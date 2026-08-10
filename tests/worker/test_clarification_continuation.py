@@ -13,6 +13,7 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.model_gateway import ModelGatewayPort, ModelResponseRejectedError
 from agent_storage import (
+    SQLiteAgentTaskStore,
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
@@ -49,8 +50,64 @@ def test_clarification_response_resumes_same_session_once(
         created_at=NOW,
         provider_call_id="call_clarify",
     )
-    initial_gateway = _gateway("I need one decision.", clarify_call)
-    final_gateway = _gateway("I will prioritize operators.")
+    plan_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.plan",
+        arguments={
+            "steps": [
+                {
+                    "step_id": "audience",
+                    "content": "Resolve the target audience",
+                    "status": "in_progress",
+                },
+                {
+                    "step_id": "summary",
+                    "content": "Produce the evidence-backed summary",
+                    "status": "pending",
+                },
+            ]
+        },
+        created_at=NOW,
+    )
+    read_plan_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.plan",
+        arguments={},
+        created_at=NOW,
+    )
+    close_plan_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.plan",
+        arguments={
+            "steps": [
+                {
+                    "step_id": "audience",
+                    "content": "Resolve the target audience",
+                    "status": "completed",
+                },
+                {
+                    "step_id": "summary",
+                    "content": "Produce the evidence-backed summary",
+                    "status": "completed",
+                },
+            ]
+        },
+        created_at=NOW,
+    )
+    initial_gateway = ScriptedModelGateway(
+        responses=(
+            _response("I will track the remaining work.", plan_call),
+            _response("I need one decision.", clarify_call),
+        )
+    )
+    final_gateway = ScriptedModelGateway(
+        responses=(
+            _response("I will restore the current plan.", read_plan_call),
+            _response("I have finished the remaining work.", close_plan_call),
+            _response("I will prioritize operators."),
+            _response("I will prioritize operators."),
+        )
+    )
     gateways = iter((initial_gateway, final_gateway))
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
@@ -60,6 +117,7 @@ def test_clarification_response_resumes_same_session_once(
     service = _execution_service(database_path)
 
     waiting = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+    waiting_task = SQLiteAgentTaskStore(database_path).ensure_for_session(session_id)
     response = create_app(database_path).append_session_message(
         str(session_id),
         {
@@ -70,16 +128,31 @@ def test_clarification_response_resumes_same_session_once(
     completed = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
 
     assert waiting.session.status is SessionStatus.WAITING_INPUT
+    assert waiting_task.goal == "Prepare an audience-specific summary."
+    assert waiting_task.task_plan.summary == {
+        "pending": 1,
+        "in_progress": 1,
+        "completed": 0,
+        "cancelled": 0,
+        "total": 2,
+    }
     assert response.status_code == 201
     assert response.body["clarification_resolved"] is True
     assert completed.session.status is SessionStatus.COMPLETED
     assert completed.attempt_result.metadata["assistant_message"] == (
         "I will prioritize operators."
     )
-    assert len(initial_gateway.requests) == 1
-    assert len(final_gateway.requests) == 1
+    assert len(initial_gateway.requests) == 2
+    assert len(final_gateway.requests) == 4
     assert final_gateway.requests[0][-1].role is MessageRole.TOOL
     assert '"user_response":"Operators"' in final_gateway.requests[0][-1].content
+    restored_plan = final_gateway.requests[1][-1]
+    assert restored_plan.role is MessageRole.TOOL
+    assert '"status":"in_progress"' in restored_plan.content
+    assert '"status":"pending"' in restored_plan.content
+    completed_task = SQLiteAgentTaskStore(database_path).ensure_for_session(session_id)
+    assert completed_task.goal == waiting_task.goal
+    assert completed_task.task_plan.summary["completed"] == 2
     events = SQLiteEventStore(database_path).list_for_session(session_id)
     assert sum(
         event.event_type is EventType.CLARIFICATION_REQUESTED for event in events
@@ -244,19 +317,19 @@ class RejectingModelGateway(ModelGatewayPort):
 
 
 def _gateway(content: str, tool_call: ToolCall | None = None) -> ScriptedModelGateway:
-    return ScriptedModelGateway(
-        responses=(
-            ScriptedModelResponse(
-                completion=ModelCompletion(
-                    assistant_message=SessionMessage(
-                        message_id=new_message_id(),
-                        role=MessageRole.ASSISTANT,
-                        content=content,
-                        created_at=NOW,
-                    ),
-                    tool_calls=(tool_call,) if tool_call is not None else (),
-                )
+    return ScriptedModelGateway(responses=(_response(content, tool_call),))
+
+
+def _response(content: str, tool_call: ToolCall | None = None) -> ScriptedModelResponse:
+    return ScriptedModelResponse(
+        completion=ModelCompletion(
+            assistant_message=SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.ASSISTANT,
+                content=content,
+                created_at=NOW,
             ),
+            tool_calls=(tool_call,) if tool_call is not None else (),
         )
     )
 

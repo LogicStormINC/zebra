@@ -10,7 +10,9 @@ from agent_core.domain.agent_tasks import (
     RolloverReason,
     SegmentVisibility,
 )
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent
 
@@ -343,10 +345,53 @@ def _task_from_connection(connection: sqlite3.Connection, task_id: TaskId) -> Ag
     return AgentTask(
         task_id=task_id,
         title=row["title"],
+        goal=_task_goal(connection, row["root_session_id"]),
+        task_plan=_task_plan(connection, task_id),
         status=SessionStatus(row["status"]),
         active_segment_id=SessionId(UUID(row["active_segment_id"])),
         current_sequence=max(current, row["segment_sequence"]),
         namespace=row["namespace"],
+    )
+
+
+def _task_goal(connection: sqlite3.Connection, root_session_id: str) -> str:
+    row = connection.execute(
+        """
+        SELECT * FROM session_events
+        WHERE session_id = ? AND event_type = ?
+        ORDER BY sequence LIMIT 1
+        """,
+        (root_session_id, EventType.USER_MESSAGE_RECEIVED.value),
+    ).fetchone()
+    if row is None:
+        projection = connection.execute(
+            "SELECT title FROM session_projections WHERE session_id = ?",
+            (root_session_id,),
+        ).fetchone()
+        if projection is None:
+            raise ValueError("task goal projection is incomplete")
+        return str(projection["title"]).strip()
+    goal = deserialize_event_row(row).payload.get("content")
+    if not isinstance(goal, str) or not goal.strip():
+        raise ValueError("task goal projection is invalid")
+    return goal.strip()
+
+
+def _task_plan(connection: sqlite3.Connection, task_id: TaskId) -> SessionPlan:
+    row = connection.execute(
+        """
+        SELECT e.* FROM task_event_index i
+        JOIN session_events e ON e.event_id = i.event_id
+        WHERE i.task_id = ? AND e.event_type = ?
+        ORDER BY i.task_sequence DESC LIMIT 1
+        """,
+        (str(task_id), EventType.PLAN_UPDATED.value),
+    ).fetchone()
+    if row is None:
+        return SessionPlan()
+    event = deserialize_event_row(row)
+    return SessionPlan.model_validate(
+        {"steps": event.payload.get("steps", ()), "updated_at": event.created_at}
     )
 
 

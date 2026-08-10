@@ -5,6 +5,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import SessionStatus
 
 
@@ -32,6 +33,8 @@ class AgentTask(BaseModel):
 
     task_id: TaskId
     title: str
+    goal: str
+    task_plan: SessionPlan = Field(default_factory=SessionPlan)
     status: SessionStatus
     active_segment_id: SessionId
     current_sequence: int = Field(ge=0)

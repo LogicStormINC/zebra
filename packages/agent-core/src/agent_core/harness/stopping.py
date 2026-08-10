@@ -94,6 +94,8 @@ class HarnessStoppingPolicy:
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return HarnessStopReason.COMPLETED
         if attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
+            if attempt_result.metadata.get("stop_reason") == "task_plan_incomplete":
+                return HarnessStopReason.TASK_PLAN_INCOMPLETE
             if attempt_result.metadata.get("stop_reason") == "tool_call_budget_exhausted":
                 return HarnessStopReason.TOOL_CALL_BUDGET_EXHAUSTED
             if attempt_result.metadata.get("stop_reason") == "tool_loop_no_progress":

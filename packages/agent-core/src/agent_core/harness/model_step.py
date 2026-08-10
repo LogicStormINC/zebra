@@ -41,6 +41,7 @@ from agent_core.harness.provider_continuation import (
     continuation_event,
     prepare_provider_continuation,
 )
+from agent_core.harness.task_state_context import append_task_state_context
 from agent_core.ports.context_compiler import ContextCompilerPort
 from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
@@ -175,7 +176,7 @@ class HarnessModelStep:
             messages,
             model_gateway,
             allow_tools=True,
-            user_goal=task.user_input,
+            user_goal=task.stable_goal,
             created_at=now,
             **({"media_inputs": task.media_inputs} if task.media_inputs else {}),
         )
@@ -429,7 +430,7 @@ class HarnessModelStep:
             messages,
             model_gateway,
             self,
-            task.user_input,
+            task.stable_goal,
             now,
             media_inputs=task.media_inputs,
         )
@@ -506,24 +507,7 @@ class HarnessModelStep:
                         created_at=created_at,
                     )
                 )
-        active_steps = tuple(
-            step for step in task.task_plan.steps if step.status.value in {"pending", "in_progress"}
-        )
-        if active_steps:
-            messages.append(
-                SessionMessage(
-                    message_id=new_message_id(),
-                    role=MessageRole.SYSTEM,
-                    content="\n".join(
-                        ["Current durable task plan:"]
-                        + [
-                            f"- [{step.status.value}] {step.step_id}: {step.content}"
-                            for step in active_steps
-                        ]
-                    ),
-                    created_at=created_at,
-                )
-            )
+        append_task_state_context(messages, task, created_at=created_at)
         messages.append(
             SessionMessage(
                 message_id=new_message_id(),

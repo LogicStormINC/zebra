@@ -92,6 +92,33 @@ def test_commit_atomically_creates_child_events_lineage_envelope_and_outbox(
     assert store.claim_dispatch(worker_id="worker-2", claimed_at=NOW) is None
 
 
+def test_child_projection_inherits_the_latest_durable_plan(tmp_path: Path) -> None:
+    database_path = tmp_path / "handoff.db"
+    source_id = _seed_completed_source(
+        database_path,
+        tmp_path,
+        plan_steps=(
+            {"step_id": "done", "content": "Finished work", "status": "completed"},
+            {"step_id": "old", "content": "Obsolete work", "status": "cancelled"},
+        ),
+    )
+    store = SQLiteSessionHandoffStore(database_path)
+    operation, commit = _prepared_commit(store, source_id)
+
+    store.commit(commit)
+
+    child = SQLiteProjectionStore(database_path).get_session(operation.target_session_id)
+    assert child is not None
+    assert [step.step_id for step in child.task_plan.steps] == ["done", "old"]
+    assert child.task_plan.summary == {
+        "total": 2,
+        "pending": 0,
+        "in_progress": 0,
+        "completed": 1,
+        "cancelled": 1,
+    }
+
+
 def test_child_recovery_revalidates_workspace_even_after_dispatch_ack(tmp_path: Path) -> None:
     database_path = tmp_path / "handoff.db"
     source = _seed_completed_source(database_path, tmp_path)
@@ -433,6 +460,7 @@ def _seed_completed_source(
     *,
     agent_definition: AgentDefinition | None = None,
     model_id: str | None = None,
+    plan_steps: tuple[dict[str, str], ...] = (),
 ) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -446,24 +474,35 @@ def _seed_completed_source(
         )
     )
     events = list(bootstrap.events)
-    events.extend(
-        (
+    events.append(
+        SessionEvent.create(
+            session_id=bootstrap.session.session_id,
+            sequence=3,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+            created_at=NOW,
+        )
+    )
+    if plan_steps:
+        events.append(
             SessionEvent.create(
                 session_id=bootstrap.session.session_id,
-                sequence=3,
-                event_type=EventType.HARNESS_ATTEMPT_STARTED,
+                sequence=len(events),
+                event_type=EventType.PLAN_UPDATED,
                 actor=EventActor.HARNESS,
-                payload={"attempt_number": 1},
+                payload={"steps": list(plan_steps)},
                 created_at=NOW,
-            ),
-            SessionEvent.create(
-                session_id=bootstrap.session.session_id,
-                sequence=4,
-                event_type=EventType.SESSION_COMPLETED,
-                actor=EventActor.HARNESS,
-                payload={"summary": "done"},
-                created_at=NOW,
-            ),
+            )
+        )
+    events.append(
+        SessionEvent.create(
+            session_id=bootstrap.session.session_id,
+            sequence=len(events),
+            event_type=EventType.SESSION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={"summary": "done"},
+            created_at=NOW,
         )
     )
     event_store = SQLiteEventStore(database_path)
@@ -524,7 +563,9 @@ def _commit_for_operation(
         completed_work=("source complete",),
         pending_work=("storage",),
         immediate_next=create_request.stage_prompt,
-        source_event_range=ContextSourceEventRange(start_sequence=0, end_sequence=4),
+        source_event_range=ContextSourceEventRange(
+            start_sequence=0, end_sequence=operation.expected_source_stream_version
+        ),
         source_event_hash=source_event_hash,
         workspace_revision=operation.workspace_revision,
         created_at=NOW,

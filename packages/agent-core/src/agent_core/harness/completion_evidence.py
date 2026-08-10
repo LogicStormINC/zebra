@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
 from hashlib import sha256
 
 from agent_core.domain.agent_definitions import (
@@ -11,11 +10,16 @@ from agent_core.domain.agent_definitions import (
     CompletionEvidenceRequirement,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import new_message_id
-from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCallStatus
 from agent_core.harness.attempt_result import build_attempt_result
+from agent_core.harness.completion_blocking import (
+    append_missing_evidence_observation,
+    blocked_completion_reason,
+    blocked_completion_summary,
+    current_task_plan,
+)
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
@@ -30,16 +34,32 @@ class CompletionEvidenceStatus:
     satisfied: bool
     missing: tuple[str, ...]
     fingerprint: str
+    open_plan_steps: tuple[str, ...] = ()
+
+
+_PLAN_COMPLETION_REQUIREMENT = "task_plan_closed"
 
 
 def evaluate_context_completion_evidence(
     context: HarnessContext,
     emitted_events: Iterable[HarnessEventDraft],
 ) -> CompletionEvidenceStatus:
-    return evaluate_completion_evidence(
+    status = evaluate_completion_evidence(
         context.task.agent_definition,
         (*context.completion_evidence_events, *emitted_events),
     )
+    plan = current_task_plan(context, emitted_events)
+    if not plan.open_step_ids:
+        return status
+    missing = (*status.missing, _PLAN_COMPLETION_REQUIREMENT)
+    fingerprint = sha256(
+        json.dumps(
+            {"evidence": status.fingerprint, "open_plan_steps": plan.open_step_ids},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    return CompletionEvidenceStatus(False, missing, fingerprint, plan.open_step_ids)
 
 
 def persisted_completion_evidence_events(
@@ -167,13 +187,9 @@ def completion_evidence_metadata(
     emitted_events: Iterable[HarnessEventDraft],
     metadata: Mapping[str, object],
 ) -> dict[str, object]:
-    status = evaluate_context_completion_evidence(context, emitted_events)
-    return {
-        **metadata,
-        "completion_evidence_satisfied": status.satisfied,
-        "completion_evidence_missing": list(status.missing),
-        "completion_evidence_fingerprint": status.fingerprint,
-    }
+    return _completion_status_metadata(
+        evaluate_context_completion_evidence(context, emitted_events), metadata
+    )
 
 
 def continue_after_tool_batch(
@@ -264,12 +280,7 @@ def complete_without_tools(
     observation_count = _non_negative_int(
         metadata.get("completion_evidence_observation_count")
     )
-    metadata = {
-        **metadata,
-        "completion_evidence_satisfied": status.satisfied,
-        "completion_evidence_missing": list(status.missing),
-        "completion_evidence_fingerprint": status.fingerprint,
-    }
+    metadata = _completion_status_metadata(status, metadata)
     if status.satisfied:
         return build_attempt_result(
             outcome=HarnessAttemptOutcome.COMPLETED,
@@ -287,7 +298,7 @@ def complete_without_tools(
     if observation_count >= 1:
         return build_attempt_result(
             outcome=HarnessAttemptOutcome.SUSPENDED,
-            summary="completion evidence contract is not satisfied",
+            summary=blocked_completion_summary(status.open_plan_steps),
             assistant_message=assistant_message,
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
@@ -295,12 +306,13 @@ def complete_without_tools(
             metadata={
                 **metadata,
                 "completion_evidence_observation_count": observation_count,
-                "stop_reason": "completion_evidence_missing",
+                "stop_reason": blocked_completion_reason(status.open_plan_steps),
             },
         )
     append_missing_evidence_observation(
         messages,
         missing=status.missing,
+        open_plan_steps=status.open_plan_steps,
         created_at=context.attempt.started_at,
     )
     return request_next_completion(
@@ -339,7 +351,7 @@ def prepare_terminal_synthesis_evidence(
     if observation_count >= 1:
         return build_attempt_result(
             outcome=HarnessAttemptOutcome.SUSPENDED,
-            summary="completion evidence contract is not satisfied",
+            summary=blocked_completion_summary(status.open_plan_steps),
             assistant_message=fallback_message,
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
@@ -348,12 +360,14 @@ def prepare_terminal_synthesis_evidence(
                 **metadata,
                 "completion_evidence_satisfied": False,
                 "completion_evidence_missing": list(status.missing),
-                "stop_reason": "completion_evidence_missing",
+                "task_plan_open_steps": list(status.open_plan_steps),
+                "stop_reason": blocked_completion_reason(status.open_plan_steps),
             },
         )
     append_missing_evidence_observation(
         messages,
         missing=status.missing,
+        open_plan_steps=status.open_plan_steps,
         created_at=context.attempt.started_at,
     )
     return request_next_completion(
@@ -385,7 +399,7 @@ def terminal_synthesis_completion_evidence(
         return None
     return build_attempt_result(
         outcome=HarnessAttemptOutcome.SUSPENDED,
-        summary="completion evidence contract is not satisfied",
+        summary=blocked_completion_summary(status.open_plan_steps),
         assistant_message=assistant_message,
         model_calls_used=model_calls_used,
         tool_calls_executed=tool_calls_executed,
@@ -394,7 +408,8 @@ def terminal_synthesis_completion_evidence(
             **metadata,
             "completion_evidence_satisfied": False,
             "completion_evidence_missing": list(status.missing),
-            "stop_reason": "completion_evidence_missing",
+            "task_plan_open_steps": list(status.open_plan_steps),
+            "stop_reason": blocked_completion_reason(status.open_plan_steps),
         },
     )
 
@@ -405,33 +420,21 @@ def _needs_terminal_synthesis(metadata: Mapping[str, object]) -> bool:
     ) is True or metadata.get("policy_recovery_terminal_synthesis") is True
 
 
-def append_missing_evidence_observation(
-    messages: list[SessionMessage],
-    *,
-    missing: tuple[str, ...],
-    created_at: datetime,
-) -> None:
-    messages.append(
-        SessionMessage(
-            message_id=new_message_id(),
-            role=MessageRole.SYSTEM,
-            content=(
-                "Runtime completion-evidence observation: "
-                + json.dumps(
-                    {
-                        "type": "missing_completion_evidence",
-                        "missing": list(missing),
-                    },
-                    separators=(",", ":"),
-                    sort_keys=True,
-                )
-                + "\nUse available tools to obtain the missing typed evidence. "
-                "Do not claim completion until the completion contract is satisfied."
-            ),
-            created_at=created_at,
-            metadata={"missing_completion_evidence": list(missing)},
-        )
-    )
+def _completion_status_metadata(
+    status: CompletionEvidenceStatus,
+    metadata: Mapping[str, object],
+) -> dict[str, object]:
+    return {
+        **metadata,
+        "completion_evidence_satisfied": status.satisfied,
+        "completion_evidence_missing": list(status.missing),
+        "completion_evidence_fingerprint": status.fingerprint,
+        **(
+            {"task_plan_open_steps": list(status.open_plan_steps)}
+            if status.open_plan_steps
+            else {}
+        ),
+    }
 
 
 def _requirement_satisfied(

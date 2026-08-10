@@ -10,6 +10,7 @@ from agent_core.application import (
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import SessionStatus
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
+from agent_core.ports.runtime import RuntimeSnapshot
 from agent_storage import SQLiteEventStore
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
@@ -24,6 +25,7 @@ def finalize_execution(
     title_service: SessionTitleService,
     event_store: SQLiteEventStore,
     started_at: datetime,
+    suspension_snapshot: RuntimeSnapshot | None = None,
 ) -> tuple[SessionEvent, ...]:
     if recorder.session.status in {
         SessionStatus.CANCELLED,
@@ -49,12 +51,22 @@ def finalize_execution(
             },
         )
     elif attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
+        snapshot_payload = (
+            {}
+            if suspension_snapshot is None
+            else {
+                "runtime_name": suspension_snapshot.runtime_name,
+                "snapshot_id": suspension_snapshot.snapshot_id,
+                "snapshot_path": suspension_snapshot.snapshot_path,
+            }
+        )
         recorder.append(
             EventType.SESSION_SUSPENDED,
             EventActor.HARNESS,
             {
                 "reason": str(attempt_result.metadata.get("stop_reason", "budget")),
                 "metadata": attempt_result.metadata,
+                **snapshot_payload,
             },
         )
     if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:

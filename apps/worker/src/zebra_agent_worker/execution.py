@@ -24,10 +24,7 @@ from agent_core.harness import (
 )
 from agent_core.harness.completion_evidence import persisted_completion_evidence_events
 from agent_core.harness.model_capabilities import declared_model_capabilities
-from agent_core.harness.models import (
-    HarnessAttemptResult,
-    HarnessEventDraft,
-)
+from agent_core.harness.models import HarnessAttemptResult, HarnessEventDraft
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway, bind_native_media_inputs
 from agent_security import (
@@ -67,6 +64,7 @@ from zebra_agent_worker.approved_continuation import (
     ApprovedContinuationError,
     recover_approved_continuation,
 )
+from zebra_agent_worker.attempt_lifecycle import execute_attempt
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.clarification_continuation import (
     ClarificationContinuationError,
@@ -81,7 +79,6 @@ from zebra_agent_worker.continuation_lifecycle import (
     mark_clarification_continuation_started,
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
-from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import finalize_execution
 from zebra_agent_worker.finos_journal_provider import (
@@ -385,6 +382,8 @@ class SessionExecutionService:
                 attachments=task.attachments,
                 media_inputs=native_media_inputs,
                 runtime_evidence=task.runtime_evidence,
+                goal=task_record.goal,
+                task_plan=task_record.task_plan,
             ),
             session=claimed.recovery.session,
             attempt=HarnessAttempt(number=1, started_at=started_at),
@@ -424,7 +423,6 @@ class SessionExecutionService:
                 clarification_id=str(clarification.tool_call.tool_call_id),
                 started_at=started_at,
             )
-        context = replace(context, session=claimed.recovery.session)
         recorder = DurableHarnessEventRecorder(
             session=claimed.recovery.session,
             workspace=claimed.recovery.workspace,
@@ -441,7 +439,10 @@ class SessionExecutionService:
                 {"attempt_number": 1},
                 created_at=started_at,
             )
-        context = replace(context, session=recorder.session)
+        context = replace(
+            context,
+            session=recorder.session.model_copy(update={"task_plan": task_record.task_plan}),
+        )
 
         def persist_event(draft: HarnessEventDraft) -> None:
             if draft.event_type is EventType.CONTEXT_COMPACTED:
@@ -502,31 +503,13 @@ class SessionExecutionService:
             event_sink=persist_event,
         )
         try:
-            if continuation is not None:
-                attempt_result = orchestrator.continue_approved_tool_call(
-                    context,
-                    initial_completion=continuation.completion,
-                    tool_call=continuation.tool_call,
-                    remaining_tool_calls=continuation.remaining_tool_calls,
-                    conversation=continuation.conversation,
-                    model_calls_used=continuation.model_calls_used,
-                    tool_calls_executed=continuation.tool_calls_executed,
-                )
-            elif clarification is not None:
-                attempt_result = orchestrator.continue_clarification(
-                    context,
-                    tool_call=clarification.tool_call,
-                    response=clarification.response,
-                    conversation=clarification.conversation,
-                    model_calls_used=clarification.model_calls_used,
-                    tool_calls_executed=clarification.tool_calls_executed,
-                    assistant_message=clarification.assistant_message,
-                )
-            else:
-                attempt_result = orchestrator.run(context)
-        except Exception as exc:
-            attempt_result = exception_attempt_result(
-                exc, error_metadata(exc, clarification, continuation)
+            attempt_result, suspension_snapshot = execute_attempt(
+                orchestrator,
+                context,
+                continuation=continuation,
+                clarification=clarification,
+                runtime=runtime,
+                runtime_handle=runtime_handle,
             )
         finally:
             cleanup_error = close_tool_gateway(tool_gateway)
@@ -540,6 +523,7 @@ class SessionExecutionService:
             title_service=SessionTitleService(model_gateway),
             event_store=self._event_store,
             started_at=started_at,
+            suspension_snapshot=suspension_snapshot,
         )
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:

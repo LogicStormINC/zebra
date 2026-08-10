@@ -37,6 +37,7 @@ class HarnessStopReason(StrEnum):
     RETRY_ALLOWED = "retry_allowed"
     TOOL_CALL_BUDGET_EXHAUSTED = "tool_call_budget_exhausted"
     TOOL_LOOP_NO_PROGRESS = "tool_loop_no_progress"
+    TASK_PLAN_INCOMPLETE = "task_plan_incomplete"
     APPROVAL_REQUIRED = "approval_required"
     CLARIFICATION_REQUIRED = "clarification_required"
 
@@ -67,6 +68,7 @@ class HarnessTask:
     attachments: tuple[AttachmentContextInput, ...] = ()
     media_inputs: tuple[ModelMediaInput, ...] = ()
     public_content: str | None = None
+    goal: str | None = None
     task_plan: SessionPlan = field(default_factory=SessionPlan)
 
     def __post_init__(self) -> None:
@@ -74,6 +76,11 @@ class HarnessTask:
             raise ValueError("harness task title must not be blank")
         if not self.user_input.strip():
             raise ValueError("harness task user_input must not be blank")
+        if self.goal is not None:
+            normalized_goal = self.goal.strip()
+            if not normalized_goal:
+                raise ValueError("harness task goal must not be blank when set")
+            object.__setattr__(self, "goal", normalized_goal)
         if self.public_content is not None:
             normalized_public_content = self.public_content.strip()
             if not normalized_public_content:
@@ -151,6 +158,10 @@ class HarnessTask:
             if not isinstance(media_input, ModelMediaInput):
                 raise ValueError("harness task media_inputs must contain ModelMediaInput values")
         object.__setattr__(self, "media_inputs", ordered_media_inputs(self.media_inputs))
+
+    @property
+    def stable_goal(self) -> str:
+        return self.goal or self.user_input
 
 
 @dataclass(frozen=True)

@@ -2,12 +2,12 @@ from collections.abc import Callable, Mapping
 from dataclasses import replace
 from datetime import datetime
 
+from agent_core.domain.events import EventType
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
     ModelCompletion,
 )
-from agent_core.domain.events import EventType
 from agent_core.domain.tools import ToolCall
 from agent_core.harness import context_recovery
 from agent_core.harness.attempt_result import (
@@ -287,7 +287,7 @@ class SequentialToolLoop:
                 messages,
                 self._model_gateway,
                 allow_tools=True,
-                user_goal=context.task.user_input,
+                user_goal=context.task.stable_goal,
                 created_at=context.attempt.started_at,
                 **(
                     {"media_inputs": context.task.media_inputs}
@@ -300,7 +300,7 @@ class SequentialToolLoop:
                 messages,
                 self._model_gateway,
                 self._model_step,
-                context.task.user_input,
+                context.task.stable_goal,
                 context.attempt.started_at,
                 **(
                     {"media_inputs": context.task.media_inputs}
@@ -449,7 +449,7 @@ class SequentialToolLoop:
             messages,
             self._model_gateway,
             self._model_step,
-            context.task.user_input,
+            context.task.stable_goal,
             context.attempt.started_at,
             **(
                 {"media_inputs": context.task.media_inputs}

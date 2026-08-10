@@ -22,7 +22,11 @@ class SessionListApi:
         body.pop("tasks", None)
         sessions = cast(list[dict[str, object]], body["sessions"])
         body["sessions"] = [
-            {key: value for key, value in item.items() if key != "task_id"}
+            {
+                key: value
+                for key, value in item.items()
+                if key not in {"task_id", "goal"}
+            }
             for item in sessions
         ]
         return ApiResponse(response.status_code, body)
