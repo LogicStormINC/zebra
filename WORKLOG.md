@@ -1,5 +1,33 @@
 # Progress Log
 
+## 2026-08-11 ZNX-GOAL-PLAN-ACT-01 product acceptance closure
+
+- retained the existing Goal/Plan lifecycle and added only two independent
+  generic execution contracts: durable default-false `plan_required` and the
+  existing AgentDefinition `required_evidence`
+- red-first tests prove Plan-before-business-tool ordering, one bounded
+  correction then explicit failure, evidence trust/failure semantics,
+  clarification/retry/rollover continuity, and no-contract compatibility
+- FinOS declares `authoritative_financial_evidence` only for explicit
+  Goal-oriented personal-finance tasks; only authorized, schema-valid,
+  successful trusted typed reads emit `authoritative_typed_read`
+- fixed the real terminal-follow-up race without weakening handoff safety:
+  completion event, projections, and owning worker-lease deletion commit in one
+  SQLite transaction after memory/title finalization
+- rebased cleanly over Zebra `dfd6a2c` and FinOS `268ed03`; post-rebase Zebra
+  targeted tests are `117 passed`, full pytest is `2110 passed, 9 failed,
+  9 skipped`, and the nine failures match the exact base
+- release eval is `10/10`; file-size keeps the same 13 paths, Ruff the same 11
+  findings, and Mypy the same 13 findings as the recorded base
+- real DeepSeek acceptance passed with first Plan revision before first
+  authoritative evidence, seven Plan revisions across two rounds, a closed final
+  Plan, the same Stable Task and Goal, and no terminal/lease race
+- FinOS full discover is `760 tests, 4 inherited failures, 12 skipped`; UI hotfix
+  tests are `122 passed`; Gate 2 real dual-repository E2E is `1 passed`
+- no Planner Agent, classifier, DAG, fixed Review/finance Plan, new permission,
+  GUI, deployment, stable integration branch change, or FinOS workflow engine
+  was added
+
 ## 2026-08-10 ZNX-GOALPLAN-01 Goal/Plan v1 lifecycle
 
 - started red-first from exact Zebra base `0a81c6d` on

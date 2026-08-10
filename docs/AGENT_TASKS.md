@@ -289,7 +289,7 @@ new evidence and long legitimate tool chains remain unbounded by default.
 
 ### CTX-REHYDRATE-02 - Convergence Projection And On-Demand Rehydration
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Vinson`
 - Coding task: `ctx_rehydrate_phase1_5` (`gpt-5.6-terra`, max)
 - Suggested role: `CTX / CORE / WORKER / QA`
@@ -16023,25 +16023,43 @@ gain new data authority. Simple Tasks remain valid without either contract.
 - [x] Prove whether `agent.plan` and host typed reads are advertised before
   changing activation instructions or capability binding.
 - [x] Add deterministic red tests before the minimum generic production change.
-- [ ] Persist strict, default-false `plan_required` on the Stable Task; inherit it
+- [x] Persist strict, default-false `plan_required` on the Stable Task; inherit it
   across follow-up, retry, resume and reconstruction; block business tools and
   normal completion before the first durable Plan, then fail explicitly after
   one bounded unsuccessful correction.
-- [ ] Reuse the existing completion-evidence framework and accept
+- [x] Reuse the existing completion-evidence framework and accept
   `authoritative_typed_read` only from trusted successful execution metadata;
   failed, malformed, proposal, save, validator, or merely read-only-tagged calls
   do not satisfy it.
-- [ ] Real complex Goal produces this order: first `PLAN_UPDATED`, first
+- [x] Real complex Goal produces this order: first `PLAN_UPDATED`, first
   authoritative typed read, continued Plan/tool work, closed Plan, satisfied
   required evidence, then `COMPLETED`.
-- [ ] The real follow-up preserves Stable Task, stable Goal, latest Plan revision,
+- [x] The real follow-up preserves Stable Task, stable Goal, latest Plan revision,
   and accumulated required evidence; it neither resets nor re-declares the root
   contracts.
-- [ ] Default no-Plan/no-evidence Tasks can still complete normally.
-- [ ] FinOS Gate 2 real dual-repository E2E remains green without a fixed Review
+- [x] Default no-Plan/no-evidence Tasks can still complete normally.
+- [x] FinOS Gate 2 real dual-repository E2E remains green without a fixed Review
   Plan or any widened capability grant.
-- [ ] Targeted, full, static, eval, and FinOS compatibility gates show no new
+- [x] Targeted, full, static, eval, and FinOS compatibility gates show no new
   regression relative to the exact base.
+
+#### Product Acceptance Evidence
+
+- Zebra implementation candidate: `d3077de98c9e1fac2797886efbe7385f48756efc`,
+  rebased over read-only-tool hotfix `dfd6a2c32637196573d4f47c77a94ace67ac77eb`.
+- Post-rebase targeted set: `117 passed`; full pytest: `2110 passed, 9 failed,
+  9 skipped`, with the same nine failures as the exact base.
+- File-size, Ruff, and Mypy retain the recorded inherited sets of `13`, `11`,
+  and `13`; release eval is `10/10`; touched-path Ruff and diff-check pass.
+- Real DeepSeek two-round acceptance: first Plan revision precedes first
+  authoritative typed evidence; seven Plan revisions finish closed; follow-up
+  keeps the same Stable Task, stable Goal, evidence, and revision continuity.
+- FinOS candidate `d596229e04b69e908f217f5178cc557c015a2f63`
+  includes UI hotfix `268ed03ac5a3718fbc98b5047f3f488467b7db6f`;
+  full discover is `760 tests, 4 inherited failures, 12 skipped`, UI is
+  `122 passed`, and Gate 2 real dual-repository E2E is `1 passed`.
+- `Wave 2.5 / Goal-Plan v1 = Product Acceptance PASS`; Wave 3 User/Private
+  Skill may start. No deployment was performed.
 
 #### Explicit Non-Goals
 

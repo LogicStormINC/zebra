@@ -5,7 +5,20 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-08-10`
+- Snapshot date: `2026-08-11`
+- `Wave 2.5 / Goal-Plan v1 = Product Acceptance PASS`. The activation closure
+  on `codex/znx-goal-plan-act-01` adds two independent, generic Stable Task
+  contracts: strict default-false `plan_required`, and the existing
+  `completion_contract.required_evidence`. A real DeepSeek two-round Goal
+  produced Plan revisions before authoritative FinOS typed reads, closed the
+  Plan, completed, then preserved the same Stable Task, stable Goal, evidence,
+  and Plan revision continuity on follow-up. Terminal publication and worker
+  lease release now share one SQLite completion transaction, so immediate
+  follow-up no longer races a visible `SESSION_COMPLETED`. Post-hotfix targeted
+  tests are `117 passed`; full pytest is `2110 passed, 9 failed, 9 skipped` with
+  the exact-base failure set; eval is `10/10`, and static/file-size findings are
+  unchanged inherited sets. Gate 2 real dual-repository E2E is `1 passed`.
+  No Planner, fixed financial Plan, new permission, GUI, or deployment was added.
 - `ZNX-GOALPLAN-01` closes the existing Plan lifecycle on
   `codex/znx-goal-plan-v1` from exact base `0a81c6d`, then combines cleanly with
   Gate 2 at `aa8c4d5`. Stable Task now projects its root Goal and latest mutable

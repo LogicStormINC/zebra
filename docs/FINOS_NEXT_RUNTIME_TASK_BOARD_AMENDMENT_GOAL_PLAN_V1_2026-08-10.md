@@ -1,6 +1,6 @@
 # 2026-08-10 FinOS Next Runtime Task Board Amendment — Goal/Plan v1
 
-- Status: **Active sequencing amendment**
+- Status: **Wave 2.5 Product Acceptance PASS**
 - Applies to: `docs/FINOS_NEXT_RUNTIME_TASK_BOARD_2026-08-08.md`
 - Integration branch: `codex/finos-runtime-next`
 - Normative implementation plan: `docs/ZEBRA_GOAL_PLAN_V1_EXECUTION_PLAN_2026-08-10.md`
@@ -95,6 +95,22 @@ Then make the smallest production changes required by those tests.
   typed reads, executed Skill provenance, candidate/save/history, and same
   Stable Task correction.
 - No FinOS source, stable integration branch, GUI, provider, or deployment state changed.
+
+### Product activation closure — 2026-08-11
+
+- `plan_required` is a generic, durable, default-false Stable Task contract;
+  when true, business execution and normal completion remain blocked until an
+  Agent-authored durable Plan exists.
+- `required_evidence` remains the independent existing completion contract;
+  FinOS satisfies `authoritative_financial_evidence` only through an authorized,
+  schema-valid, successful trusted typed read.
+- A real DeepSeek two-round Goal passed Plan-before-evidence ordering, closed
+  Plan completion, same-Task follow-up, stable Goal, Plan revision continuity,
+  and evidence continuity.
+- The post-hotfix Gate 2 real dual-repository E2E passed without a fixed Review
+  Plan, widened grant, new workflow engine, or deployment.
+- `Wave 2.5 / Goal-Plan v1 = Product Acceptance PASS`; the next product slice is
+  Wave 3 `ZNX-USKILL-01` User/Private Skill lifecycle.
 
 ### Hard non-goals
 

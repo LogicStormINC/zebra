@@ -350,6 +350,14 @@ Goal/Plan v1 is done only when all are true:
 9. targeted Goal/Plan tests and repository-required gates pass;
 10. implementation merges into `codex/finos-runtime-next` and publishes the exact SHA.
 
+Product acceptance closure (`2026-08-11`): all ten gates passed after the
+default-false `plan_required` contract and existing `required_evidence` contract
+were exercised by a real DeepSeek two-round Goal. The first durable Plan
+preceded authoritative typed evidence; the same Stable Task preserved its Goal,
+Plan revisions, and evidence across follow-up; the final Plan closed before
+completion. Gate 2 real dual-repository E2E remained green. Wave 2.5 is
+`Product Acceptance PASS`; Wave 3 User/Private Skill may begin.
+
 ---
 
 ## 8. AceAgent relationship
