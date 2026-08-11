@@ -55,7 +55,8 @@ cleanup() {
   "${K[@]}" get runtimeclass gvisor -o yaml > "$EVIDENCE_DIR/runtimeclass.yaml" 2>&1 || true
   "${K[@]}" get pods -n "$NAMESPACE" -o json > "$EVIDENCE_DIR/pods.json" 2>&1 || true
   "${K[@]}" get quota,networkpolicy,pvc -n "$NAMESPACE" -o yaml > "$EVIDENCE_DIR/policy.yaml" 2>&1 || true
-  "${K[@]}" logs -n "$NAMESPACE" job/worker > "$EVIDENCE_DIR/worker.log" 2>&1 || true
+  "${K[@]}" logs -n "$NAMESPACE" -l app=worker --all-containers=true --prefix=true \
+    > "$EVIDENCE_DIR/worker.log" 2>&1 || true
   "${K[@]}" logs -n "$NAMESPACE" pod/blocked-probe > "$EVIDENCE_DIR/blocked-probe.log" 2>&1 || true
   "${K[@]}" delete namespace "$NAMESPACE" --ignore-not-found --wait=true --timeout=120s \
     > "$EVIDENCE_DIR/cleanup.log" 2>&1
@@ -92,7 +93,15 @@ if [[ "$RUNTIME_HANDLER" != "runsc" ]]; then
   REASON="gvisor RuntimeClass is missing or handler is not runsc"
   exit 1
 fi
-if ! "${K[@]}" api-resources --api-group=networking.k8s.io | grep -q NetworkPolicy; then
+NETWORK_POLICY_API_READY=0
+for _ in $(seq 1 30); do
+  if "${K[@]}" api-resources --api-group=networking.k8s.io | grep -q NetworkPolicy; then
+    NETWORK_POLICY_API_READY=1
+    break
+  fi
+  sleep 1
+done
+if [[ "$NETWORK_POLICY_API_READY" -ne 1 ]]; then
   STATUS=1
   REASON="NetworkPolicy API is unavailable"
   exit 1
@@ -188,6 +197,25 @@ spec:
         - podSelector:
             matchLabels:
               app: worker
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-worker-api-egress
+  namespace: $NAMESPACE
+spec:
+  podSelector:
+    matchLabels:
+      app: worker
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: api
       ports:
         - protocol: TCP
           port: 8080

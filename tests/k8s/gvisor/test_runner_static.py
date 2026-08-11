@@ -12,6 +12,8 @@ def test_runner_is_fail_closed_and_cleans_namespace() -> None:
     assert '"$RUNTIME_HANDLER" != "runsc"' in source
     assert "ResourceQuota" in source
     assert "NetworkPolicy" in source
+    assert "allow-worker-api-egress" in source
+    assert 'logs -n "$NAMESPACE" -l app=worker' in source
     assert "disable-network-policy" in source
     assert "WORKER_RESTART_RESUME=PASS" in source
     assert "delete namespace" in source
