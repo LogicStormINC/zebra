@@ -4,6 +4,8 @@ from uuid import UUID
 
 import pytest
 import zebra_agent_cli.cli as cli_module
+import zebra_agent_cli.execution as cli_execution
+import zebra_agent_cli.run_command_execution as run_command_execution
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import MemoryId, SessionId, new_message_id, new_tool_call_id
 from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryType, MemoryVisibility
@@ -23,7 +25,7 @@ from agent_storage import (
     SQLiteSkillsStateStore,
 )
 from agent_tools.skills_catalog import LocalSkillCatalog
-from agent_tools.skills_scope import build_scoped_skill_roots
+from agent_tools.skills_scope import SkillCatalogError, build_scoped_skill_roots
 from cli_run_support import (
     FakeGateway,
     _created_at,
@@ -313,6 +315,81 @@ def test_cli_direct_run_freezes_explicit_private_skill(
     events = SQLiteEventStore(database_path).list_for_session(result.payload["session_id"])
     prepared = next(event for event in events if event.event_type is EventType.TASK_PREPARED)
     assert prepared.payload["skill_component_identities"] == [identity.model_dump(mode="json")]
+
+
+def test_cli_direct_owner_only_empty_grant_skips_skill_catalog(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    private_root = tmp_path / "private"
+    private_root.mkdir()
+    settings = replace(
+        _settings(database_path),
+        skill_roots=(str(private_root),),
+        skills_state_path=str(tmp_path / "skills-state.sqlite"),
+    )
+
+    def fake_build_model_gateway(settings: ZebraAgentSettings) -> FakeGateway:
+        del settings
+        return FakeGateway(
+            completion=ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="No Skill was granted.",
+                    created_at=_created_at(),
+                )
+            )
+        )
+
+    monkeypatch.setattr("zebra_agent_cli.execution.build_model_gateway", fake_build_model_gateway)
+    original_execute = run_command_execution.execute_durable_run
+
+    def assert_empty_owner(**kwargs: object):
+        assert kwargs["skill_owner"] is None
+        return original_execute(**kwargs)
+
+    monkeypatch.setattr(run_command_execution, "execute_durable_run", assert_empty_owner)
+    original_harness = cli_execution.run_local_harness
+
+    def assert_no_skill_catalog(**kwargs: object):
+        assert kwargs["skill_roots"] == ()
+        assert kwargs["skills_state"] is None
+        return original_harness(**kwargs)
+
+    monkeypatch.setattr(cli_execution, "run_local_harness", assert_no_skill_catalog)
+    result = execute(
+        [
+            "run",
+            "Run without a Skill grant",
+            "--execute",
+            "--skill-owner",
+            "owner-a",
+            "--workspace",
+            str(tmp_path),
+            "--database",
+            str(database_path),
+        ],
+        settings=settings,
+    )
+
+    assert result.payload["executed"] is True
+    with pytest.raises(SkillCatalogError, match="opaque"):
+        execute(
+            [
+                "run",
+                "Reject an invalid owner",
+                "--execute",
+                "--skill-owner",
+                "user",
+                "--workspace",
+                str(tmp_path),
+                "--database",
+                str(database_path),
+            ],
+            settings=settings,
+        )
 
 
 def test_cli_skill_selector_rejects_unavailable_disabled_and_cross_owner(tmp_path: Path) -> None:

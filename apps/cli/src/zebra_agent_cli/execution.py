@@ -72,12 +72,16 @@ def execute_durable_run(
         database_path,
         repo_id=str(workspace_root.resolve()),
     )
-    skill_roots = build_scoped_skill_roots(
-        system=settings.skill_roots_system,
-        admin=settings.skill_roots_admin,
-        user=settings.skill_roots,
-        repo=settings.skill_roots_repo,
-        owner=skill_owner if granted_skill_component_identities else None,
+    skill_roots = (
+        build_scoped_skill_roots(
+            system=settings.skill_roots_system,
+            admin=settings.skill_roots_admin,
+            user=settings.skill_roots,
+            repo=settings.skill_roots_repo,
+            owner=skill_owner,
+        )
+        if granted_skill_component_identities
+        else ()
     )
     result = run_local_harness(
         prompt=prompt,

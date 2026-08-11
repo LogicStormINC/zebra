@@ -389,6 +389,11 @@ def normalize_scoped_roots(
             namespace = owner
         path = Path(raw_path).expanduser()
         private_root = owner is not None
+        if private_root and path.parent.is_symlink():
+            raise SkillCatalogError(
+                SkillCatalogReason.INVALID_ROOT,
+                "private Skill container must not be a symlink",
+            )
         expected_private_root = None if owner is None else path.parent.resolve() / owner
         if private_root and path.is_symlink():
             raise SkillCatalogError(

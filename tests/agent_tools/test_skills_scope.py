@@ -188,6 +188,19 @@ def test_private_owner_root_symlink_cannot_cross_to_another_owner(tmp_path: Path
     assert LocalSkillCatalog((missing,), inventory_only=True).list()[0] == ()
 
 
+def test_private_owner_container_symlink_is_rejected(tmp_path: Path) -> None:
+    private_root = tmp_path / "private"
+    external_container = tmp_path / "external-private"
+    _skill(external_container / "owner-a" / "review", "review", "escaped guidance")
+    (private_root / ".zebra-private").parent.mkdir()
+    (private_root / ".zebra-private").symlink_to(external_container, target_is_directory=True)
+
+    roots = build_scoped_skill_roots(user=(str(private_root),), owner="owner-a")
+
+    with pytest.raises(SkillCatalogError, match="private Skill container"):
+        LocalSkillCatalog(roots, inventory_only=True)
+
+
 def _skill(root: Path, name: str, description: str) -> None:
     root.mkdir(parents=True, exist_ok=True)
     (root / "SKILL.md").write_text(

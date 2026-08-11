@@ -102,7 +102,7 @@ def _run_result(
             network_profile=network_profile,
             mcp_allowlist=mcp_allowlist,
             attachments=attachments,
-            skill_owner=namespace.skill_owner,
+            skill_owner=namespace.skill_owner if skill_component_identities else None,
             granted_skill_component_identities=skill_component_identities,
         )
         session = execution_result.harness_result.session

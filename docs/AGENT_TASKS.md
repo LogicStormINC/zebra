@@ -16180,6 +16180,17 @@ filter keeps it out of ownerless legacy catalog traversal.
   a one-off migration-init lock on one base full run both passed on isolated
   current/base reruns. Full Ruff (11), mypy (13), and file-size (13) match base.
   `skills_catalog.py` is 476 lines and `skills_scope.py` is 473 lines.
+- Narrow post-third red evidence: a hidden `.zebra-private` container symlink
+  could escape the configured private root, and direct CLI `--execute` with an
+  owner but no selected Skill still built a Skill catalog.
+- Narrow post-third closure: owner-root normalization rejects a symlinked private
+  container while allowing a missing container for durable snapshot recovery.
+  Empty direct grants validate the opaque owner but pass neither owner nor roots
+  to the harness, so no private catalog is constructed. Snapshot/lifecycle/CLI
+  matrix `94 passed`; Goal/Plan `39 passed`; changed-path Ruff, production-path
+  mypy, diff-check, and changed-file size limits passed. Full pytest was not
+  repeated because this follow-up only changes those two guarded paths; the
+  recorded third-candidate full comparison remains the applicable baseline.
 
 #### Explicit Non-Goals
 
