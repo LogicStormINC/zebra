@@ -54,6 +54,11 @@ uv run python tests/compose/cloudline/run_real_service.py \
 - S3：`ZEBRA_S3_RECOVERY_TEST_RESULT=PASS`；
 - fresh restore：`ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS`。
 
+在整合线 `codex/full-plan-zebra-01@741a471f` 上，application runner 又单独复跑
+通过；此前因 Host Grant registry 为空导致 API 重启的回归已由测试数据库 seed
+合法 Host registry 修复。该整合线的完整 Python suite 为 `2210 passed,
+275 skipped`，`make check` 仍全绿。
+
 第一次 application 尝试因 Docker Hub BuildKit OAuth EOF 失败，预拉取固定的
 `docker/dockerfile:1.7` 后重跑通过；这是外部镜像服务瞬时故障，不被记作 runner
 的成功。尚未执行远程 GitHub Actions，故不宣称 canonical job 已在 GitHub 上运行。

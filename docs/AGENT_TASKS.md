@@ -1278,6 +1278,9 @@ always-cleanup semantics. A failed runner must identify its contract boundary.
 - Local Docker matrix completed with independent project cleanup: application
   Compose `PASS`, Redis live fan-out `1 passed`, PostgreSQL PITR `PASS`, S3
   recovery `PASS`, and PostgreSQL/Redis/MinIO fresh restore `PASS`.
+- The integrated Zebra line `codex/full-plan-zebra-01@741a471f` re-ran the
+  application runner after seeding a valid test-only Host registry required by
+  the fail-closed Host Grant authorizer; API and Worker both stayed healthy.
 - PITR evidence recorded `events=4`, `revision=3`, old epoch rejection and
   `RPO=0.121072s`, `RTO=6.691080s`; S3 evidence recorded checksum and guarded
   PostgreSQL ref repair; every runner reported cleanup or its own `EXIT` trap.
