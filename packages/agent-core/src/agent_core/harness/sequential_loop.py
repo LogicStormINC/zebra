@@ -270,15 +270,14 @@ class SequentialToolLoop:
         plan_missing = context.task.plan_required and not current_task_plan(
             context, emitted_events
         ).steps
+        plan_calls = tuple(call for call in completion.tool_calls if call.name == "agent.plan")
         first_call = completion.tool_calls[0]
-        batch_fits = (
-            context.task.max_tool_calls is None
-            or tool_calls_executed + len(completion.tool_calls)
-            <= context.task.max_tool_calls
-        )
-        if plan_missing and first_call.name in {"agent.clarify", "agent.plan"} and (
-            not self._synthesize_tool_results
-            or (first_call.name == "agent.plan" and not batch_fits)
+        if plan_missing and len(plan_calls) == 1:
+            calls = plan_calls
+        elif (
+            plan_missing
+            and first_call.name == "agent.clarify"
+            and not self._synthesize_tool_results
         ):
             calls = (first_call,)
         self._model_step.append_tool_batch(

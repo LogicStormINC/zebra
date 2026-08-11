@@ -106,9 +106,10 @@ def required_plan_action(
         or current_task_plan(context, emitted_events).steps
     ):
         return "continue"
-    if calls and calls[0].name == "agent.clarify":
+    plan_calls = tuple(call for call in calls if call.name == "agent.plan")
+    if len(plan_calls) == 1 and _has_nonempty_plan(plan_calls[0].arguments):
         return "continue"
-    if calls and calls[0].name == "agent.plan" and _has_nonempty_plan(calls[0].arguments):
+    if not plan_calls and calls and calls[0].name == "agent.clarify":
         return "continue"
     if metadata.get("required_plan_nudge_attempted") is True or any(
         message.metadata.get("required_plan_nudge") is True for message in messages

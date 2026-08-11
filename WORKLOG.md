@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-08-11 ZNX-PLAN-MIXED-BATCH-01 required Plan mixed-batch closure
+
+- started from `codex/finos-runtime-next@50742da95e8ee9afb267150e2f8e0a884e3cfad7`
+  on `codex/znx-plan-mixed-batch-closure`; no FinOS, provider credential,
+  integration branch, push, merge, or deployment change
+- fixed the shared activation gate so exactly one non-empty `agent.plan` in a
+  no-Plan mixed completion is the only retained/executed call; multiple Plan
+  calls use the existing bounded correction/fail-closed path
+- red tests cover later Plan selection, paired follow-up context, no business
+  proposal/policy/execution before `PLAN_UPDATED`, Plan-before-business ordering,
+  selector/batch modes, and multiple-Plan rejection
+- targeted Goal/Plan/loop and User Skill matrices pass (`45` + `70`); candidate
+  full pytest is `2144 passed, 9 failed, 9 skipped` against exact base
+  `2141 passed, 9 failed, 9 skipped` with the same failures; eval is `10/10`
+- changed-path Ruff/Mypy/compileall/diff-check pass; full file-size/Ruff/Mypy
+  findings match the inherited base `13`/`11`/`13` sets
+
 ## 2026-08-11 ZNX-GOAL-PLAN-ACT-01 product acceptance closure
 
 - retained the existing Goal/Plan lifecycle and added only two independent

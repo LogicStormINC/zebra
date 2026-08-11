@@ -16074,6 +16074,50 @@ gain new data authority. Simple Tasks remain valid without either contract.
 - GUI/computer-use or FinOS source changes without a proven compatibility
   regression.
 
+### ZNX-PLAN-MIXED-BATCH-01 - Required Plan Mixed-Batch Closure
+
+- Status: `In Progress`
+- Owner: `Vinson`
+- Branch: `codex/znx-plan-mixed-batch-closure`
+- Worktree: `/Users/vinson/.codex/worktrees/dadb/zebra`
+- Exact base: `50742da95e8ee9afb267150e2f8e0a884e3cfad7`
+- Owned paths: `packages/agent-core/src/agent_core/harness/capability_guidance.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  `tests/agent_core/test_required_plans.py`, `docs/AGENT_TASKS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close the generic `plan_required` activation gap where a provider returns a
+mixed tool batch that contains exactly one valid non-first `agent.plan` call.
+Before the first durable Plan, Zebra must retain and execute only that Plan
+call, then request another completion for subsequent business work.
+
+#### Required Acceptance
+
+- [x] Red regression proves `[skills.read, agent.plan]` retains only the Plan
+  call, with no proposal, policy, or execution event for `skills.read`.
+- [x] `PLAN_UPDATED` occurs before a later business execution; a selector cannot
+  replace the required Plan with the business call.
+- [x] A no-Plan batch keeps the existing one-nudge, explicit failure behavior;
+  multiple `agent.plan` calls fail closed without guessing.
+- [x] Normal no-Plan-required and existing durable-Plan paths remain unchanged.
+
+#### Local Validation
+
+- Red-first: the later-Plan and multiple-Plan regressions both failed at the
+  exact base before the runtime change.
+- Targeted Goal/Plan/loop matrix: `45 passed`; User Skill matrix: `70 passed`.
+- Candidate full pytest: `2144 passed, 9 failed, 9 skipped`; exact base:
+  `2141 passed, 9 failed, 9 skipped`, with the same nine failing tests.
+- Changed-path Ruff, Mypy, compileall, and diff-check pass; release eval is
+  `10/10`. Full file-size/Ruff/Mypy sets remain the exact-base `13`/`11`/`13`.
+
+#### Explicit Non-Goals
+
+- FinOS prompts, domain code, authority, provider credentials, deployment, or
+  any new Planner/state machine/classifier;
+- executing or appending discarded calls from the mixed provider batch.
+
 ### ZNX-USKILL-01 - User/Private Skill Lifecycle Alignment
 
 - Status: `Review`

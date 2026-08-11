@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+import pytest
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
@@ -9,6 +10,7 @@ from agent_core.domain.plans import PlanStep, SessionPlan
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import (
+    FirstToolCallSelectionStrategy,
     HarnessAttempt,
     HarnessAttemptOutcome,
     HarnessAttemptResult,
@@ -35,6 +37,11 @@ TOOLS = (
     ModelToolDefinition(
         name="files.read",
         description="Read one file.",
+        parameters={"type": "object", "properties": {}},
+    ),
+    ModelToolDefinition(
+        name="skills.read",
+        description="Read one Skill.",
         parameters={"type": "object", "properties": {}},
     ),
 )
@@ -79,6 +86,82 @@ def test_required_plan_blocks_non_plan_tools_until_plan_exists() -> None:
     } & {str(discarded.tool_call_id), str(rejected.tool_call_id)}
 
 
+@pytest.mark.parametrize("synthesize_tool_results", (False, True))
+def test_required_plan_keeps_only_later_plan_from_mixed_batch(
+    synthesize_tool_results: bool,
+) -> None:
+    discarded = _call("skills.read", {"name": "evidence-skill"})
+    open_plan = _plan_call("in_progress")
+    planned = _call("skills.read", {"name": "evidence-skill"})
+    close_plan = _plan_call("completed")
+    result, gateway, tools = _run(
+        _response("Load the required Skill and establish a Plan.", discarded, open_plan),
+        _response("Read the required Skill.", planned),
+        _response("Close the Plan.", close_plan),
+        _response("Final answer."),
+        _response("Final answer."),
+        plan_required=True,
+        synthesize_tool_results=synthesize_tool_results,
+        tool_selector=FirstToolCallSelectionStrategy(),
+    )
+
+    assert tools.calls == [planned]
+    if synthesize_tool_results:
+        assert result.outcome is HarnessAttemptOutcome.COMPLETED
+    else:
+        assert result.outcome is HarnessAttemptOutcome.SUSPENDED
+        assert result.metadata["stop_reason"] == "task_plan_incomplete"
+    business_events = {
+        str(event.payload.get("tool_call_id"))
+        for event in result.emitted_events
+        if event.event_type
+        in {
+            EventType.TOOL_CALL_PROPOSED,
+            EventType.POLICY_DECISION_MADE,
+            EventType.TOOL_EXECUTION_STARTED,
+            EventType.TOOL_EXECUTION_COMPLETED,
+            EventType.TOOL_EXECUTION_FAILED,
+        }
+    }
+    plan_index = next(
+        index
+        for index, event in enumerate(result.emitted_events)
+        if event.event_type is EventType.PLAN_UPDATED
+    )
+    business_index = next(
+        index
+        for index, event in enumerate(result.emitted_events)
+        if event.event_type is EventType.TOOL_EXECUTION_STARTED
+        and event.payload.get("tool_call_id") == str(planned.tool_call_id)
+    )
+    follow_up_calls = [
+        call
+        for message in gateway.requests[1]
+        for call in message.tool_calls
+    ]
+
+    assert str(discarded.tool_call_id) not in business_events
+    assert plan_index < business_index
+    assert follow_up_calls == [open_plan]
+
+
+def test_required_plan_rejects_multiple_plan_calls_without_guessing() -> None:
+    first_plan = _plan_call("completed")
+    second_plan = _plan_call("completed")
+    result, gateway, tools = _run(
+        _response("Choose one of these Plans.", first_plan, second_plan),
+        _response("Still no single Plan."),
+        _response("Final answer."),
+        plan_required=True,
+    )
+
+    assert result.outcome is HarnessAttemptOutcome.FAILED
+    assert result.metadata["stop_reason"] == "required_plan_not_created"
+    assert tools.calls == []
+    assert EventType.PLAN_UPDATED not in {event.event_type for event in result.emitted_events}
+    assert gateway.requests[1][-1].metadata["required_plan_nudge"] is True
+
+
 def test_required_plan_update_precedes_business_tool_execution() -> None:
     discarded = _call("files.read", {"path": "evidence.txt"})
     planned = _call("files.read", {"path": "evidence.txt"})
@@ -86,12 +169,12 @@ def test_required_plan_update_precedes_business_tool_execution() -> None:
     close_plan = _plan_call("completed")
     result, _, tools = _run(
         _response("Read first.", discarded),
-        _response("Plan, then read.", open_plan, planned),
+        _response("Establish the Plan.", open_plan),
+        _response("Read the evidence.", planned),
         _response("Close the Plan.", close_plan),
         _response("Final answer."),
         _response("Final answer."),
         plan_required=True,
-        parallel_safe_tools=frozenset({"agent.plan", "files.read"}),
     )
 
     plan_index = next(
