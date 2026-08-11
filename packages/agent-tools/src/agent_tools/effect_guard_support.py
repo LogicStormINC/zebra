@@ -45,6 +45,15 @@ class ToolGatewayLike(Protocol):
     def close(self) -> None: ...
 
 
+def read_only_tool_names(gateway: ToolGatewayLike) -> frozenset[str]:
+    """Combine the static local set with manifest-declared read tools."""
+
+    declared = getattr(gateway, "read_only_tools", ())
+    if isinstance(declared, frozenset | set | tuple):
+        return READ_ONLY_TOOLS | frozenset(name for name in declared if isinstance(name, str))
+    return READ_ONLY_TOOLS
+
+
 class EffectPayloadCoordinatorLike(Protocol):
     def request_artifact_ref(
         self,

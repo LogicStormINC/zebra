@@ -2,6 +2,11 @@ from pathlib import Path
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.events import EventType
+from agent_core.domain.host_authority import (
+    HostContextEnvelope,
+    HostResourceRef,
+    HostTechnicalLimits,
+)
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_profiles import ToolProfile
 
@@ -53,3 +58,36 @@ def test_session_bootstrap_persists_explicit_history_scope() -> None:
     )
 
     assert result.events[2].payload["history_session_ids"] == [session_id]
+
+
+def test_session_bootstrap_persists_only_secret_free_host_context() -> None:
+    context = HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id="trench",
+        namespace_id="tenant-a",
+        workspace_ref="workspace-a",
+        resource_refs=(HostResourceRef(type="trench.event", id="evt-1"),),
+        scopes=("event.read",),
+        limits=HostTechnicalLimits(
+            max_runtime_seconds=300,
+            max_model_tokens=100_000,
+            max_artifact_bytes=10_485_760,
+        ),
+        origin="https://trench.example.com",
+        policy_version="policy-v1",
+    )
+    result = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Host task",
+            user_input="Read the selected event",
+            workspace_root=Path("/tmp/host-task"),
+            host_context=context,
+        )
+    )
+
+    persisted = result.events[2].payload["host_context"]
+    assert persisted["grant_id"] == "grant-1"
+    assert persisted["resource_refs"] == (
+        {"resource_type": "trench.event", "resource_id": "evt-1"},
+    )
+    assert "authorization" not in str(persisted).lower()

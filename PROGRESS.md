@@ -5,7 +5,7 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-08-10`
+- Snapshot date: `2026-08-11`
 - `CLOUD-TRN-NEXT-PLAN-01` is in `Review` on
   `codex/cloud-trench-next-plan-01`, intentionally stacked after the regression
   fix. The inspected next-step plan is recorded in
@@ -14,7 +14,8 @@
   slice, but first gates it on a green cloud mainline, coherent PostgreSQL +
   gVisor production composition, stateless command-only API, durable replay plus
   Redis live tail, real-service CI, production recovery and deployment evidence.
-  All new successor IDs remain `Locked`; no P4+, Memory runtime or Agent
+  `EMB-HOST-RUNTIME-01` and the Trench-side `TRN-HOST-READ-AUTH-01` successor
+  are now activated in isolated worktrees; no P4+, Memory runtime or Agent
   Definition runtime work is activated.
 - `QA-CLOUDLINE-PY-01` is `Review` on
   `codex/qa-cloudline-py-01`. It owns the Python size/Ruff/Mypy gate after the
@@ -168,7 +169,16 @@
   required successors are now explicitly frozen as `EMB-HOST-RUNTIME-01` (Zebra
   Worker authority/context composition) and the Trench-side
   `TRN-HOST-READ-AUTH-01` (service-to-service read Tool authentication); neither
-  is activated by this E2E card.
+  was activated by this E2E card. They are now implemented as the active
+  successors below; the real cross-service runner remains fail-closed until
+  isolated services and credentials are provisioned.
+- `EMB-HOST-RUNTIME-01` is `In Progress` on `codex/emb-host-runtime-01`. Zebra
+  now carries an optional, expiry-aware HostContext from authorized API request
+  through TASK_PREPARED persistence and Worker recovery; Worker discovery is
+  manifest-first and fail-closed, and Host read tools are routed through the
+  typed Host gateway with resource/idempotency binding. Focused API/Core/
+  Worker/Integrations/Effect Guard tests and `make check` pass. The branch does
+  not claim deployment or a real Trench call.
 - Gate 3 combined API/Integrations matrix is `204 passed, 3 skipped`; no Trench
   business Tool or Kubernetes gVisor E2E completion is claimed.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on

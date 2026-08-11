@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_integrations import GitHubPullRequestTransport
 from agent_security import CredentialBroker, HostGrantSecurityError
 from agent_storage import CloudCompositionSettings, ControlPlaneStores
@@ -133,6 +134,7 @@ def create_http_app(
             body=body,
             headers=dict(request.headers),
             query=dict(request.query_params),
+            host_context=getattr(request.state, "host_context", None),
         )
         response = await asyncio.to_thread(adapter.handle, route_request)
         if _is_stream_request(request) and response.status_code == 200:
@@ -316,7 +318,7 @@ def _authorize_host_request(
             },
         )
     try:
-        host_grant_authorizer.authorize(
+        verified = host_grant_authorizer.authorize(
             HostGrantHttpRequest(
                 method=request.method.upper(),
                 path=request.url.path,
@@ -324,6 +326,10 @@ def _authorize_host_request(
                 authorization=authorization,
             )
         )
+        context = getattr(verified, "context", None)
+        if context is not None and not isinstance(context, HostContextEnvelope):
+            return _forbidden("host_grant_context_invalid")
+        request.state.host_context = context
     except (HostGrantSecurityError, ValueError):
         return _forbidden("host_grant_rejected")
     return None

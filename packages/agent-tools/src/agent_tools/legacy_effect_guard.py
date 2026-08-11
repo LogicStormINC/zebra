@@ -7,10 +7,10 @@ from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 
 from agent_tools.effect_guard_support import (
-    READ_ONLY_TOOLS,
     EffectLedgerLike,
     ToolGatewayLike,
     effect_identity,
+    read_only_tool_names,
 )
 
 
@@ -45,6 +45,10 @@ class EffectGuardedToolGateway:
         return self._gateway.parallel_safe_tools
 
     @property
+    def read_only_tools(self) -> frozenset[str]:
+        return read_only_tool_names(self._gateway)
+
+    @property
     def parallel_batch_limits(self) -> dict[str, int]:
         return self._gateway.parallel_batch_limits
 
@@ -55,7 +59,7 @@ class EffectGuardedToolGateway:
         self._gateway.close()
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
-        if tool_call.name in READ_ONLY_TOOLS:
+        if tool_call.name in read_only_tool_names(self._gateway):
             return self._gateway.execute(tool_call)
         reservation = self._ledger.reserve(
             self._root_session_id, effect_identity(tool_call, self._authority_scope)

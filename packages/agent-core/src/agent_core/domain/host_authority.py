@@ -147,6 +147,7 @@ class HostContextEnvelope(BaseModel):
     limits: HostTechnicalLimits
     origin: str
     policy_version: str = Field(max_length=MAX_HOST_POLICY_VERSION_LENGTH)
+    expires_at: datetime | None = None
 
     @field_validator("grant_id", "host_app_id", "namespace_id", "workspace_ref", "policy_version")
     @classmethod
@@ -165,6 +166,15 @@ class HostContextEnvelope(BaseModel):
     @classmethod
     def normalize_context_origin(cls, value: str) -> str:
         return _canonical_origin(value, "origin")
+
+    @field_validator("expires_at")
+    @classmethod
+    def normalize_expiry(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            raise ValueError("expires_at must be timezone-aware")
+        return value.astimezone(UTC)
 
     @field_validator("scopes", mode="before")
     @classmethod
@@ -318,4 +328,5 @@ class HostSessionGrant(BaseModel):
             limits=self.limits,
             origin=self.origin,
             policy_version=self.policy_version,
+            expires_at=datetime.fromtimestamp(self.exp, UTC),
         )

@@ -1,8 +1,14 @@
 """Worker-local tool gateway composition."""
 
+from dataclasses import dataclass
+
+from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.tools import ToolCall, ToolIdempotency, ToolResult, ToolRisk
 from agent_core.ports import ArtifactPayloadStorePort, ModelGatewayPort, SessionHistoryPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
+from agent_integrations.host_tools import HostToolGateway, HostToolManifest, HostWorkloadIdentity
 from agent_runtime import LocalToolGateway
 from agent_storage import SQLiteSkillsStateStore
 from agent_tools.skills_scope import build_scoped_skill_roots
@@ -10,6 +16,88 @@ from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.task_recovery import RecoveredTask
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
+
+
+@dataclass
+class WorkerToolGateway:
+    """Compose local tools with a manifest-bound Host gateway."""
+
+    local: LocalToolGateway
+    host: HostToolGateway | None = None
+    host_context: HostContextEnvelope | None = None
+    host_manifest: HostToolManifest | None = None
+
+    @property
+    def model_tools(self) -> tuple[ModelToolDefinition, ...]:
+        return self.local.model_tools + _host_model_tools(self.host_manifest)
+
+    @property
+    def effective_mcp_tools(self) -> tuple[ModelToolDefinition, ...]:
+        return self.local.effective_mcp_tools
+
+    @property
+    def effective_skill_components(self) -> tuple[str, ...]:
+        return self.local.effective_skill_components
+
+    @property
+    def parallel_safe_tools(self) -> frozenset[str]:
+        host_safe = frozenset(
+            tool.name
+            for tool in self.host_manifest.tools
+            if tool.parallel_safe
+        ) if self.host_manifest is not None else frozenset()
+        return self.local.parallel_safe_tools | host_safe
+
+    @property
+    def parallel_batch_limits(self) -> dict[str, int]:
+        return self.local.parallel_batch_limits
+
+    @property
+    def read_only_tools(self) -> frozenset[str]:
+        host_read = frozenset(
+            tool.name
+            for tool in self.host_manifest.tools
+            if tool.risk is ToolRisk.READ
+        ) if self.host_manifest is not None else frozenset()
+        from agent_tools.effect_guard_support import READ_ONLY_TOOLS
+
+        return READ_ONLY_TOOLS | host_read
+
+    def resolve_model_tool_calls(self, tool_calls: tuple[ToolCall, ...]) -> tuple[ToolCall, ...]:
+        return self.local.resolve_model_tool_calls(tool_calls)
+
+    def execute(self, tool_call: ToolCall) -> ToolResult:
+        host_manifest = self.host_manifest
+        host_names = (
+            {tool.name for tool in host_manifest.tools}
+            if host_manifest is not None
+            else set()
+        )
+        if tool_call.name not in host_names:
+            return self.local.execute(tool_call)
+        if self.host is None:
+            raise ValueError("Host Tool gateway is unavailable")
+        if self.host_context is None:
+            raise ValueError("Host Tool context is unavailable")
+        if host_manifest is None:
+            raise ValueError("Host Tool manifest is unavailable")
+        contract = host_manifest.get(tool_call.name)
+        assert contract is not None
+        idempotency_key = (
+            f"host:{tool_call.tool_call_id}"
+            if contract.idempotency is ToolIdempotency.REQUIRED
+            else None
+        )
+        return self.host.invoke(
+            tool_call,
+            self.host_context,
+            idempotency_key=idempotency_key,
+            required_resource=_required_resource(self.host_context, tool_call),
+            manifest=self.host_manifest,
+        )
+
+    def close(self) -> None:
+        self.local.close()
 
 
 def build_worker_tool_gateway(
@@ -24,7 +112,7 @@ def build_worker_tool_gateway(
     local_artifacts: ArtifactPayloadStorePort,
     cloud_artifacts: CloudToolOutputArtifactCoordinator | None,
     trusted_local: bool,
-) -> LocalToolGateway:
+) -> WorkerToolGateway:
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,
         admin=settings.skill_roots_admin,
@@ -39,7 +127,7 @@ def build_worker_tool_gateway(
             settings.skill_roots_repo,
         )
     )
-    return LocalToolGateway(
+    local = LocalToolGateway(
         task.workspace_root,
         model_gateway=model_gateway,
         tool_profile=task.tool_profile,
@@ -59,3 +147,86 @@ def build_worker_tool_gateway(
         trusted_local=trusted_local,
         web_pipeline_v2=settings.web_pipeline_v2,
     )
+    if task.host_context is None:
+        return WorkerToolGateway(local=local)
+    if not settings.host_tool_endpoint or not settings.host_tool_workload_identity:
+        local.close()
+        raise ValueError("Host Tool endpoint and workload identity are required")
+    if not settings.host_tool_shared_secret:
+        local.close()
+        raise ValueError("Host Tool shared secret is required")
+    identity = HostWorkloadIdentity(
+        settings.host_tool_workload_identity,
+        task.host_context.namespace_id,
+        task.host_context.host_app_id,
+    )
+    host = HostToolGateway(
+        settings.host_tool_endpoint,
+        identity,
+        shared_secret=settings.host_tool_shared_secret,
+    )
+    try:
+        manifest = host.discover(task.host_context)
+        local_names = {tool.name for tool in local.model_tools}
+        host_names = {tool.name for tool in manifest.tools}
+        overlap = local_names & host_names
+        if overlap:
+            raise ValueError(f"Host Tool names overlap local tools: {', '.join(sorted(overlap))}")
+    except Exception:
+        local.close()
+        raise
+    return WorkerToolGateway(
+        local=local,
+        host=host,
+        host_context=task.host_context,
+        host_manifest=manifest,
+    )
+
+
+def _host_model_tools(manifest: HostToolManifest | None) -> tuple[ModelToolDefinition, ...]:
+    if manifest is None:
+        return ()
+    return tuple(
+        ModelToolDefinition(
+            name=tool.name,
+            description=tool.description,
+            parameters={
+                "type": "object",
+                "properties": {
+                    key: dict(value) for key, value in tool.argument_properties.items()
+                },
+                "required": list(tool.required_arguments),
+                "additionalProperties": False,
+            },
+        )
+        for tool in manifest.tools
+    )
+
+
+def _required_resource(
+    context: HostContextEnvelope,
+    tool_call: ToolCall,
+) -> HostResourceRef | None:
+    argument_name = {
+        "events.get_event": "event_id",
+        "events.get_evidence": "event_id",
+        "events.get_related_events": "event_id",
+        "events.get_entity_timeline": "entity",
+        "events.get_topic": "topic",
+    }.get(tool_call.name)
+    if argument_name is None:
+        return None
+    value = tool_call.arguments.get(argument_name)
+    if not isinstance(value, str) or not value.strip():
+        return HostResourceRef(type="trench.resource", id="invalid")
+    expected_types = (
+        ("trench.event", "event")
+        if argument_name == "event_id"
+        else ("trench.entity", "entity")
+        if argument_name == "entity"
+        else ("trench.topic", "topic")
+    )
+    for resource in context.resource_refs:
+        if resource.resource_type in expected_types and resource.resource_id == value.strip():
+            return resource
+    return HostResourceRef(type=expected_types[0], id=value.strip())

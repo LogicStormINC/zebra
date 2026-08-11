@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from agent_core.domain.host_authority import HostContextEnvelope
+
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import (
@@ -30,13 +32,21 @@ class TaskRouteRequest(Protocol):
     @property
     def query(self) -> dict[str, str] | None: ...
 
+    @property
+    def host_context(self) -> HostContextEnvelope | None: ...
+
 
 def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse | None:
     method = request.method.upper()
     if method == "GET" and request.path == "/tasks":
         return TaskReadApi(app.stores).list(request.query or {})
     if method == "POST" and request.path == "/tasks":
-        return create_task(app, request.body or {}, idempotency_key=_idempotency_key(request))
+        return create_task(
+            app,
+            request.body or {},
+            idempotency_key=_idempotency_key(request),
+            host_context=request.host_context,
+        )
     if request.path.startswith("/internal/tasks/"):
         parts = _parts(request.path, "/internal/tasks/")
         if method == "POST" and len(parts) == 3 and parts[1:] == ("segments", "rollover"):

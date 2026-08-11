@@ -44,6 +44,7 @@ from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_QUESTION_CHARS,
 )
 from agent_core.domain.events import EventType
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.plans import MAX_PLAN_STEPS, PlanStep, SessionPlan
@@ -105,6 +106,10 @@ class TaskPreparedPayload(BaseModel):
     max_attempts: int | None = None
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
+    host_context: HostContextEnvelope | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
     @field_validator("title", "user_input")
     @classmethod

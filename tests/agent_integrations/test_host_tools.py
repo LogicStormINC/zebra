@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -211,6 +211,31 @@ def test_manifest_rejects_non_host_location_and_invoke_discovery_transport_failu
         HttpHostToolTransport(resolver=lambda _host: ("8.8.8.8",)).request(
             "GET", "http://trench.example/manifest", headers={}, body=None, timeout_seconds=1
         )
+
+
+def test_shared_secret_header_is_bounded_and_expired_context_fails_closed() -> None:
+    transport = _FakeTransport(
+        [
+            HostToolTransportResponse(
+                200,
+                {"workloadIdentity": "trench-worker", "tools": [_tool_payload()]},
+            )
+        ]
+    )
+    gateway = HostToolGateway(
+        "https://trench.example/api/trench-ai/agent",
+        HostWorkloadIdentity("trench-worker", "tenant-1", "trench"),
+        shared_secret="host-secret",
+        transport=transport,
+    )
+    gateway.discover(_context())
+    assert len(transport.calls[0][2]["X-Zebra-Host-Auth"]) == 64
+    expired = _context().model_copy(update={"expires_at": datetime.now(UTC) - timedelta(seconds=1)})
+
+    result = gateway.invoke(_tool_call(), expired, idempotency_key="invoke-1")
+
+    assert result.status is ToolCallStatus.FAILED
+    assert result.metadata["reason"] == "grant_expired"
 
 
 def _tool_payload() -> dict[str, object]:

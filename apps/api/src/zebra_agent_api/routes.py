@@ -5,6 +5,7 @@ from hashlib import sha256
 from typing import Any
 from uuid import UUID
 
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
 
@@ -21,6 +22,7 @@ class RouteRequest:
     body: dict[str, Any] | None = None
     headers: dict[str, str] | None = None
     query: dict[str, str] | None = None
+    host_context: HostContextEnvelope | None = None
 
 
 @dataclass(frozen=True)
@@ -42,7 +44,9 @@ class RouteAdapter:
             return self.app.list_sessions(request.query or {})
         if method == "POST" and request.path == "/sessions":
             return self.app.create_session(
-                request.body or {}, idempotency_key=_idempotency_key(request)
+                request.body or {},
+                idempotency_key=_idempotency_key(request),
+                host_context=request.host_context,
             )
         task_response = handle_task_route(self.app, request)
         if task_response is not None:

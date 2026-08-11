@@ -24,11 +24,11 @@ from agent_core.ports import (
 )
 
 from agent_tools.effect_guard_support import (
-    READ_ONLY_TOOLS,
     EffectPayloadCoordinatorLike,
     ToolGatewayLike,
     effect_event_payload,
     effect_identity,
+    read_only_tool_names,
     uncertain_evidence,
 )
 from agent_tools.legacy_effect_guard import EffectGuardedToolGateway as EffectGuardedToolGateway
@@ -91,7 +91,11 @@ class FencedEffectToolGateway:
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:
-        return self._gateway.parallel_safe_tools & READ_ONLY_TOOLS
+        return self._gateway.parallel_safe_tools & read_only_tool_names(self._gateway)
+
+    @property
+    def read_only_tools(self) -> frozenset[str]:
+        return read_only_tool_names(self._gateway)
 
     @property
     def parallel_batch_limits(self) -> dict[str, int]:
@@ -104,7 +108,7 @@ class FencedEffectToolGateway:
         self._gateway.close()
 
     def manages_durable_effect(self, tool_call: ToolCall) -> bool:
-        return tool_call.name not in READ_ONLY_TOOLS
+        return tool_call.name not in read_only_tool_names(self._gateway)
 
     def reconcile_expired(self, *, limit: int = 100) -> int:
         self._ownership_check()
@@ -124,7 +128,7 @@ class FencedEffectToolGateway:
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         self._ownership_check()
-        if tool_call.name in READ_ONLY_TOOLS:
+        if tool_call.name in read_only_tool_names(self._gateway):
             return self._gateway.execute(tool_call)
         scheduled = self._schedule(tool_call)
         if scheduled.result is not None:

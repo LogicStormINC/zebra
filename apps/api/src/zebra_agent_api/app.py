@@ -5,8 +5,6 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.application import (
-    SessionBootstrapCommand,
-    SessionBootstrapService,
     SessionMessageAppendCommand,
     SessionMessageAppendService,
     attach_refs_to_user_event,
@@ -14,6 +12,7 @@ from agent_core.application import (
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports import LiveEventFanoutPort
@@ -75,6 +74,7 @@ from zebra_agent_api.session_payloads import (
     parse_resume_session_payload,
 )
 from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
+from zebra_agent_api.session_queue import create_queued_session
 from zebra_agent_api.skills_admin import (
     ApiSkillsAdminMixin,
     runtime_skills_state,
@@ -110,6 +110,7 @@ class ZebraAgentApi(
         payload: dict[str, object],
         *,
         idempotency_key: str | None = None,
+        host_context: HostContextEnvelope | None = None,
     ) -> ApiResponse:
         replayed = (
             replay_idempotent_response(
@@ -155,12 +156,13 @@ class ZebraAgentApi(
 
         response = (
             self.queue_cloud_run(
-                self._create_queued_session(parsed), idempotency_key=idempotency_key
+                create_queued_session(self.stores, parsed, host_context=host_context),
+                idempotency_key=idempotency_key,
             )
             if parsed["execute"] and self.settings.deployment == "cloud"
             else self._create_and_execute_session(parsed)
             if parsed["execute"]
-            else self._create_queued_session(parsed)
+            else create_queued_session(self.stores, parsed, host_context=host_context)
         )
         if idempotency_key is None or response.status_code != 201:
             return response
@@ -334,60 +336,6 @@ class ZebraAgentApi(
                 },
             )
 
-    def _create_queued_session(self, parsed: CreateSessionPayload) -> ApiResponse:
-        bootstrap = SessionBootstrapService().build(
-            SessionBootstrapCommand(
-                title=str(parsed["title"]),
-                user_input=str(parsed["prompt"]),
-                workspace_root=Path(str(parsed["workspace"])).expanduser().resolve(),
-                policy_profile=str(parsed["policy_profile"]),
-                tool_profile=ToolProfile(str(parsed["tool_profile"])),
-                network_profile=str(parsed["network_profile"]),
-                network_allowlist=tuple(parsed["network_allowlist"]),
-                mcp_allowlist=tuple(parsed["mcp_allowlist"]),
-                history_session_ids=parsed["history_session_ids"],
-                max_model_calls=parsed["max_model_calls"],
-                max_tool_calls=parsed["max_tool_calls"],
-            )
-        )
-        events, attachment_refs = persist_initial_attachments(
-            self.stores.artifact_payloads,
-            tuple(bootstrap.events),
-            parsed["attachments"],
-        )
-        for event in events:
-            self.stores.events.append(event)
-        self.stores.sessions.save_session(bootstrap.session)
-        self.stores.workspaces.save_workspace(rebuild_workspace(list(events)))
-        return ApiResponse(
-            status_code=201,
-            body={
-                "session_id": str(bootstrap.session.session_id),
-                "title": str(parsed["title"]),
-                "prompt": str(parsed["prompt"]),
-                "workspace": str(parsed["workspace"]),
-                "executed": False,
-                "status": bootstrap.session.status.value,
-                "tool_profile": str(parsed["tool_profile"]),
-                "max_model_calls": parsed["max_model_calls"],
-                "max_tool_calls": parsed["max_tool_calls"],
-                "network_profile": str(parsed["network_profile"]),
-                "network_allowlist": parsed["network_allowlist"],
-                "mcp_allowlist": parsed["mcp_allowlist"],
-                "mcp_resource_ids": parsed["mcp_resource_ids"],
-                **(
-                    {"history_session_ids": list(parsed["history_session_ids"])}
-                    if parsed["history_session_ids"] is not None
-                    else {}
-                ),
-                **(
-                    {"mcp_prompt_id": parsed["mcp_prompt_id"]}
-                    if parsed["mcp_prompt_id"] is not None
-                    else {}
-                ),
-                "attachments": [ref.to_mapping() for ref in attachment_refs],
-            },
-        )
     def _create_and_execute_session(self, parsed: CreateSessionPayload) -> ApiResponse:
         workspace_root = Path(str(parsed["workspace"])).expanduser().resolve()
         confirmed_memories = list_confirmed_repo_memories(

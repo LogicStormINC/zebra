@@ -15,6 +15,7 @@ from agent_core.domain.agent_tasks import (
     RolloverReason,
 )
 from agent_core.domain.events import EventType
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.session_handoff import HandoffActorKind
 from agent_core.domain.sessions import SessionStatus
@@ -38,7 +39,11 @@ class TaskSessionApi(Protocol):
     def stores(self) -> ControlPlaneStores: ...
 
     def create_session(
-        self, payload: dict[str, object], *, idempotency_key: str | None = None
+        self,
+        payload: dict[str, object],
+        *,
+        idempotency_key: str | None = None,
+        host_context: HostContextEnvelope | None = None,
     ) -> ApiResponse: ...
 
     def append_session_message(
@@ -175,8 +180,13 @@ def create_task(
     payload: dict[str, object],
     *,
     idempotency_key: str | None,
+    host_context: HostContextEnvelope | None = None,
 ) -> ApiResponse:
-    response = app.create_session(payload, idempotency_key=idempotency_key)
+    response = app.create_session(
+        payload,
+        idempotency_key=idempotency_key,
+        host_context=host_context,
+    )
     if response.status_code not in {200, 201}:
         return response
     session_id = response.body.get("session_id")

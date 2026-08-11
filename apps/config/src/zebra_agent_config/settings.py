@@ -106,6 +106,9 @@ class ZebraAgentSettings:
     skills_state_path: str = ".zebra-agent/skills-state.sqlite"
     mcp_servers: tuple[McpServerSettings | McpHttpServerSettings, ...] = ()
     mcp_elicitation_enabled: bool = True
+    host_tool_endpoint: str | None = None
+    host_tool_workload_identity: str | None = None
+    host_tool_shared_secret: str | None = None
 
     @property
     def deployment(self) -> str:
@@ -208,6 +211,9 @@ def load_settings(
         mcp_elicitation_enabled=_read_bool(
             values, "ZEBRA_MCP_ELICITATION", default=True
         ),
+        host_tool_endpoint=_read_optional(values, "ZEBRA_HOST_TOOL_ENDPOINT"),
+        host_tool_workload_identity=_read_optional(values, "ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY"),
+        host_tool_shared_secret=_read_optional(values, "ZEBRA_HOST_TOOL_SHARED_SECRET"),
     )
 
 

@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from urllib.parse import quote, urlsplit, urlunsplit
 
 from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
@@ -25,16 +29,28 @@ from agent_integrations.host_tools.http import HttpHostToolTransport
 class HostToolGateway:
     endpoint: str
     workload_identity: HostWorkloadIdentity
+    shared_secret: str | None = None
     transport: HostToolTransport | None = None
     manifest: HostToolManifest | None = None
 
     def discover(self, context: HostContextEnvelope) -> HostToolManifest:
+        _ensure_context_live(context)
         self.workload_identity.assert_matches(context)
         transport = self.transport or HttpHostToolTransport()
+        url = _join_endpoint(self.endpoint, "/manifest")
         response = transport.request(
             "GET",
-            _join_endpoint(self.endpoint, "/manifest"),
-            headers=_headers(self.workload_identity, context),
+            url,
+            headers=_headers(
+                self.workload_identity,
+                context,
+                method="GET",
+                path=urlsplit(url).path,
+                body=None,
+                host_app_id=self.workload_identity.host_app_id,
+                namespace_id=self.workload_identity.namespace_id,
+                shared_secret=self.shared_secret,
+            ),
             body=None,
             timeout_seconds=10,
         )
@@ -67,6 +83,7 @@ class HostToolGateway:
         manifest: HostToolManifest | None = None,
     ) -> ToolResult:
         try:
+            _ensure_context_live(context)
             self.workload_identity.assert_matches(context)
             active_manifest = manifest or self.manifest
             if active_manifest is None:
@@ -102,11 +119,22 @@ class HostToolGateway:
         except (TimeoutError, ValueError) as exc:
             return _failure(tool_call, reason="transport_error", detail=str(exc))
         try:
+            url = _join_endpoint(self.endpoint, f"/tools/{quote(contract.name, safe='')}/invoke")
+            body = _invoke_body(invocation)
             response = (self.transport or HttpHostToolTransport()).request(
                 "POST",
-                _join_endpoint(self.endpoint, f"/tools/{quote(contract.name, safe='')}/invoke"),
-                headers=_headers(self.workload_identity, context),
-                body=_invoke_body(invocation),
+                url,
+                headers=_headers(
+                    self.workload_identity,
+                    context,
+                    method="POST",
+                    path=urlsplit(url).path,
+                    body=body,
+                    host_app_id=self.workload_identity.host_app_id,
+                    namespace_id=self.workload_identity.namespace_id,
+                    shared_secret=self.shared_secret,
+                ),
+                body=body,
                 timeout_seconds=contract.timeout_seconds,
             )
         except HostToolTransportError as exc:
@@ -185,7 +213,7 @@ class HostToolGateway:
 
 
 def _invoke_body(invocation: HostToolInvocation) -> dict[str, object]:
-    return {
+    body: dict[str, object] = {
         "toolCallId": str(invocation.tool_call.tool_call_id),
         "toolName": invocation.contract.name,
         "arguments": invocation.tool_call.arguments,
@@ -194,20 +222,72 @@ def _invoke_body(invocation: HostToolInvocation) -> dict[str, object]:
             resource.model_dump(mode="json", by_alias=True)
             for resource in invocation.context.resource_refs
         ],
-        "idempotencyKey": invocation.idempotency_key,
         "workloadIdentity": invocation.identity.subject,
     }
+    if invocation.idempotency_key is not None:
+        body["idempotencyKey"] = invocation.idempotency_key
+    return body
 
 
-def _headers(identity: HostWorkloadIdentity, context: HostContextEnvelope) -> dict[str, str]:
-    return {
+def _headers(
+    identity: HostWorkloadIdentity,
+    context: HostContextEnvelope,
+    *,
+    method: str,
+    path: str,
+    body: Mapping[str, object] | None,
+    host_app_id: str,
+    namespace_id: str,
+    shared_secret: str | None,
+) -> dict[str, str]:
+    headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
         "X-Zebra-Workload-Identity": identity.subject,
         "X-Zebra-Host-App": identity.host_app_id,
         "X-Zebra-Namespace": identity.namespace_id,
         "X-Zebra-Grant-Id": context.grant_id,
+        "X-Zebra-Workspace-Ref": context.workspace_ref,
     }
+    if shared_secret:
+        headers["X-Zebra-Host-Auth"] = hmac.new(
+            shared_secret.encode(),
+            _signature_input(
+                method=method,
+                path=path,
+                grant_id=context.grant_id,
+                workspace_ref=context.workspace_ref,
+                host_app_id=host_app_id,
+                namespace_id=namespace_id,
+                body=body,
+            ),
+            hashlib.sha256,
+        ).hexdigest()
+    return headers
+
+
+def _signature_input(
+    *,
+    method: str,
+    path: str,
+    grant_id: str,
+    workspace_ref: str,
+    host_app_id: str,
+    namespace_id: str,
+    body: Mapping[str, object] | None,
+) -> bytes:
+    encoded = json.dumps(
+        body or {}, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+    return (
+        f"{method.upper()}\n{path}\n{grant_id}\n{workspace_ref}\n"
+        f"{host_app_id}\n{namespace_id}\n{encoded}"
+    ).encode()
+
+
+def _ensure_context_live(context: HostContextEnvelope) -> None:
+    if context.expires_at is not None and datetime.now(UTC) >= context.expires_at:
+        raise HostToolGatewayError("Host Grant has expired", reason="grant_expired")
 
 
 def _join_endpoint(endpoint: str, suffix: str) -> str:

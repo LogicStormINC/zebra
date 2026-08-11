@@ -42,6 +42,10 @@ class _Gateway:
         pass
 
 
+class _HostReadGateway(_Gateway):
+    read_only_tools = frozenset({"events.get_event"})
+
+
 class _Dispatch:
     def __init__(self) -> None:
         self.pending: EffectDispatch | None = None
@@ -187,6 +191,21 @@ def test_effectful_duplicate_reuses_result_but_read_only_calls_execute(tmp_path)
 
     assert replay.output == first.output
     assert gateway.calls == 3
+
+
+def test_manifest_declared_host_read_tool_bypasses_effect_ledger(tmp_path) -> None:
+    gateway = _HostReadGateway()
+    guarded = EffectGuardedToolGateway(
+        gateway,
+        ledger=SQLiteEffectLedger(tmp_path / "ledger-host-read.db"),
+        root_session_id=new_session_id(),
+        authority_scope="workspace-write",
+    )
+
+    result = guarded.execute(_call("events.get_event"))
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert gateway.calls == 1
 
 
 def test_fenced_effect_persists_intent_and_terminal_around_provider(tmp_path) -> None:

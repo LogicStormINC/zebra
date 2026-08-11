@@ -1772,18 +1772,30 @@ run.
 
 ### EMB-HOST-RUNTIME-01 - Worker Host Tool runtime composition
 
-- Status: `Locked`
-- Owner: unassigned
+- Status: `In Progress`
+- Owner: `Codex`
 - Suggested role: `WORKER / API / INTEGRATIONS / SECURITY`
 - Depends on: `EMB-HOST-GW-01`, `EMB-AUTH-HTTP-01`, and the Trench-side
   `TRN-HOST-READ-AUTH-01` service-auth contract.
-- Branch/worktree: to be assigned only when explicitly activated.
+- Branch/worktree: `codex/emb-host-runtime-01` /
+  `/Users/lukeding/.codex/worktrees/emb-host-runtime-01/zebra-agent`.
 - Owned paths: `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
   `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/domain/host_authority.py`,
   `apps/api/src/zebra_agent_api/http.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/routes.py`,
+  `apps/api/src/zebra_agent_api/task_api.py`,
+  `apps/api/src/zebra_agent_api/task_routes.py`,
+  `apps/api/src/zebra_agent_api/session_queue.py`,
   `apps/worker/src/zebra_agent_worker/task_recovery.py`,
-  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`, focused API/Core/
-  Worker tests, this task card and focused `PROGRESS.md`.
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `packages/agent-integrations/src/agent_integrations/host_tools/gateway.py`,
+  `packages/agent-tools/src/agent_tools/effect_guard.py`,
+  `packages/agent-tools/src/agent_tools/effect_guard_support.py`,
+  `packages/agent-tools/src/agent_tools/legacy_effect_guard.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, focused API/Core/Worker/
+  Tool tests, this task card and focused `PROGRESS.md`.
 
 #### Goal
 
