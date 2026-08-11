@@ -10,6 +10,7 @@ from agent_core.domain.attachments import (
     TextAttachmentInput,
 )
 from agent_core.domain.events import SessionEvent
+from agent_core.domain.skills import SkillComponentIdentity
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.harness.models import HarnessAttemptTrace, HarnessLoopResult
 from agent_core.harness.projection import HarnessTraceProjector
@@ -59,6 +60,8 @@ def execute_durable_run(
     network_profile: NetworkProfile = DEFAULT_NETWORK_PROFILE,
     mcp_allowlist: tuple[str, ...] = (),
     attachments: tuple[TextAttachmentInput, ...] = (),
+    skill_owner: str | None = None,
+    granted_skill_component_identities: tuple[SkillComponentIdentity, ...] = (),
 ) -> DurableRunResult:
     trusted_local = trusted_local_mode_enabled(settings)
     effective_network_profile = resolve_effective_network_profile(
@@ -68,6 +71,13 @@ def execute_durable_run(
     confirmed_memories = list_confirmed_repo_memories(
         database_path,
         repo_id=str(workspace_root.resolve()),
+    )
+    skill_roots = build_scoped_skill_roots(
+        system=settings.skill_roots_system,
+        admin=settings.skill_roots_admin,
+        user=settings.skill_roots,
+        repo=settings.skill_roots_repo,
+        owner=skill_owner if granted_skill_component_identities else None,
     )
     result = run_local_harness(
         prompt=prompt,
@@ -79,23 +89,13 @@ def execute_durable_run(
         network_profile=effective_network_profile,
         web_search_endpoint=settings.web_search_endpoint,
         web_pipeline_v2=settings.web_pipeline_v2,
-        skill_roots=build_scoped_skill_roots(
-            system=settings.skill_roots_system,
-            admin=settings.skill_roots_admin,
-            user=settings.skill_roots,
-            repo=settings.skill_roots_repo,
-        ),
+        skill_roots=skill_roots,
         skills_state=(
             SQLiteSkillsStateStore(settings.skills_state_path)
-            if (
-                settings.skill_roots
-                or settings.skill_roots_system
-                or settings.skill_roots_admin
-                or settings.skill_roots_repo
-            )
+            if skill_roots
             else None
         ),
-        granted_skill_component_identities=(),
+        granted_skill_component_identities=granted_skill_component_identities,
         mcp_servers=settings.mcp_servers,
         mcp_allowlist=mcp_allowlist,
         trusted_local=trusted_local,

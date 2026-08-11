@@ -5,21 +5,17 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import MappingProxyType
-from typing import Protocol
+from typing import Protocol, cast
 
 from agent_core.domain.skills import SkillComponentIdentity, normalize_skill_component_identities
 
 from agent_tools.skills_scope import (
-    MAX_COMPATIBILITY_ENTRIES as MAX_COMPATIBILITY_ENTRIES,
-)
-from agent_tools.skills_scope import (
-    MAX_METADATA_ENTRIES as MAX_METADATA_ENTRIES,
-)
-from agent_tools.skills_scope import (
-    MAX_NAME_CHARS as MAX_NAME_CHARS,
-)
-from agent_tools.skills_scope import (
+    MAX_COMPATIBILITY_ENTRIES,
+    MAX_METADATA_ENTRIES,
+    MAX_NAME_CHARS,
     ScopedSkillRoot,
+    SkillCatalogError,
+    SkillCatalogReason,
     SkillScope,
     _bounded_text,
     compute_skill_digest,
@@ -29,8 +25,6 @@ from agent_tools.skills_scope import (
     scope_priority,
     split_frontmatter,
 )
-from agent_tools.skills_scope import SkillCatalogError as SkillCatalogError
-from agent_tools.skills_scope import SkillCatalogReason as SkillCatalogReason
 
 MAX_SKILLS = 200
 MAX_SCANNED_DIRECTORIES = 5_000
@@ -73,12 +67,7 @@ __all__ = [
 
 
 class SkillEnablementState(Protocol):
-    """Read-only view of which skill components are disabled.
-
-    The catalog stays decoupled from the concrete storage layer: any object
-    exposing ``disabled_components()`` satisfies it (structural protocol).
-    ``state=None`` at the catalog means "no filtering" (backward compatible).
-    """
+    """Read-only legacy disable view; stores may expose lifecycle helpers."""
 
     def disabled_components(self) -> frozenset[tuple[str, str]]: ...
 
@@ -122,8 +111,6 @@ class SkillReadResult:
 class _SkillEntry:
     metadata: SkillMetadata
     root: Path | None
-    scope: SkillScope
-    namespace: str
     owner: str | None
     files: Mapping[str, str] | None = None
 
@@ -146,6 +133,7 @@ class LocalSkillCatalog:
                 SkillCatalogReason.INVALID_ROOT,
                 "a catalog may serve only one private Skill owner",
             )
+        self._private_owner = next(iter(private_owners), None)
         self._skills_state = skills_state
         self._inventory_only = inventory_only
         self._granted_component_identities = (
@@ -245,18 +233,19 @@ class LocalSkillCatalog:
         return MappingProxyType(files)
 
     def _available_entries(self, entries: dict[str, _SkillEntry]) -> dict[str, _SkillEntry]:
-        disabled = (
-            self._skills_state.disabled_components()
-            if self._skills_state is not None
-            else frozenset[tuple[str, str]]()
-        )
         if self._granted_component_identities is None:
+            entries = self._pinned_entries(entries, self._installed_identities())
+            disabled = (
+                self._skills_state.disabled_components()
+                if self._skills_state is not None
+                else frozenset[tuple[str, str]]()
+            )
             return {
                 name: entry
                 for name, entry in entries.items()
                 if self._is_enabled(entry, disabled)
             }
-        entries = self._pinned_entries(entries)
+        entries = self._pinned_entries(entries, self._granted_component_identities)
         expected = set(self._granted_component_identities)
         available = {
             entry.metadata.component_identity() for entry in entries.values()
@@ -289,12 +278,30 @@ class LocalSkillCatalog:
             and enabled(identity=entry.metadata.component_identity(), owner=entry.owner)
         )
 
-    def _pinned_entries(self, entries: dict[str, _SkillEntry]) -> dict[str, _SkillEntry]:
+    def _installed_identities(self) -> tuple[SkillComponentIdentity, ...]:
+        identities = getattr(self._skills_state, "installed_component_identities", None)
+        if self._inventory_only or self._private_owner is None or not callable(identities):
+            return ()
+        return cast(
+            tuple[SkillComponentIdentity, ...],
+            identities(owner=self._private_owner, enabled=True),
+        )
+
+    def _pinned_entries(
+        self, entries: dict[str, _SkillEntry], identities: tuple[SkillComponentIdentity, ...]
+    ) -> dict[str, _SkillEntry]:
         pinned = dict(entries)
-        for identity in self._granted_component_identities or ():
+        snapshots: dict[str, _SkillEntry] = {}
+        for identity in identities:
             installed = self._installed_entry(identity)
             if installed is not None:
-                pinned[identity.name] = installed
+                if identity.name in snapshots:
+                    raise SkillCatalogError(
+                        SkillCatalogReason.AMBIGUOUS_SKILL,
+                        "multiple installed Skill identities share a name",
+                    )
+                snapshots[identity.name] = installed
+        pinned.update(snapshots)
         return pinned
 
     def _installed_entry(self, identity: SkillComponentIdentity) -> _SkillEntry | None:
@@ -328,14 +335,7 @@ class LocalSkillCatalog:
             return None
         if metadata.component_identity() != identity:
             return None
-        return _SkillEntry(
-            metadata=metadata,
-            root=None,
-            scope=metadata.scope,
-            namespace=identity.namespace,
-            owner=record.owner,
-            files=record.files,
-        )
+        return _SkillEntry(metadata, None, record.owner, record.files)
 
     def _discover(self) -> tuple[dict[str, _SkillEntry], frozenset[str], bool]:
         entries: dict[str, _SkillEntry] = {}
@@ -381,10 +381,10 @@ class LocalSkillCatalog:
                 ):
                     entries.pop(name)
                     ambiguous.add(name)
-                elif existing.scope == entry.scope:
+                elif existing.metadata.scope == entry.metadata.scope:
                     entries.pop(name)
                     ambiguous.add(name)
-                elif scope_priority(entry.scope) < scope_priority(existing.scope):
+                elif scope_priority(entry.metadata.scope) < scope_priority(existing.metadata.scope):
                     entries[name] = entry
             if truncated:
                 continue
@@ -421,10 +421,7 @@ def _load_entry(skill_root: Path, scoped: ScopedSkillRoot) -> _SkillEntry | None
             namespace=namespace,
             owner=scoped.owner,
         ),
-        skill_root.resolve(),
-        scoped.scope,
-        namespace,
-        scoped.owner,
+        skill_root.resolve(), scoped.owner,
     )
 
 

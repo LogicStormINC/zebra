@@ -101,7 +101,7 @@ class ApiSkillsAdminMixin:
         operator_or_response = _operator(payload)
         if isinstance(operator_or_response, ApiResponse):
             return operator_or_response
-        matches = _matches(self.settings, name=name, owner=owner_or_response)
+        matches = _matches(self.settings, name=name, owner=owner_or_response, live_only=True)
         if len(matches) != 1 or matches[0].scope is not SkillScope.USER:
             return ApiResponse(status_code=404, body={"name": name, "status": "not_found"})
         metadata = matches[0]
@@ -147,10 +147,26 @@ class ApiSkillsAdminMixin:
         operator_or_response = _operator(payload)
         if isinstance(operator_or_response, ApiResponse):
             return operator_or_response
+        selector_or_response = _component_selector(payload)
+        if isinstance(selector_or_response, ApiResponse):
+            return selector_or_response
+        if selector_or_response is not None and owner_or_response is None:
+            return bad_request("version and digest require a private Skill owner")
         scope = payload.get("scope")
         if scope is not None and (not isinstance(scope, str) or not scope.strip()):
             return bad_request("scope must be a non-empty string")
-        matches = _matches(self.settings, name=name, owner=owner_or_response, scope=scope)
+        version, digest = selector_or_response or (None, None)
+        matches = _matches(
+            self.settings,
+            name=name,
+            owner=owner_or_response,
+            scope=scope,
+            version=version,
+            digest=digest,
+            live_only=owner_or_response is not None and selector_or_response is None,
+        )
+        if owner_or_response is not None and selector_or_response is None and not matches:
+            matches = _matches(self.settings, name=name, owner=owner_or_response, scope=scope)
         if not matches:
             return ApiResponse(status_code=404, body={"name": name, "status": "not_found"})
         if len(matches) > 1:
@@ -196,9 +212,21 @@ def _inventory(
     *,
     owner: str | None = None,
 ) -> tuple[tuple[SkillMetadata, ...], int, bool]:
-    return LocalSkillCatalog(
-        scoped_skill_roots(settings, owner=owner), inventory_only=True
-    ).list()
+    roots = scoped_skill_roots(settings, owner=owner)
+    available, ambiguous, truncated = LocalSkillCatalog(roots, inventory_only=True).list()
+    if owner is None:
+        return available, ambiguous, truncated
+    state = SQLiteSkillsStateStore(settings.skills_state_path)
+    snapshots = tuple(
+        metadata
+        for identity in state.installed_component_identities(owner=owner)
+        for metadata in LocalSkillCatalog(
+            roots, skills_state=state, granted_component_identities=(identity,)
+        ).list()[0]
+    )
+    merged = {metadata.component_identity(): metadata for metadata in (*available, *snapshots)}
+    ordered = tuple(sorted(merged.values(), key=lambda item: (item.name, item.version or "")))
+    return ordered, ambiguous, truncated
 
 
 def _matches(
@@ -207,12 +235,23 @@ def _matches(
     name: str,
     owner: str | None,
     scope: object | None = None,
+    version: str | None = None,
+    digest: str | None = None,
+    live_only: bool = False,
 ) -> tuple[SkillMetadata, ...]:
-    available, _, _ = _inventory(settings, owner=owner)
+    available = (
+        LocalSkillCatalog(scoped_skill_roots(settings, owner=owner), inventory_only=True).list()[0]
+        if live_only
+        else _inventory(settings, owner=owner)[0]
+    )
     return tuple(
         metadata
         for metadata in available
-        if metadata.name == name and (scope is None or metadata.scope.value == scope)
+        if metadata.name == name
+        and (owner is None or metadata.owner == owner)
+        and (scope is None or metadata.scope.value == scope)
+        and (version is None or metadata.version == version)
+        and (digest is None or metadata.digest == digest)
     )
 
 
@@ -275,3 +314,16 @@ def _operator(payload: dict[str, object]) -> str | None | ApiResponse:
     if operator is not None and not isinstance(operator, str):
         return bad_request("operator must be a string")
     return operator
+
+
+def _component_selector(
+    payload: dict[str, object],
+) -> tuple[str, str] | None | ApiResponse:
+    version, digest = payload.get("version"), payload.get("digest")
+    if version is None and digest is None:
+        return None
+    if not isinstance(version, str) or not version.strip():
+        return bad_request("version and digest must be non-empty strings together")
+    if not isinstance(digest, str) or not digest.strip():
+        return bad_request("version and digest must be non-empty strings together")
+    return version.strip(), digest.strip()

@@ -112,15 +112,14 @@ def build_scoped_skill_roots(
             roots.append(ScopedSkillRoot(scope=SkillScope.USER, root=path))
             continue
         private_root = Path(path).expanduser() / ".zebra-private" / normalized_owner
-        if private_root.is_dir():
-            roots.append(
-                ScopedSkillRoot(
-                    scope=SkillScope.USER,
-                    root=str(private_root),
-                    namespace=normalized_owner,
-                    owner=normalized_owner,
-                )
+        roots.append(
+            ScopedSkillRoot(
+                scope=SkillScope.USER,
+                root=str(private_root),
+                namespace=normalized_owner,
+                owner=normalized_owner,
             )
+        )
     for path in repo:
         roots.append(ScopedSkillRoot(scope=SkillScope.REPO, root=path))
     return tuple(roots)
@@ -340,13 +339,16 @@ def normalize_scoped_roots(
                 SkillCatalogReason.INVALID_ROOT, f"invalid skill root: {raw!r}"
             )
         path = Path(raw_path).expanduser()
+        private_root = owner is not None and scope is SkillScope.USER
         try:
             canonical = path.resolve(strict=True)
         except OSError as exc:
-            raise SkillCatalogError(
-                SkillCatalogReason.INVALID_ROOT, f"skill root does not exist: {path}"
-            ) from exc
-        if not canonical.is_dir():
+            if not private_root:
+                raise SkillCatalogError(
+                    SkillCatalogReason.INVALID_ROOT, f"skill root does not exist: {path}"
+                ) from exc
+            canonical = path.resolve()
+        if not private_root and not canonical.is_dir():
             raise SkillCatalogError(
                 SkillCatalogReason.INVALID_ROOT, f"skill root is not a directory: {path}"
             )

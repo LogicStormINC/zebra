@@ -652,17 +652,18 @@ def _skill_grant_snapshot(
     *,
     owner: str | None = None,
 ) -> tuple[tuple[str, ...], tuple[SkillComponentIdentity, ...]]:
-    roots = scoped_skill_roots(settings, owner=owner)
-    if not roots:
-        if requested:
-            raise ValueError("requested Skill component is unavailable")
+    normalized_owner = None if owner is None else normalize_skill_owner(owner)
+    selected = () if requested is None else requested
+    if not selected:
         return (), ()
+    roots = scoped_skill_roots(settings, owner=normalized_owner)
+    if not roots:
+        raise ValueError("requested Skill component is unavailable")
     metadata = LocalSkillCatalog(
         roots,
         skills_state=runtime_skills_state(settings),
     ).list()[0]
     available = {item.name: item.component_identity() for item in metadata}
-    selected = () if requested is None else requested
     if any(name not in available for name in selected):
         raise ValueError("requested Skill component is unavailable")
     identities = tuple(available[name] for name in selected)

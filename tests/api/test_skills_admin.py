@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
+from agent_storage import SQLiteSkillsStateStore
 from zebra_agent_api import create_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
@@ -99,8 +101,24 @@ def test_admin_private_install_enable_and_owner_projection(tmp_path: Path) -> No
     assert installed.status_code == 200
     assert installed.body["installed"] is True
     assert installed.body["enabled"] is False
+    assert app.enable_skill("review", {"owner": "owner-a", "version": "1.0.0"}).status_code == 400
 
     enabled = app.enable_skill("review", {"owner": "owner-a"})
     assert enabled.status_code == 200
     assert enabled.body["enabled"] is True
     assert app.list_skills("owner-b").body["skills"] == []
+
+
+def test_private_owner_cannot_disable_a_system_skill(tmp_path: Path) -> None:
+    database = tmp_path / "sessions.sqlite"
+    system = tmp_path / "system"
+    _skill(system / "sys-review", "sys-review", "System review")
+    settings = replace(_settings(database, tmp_path / "skills"), skill_roots_system=(str(system),))
+    app = create_app(database, settings=settings)
+
+    response = app.disable_skill("sys-review", {"owner": "owner-a", "operator": "test"})
+
+    assert response.status_code == 404
+    assert SQLiteSkillsStateStore(settings.skills_state_path).get_state(
+        name="sys-review", scope="system"
+    ) is None

@@ -187,6 +187,25 @@ class SQLiteSkillsStateStore:
             ).fetchone()
         return None if row is None else _row_to_installation(row)
 
+    def installed_component_identities(
+        self, *, owner: str, enabled: bool | None = None
+    ) -> tuple[SkillComponentIdentity, ...]:
+        enabled_value = None if enabled is None else int(enabled)
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT i.name, i.version, i.digest, i.scope, i.namespace, i.source
+                FROM skill_installations AS i
+                JOIN skill_component_state AS s
+                  ON s.owner = i.owner AND s.name = i.name AND s.version = i.version
+                 AND s.scope = i.scope AND s.namespace = i.namespace AND s.digest = i.digest
+                WHERE i.owner = ? AND (? IS NULL OR s.enabled = ?)
+                ORDER BY i.name, i.version, i.digest
+                """,
+                (owner, enabled_value, enabled_value),
+            ).fetchall()
+        return tuple(_identity_from_row(row) for row in rows)
+
     def set_component_enabled(
         self,
         *,
@@ -407,16 +426,20 @@ def _row_to_installation(row: Any) -> InstalledSkillRecord:
     parsed = json.loads(row["files_json"])
     files = _normalize_files(parsed)
     return InstalledSkillRecord(
-        identity=SkillComponentIdentity(
-            name=row["name"],
-            version=row["version"],
-            digest=row["digest"],
-            scope=row["scope"],
-            namespace=row["namespace"],
-            source=row["source"],
-        ),
+        identity=_identity_from_row(row),
         owner=row["owner"],
         files=files,
         installed_at=datetime.fromisoformat(row["installed_at"]),
         operator=row["operator"],
+    )
+
+
+def _identity_from_row(row: Any) -> SkillComponentIdentity:
+    return SkillComponentIdentity(
+        name=row["name"],
+        version=row["version"],
+        digest=row["digest"],
+        scope=row["scope"],
+        namespace=row["namespace"],
+        source=row["source"],
     )

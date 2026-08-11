@@ -34,6 +34,8 @@ def build_parser() -> argparse.ArgumentParser:
         default=NetworkProfileName.NONE.value,
     )
     run.add_argument("--network-allowlist", action="append", default=[])
+    run.add_argument("--skill", action="append", default=[])
+    run.add_argument("--skill-owner")
     run.add_argument("--mcp-tool", action="append", default=[])
     run.add_argument("--mcp-resource", action="append", default=[])
     run.add_argument("--mcp-prompt", action="append", default=[])

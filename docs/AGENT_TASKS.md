@@ -16091,6 +16091,7 @@ gain new data authority. Simple Tasks remain valid without either contract.
   `apps/api/src/zebra_agent_api/routes.py`,
   `apps/api/src/zebra_agent_api/app.py`,
   `apps/api/src/zebra_agent_api/session_payloads.py`,
+  `apps/cli/src/zebra_agent_cli/cli_parser.py`,
   `apps/cli/src/zebra_agent_cli/run_command_execution.py`,
   `apps/cli/src/zebra_agent_cli/execution.py`,
   `apps/worker/src/zebra_agent_worker/execution.py`,
@@ -16138,6 +16139,25 @@ filter keeps it out of ownerless legacy catalog traversal.
 - Full pytest: `2124 passed, 9 failed, 9 skipped`; exact base had the same nine
   failures and nine skips. Full ruff (11), mypy (13), and file-size (13)
   failure paths are inherited from the exact base; release eval passed 10/10.
+- Follow-up P1 red evidence: deleting the entire private owner container made
+  admin inventory empty; an installed-but-disabled V2 hid enabled V1; and an
+  owner-scoped disable of a system Skill returned 200 and wrote legacy state.
+- Follow-up closure: installed snapshots now back owner inventory and new
+  grants without a live owner directory; runtime considers only enabled
+  installed identities, while admin projects all installed versions. A
+  whole-container-deleted pinned resume and owner-scoped system-disable guard
+  are covered by the lifecycle tests. Exact `version` plus `digest` now permits
+  V1-to-V2 lifecycle activation without changing staging; CLI `--skill` and
+  `--skill-owner` freeze the same exact identity for queued and direct runs.
+- Follow-up red evidence also covered the old CLI parser rejection, V1 remaining
+  enabled after a V2 live upgrade, and owner-only empty grants blocked by an
+  unrelated multiple-enabled snapshot ambiguity. Owner validation now precedes
+  an API/CLI empty-grant early return, so it never scans the private catalog.
+- Final validation: EXT-SKILL/admin/CLI/inspection matrix `97 passed`, Goal/Plan
+  matrix `39 passed`, release eval `10/10`; changed-path Ruff, mypy, and
+  diff-check passed. Full pytest is `2132 passed, 9 failed, 9 skipped` (same
+  exact-base failure set); full Ruff (11), mypy (13), and file-size (13) remain
+  inherited. `skills_catalog.py` is 493 lines (under its 500-line cap).
 
 #### Explicit Non-Goals
 
