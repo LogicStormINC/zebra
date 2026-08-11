@@ -19,25 +19,28 @@
   Definition runtime work is activated.
 - `QA-CLOUDLINE-PY-01` is `Review` on
   `codex/qa-cloudline-py-01`. It owns the Python size/Ruff/Mypy gate after the
-  Lease/API regression fix. `make sync`, full Ruff, Mypy over 596 files and
-  focused tests (`34 passed, 10 skipped`) pass; the full backend is `2104
-  passed, 271 skipped, 1 failed`, with only the Desktop-owned stylesheet size
-  violation remaining. The existing concurrent PostgreSQL/Memory size and
-  export fixes were validated as an isolated handoff snapshot; the dirty
-  `zebra-cloud-trench` worktree is preserved unchanged.
+  Lease/API regression fix. The integrated Zebra line now passes Mypy over
+  `617` source files and the full backend is `2210 passed, 275 skipped`; the
+  existing concurrent PostgreSQL/Memory size and export fixes were validated
+  as an isolated handoff snapshot, and the dirty `zebra-cloud-trench`
+  worktree is preserved unchanged.
 - `QA-CLOUDLINE-DESKTOP-01` is in `Review` on
   `codex/qa-cloudline-desktop-01`. It split the remaining Desktop stylesheet
   size violation without changing the composer CSS contract and made the
   long-stream/stop assertions event-driven. Node 22 build, all Desktop static
   checks, file-size validation, and the eight Playwright tests pass. The default
   Tauri check remains environment-blocked by the global USTC Cargo mirror;
-  direct rsproxy Cargo validation passed with `--locked`.
+  direct rsproxy Cargo validation passed with `--locked`. A macOS packaged
+  `.app` build also passed, while packaged WebDriver execution remains a
+  Linux CI concern because `tauri-driver` reports that macOS is unsupported.
 - `QA-CLOUDLINE-CI-01` is in `Review` on `codex/qa-cloudline-ci-01`. It keeps
   the canonical Quality jobs intact, adds loopback proxy bypass to Desktop and
   packaged jobs, and updates the packaged driver helper to the durable
   cancellation and suspended-state contracts. The local Gate 0 matrix is
   green; the previous PR #194 failures are confirmed stale and predate the
-  Lease, atomicity, stylesheet, and event-driven assertion fixes.
+  Lease, atomicity, stylesheet, and event-driven assertion fixes. Real OS
+  sandbox smoke and the 20-cycle soak pass locally; canonical remote workflow
+  evidence is still outstanding.
 - `ARCH-CONFIG-BOUNDARY-01` is in `Review` on
   `codex/arch-config-boundary-01`. ADR-021 freezes the provider-neutral
   configuration boundary and the dependency contract passes: reusable packages

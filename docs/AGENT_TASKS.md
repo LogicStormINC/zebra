@@ -37,18 +37,23 @@ does not authorize production code, migrations or activation of its successor.
   remains `CLOUD-INTEGRATION-REG-01`.
 - `QA-CLOUDLINE-PY-01` is `Review` on
   `codex/qa-cloudline-py-01`. It owns the Python size, Ruff and Mypy baseline
-  after the regression fix. A validated snapshot of the concurrent PostgreSQL /
-  Memory size fixes is being re-homed into this isolated branch; the original
-  dirty worktree remains untouched.
+  after the regression fix. The integrated Zebra line now passes Mypy over
+  `617` source files and the complete backend is `2210 passed, 275 skipped`;
+  the validated snapshot of the concurrent PostgreSQL / Memory size fixes is
+  still isolated and the original dirty worktree remains untouched.
 - `QA-CLOUDLINE-DESKTOP-01` is in `Review` on
   `codex/qa-cloudline-desktop-01`. It split the remaining Desktop stylesheet
   size violation and made long-stream/stop Playwright regressions deterministic
   after the Python baseline. Its visual contract stays unchanged; Node 22 build,
-  static checks, file-size validation, and all eight E2E tests pass.
+  static checks, file-size validation, and all eight E2E tests pass. A macOS
+  packaged `.app` build passes; `tauri-driver` itself reports macOS unsupported,
+  so packaged WebDriver evidence remains a Linux CI gate.
 - `QA-CLOUDLINE-CI-01` is in `Review` on
   `codex/qa-cloudline-ci-01`. It owns the canonical Quality workflow and the
   packaged Desktop driver helper needed to revalidate the full Gate 0 matrix
   after the Lease, atomicity, stylesheet, and event-driven assertion fixes.
+  Local OS sandbox smoke and the 20-cycle soak now pass; canonical remote
+  workflow evidence is not claimed until this line is pushed and run.
 - `ARCH-CONFIG-BOUNDARY-01` is in `Review` on
   `codex/arch-config-boundary-01`. It freezes the provider-neutral configuration
   boundary and adds a dependency contract before Integrations and Security
@@ -472,7 +477,10 @@ new commits.
 - The old PR #194 run `30992835876` is useful only as pre-fix evidence: its
   Backend, Desktop and packaged failures correspond to the now-closed size,
   Lease checkpoint, atomicity and stale packaged-state assertions. No remote
-  rerun is claimed from this unpushed branch.
+  rerun is claimed from this unpushed branch. The integrated line additionally
+  passes `make test` with `2210 passed, 275 skipped`, builds the macOS packaged
+  `.app`, and passes the local OS sandbox smoke/soak; macOS packaged WebDriver
+  is unsupported by `tauri-driver` and is therefore left to the Linux CI job.
 
 #### Explicit Non-Goals
 
