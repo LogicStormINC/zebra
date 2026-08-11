@@ -1772,7 +1772,7 @@ run.
 
 ### EMB-HOST-RUNTIME-01 - Worker Host Tool runtime composition
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Codex`
 - Suggested role: `WORKER / API / INTEGRATIONS / SECURITY`
 - Depends on: `EMB-HOST-GW-01`, `EMB-AUTH-HTTP-01`, and the Trench-side
@@ -1825,6 +1825,14 @@ Lease/Fence ownership.
   credential provisioning (owned by `TRN-HOST-READ-AUTH-01` and deployment work)
 - no new parallel Tool registry, JWT decoder or replay ledger
 - no activation of the cross-service E2E gate before both sides are merged
+
+#### Review Evidence
+
+- `make check` passes: file-size gate (`1261` files, zero violations), Ruff,
+  Mypy (`617` source files) and release Eval (`10/10`).
+- Focused API/Core/Worker/Integrations/Effect Guard matrix passes (`68` tests).
+- Real cross-service E2E remains separately blocked until isolated services and
+  Grant/Worker inputs are provisioned; no deployment pass is claimed.
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 

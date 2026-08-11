@@ -172,7 +172,7 @@
   was activated by this E2E card. They are now implemented as the active
   successors below; the real cross-service runner remains fail-closed until
   isolated services and credentials are provisioned.
-- `EMB-HOST-RUNTIME-01` is `In Progress` on `codex/emb-host-runtime-01`. Zebra
+- `EMB-HOST-RUNTIME-01` is in `Review` on `codex/emb-host-runtime-01`. Zebra
   now carries an optional, expiry-aware HostContext from authorized API request
   through TASK_PREPARED persistence and Worker recovery; Worker discovery is
   manifest-first and fail-closed, and Host read tools are routed through the
