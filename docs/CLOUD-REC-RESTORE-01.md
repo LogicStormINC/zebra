@@ -1,9 +1,9 @@
 # CLOUD-REC-RESTORE-01 — fresh-instance restore and rebuild
 
-Status: Done  
-Owner: Codex  
-Branch: `codex/cloud-rec-restore-01`  
-Owned paths: `tests/compose/recovery_restore/`, `docs/CLOUD-REC-RESTORE-01.md`
+- Status: Done
+- Owner: Codex
+- Branch: `codex/cloud-rec-restore-01`
+- Owned paths: `tests/compose/recovery_restore/`, `docs/CLOUD-REC-RESTORE-01.md`
 
 ## Scope
 

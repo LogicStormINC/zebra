@@ -1,8 +1,8 @@
 # Zebra PostgreSQL Governed Memory 权威与迁移合同 v1.0
 
-状态：`CLOUD-MEMORY-PG-PLAN-01` 冻结候选，2026-07-29  
-适用范围：`zebra-cloud-trench` 单 deployment namespace 云端控制面  
-不适用：Desktop、本地 SQLite、Host 业务身份目录、Mem0 内部历史
+- 状态：`CLOUD-MEMORY-PG-PLAN-01` 冻结候选，2026-07-29
+- 适用范围：`zebra-cloud-trench` 单 deployment namespace 云端控制面
+- 不适用：Desktop、本地 SQLite、Host 业务身份目录、Mem0 内部历史
 
 ## 1. 结论
 

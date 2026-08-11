@@ -1,9 +1,9 @@
 # CLOUD-REC-BACKUP-01 — PostgreSQL logical backup portability
 
-Status: Done  
-Owner: Codex  
-Branch: `codex/cloud-rec-backup-01`  
-Owned paths: `tests/compose/recovery_backup/`, `docs/CLOUD-REC-BACKUP-01.md`
+- Status: Done
+- Owner: Codex
+- Branch: `codex/cloud-rec-backup-01`
+- Owned paths: `tests/compose/recovery_backup/`, `docs/CLOUD-REC-BACKUP-01.md`
 
 ## Scope
 

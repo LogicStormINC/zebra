@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from uuid import UUID
 
 from agent_core.application import (
     SessionMessageAppendCommand,
@@ -13,7 +12,6 @@ from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.host_authority import HostContextEnvelope
-from agent_core.domain.identifiers import SessionId
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports import LiveEventFanoutPort
 from agent_integrations import (
@@ -67,6 +65,7 @@ from zebra_agent_api.responses import ApiResponse, bad_request, conflict, servic
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
+from zebra_agent_api.session_identity_read import _parse_session_id as parse_session_id
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
     parse_append_session_message_payload,
@@ -104,6 +103,7 @@ class ZebraAgentApi(
     administrative_context_namespace: str | None = None
     credential_broker: CredentialBroker | None = None
     github_transport: GitHubPullRequestTransport | None = None
+    _parse_session_id = staticmethod(parse_session_id)
 
     def create_session(
         self,
@@ -322,19 +322,6 @@ class ZebraAgentApi(
             status_code=201,
             body=body,
         )
-
-    def _parse_session_id(self, session_id: str) -> SessionId | ApiResponse:
-        try:
-            return SessionId(UUID(session_id))
-        except ValueError:
-            return ApiResponse(
-                status_code=400,
-                body={
-                    "session_id": session_id,
-                    "status": "invalid_request",
-                    "reason": "session_id must be a valid UUID",
-                },
-            )
 
     def _create_and_execute_session(self, parsed: CreateSessionPayload) -> ApiResponse:
         workspace_root = Path(str(parsed["workspace"])).expanduser().resolve()

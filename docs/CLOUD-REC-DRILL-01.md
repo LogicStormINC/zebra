@@ -1,9 +1,9 @@
 # CLOUD-REC-DRILL-01 — rollback, outbox reconciliation and worker race
 
-Status: Done  
-Owner: Codex  
-Branch: `codex/cloud-rec-drill-01`  
-Owned paths: `tests/compose/recovery_drill/`, `docs/CLOUD-REC-DRILL-01.md`
+- Status: Done
+- Owner: Codex
+- Branch: `codex/cloud-rec-drill-01`
+- Owned paths: `tests/compose/recovery_drill/`, `docs/CLOUD-REC-DRILL-01.md`
 
 ## Scope
 
