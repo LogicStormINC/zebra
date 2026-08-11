@@ -1732,7 +1732,8 @@ metadata.
 - Owner: `lukeding`
 - Suggested role: `QA / SRE / PLATFORM`
 - Depends on: `TRN-READ-01`, `TRN-CPK-BFF-01`, `TRN-PANEL-01`,
-  `EMB-AGUI-API-01`, and the reviewed Host Tool contract
+  `EMB-AGUI-API-01`, `EMB-HOST-RUNTIME-01`, `TRN-HOST-READ-AUTH-01`,
+  and the reviewed Host Tool contract
 - Branch: `codex/emb-trn-read-e2e-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/emb-trn-read-e2e-01/zebra-agent`
 - Owned paths: `tests/compose/trench_read_e2e/` (new),
@@ -1756,8 +1757,8 @@ run.
 - The runner sends browser cookies only to Trench/BFF or the Grant exchange,
   never to Zebra; evidence contains no cookie, Grant, DSN or response secret.
 - The Trench business snapshot is byte-for-byte stable across the read-only
-  scenarios. The current Worker composition seam is recorded separately when
-  Host Tool execution is not wired into the production Worker.
+  scenarios. Host Tool execution must use the reviewed Worker composition and
+  signed Trench service binding; any missing external input remains `BLOCKED`.
 
 #### Explicit Non-Goals
 
@@ -1771,10 +1772,11 @@ run.
   branch. The integrated Trench stack passes its focused backend (`66` API,
   `49` cleaning), migration SQL and frontend build/test/lint; the integrated
   Zebra stack passes `make check`, `2209 passed, 275 skipped`, and all five
-  local Cloudline runners. The actual cross-service execution still returns
-  `BLOCKED` with all 16 deployment inputs missing; no real cross-service pass
-  is claimed until an isolated PG/Redis/object-store deployment supplies the
-  inputs.
+  local Cloudline runners. Host runtime and Trench service-auth successors are
+  now implemented and reviewed; the actual cross-service execution still
+  returns `BLOCKED` with all 16 deployment inputs missing. No real
+  cross-service pass is claimed until an isolated PG/Redis/object-store
+  deployment supplies the inputs.
 
 ### EMB-HOST-RUNTIME-01 - Worker Host Tool runtime composition
 
@@ -1836,7 +1838,7 @@ Lease/Fence ownership.
 
 - `make check` passes: file-size gate (`1261` files, zero violations), Ruff,
   Mypy (`617` source files) and release Eval (`10/10`).
-- Full `make test` passes (`2207` tests, `275` skipped); the focused
+- Full `make test` passes (`2209` tests, `275` skipped); the focused
   API/Core/Worker/Integrations/Effect Guard matrix is included (`69` tests).
 - Real cross-service E2E remains separately blocked until isolated services and
   Grant/Worker inputs are provisioned; no deployment pass is claimed.

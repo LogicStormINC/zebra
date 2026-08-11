@@ -78,6 +78,15 @@ class SseEvent:
     data: Mapping[str, object]
 
 
+HOST_GRANT_SCOPES = (
+    "agent.run",
+    "event.read",
+    "evidence.read",
+    "entity.read",
+    "topic.read",
+)
+
+
 def missing_environment(environment: Mapping[str, str], required: tuple[str, ...]) -> list[str]:
     return [name for name in required if not environment.get(name, "").strip()]
 
@@ -311,7 +320,7 @@ def obtain_grant(config: Config, thread_id: str, run_id: str) -> str:
         headers={**cookie_headers(config), "Content-Type": "application/json"},
         payload={
             "audience": "zebra",
-            "scopes": ["agent.run"],
+            "scopes": list(HOST_GRANT_SCOPES),
             "threadId": thread_id,
             "runId": run_id,
         },

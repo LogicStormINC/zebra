@@ -171,15 +171,14 @@
   and fresh restore) are green. The real cross-service run is still `BLOCKED`
   because this machine has no isolated Trench/Zebra HTTP, PG, Redis,
   object-store, Grant exchange or Worker-restart inputs; no cross-service pass
-  is claimed. A separate seam is
-  recorded: `build_worker_tool_gateway` still composes `LocalToolGateway`, so
-  the reviewed Host Tool adapter is not yet in the Worker production path. The
-  required successors are now explicitly frozen as `EMB-HOST-RUNTIME-01` (Zebra
-  Worker authority/context composition) and the Trench-side
-  `TRN-HOST-READ-AUTH-01` (service-to-service read Tool authentication); neither
-  was activated by this E2E card. They are now implemented as the active
-  successors below; the real cross-service runner remains fail-closed until
-  isolated services and credentials are provisioned.
+  is claimed. The previously recorded Worker composition seam is now closed by
+  the active `EMB-HOST-RUNTIME-01` successor: `build_worker_tool_gateway`
+  discovers the Host manifest, exposes its typed tools and routes Host calls
+  without local fallback. The Trench-side `TRN-HOST-READ-AUTH-01` successor
+  verifies the signed workload binding and preserves read-only scope/resource
+  filtering. Both successors are in review on the integrated branches; the
+  real cross-service runner remains fail-closed until isolated services and
+  credentials are provisioned.
 - `EMB-HOST-RUNTIME-01` is in `Review` on `codex/emb-host-runtime-01`. Zebra
   now carries an optional, expiry-aware HostContext from authorized API request
   through TASK_PREPARED persistence and Worker recovery; Worker discovery is

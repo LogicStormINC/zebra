@@ -43,16 +43,18 @@ runner 只 canonicalize `tables`，因此 view 不得包含时间戳、随机数
 会写出 `status=blocked` 的 `result.json`，并列出缺失变量，故不宣称跨服务
 E2E 通过。
 
-另一个独立的接线风险仍需在真实环境解决：Zebra Worker 当前的
-`build_worker_tool_gateway` 组合仍返回 `LocalToolGateway`，Host Tool Gateway
-虽已有 typed contract/adapter，但尚未进入 Worker 的生产执行路径。因此本卡
-不能把 Trench read Tool 的直接 HTTP 检查描述成完整的 Worker→Host Tool 链路；
-接线应作为后续 Zebra 实现卡，而不是在本 runner 中绕过边界。
+此前记录的 Worker 接线风险已由 `EMB-HOST-RUNTIME-01` 处理：当前整合分支的
+`build_worker_tool_gateway` 会在恢复到 `HostContextEnvelope` 后发现 Host
+manifest、暴露 typed tools，并把 Host tool 调用路由到受控 gateway，缺失或
+过期时不会回落到本地执行。`TRN-HOST-READ-AUTH-01` 同样已接入 Trench
+read Tool 的签名 workload binding。故本 runner 不再把这条接线当作已知代码
+缺口；仍不能把本机缺少真实服务输入时的阻断结果提升为完整的 Worker→Host
+Tool 生产验收。
 
-## 必须先激活的后续任务
+## 已激活的前置任务与剩余验收
 
-这个缺口不是本卡的隐式实现范围，需由维护者分别激活以下两张卡后，才能把
-真实 E2E 从“直接 read Tool 探针”提升为完整 Worker→Host Tool 纵切：
+以下两张前置卡已在隔离分支完成实现并进入 Review；它们不是本 runner 的隐式
+实现范围，真实 E2E 仍需在两侧服务和凭据齐备后执行：
 
 1. `EMB-HOST-RUNTIME-01`（Zebra）：把已验证的 `HostContextEnvelope` 以不含
    secret 的 `TASK_PREPARED` authority 绑定传到 `RecoveredTask`，在 Worker
@@ -64,9 +66,9 @@ E2E 通过。
    user/workspace/source scope 过滤和无业务写入约束；浏览器 Cookie 不能成为
    Worker 调用的隐式凭据。
 
-两张卡完成后，`EMB-TRN-READ-E2E-01` 才能补充 Worker Host Tool success/
-failure 场景并申请 real-service 验收；在此之前，当前 runner 的阻断结果是
-真实边界证据，不是可以绕过的测试失败。
+两张卡完成后，当前 runner 才具备申请 real-service 验收的代码前提；执行结果
+仍必须由真实 PG/Redis/object store、Grant exchange 和 Worker restart hook
+给出，不能用 focused tests 或静态探针替代。
 
 ## 执行命令
 
