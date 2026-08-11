@@ -218,7 +218,7 @@ def _public_final_event_ids(events: tuple[TaskEvent, ...]) -> set[str]:
         for item in events
         if item.event.event_type is EventType.SESSION_COMPLETED
     }
-    explicit: set[str] = set()
+    explicit: dict[str, TaskEvent] = {}
     legacy: dict[str, TaskEvent] = {}
     last_tool_sequence: dict[str, int] = {}
     for item in events:
@@ -233,7 +233,7 @@ def _public_final_event_ids(events: tuple[TaskEvent, ...]) -> set[str]:
             continue
         response_stage = event.payload.get("response_stage")
         if response_stage == "final":
-            explicit.add(str(event.event_id))
+            explicit[segment] = item
             continue
         if response_stage == "tool_loop" or segment not in completed_segments:
             continue
@@ -243,7 +243,7 @@ def _public_final_event_ids(events: tuple[TaskEvent, ...]) -> set[str]:
             and item.task_sequence > last_tool_sequence.get(segment, -1)
         ):
             legacy[segment] = item
-    return explicit | {str(item.event.event_id) for item in legacy.values()}
+    return {str(item.event.event_id) for item in (*explicit.values(), *legacy.values())}
 
 
 def _apply_tool_event(
