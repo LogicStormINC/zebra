@@ -8,6 +8,7 @@ from agent_core.domain.host_authority import (
 )
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.ports.runtime import RuntimeHandle
 from agent_integrations.host_tools import HostToolManifest
 from zebra_agent_worker.tool_gateway_runtime import WorkerToolGateway
 
@@ -49,6 +50,14 @@ class _Host:
             status=ToolCallStatus.EXECUTED,
             output="host",
         )
+
+
+class _Runtime:
+    def __init__(self) -> None:
+        self.destroyed = []
+
+    def destroy(self, handle: RuntimeHandle) -> None:
+        self.destroyed.append(handle)
 
 
 def _context() -> HostContextEnvelope:
@@ -142,3 +151,14 @@ def test_manifest_host_tool_never_falls_back_to_local() -> None:
     with pytest.raises(ValueError, match="gateway is unavailable"):
         gateway.execute(call)
     assert local.calls == 0
+
+
+def test_worker_gateway_destroys_owned_runtime_handle_once() -> None:
+    runtime = _Runtime()
+    handle = RuntimeHandle.create(runtime_name="local")
+    gateway = WorkerToolGateway(local=_Local(), runtime=runtime, runtime_handle=handle)
+
+    gateway.close()
+    gateway.close()
+
+    assert runtime.destroyed == [handle]

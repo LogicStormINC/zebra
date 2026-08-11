@@ -177,7 +177,7 @@
   through TASK_PREPARED persistence and Worker recovery; Worker discovery is
   manifest-first and fail-closed, and Host read tools are routed through the
   typed Host gateway with resource/idempotency binding. Full `make test` passes
-  (`2206 passed, 275 skipped`), and `make check` plus the focused API/Core/
+  (`2207 passed, 275 skipped`), and `make check` plus the focused API/Core/
   Worker/Integrations/Effect Guard matrix pass. The branch does not claim
   deployment or a real Trench call.
 - Gate 3 combined API/Integrations matrix is `204 passed, 3 skipped`; no Trench

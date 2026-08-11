@@ -26,6 +26,8 @@ class WorkerToolGateway:
     host: HostToolGateway | None = None
     host_context: HostContextEnvelope | None = None
     host_manifest: HostToolManifest | None = None
+    runtime: RuntimePort | None = None
+    runtime_handle: RuntimeHandle | None = None
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
@@ -97,7 +99,13 @@ class WorkerToolGateway:
         )
 
     def close(self) -> None:
-        self.local.close()
+        try:
+            self.local.close()
+        finally:
+            if self.runtime is not None and self.runtime_handle is not None:
+                handle = self.runtime_handle
+                self.runtime_handle = None
+                self.runtime.destroy(handle)
 
 
 def build_worker_tool_gateway(
@@ -141,14 +149,18 @@ def build_worker_tool_gateway(
         session_history=session_history.scoped(task.history_session_ids),
         current_session_id=str(session_id),
         runtime=runtime,
-        runtime_handle=runtime_handle,
+        runtime_handle=None,
         artifact_payload_store=local_artifacts if cloud_artifacts is None else None,
         output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
         trusted_local=trusted_local,
         web_pipeline_v2=settings.web_pipeline_v2,
     )
     if task.host_context is None:
-        return WorkerToolGateway(local=local)
+        return WorkerToolGateway(
+            local=local,
+            runtime=runtime,
+            runtime_handle=runtime_handle,
+        )
     if not settings.host_tool_endpoint or not settings.host_tool_workload_identity:
         local.close()
         raise ValueError("Host Tool endpoint and workload identity are required")
@@ -180,6 +192,8 @@ def build_worker_tool_gateway(
         host=host,
         host_context=task.host_context,
         host_manifest=manifest,
+        runtime=runtime,
+        runtime_handle=runtime_handle,
     )
 
 

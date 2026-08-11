@@ -1830,8 +1830,8 @@ Lease/Fence ownership.
 
 - `make check` passes: file-size gate (`1261` files, zero violations), Ruff,
   Mypy (`617` source files) and release Eval (`10/10`).
-- Full `make test` passes (`2206` tests, `275` skipped); the focused
-  API/Core/Worker/Integrations/Effect Guard matrix is included (`68` tests).
+- Full `make test` passes (`2207` tests, `275` skipped); the focused
+  API/Core/Worker/Integrations/Effect Guard matrix is included (`69` tests).
 - Real cross-service E2E remains separately blocked until isolated services and
   Grant/Worker inputs are provisioned; no deployment pass is claimed.
 
