@@ -84,6 +84,7 @@ from zebra_agent_api.session_control import cancel_session_control, suspend_sess
 from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
 from zebra_agent_api.skills_admin import (
     ApiSkillsAdminMixin,
+    private_skill_owner,
     runtime_skills_state,
     scoped_skill_roots,
 )
@@ -515,7 +516,9 @@ class ZebraAgentApi(
                 tool_profile=ToolProfile(str(parsed["tool_profile"])),
                 network_profile=network_profile,
                 web_search_endpoint=self.settings.web_search_endpoint,
-                skill_roots=scoped_skill_roots(self.settings),
+                skill_roots=scoped_skill_roots(
+                    self.settings, owner=private_skill_owner(skill_grant[1])
+                ),
                 skills_state=runtime_skills_state(self.settings),
                 granted_skill_component_identities=skill_grant[1],
                 mcp_servers=(

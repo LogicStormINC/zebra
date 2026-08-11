@@ -3,16 +3,21 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from pathlib import Path, PurePosixPath, PureWindowsPath
+from pathlib import Path
 from types import MappingProxyType
 from typing import Protocol, cast
 
-from agent_core.domain.skills import SkillComponentIdentity, normalize_skill_component_identities
+from agent_core.domain.skills import (
+    SkillComponentIdentity,
+    compute_private_skill_package_digest,
+    normalize_skill_component_identities,
+)
 
 from agent_tools.skills_scope import (
     MAX_COMPATIBILITY_ENTRIES,
     MAX_METADATA_ENTRIES,
     MAX_NAME_CHARS,
+    SUPPORT_DIRECTORIES,
     ScopedSkillRoot,
     SkillCatalogError,
     SkillCatalogReason,
@@ -22,13 +27,17 @@ from agent_tools.skills_scope import (
     default_namespace,
     normalize_scoped_roots,
     parse_frontmatter,
+    read_skill_package,
     scope_priority,
     split_frontmatter,
+    validate_skill_file_path,
+)
+from agent_tools.skills_scope import (
+    read_skill_file as _read_utf8,
 )
 
 MAX_SKILLS = 200
 MAX_SCANNED_DIRECTORIES = 5_000
-MAX_SKILL_FILE_BYTES = 32_768
 EXCLUDED_DIRECTORIES = frozenset(
     {
         ".git",
@@ -47,8 +56,6 @@ EXCLUDED_DIRECTORIES = frozenset(
         ".ruff_cache",
     }
 )
-SUPPORT_DIRECTORIES = frozenset({"references", "templates", "assets", "scripts"})
-SENSITIVE_PATH_MARKERS = (".env", "credential", "id_rsa", "private_key", "secret", "token")
 
 __all__ = [
     "MAX_COMPATIBILITY_ENTRIES",
@@ -148,68 +155,62 @@ class LocalSkillCatalog:
                 SkillCatalogReason.INVALID_LIMIT, f"limit must be from 1 to {MAX_SKILLS}"
             )
         entries, ambiguous, truncated = self._discover()
-        available = tuple(entry.metadata for entry in self._available_entries(entries).values())
+        available_entries = self._available_entries(entries)
+        if self._granted_component_identities is None:
+            available_entries = {
+                name: entry for name, entry in available_entries.items() if name not in ambiguous
+            }
+        available = tuple(entry.metadata for entry in available_entries.values())
         return available[:limit], len(ambiguous), truncated or len(available) > limit
 
     def read(self, name: str, *, file_path: str = "SKILL.md") -> SkillReadResult:
         normalized_name = _bounded_text(name, "name", MAX_NAME_CHARS)
         entries, ambiguous, _ = self._discover()
-        if normalized_name in ambiguous:
+        if self._granted_component_identities is None and normalized_name in ambiguous:
             raise SkillCatalogError(
                 SkillCatalogReason.AMBIGUOUS_SKILL, "skill name is ambiguous across roots"
             )
         entries = self._available_entries(entries)
+        if normalized_name in ambiguous and normalized_name not in entries:
+            raise SkillCatalogError(
+                SkillCatalogReason.AMBIGUOUS_SKILL, "skill name is ambiguous across roots"
+            )
         try:
             entry = entries[normalized_name]
         except KeyError as exc:
             raise SkillCatalogError(
                 SkillCatalogReason.SKILL_NOT_FOUND, "skill is not available"
             ) from exc
-        relative = _validated_support_path(file_path)
-        if entry.files is not None:
-            try:
-                content = entry.files[relative.as_posix()]
-            except KeyError as exc:
-                raise SkillCatalogError(
-                    SkillCatalogReason.FILE_NOT_FOUND, "skill file does not exist"
-                ) from exc
-            byte_count = len(content.encode("utf-8"))
-            component_content = entry.files["SKILL.md"]
-        else:
+        relative = validate_skill_file_path(file_path)
+        files = entry.files
+        if files is None:
             assert entry.root is not None
-            candidate = entry.root / relative
-            try:
-                resolved = candidate.resolve(strict=True)
-            except OSError as exc:
-                raise SkillCatalogError(
-                    SkillCatalogReason.FILE_NOT_FOUND, "skill file does not exist"
-                ) from exc
-            if (
-                resolved.is_symlink()
-                or not resolved.is_file()
-                or not resolved.is_relative_to(entry.root)
-            ):
-                raise SkillCatalogError(
-                    SkillCatalogReason.PATH_OUTSIDE_SKILL, "skill file escapes its package"
-                )
-            content, byte_count = _read_utf8(resolved)
-            component_content = (
-                content
-                if relative.as_posix() == "SKILL.md"
-                else _read_utf8(entry.root / "SKILL.md")[0]
-            )
-        _ensure_component_digest(entry.metadata, component_content)
+            _validate_live_file(entry.root, relative)
+            _read_utf8(entry.root / "SKILL.md")
+            files = read_skill_package(entry.root)
+        try:
+            content = files[relative.as_posix()]
+        except KeyError as exc:
+            raise SkillCatalogError(
+                SkillCatalogReason.FILE_NOT_FOUND, "skill file does not exist"
+            ) from exc
+        _ensure_entry_digest(entry, files)
+        byte_count = len(content.encode("utf-8"))
         return SkillReadResult(entry.metadata, relative.as_posix(), content, byte_count)
 
     def package_files(self, name: str) -> Mapping[str, str]:
         """Return the bounded declarative package payload without executing it."""
         normalized_name = _bounded_text(name, "name", MAX_NAME_CHARS)
         entries, ambiguous, _ = self._discover()
-        if normalized_name in ambiguous:
+        if self._granted_component_identities is None and normalized_name in ambiguous:
             raise SkillCatalogError(
                 SkillCatalogReason.AMBIGUOUS_SKILL, "skill name is ambiguous across roots"
             )
         entries = self._available_entries(entries)
+        if normalized_name in ambiguous and normalized_name not in entries:
+            raise SkillCatalogError(
+                SkillCatalogReason.AMBIGUOUS_SKILL, "skill name is ambiguous across roots"
+            )
         try:
             entry = entries[normalized_name]
         except KeyError as exc:
@@ -219,18 +220,7 @@ class LocalSkillCatalog:
         if entry.files is not None:
             return entry.files
         assert entry.root is not None
-        files = {"SKILL.md": _read_utf8(entry.root / "SKILL.md")[0]}
-        for directory in SUPPORT_DIRECTORIES:
-            support_root = entry.root / directory
-            if not support_root.is_dir() or support_root.is_symlink():
-                continue
-            for candidate in sorted(support_root.rglob("*")):
-                if candidate.is_symlink() or not candidate.is_file():
-                    continue
-                relative = candidate.relative_to(entry.root).as_posix()
-                _validated_support_path(relative)
-                files[relative] = _read_utf8(candidate)[0]
-        return MappingProxyType(files)
+        return read_skill_package(entry.root)
 
     def _available_entries(self, entries: dict[str, _SkillEntry]) -> dict[str, _SkillEntry]:
         if self._granted_component_identities is None:
@@ -294,6 +284,11 @@ class LocalSkillCatalog:
         snapshots: dict[str, _SkillEntry] = {}
         for identity in identities:
             installed = self._installed_entry(identity)
+            if installed is None and identity.scope == "user" and identity.namespace != "user":
+                raise SkillCatalogError(
+                    SkillCatalogReason.SKILL_NOT_FOUND,
+                    "granted skill component identity is unavailable",
+                )
             if installed is not None:
                 if identity.name in snapshots:
                     raise SkillCatalogError(
@@ -305,7 +300,12 @@ class LocalSkillCatalog:
         return pinned
 
     def _installed_entry(self, identity: SkillComponentIdentity) -> _SkillEntry | None:
-        if self._skills_state is None or identity.scope != "user" or identity.namespace == "user":
+        if (
+            self._skills_state is None
+            or identity.scope != "user"
+            or identity.namespace == "user"
+            or identity.namespace != self._private_owner
+        ):
             return None
         installed = getattr(self._skills_state, "installed_component", None)
         if not callable(installed):
@@ -318,6 +318,13 @@ class LocalSkillCatalog:
                 record.files["SKILL.md"].encode("utf-8")
             )
             parsed = parse_frontmatter(frontmatter_text)
+            legacy_digest = compute_skill_digest(frontmatter_text.encode("utf-8"), body_bytes)
+            package_digest = compute_private_skill_package_digest(record.files)
+            if record.owner != identity.namespace or identity.digest not in {
+                legacy_digest,
+                package_digest,
+            }:
+                return None
             metadata = SkillMetadata(
                 name=parsed.name,
                 description=parsed.description,
@@ -326,7 +333,7 @@ class LocalSkillCatalog:
                 license=parsed.license,
                 compatibility=parsed.compatibility,
                 metadata=parsed.metadata,
-                digest=compute_skill_digest(frontmatter_text.encode("utf-8"), body_bytes),
+                digest=identity.digest,
                 scope=SkillScope(identity.scope),
                 namespace=identity.namespace,
                 owner=record.owner,
@@ -402,11 +409,16 @@ def _load_entry(skill_root: Path, scoped: ScopedSkillRoot) -> _SkillEntry | None
     try:
         frontmatter_text, body_bytes = split_frontmatter(raw_bytes)
         parsed = parse_frontmatter(frontmatter_text)
+        private_files = read_skill_package(skill_root) if scoped.owner is not None else None
     except SkillCatalogError:
         return None
     source = skill_root.relative_to(Path(scoped.root)).as_posix() or "."
     namespace = scoped.namespace or default_namespace(scoped.scope)
-    digest = compute_skill_digest(frontmatter_text.encode("utf-8"), body_bytes)
+    digest = (
+        compute_private_skill_package_digest(private_files)
+        if private_files is not None
+        else compute_skill_digest(frontmatter_text.encode("utf-8"), body_bytes)
+    )
     return _SkillEntry(
         SkillMetadata(
             name=parsed.name,
@@ -425,69 +437,40 @@ def _load_entry(skill_root: Path, scoped: ScopedSkillRoot) -> _SkillEntry | None
     )
 
 
-def _ensure_component_digest(metadata: SkillMetadata, content: str) -> None:
+def _ensure_entry_digest(entry: _SkillEntry, files: Mapping[str, str]) -> None:
     try:
-        frontmatter_text, body_bytes = split_frontmatter(content.encode("utf-8"))
-    except SkillCatalogError as exc:
+        frontmatter_text, body_bytes = split_frontmatter(files["SKILL.md"].encode("utf-8"))
+    except (KeyError, SkillCatalogError) as exc:
         raise SkillCatalogError(
             SkillCatalogReason.DIGEST_MISMATCH,
             "skill component digest drifted before read",
         ) from exc
-    if metadata.digest != compute_skill_digest(frontmatter_text.encode("utf-8"), body_bytes):
+    legacy_digest = compute_skill_digest(frontmatter_text.encode("utf-8"), body_bytes)
+    expected = (
+        compute_private_skill_package_digest(files)
+        if entry.owner is not None
+        else legacy_digest
+    )
+    if entry.metadata.digest != expected and not (
+        entry.owner is not None
+        and entry.files is not None
+        and entry.metadata.digest == legacy_digest
+    ):
         raise SkillCatalogError(
             SkillCatalogReason.DIGEST_MISMATCH,
             "skill component digest drifted before read",
         )
 
 
-def _validated_support_path(value: str) -> Path:
-    if not isinstance(value, str) or not value.strip():
-        raise SkillCatalogError(
-            SkillCatalogReason.INVALID_FILE_PATH, "file_path must not be blank"
-        )
-    normalized = value.strip().replace("\\", "/")
-    if len(normalized) > 256:
-        raise SkillCatalogError(
-            SkillCatalogReason.INVALID_FILE_PATH, "file_path exceeds 256 characters"
-        )
-    posix = PurePosixPath(normalized)
-    windows = PureWindowsPath(normalized)
-    if posix.is_absolute() or windows.is_absolute() or windows.drive or ".." in posix.parts:
-        raise SkillCatalogError(
-            SkillCatalogReason.INVALID_FILE_PATH, "file_path must stay within the skill"
-        )
-    if any(part.startswith(".") for part in posix.parts) or any(
-        marker in normalized.lower() for marker in SENSITIVE_PATH_MARKERS
-    ):
-        raise SkillCatalogError(
-            SkillCatalogReason.SENSITIVE_FILE, "hidden or sensitive skill files are blocked"
-        )
-    if posix.as_posix() != "SKILL.md" and (
-        len(posix.parts) < 2 or posix.parts[0] not in SUPPORT_DIRECTORIES
-    ):
-        raise SkillCatalogError(
-            SkillCatalogReason.UNSUPPORTED_FILE, "file must be SKILL.md or a support file"
-        )
-    return Path(*posix.parts)
-
-
-def _read_utf8(path: Path) -> tuple[str, int]:
+def _validate_live_file(root: Path, relative: Path) -> None:
+    candidate = root / relative
     try:
-        size = path.stat().st_size
-        if size > MAX_SKILL_FILE_BYTES:
-            raise SkillCatalogError(
-                SkillCatalogReason.FILE_TOO_LARGE, "skill file exceeds 32768 bytes"
-            )
-        payload = path.read_bytes()
+        resolved = candidate.resolve(strict=True)
     except OSError as exc:
         raise SkillCatalogError(
-            SkillCatalogReason.FILE_READ_FAILED, "skill file could not be read"
+            SkillCatalogReason.FILE_NOT_FOUND, "skill file does not exist"
         ) from exc
-    if b"\x00" in payload:
-        raise SkillCatalogError(SkillCatalogReason.BINARY_FILE, "binary skill files are blocked")
-    try:
-        return payload.decode("utf-8"), len(payload)
-    except UnicodeDecodeError as exc:
+    if candidate.is_symlink() or not resolved.is_file() or not resolved.is_relative_to(root):
         raise SkillCatalogError(
-            SkillCatalogReason.INVALID_ENCODING, "skill files must be UTF-8"
-        ) from exc
+            SkillCatalogReason.PATH_OUTSIDE_SKILL, "skill file escapes its package"
+        )

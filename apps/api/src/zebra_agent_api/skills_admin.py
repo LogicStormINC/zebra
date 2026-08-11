@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from agent_core.domain.skills import SkillComponentIdentity
 from agent_storage import SQLiteSkillsStateStore
 from agent_tools.skills_catalog import LocalSkillCatalog, SkillMetadata
 from agent_tools.skills_scope import (
@@ -42,6 +43,20 @@ def scoped_skill_roots(
         user=settings.skill_roots,
         repo=settings.skill_roots_repo,
         owner=owner,
+    )
+
+
+def private_skill_owner(identities: tuple[SkillComponentIdentity, ...]) -> str | None:
+    return next(
+        (
+            identity.namespace
+            for identity in identities
+            if (
+                identity.scope == SkillScope.USER.value
+                and identity.namespace != SkillScope.USER.value
+            )
+        ),
+        None,
     )
 
 

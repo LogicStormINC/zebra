@@ -4,12 +4,11 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from hashlib import sha256
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any
 
-from agent_core.domain.skills import SkillComponentIdentity
+from agent_core.domain.skills import SkillComponentIdentity, compute_private_skill_package_digest
 
 from agent_storage.database import SQLiteDatabase
 
@@ -96,7 +95,7 @@ class SQLiteSkillsStateStore:
     ) -> InstalledSkillRecord:
         _validate_private_identity(identity, owner)
         normalized_files = _normalize_files(files)
-        if _component_digest(normalized_files["SKILL.md"]) != identity.digest:
+        if compute_private_skill_package_digest(normalized_files) != identity.digest:
             raise ValueError("installed Skill content does not match its identity digest")
         record = InstalledSkillRecord(
             identity=identity,
@@ -106,25 +105,9 @@ class SQLiteSkillsStateStore:
             operator=operator,
         )
         with self._database.connect() as connection:
-            existing = connection.execute(
-                """
-                SELECT * FROM skill_installations
-                WHERE owner = ? AND name = ? AND scope = ? AND namespace = ? AND version = ?
-                """,
-                (owner, identity.name, identity.scope, identity.namespace, identity.version),
-            ).fetchone()
-            if existing is not None:
-                existing_record = _row_to_installation(existing)
-                if (
-                    existing_record.identity.digest != identity.digest
-                    or existing_record.identity.source != identity.source
-                    or dict(existing_record.files) != dict(normalized_files)
-                ):
-                    raise ValueError("installed Skill version is immutable")
-                return existing_record
             connection.execute(
                 """
-                INSERT INTO skill_installations (
+                INSERT OR IGNORE INTO skill_installations (
                     owner, name, version, digest, scope, namespace, source,
                     files_json, installed_at, operator
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -142,6 +125,22 @@ class SQLiteSkillsStateStore:
                     operator,
                 ),
             )
+            existing = connection.execute(
+                """
+                SELECT * FROM skill_installations
+                WHERE owner = ? AND name = ? AND scope = ? AND namespace = ? AND version = ?
+                """,
+                (owner, identity.name, identity.scope, identity.namespace, identity.version),
+            ).fetchone()
+            if existing is None:
+                raise RuntimeError("installed Skill record is missing after insert")
+            existing_record = _row_to_installation(existing)
+            if (
+                existing_record.identity.digest != identity.digest
+                or existing_record.identity.source != identity.source
+                or dict(existing_record.files) != dict(normalized_files)
+            ):
+                raise ValueError("installed Skill version is immutable")
             connection.execute(
                 """
                 INSERT OR IGNORE INTO skill_component_state (
@@ -159,7 +158,7 @@ class SQLiteSkillsStateStore:
                     operator,
                 ),
             )
-        return record
+        return existing_record
 
     def installed_component(
         self,
@@ -382,21 +381,6 @@ def _normalize_files(files: Mapping[str, str]) -> Mapping[str, str]:
     if total > _MAX_PACKAGE_BYTES:
         raise ValueError("installed Skill package exceeds its bound")
     return MappingProxyType(dict(sorted(normalized.items())))
-
-
-def _component_digest(content: str) -> str:
-    raw = content.encode("utf-8")
-    if not raw.startswith(b"---\n"):
-        raise ValueError("installed Skill package is invalid")
-    end = raw.find(b"\n---", 4)
-    if end < 0:
-        raise ValueError("installed Skill package is invalid")
-    digest = sha256()
-    digest.update(b"skill-manifest-v1\n")
-    digest.update(raw[: end + 4])
-    digest.update(b"\nskill-body-v1\n")
-    digest.update(raw[end + 4 :])
-    return digest.hexdigest()
 
 
 def _row_to_record(row: Any) -> SkillStateRecord:

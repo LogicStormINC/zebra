@@ -154,6 +154,47 @@ def test_cli_queued_run_does_not_grant_configured_skills_by_default(tmp_path: Pa
     assert prepared.payload["skill_component_identities"] == [identity.model_dump(mode="json")]
 
 
+def test_cli_inspect_shows_frozen_skill_provenance(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    skills = tmp_path / "skills" / "review"
+    skills.mkdir(parents=True)
+    (skills / "SKILL.md").write_text(
+        "---\nname: review\ndescription: Review\nversion: 1.0.0\n---\nGUIDANCE\n",
+        encoding="utf-8",
+    )
+    settings = replace(
+        _settings(database_path),
+        skill_roots_system=(str(skills.parent),),
+        skills_state_path=str(tmp_path / "skills-state.sqlite"),
+    )
+    identity = LocalSkillCatalog(
+        build_scoped_skill_roots(system=(str(skills.parent),))
+    ).read("review").metadata.component_identity()
+    queued = execute(
+        [
+            "run",
+            "Inspect frozen provenance",
+            "--skill",
+            "review",
+            "--workspace",
+            str(tmp_path),
+            "--database",
+            str(database_path),
+        ],
+        settings=settings,
+    )
+
+    inspected = execute(
+        ["inspect", str(queued.payload["session_id"]), "--database", str(database_path)],
+        settings=settings,
+    )
+
+    assert inspected.payload["workspace"]["skill_components"] == ["review"]
+    assert inspected.payload["workspace"]["skill_component_identities"] == [
+        identity.model_dump(mode="json")
+    ]
+
+
 def test_cli_direct_run_freezes_explicit_system_skill(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

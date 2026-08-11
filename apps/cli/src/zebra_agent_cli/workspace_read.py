@@ -20,6 +20,12 @@ def serialize_workspace_projection(
     }
     if workspace.policy_profile is not None:
         body["policy_profile"] = workspace.policy_profile
+    if workspace.skill_components is not None:
+        body["skill_components"] = list(workspace.skill_components)
+    if workspace.skill_component_identities is not None:
+        body["skill_component_identities"] = [
+            identity.model_dump(mode="json") for identity in workspace.skill_component_identities
+        ]
     if workspace.last_attempt_number is not None:
         body["last_attempt_number"] = workspace.last_attempt_number
     if workspace.runtime_name is not None:

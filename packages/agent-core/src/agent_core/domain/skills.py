@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from hashlib import sha256
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -45,6 +46,19 @@ class SkillComponentIdentity(BaseModel):
         if not normalized or len(normalized) > 256:
             raise ValueError("skill component identity text is invalid")
         return normalized
+
+
+def compute_private_skill_package_digest(files: Mapping[str, str]) -> str:
+    """Return the canonical digest of an immutable private Skill package."""
+    digest = sha256(b"private-skill-package-v1\n")
+    for path, content in sorted(files.items()):
+        path_bytes = path.encode("utf-8")
+        content_bytes = content.encode("utf-8")
+        digest.update(len(path_bytes).to_bytes(4, "big"))
+        digest.update(path_bytes)
+        digest.update(len(content_bytes).to_bytes(8, "big"))
+        digest.update(content_bytes)
+    return digest.hexdigest()
 
 
 def normalize_skill_components(value: Sequence[str]) -> tuple[str, ...]:

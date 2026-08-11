@@ -16084,6 +16084,7 @@ gain new data authority. Simple Tasks remain valid without either contract.
 - Branch: `codex/znx-user-skill-lifecycle`
 - Exact base: `10af5d2396262ee830eb275bf363e8711af29766`
 - Owned paths:
+  `packages/agent-core/src/agent_core/domain/skills.py`,
   `packages/agent-storage/src/agent_storage/skills_state.py`,
   `packages/agent-tools/src/agent_tools/skills_catalog.py`,
   `packages/agent-tools/src/agent_tools/skills_scope.py`,
@@ -16094,9 +16095,11 @@ gain new data authority. Simple Tasks remain valid without either contract.
   `apps/cli/src/zebra_agent_cli/cli_parser.py`,
   `apps/cli/src/zebra_agent_cli/run_command_execution.py`,
   `apps/cli/src/zebra_agent_cli/execution.py`,
+  `apps/cli/src/zebra_agent_cli/workspace_read.py`,
   `apps/worker/src/zebra_agent_worker/execution.py`,
   `tests/integration/test_portable_skill_contract.py`,
   `tests/integration/test_user_skill_lifecycle_contract.py`,
+  `tests/integration/test_user_skill_snapshot_contract.py`,
   `tests/agent_tools/test_skills_scope.py`,
   `tests/api/test_skills_admin.py`,
   `tests/test_skills_admin_contract_matrix.py`,
@@ -16158,6 +16161,25 @@ filter keeps it out of ownerless legacy catalog traversal.
   diff-check passed. Full pytest is `2132 passed, 9 failed, 9 skipped` (same
   exact-base failure set); full Ruff (11), mypy (13), and file-size (13) remain
   inherited. `skills_catalog.py` is 493 lines (under its 500-line cap).
+- Third-candidate red evidence: an uninstalled private exact identity ran in both
+  the gateway and worker; a later system name collision blocked a pinned private
+  snapshot but could still leak into a new name-only grant; an owner-root symlink
+  crossed namespaces; and changing `references/guide.md` left the private digest
+  unchanged. Concurrent identical installation also raised SQLite uniqueness,
+  while CLI inspection omitted frozen Skill identities.
+- Third-candidate closure: private exact grants now require their durable
+  installation snapshot, snapshot-first reads tolerate later live collisions,
+  ordinary name-only discovery remains collision-fail-closed, and private package
+  digests cover the bounded declarative file map. Private owner roots reject a
+  symlink escape; identical concurrent installs reload one immutable row; and CLI
+  inspection projects the frozen identity using the API's existing JSON shape.
+- Third validation: lifecycle/CLI/catalog matrix `92 passed`; Goal/Plan `39
+  passed`; release eval `10/10`; changed-path Ruff, production-path mypy, and
+  `git diff --check` passed. Full pytest is `2139 passed, 9 failed, 9 skipped`,
+  the stable exact-base set. A one-off runtime timeout on one current full run and
+  a one-off migration-init lock on one base full run both passed on isolated
+  current/base reruns. Full Ruff (11), mypy (13), and file-size (13) match base.
+  `skills_catalog.py` is 476 lines and `skills_scope.py` is 473 lines.
 
 #### Explicit Non-Goals
 

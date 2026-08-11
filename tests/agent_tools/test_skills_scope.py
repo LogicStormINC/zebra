@@ -163,6 +163,31 @@ def test_private_owner_roots_are_namespace_isolated_and_cross_owner_catalogs_fai
         LocalSkillCatalog((*owner_a, *owner_b), inventory_only=True)
 
 
+def test_private_owner_root_symlink_cannot_cross_to_another_owner(tmp_path: Path) -> None:
+    private_root = tmp_path / "private" / ".zebra-private"
+    owner_b = private_root / "owner-b"
+    owner_b.mkdir(parents=True)
+    owner_a = private_root / "owner-a"
+    owner_a.symlink_to(owner_b, target_is_directory=True)
+    root = ScopedSkillRoot(
+        scope=SkillScope.USER,
+        root=str(owner_a),
+        namespace="owner-a",
+        owner="owner-a",
+    )
+
+    with pytest.raises(SkillCatalogError, match="private Skill root"):
+        LocalSkillCatalog((root,), inventory_only=True)
+
+    missing = ScopedSkillRoot(
+        scope=SkillScope.USER,
+        root=str(private_root / "owner-c"),
+        namespace="owner-c",
+        owner="owner-c",
+    )
+    assert LocalSkillCatalog((missing,), inventory_only=True).list()[0] == ()
+
+
 def _skill(root: Path, name: str, description: str) -> None:
     root.mkdir(parents=True, exist_ok=True)
     (root / "SKILL.md").write_text(
