@@ -156,6 +156,15 @@
   validates resource/idempotency/SSRF boundaries and returns bounded receipts;
   focused tests pass (`7`) and the Integrations package is `143 passed,
   3 skipped`.
+- `EMB-TRN-READ-E2E-01` is `In Progress` on `codex/emb-trn-read-e2e-01`.
+  Zebra now owns a fail-closed real-service runner for Trench/BFF/Zebra
+  read-only acceptance, with nine named scenarios, secret-free evidence and a
+  business-table snapshot invariant. Its contract tests pass (`4`), Ruff and
+  targeted Mypy pass; the real run is currently `BLOCKED` because this machine
+  has no isolated Trench/Zebra HTTP, PG, Redis, object-store, Grant exchange or
+  Worker-restart inputs. No cross-service pass is claimed. A separate seam is
+  recorded: `build_worker_tool_gateway` still composes `LocalToolGateway`, so
+  the reviewed Host Tool adapter is not yet in the Worker production path.
 - Gate 3 combined API/Integrations matrix is `204 passed, 3 skipped`; no Trench
   business Tool or Kubernetes gVisor E2E completion is claimed.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on

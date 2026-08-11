@@ -1723,6 +1723,53 @@ metadata.
   parent remains `Review` until the branch is merged and the release gates are
   repeated on the resulting mainline.
 
+### EMB-TRN-READ-E2E-01 - Trench Read-Only Cross-Service Acceptance
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Suggested role: `QA / SRE / PLATFORM`
+- Depends on: `TRN-READ-01`, `TRN-CPK-BFF-01`, `TRN-PANEL-01`,
+  `EMB-AGUI-API-01`, and the reviewed Host Tool contract
+- Branch: `codex/emb-trn-read-e2e-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/emb-trn-read-e2e-01/zebra-agent`
+- Owned paths: `tests/compose/trench_read_e2e/` (new),
+  `docs/EMB-TRN-READ-E2E-01.md` (new), this task card and focused
+  `PROGRESS.md`
+
+#### Goal
+
+Provide one fail-closed runner for the real Trench Event Detail → BFF → Zebra
+API/Worker → durable stream/read Tool boundary. It must retain per-scenario
+evidence and compare a read-only Trench business snapshot before and after the
+run.
+
+#### Acceptance
+
+- The runner requires real Zebra/Trench HTTP, PostgreSQL, Redis and object-store
+  health inputs; missing credentials or operator hooks produce a structured
+  blocked result and a non-zero exit code, never a skip or pass.
+- Read task, long task, disconnect/replay, Worker restart, stop/resume, Grant
+  replay and bounded Host Tool failure each have an independently named result.
+- The runner sends browser cookies only to Trench/BFF or the Grant exchange,
+  never to Zebra; evidence contains no cookie, Grant, DSN or response secret.
+- The Trench business snapshot is byte-for-byte stable across the read-only
+  scenarios. The current Worker composition seam is recorded separately when
+  Host Tool execution is not wired into the production Worker.
+
+#### Explicit Non-Goals
+
+- no Trench implementation changes, schema changes or frontend changes
+- no production credential provisioning, rollout or Kubernetes/gVisor claim
+- no treating focused Trench/Zebra tests as a real cross-service pass
+
+#### Review Evidence
+
+- The runner manifest, contract tests and evidence schema are added in this
+  branch. Local execution without the required deployment inputs is expected
+  to return `BLOCKED` with the missing variable names; no real cross-service
+  pass is claimed until an isolated PG/Redis/object-store deployment supplies
+  the inputs.
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

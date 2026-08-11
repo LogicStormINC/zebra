@@ -1,0 +1,37 @@
+{
+  "schema_version": "zebra.trench-read-e2e.runner-manifest.v1",
+  "runner": {
+    "script": "tests/compose/trench_read_e2e/run_acceptance.py",
+    "timeout_seconds": 1800,
+    "evidence_env": "ZEBRA_TRENCH_READ_E2E_EVIDENCE_DIR"
+  },
+  "scenarios": [
+    {"id": "infrastructure", "kind": "health-and-authority-probes"},
+    {"id": "read_task", "kind": "bff-bootstrap-and-scoped-read-tool"},
+    {"id": "long_task", "kind": "bff-agui-run"},
+    {"id": "disconnect_replay", "kind": "durable-cursor-reconnect"},
+    {"id": "worker_restart", "kind": "operator-restart-and-replay"},
+    {"id": "stop_resume", "kind": "durable-control-admission"},
+    {"id": "grant_replay", "kind": "single-use-host-grant"},
+    {"id": "host_tool_failure", "kind": "bounded-read-tool-error"},
+    {"id": "zero_writes", "kind": "business-snapshot-invariant"}
+  ],
+  "required_environment": [
+    "TRENCH_E2E_BFF_URL",
+    "TRENCH_E2E_READ_TOOLS_URL",
+    "TRENCH_E2E_SESSION_COOKIE",
+    "TRENCH_E2E_EVENT_ID",
+    "TRENCH_E2E_HEALTH_URL",
+    "TRENCH_E2E_DATABASE_DSN",
+    "TRENCH_E2E_REDIS_URL",
+    "TRENCH_E2E_OBJECT_STORE_HEALTH_URL",
+    "TRENCH_E2E_BUSINESS_SNAPSHOT_URL",
+    "ZEBRA_E2E_BASE_URL",
+    "ZEBRA_E2E_HEALTH_URL",
+    "ZEBRA_E2E_DATABASE_DSN",
+    "ZEBRA_E2E_REDIS_URL",
+    "ZEBRA_E2E_OBJECT_STORE_HEALTH_URL",
+    "ZEBRA_E2E_GRANT_EXCHANGE_URL",
+    "ZEBRA_E2E_WORKER_RESTART_URL"
+  ]
+}
