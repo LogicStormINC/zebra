@@ -6,8 +6,8 @@
 | Profile | 只接受 `cloud`/`production`，固定 `gvisor` + workspace quota |
 | 镜像 | repository + `sha256` digest，禁止 floating tag |
 | 凭据 | 只引用预先创建的 Kubernetes Secret，不在 chart 生成密码 |
-| 当前证据 | 静态 chart/schema 检查、`helm lint/template` 已通过；无 Kubernetes API server |
-| 生产含义 | 不构成 cluster、gVisor E2E、HA 或生产 rollout 批准 |
+| 当前证据 | 静态 chart/schema、`helm lint/template`，以及隔离 Linux `colima-zebra-gvisor` 的真实 Helm 安装均通过 |
+| 生产含义 | 证明本地 Linux/gVisor 部署契约，不构成 managed cluster、HA 或生产 rollout 批准 |
 
 Chart 位于 [`deploy/helm/zebra-agent/`](../deploy/helm/zebra-agent/)。它延续已验证的
 Docker application overlay，但把进程边界搬到 Kubernetes：migration 作为 pre-install/
@@ -63,10 +63,26 @@ helm template zebra deploy/helm/zebra-agent --values deploy/helm/zebra-agent/val
 
 本 worktree 的静态测试验证 YAML/template 必需片段、schema digest/secret/runtime 约束和
 无密码 literal；`helm 4.2.3 lint` 与 `helm template` 已通过，模板渲染出 7 个资源，默认
-值按 schema fail closed。当前没有可用的 Kubernetes API server，因此
-`kubectl apply --dry-run=server`、RuntimeClass 存在性和 gVisor E2E 仍待真实集群验证。
+值按 schema fail closed。
 
-## 4. 明确后续门
+## 4. 隔离 Linux Helm 验证
+
+在 `colima-zebra-gvisor`（Ubuntu 24.04.4、k3s `v1.34.8+k3s1`、containerd `2.3.1`）中，
+使用当前分支构建的 ARM64 镜像和临时 PostgreSQL/Redis/MinIO 依赖完成一次真实安装：
+
+- migration pre-install hook、API Deployment `2/2`、Worker Deployment `2/2` 和 Service
+  均成功；首次安装暴露 ServiceAccount hook 顺序缺陷，已将 ServiceAccount 设为
+  `pre-install,pre-upgrade`、weight `-20`，migration 为 `-10`，并补充回归测试；
+- 四个 cloud-agent Pod 的 `runtimeClassName=gvisor`，容器 `/proc/version` 为
+  `4.19.0-gvisor`，运行 UID `65532`；
+- API Pod 内部 `/health` 返回 `status=ok`、`profile=production`、`runtime_class=gvisor`、
+  `fallback_allowed=false`；Worker 删除一个 Pod 后 Deployment 自动恢复为 `2/2`；
+- PostgreSQL migration 达到 v17，Host registry seed 成功；验证结束后 Helm release 和
+  namespace 均删除，未留下集群资源。
+
+这是隔离 Linux task-level evidence，不是托管 Kubernetes、生产 HA 或 rollout 批准。
+
+## 5. 明确后续门
 
 本卡不实现 cluster-level NetworkPolicy、gVisor RuntimeClass、managed PostgreSQL/S3、
 PITR、滚动发布或 Trench。`CLOUD-K8S-GVISOR-E2E-01` 仍需真实测试集群验证长任务跨

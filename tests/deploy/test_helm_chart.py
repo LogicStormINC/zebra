@@ -53,7 +53,10 @@ def test_migration_api_worker_and_service_boundaries_are_explicit() -> None:
     api = _read("api-deployment.yaml")
     worker = _read("worker-deployment.yaml")
     service = _read("service.yaml")
+    service_account = _read("serviceaccount.yaml")
     assert '"helm.sh/hook": pre-install,pre-upgrade' in migration
+    assert '"helm.sh/hook": pre-install,pre-upgrade' in service_account
+    assert '"helm.sh/hook-weight": "-20"' in service_account
     assert "backoffLimit: 0" in migration
     assert "command: [python, docker/migrate.py]" in migration
     assert "readinessProbe:" in api and "livenessProbe:" in api and "startupProbe:" in api

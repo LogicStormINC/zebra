@@ -1220,11 +1220,12 @@ gVisor RuntimeClass and secret references without embedding database credentials
 - Database/S3/Redis/auth material arrives only through Secret refs; chart
   templates contain no password literals or generated Secret data.
 - Static render tests pass and any available `helm lint/template` evidence is
-  recorded; no Kubernetes cluster, gVisor E2E or production rollout is claimed.
+  recorded; isolated task-level Kubernetes evidence may be recorded, but no
+  managed production rollout is claimed.
 
 #### Explicit Non-Goals
 
-- no Helm release, cluster credentials, managed database or production deploy
+- no managed database, cluster credentials or production deploy
 - no gVisor runtime implementation or cluster-level NetworkPolicy/E2E
 - no changes to Docker image, API/Worker code or original dirty worktree edits
 
@@ -1237,11 +1238,15 @@ gVisor RuntimeClass and secret references without embedding database credentials
 - `helm template` renders `7` resources: migration Job, API/Worker Deployments,
   API Service, two PDBs and ServiceAccount. Default values fail closed with
   schema errors.
-- `kubectl apply --dry-run=client` cannot reach the configured local cluster;
-  `--validate=false` still cannot recognize resources without an API server.
-  No server-side or gVisor cluster claim is made.
-- `make check`: file-size `1231` files, Ruff clean, Mypy `605` files, eval
-  `10/10`; full suite `2151 passed, 271 skipped`.
+- On isolated `colima-zebra-gvisor` (Ubuntu 24.04.4/k3s v1.34.8/containerd 2.3.1),
+  a real Helm install passed: migration hook, API `2/2`, Worker `2/2`, Service,
+  `RuntimeClass=gvisor`, `/proc/version=4.19.0-gvisor`, UID `65532`, production
+  `/health`, and Worker Pod deletion/recovery. The migration/ServiceAccount hook
+  ordering defect found by this run is fixed with weights `-20`/`-10` and covered
+  by the chart test.
+- PostgreSQL reached migration v17 and the Host registry seed passed; Helm release
+  and namespace cleanup passed. This remains local task evidence, not managed
+  production or canonical remote CI evidence.
 
 ### CLOUD-REAL-SVC-CI-01 - Canonical Real-Service CI
 

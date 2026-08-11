@@ -109,10 +109,10 @@
 - `CLOUD-DEPLOY-HELM-01` is in `Review` on
   `codex/cloud-deploy-helm-01`. Its fail-closed chart renders migration/API/
   Worker, Service, Secret refs, non-root/read-only pods, resources, PDBs and
-  gVisor RuntimeClass. `helm lint/template` and static tests pass; the
-  isolated Linux `colima-zebra-gvisor` runner now proves RuntimeClass,
-  restart/resume, quota, NetworkPolicy and cleanup. Managed rollout evidence is
-  still not claimed.
+  gVisor RuntimeClass. `helm lint/template` and static tests pass. A real
+  isolated Helm install now proves migration hook ordering, API/Worker `2/2`,
+  production `/health`, gVisor `/proc/version`, UID `65532`, Worker recovery,
+  and cleanup; managed rollout evidence is still not claimed.
 - `CLOUD-REAL-SVC-CI-01` is in `Review` on
   `codex/cloud-real-svc-ci-01`. Its canonical workflow now runs separate
   application, Redis live, PITR, S3 and fresh-restore matrix runners with
