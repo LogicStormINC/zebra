@@ -1327,6 +1327,17 @@ machine-readable evidence.
 - no fallback to runc/crun when gVisor is unavailable
 - no claim of completion until a real Linux gVisor-enabled cluster passes
 
+#### Review Evidence
+
+- The isolated `colima-zebra-gvisor` Linux cluster passed the runner after the
+  Worker API egress policy was added: `ZEBRA_K8S_GVISOR_E2E_RESULT=PASS`,
+  `WORKER_RESTART_RESUME=PASS checkpoint=2`, `WORKSPACE_QUOTA=PASS`,
+  `NETWORK_POLICY=PASS`, and namespace cleanup succeeded. Runtime evidence is
+  Ubuntu 24.04.4 / k3s v1.34.8 / containerd 2.3.1 with
+  `RuntimeClass/gvisor` handler `runsc`.
+- This is task-level local Linux evidence only; it does not claim remote
+  canonical CI, a managed cluster, or a production rollout.
+
 ### EMB-TOOL-CON-01 - Host Tool Contract Extension
 
 - Status: `Review`

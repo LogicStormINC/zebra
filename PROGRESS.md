@@ -118,9 +118,10 @@
   Kubernetes rollout is claimed.
 - `CLOUD-K8S-GVISOR-E2E-01` is in `Review` on
   `codex/cloud-real-svc-ci-01`. The fail-closed Kubernetes runner and dedicated
-  workflow are implemented; the executed runner retained evidence showing the
-  current OrbStack cluster has no `gvisor` RuntimeClass (and disables
-  NetworkPolicy), so no Kubernetes E2E pass is claimed yet.
+  workflow are implemented. An isolated Linux `colima-zebra-gvisor` cluster
+  now passes the full runner (`WORKER_RESTART_RESUME`, quota, NetworkPolicy and
+  cleanup); this is local task evidence, not remote canonical CI or managed
+  production rollout evidence.
 - `EMB-TOOL-CON-01` is in `Review` on
   `codex/cloud-real-svc-ci-01`. `ToolContract`/`ToolResult` now carry Host
   execution location, scopes, risk, bounds, idempotency and typed receipt

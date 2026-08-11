@@ -37,7 +37,19 @@ GitHub 手动 workflow 位于 `.github/workflows/k8s-gvisor-e2e.yml`，使用带
 
 ## 当前证据边界
 
-本机 OrbStack Kubernetes 可启动并通过 API readiness，但当前只有 `crun`、`lunatic`、
-`spin` 等 RuntimeClass，没有 `gvisor/runsc`；因此本任务尚未有真实 gVisor E2E
-通过记录。直接运行 runner 会在 RuntimeClass preflight fail closed，这是预期安全
-行为；未将普通集群、Helm template 或 Docker gVisor smoke 计为本卡完成。
+在隔离的 `colima-zebra-gvisor` Linux VM（Ubuntu 24.04.4、kernel 6.8、k3s
+v1.34.8、containerd 2.3.1）中注册了 `RuntimeClass/gvisor`（handler=`runsc`，
+runsc `release-20260803.0`），并运行：
+
+```text
+ZEBRA_K8S_GVISOR_E2E_RESULT=PASS
+WORKER_RESTART_RESUME=PASS checkpoint=2
+WORKSPACE_QUOTA=PASS
+NETWORK_POLICY=PASS
+cleanup=true
+```
+
+证据目录：`/tmp/zebra-k8s-evidence-0811-final`。Runner 的 Worker API 出站规则、
+API discovery 重试和全量 Worker 日志证据也在该真实 Linux 运行中验证。该证据是
+本地隔离集群的任务级 PASS，不等同于远程 canonical CI、托管 Kubernetes 或生产
+rollout；原有 OrbStack context 保持未切换。
