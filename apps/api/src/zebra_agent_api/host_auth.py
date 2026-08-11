@@ -9,6 +9,7 @@ from hashlib import sha256
 
 from agent_core.domain.host_authority import HostSessionGrant
 from agent_security import (
+    CachingJwksKeyResolver,
     HostGrantBindingError,
     HostGrantSecurityError,
     HostGrantVerificationConfig,
@@ -21,6 +22,21 @@ from agent_storage import HostGrantAttempt, HostRegistryRecord, PostgresHostAuth
 from zebra_agent_api.http import HostGrantHttpRequest, HostGrantRequestAuthorizer
 
 _DEFAULT_REQUIRED_SCOPES = ("agent.run",)
+
+
+def build_postgres_host_grant_authorizer(
+    database_url: str,
+    *,
+    deployment_namespace: str,
+) -> PostgresHostGrantRequestAuthorizer:
+    """Compose the production Host Grant adapter over the cloud authority store."""
+    return PostgresHostGrantRequestAuthorizer(
+        registry=PostgresHostAuthorityStore(
+            database_url,
+            deployment_namespace=deployment_namespace,
+        ),
+        decoder=PyJwtHostGrantDecoder(CachingJwksKeyResolver()),
+    )
 
 
 @dataclass(frozen=True)

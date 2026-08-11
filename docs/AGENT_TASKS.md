@@ -1558,6 +1558,9 @@ JWT/JWKS transport bounded and injectable; never persist or log raw bearer data.
   `PostgresHostGrantRequestAuthorizer`: it loads active registry rows, verifies
   a signed RS256 Grant, checks issuer/audience/host/namespace/origin/scope,
   consumes `jti` atomically and maps replay to a secret-free HTTP rejection.
+- The production `create_http_app` factory now composes that authorizer by
+  default when the concrete PostgreSQL cloud store bundle is active; explicit
+  injection remains available for tests and alternate composition roots.
 - JWT decision is `PyJWT[crypto]` with an injectable key resolver. The bundled
   resolver pins registry HTTPS JWKS URIs, uses a bounded 5-second timeout and
   300-second cache, and decoder failures do not expose token or key details.
@@ -1765,10 +1768,13 @@ run.
 #### Review Evidence
 
 - The runner manifest, contract tests and evidence schema are added in this
-  branch. Local execution without the required deployment inputs is expected
-  to return `BLOCKED` with the missing variable names; no real cross-service
-  pass is claimed until an isolated PG/Redis/object-store deployment supplies
-  the inputs.
+  branch. The integrated Trench stack passes its focused backend (`66` API,
+  `49` cleaning), migration SQL and frontend build/test/lint; the integrated
+  Zebra stack passes `make check`, `2209 passed, 275 skipped`, and all five
+  local Cloudline runners. The actual cross-service execution still returns
+  `BLOCKED` with all 16 deployment inputs missing; no real cross-service pass
+  is claimed until an isolated PG/Redis/object-store deployment supplies the
+  inputs.
 
 ### EMB-HOST-RUNTIME-01 - Worker Host Tool runtime composition
 

@@ -116,8 +116,9 @@
   green; no remote Actions or Kubernetes rollout is claimed.
 - `CLOUD-K8S-GVISOR-E2E-01` is `In Progress` on
   `codex/cloud-real-svc-ci-01`. The fail-closed Kubernetes runner and dedicated
-  workflow are being added; the current OrbStack cluster has no `gvisor`
-  RuntimeClass, so no Kubernetes E2E pass is claimed yet.
+  workflow are being added; the executed runner retained evidence showing the
+  current OrbStack cluster has no `gvisor` RuntimeClass (and disables
+  NetworkPolicy), so no Kubernetes E2E pass is claimed yet.
 - `EMB-TOOL-CON-01` is in `Review` on
   `codex/cloud-real-svc-ci-01`. `ToolContract`/`ToolResult` now carry Host
   execution location, scopes, risk, bounds, idempotency and typed receipt
@@ -138,8 +139,10 @@
   HTTP/command/live/stream (`52 passed`) matrices are green.
 - `EMB-AUTH-01` is in `Review` on `codex/cloud-real-svc-ci-01`. A signed RS256
   PyJWT decoder with bounded injectable JWKS resolution now composes with the
-  PostgreSQL registry/replay authorizer; the real Host PostgreSQL/API matrix is
-  `5 passed`, with no raw token in HTTP/audit evidence.
+  PostgreSQL registry/replay authorizer; the production HTTP factory wires that
+  authorizer by default for the concrete cloud store bundle, while explicit
+  injection remains available for tests and alternate roots. The real Host
+  PostgreSQL/API matrix is `5 passed`, with no raw token in HTTP/audit evidence.
 - `EMB-AGUI-CMD-01` is `Review` on `codex/cloud-real-svc-ci-01`. The bounded
   `run`/`resume`/`stop` envelope resolves `threadId` to the active durable
   Segment and calls only the existing command service; focused command tests
@@ -161,9 +164,14 @@
   Zebra now owns a fail-closed real-service runner for Trench/BFF/Zebra
   read-only acceptance, with nine named scenarios, secret-free evidence and a
   business-table snapshot invariant. Its contract tests pass (`4`), Ruff and
-  targeted Mypy pass; the real run is currently `BLOCKED` because this machine
-  has no isolated Trench/Zebra HTTP, PG, Redis, object-store, Grant exchange or
-  Worker-restart inputs. No cross-service pass is claimed. A separate seam is
+  targeted Mypy pass; the integrated Trench branch passes the focused backend
+  (`66` API, `49` cleaning), migration SQL, frontend build/test/lint, and the
+  Zebra branch passes the full quality gate (`2209 passed, 275 skipped`). The
+  five local Cloudline runners (application, Redis fan-out, PITR, S3 recovery,
+  and fresh restore) are green. The real cross-service run is still `BLOCKED`
+  because this machine has no isolated Trench/Zebra HTTP, PG, Redis,
+  object-store, Grant exchange or Worker-restart inputs; no cross-service pass
+  is claimed. A separate seam is
   recorded: `build_worker_tool_gateway` still composes `LocalToolGateway`, so
   the reviewed Host Tool adapter is not yet in the Worker production path. The
   required successors are now explicitly frozen as `EMB-HOST-RUNTIME-01` (Zebra

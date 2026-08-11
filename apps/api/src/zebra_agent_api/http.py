@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_integrations import GitHubPullRequestTransport
 from agent_security import CredentialBroker, HostGrantSecurityError
-from agent_storage import CloudCompositionSettings, ControlPlaneStores
+from agent_storage import CloudCompositionSettings, ControlPlaneStores, PostgresControlPlaneStores
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -82,9 +82,16 @@ def create_http_app(
         credential_env=credential_env,
         github_transport=github_transport,
     )
+    active_host_grant_authorizer = host_grant_authorizer
+    if active_host_grant_authorizer is None and active_settings.deployment != "local":
+        active_host_grant_authorizer = _compose_production_host_grant_authorizer(
+            active_settings,
+            api.stores,
+            cloud_composition=cloud_composition,
+        )
     adapter = RouteAdapter(api)
     exact_host_origins = _resolve_host_origins(
-        host_grant_authorizer,
+        active_host_grant_authorizer,
         host_grant_origins,
     )
     app = FastAPI(title="Zebra Agent API")
@@ -103,7 +110,7 @@ def create_http_app(
         auth_error = _authorize_request(
             request,
             active_settings,
-            host_grant_authorizer=host_grant_authorizer,
+            host_grant_authorizer=active_host_grant_authorizer,
             host_grant_origins=exact_host_origins,
         )
         if auth_error is not None:
@@ -185,6 +192,23 @@ def create_http_app(
     app.add_api_route("/", handle, methods=HTTP_METHODS, response_model=None)
     app.add_api_route("/{full_path:path}", handle, methods=HTTP_METHODS, response_model=None)
     return app
+
+
+def _compose_production_host_grant_authorizer(
+    settings: ZebraAgentSettings,
+    stores: ControlPlaneStores,
+    *,
+    cloud_composition: CloudCompositionSettings | None,
+) -> HostGrantRequestAuthorizer | None:
+    """Build the default cloud authorizer only for the PostgreSQL composition."""
+    if not isinstance(stores, PostgresControlPlaneStores):
+        return None
+    from zebra_agent_api.host_auth import build_postgres_host_grant_authorizer
+
+    return build_postgres_host_grant_authorizer(
+        cloud_composition.dsn if cloud_composition is not None else settings.database_url,
+        deployment_namespace=stores.deployment_namespace,
+    )
 
 
 def _is_stream_request(request: Request) -> bool:
