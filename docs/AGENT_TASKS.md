@@ -1770,6 +1770,50 @@ run.
   pass is claimed until an isolated PG/Redis/object-store deployment supplies
   the inputs.
 
+### EMB-HOST-RUNTIME-01 - Worker Host Tool runtime composition
+
+- Status: `Locked`
+- Owner: unassigned
+- Suggested role: `WORKER / API / INTEGRATIONS / SECURITY`
+- Depends on: `EMB-HOST-GW-01`, `EMB-AUTH-HTTP-01`, and the Trench-side
+  `TRN-HOST-READ-AUTH-01` service-auth contract.
+- Branch/worktree: to be assigned only when explicitly activated.
+- Owned paths: `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `apps/api/src/zebra_agent_api/http.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`, focused API/Core/
+  Worker tests, this task card and focused `PROGRESS.md`.
+
+#### Goal
+
+Carry only the verified, non-secret Host authority context from the API command
+boundary into durable task recovery, then compose the typed Host Tool Gateway in
+the Worker execution path without creating a second Tool model or bypassing
+Lease/Fence ownership.
+
+#### Acceptance
+
+- Raw bearer Grants never enter Events, `RecoveredTask`, model context, Tool
+  output, receipts or evidence; only validated `HostContextEnvelope` fields are
+  persisted and replayed.
+- Worker manifest discovery and workload/namespace/resource/scope binding fail
+  closed before the model can select a Host Tool; malformed or changed manifests
+  cannot silently fall back to local execution.
+- Host read Tools remain read-only in the effect guard, while any future Host
+  write contract remains fenced and idempotent; lease loss prevents invocation
+  and no Trench business write is admitted by this card.
+- Focused fake-transport and API→Event→Worker recovery tests prove context
+  binding, expiry/mismatch rejection, manifest exposure, bounded failure mapping
+  and cleanup.
+
+#### Explicit Non-Goals
+
+- no Trench route/schema implementation, browser-session changes or production
+  credential provisioning (owned by `TRN-HOST-READ-AUTH-01` and deployment work)
+- no new parallel Tool registry, JWT decoder or replay ledger
+- no activation of the cross-service E2E gate before both sides are merged
+
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
 - Status: `Review`

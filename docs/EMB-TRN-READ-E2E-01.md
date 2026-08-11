@@ -49,6 +49,25 @@ E2E 通过。
 不能把 Trench read Tool 的直接 HTTP 检查描述成完整的 Worker→Host Tool 链路；
 接线应作为后续 Zebra 实现卡，而不是在本 runner 中绕过边界。
 
+## 必须先激活的后续任务
+
+这个缺口不是本卡的隐式实现范围，需由维护者分别激活以下两张卡后，才能把
+真实 E2E 从“直接 read Tool 探针”提升为完整 Worker→Host Tool 纵切：
+
+1. `EMB-HOST-RUNTIME-01`（Zebra）：把已验证的 `HostContextEnvelope` 以不含
+   secret 的 `TASK_PREPARED` authority 绑定传到 `RecoveredTask`，在 Worker
+   发现并暴露 Host manifest，按 Host/Grant scope 调用 typed gateway，并让
+   read-only Host Tool 不进入 effectful 写入队列；缺失、过期、namespace 或
+   manifest 不匹配必须 fail closed。
+2. `TRN-HOST-READ-AUTH-01`（Trench）：为 `/agent` read Tool 增加受控的
+   service-to-service workload identity / Grant binding 入口，保留既有
+   user/workspace/source scope 过滤和无业务写入约束；浏览器 Cookie 不能成为
+   Worker 调用的隐式凭据。
+
+两张卡完成后，`EMB-TRN-READ-E2E-01` 才能补充 Worker Host Tool success/
+failure 场景并申请 real-service 验收；在此之前，当前 runner 的阻断结果是
+真实边界证据，不是可以绕过的测试失败。
+
 ## 执行命令
 
 ```bash

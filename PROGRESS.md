@@ -164,7 +164,11 @@
   has no isolated Trench/Zebra HTTP, PG, Redis, object-store, Grant exchange or
   Worker-restart inputs. No cross-service pass is claimed. A separate seam is
   recorded: `build_worker_tool_gateway` still composes `LocalToolGateway`, so
-  the reviewed Host Tool adapter is not yet in the Worker production path.
+  the reviewed Host Tool adapter is not yet in the Worker production path. The
+  required successors are now explicitly frozen as `EMB-HOST-RUNTIME-01` (Zebra
+  Worker authority/context composition) and the Trench-side
+  `TRN-HOST-READ-AUTH-01` (service-to-service read Tool authentication); neither
+  is activated by this E2E card.
 - Gate 3 combined API/Integrations matrix is `204 passed, 3 skipped`; no Trench
   business Tool or Kubernetes gVisor E2E completion is claimed.
 - `CLOUD-INTEGRATION-REG-01` is in `Review` on
