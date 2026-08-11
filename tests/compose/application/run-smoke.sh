@@ -16,7 +16,7 @@ export ZEBRA_RUNTIME_CLASS=gvisor
 export ZEBRA_RUNTIME_IMAGE=zebra/runtime@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 export ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA=true
 export ZEBRA_DEPLOYMENT_NAMESPACE=application-compose-test
-export ZEBRA_AUTHORITY_ISSUER=application-compose-test-authority
+export ZEBRA_AUTHORITY_ISSUER=https://application-compose-test-authority.example
 export ZEBRA_HISTORY_SCOPE_NAMESPACE=application-compose-test-history
 export ZEBRA_CONTINUATION_SCOPE_NAMESPACE=application-compose-test-continuation
 export ZEBRA_MEMORY_CURSOR_SIGNING_KEY=application-compose-test-memory-cursor-key-32-bytes
@@ -40,6 +40,8 @@ trap cleanup EXIT
 "${BASE_COMPOSE[@]}" run --rm minio-init
 "${APP_COMPOSE[@]}" up --detach --build zebra-migrate
 "${APP_COMPOSE[@]}" wait zebra-migrate
+"${APP_COMPOSE[@]}" run --rm --no-deps --entrypoint python zebra-migrate -c \
+  'import os; from agent_storage import HostRegistryRecord, PostgresHostAuthorityStore; PostgresHostAuthorityStore(os.environ["ZEBRA_DATABASE_URL"], deployment_namespace=os.environ["ZEBRA_DEPLOYMENT_NAMESPACE"]).upsert_registry(HostRegistryRecord(host_app_id="application-compose-test", namespace_id="application-compose-test-namespace", issuer=os.environ["ZEBRA_AUTHORITY_ISSUER"], audience="zebra-application", jwks_uri="https://application-compose-test-authority.example/.well-known/jwks.json", allowed_origins=("https://application-compose.example",), algorithms=("RS256",), policy_version="application-compose-v1"))'
 "${APP_COMPOSE[@]}" up --detach --build --wait zebra-api zebra-worker
 
 curl --fail --silent --show-error "http://127.0.0.1:${API_PORT}/health" >/dev/null
