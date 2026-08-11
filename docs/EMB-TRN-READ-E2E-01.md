@@ -51,6 +51,12 @@ read Tool 的签名 workload binding。故本 runner 不再把这条接线当作
 缺口；仍不能把本机缺少真实服务输入时的阻断结果提升为完整的 Worker→Host
 Tool 生产验收。
 
+Trench 的生产 Compose 基线也已完成一次真实启动验证：backend image 包含
+vendored `OpenHarness/`，Compose 将 Host read workload allowlist/secret 传入
+API，PG/Redis/API/所有 worker/frontend 均能启动；容器内签名 manifest 和
+`events.get_event` read invoke 均成功。该证据只关闭部署打包缺口，不替代本卡
+所需的 Zebra 服务、Grant exchange、业务快照和 Worker restart hook。
+
 ## 已激活的前置任务与剩余验收
 
 以下两张前置卡已在隔离分支完成实现并进入 Review；它们不是本 runner 的隐式

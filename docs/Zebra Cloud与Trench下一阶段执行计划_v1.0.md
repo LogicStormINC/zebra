@@ -34,7 +34,9 @@ Host Tool 读取 Trench，AG-UI 可断线重放，整个链路不产生 Trench �
 已确认的代码前提包括：Worker 的 Host manifest/typed gateway 组合、Trench
 签名 service-to-service read auth，以及 BFF/验收 runner 对 `agent.run` 加上
 五个 read scope（`event.read`、`evidence.read`、`entity.read`、`topic.read`）
-的请求。未完成项只剩两类外部验收：带 `runsc` RuntimeClass 的 Kubernetes
+的请求。Trench 生产 Compose 的 OpenHarness 镜像打包和 Host read auth 环境
+接线也已补齐；真实 PG/Redis/API/Worker/frontend Compose 已启动，签名 manifest
+和 read invoke 已返回成功。未完成项只剩两类外部验收：带 `runsc` RuntimeClass 的 Kubernetes
 集群，以及同时提供 Zebra/Trench HTTP、PG、Redis、object store、Grant
 exchange 和 Worker restart hook 的隔离环境；缺少这些输入时必须保留
 `BLOCKED`，不能用 Compose 或 focused tests 替代。
