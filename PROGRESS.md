@@ -112,11 +112,13 @@
 - `CLOUD-REAL-SVC-CI-01` is in `Review` on
   `codex/cloud-real-svc-ci-01`. Its canonical workflow now runs separate
   application, Redis live, PITR, S3 and fresh-restore matrix runners with
-  bounded timeouts and always-retained evidence. The local Docker matrix is
-  green; no remote Actions or Kubernetes rollout is claimed.
-- `CLOUD-K8S-GVISOR-E2E-01` is `In Progress` on
+  bounded timeouts and always-retained evidence. The integrated Zebra line
+  `741a471f` also re-ran application Compose after seeding a valid test-only
+  Host registry; the local Docker matrix is green. No remote Actions or
+  Kubernetes rollout is claimed.
+- `CLOUD-K8S-GVISOR-E2E-01` is in `Review` on
   `codex/cloud-real-svc-ci-01`. The fail-closed Kubernetes runner and dedicated
-  workflow are being added; the executed runner retained evidence showing the
+  workflow are implemented; the executed runner retained evidence showing the
   current OrbStack cluster has no `gvisor` RuntimeClass (and disables
   NetworkPolicy), so no Kubernetes E2E pass is claimed yet.
 - `EMB-TOOL-CON-01` is in `Review` on
