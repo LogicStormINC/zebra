@@ -109,16 +109,19 @@
 - `CLOUD-DEPLOY-HELM-01` is in `Review` on
   `codex/cloud-deploy-helm-01`. Its fail-closed chart renders migration/API/
   Worker, Service, Secret refs, non-root/read-only pods, resources, PDBs and
-  gVisor RuntimeClass. `helm lint/template` and static tests pass; no cluster
-  server or gVisor E2E is available. Full validation is green:
-  `2151 passed, 271 skipped`; `make check` is green.
+  gVisor RuntimeClass. `helm lint/template` and static tests pass; the
+  isolated Linux `colima-zebra-gvisor` runner now proves RuntimeClass,
+  restart/resume, quota, NetworkPolicy and cleanup. Managed rollout evidence is
+  still not claimed.
 - `CLOUD-REAL-SVC-CI-01` is in `Review` on
   `codex/cloud-real-svc-ci-01`. Its canonical workflow now runs separate
   application, Redis live, PITR, S3 and fresh-restore matrix runners with
   bounded timeouts and always-retained evidence. The integrated Zebra line
   `741a471f` also re-ran application Compose after seeding a valid test-only
-  Host registry; the local Docker matrix is green. No remote Actions or
-  Kubernetes rollout is claimed.
+  Host registry; the local Docker matrix is green. `actionlint` now passes the
+  canonical quality workflow after removing duplicate proxy keys, and the
+  Linux container quota smoke reports real `ENOSPC`. No remote Actions or
+  managed rollout is claimed.
 - `CLOUD-K8S-GVISOR-E2E-01` is in `Review` on
   `codex/cloud-real-svc-ci-01`. The fail-closed Kubernetes runner and dedicated
   workflow are implemented. An isolated Linux `colima-zebra-gvisor` cluster

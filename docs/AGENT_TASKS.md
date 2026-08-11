@@ -1282,7 +1282,8 @@ always-cleanup semantics. A failed runner must identify its contract boundary.
 #### Review Evidence
 
 - Manifest/static workflow tests: `2 passed`; Ruff and Mypy are clean for the
-  runner wrapper/tests; Ruby YAML parser accepts `.github/workflows/quality.yml`.
+  runner wrapper/tests; Ruby YAML parser and `actionlint` accept
+  `.github/workflows/quality.yml` after duplicate proxy keys were removed.
 - Local Docker matrix completed with independent project cleanup: application
   Compose `PASS`, Redis live fan-out `1 passed`, PostgreSQL PITR `PASS`, S3
   recovery `PASS`, and PostgreSQL/Redis/MinIO fresh restore `PASS`.
@@ -1294,7 +1295,9 @@ always-cleanup semantics. A failed runner must identify its contract boundary.
   PostgreSQL ref repair; every runner reported cleanup or its own `EXIT` trap.
 - The first application attempt hit a transient Docker Hub BuildKit OAuth EOF;
   after the pinned `docker/dockerfile:1.7` image was available, the same runner
-  passed. No remote GitHub Actions run or Kubernetes claim is made here.
+  passed. A locked Linux container also ran the cloud-agent workspace quota
+  smoke with a real 8 MiB tmpfs and observed `ENOSPC`; no remote GitHub Actions
+  run or managed Kubernetes claim is made here.
 
 ### CLOUD-K8S-GVISOR-E2E-01 - Kubernetes gVisor End-to-End Evidence
 

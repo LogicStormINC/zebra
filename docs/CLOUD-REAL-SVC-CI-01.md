@@ -44,8 +44,8 @@ uv run python tests/compose/cloudline/run_real_service.py \
 
 ## 本次验证
 
-本 worktree 的静态 manifest/workflow 测试为 `2 passed`，Ruff/Mypy 和 YAML parse
-均通过。Docker 29.4.0 / Compose 5.1.2 本地矩阵最终全部通过：
+本 worktree 的静态 manifest/workflow 测试为 `2 passed`，Ruff/Mypy、YAML parse
+和 `actionlint` 均通过。Docker 29.4.0 / Compose 5.1.2 本地矩阵最终全部通过：
 
 - application Compose：`ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`；
 - live-fanout：`1 passed`；
@@ -62,3 +62,8 @@ uv run python tests/compose/cloudline/run_real_service.py \
 第一次 application 尝试因 Docker Hub BuildKit OAuth EOF 失败，预拉取固定的
 `docker/dockerfile:1.7` 后重跑通过；这是外部镜像服务瞬时故障，不被记作 runner
 的成功。尚未执行远程 GitHub Actions，故不宣称 canonical job 已在 GitHub 上运行。
+
+Cloud-agent quota 也在锁定的 `python:3.12-slim-bookworm` Linux 容器中使用
+8 MiB `tmpfs` 重跑，`tests/agent_runtime/test_workspace_quota_smoke.py` 为
+`1 passed`，实际观察到 `ENOSPC`（errno 28）。该证据不等同于托管 runner，但
+证明 quota 合同在 Linux 文件系统边界上可执行。
