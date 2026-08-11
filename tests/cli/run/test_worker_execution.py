@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 from uuid import UUID
 
@@ -91,6 +92,31 @@ def test_cli_run_command_execute_persists_harness_events(
     ]
     assert session is not None
     assert session.status is SessionStatus.COMPLETED
+
+
+def test_cli_queued_run_does_not_grant_configured_skills_by_default(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    skills = tmp_path / "skills" / "review"
+    skills.mkdir(parents=True)
+    (skills / "SKILL.md").write_text(
+        "---\nname: review\ndescription: Review\nversion: 1.0.0\n---\nGUIDANCE\n",
+        encoding="utf-8",
+    )
+    settings = replace(
+        _settings(database_path),
+        skill_roots=(str(tmp_path / "skills"),),
+        skills_state_path=str(tmp_path / "skills-state.sqlite"),
+    )
+
+    result = execute(
+        ["run", "Queue a task", "--workspace", str(tmp_path), "--database", str(database_path)],
+        settings=settings,
+    )
+
+    events = SQLiteEventStore(database_path).list_for_session(result.payload["session_id"])
+    prepared = next(event for event in events if event.event_type is EventType.TASK_PREPARED)
+    assert prepared.payload["skill_components"] == []
+    assert prepared.payload["skill_component_identities"] == []
 
 def test_cli_run_command_execute_runs_file_read_tool(
     tmp_path: Path,

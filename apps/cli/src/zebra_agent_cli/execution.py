@@ -95,6 +95,7 @@ def execute_durable_run(
             )
             else None
         ),
+        granted_skill_component_identities=(),
         mcp_servers=settings.mcp_servers,
         mcp_allowlist=mcp_allowlist,
         trusted_local=trusted_local,

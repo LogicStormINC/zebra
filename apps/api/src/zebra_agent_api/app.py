@@ -42,6 +42,7 @@ from agent_storage import (
 )
 from agent_storage.session_attachments import RegisteredTaskMedia, TaskAttachmentMediaResolver
 from agent_tools.skills_catalog import LocalSkillCatalog
+from agent_tools.skills_scope import normalize_skill_owner
 from zebra_agent_config import (
     ModelCatalogEntry,
     ZebraAgentSettings,
@@ -131,6 +132,15 @@ class ZebraAgentApi(
         parsed = payloads.parse_create_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
+        raw_skill_owner = payload.get("skill_owner")
+        if raw_skill_owner is not None and not isinstance(raw_skill_owner, str):
+            return bad_request("skill_owner must be an opaque string when provided")
+        try:
+            skill_owner = (
+                normalize_skill_owner(raw_skill_owner) if raw_skill_owner is not None else None
+            )
+        except ValueError as error:
+            return bad_request(str(error))
         try:
             model_entry = select_model_catalog_entry(self.settings, parsed["model"])
         except ValueError as error:
@@ -144,7 +154,7 @@ class ZebraAgentApi(
             return bad_request(str(error))
         try:
             skill_grant = _skill_grant_snapshot(
-                self.settings, parsed["skill_components"]
+                self.settings, parsed["skill_components"], owner=skill_owner
             )
         except ValueError as error:
             return bad_request(str(error))
@@ -639,8 +649,10 @@ def _agent_definition_response(
 def _skill_grant_snapshot(
     settings: ZebraAgentSettings,
     requested: tuple[str, ...] | None = None,
+    *,
+    owner: str | None = None,
 ) -> tuple[tuple[str, ...], tuple[SkillComponentIdentity, ...]]:
-    roots = scoped_skill_roots(settings)
+    roots = scoped_skill_roots(settings, owner=owner)
     if not roots:
         if requested:
             raise ValueError("requested Skill component is unavailable")
@@ -650,7 +662,7 @@ def _skill_grant_snapshot(
         skills_state=runtime_skills_state(settings),
     ).list()[0]
     available = {item.name: item.component_identity() for item in metadata}
-    selected = tuple(available) if requested is None else requested
+    selected = () if requested is None else requested
     if any(name not in available for name in selected):
         raise ValueError("requested Skill component is unavailable")
     identities = tuple(available[name] for name in selected)

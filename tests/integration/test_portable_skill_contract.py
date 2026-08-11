@@ -311,6 +311,7 @@ def test_queued_task_persists_identity_through_workspace_projection(tmp_path: Pa
             "prompt": "Run the portable review.",
             "workspace": str(tmp_path),
             "execute": False,
+            "skill_components": [SKILL_NAME],
         }
     )
 
@@ -325,6 +326,25 @@ def test_queued_task_persists_identity_through_workspace_projection(tmp_path: Pa
         identity.model_dump(mode="json")
         for identity in workspace.skill_component_identities or ()
     ] == [_identity_mapping(expected)]
+
+
+def test_legacy_user_identity_remains_pinnable_with_state(tmp_path: Path) -> None:
+    root = tmp_path / "skills"
+    _write_skill(root, "portable/core")
+    scoped_root = ScopedSkillRoot(scope=SkillScope.USER, root=str(root), namespace="user")
+    identity = LocalSkillCatalog((scoped_root,)).read(SKILL_NAME).metadata.component_identity()
+    gateway = LocalToolGateway(
+        tmp_path / "workspace",
+        policy_profile=PolicyProfile.READ_ONLY,
+        skill_roots=(scoped_root,),
+        skills_state=SQLiteSkillsStateStore(tmp_path / "skills-state.sqlite"),
+        granted_skill_component_identities=(identity,),
+    )
+    try:
+        result = gateway.execute(_call("skills.read", {"name": SKILL_NAME}))
+        assert result.status is ToolCallStatus.EXECUTED
+    finally:
+        gateway.close()
 
 
 def test_empty_new_task_grant_stays_empty_when_a_skill_is_enabled_later(

@@ -6,9 +6,11 @@ from agent_tools.skills_scope import (
     ScopedSkillRoot,
     SkillCatalogError,
     SkillScope,
+    build_scoped_skill_roots,
     compute_skill_digest,
     default_namespace,
     normalize_scoped_roots,
+    normalize_skill_owner,
     scope_priority,
 )
 from zebra_agent_config.settings import load_settings
@@ -23,6 +25,11 @@ def test_scope_priority_orders_higher_trust_first() -> None:
 def test_default_namespace_matches_scope_value() -> None:
     for scope in SkillScope:
         assert default_namespace(scope) == scope.value
+
+
+def test_private_owner_cannot_use_the_legacy_user_namespace() -> None:
+    with pytest.raises(SkillCatalogError, match="opaque"):
+        normalize_skill_owner("user")
 
 
 def test_compute_skill_digest_is_stable_and_distinct() -> None:
@@ -139,6 +146,21 @@ def test_settings_exposes_four_scope_root_fields(tmp_path: Path) -> None:
     assert settings.skill_roots_system == (str(system_dir.resolve()),)
     assert settings.skill_roots_admin == (str(admin_dir.resolve()),)
     assert settings.skill_roots_repo == (str(repo_dir.resolve()),)
+
+
+def test_private_owner_roots_are_namespace_isolated_and_cross_owner_catalogs_fail_closed(
+    tmp_path: Path,
+) -> None:
+    private_root = tmp_path / "private"
+    for owner in ("owner-a", "owner-b"):
+        _skill(private_root / ".zebra-private" / owner / "review", "review", f"{owner} guidance")
+
+    owner_a = build_scoped_skill_roots(user=(str(private_root),), owner="owner-a")
+    owner_b = build_scoped_skill_roots(user=(str(private_root),), owner="owner-b")
+    assert LocalSkillCatalog(owner_a, inventory_only=True).list()[0][0].namespace == "owner-a"
+    assert LocalSkillCatalog(owner_b, inventory_only=True).list()[0][0].owner == "owner-b"
+    with pytest.raises(SkillCatalogError, match="one private Skill owner"):
+        LocalSkillCatalog((*owner_a, *owner_b), inventory_only=True)
 
 
 def _skill(root: Path, name: str, description: str) -> None:

@@ -16073,3 +16073,74 @@ gain new data authority. Simple Tasks remain valid without either contract.
 - new permissions or broader account/date/object/capability scope;
 - GUI/computer-use or FinOS source changes without a proven compatibility
   regression.
+
+### ZNX-USKILL-01 - User/Private Skill Lifecycle Alignment
+
+- Status: `Review`
+- Owner: `Vinson`
+- Suggested role: `TOOLS / STORAGE / API / RUNTIME / QA`
+- Depends on: Wave 2.5 Goal/Plan product acceptance at
+  `d3077de98c9e1fac2797886efbe7385f48756efc`
+- Branch: `codex/znx-user-skill-lifecycle`
+- Exact base: `10af5d2396262ee830eb275bf363e8711af29766`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/skills_state.py`,
+  `packages/agent-tools/src/agent_tools/skills_catalog.py`,
+  `packages/agent-tools/src/agent_tools/skills_scope.py`,
+  `apps/api/src/zebra_agent_api/skills_admin.py`,
+  `apps/api/src/zebra_agent_api/routes.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/session_payloads.py`,
+  `apps/cli/src/zebra_agent_cli/run_command_execution.py`,
+  `apps/cli/src/zebra_agent_cli/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `tests/integration/test_portable_skill_contract.py`,
+  `tests/integration/test_user_skill_lifecycle_contract.py`,
+  `tests/agent_tools/test_skills_scope.py`,
+  `tests/api/test_skills_admin.py`,
+  `tests/test_skills_admin_contract_matrix.py`,
+  `tests/agent_storage/test_skills_state.py`,
+  `tests/cli/run/test_worker_execution.py`,
+  `docs/AGENT_TASKS.md`
+
+#### Goal
+
+Make a user-provided private package a normal, immutable Zebra Skill component:
+Installed -> Enabled -> exact Task Grant -> executed provenance.  Reuse the
+existing catalog, state store, task snapshot, worker, and admin surface; source
+only changes provenance/trust and never grants authority.
+
+Private filesystem discovery is limited to
+`<ZEBRA_SKILL_ROOTS>/.zebra-private/<opaque-owner>`; the existing hidden-path
+filter keeps it out of ownerless legacy catalog traversal.
+
+#### Required Acceptance
+
+- [x] Red tests first prove or refute parity, no automatic grant, opaque-owner
+  isolation, immutable version/digest, disable-new-task versus pinned-active
+  task behavior, no install execution, no implicit business persistence, and
+  provenance continuity across later catalog changes.
+- [x] Each demonstrated gap is repaired in the existing component/state/snapshot
+  paths without a second registry, engine, or FinOS-specific runtime type.
+- [x] New Task grants are explicit and exact; omission never expands to every
+  enabled Skill.  Active/resumed Tasks retain their frozen identity.
+- [x] Existing `/admin/skills` and session inspection are reused unless a tested
+  installed/owner/reconciliation field is unavailable.
+- [x] Targeted EXT-SKILL and Goal/Plan regressions, full pytest, static checks,
+  release eval, and exact-base failure comparison are recorded before review.
+
+#### Validation record (2026-08-11)
+
+- Red-first evidence: the initial lifecycle contract had five deterministic
+  failures for omitted grants, owner roots, and owner-tagged scope entries.
+- EXT-SKILL/admin/CLI/inspection matrix: `83 passed`; Goal/Plan matrix:
+  `39 passed`; changed-path ruff and `git diff --check`: passed.
+- Full pytest: `2124 passed, 9 failed, 9 skipped`; exact base had the same nine
+  failures and nine skips. Full ruff (11), mypy (13), and file-size (13)
+  failure paths are inherited from the exact base; release eval passed 10/10.
+
+#### Explicit Non-Goals
+
+- FinOS source, database, business RBAC, Review/Journal/Core persistence, UI,
+  deployment, provider execution, Marketplace, Plugin execution, remote
+  registry/update, OAuth, or a new mid-task revocation system.

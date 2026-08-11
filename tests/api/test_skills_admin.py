@@ -9,7 +9,7 @@ from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 def _skill(root: Path, name: str, description: str) -> None:
     root.mkdir(parents=True, exist_ok=True)
     (root / "SKILL.md").write_text(
-        f"---\nname: {name}\ndescription: {description}\n---\n\n# {name}\nBODY\n",
+        f"---\nname: {name}\ndescription: {description}\nversion: 1.0.0\n---\n\n# {name}\nBODY\n",
         encoding="utf-8",
     )
 
@@ -83,3 +83,24 @@ def test_admin_disable_unknown_skill_returns_not_found(tmp_path: Path) -> None:
 
     response = app.disable_skill("ghost", {})
     assert response.status_code == 404
+
+
+def test_admin_private_install_enable_and_owner_projection(tmp_path: Path) -> None:
+    private_root = tmp_path / "skills"
+    _skill(private_root / ".zebra-private" / "owner-a" / "review", "review", "Private review")
+    app = _app(tmp_path, private_root)
+
+    assert app.list_skills("owner-b").body["skills"] == []
+    listed = app.list_skills("owner-a").body["skills"]
+    assert listed[0]["owner"] == "owner-a"
+    assert listed[0]["installed"] is False
+
+    installed = app.install_skill("review", {"owner": "owner-a", "operator": "op"})
+    assert installed.status_code == 200
+    assert installed.body["installed"] is True
+    assert installed.body["enabled"] is False
+
+    enabled = app.enable_skill("review", {"owner": "owner-a"})
+    assert enabled.status_code == 200
+    assert enabled.body["enabled"] is True
+    assert app.list_skills("owner-b").body["skills"] == []

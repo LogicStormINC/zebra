@@ -288,11 +288,19 @@ class SessionExecutionService:
                 database_path=self._database_path,
                 session_id=session_id,
             )
+            private_skill_owners = {
+                identity.namespace
+                for identity in task.skill_component_identities or ()
+                if identity.scope == "user" and identity.namespace != "user"
+            }
+            if len(private_skill_owners) > 1:
+                raise WorkerExecutionError("task grants Skills from multiple private owners")
             skill_roots = build_scoped_skill_roots(
                 system=self._settings.skill_roots_system,
                 admin=self._settings.skill_roots_admin,
                 user=self._settings.skill_roots,
                 repo=self._settings.skill_roots_repo,
+                owner=next(iter(private_skill_owners), None),
             )
             skills_state = (
                 SQLiteSkillsStateStore(self._settings.skills_state_path)

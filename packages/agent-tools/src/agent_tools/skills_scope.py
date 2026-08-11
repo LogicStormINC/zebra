@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -17,6 +18,7 @@ MAX_METADATA_ENTRIES = 32
 MAX_METADATA_KEY_CHARS = 64
 MAX_METADATA_VALUE_CHARS = 256
 MAX_NAMESPACE_CHARS = 32
+_OWNER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
 
 class SkillCatalogReason(StrEnum):
@@ -82,6 +84,7 @@ class ScopedSkillRoot:
     scope: SkillScope
     root: str
     namespace: str | None = None
+    owner: str | None = None
 
 
 def build_scoped_skill_roots(
@@ -90,6 +93,7 @@ def build_scoped_skill_roots(
     admin: Sequence[str] = (),
     user: Sequence[str] = (),
     repo: Sequence[str] = (),
+    owner: str | None = None,
 ) -> tuple[ScopedSkillRoot, ...]:
     """Build scope-tagged discovery roots from the four settings root lists.
 
@@ -97,13 +101,26 @@ def build_scoped_skill_roots(
     the admin/CLI inventory discover the same scoped roots. Plain strings are
     tagged with their scope; callers may also pass ``ScopedSkillRoot`` directly.
     """
+    normalized_owner = None if owner is None else normalize_skill_owner(owner)
     roots: list[ScopedSkillRoot] = []
     for path in system:
         roots.append(ScopedSkillRoot(scope=SkillScope.SYSTEM, root=path))
     for path in admin:
         roots.append(ScopedSkillRoot(scope=SkillScope.ADMIN, root=path))
     for path in user:
-        roots.append(ScopedSkillRoot(scope=SkillScope.USER, root=path))
+        if normalized_owner is None:
+            roots.append(ScopedSkillRoot(scope=SkillScope.USER, root=path))
+            continue
+        private_root = Path(path).expanduser() / ".zebra-private" / normalized_owner
+        if private_root.is_dir():
+            roots.append(
+                ScopedSkillRoot(
+                    scope=SkillScope.USER,
+                    root=str(private_root),
+                    namespace=normalized_owner,
+                    owner=normalized_owner,
+                )
+            )
     for path in repo:
         roots.append(ScopedSkillRoot(scope=SkillScope.REPO, root=path))
     return tuple(roots)
@@ -117,6 +134,19 @@ def compute_skill_digest(manifest_bytes: bytes, body_bytes: bytes) -> str:
     digest.update(b"\nskill-body-v1\n")
     digest.update(body_bytes)
     return digest.hexdigest()
+
+
+def normalize_skill_owner(value: str) -> str:
+    if (
+        not isinstance(value, str)
+        or value == SkillScope.USER.value
+        or _OWNER.fullmatch(value) is None
+    ):
+        raise SkillCatalogError(
+            SkillCatalogReason.INVALID_ROOT,
+            "skill owner must be an opaque identifier",
+        )
+    return value
 
 
 @dataclass(frozen=True)
@@ -298,10 +328,12 @@ def normalize_scoped_roots(
         if isinstance(raw, ScopedSkillRoot):
             scope = raw.scope
             namespace = raw.namespace
+            owner = raw.owner
             raw_path = raw.root
         elif isinstance(raw, str | Path):
             scope = SkillScope.USER
             namespace = None
+            owner = None
             raw_path = str(raw)
         else:
             raise SkillCatalogError(
@@ -323,6 +355,21 @@ def normalize_scoped_roots(
                 SkillCatalogReason.DUPLICATE_ROOT, f"duplicate skill root: {canonical}"
             )
         seen.add(canonical)
-        resolved.append(ScopedSkillRoot(scope=scope, root=str(canonical), namespace=namespace))
+        if owner is not None:
+            owner = normalize_skill_owner(owner)
+            if scope is not SkillScope.USER:
+                raise SkillCatalogError(
+                    SkillCatalogReason.INVALID_ROOT,
+                    "only user Skill roots may declare an owner",
+                )
+            if namespace not in (None, owner):
+                raise SkillCatalogError(
+                    SkillCatalogReason.INVALID_ROOT,
+                    "private Skill namespace must equal its owner",
+                )
+            namespace = owner
+        resolved.append(
+            ScopedSkillRoot(scope=scope, root=str(canonical), namespace=namespace, owner=owner)
+        )
     resolved.sort(key=lambda item: scope_priority(item.scope))
     return tuple(resolved)

@@ -44,7 +44,7 @@ class CreateSessionPayload(TypedDict):
     agent_definition: AgentDefinition | None
 
 
-CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
+CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__) | {"skill_owner"}
 
 
 class ResumeSessionPayload(TypedDict):

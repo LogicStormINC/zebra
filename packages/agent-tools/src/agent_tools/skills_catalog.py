@@ -95,6 +95,7 @@ class SkillMetadata:
     digest: str | None = None
     scope: SkillScope = SkillScope.USER
     namespace: str | None = None
+    owner: str | None = None
 
     def component_identity(self) -> SkillComponentIdentity:
         if self.digest is None or self.namespace is None:
@@ -120,9 +121,11 @@ class SkillReadResult:
 @dataclass(frozen=True)
 class _SkillEntry:
     metadata: SkillMetadata
-    root: Path
+    root: Path | None
     scope: SkillScope
     namespace: str
+    owner: str | None
+    files: Mapping[str, str] | None = None
 
 
 class LocalSkillCatalog:
@@ -134,9 +137,17 @@ class LocalSkillCatalog:
         *,
         skills_state: SkillEnablementState | None = None,
         granted_component_identities: tuple[SkillComponentIdentity, ...] | None = None,
+        inventory_only: bool = False,
     ) -> None:
         self._roots = normalize_scoped_roots(roots)
+        private_owners = {root.owner for root in self._roots if root.owner is not None}
+        if len(private_owners) > 1:
+            raise SkillCatalogError(
+                SkillCatalogReason.INVALID_ROOT,
+                "a catalog may serve only one private Skill owner",
+            )
         self._skills_state = skills_state
+        self._inventory_only = inventory_only
         self._granted_component_identities = (
             None
             if granted_component_identities is None
@@ -167,29 +178,71 @@ class LocalSkillCatalog:
                 SkillCatalogReason.SKILL_NOT_FOUND, "skill is not available"
             ) from exc
         relative = _validated_support_path(file_path)
-        candidate = entry.root / relative
-        try:
-            resolved = candidate.resolve(strict=True)
-        except OSError as exc:
-            raise SkillCatalogError(
-                SkillCatalogReason.FILE_NOT_FOUND, "skill file does not exist"
-            ) from exc
-        if (
-            resolved.is_symlink()
-            or not resolved.is_file()
-            or not resolved.is_relative_to(entry.root)
-        ):
-            raise SkillCatalogError(
-                SkillCatalogReason.PATH_OUTSIDE_SKILL, "skill file escapes its package"
+        if entry.files is not None:
+            try:
+                content = entry.files[relative.as_posix()]
+            except KeyError as exc:
+                raise SkillCatalogError(
+                    SkillCatalogReason.FILE_NOT_FOUND, "skill file does not exist"
+                ) from exc
+            byte_count = len(content.encode("utf-8"))
+            component_content = entry.files["SKILL.md"]
+        else:
+            assert entry.root is not None
+            candidate = entry.root / relative
+            try:
+                resolved = candidate.resolve(strict=True)
+            except OSError as exc:
+                raise SkillCatalogError(
+                    SkillCatalogReason.FILE_NOT_FOUND, "skill file does not exist"
+                ) from exc
+            if (
+                resolved.is_symlink()
+                or not resolved.is_file()
+                or not resolved.is_relative_to(entry.root)
+            ):
+                raise SkillCatalogError(
+                    SkillCatalogReason.PATH_OUTSIDE_SKILL, "skill file escapes its package"
+                )
+            content, byte_count = _read_utf8(resolved)
+            component_content = (
+                content
+                if relative.as_posix() == "SKILL.md"
+                else _read_utf8(entry.root / "SKILL.md")[0]
             )
-        content, byte_count = _read_utf8(resolved)
-        component_content = (
-            content
-            if relative.as_posix() == "SKILL.md"
-            else _read_utf8(entry.root / "SKILL.md")[0]
-        )
         _ensure_component_digest(entry.metadata, component_content)
         return SkillReadResult(entry.metadata, relative.as_posix(), content, byte_count)
+
+    def package_files(self, name: str) -> Mapping[str, str]:
+        """Return the bounded declarative package payload without executing it."""
+        normalized_name = _bounded_text(name, "name", MAX_NAME_CHARS)
+        entries, ambiguous, _ = self._discover()
+        if normalized_name in ambiguous:
+            raise SkillCatalogError(
+                SkillCatalogReason.AMBIGUOUS_SKILL, "skill name is ambiguous across roots"
+            )
+        entries = self._available_entries(entries)
+        try:
+            entry = entries[normalized_name]
+        except KeyError as exc:
+            raise SkillCatalogError(
+                SkillCatalogReason.SKILL_NOT_FOUND, "skill is not available"
+            ) from exc
+        if entry.files is not None:
+            return entry.files
+        assert entry.root is not None
+        files = {"SKILL.md": _read_utf8(entry.root / "SKILL.md")[0]}
+        for directory in SUPPORT_DIRECTORIES:
+            support_root = entry.root / directory
+            if not support_root.is_dir() or support_root.is_symlink():
+                continue
+            for candidate in sorted(support_root.rglob("*")):
+                if candidate.is_symlink() or not candidate.is_file():
+                    continue
+                relative = candidate.relative_to(entry.root).as_posix()
+                _validated_support_path(relative)
+                files[relative] = _read_utf8(candidate)[0]
+        return MappingProxyType(files)
 
     def _available_entries(self, entries: dict[str, _SkillEntry]) -> dict[str, _SkillEntry]:
         disabled = (
@@ -197,17 +250,16 @@ class LocalSkillCatalog:
             if self._skills_state is not None
             else frozenset[tuple[str, str]]()
         )
-        enabled = {
-            name: entry
-            for name, entry in entries.items()
-            if (entry.metadata.name, entry.metadata.scope.value) not in disabled
-        }
         if self._granted_component_identities is None:
-            return enabled
+            return {
+                name: entry
+                for name, entry in entries.items()
+                if self._is_enabled(entry, disabled)
+            }
+        entries = self._pinned_entries(entries)
         expected = set(self._granted_component_identities)
         available = {
-            entry.metadata.component_identity()
-            for entry in enabled.values()
+            entry.metadata.component_identity() for entry in entries.values()
         }
         if not expected <= available:
             raise SkillCatalogError(
@@ -216,9 +268,74 @@ class LocalSkillCatalog:
             )
         return {
             name: entry
-            for name, entry in enabled.items()
+            for name, entry in entries.items()
             if entry.metadata.component_identity() in expected
         }
+
+    def _is_enabled(
+        self,
+        entry: _SkillEntry,
+        disabled: frozenset[tuple[str, str]],
+    ) -> bool:
+        if entry.owner is None:
+            return (entry.metadata.name, entry.metadata.scope.value) not in disabled
+        if self._inventory_only:
+            return True
+        if self._skills_state is None:
+            return False
+        enabled = getattr(self._skills_state, "is_component_enabled", None)
+        return bool(
+            enabled
+            and enabled(identity=entry.metadata.component_identity(), owner=entry.owner)
+        )
+
+    def _pinned_entries(self, entries: dict[str, _SkillEntry]) -> dict[str, _SkillEntry]:
+        pinned = dict(entries)
+        for identity in self._granted_component_identities or ():
+            installed = self._installed_entry(identity)
+            if installed is not None:
+                pinned[identity.name] = installed
+        return pinned
+
+    def _installed_entry(self, identity: SkillComponentIdentity) -> _SkillEntry | None:
+        if self._skills_state is None or identity.scope != "user" or identity.namespace == "user":
+            return None
+        installed = getattr(self._skills_state, "installed_component", None)
+        if not callable(installed):
+            return None
+        record = installed(identity=identity, owner=identity.namespace)
+        if record is None:
+            return None
+        try:
+            frontmatter_text, body_bytes = split_frontmatter(
+                record.files["SKILL.md"].encode("utf-8")
+            )
+            parsed = parse_frontmatter(frontmatter_text)
+            metadata = SkillMetadata(
+                name=parsed.name,
+                description=parsed.description,
+                source=identity.source,
+                version=parsed.version,
+                license=parsed.license,
+                compatibility=parsed.compatibility,
+                metadata=parsed.metadata,
+                digest=compute_skill_digest(frontmatter_text.encode("utf-8"), body_bytes),
+                scope=SkillScope(identity.scope),
+                namespace=identity.namespace,
+                owner=record.owner,
+            )
+        except (KeyError, ValueError, SkillCatalogError):
+            return None
+        if metadata.component_identity() != identity:
+            return None
+        return _SkillEntry(
+            metadata=metadata,
+            root=None,
+            scope=metadata.scope,
+            namespace=identity.namespace,
+            owner=record.owner,
+            files=record.files,
+        )
 
     def _discover(self) -> tuple[dict[str, _SkillEntry], frozenset[str], bool]:
         entries: dict[str, _SkillEntry] = {}
@@ -259,7 +376,12 @@ class LocalSkillCatalog:
                     else:
                         truncated = True
                     continue
-                if existing.scope == entry.scope:
+                if existing.owner != entry.owner and (
+                    existing.owner is not None or entry.owner is not None
+                ):
+                    entries.pop(name)
+                    ambiguous.add(name)
+                elif existing.scope == entry.scope:
                     entries.pop(name)
                     ambiguous.add(name)
                 elif scope_priority(entry.scope) < scope_priority(existing.scope):
@@ -297,10 +419,12 @@ def _load_entry(skill_root: Path, scoped: ScopedSkillRoot) -> _SkillEntry | None
             digest=digest,
             scope=scoped.scope,
             namespace=namespace,
+            owner=scoped.owner,
         ),
         skill_root.resolve(),
         scoped.scope,
         namespace,
+        scoped.owner,
     )
 
 
