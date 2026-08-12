@@ -1,8 +1,9 @@
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 from agent_core.domain.agent_definitions import AgentDefinition, AgentDefinitionContext
@@ -73,6 +74,7 @@ class HarnessTask:
     goal: str | None = None
     plan_required: bool = False
     task_plan: SessionPlan = field(default_factory=SessionPlan)
+    trusted_evidence_tools: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -86,6 +88,29 @@ class HarnessTask:
             object.__setattr__(self, "goal", normalized_goal)
         if not isinstance(self.plan_required, bool):
             raise ValueError("harness task plan_required must be boolean")
+        if not isinstance(self.trusted_evidence_tools, Mapping):
+            raise ValueError("harness task trusted_evidence_tools must be a mapping")
+        trusted_evidence_tools: dict[str, tuple[str, ...]] = {}
+        for tool_name, labels in self.trusted_evidence_tools.items():
+            if not isinstance(tool_name, str) or not tool_name.strip():
+                raise ValueError("harness task trusted evidence tool names must be non-blank")
+            if not isinstance(labels, Iterable) or isinstance(labels, str | bytes):
+                raise ValueError("harness task trusted evidence labels must be a sequence")
+            normalized_labels: list[str] = []
+            for label in labels:
+                if not isinstance(label, str) or not label.strip():
+                    raise ValueError(
+                        "harness task trusted evidence labels must be non-blank strings"
+                    )
+                if label.strip() not in normalized_labels:
+                    normalized_labels.append(label.strip())
+            if normalized_labels:
+                trusted_evidence_tools[tool_name.strip()] = tuple(normalized_labels)
+        object.__setattr__(
+            self,
+            "trusted_evidence_tools",
+            MappingProxyType(trusted_evidence_tools),
+        )
         if self.public_content is not None:
             normalized_public_content = self.public_content.strip()
             if not normalized_public_content:

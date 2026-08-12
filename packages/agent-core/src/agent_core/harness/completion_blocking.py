@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import replace
 from datetime import datetime
 
+from agent_core.domain.agent_definitions import AgentDefinition
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
@@ -66,6 +67,8 @@ def append_missing_evidence_observation(
     *,
     missing: tuple[str, ...],
     open_plan_steps: tuple[str, ...],
+    definition: AgentDefinition | None,
+    trusted_evidence_tools: Mapping[str, tuple[str, ...]],
     created_at: datetime,
 ) -> None:
     guidance = (
@@ -85,6 +88,11 @@ def append_missing_evidence_observation(
                         "type": "missing_completion_evidence",
                         "missing": list(missing),
                         "open_plan_steps": list(open_plan_steps),
+                        "trusted_evidence_tools": _trusted_evidence_tools(
+                            definition,
+                            missing,
+                            trusted_evidence_tools,
+                        ),
                     },
                     separators=(",", ":"),
                     sort_keys=True,
@@ -97,6 +105,38 @@ def append_missing_evidence_observation(
             metadata={"missing_completion_evidence": list(missing)},
         )
     )
+
+
+def _trusted_evidence_tools(
+    definition: AgentDefinition | None,
+    missing: tuple[str, ...],
+    tools: Mapping[str, tuple[str, ...]],
+) -> list[dict[str, object]]:
+    if definition is None:
+        return []
+    requirements = {
+        requirement.evidence_id: requirement
+        for requirement in definition.completion_contract.required_evidence
+    }
+    guidance: list[dict[str, object]] = []
+    for evidence_id in missing:
+        requirement = requirements.get(evidence_id)
+        if requirement is None or not requirement.typed_evidence:
+            continue
+        matching_tools = sorted(
+            tool_name
+            for tool_name, labels in tools.items()
+            if set(requirement.typed_evidence) & set(labels)
+        )
+        if matching_tools:
+            guidance.append(
+                {
+                    "evidence_id": evidence_id,
+                    "typed_evidence": list(requirement.typed_evidence),
+                    "tools": matching_tools,
+                }
+            )
+    return guidance
 
 
 def completion_evidence_observation_count(

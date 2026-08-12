@@ -313,6 +313,8 @@ def complete_without_tools(
         messages,
         missing=status.missing,
         open_plan_steps=status.open_plan_steps,
+        definition=context.task.agent_definition,
+        trusted_evidence_tools=context.task.trusted_evidence_tools,
         created_at=context.attempt.started_at,
     )
     return request_next_completion(
@@ -366,6 +368,8 @@ def prepare_terminal_synthesis_evidence(
         messages,
         missing=status.missing,
         open_plan_steps=status.open_plan_steps,
+        definition=context.task.agent_definition,
+        trusted_evidence_tools=context.task.trusted_evidence_tools,
         created_at=context.attempt.started_at,
     )
     return request_next_completion(

@@ -191,6 +191,7 @@ def run_local_harness(
                 skill_components=tool_gateway.effective_skill_components,
                 skill_component_identities=tool_gateway.effective_skill_component_identities,
                 agent_definition=agent_definition,
+                trusted_evidence_tools=tool_gateway.trusted_evidence_tools,
                 model_id=model_id,
                 agent_context=agent_context,
                 model_capabilities=declared_model_capabilities(
@@ -504,6 +505,15 @@ class LocalToolGateway(ToolGatewayPort):
     @property
     def read_only_tools(self) -> frozenset[str]:
         return self._read_only_tools
+
+    @property
+    def trusted_evidence_tools(self) -> dict[str, tuple[str, ...]]:
+        advertised = {tool.name for tool in self._model_tools}
+        return {
+            name: labels
+            for name, labels in self._trusted_typed_evidence.items()
+            if labels and name in advertised
+        }
 
     @property
     def parallel_batch_limits(self) -> dict[str, int]:

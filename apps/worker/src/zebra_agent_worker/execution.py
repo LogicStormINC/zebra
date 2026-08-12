@@ -377,6 +377,7 @@ class SessionExecutionService:
                 skill_component_identities=tool_gateway.effective_skill_component_identities,
                 agent_definition=task.agent_definition,
                 agent_context=agent_context,
+                trusted_evidence_tools=local_tool_gateway.trusted_evidence_tools,
                 model_id=task.model_id,
                 model_capabilities=declared_model_capabilities(
                     model_gateway,
