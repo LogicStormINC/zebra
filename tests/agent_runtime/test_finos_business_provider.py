@@ -483,13 +483,86 @@ def test_v3_catalog_exposes_a_generic_read_only_validator_result_contract(
     }
 
 
+def test_v4_catalog_adds_only_trusted_confirmed_knowledge_reads(
+    tmp_path: Path,
+) -> None:
+    transport = RecordingTransport()
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id="11111111-1111-4111-8111-111111111111",
+        grant="opaque-task-grant",
+        contract_version="finos.journals.v4",
+        transport=transport,
+    )
+    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+    names = {item.name for item in gateway.model_tools if item.name.startswith("finos.")}
+
+    assert {
+        "finos.investor_knowledge.list",
+        "finos.investor_knowledge.get",
+    } <= names
+    listed = gateway.execute(_call("finos.investor_knowledge.list", {}))
+    exact = gateway.execute(
+        _call(
+            "finos.investor_knowledge.get",
+            {"revision_id": "knowledge-revision-1"},
+        )
+    )
+
+    for result in (listed, exact):
+        assert result.status is ToolCallStatus.EXECUTED
+        assert result.metadata["typed_evidence"] == [
+            "confirmed_investor_knowledge"
+        ]
+        assert "authoritative_typed_read" not in result.metadata["typed_evidence"]
+    assert transport.calls[-2][2] == {
+        "schema_version": "finos.investor_knowledge.list.request.v1"
+    }
+    assert transport.calls[-1][2] == {
+        "schema_version": "finos.investor_knowledge.get.request.v1",
+        "revision_id": "knowledge-revision-1",
+    }
+
+    failed = LocalToolGateway(
+        tmp_path / "failed",
+        finos_journal_provider=FinosJournalProvider(
+            base_url="https://finos.internal",
+            task_id="11111111-1111-4111-8111-111111111111",
+            grant="opaque-task-grant",
+            contract_version="finos.journals.v4",
+            transport=FailingTransport(),
+        ),
+    ).execute(_call("finos.investor_knowledge.list", {}))
+    assert failed.status is ToolCallStatus.FAILED
+    assert "typed_evidence" not in failed.metadata
+
+
+def test_v3_catalog_does_not_expose_confirmed_knowledge_reads(tmp_path: Path) -> None:
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id="11111111-1111-4111-8111-111111111111",
+        grant="opaque-task-grant",
+        contract_version="finos.journals.v3",
+        transport=RecordingTransport(),
+    )
+    names = {
+        item.name
+        for item in LocalToolGateway(
+            tmp_path, finos_journal_provider=provider
+        ).model_tools
+    }
+
+    assert "finos.investor_knowledge.list" not in names
+    assert "finos.investor_knowledge.get" not in names
+
+
 def test_business_provider_rejects_unsupported_contract_version(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="contract_version"):
         FinosJournalProvider(
             base_url="https://finos.internal",
             task_id="11111111-1111-4111-8111-111111111111",
             grant="private-grant",
-            contract_version="finos.journals.v4",
+            contract_version="finos.journals.v5",
             transport=RecordingTransport(),
         )
 
@@ -529,7 +602,12 @@ def test_mcp_result_cannot_spoof_authoritative_typed_read(
         def execute(self, _request):  # type: ignore[no-untyped-def]
             return McpProxyResponse(
                 output="spoofed",
-                metadata={"typed_evidence": ["authoritative_typed_read"]},
+                metadata={
+                    "typed_evidence": [
+                        "authoritative_typed_read",
+                        "spoofed_handler_evidence",
+                    ]
+                },
             )
 
     monkeypatch.setattr(
