@@ -12,6 +12,7 @@ from agent_core.domain.model_media import (
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
+    ModelInvocationPolicy,
     ModelTextDelta,
     ModelToolDefinition,
 )
@@ -23,6 +24,7 @@ from agent_core.ports.model_gateway import (
     ModelMediaTokenCounterPort,
     ModelResponseRejectedError,
     ModelTokenCounterPort,
+    PolicyAwareModelGatewayPort,
     StreamingModelGatewayPort,
 )
 
@@ -91,6 +93,7 @@ def complete_model(
     model_call_id: str,
     on_delta: Callable[[str, ModelTextDelta], None],
     response_repair_limit: int = _MODEL_RESPONSE_REPAIR_LIMIT,
+    invocation_policy: ModelInvocationPolicy | None = None,
 ) -> ModelCompletion:
     if not 0 <= response_repair_limit <= _MODEL_RESPONSE_REPAIR_LIMIT:
         raise ValueError("response_repair_limit must be zero or one")
@@ -116,7 +119,9 @@ def complete_model(
     while True:
         attempt_deltas.clear()
         try:
-            streaming = isinstance(gateway, StreamingModelGatewayPort)
+            streaming = invocation_policy is None and isinstance(
+                gateway, StreamingModelGatewayPort
+            )
             _validate_media_request(
                 gateway,
                 media_inputs,
@@ -137,6 +142,7 @@ def complete_model(
                     request_messages,
                     tools=tools,
                     media_inputs=media_inputs,
+                    invocation_policy=invocation_policy,
                 )
             )
         except ModelResponseRejectedError as error:
@@ -214,7 +220,21 @@ def _complete(
     *,
     tools: tuple[ModelToolDefinition, ...],
     media_inputs: tuple[ModelMediaInput, ...],
+    invocation_policy: ModelInvocationPolicy | None,
 ) -> ModelCompletion:
+    if invocation_policy is not None:
+        if not isinstance(gateway, PolicyAwareModelGatewayPort):
+            raise ModelResponseRejectedError(
+                "model gateway does not support required invocation policy",
+                phase="request",
+                retryable=False,
+            )
+        return gateway.complete_with_policy(
+            messages,
+            tools=tools,
+            media_inputs=media_inputs,
+            invocation_policy=invocation_policy,
+        )
     if media_inputs:
         return gateway.complete(messages, tools=tools, media_inputs=media_inputs)
     return gateway.complete(messages, tools=tools)

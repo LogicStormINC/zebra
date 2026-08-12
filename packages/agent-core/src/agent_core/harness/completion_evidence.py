@@ -309,7 +309,7 @@ def complete_without_tools(
                 "stop_reason": blocked_completion_reason(status.open_plan_steps),
             },
         )
-    append_missing_evidence_observation(
+    required_tools = append_missing_evidence_observation(
         messages,
         missing=status.missing,
         open_plan_steps=status.open_plan_steps,
@@ -327,6 +327,11 @@ def complete_without_tools(
         metadata={
             **metadata,
             "completion_evidence_observation_count": observation_count + 1,
+            **(
+                {"required_evidence_tool_names": required_tools}
+                if required_tools
+                else {}
+            ),
         },
         fallback_message=assistant_message,
     )
@@ -364,7 +369,7 @@ def prepare_terminal_synthesis_evidence(
                 "stop_reason": blocked_completion_reason(status.open_plan_steps),
             },
         )
-    append_missing_evidence_observation(
+    required_tools = append_missing_evidence_observation(
         messages,
         missing=status.missing,
         open_plan_steps=status.open_plan_steps,
@@ -382,6 +387,11 @@ def prepare_terminal_synthesis_evidence(
         metadata={
             **metadata,
             "completion_evidence_observation_count": observation_count + 1,
+            **(
+                {"required_evidence_tool_names": required_tools}
+                if required_tools
+                else {}
+            ),
         },
         fallback_message=fallback_message,
     )

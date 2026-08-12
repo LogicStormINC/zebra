@@ -70,7 +70,12 @@ def append_missing_evidence_observation(
     definition: AgentDefinition | None,
     trusted_evidence_tools: Mapping[str, tuple[str, ...]],
     created_at: datetime,
-) -> None:
+) -> tuple[str, ...]:
+    producer_guidance = _trusted_evidence_tools(
+        definition,
+        missing,
+        trusted_evidence_tools,
+    )
     guidance = (
         "Use agent.plan to continue the remaining work, mark finished steps completed, or "
         "mark obsolete steps cancelled. "
@@ -88,11 +93,7 @@ def append_missing_evidence_observation(
                         "type": "missing_completion_evidence",
                         "missing": list(missing),
                         "open_plan_steps": list(open_plan_steps),
-                        "trusted_evidence_tools": _trusted_evidence_tools(
-                            definition,
-                            missing,
-                            trusted_evidence_tools,
-                        ),
+                        "trusted_evidence_tools": producer_guidance,
                     },
                     separators=(",", ":"),
                     sort_keys=True,
@@ -103,6 +104,14 @@ def append_missing_evidence_observation(
             ),
             created_at=created_at,
             metadata={"missing_completion_evidence": list(missing)},
+        )
+    )
+    return tuple(
+        dict.fromkeys(
+            tool
+            for item in producer_guidance
+            for tool in _string_list(item.get("tools"))
+            if isinstance(tool, str)
         )
     )
 
@@ -137,6 +146,10 @@ def _trusted_evidence_tools(
                 }
             )
     return guidance
+
+
+def _string_list(value: object) -> list[str]:
+    return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
 
 
 def completion_evidence_observation_count(

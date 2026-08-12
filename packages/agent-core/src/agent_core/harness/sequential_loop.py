@@ -1,12 +1,7 @@
 from collections.abc import Callable, Mapping
-from dataclasses import replace
 
-from agent_core.domain.events import EventType
 from agent_core.domain.messages import SessionMessage
-from agent_core.domain.modeling import (
-    ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
-    ModelCompletion,
-)
+from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall
 from agent_core.harness import context_recovery
 from agent_core.harness.attempt_result import (
@@ -28,6 +23,10 @@ from agent_core.harness.completion_evidence import (
     should_use_provisional_final,
     terminal_synthesis_completion_evidence,
 )
+from agent_core.harness.final_output_contract import (
+    bind_final_output_contract,
+    final_output_contract,
+)
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_request import allowed_response_repairs
 from agent_core.harness.model_step import HarnessModelStep
@@ -40,6 +39,10 @@ from agent_core.harness.models import (
 )
 from agent_core.harness.orchestration_events import model_response_event
 from agent_core.harness.protocol_invariants import is_raw_dsml_tool_request
+from agent_core.harness.required_tool_request import (
+    evidence_correction_budget_failure,
+    evidence_correction_request,
+)
 from agent_core.harness.selection import ToolCallSelectionStrategy
 from agent_core.harness.tool_batch import ToolBatchExecutor
 from agent_core.harness.tool_resolution import (
@@ -250,8 +253,8 @@ class SequentialToolLoop:
                 metadata=metadata,
             )
         if not completion.tool_calls:
-            contract = _final_output_contract(emitted_events, completion)
-            _bind_final_output_contract(emitted_events, contract)
+            contract = final_output_contract(emitted_events, completion)
+            bind_final_output_contract(emitted_events, contract)
             if contract is not None:
                 metadata = {**metadata, "output_contract": contract}
             return complete_without_tools(
@@ -340,6 +343,15 @@ class SequentialToolLoop:
             model_limit is None or model_calls_used + 1 < model_limit
         )
         allow_tools = tool_budget_open and model_budget_allows_followup
+        correction = evidence_correction_request(metadata)
+        if correction.tool_names and not allow_tools:
+            return evidence_correction_budget_failure(
+                metadata=metadata,
+                assistant_message=fallback_message,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+            )
         compaction = (
             self._model_step.prepare_conversation(
                 messages,
@@ -384,6 +396,8 @@ class SequentialToolLoop:
                 model_limit,
                 model_calls_used,
             ),
+            required_tool_names=correction.tool_names,
+            invocation_policy=correction.invocation_policy,
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
         compaction_count = metadata.get("conversation_compaction_count")
@@ -403,7 +417,7 @@ class SequentialToolLoop:
         # event must already carry the emit-tool contract BEFORE it is
         # appended; a later in-buffer replace would never reach the store.
         contract = (
-            _final_output_contract(emitted_events, completion)
+            final_output_contract(emitted_events, completion)
             if response_stage == "final"
             else None
         )
@@ -531,7 +545,7 @@ class SequentialToolLoop:
             response_repair_limit=allowed_response_repairs(model_limit, model_calls_used),
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
-        contract = _final_output_contract(emitted_events, completion)
+        contract = final_output_contract(emitted_events, completion)
         # Same sink constraint as above: inject the contract before append.
         emitted_events.append(
             model_response_event(
@@ -541,7 +555,7 @@ class SequentialToolLoop:
                 output_contract=contract,
             )
         )
-        _bind_final_output_contract(emitted_events, contract)
+        bind_final_output_contract(emitted_events, contract)
         if contract is not None:
             metadata = {**metadata, "output_contract": contract}
         if (
@@ -577,60 +591,3 @@ class SequentialToolLoop:
             emitted_events=emitted_events,
             metadata=metadata,
         )
-
-
-def _final_output_contract(
-    emitted_events: list[HarnessEventDraft],
-    completion: ModelCompletion,
-) -> dict[str, object] | None:
-    """The output_contract strictly bound to the FINAL answer.
-
-    Only the dedicated producer tool (``artifact.output_contract.emit``) may
-    contribute a contract through tool-result metadata; ANY other tool's
-    ``output_contract`` metadata is ignored, so a forged envelope from a
-    local, MCP or business-provider tool can never become the Artifact
-    contract source. The last legal emission in the terminal attempt wins;
-    otherwise the final completion's own gateway channel
-    (``ModelCompletion.output_contract``) applies. Contracts from earlier
-    tool-loop rounds never leak into the final metadata because only the
-    terminal sites bind and non-final events never carry one.
-    """
-    emitted: dict[str, object] | None = None
-    for event in emitted_events:
-        if event.event_type is not EventType.TOOL_EXECUTION_COMPLETED:
-            continue
-        if event.payload.get("tool_name") != ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME:
-            continue
-        metadata = event.payload.get("metadata")
-        candidate = (
-            metadata.get("output_contract")
-            if isinstance(metadata, Mapping)
-            else None
-        )
-        if isinstance(candidate, Mapping):
-            emitted = dict(candidate)
-    if emitted is not None:
-        return emitted
-    if completion.output_contract is not None:
-        return dict(completion.output_contract)
-    return None
-
-
-def _bind_final_output_contract(
-    emitted_events: list[HarnessEventDraft],
-    contract: dict[str, object] | None,
-) -> None:
-    """Attach the contract to the final MODEL_RESPONSE_RECEIVED event only."""
-    if contract is None:
-        return
-    for index in range(len(emitted_events) - 1, -1, -1):
-        event = emitted_events[index]
-        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
-            emitted_events[index] = replace(
-                event,
-                payload={
-                    **event.payload,
-                    "output_contract": dict(contract),
-                },
-            )
-            break
