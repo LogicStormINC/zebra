@@ -195,6 +195,59 @@ def test_recorder_rejects_cloud_projections_not_derived_from_event() -> None:
         )
 
 
+def test_committed_aggregate_uses_fenced_indexes() -> None:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Cloud aggregate indexes",
+            user_input="continue",
+            workspace_root=Path("/tmp/cloud-aggregate-indexes"),
+        )
+    )
+    workspace = rebuild_workspace(list(bootstrap.events))
+    authority = WorkerMutationAuthority(
+        deployment_namespace="cloud-a",
+        session_id=bootstrap.session.session_id,
+        lease_fence=LeaseFence(
+            control_plane_epoch=uuid4(),
+            fencing_token=7,
+            owner_instance_id="worker-a",
+        ),
+        expected_stream_revision=bootstrap.session.current_sequence,
+    )
+    model_indexer = Mock()
+    tool_indexer = Mock()
+    recorder = DurableHarnessEventRecorder(
+        session=bootstrap.session,
+        workspace=workspace,
+        event_store=Mock(),
+        projection_store=Mock(),
+        workspace_store=Mock(),
+        model_call_indexer=model_indexer,
+        tool_run_indexer=tool_indexer,
+        worker_projection_transaction=Mock(),
+        worker_mutation_authority=authority,
+    )
+    event = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=bootstrap.session.current_sequence + 1,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 1},
+        created_at=datetime(2026, 7, 29, 10, 0, tzinfo=UTC),
+    )
+
+    recorder.accept_committed_events(
+        (event,),
+        session=apply_session_event(bootstrap.session, event),
+        workspace=apply_workspace_event(workspace, event),
+    )
+
+    model_indexer.index_worker_event.assert_called_once_with(event, authority=authority)
+    tool_indexer.index_worker_event.assert_called_once_with(event, authority=authority)
+    model_indexer.index_event.assert_not_called()
+    tool_indexer.index_event.assert_not_called()
+
+
 @pytest.mark.parametrize("missing", ["transaction", "authority"])
 def test_recorder_rejects_partial_projection_transaction_configuration(
     missing: str,

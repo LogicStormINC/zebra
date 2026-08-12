@@ -5,11 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
-from agent_core.application import (
-    MemoryCandidateExtractionService,
-    MemoryCandidatePromotionService,
-    SessionTitleService,
-)
+from agent_core.application import SessionTitleService
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
@@ -27,10 +23,7 @@ from agent_security import (
     PolicyProfile,
     resolve_effective_network_profile,
 )
-from agent_storage import (
-    ControlPlaneStores,
-    sqlite_control_plane_stores,
-)
+from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 from zebra_agent_config import (
     ZebraAgentSettings,
     load_settings,
@@ -64,6 +57,7 @@ from zebra_agent_worker.execution_finalization import (
     WorkerExecutionError,
     finalize_execution,
 )
+from zebra_agent_worker.execution_storage import resolve_execution_storage
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.provider_configuration import model_provider_settings
@@ -90,7 +84,7 @@ class SessionExecutionService:
         claim_service: SessionClaimService,
         resume_service: SessionResumeService,
         settings: ZebraAgentSettings | None = None,
-        stores: ControlPlaneStores | None = None,
+        stores: ControlPlaneStores | PostgresControlPlaneStores | None = None,
         effect_dispatch: EffectDispatchPort | None = None,
         worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
         deployment_namespace: str | None = None,
@@ -117,7 +111,8 @@ class SessionExecutionService:
         self._claim_service = claim_service
         self._resume_service = resume_service
         self._settings = settings or load_settings()
-        active_stores = stores or sqlite_control_plane_stores(database_path)
+        storage = resolve_execution_storage(database_path, stores)
+        active_stores = storage.stores
         self._event_store = active_stores.events
         self._projection_store = active_stores.sessions
         self._workspace_store = active_stores.workspaces
@@ -131,9 +126,16 @@ class SessionExecutionService:
             settings=self._settings,
             stores=active_stores,
         )
-        self._artifact_payload_store = active_stores.artifact_payloads
+        self._artifact_payload_store = storage.artifact_payload_store
+        self._artifact_payload_reader = storage.artifact_payload_reader
+        self._provider_continuation_store = storage.provider_continuation_store
+        self._memory_store = storage.memory_store
+        self._cloud_memory_store = storage.cloud_memory_store
+        self._memory_extraction_service = storage.memory_extraction_service
+        self._memory_promotion_service = storage.memory_promotion_service
+        self._effect_ledger = storage.effect_ledger
+        self._deployment_namespace = storage.deployment_namespace
         self._context_lifecycle_store = active_stores.context_lifecycle
-        self._provider_continuation_store = active_stores.provider_continuations
         self._model_call_indexer = ModelCallIndexer(active_stores.model_calls)
         self._tool_run_indexer = ToolRunIndexer(
             active_stores.tool_runs, self._artifact_payload_store
@@ -145,10 +147,6 @@ class SessionExecutionService:
             transaction=worker_projection_transaction,
             deployment_namespace=deployment_namespace,
         )
-        self._memory_store = active_stores.memories
-        self._memory_extraction_service = MemoryCandidateExtractionService(self._memory_store)
-        self._memory_promotion_service = MemoryCandidatePromotionService(self._memory_store)
-        self._effect_ledger = active_stores.effects
         self._effect_dispatch = effect_dispatch
         self._session_history = active_stores.session_history
         self._handoff_gate = handoff.SessionHandoffRecoveryGate(
@@ -236,7 +234,7 @@ class SessionExecutionService:
                 session_events,
                 workspace=claimed.recovery.workspace,
                 fallback_title=claimed.recovery.session.title,
-                attachment_store=self._artifact_payload_store,
+                attachment_reader=self._artifact_payload_reader,
                 active_capsule=active_context.capsule if active_context else None,
                 handoff_evidence=(
                     None if recovered_handoff is None else recovered_handoff.runtime_evidence
@@ -487,6 +485,10 @@ class SessionExecutionService:
             memory_promotion_service=self._memory_promotion_service,
             title_service=SessionTitleService(model_gateway),
             event_store=self._event_store,
+            cloud_memory_store=self._cloud_memory_store,
+            deployment_namespace=self._deployment_namespace,
+            projection_store=self._projection_store,
+            workspace_store=self._workspace_store,
             started_at=started_at,
         )
         final_session = self._projection_store.get_session(session_id)

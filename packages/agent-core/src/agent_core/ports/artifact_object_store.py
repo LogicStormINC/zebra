@@ -8,9 +8,10 @@ from agent_core.domain.artifact_objects import (
     ArtifactObjectReceipt,
     ArtifactObjectVerification,
 )
+from agent_core.ports.artifact_payload_read import ArtifactPayloadObjectReadPort
 
 
-class ArtifactObjectStorePort(Protocol):
+class ArtifactObjectStorePort(ArtifactPayloadObjectReadPort, Protocol):
     def put_if_absent(self, request: ArtifactObjectPutRequest) -> ArtifactObjectReceipt: ...
 
     def verify(self, expectation: ArtifactObjectExpectation) -> ArtifactObjectVerification: ...

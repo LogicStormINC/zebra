@@ -222,8 +222,13 @@ class DurableHarnessEventRecorder:
         for event in events:
             if event.session_id != self._session.session_id or event.sequence != self.next_sequence:
                 raise ValueError("committed Context Event sequence does not match recorder")
-            self._model_call_indexer.index_event(event)
-            self._tool_run_indexer.index_event(event)
+            authority = self._worker_mutation_authority
+            if authority is None:
+                self._model_call_indexer.index_event(event)
+                self._tool_run_indexer.index_event(event)
+            else:
+                self._model_call_indexer.index_worker_event(event, authority=authority)
+                self._tool_run_indexer.index_worker_event(event, authority=authority)
             self._advance_authority(event)
             self._events.append(event)
             self._session = apply_event(self._session, event)

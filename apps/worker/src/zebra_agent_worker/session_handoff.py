@@ -23,6 +23,7 @@ from agent_core.ports import (
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_storage import (
     ControlPlaneStores,
+    PostgresControlPlaneStores,
     sqlite_control_plane_stores,
 )
 from agent_tools import EffectGuardedToolGateway, FencedEffectToolGateway
@@ -48,7 +49,7 @@ class SessionHandoffRecoveryGate:
         self,
         database_path: str,
         *,
-        stores: ControlPlaneStores | None = None,
+        stores: ControlPlaneStores | PostgresControlPlaneStores | None = None,
         worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
         deployment_namespace: str | None = None,
     ) -> None:
@@ -167,7 +168,7 @@ class SessionHandoffRecoveryGate:
 def guard_effectful_tools(
     gateway: Any,
     *,
-    ledger: EffectLedgerPort,
+    ledger: EffectLedgerPort | None,
     session_id: SessionId,
     recovered_handoff: RecoveredHandoff | None,
     authority_scope: str,
@@ -220,6 +221,8 @@ def guard_effectful_tools(
         return guarded
     if effect_payloads is not None or mutation_authority is not None:
         raise ValueError("cloud Effect payload coordination requires fenced dispatch")
+    if ledger is None:
+        raise ValueError("local Effect execution requires an Effect ledger")
     return EffectGuardedToolGateway(
         gateway,
         ledger=ledger,
