@@ -289,7 +289,7 @@ new evidence and long legitimate tool chains remain unbounded by default.
 
 ### CTX-REHYDRATE-02 - Convergence Projection And On-Demand Rehydration
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Vinson`
 - Coding task: `ctx_rehydrate_phase1_5` (`gpt-5.6-terra`, max)
 - Suggested role: `CTX / CORE / WORKER / QA`
@@ -16120,7 +16120,7 @@ call, then request another completion for subsequent business work.
 
 ### ZNX-USKILL-01 - User/Private Skill Lifecycle Alignment
 
-- Status: `Done`
+- Status: `Review`
 - Owner: `Vinson`
 - Suggested role: `TOOLS / STORAGE / API / RUNTIME / QA`
 - Depends on: Wave 2.5 Goal/Plan product acceptance at
