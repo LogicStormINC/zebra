@@ -1,3 +1,4 @@
+import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.application.session_projection import apply_event
@@ -23,14 +24,20 @@ from worker_execution_support import _build_execution_service, _created_at, _set
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 
 
-def test_worker_rollover_reuses_prior_authoritative_typed_read(tmp_path, monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "typed_evidence",
+    ("authoritative_typed_read", "confirmed_investor_knowledge"),
+)
+def test_worker_rollover_reuses_prior_typed_evidence(
+    tmp_path, monkeypatch, typed_evidence: str
+) -> None:
     database = tmp_path / "worker.sqlite"
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Authoritative evidence",
             user_input="Review the authorized records.",
             workspace_root=tmp_path.resolve(),
-            agent_definition=_definition(),
+            agent_definition=_definition(typed_evidence),
             created_at=_created_at(),
         )
     )
@@ -54,7 +61,7 @@ def test_worker_rollover_reuses_prior_authoritative_typed_read(tmp_path, monkeyp
             "tool_call_id": str(new_tool_call_id()),
             "status": ToolCallStatus.EXECUTED.value,
             "output": "[]",
-            "metadata": {"typed_evidence": ["authoritative_typed_read"]},
+            "metadata": {"typed_evidence": [typed_evidence]},
         },
         created_at=_created_at(),
     )
@@ -107,15 +114,15 @@ def test_worker_rollover_reuses_prior_authoritative_typed_read(tmp_path, monkeyp
     assert len(gateway.requests) == 2
 
 
-def _definition() -> AgentDefinition:
+def _definition(typed_evidence: str) -> AgentDefinition:
     return AgentDefinition(
         agent_id="finos",
         version="1.0.0",
         completion_contract=CompletionEvidenceContract(
             required_evidence=(
                 CompletionEvidenceRequirement(
-                    evidence_id="authoritative_financial_evidence",
-                    typed_evidence=("authoritative_typed_read",),
+                    evidence_id="required_typed_evidence",
+                    typed_evidence=(typed_evidence,),
                 ),
             )
         ),

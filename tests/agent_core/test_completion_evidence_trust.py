@@ -69,6 +69,12 @@ def test_conflicting_validator_fields_fail_closed_on_recorded_success() -> None:
             False,
         ),
         (
+            EventType.TOOL_EXECUTION_COMPLETED,
+            ToolCallStatus.EXECUTED.value,
+            {"typed_evidence": ["confirmed_investor_knowledge"]},
+            False,
+        ),
+        (
             EventType.TOOL_EXECUTION_FAILED,
             ToolCallStatus.FAILED.value,
             {"typed_evidence": ["authoritative_typed_read"]},

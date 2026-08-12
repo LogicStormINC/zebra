@@ -73,9 +73,9 @@ from agent_runtime.artifact_output_contract import (
     ArtifactOutputContractEmitTool,
 )
 from agent_runtime.finos_journal_provider import (
-    _FINOS_AUTHORITATIVE_TYPED_READ_TAG,
+    TRUSTED_TYPED_EVIDENCE_TAG_PREFIX,
     FinosJournalProvider,
-    trusted_authoritative_typed_read_result,
+    trusted_typed_evidence_result,
 )
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
@@ -386,9 +386,17 @@ class LocalToolGateway(ToolGatewayPort):
             registry.register(research.contract, research.handle)
         self._validator_tools = registry.names_with_tag("validator")
         self._read_only_tools = registry.names_with_tag(READ_ONLY_EFFECT_TAG)
-        self._authoritative_typed_read_tools = registry.names_with_tag(
-            _FINOS_AUTHORITATIVE_TYPED_READ_TAG
-        )
+        self._trusted_typed_evidence = {
+            name: tuple(
+                dict.fromkeys(
+                    tag.removeprefix(TRUSTED_TYPED_EVIDENCE_TAG_PREFIX)
+                    for tag in registry.get(name).tags
+                    if tag.startswith(TRUSTED_TYPED_EVIDENCE_TAG_PREFIX)
+                    and tag.removeprefix(TRUSTED_TYPED_EVIDENCE_TAG_PREFIX)
+                )
+            )
+            for name in registry.names()
+        }
         self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
         self._parallel_safe_tools = registry.parallel_safe_names()
         self._parallel_batch_limits = (
@@ -511,9 +519,9 @@ class LocalToolGateway(ToolGatewayPort):
             )
         try:
             result = self._executor.execute(tool_call)
-            return trusted_authoritative_typed_read_result(
+            return trusted_typed_evidence_result(
                 self._project_tool_output(tool_call, result),
-                trusted=tool_call.name in self._authoritative_typed_read_tools,
+                trusted_evidence=self._trusted_typed_evidence.get(tool_call.name, ()),
             )
         except ToolRegistryError as exc:
             detail = str(exc)[:1000]

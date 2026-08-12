@@ -12,6 +12,7 @@ from zebra_agent_api.task_api import _not_found, parse_task_id
 FINOS_JOURNAL_V1_CONTRACT = "finos.journals.v1"
 FINOS_JOURNAL_V2_CONTRACT = "finos.journals.v2"
 FINOS_JOURNAL_V3_CONTRACT = "finos.journals.v3"
+FINOS_JOURNAL_V4_CONTRACT = "finos.journals.v4"
 FINOS_JOURNAL_TOOLS = (
     "finos.journals.list",
     "finos.journals.get",
@@ -35,6 +36,14 @@ FINOS_JOURNAL_TOOLS_BY_CONTRACT = {
         "finos.account_changes.propose",
         "finos.journals.save",
         "finos.trade_log_quality.validate",
+    ),
+    FINOS_JOURNAL_V4_CONTRACT: (
+        *FINOS_JOURNAL_TOOLS,
+        "finos.account_changes.propose",
+        "finos.journals.save",
+        "finos.trade_log_quality.validate",
+        "finos.investor_knowledge.list",
+        "finos.investor_knowledge.get",
     ),
 }
 

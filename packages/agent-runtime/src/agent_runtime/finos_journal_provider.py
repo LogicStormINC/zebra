@@ -14,23 +14,22 @@ from agent_tools.contracts import READ_ONLY_EFFECT_TAG
 
 MAX_RESPONSE_BYTES = 524_288
 AUTHORITATIVE_TYPED_READ = "authoritative_typed_read"
-_FINOS_AUTHORITATIVE_TYPED_READ_TAG = "internal:finos_authoritative_typed_read"
+CONFIRMED_INVESTOR_KNOWLEDGE = "confirmed_investor_knowledge"
+TRUSTED_TYPED_EVIDENCE_TAG_PREFIX = "internal:trusted_typed_evidence:"
 FINOS_JOURNAL_V1_CONTRACT = "finos.journals.v1"
 FINOS_JOURNAL_V2_CONTRACT = "finos.journals.v2"
 FINOS_JOURNAL_V3_CONTRACT = "finos.journals.v3"
+FINOS_JOURNAL_V4_CONTRACT = "finos.journals.v4"
 SUPPORTED_FINOS_JOURNAL_CONTRACTS = frozenset(
-    {FINOS_JOURNAL_V1_CONTRACT, FINOS_JOURNAL_V2_CONTRACT, FINOS_JOURNAL_V3_CONTRACT}
+    (FINOS_JOURNAL_V1_CONTRACT, FINOS_JOURNAL_V2_CONTRACT,
+     FINOS_JOURNAL_V3_CONTRACT, FINOS_JOURNAL_V4_CONTRACT)
 )
-
-
 @dataclass(frozen=True)
 class _FinosTool:
     contract: ToolContract
     suffix: str
     side_effect: str = "read_only"
     tags: tuple[str, ...] = ()
-
-
 JOURNALS_LIST_CONTRACT = ToolContract(
     name="finos.journals.list",
     description="List authorized FinOS daily journals for this Task.",
@@ -267,41 +266,60 @@ TRADE_LOG_QUALITY_VALIDATE_CONTRACT = ToolContract(
     required_arguments=("report",),
     argument_properties={"report": {"type": "object"}},
 )
+INVESTOR_KNOWLEDGE_LIST_CONTRACT = ToolContract(
+    name="finos.investor_knowledge.list", description="List active confirmed Knowledge.",
+    capability_version="finos.investor_knowledge.list.v1",
+)
+INVESTOR_KNOWLEDGE_GET_CONTRACT = ToolContract(
+    name="finos.investor_knowledge.get", description="Read one confirmed Knowledge revision.",
+    capability_version="finos.investor_knowledge.get.v1",
+    required_arguments=("revision_id",),
+    argument_properties={"revision_id": {"type": "string", "minLength": 1, "maxLength": 256}},
+)
 
-FINOS_TOOL_SPECS = (
-    _FinosTool(JOURNALS_LIST_CONTRACT, "journals:list"),
-    _FinosTool(JOURNALS_GET_CONTRACT, "journals:get"),
-    _FinosTool(SNAPSHOTS_LIST_CONTRACT, "snapshots:list"),
-    _FinosTool(SNAPSHOTS_GET_CONTRACT, "snapshots:get"),
-    _FinosTool(TRANSACTIONS_LIST_CONTRACT, "transactions:list"),
-    _FinosTool(POSITIONS_LIST_CONTRACT, "positions:list"),
-    _FinosTool(NOTES_LIST_CONTRACT, "notes:list"),
-    _FinosTool(NOTES_GET_CONTRACT, "notes:get"),
-    _FinosTool(SECURITIES_RESOLVE_CONTRACT, "securities:resolve"),
+_AUTHORITATIVE_TYPED_READ_TAG = f"{TRUSTED_TYPED_EVIDENCE_TAG_PREFIX}{AUTHORITATIVE_TYPED_READ}"
+_FINOS_FACTUAL_READ_TAGS = (_AUTHORITATIVE_TYPED_READ_TAG,)
+FINOS_TOOL_SPECS = tuple(
+    _FinosTool(contract, suffix, tags=_FINOS_FACTUAL_READ_TAGS)
+    for contract, suffix in (
+        (JOURNALS_LIST_CONTRACT, "journals:list"),
+        (JOURNALS_GET_CONTRACT, "journals:get"),
+        (SNAPSHOTS_LIST_CONTRACT, "snapshots:list"),
+        (SNAPSHOTS_GET_CONTRACT, "snapshots:get"),
+        (TRANSACTIONS_LIST_CONTRACT, "transactions:list"),
+        (POSITIONS_LIST_CONTRACT, "positions:list"),
+        (NOTES_LIST_CONTRACT, "notes:list"),
+        (NOTES_GET_CONTRACT, "notes:get"),
+        (SECURITIES_RESOLVE_CONTRACT, "securities:resolve"),
+    )
 )
 FINOS_V2_TOOL_SPECS = (
     *FINOS_TOOL_SPECS,
-    _FinosTool(
-        ACCOUNT_CHANGES_PROPOSE_CONTRACT,
-        "account-changes:propose",
-        side_effect="proposal",
-    ),
-    _FinosTool(
-        JOURNALS_SAVE_CONTRACT,
-        "journals:save",
-        side_effect="journal_save",
-    ),
+    _FinosTool(ACCOUNT_CHANGES_PROPOSE_CONTRACT, "account-changes:propose", side_effect="proposal"),
+    _FinosTool(JOURNALS_SAVE_CONTRACT, "journals:save", side_effect="journal_save"),
 )
 FINOS_V3_TOOL_SPECS = (
     *FINOS_V2_TOOL_SPECS,
     _FinosTool(
-        TRADE_LOG_QUALITY_VALIDATE_CONTRACT,
-        "trade-log-quality:validate",
-        tags=("validator",),
+        TRADE_LOG_QUALITY_VALIDATE_CONTRACT, "trade-log-quality:validate", tags=("validator",)
     ),
 )
-
-
+_CONFIRMED_INVESTOR_KNOWLEDGE_TAGS = (
+    f"{TRUSTED_TYPED_EVIDENCE_TAG_PREFIX}{CONFIRMED_INVESTOR_KNOWLEDGE}",
+)
+FINOS_V4_TOOL_SPECS = (
+    *FINOS_V3_TOOL_SPECS,
+    _FinosTool(
+        INVESTOR_KNOWLEDGE_LIST_CONTRACT,
+        "investor-knowledge:list",
+        tags=_CONFIRMED_INVESTOR_KNOWLEDGE_TAGS,
+    ),
+    _FinosTool(
+        INVESTOR_KNOWLEDGE_GET_CONTRACT,
+        "investor-knowledge:get",
+        tags=_CONFIRMED_INVESTOR_KNOWLEDGE_TAGS,
+    ),
+)
 class FinosJournalTransport(Protocol):
     def post_json(
         self,
@@ -311,8 +329,6 @@ class FinosJournalTransport(Protocol):
         payload: dict[str, object],
         timeout_seconds: float,
     ) -> dict[str, object]: ...
-
-
 @dataclass(frozen=True)
 class FinosJournalProvider:
     base_url: str
@@ -360,22 +376,15 @@ class FinosJournalProvider:
             FINOS_JOURNAL_V1_CONTRACT: FINOS_TOOL_SPECS,
             FINOS_JOURNAL_V2_CONTRACT: FINOS_V2_TOOL_SPECS,
             FINOS_JOURNAL_V3_CONTRACT: FINOS_V3_TOOL_SPECS,
+            FINOS_JOURNAL_V4_CONTRACT: FINOS_V4_TOOL_SPECS,
         }[self.contract_version]
         for spec in specs:
-            if (
-                not allow_journal_save
-                and spec.side_effect == "journal_save"
-            ):
-                # Read-only policy always DENYs finos.journals.save with no
-                # recovery; exposing it only invites a guaranteed session
-                # failure. Saving stays a user-initiated action (the browser
-                # message action), never a model tool call.
+            if not allow_journal_save and spec.side_effect == "journal_save":
+                # Saving stays a user-initiated message action, never a model tool call.
                 continue
             tags = spec.tags
             if spec.side_effect == "read_only":
                 tags += (READ_ONLY_EFFECT_TAG,)
-                if "validator" not in spec.tags:
-                    tags += (_FINOS_AUTHORITATIVE_TYPED_READ_TAG,)
             registry.register(spec.contract, self._handler(spec), tags=tags)
 
     def _handler(self, spec: _FinosTool) -> Callable[[ToolCall], ToolResult]:
@@ -413,8 +422,7 @@ class FinosJournalProvider:
         if len(output.encode()) > MAX_RESPONSE_BYTES:
             return _failed(call, "FinOS provider response exceeds the size limit")
         metadata: dict[str, object] = {
-            "schema_version": response_schema,
-            "side_effect": spec.side_effect,
+            "schema_version": response_schema, "side_effect": spec.side_effect
         }
         if "validator" in spec.tags:
             validator_result = _validator_result(response)
@@ -429,29 +437,18 @@ class FinosJournalProvider:
         )
 
 
-def trusted_authoritative_typed_read_result(result: ToolResult, *, trusted: bool) -> ToolResult:
+def trusted_typed_evidence_result(
+    result: ToolResult, *, trusted_evidence: tuple[str, ...]
+) -> ToolResult:
     metadata = dict(result.metadata)
-    raw = metadata.get("typed_evidence", ())
-    values = raw if isinstance(raw, list | tuple) else (raw,)
-    evidence = [
-        item.strip()
-        for item in values
-        if isinstance(item, str) and item.strip() != AUTHORITATIVE_TYPED_READ
-    ]
-    if trusted and result.status is ToolCallStatus.EXECUTED:
-        evidence.append(AUTHORITATIVE_TYPED_READ)
-    if evidence:
-        metadata["typed_evidence"] = list(dict.fromkeys(evidence))
-    else:
-        metadata.pop("typed_evidence", None)
+    metadata.pop("typed_evidence", None)
+    evidence = tuple(dict.fromkeys(label.strip() for label in trusted_evidence if label.strip()))
+    if result.status is ToolCallStatus.EXECUTED and evidence:
+        metadata["typed_evidence"] = list(evidence)
     return result.model_copy(update={"metadata": metadata})
-
-
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
         return None
-
-
 @dataclass(frozen=True)
 class UrllibFinosTransport:
     def post_json(
@@ -484,16 +481,12 @@ class UrllibFinosTransport:
         if not isinstance(parsed, dict):
             raise ValueError("response must be an object")
         return parsed
-
-
 def _failed(call: ToolCall, detail: str) -> ToolResult:
     return ToolResult(
         tool_call_id=call.tool_call_id,
         status=ToolCallStatus.FAILED,
         metadata={"reason": "finos_journal_provider_error", "detail": detail[:1000]},
     )
-
-
 def _validator_result(response: dict[str, object]) -> dict[str, object] | None:
     value = response.get("validator_result")
     if not isinstance(value, dict):
