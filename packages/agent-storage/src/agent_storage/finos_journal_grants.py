@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -8,7 +9,7 @@ from pathlib import Path
 
 from agent_core.domain.identifiers import TaskId
 
-from agent_storage.database import SQLiteDatabase
+from agent_storage.database import SQLiteDatabase, ensure_column
 
 _CONFLICTED_GRANT_OWNER = "__conflict__"
 
@@ -19,6 +20,7 @@ class FinosJournalGrant:
     contract_version: str
     expires_at: datetime
     grant: str = field(repr=False)
+    model_tool_names: tuple[str, ...] | None = None
 
     def __post_init__(self) -> None:
         if not self.contract_version.strip():
@@ -27,6 +29,8 @@ class FinosJournalGrant:
             raise ValueError("FinOS Journal grant must not be blank")
         if self.expires_at.tzinfo is None or self.expires_at.utcoffset() is None:
             raise ValueError("FinOS Journal grant expiry must be timezone-aware")
+        if self.model_tool_names is not None:
+            _validated_model_tool_names(self.model_tool_names)
 
     @property
     def active(self) -> bool:
@@ -44,10 +48,12 @@ class SQLiteFinosJournalGrantStore:
                     task_id TEXT PRIMARY KEY,
                     contract_version TEXT NOT NULL,
                     grant TEXT NOT NULL,
-                    expires_at TEXT NOT NULL
+                    expires_at TEXT NOT NULL,
+                    model_tool_names TEXT
                 )
                 """
             )
+            ensure_column(connection, "finos_journal_grants", "model_tool_names", "TEXT")
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS finos_journal_grant_digests (
@@ -65,14 +71,24 @@ class SQLiteFinosJournalGrantStore:
         with self._database.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
-                "SELECT contract_version, grant, expires_at FROM finos_journal_grants "
+                "SELECT contract_version, grant, expires_at, model_tool_names "
+                "FROM finos_journal_grants "
                 "WHERE task_id = ?",
                 (str(binding.task_id),),
             ).fetchone()
+            current_model_tool_names = (
+                _model_tool_names(row["model_tool_names"]) if row is not None else None
+            )
+            model_tool_names = (
+                binding.model_tool_names
+                if binding.model_tool_names is not None
+                else current_model_tool_names
+            )
             values = (
                 binding.contract_version,
                 binding.grant,
                 binding.expires_at.isoformat(),
+                None if model_tool_names is None else json.dumps(model_tool_names),
             )
             current_expiry = (
                 datetime.fromisoformat(row["expires_at"]) if row is not None else None
@@ -82,6 +98,7 @@ class SQLiteFinosJournalGrantStore:
                     row["contract_version"] == binding.contract_version
                     and row["grant"] == binding.grant
                     and current_expiry == binding.expires_at
+                    and current_model_tool_names == model_tool_names
                 ):
                     owner = _grant_owner(connection, binding.grant)
                     if owner != str(binding.task_id):
@@ -91,6 +108,11 @@ class SQLiteFinosJournalGrantStore:
                     row["contract_version"] != binding.contract_version
                     or current_expiry is None
                     or binding.expires_at < current_expiry
+                    or (
+                        binding.model_tool_names is not None
+                        and current_model_tool_names is not None
+                        and binding.model_tool_names != current_model_tool_names
+                    )
                 ):
                     raise ValueError("FinOS Journal grant rotation is stale or incompatible")
             digest = _grant_digest(binding.grant)
@@ -106,13 +128,13 @@ class SQLiteFinosJournalGrantStore:
             if row is not None:
                 connection.execute(
                     "UPDATE finos_journal_grants "
-                    "SET contract_version = ?, grant = ?, expires_at = ? "
+                    "SET contract_version = ?, grant = ?, expires_at = ?, model_tool_names = ? "
                     "WHERE task_id = ?",
                     (*values, str(binding.task_id)),
                 )
                 return
             connection.execute(
-                "INSERT INTO finos_journal_grants VALUES (?, ?, ?, ?)",
+                "INSERT INTO finos_journal_grants VALUES (?, ?, ?, ?, ?)",
                 (str(binding.task_id), *values),
             )
 
@@ -125,12 +147,16 @@ class SQLiteFinosJournalGrantStore:
             ).fetchone()
             if row is None or _grant_owner(connection, row["grant"]) != str(task_id):
                 return None
-            return FinosJournalGrant(
-                task_id=task_id,
-                contract_version=row["contract_version"],
-                grant=row["grant"],
-                expires_at=datetime.fromisoformat(row["expires_at"]),
-            )
+            try:
+                return FinosJournalGrant(
+                    task_id=task_id,
+                    contract_version=row["contract_version"],
+                    grant=row["grant"],
+                    expires_at=datetime.fromisoformat(row["expires_at"]),
+                    model_tool_names=_model_tool_names(row["model_tool_names"]),
+                )
+            except ValueError:
+                return None
 
 
 def _register_grant_digest(
@@ -165,3 +191,26 @@ def _grant_owner(connection: sqlite3.Connection, grant: str) -> str | None:
 
 def _grant_digest(grant: str) -> str:
     return sha256(grant.encode()).hexdigest()
+
+
+def _model_tool_names(value: str | None) -> tuple[str, ...] | None:
+    if value is None:
+        return None
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("business provider model_tool_names are invalid") from exc
+    if not isinstance(parsed, list):
+        raise ValueError("business provider model_tool_names are invalid")
+    return _validated_model_tool_names(tuple(parsed))
+
+
+def _validated_model_tool_names(value: object) -> tuple[str, ...]:
+    names = value if isinstance(value, tuple) else ()
+    if (
+        not names
+        or not all(isinstance(name, str) and name.strip() for name in names)
+        or len(set(names)) != len(names)
+    ):
+        raise ValueError("business provider model_tool_names are invalid")
+    return names

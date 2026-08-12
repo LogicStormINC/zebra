@@ -61,13 +61,15 @@ def bind_finos_journal_provider(
     provider = _parse_finos_journal_provider(payload)
     if isinstance(provider, ApiResponse):
         return provider
+    store = SQLiteFinosJournalGrantStore(database_path)
     try:
-        SQLiteFinosJournalGrantStore(database_path).bind(
+        store.bind(
             FinosJournalGrant(
                 task_id=parsed_task_id,
                 contract_version=provider.contract_version,
                 grant=provider.grant,
                 expires_at=provider.expires_at,
+                model_tool_names=provider.model_tool_names,
             )
         )
     except ValueError:
@@ -79,13 +81,19 @@ def bind_finos_journal_provider(
                 "reason": "FinOS Journal provider rotation is stale or incompatible",
             },
         )
+    binding = store.get(parsed_task_id)
+    if binding is None:
+        return ApiResponse(409, {"task_id": task_id, "status": "conflict"})
     return ApiResponse(
         200,
         {
             "task_id": task_id,
             "business_tools": {
                 "contract_version": provider.contract_version,
-                "names": list(FINOS_JOURNAL_TOOLS_BY_CONTRACT[provider.contract_version]),
+                "names": list(
+                    binding.model_tool_names
+                    or FINOS_JOURNAL_TOOLS_BY_CONTRACT[provider.contract_version]
+                ),
             },
         },
     )
@@ -96,6 +104,7 @@ class _ParsedFinosJournalProvider:
     contract_version: str
     grant: str
     expires_at: datetime
+    model_tool_names: tuple[str, ...] | None
 
 
 def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | ApiResponse:
@@ -104,7 +113,8 @@ def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | 
             400,
             {"status": "invalid_request", "reason": "finos_journal_provider must be an object"},
         )
-    if set(raw) != {"contract_version", "grant", "expires_at"}:
+    required_fields = {"contract_version", "grant", "expires_at"}
+    if set(raw) not in (required_fields, required_fields | {"model_tool_names"}):
         return ApiResponse(
             400,
             {
@@ -118,6 +128,9 @@ def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | 
             400,
             {"status": "invalid_request", "reason": "FinOS Journal contract is unsupported"},
         )
+    model_tool_names = _model_tool_names(raw, FINOS_JOURNAL_TOOLS_BY_CONTRACT[contract_version])
+    if isinstance(model_tool_names, ApiResponse):
+        return model_tool_names
     grant = raw.get("grant")
     if not isinstance(grant, str) or not grant.strip() or len(grant) > 4096:
         return ApiResponse(
@@ -143,4 +156,28 @@ def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | 
         contract_version=contract_version,
         grant=grant.strip(),
         expires_at=parsed_expiry,
+        model_tool_names=model_tool_names,
     )
+
+
+def _model_tool_names(
+    raw: dict[str, object], catalog: tuple[str, ...]
+) -> tuple[str, ...] | ApiResponse | None:
+    if "model_tool_names" not in raw:
+        return None
+    value = raw["model_tool_names"]
+    if (
+        not isinstance(value, list)
+        or not value
+        or not all(isinstance(name, str) and name.strip() for name in value)
+        or len(set(value)) != len(value)
+        or not set(value) <= set(catalog)
+    ):
+        return ApiResponse(
+            400,
+            {
+                "status": "invalid_request",
+                "reason": "model_tool_names must be a nonempty unique contract catalog subset",
+            },
+        )
+    return tuple(name for name in catalog if name in value)

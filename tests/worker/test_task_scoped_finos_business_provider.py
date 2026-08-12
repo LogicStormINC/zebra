@@ -7,6 +7,7 @@ from uuid import UUID
 
 import pytest
 from agent_core.domain.identifiers import TaskId
+from agent_runtime import LocalToolGateway
 from agent_storage import FinosJournalGrant, SQLiteAgentTaskStore, SQLiteFinosJournalGrantStore
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 from zebra_agent_config import (
@@ -83,9 +84,10 @@ def test_worker_resolves_a_continuation_to_the_original_stable_task_binding(tmp_
     SQLiteFinosJournalGrantStore(database).bind(
         FinosJournalGrant(
             task_id=task_id,
-            contract_version="finos.journals.v1",
+            contract_version="finos.journals.v3",
             grant="active-private-grant",
             expires_at=datetime.now(UTC) + timedelta(hours=1),
+            model_tool_names=("finos.journals.list", "finos.trade_log_quality.validate"),
         )
     )
     cancelled = adapter.handle(RouteRequest("POST", f"/tasks/{task_id}/cancel", body={}))
@@ -105,6 +107,15 @@ def test_worker_resolves_a_continuation_to_the_original_stable_task_binding(tmp_
     assert continued.status_code == 201
     assert provider is not None
     assert provider.task_id == str(task_id)
+    assert provider.model_tool_names == (
+        "finos.journals.list",
+        "finos.trade_log_quality.validate",
+    )
+
+    gateway = LocalToolGateway(tmp_path, finos_journal_provider=provider)
+    names = {tool.name for tool in gateway.model_tools}
+    assert {name for name in names if name.startswith("finos.")} == set(provider.model_tool_names)
+    assert {"agent.plan", "artifact.output_contract.emit"} <= names
 
 
 def test_worker_fails_closed_for_conflicting_legacy_task_bindings(tmp_path: Path) -> None:
@@ -121,7 +132,8 @@ def test_worker_fails_closed_for_conflicting_legacy_task_bindings(tmp_path: Path
     )
     with sqlite3.connect(database) as connection:
         connection.execute(
-            "INSERT INTO finos_journal_grants VALUES (?, ?, ?, ?)",
+            "INSERT INTO finos_journal_grants "
+            "(task_id, contract_version, grant, expires_at) VALUES (?, ?, ?, ?)",
             (
                 str(second_task_id),
                 "finos.journals.v1",

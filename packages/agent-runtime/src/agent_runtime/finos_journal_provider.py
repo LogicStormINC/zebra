@@ -276,7 +276,6 @@ INVESTOR_KNOWLEDGE_GET_CONTRACT = ToolContract(
     required_arguments=("revision_id",),
     argument_properties={"revision_id": {"type": "string", "minLength": 1, "maxLength": 256}},
 )
-
 _AUTHORITATIVE_TYPED_READ_TAG = f"{TRUSTED_TYPED_EVIDENCE_TAG_PREFIX}{AUTHORITATIVE_TYPED_READ}"
 _FINOS_FACTUAL_READ_TAGS = (_AUTHORITATIVE_TYPED_READ_TAG,)
 FINOS_TOOL_SPECS = tuple(
@@ -335,9 +334,9 @@ class FinosJournalProvider:
     task_id: str
     grant: str = field(repr=False)
     contract_version: str = FINOS_JOURNAL_V1_CONTRACT
+    model_tool_names: tuple[str, ...] | None = None
     timeout_seconds: float = 10.0
     transport: FinosJournalTransport = field(default_factory=lambda: UrllibFinosTransport())
-
     def __post_init__(self) -> None:
         base_url = self.base_url.strip().rstrip("/")
         parsed = urlparse(base_url)
@@ -378,7 +377,12 @@ class FinosJournalProvider:
             FINOS_JOURNAL_V3_CONTRACT: FINOS_V3_TOOL_SPECS,
             FINOS_JOURNAL_V4_CONTRACT: FINOS_V4_TOOL_SPECS,
         }[self.contract_version]
+        selected = self.model_tool_names
+        if not set(selected or ()) <= {spec.contract.name for spec in specs}:
+            raise ValueError("business provider model_tool_names are invalid")
         for spec in specs:
+            if selected is not None and spec.contract.name not in selected:
+                continue
             if not allow_journal_save and spec.side_effect == "journal_save":
                 # Saving stays a user-initiated message action, never a model tool call.
                 continue
@@ -386,13 +390,11 @@ class FinosJournalProvider:
             if spec.side_effect == "read_only":
                 tags += (READ_ONLY_EFFECT_TAG,)
             registry.register(spec.contract, self._handler(spec), tags=tags)
-
     def _handler(self, spec: _FinosTool) -> Callable[[ToolCall], ToolResult]:
         def handler(call: ToolCall) -> ToolResult:
             return self._execute(call, spec)
 
         return handler
-
     def _execute(self, call: ToolCall, spec: _FinosTool) -> ToolResult:
         if set(call.arguments) - set(spec.contract.argument_properties):
             return _failed(call, "FinOS provider tool arguments are invalid")
@@ -422,7 +424,7 @@ class FinosJournalProvider:
         if len(output.encode()) > MAX_RESPONSE_BYTES:
             return _failed(call, "FinOS provider response exceeds the size limit")
         metadata: dict[str, object] = {
-            "schema_version": response_schema, "side_effect": spec.side_effect
+            "schema_version": response_schema, "side_effect": spec.side_effect,
         }
         if "validator" in spec.tags:
             validator_result = _validator_result(response)
@@ -435,8 +437,6 @@ class FinosJournalProvider:
             output=output,
             metadata=metadata,
         )
-
-
 def trusted_typed_evidence_result(
     result: ToolResult, *, trusted_evidence: tuple[str, ...]
 ) -> ToolResult:
