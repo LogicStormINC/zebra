@@ -16120,7 +16120,7 @@ call, then request another completion for subsequent business work.
 
 ### ZNX-USKILL-01 - User/Private Skill Lifecycle Alignment
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Vinson`
 - Suggested role: `TOOLS / STORAGE / API / RUNTIME / QA`
 - Depends on: Wave 2.5 Goal/Plan product acceptance at
@@ -16235,14 +16235,18 @@ filter keeps it out of ownerless legacy catalog traversal.
   mypy, diff-check, and changed-file size limits passed. Full pytest was not
   repeated because this follow-up only changes those two guarded paths; the
   recorded third-candidate full comparison remains the applicable baseline.
-- Final-SHA closure audit (`2026-08-12`): FinOS `6dfe283c58d7749214bc34a9b1ccab3b7a417d36`
-  plus Zebra `fb345d8d6ca1afbfe0b2a6e804aa41e774ffd863` passed the six bounded
+- Final-SHA closure audit refresh (`2026-08-12`): runtime-bearing FinOS
+  `741bd096164204da979fae4e0a409fe374a309a3` plus Zebra
+  `5da089553c9f03ccc1e003415278263ccb7705ab` passed the six bounded
   source-of-truth, lifecycle, package-digest, authority, pinning, and public
-  correction-projection checks with no P0-P3 actionable finding. FinOS next then
-  advanced to `8078cc6ffd7cc223786a433e28d74f1a1607a6b0`, whose portfolio-name
-  context change reads `security_refs` outside the existing `research:read`
-  guard; closure remains in Review pending that P2 and a refreshed exact-pair
-  audit. Deployment, browser, and live PostgreSQL remain RC evidence.
+  correction-projection checks with no P0-P3 actionable finding. The transient
+  portfolio-name context change was reverted; current positions now enter only
+  through the provider-neutral typed `finos.positions.list` contract. Latest-pair
+  focused matrices and deterministic Gate 2/3 passed; real DeepSeek acceptance
+  remains the prior recorded runtime evidence rather than a claim of a new real
+  provider run. Wave 3 / User-Private Skill Parity is closed. Documentation and
+  test-pin descendants do not change runtime semantics. Deployment, browser, and
+  live PostgreSQL remain RC evidence.
 
 #### Explicit Non-Goals
 
