@@ -11,10 +11,10 @@ from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection
-from agent_core.ports import ArtifactPayloadStorePort
+from agent_core.ports import ArtifactPayloadReadPort
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_security import NetworkProfile, PolicyProfile, parse_network_profile
-from agent_storage import load_attachment_contexts
+from agent_storage import load_attachment_contexts_from_reader
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ def recover_task(
     *,
     workspace: WorkspaceProjection,
     fallback_title: str,
-    attachment_store: ArtifactPayloadStorePort,
+    attachment_reader: ArtifactPayloadReadPort,
     active_capsule: ContextCapsule | None = None,
     handoff_evidence: RuntimeEvidenceInput | None = None,
 ) -> RecoveredTask:
@@ -61,9 +61,10 @@ def recover_task(
     resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
     policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
     try:
-        attachments = load_attachment_contexts(
-            attachment_store,
-            attachment_refs_from_event(user_event),
+        attachments = load_attachment_contexts_from_reader(
+            attachment_reader,
+            session_id=user_event.session_id,
+            refs=attachment_refs_from_event(user_event),
         )
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"queued session attachment recovery failed: {exc}") from exc

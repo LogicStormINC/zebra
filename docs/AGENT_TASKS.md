@@ -30,6 +30,12 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLOUD-EFFECT-COMP-CLOSE-01` is `In Progress` on
+  `codex/cloud-effect-comp-close-01`. The maintainer explicitly activated this
+  integration gate on 2026-08-12 after `CLOUD-INTEGRATION-REG-01@8bbdf5b5`.
+  It closes only the default Cloud Worker Effect/Artifact/Memory composition
+  and the API handoff's Effect read seam; Profile, command-only API and
+  Workspace Control Plane remain locked.
 - `CLOUD-TRN-NEXT-PLAN-01` is `Review` on
   `codex/cloud-trench-next-plan-01`. It records the evidence-backed path from
   cloud-mainline stabilization to the first production Trench read-only slice.
@@ -186,8 +192,10 @@ does not authorize production code, migrations or activation of its successor.
   `packages/agent-storage/src/agent_storage/memory_search.py` (new),
   `packages/agent-storage/src/agent_storage/memory_lookup.py`,
   `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_storage.py` (new),
   `apps/worker/src/zebra_agent_worker/execution_errors.py`,
   `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
   `tests/agent_context/test_conversation_history.py`,
   `tests/agent_core/test_context_window_gate.py`,
   `tests/agent_core/test_memory_candidate_promotions.py` (new),
@@ -231,6 +239,92 @@ confirmed repo memory by current-task relevance within a token budget.
 - no automatic child Session or Subagent creation to escape a context limit
 
 ## Cloud Integration Stabilization Board
+
+### CLOUD-EFFECT-COMP-CLOSE-01 - Default Cloud Effect Composition Closeout
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CORE / STORAGE / WORKER / API / QA`
+- Depends on: `CLOUD-INTEGRATION-REG-01@8bbdf5b5`; explicitly activated by the
+  maintainer as one integrated, path-bounded implementation slice.
+- Branch: `codex/cloud-effect-comp-close-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-effect-comp-close-01/zebra-agent`
+- Owned paths:
+  `packages/agent-core/src/agent_core/ports/effect_state.py` (new),
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-core/src/agent_core/ports/artifact_object_store.py`,
+  `packages/agent-core/src/agent_core/ports/memory_store.py`,
+  `packages/agent-core/src/agent_core/application/memory_candidates.py`,
+  `packages/agent-storage/src/agent_storage/effect_ledger.py`,
+  `packages/agent-storage/src/agent_storage/postgres/outbox.py`,
+  `packages/agent-storage/src/agent_storage/postgres_composition.py`,
+  `packages/agent-storage/src/agent_storage/runtime_composition.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `packages/agent-storage/src/agent_storage/memory_lookup.py`,
+  `packages/agent-storage/src/agent_storage/session_attachments.py`,
+  `apps/worker/src/zebra_agent_worker/cloud_composition.py` (new),
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/effect_runtime.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `apps/worker/src/zebra_agent_worker/cloud_memory_finalization.py` (new),
+  `apps/worker/src/zebra_agent_worker/runtime_setup.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `apps/worker/src/zebra_agent_worker/provider_continuation_execution.py`,
+  `apps/worker/src/zebra_agent_worker/session_handoff.py`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/worker_projection.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/api/src/zebra_agent_api/api_session_handoff_mixin.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  focused tests under `tests/agent_core/`, `tests/agent_storage/`,
+  `tests/worker/`, `tests/api/`, and `tests/compose/cloud_effect_composition/`
+  (new), plus this card and its focused `PROGRESS.md` record.
+
+#### Goal
+
+Make the default cloud Worker use the fenced Effect dispatch, cloud Artifact
+coordinator, cloud Provider Continuation coordinator and governed Memory
+aggregate without treating `PostgresControlPlaneStores` as local
+`ControlPlaneStores`; give API handoff only a read-only Effect state dependency.
+
+#### Acceptance
+
+- [x] SQLite ledger and PostgreSQL outbox both implement a narrow
+  `EffectStateReadPort`; API handoff cannot schedule or claim Effects.
+- [x] The default cloud Worker resolves one typed cloud bundle and fails before
+  execution when dispatch, object writer, projection transaction, namespace or
+  continuation scope is absent.
+- [x] Cloud Effect payloads use the existing fenced Artifact coordinator, never
+  the local byte-store API; local execution retains the existing ledger path.
+- [x] A completed cloud Session finalizes governed Memory via one fenced
+  `WorkerMemoryMutationPlan`/receipt, never local `MemoryStorePort.upsert()`.
+- [x] Focused tests cover local compatibility, cloud construction failures,
+  Effect state reads and completed-session aggregate acceptance. A real-service
+  default-entrypoint runner is included when Docker services are available; its
+  shared test workspace mount is not Workspace Control Plane evidence.
+
+#### Review evidence
+
+- Focused local matrix: `21 passed, 22 skipped` across Worker finalization,
+  projection transaction, storage composition, Cloud profile and Effect ledger
+  tests. The skipped PostgreSQL Effect/Governed-Memory cases require
+  `ZEBRA_TEST_POSTGRES_DSN` and were not substituted with SQLite.
+- Changed-path Ruff and `git diff --check` pass. `execution.py` is exactly
+  500 lines; the repository size gate now reports only four pre-existing files
+  outside this task. Repository Mypy reports 21 inherited errors; none are in
+  the new Worker composition or Memory-finalization paths.
+- A PostgreSQL+object-store default-entrypoint run remains review evidence to
+  collect in a service-enabled environment; this task makes no production claim.
+
+#### Explicit Non-Goals
+
+- no Profile matrix, API command queue, Runtime isolation, Workspace Control
+  Plane, Redis/AG-UI, Trench, migration, Helm or production-readiness claim
+- no replacement of the remaining cloud API compatibility paths; those stay an
+  explicit command-only API blocker
 
 ### CLOUD-TRN-NEXT-PLAN-01 - Cloud And Trench Next Execution Plan
 

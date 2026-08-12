@@ -20,6 +20,7 @@ from agent_core.domain.session_handoff import (
     SessionLineage,
     validate_session_handoff,
 )
+from agent_core.ports import EffectStateReadPort
 from agent_core.ports.session_handoff import (
     HandoffOperation,
     SessionHandoffCommitRequest,
@@ -61,13 +62,19 @@ class _ParsedCreate(TypedDict):
 
 
 class SessionHandoffApi:
-    def __init__(self, database_path: Path, stores: ControlPlaneStores | None = None) -> None:
+    def __init__(
+        self,
+        database_path: Path,
+        stores: ControlPlaneStores | None = None,
+        *,
+        effect_state: EffectStateReadPort | None = None,
+    ) -> None:
         active_stores = stores or sqlite_control_plane_stores(database_path)
         self._context_lifecycle = active_stores.context_lifecycle
         self._handoffs = active_stores.handoffs
         self._events = active_stores.events
         self._sessions = active_stores.sessions
-        self._effects = active_stores.effects
+        self._effects = effect_state or active_stores.effects
 
     def create(
         self,

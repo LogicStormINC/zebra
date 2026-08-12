@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from agent_core.ports import EffectStateReadPort
 from agent_integrations import GitHubPullRequestTransport
 from agent_security import CredentialBroker
 from agent_storage import (
@@ -31,6 +32,7 @@ def create_app(
     credential_broker: CredentialBroker | None = None,
     credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
+    effect_state: EffectStateReadPort | None = None,
 ) -> ZebraAgentApi:
     from zebra_agent_api.app import ZebraAgentApi
 
@@ -43,6 +45,8 @@ def create_app(
             database_path=active_settings.database_url,
             cloud=cloud_composition,
         )
+    if effect_state is None and active_settings.profile == "cloud" and active_stores is not None:
+        effect_state = active_stores.effects
     active_broker = credential_broker
     if active_broker is None:
         active_broker = build_default_credential_broker(active_settings.scm, env=credential_env)
@@ -55,4 +59,5 @@ def create_app(
         ),
         credential_broker=active_broker,
         github_transport=github_transport,
+        effect_state=effect_state,
     )

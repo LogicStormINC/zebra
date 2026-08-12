@@ -8,6 +8,7 @@ from agent_core.ports import (
     CloudControlPlane,
     ModelCallStorePort,
     ToolRunStorePort,
+    WorkerProjectionTransactionPort,
 )
 
 from agent_storage.artifact_payload_reads import CloudArtifactPayloadReader
@@ -56,6 +57,12 @@ class PostgresControlPlaneStores(CloudControlPlane):
     @property
     def legacy_artifact_control_enabled(self) -> bool:
         return False
+
+    @property
+    def worker_projection_transaction(self) -> WorkerProjectionTransactionPort:
+        if not isinstance(self.workspaces, PostgresWorkspaceProjectionStore):
+            raise ValueError("cloud control plane requires PostgreSQL Worker projections")
+        return self.workspaces
 
 
 def postgres_control_plane_stores(

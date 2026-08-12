@@ -16,6 +16,7 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.ports import EffectStateReadPort
 from agent_integrations import GitHubPullRequestTransport, build_model_gateway
 from agent_runtime import (
     read_mcp_resource_attachments,
@@ -93,6 +94,7 @@ class ZebraAgentApi(
     database_path: Path
     settings: ZebraAgentSettings
     _stores: ControlPlaneStores | None = None
+    effect_state: EffectStateReadPort | None = None
     administrative_context_namespace: str | None = None
     credential_broker: CredentialBroker | None = None
     github_transport: GitHubPullRequestTransport | None = None

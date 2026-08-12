@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import cast
 from uuid import uuid4
 
 import pytest
 from agent_core.domain.artifact_objects import (
+    ArtifactObjectDeleteRequest,
+    ArtifactObjectDeleteResult,
     ArtifactObjectExpectation,
+    ArtifactObjectPutRequest,
+    ArtifactObjectReceipt,
     ArtifactObjectVerification,
 )
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
@@ -27,11 +31,18 @@ from agent_storage import (
 )
 from zebra_agent_api.app import create_app
 from zebra_agent_config import load_settings
+from zebra_agent_worker.cloud_composition import CloudWorkerComposition
 from zebra_agent_worker.loop import build_worker_loop_service
 
 
 class _ObjectReader:
+    def put_if_absent(self, request: ArtifactObjectPutRequest) -> ArtifactObjectReceipt:
+        raise AssertionError(request)
+
     def verify(self, expectation: ArtifactObjectExpectation) -> ArtifactObjectVerification:
+        raise AssertionError(expectation)
+
+    def read_verified(self, expectation: ArtifactObjectExpectation) -> bytes:
         raise AssertionError(expectation)
 
     def read_version_verified(
@@ -40,6 +51,9 @@ class _ObjectReader:
         object_version: str,
     ) -> bytes:
         raise AssertionError((expectation, object_version))
+
+    def delete_if_version(self, request: ArtifactObjectDeleteRequest) -> ArtifactObjectDeleteResult:
+        raise AssertionError(request)
 
 
 class _Projection:
@@ -81,15 +95,6 @@ class _Projection:
     ) -> ModelCallRecord:
         del event, authority
         return self.model
-
-
-class _CloudLikeStores:
-    def __init__(self, delegate: ControlPlaneStores) -> None:
-        self._delegate = delegate
-        self.deployment_namespace = "deployment"
-
-    def __getattr__(self, name: str) -> object:
-        return getattr(self._delegate, name)
 
 
 def _cloud_settings() -> CloudCompositionSettings:
@@ -175,6 +180,7 @@ def test_api_cloud_profile_uses_shared_composition(
     api = create_app(settings=settings, cloud_composition=_cloud_settings())
     assert captured["profile"] == "cloud"
     assert api.stores is local
+    assert api.effect_state is local.effects
 
 
 def test_worker_cloud_profile_uses_shared_composition_without_sqlite_fallback(
@@ -187,18 +193,43 @@ def test_worker_cloud_profile_uses_shared_composition_without_sqlite_fallback(
         }
     )
     local = sqlite_control_plane_stores(tmp_path / "worker.sqlite")
-    cloud_like = _CloudLikeStores(local)
     captured: dict[str, object] = {}
 
-    def fake_compose(**kwargs: object) -> Any:
-        captured.update(kwargs)
-        return cloud_like
+    def fake_compose(cloud: CloudCompositionSettings) -> CloudWorkerComposition:
+        captured["cloud"] = cloud
+        return CloudWorkerComposition(
+            stores=local,  # type: ignore[arg-type]
+            effect_dispatch=local.effects,  # type: ignore[arg-type]
+            projection_transaction=local.workspaces,  # type: ignore[arg-type]
+            deployment_namespace="deployment",
+            artifact_factory=lambda _: None,  # type: ignore[arg-type,return-value]
+            provider_continuation_factory=lambda _: None,  # type: ignore[arg-type,return-value]
+        )
 
-    monkeypatch.setattr("zebra_agent_worker.loop.compose_control_plane_stores", fake_compose)
+    monkeypatch.setattr("zebra_agent_worker.loop.compose_cloud_worker", fake_compose)
+    monkeypatch.setattr("zebra_agent_worker.loop.SessionExecutionService", lambda **_: object())
     build_worker_loop_service(
         database_path=tmp_path / "ignored.sqlite",
         settings=settings,
         cloud_composition=_cloud_settings(),
         sleep=lambda _: None,
     )
-    assert captured["profile"] == "cloud"
+    assert captured["cloud"] is not None
+    assert cast(CloudCompositionSettings, captured["cloud"]).dsn == _cloud_settings().dsn
+
+
+def test_worker_cloud_profile_rejects_local_store_injection(tmp_path: Path) -> None:
+    settings = load_settings(
+        env={
+            "ZEBRA_PROFILE": "cloud",
+            "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
+        }
+    )
+    with pytest.raises(ValueError, match="CloudWorkerComposition"):
+        build_worker_loop_service(
+            database_path=tmp_path / "ignored.sqlite",
+            settings=settings,
+            stores=sqlite_control_plane_stores(tmp_path / "local.sqlite"),
+            cloud_composition=_cloud_settings(),
+            sleep=lambda _: None,
+        )

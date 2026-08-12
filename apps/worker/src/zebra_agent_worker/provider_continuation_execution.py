@@ -12,7 +12,6 @@ from agent_core.ports import (
     ProviderContinuationStorePort,
     WorkerProjectionTransactionPort,
 )
-from agent_storage import ControlPlaneStores
 
 from zebra_agent_worker.context_lifecycle import (
     persist_provider_continuation,
@@ -32,7 +31,7 @@ def validate_factory(
     factory: CloudProviderContinuationFactory | None,
     transaction: WorkerProjectionTransactionPort | None,
     deployment_namespace: str | None,
-    stores: ControlPlaneStores | None,
+    stores: object | None,
 ) -> CloudProviderContinuationFactory | None:
     if factory is not None and (transaction is None or deployment_namespace is None):
         raise ValueError(
@@ -62,16 +61,18 @@ def artifact_for(
 def resolve_provider_continuation(
     coordinator: CloudProviderContinuationCoordinator | None,
     events: list[SessionEvent],
-    local_store: ProviderContinuationStorePort,
+    local_store: ProviderContinuationStorePort | None,
 ) -> ProviderContinuationRef | None:
     if coordinator is not None:
         return coordinator.recover(events)
+    if local_store is None:
+        raise ValueError("local Provider Continuation store is required")
     return recover_provider_continuation(events, local_store)
 
 
 def build_provider_continuation_preparer(
     coordinator: CloudProviderContinuationCoordinator | None,
-    local_store: ProviderContinuationStorePort,
+    local_store: ProviderContinuationStorePort | None,
     session_id: SessionId,
 ) -> Callable[[ProviderContinuationRef, bytes | None, int | None], str | None]:
     def prepare(
@@ -81,6 +82,8 @@ def build_provider_continuation_preparer(
     ) -> str | None:
         if coordinator is not None:
             return coordinator.prepare(reference, payload, maximum_ttl_seconds)
+        if local_store is None:
+            raise ValueError("local Provider Continuation store is required")
         return persist_provider_continuation(
             local_store,
             session_id,
@@ -122,7 +125,7 @@ def build_worker_context_sinks(
     event_store: EventStorePort,
     lifecycle_store: ContextLifecycleStorePort,
     cloud_artifacts: CloudToolOutputArtifactCoordinator | None,
-    local_store: ProviderContinuationStorePort,
+    local_store: ProviderContinuationStorePort | None,
     session_id: SessionId,
 ) -> tuple[
     Callable[[HarnessEventDraft], None],

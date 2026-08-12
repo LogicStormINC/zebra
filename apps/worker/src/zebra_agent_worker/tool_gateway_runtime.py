@@ -21,7 +21,7 @@ def build_worker_tool_gateway(
     session_id: SessionId,
     runtime: RuntimePort,
     runtime_handle: RuntimeHandle,
-    local_artifacts: ArtifactPayloadStorePort,
+    local_artifacts: ArtifactPayloadStorePort | None,
     cloud_artifacts: CloudToolOutputArtifactCoordinator | None,
     trusted_local: bool,
 ) -> LocalToolGateway:
