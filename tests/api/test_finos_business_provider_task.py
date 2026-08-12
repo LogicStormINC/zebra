@@ -18,6 +18,7 @@ FINOS_TOOLS = [
     "finos.snapshots.list",
     "finos.snapshots.get",
     "finos.transactions.list",
+    "finos.positions.list",
     "finos.notes.list",
     "finos.notes.get",
     "finos.securities.resolve",
