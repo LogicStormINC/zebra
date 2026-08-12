@@ -289,7 +289,7 @@ new evidence and long legitimate tool chains remain unbounded by default.
 
 ### CTX-REHYDRATE-02 - Convergence Projection And On-Demand Rehydration
 
-- Status: `Done`
+- Status: `Review`
 - Owner: `Vinson`
 - Coding task: `ctx_rehydrate_phase1_5` (`gpt-5.6-terra`, max)
 - Suggested role: `CTX / CORE / WORKER / QA`
@@ -16238,9 +16238,11 @@ filter keeps it out of ownerless legacy catalog traversal.
 - Final-SHA closure audit (`2026-08-12`): FinOS `6dfe283c58d7749214bc34a9b1ccab3b7a417d36`
   plus Zebra `fb345d8d6ca1afbfe0b2a6e804aa41e774ffd863` passed the six bounded
   source-of-truth, lifecycle, package-digest, authority, pinning, and public
-  correction-projection checks with no P0-P3 actionable finding. Wave 3
-  User/Private Skill Parity is `Product Acceptance PASS / Final-SHA Closure Audit
-  PASS / CLOSED`; deployment, browser, and live PostgreSQL remain RC evidence.
+  correction-projection checks with no P0-P3 actionable finding. FinOS next then
+  advanced to `8078cc6ffd7cc223786a433e28d74f1a1607a6b0`, whose portfolio-name
+  context change reads `security_refs` outside the existing `research:read`
+  guard; closure remains in Review pending that P2 and a refreshed exact-pair
+  audit. Deployment, browser, and live PostgreSQL remain RC evidence.
 
 #### Explicit Non-Goals
 
