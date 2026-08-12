@@ -88,6 +88,15 @@ TRANSACTIONS_LIST_CONTRACT = ToolContract(
         "limit": {"type": "integer", "minimum": 1, "maximum": 50},
     },
 )
+POSITIONS_LIST_CONTRACT = ToolContract(
+    name="finos.positions.list",
+    description="List authorized current FinOS positions derived from confirmed Core data.",
+    capability_version="finos.positions.list.v1",
+    argument_properties={
+        "account_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "symbol": {"type": "string", "minLength": 1, "maxLength": 32},
+    },
+)
 NOTES_LIST_CONTRACT = ToolContract(
     name="finos.notes.list",
     description="List authorized FinOS note metadata for this Task.",
@@ -263,6 +272,7 @@ FINOS_TOOL_SPECS = (
     _FinosTool(SNAPSHOTS_LIST_CONTRACT, "snapshots:list"),
     _FinosTool(SNAPSHOTS_GET_CONTRACT, "snapshots:get"),
     _FinosTool(TRANSACTIONS_LIST_CONTRACT, "transactions:list"),
+    _FinosTool(POSITIONS_LIST_CONTRACT, "positions:list"),
     _FinosTool(NOTES_LIST_CONTRACT, "notes:list"),
     _FinosTool(NOTES_GET_CONTRACT, "notes:get"),
     _FinosTool(SECURITIES_RESOLVE_CONTRACT, "securities:resolve"),

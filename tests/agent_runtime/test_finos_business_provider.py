@@ -114,6 +114,11 @@ def test_fixed_business_catalog_hides_authority_and_uses_fixed_paths_and_schemas
                 "limit": 20,
             },
         ),
+        (
+            "finos.positions.list",
+            "positions:list",
+            {"account_id": "all", "symbol": "600000"},
+        ),
         ("finos.notes.list", "notes:list", {"tag": "rebalance", "limit": 20}),
         ("finos.notes.get", "notes:get", {"note_id": "note-1"}),
         (
@@ -192,6 +197,7 @@ def test_v2_business_catalog_adds_typed_proposal_and_journal_save_tools(
         "finos.snapshots.list",
         "finos.snapshots.get",
         "finos.transactions.list",
+        "finos.positions.list",
         "finos.notes.list",
         "finos.notes.get",
         "finos.securities.resolve",
