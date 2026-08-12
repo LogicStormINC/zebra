@@ -571,7 +571,7 @@ def test_worker_narrows_preapproved_mcp_scope_after_native_media_disables_tool(
     assert captured[0]["preapproved_readonly_tools"] == (search_tool,)
 
 
-def test_worker_scopes_account_change_proposal_gate_to_the_v2_or_v3_task_binding(
+def test_worker_scopes_account_change_proposal_gate_to_v2_v3_or_v4_binding(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -601,6 +601,7 @@ def test_worker_scopes_account_change_proposal_gate_to_the_v2_or_v3_task_binding
             ("finos.journals.v1", False),
             ("finos.journals.v2", True),
             ("finos.journals.v3", True),
+            ("finos.journals.v4", True),
         )
     ):
         database_path = tmp_path / f"worker-{index}.db"

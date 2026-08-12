@@ -25,6 +25,11 @@ FINOS_TOOLS = [
 ]
 FINOS_V2_TOOLS = [*FINOS_TOOLS, "finos.account_changes.propose", "finos.journals.save"]
 FINOS_V3_TOOLS = [*FINOS_V2_TOOLS, "finos.trade_log_quality.validate"]
+FINOS_V4_TOOLS = [
+    *FINOS_V3_TOOLS,
+    "finos.investor_knowledge.list",
+    "finos.investor_knowledge.get",
+]
 
 
 def test_task_finos_provider_binding_is_private_and_advertises_fixed_catalog(
@@ -113,6 +118,34 @@ def test_task_finos_provider_binding_accepts_v3_with_the_validator_addition(
         "business_tools": {"contract_version": "finos.journals.v3", "names": FINOS_V3_TOOLS},
     }
     assert "private-v3-grant" not in str(bound.body)
+
+
+def test_task_finos_provider_binding_accepts_v4_with_only_knowledge_reads(
+    tmp_path: Path,
+) -> None:
+    adapter = _adapter(tmp_path)
+    created = adapter.handle(
+        RouteRequest("POST", "/tasks", body={"prompt": "Review", "workspace": str(tmp_path)})
+    )
+    task_id = created.body["task_id"]
+
+    bound = adapter.handle(
+        RouteRequest(
+            "PUT",
+            f"/tasks/{task_id}/business-providers/finos-journals",
+            body=_binding("private-v4-grant", contract_version="finos.journals.v4"),
+        )
+    )
+
+    assert bound.status_code == 200
+    assert bound.body == {
+        "task_id": task_id,
+        "business_tools": {
+            "contract_version": "finos.journals.v4",
+            "names": FINOS_V4_TOOLS,
+        },
+    }
+    assert "private-v4-grant" not in str(bound.body)
 
 
 def test_task_finos_provider_rejects_when_endpoint_is_not_configured(tmp_path: Path) -> None:
