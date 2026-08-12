@@ -16120,7 +16120,7 @@ call, then request another completion for subsequent business work.
 
 ### ZNX-USKILL-01 - User/Private Skill Lifecycle Alignment
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Vinson`
 - Suggested role: `TOOLS / STORAGE / API / RUNTIME / QA`
 - Depends on: Wave 2.5 Goal/Plan product acceptance at
@@ -16235,6 +16235,12 @@ filter keeps it out of ownerless legacy catalog traversal.
   mypy, diff-check, and changed-file size limits passed. Full pytest was not
   repeated because this follow-up only changes those two guarded paths; the
   recorded third-candidate full comparison remains the applicable baseline.
+- Final-SHA closure audit (`2026-08-12`): FinOS `3bca5803c1a061cb5ec70cafed5610a9d4edcab3`
+  plus Zebra `fb345d8d6ca1afbfe0b2a6e804aa41e774ffd863` passed the six bounded
+  source-of-truth, lifecycle, package-digest, authority, pinning, and public
+  correction-projection checks with no P0-P3 actionable finding. Wave 3
+  User/Private Skill Parity is `Product Acceptance PASS / Final-SHA Closure Audit
+  PASS / CLOSED`; deployment, browser, and live PostgreSQL remain RC evidence.
 
 #### Explicit Non-Goals
 
