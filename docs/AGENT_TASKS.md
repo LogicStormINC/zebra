@@ -15976,6 +15976,64 @@ original Task returns 201; the full suite at the candidate HEAD shows zero new
 failures; Ruff, Mypy, release gate, `git diff --check`, and the file-size
 violation set show no new regression.
 
+### ZNX-TEVID-01 - Trusted Typed Evidence And FinOS Provider V4
+
+- Status: `In Progress`
+- Owner: `Vinson`
+- Branch: `codex/znx-trusted-typed-evidence-v1`
+- Worktree: `/Users/vinson/.codex/worktrees/zebra-trusted-typed-evidence-v1`
+- Exact base: `314e6beffc0e67be64531d6c05d993e6024e4f6a`
+- Owned paths:
+  `packages/agent-runtime/src/agent_runtime/finos_journal_provider.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-security/src/agent_security/policy.py`,
+  `apps/api/src/zebra_agent_api/task_finos_journal_provider.py`,
+  `apps/worker/src/zebra_agent_worker/finos_journal_provider.py`,
+  focused tests under `tests/agent_runtime/`, `tests/agent_security/`,
+  `tests/api/`, and `tests/worker/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, and `WORKLOG.md`.
+
+#### Goal
+
+Generalize the existing trusted FinOS read-evidence injection without changing
+the AgentDefinition or completion-evidence evaluator. A successful tool may
+only emit the exact typed-evidence labels declared by its trusted registry
+tags; handler-supplied labels are stripped. Existing FinOS factual readers keep
+`authoritative_typed_read`. A versioned FinOS provider catalog may add new
+readers whose evidence is trusted but not authoritative financial fact.
+
+The first consumer is the Wave 4 provider contract: provider version v4 adds
+fixed `finos.investor_knowledge.list` and `.get` read-only tools. Their trusted
+label is `confirmed_investor_knowledge`, never
+`authoritative_typed_read`. Zebra remains provider-neutral and owns no Thesis,
+Decision, Investor Knowledge, Review workflow, or financial persistence type.
+
+#### Required Acceptance
+
+- [ ] Red tests prove an untrusted handler cannot self-assert typed evidence.
+- [ ] A successful tool receives only its registry-declared trusted evidence;
+  failed execution receives none.
+- [ ] Existing FinOS factual readers still emit only
+  `authoritative_typed_read`.
+- [ ] Provider v1/v2/v3 catalogs remain exact and unchanged; v4 alone adds the
+  two fixed read-only tools and is enforced by API, worker, and policy paths.
+- [ ] A `confirmed_investor_knowledge` event satisfies a matching generic
+  completion requirement across continuation, but cannot satisfy an
+  `authoritative_typed_read` requirement.
+- [ ] Focused, full, static, release-eval, file-size, and FinOS compatibility
+  gates show no new regression relative to the exact base.
+
+#### Explicit Non-Goals
+
+- no Zebra finance business type, Review workflow, fixed tool order, Planner,
+  Goal/Plan change, new evidence framework, registry, classifier, or state
+  machine;
+- no FinOS business persistence, authority widening, deployment, GUI, or
+  provider credentials;
+- no change to the existing generic AgentDefinition completion evaluator or
+  task-wide evidence continuity unless a deterministic red proves a separate
+  generic defect.
+
 ### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
 
 - Status: `In Progress`
