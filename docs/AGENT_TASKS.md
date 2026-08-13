@@ -16103,7 +16103,9 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
 - [x] Bundle report shows no uncontrolled growth; full/static/eval failures
   match the exact base. (1,352.46 kB / gzip 429.07 vs base 1,349.64 kB /
   gzip 428.38, +0.2%, via vite `resolve.dedupe`; full pytest at frozen base
-  is `2185 passed, 9 failed, 9 skipped` with the inherited failure set.)
+  is `2185 passed, 9 failed, 9 skipped`, and at candidate HEAD `2187 passed,
+  9 failed, 9 skipped` with the identical inherited failure set; eval gate
+  `10/10`; touched-path Ruff/Mypy and `git diff --check` clean.)
 - [ ] No PR, merge, push, deploy, or Wave 5 start before Gate A.
 
 #### Explicit Non-Goals
