@@ -16090,8 +16090,12 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
 
 - [ ] Zebra Desktop deterministic checks, streaming/reload/cancel/follow-up
   E2E, and shared core/react tests pass after the rewrite. (Phase 2: 21/21
-  deterministic checks pass; E2E is 3 passed / 5 failed with the exact same
-  failures at base `da97dc3`, i.e. inherited, not branch-attributable; the
+  deterministic checks pass; E2E is 5 passed / 3 failed after scoping the
+  strict locators to the message body (semantic-title h1/h2 collision) and
+  fixing the cancel selector; the remaining 3 failures are inherited with
+  exact root causes (synchronous local execution prevents mid-stream/cancel
+  assertions; provider errors 500 and leave the session `ready` instead of
+  failed) and need runtime changes outside this task's owned paths; the
   shared core contract check and package typecheck pass.)
 - [ ] Zebra Desktop really consumes the shared package; no second independent
   reducer or component set remains for the same Task. (Phase 2: the six moved

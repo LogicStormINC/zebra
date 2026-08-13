@@ -1,5 +1,28 @@
 # Progress Log
 
+## 2026-08-13 Wave 4.5 E2E harness repair (post Phase 2, Gate A prep)
+
+- Playwright E2E re-run at HEAD: 5 passed / 3 failed (base was 3/5). Fixed
+  inherited harness staleness, not product behavior:
+  - semantic-title feature mirrors the model answer in h1/h2 task titles, so
+    strict text locators collided with the message body; assistant-content
+    assertions are now scoped to `.x-markdown` (continuation + approval tests
+    now pass, product assertions unchanged)
+  - cancel click selector `[aria-label="停止任务"] button` matched nothing in
+    the current antd DOM (aria-label lands on the button itself); now
+    `page.getByLabel("停止任务")`
+- remaining 3 failures are inherited runtime/harness issues, root-caused:
+  - long-stream progressive + stop/cancel: `/sessions` local execution runs
+    `run_local_harness` synchronously inside the create request
+    (`apps/api/.../app.py::_create_and_execute_session`), so the browser only
+    receives events after completion — mid-stream assertions and the cancel
+    button are unreachable through this harness; needs async/worker execution
+    path (runtime change, out of lane scope)
+  - failure terminal: `ModelProviderError` (mock returns HTTP 500 for
+    content_filter) propagates out of `_create_and_execute_session` → 500,
+    session stays `ready`, UI never shows 失败; runtime error-handling gap
+    (out of lane scope)
+
 ## 2026-08-13 Wave 4.5 Phase 2 shared task-ui extraction + Desktop rewire
 
 - contract commit `3a385d2` (before Phase 2 code): raw `approval_requested`
