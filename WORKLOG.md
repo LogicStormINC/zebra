@@ -1,5 +1,25 @@
 # Progress Log
 
+## 2026-08-13 Wave 4.5 Phase 4 generic shared-UI additions (package 0.1.1)
+
+- FinOS consumption decisions: consume `defaultTurnDisclosure`/`TurnSection`
+  as the single source of truth for turn disclosure (running open, succeeded
+  collapsed, waiting/failed/canceled open), `AssistantMessage.renderSources`
+  (exact-final-bound), and `NewContentCue` (bare aria-live cue; scroll
+  anchoring consumer-side); DECLINED a generic `QueuedFollowupList` primitive
+  (adapter-specific composer/queue) — not built
+- added to `@zebra-agent/task-ui` 0.1.1: `core/turn-disclosure.ts`
+  (deterministic mapping + contract assertions, red-first),
+  `react/TurnSection.tsx` (native details disclosure, data-status/data-turn-id,
+  overridable), `react/NewContentCue.tsx` (aria-live + onDismiss),
+  `AssistantMessage.renderSources` slot rendered before the tail actions;
+  exported from both barrels
+- Zebra Desktop reuse analysis: no turn grouping or sources/new-content UI
+  exists in Desktop, so no forced Desktop wiring and no duplicates; Desktop
+  build + checks + task-ui contract check pass (bundle 1,352.88 kB, +0.42 kB
+  from the new barrel exports); FinOS stays on frozen 0.1.0 tarball until the
+  0.1.1 artifact + SHA-256 is handed off
+
 ## 2026-08-13 Wave 4.5 Gate A PASS + Phase 4 start
 
 - root decision: Gate A = PASS on the exact pair FinOS

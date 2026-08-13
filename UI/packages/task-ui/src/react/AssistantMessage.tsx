@@ -85,6 +85,12 @@ interface AssistantMessageProps {
   agentLabel?: string;
   /** Consumer-specific content rendered above the markdown body. */
   renderBefore?: ReactNode;
+  /**
+   * Exact-final-bound sources (e.g. artifact/review references). Rendered
+   * inside the assistant block, after the markdown body and before the
+   * message tail actions, so sources are always bound to this exact message.
+   */
+  renderSources?: (message: ChatMessage) => ReactNode;
   /** Extra message actions rendered after the built-in copy action. */
   renderMessageActions?: (message: ChatMessage) => ReactNode;
 }
@@ -93,6 +99,7 @@ export function AssistantMessage({
   message,
   agentLabel = "Zebra Agent",
   renderBefore,
+  renderSources,
   renderMessageActions,
 }: AssistantMessageProps) {
   const { styles } = useStyle();
@@ -108,6 +115,7 @@ export function AssistantMessage({
         <XMarkdown className={clsx("x-markdown", styles.markdown)} paragraphTag="div">
           {message.content}
         </XMarkdown>
+        {renderSources?.(message)}
       </div>
       <div className={styles.assistantActions}>
         <Actions

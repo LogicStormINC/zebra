@@ -22,6 +22,12 @@ export {
   type RuntimeActivityProjection,
   type ToolActivityCopy,
 } from "./core/runtime-activity.ts";
+export {
+  defaultTurnDisclosure,
+  isTurnCollapsedByDefault,
+  type TurnDisclosure,
+  type TurnStatus,
+} from "./core/turn-disclosure.ts";
 export { hasVisibleTaskPlan } from "./core/task-plan.ts";
 export {
   groupTimelineForRender,

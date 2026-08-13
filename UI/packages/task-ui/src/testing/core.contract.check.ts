@@ -4,8 +4,21 @@ import { buildClarificationResponsePayload } from "../core/clarification.ts";
 import { streamEventsToMessages } from "../core/event-reducer.ts";
 import { projectRuntimeActivity } from "../core/runtime-activity.ts";
 import { hasVisibleTaskPlan } from "../core/task-plan.ts";
+import { defaultTurnDisclosure, isTurnCollapsedByDefault } from "../core/turn-disclosure.ts";
 import { projectSessionTimeline, timelinePlanPlacement } from "../core/timeline-projector.ts";
 import { makeSessionEvent } from "./fixtures.ts";
+
+// W45-P4-01: turn disclosure defaults are deterministic per terminal/running
+// status: running open, succeeded collapsed, waiting/failed/canceled open.
+assert.equal(defaultTurnDisclosure("running"), "open");
+assert.equal(defaultTurnDisclosure("succeeded"), "collapsed");
+assert.equal(defaultTurnDisclosure("waiting_user"), "open");
+assert.equal(defaultTurnDisclosure("failed"), "open");
+assert.equal(defaultTurnDisclosure("canceled"), "open");
+assert.equal(defaultTurnDisclosure("cancelled"), "open");
+assert.equal(isTurnCollapsedByDefault("succeeded"), true);
+assert.equal(isTurnCollapsedByDefault("running"), false);
+assert.equal(isTurnCollapsedByDefault("waiting_approval"), false);
 
 // Streaming merge: out-of-order deltas assemble in delta_index order and the
 // final replaces the partial in place.
