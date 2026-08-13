@@ -1,5 +1,24 @@
 # Progress Log
 
+## 2026-08-13 Wave 4.5 Gate A PASS + Phase 4 start
+
+- root decision: Gate A = PASS on the exact pair FinOS
+  `d0cdb2bf1bbed9c65bf8f5b4336c9898be412575` / Zebra
+  `dd510aaffb3e6527c4e05cca3cdb61cb3e584710` / task-ui tarball SHA-256
+  `33b01e6910c7852fd1c0a4a7f77f9acc0f39a0b2d90d7b76d1de7e49826f5741`;
+  accepted evidence includes Zebra E2E 8/8, full `2199/8/9` vs base
+  `2185/9/9`, eval 10/10, FinOS transport 12/12 / browser 10/10 /
+  synthetic 20/20, no P0-P3 actionable findings
+- docs-only acceptance commit records Gate A PASS, the exact pair, and marks
+  the ZNX-UI-FOUNDATION-01 acceptance boxes; task stays `In Progress` for
+  Phase 4/5; Wave 5 backend is NOT STARTED pending a detailed owner plan
+- Phase 4 start: red-first generic additions to `@zebra-agent/task-ui`
+  (turn disclosure defaults, elapsed/tool/plan/clarification/approval
+  rendering, exact-final-bound source/message action slots, scroll/new-content
+  cues if generic) with Desktop reuse only; queued-follow-up edit primitive
+  only on a demonstrated shared need; no FinOS business types, no
+  Planner/scheduler, no second state machine, no Tauri dependency
+
 ## 2026-08-13 Wave 4.5 Gate A runtime closure (progressive/cancel/failure)
 
 - red diagnostics first (live curl + sqlite probes against the e2e API):

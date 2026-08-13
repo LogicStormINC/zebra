@@ -16103,22 +16103,45 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
 
 - [x] Zebra Desktop deterministic checks, streaming/reload/cancel/follow-up
   E2E, and shared core/react tests pass after the rewrite. (21/21 checks;
-  Playwright E2E 8/8 at HEAD, was 3/5 at base; shared core contract check and
-  package typecheck pass.)
-- [ ] Zebra Desktop really consumes the shared package; no second independent
+  Playwright E2E 8/8 at Gate A HEAD, was 3/5 at base; shared core contract
+  check and package typecheck pass.)
+- [x] Zebra Desktop really consumes the shared package; no second independent
   reducer or component set remains for the same Task. (Phase 2: the six moved
   lib modules and six moved component files were deleted; desktop only keeps
-  thin adapters using shared slots.)
+  thin adapters using shared slots; verified again at Gate A HEAD.)
 - [x] Shared package has no Tauri dependency and no FinOS business type;
   business rendering stays behind `renderBusinessItem` /
   `renderMessageActions` / `renderSources` / `mapToolLabel` slots.
 - [x] Bundle report shows no uncontrolled growth; full/static/eval failures
   match the exact base. (1,352.46 kB / gzip 429.07 vs base 1,349.64 kB /
   gzip 428.38, +0.2%, via vite `resolve.dedupe`; full pytest at frozen base
-  is `2185 passed, 9 failed, 9 skipped`, and at candidate HEAD `2187 passed,
-  9 failed, 9 skipped` with the identical inherited failure set; eval gate
-  `10/10`; touched-path Ruff/Mypy and `git diff --check` clean.)
-- [ ] No PR, merge, push, deploy, or Wave 5 start before Gate A.
+  is `2185 passed, 9 failed, 9 skipped`, and at Gate A HEAD `2199 passed,
+  8 failed, 9 skipped` with zero new failures (one inherited failure fixed by
+  the runtime closure); eval gate `10/10`; touched-path Ruff/Mypy and
+  `git diff --check` clean.)
+- [x] No PR, merge, push, deploy, or Wave 5 start before Gate A.
+
+#### Gate A Acceptance (2026-08-13, PASS)
+
+- Accepted implementation pair:
+  FinOS `d0cdb2bf1bbed9c65bf8f5b4336c9898be412575` /
+  Zebra `dd510aaffb3e6527c4e05cca3cdb61cb3e584710` /
+  `@zebra-agent/task-ui@0.1.0` tarball
+  SHA-256 `33b01e6910c7852fd1c0a4a7f77f9acc0f39a0b2d90d7b76d1de7e49826f5741`
+  (14,138 bytes, source commit `dd510aa`).
+- Root post-commit evidence: clean exact merge-bases and diff-check; Zebra
+  focused runtime/shared/Desktop checks green; full `2199 passed / 8 failed /
+  9 skipped` vs base `2185 / 9 / 9` (one inherited fixed, zero new); eval
+  `10/10`; Desktop E2E `8/8`; FinOS joint transport `12/12`, browser `10/10`,
+  synthetic `20/20`; no P0-P3 actionable findings.
+- Wave 5 backend: NOT STARTED. It remains frozen pending a detailed owner
+  plan; Gate A only unblocks Wave 4.5 Phase 4/5 UI work.
+- ZNX-UI-FOUNDATION-01 stays `In Progress` for Phase 4/5 generic shared-UI
+  extensions (turn disclosure defaults, elapsed/tool/plan/clarification/
+  approval rendering, exact-final-bound source/message action slots,
+  scroll/new-content cues if generic; queued-follow-up edit primitive only on
+  a demonstrated shared need). No FinOS business types, no Planner/scheduler,
+  no second state machine, no Tauri dependency, no raw arguments/output.
 
 #### Explicit Non-Goals
 

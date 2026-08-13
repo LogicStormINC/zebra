@@ -6,6 +6,18 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-13`
+- Wave 4.5 Gate A = PASS. Accepted pair: FinOS
+  `d0cdb2bf1bbed9c65bf8f5b4336c9898be412575` / Zebra
+  `dd510aaffb3e6527c4e05cca3cdb61cb3e584710` / `@zebra-agent/task-ui@0.1.0`
+  tarball SHA-256 `33b01e6910c7852fd1c0a4a7f77f9acc0f39a0b2d90d7b76d1de7e49826f5741`.
+  Zebra evidence: Desktop E2E 8/8, full pytest `2199/8/9` vs base `2185/9/9`
+  (one inherited fixed, zero new), eval 10/10, bundle +0.2% vs base; FinOS
+  joint transport 12/12, browser 10/10, synthetic 20/20; no P0-P3 actionable
+  findings. Wave 4.5 Phase 4 (generic shared-UI extensions) is now in
+  progress on `codex/znx-wave45-task-ui-foundation-v1`; Wave 5 backend is
+  NOT STARTED and stays frozen pending a detailed owner plan. No PR, merge,
+  push, or deploy.
+- Snapshot date: `2026-08-13`
 - Wave 4 = CLOSED. Final pair: FinOS `6e84e23b22d11a1f89afa9d73e8f17c9e47382a5`
   / Zebra `da97dc3ac9ffe300076f4c68031b96a627e6dd58`, both ahead-only from
   `f839149` / `314e6be`, with `codex/finos-next` and `codex/finos-runtime-next`
