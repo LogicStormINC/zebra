@@ -207,6 +207,84 @@ def test_task_finos_provider_binding_persists_model_tool_selection_across_rotati
     assert "rotated-private-grant" not in str(rotated.body)
 
 
+def test_task_finos_provider_binding_persists_exact_model_argument_values(
+    tmp_path: Path,
+) -> None:
+    adapter = _adapter(tmp_path)
+    created = adapter.handle(
+        RouteRequest("POST", "/tasks", body={"prompt": "Review", "workspace": str(tmp_path)})
+    )
+    path = f"/tasks/{created.body['task_id']}/business-providers/finos-journals"
+    revision_id = "knowledge-revision-1"
+
+    bound = adapter.handle(
+        RouteRequest(
+            "PUT",
+            path,
+            body={
+                **_binding(
+                    "private-v4-grant",
+                    contract_version="finos.journals.v4",
+                    model_tool_names=["finos.investor_knowledge.get"],
+                ),
+                "model_tool_argument_values": {
+                    "finos.investor_knowledge.get": {
+                        "revision_id": [revision_id]
+                    }
+                },
+            },
+        )
+    )
+
+    assert bound.status_code == 200
+    assert bound.body["business_tools"]["names"] == [
+        "finos.investor_knowledge.get"
+    ]
+
+
+@pytest.mark.parametrize(
+    "argument_values",
+    (
+        {"finos.investor_knowledge.get": {"unknown": ["value"]}},
+        {"finos.trade_log_quality.validate": {"report": ["value"]}},
+        {"finos.investor_knowledge.get": {"revision_id": ["x" * 257]}},
+        {
+            "finos.investor_knowledge.get": {
+                "revision_id": [f"{index:02d}-{'x' * 253}" for index in range(64)]
+            }
+        },
+    ),
+)
+def test_task_finos_provider_rejects_invalid_model_argument_values_before_binding(
+    tmp_path: Path,
+    argument_values: object,
+) -> None:
+    adapter = _adapter(tmp_path)
+    created = adapter.handle(
+        RouteRequest("POST", "/tasks", body={"prompt": "Review", "workspace": str(tmp_path)})
+    )
+
+    response = adapter.handle(
+        RouteRequest(
+            "PUT",
+            f"/tasks/{created.body['task_id']}/business-providers/finos-journals",
+            body={
+                **_binding(
+                    "private-v4-grant",
+                    contract_version="finos.journals.v4",
+                    model_tool_names=[
+                        "finos.investor_knowledge.get",
+                        "finos.trade_log_quality.validate",
+                    ],
+                ),
+                "model_tool_argument_values": argument_values,
+            },
+        )
+    )
+
+    assert response.status_code == 400
+
+
 @pytest.mark.parametrize(
     "model_tool_names",
     (

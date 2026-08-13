@@ -54,6 +54,7 @@ def build_finos_journal_provider(
         grant=binding.grant,
         contract_version=binding.contract_version,
         model_tool_names=binding.model_tool_names,
+        model_tool_argument_values=binding.model_tool_argument_values,
         timeout_seconds=settings.finos_journal_provider.timeout_seconds,
         **kwargs,
     )

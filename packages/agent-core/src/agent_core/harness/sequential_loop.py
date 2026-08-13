@@ -400,6 +400,16 @@ class SequentialToolLoop:
             invocation_policy=correction.invocation_policy,
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
+        if correction.tool_names and any(
+            call.name not in correction.tool_names for call in completion.tool_calls
+        ):
+            return evidence_correction_budget_failure(
+                metadata=metadata,
+                assistant_message=completion.assistant_message.content,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+            )
         compaction_count = metadata.get("conversation_compaction_count")
         provisional_final = should_use_provisional_final(
             context,

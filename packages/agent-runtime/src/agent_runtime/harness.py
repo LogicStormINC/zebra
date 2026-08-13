@@ -75,12 +75,14 @@ from agent_runtime.artifact_output_contract import (
 from agent_runtime.finos_journal_provider import (
     TRUSTED_TYPED_EVIDENCE_TAG_PREFIX,
     FinosJournalProvider,
-    trusted_typed_evidence_result,
 )
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
+from agent_runtime.tool_contract_constraints import (
+    trusted_typed_evidence_result,
+)
 from agent_runtime.web_gateway import LocalWebGatewayTransport
 from agent_runtime.web_search import LocalWebSearchTransport
 from agent_runtime.web_tools import register_native_web_tools

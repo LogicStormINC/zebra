@@ -74,6 +74,44 @@ def test_model_tool_selection_survives_an_omitted_grant_rotation(tmp_path: Path)
     assert binding.model_tool_names == selected
 
 
+def test_model_argument_values_are_immutable_and_survive_omitted_rotation(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteFinosJournalGrantStore(tmp_path / "tasks.sqlite")
+    task_id = new_task_id()
+    expiry = datetime.now(UTC) + timedelta(minutes=10)
+    selected = ("provider.records.get",)
+    values = (("provider.records.get", (("record_id", ("record-1",)),)),)
+    store.bind(
+        _grant(
+            task_id,
+            "grant-1",
+            expiry,
+            model_tool_names=selected,
+            model_tool_argument_values=values,
+        )
+    )
+
+    store.bind(_grant(task_id, "grant-2", expiry + timedelta(minutes=1)))
+    with pytest.raises(ValueError):
+        store.bind(
+            _grant(
+                task_id,
+                "grant-3",
+                expiry + timedelta(minutes=2),
+                model_tool_names=selected,
+                model_tool_argument_values=(
+                    ("provider.records.get", (("record_id", ("record-2",)),)),
+                ),
+            )
+        )
+
+    binding = store.get(task_id)
+    assert binding is not None
+    assert binding.grant == "grant-2"
+    assert binding.model_tool_argument_values == values
+
+
 def test_existing_binding_is_registered_by_digest_before_rotation(tmp_path: Path) -> None:
     database = tmp_path / "legacy.sqlite"
     task_id = new_task_id()
@@ -138,6 +176,7 @@ def _grant(
     expires_at: datetime,
     *,
     model_tool_names: tuple[str, ...] | None = None,
+    model_tool_argument_values=None,
 ) -> FinosJournalGrant:
     return FinosJournalGrant(
         task_id=task_id,
@@ -145,6 +184,7 @@ def _grant(
         grant=grant,
         expires_at=expires_at,
         model_tool_names=model_tool_names,
+        model_tool_argument_values=model_tool_argument_values,
     )
 
 

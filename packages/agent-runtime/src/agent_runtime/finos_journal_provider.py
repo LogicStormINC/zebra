@@ -12,6 +12,8 @@ from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_tools import ToolContract, ToolRegistry
 from agent_tools.contracts import READ_ONLY_EFFECT_TAG
 
+import agent_runtime.tool_contract_constraints as tool_contract_constraints
+
 MAX_RESPONSE_BYTES = 524_288
 AUTHORITATIVE_TYPED_READ = "authoritative_typed_read"
 CONFIRMED_INVESTOR_KNOWLEDGE = "confirmed_investor_knowledge"
@@ -319,6 +321,12 @@ FINOS_V4_TOOL_SPECS = (
         tags=_CONFIRMED_INVESTOR_KNOWLEDGE_TAGS,
     ),
 )
+FINOS_TOOL_SPECS_BY_CONTRACT = {
+    FINOS_JOURNAL_V1_CONTRACT: FINOS_TOOL_SPECS,
+    FINOS_JOURNAL_V2_CONTRACT: FINOS_V2_TOOL_SPECS,
+    FINOS_JOURNAL_V3_CONTRACT: FINOS_V3_TOOL_SPECS,
+    FINOS_JOURNAL_V4_CONTRACT: FINOS_V4_TOOL_SPECS,
+}
 class FinosJournalTransport(Protocol):
     def post_json(
         self,
@@ -335,6 +343,7 @@ class FinosJournalProvider:
     grant: str = field(repr=False)
     contract_version: str = FINOS_JOURNAL_V1_CONTRACT
     model_tool_names: tuple[str, ...] | None = None
+    model_tool_argument_values: tool_contract_constraints.ModelToolArgumentValues | None = None
     timeout_seconds: float = 10.0
     transport: FinosJournalTransport = field(default_factory=lambda: UrllibFinosTransport())
     def __post_init__(self) -> None:
@@ -371,15 +380,15 @@ class FinosJournalProvider:
         *,
         allow_journal_save: bool = True,
     ) -> None:
-        specs = {
-            FINOS_JOURNAL_V1_CONTRACT: FINOS_TOOL_SPECS,
-            FINOS_JOURNAL_V2_CONTRACT: FINOS_V2_TOOL_SPECS,
-            FINOS_JOURNAL_V3_CONTRACT: FINOS_V3_TOOL_SPECS,
-            FINOS_JOURNAL_V4_CONTRACT: FINOS_V4_TOOL_SPECS,
-        }[self.contract_version]
+        specs = FINOS_TOOL_SPECS_BY_CONTRACT[self.contract_version]
         selected = self.model_tool_names
         if not set(selected or ()) <= {spec.contract.name for spec in specs}:
             raise ValueError("business provider model_tool_names are invalid")
+        contracts = tool_contract_constraints.constrained_tool_contracts(
+            {spec.contract.name: spec.contract for spec in specs},
+            self.model_tool_argument_values,
+            selected,
+        )
         for spec in specs:
             if selected is not None and spec.contract.name not in selected:
                 continue
@@ -389,7 +398,7 @@ class FinosJournalProvider:
             tags = spec.tags
             if spec.side_effect == "read_only":
                 tags += (READ_ONLY_EFFECT_TAG,)
-            registry.register(spec.contract, self._handler(spec), tags=tags)
+            registry.register(contracts[spec.contract.name], self._handler(spec), tags=tags)
     def _handler(self, spec: _FinosTool) -> Callable[[ToolCall], ToolResult]:
         def handler(call: ToolCall) -> ToolResult:
             return self._execute(call, spec)
@@ -437,15 +446,6 @@ class FinosJournalProvider:
             output=output,
             metadata=metadata,
         )
-def trusted_typed_evidence_result(
-    result: ToolResult, *, trusted_evidence: tuple[str, ...]
-) -> ToolResult:
-    metadata = dict(result.metadata)
-    metadata.pop("typed_evidence", None)
-    evidence = tuple(dict.fromkeys(label.strip() for label in trusted_evidence if label.strip()))
-    if result.status is ToolCallStatus.EXECUTED and evidence:
-        metadata["typed_evidence"] = list(evidence)
-    return result.model_copy(update={"metadata": metadata})
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
         return None

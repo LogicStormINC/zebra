@@ -10,6 +10,12 @@ from pathlib import Path
 from agent_core.domain.identifiers import TaskId
 
 from agent_storage.database import SQLiteDatabase, ensure_column
+from agent_storage.model_tool_argument_values import (
+    ModelToolArgumentValues,
+    model_tool_argument_values_from_json,
+    model_tool_argument_values_json,
+    validate_model_tool_argument_values,
+)
 
 _CONFLICTED_GRANT_OWNER = "__conflict__"
 
@@ -21,6 +27,7 @@ class FinosJournalGrant:
     expires_at: datetime
     grant: str = field(repr=False)
     model_tool_names: tuple[str, ...] | None = None
+    model_tool_argument_values: ModelToolArgumentValues | None = None
 
     def __post_init__(self) -> None:
         if not self.contract_version.strip():
@@ -31,6 +38,15 @@ class FinosJournalGrant:
             raise ValueError("FinOS Journal grant expiry must be timezone-aware")
         if self.model_tool_names is not None:
             _validated_model_tool_names(self.model_tool_names)
+        if self.model_tool_argument_values is not None:
+            object.__setattr__(
+                self,
+                "model_tool_argument_values",
+                validate_model_tool_argument_values(
+                    self.model_tool_argument_values,
+                    selected_tool_names=self.model_tool_names,
+                ),
+            )
 
     @property
     def active(self) -> bool:
@@ -49,11 +65,15 @@ class SQLiteFinosJournalGrantStore:
                     contract_version TEXT NOT NULL,
                     grant TEXT NOT NULL,
                     expires_at TEXT NOT NULL,
-                    model_tool_names TEXT
+                    model_tool_names TEXT,
+                    model_tool_argument_values TEXT
                 )
                 """
             )
             ensure_column(connection, "finos_journal_grants", "model_tool_names", "TEXT")
+            ensure_column(
+                connection, "finos_journal_grants", "model_tool_argument_values", "TEXT"
+            )
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS finos_journal_grant_digests (
@@ -71,7 +91,8 @@ class SQLiteFinosJournalGrantStore:
         with self._database.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
-                "SELECT contract_version, grant, expires_at, model_tool_names "
+                "SELECT contract_version, grant, expires_at, model_tool_names, "
+                "model_tool_argument_values "
                 "FROM finos_journal_grants "
                 "WHERE task_id = ?",
                 (str(binding.task_id),),
@@ -79,16 +100,31 @@ class SQLiteFinosJournalGrantStore:
             current_model_tool_names = (
                 _model_tool_names(row["model_tool_names"]) if row is not None else None
             )
+            current_model_tool_argument_values = (
+                model_tool_argument_values_from_json(row["model_tool_argument_values"])
+                if row is not None and row["model_tool_argument_values"] is not None
+                else None
+            )
             model_tool_names = (
                 binding.model_tool_names
                 if binding.model_tool_names is not None
                 else current_model_tool_names
+            )
+            model_tool_argument_values = (
+                binding.model_tool_argument_values
+                if binding.model_tool_argument_values is not None
+                else current_model_tool_argument_values
             )
             values = (
                 binding.contract_version,
                 binding.grant,
                 binding.expires_at.isoformat(),
                 None if model_tool_names is None else json.dumps(model_tool_names),
+                (
+                    None
+                    if model_tool_argument_values is None
+                    else model_tool_argument_values_json(model_tool_argument_values)
+                ),
             )
             current_expiry = (
                 datetime.fromisoformat(row["expires_at"]) if row is not None else None
@@ -99,6 +135,7 @@ class SQLiteFinosJournalGrantStore:
                     and row["grant"] == binding.grant
                     and current_expiry == binding.expires_at
                     and current_model_tool_names == model_tool_names
+                    and current_model_tool_argument_values == model_tool_argument_values
                 ):
                     owner = _grant_owner(connection, binding.grant)
                     if owner != str(binding.task_id):
@@ -112,6 +149,10 @@ class SQLiteFinosJournalGrantStore:
                         binding.model_tool_names is not None
                         and current_model_tool_names is not None
                         and binding.model_tool_names != current_model_tool_names
+                    )
+                    or (
+                        binding.model_tool_argument_values is not None
+                        and binding.model_tool_argument_values != current_model_tool_argument_values
                     )
                 ):
                     raise ValueError("FinOS Journal grant rotation is stale or incompatible")
@@ -128,13 +169,14 @@ class SQLiteFinosJournalGrantStore:
             if row is not None:
                 connection.execute(
                     "UPDATE finos_journal_grants "
-                    "SET contract_version = ?, grant = ?, expires_at = ?, model_tool_names = ? "
+                    "SET contract_version = ?, grant = ?, expires_at = ?, model_tool_names = ?, "
+                    "model_tool_argument_values = ? "
                     "WHERE task_id = ?",
                     (*values, str(binding.task_id)),
                 )
                 return
             connection.execute(
-                "INSERT INTO finos_journal_grants VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO finos_journal_grants VALUES (?, ?, ?, ?, ?, ?)",
                 (str(binding.task_id), *values),
             )
 
@@ -154,6 +196,11 @@ class SQLiteFinosJournalGrantStore:
                     grant=row["grant"],
                     expires_at=datetime.fromisoformat(row["expires_at"]),
                     model_tool_names=_model_tool_names(row["model_tool_names"]),
+                    model_tool_argument_values=(
+                        model_tool_argument_values_from_json(row["model_tool_argument_values"])
+                        if row["model_tool_argument_values"] is not None
+                        else None
+                    ),
                 )
             except ValueError:
                 return None

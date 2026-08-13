@@ -5,6 +5,7 @@ from agent_core.domain.agent_definitions import (
     CompletionEvidenceContract,
     CompletionEvidenceRequirement,
 )
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
@@ -37,8 +38,9 @@ IRRELEVANT = ModelToolDefinition(
 
 
 class Gateway:
-    def __init__(self) -> None:
+    def __init__(self, correction_tool_name: str = "evidence.lookup") -> None:
         self.requests: list[tuple[tuple[str, ...], ModelInvocationPolicy | None]] = []
+        self.correction_tool_name = correction_tool_name
 
     def complete(self, messages, *, tools=(), media_inputs=()):
         self.requests.append((tuple(tool.name for tool in tools), None))
@@ -56,7 +58,7 @@ class Gateway:
             "Collecting evidence.",
             ToolCall(
                 tool_call_id=new_tool_call_id(),
-                name="evidence.lookup",
+                name=self.correction_tool_name,
                 created_at=NOW,
             ),
         )
@@ -72,7 +74,11 @@ class Policy:
 
 
 class Tools:
+    def __init__(self) -> None:
+        self.executions: list[str] = []
+
     def execute(self, tool_call):
+        self.executions.append(tool_call.name)
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=ToolCallStatus.EXECUTED,
@@ -161,6 +167,57 @@ def test_required_evidence_producer_budget_shortage_fails_closed() -> None:
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
     assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
     assert len(gateway.requests) == 1
+
+
+def test_required_evidence_correction_rejects_unadvertised_tool_before_events() -> None:
+    gateway = Gateway("irrelevant.lookup")
+    tools = Tools()
+    definition = AgentDefinition(
+        agent_id="agent-neutral",
+        version="1.0.0",
+        completion_contract=CompletionEvidenceContract(
+            required_evidence=(
+                CompletionEvidenceRequirement(
+                    evidence_id="required_external_fact",
+                    typed_evidence=("external.fact.confirmed",),
+                ),
+            )
+        ),
+    )
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Forced evidence correction",
+            user_input="Answer from trusted facts.",
+            max_model_calls=4,
+            agent_definition=definition,
+            trusted_evidence_tools={
+                "evidence.lookup": ("external.fact.confirmed",)
+            },
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            Policy(),
+            tools,
+            model_step=HarnessModelStep(available_tools=(PRODUCER, IRRELEVANT)),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
+    assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert tools.executions == []
+    assert sum(
+        event.event_type is EventType.MODEL_RESPONSE_RECEIVED for event in result.events
+    ) == 1
+    assert not {
+        EventType.TOOL_CALL_PROPOSED,
+        EventType.POLICY_DECISION_MADE,
+        EventType.TOOL_EXECUTION_STARTED,
+        EventType.TOOL_EXECUTION_COMPLETED,
+        EventType.TOOL_EXECUTION_FAILED,
+    } & {event.event_type for event in result.events}
 
 
 def _completion(content: str, *tool_calls: ToolCall) -> ModelCompletion:

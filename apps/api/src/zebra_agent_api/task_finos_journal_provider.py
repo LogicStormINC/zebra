@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from agent_runtime.finos_journal_provider import FINOS_TOOL_SPECS_BY_CONTRACT
 from agent_storage import FinosJournalGrant, SQLiteAgentTaskStore, SQLiteFinosJournalGrantStore
+from agent_storage.model_tool_argument_values import (
+    ModelToolArgumentValues,
+    validate_model_tool_argument_values,
+)
 
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import _not_found, parse_task_id
@@ -70,6 +76,7 @@ def bind_finos_journal_provider(
                 grant=provider.grant,
                 expires_at=provider.expires_at,
                 model_tool_names=provider.model_tool_names,
+                model_tool_argument_values=provider.model_tool_argument_values,
             )
         )
     except ValueError:
@@ -105,6 +112,7 @@ class _ParsedFinosJournalProvider:
     grant: str
     expires_at: datetime
     model_tool_names: tuple[str, ...] | None
+    model_tool_argument_values: ModelToolArgumentValues | None
 
 
 def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | ApiResponse:
@@ -114,7 +122,8 @@ def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | 
             {"status": "invalid_request", "reason": "finos_journal_provider must be an object"},
         )
     required_fields = {"contract_version", "grant", "expires_at"}
-    if set(raw) not in (required_fields, required_fields | {"model_tool_names"}):
+    optional_fields = {"model_tool_names", "model_tool_argument_values"}
+    if not required_fields <= set(raw) <= required_fields | optional_fields:
         return ApiResponse(
             400,
             {
@@ -131,6 +140,16 @@ def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | 
     model_tool_names = _model_tool_names(raw, FINOS_JOURNAL_TOOLS_BY_CONTRACT[contract_version])
     if isinstance(model_tool_names, ApiResponse):
         return model_tool_names
+    model_tool_argument_values = _model_tool_argument_values(
+        raw,
+        model_tool_names,
+        {
+            spec.contract.name: spec.contract.argument_properties
+            for spec in FINOS_TOOL_SPECS_BY_CONTRACT[contract_version]
+        },
+    )
+    if isinstance(model_tool_argument_values, ApiResponse):
+        return model_tool_argument_values
     grant = raw.get("grant")
     if not isinstance(grant, str) or not grant.strip() or len(grant) > 4096:
         return ApiResponse(
@@ -157,6 +176,7 @@ def _parse_finos_journal_provider(raw: object) -> _ParsedFinosJournalProvider | 
         grant=grant.strip(),
         expires_at=parsed_expiry,
         model_tool_names=model_tool_names,
+        model_tool_argument_values=model_tool_argument_values,
     )
 
 
@@ -181,3 +201,27 @@ def _model_tool_names(
             },
         )
     return tuple(name for name in catalog if name in value)
+
+
+def _model_tool_argument_values(
+    raw: dict[str, object],
+    model_tool_names: tuple[str, ...] | None,
+    catalog: dict[str, Mapping[str, Mapping[str, object]]],
+) -> ModelToolArgumentValues | ApiResponse | None:
+    if "model_tool_argument_values" not in raw:
+        return None
+    try:
+        return validate_model_tool_argument_values(
+            raw["model_tool_argument_values"],
+            selected_tool_names=model_tool_names,
+            catalog=catalog,
+            require_lists=True,
+        )
+    except ValueError:
+        return ApiResponse(
+            400,
+            {
+                "status": "invalid_request",
+                "reason": "model_tool_argument_values must constrain selected string values",
+            },
+        )
