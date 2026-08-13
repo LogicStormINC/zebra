@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-08-13 Wave 4.5 Phase 0 governance correction and baseline
+
+- exact base verified: `HEAD == merge-base == da97dc3ac9ffe300076f4c68031b96a627e6dd58`,
+  clean tree, created `codex/znx-wave45-task-ui-foundation-v1` from that SHA;
+  no source checkout, `next`/`stable`/`integration` branch modified
+- docs-only commit: `ZNX-TEVID-01` marked `Done` with all acceptance checked,
+  Wave 4 closure pair `6e84e23 / da97dc3` recorded, `P3-GOV-01` fixed,
+  `ZNX-UI-FOUNDATION-01` registered with owned paths/non-goals and FinOS peer
+  contract coordination rule; `PROGRESS.md` snapshot updated
+- next: Phase 2 shared `@zebra-agent/task-ui` extraction and Desktop rewire;
+  stop at Gate A, Wave 5 stays frozen
+
 ## 2026-08-11 ZNX-PLAN-MIXED-BATCH-01 required Plan mixed-batch closure
 
 - started from `codex/finos-runtime-next@50742da95e8ee9afb267150e2f8e0a884e3cfad7`

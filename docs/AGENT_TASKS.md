@@ -15978,7 +15978,7 @@ violation set show no new regression.
 
 ### ZNX-TEVID-01 - Trusted Typed Evidence And FinOS Provider V4
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Vinson`
 - Branch: `codex/znx-trusted-typed-evidence-v1`
 - Worktree: `/Users/vinson/.codex/worktrees/zebra-trusted-typed-evidence-v1`
@@ -16010,18 +16010,38 @@ Decision, Investor Knowledge, Review workflow, or financial persistence type.
 
 #### Required Acceptance
 
-- [ ] Red tests prove an untrusted handler cannot self-assert typed evidence.
-- [ ] A successful tool receives only its registry-declared trusted evidence;
+- [x] Red tests prove an untrusted handler cannot self-assert typed evidence.
+- [x] A successful tool receives only its registry-declared trusted evidence;
   failed execution receives none.
-- [ ] Existing FinOS factual readers still emit only
+- [x] Existing FinOS factual readers still emit only
   `authoritative_typed_read`.
-- [ ] Provider v1/v2/v3 catalogs remain exact and unchanged; v4 alone adds the
+- [x] Provider v1/v2/v3 catalogs remain exact and unchanged; v4 alone adds the
   two fixed read-only tools and is enforced by API, worker, and policy paths.
-- [ ] A `confirmed_investor_knowledge` event satisfies a matching generic
+- [x] A `confirmed_investor_knowledge` event satisfies a matching generic
   completion requirement across continuation, but cannot satisfy an
   `authoritative_typed_read` requirement.
-- [ ] Focused, full, static, release-eval, file-size, and FinOS compatibility
+- [x] Focused, full, static, release-eval, file-size, and FinOS compatibility
   gates show no new regression relative to the exact base.
+
+#### Wave 4 Closure Evidence (2026-08-13)
+
+- Final pair: FinOS `6e84e23b22d11a1f89afa9d73e8f17c9e47382a5` /
+  Zebra `da97dc3ac9ffe300076f4c68031b96a627e6dd58`; both branches are exact
+  ahead-only from their `next` bases (`f839149` / `314e6be`), no behind, no
+  rewrite of `codex/finos-next` or `codex/finos-runtime-next`.
+- Final Zebra commit `da97dc3` is a production fix that binds required-evidence
+  parameters to authorized enum values; the audited production slice sits on
+  the full Wave 4 branch.
+- Wave 4 independent audit: PASS, one P3 governance correction
+  (`P3-GOV-01`) fixed by this docs-only commit. No P0/P1/P2 findings.
+- Wave 4 focused contract suite passes at the final pair
+  (`tests/agent_core/test_completion_evidence_trust.py`,
+  `tests/agent_core/test_required_evidence_correction.py`,
+  `tests/agent_runtime/test_trusted_evidence_guidance.py`,
+  `tests/agent_runtime/test_finos_business_provider.py`,
+  `tests/agent_security/test_finos_business_provider_policy.py`,
+  `tests/api/test_finos_business_provider_task.py`, worker continuation
+  matrix); full-suite failures at `da97dc3` match the exact base set.
 
 #### Explicit Non-Goals
 
@@ -16033,6 +16053,61 @@ Decision, Investor Knowledge, Review workflow, or financial persistence type.
 - no change to the existing generic AgentDefinition completion evaluator or
   task-wide evidence continuity unless a deterministic red proves a separate
   generic defect.
+
+### ZNX-UI-FOUNDATION-01 - Wave 4.5 Shared Task UI Foundation
+
+- Status: `In Progress`
+- Owner: `Vinson`
+- Branch: `codex/znx-wave45-task-ui-foundation-v1`
+- Worktree: `/Users/vinson/.codex/worktrees/cf5f/zebra`
+- Exact base: `da97dc3ac9ffe300076f4c68031b96a627e6dd58` (Zebra Wave 4 final)
+- Compatible FinOS close SHA: `6e84e23b22d11a1f89afa9d73e8f17c9e47382a5`
+- Owned paths:
+  `UI/packages/task-ui/**` (shared core + React primitives + fixtures),
+  `UI/desktop/**` (import/refactor back onto the shared package, checks, E2E),
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`.
+- Coordination: FinOS peer lane owns `codex/fnx-wave45-aceagent-ui-foundation-v1`
+  (Phase 0/1/3). Shared-field contract changes
+  (`event_id`, `sequence`/`cursor`, `created_at`, `message_id`, `final`,
+  `clarification`, `approval`, `plan`, tool activity, terminal status, artifact
+  mapping) require a separate contract commit + fixture and FinOS peer
+  notification before landing.
+
+#### Goal
+
+Extract the already-proven generic Task UI surface from Zebra Desktop into a
+shared `@zebra-agent/task-ui` package consumed by both Zebra Desktop and the
+FinOS AceAgent React Island, with exactly one reducer/view-model per Task.
+Only proven generic pieces are extracted: public event types, event merge /
+sequence ordering, delta merge, streaming final in-place replacement, timeline
+projection, tool lifecycle, plan, clarification, approval, activity, generic
+Markdown messages, React primitives, automation fixtures, and Playwright
+scenarios. The shared package must not depend on Tauri and must not contain
+any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
+`ImportDraft`, `CoreConfirmation`, `JournalSave`, FinOS Review).
+
+#### Required Acceptance
+
+- [ ] Zebra Desktop deterministic checks, streaming/reload/cancel/follow-up
+  E2E, and shared core/react tests pass after the rewrite.
+- [ ] Zebra Desktop really consumes the shared package; no second independent
+  reducer or component set remains for the same Task.
+- [ ] Shared package has no Tauri dependency and no FinOS business type;
+  business rendering stays behind `renderBusinessItem` /
+  `renderMessageActions` / `renderSources` / `mapToolLabel` slots.
+- [ ] Bundle report shows no uncontrolled growth; full/static/eval failures
+  match the exact base.
+- [ ] No PR, merge, push, deploy, or Wave 5 start before Gate A.
+
+#### Explicit Non-Goals
+
+- no FinOS business types or runtime domain inside Zebra;
+- no second session state machine, no durable `rounds` table, no Planner /
+  Scheduler / Knowledge Graph, no raw tool arguments/output display, no
+  prompt/reasoning/policy/grant exposure;
+- no empty shells or speculative framework for the sake of the suggested
+  attachment tree; no Tauri shell dependency in the shared package;
+- no PR/merge/push/deploy; Wave 5 stays frozen until Gate A passes.
 
 ### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
 

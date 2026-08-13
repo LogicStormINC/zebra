@@ -5,6 +5,21 @@
 
 ## Current Mainline Snapshot
 
+- Snapshot date: `2026-08-13`
+- Wave 4 = CLOSED. Final pair: FinOS `6e84e23b22d11a1f89afa9d73e8f17c9e47382a5`
+  / Zebra `da97dc3ac9ffe300076f4c68031b96a627e6dd58`, both ahead-only from
+  `f839149` / `314e6be`, with `codex/finos-next` and `codex/finos-runtime-next`
+  untouched. Independent audit: PASS with one P3 governance correction
+  (`P3-GOV-01`), fixed by the Wave 4.5 docs-only commit.
+- Wave 4.5 = GO, Phase 0 complete on `codex/znx-wave45-task-ui-foundation-v1`
+  from exact base `da97dc3`; `ZNX-TEVID-01` is `Done` and
+  `ZNX-UI-FOUNDATION-01` is registered (owned paths, non-goals, FinOS peer
+  coordination). Phase 2 is extracting the proven generic Task UI surface from
+  Zebra Desktop into a shared `@zebra-agent/task-ui` package (no Tauri
+  dependency, no FinOS business types, one reducer per Task) and rewiring
+  Zebra Desktop onto it.
+- Gate A is the Wave 5 start gate; Wave 5 remains frozen. No PR, merge, push,
+  or deploy until the owner authorizes.
 - Snapshot date: `2026-08-11`
 - `Wave 2.5 / Goal-Plan v1 = Product Acceptance PASS`. The activation closure
   on `codex/znx-goal-plan-act-01` adds two independent, generic Stable Task
