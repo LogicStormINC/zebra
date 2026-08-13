@@ -49,6 +49,7 @@
     "@lobehub/ui": "5.22.3",
     "@tanstack/react-query": "^5.85.5",
     "@tauri-apps/api": "^2.8.0",
+    "@zebra-agent/task-ui": "workspace:*",
     "antd": "^6.5.1",
     "antd-style": "^4.1.0",
     "clsx": "^2.1.1",

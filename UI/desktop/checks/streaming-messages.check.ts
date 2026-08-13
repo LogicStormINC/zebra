@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { streamEventsToMessages } from "../src/lib/streaming-messages.ts";
-import type { SessionEvent } from "../src/types.ts";
+import { streamEventsToMessages, type SessionEvent } from "@zebra-agent/task-ui";
 
 const event = (
   sequence: number,

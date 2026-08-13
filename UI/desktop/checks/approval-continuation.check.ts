@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { decideActiveApproval } from "../src/lib/approval-continuation.ts";
+import { decideActiveApproval } from "@zebra-agent/task-ui";
 
 const calls: string[] = [];
 const api = {

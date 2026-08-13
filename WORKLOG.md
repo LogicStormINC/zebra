@@ -1,5 +1,31 @@
 # Progress Log
 
+## 2026-08-13 Wave 4.5 Phase 2 shared task-ui extraction + Desktop rewire
+
+- contract commit `3a385d2` (before Phase 2 code): raw `approval_requested`
+  payload now carries `approval_id` (= segment/session id), fixture pinned in
+  `tests/agent_core/test_approval_request_public_contract.py`; exact fixture
+  sent to FinOS peer, acknowledged, FinOS Phase 1 pinned it
+  (`84f81ba` on `codex/fnx-wave45-aceagent-ui-foundation-v1`)
+- new shared package `UI/packages/task-ui` (`@zebra-agent/task-ui@0.1.0`):
+  core `event-reducer`, `timeline-projector`, `runtime-activity`, `task-plan`,
+  `clarification`, `approval`, `public-types`; react `AssistantMessage`,
+  `ExecutionDisclosure` (public-safe, no raw args/output/policy),
+  `ToolCallGroup` (detail slot), `TaskPlan`, `ClarificationCard`,
+  `ApprovalCard` (extra-details slot), `RuntimeActivityCard`; testing
+  `fixtures` + `core.contract.check`. No Tauri dependency; no FinOS business
+  type; extension slots only
+- Zebra Desktop rewired onto the package; the six moved lib modules and six
+  moved component files were deleted (no second reducer/component set); desktop
+  adapters `AssistantMessageBlock`/`SessionApprovalPanel` keep desktop-only
+  insight cards and web.search approval details via shared slots
+- validation at candidate HEAD: all 21 desktop deterministic checks pass,
+  package typecheck + core contract check pass, `pnpm build` = 1,352.46 kB JS
+  (gzip 429.07) vs exact base 1,349.64 kB (gzip 428.38) with vite `resolve.dedupe`
+  (8193 vs 8190 modules); Playwright E2E 3 passed / 5 failed, byte-identical
+  result at exact base `da97dc3` (inherited, zero new failures)
+- Gate A pending: no PR/merge/push/deploy; Wave 5 stays frozen
+
 ## 2026-08-13 Wave 4.5 Phase 0 governance correction and baseline
 
 - exact base verified: `HEAD == merge-base == da97dc3ac9ffe300076f4c68031b96a627e6dd58`,

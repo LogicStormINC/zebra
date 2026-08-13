@@ -1,8 +1,8 @@
 import { QuestionCircleOutlined } from "@ant-design/icons";
 import { Button, Input } from "antd";
 import { createStyles } from "antd-style";
-import React from "react";
-import type { ClarificationContext } from "../types";
+import { useState } from "react";
+import type { ClarificationContext } from "../core/public-types.ts";
 
 const useStyle = createStyles(({ css }) => ({
   panel: css`
@@ -49,19 +49,19 @@ const useStyle = createStyles(({ css }) => ({
   `,
 }));
 
-interface SessionClarificationPanelProps {
+interface ClarificationCardProps {
   clarification: ClarificationContext | undefined;
   busy: boolean;
   onRespond: (clarificationId: string, content: string) => Promise<unknown>;
 }
 
-export function SessionClarificationPanel({
+export function ClarificationCard({
   clarification,
   busy,
   onRespond,
-}: SessionClarificationPanelProps) {
+}: ClarificationCardProps) {
   const { styles } = useStyle();
-  const [response, setResponse] = React.useState("");
+  const [response, setResponse] = useState("");
   if (!clarification) return null;
 
   const submit = (content: string) => {

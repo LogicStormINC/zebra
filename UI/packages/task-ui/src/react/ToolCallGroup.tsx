@@ -1,8 +1,8 @@
 import { RightOutlined } from "@ant-design/icons";
 import { createStyles, keyframes } from "antd-style";
-import locale from "../_utils/local";
-import { isActiveToolStatus, type TimelineToolItem } from "../lib/session-timeline";
-import { SessionExecutionTrace } from "./SessionExecutionTrace";
+import { Fragment, type ReactNode } from "react";
+import { isActiveToolStatus, type TimelineToolItem } from "../core/timeline-projector.ts";
+import { ExecutionDisclosure } from "./ExecutionDisclosure.tsx";
 
 const shimmer = keyframes`
   0%, 100% { opacity: 1; }
@@ -74,24 +74,40 @@ const useStyle = createStyles(({ css }) => ({
   `,
 }));
 
-export function ToolCallGroup({ tools }: { tools: TimelineToolItem[] }) {
+interface ToolCallGroupProps {
+  tools: TimelineToolItem[];
+  activeLabel?: string;
+  label?: string;
+  unitLabel?: string;
+  failedLabel?: string;
+  /** Consumer-provided detail renderer; defaults to the public-safe disclosure. */
+  renderToolDetail?: (tool: TimelineToolItem) => ReactNode;
+}
+
+export function ToolCallGroup({
+  tools,
+  activeLabel = "正在调用工具…",
+  label = "工具调用",
+  unitLabel = "项",
+  failedLabel = "failed",
+  renderToolDetail = (tool) => <ExecutionDisclosure tool={tool} />,
+}: ToolCallGroupProps) {
   const { styles, cx } = useStyle();
   const active = tools.some((tool) => isActiveToolStatus(tool.status));
   const failedCount = tools.filter((tool) => tool.status === "failed" || tool.status === "denied").length;
-  const label = active ? locale.toolCallGroupActive : locale.toolCallGroup;
 
   return (
     <details className={styles.group}>
       <summary className={styles.summary}>
         <RightOutlined className={styles.chevron} />
-        <span className={cx(styles.label, active && styles.labelActive)}>{label}</span>
-        <span className={styles.count}>· {tools.length} {locale.toolCallUnit}</span>
+        <span className={cx(styles.label, active && styles.labelActive)}>{active ? activeLabel : label}</span>
+        <span className={styles.count}>· {tools.length} {unitLabel}</span>
         <span className={styles.spacer} />
-        {failedCount ? <span className={styles.failed}>{failedCount} failed</span> : null}
+        {failedCount ? <span className={styles.failed}>{failedCount} {failedLabel}</span> : null}
       </summary>
       <div className={styles.body}>
         {tools.map((tool) => (
-          <SessionExecutionTrace key={tool.key} tool={tool} />
+          <Fragment key={tool.key}>{renderToolDetail(tool)}</Fragment>
         ))}
       </div>
     </details>

@@ -1,6 +1,15 @@
+import { CheckOutlined, MinusOutlined } from "@ant-design/icons";
 import { createStyles } from "antd-style";
+import type { TaskPlan, TaskPlanStep } from "../core/public-types.ts";
 
-export const useSessionTaskPlanStyle = createStyles(({ css }) => ({
+const STATUS_LABELS: Record<TaskPlanStep["status"], string> = {
+  pending: "待处理",
+  in_progress: "进行中",
+  completed: "已完成",
+  cancelled: "已取消",
+};
+
+const useStyle = createStyles(({ css }) => ({
   card: css`
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
@@ -74,3 +83,26 @@ export const useSessionTaskPlanStyle = createStyles(({ css }) => ({
     }
   `,
 }));
+
+export function TaskPlan({ plan }: { plan: TaskPlan }) {
+  const { styles } = useStyle();
+  return (
+    <section aria-label="任务计划" className={styles.card}>
+      <div className={styles.header}>
+        <h3>任务计划</h3>
+        <span>{plan.summary.completed}/{plan.summary.total} 已完成</span>
+      </div>
+      <ol className={styles.list}>
+        {plan.steps.map((step) => (
+          <li className={styles.step} data-status={step.status} key={step.step_id}>
+            <span aria-hidden="true" className={styles.status}>
+              {step.status === "completed" ? <CheckOutlined /> : step.status === "cancelled" ? <MinusOutlined /> : null}
+            </span>
+            <span>{step.content}</span>
+            <small>{STATUS_LABELS[step.status]}</small>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}

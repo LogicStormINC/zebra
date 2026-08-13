@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement } from "../src/lib/session-timeline.ts";
-import type { SessionEvent } from "../src/types.ts";
+import { optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type SessionEvent } from "@zebra-agent/task-ui";
 
 const event = (
   sequence: number,

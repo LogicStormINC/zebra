@@ -1,10 +1,10 @@
-type ApprovalDecisionApi = {
+export type ApprovalDecisionApi = {
   approve: (approvalId: string, payload: { operator: string }) => Promise<unknown>;
   reject: (approvalId: string, payload: { operator: string }) => Promise<unknown>;
   resume: (sessionId: string) => Promise<unknown>;
 };
 
-type ApprovalIdentity = {
+export type ApprovalIdentity = {
   approval_id: string;
   session_id: string;
 };

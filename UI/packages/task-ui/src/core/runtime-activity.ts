@@ -1,10 +1,15 @@
-import type { SessionEvent } from "../types";
+import type { SessionEvent } from "./public-types.ts";
 
 export interface RuntimeActivityProjection {
   title: string;
   detail: string;
   startedAt?: string;
   updatedAt?: string;
+}
+
+export interface ToolActivityCopy {
+  title: string;
+  label: string;
 }
 
 const TERMINAL_OR_WAITING_EVENTS = new Set([
@@ -16,7 +21,7 @@ const TERMINAL_OR_WAITING_EVENTS = new Set([
   "session_cancelled",
 ]);
 
-const TOOL_COPY: Record<string, { title: string; label: string }> = {
+const TOOL_COPY: Record<string, ToolActivityCopy> = {
   "web.search": { title: "正在搜索网络", label: "网络搜索" },
   "web.fetch": { title: "正在读取网页", label: "网页读取" },
   "files.list": { title: "正在浏览文件", label: "文件浏览" },
@@ -36,15 +41,18 @@ function attemptNumber(event: SessionEvent): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
-function toolCopy(event: SessionEvent) {
+function toolCopy(event: SessionEvent, mapToolLabel: (name: string, fallback: ToolActivityCopy) => ToolActivityCopy) {
   const name = stringValue(event.payload.tool_name);
-  return name ? TOOL_COPY[name] ?? { title: "正在使用工具", label: name } : { title: "正在使用工具", label: "工具执行" };
+  return name
+    ? mapToolLabel(name, TOOL_COPY[name] ?? { title: "正在使用工具", label: name })
+    : { title: "正在使用工具", label: "工具执行" };
 }
 
 export function projectRuntimeActivity(
   sessionStatus: string | undefined,
   events: SessionEvent[],
   isRequesting: boolean,
+  mapToolLabel: (name: string, fallback: ToolActivityCopy) => ToolActivityCopy = (_name, fallback) => fallback,
 ): RuntimeActivityProjection | null {
   if (!isRequesting && sessionStatus !== "running") return null;
   if (["waiting_approval", "waiting_input", "suspended"].includes(sessionStatus ?? "")) return null;
@@ -70,14 +78,14 @@ export function projectRuntimeActivity(
     return { ...base, title: "正在处理任务", detail: attempt ? `第 ${attempt} 次执行` : "执行已启动" };
   }
   if (latest.event_type === "tool_call_proposed" || latest.event_type === "policy_decision_made") {
-    return { ...base, title: "准备使用工具", detail: toolCopy(latest).label };
+    return { ...base, title: "准备使用工具", detail: toolCopy(latest, mapToolLabel).label };
   }
   if (latest.event_type === "tool_execution_started") {
-    const copy = toolCopy(latest);
+    const copy = toolCopy(latest, mapToolLabel);
     return { ...base, title: copy.title, detail: copy.label };
   }
-  if (latest.event_type === "tool_execution_completed") return { ...base, title: "正在整理结果", detail: `${toolCopy(latest).label}已完成` };
-  if (latest.event_type === "tool_execution_failed") return { ...base, title: "正在处理工具结果", detail: `${toolCopy(latest).label}未完成` };
+  if (latest.event_type === "tool_execution_completed") return { ...base, title: "正在整理结果", detail: `${toolCopy(latest, mapToolLabel).label}已完成` };
+  if (latest.event_type === "tool_execution_failed") return { ...base, title: "正在处理工具结果", detail: `${toolCopy(latest, mapToolLabel).label}未完成` };
   if (latest.event_type === "plan_proposed" || latest.event_type === "plan_updated") return { ...base, title: "正在更新计划", detail: "任务计划已记录" };
   if (latest.event_type === "approval_granted" || latest.event_type === "clarification_responded" || latest.event_type === "session_resumed") {
     return { ...base, title: "正在继续任务", detail: "已恢复执行" };

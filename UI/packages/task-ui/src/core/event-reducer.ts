@@ -1,5 +1,4 @@
-import type { SessionEvent } from "../types";
-import type { ChatMessage } from "./chat-surface";
+import type { ChatMessage, SessionEvent } from "./public-types.ts";
 
 function readText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -16,6 +15,10 @@ const STREAM_RESET_EVENTS = new Set([
   "session_cancelled",
 ]);
 
+/**
+ * Reduce raw task events into display messages: sequence-ordered merge,
+ * delta chunk assembly, and in-place streaming-final replacement.
+ */
 export function streamEventsToMessages(events: SessionEvent[]): ChatMessage[] {
   const messages = new Map<string, { message: ChatMessage; sequence: number }>();
   const streamed = new Map<string, {

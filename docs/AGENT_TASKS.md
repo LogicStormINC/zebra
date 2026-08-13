@@ -16089,14 +16089,21 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
 #### Required Acceptance
 
 - [ ] Zebra Desktop deterministic checks, streaming/reload/cancel/follow-up
-  E2E, and shared core/react tests pass after the rewrite.
+  E2E, and shared core/react tests pass after the rewrite. (Phase 2: 21/21
+  deterministic checks pass; E2E is 3 passed / 5 failed with the exact same
+  failures at base `da97dc3`, i.e. inherited, not branch-attributable; the
+  shared core contract check and package typecheck pass.)
 - [ ] Zebra Desktop really consumes the shared package; no second independent
-  reducer or component set remains for the same Task.
-- [ ] Shared package has no Tauri dependency and no FinOS business type;
+  reducer or component set remains for the same Task. (Phase 2: the six moved
+  lib modules and six moved component files were deleted; desktop only keeps
+  thin adapters using shared slots.)
+- [x] Shared package has no Tauri dependency and no FinOS business type;
   business rendering stays behind `renderBusinessItem` /
   `renderMessageActions` / `renderSources` / `mapToolLabel` slots.
-- [ ] Bundle report shows no uncontrolled growth; full/static/eval failures
-  match the exact base.
+- [x] Bundle report shows no uncontrolled growth; full/static/eval failures
+  match the exact base. (1,352.46 kB / gzip 429.07 vs base 1,349.64 kB /
+  gzip 428.38, +0.2%, via vite `resolve.dedupe`; full pytest at frozen base
+  is `2185 passed, 9 failed, 9 skipped` with the inherited failure set.)
 - [ ] No PR, merge, push, deploy, or Wave 5 start before Gate A.
 
 #### Explicit Non-Goals

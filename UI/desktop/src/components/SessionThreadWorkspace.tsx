@@ -1,19 +1,31 @@
 import React from "react";
+import {
+  groupTimelineForRender,
+  hasVisibleTaskPlan,
+  isVisibleSessionEvent,
+  optimisticTimelineMessages,
+  projectRuntimeActivity,
+  projectSessionTimeline,
+  timelinePlanPlacement,
+  type ChatMessage,
+  type TaskApproval,
+  type TimelineMessageItem,
+  type TimelineStatusItem,
+} from "@zebra-agent/task-ui";
+import {
+  ApprovalCard,
+  ClarificationCard,
+  RuntimeActivityCard,
+  TaskPlan,
+  ToolCallGroup,
+} from "@zebra-agent/task-ui/react";
 import locale from "../_utils/local";
 import { activeSessionStatusLabel } from "../_utils/session-status";
-import type { ChatMessage } from "../lib/chat-surface";
-import { projectRuntimeActivity } from "../lib/runtime-activity";
-import { isVisibleSessionEvent, groupTimelineForRender, optimisticTimelineMessages, projectSessionTimeline, timelinePlanPlacement, type TimelineMessageItem, type TimelineStatusItem } from "../lib/session-timeline";
 import { compactWorkspaceLabel } from "../lib/task-launch-config";
-import { hasVisibleTaskPlan } from "../lib/task-plan";
 import type { ApprovalSummary, SessionEvent, SessionSummary } from "../types";
-import { AgentActivityCard } from "./AgentActivityCard";
 import { AssistantMessageBlock } from "./AssistantMessageBlock";
 import { SessionExecutionTrace } from "./SessionExecutionTrace";
-import { ToolCallGroup } from "./ToolCallGroup";
-import { SessionTaskPlan } from "./SessionTaskPlan";
 import { SessionApprovalPanel } from "./SessionApprovalPanel";
-import { SessionClarificationPanel } from "./SessionClarificationPanel";
 import { useSessionThreadWorkspaceStyle } from "./SessionThreadWorkspace.styles";
 
 type InspectorTab = "context" | "logs";
@@ -97,7 +109,7 @@ export function SessionThreadWorkspace({
   const visiblePlan = hasVisibleTaskPlan(sessionSummary?.task_plan) ? sessionSummary.task_plan : undefined;
   const planPlacement = visiblePlan ? timelinePlanPlacement(timelineItems) : undefined;
   const planNode = visiblePlan && planPlacement
-    ? <SessionTaskPlan key={`plan:${planPlacement.mode === "start" ? "start" : planPlacement.anchorKey}`} plan={visiblePlan} />
+    ? <TaskPlan key={`plan:${planPlacement.mode === "start" ? "start" : planPlacement.anchorKey}`} plan={visiblePlan} />
     : null;
   const toolCount = timelineItems.filter((item) => item.kind === "tool").length;
   const activity = projectRuntimeActivity(sessionSummary?.status, events, isRequesting);
@@ -173,7 +185,7 @@ export function SessionThreadWorkspace({
               const content = item.kind === "message"
                 ? renderMessage(item, item.key)
                 : item.kind === "toolGroup"
-                  ? <ToolCallGroup key={item.key} tools={item.tools} />
+                  ? <ToolCallGroup key={item.key} tools={item.tools} renderToolDetail={(tool) => <SessionExecutionTrace tool={tool} />} />
                   : item.kind === "tool" ? <SessionExecutionTrace key={item.key} tool={item} /> : renderStatus(item);
               const insertPlanAfter = visiblePlan && planPlacement?.mode === "after" && planPlacement.anchorKey === item.key;
               return <React.Fragment key={`stream:${item.key}`}>
@@ -183,14 +195,14 @@ export function SessionThreadWorkspace({
             })}
             {optimisticMessages.map((message) => renderMessage(message, message.key))}
             {activity ? (
-              <AgentActivityCard
+              <RuntimeActivityCard
                 activity={activity}
                 key={sessionSummary?.session_id ?? "local-activity"}
                 onShowDetails={() => setInspectorTab("logs")}
               />
             ) : null}
           </div>
-          <SessionClarificationPanel
+          <ClarificationCard
             busy={clarificationBusy}
             clarification={sessionSummary?.clarification_context}
             onRespond={onRespondClarification}

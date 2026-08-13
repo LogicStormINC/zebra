@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { hasVisibleTaskPlan } from "../src/lib/task-plan.ts";
+import { hasVisibleTaskPlan } from "@zebra-agent/task-ui";
 
 assert.equal(hasVisibleTaskPlan(undefined), false);
 assert.equal(hasVisibleTaskPlan({ steps: [], summary: { total: 0, pending: 0, in_progress: 0, completed: 0, cancelled: 0 } }), false);

@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { projectRuntimeActivity, runtimeActivityTiming } from "../src/lib/runtime-activity.ts";
-import type { SessionEvent } from "../src/types.ts";
+import { projectRuntimeActivity, runtimeActivityTiming, type SessionEvent } from "@zebra-agent/task-ui";
 
 const event = (sequence: number, eventType: string, payload: Record<string, unknown> = {}): SessionEvent => ({
   event_id: `event-${sequence}`,
