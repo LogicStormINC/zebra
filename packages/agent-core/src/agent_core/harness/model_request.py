@@ -113,8 +113,7 @@ def complete_model(
 
     def capture(delta: ModelTextDelta) -> None:
         attempt_deltas.append(delta)
-        if not tools:
-            emit(delta)
+        emit(delta)
 
     while True:
         attempt_deltas.clear()
@@ -146,7 +145,7 @@ def complete_model(
                 )
             )
         except ModelResponseRejectedError as error:
-            public_output_committed = bool(attempt_deltas) and not tools
+            public_output_committed = bool(attempt_deltas)
             if (
                 not error.retryable
                 or public_output_committed
@@ -162,9 +161,6 @@ def complete_model(
             repair_count += 1
             request_messages = [*messages, _model_response_repair_message(error)]
             continue
-        if tools:
-            for delta in attempt_deltas:
-                emit(delta)
         if rejected is None:
             return completion
         return replace(

@@ -49,6 +49,31 @@ assert.deepEqual(final, [{
   content: "Hello Zebra!",
 }]);
 
+// W45-GATE-A-01: a tool-call round discards provisional streamed text; the
+// partial never survives as a message (the durable log keeps deltas for
+// replay, but the reducer must not surface them as final content).
+const toolRound = streamEventsToMessages([
+  makeSessionEvent(1, "user_message_received", { content: "Read the file." }),
+  makeSessionEvent(2, "model_response_delta", {
+    model_call_id: "call-tool",
+    delta_index: 0,
+    content_delta: "Let me check the repo first...",
+  }),
+  makeSessionEvent(3, "tool_call_proposed", {
+    attempt_number: 1,
+    tool_name: "files.read",
+    tool_call_id: "call-a",
+  }),
+  makeSessionEvent(4, "model_response_received", {
+    model_call_id: "call-tool",
+    assistant_message: "I will read the file.",
+  }),
+]);
+assert.deepEqual(toolRound, [
+  { key: "event-1", role: "user", status: "success", content: "Read the file." },
+  { key: "event-4", role: "assistant", status: "success", content: "I will read the file." },
+]);
+
 // Timeline: duplicate event ids collapse, tool lifecycle folds into one item.
 const timeline = projectSessionTimeline([
   makeSessionEvent(1, "user_message_received", { content: "Inspect." }),

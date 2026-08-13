@@ -1,5 +1,50 @@
 # Progress Log
 
+## 2026-08-13 Wave 4.5 Gate A runtime closure (progressive/cancel/failure)
+
+- red diagnostics first (live curl + sqlite probes against the e2e API):
+  - task stream delivers initial + attempt events progressively, but every
+    `model_response_delta` arrived only after resume completed — root cause:
+    `complete_model` buffered text deltas whenever tools were advertised
+    (`capture()`), so tool-capable streams could never render progressively
+  - cancel already worked at the worker boundary once deltas flow (the
+    recorder raises `ExecutionInterrupted` on the next append after an
+    external `SESSION_CANCELLED`; finalize's terminal-state guard keeps
+    cancelled authoritative — `test_worker_streaming_stops_cleanly_after_durable_cancellation`
+    was inherited-failing at base and now passes)
+  - provider failure: streaming `finish_reason=content_filter` is wrapped by
+    `parse_completion` as `ModelResponseRejectedError(retryable=False)`; the
+    worker classified ALL response rejections as resumable SUSPENDED — a
+    non-retryable rejection never became durable failed
+- fixes (smallest shared boundaries, no new state machine):
+  - `model_request.py`: deltas emit progressively for tool-capable streams;
+    removed the end-of-stream re-emission; `public_output_committed` now
+    covers tools, so a rejection after public deltas fails closed (no
+    duplicate/repair after visible text); rejection before any public delta
+    still repairs once
+  - `openai_payloads.py`: finish-reason validation is provider-neutral
+    (content_filter/length/unsupported are non-retryable rejections on every
+    OpenAI-compatible provider, not only the DeepSeek router path)
+  - `execution_errors.py`: classification matrix pinned by tests —
+    `ModelResponseRejectedError(retryable=False)` and
+    `ModelProviderError(retryable=False)` -> durable FAILED;
+    retryable variants -> durable SUSPENDED (resumable); provider/rejection
+    payloads carry only normalized reason (`error_message` scrubbed), no raw
+    message/URL/credential; lease always released
+  - `mock-provider.mjs`: `content_filter` now delivered as a real streaming
+    finish_reason over HTTP 200 (the wire contract), keeping HTTP 500 as the
+    retryable transport case covered by deterministic tests
+- new deterministic tests: streaming progress (2 red-first) + repair safety
+  (2), worker classification matrix (4), retryable suspend + resumable
+  completion (2), HTTP resume bounded for failed/suspended (2), task-ui
+  tool-call provisional-text discard (1)
+- validation: full pytest `2199 passed, 8 failed, 9 skipped` (base was
+  `2185/9/9`; one inherited failure fixed, zero new); Playwright E2E 8/8
+  (was 3/5 at base); desktop checks 21/21; task-ui core contract check pass;
+  build `1,352.46 kB / gzip 429.07` (+0.2% vs base, unchanged from Phase 2);
+  eval 10/10; touched-path Ruff/Mypy/`git diff --check` clean; file-size and
+  full Ruff findings match the inherited sets
+
 ## 2026-08-13 Wave 4.5 E2E harness repair (post Phase 2, Gate A prep)
 
 - Playwright E2E re-run at HEAD: 5 passed / 3 failed (base was 3/5). Fixed

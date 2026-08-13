@@ -58,8 +58,21 @@ const server = createServer(async (request, response) => {
   const body = JSON.parse(Buffer.concat(buffers).toString("utf8"));
   const plan = responsePlan(Array.isArray(body.messages) ? body.messages : []);
   if (plan.finishReason === "content_filter") {
-    response.writeHead(500, { "content-type": "application/json" });
-    response.end(JSON.stringify({ error: { message: "packaged provider failure" } }));
+    // Content-filter rejections arrive as a streaming finish_reason on the
+    // wire, not as an HTTP 500. The runtime maps finish_reason content_filter
+    // to a non-retryable provider error -> durable session_failed.
+    response.writeHead(200, {
+      "cache-control": "no-cache",
+      "connection": "keep-alive",
+      "content-type": "text/event-stream",
+    });
+    response.write(`data: ${JSON.stringify(chunkPayload(""))}\n\n`);
+    response.write(`data: ${JSON.stringify(chunkPayload("", "content_filter", {
+      prompt_tokens: 8,
+      completion_tokens: 1,
+      total_tokens: 9,
+    }))}\n\n`);
+    response.end("data: [DONE]\n\n");
     return;
   }
   if (!body.stream) {

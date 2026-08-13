@@ -22,6 +22,14 @@
   pinned by fixture and acknowledged by the FinOS peer (Phase 1 landed at
   FinOS `84f81ba`). Desktop checks 21/21, build +0.2% vs base, E2E failures
   identical to exact base.
+  Gate A runtime closure landed on the same branch: tool-capable model
+  streams now emit deltas progressively (browsers render mid-stream), cancel
+  stays authoritative (no late failed/completed), and provider failures are
+  classified durably — non-retryable rejections -> `failed`, retryable
+  HTTP 500/transport -> `suspended` with lease released and normalized-only
+  payloads. Playwright E2E is now 8/8 (was 3/5 at base); full pytest
+  `2199 passed, 8 failed, 9 skipped` (one inherited failure fixed, zero new);
+  eval 10/10; bundle unchanged from Phase 2.
 - Gate A is the Wave 5 start gate; Wave 5 remains frozen. No PR, merge, push,
   or deploy until the owner authorizes.
 - Snapshot date: `2026-08-11`

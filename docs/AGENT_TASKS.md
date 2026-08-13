@@ -16070,9 +16070,15 @@ Decision, Investor Knowledge, Review workflow, or financial persistence type.
   edit; this is Gate A closure, not Wave 5 scope):
   `packages/agent-core/src/agent_core/harness/model_request.py`
   (progressive text-delta emission for tool-capable streams),
+  `packages/agent-integrations/src/agent_integrations/openai_payloads.py`
+  (provider-neutral finish-reason validation),
+  `apps/worker/src/zebra_agent_worker/execution_errors.py`
+  (provider/rejection classification matrix + safe failure payloads),
   `UI/desktop/e2e/support/mock-provider.mjs` (content_filter delivery
-  contract), new focused tests under `tests/agent_core/`. No worker/scheduler/
-  state-machine changes; no FinOS runtime paths.
+  contract), new focused tests under `tests/agent_core/`,
+  `tests/worker/execution/`, `tests/api/http_app/`, and the task-ui core
+  contract check. No worker/scheduler/state-machine changes; no FinOS runtime
+  paths.
 - Coordination: FinOS peer lane owns `codex/fnx-wave45-aceagent-ui-foundation-v1`
   (Phase 0/1/3). Shared-field contract changes
   (`event_id`, `sequence`/`cursor`, `created_at`, `message_id`, `final`,
@@ -16095,15 +16101,10 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
 
 #### Required Acceptance
 
-- [ ] Zebra Desktop deterministic checks, streaming/reload/cancel/follow-up
-  E2E, and shared core/react tests pass after the rewrite. (Phase 2: 21/21
-  deterministic checks pass; E2E is 5 passed / 3 failed after scoping the
-  strict locators to the message body (semantic-title h1/h2 collision) and
-  fixing the cancel selector; the remaining 3 failures are inherited with
-  exact root causes (synchronous local execution prevents mid-stream/cancel
-  assertions; provider errors 500 and leave the session `ready` instead of
-  failed) and need runtime changes outside this task's owned paths; the
-  shared core contract check and package typecheck pass.)
+- [x] Zebra Desktop deterministic checks, streaming/reload/cancel/follow-up
+  E2E, and shared core/react tests pass after the rewrite. (21/21 checks;
+  Playwright E2E 8/8 at HEAD, was 3/5 at base; shared core contract check and
+  package typecheck pass.)
 - [ ] Zebra Desktop really consumes the shared package; no second independent
   reducer or component set remains for the same Task. (Phase 2: the six moved
   lib modules and six moved component files were deleted; desktop only keeps
