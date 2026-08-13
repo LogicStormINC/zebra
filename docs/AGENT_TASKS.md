@@ -16066,6 +16066,13 @@ Decision, Investor Knowledge, Review workflow, or financial persistence type.
   `UI/packages/task-ui/**` (shared core + React primitives + fixtures),
   `UI/desktop/**` (import/refactor back onto the shared package, checks, E2E),
   `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`.
+- Gate A runtime closure (narrow, added 2026-08-13 before any production
+  edit; this is Gate A closure, not Wave 5 scope):
+  `packages/agent-core/src/agent_core/harness/model_request.py`
+  (progressive text-delta emission for tool-capable streams),
+  `UI/desktop/e2e/support/mock-provider.mjs` (content_filter delivery
+  contract), new focused tests under `tests/agent_core/`. No worker/scheduler/
+  state-machine changes; no FinOS runtime paths.
 - Coordination: FinOS peer lane owns `codex/fnx-wave45-aceagent-ui-foundation-v1`
   (Phase 0/1/3). Shared-field contract changes
   (`event_id`, `sequence`/`cursor`, `created_at`, `message_id`, `final`,
