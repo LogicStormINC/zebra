@@ -37,6 +37,7 @@ def policy_stop_result(
                 actor=EventActor.POLICY,
                 payload=approval_requested_payload(
                     attempt_number=context.attempt.number,
+                    approval_id=str(context.session.session_id),
                     tool_call=tool_call,
                     assistant_message=completion.assistant_message.content,
                     decision=decision,
