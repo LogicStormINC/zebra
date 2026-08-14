@@ -8,11 +8,11 @@
 2. `completed` - Audit the full caller/transaction/recovery chain and write
    the docs-first existing-state audit + Wave 5 task card (W5-DSH-01/02/03,
    R1-R8 red matrix).
-3. `in_progress` - Commit red/contract tests that prove the six real gaps at
+3. `completed` - Commit red/contract tests that prove the six real gaps at
    the exact base (no production edits).
-4. `pending` - Run the minimal focused baseline checks; separate inherited
+4. `completed` - Run the minimal focused baseline checks; separate inherited
    exact-base failures from new red failures.
-5. `pending` - Leave the worktree clean and report exact
+5. `in_progress` - Leave the worktree clean and report exact
    branch/HEAD/merge-base/changed paths/tests/security/gaps; stop at Gate 0.
 
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall

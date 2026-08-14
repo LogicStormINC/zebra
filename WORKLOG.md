@@ -63,9 +63,19 @@
 - docs-first commit: audit + `ZNX-WAVE5-OUTER-ATTEMPTS-01` task card with
   W5-DSH-01/02/03 contracts and the R1-R8 red matrix; PROGRESS/task_plan/
   WORKLOG updated
-- next commit: deterministic red tests (expected FAIL at exact base), then
-  focused baseline run, clean worktree, Gate 0 report; no production code,
-  no Phase 1, no PR/merge/push/deploy
+- second commit `5b59e65`: nine deterministic red/contract tests
+  (`tests/worker/execution/test_wave5_gate0_red_contracts.py`) all FAIL at
+  exact base as designed (R1-R8 + W5-DSH-01/02 payload coordinates);
+  focused baseline `37 passed` across harness loop/stopping, worker core
+  execution, completion-evidence trust, public-conversation multiturn,
+  final-identity and terminal-lease suites; new red failures fully separated
+  from the inherited exact-base full-suite failure set; no production code
+- FinOS peer Gate 0 contracts acknowledged (`019ffe56-...`): profile
+  preflight, immutable manifest/digests, usage = sum of attempt usages with
+  single settlement, safe public summary; no conflicts flagged; Phase 1 must
+  add Zebra profile advertisement/manifest consumption seams
+- Gate 0 complete: worktree clean, stop and report; no Phase 1, no
+  PR/merge/push/deploy
 
 ## 2026-08-13 Wave 4.5 Gate A PASS + Phase 4 start
 
