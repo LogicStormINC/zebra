@@ -16231,11 +16231,13 @@ or bind a business operation.
   loop starts Attempt 2 (base: `should_retry=False`).
 - R3 Retryable-failed session resumes as Attempt 2 (base:
   `SessionResumeError` on terminal session).
-- R4 Attempt coordinates at the existing lifecycle seams: start
-  (`HARNESS_ATTEMPT_STARTED`: `attempt_id/attempt_sequence/started_at/
-  causal_attempt_id`) and terminal (`SESSION_COMPLETED`/`SESSION_FAILED`:
-  `attempt_id/ended_at/terminal_reason`) (base: no schema registered;
-  lifecycle-level contract, not all fields on the start event).
+- R4 Start coordinates on `HARNESS_ATTEMPT_STARTED`
+  (`attempt_id/attempt_sequence/started_at/causal_attempt_id`) plus a
+  durable attempt-outcome record separate from the Stable Task terminal
+  carrying `attempt_id/ended_at/terminal_reason` (exact type/storage shape
+  not prescribed); a retriable Attempt 1 must not terminalize the Stable
+  Task and Task terminal occurs only after the accepted/exhausted final
+  attempt (base: `SESSION_FAILED` is written immediately; no start schema).
 - R5 Behavioral fail-closed at the real dispatch seam: durable attempt
   coordinate (2) differs from worker reconstruction (1) and the model
   gateway must not be called; `MODEL_REQUEST_STARTED` schema accepting the
@@ -16246,10 +16248,11 @@ or bind a business operation.
 - R7 Failed attempt candidate final is not public canonical final and
   `final_message_identity` is None (base: candidate projected + identity
   returned).
-- R8 Behavioral: every usage-bearing event links to a stable attempt
-  identity and one Stable Task's usage equals the sum of its attempt usages
-  at the existing task-event seam (no storage shape prescribed) (base:
-  usage events carry no `attempt_id`).
+- R8 Behavioral (Zebra-owned GAP only): every usage-bearing model record
+  links to a stable attempt identity at the existing task-event seam;
+  Task usage = sum(attempt usage) aggregation is independently red-tested
+  by the FinOS lane (FinOS R3), with Zebra later supplying the durable
+  per-attempt inputs (base: usage events carry no `attempt_id`).
 
 #### Gate 0 acceptance
 

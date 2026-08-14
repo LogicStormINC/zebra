@@ -201,10 +201,12 @@ def test_r3_retryable_failed_session_resumes_as_attempt_2(
 
 
 # R4 (W5-DSH-02): durable attempt coordinates checked at the existing
-# lifecycle seams - start coordinates on HARNESS_ATTEMPT_STARTED, terminal
-# coordinates on the terminal events. The owner contract requires lifecycle
+# lifecycle seams - start coordinates on HARNESS_ATTEMPT_STARTED, attempt
+# outcome (ended_at/terminal_reason) in a durable record separate from the
+# Stable Task terminal events. The owner contract requires lifecycle
 # identity/sequence/started/ended time/terminal reason/causal reference, not
-# every field on the start event.
+# every field on the start event, and a retriable Attempt 1 must not
+# terminalize the Stable Task.
 def test_r4_attempt_start_coordinates_at_start_seam() -> None:
     schema = event_payload_schema_for(EventType.HARNESS_ATTEMPT_STARTED)
     properties = schema["properties"]
@@ -217,12 +219,41 @@ def test_r4_attempt_start_coordinates_at_start_seam() -> None:
         assert field in properties
 
 
-def test_r4_attempt_terminal_coordinates_at_terminal_seam() -> None:
-    for terminal_type in (EventType.SESSION_COMPLETED, EventType.SESSION_FAILED):
-        schema = event_payload_schema_for(terminal_type)
-        properties = schema["properties"]
-        for field in ("attempt_id", "ended_at", "terminal_reason"):
-            assert field in properties
+def test_r4_attempt_outcome_record_is_separate_from_task_terminal(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "wave5-r4.db"
+    bootstrap = _seed_session(database_path, tmp_path, max_attempts=2)
+    session_id = bootstrap.session.session_id
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _ExplodingGateway(),
+    )
+    _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="wave5-red-r4",
+        executed_at=_created_at(),
+    )
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    task_terminal_types = {EventType.SESSION_COMPLETED, EventType.SESSION_FAILED}
+    # A retriable Attempt 1 failure must not terminalize the Stable Task
+    # while an attempt remains (max_attempts=2).
+    assert not any(event.event_type in task_terminal_types for event in events)
+    # The attempt outcome lives in a durable record separate from Task
+    # terminal, carrying identity/ended time/terminal reason; its exact
+    # type/storage shape is not prescribed.
+    outcomes = [
+        event
+        for event in events
+        if event.event_type not in task_terminal_types
+        and event.payload.get("attempt_id")
+        and event.payload.get("ended_at") is not None
+        and event.payload.get("terminal_reason")
+    ]
+    assert outcomes
+    started = [event for event in events if event.event_type is EventType.HARNESS_ATTEMPT_STARTED]
+    assert outcomes[0].payload["attempt_id"] == started[0].payload["attempt_id"]
 
 
 # R5 (W5-DSH-01): behavioral fail-closed at the real dispatch seam - when the
@@ -412,10 +443,11 @@ def test_r7_failed_attempt_candidate_final_stays_out_of_public_canonical_final(
     assert final_message_identity(database_path, str(task.task_id)) is None
 
 
-# R8: behavioral - one Stable Task's usage equals the sum of its attempt
-# usages, and every usage-bearing event links to a stable attempt identity,
-# computed at the existing task-event seam (no storage shape prescribed).
-def test_r8_task_usage_equals_sum_of_attempt_usages(
+# R8: Zebra-owned GAP only - every usage-bearing model record must link to a
+# stable attempt identity at the existing task-event seam. Task-level
+# usage = sum(attempt usage) aggregation is independently red-tested by the
+# FinOS lane (R3); Zebra later supplies the durable per-attempt inputs.
+def test_r8_usage_records_link_to_stable_attempt_identity(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -446,13 +478,6 @@ def test_r8_task_usage_equals_sum_of_attempt_usages(
         if item.event.event_type is EventType.HARNESS_ATTEMPT_STARTED
     ]
     assert usage_events
-    per_attempt: dict[str, int] = {}
     for usage in usage_events:
         attempt_id = usage.payload["attempt_id"]  # base: KeyError -> red
         assert attempt_id in {event.payload["attempt_id"] for event in attempt_started}
-        per_attempt[attempt_id] = per_attempt.get(attempt_id, 0) + int(
-            usage.payload["total_tokens"]
-        )
-    assert sum(per_attempt.values()) == sum(
-        int(usage.payload["total_tokens"]) for usage in usage_events
-    )

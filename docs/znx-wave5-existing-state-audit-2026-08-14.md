@@ -194,11 +194,11 @@ all FAIL at exact base)
 | R1 | Hosted worker starts Attempt 2 after retryable attempt-1 failure (max_attempts=2 seeded) | 3.1 single attempt | 1 `HARNESS_ATTEMPT_STARTED`, terminal `attempt_number=1` |
 | R2 | Evidence-correction failure is retryable when attempts remain; loop starts Attempt 2 | 3.2 no Attempt 2 | `should_retry=False`, 1 attempt |
 | R3 | Retryable-failed session resumes as Attempt 2 | 3.3 recovery blocked | `SessionResumeError` |
-| R4 | Attempt coordinates at the existing lifecycle seams: start (`HARNESS_ATTEMPT_STARTED`: `attempt_id/attempt_sequence/started_at/causal_attempt_id`) and terminal (`SESSION_COMPLETED`/`SESSION_FAILED`: `attempt_id/ended_at/terminal_reason`) | 3.3 no durable coordinates (W5-DSH-02) | no schema registered (`KeyError`); owner contract does not prescribe every field on the start event |
+| R4 | Start coordinates on `HARNESS_ATTEMPT_STARTED` (`attempt_id/attempt_sequence/started_at/causal_attempt_id`) plus a durable attempt-outcome record separate from the Stable Task terminal carrying `attempt_id/ended_at/terminal_reason` (exact type/storage shape not prescribed); a retriable Attempt 1 must not terminalize the Stable Task, and Task terminal occurs only after the accepted/exhausted final attempt | 3.3 no durable coordinates/outcome (W5-DSH-02) | base writes `SESSION_FAILED` immediately (attempt outcome not separate) and no start schema exists (`KeyError`) |
 | R5 | Behavioral fail-closed at the real dispatch seam: durable attempt coordinate (2) differs from worker reconstruction (1) and the model gateway must not be called; `MODEL_REQUEST_STARTED` schema accepting W5-DSH-01 digests/coordinates is a supporting assertion | 3.3/3.9 no reconstruction invariant (W5-DSH-01) | gateway is invoked despite the mismatch; schema fields absent, `extra="forbid"` |
 | R6 | Task terminal carries coverage verdict | 3.4 no coverage verdict | terminal payload has none |
 | R7 | Failed attempt candidate final is not public canonical final; `final_message_identity` is None | 3.5 wrong canonical final | candidate projected + identity returned |
-| R8 | Behavioral: every usage-bearing event links to a stable attempt identity and one Stable Task's usage equals the sum of its attempt usages, computed at the existing task-event seam (no storage shape prescribed) | 3.6 no settlement aggregation | usage events carry no `attempt_id` (`KeyError`) |
+| R8 | Behavioral (Zebra-owned GAP only): every usage-bearing model record links to a stable attempt identity at the existing task-event seam; Task usage = sum(attempt usage) aggregation is independently red-tested by the FinOS lane (FinOS R3), with Zebra later supplying the durable per-attempt inputs | 3.6 usage not linkable to attempts | usage events carry no `attempt_id` (`KeyError`) |
 
 W5-DSH-03 crash-point fixtures are registered in the task card and will be
 implemented as deterministic replay/equivalence tests when attempts and
@@ -210,7 +210,12 @@ per the owner lifecycle contract (no over-specification of the start event);
 R5 gained the behavioral dispatch fail-closed red through the real worker
 seam with schema coverage demoted to supporting; R8 is behavioral (usage
 linkable to stable attempt identity, Task usage = sum of attempt usages) and
-leaves storage shape free.
+leaves storage shape free. Final correction: R4's terminal seam is a durable
+attempt-outcome record separate from `SESSION_COMPLETED`/`SESSION_FAILED`
+(those are Stable Task terminal events; a retriable Attempt 1 must record
+`ended_at`/`terminal_reason` without terminalizing the Task), and R8 narrows
+to the Zebra-owned linkage gap only - Task-level aggregation is FinOS R3's
+independent red test, not claimed by Zebra R8.
 
 ## 6. Security findings (Gate 0, exact base)
 - No prompt/reasoning/raw provider output/grant/policy leaks into the public

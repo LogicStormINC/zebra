@@ -100,6 +100,24 @@
   claimed by this lane; Phase 1 starts only on owner acceptance; no
   production code, no push/PR/deploy
 
+## 2026-08-14 Wave 5 Gate 0 final contract correction (root audit)
+
+- R4 terminal seam corrected: `SESSION_COMPLETED`/`SESSION_FAILED` are
+  Stable Task terminal events, so a retriable Attempt 1 must record durable
+  `ended_at`/`terminal_reason` in an attempt-outcome record separate from
+  Task terminal (exact type/storage shape not prescribed; the red searches
+  the durable event stream for any non-SESSION terminal attempt outcome and
+  asserts the Task is not terminalized while attempts remain). Base red:
+  `SESSION_FAILED` is written immediately after attempt 1.
+- R8 narrowed to the Zebra-owned GAP: every usage-bearing model record must
+  link to a stable attempt identity at the task-event seam; the
+  Task usage = sum(attempt usage) aggregation is FinOS R3's independent red
+  test and is not claimed by Zebra R8. Base red: `KeyError: 'attempt_id'`.
+- revised red suite: `11 failed` at exact base as designed; focused baseline
+  `37 passed` unchanged; ruff/diff/status clean; docs/tests-only commit;
+  state remains "ready for owner acceptance", no Phase 1, no
+  push/PR/deploy.
+
 ## 2026-08-13 Wave 4.5 Gate A PASS + Phase 4 start
 
 - root decision: Gate A = PASS on the exact pair FinOS
