@@ -375,8 +375,7 @@ aggregate without treating `PostgresControlPlaneStores` as local
 
 ### CLOUD-EFFECT-DEFAULT-E2E-01 - Default Entrypoint Real Side-Effect Acceptance
 
-- Status: `Blocked`
-- Owner: `lukeding`
+- Status: `In Progress`
 - Suggested role: `QA / SRE`
 - Depends on: the merged `CLOUD-EFFECT-COMP-CLOSE-01` composition closeout;
   execution tier is blocked on a gVisor-capable engine plus the execution-tier
@@ -386,17 +385,29 @@ aggregate without treating `PostgresControlPlaneStores` as local
 - Owned paths: `tests/compose/effect_default_e2e/` (runner, stub, seed,
   durable verifier, compose file, contract test),
   `docs/CLOUD-EFFECT-DEFAULT-E2E-01.md`
-- Composition tier (validated on real PostgreSQL 17.5 + MinIO with the default
-  Worker entrypoint and a provider-shaped stub model): infrastructure, session
-  acceptance, worker fail-closed with zero Effect side effects across repeated
-  cycles, and the API handoff Effect read all pass; the runner exits
-  `ZEBRA_EFFECT_DEFAULT_E2E=BLOCKED` (2) with six execution-tier scenarios
-  explicitly skipped as `gvisor_engine_absent`. Runtime provisioning precedes
-  the first model call, so no session can execute without a runsc engine.
+- Execution tier validated on 2026-08-14 against a test-only gVisor rig
+  (colima `zebra-gvisor` VM dockerd + runsc, host tunnel, dual-view dedicated
+  workspace mount): the default Worker executed a policy-approved
+  `command.run` side effect inside a real gVisor sandbox through the durable
+  command lane; the outbox holds exactly one `succeeded` row with terminal
+  Event and payload binding, both request/result payloads are finalized in
+  versioned MinIO, repeated Worker cycles do not duplicate the effect, replay
+  stays consistent, and a no-tool session reaches `COMPLETED` with governed
+  Memory finalization (empty plans commit nothing). Result:
+  `ZEBRA_EFFECT_DEFAULT_E2E=PASS` with `lease_loss_uncertain_reconcile`
+  explicitly skipped pending a fault-injection design.
+- Composition tier (no gVisor engine): infrastructure, session acceptance,
+  worker fail-closed with zero Effect side effects, and the API handoff
+  Effect read pass; the runner exits `BLOCKED` (2) with the execution tier
+  skipped as `gvisor_engine_absent`.
+- Recorded findings: the inline execution path never populates outbox
+  `claim_fencing_token` (reserved for the dispatch-consumer lane), and a
+  Worker dying mid-attempt leaves the projection `running` with no default
+  requeue lane — recovery-sweep successor required.
 - Contract tests: `6 passed`; changed-path Ruff passes.
-- Explicit non-goals: no execution-tier or production claim; the local colima
-  `zebra-gvisor` VM has runsc installed but its sandbox fails to start under
-  nerdctl, so no usable engine evidence exists yet.
+- Explicit non-goals: the rig is test-only fixture evidence; Workspace
+  Control Plane, multi-tenant isolation and production rollout remain
+  unclaimed.
 
 ### CLOUD-TRN-NEXT-PLAN-01 - Cloud And Trench Next Execution Plan
 

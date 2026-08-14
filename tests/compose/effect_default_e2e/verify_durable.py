@@ -68,6 +68,55 @@ def lease_rows() -> int:
     return 0
 
 
+def current_revision(session_id: str) -> int:
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT coalesce(max(sequence), -1) FROM session_events WHERE session_id = %s",
+            (uuid.UUID(session_id),),
+        )
+        (revision,) = cursor.fetchone()
+    print(json.dumps({"current_revision": revision}))
+    return 0
+
+
+def effect_summary() -> int:
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT status, count(*),"
+            " count(*) FILTER (WHERE claim_fencing_token IS NOT NULL),"
+            " count(*) FILTER (WHERE terminal_event_id IS NOT NULL),"
+            " count(*) FILTER (WHERE payload_artifact_ref IS NOT NULL)"
+            " FROM effect_outbox GROUP BY status"
+        )
+        rows = cursor.fetchall()
+        cursor.execute(
+            "SELECT lifecycle_status, count(*) FROM artifact_payload_metadata"
+            " GROUP BY lifecycle_status"
+        )
+        artifacts = cursor.fetchall()
+        cursor.execute("SELECT count(*) FROM governed_memory_operations")
+        (memory_ops,) = cursor.fetchone()
+    print(
+        json.dumps(
+            {
+                "effects": [
+                    {
+                        "status": row[0],
+                        "rows": row[1],
+                        "fenced": row[2],
+                        "terminal_bound": row[3],
+                        "payload_bound": row[4],
+                    }
+                    for row in rows
+                ],
+                "artifacts": [[row[0], row[1]] for row in artifacts],
+                "memory_operations": memory_ops,
+            }
+        )
+    )
+    return 0
+
+
 def handoff_read(session_id: str) -> int:
     cloud = cloud_composition_from_environment()
     stores = postgres_control_plane_stores(
@@ -95,8 +144,10 @@ def handoff_read(session_id: str) -> int:
 COMMANDS = {
     "bootstrap-epoch": bootstrap_epoch,
     "effect-outbox-count": effect_outbox_count,
+    "effect-summary": effect_summary,
     "session-status": session_status,
     "event-types": event_types,
+    "current-revision": current_revision,
     "lease-rows": lease_rows,
     "handoff-read": handoff_read,
 }
@@ -107,6 +158,9 @@ def main(argv: list[str]) -> int:
         print(f"usage: verify_durable.py {{{'|'.join(COMMANDS)}}} [session_id]", file=sys.stderr)
         return 64
     command = COMMANDS[argv[1]]
+    if argv[1] == "current-revision" and len(argv) < 3:
+        print("current-revision requires a session id", file=sys.stderr)
+        return 64
     if argv[1] == "session-status" and len(argv) < 3:
         print("session-status requires a session id", file=sys.stderr)
         return 64
@@ -116,7 +170,7 @@ def main(argv: list[str]) -> int:
     if argv[1] == "handoff-read" and len(argv) < 3:
         print("handoff-read requires a session id", file=sys.stderr)
         return 64
-    if argv[1] in {"session-status", "event-types", "handoff-read"}:
+    if argv[1] in {"session-status", "event-types", "handoff-read", "current-revision"}:
         return command(argv[2])
     return command()
 

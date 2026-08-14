@@ -63,7 +63,8 @@ def test_stub_stays_provider_shaped_and_prompt_gated() -> None:
     assert "text/event-stream" in source
     assert '"tool_calls"' in source
     assert '"finish_reason": "tool_calls"' in source
-    assert "command.run" in source
+    assert 'command_tool = next(' in source
+    assert '"name": command_tool' in source
 
     compose_source = COMPOSE.read_text(encoding="utf-8")
     assert "postgres:17.5-alpine3.21" in compose_source

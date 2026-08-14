@@ -20,8 +20,19 @@
   dirty-mainline handoff snapshot lives on
   `codex/cloudline-worktree-snapshot`. `EMB-TRN-READ-E2E-01` remains
   `In Progress` and fail-closed pending isolated cross-service inputs.
-- `CLOUD-EFFECT-DEFAULT-E2E-01` is `Blocked` with its composition tier
-  closed: the repository now carries a fail-closed runner
+- `CLOUD-EFFECT-DEFAULT-E2E-01` is `In Progress` with its execution tier
+  validated on a test-only gVisor rig: the default Worker executed a real,
+  policy-approved `command.run` side effect inside a gVisor sandbox through
+  the durable command lane; PostgreSQL holds exactly one `succeeded` Effect
+  with terminal Event and payload binding, MinIO holds both finalized
+  versioned payloads, restart cycles do not duplicate the side effect, and a
+  no-tool session reaches `COMPLETED` with governed Memory finalization.
+  `lease_loss_uncertain_reconcile` stays skipped pending a fault-injection
+  design. Composition tier (no engine) still closes green with `BLOCKED`
+  (2). Recorded findings: inline execution never populates outbox
+  `claim_fencing_token` (dispatch-consumer lane owns that), and a Worker
+  dying mid-attempt leaves the projection `running` with no default requeue
+  lane — a recovery-sweep successor is required. Previously: the repository now carries a fail-closed runner
   (`tests/compose/effect_default_e2e/`) that drives real PostgreSQL 17.5,
   MinIO, the committed API application object, the default Worker entrypoint
   and a provider-shaped OpenAI-compatible stub model. The composition

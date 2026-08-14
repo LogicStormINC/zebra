@@ -29,7 +29,16 @@ class Handler(BaseHTTPRequestHandler):
                 content = message.get("content")
                 if isinstance(content, str):
                     user_prompt = content
-        wants_side_effect = SIDE_EFFECT_MARKER in user_prompt
+        command_tool = next(
+            (
+                tool["function"]["name"]
+                for tool in body.get("tools", [])
+                if isinstance(tool, dict)
+                and "command" in str(tool.get("function", {}).get("name", "")).lower()
+            ),
+            None,
+        )
+        wants_side_effect = SIDE_EFFECT_MARKER in user_prompt and command_tool is not None
         call_id = f"effect-e2e-call-{int(self.headers.get('X-Call-Seq', '0') or 0)}"
 
         self.send_response(200)
@@ -55,7 +64,7 @@ class Handler(BaseHTTPRequestHandler):
                                         "id": "effect-e2e-tool-1",
                                         "type": "function",
                                         "function": {
-                                            "name": "command.run",
+                                            "name": command_tool,
                                             "arguments": arguments,
                                         },
                                     }

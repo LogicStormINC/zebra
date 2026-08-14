@@ -75,7 +75,13 @@ class Runner:
         self.failures = 0
         self.stub_process: subprocess.Popen[bytes] | None = None
         self.run_root = Path(EVIDENCE_DIR)
-        self.workspace = self.run_root / "workspace"
+        self.runner_dir = RUNNER_DIR
+        self.workspace = Path(
+            os.environ.get("ZEBRA_EFFECT_E2E_WORKSPACE", str(self.run_root / "workspace"))
+        )
+        runtime_image = os.environ.get("ZEBRA_EFFECT_E2E_RUNTIME_IMAGE")
+        if runtime_image:
+            CLOUD_ENV["ZEBRA_RUNTIME_IMAGE"] = runtime_image
 
     def record(self, name: str, passed: bool, detail: dict[str, Any]) -> None:
         status = "pass" if passed else "fail"
@@ -93,6 +99,10 @@ class Runner:
         print(f"scenario {name}: skipped ({reason})")
 
     def compose(self, *args: str) -> subprocess.CompletedProcess[bytes]:
+        # Dependencies always run on the local default engine; only the
+        # Worker's runtime engine may point at a remote gVisor rig through
+        # DOCKER_HOST in the ambient environment.
+        env = {key: value for key, value in os.environ.items() if key != "DOCKER_HOST"}
         return subprocess.run(
             (
                 "docker",
@@ -105,6 +115,7 @@ class Runner:
             ),
             capture_output=True,
             text=True,
+            env=env,
         )
 
     def uv(
@@ -304,18 +315,26 @@ class Runner:
             self.start_dependencies()
             self.start_stub()
             seed: dict[str, Any] = {}
-            for name, action in (
+            execution_enabled = (
+                self.gvisor_available()
+                and os.environ.get("ZEBRA_EFFECT_E2E_ENABLE_EXECUTION_TIER") == "1"
+            )
+            composition_actions: list[tuple[str, Any]] = [
                 ("infrastructure", lambda: self.scenario_infrastructure()),
                 ("session_acceptance", lambda: seed.update(self.scenario_session_acceptance())),
-                (
-                    "worker_fail_closed",
-                    lambda: self.scenario_worker_fail_closed(seed["session_id"]),
-                ),
                 (
                     "handoff_effect_read",
                     lambda: self.scenario_handoff_effect_read(seed["session_id"]),
                 ),
-            ):
+            ]
+            if not execution_enabled:
+                composition_actions.append(
+                    (
+                        "worker_fail_closed",
+                        lambda: self.scenario_worker_fail_closed(seed["session_id"]),
+                    )
+                )
+            for name, action in composition_actions:
                 try:
                     action()
                 except Exception as error:  # noqa: BLE001 - evidence must record the failure
@@ -328,15 +347,11 @@ class Runner:
                             False,
                             {"error": "session seed failed; dependent scenario not executed"},
                         )
-            execution_enabled = (
-                self.gvisor_available()
-                and os.environ.get("ZEBRA_EFFECT_E2E_ENABLE_EXECUTION_TIER") == "1"
-            )
             if not execution_enabled:
                 reason = (
                     "gvisor_engine_absent"
                     if not self.gvisor_available()
-                    else "execution_tier_implementation_pending"
+                    else "execution_tier_not_enabled"
                 )
                 for name in EXECUTION_TIER_SCENARIOS:
                     self.record_skipped(
@@ -344,14 +359,13 @@ class Runner:
                         reason,
                         (
                             "gVisor-capable engine, dedicated workspace mount,"
-                            " execution tier implementation"
+                            " execution tier enablement"
                         ),
                     )
             else:
-                for name in EXECUTION_TIER_SCENARIOS:
-                    self.record_skipped(
-                        name, "execution_tier_implementation_pending", "implementation"
-                    )
+                from execution_tier import run_execution_tier
+
+                run_execution_tier(self)
             result["scenarios"] = self.scenarios
             result["passed"] = self.failures == 0 and execution_enabled
             _write_result(self.run_root, result)
