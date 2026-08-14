@@ -16157,7 +16157,7 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
 
 ### ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Complex Analysis Outer Attempt & Evidence Coverage v1
 
-- Status: `Review` (Gate 1 evidence ready; owner acceptance pending; no Phase 2)
+- Status: `Review` (Gate 2 evidence ready; owner acceptance pending; no Phase 3)
 - Owner: `Vinson`
 - Branch: `codex/znx-hosted-outer-attempts-v1`
 - Worktree: `/Users/vinson/.codex/worktrees/058c/zebra`
@@ -16301,6 +16301,38 @@ or bind a business operation.
 - [x] FinOS peer contract frozen in
       `tests/fixtures/wave5_gate1_contract_delta_v1.json`; peer notification
       sent separately with the final exact SHA
+
+#### Phase 2 (Gate 2) evidence (2026-08-15)
+
+- red-first: 15 Phase 2 test cases added/updated (new
+  `test_wave5_phase2_coverage_correction.py` + R2 x2 / R6 updated to the
+  exact-code contract); `10 failed / 15 passed` at starting HEAD `4797af8`
+  before any production edit
+- implementation (shared-root, no second engine): frozen
+  `max_corrections_per_attempt` now drives the existing correction path
+  (0 = no correction, 1 = exactly one, from the frozen Task policy);
+  exact retry code `completion_evidence_missing_after_correction` added to
+  the default/catalog retryable codes while `completion_evidence_missing`
+  stays absolutely non-retriable; safe coverage counts in the existing
+  completion-evidence status metadata; terminal `coverage_verdict`
+  (status/counts/message only) on SESSION_COMPLETED/SESSION_FAILED with
+  explicit `retryable=false`; outcome `result_metadata` carries the safe
+  counts for crash recovery; public projection exposes only the safe
+  verdict; W5-DSH-01 root correction lets the in-attempt correction dispatch
+  reconstruct (plain responses are not re-sent, runtime observations are
+  derived guidance excluded from the stable envelope)
+- results: Phase 2 + Gate 0 reds `25 passed`; Phase 1/Gate 1 suites
+  `30 passed`; focused `140 passed`; full `2254 passed / 8 failed /
+  9 skipped` vs Gate 1 `2237 / 11 / 9` (only the inherited 8 exact-base
+  failures remain; zero new regressions); eval `10/10`; ruff 11 / mypy 13
+  identical to base; file-size gate same 10 inherited violations
+- peer fixture frozen: `tests/fixtures/wave5_gate2_contract_delta_v1.json`,
+  schema-validated by `test_wave5_gate2_peer_contract.py`; peer notification
+  sent to FinOS task `019ffe56-8b1e-74e2-9289-9ee8a3544aff` for
+  notification/compatibility review only (no FinOS edits, no next phase)
+- [x] Gate 2 evidence documented in
+      `docs/znx-wave5-phase2-gate2-evidence-2026-08-15.md`; ready for owner
+      acceptance; no Phase 3, no push/PR/merge/deploy
 
 #### Explicit Non-Goals
 

@@ -40,6 +40,37 @@
    ruff/mypy identical to base; ready for owner acceptance; stop before
    Phase 2.
 
+## ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Phase 2 / Gate 2 (Zebra backend lane)
+
+1. `completed` - Owner accepted Gate 1 and authorized Phase 2; verified
+   branch/HEAD `4797af8`/clean status/merge-base `6afbafa` and re-confirmed
+   the three intentional Phase 2 reds at the starting HEAD.
+2. `completed` - Red-first: add the Phase 2 coverage/correction matrix
+   (independence, trusted-typed-only, frozen correction budget 0/1, exact
+   after-correction code, matching advertised producer + required choice,
+   frozen-policy retryability, Attempt 2 evidence carryover, safe terminal
+   verdict, public projection boundary) and update R2 x2 / R6 to the exact
+   code contract; `10 failed / 15 passed` at the starting HEAD.
+3. `completed` - Drive the existing completion-evidence correction path from
+   the frozen `max_corrections_per_attempt`; emit
+   `completion_evidence_missing_after_correction` on exhaustion and make it
+   the only retryable coverage code; keep `completion_evidence_missing`
+   non-retriable.
+4. `completed` - Add safe coverage counts/verdict to the existing
+   completion-evidence status metadata and the terminal payloads; persist
+   counts in the outcome record for crash recovery; expose only the safe
+   verdict publicly.
+5. `completed` - Root-correct the W5-DSH-01 guard for in-attempt correction
+   dispatches (plain responses not mirrored; runtime observations excluded
+   from the stable envelope); adapt the four existing tests that asserted
+   the old correction contract; keep all files under repository limits.
+6. `completed` - Gate 2 evidence: Phase 2 + reds `25/25`, Phase 1/Gate 1
+   `30/30`, focused `140/140`, full `2254/8/9` (only the inherited 8
+   exact-base failures), eval `10/10`, ruff 11 / mypy 13 identical to base,
+   file-size gate same 10 inherited violations; freeze the Gate 2 peer
+   fixture and notify the FinOS peer task; ready for owner acceptance; stop
+   before Phase 3.
+
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
 1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and

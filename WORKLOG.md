@@ -1,5 +1,53 @@
 # Progress Log
 
+## 2026-08-15 Wave 5 Phase 2 (Gate 2) - coverage correction + safe verdict
+
+- owner accepted Gate 1 and authorized Phase 2 (sole Zebra Phase 2 lane);
+  verified worktree at starting HEAD `4797af8` on
+  `codex/znx-hosted-outer-attempts-v1`, clean status, merge-base `6afbafa`;
+  re-confirmed the three intentional Phase 2 reds at the starting HEAD
+- red-first: new `test_wave5_phase2_coverage_correction.py` (P2-1..P2-10)
+  plus R2 x2 / R6 updated to the exact-code contract; `10 failed /
+  15 passed` at the starting HEAD (real gaps: no harness correction budget,
+  no exact code, no frozen-policy catalog entry, no safe counts, no
+  terminal verdict, no Attempt 2 for hosted coverage-missing tasks)
+- implementation: frozen `max_corrections_per_attempt` drives the existing
+  completion-evidence correction (0 = none, 1 = one); exact
+  `completion_evidence_missing_after_correction` is the only retryable
+  coverage code (`completion_evidence_missing` stays absolutely
+  non-retriable); safe counts added to completion-evidence status metadata;
+  terminal `coverage_verdict` (status/counts/message) on completed/failed
+  with explicit retryable; outcome `result_metadata` carries counts for
+  crash recovery; public projection exposes only the safe verdict; new
+  `harness/coverage_verdict.py` split keeps `completion_evidence.py` under
+  the file-size limit
+- root correction: the W5-DSH-01 guard blocked the in-attempt correction
+  dispatch; `mirror_attempt_messages` now mirrors only tool-exchange
+  responses (plain candidates are never re-sent), and the stable system
+  envelope excludes harness runtime observations (missing-evidence,
+  convergence, plan-contract, validator-correction) - deterministic derived
+  guidance, not external request content; the guard still fails closed on
+  conversation/tool-grant/model-config/media/stable-prompt drift
+- adapted existing tests asserting the old correction contract:
+  `test_required_evidence_correction` (wrong-tool correction -> after-code),
+  `test_agent_definition_completion_contract` (retryable after correction,
+  budget-bound stop), `test_clarification_continuation` (frozen
+  max_corrections=1 seed), `test_session_bootstrap` (default frozen
+  retryable list now includes the exact code)
+- evidence: Phase 2 + Gate 0 reds `25 passed`; Phase 1/Gate 1 `30 passed`;
+  focused `140 passed`; full `2254 passed / 8 failed / 9 skipped` vs Gate 1
+  `2237 / 11 / 9` (only the inherited 8 exact-base failures remain: 2
+  agent_integrations, 5 clock-sensitive session_pull_request, 1 file-size
+  gate); eval `10/10`; ruff 11 and mypy 13 identical to base; file-size
+  gate same 10 inherited violations; `git diff --check` clean
+- Gate 2 peer fixture frozen at
+  `tests/fixtures/wave5_gate2_contract_delta_v1.json` (schema-validated by
+  `test_wave5_gate2_peer_contract.py`); notification sent to FinOS peer
+  task `019ffe56-8b1e-74e2-9289-9ee8a3544aff` (review only; FinOS must not
+  edit or start its next phase from it)
+- worktree clean; no push/PR/merge/deploy; stop at Gate 2 for owner
+  acceptance; Phase 3/4/5/6 remain future gates
+
 ## 2026-08-14 Wave 4.5 Phase 4 interrupted-assistant partial preservation (0.1.2)
 
 - red-first: `session_failed`/`session_cancelled` were in
