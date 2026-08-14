@@ -270,6 +270,7 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
         database_path,
         tmp_path,
         agent_definition=_authoritative_evidence_definition(),
+        max_corrections_per_attempt=1,
     )
     service = _execution_service(database_path)
 
@@ -282,7 +283,9 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
 
     assert waiting.session.status is SessionStatus.WAITING_INPUT
     assert failed.session.status is SessionStatus.FAILED
-    assert failed.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert failed.attempt_result.metadata["stop_reason"] == (
+        "completion_evidence_missing_after_correction"
+    )
     assert len(resumed.requests) == 1
     clarification = next(
         event
@@ -468,6 +471,7 @@ def _seed_session(
     *,
     plan_required: bool = False,
     agent_definition: AgentDefinition | None = None,
+    max_corrections_per_attempt: int = 0,
 ):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -477,6 +481,7 @@ def _seed_session(
             policy_profile="workspace_write",
             plan_required=plan_required,
             agent_definition=agent_definition,
+            max_corrections_per_attempt=max_corrections_per_attempt,
         )
     )
     event_store = SQLiteEventStore(database_path)

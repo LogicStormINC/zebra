@@ -223,7 +223,7 @@ def test_required_evidence_can_arrive_in_any_tool_order() -> None:
     assert result.attempt_result.metadata["completion_evidence_satisfied"] is True
 
 
-def test_repeated_missing_evidence_fails_without_retry() -> None:
+def test_repeated_missing_evidence_after_correction_stops_at_budget_bound() -> None:
     definition = _definition()
     gateway = ScriptedGateway(
         (_completion("No typed evidence."), _completion("Still no typed evidence."))
@@ -238,8 +238,10 @@ def test_repeated_missing_evidence_fails_without_retry() -> None:
     )
 
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
-    assert result.run_result.stop_reason is HarnessStopReason.COMPLETION_EVIDENCE_MISSING
+    assert result.attempt_result.metadata["stop_reason"] == (
+        "completion_evidence_missing_after_correction"
+    )
+    assert result.run_result.stop_reason is HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
     assert result.run_result.attempts_used == 1
     assert len(gateway.requests) == 2
     assert sum(
@@ -311,7 +313,9 @@ def test_default_tool_loop_completion_is_gated_by_contract() -> None:
     )
 
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert result.attempt_result.metadata["stop_reason"] == (
+        "completion_evidence_missing_after_correction"
+    )
     assert len(gateway.requests) == 2
 
 

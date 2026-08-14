@@ -9,6 +9,7 @@ code is changed to make them green. Phase 1+ implements the contracts.
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
 from agent_core.application import (
     SessionBootstrapCommand,
     SessionBootstrapService,
@@ -16,6 +17,7 @@ from agent_core.application import (
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.contracts.events import event_payload_schema_for
+from agent_core.domain.attempt_policy import TaskAttemptPolicy
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
 from agent_core.domain.tool_profiles import ToolProfile
@@ -24,6 +26,7 @@ from agent_core.harness import (
     HarnessAttemptResult,
     HarnessLoop,
     HarnessStoppingPolicy,
+    HarnessStopReason,
     HarnessTask,
     StepClock,
 )
@@ -117,14 +120,17 @@ def test_r1_hosted_worker_starts_attempt_2_after_retryable_failure(
     assert failed.payload["attempt_number"] == 2
 
 
-# R2: evidence-correction failure is retryable when attempts remain, and the
-# outer loop must start Attempt 2 instead of terminal-failing.
+# R2: after the bounded evidence correction still misses coverage the exact
+# stop code is `completion_evidence_missing_after_correction`, and that exact
+# code - and only that coverage code - can schedule Attempt 2 under the frozen
+# policy/caps/budgets. `completion_evidence_missing` (no correction performed)
+# remains non-retryable.
 def test_r2_evidence_correction_failure_is_retryable_when_attempts_remain() -> None:
     policy = HarnessStoppingPolicy()
-    attempt_result = HarnessAttemptResult(
+    after_correction = HarnessAttemptResult(
         outcome=HarnessAttemptOutcome.FAILED,
         summary="evidence still missing after bounded correction",
-        metadata={"stop_reason": "completion_evidence_missing"},
+        metadata={"stop_reason": "completion_evidence_missing_after_correction"},
     )
 
     assert (
@@ -135,10 +141,37 @@ def test_r2_evidence_correction_failure_is_retryable_when_attempts_remain() -> N
             attempts_used=1,
             model_calls_used=1,
             tool_calls_used=0,
-            attempt_result=attempt_result,
+            attempt_result=after_correction,
         )
         is True
     )
+    no_correction = HarnessAttemptResult(
+        outcome=HarnessAttemptOutcome.FAILED,
+        summary="completion evidence contract is not satisfied",
+        metadata={"stop_reason": "completion_evidence_missing"},
+    )
+    assert (
+        policy.should_retry(
+            max_attempts=2,
+            max_model_calls=None,
+            max_tool_calls=None,
+            attempts_used=1,
+            model_calls_used=1,
+            tool_calls_used=0,
+            attempt_result=no_correction,
+        )
+        is False
+    )
+    # The frozen policy can make only the exact coverage code retryable; the
+    # legacy code is absolutely non-retriable even if someone tries to freeze it.
+    frozen = TaskAttemptPolicy(
+        max_attempts=2,
+        max_corrections_per_attempt=1,
+        retryable_stop_reasons=("completion_evidence_missing_after_correction",),
+    )
+    assert frozen.retryable_stop_reasons == ("completion_evidence_missing_after_correction",)
+    with pytest.raises(ValueError):
+        TaskAttemptPolicy(retryable_stop_reasons=("completion_evidence_missing",))
 
 
 def test_r2_harness_loop_starts_attempt_2_after_evidence_correction_failure() -> None:
@@ -152,6 +185,7 @@ def test_r2_harness_loop_starts_attempt_2_after_evidence_correction_failure() ->
         title="Evidence retry",
         user_input="prove the evidence contract",
         max_attempts=2,
+        max_corrections_per_attempt=1,
     )
 
     result = loop.run(
@@ -159,12 +193,13 @@ def test_r2_harness_loop_starts_attempt_2_after_evidence_correction_failure() ->
         lambda _context: HarnessAttemptResult(
             outcome=HarnessAttemptOutcome.FAILED,
             summary="evidence still missing after bounded correction",
-            metadata={"stop_reason": "completion_evidence_missing"},
+            metadata={"stop_reason": "completion_evidence_missing_after_correction"},
         ),
     )
 
     assert len(result.attempt_results) == 2
     assert result.run_result.attempts_used == 2
+    assert result.run_result.stop_reason is HarnessStopReason.RETRY_EXHAUSTED
 
 
 # R3: a retryable-failed session (crash window after the Attempt-1 outcome)
@@ -433,6 +468,17 @@ def test_r6_task_terminal_carries_coverage_verdict(
     verdict = completed.payload.get("coverage_verdict")
     assert verdict is not None
     assert verdict["status"] in {"complete", "partial", "missing"}
+    # The terminal coverage verdict is a safe summary only: status, counts and
+    # a message. Private requirement IDs, evidence refs, digests and
+    # diagnostics never enter it.
+    assert set(verdict) == {
+        "status",
+        "required_count",
+        "satisfied_count",
+        "missing_count",
+        "message",
+    }
+    assert isinstance(verdict["message"], str) and verdict["message"].strip()
 
 
 # R7: a failed attempt's candidate final must stay attempt-private; it must
