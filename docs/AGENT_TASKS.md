@@ -16056,7 +16056,7 @@ Decision, Investor Knowledge, Review workflow, or financial persistence type.
 
 ### ZNX-UI-FOUNDATION-01 - Wave 4.5 Shared Task UI Foundation
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Vinson`
 - Branch: `codex/znx-wave45-task-ui-foundation-v1`
 - Worktree: `/Users/vinson/.codex/worktrees/cf5f/zebra`
@@ -16134,14 +16134,27 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
   9 skipped` vs base `2185 / 9 / 9` (one inherited fixed, zero new); eval
   `10/10`; Desktop E2E `8/8`; FinOS joint transport `12/12`, browser `10/10`,
   synthetic `20/20`; no P0-P3 actionable findings.
-- Wave 5 backend: NOT STARTED. It remains frozen pending a detailed owner
-  plan; Gate A only unblocks Wave 4.5 Phase 4/5 UI work.
-- ZNX-UI-FOUNDATION-01 stays `In Progress` for Phase 4/5 generic shared-UI
-  extensions (turn disclosure defaults, elapsed/tool/plan/clarification/
-  approval rendering, exact-final-bound source/message action slots,
-  scroll/new-content cues if generic; queued-follow-up edit primitive only on
-  a demonstrated shared need). No FinOS business types, no Planner/scheduler,
-  no second state machine, no Tauri dependency, no raw arguments/output.
+
+#### Wave 4.5 Closure (2026-08-14)
+
+- Wave 4.5 = CLOSED: Gate A PASS -> Product Acceptance PASS -> Final-SHA
+  Closure Audit PASS; `ZNX-UI-FOUNDATION-01` marked `Done` with all
+  acceptance criteria checked.
+- Accepted final implementation pair: FinOS
+  `a6c38f08b613c2a02647aa3f938a8335072e6c2a` / Zebra
+  `6afbafa306ebbdd67956023d0924d66ea1545f99`.
+- Shared package: `@zebra-agent/task-ui@0.1.2` tarball SHA-256
+  `0d2678991857694aab94b44bff8265fdc11bb16cc3096d8440207f4820c19fdc`,
+  16,180 bytes, 23 entries.
+- Shared reducer semantics (final): a failed/cancelled interrupted assistant
+  partial remains visible with `status="error"`; it is never upgraded to a
+  canonical final and never receives final actions or source binding.
+- Evidence: shared task-ui/Desktop checks and artifact verification pass;
+  FinOS browser smoke `92/92`, frontend build green, Phase4/public/background
+  `45/45`, Gate2/4 `48/48`, full baseline zero new failures, visual evidence
+  reviewed, no P0-P2 actionable findings.
+- Wave 5 backend: active separately in its own lane, outside the Wave 4.5
+  closure.
 
 #### Explicit Non-Goals
 
@@ -16151,7 +16164,7 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
   prompt/reasoning/policy/grant exposure;
 - no empty shells or speculative framework for the sake of the suggested
   attachment tree; no Tauri shell dependency in the shared package;
-- no PR/merge/push/deploy; Wave 5 stays frozen until Gate A passes.
+- no PR/merge/deploy; feature-branch publication requires owner authorization.
 
 ### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
 

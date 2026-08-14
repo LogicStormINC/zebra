@@ -1,5 +1,26 @@
 # Progress Log
 
+## 2026-08-14 Wave 4.5 final docs-only closure
+
+- Wave 4.5 = CLOSED: Gate A PASS -> Product Acceptance PASS -> Final-SHA
+  Closure Audit PASS; `ZNX-UI-FOUNDATION-01` marked `Done` with all
+  acceptance criteria checked
+- accepted final implementation pair: FinOS
+  `a6c38f08b613c2a02647aa3f938a8335072e6c2a` / Zebra
+  `6afbafa306ebbdd67956023d0924d66ea1545f99`; shared package
+  `@zebra-agent/task-ui@0.1.2` tarball SHA-256
+  `0d2678991857694aab94b44bff8265fdc11bb16cc3096d8440207f4820c19fdc`,
+  16,180 bytes, 23 entries
+- shared reducer semantics recorded: a failed/cancelled interrupted assistant
+  partial stays visible with `status="error"` and is never upgraded to a
+  canonical final (no final actions/source binding)
+- evidence recorded: shared task-ui/Desktop checks and artifact verification;
+  FinOS browser smoke `92/92`, frontend build, Phase4/public/background
+  `45/45`, Gate2/4 `48/48`, full baseline zero new, visual evidence reviewed,
+  no P0-P2 actionable findings
+- Wave 5 backend: active separately in its own lane, outside the Wave 4.5
+  closure; no PR/deploy in this lane; feature-branch publication owner-authorized
+
 ## 2026-08-14 Wave 4.5 Phase 4 interrupted-assistant partial preservation (0.1.2)
 
 - red-first: `session_failed`/`session_cancelled` were in

@@ -5,18 +5,22 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-08-13`
-- Wave 4.5 Gate A = PASS. Accepted pair: FinOS
-  `d0cdb2bf1bbed9c65bf8f5b4336c9898be412575` / Zebra
-  `dd510aaffb3e6527c4e05cca3cdb61cb3e584710` / `@zebra-agent/task-ui@0.1.0`
-  tarball SHA-256 `33b01e6910c7852fd1c0a4a7f77f9acc0f39a0b2d90d7b76d1de7e49826f5741`.
-  Zebra evidence: Desktop E2E 8/8, full pytest `2199/8/9` vs base `2185/9/9`
-  (one inherited fixed, zero new), eval 10/10, bundle +0.2% vs base; FinOS
-  joint transport 12/12, browser 10/10, synthetic 20/20; no P0-P3 actionable
-  findings. Wave 4.5 Phase 4 (generic shared-UI extensions) is now in
-  progress on `codex/znx-wave45-task-ui-foundation-v1`; Wave 5 backend is
-  NOT STARTED and stays frozen pending a detailed owner plan. No PR, merge,
-  push, or deploy.
+- Snapshot date: `2026-08-14`
+- Wave 4.5 = CLOSED. Gate A PASS -> Product Acceptance PASS -> Final-SHA
+  Closure Audit PASS. Accepted final pair: FinOS
+  `a6c38f08b613c2a02647aa3f938a8335072e6c2a` / Zebra
+  `6afbafa306ebbdd67956023d0924d66ea1545f99`; shared package
+  `@zebra-agent/task-ui@0.1.2` tarball SHA-256
+  `0d2678991857694aab94b44bff8265fdc11bb16cc3096d8440207f4820c19fdc`,
+  16,180 bytes, 23 entries. Shared reducer semantics: a failed/cancelled
+  interrupted assistant partial remains visible with `status="error"` and is
+  never upgraded to a canonical final (no final actions/source binding).
+  Evidence: shared task-ui/Desktop checks and artifact verification pass;
+  FinOS browser smoke `92/92`, frontend build green, Phase4/public/background
+  `45/45`, Gate2/4 `48/48`, full baseline zero new failures, visual evidence
+  reviewed, no P0-P2 actionable findings. Wave 5 backend is active separately
+  in its own lane and outside the Wave 4.5 closure. No PR, merge, or deploy;
+  feature-branch publication is owner-authorized.
 - Snapshot date: `2026-08-13`
 - Wave 4 = CLOSED. Final pair: FinOS `6e84e23b22d11a1f89afa9d73e8f17c9e47382a5`
   / Zebra `da97dc3ac9ffe300076f4c68031b96a627e6dd58`, both ahead-only from
@@ -42,8 +46,6 @@
   payloads. Playwright E2E is now 8/8 (was 3/5 at base); full pytest
   `2199 passed, 8 failed, 9 skipped` (one inherited failure fixed, zero new);
   eval 10/10; bundle unchanged from Phase 2.
-- Gate A is the Wave 5 start gate; Wave 5 remains frozen. No PR, merge, push,
-  or deploy until the owner authorizes.
 - Snapshot date: `2026-08-11`
 - `Wave 2.5 / Goal-Plan v1 = Product Acceptance PASS`. The activation closure
   on `codex/znx-goal-plan-act-01` adds two independent, generic Stable Task
