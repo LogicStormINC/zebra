@@ -337,6 +337,7 @@ class SessionExecutionService:
                 title=task.title,
                 user_input=task_user_input,
                 max_attempts=task.max_attempts,
+                max_corrections_per_attempt=task.max_corrections_per_attempt,
                 max_model_calls=task.max_model_calls,
                 max_tool_calls=task.max_tool_calls,
                 workspace_root=task.workspace_root,

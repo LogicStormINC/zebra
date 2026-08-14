@@ -13,7 +13,14 @@ from dataclasses import dataclass
 
 MAX_ATTEMPTS_CAP = 2
 MAX_CORRECTIONS_PER_ATTEMPT_CAP = 1
-DEFAULT_RETRYABLE_STOP_REASONS = ("model_execution_failed",)
+DEFAULT_RETRYABLE_STOP_REASONS = (
+    "model_execution_failed",
+    # Phase 2: the bounded evidence correction ran and coverage is still
+    # missing - the only coverage code that may schedule Attempt 2. The
+    # pre-correction code `completion_evidence_missing` stays absolutely
+    # non-retriable below.
+    "completion_evidence_missing_after_correction",
+)
 # Narrow generic retryable-code catalog for v1. Codes outside this catalog can
 # never be frozen as retryable; Phase 2 adds the exact coverage-correction code.
 RETRYABLE_CODE_CATALOG = frozenset(DEFAULT_RETRYABLE_STOP_REASONS)

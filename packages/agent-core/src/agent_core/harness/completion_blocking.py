@@ -170,8 +170,16 @@ def completion_evidence_failure_outcome(
     return HarnessAttemptOutcome.SUSPENDED if open_plan_steps else HarnessAttemptOutcome.FAILED
 
 
-def blocked_completion_reason(open_plan_steps: tuple[str, ...]) -> str:
-    return "task_plan_incomplete" if open_plan_steps else "completion_evidence_missing"
+def blocked_completion_reason(
+    open_plan_steps: tuple[str, ...],
+    *,
+    correction_attempted: bool = False,
+) -> str:
+    if open_plan_steps:
+        return "task_plan_incomplete"
+    if correction_attempted:
+        return "completion_evidence_missing_after_correction"
+    return "completion_evidence_missing"
 
 
 def blocked_completion_summary(open_plan_steps: tuple[str, ...]) -> str:

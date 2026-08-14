@@ -213,7 +213,12 @@ def mirror_attempt_messages(
                             )
                         )
                 index += 1
-            if isinstance(content, str) and content.strip() or tool_calls:
+            # Only responses that were part of a tool exchange are appended to
+            # the actual request conversation (append_tool_batch). Plain
+            # candidate responses are emitted as events but never re-sent, so
+            # mirroring them would break the dispatch reconstruction guard on
+            # the next in-attempt completion (e.g. evidence correction).
+            if tool_calls:
                 messages.append(
                     SessionMessage(
                         message_id=new_message_id(),

@@ -8,6 +8,7 @@ from typing import Any
 
 from agent_core.domain.agent_definitions import AgentDefinition, AgentDefinitionContext
 from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.attempt_policy import MAX_CORRECTIONS_PER_ATTEMPT_CAP
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.model_media import ModelMediaInput, ordered_media_inputs
@@ -75,6 +76,10 @@ class HarnessTask:
     plan_required: bool = False
     task_plan: SessionPlan = field(default_factory=SessionPlan)
     trusted_evidence_tools: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    # Bounded evidence-correction budget. Legacy generic-harness default is one
+    # correction; the Hosted Worker always overrides this with the frozen Task
+    # policy value (0 = no correction) so the harness never hard-codes a budget.
+    max_corrections_per_attempt: int = 1
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -88,6 +93,15 @@ class HarnessTask:
             object.__setattr__(self, "goal", normalized_goal)
         if not isinstance(self.plan_required, bool):
             raise ValueError("harness task plan_required must be boolean")
+        if not isinstance(self.max_corrections_per_attempt, int) or isinstance(
+            self.max_corrections_per_attempt, bool
+        ):
+            raise ValueError("harness task max_corrections_per_attempt must be an integer")
+        if not 0 <= self.max_corrections_per_attempt <= MAX_CORRECTIONS_PER_ATTEMPT_CAP:
+            raise ValueError(
+                "harness task max_corrections_per_attempt must be within "
+                f"0..{MAX_CORRECTIONS_PER_ATTEMPT_CAP}"
+            )
         if not isinstance(self.trusted_evidence_tools, Mapping):
             raise ValueError("harness task trusted_evidence_tools must be a mapping")
         trusted_evidence_tools: dict[str, tuple[str, ...]] = {}

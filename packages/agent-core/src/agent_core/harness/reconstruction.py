@@ -103,6 +103,42 @@ def system_prompt_digest(
     )
 
 
+def stable_system_messages(
+    messages: list[SessionMessage] | tuple[SessionMessage, ...],
+) -> list[SessionMessage]:
+    """System messages that belong to the stable request envelope.
+
+    Harness-generated runtime observations (missing-evidence observation,
+    no-progress convergence observation, plan contract observation, validator
+    correction instruction) are deterministic guidance derived from the
+    durable evidence/plan state, not external request content. They are
+    excluded from the stable envelope digest so in-attempt correction
+    dispatches reconstruct exactly; the durable invariant still guards the
+    stable prompt, tool grant, model configuration, media and conversation.
+    """
+    return [
+        message
+        for message in messages
+        if message.role is MessageRole.SYSTEM and not _is_runtime_observation(message)
+    ]
+
+
+def _is_runtime_observation(message: SessionMessage) -> bool:
+    metadata = message.metadata or {}
+    if metadata.get("missing_completion_evidence") is not None:
+        return True
+    if metadata.get("validator_correction") is True:
+        return True
+    if metadata.get("required_plan_nudge") is True:
+        return True
+    content = message.content or ""
+    return (
+        content.startswith("Runtime completion-evidence observation: ")
+        or content.startswith("Runtime convergence observation: ")
+        or content.startswith("Runtime contract observation: ")
+    )
+
+
 def tool_schema_digest(tools: tuple[ModelToolDefinition, ...] | list[Any]) -> str:
     schemas: list[dict[str, object]] = []
     for tool in tools:
@@ -243,7 +279,7 @@ class RequestReconstruction:
         if plan_revision is not None:
             self.plan_revision = plan_revision
         actual_conversation = conversation_digest(messages)
-        actual_system = system_prompt_digest(messages)
+        actual_system = system_prompt_digest(stable_system_messages(messages))
         actual_tools = tool_schema_digest(tools)
         actual_media = media_inputs_digest(media_inputs)
         rebuilt = self._messages_rebuild() if self._messages_rebuild is not None else None

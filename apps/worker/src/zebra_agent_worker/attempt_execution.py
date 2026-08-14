@@ -35,6 +35,7 @@ from agent_core.harness.reconstruction import (
     invocation_policy_digest,
     media_inputs_digest,
     model_config_digest,
+    stable_system_messages,
     system_prompt_digest,
 )
 from agent_core.harness.required_tool_request import selected_model_tools
@@ -308,7 +309,11 @@ def _build_reconstruction(
             allow_tools=allow_tools,
             required_names=required_tool_names,
         )
-        return system_prompt_digest(system_messages), expected_tools, expected_invocation
+        return (
+            system_prompt_digest(stable_system_messages(system_messages)),
+            expected_tools,
+            expected_invocation,
+        )
 
     def rebuild() -> list[SessionMessage]:
         current = durable_events(scoped_events, recorder)

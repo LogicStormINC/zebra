@@ -128,6 +128,19 @@ def record_attempt_outcome(
 ) -> None:
     model_calls_used = usage_int(result.metadata, "model_calls_used", 1)
     tool_calls_used = usage_int(result.metadata, "tool_calls_executed", 0)
+    result_metadata: dict[str, object] = {
+        "stop_reason": str(result.metadata.get("stop_reason", "unknown")),
+        "model_calls_used": model_calls_used,
+        "tool_calls_executed": tool_calls_used,
+    }
+    for key in (
+        "completion_evidence_required_count",
+        "completion_evidence_satisfied_count",
+        "completion_evidence_missing_count",
+    ):
+        value = result.metadata.get(key)
+        if isinstance(value, int) and not isinstance(value, bool):
+            result_metadata[key] = value
     recorder.append(
         EventType.ATTEMPT_OUTCOME_RECORDED,
         EventActor.HARNESS,
@@ -142,11 +155,7 @@ def record_attempt_outcome(
             "summary": result.summary,
             "turn_id": turn_id,
             "epoch_sequence": epoch_sequence,
-            "result_metadata": {
-                "stop_reason": str(result.metadata.get("stop_reason", "unknown")),
-                "model_calls_used": model_calls_used,
-                "tool_calls_executed": tool_calls_used,
-            },
+            "result_metadata": result_metadata,
         },
         created_at=ended_at,
     )

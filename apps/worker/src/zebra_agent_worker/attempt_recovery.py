@@ -132,6 +132,9 @@ def _safe_metadata(payload: dict[str, object]) -> dict[str, object]:
         "completion_evidence_satisfied",
         "completion_evidence_missing",
         "completion_evidence_fingerprint",
+        "completion_evidence_required_count",
+        "completion_evidence_satisfied_count",
+        "completion_evidence_missing_count",
     }
     return {key: value for key, value in raw.items() if key in allowed}
 

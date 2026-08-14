@@ -10,6 +10,7 @@ from agent_core.application import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import SessionStatus
+from agent_core.harness.coverage_verdict import safe_coverage_verdict
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.runtime import RuntimeSnapshot
 from agent_storage import SQLiteEventStore
@@ -79,6 +80,7 @@ def finalize_execution(
                 "attempt_number": attempt_number,
                 "summary": attempt_result.summary,
                 "metadata": attempt_result.metadata,
+                "coverage_verdict": safe_coverage_verdict(attempt_result.metadata),
             },
         )
         if completion_sink is None:
@@ -97,6 +99,8 @@ def finalize_execution(
                 "attempt_number": attempt_number,
                 "summary": attempt_result.summary,
                 "metadata": attempt_result.metadata,
+                "coverage_verdict": safe_coverage_verdict(attempt_result.metadata),
+                "retryable": False,
             },
         )
     elif attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:

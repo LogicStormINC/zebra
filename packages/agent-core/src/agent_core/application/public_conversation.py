@@ -114,6 +114,7 @@ def project_public_conversation(
             continue
 
         if event_type in _PROGRESS_CONTENT:
+            coverage_verdict = event.payload.get("coverage_verdict")
             _set_event_item(
                 items,
                 task_event,
@@ -121,6 +122,12 @@ def project_public_conversation(
                 state=_PROGRESS_STATE[event_type],
                 disclosure=_PROGRESS_DISCLOSURE[event_type],
                 content=_PROGRESS_CONTENT[event_type],
+                data=(
+                    {"coverage_verdict": coverage_verdict}
+                    if event_type is EventType.SESSION_COMPLETED
+                    and isinstance(coverage_verdict, dict)
+                    else None
+                ),
             )
             continue
 
@@ -149,6 +156,7 @@ def project_public_conversation(
                 or _text(event.payload.get("summary"))
                 or "This task did not complete."
             )
+            coverage_verdict = event.payload.get("coverage_verdict")
             _set_event_item(
                 items,
                 task_event,
@@ -156,7 +164,14 @@ def project_public_conversation(
                 state="failed",
                 disclosure="open",
                 content=public_message,
-                data={"retryable": bool(event.payload.get("retryable", True))},
+                data={
+                    "retryable": bool(event.payload.get("retryable", True)),
+                    **(
+                        {"coverage_verdict": coverage_verdict}
+                        if isinstance(coverage_verdict, dict)
+                        else {}
+                    ),
+                },
             )
 
     projected = tuple(
