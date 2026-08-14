@@ -54,10 +54,20 @@ skip，`ZEBRA_EFFECT_DEFAULT_E2E=PASS`（exit 0）。
 - 默认执行流在会话 Lease 下内联完成 schedule → execute → complete；
   `claim_fencing_token` 仅由独立分发消费通道（`claim_next`）填充，内联
   路径为 NULL 是预期行为，不是缺口。
-- **发现的恢复缺口**：Worker 在 attempt 中途退出后，会话投影停留在
-  `running`；默认循环只轮询 `ready`，`list_waiting_approval_sessions`
-  仅被 API 读侧使用。批准/消息/resume 命令仍被持久化接受，但没有通道
-  把孤儿 `running` 会话重新排队。需要后续恢复清扫卡（successor）处理。
+- **发现的恢复缺口（精确根因，2026-08-14 受控实验）**：批准续跑是一次
+  性交接。`recover_approved_continuation` 只接受
+  `requested + granted + 未开始执行` 状态；一旦出现
+  `TOOL_EXECUTION_STARTED`，任何后续 resume 都因
+  `approved tool continuation has uncertain prior execution state`
+  fail-closed（防副作用重放的正确防御）。但配套的进程内续跑在实验中
+  未完成：工具 `succeeded` 后 attempt 不再发起最终模型轮、不写任何
+  终态事件，会话楔死在 `running`；观察到双重 `TOOL_EXECUTION_STARTED`
+  事件（`mark_approved_continuation_started` 一枚 + 批执行器又一枚），
+  是隔离异常还是预期双记需 successor 确认。此外命令消费通道把失败
+  `skipped` 的 reason 吞在循环内部（不打日志），且命令事件随投影推进
+  变为不可重试。需要 successor 卡同时处理：批准续跑的 durable
+  checkpoint 化、孤儿 `running` 会话的恢复通道、以及命令消费失败的
+  可观测与重试语义。
 
 ## 复现
 

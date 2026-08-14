@@ -30,9 +30,15 @@
   `lease_loss_uncertain_reconcile` stays skipped pending a fault-injection
   design. Composition tier (no engine) still closes green with `BLOCKED`
   (2). Recorded findings: inline execution never populates outbox
-  `claim_fencing_token` (dispatch-consumer lane owns that), and a Worker
-  dying mid-attempt leaves the projection `running` with no default requeue
-  lane — a recovery-sweep successor is required. Previously: the repository now carries a fail-closed runner
+  `claim_fencing_token` (dispatch-consumer lane owns that); a controlled
+  live-worker experiment pinned the post-approval wedge precisely — the
+  approved tool executes once (`succeeded`), the in-process continuation
+  never issues the final model turn, the session stays `running` with no
+  terminal event, a double `TOOL_EXECUTION_STARTED` anomaly is visible,
+  and every later resume fails closed on `uncertain prior execution state`
+  while command-consumption failures are swallowed without logs. A
+  successor card must checkpoint the post-approval continuation durably
+  and make orphaned `running` sessions resumable. Previously: the repository now carries a fail-closed runner
   (`tests/compose/effect_default_e2e/`) that drives real PostgreSQL 17.5,
   MinIO, the committed API application object, the default Worker entrypoint
   and a provider-shaped OpenAI-compatible stub model. The composition
