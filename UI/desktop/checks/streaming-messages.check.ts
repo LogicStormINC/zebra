@@ -110,10 +110,16 @@ const recovered = streamEventsToMessages([
 ]);
 assert.deepEqual(recovered.map(({ role, content }) => [role, content]), [
   ["user", "First request"],
+  ["assistant", "Now let me check the repository"],
   ["user", "Retry request"],
+  ["assistant", "I will prepare the Markdown file."],
   ["user", "Final request"],
   ["assistant", "Final report"],
 ]);
+assert.deepEqual(
+  recovered.filter((message) => message.status === "error").map(({ content }) => content),
+  ["Now let me check the repository", "I will prepare the Markdown file."],
+);
 
 const superseded = streamEventsToMessages([
   event(20, "model_response_delta", {

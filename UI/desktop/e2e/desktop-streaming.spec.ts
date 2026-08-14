@@ -66,6 +66,9 @@ test("stops a running stream without a late completion", async ({ page, request 
   await page.getByLabel("停止任务").click();
   await expect.poll(async () => (await session(request, sessionId)).status).toBe("cancelled");
   await expect(page.getByText("已停止", { exact: true })).toBeVisible();
+  // W45-P4-02: the interrupted partial survives the cancel as an error
+  // message instead of being deleted (it never becomes a canonical final).
+  await expect(assistantMessage(page).getByText(/stop-003\|/)).toBeVisible();
 
   await page.waitForTimeout(5_000);
   const stream = await request.get(`${API_URL}/tasks/${sessionId}/stream`, { headers: AUTH_HEADERS });
@@ -75,7 +78,9 @@ test("stops a running stream without a late completion", async ({ page, request 
   expect((await session(request, sessionId)).status).toBe("cancelled");
 
   await submit(page, "E2E_APPROVAL continue the cancelled Task internally");
-  await expect(assistantMessage(page).getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".x-markdown").filter({ hasText: "APPROVAL_COMPLETE" }).first(),
+  ).toBeVisible();
   await expect(page.getByText("Agent 需要人工确认")).not.toBeVisible();
 });
 

@@ -1,5 +1,31 @@
 # Progress Log
 
+## 2026-08-14 Wave 4.5 Phase 4 interrupted-assistant partial preservation (0.1.2)
+
+- red-first: `session_failed`/`session_cancelled` were in
+  `STREAM_RESET_EVENTS`, so a real interruption deleted the already streamed
+  assistant partial; contract assertions added first (shared core check +
+  Desktop streaming-messages check) and failed against the old reducer
+- minimal fix in `event-reducer.ts`: failed/cancelled interruption now keeps
+  the sorted/merged partial as a `ChatMessage` with `status="error"`; the
+  message keeps its `model-stream:<call>` key and is never upgraded to a
+  canonical final (no final actions/source binding); normal resets
+  (`model_request_started`, `harness_attempt_started`, approval, clarification,
+  `session_completed`, `session_suspended`) keep their existing discard
+  semantics, pinned by new contract assertions; no deltas before interruption
+  -> nothing preserved
+- Desktop consumes the same reducer: `checks/streaming-messages.check.ts`
+  recovered-case now expects the two interrupted partials as error messages;
+  E2E stop-test gained a real assertion that the partial survives cancel, and
+  the follow-up APPROVAL_COMPLETE assertion is scoped to the markdown blocks
+  (the partial legitimately renders in the optimistic tail)
+- validation: task-ui contract check + package typecheck green; Desktop
+  checks 21/21; build 1,353.05 kB (+0.17 kB vs 0.1.1); Playwright E2E 8/8;
+  `git diff --check` clean
+- `@zebra-agent/task-ui@0.1.2` packed to /tmp/task-ui-pack-012, 23 entries,
+  SHA-256 `0d2678991857694aab94b44bff8265fdc11bb16cc3096d8440207f4820c19fdc`,
+  16,180 bytes, contract check green from the artifact; handoff sent to FinOS
+
 ## 2026-08-13 Wave 4.5 Phase 4 generic shared-UI additions (package 0.1.1)
 
 - FinOS consumption decisions: consume `defaultTurnDisclosure`/`TurnSection`

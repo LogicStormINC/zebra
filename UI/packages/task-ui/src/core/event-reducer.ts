@@ -11,9 +11,13 @@ const STREAM_RESET_EVENTS = new Set([
   "clarification_requested",
   "session_suspended",
   "session_completed",
-  "session_failed",
-  "session_cancelled",
 ]);
+
+// W45-P4-02: a real failed/cancelled interruption keeps the already streamed
+// partial answer (status "error") instead of deleting it. It is never
+// upgraded to a canonical final: the message keeps its model-stream key, so
+// consumers must not attach final actions or source binding to it.
+const INTERRUPTED_STREAM_EVENTS = new Set(["session_failed", "session_cancelled"]);
 
 /**
  * Reduce raw task events into display messages: sequence-ordered merge,
@@ -53,6 +57,19 @@ export function streamEventsToMessages(events: SessionEvent[]): ChatMessage[] {
       }
       if (STREAM_RESET_EVENTS.has(event.event_type)) {
         discardUncommittedStreams();
+        return;
+      }
+      if (INTERRUPTED_STREAM_EVENTS.has(event.event_type)) {
+        for (const draft of streamed.values()) {
+          const entry = messages.get(draft.key);
+          if (entry) {
+            messages.set(draft.key, {
+              ...entry,
+              message: { ...entry.message, status: "error" },
+            });
+          }
+        }
+        streamed.clear();
         return;
       }
       if (event.event_type === "model_response_delta") {

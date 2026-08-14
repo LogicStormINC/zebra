@@ -62,6 +62,94 @@ assert.deepEqual(final, [{
   content: "Hello Zebra!",
 }]);
 
+// W45-P4-02: a real failed/cancelled interruption preserves the merged
+// partial answer as an error message (sorted, out-of-order deltas merged).
+// It never becomes a canonical final (key stays model-stream:<call>).
+const interrupted = streamEventsToMessages([
+  makeSessionEvent(1, "user_message_received", { content: "Stream this." }),
+  makeSessionEvent(2, "model_response_delta", {
+    model_call_id: "call-x",
+    delta_index: 0,
+    content_delta: "Hello ",
+  }),
+  makeSessionEvent(4, "model_response_delta", {
+    model_call_id: "call-x",
+    delta_index: 2,
+    content_delta: "!",
+  }),
+  makeSessionEvent(3, "model_response_delta", {
+    model_call_id: "call-x",
+    delta_index: 1,
+    content_delta: "Zebra",
+  }),
+  makeSessionEvent(5, "session_failed", {}),
+]);
+assert.deepEqual(interrupted, [
+  { key: "event-1", role: "user", status: "success", content: "Stream this." },
+  { key: "model-stream:call-x", role: "assistant", status: "error", content: "Hello Zebra!" },
+]);
+
+const cancelled = streamEventsToMessages([
+  makeSessionEvent(1, "model_response_delta", {
+    model_call_id: "call-y",
+    delta_index: 0,
+    content_delta: "Partial",
+  }),
+  makeSessionEvent(2, "session_cancelled", {}),
+]);
+assert.deepEqual(cancelled, [
+  { key: "model-stream:call-y", role: "assistant", status: "error", content: "Partial" },
+]);
+
+// No deltas before the interruption -> nothing preserved.
+assert.deepEqual(streamEventsToMessages([
+  makeSessionEvent(1, "model_request_started", { model_call_id: "call-z" }),
+  makeSessionEvent(2, "session_failed", {}),
+]), []);
+
+// Existing reset semantics stay pinned: normal completion, approval,
+// clarification, and a fresh model request discard uncommitted partials.
+assert.deepEqual(streamEventsToMessages([
+  makeSessionEvent(1, "model_response_delta", {
+    model_call_id: "call-w",
+    delta_index: 0,
+    content_delta: "draft",
+  }),
+  makeSessionEvent(2, "session_completed", {}),
+]), []);
+assert.deepEqual(streamEventsToMessages([
+  makeSessionEvent(1, "model_response_delta", {
+    model_call_id: "call-a1",
+    delta_index: 0,
+    content_delta: "draft",
+  }),
+  makeSessionEvent(2, "approval_requested", {}),
+]), []);
+assert.deepEqual(streamEventsToMessages([
+  makeSessionEvent(1, "model_response_delta", {
+    model_call_id: "call-c1",
+    delta_index: 0,
+    content_delta: "draft",
+  }),
+  makeSessionEvent(2, "clarification_requested", {}),
+]), []);
+const superseded = streamEventsToMessages([
+  makeSessionEvent(1, "model_response_delta", {
+    model_call_id: "stale",
+    delta_index: 0,
+    content_delta: "Stale",
+  }),
+  makeSessionEvent(2, "model_request_started", { model_call_id: "fresh" }),
+  makeSessionEvent(3, "model_response_delta", {
+    model_call_id: "fresh",
+    delta_index: 0,
+    content_delta: "Fresh",
+  }),
+]);
+assert.deepEqual(superseded.map(({ key, content }) => [key, content]), [
+  ["model-stream:fresh", "Fresh"],
+]);
+
 // W45-GATE-A-01: a tool-call round discards provisional streamed text; the
 // partial never survives as a message (the durable log keeps deltas for
 // replay, but the reducer must not surface them as final content).
