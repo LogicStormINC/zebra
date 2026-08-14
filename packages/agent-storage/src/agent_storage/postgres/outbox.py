@@ -18,6 +18,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseFence
 from agent_core.domain.tools import ToolCallStatus, ToolResult
 from agent_core.ports.effect_dispatch import EffectDispatchPort
+from agent_core.ports.effect_state import EffectStateReadPort
 from psycopg import errors
 from psycopg.types.json import Jsonb
 
@@ -48,11 +49,40 @@ from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.leases import assert_current_lease_fence
 
 
-class PostgresEffectDispatchStore(EffectPayloadDispatchMixin, EffectDispatchPort):
+class PostgresEffectDispatchStore(
+    EffectPayloadDispatchMixin,
+    EffectDispatchPort,
+    EffectStateReadPort,
+):
     """Keep Event intent, delivery state, and terminal fact in one transaction."""
 
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+
+    def terminal_keys(self, root_session_id: SessionId) -> frozenset[str]:
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT ledger_key FROM effect_outbox
+                WHERE deployment_namespace = %s AND root_session_id = %s
+                  AND status = 'succeeded'
+                """,
+                (self._namespace, root_session_id),
+            ).fetchall()
+        return frozenset(row["ledger_key"] for row in rows)
+
+    def has_uncertain(self, root_session_id: SessionId) -> bool:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT 1 FROM effect_outbox
+                WHERE deployment_namespace = %s AND root_session_id = %s
+                  AND status IN ('pending', 'claimed', 'uncertain')
+                LIMIT 1
+                """,
+                (self._namespace, root_session_id),
+            ).fetchone()
+        return row is not None
 
     def schedule(
         self,

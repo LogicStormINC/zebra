@@ -4,8 +4,6 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast
-
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.projection_store import ProjectionStorePort
@@ -14,12 +12,14 @@ from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
     LeaseConflictError,
-    compose_control_plane_stores,
+    PostgresControlPlaneStores,
+    cloud_composition_from_environment,
     with_committed_event_publisher,
 )
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.claims import SessionClaimService
+from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
 from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
@@ -174,22 +174,50 @@ def build_worker_loop_service(
     sleep: Callable[[float], None] = time.sleep,
     stores: ControlPlaneStores | None = None,
     cloud_composition: CloudCompositionSettings | None = None,
+    cloud_worker_composition: CloudWorkerComposition | None = None,
     effect_dispatch: EffectDispatchPort | None = None,
     worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
     deployment_namespace: str | None = None,
     cloud_provider_continuation_factory: Callable[[SessionId], CloudProviderContinuationCoordinator]
     | None = None,
 ) -> WorkerLoopService:
-    active_stores = stores or compose_control_plane_stores(
-        profile=settings.profile,
-        storage_authority=settings.storage_authority,
-        database_path=(
-            settings.database_url
-            if settings.storage_authority == "postgresql"
-            else database_path
-        ),
-        cloud=cloud_composition,
-    )
+    if settings.storage_authority == "postgresql":
+        if stores is not None:
+            raise ValueError("cloud Worker requires CloudWorkerComposition, not ControlPlaneStores")
+        if any(
+            value is not None
+            for value in (
+                effect_dispatch,
+                worker_projection_transaction,
+                deployment_namespace,
+                cloud_provider_continuation_factory,
+            )
+        ):
+            raise ValueError("cloud Worker dependencies must come from one CloudWorkerComposition")
+        cloud_bundle = cloud_worker_composition or compose_cloud_worker(
+            cloud_composition or cloud_composition_from_environment()
+        )
+        active_stores: ControlPlaneStores | PostgresControlPlaneStores = cloud_bundle.stores
+        active_transaction: WorkerProjectionTransactionPort | None = (
+            cloud_bundle.projection_transaction
+        )
+        active_namespace: str | None = cloud_bundle.deployment_namespace
+        active_dispatch: EffectDispatchPort | None = cloud_bundle.effect_dispatch
+        active_artifact_factory = cloud_bundle.artifact_factory
+        active_provider_factory: (
+            Callable[[SessionId], CloudProviderContinuationCoordinator] | None
+        ) = (
+            cloud_bundle.provider_continuation_factory
+        )
+    else:
+        from agent_storage import sqlite_control_plane_stores
+
+        active_stores = stores or sqlite_control_plane_stores(database_path)
+        active_transaction = worker_projection_transaction
+        active_namespace = deployment_namespace
+        active_dispatch = effect_dispatch
+        active_artifact_factory = None
+        active_provider_factory = cloud_provider_continuation_factory
     if settings.live_events.redis_url is not None:
         namespace = getattr(active_stores, "deployment_namespace", None)
         if namespace is None and settings.deployment == "local":
@@ -205,23 +233,13 @@ def build_worker_loop_service(
                 key_prefix=settings.live_events.key_prefix,
             ),
         )
-    active_transaction = worker_projection_transaction
-    active_namespace = deployment_namespace
-    if settings.storage_authority == "postgresql":
-        active_transaction = active_transaction or cast(
-            WorkerProjectionTransactionPort, active_stores.workspaces
-        )
-        active_namespace = active_namespace or getattr(active_stores, "deployment_namespace", None)
-        if not isinstance(active_namespace, str) or not active_namespace.strip():
-            raise ValueError(
-                f"{settings.profile} profile composition must expose deployment_namespace"
-            )
+    execution_stores = active_stores
     claim_service = SessionClaimService(
-        active_stores.leases,
+        execution_stores.leases,
         SessionRecoveryService(
-            active_stores.events,
-            active_stores.sessions,
-            active_stores.workspaces,
+            execution_stores.events,
+            execution_stores.sessions,
+            execution_stores.workspaces,
         ),
     )
     execution_service = SessionExecutionService(
@@ -229,23 +247,24 @@ def build_worker_loop_service(
         claim_service=claim_service,
         resume_service=SessionResumeService(claim_service),
         settings=settings,
-        stores=active_stores,
-        effect_dispatch=effect_dispatch,
+        stores=execution_stores,
+        effect_dispatch=active_dispatch,
         worker_projection_transaction=active_transaction,
         deployment_namespace=active_namespace,
-        cloud_provider_continuation_factory=cloud_provider_continuation_factory,
+        cloud_artifact_factory=active_artifact_factory,
+        cloud_provider_continuation_factory=active_provider_factory,
     )
     command_consumer = SessionCommandConsumer(
-        active_stores,
+        execution_stores,
         execution_service,
         control_service=SessionControlService(
             database_path,
             settings=settings,
-            stores=active_stores,
+            stores=execution_stores,
         ),
     )
     return WorkerLoopService(
-        projection_store=active_stores.sessions,
+        projection_store=execution_stores.sessions,
         execution_service=execution_service,
         sleep=sleep,
         command_consumer=command_consumer,

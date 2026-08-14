@@ -66,6 +66,7 @@ from agent_core.ports.effect_ledger import (
     EffectLedgerStatus,
     EffectReservation,
 )
+from agent_core.ports.effect_state import EffectStateReadPort
 from agent_core.ports.event_store import EventStorePort
 from agent_core.ports.governed_memory_store import (
     GovernedMemoryScanCursor,
@@ -87,7 +88,7 @@ from agent_core.ports.live_event_fanout import (
     LiveEventFanoutPort,
 )
 from agent_core.ports.memory_delivery import MemoryDeliveryLedgerPort
-from agent_core.ports.memory_store import MemoryStorePort
+from agent_core.ports.memory_store import MemoryReadPort, MemoryStorePort
 from agent_core.ports.model_call_store import ModelCallStorePort
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.model_tool_projection import ModelToolProjectionPort
@@ -180,6 +181,7 @@ __all__ = [
     "DeliveryReplayResultType",
     "DeliveryTransactionPort",
     "EffectDispatchPort",
+    "EffectStateReadPort",
     "EffectLedgerPort",
     "EffectLedgerStatus",
     "EffectReservation",
@@ -207,6 +209,7 @@ __all__ = [
     "LiveEventEnvelope",
     "LiveEventFanoutPort",
     "MemoryStorePort",
+    "MemoryReadPort",
     "MemoryDeliveryLedgerPort",
     "ConfirmedMemoryPublication",
     "MemoryGatewayDeleteRequest",

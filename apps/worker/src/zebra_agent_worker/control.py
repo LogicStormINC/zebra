@@ -15,7 +15,11 @@ from agent_core.ports.runtime import (
     RuntimeSnapshot,
     RuntimeSnapshotStatus,
 )
-from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
+from agent_storage import (
+    ControlPlaneStores,
+    PostgresControlPlaneStores,
+    sqlite_control_plane_stores,
+)
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_worker.recovery import (
@@ -54,7 +58,7 @@ class SessionControlService:
         database_path: Path,
         *,
         settings: ZebraAgentSettings | None = None,
-        stores: ControlPlaneStores | None = None,
+        stores: ControlPlaneStores | PostgresControlPlaneStores | None = None,
     ) -> None:
         self._database_path = database_path
         self._settings = settings or load_settings()

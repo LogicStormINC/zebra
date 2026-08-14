@@ -11,7 +11,7 @@ from agent_core.domain.memories import (
     MemoryVisibility,
 )
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
-from agent_core.ports.memory_store import MemoryStorePort
+from agent_core.ports.memory_store import MemoryReadPort
 
 from agent_storage.memories import SQLiteMemoryStore
 
@@ -26,7 +26,7 @@ _TYPE_PRIORITY: dict[MemoryType, int] = {
 
 
 def list_confirmed_repo_memories(
-    store_or_database_path: MemoryStorePort | str | Path,
+    store_or_database_path: MemoryReadPort | str | Path,
     *,
     repo_id: str,
     limit: int = 8,
@@ -110,7 +110,7 @@ def _estimate_tokens(text: str) -> int:
 
 
 def list_confirmed_repo_memory_texts(
-    store_or_database_path: MemoryStorePort | str | Path,
+    store_or_database_path: MemoryReadPort | str | Path,
     *,
     repo_id: str,
     limit: int = 8,
@@ -131,7 +131,7 @@ def list_confirmed_repo_memory_texts(
     )
 
 
-def _memory_store(source: MemoryStorePort | str | Path) -> MemoryStorePort:
+def _memory_store(source: MemoryReadPort | str | Path) -> MemoryReadPort:
     return SQLiteMemoryStore(source) if isinstance(source, str | Path) else source
 
 

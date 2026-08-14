@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Any, cast
 
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
-from agent_core.ports import ArtifactPayloadObjectReadPort
-from botocore.config import Config  # type: ignore
-from botocore.session import Session  # type: ignore
+from agent_core.ports import ArtifactObjectStorePort
+from botocore.config import Config  # type: ignore[import-untyped]
+from botocore.session import Session  # type: ignore[import-untyped]
 
 from agent_storage.artifact_objects import S3ArtifactObjectStore
 from agent_storage.composition import ControlPlaneStores, sqlite_control_plane_stores
@@ -25,7 +25,7 @@ class CloudCompositionSettings:
     dsn: str
     deployment_namespace: str
     memory_cursor_signing_key: bytes
-    artifact_objects: ArtifactPayloadObjectReadPort
+    artifact_objects: ArtifactObjectStorePort
     history_scope: OpaqueAuthorityScope
     continuation_scope: OpaqueAuthorityScope
 

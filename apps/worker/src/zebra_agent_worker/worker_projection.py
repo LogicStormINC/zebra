@@ -7,7 +7,7 @@ from agent_core.ports import (
     WorkerMutationAuthority,
     WorkerProjectionTransactionPort,
 )
-from agent_storage import ControlPlaneStores
+from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.model_call_index import ModelCallIndexer
@@ -18,7 +18,7 @@ class WorkerProjectionRecorderFactory:
     def __init__(
         self,
         *,
-        stores: ControlPlaneStores,
+        stores: ControlPlaneStores | PostgresControlPlaneStores,
         model_call_indexer: ModelCallIndexer,
         tool_run_indexer: ToolRunIndexer,
         transaction: WorkerProjectionTransactionPort | None,

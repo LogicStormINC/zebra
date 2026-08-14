@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from agent_core.ports import LiveEventFanoutPort
+from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
 from agent_integrations import GitHubPullRequestTransport, RedisCommittedEventPublisher
 from agent_security import CredentialBroker
 from agent_storage import (
@@ -33,6 +33,7 @@ def create_app(
     credential_broker: CredentialBroker | None = None,
     credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
+    effect_state: EffectStateReadPort | None = None,
 ) -> ZebraAgentApi:
     from zebra_agent_api.app import ZebraAgentApi
 
@@ -47,6 +48,8 @@ def create_app(
             database_path=active_settings.database_url,
             cloud=cloud_composition,
         )
+    if effect_state is None and active_settings.storage_authority == "postgresql" and active_stores is not None:
+        effect_state = active_stores.effects
     if active_stores is not None and active_settings.live_events.redis_url is not None:
         namespace = getattr(active_stores, "deployment_namespace", None)
         if namespace is None and active_settings.deployment == "local":
@@ -79,4 +82,5 @@ def create_app(
         ),
         credential_broker=active_broker,
         github_transport=github_transport,
+        effect_state=effect_state,
     )

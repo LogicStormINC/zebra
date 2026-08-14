@@ -3,7 +3,7 @@
 from typing import Any
 
 from agent_core.harness import HarnessTask
-from agent_core.ports import MemoryStorePort
+from agent_core.ports import MemoryReadPort
 from agent_storage import list_confirmed_repo_memories
 
 from zebra_agent_worker.task_recovery import RecoveredTask
@@ -14,7 +14,7 @@ def harness_task_for_recovered(
     *,
     network_profile: Any,
     tool_gateway: Any,
-    memory_store: MemoryStorePort,
+    memory_store: MemoryReadPort,
 ) -> HarnessTask:
     return HarnessTask(
         title=task.title,

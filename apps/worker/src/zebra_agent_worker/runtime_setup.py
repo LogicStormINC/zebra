@@ -32,7 +32,7 @@ def build_prepared_runtime(
     network_profile: str,
     session_id: SessionId,
     attempt_number: int,
-    artifact_store: ArtifactPayloadStorePort,
+    artifact_store: ArtifactPayloadStorePort | None,
     created_at: datetime,
 ) -> tuple[RuntimePort, PreparedRuntime]:
     runtime = build_runtime(
@@ -61,13 +61,15 @@ def prepare_runtime(
     network_profile: str,
     workspace_root: Path,
     session_id: SessionId,
-    artifact_store: ArtifactPayloadStorePort,
+    artifact_store: ArtifactPayloadStorePort | None,
     created_at: datetime,
 ) -> PreparedRuntime:
     if network_profile != "setup-only":
         return PreparedRuntime(handle=runtime.provision(workspace_root=str(workspace_root)))
     if not setup.enabled:
         raise RuntimeSetupError("setup-only network profile requires enabled Setup configuration")
+    if artifact_store is None:
+        raise RuntimeSetupError("setup-only runtime requires a local Artifact payload store")
     plan = SetupPhasePlan(
         command=setup.command,
         dependencies=tuple(
