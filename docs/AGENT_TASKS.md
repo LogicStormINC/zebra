@@ -16265,6 +16265,36 @@ or bind a business operation.
 - [ ] owner acceptance of the Gate 0 evidence (this lane stops at Gate 0
       and does not claim acceptance; Phase 1 starts only on owner acceptance)
 
+#### Phase 1 (Gate 1) evidence (2026-08-14)
+
+- synchronized: Gate 0 commits rebased onto accepted production `6afbafa`
+  (backup `refs/backup/wave5/zebra-gate0-ff129ce`; range-diff clean;
+  remote Wave 4.5 refs untouched)
+- red-first: 8 Phase 1 tests added, 7 failed on the synchronized base before
+  production edits
+- implementation: generic frozen `TaskAttemptPolicy` (max_attempts 1..2,
+  max_corrections_per_attempt 0..1, retryable codes, profile id);
+  Hosted Worker outer coordinator under one Stable Task
+  (`attempt_coordinator.py` + `attempt_events.py` + `attempt_execution.py`);
+  durable `HARNESS_ATTEMPT_STARTED` coordinates + new
+  `ATTEMPT_OUTCOME_RECORDED`; W5-DSH-01 pre-dispatch reconstruction guard
+  (fail closed, `attempt_reconstruction_invalid`); private dispatch
+  coordinates on `MODEL_REQUEST_STARTED`/`MODEL_RESPONSE_RECEIVED`; public
+  canonical final bound to the accepted attempt; terminal carries the real
+  accepted/exhausted attempt number
+- crash recovery: retriable outcome -> Attempt 2 resumes exactly once
+  (P1-4); non-retriable outcome before terminal -> terminal re-committed
+  once with no dispatch (P1-8); cancel mid-attempt stops without outcome
+  record; paused states (waiting/suspended) resume the same attempt
+- results: Phase 1 `8 passed`; Gate 0 `6 passed / 5 failed` (R2 x2 + R6 =
+  Phase 2; R3/R4 = superseded premises pinned by P1-4/P1-8); full
+  `2212/13/9` vs base `2199/8/9` (zero new regressions); eval `10/10`;
+  ruff 11 and mypy 13 identical to base; file-size gate same 10 inherited
+  violations (all Phase 1 files under limits)
+- [x] Gate 1 evidence documented in
+      `docs/znx-wave5-phase1-gate1-evidence-2026-08-14.md`; ready for owner
+      acceptance; no Phase 2, no push/PR/merge/deploy
+
 #### Explicit Non-Goals
 
 - Planner, Scheduler, DAG, second registry/engine, FinOS-specific workflow,

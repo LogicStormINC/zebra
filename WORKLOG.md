@@ -118,6 +118,52 @@
   state remains "ready for owner acceptance", no Phase 1, no
   push/PR/deploy.
 
+## 2026-08-14 Wave 5 Phase 1 (Gate 1) - synchronization + outer attempts
+
+- owner accepted Gate 0 and authorized Phase 1; synchronized first:
+  verified clean tree, ancestry `1d19abb -> 6afbafa -> 687ac7d`, remote
+  Wave 4.5 ref = `687ac7d`; created `refs/backup/wave5/zebra-gate0-ff129ce`
+  = `ff129ce`; rebased the five Gate 0 commits onto `6afbafa` (one WORKLOG
+  conflict resolved by preserving both sides; range-diff commits 2-5
+  identical, commit 1 differs only in that resolution); Gate 0 red suite
+  `11 failed` + focused baseline `37 passed` re-verified on the synchronized
+  base; FinOS peer sync acknowledged (`91af6cd` on `a6c38f08`)
+- red-first: 8 Phase 1 tests in
+  `tests/worker/execution/test_wave5_phase1_outer_attempts.py`; 7 failed on
+  the synchronized base before any production edit
+- implementation (no second engine, no FinOS types, no UI/next/stable):
+  generic frozen `TaskAttemptPolicy` (`attempt_policy.py`, caps 2/1,
+  retryable codes, profile id; bootstrap + `TASK_PREPARED` freeze; recovery
+  fails closed); Hosted Worker coordinator (`attempt_coordinator.py` 427
+  lines, `attempt_events.py`, `attempt_execution.py`; execution.py shrunk
+  563 -> ~450); durable `HARNESS_ATTEMPT_STARTED` coordinates + new
+  `ATTEMPT_OUTCOME_RECORDED` event; W5-DSH-01 coordinate reconstruction
+  guard failing closed before the gateway (`attempt_reconstruction_invalid`);
+  private coordinates on `MODEL_REQUEST_STARTED`/`MODEL_RESPONSE_RECEIVED`
+  (usage linkable to `attempt-{sequence}`); public canonical final bound to
+  the accepted attempt; terminal attempt_number = accepted/exhausted attempt
+- crash/recovery: retriable outcome -> Attempt 2 resumes exactly once;
+  non-retriable outcome before terminal -> terminal re-committed once with
+  no dispatch; cancel stops without outcome record; waiting/suspended resume
+  the same attempt (no outcome record for paused states)
+- regression fixes during implementation: continuation/resume paths kept
+  working (outcome records only for completed/failed), legacy public-final
+  projections preserved (exclude only failed/cancelled segments and
+  mismatched attempts), HarnessLoop `max_attempts=3` tests unaffected (cap
+  enforced at creation/recovery, payload schema stays generic), policy-engine
+  test seam moved to `attempt_execution`, TASK_PREPARED/CLI/API payload
+  asserts updated for the frozen policy fields
+- evidence: Phase 1 `8 passed`; Gate 0 `6 passed / 5 failed` (R2 x2 + R6 =
+  Phase 2; R3/R4 superseded premises); full `2212/13/9` vs base `2199/8/9`
+  (inherited set unchanged: 2 agent_integrations, 5 clock-sensitive
+  session_pull_request, 1 file-size gate); eval `10/10`; ruff 11 and mypy 13
+  identical to base; file-size gate same 10 inherited violations
+- Gate 1 evidence: `docs/znx-wave5-phase1-gate1-evidence-2026-08-14.md`;
+  contract deltas for FinOS peer recorded (frozen policy payload fields,
+  `attempt_outcome_recorded`, attempt coordinates, accepted-attempt-only
+  canonical final, per-attempt usage inputs for FinOS R3); clean tree,
+  stop at Gate 1, no Phase 2, no push/PR/merge/deploy
+
 ## 2026-08-13 Wave 4.5 Gate A PASS + Phase 4 start
 
 - root decision: Gate A = PASS on the exact pair FinOS

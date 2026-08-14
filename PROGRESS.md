@@ -6,6 +6,24 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-14`
+- Wave 5 Phase 1 (Gate 1 evidence) complete on
+  `codex/znx-hosted-outer-attempts-v1`, rebased onto accepted production
+  `6afbafa` (backup `refs/backup/wave5/zebra-gate0-ff129ce`; remote Wave 4.5
+  refs untouched). Phase 1 implemented generic frozen Task attempt policy
+  (2 attempts / 1 correction caps), Hosted Worker outer coordination
+  (Attempt 1 -> Attempt 2 under one Stable Task), durable attempt
+  start/outcome coordinates (`attempt_outcome_recorded`), W5-DSH-01
+  pre-dispatch reconstruction fail-closed, private dispatch coordinates,
+  accepted-attempt-only canonical final, crash recovery around attempt
+  outcome/retry scheduling/Attempt 2 creation. Red-first: 8 Phase 1 tests
+  (7 failed pre-implementation); after: Phase 1 8/8, Gate 0 red suite
+  6 green / 5 classified red (R2 x2 + R6 Phase 2; R3/R4 superseded), full
+  `2212 passed / 13 failed / 9 skipped` vs base `2199 / 8 / 9` (zero new
+  regressions; +13 pass = 8 Phase 1 + 6 Gate 0 green - 1 payload-assert
+  move), eval 10/10, ruff 11 / mypy 13 identical to base, file-size gate
+  same 10 inherited violations. No PR/merge/push/deploy; Phase 2 starts only
+  on owner acceptance of Gate 1.
+- Snapshot date: `2026-08-14`
 - Wave 5 backend Gate 0 in progress on
   `codex/znx-hosted-outer-attempts-v1` from exact base `1d19abb` (remote-ref
   verified `fork/codex/znx-wave45-task-ui-foundation-v1` = `1d19abb`; FinOS

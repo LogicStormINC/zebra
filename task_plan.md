@@ -17,6 +17,25 @@
    Gate 0 evidence is ready for owner acceptance; acceptance is not claimed
    by this lane and Phase 1 starts only on owner acceptance.
 
+## ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Phase 1 / Gate 1 (Zebra backend lane)
+
+1. `completed` - Owner accepted Gate 0; synchronize: verify ancestry and
+   remote refs, create backup ref, rebase the five Gate 0 commits onto
+   accepted production `6afbafa`, re-run Gate 0 red suite (11 failed) and
+   focused baseline (37 passed).
+2. `completed` - Red-first: add 8 Phase 1 tests and demonstrate 7 failures
+   on the synchronized base.
+3. `completed` - Freeze generic Task attempt policy at creation (caps 2/1,
+   retryable codes, profile id) with fail-closed recovery.
+4. `completed` - Activate Hosted Worker Attempt 1 -> Attempt 2 coordination
+   with durable start/outcome coordinates and crash recovery; W5-DSH-01
+   fail-closed guard; usage-attempt linkage; accepted-attempt-only canonical
+   final.
+5. `completed` - Gate 1 evidence: red-before/green-after, Gate 0 red
+   classification, full `2212/13/9` vs base `2199/8/9`, eval 10/10,
+   ruff/mypy identical to base, crash/security findings, peer contract
+   deltas; clean tree; ready for owner acceptance; stop before Phase 2.
+
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
 1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and
