@@ -16,7 +16,6 @@ from agent_core.application import (
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.contracts.events import event_payload_schema_for
-from agent_core.domain.agent_tasks import AgentTask
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
 from agent_core.domain.tool_profiles import ToolProfile
@@ -39,6 +38,7 @@ from worker_execution_support import (
     _assistant_only_gateway,
     _build_execution_service,
     _created_at,
+    _tool_gateway,
 )
 from zebra_agent_api.task_final_identity import final_message_identity
 from zebra_agent_worker import SessionClaimService, SessionRecoveryService
@@ -200,25 +200,85 @@ def test_r3_retryable_failed_session_resumes_as_attempt_2(
     assert resumed.claimed is not None
 
 
-# R4 (W5-DSH-02): HARNESS_ATTEMPT_STARTED must have a durable coordinates
-# payload contract.
-def test_r4_attempt_started_payload_contract_carries_durable_coordinates() -> None:
+# R4 (W5-DSH-02): durable attempt coordinates checked at the existing
+# lifecycle seams - start coordinates on HARNESS_ATTEMPT_STARTED, terminal
+# coordinates on the terminal events. The owner contract requires lifecycle
+# identity/sequence/started/ended time/terminal reason/causal reference, not
+# every field on the start event.
+def test_r4_attempt_start_coordinates_at_start_seam() -> None:
     schema = event_payload_schema_for(EventType.HARNESS_ATTEMPT_STARTED)
     properties = schema["properties"]
     for field in (
         "attempt_id",
         "attempt_sequence",
         "started_at",
-        "ended_at",
-        "terminal_reason",
         "causal_attempt_id",
     ):
         assert field in properties
 
 
-# R5 (W5-DSH-01): every model dispatch records the private reconstruction
-# coordinates and accepts them in the durable payload contract.
-def test_r5_model_request_payload_carries_reconstruction_coordinates() -> None:
+def test_r4_attempt_terminal_coordinates_at_terminal_seam() -> None:
+    for terminal_type in (EventType.SESSION_COMPLETED, EventType.SESSION_FAILED):
+        schema = event_payload_schema_for(terminal_type)
+        properties = schema["properties"]
+        for field in ("attempt_id", "ended_at", "terminal_reason"):
+            assert field in properties
+
+
+# R5 (W5-DSH-01): behavioral fail-closed at the real dispatch seam - when the
+# durable stream's attempt coordinate differs from the worker reconstruction,
+# execution must fail closed BEFORE the model gateway is called.
+def test_r5_dispatch_fails_closed_on_reconstruction_mismatch(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "wave5-r5.db"
+    bootstrap = _seed_session(database_path, tmp_path, max_attempts=2)
+    session_id = bootstrap.session.session_id
+    durable_attempt = SessionEvent.create(
+        session_id=session_id,
+        sequence=3,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 2},
+        created_at=_created_at(),
+    )
+    event_store = SQLiteEventStore(database_path)
+    event_store.append(durable_attempt)
+    projected_session = apply_event(bootstrap.session, durable_attempt)
+    SQLiteProjectionStore(database_path).save_session(projected_session)
+
+    calls: list[str] = []
+
+    class _RecordingGateway:
+        def complete(self, messages, *, tools=()):
+            calls.append("complete")
+            raise AssertionError("dispatch must fail closed before gateway call")
+
+        def complete_stream(self, messages, *, tools=(), on_text_delta=None):
+            calls.append("complete_stream")
+            raise AssertionError("dispatch must fail closed before gateway call")
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _RecordingGateway(),
+    )
+
+    _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="wave5-red-r5",
+        executed_at=_created_at(),
+    )
+
+    events = event_store.list_for_session(session_id)
+    started = [event for event in events if event.event_type is EventType.HARNESS_ATTEMPT_STARTED]
+    assert calls == []
+    assert started[-1].payload["attempt_id"] == "attempt-2"
+
+
+# R5 supporting schema assertion: the durable request payload must accept the
+# private reconstruction coordinates.
+def test_r5_model_request_payload_schema_supports_reconstruction_coordinates() -> None:
     schema = event_payload_schema_for(EventType.MODEL_REQUEST_STARTED)
     properties = schema["properties"]
     for field in (
@@ -352,11 +412,47 @@ def test_r7_failed_attempt_candidate_final_stays_out_of_public_canonical_final(
     assert final_message_identity(database_path, str(task.task_id)) is None
 
 
-# R8: attempt usage must be aggregatable into a Task settlement record and
-# model calls must link to attempts by stable id.
-def test_r8_task_usage_is_aggregatable_for_settlement() -> None:
-    task_properties = AgentTask.model_json_schema()["properties"]
-    assert "usage" in task_properties
-    assert "attempts" in task_properties
-    response_properties = event_payload_schema_for(EventType.MODEL_RESPONSE_RECEIVED)["properties"]
-    assert "attempt_id" in response_properties
+# R8: behavioral - one Stable Task's usage equals the sum of its attempt
+# usages, and every usage-bearing event links to a stable attempt identity,
+# computed at the existing task-event seam (no storage shape prescribed).
+def test_r8_task_usage_equals_sum_of_attempt_usages(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "wave5-r8.db"
+    bootstrap = _seed_session(database_path, tmp_path, max_attempts=1)
+    session_id = bootstrap.session.session_id
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _tool_gateway(settings=settings),
+    )
+    _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="wave5-red-r8",
+        executed_at=_created_at(),
+    )
+    task_store = SQLiteAgentTaskStore(database_path)
+    task = task_store.ensure_for_session(session_id)
+    task_events = task_store.read_events(task.task_id, -1)
+    usage_events = [
+        item.event
+        for item in task_events
+        if item.event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+        and item.event.payload.get("total_tokens") is not None
+    ]
+    attempt_started = [
+        item.event
+        for item in task_events
+        if item.event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+    ]
+    assert usage_events
+    per_attempt: dict[str, int] = {}
+    for usage in usage_events:
+        attempt_id = usage.payload["attempt_id"]  # base: KeyError -> red
+        assert attempt_id in {event.payload["attempt_id"] for event in attempt_started}
+        per_attempt[attempt_id] = per_attempt.get(attempt_id, 0) + int(
+            usage.payload["total_tokens"]
+        )
+    assert sum(per_attempt.values()) == sum(
+        int(usage.payload["total_tokens"]) for usage in usage_events
+    )

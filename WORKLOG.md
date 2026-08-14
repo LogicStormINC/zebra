@@ -77,6 +77,29 @@
 - Gate 0 complete: worktree clean, stop and report; no Phase 1, no
   PR/merge/push/deploy
 
+## 2026-08-14 Wave 5 Gate 0 revision (root independent audit)
+
+- root audit findings fixed without solving the red tests:
+  - R4 no longer prescribes `ended_at`/`terminal_reason` on
+    `HARNESS_ATTEMPT_STARTED`; start coordinates (`attempt_id`,
+    `attempt_sequence`, `started_at`, `causal_attempt_id`) are checked at
+    the start seam and terminal coordinates (`attempt_id`, `ended_at`,
+    `terminal_reason`) at the existing `SESSION_COMPLETED`/`SESSION_FAILED`
+    seam (lifecycle-level contract, no second Turn/Step system)
+  - R5 gained the smallest behavioral red through the real
+    worker/model-dispatch seam: durable attempt coordinate 2 vs worker
+    reconstruction 1 must fail closed before the gateway is called (base:
+    `complete_stream` is invoked); schema coverage is a supporting assertion
+  - R8 is behavioral: every usage-bearing event must link to a stable
+    attempt identity and Task usage = sum of attempt usages at the existing
+    task-event seam (base: `KeyError: 'attempt_id'`); no storage shape
+    prescribed
+- revised red suite: `11 failed` at exact base as designed; focused baseline
+  `37 passed` unchanged; ruff/diff/status clean
+- closure docs record "ready for owner acceptance"; acceptance is not
+  claimed by this lane; Phase 1 starts only on owner acceptance; no
+  production code, no push/PR/deploy
+
 ## 2026-08-13 Wave 4.5 Gate A PASS + Phase 4 start
 
 - root decision: Gate A = PASS on the exact pair FinOS

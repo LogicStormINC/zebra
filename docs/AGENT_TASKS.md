@@ -16231,28 +16231,36 @@ or bind a business operation.
   loop starts Attempt 2 (base: `should_retry=False`).
 - R3 Retryable-failed session resumes as Attempt 2 (base:
   `SessionResumeError` on terminal session).
-- R4 `HARNESS_ATTEMPT_STARTED` payload contract carries
-  `attempt_id/attempt_sequence/started_at/ended_at/terminal_reason/
-  causal_attempt_id` (base: no schema registered).
-- R5 `MODEL_REQUEST_STARTED` payload carries the W5-DSH-01 coordinates
-  (base: absent, `extra="forbid"`).
+- R4 Attempt coordinates at the existing lifecycle seams: start
+  (`HARNESS_ATTEMPT_STARTED`: `attempt_id/attempt_sequence/started_at/
+  causal_attempt_id`) and terminal (`SESSION_COMPLETED`/`SESSION_FAILED`:
+  `attempt_id/ended_at/terminal_reason`) (base: no schema registered;
+  lifecycle-level contract, not all fields on the start event).
+- R5 Behavioral fail-closed at the real dispatch seam: durable attempt
+  coordinate (2) differs from worker reconstruction (1) and the model
+  gateway must not be called; `MODEL_REQUEST_STARTED` schema accepting the
+  W5-DSH-01 digests/coordinates is a supporting assertion (base: gateway is
+  invoked despite mismatch; fields absent, `extra="forbid"`).
 - R6 Task terminal carries a coverage verdict (base: terminal payload has
   none).
 - R7 Failed attempt candidate final is not public canonical final and
   `final_message_identity` is None (base: candidate projected + identity
   returned).
-- R8 Task/attempt usage is aggregatable for settlement (`AgentTask.usage`,
-  per-attempt linkable model calls) (base: no usage field/coordinates).
+- R8 Behavioral: every usage-bearing event links to a stable attempt
+  identity and one Stable Task's usage equals the sum of its attempt usages
+  at the existing task-event seam (no storage shape prescribed) (base:
+  usage events carry no `attempt_id`).
 
 #### Gate 0 acceptance
 
-- [ ] docs-first existing-state audit + task card committed (docs-only)
-- [ ] deterministic red/contract tests committed and failing at exact base
-- [ ] minimal focused baseline checks run; inherited exact-base failures
+- [x] docs-first existing-state audit + task card committed (docs-only)
+- [x] deterministic red/contract tests committed and failing at exact base
+- [x] minimal focused baseline checks run; inherited exact-base failures
       separated from new red failures
-- [ ] worktree clean; exact branch/HEAD/merge-base/changed paths/tests/
+- [x] worktree clean; exact branch/HEAD/merge-base/changed paths/tests/
       security/gaps reported; no PR/merge/push/deploy; no production code
-- [ ] stop and report after Gate 0; Phase 1 starts only on owner acceptance
+- [ ] owner acceptance of the Gate 0 evidence (this lane stops at Gate 0
+      and does not claim acceptance; Phase 1 starts only on owner acceptance)
 
 #### Explicit Non-Goals
 

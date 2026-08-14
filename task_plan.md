@@ -12,8 +12,10 @@
    the exact base (no production edits).
 4. `completed` - Run the minimal focused baseline checks; separate inherited
    exact-base failures from new red failures.
-5. `in_progress` - Leave the worktree clean and report exact
+5. `completed` - Leave the worktree clean and report exact
    branch/HEAD/merge-base/changed paths/tests/security/gaps; stop at Gate 0.
+   Gate 0 evidence is ready for owner acceptance; acceptance is not claimed
+   by this lane and Phase 1 starts only on owner acceptance.
 
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
