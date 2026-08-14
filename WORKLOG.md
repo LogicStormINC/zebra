@@ -164,6 +164,26 @@
   canonical final, per-attempt usage inputs for FinOS R3); clean tree,
   stop at Gate 1, no Phase 2, no push/PR/merge/deploy
 
+## 2026-08-14 Wave 5 Gate 1 root correction closure
+
+- resumed the preserved `fa10e53` dirty worktree after the coding window
+  ended with a tool-schema system error; no reset/rebase/rebuild
+- closed full W5-DSH-01 equality for messages/system/tool/media/model config/
+  invocation policy, explicit no-manifest digest, provider tool-call envelope,
+  task-wide frozen policy/budgets, epoch-derived Turn identity, same-Attempt
+  continuations and correlated in-flight Step crash recovery
+- split the 869-line untracked recovery test before commit; largest new test
+  is 673 lines and all Wave 5 source/test files satisfy repository limits
+- frozen FinOS peer fixture
+  `tests/fixtures/wave5_gate1_contract_delta_v1.json`
+- fresh evidence: Gate 1 `30 passed`; Gate 0 `8 passed / 3 Phase 2 reds`;
+  focused baseline `38 passed`; full `2237 passed / 11 failed / 9 skipped`
+  (8 exact-base inherited failures + only R2 x2/R6 intentional reds); eval
+  10/10; full ruff 11 and mypy 13 unchanged from base; zero production
+  regression
+- stop at Gate 1 ready for owner acceptance; no Phase 2, FinOS edit,
+  UI/next/stable edit, push, PR, merge or deploy
+
 ## 2026-08-13 Wave 4.5 Gate A PASS + Phase 4 start
 
 - root decision: Gate A = PASS on the exact pair FinOS

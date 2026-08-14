@@ -16157,7 +16157,7 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
 
 ### ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Complex Analysis Outer Attempt & Evidence Coverage v1
 
-- Status: `In Progress` (Gate 0 only; stop after Gate 0, do not start Phase 1)
+- Status: `Review` (Gate 1 evidence ready; owner acceptance pending; no Phase 2)
 - Owner: `Vinson`
 - Branch: `codex/znx-hosted-outer-attempts-v1`
 - Worktree: `/Users/vinson/.codex/worktrees/058c/zebra`
@@ -16205,7 +16205,8 @@ or bind a business operation.
   dispatch, actual request equals durable reconstruction across
   `stable_task_id`, `attempt_id`, `turn_id`, `step_id`, `goal_revision`,
   `plan_revision`, `resource_manifest_digest`, `messages_digest`,
-  `system_prompt_digest`, `tool_schema_digest`, `model_config_digest`;
+  `system_prompt_digest`, `tool_schema_digest`, `model_config_digest`,
+  `invocation_policy_digest`;
   mismatch fails closed; full prompt/schema/grant/private resource never
   public.
 - W5-DSH-02 Durable Execution Coordinates: Stable Task -> Attempt -> Turn ->
@@ -16262,8 +16263,7 @@ or bind a business operation.
       separated from new red failures
 - [x] worktree clean; exact branch/HEAD/merge-base/changed paths/tests/
       security/gaps reported; no PR/merge/push/deploy; no production code
-- [ ] owner acceptance of the Gate 0 evidence (this lane stops at Gate 0
-      and does not claim acceptance; Phase 1 starts only on owner acceptance)
+- [x] owner acceptance of Gate 0 recorded before Phase 1 synchronization
 
 #### Phase 1 (Gate 1) evidence (2026-08-14)
 
@@ -16286,14 +16286,21 @@ or bind a business operation.
   (P1-4); non-retriable outcome before terminal -> terminal re-committed
   once with no dispatch (P1-8); cancel mid-attempt stops without outcome
   record; paused states (waiting/suspended) resume the same attempt
-- results: Phase 1 `8 passed`; Gate 0 `6 passed / 5 failed` (R2 x2 + R6 =
-  Phase 2; R3/R4 = superseded premises pinned by P1-4/P1-8); full
-  `2212/13/9` vs base `2199/8/9` (zero new regressions); eval `10/10`;
+- root correction: full request-envelope equality, frozen policy/budget
+  rollover, epoch/Turn identity, same-Attempt continuations, in-flight Step
+  fail-closed recovery, explicit no-manifest digest, provider tool envelope,
+  and a schema-validated FinOS peer fixture
+- results: Gate 1 `30 passed`; Gate 0 `8 passed / 3 failed` (only R2 x2 +
+  R6 remain for Phase 2); focused `38 passed`; full `2237/11/9` vs base
+  `2199/8/9` (zero new production regressions); eval `10/10`;
   ruff 11 and mypy 13 identical to base; file-size gate same 10 inherited
   violations (all Phase 1 files under limits)
 - [x] Gate 1 evidence documented in
       `docs/znx-wave5-phase1-gate1-evidence-2026-08-14.md`; ready for owner
       acceptance; no Phase 2, no push/PR/merge/deploy
+- [x] FinOS peer contract frozen in
+      `tests/fixtures/wave5_gate1_contract_delta_v1.json`; peer notification
+      sent separately with the final exact SHA
 
 #### Explicit Non-Goals
 

@@ -13,16 +13,19 @@
   (2 attempts / 1 correction caps), Hosted Worker outer coordination
   (Attempt 1 -> Attempt 2 under one Stable Task), durable attempt
   start/outcome coordinates (`attempt_outcome_recorded`), W5-DSH-01
-  pre-dispatch reconstruction fail-closed, private dispatch coordinates,
+  pre-dispatch full request-envelope reconstruction fail-closed, private
+  dispatch coordinates/digests (including invocation policy and explicit
+  no-manifest digest),
   accepted-attempt-only canonical final, crash recovery around attempt
   outcome/retry scheduling/Attempt 2 creation. Red-first: 8 Phase 1 tests
-  (7 failed pre-implementation); after: Phase 1 8/8, Gate 0 red suite
-  6 green / 5 classified red (R2 x2 + R6 Phase 2; R3/R4 superseded), full
-  `2212 passed / 13 failed / 9 skipped` vs base `2199 / 8 / 9` (zero new
-  regressions; +13 pass = 8 Phase 1 + 6 Gate 0 green - 1 payload-assert
-  move), eval 10/10, ruff 11 / mypy 13 identical to base, file-size gate
-  same 10 inherited violations. No PR/merge/push/deploy; Phase 2 starts only
-  on owner acceptance of Gate 1.
+  (7 failed pre-implementation); after root correction: Gate 1 30/30, Gate 0
+  8 green / 3 Phase 2 red (R2 x2 + R6), focused 38/38, full `2237 passed /
+  11 failed / 9 skipped` vs base `2199 / 8 / 9` (38 new passes; only the
+  three intentional Phase 2 reds added; zero production regressions), eval
+  10/10, ruff 11 / mypy 13 identical to base, file-size gate same 10
+  inherited violations. Peer contract fixture is frozen under
+  `tests/fixtures/`; no PR/merge/push/deploy; Phase 2 starts only on owner
+  acceptance of Gate 1.
 - Snapshot date: `2026-08-14`
 - Wave 5 backend Gate 0 in progress on
   `codex/znx-hosted-outer-attempts-v1` from exact base `1d19abb` (remote-ref

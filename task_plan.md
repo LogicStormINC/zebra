@@ -31,10 +31,14 @@
    with durable start/outcome coordinates and crash recovery; W5-DSH-01
    fail-closed guard; usage-attempt linkage; accepted-attempt-only canonical
    final.
-5. `completed` - Gate 1 evidence: red-before/green-after, Gate 0 red
-   classification, full `2212/13/9` vs base `2199/8/9`, eval 10/10,
-   ruff/mypy identical to base, crash/security findings, peer contract
-   deltas; clean tree; ready for owner acceptance; stop before Phase 2.
+5. `completed` - Root correction closes request-envelope equality, frozen
+   policy/budget rollover, epoch/Turn identity, continuation and crash/Step
+   recovery gaps; split tests below size limits and freeze the FinOS peer
+   fixture.
+6. `completed` - Gate 1 evidence: 30/30 Gate 1, Gate 0 8 green / 3 Phase 2
+   red, focused 38/38, full `2237/11/9` vs base `2199/8/9`, eval 10/10,
+   ruff/mypy identical to base; ready for owner acceptance; stop before
+   Phase 2.
 
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
