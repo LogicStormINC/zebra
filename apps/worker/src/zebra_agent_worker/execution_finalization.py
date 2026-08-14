@@ -28,6 +28,7 @@ def finalize_execution(
     started_at: datetime,
     suspension_snapshot: RuntimeSnapshot | None = None,
     completion_sink: Callable[[SessionEvent], SessionEvent] | None = None,
+    attempt_number: int = 1,
 ) -> tuple[SessionEvent, ...]:
     if recorder.session.status in {
         SessionStatus.CANCELLED,
@@ -37,9 +38,7 @@ def finalize_execution(
     }:
         return recorder.events
     if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
-        completed_session = recorder.session.model_copy(
-            update={"status": SessionStatus.COMPLETED}
-        )
+        completed_session = recorder.session.model_copy(update={"status": SessionStatus.COMPLETED})
         extraction = memory_extraction_service.extract(
             session=completed_session,
             events=event_store.list_for_session(recorder.session.session_id),
@@ -51,9 +50,7 @@ def finalize_execution(
         )
         for event in extraction.events:
             recorder.append_event(event)
-        completed_session = recorder.session.model_copy(
-            update={"status": SessionStatus.COMPLETED}
-        )
+        completed_session = recorder.session.model_copy(update={"status": SessionStatus.COMPLETED})
         promotion = memory_promotion_service.promote(
             session=completed_session,
             source_events=event_store.list_for_session(recorder.session.session_id),
@@ -75,7 +72,7 @@ def finalize_execution(
             event_type=EventType.SESSION_COMPLETED,
             actor=EventActor.HARNESS,
             payload={
-                "attempt_number": 1,
+                "attempt_number": attempt_number,
                 "summary": attempt_result.summary,
                 "metadata": attempt_result.metadata,
             },
@@ -93,7 +90,7 @@ def finalize_execution(
             EventType.SESSION_FAILED,
             EventActor.HARNESS,
             {
-                "attempt_number": 1,
+                "attempt_number": attempt_number,
                 "summary": attempt_result.summary,
                 "metadata": attempt_result.metadata,
             },

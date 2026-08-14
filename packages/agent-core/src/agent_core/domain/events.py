@@ -36,6 +36,7 @@ class EventType(StrEnum):
     SUBAGENT_FAILED = "subagent_failed"
     SUBAGENT_CANCELLED = "subagent_cancelled"
     HARNESS_ATTEMPT_STARTED = "harness_attempt_started"
+    ATTEMPT_OUTCOME_RECORDED = "attempt_outcome_recorded"
     TOOL_CALL_PROPOSED = "tool_call_proposed"
     POLICY_DECISION_MADE = "policy_decision_made"
     APPROVAL_REQUESTED = "approval_requested"

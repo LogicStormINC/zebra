@@ -10,6 +10,7 @@ from agent_core.application import (
 )
 from agent_core.domain.agent_definitions import AgentDefinition
 from agent_core.domain.attachments import AttachmentContextInput, SessionAttachmentRef
+from agent_core.domain.attempt_policy import TaskAttemptPolicy
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.model_media import ModelMediaInput
@@ -38,6 +39,9 @@ class RecoveredTask:
     agent_definition: AgentDefinition | None
     history_session_ids: tuple[str, ...] | None
     max_attempts: int
+    max_corrections_per_attempt: int
+    execution_profile_id: str | None
+    retryable_stop_reasons: tuple[str, ...]
     max_model_calls: int | None
     max_tool_calls: int | None
     model_id: str | None
@@ -85,6 +89,7 @@ def recover_task(
     title = task_payload.get("title")
     resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
     policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
+    attempt_policy = _attempt_policy_from_payload(task_payload)
     try:
         attachments = load_attachment_contexts(
             attachment_store,
@@ -109,7 +114,10 @@ def recover_task(
         skill_component_identities=workspace.skill_component_identities,
         agent_definition=agent_definition,
         history_session_ids=_history_session_ids(task_payload.get("history_session_ids")),
-        max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,
+        max_attempts=attempt_policy.max_attempts,
+        max_corrections_per_attempt=attempt_policy.max_corrections_per_attempt,
+        execution_profile_id=attempt_policy.execution_profile_id,
+        retryable_stop_reasons=attempt_policy.retryable_stop_reasons,
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
         model_id=model_id,
@@ -229,6 +237,51 @@ def _optional_positive_int(value: object) -> int | None:
     if not isinstance(value, int) or isinstance(value, bool):
         return None
     return value if value > 0 else None
+
+
+def _attempt_policy_from_payload(payload: dict[str, object]) -> TaskAttemptPolicy:
+    """Reconstruct the frozen Task policy, failing closed on any drift."""
+    try:
+        return TaskAttemptPolicy(
+            max_attempts=(_optional_positive_int(payload.get("max_attempts")) or 1),
+            max_corrections_per_attempt=_optional_non_negative_int(
+                payload.get("max_corrections_per_attempt")
+            ),
+            execution_profile_id=_optional_text(payload.get("execution_profile_id")),
+            retryable_stop_reasons=_optional_reasons(payload.get("retryable_stop_reasons")),
+        )
+    except ValueError as exc:
+        raise ValueError(f"queued session attempt policy is invalid: {exc}") from exc
+
+
+def _optional_non_negative_int(value: object) -> int:
+    if value is None:
+        return 0
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise ValueError("max_corrections_per_attempt must be a non-negative integer")
+    return value
+
+
+def _optional_text(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("execution_profile_id must be a string")
+    return value.strip() or None
+
+
+def _optional_reasons(value: object) -> tuple[str, ...]:
+    if value is None:
+        return TaskAttemptPolicy().retryable_stop_reasons
+    if not isinstance(value, list):
+        raise ValueError("retryable_stop_reasons must be a list")
+    reasons: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError("retryable_stop_reasons must be non-blank codes")
+        if item.strip() not in reasons:
+            reasons.append(item.strip())
+    return tuple(reasons)
 
 
 def _model_id(value: object) -> str | None:

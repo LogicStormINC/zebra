@@ -6,6 +6,7 @@ from pathlib import Path
 
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.agent_definitions import AgentDefinition
+from agent_core.domain.attempt_policy import TaskAttemptPolicy
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.mcp import normalize_mcp_allowlist
@@ -36,12 +37,25 @@ class SessionBootstrapCommand:
     agent_definition: AgentDefinition | None = None
     history_session_ids: tuple[str, ...] | None = None
     max_attempts: int = 1
+    max_corrections_per_attempt: int = 0
+    execution_profile_id: str | None = None
+    retryable_stop_reasons: tuple[str, ...] | None = None
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
     plan_required: bool = False
     created_at: datetime | None = None
     session_id: SessionId | None = None
     model_id: str | None = None
+
+    def __post_init__(self) -> None:
+        TaskAttemptPolicy(
+            max_attempts=self.max_attempts,
+            max_corrections_per_attempt=self.max_corrections_per_attempt,
+            execution_profile_id=self.execution_profile_id,
+            retryable_stop_reasons=(
+                self.retryable_stop_reasons or TaskAttemptPolicy().retryable_stop_reasons
+            ),
+        )
 
 
 @dataclass(frozen=True)
@@ -55,9 +69,7 @@ class SessionBootstrapService:
         if not isinstance(command.plan_required, bool):
             raise ValueError("plan_required must be boolean")
         mcp_allowlist = normalize_mcp_allowlist(command.mcp_allowlist)
-        preapproved_readonly_tools = normalize_mcp_allowlist(
-            command.preapproved_readonly_tools
-        )
+        preapproved_readonly_tools = normalize_mcp_allowlist(command.preapproved_readonly_tools)
         if preapproved_readonly_tools and (
             command.policy_profile != "read_only"
             or command.network_profile != "mcp-proxy-only"
@@ -145,14 +157,19 @@ class SessionBootstrapService:
                         else {}
                     ),
                     "max_attempts": command.max_attempts,
+                    "max_corrections_per_attempt": command.max_corrections_per_attempt,
+                    **(
+                        {"execution_profile_id": command.execution_profile_id}
+                        if command.execution_profile_id is not None
+                        else {}
+                    ),
+                    "retryable_stop_reasons": list(
+                        command.retryable_stop_reasons or TaskAttemptPolicy().retryable_stop_reasons
+                    ),
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,
                     **({"plan_required": True} if command.plan_required else {}),
-                    **(
-                        {"model_id": command.model_id}
-                        if command.model_id is not None
-                        else {}
-                    ),
+                    **({"model_id": command.model_id} if command.model_id is not None else {}),
                 },
                 created_at=session.created_at,
             ),

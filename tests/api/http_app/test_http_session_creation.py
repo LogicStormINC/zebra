@@ -226,16 +226,16 @@ def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
         "executed": True,
         "worker_id": "api-worker",
         "status": "completed",
-        "current_sequence": 7,
+        "current_sequence": 8,
         "assistant_message": "HTTP resume complete.",
         "trace": [
             {
                 "attempt_number": 1,
                 "assistant_message": "HTTP resume complete.",
                 "tools": [],
-                }
-            ],
-        }
+            }
+        ],
+    }
     assert body["final_message"]["cursor"] == 5
     assert body["final_message"]["message_id"].startswith("final:")
 

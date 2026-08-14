@@ -20,6 +20,8 @@ from agent_core.contracts.handoff_events import (
     UserMessageReceivedPayload,
 )
 from agent_core.contracts.model_events import (
+    AttemptOutcomeRecordedPayload,
+    HarnessAttemptStartedPayload,
     ModelRequestStartedPayload,
     ModelResponseDeltaPayload,
     ModelResponseReceivedPayload,
@@ -283,9 +285,7 @@ class ClarificationRequestedPayload(BaseModel):
     response_schema: dict[str, Any] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    elicitation_source: str | None = Field(
-        default=None, exclude_if=lambda value: value is None
-    )
+    elicitation_source: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @field_validator("attempt_number")
     @classmethod
@@ -374,6 +374,8 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
     EventType.TASK_PREPARED: TaskPreparedPayload,
     EventType.RUNTIME_PROVISIONED: RuntimeProvisionedPayload,
+    EventType.HARNESS_ATTEMPT_STARTED: HarnessAttemptStartedPayload,
+    EventType.ATTEMPT_OUTCOME_RECORDED: AttemptOutcomeRecordedPayload,
     EventType.MODEL_REQUEST_STARTED: ModelRequestStartedPayload,
     EventType.MODEL_RESPONSE_DELTA: ModelResponseDeltaPayload,
     EventType.MODEL_RESPONSE_RECEIVED: ModelResponseReceivedPayload,

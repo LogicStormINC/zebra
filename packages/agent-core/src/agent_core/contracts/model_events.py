@@ -3,6 +3,51 @@ import re
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+class HarnessAttemptStartedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # Stable attempt coordinates (Wave 5 W5-DSH-02). Fields are optional so
+    # pre-Phase-1 events remain replayable; the Hosted Worker writes the
+    # full coordinate set for new attempts.
+    attempt_number: int | None = Field(default=None, gt=0)
+    attempt_id: str | None = None
+    attempt_sequence: int | None = Field(default=None, gt=0)
+    started_at: str | None = None
+    causal_attempt_id: str | None = None
+    clarification_continuation: bool | None = None
+    clarification_id: str | None = None
+
+    @field_validator("attempt_id", "causal_attempt_id", "started_at")
+    @classmethod
+    def ensure_attempt_text_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("attempt coordinate text must not be blank")
+        return stripped
+
+
+class AttemptOutcomeRecordedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_id: str
+    attempt_sequence: int = Field(gt=0)
+    outcome: str
+    ended_at: str
+    terminal_reason: str
+    retry_scheduled: bool = False
+    next_attempt_sequence: int | None = Field(default=None, gt=0)
+
+    @field_validator("attempt_id", "outcome", "ended_at", "terminal_reason")
+    @classmethod
+    def ensure_outcome_text_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("attempt outcome text must not be blank")
+        return stripped
+
+
 class ModelRequestStartedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -15,6 +60,19 @@ class ModelRequestStartedPayload(BaseModel):
     token_estimate_method: str | None = None
     token_breakdown: dict[str, int] | None = None
     reserves: dict[str, int] | None = None
+    # Private request-reconstruction coordinates (W5-DSH-01). Digests are
+    # recorded at dispatch and stay out of any public projection.
+    stable_task_id: str | None = None
+    attempt_id: str | None = None
+    turn_id: str | None = None
+    step_id: str | None = None
+    goal_revision: int | None = Field(default=None, ge=0)
+    plan_revision: int | None = Field(default=None, ge=0)
+    resource_manifest_digest: str | None = None
+    messages_digest: str | None = None
+    system_prompt_digest: str | None = None
+    tool_schema_digest: str | None = None
+    model_config_digest: str | None = None
 
     @field_validator("model_call_id", "model_profile", "token_estimate_method")
     @classmethod
@@ -25,6 +83,28 @@ class ModelRequestStartedPayload(BaseModel):
         if not normalized:
             raise ValueError("model request text fields must not be blank")
         return normalized
+
+    @field_validator(
+        "stable_task_id",
+        "attempt_id",
+        "turn_id",
+        "step_id",
+        "resource_manifest_digest",
+        "messages_digest",
+        "system_prompt_digest",
+        "tool_schema_digest",
+        "model_config_digest",
+    )
+    @classmethod
+    def ensure_reconstruction_text_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("reconstruction coordinate text must not be blank")
+        if len(stripped) > 128:
+            raise ValueError("reconstruction coordinate text is too long")
+        return stripped
 
     @field_validator("token_breakdown", "reserves")
     @classmethod
@@ -66,6 +146,8 @@ class ModelResponseReceivedPayload(BaseModel):
     # Optional fields keep historical events replayable. extra=forbid prevents
     # private provider payloads from entering durable state.
     attempt_number: int | None = Field(default=None, gt=0)
+    attempt_id: str | None = None
+    stable_task_id: str | None = None
     assistant_message: str | None = None
     tool_call_count: int | None = Field(default=None, ge=0)
     response_stage: str | None = None
@@ -121,33 +203,33 @@ class ModelResponseReceivedPayload(BaseModel):
         digest = value.get("payload_digest")
         refs = value.get("source_refs")
         if not isinstance(contract_id, str) or not contract_id.strip():
-            raise ValueError(
-                "output_contract.contract_id must be a non-blank string"
-            )
+            raise ValueError("output_contract.contract_id must be a non-blank string")
         if not isinstance(contract_version, str) or not contract_version.strip():
-            raise ValueError(
-                "output_contract.contract_version must be a non-blank string"
-            )
+            raise ValueError("output_contract.contract_version must be a non-blank string")
         if not isinstance(payload, dict):
-            raise ValueError(
-                "output_contract.structured_payload is required and must be an object"
-            )
+            raise ValueError("output_contract.structured_payload is required and must be an object")
         if digest is not None and (
-            not isinstance(digest, str)
-            or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+            not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
         ):
             raise ValueError(
-                "output_contract.payload_digest, when provided, "
-                "must be sha256:<64 hex>"
+                "output_contract.payload_digest, when provided, must be sha256:<64 hex>"
             )
         if (
             not isinstance(refs, list)
             or not refs
-            or not all(
-                isinstance(item, str) and item.strip() for item in refs
-            )
+            or not all(isinstance(item, str) and item.strip() for item in refs)
         ):
             raise ValueError(
                 "output_contract.source_refs is required and must be a non-empty text array"
             )
         return value
+
+    @field_validator("attempt_id", "stable_task_id")
+    @classmethod
+    def ensure_response_identity_text_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("response identity text must not be blank")
+        return stripped

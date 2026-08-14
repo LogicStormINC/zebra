@@ -1,36 +1,30 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from agent_context import LocalContextCompiler
 from agent_core.application import (
     MemoryCandidateExtractionService,
     MemoryCandidatePromotionService,
     SessionTitleService,
     attachment_refs_from_event,
 )
-from agent_core.domain.context_continuation import ProviderContinuationRef
-from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.attempt_policy import TaskAttemptPolicy
+from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
 from agent_core.harness import (
     HarnessAttempt,
     HarnessContext,
-    HarnessModelStep,
     HarnessTask,
-    SingleAttemptOrchestrator,
 )
 from agent_core.harness.completion_evidence import persisted_completion_evidence_events
 from agent_core.harness.model_capabilities import declared_model_capabilities
-from agent_core.harness.models import HarnessAttemptResult, HarnessEventDraft
+from agent_core.harness.models import HarnessAttemptResult
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway, bind_native_media_inputs
-from agent_security import (
-    LocalPolicyEngine,
-    resolve_effective_network_profile,
-)
+from agent_security import resolve_effective_network_profile
 from agent_storage import (
     SQLiteAgentTaskStore,
     SQLiteArtifactPayloadStore,
@@ -60,39 +54,17 @@ from zebra_agent_config import (
 
 import zebra_agent_worker.session_handoff as handoff
 import zebra_agent_worker.task_preapproval as auth
-from zebra_agent_worker.approved_continuation import (
-    ApprovedContinuationError,
-    recover_approved_continuation,
-)
-from zebra_agent_worker.attempt_lifecycle import execute_attempt
+from zebra_agent_worker.attempt_coordinator import HostedAttemptCoordinator
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
-from zebra_agent_worker.clarification_continuation import (
-    ClarificationContinuationError,
-    recover_clarification_continuation,
-)
-from zebra_agent_worker.context_lifecycle import (
-    persist_context_compaction,
-    recover_provider_continuation,
-)
-from zebra_agent_worker.continuation_lifecycle import (
-    mark_approved_continuation_started,
-    mark_clarification_continuation_started,
-)
+from zebra_agent_worker.context_lifecycle import recover_provider_continuation
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import finalize_execution
-from zebra_agent_worker.finos_journal_provider import (
-    allows_finos_account_changes_proposal,
-    build_finos_journal_provider,
-)
+from zebra_agent_worker.finos_journal_provider import build_finos_journal_provider
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
-from zebra_agent_worker.runtime_authority import (
-    close_tool_gateway,
-    persist_runtime_authority,
-    runtime_cleanup_failure_result,
-)
+from zebra_agent_worker.runtime_authority import persist_runtime_authority
 from zebra_agent_worker.runtime_setup import (
     build_prepared_runtime,
     require_matching_runtime_authority,
@@ -233,9 +205,7 @@ class SessionExecutionService:
             trusted_local=trusted_local,
         )
         try:
-            model_gateway = build_model_gateway(
-                settings_for_model(self._settings, task.model_id)
-            )
+            model_gateway = build_model_gateway(settings_for_model(self._settings, task.model_id))
         except ValueError:
             self._claim_service.release_claim(claimed)
             raise
@@ -303,9 +273,7 @@ class SessionExecutionService:
                 owner=next(iter(private_skill_owners), None),
             )
             skills_state = (
-                SQLiteSkillsStateStore(self._settings.skills_state_path)
-                if skill_roots
-                else None
+                SQLiteSkillsStateStore(self._settings.skills_state_path) if skill_roots else None
             )
             agent_context = resolve_agent_definition_context(
                 task.agent_definition,
@@ -359,7 +327,6 @@ class SessionExecutionService:
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
                 ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
-        context_compiler = LocalContextCompiler()
         context = HarnessContext(
             task=HarnessTask(
                 title=task.title,
@@ -401,132 +368,50 @@ class SessionExecutionService:
                 item.event for item in task_events
             ),
         )
-        try:
-            continuation = recover_approved_continuation(session_events)
-            clarification = recover_clarification_continuation(session_events)
-            if continuation is not None and clarification is not None:
-                raise WorkerExecutionError("session has multiple active continuations")
-        except (
-            ApprovedContinuationError,
-            ClarificationContinuationError,
-            WorkerExecutionError,
-        ) as exc:
-            cleanup_error = close_tool_gateway(tool_gateway)
-            self._claim_service.release_claim(claimed)
-            if cleanup_error is not None:
-                raise WorkerExecutionError(
-                    f"{exc}; runtime cleanup failed: {cleanup_error}"
-                ) from cleanup_error
-            raise WorkerExecutionError(str(exc)) from exc
-        if continuation is not None:
-            claimed = mark_approved_continuation_started(
-                claimed,
-                event_store=self._event_store,
-                recovery_service=self._recovery_service,
-                tool_name=continuation.tool_call.name,
-                tool_call_id=str(continuation.tool_call.tool_call_id),
-                started_at=started_at,
-            )
-        elif clarification is not None:
-            claimed = mark_clarification_continuation_started(
-                claimed,
-                event_store=self._event_store,
-                recovery_service=self._recovery_service,
-                clarification_id=str(clarification.tool_call.tool_call_id),
-                started_at=started_at,
-            )
-        recorder = DurableHarnessEventRecorder(
-            session=claimed.recovery.session,
-            workspace=claimed.recovery.workspace,
+        coordinator = HostedAttemptCoordinator(
+            claim_service=self._claim_service,
             event_store=self._event_store,
             projection_store=self._projection_store,
             workspace_store=self._workspace_store,
             model_call_indexer=self._model_call_indexer,
             tool_run_indexer=self._tool_run_indexer,
-        )
-        if continuation is None and clarification is None:
-            recorder.append(
-                EventType.HARNESS_ATTEMPT_STARTED,
-                EventActor.HARNESS,
-                {"attempt_number": 1},
-                created_at=started_at,
-            )
-        context = replace(
-            context,
-            session=recorder.session.model_copy(update={"task_plan": task_record.task_plan}),
-        )
-
-        def persist_event(draft: HarnessEventDraft) -> None:
-            if draft.event_type is EventType.CONTEXT_COMPACTED:
-                persist_context_compaction(
-                    draft,
-                    recorder=recorder,
-                    event_store=self._event_store,
-                    lifecycle_store=self._context_lifecycle_store,
-                )
-            else:
-                recorder.append_draft(draft)
-
-        def persist_continuation(
-            reference: ProviderContinuationRef,
-            payload: bytes | None,
-            maximum_ttl_seconds: int | None,
-        ) -> str | None:
-            if payload is None:
-                return None
-            artifact = self._provider_continuation_store.store(
-                tenant_id="local",
-                session_id=str(session_id),
-                reference=reference,
-                opaque_payload=payload,
-                maximum_ttl_seconds=maximum_ttl_seconds,
-            )
-            return artifact.artifact_id
-
-        model_step = HarnessModelStep(
-            context_compiler=context_compiler,
-            available_tools=tool_gateway.model_tools,
-            conversation_compactor=context_compiler,
-            event_sink=persist_event,
-            continuation_sink=persist_continuation,
-            provider_continuation=provider_continuation,
-            attempt_number=1,
-        )
-        policy_engine = auth.build_policy_engine(
-            LocalPolicyEngine,
-            task,
-            effective_network_profile,
-            self._settings,
-            tool_gateway.effective_mcp_tools,
-            trusted_local,
-            allows_finos_account_changes_proposal(finos_journal_provider),
-        )
-        orchestrator = SingleAttemptOrchestrator(
-            model_gateway,
-            policy_engine,
-            tool_gateway,
-            model_step=model_step,
-            synthesize_tool_results=True,
-            parallel_safe_tools=tool_gateway.parallel_safe_tools,
-            parallel_batch_limits=tool_gateway.parallel_batch_limits,
-            max_parallel_tool_calls=3,
-            tool_call_resolver=tool_gateway.resolve_model_tool_calls,
-            validator_tool_names=tool_gateway.validator_tools,
-            event_sink=persist_event,
+            context_lifecycle_store=self._context_lifecycle_store,
+            provider_continuation_store=self._provider_continuation_store,
+            recovery_service=self._recovery_service,
+            settings=self._settings,
         )
         try:
-            attempt_result, suspension_snapshot = execute_attempt(
-                orchestrator,
-                context,
-                continuation=continuation,
-                clarification=clarification,
+            outcome = coordinator.run(
+                session_id=session_id,
+                started_at=started_at,
+                task=task,
+                task_record=task_record,
+                claimed=claimed,
+                base_context=context,
+                model_gateway=model_gateway,
+                tool_gateway=tool_gateway,
                 runtime=runtime,
                 runtime_handle=runtime_handle,
+                finos_journal_provider=finos_journal_provider,
+                trusted_local=trusted_local,
+                effective_network_profile=effective_network_profile,
+                provider_continuation=provider_continuation,
+                session_events=session_events,
+                task_events=task_events,
+                policy=TaskAttemptPolicy(
+                    max_attempts=task.max_attempts,
+                    max_corrections_per_attempt=task.max_corrections_per_attempt,
+                    execution_profile_id=task.execution_profile_id,
+                    retryable_stop_reasons=task.retryable_stop_reasons,
+                ),
+                artifact_payload_store=self._artifact_payload_store,
             )
-        finally:
-            cleanup_error = close_tool_gateway(tool_gateway)
-        if cleanup_error is not None:
-            attempt_result = runtime_cleanup_failure_result(cleanup_error, attempt_result)
+        except Exception as exc:
+            self._claim_service.release_claim(claimed)
+            raise WorkerExecutionError(str(exc)) from exc
+        attempt_result = outcome.attempt_result
+        recorder = outcome.recorder
+        claimed = outcome.claimed
         completion_lease_released = False
 
         def persist_completed(event: SessionEvent) -> SessionEvent:
@@ -548,8 +433,9 @@ class SessionExecutionService:
             title_service=SessionTitleService(model_gateway),
             event_store=self._event_store,
             started_at=started_at,
-            suspension_snapshot=suspension_snapshot,
+            suspension_snapshot=outcome.suspension_snapshot,
             completion_sink=persist_completed,
+            attempt_number=outcome.attempt.number,
         )
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:

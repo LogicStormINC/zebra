@@ -218,6 +218,17 @@ def _public_final_event_ids(events: tuple[TaskEvent, ...]) -> set[str]:
         for item in events
         if item.event.event_type is EventType.SESSION_COMPLETED
     }
+    failed_segments = {
+        str(item.segment_id)
+        for item in events
+        if item.event.event_type
+        in {EventType.SESSION_FAILED, EventType.SESSION_CANCELLED}
+    }
+    terminal_attempt = {
+        str(item.segment_id): item.event.payload.get("attempt_number")
+        for item in events
+        if item.event.event_type is EventType.SESSION_COMPLETED
+    }
     explicit: dict[str, TaskEvent] = {}
     legacy: dict[str, TaskEvent] = {}
     last_tool_sequence: dict[str, int] = {}
@@ -233,14 +244,21 @@ def _public_final_event_ids(events: tuple[TaskEvent, ...]) -> set[str]:
             continue
         response_stage = event.payload.get("response_stage")
         if response_stage == "final":
+            # Only the accepted attempt's candidate may become the canonical
+            # final: a failed attempt's final stays attempt-private (Wave 5).
+            if segment in failed_segments:
+                continue
+            event_attempt = event.payload.get("attempt_number")
+            terminal = terminal_attempt.get(segment)
+            if terminal is not None and event_attempt is not None and event_attempt != terminal:
+                continue
             explicit[segment] = item
             continue
         if response_stage == "tool_loop" or segment not in completed_segments:
             continue
         tool_call_count = event.payload.get("tool_call_count")
         if tool_call_count == 0 or (
-            tool_call_count is None
-            and item.task_sequence > last_tool_sequence.get(segment, -1)
+            tool_call_count is None and item.task_sequence > last_tool_sequence.get(segment, -1)
         ):
             legacy[segment] = item
     return {str(item.event.event_id) for item in (*explicit.values(), *legacy.values())}
@@ -316,10 +334,7 @@ def _apply_clarification_event(
         public_choices = [
             normalized
             for choice in choices[:MAX_PUBLIC_CHOICES]
-            if (
-                normalized := _bounded_text(choice, limit=MAX_PUBLIC_CHOICE_CHARS)
-            )
-            is not None
+            if (normalized := _bounded_text(choice, limit=MAX_PUBLIC_CHOICE_CHARS)) is not None
         ]
         if public_choices:
             data["choices"] = public_choices
