@@ -20,6 +20,21 @@
   dirty-mainline handoff snapshot lives on
   `codex/cloudline-worktree-snapshot`. `EMB-TRN-READ-E2E-01` remains
   `In Progress` and fail-closed pending isolated cross-service inputs.
+- `CLOUD-EFFECT-DEFAULT-E2E-01` is `Blocked` with its composition tier
+  closed: the repository now carries a fail-closed runner
+  (`tests/compose/effect_default_e2e/`) that drives real PostgreSQL 17.5,
+  MinIO, the committed API application object, the default Worker entrypoint
+  and a provider-shaped OpenAI-compatible stub model. The composition
+  scenarios (infrastructure, session acceptance, worker fail-closed with zero
+  Effect side effects across repeated cycles, handoff Effect read) pass and
+  are recorded in `docs/CLOUD-EFFECT-DEFAULT-E2E-01.md`. Source review and a
+  host prototype proved runtime provisioning precedes the first model call,
+  so the six execution-tier scenarios stay explicitly
+  `gvisor_engine_absent`: the runner reports
+  `ZEBRA_EFFECT_DEFAULT_E2E=BLOCKED` (exit 2) and never derives a PASS from
+  composition-tier evidence. The execution tier needs a runsc-capable engine
+  and its implementation slice; the local colima `zebra-gvisor` VM's runsc
+  sandbox does not start under nerdctl yet.
 - `CLOUD-EFFECT-COMP-CLOSE-01` is `Done` after maintainer activation and
   rebase onto the merged cloudline. It is a narrow application-composition
   gate: the default Cloud Worker now composes the typed

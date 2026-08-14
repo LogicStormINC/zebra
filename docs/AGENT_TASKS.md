@@ -373,6 +373,31 @@ aggregate without treating `PostgresControlPlaneStores` as local
 - no replacement of the remaining cloud API compatibility paths; those stay an
   explicit command-only API blocker
 
+### CLOUD-EFFECT-DEFAULT-E2E-01 - Default Entrypoint Real Side-Effect Acceptance
+
+- Status: `Blocked`
+- Owner: `lukeding`
+- Suggested role: `QA / SRE`
+- Depends on: the merged `CLOUD-EFFECT-COMP-CLOSE-01` composition closeout;
+  execution tier is blocked on a gVisor-capable engine plus the execution-tier
+  implementation.
+- Branch: `zebra-cloud-trench` (runner committed directly on the merged
+  cloudline under the 2026-08-14 maintainer batch closeout)
+- Owned paths: `tests/compose/effect_default_e2e/` (runner, stub, seed,
+  durable verifier, compose file, contract test),
+  `docs/CLOUD-EFFECT-DEFAULT-E2E-01.md`
+- Composition tier (validated on real PostgreSQL 17.5 + MinIO with the default
+  Worker entrypoint and a provider-shaped stub model): infrastructure, session
+  acceptance, worker fail-closed with zero Effect side effects across repeated
+  cycles, and the API handoff Effect read all pass; the runner exits
+  `ZEBRA_EFFECT_DEFAULT_E2E=BLOCKED` (2) with six execution-tier scenarios
+  explicitly skipped as `gvisor_engine_absent`. Runtime provisioning precedes
+  the first model call, so no session can execute without a runsc engine.
+- Contract tests: `6 passed`; changed-path Ruff passes.
+- Explicit non-goals: no execution-tier or production claim; the local colima
+  `zebra-gvisor` VM has runsc installed but its sandbox fails to start under
+  nerdctl, so no usable engine evidence exists yet.
+
 ### CLOUD-TRN-NEXT-PLAN-01 - Cloud And Trench Next Execution Plan
 
 - Status: `Done`

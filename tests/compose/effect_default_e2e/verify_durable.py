@@ -1,0 +1,125 @@
+"""Durable-plane verification helpers for the effect default E2E gate."""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+import uuid
+
+from agent_storage.postgres.epoch import bootstrap_control_plane_epoch
+from agent_storage.postgres_composition import postgres_control_plane_stores
+from agent_storage.runtime_composition import cloud_composition_from_environment
+
+
+def _connect():
+    import psycopg
+
+    return psycopg.connect(os.environ["ZEBRA_DATABASE_URL"])
+
+
+def bootstrap_epoch() -> int:
+    epoch = bootstrap_control_plane_epoch(
+        os.environ["ZEBRA_DATABASE_URL"],
+        deployment_namespace=os.environ["ZEBRA_DEPLOYMENT_NAMESPACE"],
+    )
+    print(json.dumps({"epoch": str(epoch)}))
+    return 0
+
+
+def effect_outbox_count() -> int:
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute("SELECT count(*) FROM effect_outbox")
+        (count,) = cursor.fetchone()
+    print(json.dumps({"effect_outbox_rows": count}))
+    return 0
+
+
+def session_status(session_id: str) -> int:
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT status FROM session_projections WHERE session_id = %s",
+            (session_id,),
+        )
+        row = cursor.fetchone()
+    print(json.dumps({"status": row[0] if row else None}))
+    return 0
+
+
+def event_types(session_id: str) -> int:
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT event_type, count(*) FROM session_events"
+            " WHERE session_id = %s GROUP BY event_type ORDER BY event_type",
+            (uuid.UUID(session_id),),
+        )
+        rows = cursor.fetchall()
+    print(json.dumps({"event_types": [[row[0], row[1]] for row in rows]}))
+    return 0
+
+
+def lease_rows() -> int:
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT count(*), count(DISTINCT control_plane_epoch) FROM worker_leases",
+        )
+        rows_total, epochs = cursor.fetchone()
+    print(json.dumps({"lease_rows": rows_total, "lease_epochs": epochs}))
+    return 0
+
+
+def handoff_read(session_id: str) -> int:
+    cloud = cloud_composition_from_environment()
+    stores = postgres_control_plane_stores(
+        cloud.dsn,
+        deployment_namespace=cloud.deployment_namespace,
+        memory_cursor_signing_key=cloud.memory_cursor_signing_key,
+        artifact_objects=cloud.artifact_objects,
+        history_scope=cloud.history_scope,
+        continuation_scope=cloud.continuation_scope,
+    )
+    effects = stores.effects
+    terminal = effects.terminal_keys(uuid.UUID(session_id))
+    uncertain = effects.has_uncertain(uuid.UUID(session_id))
+    print(
+        json.dumps(
+            {
+                "terminal_keys": sorted(str(key) for key in terminal),
+                "has_uncertain": uncertain,
+            }
+        )
+    )
+    return 0
+
+
+COMMANDS = {
+    "bootstrap-epoch": bootstrap_epoch,
+    "effect-outbox-count": effect_outbox_count,
+    "session-status": session_status,
+    "event-types": event_types,
+    "lease-rows": lease_rows,
+    "handoff-read": handoff_read,
+}
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) < 2 or argv[1] not in COMMANDS:
+        print(f"usage: verify_durable.py {{{'|'.join(COMMANDS)}}} [session_id]", file=sys.stderr)
+        return 64
+    command = COMMANDS[argv[1]]
+    if argv[1] == "session-status" and len(argv) < 3:
+        print("session-status requires a session id", file=sys.stderr)
+        return 64
+    if argv[1] == "event-types" and len(argv) < 3:
+        print("event-types requires a session id", file=sys.stderr)
+        return 64
+    if argv[1] == "handoff-read" and len(argv) < 3:
+        print("handoff-read requires a session id", file=sys.stderr)
+        return 64
+    if argv[1] in {"session-status", "event-types", "handoff-read"}:
+        return command(argv[2])
+    return command()
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
