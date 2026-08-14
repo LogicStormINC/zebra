@@ -46,6 +46,27 @@
   from the new barrel exports); FinOS stays on frozen 0.1.0 tarball until the
   0.1.1 artifact + SHA-256 is handed off
 
+## 2026-08-14 Wave 5 Gate 0 start (Zebra backend lane)
+
+- frozen baseline verified in `/Users/vinson/.codex/worktrees/058c/zebra`:
+  HEAD = merge-base = `1d19abb` (exact base, detached), worktree clean,
+  `codex/znx-hosted-outer-attempts-v1` did not exist and was created;
+  `fork/codex/znx-wave45-task-ui-foundation-v1` remotely readable at
+  `1d19abb`; FinOS peer base `305223e` confirmed by owner message; frozen
+  `@zebra-agent/task-ui@0.1.0` sha256
+  `33b01e6910c7852fd1c0a4a7f77f9acc0f39a0b2d90d7b76d1de7e49826f5741`
+- full chain audit completed (Hosted Worker execution, attempt lifecycle,
+  recovery/resume, task/segment store, completion evidence, terminal
+  finalization, lease release, public conversation, final identity, usage,
+  Goal/Plan continuity, profile binding) with exact file:line evidence in
+  `docs/znx-wave5-existing-state-audit-2026-08-14.md`
+- docs-first commit: audit + `ZNX-WAVE5-OUTER-ATTEMPTS-01` task card with
+  W5-DSH-01/02/03 contracts and the R1-R8 red matrix; PROGRESS/task_plan/
+  WORKLOG updated
+- next commit: deterministic red tests (expected FAIL at exact base), then
+  focused baseline run, clean worktree, Gate 0 report; no production code,
+  no Phase 1, no PR/merge/push/deploy
+
 ## 2026-08-13 Wave 4.5 Gate A PASS + Phase 4 start
 
 - root decision: Gate A = PASS on the exact pair FinOS

@@ -16155,6 +16155,116 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
 
 ### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
 
+### ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Complex Analysis Outer Attempt & Evidence Coverage v1
+
+- Status: `In Progress` (Gate 0 only; stop after Gate 0, do not start Phase 1)
+- Owner: `Vinson`
+- Branch: `codex/znx-hosted-outer-attempts-v1`
+- Worktree: `/Users/vinson/.codex/worktrees/058c/zebra`
+- Exact base: `1d19abbb57c4df5c9e8636db9c004638d7220ee8`
+  (Zebra Wave 4.5 Gate A acceptance record; remote-ref verified
+  `fork/codex/znx-wave45-task-ui-foundation-v1` = `1d19abb`)
+- Compatible FinOS exact base: `305223e7bf7bbc9ffc646ea488e89c7da8585c49`;
+  FinOS peer Gate 0 task `019ffe56-8b1e-74e2-9289-9ee8a3544aff`
+- Frozen shared package: `@zebra-agent/task-ui@0.1.0` SHA-256
+  `33b01e6910c7852fd1c0a4a7f77f9acc0f39a0b2d90d7b76d1de7e49826f5741`
+- Owned paths (Gate 0):
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`, `task_plan.md`,
+  `docs/znx-wave5-existing-state-audit-2026-08-14.md`,
+  new red/contract tests under `tests/` (no production code)
+- Owned paths (Phases 1-6, locked until owner accepts each gate):
+  `packages/agent-core/**` attempt/harness/coverage paths,
+  `packages/agent-storage/**` attempt/coverage/usage projection,
+  `apps/worker/**` execution/recovery,
+  `apps/api/**` profile binding and safe task projection,
+  backend tests/docs
+- Coordination: shared high-risk contracts (public task event, public
+  conversation, task projection, message identity, final identity,
+  attempt_summary, coverage_summary, web.py public response, task-ui public
+  types) change only via a separate contract commit + fixture with FinOS
+  peer notification before landing; this lane never modifies
+  `UI/packages/task-ui/**`, `UI/desktop/**`, FinOS source, next/stable, and
+  never creates/merges/pushes PRs or deploys.
+
+#### Goal
+
+Activate generic hosted outer attempts under one Stable Task (v1
+max_attempts=2, max_corrections_per_attempt=1, frozen at Task creation),
+generic final resource/evidence coverage, one bounded evidence correction per
+Attempt, deterministic crash/resume recovery, and per-attempt usage that can
+be settled once by the FinOS Credit lane. Zebra owns Attempt lifecycle, retry,
+coverage, correction and recovery; FinOS owns profile preflight, immutable
+resource manifest, owner authorization, read-only grant and Credit
+reserve/settle. No FinOS business type enters Zebra. Coverage-failed
+candidate finals stay attempt-private and never enter the public conversation
+or bind a business operation.
+
+#### DSH backend contracts (registered at Gate 0)
+
+- W5-DSH-01 Private Request Reconstruction Invariant: before every model
+  dispatch, actual request equals durable reconstruction across
+  `stable_task_id`, `attempt_id`, `turn_id`, `step_id`, `goal_revision`,
+  `plan_revision`, `resource_manifest_digest`, `messages_digest`,
+  `system_prompt_digest`, `tool_schema_digest`, `model_config_digest`;
+  mismatch fails closed; full prompt/schema/grant/private resource never
+  public.
+- W5-DSH-02 Durable Execution Coordinates: Stable Task -> Attempt -> Turn ->
+  Step; Segment is an internal context carrier, not an Attempt or visible
+  Turn; stable identity/sequence/time/terminal reason/causal reference;
+  crash/resume must not duplicate, skip or cross evidence/final; reuse
+  existing event/session/segment seams, do not port a second DSH Turn/Step
+  system.
+- W5-DSH-03 Replay/Recovery Equivalence: deterministic crash tests at
+  attempt_started / model call / tool result / coverage report / retry
+  scheduled / Attempt 2 creation (before+after) / canonical final
+  (before+after) / Task terminal (before+after) / Credit settlement
+  (before+after); continuous, durable-replay and recovered execution yield
+  identical attempt identities/count, coverage/evidence, canonical final,
+  terminal, Goal/Plan revisions, usage, settlement.
+
+#### Gate 0 red-test matrix (all expected to FAIL at exact base)
+
+- R1 Hosted Worker starts Attempt 2 after retryable attempt-1 failure
+  (max_attempts=2 seeded; base: one `HARNESS_ATTEMPT_STARTED`, terminal
+  `attempt_number=1`).
+- R2 Evidence-correction failure is retryable when attempts remain and the
+  loop starts Attempt 2 (base: `should_retry=False`).
+- R3 Retryable-failed session resumes as Attempt 2 (base:
+  `SessionResumeError` on terminal session).
+- R4 `HARNESS_ATTEMPT_STARTED` payload contract carries
+  `attempt_id/attempt_sequence/started_at/ended_at/terminal_reason/
+  causal_attempt_id` (base: no schema registered).
+- R5 `MODEL_REQUEST_STARTED` payload carries the W5-DSH-01 coordinates
+  (base: absent, `extra="forbid"`).
+- R6 Task terminal carries a coverage verdict (base: terminal payload has
+  none).
+- R7 Failed attempt candidate final is not public canonical final and
+  `final_message_identity` is None (base: candidate projected + identity
+  returned).
+- R8 Task/attempt usage is aggregatable for settlement (`AgentTask.usage`,
+  per-attempt linkable model calls) (base: no usage field/coordinates).
+
+#### Gate 0 acceptance
+
+- [ ] docs-first existing-state audit + task card committed (docs-only)
+- [ ] deterministic red/contract tests committed and failing at exact base
+- [ ] minimal focused baseline checks run; inherited exact-base failures
+      separated from new red failures
+- [ ] worktree clean; exact branch/HEAD/merge-base/changed paths/tests/
+      security/gaps reported; no PR/merge/push/deploy; no production code
+- [ ] stop and report after Gate 0; Phase 1 starts only on owner acceptance
+
+#### Explicit Non-Goals
+
+- Planner, Scheduler, DAG, second registry/engine, FinOS-specific workflow,
+  UI Node Engine, Cordis, compaction, chunk packing, persistence batching,
+  any DSH runtime dependency, PR/merge/deploy/push;
+- no FinOS business types in Zebra, no automatic Core/Journal/Knowledge
+  write, no raw prompt/arguments/tool output/grant/policy in public
+  projection, no UI path changes, no next/stable modification, no subagents.
+
+### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
+
 - Status: `In Progress`
 - Owner: `Vinson`
 - Branch: `codex/znx-goal-plan-act-01`

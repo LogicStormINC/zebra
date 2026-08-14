@@ -1,5 +1,20 @@
 # Task Plan
 
+## ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Gate 0 (Zebra backend lane)
+
+1. `completed` - Verify exact base `1d19abb`, merge-base, clean worktree,
+   remote ref `fork/codex/znx-wave45-task-ui-foundation-v1`, and create
+   `codex/znx-hosted-outer-attempts-v1`.
+2. `completed` - Audit the full caller/transaction/recovery chain and write
+   the docs-first existing-state audit + Wave 5 task card (W5-DSH-01/02/03,
+   R1-R8 red matrix).
+3. `in_progress` - Commit red/contract tests that prove the six real gaps at
+   the exact base (no production edits).
+4. `pending` - Run the minimal focused baseline checks; separate inherited
+   exact-base failures from new red failures.
+5. `pending` - Leave the worktree clean and report exact
+   branch/HEAD/merge-base/changed paths/tests/security/gaps; stop at Gate 0.
+
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
 1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and

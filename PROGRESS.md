@@ -5,6 +5,20 @@
 
 ## Current Mainline Snapshot
 
+- Snapshot date: `2026-08-14`
+- Wave 5 backend Gate 0 in progress on
+  `codex/znx-hosted-outer-attempts-v1` from exact base `1d19abb` (remote-ref
+  verified `fork/codex/znx-wave45-task-ui-foundation-v1` = `1d19abb`; FinOS
+  peer base `305223e`, peer task `019ffe56-8b1e-74e2-9289-9ee8a3544aff`).
+  Gate 0 is docs-first only: existing-state audit +
+  `ZNX-WAVE5-OUTER-ATTEMPTS-01` task card (including W5-DSH-01/02/03 backend
+  contracts and the eight-test red matrix) plus deterministic red tests that
+  prove the Hosted Worker single-attempt, no-Attempt-2-after-correction, no
+  durable attempt coordinates, no coverage verdict, failed-candidate-can-become-
+  canonical-final and no usage-settlement gaps. No production code, no
+  PR/merge/push/deploy, no next/stable, no `UI/packages/task-ui/**` or
+  `UI/desktop/**` changes; Wave 4.5 Gate A remains PASS and Phase 4 continues
+  in its own worktree. Phase 1 starts only after Gate 0 acceptance.
 - Snapshot date: `2026-08-13`
 - Wave 4.5 Gate A = PASS. Accepted pair: FinOS
   `d0cdb2bf1bbed9c65bf8f5b4336c9898be412575` / Zebra
