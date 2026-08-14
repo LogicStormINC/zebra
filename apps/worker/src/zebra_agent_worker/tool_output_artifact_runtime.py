@@ -28,9 +28,7 @@ def validate_cloud_artifact_factory(
     effect_dispatch: EffectDispatchPort | None,
 ) -> CloudArtifactCoordinatorFactory | None:
     if factory is not None and (transaction is None or deployment_namespace is None):
-        raise ValueError(
-            "cloud Artifact output requires the fenced Worker projection transaction"
-        )
+        raise ValueError("cloud Artifact output requires the fenced Worker projection transaction")
     if factory is not None and effect_dispatch is not None:
         required = (
             "schedule_with_payload",

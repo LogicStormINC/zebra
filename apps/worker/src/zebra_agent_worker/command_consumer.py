@@ -9,7 +9,7 @@ from agent_core.contracts import SessionCommand, SessionCommandAcceptedPayload, 
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports.projection_store import ProjectionStorePort
-from agent_storage import ControlPlaneStores, LeaseConflictError
+from agent_storage import ControlPlaneStores, LeaseConflictError, PostgresControlPlaneStores
 from pydantic import ValidationError
 
 from zebra_agent_worker.control import SessionControlError
@@ -39,7 +39,7 @@ class SessionCommandConsumer:
 
     def __init__(
         self,
-        stores: ControlPlaneStores,
+        stores: ControlPlaneStores | PostgresControlPlaneStores,
         execution_service: SessionExecutionService,
         *,
         control_service: _SessionControl | None = None,
@@ -61,9 +61,7 @@ class SessionCommandConsumer:
         lease_ttl_seconds: int,
         batch_size: int = 1,
     ) -> CommandConsumption:
-        for session in self._projection_store.list_recent_sessions(
-            limit=max(1, batch_size * 8)
-        ):
+        for session in self._projection_store.list_recent_sessions(limit=max(1, batch_size * 8)):
             command_event = self._next_command(session.session_id, session.current_sequence)
             if command_event is None:
                 continue
@@ -128,14 +126,18 @@ class SessionCommandConsumer:
         clarification_id = command.payload.get("clarification_id")
         if clarification_id is not None and not isinstance(clarification_id, str):
             raise ValueError("message clarification_id is invalid")
-        event = SessionMessageAppendService().build_event(
-            session=recovery.session,
-            next_sequence=recovery.session.current_sequence + 1,
-            command=SessionMessageAppendCommand(
-                content=content,
-                clarification_id=clarification_id,
-            ),
-        ).model_copy(update={"idempotency_key": f"{command.idempotency_key}:message"})
+        event = (
+            SessionMessageAppendService()
+            .build_event(
+                session=recovery.session,
+                next_sequence=recovery.session.current_sequence + 1,
+                command=SessionMessageAppendCommand(
+                    content=content,
+                    clarification_id=clarification_id,
+                ),
+            )
+            .model_copy(update={"idempotency_key": f"{command.idempotency_key}:message"})
+        )
         self._stores.events.append(event)
 
     def _cancel(self, command: SessionCommand) -> None:

@@ -30,12 +30,14 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
-- `CLOUD-EFFECT-COMP-CLOSE-01` is `In Progress` on
-  `codex/cloud-effect-comp-close-01`. The maintainer explicitly activated this
-  integration gate on 2026-08-12 after `CLOUD-INTEGRATION-REG-01@8bbdf5b5`.
-  It closes only the default Cloud Worker Effect/Artifact/Memory composition
-  and the API handoff's Effect read seam; Profile, command-only API and
-  Workspace Control Plane remain locked.
+- `CLOUD-EFFECT-COMP-CLOSE-01` is `Done`. Its implementation was rebased onto
+  the merged cloudline stack and fast-forward merged into `zebra-cloud-trench`
+  as `bbd6108d`: the typed `CloudWorkerComposition` replaces the unsafe
+  `ControlPlaneStores` cast, the API handoff reads the narrow
+  `EffectStateReadPort`, and cloud Memory finalization commits through the
+  governed aggregate. Profile axes, command-only API, live SSE, host auth and
+  AG-UI routes from the same stack are now mainline; Workspace Control Plane
+  remains unimplemented and separately gated.
 - `CLOUD-TRN-NEXT-PLAN-01` is `Review` on
   `codex/cloud-trench-next-plan-01`. It records the evidence-backed path from
   cloud-mainline stabilization to the first production Trench read-only slice.
@@ -287,7 +289,7 @@ confirmed repo memory by current-task relevance within a token budget.
 
 ### CLOUD-EFFECT-COMP-CLOSE-01 - Default Cloud Effect Composition Closeout
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / STORAGE / WORKER / API / QA`
 - Depends on: `CLOUD-INTEGRATION-REG-01@8bbdf5b5`; explicitly activated by the
@@ -373,7 +375,7 @@ aggregate without treating `PostgresControlPlaneStores` as local
 
 ### CLOUD-TRN-NEXT-PLAN-01 - Cloud And Trench Next Execution Plan
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCH / PM / QA`
 - Depends on: `CLOUD-INTEGRATION-REG-01` review evidence; this docs branch is
@@ -427,7 +429,7 @@ branch, worktree and frozen Owned paths.
 
 ### QA-CLOUDLINE-PY-01 - Python Quality Baseline
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `QA / CORE / STORAGE`
 - Depends on: merged `CLOUD-INTEGRATION-REG-01`; this worktree is based on
@@ -492,7 +494,7 @@ errors exposed after the complete workspace dependency sync.
 
 ### QA-CLOUDLINE-DESKTOP-01 - Desktop Quality And Streaming Regressions
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `QA / DESKTOP`
 - Depends on: `QA-CLOUDLINE-PY-01` review commit `908f1989ca32`
@@ -529,7 +531,7 @@ than timing- or multi-match-dependent.
 
 ### QA-CLOUDLINE-CI-01 - Canonical Gate 0 Quality Baseline
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `QA / CI`
 - Depends on: `QA-CLOUDLINE-PY-01` review commit `908f1989ca32` and
@@ -584,7 +586,7 @@ new commits.
 
 ### ARCH-CONFIG-BOUNDARY-01 - Packages/Apps Configuration Boundary Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCH / CONFIG`
 - Depends on: Gate 0 canonical quality review commit `109ec4e4`
@@ -627,7 +629,7 @@ provider-specific adapters.
 
 ### ARCH-CONFIG-INTEGRATIONS-01 - Typed Integration Provider Settings
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `INTEGRATIONS / CONFIG`
 - Depends on: `ARCH-CONFIG-BOUNDARY-01` review commit `7e5c5360`
@@ -673,7 +675,7 @@ credential redaction, retry and network policy behavior at app composition.
 
 ### ARCH-CONFIG-SECURITY-01 - Credential Boundary Configuration Decoupling
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `SECURITY / CONFIG`
 - Depends on: `ARCH-CONFIG-BOUNDARY-01` review commit `7e5c5360` and
@@ -712,7 +714,7 @@ needs. It must not read environment/config aggregates or import `apps/config`.
 
 ### CLOUD-DEPLOY-PROFILE-CON-01 - Deployment Profile Matrix Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCH / DEPLOY`
 - Depends on: `ARCH-CONFIG-INTEGRATIONS-01` and `ARCH-CONFIG-SECURITY-01` review
@@ -755,7 +757,7 @@ PostgreSQL plus gVisor and fail closed. `cloud + trusted-local` and
 
 ### CLOUD-DEPLOY-PROFILE-01 - Profile Implementation And Application Composition
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCH / DEPLOY / API / WORKER`
 - Depends on: `CLOUD-DEPLOY-PROFILE-CON-01` review commit `322a0233`
@@ -812,7 +814,7 @@ CI and test keep lazy SQLite compatibility.
 
 ### CLOUD-COMMAND-API-CON-01 - Stateless API Command Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `CORE / API / STORAGE`
 - Depends on: `CLOUD-DEPLOY-PROFILE-01` review commit `99b73707`
@@ -863,7 +865,7 @@ explicitly outside this contract.
 
 ### CLOUD-COMMAND-RUN-01 - Run/Resume Command And Worker Wake-up
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `API / WORKER / STORAGE`
 - Depends on: `CLOUD-COMMAND-API-CON-01` review commit `af8ec37b`
@@ -907,7 +909,7 @@ remains explicitly isolated.
 
 ### CLOUD-COMMAND-CTRL-01 - Stop/Cancel/Suspend Control Commands
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `API / WORKER / STORAGE`
 - Depends on: `CLOUD-COMMAND-RUN-01` review commit `e049006b`
@@ -955,7 +957,7 @@ Route cloud stop/cancel/suspend/resume controls through the durable command
 
 ### CLOUD-LIVE-WIRE-CON-01 - Event Commit/Live Publish Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `CORE / STORAGE / INTEGRATIONS`
 - Depends on: `CLOUD-COMMAND-CTRL-01` review commit `74d830eb`
@@ -1005,7 +1007,7 @@ live barrier before durable replay and filters by durable sequence.
 
 ### CLOUD-LIVE-PUBLISH-01 - Redis Live Publisher Composition
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `INTEGRATIONS / API / WORKER / STORAGE`
 - Depends on: `CLOUD-LIVE-WIRE-CON-01` review commit `62b1b328`
@@ -1060,7 +1062,7 @@ must degrade to replay and never roll back the append.
 
 ### CLOUD-LIVE-SSE-01 - Durable Replay And Redis Live Tail
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `API / INTEGRATIONS / QA`
 - Depends on: `CLOUD-LIVE-PUBLISH-01` review commit `1aa0a703`
@@ -1110,7 +1112,7 @@ entries or API restart fall back to durable polling without claiming loss.
 
 ### CLOUD-REC-PROD-CON-01 - Production Recovery Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `SRE / STORAGE / SECURITY`
 - Depends on: Gate 0 canonical quality baseline and the local recovery evidence
@@ -1164,7 +1166,7 @@ drill evidence.
 
 ### CLOUD-REC-PG-PITR-01 - PostgreSQL Physical PITR Drill
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `STORAGE / SRE`
 - Depends on: `CLOUD-REC-PROD-CON-01` review commit `c75b31d4` and an
@@ -1226,7 +1228,7 @@ rotate the control-plane epoch before a replacement Lease owner can write.
 
 ### CLOUD-REC-S3-01 - Artifact Object Backup And Restore Drill
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `STORAGE / SRE`
 - Depends on: `CLOUD-REC-PROD-CON-01` review commit `c75b31d4`, the existing
@@ -1286,7 +1288,7 @@ Artifact metadata/ref, checksum, size and namespace remain consistent.
 
 ### CLOUD-DEPLOY-HELM-01 - Kubernetes/Helm Application Deployment
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `SRE / PLATFORM / SECURITY`
 - Depends on: `CLOUD-DEPLOY-PROFILE-01` review evidence, recovery contract
@@ -1344,7 +1346,7 @@ gVisor RuntimeClass and secret references without embedding database credentials
 
 ### CLOUD-REAL-SVC-CI-01 - Canonical Real-Service CI
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `QA / SRE / PLATFORM`
 - Depends on: live Redis publisher/SSE and PostgreSQL/S3 recovery runners already
@@ -1400,7 +1402,7 @@ always-cleanup semantics. A failed runner must identify its contract boundary.
 
 ### CLOUD-K8S-GVISOR-E2E-01 - Kubernetes gVisor End-to-End Evidence
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `SRE / PLATFORM / SECURITY`
 - Depends on: `CLOUD-DEPLOY-HELM-01`, `CLOUD-REAL-SVC-CI-01` and a real Linux
@@ -1450,7 +1452,7 @@ machine-readable evidence.
 
 ### EMB-TOOL-CON-01 - Host Tool Contract Extension
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `CORE / TOOLS / SECURITY`
 - Depends on: completed `EMB-HOST-CON-01`, `EMB-AGUI-CON-01` and Gate 0 quality
@@ -1497,7 +1499,7 @@ Do not create a parallel Host Tool model.
 
 ### EMB-AUTH-CON-01 - Host Grant/JWT Security Contract
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `SECURITY / CORE`
 - Depends on: completed `EMB-HOST-CON-01`, `EMB-TOOL-CON-01` and Gate 0 quality
@@ -1545,7 +1547,7 @@ key retrieval remain an adapter concern.
 
 ### EMB-AUTH-PG-01 - Host Registry And Replay Ledger
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `STORAGE / SECURITY / QA`
 - Depends on: `EMB-AUTH-CON-01`, production Profile and `CLOUD-REAL-SVC-CI-01`
@@ -1597,7 +1599,7 @@ remain provider-neutral and must not import API, JWT or Trench code.
 
 ### EMB-AUTH-HTTP-01 - API Auth Middleware And Exact CORS
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `API / SECURITY`
 - Depends on: `EMB-AUTH-PG-01` and the command/profile baseline
@@ -1646,7 +1648,7 @@ an Embedded/cloud fallback.
 
 ### EMB-AUTH-01 - Production Host Auth Gate
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `SECURITY / API / STORAGE`
 - Depends on: `EMB-AUTH-CON-01`, `EMB-AUTH-PG-01` and `EMB-AUTH-HTTP-01`
@@ -1696,7 +1698,7 @@ JWT/JWKS transport bounded and injectable; never persist or log raw bearer data.
 
 ### EMB-AGUI-CMD-01 - AG-UI Command Endpoint
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `API / INTEGRATIONS / QA`
 - Depends on: command control, `EMB-AUTH-HTTP-01`, and `EMB-AGUI-CON-01`
@@ -1740,7 +1742,7 @@ official `RunAgentInput` where applicable, and append only a command intent.
 
 ### EMB-AGUI-STREAM-01 - AG-UI Replay And Stream Endpoint
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `API / INTEGRATIONS / QA`
 - Depends on: `EMB-AGUI-CMD-01`, live SSE, `EMB-AUTH-HTTP-01`, and
@@ -1786,7 +1788,7 @@ it.
 
 ### EMB-HOST-GW-01 - Typed Host Tool Gateway
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `INTEGRATIONS / SECURITY / QA`
 - Depends on: `EMB-TOOL-CON-01` and `EMB-AUTH-01`
@@ -1834,7 +1836,7 @@ metadata.
 
 ### EMB-AGUI-API-01 - Production AG-UI Gate
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `API / INTEGRATIONS / QA`
 - Depends on: `EMB-AGUI-CMD-01` and `EMB-AGUI-STREAM-01`
@@ -1904,7 +1906,7 @@ run.
 
 ### EMB-HOST-RUNTIME-01 - Worker Host Tool runtime composition
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `WORKER / API / INTEGRATIONS / SECURITY`
 - Depends on: `EMB-HOST-GW-01`, `EMB-AUTH-HTTP-01`, and the Trench-side
@@ -1969,7 +1971,7 @@ Lease/Fence ownership.
 
 ### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `WORKER / API / QA`
 - Depends on: `zebra-cloud-trench@978e02de`

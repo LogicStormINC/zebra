@@ -185,9 +185,12 @@ class CloudToolOutputArtifactCoordinator:
                 allow_finalized_sequence_replay
                 and existing.lifecycle_status is CloudArtifactPayloadLifecycleStatus.FINALIZED
             ):
-                same_reservation = existing.reservation.model_copy(
-                    update={"intended_event_sequence": intended_event_sequence}
-                ) == reservation
+                same_reservation = (
+                    existing.reservation.model_copy(
+                        update={"intended_event_sequence": intended_event_sequence}
+                    )
+                    == reservation
+                )
             if not same_reservation or existing.object_receipt.expectation != expectation:
                 raise CloudArtifactPayloadConflictError(
                     "stable Artifact identity was reused with different payload meaning"
@@ -298,9 +301,7 @@ class CloudToolOutputArtifactCoordinator:
                             idempotency_key=(
                                 f"{idempotency_scope}-compensate:{reservation.artifact_id}"
                             ),
-                            object_cleanup=ArtifactObjectCleanupEvidence(
-                                verification=verification
-                            ),
+                            object_cleanup=ArtifactObjectCleanupEvidence(verification=verification),
                             compensated_at=datetime.now(UTC),
                         ),
                         authority=authority,

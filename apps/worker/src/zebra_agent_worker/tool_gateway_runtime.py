@@ -43,11 +43,11 @@ class WorkerToolGateway:
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:
-        host_safe = frozenset(
-            tool.name
-            for tool in self.host_manifest.tools
-            if tool.parallel_safe
-        ) if self.host_manifest is not None else frozenset()
+        host_safe = (
+            frozenset(tool.name for tool in self.host_manifest.tools if tool.parallel_safe)
+            if self.host_manifest is not None
+            else frozenset()
+        )
         return self.local.parallel_safe_tools | host_safe
 
     @property
@@ -56,11 +56,11 @@ class WorkerToolGateway:
 
     @property
     def read_only_tools(self) -> frozenset[str]:
-        host_read = frozenset(
-            tool.name
-            for tool in self.host_manifest.tools
-            if tool.risk is ToolRisk.READ
-        ) if self.host_manifest is not None else frozenset()
+        host_read = (
+            frozenset(tool.name for tool in self.host_manifest.tools if tool.risk is ToolRisk.READ)
+            if self.host_manifest is not None
+            else frozenset()
+        )
         from agent_tools.effect_guard_support import READ_ONLY_TOOLS
 
         return READ_ONLY_TOOLS | host_read
@@ -71,9 +71,7 @@ class WorkerToolGateway:
     def execute(self, tool_call: ToolCall) -> ToolResult:
         host_manifest = self.host_manifest
         host_names = (
-            {tool.name for tool in host_manifest.tools}
-            if host_manifest is not None
-            else set()
+            {tool.name for tool in host_manifest.tools} if host_manifest is not None else set()
         )
         if tool_call.name not in host_names:
             return self.local.execute(tool_call)
@@ -206,9 +204,7 @@ def _host_model_tools(manifest: HostToolManifest | None) -> tuple[ModelToolDefin
             description=tool.description,
             parameters={
                 "type": "object",
-                "properties": {
-                    key: dict(value) for key, value in tool.argument_properties.items()
-                },
+                "properties": {key: dict(value) for key, value in tool.argument_properties.items()},
                 "required": list(tool.required_arguments),
                 "additionalProperties": False,
             },

@@ -13,9 +13,7 @@ from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_integrations.model_errors import ModelProviderError
 
 
-def exception_attempt_result(
-    exc: Exception, metadata: dict[str, object]
-) -> HarnessAttemptResult:
+def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> HarnessAttemptResult:
     """Classify an unhandled exception into a terminal or recoverable result.
 
     CTX-ART-01: a capsule validation error that escapes the persistence
@@ -26,8 +24,7 @@ def exception_attempt_result(
         return HarnessAttemptResult(
             outcome=HarnessAttemptOutcome.SUSPENDED,
             summary=(
-                "context capsule validation failed; execution can continue "
-                "with a fresh context"
+                "context capsule validation failed; execution can continue with a fresh context"
             ),
             metadata={**metadata, "stop_reason": "context_recovery_required"},
         )
@@ -63,19 +60,15 @@ def error_metadata(
 ) -> dict[str, object]:
     """Build error metadata from an unhandled exception and execution context."""
     raw_error = str(exc).strip()
-    model_calls = (
-        getattr(clarification, "model_calls_used", None)
-        or getattr(continuation, "model_calls_used", None)
+    model_calls = getattr(clarification, "model_calls_used", None) or getattr(
+        continuation, "model_calls_used", None
     )
-    tool_calls = (
-        getattr(clarification, "tool_calls_executed", None)
-        or getattr(continuation, "tool_calls_executed", None)
+    tool_calls = getattr(clarification, "tool_calls_executed", None) or getattr(
+        continuation, "tool_calls_executed", None
     )
     error_type = type(exc).__name__
     response_repair_count = (
-        exc.response_repair_count
-        if isinstance(exc, ModelResponseRejectedError)
-        else 0
+        exc.response_repair_count if isinstance(exc, ModelResponseRejectedError) else 0
     )
     metadata: dict[str, object] = {
         "stop_reason": "model_execution_failed",

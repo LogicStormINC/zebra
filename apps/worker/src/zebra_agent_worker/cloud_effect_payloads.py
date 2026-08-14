@@ -217,9 +217,7 @@ def _request_artifact_id(
     root_session_id: SessionId,
     identity: EffectIdentity,
 ) -> ArtifactId:
-    return ArtifactId(
-        uuid5(UUID(str(root_session_id)), f"effect-request:{identity.ledger_key()}")
-    )
+    return ArtifactId(uuid5(UUID(str(root_session_id)), f"effect-request:{identity.ledger_key()}"))
 
 
 def _artifact_id(artifact_ref: str) -> ArtifactId:

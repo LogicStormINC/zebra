@@ -32,9 +32,7 @@ def build_runtime(
     if runtime_class is RuntimeClass.TRUSTED_LOCAL:
         return LocalRuntime(snapshot_root=runtime_root)
     engine = (
-        os_sandbox_engine()
-        if runtime_class is RuntimeClass.OS_SANDBOX
-        else settings.runtime.engine
+        os_sandbox_engine() if runtime_class is RuntimeClass.OS_SANDBOX else settings.runtime.engine
     )
     spec = SandboxSpec(
         runtime_class=runtime_class,

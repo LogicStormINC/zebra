@@ -8,6 +8,7 @@ from agent_core.ports.committed_event_publisher import CommittedEventPublisherPo
 from agent_core.ports.event_store import EventStorePort
 
 from agent_storage.composition import ControlPlaneStores
+from agent_storage.postgres_composition import PostgresControlPlaneStores
 
 
 class PostCommitPublishingEventStore(EventStorePort):
@@ -37,10 +38,10 @@ class PostCommitPublishingEventStore(EventStorePort):
         return self._event_store.read_since(session_id, sequence)
 
 
-def with_committed_event_publisher(
-    stores: ControlPlaneStores,
+def with_committed_event_publisher[StoreBundle: ControlPlaneStores | PostgresControlPlaneStores](
+    stores: StoreBundle,
     publisher: CommittedEventPublisherPort,
-) -> ControlPlaneStores:
+) -> StoreBundle:
     if isinstance(stores.events, PostCommitPublishingEventStore):
         return stores
     return replace(

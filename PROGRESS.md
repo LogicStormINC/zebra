@@ -5,15 +5,29 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-08-11`
-- `CLOUD-EFFECT-COMP-CLOSE-01` is in `Review` on
-  `codex/cloud-effect-comp-close-01` after explicit maintainer activation. It
-  is a narrow application-composition gate: default Cloud Worker Effect,
-  Artifact, Provider Continuation and governed Memory finalization plus API
-  handoff Effect reads. The focused local matrix is `21 passed, 22 skipped`
-  (the skipped PostgreSQL cases require `ZEBRA_TEST_POSTGRES_DSN`); changed-path
-  Ruff and diff checks pass. It does not make the API command-only or the
-  platform production-ready.
+- Snapshot date: `2026-08-14`
+- Maintainer batch closeout: the entire 2026-08-10 to 2026-08-12 cloudline
+  stack (`CLOUD-INTEGRATION-REG-01`, `CLOUD-TRN-NEXT-PLAN-01`, the three
+  `QA-CLOUDLINE` quality baselines, the three `ARCH-CONFIG` boundary cards,
+  `CLOUD-DEPLOY-PROFILE-CON/01`, the three `CLOUD-COMMAND` cards, the three
+  `CLOUD-LIVE` cards, `CLOUD-REC-PROD-CON/PG-PITR/S3`, `CLOUD-DEPLOY-HELM-01`,
+  `CLOUD-REAL-SVC-CI-01`, `CLOUD-K8S-GVISOR-E2E-01`, the `EMB-AUTH`,
+  `EMB-AGUI`, `EMB-HOST-GW` and `EMB-HOST-RUNTIME` cards) was fast-forward
+  merged into `zebra-cloud-trench` at `ca88aeba`, and the rebased
+  `CLOUD-EFFECT-COMP-CLOSE-01` implementation merged as `bbd6108d`. All of
+  these cards are recorded `Done`; per-card prose in
+  `docs/AGENT_TASKS.md` is preserved as historical evidence. The preserved
+  dirty-mainline handoff snapshot lives on
+  `codex/cloudline-worktree-snapshot`. `EMB-TRN-READ-E2E-01` remains
+  `In Progress` and fail-closed pending isolated cross-service inputs.
+- `CLOUD-EFFECT-COMP-CLOSE-01` is `Done` after maintainer activation and
+  rebase onto the merged cloudline. It is a narrow application-composition
+  gate: the default Cloud Worker now composes the typed
+  `CloudWorkerComposition` (Effect dispatch, projection transaction,
+  deployment namespace, cloud Artifact and Provider Continuation factories)
+  instead of an unsafe `ControlPlaneStores` cast, the API handoff reads the
+  narrow `EffectStateReadPort`, and cloud Memory finalization commits through
+  the governed aggregate. It does not make the platform production-ready.
 - `CLOUD-TRN-NEXT-PLAN-01` is in `Review` on
   `codex/cloud-trench-next-plan-01`, intentionally stacked after the regression
   fix. The inspected next-step plan is recorded in

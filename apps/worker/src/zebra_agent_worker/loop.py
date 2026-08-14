@@ -4,6 +4,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.projection_store import ProjectionStorePort
@@ -206,9 +207,7 @@ def build_worker_loop_service(
         active_artifact_factory = cloud_bundle.artifact_factory
         active_provider_factory: (
             Callable[[SessionId], CloudProviderContinuationCoordinator] | None
-        ) = (
-            cloud_bundle.provider_continuation_factory
-        )
+        ) = cloud_bundle.provider_continuation_factory
     else:
         from agent_storage import sqlite_control_plane_stores
 

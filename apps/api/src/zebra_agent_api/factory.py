@@ -41,15 +41,17 @@ def create_app(
     active_database_path = Path(database_path or active_settings.database_url)
     active_stores = stores
     live_event_fanout: LiveEventFanoutPort | None = None
+    composed_stores = None
     if active_stores is None and active_settings.storage_authority == "postgresql":
-        active_stores = compose_control_plane_stores(
+        composed_stores = compose_control_plane_stores(
             profile=active_settings.profile,
             storage_authority=active_settings.storage_authority,
             database_path=active_settings.database_url,
             cloud=cloud_composition,
         )
-    if effect_state is None and active_settings.storage_authority == "postgresql" and active_stores is not None:
-        effect_state = active_stores.effects
+        active_stores = composed_stores
+    if effect_state is None and composed_stores is not None:
+        effect_state = composed_stores.effects
     if active_stores is not None and active_settings.live_events.redis_url is not None:
         namespace = getattr(active_stores, "deployment_namespace", None)
         if namespace is None and active_settings.deployment == "local":

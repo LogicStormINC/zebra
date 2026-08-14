@@ -16,7 +16,11 @@ from agent_core.domain.host_authority import (
     HostResourceRef,
     HostTechnicalLimits,
 )
-from agent_storage import SQLiteArtifactPayloadStore, store_initial_text_attachments
+from agent_storage import (
+    LocalArtifactPayloadReader,
+    SQLiteArtifactPayloadStore,
+    store_initial_text_attachments,
+)
 from zebra_agent_worker.task_recovery import recover_task
 
 
@@ -55,7 +59,7 @@ def test_worker_recovers_only_captured_prompt_bytes(
         list(events),
         workspace=rebuild_workspace(list(events)),
         fallback_title="fallback",
-        attachment_store=SQLiteArtifactPayloadStore(database),
+        attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(database)),
     )
 
     assert len(recovered.attachments) == 1
@@ -116,7 +120,7 @@ def test_worker_reinjects_latest_durable_context_capsule(tmp_path: Path) -> None
         events,
         workspace=rebuild_workspace(events),
         fallback_title="fallback",
-        attachment_store=SQLiteArtifactPayloadStore(database),
+        attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(database)),
     )
 
     assert recovered.runtime_evidence[0].summary == "Finish the refactor"
@@ -145,7 +149,7 @@ def test_worker_recovery_carries_skill_components_snapshot(tmp_path: Path) -> No
         events,
         workspace=workspace,
         fallback_title="fallback",
-        attachment_store=SQLiteArtifactPayloadStore(database),
+        attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(database)),
     )
 
     assert recovered.skill_components == ("Review", "evidence")
@@ -181,7 +185,7 @@ def test_worker_recovery_restores_secret_free_host_context(tmp_path: Path) -> No
         list(bootstrap.events),
         workspace=rebuild_workspace(list(bootstrap.events)),
         fallback_title="fallback",
-        attachment_store=SQLiteArtifactPayloadStore(database),
+        attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(database)),
     )
 
     assert recovered.host_context == context

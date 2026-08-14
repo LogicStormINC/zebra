@@ -24,11 +24,7 @@ from agent_security import (
     resolve_effective_network_profile,
 )
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
-from zebra_agent_config import (
-    ZebraAgentSettings,
-    load_settings,
-    trusted_local_mode_enabled,
-)
+from zebra_agent_config import ZebraAgentSettings, load_settings, trusted_local_mode_enabled
 
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
 import zebra_agent_worker.runtime_setup as runtime_setup

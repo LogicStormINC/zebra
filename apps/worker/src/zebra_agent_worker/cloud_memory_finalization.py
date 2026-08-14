@@ -48,9 +48,7 @@ def finalize_cloud_memory(
         raise ValueError("cloud Memory finalization requires Worker mutation authority")
     session = recorder.session
     events = event_store.list_for_session(session.session_id)
-    confirmed = memory_store.list_for_worker(
-        _confirmed_repo_query(recorder), authority=authority
-    )
+    confirmed = memory_store.list_for_worker(_confirmed_repo_query(recorder), authority=authority)
     extraction = MemoryCandidateExtractionPlanner().plan(
         session=session,
         events=events,
