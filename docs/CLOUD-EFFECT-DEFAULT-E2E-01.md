@@ -54,20 +54,29 @@ skip，`ZEBRA_EFFECT_DEFAULT_E2E=PASS`（exit 0）。
 - 默认执行流在会话 Lease 下内联完成 schedule → execute → complete；
   `claim_fencing_token` 仅由独立分发消费通道（`claim_next`）填充，内联
   路径为 NULL 是预期行为，不是缺口。
-- **发现的恢复缺口（精确根因，2026-08-14 受控实验）**：批准续跑是一次
-  性交接。`recover_approved_continuation` 只接受
-  `requested + granted + 未开始执行` 状态；一旦出现
-  `TOOL_EXECUTION_STARTED`，任何后续 resume 都因
+- **已修复的楔死根因（2026-08-15）**：受控实验加编排器/提交双端插桩
+  把根因钉到 `DurableHarnessEventRecorder.accept_persisted_event`——
+  fenced guard 原子提交的事件经该方法同步时走了 legacy
+  `index_event`，而 cloud 的 Event-derived 投影适配器禁止 `upsert`
+  （`cloud tool runs are Event-derived; use fenced worker indexing`）。
+  异常在投影推进之前抛出，导致事件流领先投影行一个序列，finalize
+  写终态事件时触发
+  `session projection does not precede the canonical Event`，会话楔死
+  在 `running`，后续 resume 再被
   `approved tool continuation has uncertain prior execution state`
-  fail-closed（防副作用重放的正确防御）。但配套的进程内续跑在实验中
-  未完成：工具 `succeeded` 后 attempt 不再发起最终模型轮、不写任何
-  终态事件，会话楔死在 `running`；观察到双重 `TOOL_EXECUTION_STARTED`
-  事件（`mark_approved_continuation_started` 一枚 + 批执行器又一枚），
-  是隔离异常还是预期双记需 successor 确认。此外命令消费通道把失败
-  `skipped` 的 reason 吞在循环内部（不打日志），且命令事件随投影推进
-  变为不可重试。需要 successor 卡同时处理：批准续跑的 durable
-  checkpoint 化、孤儿 `running` 会话的恢复通道、以及命令消费失败的
-  可观测与重试语义。
+  fail-closed。修复让 `accept_persisted_event` 与 `append_event` 的
+  事务路径一致：先推进视图、经 `index_worker_event(authority=...)`
+  走 fenced 索引、再保存投影。回归测试固定该序列（cloud recorder 上
+  legacy upsert 必须不可达，投影必须前进）。
+- **修复后的完整链路（本机 rig 实测）**：批准 → resume 命令 → gVisor
+  真实副作用 → 最终模型轮 → `session_completed`（final answer）。
+  E2E 的 `side_effect_schedule_claim_complete` 断言已收紧为会话必须
+  `completed`；全矩阵保持 PASS。
+- **仍开放**：`recover_approved_continuation` 对已开始执行后的
+  fail-closed 是正确的防重放防御，但真正的进程内中途崩溃恢复（工具
+  执行中 Worker 死亡）仍无 durable checkpoint——与
+  `lease_loss_uncertain_reconcile` 故障注入同属一张 successor 卡。
+  命令消费失败 reason 仍不打日志（可观测性小项）。
 
 ## 复现
 

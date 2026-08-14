@@ -38,7 +38,13 @@ class Handler(BaseHTTPRequestHandler):
             ),
             None,
         )
-        wants_side_effect = SIDE_EFFECT_MARKER in user_prompt and command_tool is not None
+        has_tool_result = any(
+            isinstance(message, dict) and message.get("role") == "tool"
+            for message in body.get("messages", [])
+        )
+        wants_side_effect = (
+            SIDE_EFFECT_MARKER in user_prompt and not has_tool_result and command_tool is not None
+        )
         call_id = f"effect-e2e-call-{int(self.headers.get('X-Call-Seq', '0') or 0)}"
 
         self.send_response(200)

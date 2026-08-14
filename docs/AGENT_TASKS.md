@@ -401,14 +401,19 @@ aggregate without treating `PostgresControlPlaneStores` as local
   Effect read pass; the runner exits `BLOCKED` (2) with the execution tier
   skipped as `gvisor_engine_absent`.
 - Recorded findings: the inline execution path never populates outbox
-  `claim_fencing_token` (reserved for the dispatch-consumer lane); the
-  approved-continuation handoff is single-shot — after the approved tool
-  starts, any later resume fails closed on `uncertain prior execution
-  state` while the observed run never reached the final model turn,
-  leaving the session wedged in `running` (with a double
-  `TOOL_EXECUTION_STARTED` anomaly), and command-consumption failures are
-  swallowed without logs or retry. A successor card must make the
-  post-approval continuation durably checkpointed and resumable.
+  `claim_fencing_token` (reserved for the dispatch-consumer lane). The
+  2026-08-14 wedge was root-caused on 2026-08-15 and fixed:
+  `DurableHarnessEventRecorder.accept_persisted_event` sent guard-committed
+  events down the legacy `index_event` path whose cloud Event-derived
+  adapter forbids `upsert`, aborting projection advancement and wedging
+  finalization. The fix mirrors the transaction path (advance view, fenced
+  `index_worker_event`, save projections) with a regression test; the
+  approved side-effect session now reaches `completed` with a final model
+  turn on the rig, and the E2E asserts it. Still open on the successor
+  card: durable checkpointing for genuine mid-execution Worker death
+  (the post-start fail-closed resume defense stays), the
+  `lease_loss_uncertain_reconcile` fault-injection scenario, and
+  command-consumption failure logging.
 - Contract tests: `6 passed`; changed-path Ruff passes.
 - Explicit non-goals: the rig is test-only fixture evidence; Workspace
   Control Plane, multi-tenant isolation and production rollout remain

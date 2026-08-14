@@ -99,6 +99,7 @@ def scenario_side_effect(runner: Runner) -> dict[str, Any]:
         and proof.is_file()
         and proof.read_text() == PROOF_CONTENT
         and artifacts.get("finalized", 0) >= 2
+        and detail["session_status"] == "completed"
     )
     runner.record("side_effect_schedule_claim_complete", passed, detail)
     return detail

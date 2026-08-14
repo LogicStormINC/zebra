@@ -287,3 +287,84 @@ def test_recorder_rejects_partial_projection_transaction_configuration(
             worker_projection_transaction=transaction,
             worker_mutation_authority=authority,
         )
+
+
+def test_accept_persisted_event_uses_fenced_indexing_and_advances_projections() -> None:
+    """Cloud guard events must never reach the legacy upsert indexing path.
+
+    Regression for the approved-continuation wedge: accepting a guard-committed
+    TOOL_EXECUTION_COMPLETED through index_event raised the Event-derived
+    adapter's forbidden upsert before projections were saved, leaving the
+    event store ahead of the projection row and wedging the session.
+    """
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Fenced accept",
+            user_input="continue",
+            workspace_root=Path("/tmp/fenced-accept"),
+        )
+    )
+    workspace = rebuild_workspace(list(bootstrap.events))
+    model_store = Mock()
+    model_store.index_worker_event.return_value = None
+    tool_store = Mock()
+    tool_store.index_worker_event.return_value = None
+
+    def _forbidden_upsert(record):  # noqa: ANN001
+        raise AssertionError("legacy upsert must not be used on cloud recorders")
+
+    model_store.upsert.side_effect = _forbidden_upsert
+    tool_store.upsert.side_effect = _forbidden_upsert
+    event_store = Mock()
+    event_store.read_since.return_value = []
+    projection_store = Mock()
+    workspace_store = Mock()
+    transaction = Mock()
+    authority = WorkerMutationAuthority(
+        deployment_namespace="cloud-a",
+        session_id=bootstrap.session.session_id,
+        lease_fence=LeaseFence(
+            control_plane_epoch=uuid4(),
+            fencing_token=9,
+            owner_instance_id="worker-a",
+        ),
+        expected_stream_revision=bootstrap.session.current_sequence,
+    )
+    recorder = DurableHarnessEventRecorder(
+        session=bootstrap.session,
+        workspace=workspace,
+        event_store=event_store,
+        projection_store=projection_store,
+        workspace_store=workspace_store,
+        model_call_indexer=ModelCallIndexer(model_store),
+        tool_run_indexer=ToolRunIndexer(tool_store, None),
+        worker_projection_transaction=transaction,
+        worker_mutation_authority=authority,
+    )
+    completed = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=bootstrap.session.current_sequence + 1,
+        event_type=EventType.TOOL_EXECUTION_COMPLETED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "tool_name": "command.run",
+            "tool_call_id": str(uuid4()),
+            "status": "executed",
+            "output": "effect-e2e-proof",
+            "metadata": {},
+        },
+        created_at=datetime(2026, 8, 15, 0, 0, tzinfo=UTC),
+    )
+
+    accepted = recorder.accept_persisted_event(completed)
+
+    assert accepted == completed
+    model_store.upsert.assert_not_called()
+    tool_store.upsert.assert_not_called()
+    tool_store.index_worker_event.assert_called_once_with(completed, authority=authority)
+    transaction.commit_worker_event.assert_not_called()
+    saved_session = projection_store.save_session.call_args.args[0]
+    assert saved_session.current_sequence == completed.sequence
+    workspace_store.save_workspace.assert_called_once()
+    assert recorder.session.current_sequence == completed.sequence

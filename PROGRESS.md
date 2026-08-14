@@ -30,15 +30,20 @@
   `lease_loss_uncertain_reconcile` stays skipped pending a fault-injection
   design. Composition tier (no engine) still closes green with `BLOCKED`
   (2). Recorded findings: inline execution never populates outbox
-  `claim_fencing_token` (dispatch-consumer lane owns that); a controlled
-  live-worker experiment pinned the post-approval wedge precisely — the
-  approved tool executes once (`succeeded`), the in-process continuation
-  never issues the final model turn, the session stays `running` with no
-  terminal event, a double `TOOL_EXECUTION_STARTED` anomaly is visible,
-  and every later resume fails closed on `uncertain prior execution state`
-  while command-consumption failures are swallowed without logs. A
-  successor card must checkpoint the post-approval continuation durably
-  and make orphaned `running` sessions resumable. Previously: the repository now carries a fail-closed runner
+  `claim_fencing_token` (dispatch-consumer lane owns that). The
+  post-approval wedge was root-caused by an instrumented rig experiment
+  and fixed on 2026-08-15: `accept_persisted_event` drove guard-committed
+  events through the legacy `index_event`/`upsert` path that the cloud
+  Event-derived adapters forbid, aborting before projections advanced and
+  leaving the event store ahead of the projection row, which made every
+  terminal append conflict. The fix mirrors the recorder's transaction
+  path (advance the view, index through fenced `index_worker_event`,
+  save projections) and carries a regression test; the approved
+  side-effect session now completes with a final model turn on the rig
+  and the E2E matrix asserts it. The post-start fail-closed resume
+  defense intentionally stays; genuine mid-execution Worker death
+  checkpointing, the lease-loss fault-injection scenario and
+  command-consumption failure logging remain on the successor card. Previously: the repository now carries a fail-closed runner
   (`tests/compose/effect_default_e2e/`) that drives real PostgreSQL 17.5,
   MinIO, the committed API application object, the default Worker entrypoint
   and a provider-shaped OpenAI-compatible stub model. The composition
