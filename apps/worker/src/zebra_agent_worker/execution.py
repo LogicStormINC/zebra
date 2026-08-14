@@ -10,7 +10,6 @@ from agent_core.application import (
     SessionTitleService,
     attachment_refs_from_event,
 )
-from agent_core.domain.attempt_policy import TaskAttemptPolicy
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
@@ -69,7 +68,11 @@ from zebra_agent_worker.runtime_setup import (
     build_prepared_runtime,
     require_matching_runtime_authority,
 )
-from zebra_agent_worker.task_recovery import persisted_task_model_id, recover_task
+from zebra_agent_worker.task_recovery import (
+    persisted_task_model_id,
+    recover_task,
+    task_frozen_facts,
+)
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
 
@@ -179,6 +182,7 @@ class SessionExecutionService:
         )
         try:
             task_model_id = persisted_task_model_id([item.event for item in task_events])
+            task_facts = task_frozen_facts(task_events)
             task = recover_task(
                 session_events,
                 workspace=claimed.recovery.workspace,
@@ -191,6 +195,7 @@ class SessionExecutionService:
                     None if recovered_handoff is None else recovered_handoff.runtime_evidence
                 ),
                 task_model_id=task_model_id,
+                task_facts=task_facts,
             )
         except (FileNotFoundError, ValueError) as exc:
             self._claim_service.release_claim(claimed)
@@ -369,7 +374,6 @@ class SessionExecutionService:
             ),
         )
         coordinator = HostedAttemptCoordinator(
-            claim_service=self._claim_service,
             event_store=self._event_store,
             projection_store=self._projection_store,
             workspace_store=self._workspace_store,
@@ -398,13 +402,8 @@ class SessionExecutionService:
                 provider_continuation=provider_continuation,
                 session_events=session_events,
                 task_events=task_events,
-                policy=TaskAttemptPolicy(
-                    max_attempts=task.max_attempts,
-                    max_corrections_per_attempt=task.max_corrections_per_attempt,
-                    execution_profile_id=task.execution_profile_id,
-                    retryable_stop_reasons=task.retryable_stop_reasons,
-                ),
-                artifact_payload_store=self._artifact_payload_store,
+                policy=task_facts.policy,
+                segments=task_store.segments(task_record.task_id),
             )
         except Exception as exc:
             self._claim_service.release_claim(claimed)
@@ -430,7 +429,9 @@ class SessionExecutionService:
             attempt_result=attempt_result,
             memory_extraction_service=self._memory_extraction_service,
             memory_promotion_service=self._memory_promotion_service,
-            title_service=SessionTitleService(model_gateway),
+            title_service=(
+                None if task_facts.policy.max_attempts > 1 else SessionTitleService(model_gateway)
+            ),
             event_store=self._event_store,
             started_at=started_at,
             suspension_snapshot=outcome.suspension_snapshot,

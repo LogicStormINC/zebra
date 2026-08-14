@@ -1,20 +1,21 @@
-"""Hosted Worker outer attempt coordination (Wave 5 Phase 1).
+"""Hosted Worker outer attempt coordination (Wave 5 Phase 1 + Gate 1).
 
 Coordinates Attempt 1 -> Attempt 2 under one Stable Task for retryable
-failures and fails closed when the durable reconstruction is inconsistent
-(W5-DSH-01/02). Durable attempt-event helpers live in ``attempt_events`` and
-single-attempt execution in ``attempt_execution``.
+failures, reconstructs attempt state from the ordered Stable Task stream
+(epoch-scoped), persists stable start/outcome coordinates, and fails closed
+when the durable reconstruction is inconsistent (W5-DSH-01/02).
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+import sys
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from agent_core.domain.agent_tasks import AgentTask
+from agent_core.domain.agent_tasks import AgentTask, ExecutionSegment
 from agent_core.domain.attempt_policy import TaskAttemptPolicy
 from agent_core.domain.context_continuation import ProviderContinuationRef
-from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.harness import (
@@ -29,7 +30,6 @@ from agent_core.ports.runtime import RuntimeHandle, RuntimePort, RuntimeSnapshot
 from agent_runtime import FinosJournalProvider
 from agent_security import NetworkProfile
 from agent_storage import (
-    SQLiteArtifactPayloadStore,
     SQLiteContextLifecycleStore,
     SQLiteEventStore,
     SQLiteProjectionStore,
@@ -47,15 +47,26 @@ from zebra_agent_worker.approved_continuation import (
 from zebra_agent_worker.attempt_events import (
     AttemptReconstructionError,
     attempt_for,
+    derive_epoch_coordinates,
+    derive_plan_revision,
     durable_events,
+    durable_usage,
+    epoch_scoped_events,
     materialize_attempt_start,
     reconstruct_current_attempt,
     record_attempt_outcome,
+    remaining_budget,
     should_retry_attempt,
+    usage_int,
     validate_attempt_reconstruction,
 )
 from zebra_agent_worker.attempt_execution import run_single_attempt
-from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
+from zebra_agent_worker.attempt_recovery import (
+    _budget_blocked_result,
+    complete_terminal_after_outcome,
+    fail_closed,
+)
+from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.clarification_continuation import (
     ClarificationContinuation,
     ClarificationContinuationError,
@@ -89,7 +100,6 @@ class HostedAttemptCoordinator:
     def __init__(
         self,
         *,
-        claim_service: SessionClaimService,
         event_store: SQLiteEventStore,
         projection_store: SQLiteProjectionStore,
         workspace_store: SQLiteWorkspaceProjectionStore,
@@ -100,7 +110,6 @@ class HostedAttemptCoordinator:
         recovery_service: SessionRecoveryService,
         settings: ZebraAgentSettings,
     ) -> None:
-        self._claim_service = claim_service
         self._event_store = event_store
         self._projection_store = projection_store
         self._workspace_store = workspace_store
@@ -110,6 +119,7 @@ class HostedAttemptCoordinator:
         self._provider_continuation_store = provider_continuation_store
         self._recovery_service = recovery_service
         self._settings = settings
+        self._gateway_closed = False
 
     def run(
         self,
@@ -131,17 +141,12 @@ class HostedAttemptCoordinator:
         session_events: list[SessionEvent],
         task_events: tuple[TaskEvent, ...],
         policy: TaskAttemptPolicy,
-        artifact_payload_store: SQLiteArtifactPayloadStore,
+        segments: tuple[ExecutionSegment, ...],
     ) -> CoordinatorResult:
-        outcome: CoordinatorResult | None = None
+        self._gateway_closed = False
+        self._segments = segments
         try:
             continuation, clarification = self._recover_continuations(session_events)
-            claimed = self._mark_continuation_started(
-                claimed,
-                continuation=continuation,
-                clarification=clarification,
-                started_at=started_at,
-            )
             recorder = DurableHarnessEventRecorder(
                 session=claimed.recovery.session,
                 workspace=claimed.recovery.workspace,
@@ -151,10 +156,7 @@ class HostedAttemptCoordinator:
                 model_call_indexer=self._model_call_indexer,
                 tool_run_indexer=self._tool_run_indexer,
             )
-            plan_revision = 1 + sum(
-                1 for item in task_events if item.event.event_type is EventType.PLAN_UPDATED
-            )
-            outcome = self._coordinate(
+            return self._coordinate(
                 session_id=session_id,
                 started_at=started_at,
                 task=task,
@@ -170,24 +172,22 @@ class HostedAttemptCoordinator:
                 effective_network_profile=effective_network_profile,
                 provider_continuation=provider_continuation,
                 session_events=session_events,
+                task_events=task_events,
                 recorder=recorder,
                 continuation=continuation,
                 clarification=clarification,
-                plan_revision=plan_revision,
                 policy=policy,
-                artifact_payload_store=artifact_payload_store,
+                segments=segments,
             )
         finally:
-            cleanup_error = close_tool_gateway(tool_gateway)
-        assert outcome is not None
-        if cleanup_error is not None:
-            outcome = replace(
-                outcome,
-                attempt_result=runtime_cleanup_failure_result(
-                    cleanup_error, outcome.attempt_result
-                ),
-            )
-        return outcome
+            if not self._gateway_closed:
+                cleanup_error = close_tool_gateway(tool_gateway)
+                if cleanup_error is not None:
+                    active_exc = sys.exc_info()[1]
+                    if active_exc is not None:
+                        raise ValueError(
+                            f"{active_exc}; runtime cleanup failed: {cleanup_error}"
+                        ) from active_exc
 
     def _coordinate(
         self,
@@ -207,68 +207,156 @@ class HostedAttemptCoordinator:
         effective_network_profile: NetworkProfile,
         provider_continuation: ProviderContinuationRef | None,
         session_events: list[SessionEvent],
+        task_events: tuple[TaskEvent, ...],
         recorder: DurableHarnessEventRecorder,
         continuation: ApprovedContinuation | None,
         clarification: ClarificationContinuation | None,
-        plan_revision: int,
         policy: TaskAttemptPolicy,
-        artifact_payload_store: SQLiteArtifactPayloadStore,
+        segments: tuple[ExecutionSegment, ...],
     ) -> CoordinatorResult:
+        scoped = epoch_scoped_events(list(task_events), segments)
+        epoch_sequence, turn_id = derive_epoch_coordinates(list(task_events), segments)
         try:
-            current = reconstruct_current_attempt(session_events, policy)
-            if (continuation is not None or clarification is not None) and current != 1:
-                raise AttemptReconstructionError(
-                    "continuation requires the first attempt to be in flight"
-                )
+            current = reconstruct_current_attempt(scoped, policy)
+            # Validate the complete active-epoch chain (including in-flight
+            # model-step correlation) before dispatch AND terminal recovery.
+            validate_attempt_reconstruction(
+                scoped,
+                attempt_for(max(current, 1), started_at=started_at),
+                max_attempts=policy.max_attempts,
+                epoch_sequence=epoch_sequence,
+                turn_id=turn_id,
+            )
             if current == 0:
-                return self._complete_terminal_after_outcome(
+                terminal_result, terminal_attempt = complete_terminal_after_outcome(
                     recorder=recorder,
-                    session_events=session_events,
+                    scoped_events=scoped,
                     started_at=started_at,
+                    claimed=claimed,
+                    tool_gateway=tool_gateway,
+                    close_gateway=self._close_gateway,
+                )
+                return CoordinatorResult(
+                    attempt_result=terminal_result,
+                    suspension_snapshot=None,
+                    recorder=recorder,
+                    attempt=terminal_attempt,
                     claimed=claimed,
                 )
             attempt = attempt_for(current, started_at=started_at)
-            durable = durable_events(session_events, recorder)
-            materialize_attempt_start(recorder, attempt, durable, started_at=started_at)
-            validate_attempt_reconstruction(durable, attempt)
         except AttemptReconstructionError as exc:
-            return self._fail_closed(
+            closed_result, closed_attempt = fail_closed(
                 recorder=recorder,
-                session_events=session_events,
+                scoped_events=scoped,
                 started_at=started_at,
                 error=str(exc),
+                tool_gateway=tool_gateway,
+                close_gateway=self._close_gateway,
+                turn_id=turn_id,
+                epoch_sequence=epoch_sequence,
+            )
+            return CoordinatorResult(
+                attempt_result=closed_result,
+                suspension_snapshot=None,
+                recorder=recorder,
+                attempt=closed_attempt,
                 claimed=claimed,
             )
+        if continuation is not None or clarification is not None:
+            claimed = self._mark_continuation_started(
+                claimed,
+                continuation=continuation,
+                clarification=clarification,
+                started_at=started_at,
+                attempt=attempt if policy.max_attempts > 1 else None,
+            )
+
+        def plan_revision_provider() -> int:
+            return derive_plan_revision([*scoped, *recorder.events])
 
         attempt_result: HarnessAttemptResult | None = None
         suspension_snapshot: RuntimeSnapshot | None = None
+        model_calls_used, tool_calls_used = durable_usage([*scoped, *recorder.events])
         while True:
-            durable = durable_events(session_events, recorder)
-            materialize_attempt_start(recorder, attempt, durable, started_at=attempt.started_at)
-            validate_attempt_reconstruction(durable, attempt)
-            attempt_result, suspension_snapshot = run_single_attempt(
-                session_id=session_id,
-                attempt=attempt,
-                recorder=recorder,
-                task=task,
-                task_record=task_record,
-                base_context=base_context,
-                model_gateway=model_gateway,
-                tool_gateway=tool_gateway,
-                runtime=runtime,
-                runtime_handle=runtime_handle,
-                finos_journal_provider=finos_journal_provider,
-                trusted_local=trusted_local,
-                effective_network_profile=effective_network_profile,
-                provider_continuation=provider_continuation,
-                continuation=continuation,
-                clarification=clarification,
-                plan_revision=plan_revision,
-                event_store=self._event_store,
-                context_lifecycle_store=self._context_lifecycle_store,
-                provider_continuation_store=self._provider_continuation_store,
-                settings=self._settings,
+            budget_blocked = _budget_blocked_result(
+                attempt,
+                model_calls_used,
+                tool_calls_used,
+                task.max_model_calls,
+                task.max_tool_calls,
             )
+            if budget_blocked is not None:
+                # Frozen Task budget is spent: terminalize deterministically
+                # with zero provider calls (never an endless suspend cycle).
+                attempt_result = budget_blocked
+                suspension_snapshot = None
+            else:
+                try:
+                    durable = durable_events(scoped, recorder)
+                    # Validate the complete existing chain BEFORE materializing
+                    # any missing start so a corrupt chain is never extended.
+                    validate_attempt_reconstruction(
+                        durable,
+                        attempt,
+                        max_attempts=policy.max_attempts,
+                        epoch_sequence=epoch_sequence,
+                        turn_id=turn_id,
+                    )
+                    materialize_attempt_start(
+                        recorder,
+                        attempt,
+                        durable,
+                        started_at=attempt.started_at,
+                        turn_id=turn_id,
+                        epoch_sequence=epoch_sequence,
+                    )
+                except AttemptReconstructionError as exc:
+                    attempt_result, attempt = fail_closed(
+                        recorder=recorder,
+                        scoped_events=scoped,
+                        started_at=started_at,
+                        error=str(exc),
+                        tool_gateway=tool_gateway,
+                        close_gateway=self._close_gateway,
+                        turn_id=turn_id,
+                        epoch_sequence=epoch_sequence,
+                    )
+                    return CoordinatorResult(
+                        attempt_result=attempt_result,
+                        suspension_snapshot=None,
+                        recorder=recorder,
+                        attempt=attempt,
+                        claimed=claimed,
+                    )
+                attempt_result, suspension_snapshot = run_single_attempt(
+                    session_id=session_id,
+                    attempt=attempt,
+                    recorder=recorder,
+                    task=task,
+                    task_record=task_record,
+                    base_context=base_context,
+                    model_gateway=model_gateway,
+                    tool_gateway=tool_gateway,
+                    runtime=runtime,
+                    runtime_handle=runtime_handle,
+                    finos_journal_provider=finos_journal_provider,
+                    trusted_local=trusted_local,
+                    effective_network_profile=effective_network_profile,
+                    provider_continuation=provider_continuation,
+                    continuation=continuation,
+                    clarification=clarification,
+                    plan_revision_provider=plan_revision_provider,
+                    remaining_model_calls=remaining_budget(task.max_model_calls, model_calls_used),
+                    remaining_tool_calls=remaining_budget(task.max_tool_calls, tool_calls_used),
+                    scoped_events=scoped,
+                    segments=segments,
+                    task_events=task_events,
+                    guarded=policy.max_attempts > 1,
+                    event_store=self._event_store,
+                    context_lifecycle_store=self._context_lifecycle_store,
+                    provider_continuation_store=self._provider_continuation_store,
+                    settings=self._settings,
+                )
             continuation = None
             clarification = None
             if recorder.session.status in {
@@ -276,27 +364,49 @@ class HostedAttemptCoordinator:
                 SessionStatus.COMPLETED,
                 SessionStatus.FAILED,
             }:
-                # External durable control terminalized the Task mid-attempt
-                # (e.g. cancel); stop without an attempt outcome record.
                 break
-            retry_scheduled = should_retry_attempt(policy, attempt_result, attempt.number)
-            if attempt_result.outcome in {
-                HarnessAttemptOutcome.COMPLETED,
-                HarnessAttemptOutcome.FAILED,
-            }:
-                # Paused states (waiting approval/input, suspended) are not
-                # attempt outcomes: continuation/suspension recovery resumes
-                # the same attempt from the durable stream.
+            model_calls_used += usage_int(attempt_result.metadata, "model_calls_used", 1)
+            tool_calls_used += usage_int(attempt_result.metadata, "tool_calls_executed", 0)
+            retry_scheduled = should_retry_attempt(
+                policy,
+                attempt_result,
+                attempt.number,
+                model_calls_used=model_calls_used,
+                tool_calls_used=tool_calls_used,
+                max_model_calls=task.max_model_calls,
+                max_tool_calls=task.max_tool_calls,
+            )
+            if retry_scheduled:
                 record_attempt_outcome(
                     recorder,
                     attempt=attempt,
                     result=attempt_result,
                     ended_at=datetime.now(UTC),
-                    retry_scheduled=retry_scheduled,
+                    retry_scheduled=True,
+                    turn_id=turn_id,
+                    epoch_sequence=epoch_sequence,
                 )
-            if not retry_scheduled:
-                break
-            attempt = attempt_for(attempt.number + 1, started_at=datetime.now(UTC))
+                attempt = attempt_for(attempt.number + 1, started_at=datetime.now(UTC))
+                continue
+            cleanup_error = self._close_gateway(tool_gateway)
+            if cleanup_error is not None:
+                attempt_result = runtime_cleanup_failure_result(cleanup_error, attempt_result)
+            paused = attempt_result.outcome in {
+                HarnessAttemptOutcome.WAITING_APPROVAL,
+                HarnessAttemptOutcome.WAITING_INPUT,
+                HarnessAttemptOutcome.SUSPENDED,
+            }
+            if not paused or cleanup_error is not None:
+                record_attempt_outcome(
+                    recorder,
+                    attempt=attempt,
+                    result=attempt_result,
+                    ended_at=datetime.now(UTC),
+                    retry_scheduled=False,
+                    turn_id=turn_id,
+                    epoch_sequence=epoch_sequence,
+                )
+            break
         assert attempt_result is not None
         return CoordinatorResult(
             attempt_result=attempt_result,
@@ -330,6 +440,7 @@ class HostedAttemptCoordinator:
         continuation: ApprovedContinuation | None,
         clarification: ClarificationContinuation | None,
         started_at: datetime,
+        attempt: HarnessAttempt | None,
     ) -> ClaimedSession:
         if continuation is not None:
             return mark_approved_continuation_started(
@@ -339,6 +450,7 @@ class HostedAttemptCoordinator:
                 tool_name=continuation.tool_call.name,
                 tool_call_id=str(continuation.tool_call.tool_call_id),
                 started_at=started_at,
+                attempt=attempt,
             )
         if clarification is not None:
             return mark_clarification_continuation_started(
@@ -347,88 +459,10 @@ class HostedAttemptCoordinator:
                 recovery_service=self._recovery_service,
                 clarification_id=str(clarification.tool_call.tool_call_id),
                 started_at=started_at,
+                attempt=attempt,
             )
         return claimed
 
-    def _complete_terminal_after_outcome(
-        self,
-        *,
-        recorder: DurableHarnessEventRecorder,
-        session_events: list[SessionEvent],
-        started_at: datetime,
-        claimed: ClaimedSession,
-    ) -> CoordinatorResult:
-        """Crash between a non-retriable/exhausted outcome and Task terminal:
-        synthesize the missing terminal without dispatching anything."""
-        outcomes = [
-            event
-            for event in session_events
-            if event.event_type is EventType.ATTEMPT_OUTCOME_RECORDED
-        ]
-        last = outcomes[-1]
-        attempt = attempt_for(int(last.payload["attempt_sequence"]), started_at=started_at)
-        attempt_result = HarnessAttemptResult(
-            outcome=HarnessAttemptOutcome.FAILED,
-            summary="attempt policy exhausted before terminal commit",
-            metadata={
-                "stop_reason": last.payload["terminal_reason"],
-                "attempt_id": last.payload["attempt_id"],
-            },
-        )
-        return CoordinatorResult(
-            attempt_result=attempt_result,
-            suspension_snapshot=None,
-            recorder=recorder,
-            attempt=attempt,
-            claimed=claimed,
-        )
-
-    def _fail_closed(
-        self,
-        *,
-        recorder: DurableHarnessEventRecorder,
-        session_events: list[SessionEvent],
-        started_at: datetime,
-        error: str,
-        claimed: ClaimedSession,
-    ) -> CoordinatorResult:
-        """Inconsistent durable reconstruction: record the attempt outcome and
-        terminalize without ever calling the model gateway."""
-        starts = [
-            event
-            for event in session_events
-            if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
-        ]
-        sequence = (
-            int(starts[-1].payload.get("attempt_sequence") or starts[-1].payload["attempt_number"])
-            if starts
-            else 1
-        )
-        attempt = attempt_for(sequence, started_at=started_at)
-        durable = durable_events(session_events, recorder)
-        materialize_attempt_start(recorder, attempt, durable, started_at=started_at)
-        record_attempt_outcome(
-            recorder,
-            attempt=attempt,
-            result=HarnessAttemptResult(
-                outcome=HarnessAttemptOutcome.FAILED,
-                summary="attempt reconstruction failed closed",
-                metadata={"stop_reason": "attempt_reconstruction_invalid"},
-            ),
-            ended_at=datetime.now(UTC),
-            retry_scheduled=False,
-        )
-        return CoordinatorResult(
-            attempt_result=HarnessAttemptResult(
-                outcome=HarnessAttemptOutcome.FAILED,
-                summary="attempt reconstruction failed closed",
-                metadata={
-                    "stop_reason": "attempt_reconstruction_invalid",
-                    "error_message": error,
-                },
-            ),
-            suspension_snapshot=None,
-            recorder=recorder,
-            attempt=attempt,
-            claimed=claimed,
-        )
+    def _close_gateway(self, tool_gateway: EffectGuardedToolGateway) -> Exception | None:
+        self._gateway_closed = True
+        return close_tool_gateway(tool_gateway)

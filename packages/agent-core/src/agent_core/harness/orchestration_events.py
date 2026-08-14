@@ -2,11 +2,38 @@ from collections.abc import Mapping
 
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
-from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.modeling import ModelCompletion, ModelContextWindow
 from agent_core.domain.policies import PolicyDecision
 from agent_core.domain.tools import ToolCall
+from agent_core.harness.context_window import ContextWindowPlan
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports.conversation_compactor import ConversationCompactionResult
+
+
+def model_request_started_payload(
+    *,
+    attempt_number: int,
+    model_call_id: str,
+    plan: ContextWindowPlan,
+    window: ModelContextWindow,
+    reconstruction_fields: Mapping[str, object] | None = None,
+) -> dict[str, object]:
+    return {
+        "attempt_number": attempt_number,
+        "model_call_id": model_call_id,
+        "estimated_input_tokens": plan.estimated_input_tokens,
+        "input_token_limit": plan.input_token_limit,
+        "model_profile": plan.profile_name,
+        "token_estimate_method": plan.estimate_method,
+        "token_breakdown": plan.token_breakdown,
+        "reserves": {
+            "output": window.max_output_tokens,
+            "reasoning": window.reasoning_reserve_tokens,
+            "compaction": window.compaction_reserve_tokens,
+            "protocol_and_emergency": window.protocol_reserve_tokens,
+        },
+        **(dict(reconstruction_fields) if reconstruction_fields else {}),
+    }
 
 
 def model_response_event(
@@ -117,6 +144,16 @@ def policy_decision_payload(
     return payload
 
 
+def tool_call_provider_payload(tool_call: ToolCall) -> dict[str, object]:
+    payload: dict[str, object] = {}
+    if tool_call.provider_call_id is not None:
+        payload["provider_call_id"] = tool_call.provider_call_id
+    if tool_call.provider_tool_name is not None:
+        payload["provider_tool_name"] = tool_call.provider_tool_name
+        payload["provider_arguments"] = tool_call.provider_arguments or {}
+    return payload
+
+
 def approval_requested_payload(
     *,
     attempt_number: int,
@@ -148,11 +185,7 @@ def approval_requested_payload(
         payload["remaining_tool_calls"] = [
             call.model_dump(mode="json") for call in remaining_tool_calls
         ]
-    if tool_call.provider_call_id is not None:
-        payload["provider_call_id"] = tool_call.provider_call_id
-    if tool_call.provider_tool_name is not None:
-        payload["provider_tool_name"] = tool_call.provider_tool_name
-        payload["provider_arguments"] = tool_call.provider_arguments or {}
+    payload.update(tool_call_provider_payload(tool_call))
     _extend_proxy_policy_payload(payload, decision)
     return payload
 

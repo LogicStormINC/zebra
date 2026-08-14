@@ -14,6 +14,8 @@ class HarnessAttemptStartedPayload(BaseModel):
     attempt_sequence: int | None = Field(default=None, gt=0)
     started_at: str | None = None
     causal_attempt_id: str | None = None
+    turn_id: str | None = None
+    epoch_sequence: int | None = Field(default=None, ge=0)
     clarification_continuation: bool | None = None
     clarification_id: str | None = None
 
@@ -38,6 +40,10 @@ class AttemptOutcomeRecordedPayload(BaseModel):
     terminal_reason: str
     retry_scheduled: bool = False
     next_attempt_sequence: int | None = Field(default=None, gt=0)
+    summary: str | None = None
+    result_metadata: dict[str, object] | None = None
+    turn_id: str | None = None
+    epoch_sequence: int | None = Field(default=None, ge=0)
 
     @field_validator("attempt_id", "outcome", "ended_at", "terminal_reason")
     @classmethod
@@ -45,6 +51,27 @@ class AttemptOutcomeRecordedPayload(BaseModel):
         stripped = value.strip()
         if not stripped:
             raise ValueError("attempt outcome text must not be blank")
+        return stripped
+
+
+class AttemptContinuationStartedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_id: str
+    attempt_sequence: int = Field(gt=0)
+    continuation_kind: str
+    continuation_id: str
+
+    @field_validator(
+        "attempt_id",
+        "continuation_kind",
+        "continuation_id",
+    )
+    @classmethod
+    def ensure_continuation_text_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("attempt continuation text must not be blank")
         return stripped
 
 
@@ -73,6 +100,7 @@ class ModelRequestStartedPayload(BaseModel):
     system_prompt_digest: str | None = None
     tool_schema_digest: str | None = None
     model_config_digest: str | None = None
+    invocation_policy_digest: str | None = None
 
     @field_validator("model_call_id", "model_profile", "token_estimate_method")
     @classmethod
@@ -94,6 +122,7 @@ class ModelRequestStartedPayload(BaseModel):
         "system_prompt_digest",
         "tool_schema_digest",
         "model_config_digest",
+        "invocation_policy_digest",
     )
     @classmethod
     def ensure_reconstruction_text_not_blank(cls, value: str | None) -> str | None:
@@ -104,6 +133,23 @@ class ModelRequestStartedPayload(BaseModel):
             raise ValueError("reconstruction coordinate text must not be blank")
         if len(stripped) > 128:
             raise ValueError("reconstruction coordinate text is too long")
+        return stripped
+
+    @field_validator(
+        "resource_manifest_digest",
+        "messages_digest",
+        "system_prompt_digest",
+        "tool_schema_digest",
+        "model_config_digest",
+        "invocation_policy_digest",
+    )
+    @classmethod
+    def ensure_reconstruction_digest_shape(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", stripped):
+            raise ValueError("reconstruction digests must use the sha256:<64 hex> envelope")
         return stripped
 
     @field_validator("token_breakdown", "reserves")

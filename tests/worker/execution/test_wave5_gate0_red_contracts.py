@@ -79,6 +79,9 @@ def _seed_session(
 class _ExplodingGateway:
     """Provider that fails deterministically with a generic transport error."""
 
+    provider = "test"
+    model_name = "test-model"
+
     def complete(self, messages, *, tools=()):
         raise RuntimeError("provider transport exploded")
 
@@ -164,7 +167,12 @@ def test_r2_harness_loop_starts_attempt_2_after_evidence_correction_failure() ->
     assert result.run_result.attempts_used == 2
 
 
-# R3: a retryable-failed session must be resumable as Attempt 2.
+# R3: a retryable-failed session (crash window after the Attempt-1 outcome)
+# must be claimable/resumable and continue as Attempt 2 under the same
+# Stable Task. Phase 1 coordinates Attempt 1 -> Attempt 2 in one lease for
+# the live path (R1), so the resume contract is exercised at the durable
+# outcome boundary: a retry_scheduled outcome with no Task terminal must be
+# resumed as Attempt 2, never as a duplicate Attempt 1.
 def test_r3_retryable_failed_session_resumes_as_attempt_2(
     tmp_path: Path,
     monkeypatch,
@@ -172,19 +180,56 @@ def test_r3_retryable_failed_session_resumes_as_attempt_2(
     database_path = tmp_path / "wave5-r3.db"
     bootstrap = _seed_session(database_path, tmp_path, max_attempts=2)
     session_id = bootstrap.session.session_id
+    epoch_turn = f"turn:{bootstrap.events[1].event_id}"
+    event_store = SQLiteEventStore(database_path)
+    durable = (
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=3,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={
+                "attempt_number": 1,
+                "attempt_id": "attempt-1",
+                "attempt_sequence": 1,
+                "started_at": _created_at().isoformat(),
+                "turn_id": epoch_turn,
+                "epoch_sequence": 0,
+            },
+            created_at=_created_at(),
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=4,
+            event_type=EventType.ATTEMPT_OUTCOME_RECORDED,
+            actor=EventActor.HARNESS,
+            payload={
+                "attempt_id": "attempt-1",
+                "attempt_sequence": 1,
+                "outcome": "failed",
+                "ended_at": _created_at().isoformat(),
+                "terminal_reason": "model_execution_failed",
+                "retry_scheduled": True,
+                "next_attempt_sequence": 2,
+                "turn_id": epoch_turn,
+                "epoch_sequence": 0,
+            },
+            created_at=_created_at(),
+        ),
+    )
+    session = bootstrap.session
+    for event in durable:
+        event_store.append(event)
+        session = apply_event(session, event)
+    SQLiteProjectionStore(database_path).save_session(session)
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
         lambda settings: _ExplodingGateway(),
     )
-    _build_execution_service(database_path).execute_session(
-        session_id,
-        worker_id="wave5-red-r3",
-        executed_at=_created_at(),
-    )
     claim_service = SessionClaimService(
         SQLiteLeaseStore(database_path),
         SessionRecoveryService(
-            SQLiteEventStore(database_path),
+            event_store,
             SQLiteProjectionStore(database_path),
             SQLiteWorkspaceProjectionStore(database_path),
         ),
@@ -198,6 +243,14 @@ def test_r3_retryable_failed_session_resumes_as_attempt_2(
     )
 
     assert resumed.claimed is not None
+    _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="wave5-red-r3-resume",
+        executed_at=_created_at(),
+    )
+    events = event_store.list_for_session(session_id)
+    started = [event for event in events if event.event_type is EventType.HARNESS_ATTEMPT_STARTED]
+    assert [event.payload["attempt_sequence"] for event in started] == [1, 2]
 
 
 # R4 (W5-DSH-02): durable attempt coordinates checked at the existing
@@ -237,9 +290,6 @@ def test_r4_attempt_outcome_record_is_separate_from_task_terminal(
     )
     events = SQLiteEventStore(database_path).list_for_session(session_id)
     task_terminal_types = {EventType.SESSION_COMPLETED, EventType.SESSION_FAILED}
-    # A retriable Attempt 1 failure must not terminalize the Stable Task
-    # while an attempt remains (max_attempts=2).
-    assert not any(event.event_type in task_terminal_types for event in events)
     # The attempt outcome lives in a durable record separate from Task
     # terminal, carrying identity/ended time/terminal reason; its exact
     # type/storage shape is not prescribed.
@@ -254,6 +304,13 @@ def test_r4_attempt_outcome_record_is_separate_from_task_terminal(
     assert outcomes
     started = [event for event in events if event.event_type is EventType.HARNESS_ATTEMPT_STARTED]
     assert outcomes[0].payload["attempt_id"] == started[0].payload["attempt_id"]
+    # Task terminal occurs only after the accepted/exhausted final attempt:
+    # the retryable Attempt 1 outcome must not terminalize the Stable Task,
+    # and the exhausted Attempt 2 outcome precedes the single SESSION_FAILED.
+    terminal = [event for event in events if event.event_type in task_terminal_types]
+    assert len(terminal) == 1
+    assert events.index(terminal[0]) > events.index(outcomes[-1])
+    assert terminal[0].payload["attempt_number"] == 2
 
 
 # R5 (W5-DSH-01): behavioral fail-closed at the real dispatch seam - when the
@@ -282,6 +339,9 @@ def test_r5_dispatch_fails_closed_on_reconstruction_mismatch(
     calls: list[str] = []
 
     class _RecordingGateway:
+        provider = "test"
+        model_name = "test-model"
+
         def complete(self, messages, *, tools=()):
             calls.append("complete")
             raise AssertionError("dispatch must fail closed before gateway call")

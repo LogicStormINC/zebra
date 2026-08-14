@@ -53,7 +53,9 @@ class SessionBootstrapCommand:
             max_corrections_per_attempt=self.max_corrections_per_attempt,
             execution_profile_id=self.execution_profile_id,
             retryable_stop_reasons=(
-                self.retryable_stop_reasons or TaskAttemptPolicy().retryable_stop_reasons
+                self.retryable_stop_reasons
+                if self.retryable_stop_reasons is not None
+                else TaskAttemptPolicy().retryable_stop_reasons
             ),
         )
 
@@ -164,7 +166,9 @@ class SessionBootstrapService:
                         else {}
                     ),
                     "retryable_stop_reasons": list(
-                        command.retryable_stop_reasons or TaskAttemptPolicy().retryable_stop_reasons
+                        command.retryable_stop_reasons
+                        if command.retryable_stop_reasons is not None
+                        else TaskAttemptPolicy().retryable_stop_reasons
                     ),
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,

@@ -17,6 +17,7 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
 )
 from agent_core.harness.context_window import ContextWindowPlan, plan_context_window
+from agent_core.harness.reconstruction import RequestReconstruction
 from agent_core.ports.model_gateway import (
     ModelContextWindowPort,
     ModelGatewayPort,
@@ -94,6 +95,10 @@ def complete_model(
     on_delta: Callable[[str, ModelTextDelta], None],
     response_repair_limit: int = _MODEL_RESPONSE_REPAIR_LIMIT,
     invocation_policy: ModelInvocationPolicy | None = None,
+    reconstruction: RequestReconstruction | None = None,
+    step_kind: str = "initial",
+    allow_tools: bool = True,
+    required_tool_names: tuple[str, ...] = (),
 ) -> ModelCompletion:
     if not 0 <= response_repair_limit <= _MODEL_RESPONSE_REPAIR_LIMIT:
         raise ValueError("response_repair_limit must be zero or one")
@@ -117,10 +122,21 @@ def complete_model(
 
     while True:
         attempt_deltas.clear()
-        try:
-            streaming = invocation_policy is None and isinstance(
-                gateway, StreamingModelGatewayPort
+        if reconstruction is not None:
+            # W5-DSH-01: every actual provider envelope (including repaired
+            # and fallback dispatches) is checked before the provider call.
+            reconstruction.verify(
+                request_messages,
+                tools,
+                media_inputs=media_inputs,
+                gateway=gateway,
+                invocation_policy=invocation_policy,
+                step_kind=step_kind,
+                allow_tools=allow_tools,
+                required_tool_names=required_tool_names,
             )
+        try:
+            streaming = invocation_policy is None and isinstance(gateway, StreamingModelGatewayPort)
             _validate_media_request(
                 gateway,
                 media_inputs,

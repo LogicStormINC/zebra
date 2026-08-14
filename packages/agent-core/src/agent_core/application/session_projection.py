@@ -94,6 +94,8 @@ def _next_status_for_event(event: SessionEvent) -> SessionStatus | None:
     status_map: dict[EventType, SessionStatus] = {
         EventType.TASK_PREPARED: SessionStatus.READY,
         EventType.HARNESS_ATTEMPT_STARTED: SessionStatus.RUNNING,
+        EventType.ATTEMPT_CONTINUATION_STARTED: SessionStatus.RUNNING,
+        EventType.ATTEMPT_OUTCOME_RECORDED: SessionStatus.RUNNING,
         EventType.MODEL_REQUEST_STARTED: SessionStatus.RUNNING,
         EventType.MODEL_RESPONSE_DELTA: SessionStatus.RUNNING,
         EventType.PLAN_PROPOSED: SessionStatus.RUNNING,

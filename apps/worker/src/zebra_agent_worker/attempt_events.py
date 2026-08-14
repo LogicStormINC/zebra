@@ -1,15 +1,18 @@
-"""Durable attempt event helpers (Wave 5 Phase 1).
+"""Durable attempt event helpers (Wave 5 Phase 1 + Gate 1).
 
-Stable start/outcome coordinates and reconstruction rules for the Hosted
-Worker outer attempt loop. These helpers only read/write durable events;
-coordination policy lives in ``attempt_coordinator``.
+Stable start/outcome coordinates, usage accounting and retry decisions for
+the Hosted Worker outer attempt loop. Chain validation and epoch scoping live
+in ``attempt_chain``; coordination policy lives in ``attempt_coordinator``.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
 
-from agent_core.domain.attempt_policy import TaskAttemptPolicy
+from agent_core.domain.attempt_policy import (
+    ABSOLUTE_NON_RETRYABLE_STOP_REASONS,
+    TaskAttemptPolicy,
+)
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.harness import (
     HarnessAttempt,
@@ -17,11 +20,37 @@ from agent_core.harness import (
     HarnessAttemptResult,
 )
 
+from zebra_agent_worker.attempt_chain import (
+    AttemptReconstructionError,
+    derive_epoch_coordinates,
+    derive_turn_id,
+    durable_usage,
+    epoch_scoped_events,
+    mirror_attempt_messages,
+    remaining_budget,
+    usage_int,
+    validate_attempt_reconstruction,
+)
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 
-
-class AttemptReconstructionError(ValueError):
-    """The durable attempt stream cannot be reconstructed safely."""
+__all__ = [
+    "AttemptReconstructionError",
+    "attempt_for",
+    "derive_epoch_coordinates",
+    "derive_plan_revision",
+    "derive_turn_id",
+    "durable_events",
+    "durable_usage",
+    "epoch_scoped_events",
+    "materialize_attempt_start",
+    "mirror_attempt_messages",
+    "reconstruct_current_attempt",
+    "record_attempt_outcome",
+    "remaining_budget",
+    "should_retry_attempt",
+    "usage_int",
+    "validate_attempt_reconstruction",
+]
 
 
 def reconstruct_current_attempt(
@@ -50,34 +79,18 @@ def reconstruct_current_attempt(
     return 1
 
 
-def validate_attempt_reconstruction(
-    session_events: list[SessionEvent],
-    attempt: HarnessAttempt,
-) -> None:
-    """Causal-chain validation: attempt N requires a retriable outcome N-1."""
-    if attempt.number == 1:
-        return
-    previous = next(
-        (
-            event
-            for event in _outcome_events(session_events)
-            if int(event.payload["attempt_sequence"]) == attempt.number - 1
-        ),
-        None,
-    )
-    if previous is None or not previous.payload.get("retry_scheduled"):
-        raise AttemptReconstructionError(f"attempt {attempt.number} has no retriable prior outcome")
-
-
 def materialize_attempt_start(
     recorder: DurableHarnessEventRecorder,
     attempt: HarnessAttempt,
     session_events: list[SessionEvent],
     *,
     started_at: datetime,
-) -> None:
+    turn_id: str,
+    epoch_sequence: int,
+) -> bool:
     """Record the authoritative start only when missing or legacy (no stable
-    identity yet), so crash recovery never duplicates a start."""
+    identity yet), so crash recovery never duplicates a start. Returns True
+    when a fresh start was recorded."""
     existing = [
         event
         for event in session_events
@@ -85,7 +98,7 @@ def materialize_attempt_start(
         and event.payload.get("attempt_sequence") == attempt.number
     ]
     if existing and existing[-1].payload.get("attempt_id"):
-        return
+        return False
     recorder.append(
         EventType.HARNESS_ATTEMPT_STARTED,
         EventActor.HARNESS,
@@ -95,9 +108,12 @@ def materialize_attempt_start(
             "attempt_sequence": attempt.number,
             "started_at": started_at.isoformat(),
             "causal_attempt_id": attempt.causal_attempt_id,
+            "turn_id": turn_id,
+            "epoch_sequence": epoch_sequence,
         },
         created_at=started_at,
     )
+    return True
 
 
 def record_attempt_outcome(
@@ -107,7 +123,11 @@ def record_attempt_outcome(
     result: HarnessAttemptResult,
     ended_at: datetime,
     retry_scheduled: bool,
+    turn_id: str,
+    epoch_sequence: int,
 ) -> None:
+    model_calls_used = usage_int(result.metadata, "model_calls_used", 1)
+    tool_calls_used = usage_int(result.metadata, "tool_calls_executed", 0)
     recorder.append(
         EventType.ATTEMPT_OUTCOME_RECORDED,
         EventActor.HARNESS,
@@ -119,6 +139,14 @@ def record_attempt_outcome(
             "terminal_reason": str(result.metadata.get("stop_reason", "unknown")),
             "retry_scheduled": retry_scheduled,
             "next_attempt_sequence": attempt.number + 1 if retry_scheduled else None,
+            "summary": result.summary,
+            "turn_id": turn_id,
+            "epoch_sequence": epoch_sequence,
+            "result_metadata": {
+                "stop_reason": str(result.metadata.get("stop_reason", "unknown")),
+                "model_calls_used": model_calls_used,
+                "tool_calls_executed": tool_calls_used,
+            },
         },
         created_at=ended_at,
     )
@@ -128,13 +156,33 @@ def should_retry_attempt(
     policy: TaskAttemptPolicy,
     result: HarnessAttemptResult,
     attempts_used: int,
+    *,
+    model_calls_used: int,
+    tool_calls_used: int,
+    max_model_calls: int | None,
+    max_tool_calls: int | None,
 ) -> bool:
     if result.outcome is not HarnessAttemptOutcome.FAILED:
         return False
     reason = result.metadata.get("stop_reason")
-    if not isinstance(reason, str) or reason not in policy.retryable_stop_reasons:
+    if not isinstance(reason, str):
+        return False
+    if reason in ABSOLUTE_NON_RETRYABLE_STOP_REASONS:
+        return False
+    if reason not in policy.retryable_stop_reasons:
+        return False
+    # Frozen Stable Task budgets are cumulative across attempts: Attempt 2
+    # must not exceed the same Task's model/tool call budget.
+    if max_model_calls is not None and model_calls_used >= max_model_calls:
+        return False
+    if max_tool_calls is not None and tool_calls_used >= max_tool_calls:
         return False
     return attempts_used < policy.max_attempts
+
+
+def derive_plan_revision(session_events: list[SessionEvent]) -> int:
+    """Current durable Plan revision: 1 + count of PLAN_UPDATED facts."""
+    return 1 + sum(1 for event in session_events if event.event_type is EventType.PLAN_UPDATED)
 
 
 def attempt_for(number: int, *, started_at: datetime) -> HarnessAttempt:

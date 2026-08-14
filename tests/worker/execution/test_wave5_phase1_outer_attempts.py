@@ -62,6 +62,9 @@ def _seed(
 
 
 class _ExplodingGateway:
+    provider = "test"
+    model_name = "test-model"
+
     def complete(self, messages, *, tools=()):
         raise RuntimeError("provider transport exploded")
 
@@ -70,6 +73,9 @@ class _ExplodingGateway:
 
 
 class _RejectingGateway:
+    provider = "test"
+    model_name = "test-model"
+
     def complete(self, messages, *, tools=()):
         raise ModelResponseRejectedError(
             "provider rejected the response",
@@ -198,6 +204,7 @@ def test_p1_4_crash_after_outcome_resumes_with_attempt_2(
     database_path = tmp_path / "phase1-p4.db"
     bootstrap = _seed(database_path, tmp_path, max_attempts=2)
     session_id = bootstrap.session.session_id
+    epoch_turn = f"turn:{bootstrap.events[1].event_id}"
     event_store = SQLiteEventStore(database_path)
     durable = (
         SessionEvent.create(
@@ -210,6 +217,8 @@ def test_p1_4_crash_after_outcome_resumes_with_attempt_2(
                 "attempt_id": "attempt-1",
                 "attempt_sequence": 1,
                 "started_at": _created_at().isoformat(),
+                "turn_id": epoch_turn,
+                "epoch_sequence": 0,
             },
             created_at=_created_at(),
         ),
@@ -226,6 +235,8 @@ def test_p1_4_crash_after_outcome_resumes_with_attempt_2(
                 "terminal_reason": "model_execution_failed",
                 "retry_scheduled": True,
                 "next_attempt_sequence": 2,
+                "turn_id": epoch_turn,
+                "epoch_sequence": 0,
             },
             created_at=_created_at(),
         ),
@@ -308,7 +319,7 @@ def test_p1_6_dispatch_events_carry_stable_attempt_identity(
     monkeypatch,
 ) -> None:
     database_path = tmp_path / "phase1-p6.db"
-    bootstrap = _seed(database_path, tmp_path, max_attempts=1)
+    bootstrap = _seed(database_path, tmp_path, max_attempts=2)
     session_id = bootstrap.session.session_id
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
@@ -360,6 +371,7 @@ def test_p1_8_crash_after_non_retriable_outcome_recommits_terminal_once(
     database_path = tmp_path / "phase1-p8.db"
     bootstrap = _seed(database_path, tmp_path, max_attempts=2)
     session_id = bootstrap.session.session_id
+    epoch_turn = f"turn:{bootstrap.events[1].event_id}"
     event_store = SQLiteEventStore(database_path)
     durable = (
         SessionEvent.create(
@@ -372,6 +384,8 @@ def test_p1_8_crash_after_non_retriable_outcome_recommits_terminal_once(
                 "attempt_id": "attempt-1",
                 "attempt_sequence": 1,
                 "started_at": _created_at().isoformat(),
+                "turn_id": epoch_turn,
+                "epoch_sequence": 0,
             },
             created_at=_created_at(),
         ),
@@ -388,6 +402,8 @@ def test_p1_8_crash_after_non_retriable_outcome_recommits_terminal_once(
                 "terminal_reason": "model_response_rejected",
                 "retry_scheduled": False,
                 "next_attempt_sequence": None,
+                "turn_id": epoch_turn,
+                "epoch_sequence": 0,
             },
             created_at=_created_at(),
         ),

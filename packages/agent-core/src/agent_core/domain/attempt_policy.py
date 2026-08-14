@@ -14,6 +14,38 @@ from dataclasses import dataclass
 MAX_ATTEMPTS_CAP = 2
 MAX_CORRECTIONS_PER_ATTEMPT_CAP = 1
 DEFAULT_RETRYABLE_STOP_REASONS = ("model_execution_failed",)
+# Narrow generic retryable-code catalog for v1. Codes outside this catalog can
+# never be frozen as retryable; Phase 2 adds the exact coverage-correction code.
+RETRYABLE_CODE_CATALOG = frozenset(DEFAULT_RETRYABLE_STOP_REASONS)
+# Absolute non-retriable codes: even a drifted frozen list can never retry these.
+ABSOLUTE_NON_RETRYABLE_STOP_REASONS = frozenset(
+    {
+        "approval_rejected",
+        "capability_denied",
+        "completion_evidence_missing",
+        "context_recovery_required",
+        "context_window_exceeded",
+        "credit_budget_exhausted",
+        "hard_token_budget_exhausted",
+        "invalid_resource_manifest",
+        "model_call_budget_exhausted",
+        "model_provider_retry_exhausted",
+        "model_response_rejected",
+        "model_response_repair_exhausted",
+        "output_contract_invalid_after_bound",
+        "owner_mismatch",
+        "owner_scope_denied",
+        "required_plan_not_created",
+        "runtime_snapshot_failed",
+        "side_effect_uncertain",
+        "task_plan_incomplete",
+        "tool_call_budget_exhausted",
+        "tool_loop_no_progress",
+        "unsupported_profile",
+        "user_cancelled",
+        "waiting_user",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -46,6 +78,14 @@ class TaskAttemptPolicy:
         for reason in self.retryable_stop_reasons:
             if not isinstance(reason, str) or not reason.strip():
                 raise ValueError("retryable_stop_reasons must be non-blank machine codes")
+            if reason.strip() not in RETRYABLE_CODE_CATALOG:
+                raise ValueError(
+                    f"retryable_stop_reason {reason!r} is not in the v1 retryable "
+                    "code catalog; non-retriable conditions can never be frozen "
+                    "as retryable"
+                )
+            if reason.strip() in ABSOLUTE_NON_RETRYABLE_STOP_REASONS:
+                raise ValueError(f"retryable_stop_reason {reason!r} is absolutely non-retriable")
             if reason.strip() not in normalized_reasons:
                 normalized_reasons.append(reason.strip())
         object.__setattr__(self, "retryable_stop_reasons", tuple(normalized_reasons))

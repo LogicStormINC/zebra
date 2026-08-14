@@ -40,6 +40,13 @@ def recover_clarification_continuation(
             and event.payload.get("clarification_continuation") is True
         ):
             continuation_started = True
+        elif (
+            responded is not None
+            and event.event_type is EventType.ATTEMPT_CONTINUATION_STARTED
+            and event.payload.get("continuation_kind") == "clarification"
+            and event.payload.get("continuation_id") == responded.payload.get("clarification_id")
+        ):
+            continuation_started = True
     if requested is None or responded is None:
         return None
     if continuation_started:

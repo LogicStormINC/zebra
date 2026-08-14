@@ -12,6 +12,9 @@ class ScriptedModelResponse:
 
 
 class ScriptedModelGateway(ModelGatewayPort):
+    provider = "test"
+    model_name = "test-model"
+
     def __init__(self, responses: tuple[ScriptedModelResponse, ...]) -> None:
         if not responses:
             raise ValueError("scripted model gateway requires at least one response")

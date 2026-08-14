@@ -23,7 +23,7 @@ def finalize_execution(
     attempt_result: HarnessAttemptResult,
     memory_extraction_service: MemoryCandidateExtractionService,
     memory_promotion_service: MemoryCandidatePromotionService,
-    title_service: SessionTitleService,
+    title_service: SessionTitleService | None,
     event_store: SQLiteEventStore,
     started_at: datetime,
     suspension_snapshot: RuntimeSnapshot | None = None,
@@ -59,11 +59,15 @@ def finalize_execution(
         )
         for event in promotion.events:
             recorder.append_event(event)
-        title_event = title_service.generate(
-            session=recorder.session.model_copy(update={"status": SessionStatus.COMPLETED}),
-            events=event_store.list_for_session(recorder.session.session_id),
-            next_sequence=recorder.next_sequence,
-        )
+        title_event = None
+        if title_service is not None:
+            # Wave 5 guarded/outer-attempt tasks skip model-based title
+            # generation: the deterministic existing title is retained.
+            title_event = title_service.generate(
+                session=recorder.session.model_copy(update={"status": SessionStatus.COMPLETED}),
+                events=event_store.list_for_session(recorder.session.session_id),
+                next_sequence=recorder.next_sequence,
+            )
         if title_event is not None:
             recorder.append_event(title_event)
         completion_event = SessionEvent.create(

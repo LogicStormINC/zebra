@@ -221,13 +221,21 @@ def _public_final_event_ids(events: tuple[TaskEvent, ...]) -> set[str]:
     failed_segments = {
         str(item.segment_id)
         for item in events
-        if item.event.event_type
-        in {EventType.SESSION_FAILED, EventType.SESSION_CANCELLED}
+        if item.event.event_type in {EventType.SESSION_FAILED, EventType.SESSION_CANCELLED}
     }
     terminal_attempt = {
         str(item.segment_id): item.event.payload.get("attempt_number")
         for item in events
         if item.event.event_type is EventType.SESSION_COMPLETED
+    }
+    accepted_attempts = {
+        (
+            str(item.segment_id),
+            item.event.payload.get("attempt_id") or item.event.payload.get("attempt_number"),
+        )
+        for item in events
+        if item.event.event_type is EventType.ATTEMPT_OUTCOME_RECORDED
+        and item.event.payload.get("outcome") == "completed"
     }
     explicit: dict[str, TaskEvent] = {}
     legacy: dict[str, TaskEvent] = {}
@@ -248,9 +256,23 @@ def _public_final_event_ids(events: tuple[TaskEvent, ...]) -> set[str]:
             # final: a failed attempt's final stays attempt-private (Wave 5).
             if segment in failed_segments:
                 continue
-            event_attempt = event.payload.get("attempt_number")
+            event_attempt_id = event.payload.get("attempt_id")
+            event_attempt_number = event.payload.get("attempt_number")
+            if event_attempt_id is not None or event_attempt_number is not None:
+                # Wave 5 candidates require an authoritative accepted attempt
+                # fact; no-outcome/failed/retrying candidates remain private,
+                # closing the read window before ATTEMPT_OUTCOME_RECORDED.
+                if (
+                    segment,
+                    event_attempt_id or event_attempt_number,
+                ) not in accepted_attempts:
+                    continue
             terminal = terminal_attempt.get(segment)
-            if terminal is not None and event_attempt is not None and event_attempt != terminal:
+            if (
+                terminal is not None
+                and event_attempt_number is not None
+                and event_attempt_number != terminal
+            ):
                 continue
             explicit[segment] = item
             continue

@@ -20,6 +20,7 @@ from agent_core.contracts.handoff_events import (
     UserMessageReceivedPayload,
 )
 from agent_core.contracts.model_events import (
+    AttemptContinuationStartedPayload,
     AttemptOutcomeRecordedPayload,
     HarnessAttemptStartedPayload,
     ModelRequestStartedPayload,
@@ -376,6 +377,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.RUNTIME_PROVISIONED: RuntimeProvisionedPayload,
     EventType.HARNESS_ATTEMPT_STARTED: HarnessAttemptStartedPayload,
     EventType.ATTEMPT_OUTCOME_RECORDED: AttemptOutcomeRecordedPayload,
+    EventType.ATTEMPT_CONTINUATION_STARTED: AttemptContinuationStartedPayload,
     EventType.MODEL_REQUEST_STARTED: ModelRequestStartedPayload,
     EventType.MODEL_RESPONSE_DELTA: ModelResponseDeltaPayload,
     EventType.MODEL_RESPONSE_RECEIVED: ModelResponseReceivedPayload,
