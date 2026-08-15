@@ -6,6 +6,27 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-15`
+- Wave 5 Gate 2 re-audit fix 2 complete on
+  `codex/znx-hosted-outer-attempts-v1` (starting HEAD `05e68c4`): the root
+  re-audit found the continuation fix misclassified the required-plan nudge
+  path as terminal synthesis under the real DSH guard (plan_required=True,
+  max_attempts=2) - the Task failed before the nudge-driven request 2 with
+  attempt_reconstruction_invalid. Fixed at the terminal-synthesis
+  reconstruction decision with an exact durable discriminator (plain
+  response with tool_call_count=0, no following tool events, no durable Plan
+  while plan_required), a private optional proposed_tool_names field on
+  MODEL_RESPONSE_RECEIVED for byte-exact nudge rebuilds, continuation
+  guidance seeded from the recovered conversation, and the envelope rebuild
+  deriving full systems + conversation through the same durable replay.
+  Red-first: the upgraded guarded plan-nudge clarification test red at
+  `05e68c4`; green after. Corrected final: continuation tests 8/8, worker
+  suites 104/104, agent_core/api/storage 468/468, full `2274 passed /
+  8 failed / 9 skipped` (only the inherited 8 exact-base failures remain),
+  eval 10/10, ruff 11 / mypy 13 identical to base, file-size gate same 10
+  inherited violations; shared fixture unchanged; final exact SHA sent to
+  the FinOS peer; no push/PR/merge/deploy; Phase 3 starts only on
+  root/owner acceptance of Gate 2.
+- Snapshot date: `2026-08-15`
 - Wave 5 Gate 2 re-audit fix complete on
   `codex/znx-hosted-outer-attempts-v1` (starting HEAD `eeebae8`): the root
   re-audit found that a real guarded clarification continuation

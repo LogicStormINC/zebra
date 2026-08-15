@@ -223,6 +223,66 @@ worker suites `104 passed`; agent_core/api/storage `468 passed`; full
 failures); eval `10/10`; ruff 11 / mypy 13 identical to base; file-size gate
 same 10 inherited violations; `git diff --check` clean
 
+## 4c. Gate 2 re-audit rejection (required-plan nudge regression, 2026-08-15)
+
+The root re-audit rejected the closure with one deterministic P1 regression
+introduced by the continuation fix: under the real Wave 5 DSH guard
+(plan_required=True, max_attempts=2), a first response that proposes a
+substantive tool before creating a Plan must be rejected with the existing
+required-plan nudge and a second model request - but on `05e68c4` the Task
+failed before request 2 (`attempt_reconstruction_invalid`, gateway
+requests=1, reproduced 12/12). Root cause:
+`_terminal_synthesis_pending` (added in `380a989` for guarded approved-batch
+terminal synthesis) saw `response_stage="tool_loop"` with no later tool
+events and misclassified the plan-nudge path as a provisional final,
+appending a false "tool budget is complete" user instruction to the rebuilt
+conversation. The existing plan-nudge clarification test seeded
+`max_attempts=1` (guard off), so the gap was missed.
+
+Red-first (starting HEAD `05e68c4`):
+- upgraded `test_required_plan_nudge_remains_bounded_across_clarification`
+  to max_attempts=2 with strengthened assertions: request 1 proposes
+  files.read before the Plan, request 2 dispatches after the nudge and asks
+  agent.clarify, the first execute reaches WAITING_INPUT (not
+  attempt_reconstruction_invalid), the resumed provider request follows the
+  existing expected required-plan result (required_plan_not_created, one
+  resumed request), exactly one attempt, no files.read execution
+  -> RED at `05e68c4` (failed before request 2)
+
+Minimum shared-root fix at the terminal-synthesis reconstruction decision:
+- `terminal_synthesis_pending` now requires an exact durable discriminator:
+  the last response must be PLAIN (`tool_call_count == 0` in the response
+  payload itself), staged `tool_loop`, with no tool events following, AND the
+  plan-nudge path is excluded while `plan_required` has no durable Plan (the
+  harness schedules the nudge, not terminal synthesis). The approved-batch
+  provisional-final reconstruction still works (plain response, no plan
+  requirement).
+- the nudge content needs the proposed tool names, which are blocked before
+  any TOOL_CALL_PROPOSED event; the existing durable MODEL_RESPONSE_RECEIVED
+  now carries a private optional `proposed_tool_names` field (schema-
+  validated, historical events stay replayable) and the runtime-guidance
+  rebuild reads it, so the rebuilt nudge is byte-exact.
+- `_completion_for_names` uses a non-blank placeholder assistant content
+  (only the tool-call names are consumed by the nudge builder).
+- continuation runtime-guidance rebuild seeds plan-nudged/observation state
+  from the recovered conversation (the same markers the harness checks), so
+  pre-boundary guidance is never rebuilt twice.
+- the envelope rebuild now derives the full expected request (systems +
+  conversation) through the same durable replay and compaction transform;
+  the system digest uses exactly the rebuilt system messages.
+- no guard bypass: full system/runtime-guidance equality (content AND
+  metadata), tool/media/model/invocation-policy equality and the
+  tamper-before-gateway guarantee are preserved; P1-1/P1-3 corrections
+  untouched; shared fixture unchanged (internal event field is optional and
+  private).
+
+Corrected evidence (fresh runs on the corrected tree): guarded plan-nudge
+clarification + all continuation tests `8/8`; worker suites `104 passed`;
+agent_core/api/storage `468 passed`; full `2274 passed / 8 failed /
+9 skipped` (only the same 8 exact-base inherited failures); eval `10/10`;
+ruff 11 / mypy 13 identical to base; file-size gate same 10 inherited
+violations; `git diff --check` clean
+
 ## 5. Contract deltas for the FinOS peer (Gate 2)
 - exact retry classification: `completion_evidence_missing_after_correction`
   is the only coverage code that may schedule Attempt 2 under the frozen

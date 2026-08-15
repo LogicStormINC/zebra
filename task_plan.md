@@ -128,6 +128,31 @@
    fixture unchanged (internal replay fix only); final SHA sent to the FinOS
    peer; ready for root/owner re-acceptance; stop before Phase 3.
 
+## ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Gate 2 re-audit fix 2 (plan-nudge regression)
+
+1. `completed` - Root re-audit found the continuation fix misclassified the
+   required-plan nudge path as terminal synthesis under the real DSH guard
+   (plan_required=True, max_attempts=2): the Task failed before the nudge-
+   driven request 2 (attempt_reconstruction_invalid, requests=1, 12/12).
+2. `completed` - Red-first at `05e68c4`: upgraded the plan-nudge
+   clarification test to max_attempts=2 (proposal before Plan, nudge-driven
+   request 2 -> agent.clarify, WAITING_INPUT, resumed required-plan result,
+   exactly one attempt); red before the fix.
+3. `completed` - Minimum shared-root fix at the terminal-synthesis
+   reconstruction decision: exact durable discriminator (plain response with
+   tool_call_count=0, no following tool events, no durable Plan while
+   plan_required); private optional proposed_tool_names on
+   MODEL_RESPONSE_RECEIVED for byte-exact nudge rebuilds; continuation
+   guidance seeded from the recovered conversation; envelope rebuild derives
+   full systems + conversation through the same durable replay; no guard
+   bypass, no second engine.
+4. `completed` - Corrected evidence (fresh runs): continuation tests 8/8,
+   worker suites 104/104, agent_core/api/storage 468/468, full `2274 passed
+   / 8 failed / 9 skipped` (same inherited 8), eval `10/10`, ruff 11 / mypy
+   13 identical to base, file-size gate same 10 inherited violations;
+   fixture unchanged (optional private event field only); final SHA sent to
+   the FinOS peer; ready for root/owner re-acceptance; stop before Phase 3.
+
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
 1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and

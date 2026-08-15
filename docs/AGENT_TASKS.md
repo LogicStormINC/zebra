@@ -16351,6 +16351,21 @@ or bind a business operation.
   green after. Corrected final: full `2274 passed / 8 failed / 9 skipped`
   (same inherited 8), eval `10/10`, ruff 11 / mypy 13 identical to base,
   file-size gate same 10 inherited violations
+- re-audit rejection 2 (starting HEAD `05e68c4`): the continuation fix
+  misclassified the required-plan nudge path as terminal synthesis under the
+  real DSH guard (plan_required=True, max_attempts=2) - the Task failed
+  before the nudge-driven request 2 (`attempt_reconstruction_invalid`,
+  requests=1). Fixed at the terminal-synthesis reconstruction decision:
+  exact durable discriminator (plain response with tool_call_count=0, no
+  following tool events, and no durable Plan while plan_required), private
+  optional `proposed_tool_names` on MODEL_RESPONSE_RECEIVED for byte-exact
+  nudge rebuilds, continuation guidance seeded from the recovered
+  conversation, and the envelope rebuild now derives full systems +
+  conversation through the same durable replay. Red-first: the upgraded
+  guarded plan-nudge clarification test red at `05e68c4`, green after;
+  corrected final: full `2274 passed / 8 failed / 9 skipped` (same inherited
+  8), eval `10/10`, ruff 11 / mypy 13 identical to base, file-size gate same
+  10 inherited violations; shared fixture unchanged
 - peer fixture frozen: `tests/fixtures/wave5_gate2_contract_delta_v1.json`,
   schema-validated by `test_wave5_gate2_peer_contract.py`; peer notification
   (initial + corrected contract note) sent to FinOS task
