@@ -15913,6 +15913,7 @@ resolved capabilities into the existing OpenAI-compatible gateway.
 - Repository: `vinson1101/zebra`
 - Owned paths:
   `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_gateway_factory.py`,
   `packages/agent-integrations/src/agent_integrations/openai_model_profiles.py`,
   `tests/agent_integrations/test_qwen_thinking_profiles.py`,
   `docs/Generic_Model_Profile_Contract_v2.md`, `docs/AGENT_TASKS.md`,

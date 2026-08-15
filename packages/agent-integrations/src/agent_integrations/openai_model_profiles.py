@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 from agent_core.domain.model_media import ModelInputModality, ModelMediaCapabilities
+from agent_core.domain.modeling import ModelThinkingMode
 
 
 @dataclass(frozen=True)
@@ -10,6 +11,7 @@ class ModelProfile:
     expected_provider: str
     expected_model: str
     media_capabilities: ModelMediaCapabilities
+    thinking_mode: ModelThinkingMode = ModelThinkingMode.DISABLED
 
 
 MODEL_PROFILES: Mapping[str, ModelProfile] = MappingProxyType(
@@ -56,6 +58,18 @@ MODEL_PROFILES: Mapping[str, ModelProfile] = MappingProxyType(
             expected_model="qwen3.7-max",
             media_capabilities=ModelMediaCapabilities(),
         ),
+        "qwen-max-dated-thinking-v1": ModelProfile(
+            expected_provider="qwen",
+            expected_model="qwen3.7-max-2026-05-17",
+            media_capabilities=ModelMediaCapabilities(),
+            thinking_mode=ModelThinkingMode.ENABLED,
+        ),
+        "qwen-max-preview-thinking-v1": ModelProfile(
+            expected_provider="qwen",
+            expected_model="qwen3.7-max-preview",
+            media_capabilities=ModelMediaCapabilities(),
+            thinking_mode=ModelThinkingMode.ENABLED,
+        ),
     }
 )
 
@@ -69,6 +83,27 @@ def resolve_model_profile(
 ) -> ModelMediaCapabilities:
     if profile_id is None:
         return ModelMediaCapabilities()
+    return _resolve_profile(profile_id, provider, model, profiles).media_capabilities
+
+
+def resolve_model_thinking_mode(
+    profile_id: str | None,
+    *,
+    provider: str,
+    model: str,
+    profiles: Mapping[str, ModelProfile] = MODEL_PROFILES,
+) -> ModelThinkingMode:
+    if profile_id is None:
+        return ModelThinkingMode.DISABLED
+    return _resolve_profile(profile_id, provider, model, profiles).thinking_mode
+
+
+def _resolve_profile(
+    profile_id: str,
+    provider: str,
+    model: str,
+    profiles: Mapping[str, ModelProfile],
+) -> ModelProfile:
     try:
         profile = profiles[profile_id]
     except KeyError:
@@ -77,4 +112,4 @@ def resolve_model_profile(
         raise ValueError(f"model profile provider mismatch: {profile_id}")
     if model != profile.expected_model:
         raise ValueError(f"model profile model mismatch: {profile_id}")
-    return profile.media_capabilities
+    return profile
