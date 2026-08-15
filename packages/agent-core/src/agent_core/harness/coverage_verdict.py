@@ -49,6 +49,38 @@ def safe_coverage_verdict(metadata: Mapping[str, object]) -> dict[str, object] |
     required = metadata.get("completion_evidence_required_count")
     satisfied = metadata.get("completion_evidence_satisfied_count")
     missing = metadata.get("completion_evidence_missing_count")
+    return _verified_verdict(required, satisfied, missing)
+
+
+def sanitize_public_coverage_verdict(raw: object) -> dict[str, object] | None:
+    """Public-projection sanitizer for a terminal coverage verdict.
+
+    Never trusts or forwards the source dict or source message. The exact
+    five-field object is rebuilt from validated counts and a fixed message
+    derived from the validated status/counts. Malformed verdicts (unknown
+    status, wrong types, bool-as-int, negative or inconsistent counts, or a
+    status that contradicts the counts) fail closed by omitting the verdict.
+    """
+    if not isinstance(raw, dict):
+        return None
+    status = raw.get("status")
+    if status not in {"complete", "partial", "missing"}:
+        return None
+    verdict = _verified_verdict(
+        raw.get("required_count"),
+        raw.get("satisfied_count"),
+        raw.get("missing_count"),
+    )
+    if verdict is None or verdict["status"] != status:
+        return None
+    return verdict
+
+
+def _verified_verdict(
+    required: object,
+    satisfied: object,
+    missing: object,
+) -> dict[str, object] | None:
     if (
         not isinstance(required, int)
         or isinstance(required, bool)
@@ -56,27 +88,32 @@ def safe_coverage_verdict(metadata: Mapping[str, object]) -> dict[str, object] |
         or isinstance(satisfied, bool)
         or not isinstance(missing, int)
         or isinstance(missing, bool)
+        or required < 0
+        or satisfied < 0
+        or missing < 0
     ):
         return None
-    if missing == 0:
-        status = "complete"
-        message = "Required evidence coverage is satisfied."
-    elif satisfied > 0:
-        status = "partial"
-        message = (
-            "Required evidence coverage is partially satisfied; the task cannot "
-            "complete without the remaining trusted evidence."
-        )
-    else:
-        status = "missing"
-        message = (
-            "Required evidence coverage is not satisfied; the task cannot "
-            "complete without trusted evidence."
-        )
+    if required != satisfied + missing:
+        return None
+    status = "complete" if missing == 0 else ("partial" if satisfied > 0 else "missing")
     return {
         "status": status,
         "required_count": required,
         "satisfied_count": satisfied,
         "missing_count": missing,
-        "message": message,
+        "message": _verdict_message(status),
     }
+
+
+def _verdict_message(status: str) -> str:
+    if status == "complete":
+        return "Required evidence coverage is satisfied."
+    if status == "partial":
+        return (
+            "Required evidence coverage is partially satisfied; the task cannot "
+            "complete without the remaining trusted evidence."
+        )
+    return (
+        "Required evidence coverage is not satisfied; the task cannot "
+        "complete without trusted evidence."
+    )

@@ -35,7 +35,6 @@ from agent_core.harness.reconstruction import (
     invocation_policy_digest,
     media_inputs_digest,
     model_config_digest,
-    stable_system_messages,
     system_prompt_digest,
 )
 from agent_core.harness.required_tool_request import selected_model_tools
@@ -65,6 +64,7 @@ from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.finos_journal_provider import (
     allows_finos_account_changes_proposal,
 )
+from zebra_agent_worker.runtime_guidance import rebuilt_runtime_guidance
 from zebra_agent_worker.task_preapproval import build_policy_engine
 from zebra_agent_worker.task_recovery import RecoveredTask
 
@@ -270,6 +270,25 @@ def _build_reconstruction(
     base_conversation = (
         continuation_conversation if has_continuation else list(initial_conversation)
     )
+    base_evidence_events = persisted_completion_evidence_events(
+        item.event for item in task_events
+    )
+
+    def runtime_guidance() -> tuple[SessionMessage, ...]:
+        # Full request-envelope equality: the exact runtime guidance actually
+        # sent to the provider is independently rebuilt from durable
+        # evidence/plan state via the same helpers the harness uses.
+        return rebuilt_runtime_guidance(
+            durable_events(scoped_events, recorder),
+            attempt=attempt,
+            task=attempt_task,
+            session=recorder.session,
+            completion_evidence_events=(
+                base_evidence_events
+                + persisted_completion_evidence_events(recorder.events)
+            ),
+            created_at=attempt.started_at,
+        )
 
     def step_envelope(
         step_kind: str,
@@ -282,14 +301,19 @@ def _build_reconstruction(
             else None
         )
         if has_continuation:
-            # Continuation dispatches rebuild from the recovered conversation,
-            # which carries no system prompts; the actual envelope matches.
+            # Continuation dispatches use the durable recovered conversation;
+            # its system messages (stable prompt + runtime guidance) are the
+            # independently derived expected envelope.
             expected_tools = selected_model_tools(
                 tool_gateway.model_tools,
                 allow_tools=allow_tools,
                 required_names=required_tool_names,
             )
-            return system_prompt_digest([]), expected_tools, expected_invocation
+            return (
+                system_prompt_digest(continuation_conversation),
+                expected_tools,
+                expected_invocation,
+            )
         system_messages = list(probe_system_messages)
         if follow_up_guidance_needed:
             system_messages.append(
@@ -304,13 +328,14 @@ def _build_reconstruction(
             append_final_answer_instruction(system_messages, created_at=attempt.started_at)
         elif step_kind == "validator_correction":
             append_validator_correction_instruction(system_messages, created_at=attempt.started_at)
+        system_messages.extend(runtime_guidance())
         expected_tools = selected_model_tools(
             tool_gateway.model_tools,
             allow_tools=allow_tools,
             required_names=required_tool_names,
         )
         return (
-            system_prompt_digest(stable_system_messages(system_messages)),
+            system_prompt_digest(system_messages),
             expected_tools,
             expected_invocation,
         )

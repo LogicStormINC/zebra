@@ -5,6 +5,7 @@ from typing import Literal
 
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import TaskId
+from agent_core.harness.coverage_verdict import sanitize_public_coverage_verdict
 from agent_core.ports.agent_tasks import TaskEvent
 
 PUBLIC_CONVERSATION_SCHEMA_VERSION = "zebra.public-conversation.v1"
@@ -114,7 +115,9 @@ def project_public_conversation(
             continue
 
         if event_type in _PROGRESS_CONTENT:
-            coverage_verdict = event.payload.get("coverage_verdict")
+            coverage_verdict = sanitize_public_coverage_verdict(
+                event.payload.get("coverage_verdict")
+            )
             _set_event_item(
                 items,
                 task_event,
@@ -125,7 +128,7 @@ def project_public_conversation(
                 data=(
                     {"coverage_verdict": coverage_verdict}
                     if event_type is EventType.SESSION_COMPLETED
-                    and isinstance(coverage_verdict, dict)
+                    and coverage_verdict is not None
                     else None
                 ),
             )
@@ -156,7 +159,9 @@ def project_public_conversation(
                 or _text(event.payload.get("summary"))
                 or "This task did not complete."
             )
-            coverage_verdict = event.payload.get("coverage_verdict")
+            coverage_verdict = sanitize_public_coverage_verdict(
+                event.payload.get("coverage_verdict")
+            )
             _set_event_item(
                 items,
                 task_event,
@@ -168,7 +173,7 @@ def project_public_conversation(
                     "retryable": bool(event.payload.get("retryable", True)),
                     **(
                         {"coverage_verdict": coverage_verdict}
-                        if isinstance(coverage_verdict, dict)
+                        if coverage_verdict is not None
                         else {}
                     ),
                 },

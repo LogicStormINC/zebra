@@ -7,9 +7,10 @@ envelope against an independently derived durable reconstruction:
   tool-call identity) must equal the durable conversation rebuild for that
   dispatch step (repair/fallback dispatches reuse the same envelope; the
   sanctioned compaction transform is the only skip boundary);
-- system prompt digest: the actual system messages (excluding deterministic
-  internal repair markers) must equal the durable system prompt independently
-  built from the frozen Task facts at attempt start;
+- system prompt digest: the actual system messages (stable prompt plus the
+  exact runtime guidance rebuilt from durable evidence/plan state) must equal
+  the durable reconstruction; tampered guidance content or metadata can never
+  collide with the rebuilt envelope;
 - tool schema digest: the actual tool set must equal the durable grant set;
 - media digest: the actual media inputs must equal the durable task inputs.
 
@@ -94,49 +95,23 @@ def conversation_digest(
 def system_prompt_digest(
     messages: list[SessionMessage] | tuple[SessionMessage, ...],
 ) -> str:
+    """Canonical structured envelope over the full system request: content AND
+    metadata, so tampered runtime guidance (content or metadata) can never
+    collide with the independently rebuilt durable guidance."""
     return digest_json(
         [
-            {"content": message.content or ""}
+            {
+                "content": message.content or "",
+                "metadata": _sorted_metadata(message.metadata),
+            }
             for message in messages
             if message.role is MessageRole.SYSTEM
         ]
     )
 
 
-def stable_system_messages(
-    messages: list[SessionMessage] | tuple[SessionMessage, ...],
-) -> list[SessionMessage]:
-    """System messages that belong to the stable request envelope.
-
-    Harness-generated runtime observations (missing-evidence observation,
-    no-progress convergence observation, plan contract observation, validator
-    correction instruction) are deterministic guidance derived from the
-    durable evidence/plan state, not external request content. They are
-    excluded from the stable envelope digest so in-attempt correction
-    dispatches reconstruct exactly; the durable invariant still guards the
-    stable prompt, tool grant, model configuration, media and conversation.
-    """
-    return [
-        message
-        for message in messages
-        if message.role is MessageRole.SYSTEM and not _is_runtime_observation(message)
-    ]
-
-
-def _is_runtime_observation(message: SessionMessage) -> bool:
-    metadata = message.metadata or {}
-    if metadata.get("missing_completion_evidence") is not None:
-        return True
-    if metadata.get("validator_correction") is True:
-        return True
-    if metadata.get("required_plan_nudge") is True:
-        return True
-    content = message.content or ""
-    return (
-        content.startswith("Runtime completion-evidence observation: ")
-        or content.startswith("Runtime convergence observation: ")
-        or content.startswith("Runtime contract observation: ")
-    )
+def _sorted_metadata(metadata: dict[str, Any] | None) -> dict[str, Any]:
+    return dict(sorted((metadata or {}).items()))
 
 
 def tool_schema_digest(tools: tuple[ModelToolDefinition, ...] | list[Any]) -> str:
@@ -279,7 +254,7 @@ class RequestReconstruction:
         if plan_revision is not None:
             self.plan_revision = plan_revision
         actual_conversation = conversation_digest(messages)
-        actual_system = system_prompt_digest(stable_system_messages(messages))
+        actual_system = system_prompt_digest(messages)
         actual_tools = tool_schema_digest(tools)
         actual_media = media_inputs_digest(media_inputs)
         rebuilt = self._messages_rebuild() if self._messages_rebuild is not None else None
