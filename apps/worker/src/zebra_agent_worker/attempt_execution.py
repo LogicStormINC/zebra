@@ -67,10 +67,10 @@ from zebra_agent_worker.finos_journal_provider import (
 from zebra_agent_worker.runtime_guidance import (
     _continuation_boundary_index,
     rebuilt_runtime_guidance,
-    terminal_synthesis_pending,
 )
 from zebra_agent_worker.task_preapproval import build_policy_engine
 from zebra_agent_worker.task_recovery import RecoveredTask
+from zebra_agent_worker.terminal_synthesis import terminal_synthesis_pending
 
 
 def run_single_attempt(
@@ -304,6 +304,7 @@ def _build_reconstruction(
             ),
             created_at=attempt.started_at,
             prior_messages=continuation_conversation if has_continuation else (),
+            base_evidence_events=base_evidence_events,
         )
 
     def step_envelope(
