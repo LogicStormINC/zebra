@@ -16402,6 +16402,20 @@ or bind a business operation.
   full `2278 passed / 8 failed / 9 skipped` (same inherited 8), eval
   `10/10`, ruff 11 / mypy 13 identical to base, file-size gate same 10
   inherited violations; shared fixture unchanged
+- re-audit rejection 5 (starting HEAD `8656cab`): the fourth runtime
+  terminal trigger, policy_recovery_terminal_synthesis (set after the second
+  recoverable policy DENY), was missing from the durable reconstruction - a
+  real guarded worker run with two recoverable DENY decisions failed closed
+  before request 3. Fixed at the shared durable reconstruction seam: the
+  policy-recovery signal is the POLICY_DECISION_MADE(deny) decision paired
+  with the following non-executed TOOL_EXECUTION_FAILED (the exact
+  recoverable_policy_deny_observation shape), the terminal state includes
+  the trigger (two denies) gated on evidence handling, and the per-batch
+  evidence loop fires the typed correction for policy-recovery terminal
+  entries too. Red-first: two Hosted Worker tests red at `8656cab`, green
+  after. Corrected final: full `2280 passed / 8 failed / 9 skipped` (same
+  inherited 8), eval `10/10`, ruff 11 / mypy 13 identical to base,
+  file-size gate same 10 inherited violations; shared fixture unchanged
 - peer fixture frozen: `tests/fixtures/wave5_gate2_contract_delta_v1.json`,
   schema-validated by `test_wave5_gate2_peer_contract.py`; peer notification
   (initial + corrected contract note) sent to FinOS task

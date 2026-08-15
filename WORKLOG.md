@@ -1,5 +1,50 @@
 # Progress Log
 
+## 2026-08-15 Wave 5 Gate 2 re-audit fix 5 (policy-recovery terminal synthesis)
+
+- root re-audit found the fourth runtime terminal trigger missing from the
+  durable reconstruction: `_needs_terminal_synthesis` also fires on
+  `policy_recovery_terminal_synthesis` (set by
+  `policy_step.policy_recovery_metadata` after the second recoverable policy
+  DENY). A real guarded worker run (max_attempts=2) with two recoverable
+  DENY decisions reached actual terminal synthesis while the guard failed
+  closed before request 3 (attempt_reconstruction_invalid, gateway
+  requests=2)
+- red-first at `8656cab`: two real Hosted Worker tests
+  (`test_guarded_policy_recovery_terminal_synthesis`: two distinct tool
+  calls receive recoverable policy DENY then exactly one tool-disabled
+  terminal synthesis request completes with the exact no-progress +
+  final-answer guidance; `test_guarded_policy_recovery_evidence_correction_
+  takes_precedence`: after two denies with missing typed evidence and a
+  matching advertised producer, the typed evidence correction dispatch comes
+  first with required producer-only tools and no terminal guidance) - both
+  red before the fix, green after
+- minimum shared-root fix at the durable reconstruction seam:
+  - the policy-recovery signal is the POLICY_DECISION_MADE(deny) decision
+    paired with the following TOOL_EXECUTION_FAILED marking the call as not
+    executed (the exact shape recoverable_policy_deny_observation records);
+    repeated-tool failures are not preceded by a policy deny decision, so
+    the pairing is exact and does not rely on fragile metadata
+  - the terminal-synthesis state gains the policy-recovery trigger (two
+    recoverable denies, the same count semantics as policy_recovery_metadata)
+    and includes it in pending (still gated on evidence handling)
+  - the per-batch evidence loop fires the typed correction observation for
+    policy-recovery-triggered terminal entries too
+  - no guard bypass; full system/runtime-guidance equality (content AND
+    metadata), conversation, tool/media/model/invocation-policy axes and
+    the tamper-before-gateway guarantee are preserved; no public exposure;
+    no second retry/model loop/reducer/state machine
+- corrected evidence (fresh runs): policy-recovery + precedence + guarded
+  terminal/continuation/plan tests `19/19`; worker suites `110 passed`;
+  agent_core/storage `467 passed`; full `2280 passed / 8 failed /
+  9 skipped` (same inherited 8: 2 agent_integrations, 5 clock-sensitive
+  session_pull_request, 1 file-size gate); eval `10/10`; ruff 11 / mypy 13
+  identical to base; file-size gate same 10 inherited violations;
+  `git diff --check` clean
+- no external schema/fixture delta; final exact SHA sent to FinOS peer
+  `019ffe56-8b1e-74e2-9289-9ee8a3544aff`; no push/PR/merge/deploy; stop at
+  Gate 2 for root/owner re-acceptance
+
 ## 2026-08-15 Wave 5 Gate 2 re-audit fix 4 (evidence-before-terminal precedence)
 
 - root re-audit found one shared precedence bug: the reconstruction violated

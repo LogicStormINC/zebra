@@ -412,6 +412,53 @@ tests + all guarded terminal/continuation/plan tests `17/17`; worker suites
 `10/10`; ruff 11 / mypy 13 identical to base; file-size gate same 10
 inherited violations; `git diff --check` clean.
 
+## 4f. Gate 2 re-audit rejection 5 (policy-recovery terminal synthesis, 2026-08-15)
+
+The root re-audit found the fourth runtime terminal trigger missing from the
+durable reconstruction: `_needs_terminal_synthesis` also fires on
+`policy_recovery_terminal_synthesis` (set by `policy_step.policy_recovery_
+metadata` after the second recoverable policy DENY). terminal_synthesis.py
+reconstructed only plain provisional, validator rejection and no-progress,
+so a real guarded worker run (max_attempts=2) with two recoverable DENY
+decisions reached actual terminal synthesis while the guard failed closed
+before request 3 (attempt_reconstruction_invalid, gateway requests=2).
+
+Red-first (starting HEAD `8656cab`): two real Hosted Worker tests -
+`test_guarded_policy_recovery_terminal_synthesis` (two distinct tool calls
+receive recoverable policy DENY, then exactly one tool-disabled terminal
+synthesis request completes: 3 requests, single Attempt, COMPLETED, the
+terminal request carries the exact no-progress observation + final-answer
+instruction) and `test_guarded_policy_recovery_evidence_correction_takes_
+precedence` (after two recoverable denies with missing typed evidence and a
+matching advertised producer, the next dispatch is the typed evidence
+correction with required producer-only tools and exactly one missing-evidence
+observation, no terminal guidance) - both RED at `8656cab`, green after the
+fix.
+
+Minimum shared-root fix at the durable reconstruction seam:
+- the durable policy-recovery signal is the POLICY_DECISION_MADE(deny)
+  decision paired with the following TOOL_EXECUTION_FAILED marking the call
+  as not executed (the exact shape recoverable_policy_deny_observation
+  records); repeated-tool failures are not preceded by a policy deny
+  decision, so the pairing is exact and does not rely on fragile metadata
+- the terminal-synthesis state gains the policy-recovery trigger (two
+  recoverable denies, the same count semantics as policy_recovery_metadata)
+  and includes it in pending (still gated on evidence handling); the
+  per-batch evidence loop fires the typed correction observation for
+  policy-recovery-triggered terminal entries too
+- no guard bypass; full system/runtime-guidance equality (content AND
+  metadata), conversation, tool/media/model/invocation-policy axes and the
+  tamper-before-gateway guarantee are preserved; no public exposure; no
+  second retry/model loop/reducer/state machine; no external schema/fixture
+  delta
+
+Corrected evidence (fresh runs on the corrected tree): the two
+policy-recovery tests + all precedence/guarded terminal/continuation/plan
+tests `19/19`; worker suites `110 passed`; agent_core/storage `467 passed`;
+full `2280 passed / 8 failed / 9 skipped` (only the same 8 exact-base
+inherited failures); eval `10/10`; ruff 11 / mypy 13 identical to base;
+file-size gate same 10 inherited violations; `git diff --check` clean.
+
 ## 5. Contract deltas for the FinOS peer (Gate 2)
 - exact retry classification: `completion_evidence_missing_after_correction`
   is the only coverage code that may schedule Attempt 2 under the frozen

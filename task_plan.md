@@ -212,6 +212,35 @@
    SHA sent to the FinOS peer; ready for root/owner re-acceptance; stop
    before Phase 3.
 
+## ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Gate 2 re-audit fix 5 (policy-recovery terminal synthesis)
+
+1. `completed` - Root re-audit found the fourth runtime terminal trigger,
+   policy_recovery_terminal_synthesis (set after the second recoverable
+   policy DENY), missing from the durable reconstruction - a real guarded
+   worker run with two recoverable DENY decisions failed closed before
+   request 3 (attempt_reconstruction_invalid, gateway requests=2).
+2. `completed` - Red-first at `8656cab`: two real Hosted Worker tests
+   (two recoverable DENY decisions then one tool-disabled terminal
+   synthesis request; and the evidence-precedence combination where the
+   typed evidence correction dispatch comes first) - both red before the
+   fix, green after.
+3. `completed` - Minimum shared-root fix at the durable reconstruction
+   seam: the policy-recovery signal is the POLICY_DECISION_MADE(deny)
+   decision paired with the following non-executed TOOL_EXECUTION_FAILED
+   (the exact recoverable_policy_deny_observation shape; repeated-tool
+   failures are not preceded by a policy deny decision), the terminal state
+   includes the two-deny trigger gated on evidence handling, and the
+   per-batch evidence loop fires the typed correction for policy-recovery
+   terminal entries too; no second retry/model loop/reducer/state machine;
+   no external schema/fixture delta.
+4. `completed` - Corrected evidence (fresh runs): policy-recovery +
+   precedence + guarded terminal/continuation/plan tests 19/19, worker
+   suites 110/110, agent_core/storage 467/467, full `2280 passed /
+   8 failed / 9 skipped` (same inherited 8), eval `10/10`, ruff 11 / mypy
+   13 identical to base, file-size gate same 10 inherited violations;
+   fixture unchanged; final SHA sent to the FinOS peer; ready for
+   root/owner re-acceptance; stop before Phase 3.
+
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
 1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and

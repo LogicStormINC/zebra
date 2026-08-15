@@ -6,6 +6,28 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-15`
+- Wave 5 Gate 2 re-audit fix 5 complete on
+  `codex/znx-hosted-outer-attempts-v1` (starting HEAD `8656cab`): the root
+  re-audit found the fourth runtime terminal trigger,
+  policy_recovery_terminal_synthesis (set after the second recoverable
+  policy DENY), missing from the durable reconstruction - a real guarded
+  worker run with two recoverable DENY decisions failed closed before
+  request 3. Fixed at the shared durable reconstruction seam: the
+  policy-recovery signal is the POLICY_DECISION_MADE(deny) decision paired
+  with the following non-executed TOOL_EXECUTION_FAILED (the exact
+  recoverable_policy_deny_observation shape), the terminal state includes
+  the two-deny trigger gated on evidence handling, and the per-batch
+  evidence loop fires the typed correction for policy-recovery terminal
+  entries too. Red-first: two Hosted Worker tests red at `8656cab`; green
+  after. Corrected final: policy-recovery + precedence + guarded
+  terminal/continuation/plan tests 19/19, worker suites 110/110,
+  agent_core/storage 467/467, full `2280 passed / 8 failed / 9 skipped`
+  (only the inherited 8 exact-base failures remain), eval 10/10, ruff 11 /
+  mypy 13 identical to base, file-size gate same 10 inherited violations;
+  shared fixture unchanged; final exact SHA sent to the FinOS peer; no
+  push/PR/merge/deploy; Phase 3 starts only on root/owner acceptance of
+  Gate 2.
+- Snapshot date: `2026-08-15`
 - Wave 5 Gate 2 re-audit fix 4 complete on
   `codex/znx-hosted-outer-attempts-v1` (starting HEAD `26ef883`): the root
   re-audit found the reconstruction violated the runtime's
