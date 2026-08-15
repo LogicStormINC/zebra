@@ -6,6 +6,31 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-15`
+- Wave 5 Gate 2 re-audit fix 3 complete on
+  `codex/znx-hosted-outer-attempts-v1` (starting HEAD `1ce6a8b`): the root
+  re-audit found two normal terminal-synthesis flows broken under the real
+  DSH guard (max_attempts=2) - guarded validator correction (FinOS v3
+  validator passed=false) and guarded no-progress convergence (repeated
+  identical reads) both failed with attempt_reconstruction_invalid before
+  the tool-disabled terminal dispatch. Fixed with one shared-root durable
+  terminal-synthesis reconstruction change: a reachable batch scan
+  (validator signal, state changes, observation fingerprints), the
+  no-progress counter replayed with the harness's own progress rule
+  (observation_fingerprint + threshold), and the three real triggers (plain
+  provisional final, validator rejection, convergence threshold) driving the
+  exact validator/no-progress/final-answer instruction rebuild via the same
+  helpers. Red-first: two Hosted Worker tests red at `1ce6a8b`; green
+  after. Corrected final: guarded validator/convergence + continuation/plan
+  tests 15/15, worker suites 106/106, agent_core/storage 466/466 (one known
+  transient migration-concurrency flake, isolated rerun green), full
+  `2276 passed / 8 failed / 9 skipped` (only the inherited 8 exact-base
+  failures remain), eval 10/10, ruff 11 / mypy 13 identical to base,
+  file-size gate same 10 inherited violations; live validator/no-progress
+  equivalence is covered (Phase 4 = full crash/replay matrix only); shared
+  fixture unchanged; final exact SHA sent to the FinOS peer; no
+  push/PR/merge/deploy; Phase 3 starts only on root/owner acceptance of
+  Gate 2.
+- Snapshot date: `2026-08-15`
 - Wave 5 Gate 2 re-audit fix 2 complete on
   `codex/znx-hosted-outer-attempts-v1` (starting HEAD `05e68c4`): the root
   re-audit found the continuation fix misclassified the required-plan nudge

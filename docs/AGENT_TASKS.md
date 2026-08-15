@@ -16366,6 +16366,23 @@ or bind a business operation.
   corrected final: full `2274 passed / 8 failed / 9 skipped` (same inherited
   8), eval `10/10`, ruff 11 / mypy 13 identical to base, file-size gate same
   10 inherited violations; shared fixture unchanged
+- re-audit rejection 3 (starting HEAD `1ce6a8b`): two normal
+  terminal-synthesis flows were broken under the real DSH guard - guarded
+  validator correction (FinOS v3 validator passed=false) and guarded
+  no-progress convergence (repeated identical reads) both failed with
+  attempt_reconstruction_invalid before the tool-disabled terminal
+  dispatch. Fixed with one shared-root durable reconstruction change:
+  reachable batch scan (validator signal, state changes, observation
+  fingerprints), no-progress counter replayed with the harness's own
+  progress rule, and the three real terminal-synthesis triggers (plain
+  provisional final, validator rejection, convergence threshold) driving
+  the exact validator/no-progress/final-answer instruction rebuild.
+  Red-first: two Hosted Worker tests red at `1ce6a8b`, green after.
+  Corrected final: full `2276 passed / 8 failed / 9 skipped` (same inherited
+  8), eval `10/10`, ruff 11 / mypy 13 identical to base, file-size gate same
+  10 inherited violations; live validator/no-progress equivalence is now
+  covered (Phase 4 remains only the full crash/replay matrix); shared
+  fixture unchanged
 - peer fixture frozen: `tests/fixtures/wave5_gate2_contract_delta_v1.json`,
   schema-validated by `test_wave5_gate2_peer_contract.py`; peer notification
   (initial + corrected contract note) sent to FinOS task

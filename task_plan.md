@@ -153,6 +153,36 @@
    fixture unchanged (optional private event field only); final SHA sent to
    the FinOS peer; ready for root/owner re-acceptance; stop before Phase 3.
 
+## ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Gate 2 re-audit fix 3 (guarded terminal synthesis)
+
+1. `completed` - Root re-audit found two normal terminal-synthesis flows
+   broken under the real DSH guard (max_attempts=2): guarded validator
+   correction (FinOS v3 validator passed=false) and guarded no-progress
+   convergence (repeated identical reads) both failed with
+   attempt_reconstruction_invalid before the tool-disabled terminal
+   dispatch.
+2. `completed` - Red-first at `1ce6a8b`: two real Hosted Worker tests
+   (FinOS v3 validator contract with a fake transport; repeated stable
+   files.read) - both red before the fix (requests=1/4, reconstruction
+   mismatch), green after.
+3. `completed` - One shared-root durable terminal-synthesis reconstruction
+   fix: reachable batch scan (validator signal, state changes, observation
+   fingerprints), no-progress counter replayed with the harness's own
+   progress rule (`observation_fingerprint` + threshold), and the three real
+   triggers (plain provisional final, validator rejection, convergence
+   threshold) driving the exact validator/no-progress/final-answer
+   instruction rebuild via the same helpers; no guard bypass, no public
+   exposure, no new state machine.
+4. `completed` - Corrected evidence (fresh runs): guarded validator +
+   convergence + continuation/plan tests 15/15, worker suites 106/106,
+   agent_core/storage 466/466 (one known transient migration-concurrency
+   flake, isolated rerun green), full `2276 passed / 8 failed / 9 skipped`
+   (same inherited 8), eval `10/10`, ruff 11 / mypy 13 identical to base,
+   file-size gate same 10 inherited violations; live validator/no-progress
+   equivalence covered (Phase 4 = full crash/replay matrix only); fixture
+   unchanged; final SHA sent to the FinOS peer; ready for root/owner
+   re-acceptance; stop before Phase 3.
+
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
 1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and

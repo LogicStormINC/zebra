@@ -283,6 +283,81 @@ agent_core/api/storage `468 passed`; full `2274 passed / 8 failed /
 ruff 11 / mypy 13 identical to base; file-size gate same 10 inherited
 violations; `git diff --check` clean
 
+## 4d. Gate 2 re-audit rejection 3 (guarded terminal-synthesis flows, 2026-08-15)
+
+The root re-audit rejected the closure again: two NORMAL existing
+terminal-synthesis flows that the Gate 2 corrections explicitly required
+preserving were broken whenever W5-DSH-01 is enabled (max_attempts=2):
+
+- P1-A guarded validator correction: a Hosted Worker with the FinOS v3
+  validator contract - model request 1 calls
+  finos.trade_log_quality.validate, the provider returns a valid
+  passed=false validator result, and the model has a second "Corrected
+  final." response. Expected: one bounded tool-disabled validator-correction
+  dispatch, 2 provider requests, COMPLETED on the same Attempt. Actual at
+  `1ce6a8b`: FAILED attempt_reconstruction_invalid, requests=1. The rebuilt
+  envelope missed the validator_correction SYSTEM message, the
+  tool_loop_no_progress SYSTEM observation and the fixed final-answer USER
+  instruction; runtime_guidance's validator detection was unreachable (the
+  scan stop set contained TOOL_EXECUTION_COMPLETED/FAILED/STARTED), and
+  terminal_synthesis_pending required tool_call_count==0 so it could not
+  recognize validator-triggered terminal synthesis.
+- P1-B guarded no-progress convergence: repeated identical files.read
+  proposals for the same stable file reach the existing no-progress
+  threshold, then one tool-disabled terminal-synthesis request. Expected:
+  4 tool-loop requests + 1 terminal request, COMPLETED with 5 provider
+  requests on the same Attempt. Actual at `1ce6a8b`: FAILED before provider
+  request 5 (attempt_reconstruction_invalid, requests=4). The rebuilt
+  envelope missed the tool_loop_no_progress observation (whose
+  consecutive_no_progress_batches count is not durable) and the final-answer
+  instruction.
+
+Red-first (starting HEAD `1ce6a8b`): two real Hosted Worker tests
+(`test_guarded_validator_correction_dispatches_terminal_synthesis` with the
+FinOS v3 validator contract and a fake local transport returning passed=false;
+`test_guarded_no_progress_convergence_dispatches_terminal_synthesis` with a
+real stable file) - both RED at `1ce6a8b` (FAILED with the reconstruction
+mismatch, requests=1/4) and green after the fix.
+
+Minimum shared-root fix at the durable terminal-synthesis reconstruction
+decision (one fix, no per-test bypasses):
+- `_scan_attempt_batches` replaces the unreachable lookahead: each durable
+  model response's tool batch is scanned with TOOL_CALL_PROPOSED,
+  TOOL_EXECUTION_COMPLETED/FAILED (validator-rejection signal via the same
+  `_validator_failed_event` helper) and PLAN_UPDATED/APPROVAL_REQUESTED
+  (state-changed) processed - execution completion/failure is now actually
+  inspectable.
+- the no-progress counter is replayed with the harness's OWN progress rule
+  (`observation_fingerprint` + the same reset/increment semantics and
+  `DEFAULT_REPEAT_HARD_STOP_THRESHOLD`), so no new durable marker was
+  needed: the fingerprints are derived from the durable execution events.
+- `_terminal_synthesis_state` recognizes the three real triggers - plain
+  provisional final (unchanged exact discriminator), validator rejection
+  (last batch), and no-progress convergence (replayed count >= threshold) -
+  and `terminal_synthesis_pending` uses it for the final-answer instruction.
+- the rebuilt runtime guidance appends the exact instruction messages via
+  the same helpers the harness uses: validator_correction (once) and the
+  tool_loop_no_progress observation (with the replayed count) exactly when
+  the terminal-synthesis dispatch is not the plain-provisional variant;
+  continuation seeding covers validator/no-progress markers already present
+  in the recovered conversation.
+- no guard bypass: full system/runtime-guidance equality (content AND
+  metadata), conversation, tool/media/model/invocation-policy axes and the
+  tamper-before-gateway guarantee are preserved; no public exposure; no new
+  state machine; proposed_tool_names stays private and validated.
+
+Corrected evidence (fresh runs on the corrected tree): guarded validator +
+convergence + all continuation/plan tests `15/15`; worker suites
+`106 passed`; agent_core/storage `466 passed` (one known transient
+migration-concurrency flake, isolated rerun green); full `2276 passed /
+8 failed / 9 skipped` (only the same 8 exact-base inherited failures);
+eval `10/10`; ruff 11 / mypy 13 identical to base; file-size gate same 10
+inherited violations; `git diff --check` clean.
+
+Gate 2 now covers live pre-dispatch equivalence for validator correction and
+no-progress convergence under the guard; Phase 4 remains ONLY the full
+W5-DSH-03 crash/replay matrix.
+
 ## 5. Contract deltas for the FinOS peer (Gate 2)
 - exact retry classification: `completion_evidence_missing_after_correction`
   is the only coverage code that may schedule Attempt 2 under the frozen
@@ -324,6 +399,9 @@ violations; `git diff --check` clean
   read-only grant and Credit quote/reserve/settle (FinOS lane +
   coordination commit)
 - Phase 4: full W5-DSH-03 crash/replay equivalence matrix; only the
-  outcome-durability seam needed by Phase 2 was extended here
+  outcome-durability seam needed by Phase 2 was extended here. Live
+  pre-dispatch equivalence for continuation, plan-nudge, approved
+  terminal synthesis, validator correction and no-progress convergence is
+  covered by Gate 2; the full crash/replay matrix remains Phase 4.
 - real DeepSeek acceptance (Phase 5) and final SHA closure (Phase 6) remain
   future gates; no push/PR/merge/deploy from this lane

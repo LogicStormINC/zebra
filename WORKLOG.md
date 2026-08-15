@@ -1,5 +1,60 @@
 # Progress Log
 
+## 2026-08-15 Wave 5 Gate 2 re-audit fix 3 (guarded terminal synthesis)
+
+- root re-audit rejected the closure: two NORMAL existing terminal-synthesis
+  flows were broken whenever W5-DSH-01 is enabled (max_attempts=2):
+  - P1-A guarded validator correction: FinOS v3 validator passed=false ->
+    FAILED attempt_reconstruction_invalid, provider requests=1 (expected
+    one tool-disabled validator-correction dispatch + COMPLETED); the
+    rebuilt envelope missed validator_correction + tool_loop_no_progress +
+    final-answer; runtime_guidance's validator scan was unreachable (the
+    lookahead stop set contained TOOL_EXECUTION_*), and
+    terminal_synthesis_pending required tool_call_count==0
+  - P1-B guarded no-progress convergence: repeated identical files.read ->
+    FAILED before provider request 5 (expected 5 requests + COMPLETED); the
+    rebuilt envelope missed the no-progress observation (count not durable)
+    and the final-answer instruction
+- red-first at `1ce6a8b`: two real Hosted Worker tests
+  (`test_guarded_validator_correction_dispatches_terminal_synthesis` with
+  the FinOS v3 validator contract and a fake local transport returning
+  passed=false; `test_guarded_no_progress_convergence_dispatches_terminal_
+  synthesis` with a real stable file) - both red before the fix, green after
+- one shared-root durable terminal-synthesis reconstruction fix:
+  - `_scan_attempt_batches` replaces the unreachable lookahead: each
+    durable response's tool batch is scanned with TOOL_CALL_PROPOSED,
+    TOOL_EXECUTION_COMPLETED/FAILED (validator rejection via the same
+    `_validator_failed_event`) and PLAN_UPDATED/APPROVAL_REQUESTED
+    (state-changed) processed
+  - the no-progress counter is replayed with the harness's own progress
+    rule (`observation_fingerprint` + reset/increment semantics +
+    DEFAULT_REPEAT_HARD_STOP_THRESHOLD) from the durable execution events,
+    so no new durable marker was needed
+  - `_terminal_synthesis_state` recognizes the three real triggers (plain
+    provisional final, validator rejection, convergence threshold);
+    `terminal_synthesis_pending` drives the final-answer instruction; the
+    rebuilt guidance appends validator_correction (once) and the
+    tool_loop_no_progress observation (with the replayed count) exactly at
+    the non-plain-provisional terminal dispatch, via the same helpers the
+    harness uses; continuation seeding covers pre-boundary markers
+  - no guard bypass; full system/runtime-guidance equality (content AND
+    metadata), conversation, tool/media/model/invocation-policy axes and
+    the tamper-before-gateway guarantee are preserved; no public exposure;
+    no second state machine
+- corrected evidence (fresh runs): guarded validator/convergence +
+  continuation/plan tests `15/15`; worker suites `106 passed`;
+  agent_core/storage `466 passed` (one known transient migration-concurrency
+  flake, isolated rerun green); full `2276 passed / 8 failed / 9 skipped`
+  (same inherited 8: 2 agent_integrations, 5 clock-sensitive
+  session_pull_request, 1 file-size gate); eval `10/10`; ruff 11 / mypy 13
+  identical to base; file-size gate same 10 inherited violations;
+  `git diff --check` clean
+- live validator/no-progress equivalence is now covered by Gate 2; Phase 4
+  remains only the full W5-DSH-03 crash/replay matrix; shared fixture
+  unchanged; final exact SHA sent to FinOS peer
+  `019ffe56-8b1e-74e2-9289-9ee8a3544aff`; no push/PR/merge/deploy; stop at
+  Gate 2 for root/owner re-acceptance
+
 ## 2026-08-15 Wave 5 Gate 2 re-audit fix 2 (required-plan nudge regression)
 
 - root re-audit rejected the closure with one deterministic P1 regression
