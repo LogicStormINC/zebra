@@ -183,6 +183,35 @@
    unchanged; final SHA sent to the FinOS peer; ready for root/owner
    re-acceptance; stop before Phase 3.
 
+## ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Gate 2 re-audit fix 4 (evidence-before-terminal precedence)
+
+1. `completed` - Root re-audit found the reconstruction violated the
+   runtime's evidence-before-terminal-synthesis order: with missing
+   completion evidence and a matching trusted producer it rebuilt the
+   validator/no-progress/final-answer guidance alongside the missing-
+   evidence observation, so the real evidence-correction dispatch never
+   matched (validator + evidence and convergence + evidence combinations
+   failed with attempt_reconstruction_invalid).
+2. `completed` - Red-first at `26ef883`: two real Hosted Worker precedence
+   tests (validator passed=false + authoritative producer; repeated stable
+   reads + authoritative producer) - both red before the fix, green after.
+3. `completed` - Minimum shared-root fix at the durable next-dispatch
+   decision: terminal synthesis pending gated on evidence handling
+   (pending = triggers AND NOT evidence_missing); validator trigger is any
+   batch (the runtime flag persists until the evidence gate returns None);
+   evidence observations rebuilt with the historical per-batch evidence
+   state; the no-progress counter reuses the harness's own shared
+   update_observation_progress transition (no parallel reducer); durable
+   terminal-synthesis reconstruction moved to the focused
+   terminal_synthesis.py (no new size violation); no guard bypass.
+4. `completed` - Corrected evidence (fresh runs): precedence + guarded
+   terminal/continuation/plan tests 17/17, worker suites 108/108,
+   agent_core/storage 467/467, full `2278 passed / 8 failed / 9 skipped`
+   (same inherited 8), eval `10/10`, ruff 11 / mypy 13 identical to base,
+   file-size gate same 10 inherited violations; fixture unchanged; final
+   SHA sent to the FinOS peer; ready for root/owner re-acceptance; stop
+   before Phase 3.
+
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
 1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and

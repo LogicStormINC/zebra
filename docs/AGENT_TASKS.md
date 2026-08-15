@@ -16383,6 +16383,25 @@ or bind a business operation.
   10 inherited violations; live validator/no-progress equivalence is now
   covered (Phase 4 remains only the full crash/replay matrix); shared
   fixture unchanged
+- re-audit rejection 4 (starting HEAD `26ef883`): the reconstruction
+  violated the runtime's evidence-before-terminal-synthesis precedence -
+  with missing completion evidence and a matching trusted producer it
+  rebuilt the validator/no-progress/final-answer guidance alongside the
+  missing-evidence observation, so the real evidence-correction dispatch
+  never matched (validator + evidence and convergence + evidence
+  combinations failed with attempt_reconstruction_invalid). Fixed at the
+  durable next-dispatch decision: terminal synthesis pending is gated on
+  evidence handling (pending = triggers AND NOT evidence_missing), the
+  validator trigger is any batch (the runtime flag persists until the
+  evidence gate returns None), evidence observations are rebuilt with the
+  historical per-batch evidence state, and the no-progress counter reuses
+  the harness's own update_observation_progress transition; the durable
+  terminal-synthesis reconstruction moved to the focused
+  terminal_synthesis.py (no new size violation). Red-first: two Hosted
+  Worker precedence tests red at `26ef883`, green after. Corrected final:
+  full `2278 passed / 8 failed / 9 skipped` (same inherited 8), eval
+  `10/10`, ruff 11 / mypy 13 identical to base, file-size gate same 10
+  inherited violations; shared fixture unchanged
 - peer fixture frozen: `tests/fixtures/wave5_gate2_contract_delta_v1.json`,
   schema-validated by `test_wave5_gate2_peer_contract.py`; peer notification
   (initial + corrected contract note) sent to FinOS task

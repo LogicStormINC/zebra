@@ -358,6 +358,60 @@ Gate 2 now covers live pre-dispatch equivalence for validator correction and
 no-progress convergence under the guard; Phase 4 remains ONLY the full
 W5-DSH-03 crash/replay matrix.
 
+## 4e. Gate 2 re-audit rejection 4 (evidence-before-terminal precedence, 2026-08-15)
+
+The root re-audit found one shared precedence bug: the reconstruction
+violated the runtime's evidence-before-terminal-synthesis order in
+`_request_terminal_synthesis` (prepare_terminal_synthesis_evidence first;
+only when it returns None does validator/no-progress guidance + final-answer
+get appended). With missing completion evidence and a matching trusted
+producer, the reconstruction independently appended the missing-evidence
+observation AND the validator/no-progress/final-answer guidance, so the
+expected envelope could never equal the real evidence-correction request.
+Reproduced on `26ef883` with a genuine FinOS v3 provider advertising both
+the producer and the validator (FAILED attempt_reconstruction_invalid before
+request 2), and with convergence + missing evidence (FAILED before the
+correction dispatch).
+
+Red-first (starting HEAD `26ef883`): two real Hosted Worker tests
+(`test_guarded_validator_evidence_correction_takes_precedence`,
+`test_guarded_convergence_evidence_correction_takes_precedence`) - both RED
+at `26ef883` (reconstruction mismatch, requests=1/4), green after the fix.
+
+Minimum shared-root fix at the durable next-dispatch decision:
+- the terminal-synthesis state is gated on evidence handling:
+  `pending = (plain_provisional or validator_rejection or
+  no_progress_triggered) and not evidence_missing`; `terminal_synthesis_pending`
+  evaluates the completion-evidence status over the durable stream, so the
+  final-answer instruction is never reconstructed while evidence handling
+  takes over
+- the validator/no-progress guidance in the rebuilt runtime guidance is
+  appended only through the same gated state, never alongside a
+  missing-evidence correction
+- the runtime's terminal-synthesis flags persist in the batch metadata (a
+  validator rejection keeps the terminal entry pending until the evidence
+  gate returns None), so the validator trigger is ANY batch in the attempt,
+  not only the last one; the evidence correction observation is rebuilt with
+  the HISTORICAL evidence state per batch (typed evidence produced by a
+  later batch must not erase an already-appended observation)
+- the no-progress counter now reuses the harness's OWN shared
+  `update_observation_progress` transition (no parallel reducer); the
+  per-batch loop replays it incrementally so the correction observation
+  fires for no-progress-triggered terminal entries too
+- `runtime_guidance.py` split: the durable terminal-synthesis reconstruction
+  moved to the focused `terminal_synthesis.py` (both files under limits)
+- no guard bypass; full system/runtime-guidance equality (content AND
+  metadata), conversation, tool/media/model/invocation-policy axes and the
+  tamper-before-gateway guarantee are preserved; no public exposure; no
+  second state machine
+
+Corrected evidence (fresh runs on the corrected tree): the two precedence
+tests + all guarded terminal/continuation/plan tests `17/17`; worker suites
+`108 passed`; agent_core/storage `467 passed`; full `2278 passed /
+8 failed / 9 skipped` (only the same 8 exact-base inherited failures); eval
+`10/10`; ruff 11 / mypy 13 identical to base; file-size gate same 10
+inherited violations; `git diff --check` clean.
+
 ## 5. Contract deltas for the FinOS peer (Gate 2)
 - exact retry classification: `completion_evidence_missing_after_correction`
   is the only coverage code that may schedule Attempt 2 under the frozen

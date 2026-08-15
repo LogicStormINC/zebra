@@ -1,5 +1,59 @@
 # Progress Log
 
+## 2026-08-15 Wave 5 Gate 2 re-audit fix 4 (evidence-before-terminal precedence)
+
+- root re-audit found one shared precedence bug: the reconstruction violated
+  the runtime's evidence-before-terminal-synthesis order in
+  `_request_terminal_synthesis` (prepare_terminal_synthesis_evidence first;
+  only when it returns None does validator/no-progress guidance + final-
+  answer get appended). With missing completion evidence and a matching
+  trusted producer, the rebuilt envelope contained the missing-evidence
+  observation AND the validator/no-progress/final-answer guidance, so the
+  real evidence-correction request never matched
+  (attempt_reconstruction_invalid before request 2 for the validator +
+  evidence case; before the correction dispatch for convergence + evidence)
+- red-first at `26ef883`: two real Hosted Worker precedence tests
+  (`test_guarded_validator_evidence_correction_takes_precedence` with the
+  FinOS v3 validator + authoritative producer,
+  `test_guarded_convergence_evidence_correction_takes_precedence` with
+  repeated stable reads + authoritative producer) - both red before the fix,
+  green after
+- minimum shared-root fix at the durable next-dispatch decision:
+  - terminal synthesis pending is gated on evidence handling:
+    `pending = (plain_provisional or validator_rejection or
+    no_progress_triggered) and not evidence_missing`;
+    `terminal_synthesis_pending` evaluates the completion-evidence status
+    over the durable stream so the final-answer instruction is never
+    reconstructed while evidence handling takes over
+  - the validator/no-progress guidance is appended only through the same
+    gated state, never alongside a missing-evidence correction
+  - the validator trigger is ANY batch in the attempt (the runtime's
+    terminal-synthesis flags persist in the batch metadata until the
+    evidence gate returns None), not only the last batch
+  - evidence observations are rebuilt with the HISTORICAL per-batch
+    evidence state (typed evidence produced by a later batch must not erase
+    an already-appended observation), and the per-batch loop fires the
+    correction observation for no-progress-triggered terminal entries too
+  - the no-progress counter now reuses the harness's own shared
+    `update_observation_progress` transition (no parallel reducer)
+  - `runtime_guidance.py` split: the durable terminal-synthesis
+    reconstruction moved to the focused `terminal_synthesis.py` (no new
+    file-size violation)
+  - no guard bypass; full system/runtime-guidance equality (content AND
+    metadata), conversation, tool/media/model/invocation-policy axes and
+    the tamper-before-gateway guarantee are preserved; no public exposure;
+    no second state machine
+- corrected evidence (fresh runs): precedence + guarded terminal/
+  continuation/plan tests `17/17`; worker suites `108 passed`;
+  agent_core/storage `467 passed`; full `2278 passed / 8 failed /
+  9 skipped` (same inherited 8: 2 agent_integrations, 5 clock-sensitive
+  session_pull_request, 1 file-size gate); eval `10/10`; ruff 11 / mypy 13
+  identical to base; file-size gate same 10 inherited violations;
+  `git diff --check` clean
+- shared fixture unchanged; final exact SHA sent to FinOS peer
+  `019ffe56-8b1e-74e2-9289-9ee8a3544aff`; no push/PR/merge/deploy; stop at
+  Gate 2 for root/owner re-acceptance
+
 ## 2026-08-15 Wave 5 Gate 2 re-audit fix 3 (guarded terminal synthesis)
 
 - root re-audit rejected the closure: two NORMAL existing terminal-synthesis

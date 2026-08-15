@@ -6,6 +6,31 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-15`
+- Wave 5 Gate 2 re-audit fix 4 complete on
+  `codex/znx-hosted-outer-attempts-v1` (starting HEAD `26ef883`): the root
+  re-audit found the reconstruction violated the runtime's
+  evidence-before-terminal-synthesis precedence - with missing completion
+  evidence and a matching trusted producer it rebuilt the
+  validator/no-progress/final-answer guidance alongside the missing-evidence
+  observation, so the real evidence-correction dispatch never matched
+  (validator + evidence and convergence + evidence combinations failed with
+  attempt_reconstruction_invalid). Fixed at the durable next-dispatch
+  decision: terminal synthesis pending is gated on evidence handling,
+  the validator trigger is any batch (the runtime flag persists until the
+  evidence gate returns None), evidence observations are rebuilt with the
+  historical per-batch evidence state, and the no-progress counter reuses
+  the harness's own update_observation_progress transition; the durable
+  terminal-synthesis reconstruction moved to the focused
+  terminal_synthesis.py (no new size violation). Red-first: two Hosted
+  Worker precedence tests red at `26ef883`; green after. Corrected final:
+  precedence + guarded terminal/continuation/plan tests 17/17, worker
+  suites 108/108, agent_core/storage 467/467, full `2278 passed /
+  8 failed / 9 skipped` (only the inherited 8 exact-base failures remain),
+  eval 10/10, ruff 11 / mypy 13 identical to base, file-size gate same 10
+  inherited violations; shared fixture unchanged; final exact SHA sent to
+  the FinOS peer; no push/PR/merge/deploy; Phase 3 starts only on
+  root/owner acceptance of Gate 2.
+- Snapshot date: `2026-08-15`
 - Wave 5 Gate 2 re-audit fix 3 complete on
   `codex/znx-hosted-outer-attempts-v1` (starting HEAD `1ce6a8b`): the root
   re-audit found two normal terminal-synthesis flows broken under the real
