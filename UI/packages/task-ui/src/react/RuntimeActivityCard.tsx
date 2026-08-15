@@ -20,18 +20,18 @@ const useStyle = createStyles(({ css }) => ({
     min-width: 0;
   `,
   title: css`
-    color: rgba(255, 255, 255, 0.82);
+    color: var(--task-ui-text, rgba(255, 255, 255, 0.82));
     font-size: 13px;
     font-weight: 500;
   `,
   detail: css`
-    color: rgba(255, 255, 255, 0.42);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.42));
     font-size: 12px;
     line-height: 18px;
   `,
   action: css`
     flex: none;
-    color: rgba(255, 255, 255, 0.42);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.42));
     opacity: 0;
     transition: opacity 160ms ease, color 160ms ease;
     @media (hover: none), (max-width: 640px), (prefers-reduced-motion: reduce) { opacity: 1; }

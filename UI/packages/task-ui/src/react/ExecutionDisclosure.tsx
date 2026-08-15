@@ -20,17 +20,17 @@ const useStyle = createStyles(({ css }) => ({
     grid-template-columns: 16px minmax(0, 1fr) auto auto;
     align-items: center;
     gap: 8px;
-    color: rgba(255, 255, 255, 0.68);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.68));
     font-size: 12px;
     line-height: 18px;
   `,
   icon: css`
-    color: rgba(255, 255, 255, 0.34);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.34));
   `,
   name: css`
     min-width: 0;
     overflow: hidden;
-    color: rgba(255, 255, 255, 0.78);
+    color: var(--task-ui-text, rgba(255, 255, 255, 0.78));
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -38,25 +38,25 @@ const useStyle = createStyles(({ css }) => ({
   result: css`
     min-width: 0;
     overflow: hidden;
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.55));
     text-overflow: ellipsis;
     white-space: nowrap;
   `,
   attempt: css`
-    color: rgba(255, 255, 255, 0.48);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.48));
     white-space: nowrap;
   `,
   status: css`
     padding: 1px 7px;
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    border: 1px solid var(--task-ui-border, rgba(255, 255, 255, 0.09));
     border-radius: 999px;
-    color: rgba(255, 255, 255, 0.62);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.62));
     font-size: 11px;
     line-height: 16px;
     white-space: nowrap;
-    [data-status="running"] &, [data-status="awaiting_approval"] & { color: #f2a65a; }
-    [data-status="failed"] &, [data-status="denied"] & { color: #f28b82; }
-    [data-status="completed"] & { color: #8fbc8f; }
+    [data-status="running"] &, [data-status="awaiting_approval"] & { color: var(--task-ui-accent, #f2a65a); }
+    [data-status="failed"] &, [data-status="denied"] & { color: var(--task-ui-danger, #f28b82); }
+    [data-status="completed"] & { color: var(--task-ui-success, #8fbc8f); }
   `,
 }));
 

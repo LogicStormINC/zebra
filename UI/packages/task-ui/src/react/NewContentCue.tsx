@@ -7,10 +7,10 @@ const useStyle = createStyles(({ css }) => ({
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    border: 1px solid rgba(245, 158, 11, 0.35);
+    border: 1px solid color-mix(in srgb, var(--task-ui-accent, rgb(245, 158, 11)) 35%, transparent);
     border-radius: 999px;
-    background: rgba(245, 158, 11, 0.12);
-    color: #f5a623;
+    background: color-mix(in srgb, var(--task-ui-accent, rgb(245, 158, 11)) 12%, transparent);
+    color: var(--task-ui-accent, #f5a623);
     font-size: 12px;
     line-height: 20px;
     padding: 2px 12px;

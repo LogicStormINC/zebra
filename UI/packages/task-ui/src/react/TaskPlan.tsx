@@ -11,9 +11,9 @@ const STATUS_LABELS: Record<TaskPlanStep["status"], string> = {
 
 const useStyle = createStyles(({ css }) => ({
   card: css`
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--task-ui-border, rgba(255, 255, 255, 0.08));
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.025);
+    background: var(--task-ui-surface, rgba(255, 255, 255, 0.025));
     padding: 16px 18px;
   `,
   header: css`
@@ -24,13 +24,13 @@ const useStyle = createStyles(({ css }) => ({
     margin-bottom: 10px;
     h3 {
       margin: 0;
-      color: var(--zebra-text-primary);
+      color: var(--task-ui-text, #f4f4f5);
       font-size: 13px;
       line-height: 20px;
       font-weight: 600;
     }
     span {
-      color: rgba(255, 255, 255, 0.42);
+      color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.42));
       font-size: 11px;
       line-height: 18px;
     }
@@ -50,18 +50,18 @@ const useStyle = createStyles(({ css }) => ({
     align-items: center;
     gap: 8px;
     min-height: 30px;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--task-ui-text, rgba(255, 255, 255, 0.7));
     font-size: 13px;
     line-height: 20px;
     &[data-status="completed"],
     &[data-status="cancelled"] {
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.4));
     }
     &[data-status="in_progress"] {
-      color: var(--zebra-text-primary);
+      color: var(--task-ui-text, #f4f4f5);
     }
     small {
-      color: rgba(255, 255, 255, 0.34);
+      color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.34));
       font-size: 11px;
       line-height: 18px;
       white-space: nowrap;
@@ -73,13 +73,13 @@ const useStyle = createStyles(({ css }) => ({
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--task-ui-border, rgba(255, 255, 255, 0.15));
     border-radius: 50%;
-    color: rgba(255, 255, 255, 0.58);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.58));
     font-size: 9px;
     [data-status="in_progress"] & {
-      border-color: rgba(245, 158, 11, 0.58);
-      box-shadow: inset 0 0 0 4px rgba(245, 158, 11, 0.16);
+      border-color: color-mix(in srgb, var(--task-ui-accent, rgb(245, 158, 11)) 58%, transparent);
+      box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--task-ui-accent, rgb(245, 158, 11)) 16%, transparent);
     }
   `,
 }));

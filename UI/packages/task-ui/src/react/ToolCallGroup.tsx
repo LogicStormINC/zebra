@@ -11,12 +11,12 @@ const shimmer = keyframes`
 
 const useStyle = createStyles(({ css }) => ({
   group: css`
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--task-ui-border, rgba(255, 255, 255, 0.07));
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.015);
+    background: var(--task-ui-surface-muted, rgba(255, 255, 255, 0.015));
     overflow: hidden;
     &[open] {
-      background: rgba(255, 255, 255, 0.022);
+      background: var(--task-ui-surface-muted, rgba(255, 255, 255, 0.022));
     }
   `,
   summary: css`
@@ -26,7 +26,7 @@ const useStyle = createStyles(({ css }) => ({
     gap: 8px;
     padding: 8px 12px;
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.72);
+    color: var(--task-ui-text, rgba(255, 255, 255, 0.72));
     font-size: 13px;
     line-height: 20px;
     list-style: none;
@@ -35,17 +35,17 @@ const useStyle = createStyles(({ css }) => ({
       display: none;
     }
     &:hover {
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--task-ui-text, rgba(255, 255, 255, 0.9));
     }
     &:focus-visible {
       border-radius: 6px;
-      outline: 2px solid rgba(245, 158, 11, 0.7);
+      outline: 2px solid color-mix(in srgb, var(--task-ui-accent, rgb(245, 158, 11)) 70%, transparent);
       outline-offset: -2px;
     }
   `,
   chevron: css`
     flex: 0 0 auto;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.4));
     font-size: 11px;
     transition: transform 160ms ease;
     details[open] & {
@@ -59,14 +59,14 @@ const useStyle = createStyles(({ css }) => ({
     animation: ${shimmer} 1.5s ease-in-out infinite;
   `,
   count: css`
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.45));
     font-size: 12px;
   `,
   spacer: css`
     flex: 1;
   `,
   failed: css`
-    color: #f28b82;
+    color: var(--task-ui-danger, #f28b82);
     font-size: 12px;
   `,
   body: css`

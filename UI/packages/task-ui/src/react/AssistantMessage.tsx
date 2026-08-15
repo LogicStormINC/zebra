@@ -11,13 +11,13 @@ const useStyle = createStyles(({ css }) => {
       display: flex;
       flex-direction: column;
       gap: var(--zebra-space-sm);
-      color: rgba(255, 255, 255, 0.92);
+      color: var(--task-ui-text, rgba(255, 255, 255, 0.92));
     `,
     assistantMeta: css`
       display: flex;
       align-items: center;
       gap: var(--zebra-space-xs);
-      color: rgba(255, 255, 255, 0.45);
+      color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.45));
       font-size: var(--zebra-font-size-sm);
       font-weight: var(--zebra-font-weight-medium);
       letter-spacing: 0.02em;
@@ -26,7 +26,7 @@ const useStyle = createStyles(({ css }) => {
       width: var(--zebra-icon-dot);
       height: var(--zebra-icon-dot);
       border-radius: 50%;
-      background: #8f8f8f;
+      background: var(--task-ui-text-muted, #8f8f8f);
     `,
     assistantBody: css`
       display: flex;
@@ -34,7 +34,7 @@ const useStyle = createStyles(({ css }) => {
       gap: var(--zebra-space-md);
     `,
     markdown: css`
-      color: rgba(255, 255, 255, 0.92);
+      color: var(--task-ui-text, rgba(255, 255, 255, 0.92));
       font-size: var(--zebra-font-size-md);
       line-height: var(--zebra-line-height-relaxed);
       p {
@@ -51,15 +51,15 @@ const useStyle = createStyles(({ css }) => {
         margin-top: var(--zebra-space-xs);
       }
       code {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: var(--task-ui-surface-muted, rgba(255, 255, 255, 0.1));
+        border: 1px solid var(--task-ui-border, rgba(255, 255, 255, 0.05));
         border-radius: var(--zebra-radius-pill);
         padding: var(--zebra-space-3xs) var(--zebra-space-sm);
         font-size: var(--zebra-font-size-code);
       }
       pre {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--task-ui-surface-muted, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--task-ui-border, rgba(255, 255, 255, 0.08));
         border-radius: var(--zebra-radius-card);
         padding: var(--zebra-space-sm) var(--zebra-space-md);
         overflow: auto;
@@ -67,15 +67,15 @@ const useStyle = createStyles(({ css }) => {
       blockquote {
         margin: 0;
         padding-left: var(--zebra-space-md);
-        border-left: var(--zebra-line-indent-step) solid rgba(255, 255, 255, 0.12);
-        color: rgba(255, 255, 255, 0.66);
+        border-left: var(--zebra-line-indent-step) solid var(--task-ui-border, rgba(255, 255, 255, 0.12));
+        color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.66));
       }
     `,
     assistantActions: css`
       display: flex;
       align-items: center;
       gap: var(--zebra-space-sm);
-      color: rgba(255, 255, 255, 0.45);
+      color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.45));
     `,
   };
 });

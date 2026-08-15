@@ -7,30 +7,30 @@ import type { ClarificationContext } from "../core/public-types.ts";
 const useStyle = createStyles(({ css }) => ({
   panel: css`
     padding: 18px;
-    border: 1px solid rgba(245, 158, 11, 0.28);
+    border: 1px solid color-mix(in srgb, var(--task-ui-accent, rgb(245, 158, 11)) 28%, transparent);
     border-radius: 16px;
-    background: rgba(245, 158, 11, 0.055);
+    background: color-mix(in srgb, var(--task-ui-accent, rgb(245, 158, 11)) 5.5%, transparent);
   `,
   heading: css`
     display: flex;
     align-items: center;
     gap: 9px;
     margin: 0 0 8px;
-    color: var(--zebra-text-primary);
+    color: var(--task-ui-text, #f4f4f5);
     font-size: 14px;
     line-height: 22px;
     font-weight: 600;
-    svg { color: #f5a623; }
+    svg { color: var(--task-ui-accent, #f5a623); }
   `,
   question: css`
     margin: 0;
-    color: rgba(255, 255, 255, 0.82);
+    color: var(--task-ui-text, rgba(255, 255, 255, 0.82));
     font-size: 14px;
     line-height: 22px;
   `,
   context: css`
     margin: 6px 0 0;
-    color: rgba(255, 255, 255, 0.46);
+    color: var(--task-ui-text-muted, rgba(255, 255, 255, 0.46));
     font-size: 12px;
     line-height: 19px;
   `,
