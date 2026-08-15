@@ -83,6 +83,8 @@ const useStyle = createStyles(({ css }) => {
 interface AssistantMessageProps {
   message: ChatMessage;
   agentLabel?: string;
+  /** Built-in copy action; set false when the consumer's toolbar owns copy. */
+  showCopyAction?: boolean;
   /** Consumer-specific content rendered above the markdown body. */
   renderBefore?: ReactNode;
   /**
@@ -98,6 +100,7 @@ interface AssistantMessageProps {
 export function AssistantMessage({
   message,
   agentLabel = "Zebra Agent",
+  showCopyAction = true,
   renderBefore,
   renderSources,
   renderMessageActions,
@@ -120,10 +123,9 @@ export function AssistantMessage({
       <div className={styles.assistantActions}>
         <Actions
           items={[
-            {
-              key: "copy",
-              actionRender: <Actions.Copy text={message.content} />,
-            },
+            ...(showCopyAction
+              ? [{ key: "copy", actionRender: <Actions.Copy text={message.content} /> }]
+              : []),
           ]}
         />
         {renderMessageActions?.(message)}
