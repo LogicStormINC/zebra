@@ -15902,6 +15902,47 @@ resolved capabilities into the existing OpenAI-compatible gateway.
   database/UI changes, FinOS business behavior, MiniMax MCP changes, or
   upstream merge
 
+### MDL-PROFILE-03 - Qwen Max Text Thinking Profiles
+
+- Status: `In Progress`
+- Owner: `Vinson`
+- Suggested role: `INTEGRATIONS / QA / DEPLOYMENT`
+- Depends on: `MDL-PROFILE-02`
+- Branch: `codex/qwen37-max-thinking-profiles`
+- Base: `4f936c4a165e9f92cff68008d9440fe715c7048b`
+- Repository: `vinson1101/zebra`
+- Owned paths:
+  `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_model_profiles.py`,
+  `tests/agent_integrations/test_qwen_thinking_profiles.py`,
+  `docs/Generic_Model_Profile_Contract_v2.md`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Bind the verified Qwen request thinking mode to an exact versioned model
+profile. `qwen3.7-max` stays text-only with thinking disabled;
+`qwen3.7-max-2026-05-17` and `qwen3.7-max-preview` stay text-only and send
+`enable_thinking=true`. The OpenAI-compatible adapter must not infer behavior
+from model-name prefixes, suffixes, aliases, or regular expressions.
+
+#### Acceptance
+
+- [ ] Red tests reproduce the current `enable_thinking=false` request for the
+  dated and preview Max profiles.
+- [ ] Exact provider/model/profile mismatches fail before HTTP.
+- [ ] All three Max profiles remain native-text-only and retain MCP image use.
+- [ ] Flash profiles retain their existing `enable_thinking=false` behavior.
+- [ ] Focused tests, Ruff, Mypy, compileall, and `git diff --check` pass.
+- [ ] All three exact models pass provider tool-call preflight and deployed
+  FinOS-to-Zebra text smoke before the catalog is declared available.
+
+#### Explicit Non-Goals
+
+- Native image support, MiniMax MCP changes, automatic model routing or
+  fallback, model-name inference, a second provider adapter, business workflow
+  changes, FinOS Task schema changes, or prompt specialization.
+
 ### EFF-READONLY-01 - Declared Read-Only Tools Bypass Effect Ledger Before Reserve
 
 - Status: `Review`
