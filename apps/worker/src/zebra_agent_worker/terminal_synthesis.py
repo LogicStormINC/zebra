@@ -31,6 +31,7 @@ from agent_core.harness.models import HarnessAttempt, HarnessContext, HarnessEve
 class _BatchScan:
     tool_names: tuple[str, ...]
     validator_rejection: bool
+    recoverable_deny: bool
     state_changed: bool
     observations: tuple[tuple[ToolCall, ToolResult], ...]
     end_index: int
@@ -41,6 +42,7 @@ class _TerminalSynthesisState:
     pending: bool
     plain_provisional: bool
     validator_rejection: bool
+    policy_recovery: bool
     no_progress_count: int
 
 
@@ -72,6 +74,8 @@ def _scan_attempt_batches(
                 if isinstance(name, str) and name.strip()
             )
         validator_rejection = False
+        recoverable_deny = False
+        denied_tool_call_ids: set[str] = set()
         state_changed = False
         observations: list[tuple[ToolCall, ToolResult]] = []
         while index < len(events) and events[index].event_type not in {
@@ -84,12 +88,19 @@ def _scan_attempt_batches(
                 name = following.payload.get("tool_name")
                 if isinstance(name, str) and name.strip():
                     tool_names.append(name.strip())
+            elif following.event_type is EventType.POLICY_DECISION_MADE:
+                if following.payload.get("decision") == "deny":
+                    raw_id = following.payload.get("tool_call_id")
+                    if isinstance(raw_id, str) and raw_id.strip():
+                        denied_tool_call_ids.add(raw_id.strip())
             elif following.event_type in {
                 EventType.TOOL_EXECUTION_COMPLETED,
                 EventType.TOOL_EXECUTION_FAILED,
             }:
                 if _validator_failed_event(following.payload):
                     validator_rejection = True
+                if _recoverable_deny_event(following.payload, denied_tool_call_ids):
+                    recoverable_deny = True
                 observation = _execution_observation(following.payload, created_at)
                 if observation is not None:
                     observations.append(observation)
@@ -102,6 +113,7 @@ def _scan_attempt_batches(
             _BatchScan(
                 tool_names=tuple(dict.fromkeys(tool_names)),
                 validator_rejection=validator_rejection,
+                recoverable_deny=recoverable_deny,
                 state_changed=state_changed,
                 observations=tuple(observations),
                 end_index=index,
@@ -180,6 +192,9 @@ def _terminal_synthesis_state(
     # terminal entry pending until the evidence gate returns None, so the
     # trigger is any batch in the attempt, not only the last one.
     validator_rejection = any(batch.validator_rejection for batch in batches)
+    # policy_recovery_metadata sets policy_recovery_terminal_synthesis after
+    # the second recoverable policy deny (count >= 2).
+    policy_recovery = sum(1 for batch in batches if batch.recoverable_deny) >= 2
     no_progress_triggered = no_progress_count >= DEFAULT_REPEAT_HARD_STOP_THRESHOLD
     last_response_index: int | None = None
     for index, event in enumerate(events):
@@ -223,12 +238,16 @@ def _terminal_synthesis_state(
     # synthesis - and its validator/no-progress/final-answer guidance - can
     # only be pending after evidence handling is satisfied.
     pending = (
-        plain_provisional or validator_rejection or no_progress_triggered
+        plain_provisional
+        or validator_rejection
+        or policy_recovery
+        or no_progress_triggered
     ) and not evidence_missing
     return _TerminalSynthesisState(
         pending=pending,
         plain_provisional=plain_provisional,
         validator_rejection=validator_rejection,
+        policy_recovery=policy_recovery,
         no_progress_count=no_progress_count,
     )
 
@@ -272,6 +291,23 @@ def _validator_failed_event(payload: dict[str, object]) -> bool:
         return outcome != "passed"
     result = metadata.get("validator_result")
     return isinstance(result, dict) and result.get("passed") is False
+
+
+def _recoverable_deny_event(
+    payload: dict[str, object],
+    denied_tool_call_ids: set[str],
+) -> bool:
+    """A recoverable policy deny is durable as a policy DENY decision
+    followed by a TOOL_EXECUTION_FAILED marking the call as not executed
+    (recoverable_policy_deny_observation records exactly this pair);
+    repeated-tool failures are not preceded by a policy deny decision."""
+    if payload.get("status") == ToolCallStatus.EXECUTED.value:
+        return False
+    metadata = payload.get("metadata")
+    if not (isinstance(metadata, dict) and metadata.get("executed") is False):
+        return False
+    raw_id = payload.get("tool_call_id")
+    return isinstance(raw_id, str) and raw_id.strip() in denied_tool_call_ids
 
 
 def terminal_synthesis_pending(

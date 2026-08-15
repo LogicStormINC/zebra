@@ -123,9 +123,13 @@ def _rebuild(
     )
 
     progress_metadata: dict[str, object] = {}
+    recoverable_deny_count = 0
     for batch in batches:
         tool_names = batch.tool_names
         validator_failed = batch.validator_rejection
+        if batch.recoverable_deny:
+            recoverable_deny_count += 1
+        policy_recovery_triggered = recoverable_deny_count >= 2
         progress_metadata = update_observation_progress(
             progress_metadata,
             batch.observations,
@@ -181,7 +185,7 @@ def _rebuild(
             evidence_observations += 1
         elif (
             batch_evidence_missing
-            and (validator_failed or no_progress_triggered)
+            and (validator_failed or no_progress_triggered or policy_recovery_triggered)
             and correction_open
         ):
             guidance.append(
