@@ -94,6 +94,28 @@ def _seed_producer_coverage_session(database_path: Path, workspace_root: Path):
     return bootstrap
 
 
+def _seed_guarded_session(database_path: Path, workspace_root: Path):
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Guarded terminal synthesis",
+            user_input="Complete the analysis.",
+            workspace_root=workspace_root.resolve(),
+            tool_profile=ToolProfile.CODING,
+            max_attempts=2,
+        )
+    )
+    event_store = SQLiteEventStore(database_path)
+    for event in bootstrap.events:
+        event_store.append(event)
+    SQLiteProjectionStore(database_path).save_session(bootstrap.session)
+    SessionRecoveryService(
+        event_store,
+        SQLiteProjectionStore(database_path),
+        SQLiteWorkspaceProjectionStore(database_path),
+    ).recover_session(bootstrap.session.session_id)
+    return bootstrap
+
+
 class _PolicyAwareScriptedGateway(ScriptedModelGateway):
     def __init__(self, responses) -> None:
         super().__init__(responses)
@@ -175,6 +197,178 @@ def _assert_single_attempt(database_path: Path, session_id) -> None:
         if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
     ]
     assert [event.payload["attempt_sequence"] for event in starts] == [1]
+
+
+class _RecoverableDenyPolicy:
+    """Denies the first two distinct tool calls recoverably (the runtime
+    counts two denies before terminal synthesis), then allows."""
+
+    def __init__(self) -> None:
+        self.denies = 0
+
+    def evaluate_tool_call(self, tool_call):
+        del tool_call
+        if self.denies < 2:
+            self.denies += 1
+            return _recoverable_deny()
+        return _allow()
+
+
+def _recoverable_deny():
+    from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
+
+    return PolicyDecision(
+        decision=PolicyDecisionType.DENY,
+        reason="test recoverable deny",
+        policy_profile="workspace_write",
+        recoverable=True,
+    )
+
+
+def _allow():
+    from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
+
+    return PolicyDecision(
+        decision=PolicyDecisionType.ALLOW,
+        reason="allowed",
+        policy_profile="workspace_write",
+    )
+
+
+def _install_recoverable_deny_policy(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "zebra_agent_worker.attempt_execution.LocalPolicyEngine",
+        lambda **kwargs: _RecoverableDenyPolicy(),
+    )
+
+
+# P1: after two recoverable policy DENY decisions, the runtime schedules the
+# tool-disabled terminal synthesis; the durable reconstruction must include
+# it (no-progress observation + final-answer instruction) instead of failing
+# closed before request 3.
+def test_guarded_policy_recovery_terminal_synthesis(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "wave5-policy-recovery.db"
+    bootstrap = _seed_guarded_session(database_path, tmp_path)
+    session_id = bootstrap.session.session_id
+    _install_recoverable_deny_policy(monkeypatch)
+    first_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.read",
+        arguments={"path": "stable.txt"},
+        created_at=_created_at(),
+    )
+    second_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="git.status",
+        arguments={},
+        created_at=_created_at(),
+    )
+    gateway = _PolicyAwareScriptedGateway(
+        responses=(
+            _scripted_response("Attempting the first read.", first_call),
+            _scripted_response("Attempting the status check.", second_call),
+            _scripted_response("Synthesized."),
+        )
+    )
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: gateway,
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="wave5-policy-recovery",
+        executed_at=_created_at(),
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert len(gateway.requests) == 3
+    assert gateway.tool_requests[-1] == ()
+    terminal_messages = gateway.requests[-1]
+    assert sum(
+        message.metadata.get("tool_loop_no_progress") is True
+        for message in terminal_messages
+    ) == 1
+    assert sum(
+        "The tool budget is complete." in message.content
+        for message in terminal_messages
+        if message.role is MessageRole.USER
+    ) == 1
+    assert result.attempt_result.metadata.get("stop_reason") != (
+        "attempt_reconstruction_invalid"
+    )
+    _assert_single_attempt(database_path, session_id)
+
+
+# P1 precedence: after two recoverable denies, missing typed evidence with a
+# matching advertised producer must produce the typed evidence correction
+# dispatch, not terminal synthesis.
+def test_guarded_policy_recovery_evidence_correction_takes_precedence(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "wave5-policy-recovery-evidence.db"
+    bootstrap = _seed_producer_coverage_session(database_path, tmp_path)
+    session_id = bootstrap.session.session_id
+    _install_recoverable_deny_policy(monkeypatch)
+    provider = FinosJournalProvider(
+        base_url="https://finos.internal",
+        task_id=str(session_id),
+        grant="private-grant",
+        contract_version="finos.journals.v3",
+        transport=_MixedFinosTransport(),
+    )
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_finos_journal_provider",
+        lambda settings, database_path, session_id: provider,
+    )
+    first_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.read",
+        arguments={"path": "stable.txt"},
+        created_at=_created_at(),
+    )
+    second_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="git.status",
+        arguments={},
+        created_at=_created_at(),
+    )
+    producer_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="finos.journals.list",
+        arguments={},
+        created_at=_created_at(),
+    )
+    gateway = _PolicyAwareScriptedGateway(
+        responses=(
+            _scripted_response("Attempting the first read.", first_call),
+            _scripted_response("Attempting the status check.", second_call),
+            _scripted_response("Collecting the evidence.", producer_call),
+            _scripted_response("Final answer."),
+        )
+    )
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: gateway,
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="wave5-policy-recovery-evidence",
+        executed_at=_created_at(),
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert len(gateway.requests) == 4
+    _assert_correction_dispatch(gateway, 2)
+    assert result.attempt_result.metadata.get("stop_reason") != (
+        "attempt_reconstruction_invalid"
+    )
+    _assert_single_attempt(database_path, session_id)
 
 
 # P1 precedence: validator rejection with missing evidence must produce the
