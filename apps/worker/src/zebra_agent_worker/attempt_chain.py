@@ -126,12 +126,18 @@ def mirror_attempt_messages(
     *,
     attempt_number: int,
     created_at: datetime,
+    provider_events: list[SessionEvent] | None = None,
 ) -> tuple[SessionMessage, ...]:
     """Mirror the in-attempt assistant/tool messages the harness appends to
     the actual request: assistant messages carry their tool calls from
     TOOL_CALL_PROPOSED (name/id/arguments/provider call id), and tool-result
     messages use the harness's own ``tool_result_content`` serialization with
-    the same provider-or-internal call id rule as ``append_tool_result``."""
+    the same provider-or-internal call id rule as ``append_tool_result``.
+
+    ``provider_events`` optionally supplies the full durable stream so the
+    provider-call-id mapping is seeded from proposals that precede a
+    continuation snapshot boundary (the tail events alone would lose the
+    mapping for approved/clarified calls)."""
     from agent_core.harness.tool_result_message import (
         tool_result_content,
         tool_result_status,
@@ -139,6 +145,14 @@ def mirror_attempt_messages(
 
     messages: list[SessionMessage] = []
     provider_ids: dict[str, str] = {}
+    for event in provider_events if provider_events is not None else events:
+        if event.payload.get("attempt_number") != attempt_number:
+            continue
+        if event.event_type is EventType.TOOL_CALL_PROPOSED:
+            raw_id = event.payload.get("tool_call_id")
+            provider_call_id = event.payload.get("provider_call_id")
+            if isinstance(raw_id, str) and isinstance(provider_call_id, str):
+                provider_ids[raw_id] = provider_call_id
     index = 0
     while index < len(events):
         event = events[index]
