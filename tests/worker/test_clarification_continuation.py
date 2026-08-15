@@ -233,10 +233,12 @@ def test_required_plan_nudge_remains_bounded_across_clarification(
         database_path,
         tmp_path,
         plan_required=True,
+        max_attempts=2,
     )
     service = _execution_service(database_path)
 
     waiting = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+    assert len(initial.requests) == 2  # proposal attempt + required-plan nudge
     create_app(database_path).append_session_message(
         str(session_id),
         {
@@ -250,7 +252,16 @@ def test_required_plan_nudge_remains_bounded_across_clarification(
     assert failed.session.status is SessionStatus.FAILED
     assert failed.attempt_result.metadata["stop_reason"] == "required_plan_not_created"
     assert len(resumed.requests) == 1
+    assert failed.attempt_result.metadata.get("stop_reason") != (
+        "attempt_reconstruction_invalid"
+    )
     events = SQLiteEventStore(database_path).list_for_session(session_id)
+    starts = [
+        event
+        for event in events
+        if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+    ]
+    assert [event.payload["attempt_sequence"] for event in starts] == [1]
     assert not any(
         event.event_type is EventType.TOOL_EXECUTION_STARTED
         and event.payload.get("tool_name") == "files.read"
