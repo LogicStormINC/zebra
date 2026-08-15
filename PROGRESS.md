@@ -6,6 +6,27 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-15`
+- Wave 5 Gate 2 re-audit fix complete on
+  `codex/znx-hosted-outer-attempts-v1` (starting HEAD `eeebae8`): the root
+  re-audit found that a real guarded clarification continuation
+  (max_attempts=2) always failed before the resumed provider call because
+  the durable replay mirrored the prior response again on top of the
+  recovered continuation conversation. Fixed at the durable reconstruction
+  seam: continuation replays only the durable tail after the last snapshot
+  boundary (clarification/approval requested), the provider-call-id mapping
+  is seeded from the full durable stream, the continuation envelope includes
+  the rebuilt runtime guidance, and the terminal-synthesis final-answer
+  instruction is derived from the durable provisional-final response.
+  Red-first: 3 tests red at `eeebae8` (guarded clarification, guarded
+  clarification + evidence correction with a genuine producer, guarded
+  approved batch); green after. Corrected final: worker suites 104/104,
+  agent_core/api/storage 468/468, full `2274 passed / 8 failed / 9 skipped`
+  (only the inherited 8 exact-base failures remain; zero new regressions),
+  eval 10/10, ruff 11 / mypy 13 identical to base, file-size gate same 10
+  inherited violations; shared fixture unchanged (internal replay fix only);
+  final exact SHA sent to the FinOS peer; no push/PR/merge/deploy; Phase 3
+  starts only on root/owner acceptance of Gate 2.
+- Snapshot date: `2026-08-15`
 - Wave 5 Phase 2 (Gate 2 evidence) complete on
   `codex/znx-hosted-outer-attempts-v1` from starting HEAD `4797af8` (Gate 1
   closure) on accepted production merge-base `6afbafa`. Phase 2 implemented

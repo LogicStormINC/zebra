@@ -103,6 +103,31 @@
    Gate 2 fixture and sent the corrected contract note to the FinOS peer;
    ready for root/owner re-acceptance; stop before Phase 3.
 
+## ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Gate 2 re-audit fix (continuation replay)
+
+1. `completed` - Root re-audit rejected the closure: a real guarded
+   clarification continuation (max_attempts=2) failed before the resumed
+   provider call with attempt_reconstruction_invalid; rebuild() duplicated
+   the prior response on top of the recovered continuation conversation.
+2. `completed` - Red-first at `eeebae8`: new guarded clarification test
+   (WAITING_INPUT -> resume -> exactly one resumed request -> completed),
+   upgraded clarification + evidence-correction test (max_attempts=2,
+   genuine producer, resumed completion + one typed correction, after-
+   correction terminal), upgraded approved-batch continuation test;
+   all 3 red before the fix.
+3. `completed` - Minimum shared-root fix at the durable reconstruction seam:
+   continuation replays only the durable tail after the last snapshot
+   boundary; provider-call-id mapping seeded from the full stream;
+   continuation envelope includes rebuilt runtime guidance; terminal-
+   synthesis final-answer instruction derived from the durable provisional-
+   final response; no guard bypass, no second engine.
+4. `completed` - Corrected evidence (fresh runs): continuation tests 3/3,
+   worker suites 104/104, agent_core/api/storage 468/468, full `2274 passed
+   / 8 failed / 9 skipped` (same inherited 8), eval `10/10`, ruff 11 / mypy
+   13 identical to base, file-size gate same 10 inherited violations;
+   fixture unchanged (internal replay fix only); final SHA sent to the FinOS
+   peer; ready for root/owner re-acceptance; stop before Phase 3.
+
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 
 1. `completed` - Verify issue `#197`, compare Codex, Claude Code, Pi Agent and

@@ -16337,6 +16337,20 @@ or bind a business operation.
   `25/25`, Gate 1 `30/30`, focused `177/177`, full `2273 passed / 8 failed /
   9 skipped` (same inherited 8), eval `10/10`, ruff 11 / mypy 13 identical
   to base, file-size gate same 10 inherited violations
+- re-audit rejection (starting HEAD `eeebae8`): real guarded clarification
+  continuation failed before the resumed provider call
+  (`attempt_reconstruction_invalid`) because `rebuild()` duplicated the prior
+  response on top of the recovered continuation conversation. Fixed at the
+  durable reconstruction seam: continuation replays only the durable tail
+  after the last snapshot boundary (clarification/approval requested),
+  provider-call-id mapping is seeded from the full stream, the continuation
+  envelope includes rebuilt runtime guidance, and the terminal-synthesis
+  final-answer instruction is derived from the durable provisional-final
+  response. Red-first: 3 tests red at `eeebae8` (guarded clarification,
+  guarded clarification + evidence correction, guarded approved batch);
+  green after. Corrected final: full `2274 passed / 8 failed / 9 skipped`
+  (same inherited 8), eval `10/10`, ruff 11 / mypy 13 identical to base,
+  file-size gate same 10 inherited violations
 - peer fixture frozen: `tests/fixtures/wave5_gate2_contract_delta_v1.json`,
   schema-validated by `test_wave5_gate2_peer_contract.py`; peer notification
   (initial + corrected contract note) sent to FinOS task

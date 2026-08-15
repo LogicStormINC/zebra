@@ -1,5 +1,65 @@
 # Progress Log
 
+## 2026-08-15 Wave 5 Gate 2 re-audit fix (continuation replay)
+
+- root re-audit rejected the Gate 2 closure with one P1 blocker: a real
+  guarded clarification continuation (max_attempts=2 enables W5-DSH-01)
+  always failed before the resumed provider call with
+  `attempt_reconstruction_invalid` / "actual conversation content differs
+  from the durable reconstruction" (resumed provider requests=0); reproduced
+  both with and without a completion-evidence contract and with a genuine
+  producer + max_corrections=1
+- root cause: in `attempt_execution.py` `rebuild()`, the recovered
+  continuation conversation (which already materializes every event up to
+  the snapshot boundary) was used as the base and then ALL same-attempt
+  durable events were mirrored again, duplicating the prior
+  MODEL_RESPONSE_RECEIVED; existing tests missed it because the
+  clarification seed left max_attempts at its default 1 (guard off)
+- red-first at `eeebae8` (3 tests):
+  - new `test_guarded_clarification_resumes_same_attempt_without_
+    reconstruction_mismatch`: normal clarification lifecycle with
+    max_attempts=2 - WAITING_INPUT, user response resumes the same Attempt,
+    exactly one resumed request, Task completes, no reconstruction mismatch,
+    no extra Attempt
+  - upgraded `test_completion_evidence_correction_remains_bounded_across_
+    clarification` to max_attempts=2 with a genuine advertised trusted
+    producer: resumed completion + one typed correction dispatch; the
+    retryable after-correction code schedules Attempt 2 (its own completion
+    + one typed correction) before the terminal
+  - upgraded `test_approved_batch_continues_tail_without_replaying_completed_
+    call` to max_attempts=2 (same shared seam, smallest relevant approved
+    path)
+- minimum shared-root fix at the durable reconstruction seam:
+  - continuation `rebuild()` mirrors only the durable tail after the last
+    snapshot boundary (`CLARIFICATION_REQUESTED` / `APPROVAL_REQUESTED`), so
+    the prior response is replayed exactly once; the recovered continuation
+    conversation stays the base (no mutable actual-message-as-expected
+    shortcut)
+  - `mirror_attempt_messages` seeds the provider-call-id mapping from the
+    full durable stream (`provider_events`) so continuation tail results keep
+    the harness's provider-or-internal id rule even when the proposals
+    precede the snapshot boundary (approved-call tool messages matched)
+  - the continuation envelope includes the rebuilt runtime guidance
+    (`runtime_guidance()`) so a resumed typed correction observation is
+    covered
+  - the terminal-synthesis dispatch (provisional final) conversation now
+    includes the fixed final-answer instruction, derived from the durable
+    provisional-final response (`response_stage == "tool_loop"` with no
+    following tool events) - a latent guarded-path gap the approved
+    continuation test exposed
+  - no guard bypass: full system/runtime-guidance equality, tool/media/
+    model/invocation-policy equality and the tamper-before-gateway guarantee
+    are preserved; P1-1/P1-3 corrections untouched
+- corrected evidence (fresh runs): continuation tests 3/3; worker suites
+  `104 passed`; agent_core/api/storage `468 passed`; full `2274 passed /
+  8 failed / 9 skipped` (same inherited 8: 2 agent_integrations, 5
+  clock-sensitive session_pull_request, 1 file-size gate); eval `10/10`;
+  ruff 11 / mypy 13 identical to base; file-size gate same 10 inherited
+  violations; `git diff --check` clean
+- shared Gate 2 fixture unchanged (internal replay fix only); final exact
+  SHA sent to FinOS peer `019ffe56-8b1e-74e2-9289-9ee8a3544aff`; no
+  push/PR/merge/deploy; stop at Gate 2 for root/owner re-acceptance
+
 ## 2026-08-15 Wave 5 Gate 2 correction (root independent audit)
 
 - root audit reproduced three P1 blockers at the Gate 2 HEAD `3206c77`:

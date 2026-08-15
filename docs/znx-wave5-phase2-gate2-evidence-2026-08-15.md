@@ -166,6 +166,63 @@ all were corrected on the same lane/worktree (starting HEAD `3206c77`):
   `malformed_verdict_policy`) and schema-validated; corrected contract note
   sent to the FinOS peer before the docs commit
 
+## 4b. Gate 2 re-audit rejection (continuation replay, 2026-08-15)
+
+The root re-audit rejected the closure with one new P1 blocker: a real
+guarded clarification continuation (max_attempts=2, W5-DSH-01 enabled)
+always failed before the resumed provider call with
+`attempt_reconstruction_invalid` / "actual conversation content differs from
+the durable reconstruction". Root cause: `rebuild()` started from the
+recovered continuation conversation (which already materializes every event
+up to the snapshot boundary) and then mirrored ALL same-attempt durable
+events again, duplicating the prior `MODEL_RESPONSE_RECEIVED` (actual
+`system, system, system, user, assistant, tool` vs rebuilt
+`..., assistant`). Existing tests missed it because the clarification seed
+left `max_attempts` at its default 1 (guard off).
+
+Red-first (starting HEAD `eeebae8`):
+- new `test_guarded_clarification_resumes_same_attempt_without_reconstruction_
+  mismatch`: normal clarification lifecycle with max_attempts=2 - first run
+  WAITING_INPUT, user response resumes the same Attempt, exactly one resumed
+  provider request, Task completes, no reconstruction mismatch, no extra
+  Attempt -> RED at `eeebae8` (0 resumed requests, attempt_reconstruction_invalid)
+- upgraded `test_completion_evidence_correction_remains_bounded_across_
+  clarification` to max_attempts=2 with a genuine advertised trusted
+  producer: resumed completion + one typed correction dispatch; the
+  retryable after-correction code schedules Attempt 2 (its own completion +
+  one typed correction) before the terminal -> RED at `eeebae8` (0 resumed
+  requests)
+- upgraded `test_approved_batch_continues_tail_without_replaying_completed_
+  call` to max_attempts=2 (same shared seam, smallest relevant approved path)
+  -> RED at `eeebae8`
+
+Minimum shared-root correction at the durable reconstruction seam:
+- `rebuild()` for a continuation mirrors only the durable tail AFTER the last
+  snapshot boundary (`CLARIFICATION_REQUESTED` / `APPROVAL_REQUESTED`), so
+  the prior response is replayed exactly once; the recovered continuation
+  conversation stays the base (no mutable actual-message-as-expected shortcut)
+- `mirror_attempt_messages` seeds the provider-call-id mapping from the full
+  durable stream (`provider_events`) so continuation tail results keep the
+  harness's provider-or-internal id rule even when the proposals precede the
+  snapshot boundary
+- the continuation envelope also includes the rebuilt runtime guidance
+  (`runtime_guidance()`) so a resumed typed correction observation is covered
+- the terminal-synthesis dispatch (provisional final) conversation now
+  includes the fixed final-answer instruction, derived from the durable
+  provisional-final response (`response_stage == "tool_loop"` with no
+  following tool events) - this was a latent guarded-path gap the approved
+  continuation test exposed
+- no guard bypass: full system/runtime-guidance equality, tool/media/model/
+  invocation-policy equality and the tamper-before-gateway guarantee are
+  preserved; the P1-1/P1-3 corrections are untouched
+
+Corrected evidence (fresh runs on the corrected tree): the two new/upgraded
+clarification tests + approved continuation `3/3` (red before, green after);
+worker suites `104 passed`; agent_core/api/storage `468 passed`; full
+`2274 passed / 8 failed / 9 skipped` (only the same 8 exact-base inherited
+failures); eval `10/10`; ruff 11 / mypy 13 identical to base; file-size gate
+same 10 inherited violations; `git diff --check` clean
+
 ## 5. Contract deltas for the FinOS peer (Gate 2)
 - exact retry classification: `completion_evidence_missing_after_correction`
   is the only coverage code that may schedule Attempt 2 under the frozen
