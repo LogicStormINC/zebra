@@ -47,6 +47,7 @@ def model_response_event(
         "attempt_number": attempt_number,
         "assistant_message": completion.assistant_message.content,
         "tool_call_count": len(completion.tool_calls),
+        "proposed_tool_names": [call.name for call in completion.tool_calls],
         "provider": completion.call_metadata.provider,
         "model_name": completion.call_metadata.model_name,
         "input_tokens": completion.call_metadata.usage.input_tokens,

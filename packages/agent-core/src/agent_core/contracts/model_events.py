@@ -196,6 +196,7 @@ class ModelResponseReceivedPayload(BaseModel):
     stable_task_id: str | None = None
     assistant_message: str | None = None
     tool_call_count: int | None = Field(default=None, ge=0)
+    proposed_tool_names: tuple[str, ...] | None = None
     response_stage: str | None = None
     model_call_id: str | None = None
     provider: str | None = None

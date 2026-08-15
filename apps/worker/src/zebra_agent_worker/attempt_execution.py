@@ -64,7 +64,11 @@ from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.finos_journal_provider import (
     allows_finos_account_changes_proposal,
 )
-from zebra_agent_worker.runtime_guidance import rebuilt_runtime_guidance
+from zebra_agent_worker.runtime_guidance import (
+    _continuation_boundary_index,
+    rebuilt_runtime_guidance,
+    terminal_synthesis_pending,
+)
 from zebra_agent_worker.task_preapproval import build_policy_engine
 from zebra_agent_worker.task_recovery import RecoveredTask
 
@@ -253,10 +257,6 @@ def _build_reconstruction(
         created_at=attempt.started_at,
         model_gateway=model_gateway,
     )
-    initial_conversation = [
-        message for message in initial if message.role is not MessageRole.SYSTEM
-    ]
-    probe_system_messages = [message for message in initial if message.role is MessageRole.SYSTEM]
     follow_up_guidance_needed = any(
         evidence.kind == "session_handoff"
         and (evidence.metadata or {}).get("handoff_source") == "active_projection"
@@ -267,19 +267,34 @@ def _build_reconstruction(
         continuation, clarification, created_at=attempt.started_at
     )
     has_continuation = bool(continuation_conversation)
-    base_conversation = (
-        continuation_conversation if has_continuation else list(initial_conversation)
+    base_full_messages = (
+        continuation_conversation if has_continuation else list(initial)
     )
     base_evidence_events = persisted_completion_evidence_events(
         item.event for item in task_events
     )
+
+    def durable_tail() -> list[SessionEvent]:
+        """Events the current dispatch is verified against.
+
+        For a continuation, everything at or before the last snapshot
+        boundary is already materialized in the recovered conversation, so
+        only the durable tail after that boundary is replayed/rebuilt.
+        Without a boundary the guard still fails closed (full replay)."""
+        full = durable_events(scoped_events, recorder)
+        if not has_continuation:
+            return full
+        boundary_index = _continuation_boundary_index(full)
+        if boundary_index is None:
+            return full
+        return full[boundary_index + 1 :]
 
     def runtime_guidance() -> tuple[SessionMessage, ...]:
         # Full request-envelope equality: the exact runtime guidance actually
         # sent to the provider is independently rebuilt from durable
         # evidence/plan state via the same helpers the harness uses.
         return rebuilt_runtime_guidance(
-            durable_events(scoped_events, recorder),
+            durable_tail(),
             attempt=attempt,
             task=attempt_task,
             session=recorder.session,
@@ -288,6 +303,7 @@ def _build_reconstruction(
                 + persisted_completion_evidence_events(recorder.events)
             ),
             created_at=attempt.started_at,
+            prior_messages=continuation_conversation if has_continuation else (),
         )
 
     def step_envelope(
@@ -305,18 +321,18 @@ def _build_reconstruction(
             # its system messages (stable prompt + runtime guidance) are the
             # independently derived expected envelope, plus any runtime
             # guidance appended by the resumed run (e.g. a typed evidence
-            # correction observation).
+            # correction observation), through the same durable replay.
             expected_tools = selected_model_tools(
                 tool_gateway.model_tools,
                 allow_tools=allow_tools,
                 required_names=required_tool_names,
             )
             return (
-                system_prompt_digest((*continuation_conversation, *runtime_guidance())),
+                system_prompt_digest(rebuilt_system_messages()),
                 expected_tools,
                 expected_invocation,
             )
-        system_messages = list(probe_system_messages)
+        system_messages = rebuilt_system_messages()
         if follow_up_guidance_needed:
             system_messages.append(
                 SessionMessage(
@@ -330,7 +346,6 @@ def _build_reconstruction(
             append_final_answer_instruction(system_messages, created_at=attempt.started_at)
         elif step_kind == "validator_correction":
             append_validator_correction_instruction(system_messages, created_at=attempt.started_at)
-        system_messages.extend(runtime_guidance())
         expected_tools = selected_model_tools(
             tool_gateway.model_tools,
             allow_tools=allow_tools,
@@ -342,23 +357,22 @@ def _build_reconstruction(
             expected_invocation,
         )
 
-    def rebuild() -> list[SessionMessage]:
+    def rebuilt_messages() -> list[SessionMessage]:
+        """Full expected request messages (systems + conversation) derived
+        only from durable state: the fresh/recovered base, the rebuilt
+        runtime guidance, the mirrored durable tail, the sanctioned
+        compaction transform at each durable boundary, and the
+        terminal-synthesis final-answer instruction. The conversation digest
+        ignores system messages; the system digest uses exactly the rebuilt
+        system messages so a durable compaction is reproduced identically."""
         full_current = durable_events(scoped_events, recorder)
-        current = full_current
-        if has_continuation:
-            # The recovered continuation conversation already materializes
-            # every durable event up to its snapshot boundary; replay only
-            # the durable tail after that boundary so the prior response is
-            # never mirrored twice. Without a boundary the guard still fails
-            # closed (old full replay) instead of being bypassed.
-            boundary_index = _continuation_boundary_index(current)
-            if boundary_index is not None:
-                current = current[boundary_index + 1 :]
+        current = durable_tail()
         # Deterministic durable replay: rebuild the conversation the harness
         # derives from the durable stream, re-applying the sanctioned
         # compaction transform through the existing bounded-conversation
         # builder at each durable compaction boundary.
-        replay: list[SessionMessage] = list(base_conversation)
+        replay: list[SessionMessage] = list(base_full_messages)
+        replay.extend(runtime_guidance())
         segment: list[SessionEvent] = []
         for event in current:
             if event.event_type in {
@@ -395,13 +409,29 @@ def _build_reconstruction(
                 provider_events=full_current,
             )
         )
-        if _terminal_synthesis_pending(current, attempt.number):
+        if terminal_synthesis_pending(
+            current,
+            attempt.number,
+            task=attempt_task,
+            session=recorder.session,
+            created_at=attempt.started_at,
+            full_stream=full_current,
+        ):
             # A durable provisional-final response (tool_loop stage, no tool
             # execution following) schedules the terminal-synthesis dispatch,
             # whose actual conversation carries the fixed final-answer
             # instruction appended by prepare_terminal_conversation.
             append_final_answer_instruction(replay, created_at=attempt.started_at)
         return replay
+
+    def rebuilt_system_messages() -> list[SessionMessage]:
+        return [
+            message
+            for message in rebuilt_messages()
+            if message.role is MessageRole.SYSTEM
+        ]
+
+    rebuild = rebuilt_messages
 
     model_settings = settings_for_model(settings, attempt_task.model_id).model
     config_basis = f"{model_settings.provider}:{model_settings.model}"
@@ -446,53 +476,3 @@ def _continuation_conversation(
         )
         return (*clarification.conversation, tool_message)
     return ()
-
-
-def _continuation_boundary_index(events: list[SessionEvent]) -> int | None:
-    """Index of the last continuation snapshot boundary in the durable stream.
-
-    CLARIFICATION_REQUESTED / APPROVAL_REQUESTED carry the conversation
-    snapshot the recovered continuation replays from; every event at or
-    before that index is already materialized in the recovered conversation
-    and must not be mirrored again.
-    """
-    boundary_index: int | None = None
-    for index, event in enumerate(events):
-        if event.event_type in {
-            EventType.CLARIFICATION_REQUESTED,
-            EventType.APPROVAL_REQUESTED,
-        }:
-            boundary_index = index
-    return boundary_index
-
-
-def _terminal_synthesis_pending(
-    events: list[SessionEvent],
-    attempt_number: int,
-) -> bool:
-    """True when the next dispatch is the terminal-synthesis dispatch.
-
-    The harness schedules terminal synthesis after a plain response that was
-    staged as a provisional final (response_stage == "tool_loop" with no tool
-    call or execution following it in the durable stream)."""
-    last_response_index: int | None = None
-    for index, event in enumerate(events):
-        if (
-            event.event_type is EventType.MODEL_RESPONSE_RECEIVED
-            and event.payload.get("attempt_number") == attempt_number
-        ):
-            last_response_index = index
-    if last_response_index is None:
-        return False
-    last_response = events[last_response_index]
-    if last_response.payload.get("response_stage") != "tool_loop":
-        return False
-    for event in events[last_response_index + 1 :]:
-        if event.event_type in {
-            EventType.TOOL_CALL_PROPOSED,
-            EventType.TOOL_EXECUTION_STARTED,
-            EventType.TOOL_EXECUTION_COMPLETED,
-            EventType.TOOL_EXECUTION_FAILED,
-        }:
-            return False
-    return True
