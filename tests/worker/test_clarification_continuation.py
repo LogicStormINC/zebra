@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -18,14 +18,21 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.model_gateway import ModelGatewayPort, ModelResponseRejectedError
 from agent_storage import (
+    FinosJournalGrant,
     SQLiteAgentTaskStore,
     SQLiteEventStore,
+    SQLiteFinosJournalGrantStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_api import create_app
-from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from zebra_agent_config import (
+    ApiSettings,
+    FinosJournalProviderSettings,
+    ModelSettings,
+    ZebraAgentSettings,
+)
 from zebra_agent_worker import (
     SessionClaimService,
     SessionExecutionService,
@@ -38,6 +45,19 @@ from zebra_agent_worker.clarification_continuation import (
 )
 
 NOW = datetime(2026, 7, 15, 10, 0, tzinfo=UTC)
+
+
+class _PolicyAwareScriptedGateway(ScriptedModelGateway):
+    def complete_with_policy(
+        self,
+        messages,
+        *,
+        tools=(),
+        media_inputs=(),
+        invocation_policy=None,
+    ):
+        del media_inputs, invocation_policy
+        return self.complete(messages, tools=tools)
 
 
 def test_clarification_response_resumes_same_session_once(
@@ -238,7 +258,7 @@ def test_required_plan_nudge_remains_bounded_across_clarification(
     )
 
 
-def test_completion_evidence_nudge_remains_bounded_across_clarification(
+def test_completion_evidence_correction_remains_bounded_across_clarification(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -249,13 +269,13 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
         arguments={"question": "Which account?"},
         created_at=NOW,
     )
-    initial = ScriptedModelGateway(
-        responses=(
-            _response("The answer is ready."),
-            _response("I need one answer.", clarify_call),
-        )
+    # Under the typed-tool-only contract the model asks its clarification on
+    # the initial dispatch; the bounded evidence correction only runs after
+    # the continuation, with the genuine advertised producer forced.
+    initial = _PolicyAwareScriptedGateway(
+        responses=(_response("I need one answer.", clarify_call),)
     )
-    resumed = ScriptedModelGateway(
+    resumed = _PolicyAwareScriptedGateway(
         responses=(
             _response("Still no authoritative evidence."),
             _response("Still no authoritative evidence."),
@@ -272,6 +292,15 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
         agent_definition=_authoritative_evidence_definition(),
         max_corrections_per_attempt=1,
     )
+    task = SQLiteAgentTaskStore(database_path).ensure_for_session(session_id)
+    SQLiteFinosJournalGrantStore(database_path).bind(
+        FinosJournalGrant(
+            task_id=task.task_id,
+            contract_version="finos.journals.v1",
+            grant="private-grant",
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+        )
+    )
     service = _execution_service(database_path)
 
     waiting = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
@@ -286,7 +315,13 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
     assert failed.attempt_result.metadata["stop_reason"] == (
         "completion_evidence_missing_after_correction"
     )
-    assert len(resumed.requests) == 1
+    assert len(resumed.requests) == 2  # resumed completion + one typed correction
+    assert sum(
+        message.metadata.get("missing_completion_evidence") is not None
+        for request in resumed.requests
+        for message in request
+        if message.role is MessageRole.SYSTEM
+    ) == 1
     clarification = next(
         event
         for event in SQLiteEventStore(database_path).list_for_session(session_id)
@@ -295,7 +330,7 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
     assert sum(
         message.get("metadata", {}).get("missing_completion_evidence") is not None
         for message in clarification.payload["conversation"]
-    ) == 1
+    ) == 0
 
 
 def test_clarification_continuation_fails_closed_after_start_marker() -> None:
@@ -528,6 +563,9 @@ def _execution_service(database_path: Path) -> SessionExecutionService:
             profile="test",
             database_url=str(database_path),
             api=ApiSettings(auth_token=None),
+            finos_journal_provider=FinosJournalProviderSettings(
+                base_url="https://finos.internal"
+            ),
             model=ModelSettings(
                 provider="test",
                 api_key_env="TEST_API_KEY",

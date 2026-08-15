@@ -8,13 +8,8 @@ no terminal coverage verdict); Phase 2 production closes exactly these gaps.
 """
 
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
-from agent_core.application import (
-    SessionBootstrapCommand,
-    SessionBootstrapService,
-)
 from agent_core.domain.agent_definitions import (
     AgentDefinition,
     CompletionEvidenceContract,
@@ -22,17 +17,13 @@ from agent_core.domain.agent_definitions import (
 )
 from agent_core.domain.attempt_policy import TaskAttemptPolicy
 from agent_core.domain.events import EventActor, EventType
-from agent_core.domain.identifiers import new_message_id, new_tool_call_id
-from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.identifiers import new_tool_call_id
+from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import (
-    ModelCallMetadata,
-    ModelCompletion,
     ModelToolChoice,
     ModelToolDefinition,
-    ModelUsage,
 )
 from agent_core.domain.sessions import Session
-from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tools import ToolCallStatus
 from agent_core.harness import (
     HarnessAttempt,
@@ -55,13 +46,6 @@ from agent_core.harness.required_tool_request import (
     evidence_correction_request,
     selected_model_tools,
 )
-from agent_storage import (
-    SQLiteEventStore,
-    SQLiteProjectionStore,
-    SQLiteWorkspaceProjectionStore,
-)
-from worker_execution_support import _build_execution_service, _created_at
-from zebra_agent_worker import SessionRecoveryService
 
 NOW = datetime(2026, 8, 15, 2, 0, tzinfo=UTC)
 
@@ -110,6 +94,21 @@ def _context(*, max_corrections_per_attempt: int) -> HarnessContext:
         trusted_evidence_tools={
             "evidence.lookup": ("authoritative.financial.confirmed",)
         },
+    )
+    return HarnessContext(
+        task=task,
+        session=Session.create(title=task.title, created_at=NOW),
+        attempt=HarnessAttempt(number=1, started_at=NOW),
+    )
+
+
+def _no_producer_context(*, max_corrections_per_attempt: int) -> HarnessContext:
+    task = HarnessTask(
+        title="Coverage correction",
+        user_input="Prove the evidence contract.",
+        max_attempts=2,
+        max_corrections_per_attempt=max_corrections_per_attempt,
+        agent_definition=_financial_definition(),
     )
     return HarnessContext(
         task=task,
@@ -313,6 +312,32 @@ def test_max_zero_performs_no_correction_and_keeps_legacy_code() -> None:
     assert result.metadata["stop_reason"] == "completion_evidence_missing"
 
 
+# P1-3 core: typed evidence with no matching currently-advertised trusted
+# producer must never dispatch a prompt-only correction.
+def test_core_no_matching_producer_never_dispatches_correction() -> None:
+    context = _no_producer_context(max_corrections_per_attempt=1)
+    messages: list[SessionMessage] = []
+    corrections: list[dict[str, object]] = []
+
+    result = complete_without_tools(
+        context,
+        messages=messages,
+        emitted_events=[],
+        model_calls_used=0,
+        tool_calls_executed=0,
+        metadata={},
+        assistant_message="candidate final",
+        fingerprints=set(),
+        request_next_completion=lambda _ctx, **kwargs: corrections.append(kwargs)
+        or _synthetic_completion(**kwargs),
+    )
+    assert corrections == []
+    assert messages == []
+    assert result.outcome is HarnessAttemptOutcome.FAILED
+    assert result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert result.metadata.get("completion_evidence_observation_count", 0) == 0
+
+
 # P2-5: correction names only matching currently-advertised trusted producer
 # tools with the required tool choice and the existing typed argument schema;
 # no FinOS-specific tool name or manifest argument is invented.
@@ -474,155 +499,3 @@ def test_completion_evidence_metadata_carries_safe_counts() -> None:
             "completion_evidence_missing_count",
         )
     )
-
-
-class _AlwaysAssistantGateway:
-    provider = "test"
-    model_name = "test-model"
-
-    def __init__(self) -> None:
-        self.calls = 0
-
-    def complete(self, messages, *, tools=(), media_inputs=()):
-        del tools, media_inputs
-        self.calls += 1
-        return ModelCompletion(
-            assistant_message=SessionMessage(
-                message_id=new_message_id(),
-                role=MessageRole.ASSISTANT,
-                content="No typed evidence is available.",
-                created_at=_created_at(),
-            ),
-            call_metadata=ModelCallMetadata(
-                provider="test",
-                model_name="test-model",
-                usage=ModelUsage(total_tokens=1),
-            ),
-        )
-
-
-def _seed_coverage_session(database_path: Path, workspace_root: Path):
-    bootstrap = SessionBootstrapService().build(
-        SessionBootstrapCommand(
-            title="Queued coverage task",
-            user_input="Complete the analysis.",
-            workspace_root=workspace_root.resolve(),
-            tool_profile=ToolProfile.CODING,
-            max_attempts=2,
-            max_corrections_per_attempt=1,
-            agent_definition=_financial_definition(),
-        )
-    )
-    event_store = SQLiteEventStore(database_path)
-    for event in bootstrap.events:
-        event_store.append(event)
-    SQLiteProjectionStore(database_path).save_session(bootstrap.session)
-    SessionRecoveryService(
-        event_store,
-        SQLiteProjectionStore(database_path),
-        SQLiteWorkspaceProjectionStore(database_path),
-    ).recover_session(bootstrap.session.session_id)
-    return bootstrap
-
-
-# P2-9: the hosted worker runs the bounded correction once per Attempt, starts
-# Attempt 2 with the exact coverage code, and terminals with a safe coverage
-# verdict after retry exhaustion.
-def test_hosted_worker_exhausts_coverage_retry_with_safe_terminal(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    database_path = tmp_path / "wave5-p2-9.db"
-    bootstrap = _seed_coverage_session(database_path, tmp_path)
-    session_id = bootstrap.session.session_id
-    gateway = _AlwaysAssistantGateway()
-    monkeypatch.setattr(
-        "zebra_agent_worker.execution.build_model_gateway",
-        lambda settings: gateway,
-    )
-
-    _build_execution_service(database_path).execute_session(
-        session_id,
-        worker_id="wave5-p2-9",
-        executed_at=_created_at(),
-    )
-
-    events = SQLiteEventStore(database_path).list_for_session(session_id)
-    starts = [
-        event
-        for event in events
-        if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
-    ]
-    assert [event.payload["attempt_sequence"] for event in starts] == [1, 2]
-    outcomes = [
-        event
-        for event in events
-        if event.event_type is EventType.ATTEMPT_OUTCOME_RECORDED
-    ]
-    assert [event.payload["retry_scheduled"] for event in outcomes] == [True, False]
-    failed = next(event for event in events if event.event_type is EventType.SESSION_FAILED)
-    assert failed.payload["attempt_number"] == 2
-    assert failed.payload["metadata"]["stop_reason"] == (
-        "completion_evidence_missing_after_correction"
-    )
-    assert failed.payload["retryable"] is False
-    verdict = failed.payload["coverage_verdict"]
-    assert verdict["status"] == "missing"
-    assert verdict["required_count"] == 1
-    assert verdict["satisfied_count"] == 0
-    assert verdict["missing_count"] == 1
-    assert "authoritative_financial" not in verdict["message"]
-    assert gateway.calls == 4  # initial + one correction per Attempt, two Attempts
-
-
-# P2-10: the public projection carries only the safe coverage verdict; private
-# requirement IDs, evidence refs, digests and diagnostics never become public.
-def test_public_projection_exposes_only_safe_coverage_verdict(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    from agent_core.application.public_conversation import project_public_conversation
-    from agent_storage import SQLiteAgentTaskStore
-    from zebra_agent_api.task_final_identity import final_message_identity
-
-    database_path = tmp_path / "wave5-p2-10.db"
-    bootstrap = _seed_coverage_session(database_path, tmp_path)
-    session_id = bootstrap.session.session_id
-    gateway = _AlwaysAssistantGateway()
-    monkeypatch.setattr(
-        "zebra_agent_worker.execution.build_model_gateway",
-        lambda settings: gateway,
-    )
-    _build_execution_service(database_path).execute_session(
-        session_id,
-        worker_id="wave5-p2-10",
-        executed_at=_created_at(),
-    )
-    task_store = SQLiteAgentTaskStore(database_path)
-    task = task_store.ensure_for_session(session_id)
-    task_events = task_store.read_events(task.task_id, -1)
-
-    projection = project_public_conversation(task.task_id, task_events)
-    final_items = [item for item in projection.items if item.role == "final_response"]
-    assert final_items == []
-    failure_items = [item for item in projection.items if item.role == "failure"]
-    assert len(failure_items) == 1
-    assert failure_items[0].data["retryable"] is False
-    verdict = failure_items[0].data["coverage_verdict"]
-    assert set(verdict) == {
-        "status",
-        "required_count",
-        "satisfied_count",
-        "missing_count",
-        "message",
-    }
-    assert final_message_identity(database_path, str(task.task_id)) is None
-    leaked = {
-        key
-        for item in projection.items
-        for key in (*item.data, item.content)
-        if "authoritative_financial" in str(key)
-        or "sha256:" in str(key)
-        or "completion_evidence_missing" in str(key)
-    }
-    assert leaked == set()

@@ -3,6 +3,8 @@
   "coverage_classification": {
     "retryable_after_bounded_correction": "completion_evidence_missing_after_correction",
     "non_retryable_without_correction": "completion_evidence_missing",
+    "correction_requires_matching_advertised_producer": true,
+    "no_producer_behavior": "no correction dispatch; one initial model call only; completion_evidence_missing; no Attempt 2",
     "max_corrections_per_attempt": {
       "0": "no correction is performed; legacy non-retryable code",
       "1": "exactly one bounded correction; then the retryable after-correction code"
@@ -146,6 +148,8 @@
       "missing_count",
       "message"
     ],
+    "coverage_verdict_sanitized": true,
+    "malformed_verdict_policy": "fail_closed_omit_or_rebuild_valid_safe_verdict",
     "private_fields_excluded_from_public_projection": [
       "completion_evidence_missing",
       "completion_evidence_fingerprint",

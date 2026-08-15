@@ -153,6 +153,10 @@ class ScriptedGateway:
         self.cursor += 1
         return response
 
+    def complete_with_policy(self, messages, *, tools=(), media_inputs=(), invocation_policy=None):
+        del media_inputs, invocation_policy
+        return self.complete(messages, tools=tools)
+
 
 class EvidenceTools:
     def execute(self, tool_call: ToolCall) -> ToolResult:
@@ -223,7 +227,7 @@ def test_required_evidence_can_arrive_in_any_tool_order() -> None:
     assert result.attempt_result.metadata["completion_evidence_satisfied"] is True
 
 
-def test_repeated_missing_evidence_after_correction_stops_at_budget_bound() -> None:
+def test_typed_correction_cannot_dispatch_when_model_budget_is_closed() -> None:
     definition = _definition()
     gateway = ScriptedGateway(
         (_completion("No typed evidence."), _completion("Still no typed evidence."))
@@ -238,18 +242,15 @@ def test_repeated_missing_evidence_after_correction_stops_at_budget_bound() -> N
     )
 
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == (
-        "completion_evidence_missing_after_correction"
-    )
-    assert result.run_result.stop_reason is HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
+    assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert result.run_result.stop_reason is HarnessStopReason.COMPLETION_EVIDENCE_MISSING
     assert result.run_result.attempts_used == 1
-    assert len(gateway.requests) == 2
-    assert sum(
-        "missing_completion_evidence" in message.content
+    assert len(gateway.requests) == 1
+    assert not any(
+        message.metadata.get("missing_completion_evidence") is not None
         for request in gateway.requests
         for message in request
-        if message.role is MessageRole.SYSTEM
-    ) == 1
+    )
 
 
 def test_failed_validator_result_cannot_satisfy_passed_evidence() -> None:
@@ -279,9 +280,16 @@ def test_failed_validator_result_cannot_satisfy_passed_evidence() -> None:
         max_model_calls=2,
     )
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
     assert result.attempt_result.metadata["completion_evidence_satisfied"] is False
     assert result.attempt_result.metadata["completion_evidence_missing"] == ["validation"]
+    assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert len(gateway.requests) == 2
+    assert not any(
+        message.metadata.get("missing_completion_evidence") is not None
+        for request in gateway.requests
+        for message in request
+    )
 
 
 def test_default_tool_loop_completion_is_gated_by_contract() -> None:
@@ -313,10 +321,8 @@ def test_default_tool_loop_completion_is_gated_by_contract() -> None:
     )
 
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == (
-        "completion_evidence_missing_after_correction"
-    )
-    assert len(gateway.requests) == 2
+    assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert len(gateway.requests) == 1
 
 
 def test_approved_continuation_retains_durable_completion_evidence() -> None:
@@ -661,6 +667,7 @@ def _run(
             max_attempts=max_attempts,
             max_model_calls=max_model_calls,
             agent_definition=definition,
+            trusted_evidence_tools={"evidence.lookup": ("lookup.ready",)},
         ),
         SingleAttemptOrchestrator(
             gateway,

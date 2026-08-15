@@ -20,6 +20,11 @@ def test_wave5_gate2_peer_contract_fixture_validates() -> None:
     assert classification["non_retryable_without_correction"] == (
         "completion_evidence_missing"
     )
+    assert classification["correction_requires_matching_advertised_producer"] is True
+    assert classification["no_producer_behavior"] == (
+        "no correction dispatch; one initial model call only; "
+        "completion_evidence_missing; no Attempt 2"
+    )
     for item in fixture["events"]:
         event_type = EventType(item["event_type"])
         if event_type in {
@@ -61,6 +66,10 @@ def test_wave5_gate2_peer_contract_fixture_validates() -> None:
         "missing_count",
         "message",
     ]
+    assert fixture["public_boundary"]["coverage_verdict_sanitized"] is True
+    assert fixture["public_boundary"]["malformed_verdict_policy"] == (
+        "fail_closed_omit_or_rebuild_valid_safe_verdict"
+    )
     assert "completion_evidence_missing" in fixture["public_boundary"][
         "private_fields_excluded_from_public_projection"
     ]
