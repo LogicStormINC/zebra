@@ -1,5 +1,60 @@
 # Progress Log
 
+## 2026-08-15 Wave 5 Gate 2 correction (root independent audit)
+
+- root audit reproduced three P1 blockers at the Gate 2 HEAD `3206c77`:
+  (1) the public projection forwarded any `coverage_verdict` dict verbatim
+  (requirement_ids + resource_manifest_digest leaked); (2) the W5-DSH-01
+  envelope ignored runtime system guidance (tampered "PRIVATE OVERRIDE"
+  observation produced the same digest and passed verify); (3) prompt-only
+  corrections dispatched without a matching advertised trusted producer
+  (P2-9 asserted four free-form correction calls); plus the evidence-doc
+  count inaccuracy (2254 vs the actual 2255 post-fixture run)
+- red-first at `3206c77`: rewritten P2-9 (no producer must fail closed
+  after one initial call), new P2-9b (genuine trusted producer + one typed
+  correction per Attempt -> after-correction code + Attempt 2), P2-9c
+  (tampered guidance content/metadata fails closed with zero gateway calls),
+  core no-producer test, and 14 parametrized verdict-sanitization cases
+  (SESSION_COMPLETED + SESSION_FAILED x 7 poison shapes) ->
+  `18 failed / 14 passed`
+- P1-1: `sanitize_public_coverage_verdict` rebuilds the exact five-field
+  safe object from validated counts (status in complete/partial/missing,
+  non-negative ints, bools rejected, required == satisfied + missing,
+  status consistent with counts) with a fixed safe message; malformed
+  verdicts fail closed (omitted); the source dict/message is never
+  trusted or forwarded
+- P1-2: removed the blanket runtime-guidance exclusion; new
+  `runtime_guidance.py` rebuilds the exact guidance actually sent
+  (missing-evidence observations, required-plan nudges, validator
+  instructions) from durable evidence/plan state via the same helpers and
+  includes it in the verified envelope; `system_prompt_digest` now covers
+  content AND metadata; continuation dispatches derive the expected
+  envelope from the durable recovered conversation; tampered guidance
+  fails closed before the gateway (`attempt_reconstruction_invalid`,
+  zero additional calls)
+- P1-3: `schedule_evidence_correction` (shared by
+  `complete_without_tools` / `prepare_terminal_synthesis_evidence`) gates
+  corrections on a matching advertised trusted producer; no producer ->
+  no dispatch, one initial call, `completion_evidence_missing`, no Attempt
+  2; open-plan corrections stay separate; adapted
+  `test_agent_definition_completion_contract` (producer + policy-aware
+  gateway; validator-only/budget-closed cases use the legacy code) and
+  `test_clarification_continuation` (clarify on the initial dispatch,
+  bounded correction after the continuation with a genuine producer)
+- corrected evidence (fresh runs): Phase 2 + Gate 0 `25/25`; Gate 1
+  `30/30`; focused `177/177`; full `2273 passed / 8 failed / 9 skipped`
+  (same inherited 8: 2 agent_integrations, 5 clock-sensitive
+  session_pull_request, 1 file-size gate); eval `10/10`; ruff 11 / mypy 13
+  identical to base; file-size gate same 10 inherited violations;
+  `git diff --check` clean; test file split under limits
+  (core 502, worker scenarios 432, public verdict 212)
+- shared Gate 2 fixture updated
+  (`correction_requires_matching_advertised_producer`, `no_producer_behavior`,
+  `coverage_verdict_sanitized`, `malformed_verdict_policy`); corrected
+  contract note sent to FinOS peer `019ffe56-8b1e-74e2-9289-9ee8a3544aff`
+  before the docs commit; no push/PR/merge/deploy; stop at Gate 2 for
+  root/owner re-acceptance
+
 ## 2026-08-15 Wave 5 Phase 2 (Gate 2) - coverage correction + safe verdict
 
 - owner accepted Gate 1 and authorized Phase 2 (sole Zebra Phase 2 lane);

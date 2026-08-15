@@ -89,8 +89,10 @@ New/updated Phase 2 tests were run BEFORE any production edit:
 - Phase 1 + Gate 1 suites (8+22+fixture/reconstruction/recovery/edges):
   `30 passed` (unchanged behavior)
 - focused worker/evidence/loop/stopping/public/final-identity/terminal
-  suites: `140 passed`
-- full pytest: `2254 passed / 8 failed / 9 skipped`
+  suites: `140 passed` (corrected HEAD: `177 passed`)
+- full pytest: `2254 passed / 8 failed / 9 skipped` (pre-correction HEAD
+  `3206c77`; corrected final HEAD after the root-audit corrections:
+  `2273 passed / 8 failed / 9 skipped`)
   - Gate 1 baseline was `2237 / 11 / 9`: +17 passed (the three Phase 2
     reds closed + the new Phase 2/fixture tests), and the three Phase 2
     reds are no longer in the failure set
@@ -106,6 +108,63 @@ New/updated Phase 2 tests were run BEFORE any production edit:
   limits (`completion_evidence.py` 494, `coverage_verdict.py` 77, largest
   new test file 629/700)
 - `git diff --check` clean; worktree clean
+
+## 4a. Gate 2 correction (root independent audit, 2026-08-15)
+
+The root audit found three P1 blockers plus an evidence-count accuracy issue;
+all were corrected on the same lane/worktree (starting HEAD `3206c77`):
+
+- P1-1 public coverage verdict sanitization: `public_conversation.py` now
+  rebuilds the verdict through `sanitize_public_coverage_verdict` - an exact
+  five-field object from validated counts (status in
+  complete/partial/missing, non-negative ints, bools rejected,
+  required == satisfied + missing, status consistent with counts) and a
+  fixed safe message; the source dict/message is never trusted or forwarded,
+  malformed verdicts fail closed (omitted). Red-first: 14 parametrized
+  sanitize cases (SESSION_COMPLETED + SESSION_FAILED x 7 poison shapes)
+  failed at `3206c77` (raw dict forwarded verbatim) and pass after the fix.
+- P1-2 full request-envelope equality: the blanket runtime-guidance
+  exclusion was removed from the W5-DSH-01 envelope. The exact runtime
+  guidance actually sent to the provider (missing-evidence observations,
+  required-plan nudges, validator-correction instructions) is now
+  independently rebuilt from durable evidence/plan state via the same
+  helpers (`runtime_guidance.py`) and included in the expected digest;
+  `system_prompt_digest` covers content AND metadata; continuation
+  dispatches derive the expected envelope from the durable recovered
+  conversation. Red-first: tampered guidance (content and metadata) passed
+  the guard at `3206c77`; both tamper cases now fail closed with zero
+  gateway calls (`attempt_reconstruction_invalid`), while the legitimate
+  typed correction still dispatches (P2-9b, 4 model calls).
+- P1-3 typed-tool-only correction: `schedule_evidence_correction` (shared
+  by `complete_without_tools` and `prepare_terminal_synthesis_evidence`)
+  never dispatches a prompt-only correction - with required typed evidence
+  and no matching currently-advertised trusted producer the attempt fails
+  closed after one initial model call with `completion_evidence_missing`
+  (no Attempt 2); the correction budget increments and
+  `tool_choice=required` applies only when a matching producer exists.
+  Open-plan corrections stay separate. Red-first: the rewritten P2-9
+  (no producer) and the new core no-producer test failed at `3206c77`
+  (prompt-only correction dispatched); they pass after the fix. The
+  exhaustion/Attempt-2 worker scenario (P2-9b) now uses a genuine trusted
+  advertised producer (FinOS journal grant + provider) and one typed
+  correction per Attempt yields `completion_evidence_missing_after_correction`
+  and Attempt 2.
+- corrected evidence (fresh runs on the corrected tree): Phase 2 + Gate 0
+  `25/25`; Gate 1 `30/30`; focused `177/177`; full `2273 passed / 8 failed /
+  9 skipped` (only the same 8 exact-base inherited failures: 2
+  agent_integrations, 5 clock-sensitive session_pull_request, 1 file-size
+  gate); eval `10/10`; ruff 11 / mypy 13 identical to base; file-size gate
+  same 10 inherited violations; `git diff --check` clean
+- adapted tests to the typed-tool-only contract: `test_agent_definition_-
+  completion_contract` (producer + policy-aware scripted gateway; validator-
+  only and budget-closed corrections now use the legacy code),
+  `test_clarification_continuation` (clarify on the initial dispatch;
+  bounded correction after the continuation with a genuine producer)
+- shared Gate 2 fixture updated
+  (`coverage_classification.correction_requires_matching_advertised_producer`,
+  `no_producer_behavior`, `public_boundary.coverage_verdict_sanitized`,
+  `malformed_verdict_policy`) and schema-validated; corrected contract note
+  sent to the FinOS peer before the docs commit
 
 ## 5. Contract deltas for the FinOS peer (Gate 2)
 - exact retry classification: `completion_evidence_missing_after_correction`
@@ -123,6 +182,11 @@ New/updated Phase 2 tests were run BEFORE any production edit:
   counts (no IDs) so Attempt 2 and crash recovery can rebuild the verdict
 - public projection exposes only the safe verdict; requirement IDs, evidence
   refs, digests, diagnostics and result metadata stay private
+- public projection sanitizes the verdict: exact five-field safe object
+  rebuilt from validated counts; malformed verdicts fail closed (omitted);
+  source dict/message never forwarded
+- corrections are typed-tool-only: no matching advertised trusted producer
+  means no correction dispatch (`completion_evidence_missing`, no Attempt 2)
 - frozen fixture:
   `tests/fixtures/wave5_gate2_contract_delta_v1.json`, schema-validated by
   `tests/worker/execution/test_wave5_gate2_peer_contract.py`

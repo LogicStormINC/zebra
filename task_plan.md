@@ -68,8 +68,40 @@
    `30/30`, focused `140/140`, full `2254/8/9` (only the inherited 8
    exact-base failures), eval `10/10`, ruff 11 / mypy 13 identical to base,
    file-size gate same 10 inherited violations; freeze the Gate 2 peer
-   fixture and notify the FinOS peer task; ready for owner acceptance; stop
-   before Phase 3.
+   fixture and notify the FinOS peer task.
+
+## ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Gate 2 correction (root audit)
+
+1. `completed` - Root independent audit reproduced three P1 blockers at the
+   Gate 2 HEAD `3206c77`: unsanitized public coverage verdict, W5-DSH-01
+   ignoring runtime system guidance, and prompt-only corrections without an
+   authorized producer; plus the evidence-doc count inaccuracy.
+2. `completed` - Red-first: rewrite P2-9 (no producer must fail closed),
+   add P2-9b (genuine producer exhaustion), P2-9c (tampered guidance fails
+   closed, content + metadata), the core no-producer test, and 14
+   parametrized verdict-sanitization cases (SESSION_COMPLETED +
+   SESSION_FAILED); `18 failed / 14 passed` at `3206c77`.
+3. `completed` - P1-1: `sanitize_public_coverage_verdict` rebuilds the exact
+   five-field safe object from validated counts (status, non-negative ints,
+   bools rejected, required = satisfied + missing, status consistent) with a
+   fixed message; malformed verdicts fail closed; public projection never
+   forwards the source dict.
+4. `completed` - P1-2: full envelope equality - rebuilt runtime guidance
+   (evidence observations, plan nudges, validator instructions) from durable
+   state via the same helpers; system digest covers content + metadata;
+   continuation envelope derives from the durable recovered conversation;
+   tampered guidance fails closed before the gateway.
+5. `completed` - P1-3: `schedule_evidence_correction` gate - no matching
+   advertised trusted producer means no correction dispatch
+   (`completion_evidence_missing`, no Attempt 2); budget increments only
+   with a producer; plan behavior unchanged; adapted the four tests that
+   relied on prompt-only corrections.
+6. `completed` - Corrected evidence (fresh runs): Phase 2 + Gate 0 `25/25`,
+   Gate 1 `30/30`, focused `177/177`, full `2273 passed / 8 failed /
+   9 skipped` (same inherited 8), eval `10/10`, ruff 11 / mypy 13 identical
+   to base, file-size gate same 10 inherited violations; updated the shared
+   Gate 2 fixture and sent the corrected contract note to the FinOS peer;
+   ready for root/owner re-acceptance; stop before Phase 3.
 
 ## CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
 

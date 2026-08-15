@@ -16326,10 +16326,22 @@ or bind a business operation.
   9 skipped` vs Gate 1 `2237 / 11 / 9` (only the inherited 8 exact-base
   failures remain; zero new regressions); eval `10/10`; ruff 11 / mypy 13
   identical to base; file-size gate same 10 inherited violations
+- corrected after root audit (starting HEAD `3206c77`): P1-1 public verdict
+  sanitization (exact five-field safe object rebuilt from validated counts;
+  malformed verdicts fail closed), P1-2 full W5-DSH-01 envelope equality
+  (runtime guidance rebuilt from durable state, content + metadata digest,
+  tamper fails closed before the gateway), P1-3 typed-tool-only correction
+  (no matching producer = no correction dispatch, legacy code, no Attempt 2;
+  exhaustion scenario uses a genuine trusted producer); red-first
+  `18 failed / 14 passed` at `3206c77`; corrected final: Phase 2 + Gate 0
+  `25/25`, Gate 1 `30/30`, focused `177/177`, full `2273 passed / 8 failed /
+  9 skipped` (same inherited 8), eval `10/10`, ruff 11 / mypy 13 identical
+  to base, file-size gate same 10 inherited violations
 - peer fixture frozen: `tests/fixtures/wave5_gate2_contract_delta_v1.json`,
   schema-validated by `test_wave5_gate2_peer_contract.py`; peer notification
-  sent to FinOS task `019ffe56-8b1e-74e2-9289-9ee8a3544aff` for
-  notification/compatibility review only (no FinOS edits, no next phase)
+  (initial + corrected contract note) sent to FinOS task
+  `019ffe56-8b1e-74e2-9289-9ee8a3544aff` for notification/compatibility
+  review only (no FinOS edits, no next phase)
 - [x] Gate 2 evidence documented in
       `docs/znx-wave5-phase2-gate2-evidence-2026-08-15.md`; ready for owner
       acceptance; no Phase 3, no push/PR/merge/deploy

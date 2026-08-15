@@ -18,17 +18,26 @@
   `coverage_verdict` (status/counts/message only) with explicit retryable,
   durable outcome counts for crash recovery, and a public projection that
   exposes only the safe verdict. Root-corrected the W5-DSH-01 guard so the
-  in-attempt correction dispatch reconstructs (plain responses are not
-  re-sent; runtime observations are derived guidance excluded from the
-  stable envelope). Red-first: 10 Phase 2 reds at the starting HEAD; after
-  implementation: Phase 2 + Gate 0 reds 25/25, Phase 1/Gate 1 30/30,
-  focused 140/140, full `2254 passed / 8 failed / 9 skipped` vs Gate 1
+  in-attempt correction dispatch reconstructs. A root-audit correction round
+  (starting HEAD `3206c77`) then closed three P1 blockers: the public
+  projection sanitizes the terminal coverage verdict (exact five-field safe
+  object rebuilt from validated counts; malformed verdicts fail closed), the
+  W5-DSH-01 envelope restores full request equality (runtime guidance is
+  rebuilt from durable evidence/plan state and included in the verified
+  digest with content AND metadata; tampered guidance fails closed before
+  the gateway), and corrections are typed-tool-only (no matching advertised
+  trusted producer means no correction dispatch, `completion_evidence_missing`,
+  no Attempt 2; the exhaustion scenario now uses a genuine producer with one
+  typed correction per Attempt). Red-first: 18 corrected reds at `3206c77`;
+  after correction: Phase 2 + Gate 0 reds 25/25, Phase 1/Gate 1 30/30,
+  focused 177/177, full `2273 passed / 8 failed / 9 skipped` vs Gate 1
   `2237 / 11 / 9` (only the inherited 8 exact-base failures remain; zero new
   regressions), eval 10/10, ruff 11 / mypy 13 identical to base, file-size
   gate same 10 inherited violations. Gate 2 peer fixture frozen under
-  `tests/fixtures/wave5_gate2_contract_delta_v1.json`; peer notification
-  sent; no push/PR/merge/deploy; Phase 3 starts only on owner acceptance of
-  Gate 2.
+  `tests/fixtures/wave5_gate2_contract_delta_v1.json` (updated with the
+  sanitization/producer contracts); corrected contract note sent to the
+  FinOS peer; no push/PR/merge/deploy; Phase 3 starts only on owner
+  acceptance of Gate 2.
 - Snapshot date: `2026-08-14`
 - Wave 5 Phase 1 (Gate 1 evidence) complete on
   `codex/znx-hosted-outer-attempts-v1`, rebased onto accepted production
