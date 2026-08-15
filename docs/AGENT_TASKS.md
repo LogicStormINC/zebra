@@ -15904,7 +15904,7 @@ resolved capabilities into the existing OpenAI-compatible gateway.
 
 ### MDL-PROFILE-03 - Qwen Max Text Thinking Profiles
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `Vinson`
 - Suggested role: `INTEGRATIONS / QA / DEPLOYMENT`
 - Depends on: `MDL-PROFILE-02`
@@ -15929,12 +15929,12 @@ from model-name prefixes, suffixes, aliases, or regular expressions.
 
 #### Acceptance
 
-- [ ] Red tests reproduce the current `enable_thinking=false` request for the
+- [x] Red tests reproduce the current `enable_thinking=false` request for the
   dated and preview Max profiles.
-- [ ] Exact provider/model/profile mismatches fail before HTTP.
-- [ ] All three Max profiles remain native-text-only and retain MCP image use.
-- [ ] Flash profiles retain their existing `enable_thinking=false` behavior.
-- [ ] Focused tests, Ruff, Mypy, compileall, and `git diff --check` pass.
+- [x] Exact provider/model/profile mismatches fail before HTTP.
+- [x] All three Max profiles remain native-text-only and retain MCP image use.
+- [x] Flash profiles retain their existing `enable_thinking=false` behavior.
+- [x] Focused tests, Ruff, Mypy, compileall, and `git diff --check` pass.
 - [ ] All three exact models pass provider tool-call preflight and deployed
   FinOS-to-Zebra text smoke before the catalog is declared available.
 

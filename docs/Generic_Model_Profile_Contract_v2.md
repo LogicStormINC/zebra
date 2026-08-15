@@ -8,8 +8,9 @@
 `codex/qwen-native-multimodal@4533cf4`.
 
 This document replaces model-name capability inference with an explicit model
-profile contract. It does not authorize a merge to `main`, a provider switch,
-or a FinOS deployment.
+profile contract. The 2026-08-15 `MDL-PROFILE-03` follow-up also binds one
+verified request thinking mode to each exact profile; it does not authorize a
+merge to `main`, automatic routing, or native media for text-only models.
 
 Implementation `cf0dff9` removes the exact model-name gate and passes `46`
 focused tests plus changed-source Ruff/Mypy. This follow-up adds the explicitly
@@ -39,7 +40,8 @@ model identifier, and its value contains only:
 
 - expected provider identity;
 - expected exact model identity;
-- the existing `ModelMediaCapabilities` value.
+- the existing `ModelMediaCapabilities` value;
+- the existing provider-neutral `ModelThinkingMode` value.
 
 The profile mapping and one pure resolver function are the single source of
 truth. A new model becomes usable only after an explicit profile entry and its
@@ -86,12 +88,14 @@ existing Core preflight + Policy + transport
 The first registry revision records only evidence already established on the
 configured Qwen-compatible endpoint:
 
-| Profile | Provider model | Declared input | Tools with media | Streaming with media |
-|---|---|---|---|---|
-| `qwen-flash-native-v1` | `qwen3.7-flash-2026-07-15` | text + image | yes | yes |
-| `qwen-flash-alias-native-v1` | `qwen3.7-flash` | text + image | yes | yes |
-| `qwen-plus-native-v1` | `qwen3.7-plus` | text + image | no until independently verified | no until independently verified |
-| `qwen-max-text-v1` | `qwen3.7-max` | text only | n/a | n/a |
+| Profile | Provider model | Declared input | Thinking | Tools with media | Streaming with media |
+|---|---|---|---|---|---|
+| `qwen-flash-native-v1` | `qwen3.7-flash-2026-07-15` | text + image | disabled | yes | yes |
+| `qwen-flash-alias-native-v1` | `qwen3.7-flash` | text + image | disabled | yes | yes |
+| `qwen-plus-native-v1` | `qwen3.7-plus` | text + image | disabled | no until independently verified | no until independently verified |
+| `qwen-max-text-v1` | `qwen3.7-max` | text only | disabled | n/a | n/a |
+| `qwen-max-dated-thinking-v1` | `qwen3.7-max-2026-05-17` | text only | enabled | n/a | n/a |
+| `qwen-max-preview-thinking-v1` | `qwen3.7-max-preview` | text only | enabled | n/a | n/a |
 
 The alias Flash profile is backed by the 2026-08-02 DashScope-compatible probe:
 text, native 16x16 PNG, image plus required function tool, and the same request
@@ -103,6 +107,13 @@ to `qwen3.7-flash-2026-07-15`.
 The Plus profile may be promoted only by updating its profile revision after
 separate tools-with-media and streaming-with-media acceptance. Changing a model
 name alone never changes capability.
+
+The two Max thinking profiles are backed by the 2026-08-15 configured endpoint
+probe. All three Max identifiers accepted text and function tools. The dated
+and preview identifiers rejected `enable_thinking=false` with
+`invalid_parameter_error` and accepted `enable_thinking=true`; the unversioned
+Max identifier accepted `false`. None declares native image input. Image work
+therefore remains on the separately configured, Policy-bound MiniMax MCP path.
 
 ## Implementation boundary
 

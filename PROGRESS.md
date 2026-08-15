@@ -5,6 +5,14 @@
 
 ## Current Mainline Snapshot
 
+- Review follow-up `MDL-PROFILE-03` is implemented on
+  `codex/qwen37-max-thinking-profiles` from deployed FinOS runtime base
+  `4f936c4`. Exact profiles keep `qwen3.7-max` text-only with thinking disabled
+  and keep `qwen3.7-max-2026-05-17` / `qwen3.7-max-preview` text-only with
+  thinking enabled. The adapter contains no model-name inference; native image
+  capability remains absent and MiniMax MCP remains independent. Red-first
+  focused tests are green, direct text/tool probes passed for all three model
+  identifiers, and deployment E2E remains the final gate.
 - Snapshot date: `2026-07-29`
 - AOR-DEF-01 follow-up review closes durable continuation evidence,
   shared capability preflight, and trusted skill scope/state/content-digest
