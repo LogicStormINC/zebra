@@ -67,6 +67,7 @@ def _seed_ready_session_with_input(
     network_allowlist: tuple[str, ...] = (),
     mcp_allowlist: tuple[str, ...] = (),
     preapproved_readonly_tools: tuple[str, ...] = (),
+    plan_required: bool = False,
 ) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -79,6 +80,7 @@ def _seed_ready_session_with_input(
             network_allowlist=network_allowlist,
             mcp_allowlist=mcp_allowlist,
             preapproved_readonly_tools=preapproved_readonly_tools,
+            plan_required=plan_required,
         )
     )
     event_store = SQLiteEventStore(database_path)

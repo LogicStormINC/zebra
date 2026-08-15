@@ -1,5 +1,4 @@
-import type { SessionEvent } from "../types";
-import type { ChatMessage } from "./chat-surface";
+import type { ChatMessage, SessionEvent } from "./public-types.ts";
 
 interface TimelineBase {
   key: string;

@@ -1,13 +1,17 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from agent_core.domain.agent_definitions import AgentDefinition
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
-from agent_core.domain.skills import normalize_skill_components
+from agent_core.domain.skills import (
+    SkillComponentIdentity,
+    normalize_skill_component_identities,
+    normalize_skill_components,
+)
 from agent_core.domain.tool_profiles import ToolProfile
 
 
@@ -37,6 +41,7 @@ class WorkspaceProjection(BaseModel):
     mcp_allowlist: tuple[str, ...] | None = None
     preapproved_readonly_tools: tuple[str, ...] | None = None
     skill_components: tuple[str, ...] | None = None
+    skill_component_identities: tuple[SkillComponentIdentity, ...] | None = None
     agent_definition: AgentDefinition | None = None
     last_attempt_number: int | None = None
     runtime_name: str | None = None
@@ -90,3 +95,20 @@ class WorkspaceProjection(BaseModel):
         value: tuple[str, ...] | None,
     ) -> tuple[str, ...] | None:
         return None if value is None else normalize_skill_components(value)
+
+    @field_validator("skill_component_identities")
+    @classmethod
+    def ensure_valid_skill_component_identities(
+        cls,
+        value: tuple[SkillComponentIdentity, ...] | None,
+    ) -> tuple[SkillComponentIdentity, ...] | None:
+        return None if value is None else normalize_skill_component_identities(value)
+
+    @model_validator(mode="after")
+    def ensure_skill_grant_identity_matches_components(self) -> "WorkspaceProjection":
+        if self.skill_component_identities is None:
+            return self
+        identities = tuple(identity.name for identity in self.skill_component_identities)
+        if self.skill_components is not None and self.skill_components != identities:
+            raise ValueError("skill component identities must match skill_components")
+        return self

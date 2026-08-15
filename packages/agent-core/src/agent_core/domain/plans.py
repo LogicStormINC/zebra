@@ -61,6 +61,14 @@ class SessionPlan(BaseModel):
             "cancelled": counts[PlanStepStatus.CANCELLED.value],
         }
 
+    @property
+    def open_step_ids(self) -> tuple[str, ...]:
+        return tuple(
+            step.step_id
+            for step in self.steps
+            if step.status in {PlanStepStatus.PENDING, PlanStepStatus.IN_PROGRESS}
+        )
+
     def to_mapping(self) -> dict[str, object]:
         payload: dict[str, object] = {
             "steps": [step.model_dump(mode="json") for step in self.steps],

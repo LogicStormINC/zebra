@@ -6,6 +6,7 @@ from agent_core.domain.model_media import ModelMediaCapabilities, ModelMediaInpu
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
+    ModelInvocationPolicy,
     ModelTextDelta,
     ModelToolDefinition,
 )
@@ -129,6 +130,18 @@ class ModelGatewayPort(Protocol):
         *,
         tools: tuple[ModelToolDefinition, ...] = (),
         media_inputs: tuple[ModelMediaInput, ...] = (),
+    ) -> ModelCompletion: ...
+
+
+@runtime_checkable
+class PolicyAwareModelGatewayPort(Protocol):
+    def complete_with_policy(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+        media_inputs: tuple[ModelMediaInput, ...] = (),
+        invocation_policy: ModelInvocationPolicy,
     ) -> ModelCompletion: ...
 
 

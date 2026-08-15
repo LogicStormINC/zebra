@@ -321,13 +321,15 @@ class RouteAdapter:
                 return self.app.get_session_delivery_audit(parts[0])
             return _not_found(request)
         if method == "GET" and request.path == "/admin/skills":
-            return self.app.list_skills()
+            return self.app.list_skills(_query_owner(request))
         if method == "GET" and request.path.startswith("/admin/skills/"):
             parts = _admin_skills_path_parts(request.path)
             if len(parts) == 1:
-                return self.app.show_skill(parts[0])
+                return self.app.show_skill(parts[0], _query_owner(request))
         if method == "POST" and request.path.startswith("/admin/skills/"):
             parts = _admin_skills_path_parts(request.path)
+            if len(parts) == 2 and parts[1] == "install":
+                return self.app.install_skill(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "enable":
                 return self.app.enable_skill(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "disable":
@@ -371,6 +373,10 @@ def _admin_skills_path_parts(path: str) -> tuple[str, ...]:
     if not suffix:
         return ()
     return tuple(part for part in suffix.split("/") if part)
+
+
+def _query_owner(request: RouteRequest) -> str | None:
+    return None if request.query is None else request.query.get("owner")
 
 
 def _idempotency_key(request: RouteRequest) -> str | None:

@@ -8,6 +8,7 @@ from typing import Any, Protocol, cast
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.session_handoff import EffectIdentity
+from agent_core.domain.skills import SkillComponentIdentity
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 
 
@@ -31,6 +32,7 @@ class ToolGatewayLike(Protocol):
     model_tools: tuple[ModelToolDefinition, ...]
     effective_mcp_tools: tuple[ModelToolDefinition, ...]
     effective_skill_components: tuple[str, ...]
+    effective_skill_component_identities: tuple[SkillComponentIdentity, ...]
     parallel_safe_tools: frozenset[str]
     read_only_tools: frozenset[str]
     validator_tools: frozenset[str]
@@ -106,6 +108,10 @@ class EffectGuardedToolGateway:
     @property
     def effective_skill_components(self) -> tuple[str, ...]:
         return self._gateway.effective_skill_components
+
+    @property
+    def effective_skill_component_identities(self) -> tuple[SkillComponentIdentity, ...]:
+        return self._gateway.effective_skill_component_identities
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:

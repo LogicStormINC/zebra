@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ApprovalSummary } from "../types";
 import { toErrorMessage } from "./chat-surface";
 import type { ZebraApiClient } from "./zebra-api";
-import { decideActiveApproval } from "./approval-continuation";
+import { decideActiveApproval } from "@zebra-agent/task-ui";
 
 export function useActiveApproval(
   api: ZebraApiClient,

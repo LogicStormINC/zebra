@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildClarificationResponsePayload } from "../src/lib/clarification-continuation.ts";
+import { buildClarificationResponsePayload } from "@zebra-agent/task-ui";
 
 assert.deepEqual(buildClarificationResponsePayload(" clarification-1 ", " Operators "), {
   content: "Operators",

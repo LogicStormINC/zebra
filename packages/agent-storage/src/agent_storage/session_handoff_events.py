@@ -3,6 +3,7 @@ import sqlite3
 from typing import Any
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.plans import SessionPlan
 from agent_core.ports.session_handoff import HandoffOperation, SessionHandoffCommitRequest
 
 
@@ -85,6 +86,11 @@ def build_handoff_events(
                     if workspace["skill_components"] is None
                     else json.loads(workspace["skill_components"])
                 ),
+                "skill_component_identities": (
+                    None
+                    if workspace["skill_component_identities"] is None
+                    else json.loads(workspace["skill_component_identities"])
+                ),
                 "agent_definition": (
                     None
                     if workspace["agent_definition"] is None
@@ -116,6 +122,7 @@ def insert_child_projections(
     workspace: sqlite3.Row,
 ) -> None:
     created_at = request.envelope.created_at.isoformat()
+    task_plan_json = _latest_task_plan_json(connection, operation.source_session_id)
     connection.execute(
         "INSERT INTO session_projections VALUES (?, ?, 'ready', ?, ?, 3, NULL, NULL, ?)",
         (
@@ -123,7 +130,7 @@ def insert_child_projections(
             request.create_request.title,
             created_at,
             created_at,
-            json.dumps({"steps": [], "updated_at": None}),
+            task_plan_json,
         ),
     )
     columns = [row[1] for row in connection.execute("PRAGMA table_info(workspace_projections)")]
@@ -136,3 +143,29 @@ def insert_child_projections(
         f"INSERT INTO workspace_projections ({', '.join(columns)}) VALUES ({placeholders})",
         values,
     )
+
+
+def _latest_task_plan_json(
+    connection: sqlite3.Connection,
+    source_session_id: object,
+) -> str:
+    row = connection.execute(
+        """
+        SELECT e.payload, e.created_at
+        FROM session_events e
+        JOIN session_lineage l ON l.session_id = e.session_id
+        WHERE l.root_session_id = (
+            SELECT root_session_id FROM session_lineage WHERE session_id = ?
+        ) AND e.event_type = ?
+        ORDER BY l.stage_index DESC, e.sequence DESC
+        LIMIT 1
+        """,
+        (str(source_session_id), EventType.PLAN_UPDATED.value),
+    ).fetchone()
+    if row is None:
+        return json.dumps(SessionPlan().model_dump(mode="json"))
+    payload = json.loads(row["payload"])
+    plan = SessionPlan.model_validate(
+        {"steps": payload.get("steps", ()), "updated_at": row["created_at"]}
+    )
+    return json.dumps(plan.model_dump(mode="json"))

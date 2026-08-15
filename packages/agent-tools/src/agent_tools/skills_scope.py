@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import MappingProxyType
 
 MAX_FRONTMATTER_BYTES = 8_192
@@ -17,6 +18,12 @@ MAX_METADATA_ENTRIES = 32
 MAX_METADATA_KEY_CHARS = 64
 MAX_METADATA_VALUE_CHARS = 256
 MAX_NAMESPACE_CHARS = 32
+MAX_SKILL_FILE_BYTES = 32_768
+MAX_SKILL_PACKAGE_FILES = 128
+MAX_SKILL_PACKAGE_BYTES = 262_144
+_OWNER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+SUPPORT_DIRECTORIES = frozenset({"references", "templates", "assets", "scripts"})
+_SENSITIVE_PATH_MARKERS = (".env", "credential", "id_rsa", "private_key", "secret", "token")
 
 
 class SkillCatalogReason(StrEnum):
@@ -42,6 +49,7 @@ class SkillCatalogReason(StrEnum):
     SENSITIVE_FILE = "sensitive_file"
     UNSUPPORTED_FILE = "unsupported_file"
     FILE_READ_FAILED = "file_read_failed"
+    DIGEST_MISMATCH = "digest_mismatch"
     INVALID_ARGUMENTS = "invalid_arguments"
 
 
@@ -81,6 +89,7 @@ class ScopedSkillRoot:
     scope: SkillScope
     root: str
     namespace: str | None = None
+    owner: str | None = None
 
 
 def build_scoped_skill_roots(
@@ -89,6 +98,7 @@ def build_scoped_skill_roots(
     admin: Sequence[str] = (),
     user: Sequence[str] = (),
     repo: Sequence[str] = (),
+    owner: str | None = None,
 ) -> tuple[ScopedSkillRoot, ...]:
     """Build scope-tagged discovery roots from the four settings root lists.
 
@@ -96,13 +106,25 @@ def build_scoped_skill_roots(
     the admin/CLI inventory discover the same scoped roots. Plain strings are
     tagged with their scope; callers may also pass ``ScopedSkillRoot`` directly.
     """
+    normalized_owner = None if owner is None else normalize_skill_owner(owner)
     roots: list[ScopedSkillRoot] = []
     for path in system:
         roots.append(ScopedSkillRoot(scope=SkillScope.SYSTEM, root=path))
     for path in admin:
         roots.append(ScopedSkillRoot(scope=SkillScope.ADMIN, root=path))
     for path in user:
-        roots.append(ScopedSkillRoot(scope=SkillScope.USER, root=path))
+        if normalized_owner is None:
+            roots.append(ScopedSkillRoot(scope=SkillScope.USER, root=path))
+            continue
+        private_root = Path(path).expanduser() / ".zebra-private" / normalized_owner
+        roots.append(
+            ScopedSkillRoot(
+                scope=SkillScope.USER,
+                root=str(private_root),
+                namespace=normalized_owner,
+                owner=normalized_owner,
+            )
+        )
     for path in repo:
         roots.append(ScopedSkillRoot(scope=SkillScope.REPO, root=path))
     return tuple(roots)
@@ -116,6 +138,50 @@ def compute_skill_digest(manifest_bytes: bytes, body_bytes: bytes) -> str:
     digest.update(b"\nskill-body-v1\n")
     digest.update(body_bytes)
     return digest.hexdigest()
+
+
+def read_skill_package(root: Path) -> Mapping[str, str]:
+    """Read the bounded declarative Skill package without executing it."""
+    skill_file = root / "SKILL.md"
+    if skill_file.is_symlink():
+        raise SkillCatalogError(
+            SkillCatalogReason.PATH_OUTSIDE_SKILL, "skill file escapes its package"
+        )
+    content, total = read_skill_file(skill_file)
+    files = {"SKILL.md": content}
+    for directory in SUPPORT_DIRECTORIES:
+        support_root = root / directory
+        if not support_root.is_dir() or support_root.is_symlink():
+            continue
+        for candidate in sorted(support_root.rglob("*")):
+            if candidate.is_symlink() or not candidate.is_file():
+                continue
+            relative = candidate.relative_to(root).as_posix()
+            validate_skill_file_path(relative)
+            content, byte_count = read_skill_file(candidate)
+            if (
+                len(files) >= MAX_SKILL_PACKAGE_FILES
+                or total + byte_count > MAX_SKILL_PACKAGE_BYTES
+            ):
+                raise SkillCatalogError(
+                    SkillCatalogReason.FILE_TOO_LARGE, "skill package exceeds its bound"
+                )
+            files[relative] = content
+            total += byte_count
+    return MappingProxyType(dict(sorted(files.items())))
+
+
+def normalize_skill_owner(value: str) -> str:
+    if (
+        not isinstance(value, str)
+        or value == SkillScope.USER.value
+        or _OWNER.fullmatch(value) is None
+    ):
+        raise SkillCatalogError(
+            SkillCatalogReason.INVALID_ROOT,
+            "skill owner must be an opaque identifier",
+        )
+    return value
 
 
 @dataclass(frozen=True)
@@ -297,23 +363,55 @@ def normalize_scoped_roots(
         if isinstance(raw, ScopedSkillRoot):
             scope = raw.scope
             namespace = raw.namespace
+            owner = raw.owner
             raw_path = raw.root
         elif isinstance(raw, str | Path):
             scope = SkillScope.USER
             namespace = None
+            owner = None
             raw_path = str(raw)
         else:
             raise SkillCatalogError(
                 SkillCatalogReason.INVALID_ROOT, f"invalid skill root: {raw!r}"
             )
+        if owner is not None:
+            owner = normalize_skill_owner(owner)
+            if scope is not SkillScope.USER:
+                raise SkillCatalogError(
+                    SkillCatalogReason.INVALID_ROOT,
+                    "only user Skill roots may declare an owner",
+                )
+            if namespace not in (None, owner):
+                raise SkillCatalogError(
+                    SkillCatalogReason.INVALID_ROOT,
+                    "private Skill namespace must equal its owner",
+                )
+            namespace = owner
         path = Path(raw_path).expanduser()
+        private_root = owner is not None
+        if private_root and path.parent.is_symlink():
+            raise SkillCatalogError(
+                SkillCatalogReason.INVALID_ROOT,
+                "private Skill container must not be a symlink",
+            )
+        expected_private_root = None if owner is None else path.parent.resolve() / owner
+        if private_root and path.is_symlink():
+            raise SkillCatalogError(
+                SkillCatalogReason.INVALID_ROOT, "private Skill root must not be a symlink"
+            )
         try:
             canonical = path.resolve(strict=True)
         except OSError as exc:
+            if not private_root:
+                raise SkillCatalogError(
+                    SkillCatalogReason.INVALID_ROOT, f"skill root does not exist: {path}"
+                ) from exc
+            canonical = path.resolve()
+        if expected_private_root is not None and canonical != expected_private_root:
             raise SkillCatalogError(
-                SkillCatalogReason.INVALID_ROOT, f"skill root does not exist: {path}"
-            ) from exc
-        if not canonical.is_dir():
+                SkillCatalogReason.INVALID_ROOT, "private Skill root escapes its owner location"
+            )
+        if not private_root and not canonical.is_dir():
             raise SkillCatalogError(
                 SkillCatalogReason.INVALID_ROOT, f"skill root is not a directory: {path}"
             )
@@ -322,6 +420,59 @@ def normalize_scoped_roots(
                 SkillCatalogReason.DUPLICATE_ROOT, f"duplicate skill root: {canonical}"
             )
         seen.add(canonical)
-        resolved.append(ScopedSkillRoot(scope=scope, root=str(canonical), namespace=namespace))
+        resolved.append(
+            ScopedSkillRoot(scope=scope, root=str(canonical), namespace=namespace, owner=owner)
+        )
     resolved.sort(key=lambda item: scope_priority(item.scope))
     return tuple(resolved)
+
+
+def validate_skill_file_path(value: str) -> Path:
+    if not isinstance(value, str) or not value.strip():
+        raise SkillCatalogError(SkillCatalogReason.INVALID_FILE_PATH, "file_path must not be blank")
+    normalized = value.strip().replace("\\", "/")
+    posix = PurePosixPath(normalized)
+    windows = PureWindowsPath(normalized)
+    if (
+        len(normalized) > 256
+        or posix.is_absolute()
+        or windows.is_absolute()
+        or windows.drive
+        or ".." in posix.parts
+    ):
+        raise SkillCatalogError(
+            SkillCatalogReason.INVALID_FILE_PATH, "file_path must stay within the skill"
+        )
+    if any(part.startswith(".") for part in posix.parts) or any(
+        marker in normalized.lower() for marker in _SENSITIVE_PATH_MARKERS
+    ):
+        raise SkillCatalogError(SkillCatalogReason.SENSITIVE_FILE, "skill file is blocked")
+    if posix.as_posix() != "SKILL.md" and (
+        len(posix.parts) < 2 or posix.parts[0] not in SUPPORT_DIRECTORIES
+    ):
+        raise SkillCatalogError(
+            SkillCatalogReason.UNSUPPORTED_FILE, "skill support file is invalid"
+        )
+    return Path(*posix.parts)
+
+
+def read_skill_file(path: Path) -> tuple[str, int]:
+    try:
+        size = path.stat().st_size
+        if size > MAX_SKILL_FILE_BYTES:
+            raise SkillCatalogError(
+                SkillCatalogReason.FILE_TOO_LARGE, "skill file exceeds 32768 bytes"
+            )
+        payload = path.read_bytes()
+    except OSError as exc:
+        raise SkillCatalogError(
+            SkillCatalogReason.FILE_READ_FAILED, "skill file could not be read"
+        ) from exc
+    if b"\x00" in payload:
+        raise SkillCatalogError(SkillCatalogReason.BINARY_FILE, "binary skill files are blocked")
+    try:
+        return payload.decode("utf-8"), len(payload)
+    except UnicodeDecodeError as exc:
+        raise SkillCatalogError(
+            SkillCatalogReason.INVALID_ENCODING, "skill files must be UTF-8"
+        ) from exc

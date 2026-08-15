@@ -1,0 +1,36 @@
+{
+  "name": "@zebra-agent/task-ui",
+  "version": "0.1.2",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.2",
+  "description": "Shared generic Task UI core and React primitives for Zebra Desktop and FinOS AceAgent.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "check": "node --experimental-strip-types src/testing/core.contract.check.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@ant-design/icons": "^6.0.0",
+    "@ant-design/x": "^2.8.0",
+    "@ant-design/x-markdown": "^2.8.0",
+    "antd": "^6.5.1",
+    "antd-style": "^4.1.0",
+    "clsx": "^2.1.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.8",
+    "typescript": "~5.8.3"
+  }
+}

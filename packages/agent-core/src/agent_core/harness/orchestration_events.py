@@ -120,6 +120,7 @@ def policy_decision_payload(
 def approval_requested_payload(
     *,
     attempt_number: int,
+    approval_id: str,
     tool_call: ToolCall,
     assistant_message: str,
     decision: PolicyDecision,
@@ -130,6 +131,7 @@ def approval_requested_payload(
 ) -> dict[str, object]:
     payload: dict[str, object] = {
         "attempt_number": attempt_number,
+        "approval_id": approval_id,
         "reason": decision.reason,
         "policy_profile": decision.policy_profile,
         "tool_name": tool_call.name,

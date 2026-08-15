@@ -1,6 +1,6 @@
 import { ToolOutlined } from "@ant-design/icons";
 import { createStyles } from "antd-style";
-import type { TimelineToolItem } from "../lib/session-timeline";
+import type { TimelineToolItem } from "@zebra-agent/task-ui";
 
 const STATUS_LABELS: Record<TimelineToolItem["status"], string> = {
   proposed: "proposed",

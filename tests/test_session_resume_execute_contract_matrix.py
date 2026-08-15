@@ -277,7 +277,7 @@ class _FakeGateway:
         tools: tuple[ModelToolDefinition, ...] = (),
     ) -> ModelCompletion:
         assert tools
-        assert len(messages) in {1, 2}
+        assert len(messages) in {1, 2, 3}
         assert messages[-1].role is MessageRole.USER
         return self._completion
 

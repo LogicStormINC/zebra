@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from pathlib import Path
 
 from agent_core.domain.clarifications import ClarificationContext
@@ -17,41 +18,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
 
     def save_session(self, session: Session) -> Session:
         with self._database.connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO session_projections (
-                    session_id,
-                    title,
-                    status,
-                    created_at,
-                    updated_at,
-                    current_sequence,
-                    approval_context_json,
-                    clarification_context_json,
-                    task_plan_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(session_id) DO UPDATE SET
-                    title = excluded.title,
-                    status = excluded.status,
-                    created_at = excluded.created_at,
-                    updated_at = excluded.updated_at,
-                    current_sequence = excluded.current_sequence,
-                    approval_context_json = excluded.approval_context_json,
-                    clarification_context_json = excluded.clarification_context_json,
-                    task_plan_json = excluded.task_plan_json
-                """,
-                (
-                    str(session.session_id),
-                    session.title,
-                    session.status.value,
-                    session.created_at.isoformat(),
-                    session.updated_at.isoformat(),
-                    session.current_sequence,
-                    _approval_context_json(session.approval_context),
-                    _clarification_context_json(session.clarification_context),
-                    _task_plan_json(session.task_plan),
-                ),
-            )
+            _save_session(connection, session)
         return session
 
     def get_session(self, session_id: SessionId) -> Session | None:
@@ -200,6 +167,44 @@ def _approval_context_json(context: ApprovalContext | None) -> str | None:
     if context is None:
         return None
     return json.dumps(context.model_dump(mode="json"))
+
+
+def _save_session(connection: sqlite3.Connection, session: Session) -> None:
+    connection.execute(
+        """
+        INSERT INTO session_projections (
+            session_id,
+            title,
+            status,
+            created_at,
+            updated_at,
+            current_sequence,
+            approval_context_json,
+            clarification_context_json,
+            task_plan_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(session_id) DO UPDATE SET
+            title = excluded.title,
+            status = excluded.status,
+            created_at = excluded.created_at,
+            updated_at = excluded.updated_at,
+            current_sequence = excluded.current_sequence,
+            approval_context_json = excluded.approval_context_json,
+            clarification_context_json = excluded.clarification_context_json,
+            task_plan_json = excluded.task_plan_json
+        """,
+        (
+            str(session.session_id),
+            session.title,
+            session.status.value,
+            session.created_at.isoformat(),
+            session.updated_at.isoformat(),
+            session.current_sequence,
+            _approval_context_json(session.approval_context),
+            _clarification_context_json(session.clarification_context),
+            _task_plan_json(session.task_plan),
+        ),
+    )
 
 
 def _approval_context_from_json(value: object) -> ApprovalContext | None:

@@ -22,6 +22,8 @@ from agent_security import LocalPolicyEngine, PolicyProfile
         "finos.notes.get",
         "finos.securities.resolve",
         "finos.trade_log_quality.validate",
+        "finos.investor_knowledge.list",
+        "finos.investor_knowledge.get",
     ],
 )
 def test_finos_business_tools_are_explicit_read_only_policy_allowances(tool_name: str) -> None:

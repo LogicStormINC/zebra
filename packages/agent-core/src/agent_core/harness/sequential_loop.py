@@ -1,27 +1,31 @@
 from collections.abc import Callable, Mapping
-from dataclasses import replace
-from datetime import datetime
 
-from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import (
-    ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME,
-    ModelCompletion,
-)
-from agent_core.domain.events import EventType
+from agent_core.domain.messages import SessionMessage
+from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall
 from agent_core.harness import context_recovery
 from agent_core.harness.attempt_result import (
-    action_fingerprint,
     append_no_progress_observation,
     build_attempt_result,
+    executed_action_fingerprints,
+)
+from agent_core.harness.capability_guidance import (
+    append_required_plan_nudge,
+    required_plan_action,
+    required_plan_failure,
 )
 from agent_core.harness.clarification_step import clarification_tool_result
+from agent_core.harness.completion_blocking import current_task_plan
 from agent_core.harness.completion_evidence import (
     complete_without_tools,
     continue_after_tool_batch,
     prepare_terminal_synthesis_evidence,
     should_use_provisional_final,
     terminal_synthesis_completion_evidence,
+)
+from agent_core.harness.final_output_contract import (
+    bind_final_output_contract,
+    final_output_contract,
 )
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_request import allowed_response_repairs
@@ -34,6 +38,11 @@ from agent_core.harness.models import (
     HarnessEventDraft,
 )
 from agent_core.harness.orchestration_events import model_response_event
+from agent_core.harness.protocol_invariants import is_raw_dsml_tool_request
+from agent_core.harness.required_tool_request import (
+    evidence_correction_budget_failure,
+    evidence_correction_request,
+)
 from agent_core.harness.selection import ToolCallSelectionStrategy
 from agent_core.harness.tool_batch import ToolBatchExecutor
 from agent_core.harness.tool_resolution import (
@@ -103,10 +112,18 @@ class SequentialToolLoop:
                 completion=completion,
                 tool_calls=calls,
             )
-        fingerprints = _executed_action_fingerprints(
+        fingerprints = executed_action_fingerprints(
             messages, since=context.attempt.started_at
         )
         emitted_events: list[HarnessEventDraft] = HarnessEventBuffer(self._event_sink)
+        if context.task.plan_required and not current_task_plan(context, ()).steps:
+            return required_plan_failure(
+                completion,
+                emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata={"approval_continuation": True},
+            )
         batch = self._batch_executor.execute(
             context,
             messages=messages,
@@ -163,7 +180,7 @@ class SequentialToolLoop:
             emitted_events=HarnessEventBuffer(self._event_sink),
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
-            fingerprints=_executed_action_fingerprints(
+            fingerprints=executed_action_fingerprints(
                 messages, since=context.attempt.started_at
             ),
             metadata={
@@ -204,9 +221,40 @@ class SequentialToolLoop:
                     "detail": str(exc),
                 },
         )
+        plan_action = required_plan_action(
+            context,
+            messages,
+            completion,
+            emitted_events,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            metadata=metadata,
+        )
+        if plan_action == "nudge":
+            append_required_plan_nudge(
+                messages, completion, created_at=context.attempt.started_at
+            )
+            return self._request_next_completion(
+                context,
+                messages=messages,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                fingerprints=fingerprints,
+                metadata={**metadata, "required_plan_nudge_attempted": True},
+                fallback_message=completion.assistant_message.content,
+            )
+        if plan_action == "fail":
+            return required_plan_failure(
+                completion,
+                emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                metadata=metadata,
+            )
         if not completion.tool_calls:
-            contract = _final_output_contract(emitted_events, completion)
-            _bind_final_output_contract(emitted_events, contract)
+            contract = final_output_contract(emitted_events, completion)
+            bind_final_output_contract(emitted_events, contract)
             if contract is not None:
                 metadata = {**metadata, "output_contract": contract}
             return complete_without_tools(
@@ -222,6 +270,19 @@ class SequentialToolLoop:
             )
         selection = self._tool_selector.select(completion.tool_calls)
         calls = completion.tool_calls if self._synthesize_tool_results else (selection.tool_call,)
+        plan_missing = context.task.plan_required and not current_task_plan(
+            context, emitted_events
+        ).steps
+        plan_calls = tuple(call for call in completion.tool_calls if call.name == "agent.plan")
+        first_call = completion.tool_calls[0]
+        if plan_missing and len(plan_calls) == 1:
+            calls = plan_calls
+        elif (
+            plan_missing
+            and first_call.name == "agent.clarify"
+            and not self._synthesize_tool_results
+        ):
+            calls = (first_call,)
         self._model_step.append_tool_batch(
             messages,
             completion=completion,
@@ -282,12 +343,21 @@ class SequentialToolLoop:
             model_limit is None or model_calls_used + 1 < model_limit
         )
         allow_tools = tool_budget_open and model_budget_allows_followup
+        correction = evidence_correction_request(metadata)
+        if correction.tool_names and not allow_tools:
+            return evidence_correction_budget_failure(
+                metadata=metadata,
+                assistant_message=fallback_message,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+            )
         compaction = (
             self._model_step.prepare_conversation(
                 messages,
                 self._model_gateway,
                 allow_tools=True,
-                user_goal=context.task.user_input,
+                user_goal=context.task.stable_goal,
                 created_at=context.attempt.started_at,
                 **(
                     {"media_inputs": context.task.media_inputs}
@@ -300,7 +370,7 @@ class SequentialToolLoop:
                 messages,
                 self._model_gateway,
                 self._model_step,
-                context.task.user_input,
+                context.task.stable_goal,
                 context.attempt.started_at,
                 **(
                     {"media_inputs": context.task.media_inputs}
@@ -326,8 +396,20 @@ class SequentialToolLoop:
                 model_limit,
                 model_calls_used,
             ),
+            required_tool_names=correction.tool_names,
+            invocation_policy=correction.invocation_policy,
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
+        if correction.tool_names and any(
+            call.name not in correction.tool_names for call in completion.tool_calls
+        ):
+            return evidence_correction_budget_failure(
+                metadata=metadata,
+                assistant_message=completion.assistant_message.content,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                emitted_events=emitted_events,
+            )
         compaction_count = metadata.get("conversation_compaction_count")
         provisional_final = should_use_provisional_final(
             context,
@@ -345,7 +427,7 @@ class SequentialToolLoop:
         # event must already carry the emit-tool contract BEFORE it is
         # appended; a later in-buffer replace would never reach the store.
         contract = (
-            _final_output_contract(emitted_events, completion)
+            final_output_contract(emitted_events, completion)
             if response_stage == "final"
             else None
         )
@@ -425,7 +507,7 @@ class SequentialToolLoop:
             tool_calls_executed=tool_calls_executed,
             metadata=metadata,
             fallback_message=fallback_message,
-            fingerprints=_executed_action_fingerprints(
+            fingerprints=executed_action_fingerprints(
                 messages, since=context.attempt.started_at
             ),
             request_next_completion=self._request_next_completion,
@@ -449,7 +531,7 @@ class SequentialToolLoop:
             messages,
             self._model_gateway,
             self._model_step,
-            context.task.user_input,
+            context.task.stable_goal,
             context.attempt.started_at,
             **(
                 {"media_inputs": context.task.media_inputs}
@@ -473,7 +555,7 @@ class SequentialToolLoop:
             response_repair_limit=allowed_response_repairs(model_limit, model_calls_used),
         )
         model_calls_used += 1 + completion.call_metadata.response_repair_count
-        contract = _final_output_contract(emitted_events, completion)
+        contract = final_output_contract(emitted_events, completion)
         # Same sink constraint as above: inject the contract before append.
         emitted_events.append(
             model_response_event(
@@ -483,12 +565,12 @@ class SequentialToolLoop:
                 output_contract=contract,
             )
         )
-        _bind_final_output_contract(emitted_events, contract)
+        bind_final_output_contract(emitted_events, contract)
         if contract is not None:
             metadata = {**metadata, "output_contract": contract}
         if (
             completion.tool_calls
-            or _is_raw_dsml_tool_request(completion.assistant_message.content)
+            or is_raw_dsml_tool_request(completion.assistant_message.content)
             or not completion.assistant_message.content.strip()
         ):
             return build_attempt_result(
@@ -519,98 +601,3 @@ class SequentialToolLoop:
             emitted_events=emitted_events,
             metadata=metadata,
         )
-
-
-def _executed_action_fingerprints(
-    messages: list[SessionMessage],
-    *,
-    since: datetime | None = None,
-) -> set[str]:
-    completed_ids = {
-        message.tool_call_id for message in messages if message.role is MessageRole.TOOL
-    }
-    return {
-        action_fingerprint(call)
-        for message in messages
-        if since is None or message.created_at >= since
-        for call in message.tool_calls
-        if (call.provider_call_id or str(call.tool_call_id)) in completed_ids
-    }
-
-
-def _final_output_contract(
-    emitted_events: list[HarnessEventDraft],
-    completion: ModelCompletion,
-) -> dict[str, object] | None:
-    """The output_contract strictly bound to the FINAL answer.
-
-    Only the dedicated producer tool (``artifact.output_contract.emit``) may
-    contribute a contract through tool-result metadata; ANY other tool's
-    ``output_contract`` metadata is ignored, so a forged envelope from a
-    local, MCP or business-provider tool can never become the Artifact
-    contract source. The last legal emission in the terminal attempt wins;
-    otherwise the final completion's own gateway channel
-    (``ModelCompletion.output_contract``) applies. Contracts from earlier
-    tool-loop rounds never leak into the final metadata because only the
-    terminal sites bind and non-final events never carry one.
-    """
-    emitted: dict[str, object] | None = None
-    for event in emitted_events:
-        if event.event_type is not EventType.TOOL_EXECUTION_COMPLETED:
-            continue
-        if event.payload.get("tool_name") != ARTIFACT_OUTPUT_CONTRACT_EMIT_TOOL_NAME:
-            continue
-        metadata = event.payload.get("metadata")
-        candidate = (
-            metadata.get("output_contract")
-            if isinstance(metadata, Mapping)
-            else None
-        )
-        if isinstance(candidate, Mapping):
-            emitted = dict(candidate)
-    if emitted is not None:
-        return emitted
-    if completion.output_contract is not None:
-        return dict(completion.output_contract)
-    return None
-
-
-def _bind_final_output_contract(
-    emitted_events: list[HarnessEventDraft],
-    contract: dict[str, object] | None,
-) -> None:
-    """Attach the contract to the final MODEL_RESPONSE_RECEIVED event only."""
-    if contract is None:
-        return
-    for index in range(len(emitted_events) - 1, -1, -1):
-        event = emitted_events[index]
-        if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
-            emitted_events[index] = replace(
-                event,
-                payload={
-                    **event.payload,
-                    "output_contract": dict(contract),
-                },
-            )
-            break
-
-
-def _is_raw_dsml_tool_request(content: str) -> bool:
-    marker = "<｜｜DSML｜｜tool_calls>"
-    marker_index = 0
-    while True:
-        marker_index = content.find(marker, marker_index)
-        if marker_index < 0:
-            return False
-        invoke_index = content.find("invoke name=", marker_index + len(marker))
-        if (
-            not _is_inside_fenced_code_block(content, marker_index)
-            and invoke_index >= 0
-            and not _is_inside_fenced_code_block(content, invoke_index)
-        ):
-            return True
-        marker_index += len(marker)
-
-
-def _is_inside_fenced_code_block(content: str, position: int) -> bool:
-    return sum(line.lstrip().startswith("```") for line in content[:position].splitlines()) % 2 == 1

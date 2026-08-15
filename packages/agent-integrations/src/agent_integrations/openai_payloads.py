@@ -172,10 +172,13 @@ def _parse_completion(
     if not isinstance(message, dict):
         raise ValueError("model gateway choice must include a message object")
     finish_reason = optional_str(first_choice.get("finish_reason"))
-    if resolved is not None:
-        finish_error = finish_reason_error(finish_reason)
-        if finish_error is not None:
-            raise finish_error
+    # W45-GATE-A-02: finish-reason validation is provider-neutral. A
+    # content_filter/length/unsupported finish is a non-retryable rejection on
+    # every OpenAI-compatible provider, not only the DeepSeek router path;
+    # otherwise a rejected stream silently becomes an empty completion.
+    finish_error = finish_reason_error(finish_reason)
+    if finish_error is not None:
+        raise finish_error
     tool_calls = _parse_tool_calls(
         message.get("tool_calls"),
         internal_tool_names=internal_names,

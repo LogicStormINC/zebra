@@ -1,4 +1,3 @@
-import json
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -16,10 +15,12 @@ from agent_core.domain.model_media import (
 )
 from agent_core.domain.modeling import (
     ModelCompletion,
+    ModelInvocationPolicy,
     ModelTextDelta,
     ModelToolDefinition,
 )
-from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.domain.tools import ToolCall, ToolResult
+from agent_core.harness.capability_guidance import append_capability_guidance
 from agent_core.harness.context_recovery import (
     merge_recovery_messages,
     prepare_bounded_conversation,
@@ -41,6 +42,9 @@ from agent_core.harness.provider_continuation import (
     continuation_event,
     prepare_provider_continuation,
 )
+from agent_core.harness.required_tool_request import selected_model_tools
+from agent_core.harness.task_state_context import append_task_state_context
+from agent_core.harness.tool_result_message import tool_result_content, tool_result_status
 from agent_core.ports.context_compiler import ContextCompilerPort
 from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
@@ -48,35 +52,6 @@ from agent_core.ports.conversation_compactor import (
 )
 from agent_core.ports.model_gateway import ModelGatewayPort, ModelResponseRejectedError
 from agent_core.ports.provider_continuation import ProviderContinuationCompletionPort
-
-MODEL_NATIVE_DELEGATION_GUIDANCE = (
-    "Subagent delegation:\n"
-    "- Answer directly when context is sufficient or evidence collection is not needed.\n"
-    "- Use a normal parent tool for one direct operation or a short linear sequence.\n"
-    "- Call agent.research only for bounded, independent, multi-step evidence "
-    "collection whose separate context is materially useful.\n"
-    "- Words such as research, search, analysis, or comparison do not require "
-    "delegation by themselves.\n"
-    "- Every agent.research call must include objective and a concise "
-    "delegation_reason explaining why direct work is less suitable."
-)
-
-
-def _tool_result_content(tool_result: ToolResult) -> str:
-    if tool_result.output:
-        return tool_result.output
-    if tool_result.status is ToolCallStatus.EXECUTED:
-        return "Tool executed."
-    observation: dict[str, object] = {"status": tool_result.status.value}
-    for key in ("reason", "detail"):
-        value = tool_result.metadata.get(key)
-        if isinstance(value, str | int | float | bool):
-            observation[key] = value
-    return json.dumps(observation, ensure_ascii=False, sort_keys=True)
-
-
-def _tool_result_status(tool_result: ToolResult) -> str:
-    return "succeeded" if tool_result.status is ToolCallStatus.EXECUTED else "failed"
 
 
 class HarnessModelStep:
@@ -175,7 +150,7 @@ class HarnessModelStep:
             messages,
             model_gateway,
             allow_tools=True,
-            user_goal=task.user_input,
+            user_goal=task.stable_goal,
             created_at=now,
             **({"media_inputs": task.media_inputs} if task.media_inputs else {}),
         )
@@ -196,8 +171,18 @@ class HarnessModelStep:
         allow_tools: bool,
         media_inputs: tuple[ModelMediaInput, ...] = (),
         response_repair_limit: int = 1,
+        required_tool_names: tuple[str, ...] = (),
+        invocation_policy: ModelInvocationPolicy | None = None,
     ) -> ModelCompletion:
-        tools = self._available_tools if allow_tools else ()
+        tools = selected_model_tools(
+            self._available_tools,
+            allow_tools=allow_tools,
+            required_names=required_tool_names,
+        )
+        if invocation_policy is not None and not tools:
+            raise ValueError("model invocation policy requires advertised tools")
+        if invocation_policy is not None:
+            self._provider_continuation = None
         window = context_window(model_gateway)
         plan = build_context_plan(
             tuple(messages),
@@ -231,6 +216,7 @@ class HarnessModelStep:
                         model_call_id="untracked",
                         on_delta=lambda _model_call_id, _delta: None,
                         response_repair_limit=response_repair_limit,
+                        invocation_policy=invocation_policy,
                     )
                 finally:
                     self._provider_continuation = None
@@ -243,6 +229,7 @@ class HarnessModelStep:
                     model_call_id="untracked",
                     on_delta=lambda _model_call_id, _delta: None,
                     response_repair_limit=response_repair_limit,
+                    invocation_policy=invocation_policy,
                 )
             return with_context_plan(completion, plan)
         model_call_id = str(new_correlation_id())
@@ -296,6 +283,7 @@ class HarnessModelStep:
                     model_call_id=model_call_id,
                     on_delta=self._emit_text_delta,
                     response_repair_limit=response_repair_limit,
+                    invocation_policy=invocation_policy,
                 )
             finally:
                 self._provider_continuation = None
@@ -308,6 +296,7 @@ class HarnessModelStep:
                 model_call_id=model_call_id,
                 on_delta=self._emit_text_delta,
                 response_repair_limit=response_repair_limit,
+                invocation_policy=invocation_policy,
             )
         planned_completion = with_context_plan(completion, plan)
         return replace(
@@ -396,12 +385,12 @@ class HarnessModelStep:
             SessionMessage(
                 message_id=new_message_id(),
                 role=MessageRole.TOOL,
-                content=_tool_result_content(tool_result),
+                content=tool_result_content(tool_result),
                 created_at=created_at,
                 tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
                 metadata={
                     **tool_result.metadata,
-                    "tool_result_status": _tool_result_status(tool_result),
+                    "tool_result_status": tool_result_status(tool_result),
                 },
             )
         )
@@ -429,7 +418,7 @@ class HarnessModelStep:
             messages,
             model_gateway,
             self,
-            task.user_input,
+            task.stable_goal,
             now,
             media_inputs=task.media_inputs,
         )
@@ -490,40 +479,13 @@ class HarnessModelStep:
                     },
                 ),
             )
-        if any(tool.name == "agent.research" for tool in self._available_tools):
-            if messages:
-                messages[-1] = messages[-1].model_copy(
-                    update={
-                        "content": (f"{messages[-1].content}\n\n{MODEL_NATIVE_DELEGATION_GUIDANCE}")
-                    }
-                )
-            else:
-                messages.append(
-                    SessionMessage(
-                        message_id=new_message_id(),
-                        role=MessageRole.SYSTEM,
-                        content=MODEL_NATIVE_DELEGATION_GUIDANCE,
-                        created_at=created_at,
-                    )
-                )
-        active_steps = tuple(
-            step for step in task.task_plan.steps if step.status.value in {"pending", "in_progress"}
+        append_capability_guidance(
+            messages,
+            self._available_tools,
+            created_at=created_at,
+            plan_required=task.plan_required,
         )
-        if active_steps:
-            messages.append(
-                SessionMessage(
-                    message_id=new_message_id(),
-                    role=MessageRole.SYSTEM,
-                    content="\n".join(
-                        ["Current durable task plan:"]
-                        + [
-                            f"- [{step.status.value}] {step.step_id}: {step.content}"
-                            for step in active_steps
-                        ]
-                    ),
-                    created_at=created_at,
-                )
-            )
+        append_task_state_context(messages, task, created_at=created_at)
         messages.append(
             SessionMessage(
                 message_id=new_message_id(),

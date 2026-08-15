@@ -38,6 +38,12 @@ def exception_attempt_result(
             metadata={**metadata, "stop_reason": "context_window_exceeded"},
         )
     if isinstance(exc, ModelResponseRejectedError):
+        if not exc.retryable:
+            return HarnessAttemptResult(
+                outcome=HarnessAttemptOutcome.FAILED,
+                summary="model response rejected",
+                metadata={**metadata, "stop_reason": "model_response_rejected"},
+            )
         return HarnessAttemptResult(
             outcome=HarnessAttemptOutcome.SUSPENDED,
             summary="model response repair exhausted; execution can be resumed safely",
@@ -85,6 +91,7 @@ def error_metadata(
         "error_message": raw_error or f"{error_type} (no detail was provided)",
     }
     if isinstance(exc, ModelResponseRejectedError):
+        metadata["error_message"] = exc.reason
         metadata.update(exc.metadata())
     elif isinstance(exc, ContextWindowExceededError):
         metadata.update(
@@ -97,6 +104,10 @@ def error_metadata(
             }
         )
     elif isinstance(exc, ModelProviderError):
+        # W45-GATE-A-03: the durable failure payload carries only the
+        # normalized provider category. Raw transport text can embed URLs or
+        # credentials and must never reach the event store or browser.
+        metadata["error_message"] = exc.normalized_error
         metadata.update(
             {
                 "normalized_error": exc.normalized_error,

@@ -1,8 +1,9 @@
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 from agent_core.domain.agent_definitions import AgentDefinition, AgentDefinitionContext
@@ -12,7 +13,11 @@ from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.model_media import ModelMediaInput, ordered_media_inputs
 from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import Session
-from agent_core.domain.skills import normalize_skill_components
+from agent_core.domain.skills import (
+    SkillComponentIdentity,
+    normalize_skill_component_identities,
+    normalize_skill_components,
+)
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
@@ -33,6 +38,9 @@ class HarnessStopReason(StrEnum):
     RETRY_ALLOWED = "retry_allowed"
     TOOL_CALL_BUDGET_EXHAUSTED = "tool_call_budget_exhausted"
     TOOL_LOOP_NO_PROGRESS = "tool_loop_no_progress"
+    TASK_PLAN_INCOMPLETE = "task_plan_incomplete"
+    REQUIRED_PLAN_NOT_CREATED = "required_plan_not_created"
+    COMPLETION_EVIDENCE_MISSING = "completion_evidence_missing"
     APPROVAL_REQUIRED = "approval_required"
     CLARIFICATION_REQUIRED = "clarification_required"
 
@@ -52,6 +60,7 @@ class HarnessTask:
     mcp_allowlist: tuple[str, ...] = ()
     preapproved_readonly_tools: tuple[str, ...] = ()
     skill_components: tuple[str, ...] = ()
+    skill_component_identities: tuple[SkillComponentIdentity, ...] | None = None
     agent_definition: AgentDefinition | None = None
     agent_context: AgentDefinitionContext | None = None
     model_capabilities: tuple[str, ...] = ()
@@ -62,13 +71,46 @@ class HarnessTask:
     attachments: tuple[AttachmentContextInput, ...] = ()
     media_inputs: tuple[ModelMediaInput, ...] = ()
     public_content: str | None = None
+    goal: str | None = None
+    plan_required: bool = False
     task_plan: SessionPlan = field(default_factory=SessionPlan)
+    trusted_evidence_tools: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.title.strip():
             raise ValueError("harness task title must not be blank")
         if not self.user_input.strip():
             raise ValueError("harness task user_input must not be blank")
+        if self.goal is not None:
+            normalized_goal = self.goal.strip()
+            if not normalized_goal:
+                raise ValueError("harness task goal must not be blank when set")
+            object.__setattr__(self, "goal", normalized_goal)
+        if not isinstance(self.plan_required, bool):
+            raise ValueError("harness task plan_required must be boolean")
+        if not isinstance(self.trusted_evidence_tools, Mapping):
+            raise ValueError("harness task trusted_evidence_tools must be a mapping")
+        trusted_evidence_tools: dict[str, tuple[str, ...]] = {}
+        for tool_name, labels in self.trusted_evidence_tools.items():
+            if not isinstance(tool_name, str) or not tool_name.strip():
+                raise ValueError("harness task trusted evidence tool names must be non-blank")
+            if not isinstance(labels, Iterable) or isinstance(labels, str | bytes):
+                raise ValueError("harness task trusted evidence labels must be a sequence")
+            normalized_labels: list[str] = []
+            for label in labels:
+                if not isinstance(label, str) or not label.strip():
+                    raise ValueError(
+                        "harness task trusted evidence labels must be non-blank strings"
+                    )
+                if label.strip() not in normalized_labels:
+                    normalized_labels.append(label.strip())
+            if normalized_labels:
+                trusted_evidence_tools[tool_name.strip()] = tuple(normalized_labels)
+        object.__setattr__(
+            self,
+            "trusted_evidence_tools",
+            MappingProxyType(trusted_evidence_tools),
+        )
         if self.public_content is not None:
             normalized_public_content = self.public_content.strip()
             if not normalized_public_content:
@@ -104,6 +146,16 @@ class HarnessTask:
         object.__setattr__(
             self, "skill_components", normalize_skill_components(self.skill_components)
         )
+        skill_component_identities = (
+            None
+            if self.skill_component_identities is None
+            else normalize_skill_component_identities(self.skill_component_identities)
+        )
+        if skill_component_identities is not None and self.skill_components != tuple(
+            identity.name for identity in skill_component_identities
+        ):
+            raise ValueError("skill component identities must match skill_components")
+        object.__setattr__(self, "skill_component_identities", skill_component_identities)
         model_capabilities: list[str] = []
         for capability in self.model_capabilities:
             if not isinstance(capability, str) or not capability.strip():
@@ -136,6 +188,10 @@ class HarnessTask:
             if not isinstance(media_input, ModelMediaInput):
                 raise ValueError("harness task media_inputs must contain ModelMediaInput values")
         object.__setattr__(self, "media_inputs", ordered_media_inputs(self.media_inputs))
+
+    @property
+    def stable_goal(self) -> str:
+        return self.goal or self.user_input
 
 
 @dataclass(frozen=True)

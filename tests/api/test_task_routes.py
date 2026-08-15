@@ -556,6 +556,7 @@ def test_task_routes_keep_one_identity_across_automatic_follow_up_rollover(
     assert handoff_id is not None
     envelope = SQLiteSessionHandoffStore(database).get_envelope(handoff_id)
     assert envelope is not None
+    assert envelope.objective == "Start"
     assert envelope.completed_work == (
         "Prior user request: Start",
         "Prior assistant response: 长江电力今日上涨。需要继续分析资金流向吗？",

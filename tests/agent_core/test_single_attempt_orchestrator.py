@@ -339,6 +339,7 @@ def test_single_attempt_orchestrator_emits_approval_requested_event() -> None:
     )
     assert approval_event.payload == {
         "attempt_number": 1,
+        "approval_id": str(approval_event.session_id),
         "reason": "manual approval required in test",
         "policy_profile": "workspace_write",
         "tool_name": "command.run",
@@ -427,6 +428,7 @@ def test_single_attempt_orchestrator_projects_proxy_approval_metadata() -> None:
     }
     assert approval_event.payload == {
         "attempt_number": 1,
+        "approval_id": str(approval_event.session_id),
         "reason": "proxy-routed external tool execution in test",
         "policy_profile": "full_access",
         "tool_name": "mcp.github.create_pull_request",

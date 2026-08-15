@@ -13,6 +13,7 @@ from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.identifiers import EventId, SessionId
 from agent_core.domain.model_media import ModelInputModality, ModelMediaInput
 from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.skills import SkillComponentIdentity
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
@@ -68,14 +69,20 @@ from agent_tools.errors import ToolRegistryError
 from agent_tools.skills_catalog import LocalSkillCatalog, ScopedSkillRoot, SkillEnablementState
 
 from agent_runtime.adapters.local import LocalRuntime
-from agent_runtime.finos_journal_provider import FinosJournalProvider
 from agent_runtime.artifact_output_contract import (
     ArtifactOutputContractEmitTool,
+)
+from agent_runtime.finos_journal_provider import (
+    TRUSTED_TYPED_EVIDENCE_TAG_PREFIX,
+    FinosJournalProvider,
 )
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
+from agent_runtime.tool_contract_constraints import (
+    trusted_typed_evidence_result,
+)
 from agent_runtime.web_gateway import LocalWebGatewayTransport
 from agent_runtime.web_search import LocalWebSearchTransport
 from agent_runtime.web_tools import register_native_web_tools
@@ -120,6 +127,7 @@ def run_local_harness(
     web_search_endpoint: str | None = None,
     skill_roots: tuple[str | Path | ScopedSkillRoot, ...] = (),
     skills_state: SkillEnablementState | None = None,
+    granted_skill_component_identities: tuple[SkillComponentIdentity, ...] | None = None,
     session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     attachments: tuple[AttachmentContextInput, ...] = (),
@@ -133,6 +141,7 @@ def run_local_harness(
     trusted_local: bool = False,
     max_model_calls: int | None = None,
     max_tool_calls: int | None = None,
+    plan_required: bool = False,
     web_pipeline_v2: bool = False,
     session_id: SessionId | None = None,
     initial_user_event_id: EventId | None = None,
@@ -146,6 +155,7 @@ def run_local_harness(
         web_search_endpoint=web_search_endpoint,
         skill_roots=skill_roots,
         skills_state=skills_state,
+        granted_skill_component_identities=granted_skill_component_identities,
         session_history=session_history,
         mcp_servers=mcp_servers,
         mcp_allowlist=mcp_allowlist,
@@ -172,6 +182,7 @@ def run_local_harness(
                 max_attempts=1,
                 max_model_calls=max_model_calls,
                 max_tool_calls=max_tool_calls,
+                plan_required=plan_required,
                 workspace_root=workspace_root,
                 policy_profile=policy_profile.value,
                 tool_profile=tool_profile,
@@ -180,7 +191,9 @@ def run_local_harness(
                 mcp_allowlist=effective_mcp_allowlist,
                 preapproved_readonly_tools=effective_preapproved_readonly_tools,
                 skill_components=tool_gateway.effective_skill_components,
+                skill_component_identities=tool_gateway.effective_skill_component_identities,
                 agent_definition=agent_definition,
+                trusted_evidence_tools=tool_gateway.trusted_evidence_tools,
                 model_id=model_id,
                 agent_context=agent_context,
                 model_capabilities=declared_model_capabilities(
@@ -236,6 +249,7 @@ class LocalToolGateway(ToolGatewayPort):
         web_search_transport: WebSearchTransport | None = None,
         skill_roots: tuple[str | Path | ScopedSkillRoot, ...] = (),
         skills_state: SkillEnablementState | None = None,
+        granted_skill_component_identities: tuple[SkillComponentIdentity, ...] | None = None,
         session_history: SessionHistoryPort | None = None,
         current_session_id: str | None = None,
         mcp_servers: Sequence[McpAnyServerSpec] = (),
@@ -326,9 +340,20 @@ class LocalToolGateway(ToolGatewayPort):
             tags=("artifact_metadata",),
         )
         self._skill_component_names: tuple[str, ...] = ()
+        self._skill_component_identities: tuple[SkillComponentIdentity, ...] = ()
+        if granted_skill_component_identities and not skill_roots:
+            raise ValueError("granted skill component identities require configured skill roots")
         if skill_roots:
-            catalog = LocalSkillCatalog(skill_roots, skills_state=skills_state)
-            self._skill_component_names = tuple(metadata.name for metadata in catalog.list()[0])
+            catalog = LocalSkillCatalog(
+                skill_roots,
+                skills_state=skills_state,
+                granted_component_identities=granted_skill_component_identities,
+            )
+            skill_metadata = catalog.list()[0]
+            self._skill_component_names = tuple(metadata.name for metadata in skill_metadata)
+            self._skill_component_identities = tuple(
+                metadata.component_identity() for metadata in skill_metadata
+            )
             for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
                 if skill_tool.contract.name in enabled_names:
                     registry.register(skill_tool.contract, skill_tool.handle)
@@ -364,6 +389,17 @@ class LocalToolGateway(ToolGatewayPort):
             registry.register(research.contract, research.handle)
         self._validator_tools = registry.names_with_tag("validator")
         self._read_only_tools = registry.names_with_tag(READ_ONLY_EFFECT_TAG)
+        self._trusted_typed_evidence = {
+            name: tuple(
+                dict.fromkeys(
+                    tag.removeprefix(TRUSTED_TYPED_EVIDENCE_TAG_PREFIX)
+                    for tag in registry.get(name).tags
+                    if tag.startswith(TRUSTED_TYPED_EVIDENCE_TAG_PREFIX)
+                    and tag.removeprefix(TRUSTED_TYPED_EVIDENCE_TAG_PREFIX)
+                )
+            )
+            for name in registry.names()
+        }
         self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
         self._parallel_safe_tools = registry.parallel_safe_names()
         self._parallel_batch_limits = (
@@ -457,6 +493,10 @@ class LocalToolGateway(ToolGatewayPort):
         return self._skill_component_names
 
     @property
+    def effective_skill_component_identities(self) -> tuple[SkillComponentIdentity, ...]:
+        return self._skill_component_identities
+
+    @property
     def parallel_safe_tools(self) -> frozenset[str]:
         return self._parallel_safe_tools
 
@@ -467,6 +507,15 @@ class LocalToolGateway(ToolGatewayPort):
     @property
     def read_only_tools(self) -> frozenset[str]:
         return self._read_only_tools
+
+    @property
+    def trusted_evidence_tools(self) -> dict[str, tuple[str, ...]]:
+        advertised = {tool.name for tool in self._model_tools}
+        return {
+            name: labels
+            for name, labels in self._trusted_typed_evidence.items()
+            if labels and name in advertised
+        }
 
     @property
     def parallel_batch_limits(self) -> dict[str, int]:
@@ -482,7 +531,10 @@ class LocalToolGateway(ToolGatewayPort):
             )
         try:
             result = self._executor.execute(tool_call)
-            return self._project_tool_output(tool_call, result)
+            return trusted_typed_evidence_result(
+                self._project_tool_output(tool_call, result),
+                trusted_evidence=self._trusted_typed_evidence.get(tool_call.name, ()),
+            )
         except ToolRegistryError as exc:
             detail = str(exc)[:1000]
             return ToolResult(

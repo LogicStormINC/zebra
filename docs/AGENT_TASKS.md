@@ -289,7 +289,7 @@ new evidence and long legitimate tool chains remain unbounded by default.
 
 ### CTX-REHYDRATE-02 - Convergence Projection And On-Demand Rehydration
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Vinson`
 - Coding task: `ctx_rehydrate_phase1_5` (`gpt-5.6-terra`, max)
 - Suggested role: `CTX / CORE / WORKER / QA`
@@ -16017,3 +16017,471 @@ is converged to `failed_no_effect` (never deleted or set to `succeeded`) and the
 original Task returns 201; the full suite at the candidate HEAD shows zero new
 failures; Ruff, Mypy, release gate, `git diff --check`, and the file-size
 violation set show no new regression.
+
+### ZNX-TEVID-01 - Trusted Typed Evidence And FinOS Provider V4
+
+- Status: `Done`
+- Owner: `Vinson`
+- Branch: `codex/znx-trusted-typed-evidence-v1`
+- Worktree: `/Users/vinson/.codex/worktrees/zebra-trusted-typed-evidence-v1`
+- Exact base: `314e6beffc0e67be64531d6c05d993e6024e4f6a`
+- Owned paths:
+  `packages/agent-runtime/src/agent_runtime/finos_journal_provider.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-security/src/agent_security/policy.py`,
+  `apps/api/src/zebra_agent_api/task_finos_journal_provider.py`,
+  `apps/worker/src/zebra_agent_worker/finos_journal_provider.py`,
+  focused tests under `tests/agent_runtime/`, `tests/agent_security/`,
+  `tests/api/`, and `tests/worker/`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, and `WORKLOG.md`.
+
+#### Goal
+
+Generalize the existing trusted FinOS read-evidence injection without changing
+the AgentDefinition or completion-evidence evaluator. A successful tool may
+only emit the exact typed-evidence labels declared by its trusted registry
+tags; handler-supplied labels are stripped. Existing FinOS factual readers keep
+`authoritative_typed_read`. A versioned FinOS provider catalog may add new
+readers whose evidence is trusted but not authoritative financial fact.
+
+The first consumer is the Wave 4 provider contract: provider version v4 adds
+fixed `finos.investor_knowledge.list` and `.get` read-only tools. Their trusted
+label is `confirmed_investor_knowledge`, never
+`authoritative_typed_read`. Zebra remains provider-neutral and owns no Thesis,
+Decision, Investor Knowledge, Review workflow, or financial persistence type.
+
+#### Required Acceptance
+
+- [x] Red tests prove an untrusted handler cannot self-assert typed evidence.
+- [x] A successful tool receives only its registry-declared trusted evidence;
+  failed execution receives none.
+- [x] Existing FinOS factual readers still emit only
+  `authoritative_typed_read`.
+- [x] Provider v1/v2/v3 catalogs remain exact and unchanged; v4 alone adds the
+  two fixed read-only tools and is enforced by API, worker, and policy paths.
+- [x] A `confirmed_investor_knowledge` event satisfies a matching generic
+  completion requirement across continuation, but cannot satisfy an
+  `authoritative_typed_read` requirement.
+- [x] Focused, full, static, release-eval, file-size, and FinOS compatibility
+  gates show no new regression relative to the exact base.
+
+#### Wave 4 Closure Evidence (2026-08-13)
+
+- Final pair: FinOS `6e84e23b22d11a1f89afa9d73e8f17c9e47382a5` /
+  Zebra `da97dc3ac9ffe300076f4c68031b96a627e6dd58`; both branches are exact
+  ahead-only from their `next` bases (`f839149` / `314e6be`), no behind, no
+  rewrite of `codex/finos-next` or `codex/finos-runtime-next`.
+- Final Zebra commit `da97dc3` is a production fix that binds required-evidence
+  parameters to authorized enum values; the audited production slice sits on
+  the full Wave 4 branch.
+- Wave 4 independent audit: PASS, one P3 governance correction
+  (`P3-GOV-01`) fixed by this docs-only commit. No P0/P1/P2 findings.
+- Wave 4 focused contract suite passes at the final pair
+  (`tests/agent_core/test_completion_evidence_trust.py`,
+  `tests/agent_core/test_required_evidence_correction.py`,
+  `tests/agent_runtime/test_trusted_evidence_guidance.py`,
+  `tests/agent_runtime/test_finos_business_provider.py`,
+  `tests/agent_security/test_finos_business_provider_policy.py`,
+  `tests/api/test_finos_business_provider_task.py`, worker continuation
+  matrix); full-suite failures at `da97dc3` match the exact base set.
+
+#### Explicit Non-Goals
+
+- no Zebra finance business type, Review workflow, fixed tool order, Planner,
+  Goal/Plan change, new evidence framework, registry, classifier, or state
+  machine;
+- no FinOS business persistence, authority widening, deployment, GUI, or
+  provider credentials;
+- no change to the existing generic AgentDefinition completion evaluator or
+  task-wide evidence continuity unless a deterministic red proves a separate
+  generic defect.
+
+### ZNX-UI-FOUNDATION-01 - Wave 4.5 Shared Task UI Foundation
+
+- Status: `Done`
+- Owner: `Vinson`
+- Branch: `codex/znx-wave45-task-ui-foundation-v1`
+- Worktree: `/Users/vinson/.codex/worktrees/cf5f/zebra`
+- Exact base: `da97dc3ac9ffe300076f4c68031b96a627e6dd58` (Zebra Wave 4 final)
+- Compatible FinOS close SHA: `6e84e23b22d11a1f89afa9d73e8f17c9e47382a5`
+- Owned paths:
+  `UI/packages/task-ui/**` (shared core + React primitives + fixtures),
+  `UI/desktop/**` (import/refactor back onto the shared package, checks, E2E),
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`.
+- Gate A runtime closure (narrow, added 2026-08-13 before any production
+  edit; this is Gate A closure, not Wave 5 scope):
+  `packages/agent-core/src/agent_core/harness/model_request.py`
+  (progressive text-delta emission for tool-capable streams),
+  `packages/agent-integrations/src/agent_integrations/openai_payloads.py`
+  (provider-neutral finish-reason validation),
+  `apps/worker/src/zebra_agent_worker/execution_errors.py`
+  (provider/rejection classification matrix + safe failure payloads),
+  `UI/desktop/e2e/support/mock-provider.mjs` (content_filter delivery
+  contract), new focused tests under `tests/agent_core/`,
+  `tests/worker/execution/`, `tests/api/http_app/`, and the task-ui core
+  contract check. No worker/scheduler/state-machine changes; no FinOS runtime
+  paths.
+- Coordination: FinOS peer lane owns `codex/fnx-wave45-aceagent-ui-foundation-v1`
+  (Phase 0/1/3). Shared-field contract changes
+  (`event_id`, `sequence`/`cursor`, `created_at`, `message_id`, `final`,
+  `clarification`, `approval`, `plan`, tool activity, terminal status, artifact
+  mapping) require a separate contract commit + fixture and FinOS peer
+  notification before landing.
+
+#### Goal
+
+Extract the already-proven generic Task UI surface from Zebra Desktop into a
+shared `@zebra-agent/task-ui` package consumed by both Zebra Desktop and the
+FinOS AceAgent React Island, with exactly one reducer/view-model per Task.
+Only proven generic pieces are extracted: public event types, event merge /
+sequence ordering, delta merge, streaming final in-place replacement, timeline
+projection, tool lifecycle, plan, clarification, approval, activity, generic
+Markdown messages, React primitives, automation fixtures, and Playwright
+scenarios. The shared package must not depend on Tauri and must not contain
+any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
+`ImportDraft`, `CoreConfirmation`, `JournalSave`, FinOS Review).
+
+#### Required Acceptance
+
+- [x] Zebra Desktop deterministic checks, streaming/reload/cancel/follow-up
+  E2E, and shared core/react tests pass after the rewrite. (21/21 checks;
+  Playwright E2E 8/8 at Gate A HEAD, was 3/5 at base; shared core contract
+  check and package typecheck pass.)
+- [x] Zebra Desktop really consumes the shared package; no second independent
+  reducer or component set remains for the same Task. (Phase 2: the six moved
+  lib modules and six moved component files were deleted; desktop only keeps
+  thin adapters using shared slots; verified again at Gate A HEAD.)
+- [x] Shared package has no Tauri dependency and no FinOS business type;
+  business rendering stays behind `renderBusinessItem` /
+  `renderMessageActions` / `renderSources` / `mapToolLabel` slots.
+- [x] Bundle report shows no uncontrolled growth; full/static/eval failures
+  match the exact base. (1,352.46 kB / gzip 429.07 vs base 1,349.64 kB /
+  gzip 428.38, +0.2%, via vite `resolve.dedupe`; full pytest at frozen base
+  is `2185 passed, 9 failed, 9 skipped`, and at Gate A HEAD `2199 passed,
+  8 failed, 9 skipped` with zero new failures (one inherited failure fixed by
+  the runtime closure); eval gate `10/10`; touched-path Ruff/Mypy and
+  `git diff --check` clean.)
+- [x] No PR, merge, push, deploy, or Wave 5 start before Gate A.
+
+#### Gate A Acceptance (2026-08-13, PASS)
+
+- Accepted implementation pair:
+  FinOS `d0cdb2bf1bbed9c65bf8f5b4336c9898be412575` /
+  Zebra `dd510aaffb3e6527c4e05cca3cdb61cb3e584710` /
+  `@zebra-agent/task-ui@0.1.0` tarball
+  SHA-256 `33b01e6910c7852fd1c0a4a7f77f9acc0f39a0b2d90d7b76d1de7e49826f5741`
+  (14,138 bytes, source commit `dd510aa`).
+- Root post-commit evidence: clean exact merge-bases and diff-check; Zebra
+  focused runtime/shared/Desktop checks green; full `2199 passed / 8 failed /
+  9 skipped` vs base `2185 / 9 / 9` (one inherited fixed, zero new); eval
+  `10/10`; Desktop E2E `8/8`; FinOS joint transport `12/12`, browser `10/10`,
+  synthetic `20/20`; no P0-P3 actionable findings.
+
+#### Wave 4.5 Closure (2026-08-14)
+
+- Wave 4.5 = CLOSED: Gate A PASS -> Product Acceptance PASS -> Final-SHA
+  Closure Audit PASS; `ZNX-UI-FOUNDATION-01` marked `Done` with all
+  acceptance criteria checked.
+- Accepted final implementation pair: FinOS
+  `a6c38f08b613c2a02647aa3f938a8335072e6c2a` / Zebra
+  `6afbafa306ebbdd67956023d0924d66ea1545f99`.
+- Shared package: `@zebra-agent/task-ui@0.1.2` tarball SHA-256
+  `0d2678991857694aab94b44bff8265fdc11bb16cc3096d8440207f4820c19fdc`,
+  16,180 bytes, 23 entries.
+- Shared reducer semantics (final): a failed/cancelled interrupted assistant
+  partial remains visible with `status="error"`; it is never upgraded to a
+  canonical final and never receives final actions or source binding.
+- Evidence: shared task-ui/Desktop checks and artifact verification pass;
+  FinOS browser smoke `92/92`, frontend build green, Phase4/public/background
+  `45/45`, Gate2/4 `48/48`, full baseline zero new failures, visual evidence
+  reviewed, no P0-P2 actionable findings.
+- Wave 5 backend: active separately in its own lane, outside the Wave 4.5
+  closure.
+
+#### Explicit Non-Goals
+
+- no FinOS business types or runtime domain inside Zebra;
+- no second session state machine, no durable `rounds` table, no Planner /
+  Scheduler / Knowledge Graph, no raw tool arguments/output display, no
+  prompt/reasoning/policy/grant exposure;
+- no empty shells or speculative framework for the sake of the suggested
+  attachment tree; no Tauri shell dependency in the shared package;
+- no PR/merge/deploy; feature-branch publication requires owner authorization.
+
+### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
+
+- Status: `In Progress`
+- Owner: `Vinson`
+- Branch: `codex/znx-goal-plan-act-01`
+- Exact base: `61552a4c86e40e324219be96c0cf7f58afb0fb75`
+- Owned paths: `apps/api/src/zebra_agent_api/`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/contracts/task_prepared.py`,
+  `packages/agent-core/src/agent_core/domain/agent_tasks.py`,
+  `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-runtime/src/agent_runtime/finos_journal_provider.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-storage/src/agent_storage/agent_tasks.py`,
+  `packages/agent-storage/src/agent_storage/projections.py`,
+  `packages/agent-storage/src/agent_storage/sqlite.py`,
+  `packages/agent-storage/src/agent_storage/workspaces.py`,
+  `tests/agent_core/`, `tests/agent_runtime/`, `tests/agent_storage/`,
+  `tests/api/`, `tests/worker/`,
+  `docs/AGENT_TASKS.md`,
+  `docs/FINOS_NEXT_RUNTIME_TASK_BOARD_AMENDMENT_GOAL_PLAN_V1_2026-08-10.md`,
+  `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close the narrow product-activation gap after Goal/Plan v1 lifecycle acceptance
+with two independent generic Stable Task execution contracts:
+
+- `plan_required=true` requires an Agent-authored durable Plan before business
+  execution and before normal completion;
+- the existing `AgentDefinition.completion_contract.required_evidence` requires
+  declared authoritative evidence before normal completion.
+
+FinOS may select these contracts for an explicit Goal-oriented Task and may
+produce `authoritative_typed_read` only after an authorized, schema-valid,
+successful typed read. It does not author Plan steps, prescribe tool order, or
+gain new data authority. Simple Tasks remain valid without either contract.
+
+#### Required Diagnostic And Acceptance
+
+- [x] Capture only advertised tool names and returned tool-call names from the
+  failed real-model request; never record credentials.
+- [x] Prove whether `agent.plan` and host typed reads are advertised before
+  changing activation instructions or capability binding.
+- [x] Add deterministic red tests before the minimum generic production change.
+- [x] Persist strict, default-false `plan_required` on the Stable Task; inherit it
+  across follow-up, retry, resume and reconstruction; block business tools and
+  normal completion before the first durable Plan, then fail explicitly after
+  one bounded unsuccessful correction.
+- [x] Reuse the existing completion-evidence framework and accept
+  `authoritative_typed_read` only from trusted successful execution metadata;
+  failed, malformed, proposal, save, validator, or merely read-only-tagged calls
+  do not satisfy it.
+- [x] Real complex Goal produces this order: first `PLAN_UPDATED`, first
+  authoritative typed read, continued Plan/tool work, closed Plan, satisfied
+  required evidence, then `COMPLETED`.
+- [x] The real follow-up preserves Stable Task, stable Goal, latest Plan revision,
+  and accumulated required evidence; it neither resets nor re-declares the root
+  contracts.
+- [x] Default no-Plan/no-evidence Tasks can still complete normally.
+- [x] FinOS Gate 2 real dual-repository E2E remains green without a fixed Review
+  Plan or any widened capability grant.
+- [x] Targeted, full, static, eval, and FinOS compatibility gates show no new
+  regression relative to the exact base.
+
+#### Product Acceptance Evidence
+
+- Zebra implementation candidate: `d3077de98c9e1fac2797886efbe7385f48756efc`,
+  rebased over read-only-tool hotfix `dfd6a2c32637196573d4f47c77a94ace67ac77eb`.
+- Post-rebase targeted set: `117 passed`; full pytest: `2110 passed, 9 failed,
+  9 skipped`, with the same nine failures as the exact base.
+- File-size, Ruff, and Mypy retain the recorded inherited sets of `13`, `11`,
+  and `13`; release eval is `10/10`; touched-path Ruff and diff-check pass.
+- Real DeepSeek two-round acceptance: first Plan revision precedes first
+  authoritative typed evidence; seven Plan revisions finish closed; follow-up
+  keeps the same Stable Task, stable Goal, evidence, and revision continuity.
+- FinOS candidate `d596229e04b69e908f217f5178cc557c015a2f63`
+  includes UI hotfix `268ed03ac5a3718fbc98b5047f3f488467b7db6f`;
+  full discover is `760 tests, 4 inherited failures, 12 skipped`, UI is
+  `122 passed`, and Gate 2 real dual-repository E2E is `1 passed`.
+- `Wave 2.5 / Goal-Plan v1 = Product Acceptance PASS`; Wave 3 User/Private
+  Skill may start. No deployment was performed.
+
+#### Explicit Non-Goals
+
+- planner Agent or planner model;
+- complexity classifier;
+- Goal Tree, Plan DAG, scheduler, recurring/background work, or unlimited
+  automatic continuation;
+- mandatory Plan for every Task;
+- a new evidence framework, fixed tool-name requirement, or untrusted evidence;
+- FinOS/Review/finance-specific Plan, workflow, or Goal/Plan types;
+- new permissions or broader account/date/object/capability scope;
+- GUI/computer-use or FinOS source changes without a proven compatibility
+  regression.
+
+### ZNX-PLAN-MIXED-BATCH-01 - Required Plan Mixed-Batch Closure
+
+- Status: `In Progress`
+- Owner: `Vinson`
+- Branch: `codex/znx-plan-mixed-batch-closure`
+- Worktree: `/Users/vinson/.codex/worktrees/dadb/zebra`
+- Exact base: `50742da95e8ee9afb267150e2f8e0a884e3cfad7`
+- Owned paths: `packages/agent-core/src/agent_core/harness/capability_guidance.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  `tests/agent_core/test_required_plans.py`, `docs/AGENT_TASKS.md`, `WORKLOG.md`
+
+#### Goal
+
+Close the generic `plan_required` activation gap where a provider returns a
+mixed tool batch that contains exactly one valid non-first `agent.plan` call.
+Before the first durable Plan, Zebra must retain and execute only that Plan
+call, then request another completion for subsequent business work.
+
+#### Required Acceptance
+
+- [x] Red regression proves `[skills.read, agent.plan]` retains only the Plan
+  call, with no proposal, policy, or execution event for `skills.read`.
+- [x] `PLAN_UPDATED` occurs before a later business execution; a selector cannot
+  replace the required Plan with the business call.
+- [x] A no-Plan batch keeps the existing one-nudge, explicit failure behavior;
+  multiple `agent.plan` calls fail closed without guessing.
+- [x] Normal no-Plan-required and existing durable-Plan paths remain unchanged.
+
+#### Local Validation
+
+- Red-first: the later-Plan and multiple-Plan regressions both failed at the
+  exact base before the runtime change.
+- Targeted Goal/Plan/loop matrix: `45 passed`; User Skill matrix: `70 passed`.
+- Candidate full pytest: `2144 passed, 9 failed, 9 skipped`; exact base:
+  `2141 passed, 9 failed, 9 skipped`, with the same nine failing tests.
+- Changed-path Ruff, Mypy, compileall, and diff-check pass; release eval is
+  `10/10`. Full file-size/Ruff/Mypy sets remain the exact-base `13`/`11`/`13`.
+
+#### Explicit Non-Goals
+
+- FinOS prompts, domain code, authority, provider credentials, deployment, or
+  any new Planner/state machine/classifier;
+- executing or appending discarded calls from the mixed provider batch.
+
+### ZNX-USKILL-01 - User/Private Skill Lifecycle Alignment
+
+- Status: `Done`
+- Owner: `Vinson`
+- Suggested role: `TOOLS / STORAGE / API / RUNTIME / QA`
+- Depends on: Wave 2.5 Goal/Plan product acceptance at
+  `d3077de98c9e1fac2797886efbe7385f48756efc`
+- Branch: `codex/znx-user-skill-lifecycle`
+- Exact base: `10af5d2396262ee830eb275bf363e8711af29766`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/skills.py`,
+  `packages/agent-storage/src/agent_storage/skills_state.py`,
+  `packages/agent-tools/src/agent_tools/skills_catalog.py`,
+  `packages/agent-tools/src/agent_tools/skills_scope.py`,
+  `apps/api/src/zebra_agent_api/skills_admin.py`,
+  `apps/api/src/zebra_agent_api/routes.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/session_payloads.py`,
+  `apps/cli/src/zebra_agent_cli/cli_parser.py`,
+  `apps/cli/src/zebra_agent_cli/run_command_execution.py`,
+  `apps/cli/src/zebra_agent_cli/execution.py`,
+  `apps/cli/src/zebra_agent_cli/workspace_read.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `tests/integration/test_portable_skill_contract.py`,
+  `tests/integration/test_user_skill_lifecycle_contract.py`,
+  `tests/integration/test_user_skill_snapshot_contract.py`,
+  `tests/agent_tools/test_skills_scope.py`,
+  `tests/api/test_skills_admin.py`,
+  `tests/test_skills_admin_contract_matrix.py`,
+  `tests/agent_storage/test_skills_state.py`,
+  `tests/cli/run/test_worker_execution.py`,
+  `docs/AGENT_TASKS.md`
+
+#### Goal
+
+Make a user-provided private package a normal, immutable Zebra Skill component:
+Installed -> Enabled -> exact Task Grant -> executed provenance.  Reuse the
+existing catalog, state store, task snapshot, worker, and admin surface; source
+only changes provenance/trust and never grants authority.
+
+Private filesystem discovery is limited to
+`<ZEBRA_SKILL_ROOTS>/.zebra-private/<opaque-owner>`; the existing hidden-path
+filter keeps it out of ownerless legacy catalog traversal.
+
+#### Required Acceptance
+
+- [x] Red tests first prove or refute parity, no automatic grant, opaque-owner
+  isolation, immutable version/digest, disable-new-task versus pinned-active
+  task behavior, no install execution, no implicit business persistence, and
+  provenance continuity across later catalog changes.
+- [x] Each demonstrated gap is repaired in the existing component/state/snapshot
+  paths without a second registry, engine, or FinOS-specific runtime type.
+- [x] New Task grants are explicit and exact; omission never expands to every
+  enabled Skill.  Active/resumed Tasks retain their frozen identity.
+- [x] Existing `/admin/skills` and session inspection are reused unless a tested
+  installed/owner/reconciliation field is unavailable.
+- [x] Targeted EXT-SKILL and Goal/Plan regressions, full pytest, static checks,
+  release eval, and exact-base failure comparison are recorded before review.
+
+#### Validation record (2026-08-11)
+
+- Red-first evidence: the initial lifecycle contract had five deterministic
+  failures for omitted grants, owner roots, and owner-tagged scope entries.
+- EXT-SKILL/admin/CLI/inspection matrix: `83 passed`; Goal/Plan matrix:
+  `39 passed`; changed-path ruff and `git diff --check`: passed.
+- Full pytest: `2124 passed, 9 failed, 9 skipped`; exact base had the same nine
+  failures and nine skips. Full ruff (11), mypy (13), and file-size (13)
+  failure paths are inherited from the exact base; release eval passed 10/10.
+- Follow-up P1 red evidence: deleting the entire private owner container made
+  admin inventory empty; an installed-but-disabled V2 hid enabled V1; and an
+  owner-scoped disable of a system Skill returned 200 and wrote legacy state.
+- Follow-up closure: installed snapshots now back owner inventory and new
+  grants without a live owner directory; runtime considers only enabled
+  installed identities, while admin projects all installed versions. A
+  whole-container-deleted pinned resume and owner-scoped system-disable guard
+  are covered by the lifecycle tests. Exact `version` plus `digest` now permits
+  V1-to-V2 lifecycle activation without changing staging; CLI `--skill` and
+  `--skill-owner` freeze the same exact identity for queued and direct runs.
+- Follow-up red evidence also covered the old CLI parser rejection, V1 remaining
+  enabled after a V2 live upgrade, and owner-only empty grants blocked by an
+  unrelated multiple-enabled snapshot ambiguity. Owner validation now precedes
+  an API/CLI empty-grant early return, so it never scans the private catalog.
+- Final validation: EXT-SKILL/admin/CLI/inspection matrix `97 passed`, Goal/Plan
+  matrix `39 passed`, release eval `10/10`; changed-path Ruff, mypy, and
+  diff-check passed. Full pytest is `2132 passed, 9 failed, 9 skipped` (same
+  exact-base failure set); full Ruff (11), mypy (13), and file-size (13) remain
+  inherited. `skills_catalog.py` is 493 lines (under its 500-line cap).
+- Third-candidate red evidence: an uninstalled private exact identity ran in both
+  the gateway and worker; a later system name collision blocked a pinned private
+  snapshot but could still leak into a new name-only grant; an owner-root symlink
+  crossed namespaces; and changing `references/guide.md` left the private digest
+  unchanged. Concurrent identical installation also raised SQLite uniqueness,
+  while CLI inspection omitted frozen Skill identities.
+- Third-candidate closure: private exact grants now require their durable
+  installation snapshot, snapshot-first reads tolerate later live collisions,
+  ordinary name-only discovery remains collision-fail-closed, and private package
+  digests cover the bounded declarative file map. Private owner roots reject a
+  symlink escape; identical concurrent installs reload one immutable row; and CLI
+  inspection projects the frozen identity using the API's existing JSON shape.
+- Third validation: lifecycle/CLI/catalog matrix `92 passed`; Goal/Plan `39
+  passed`; release eval `10/10`; changed-path Ruff, production-path mypy, and
+  `git diff --check` passed. Full pytest is `2139 passed, 9 failed, 9 skipped`,
+  the stable exact-base set. A one-off runtime timeout on one current full run and
+  a one-off migration-init lock on one base full run both passed on isolated
+  current/base reruns. Full Ruff (11), mypy (13), and file-size (13) match base.
+  `skills_catalog.py` is 476 lines and `skills_scope.py` is 473 lines.
+- Narrow post-third red evidence: a hidden `.zebra-private` container symlink
+  could escape the configured private root, and direct CLI `--execute` with an
+  owner but no selected Skill still built a Skill catalog.
+- Narrow post-third closure: owner-root normalization rejects a symlinked private
+  container while allowing a missing container for durable snapshot recovery.
+  Empty direct grants validate the opaque owner but pass neither owner nor roots
+  to the harness, so no private catalog is constructed. Snapshot/lifecycle/CLI
+  matrix `94 passed`; Goal/Plan `39 passed`; changed-path Ruff, production-path
+  mypy, diff-check, and changed-file size limits passed. Full pytest was not
+  repeated because this follow-up only changes those two guarded paths; the
+  recorded third-candidate full comparison remains the applicable baseline.
+- Final-SHA closure audit refresh (`2026-08-12`): runtime-bearing FinOS
+  `741bd096164204da979fae4e0a409fe374a309a3` plus Zebra
+  `5da089553c9f03ccc1e003415278263ccb7705ab` passed the six bounded
+  source-of-truth, lifecycle, package-digest, authority, pinning, and public
+  correction-projection checks with no P0-P3 actionable finding. The transient
+  portfolio-name context change was reverted; current positions now enter only
+  through the provider-neutral typed `finos.positions.list` contract. Latest-pair
+  focused matrices and deterministic Gate 2/3 passed; real DeepSeek acceptance
+  remains the prior recorded runtime evidence rather than a claim of a new real
+  provider run. Wave 3 / User-Private Skill Parity is closed. Documentation and
+  test-pin descendants do not change runtime semantics. Deployment, browser, and
+  live PostgreSQL remain RC evidence.
+
+#### Explicit Non-Goals
+
+- FinOS source, database, business RBAC, Review/Journal/Core persistence, UI,
+  deployment, provider execution, Marketplace, Plugin execution, remote
+  registry/update, OAuth, or a new mid-task revocation system.

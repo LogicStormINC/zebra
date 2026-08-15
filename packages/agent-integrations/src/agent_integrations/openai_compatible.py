@@ -126,6 +126,7 @@ class OpenAICompatibleModelGateway:
             tool_names=tool_names,
             stream=False,
             resolved=resolved,
+            invocation_policy=invocation_policy,
             strict_tools=strict_tools,
         )
         started = perf_counter()
@@ -162,6 +163,21 @@ class OpenAICompatibleModelGateway:
                     ) from None
                 retry_count += 1
 
+    def complete_with_policy(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+        media_inputs: tuple[ModelMediaInput, ...] = (),
+        invocation_policy: ModelInvocationPolicy,
+    ) -> ModelCompletion:
+        return self.complete(
+            messages,
+            tools=tools,
+            media_inputs=media_inputs,
+            invocation_policy=invocation_policy,
+        )
+
     def complete_stream(
         self,
         messages: list[SessionMessage],
@@ -182,6 +198,7 @@ class OpenAICompatibleModelGateway:
             tool_names=tool_names,
             stream=True,
             resolved=resolved,
+            invocation_policy=invocation_policy,
             strict_tools=strict_tools,
         )
         client = self._client or httpx.Client(timeout=self._client_timeout())
@@ -259,6 +276,7 @@ class OpenAICompatibleModelGateway:
         tool_names: tuple[str, ...],
         stream: bool,
         resolved: ResolvedDeepSeekInvocation | None,
+        invocation_policy: ModelInvocationPolicy | None,
         strict_tools: bool,
     ) -> tuple[dict[str, Any], ModelRequestMetadata | None]:
         self._media_capabilities.validate_request(
@@ -295,7 +313,10 @@ class OpenAICompatibleModelGateway:
                 body["reasoning_effort"] = resolved.reasoning_effort.value
             if stream:
                 body["stream_options"] = {"include_usage": True}
-        elif self._provider_name.lower() == "qwen":
+        else:
+            if invocation_policy is not None:
+                body["tool_choice"] = invocation_policy.tool_choice.value
+        if resolved is None and self._provider_name.lower() == "qwen":
             body.update(
                 {
                     "enable_thinking": self._model_thinking_mode
@@ -443,6 +464,12 @@ class OpenAICompatibleModelGateway:
         finally:
             if should_close:
                 client.close()
+def _serialized_tool_name(tool: dict[str, object]) -> str:
+    function = tool.get("function")
+    if not isinstance(function, dict):
+        return ""
+    name = function.get("name")
+    return name if isinstance(name, str) else ""
 
 
 def build_model_gateway(
@@ -452,16 +479,6 @@ def build_model_gateway(
     media_resolver: ModelMediaResolverPort | None = None,
     client: httpx.Client | None = None,
 ) -> OpenAICompatibleModelGateway:
-    from agent_integrations.openai_gateway_factory import (
-        build_model_gateway as build,
-    )
+    from agent_integrations.model_gateway_factory import build_model_gateway as build
 
     return build(settings, env=env, media_resolver=media_resolver, client=client)
-
-
-def _serialized_tool_name(tool: dict[str, object]) -> str:
-    function = tool.get("function")
-    if not isinstance(function, dict):
-        return ""
-    name = function.get("name")
-    return name if isinstance(name, str) else ""

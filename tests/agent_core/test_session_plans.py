@@ -13,7 +13,10 @@ from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness import (
     HarnessAttempt,
     HarnessAttemptOutcome,
+    HarnessAttemptResult,
     HarnessContext,
+    HarnessEventDraft,
+    HarnessLoop,
     HarnessModelStep,
     HarnessTask,
 )
@@ -168,6 +171,287 @@ def test_recovered_active_plan_is_injected_without_completed_steps() -> None:
     messages = HarnessModelStep().build_initial_messages(task, created_at=NOW)
     assert "Continue work" in messages[0].content
     assert "Already done" not in messages[0].content
+
+
+@pytest.mark.parametrize(
+    "status", (PlanStepStatus.PENDING, PlanStepStatus.IN_PROGRESS)
+)
+def test_open_plan_cannot_complete_normally(status: PlanStepStatus) -> None:
+    session = Session.create(title="Plan", created_at=NOW).model_copy(
+        update={
+            "status": SessionStatus.RUNNING,
+            "task_plan": SessionPlan(
+                steps=(PlanStep(step_id="remaining", content="Finish work", status=status),)
+            ),
+        }
+    )
+    gateway = ScriptedModelGateway(
+        responses=(_response("Premature final."), _response("Still premature."))
+    )
+
+    result = SingleAttemptOrchestrator(
+        gateway,
+        LocalPolicyEngine(PolicyProfile.READ_ONLY),
+        NeverToolGateway(),
+        model_step=HarnessModelStep(),
+        verifier=NoopVerifier(),
+    ).run(
+        HarnessContext(
+            task=HarnessTask(title="Plan", user_input="Finish the task."),
+            session=session,
+            attempt=HarnessAttempt(number=1, started_at=NOW),
+        )
+    )
+
+    assert result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.metadata["stop_reason"] == "task_plan_incomplete"
+    assert result.metadata["task_plan_open_steps"] == ["remaining"]
+    assert len(gateway.requests) == 2
+
+
+def test_agent_can_close_plan_after_completion_is_rejected() -> None:
+    session = Session.create(title="Plan", created_at=NOW).model_copy(
+        update={
+            "status": SessionStatus.RUNNING,
+            "task_plan": SessionPlan(
+                steps=(
+                    PlanStep(
+                        step_id="answer",
+                        content="Prepare final answer",
+                        status=PlanStepStatus.IN_PROGRESS,
+                    ),
+                )
+            ),
+        }
+    )
+    close_plan = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.plan",
+        arguments={
+            "steps": [
+                {
+                    "step_id": "answer",
+                    "content": "Prepare final answer",
+                    "status": "completed",
+                }
+            ]
+        },
+        created_at=NOW,
+    )
+    gateway = ScriptedModelGateway(
+        responses=(
+            _response("Premature final."),
+            _response("I will close the plan.", close_plan),
+            _response("Final answer."),
+            _response("Final answer."),
+        )
+    )
+
+    result = SingleAttemptOrchestrator(
+        gateway,
+        LocalPolicyEngine(PolicyProfile.READ_ONLY),
+        NeverToolGateway(),
+        model_step=HarnessModelStep(),
+        verifier=NoopVerifier(),
+        synthesize_tool_results=True,
+    ).run(
+        HarnessContext(
+            task=HarnessTask(title="Plan", user_input="Finish the task."),
+            session=session,
+            attempt=HarnessAttempt(number=1, started_at=NOW),
+        )
+    )
+
+    assert result.outcome is HarnessAttemptOutcome.COMPLETED
+    plan_event = next(
+        event for event in result.emitted_events if event.event_type is EventType.PLAN_UPDATED
+    )
+    assert plan_event.payload["steps"][0]["status"] == "completed"
+
+
+def test_cancelled_plan_steps_allow_normal_completion() -> None:
+    session = Session.create(title="Plan", created_at=NOW).model_copy(
+        update={
+            "status": SessionStatus.RUNNING,
+            "task_plan": SessionPlan(
+                steps=(
+                    PlanStep(
+                        step_id="obsolete",
+                        content="Obsolete work",
+                        status=PlanStepStatus.CANCELLED,
+                    ),
+                )
+            ),
+        }
+    )
+    gateway = ScriptedModelGateway(responses=(_response("Done."),))
+
+    result = SingleAttemptOrchestrator(
+        gateway,
+        LocalPolicyEngine(PolicyProfile.READ_ONLY),
+        NeverToolGateway(),
+        model_step=HarnessModelStep(),
+        verifier=NoopVerifier(),
+    ).run(
+        HarnessContext(
+            task=HarnessTask(title="Plan", user_input="Finish the task."),
+            session=session,
+            attempt=HarnessAttempt(number=1, started_at=NOW),
+        )
+    )
+
+    assert result.outcome is HarnessAttemptOutcome.COMPLETED
+
+
+def test_closed_plan_does_not_fabricate_goal_success() -> None:
+    task = HarnessTask(
+        title="Plan",
+        user_input="Finish the task.",
+        task_plan=SessionPlan(
+            steps=(
+                PlanStep(
+                    step_id="done",
+                    content="Closed work",
+                    status=PlanStepStatus.COMPLETED,
+                ),
+            )
+        ),
+    )
+
+    result = HarnessLoop().run(
+        task,
+        lambda _context: HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.FAILED,
+            summary="goal still failed",
+            metadata={"model_calls_used": 1},
+        ),
+        created_at=NOW,
+    )
+
+    assert result.session.status is SessionStatus.FAILED
+    assert result.run_result.final_outcome is HarnessAttemptOutcome.FAILED
+
+
+def test_harness_loop_rejects_a_completed_attempt_with_open_plan() -> None:
+    task = HarnessTask(
+        title="Plan",
+        user_input="Finish the task.",
+        task_plan=SessionPlan(
+            steps=(
+                PlanStep(
+                    step_id="remaining",
+                    content="Finish remaining work",
+                    status=PlanStepStatus.PENDING,
+                ),
+            )
+        ),
+    )
+
+    result = HarnessLoop().run(
+        task,
+        lambda _context: HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.COMPLETED,
+            summary="premature completion",
+            metadata={"model_calls_used": 1},
+        ),
+        created_at=NOW,
+    )
+
+    assert result.session.status is SessionStatus.SUSPENDED
+    assert result.run_result.final_outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.run_result.stop_reason.value == "task_plan_incomplete"
+    assert result.attempt_result.metadata["stop_reason"] == "task_plan_incomplete"
+
+
+def test_retry_receives_the_latest_durable_plan() -> None:
+    seen: list[SessionPlan] = []
+
+    def run_attempt(context: HarnessContext) -> HarnessAttemptResult:
+        seen.append(context.session.task_plan)
+        events = (
+            (
+                HarnessEventDraft(
+                    event_type=EventType.PLAN_UPDATED,
+                    actor=EventActor.HARNESS,
+                    payload={
+                        "steps": [
+                            {
+                                "step_id": "retry",
+                                "content": "Retry with evidence",
+                                "status": "in_progress",
+                            }
+                        ]
+                    },
+                ),
+            )
+            if context.attempt.number == 1
+            else ()
+        )
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.FAILED,
+            summary="retryable failure",
+            metadata={"model_calls_used": 1},
+            emitted_events=events,
+        )
+
+    HarnessLoop().run(
+        HarnessTask(title="Retry", user_input="Retry the task.", max_attempts=2),
+        run_attempt,
+        created_at=NOW,
+    )
+
+    assert seen[0].steps == ()
+    assert seen[1].steps[0].step_id == "retry"
+    assert seen[1].steps[0].status is PlanStepStatus.IN_PROGRESS
+
+
+def test_reconstructed_context_separates_stable_goal_from_follow_up() -> None:
+    messages = HarnessModelStep().build_initial_messages(
+        HarnessTask(
+            title="Goal",
+            user_input="Exclude the CICC account for now.",
+            goal="Identify the causes of recent repeated losses.",
+            task_plan=SessionPlan(
+                steps=(
+                    PlanStep(
+                        step_id="compare",
+                        content="Compare recent journals",
+                        status=PlanStepStatus.PENDING,
+                    ),
+                )
+            ),
+        ),
+        created_at=NOW,
+    )
+
+    assert "Stable task goal" in messages[0].content
+    assert "Identify the causes" in messages[0].content
+    assert "Current durable task plan" in messages[1].content
+    assert messages[-1].role is MessageRole.USER
+    assert messages[-1].content == "Exclude the CICC account for now."
+
+
+def test_simple_one_shot_task_still_completes_without_a_plan() -> None:
+    gateway = ScriptedModelGateway(responses=(_response("One-shot answer."),))
+    session = Session.create(title="Simple", created_at=NOW).model_copy(
+        update={"status": SessionStatus.RUNNING}
+    )
+
+    result = SingleAttemptOrchestrator(
+        gateway,
+        LocalPolicyEngine(PolicyProfile.READ_ONLY),
+        NeverToolGateway(),
+        model_step=HarnessModelStep(),
+        verifier=NoopVerifier(),
+    ).run(
+        HarnessContext(
+            task=HarnessTask(title="Simple", user_input="Answer once."),
+            session=session,
+            attempt=HarnessAttempt(number=1, started_at=NOW),
+        )
+    )
+
+    assert result.outcome is HarnessAttemptOutcome.COMPLETED
 
 
 def _response(content: str, tool_call: ToolCall | None = None) -> ScriptedModelResponse:

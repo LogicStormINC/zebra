@@ -28,8 +28,8 @@ from agent_storage import (
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_handoff import SessionHandoffApi
-from zebra_agent_api.task_final_identity import final_message_identity
 from zebra_agent_api.session_summary import serialize_session_summary
+from zebra_agent_api.task_final_identity import final_message_identity
 
 DEFAULT_TASK_LIMIT = 50
 MAX_TASK_LIMIT = 100
@@ -68,12 +68,14 @@ class TaskReadApi:
         parsed = parse_task_id(task_id)
         if isinstance(parsed, ApiResponse):
             return parsed
-        task = SQLiteAgentTaskStore(self.database_path).get_task(parsed)
+        store = SQLiteAgentTaskStore(self.database_path)
+        task = store.get_task(parsed)
         if task is None:
             return _not_found(task_id)
         session = SQLiteProjectionStore(self.database_path).get_session(task.active_segment_id)
         if session is None:
             return ApiResponse(409, {"task_id": task_id, "status": "projection_incomplete"})
+        session = session.model_copy(update={"task_plan": task.task_plan})
         workspace = SQLiteWorkspaceProjectionStore(self.database_path).get_workspace(
             task.active_segment_id
         )
@@ -84,13 +86,14 @@ class TaskReadApi:
             session_id=task_id,
             current_sequence=task.current_sequence,
             status=task.status.value,
+            goal={"objective": task.goal},
         )
+        if task.plan_required:
+            body["plan_required"] = True
         final_message = final_message_identity(self.database_path, task_id)
         if final_message is not None:
             body["final_message"] = final_message
-        task_events = SQLiteAgentTaskStore(self.database_path).read_events(
-            parsed, -1
-        )
+        task_events = store.read_events(parsed, -1)
         # Contract projection is scoped to the ACTIVE execution segment: a
         # stable Task keeps earlier rounds in older segments, and their
         # final-stage events must never bind a contract to the latest final.
@@ -157,6 +160,7 @@ class TaskReadApi:
             session = projection_store.get_session(task.active_segment_id)
             if session is None:
                 continue
+            session = session.model_copy(update={"task_plan": task.task_plan})
             body = serialize_session_summary(
                 session,
                 workspace_store.get_workspace(task.active_segment_id),
@@ -169,7 +173,10 @@ class TaskReadApi:
                 session_id=str(task.task_id),
                 current_sequence=task.current_sequence,
                 status=task.status.value,
+                goal={"objective": task.goal},
             )
+            if task.plan_required:
+                body["plan_required"] = True
             items.append(body)
         return ApiResponse(
             200,
@@ -263,7 +270,11 @@ def create_task(
     task = SQLiteAgentTaskStore(app.database_path).ensure_for_session(SessionId(UUID(session_id)))
     body = dict(response.body)
     body.pop("workspace", None)
-    body.update(task_id=str(task.task_id), session_id=str(task.task_id))
+    body.update(
+        task_id=str(task.task_id),
+        session_id=str(task.task_id),
+        plan_required=task.plan_required,
+    )
     return ApiResponse(response.status_code, body)
 
 
@@ -283,7 +294,6 @@ def mutate_task(
             app.database_path,
             task_id,
             stage_prompt="Recover from the verified Task checkpoint and continue.",
-            objective=f"Recover and continue {session.title}",
             idempotency_key=f"task-recovery:{task_id}:{session.current_sequence}",
             actor_kind=HandoffActorKind.AUTOMATION,
             rollover_reason=RolloverReason.RECOVERY,
@@ -364,7 +374,6 @@ def append_task_message(
         app.database_path,
         task_id,
         stage_prompt="Continue from the verified Task checkpoint.",
-        objective=content.strip(),
         idempotency_key=idempotency_key
         or _follow_up_key(task_id, session.current_sequence, content),
         actor_kind=HandoffActorKind.AUTOMATION,
@@ -404,14 +413,12 @@ def rollover_task(
     if decision is not ContextLifecycleDecision.ROLLOVER:
         return ApiResponse(200, {"task_id": task_id, "decision": decision.value})
     prompt = payload.get("stage_prompt", "Continue from the verified Task checkpoint.")
-    objective = payload.get("objective", "Continue the current Task.")
-    if not isinstance(prompt, str) or not prompt.strip() or not isinstance(objective, str):
+    if not isinstance(prompt, str) or not prompt.strip():
         return ApiResponse(400, {"task_id": task_id, "status": "invalid_request"})
     return _rollover(
         app.database_path,
         task_id,
         stage_prompt=prompt.strip(),
-        objective=objective.strip(),
         idempotency_key=idempotency_key or f"internal-rollover:{task_id}",
         actor_kind=HandoffActorKind.AUTOMATION,
         rollover_reason=(
@@ -466,7 +473,6 @@ def _rollover(
     task_id: str,
     *,
     stage_prompt: str,
-    objective: str,
     idempotency_key: str,
     actor_kind: HandoffActorKind,
     rollover_reason: RolloverReason,
@@ -477,11 +483,12 @@ def _rollover(
     source = SQLiteProjectionStore(database_path).get_session(active)
     if source is None:
         return ApiResponse(409, {"task_id": task_id, "status": "projection_incomplete"})
+    task = SQLiteAgentTaskStore(database_path).ensure_for_session(active)
     return SessionHandoffApi(database_path).create(
         str(active),
         {
             "title": source.title,
-            "objective": objective,
+            "objective": task.goal,
             "stage_prompt": stage_prompt,
             "reason": f"internal_{rollover_reason.value}",
         },

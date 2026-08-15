@@ -8,6 +8,7 @@ from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.session_history import normalize_history_session_ids
+from agent_core.domain.skills import normalize_skill_components
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
@@ -28,6 +29,7 @@ class CreateSessionPayload(TypedDict):
     tool_profile: str
     max_model_calls: int | None
     max_tool_calls: int | None
+    plan_required: bool
     network_profile: str
     network_allowlist: list[str]
     mcp_allowlist: list[str]
@@ -38,10 +40,11 @@ class CreateSessionPayload(TypedDict):
     history_session_ids: tuple[str, ...] | None
     attachments: tuple[TextAttachmentInput, ...]
     image_attachments: tuple[ImageAttachmentInput, ...]
+    skill_components: tuple[str, ...] | None
     agent_definition: AgentDefinition | None
 
 
-CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
+CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__) | {"skill_owner"}
 
 
 class ResumeSessionPayload(TypedDict):
@@ -124,10 +127,10 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
     workspace = payload.get("workspace", ".")
     if not isinstance(workspace, str) or not workspace.strip():
         return bad_request("workspace must be a non-blank string when provided")
-    execute = payload.get("execute", False)
-    if not isinstance(execute, bool):
-        return bad_request("execute must be a boolean when provided")
-
+    execute, plan_required = payload.get("execute", False), payload.get("plan_required", False)
+    for field, value in (("execute", execute), ("plan_required", plan_required)):
+        if not isinstance(value, bool):
+            return bad_request(f"{field} must be a boolean when provided")
     policy_profile = payload.get("policy_profile", PolicyProfile.WORKSPACE_WRITE.value)
     if not isinstance(policy_profile, str):
         return bad_request("policy_profile must be a string when provided")
@@ -135,7 +138,6 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
         PolicyProfile(policy_profile)
     except ValueError:
         return bad_request("policy_profile is not supported")
-
     tool_profile = payload.get("tool_profile", ToolProfile.GENERAL.value)
     if not isinstance(tool_profile, str):
         return bad_request("tool_profile must be a string when provided")
@@ -168,26 +170,24 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
         network = parse_network_profile(network_profile, domain_allowlist=network_allowlist)
     except NetworkProfileError as exc:
         return bad_request(str(exc))
-    try:
-        parsed_attachments = parse_attachment_inputs(payload.get("attachments"))
-    except ValueError as exc:
-        return bad_request(str(exc))
-    try:
-        agent_definition = parse_agent_definition(payload.get("agent_definition"))
-    except ValueError as exc:
-        return bad_request(str(exc))
+    raw_skill_components = payload.get("skill_components")
     raw_history_session_ids = payload.get("history_session_ids")
+    if raw_skill_components is not None and not isinstance(raw_skill_components, list):
+        return bad_request("skill_components must be a list of Skill names")
     if raw_history_session_ids is not None and (
         not isinstance(raw_history_session_ids, list)
         or not all(isinstance(item, str) for item in raw_history_session_ids)
     ):
         return bad_request("history_session_ids must be a list of UUID strings when provided")
     try:
-        history_session_ids = (
-            None
-            if raw_history_session_ids is None
-            else normalize_history_session_ids(raw_history_session_ids)
-        )
+        parsed_attachments = parse_attachment_inputs(payload.get("attachments"))
+        agent_definition = parse_agent_definition(payload.get("agent_definition"))
+        skill_components = normalize_skill_components(
+            raw_skill_components
+        ) if raw_skill_components is not None else None
+        history_session_ids = normalize_history_session_ids(
+            raw_history_session_ids
+        ) if raw_history_session_ids is not None else None
     except ValueError as exc:
         return bad_request(str(exc))
     try:
@@ -234,11 +234,11 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
         ),
         "title": title.strip(),
         "workspace": workspace.strip(),
-        "execute": execute,
+        "execute": bool(execute),
         "policy_profile": policy_profile,
         "tool_profile": tool_profile,
         "max_model_calls": max_model_calls,
-        "max_tool_calls": max_tool_calls,
+        "max_tool_calls": max_tool_calls, "plan_required": bool(plan_required),
         "network_profile": network.name.value,
         "network_allowlist": list(network.domain_allowlist),
         "mcp_allowlist": list(normalized_mcp),
@@ -257,7 +257,7 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
             for attachment in parsed_attachments
             if isinstance(attachment, ImageAttachmentInput)
         ),
-        "agent_definition": agent_definition,
+        "skill_components": skill_components, "agent_definition": agent_definition,
     }
 
 

@@ -5,15 +5,81 @@
 
 ## Current Mainline Snapshot
 
-- Review follow-up `MDL-PROFILE-03` is implemented on
-  `codex/qwen37-max-thinking-profiles` from deployed FinOS runtime base
-  `4f936c4`. Exact profiles keep `qwen3.7-max` text-only with thinking disabled
+- Snapshot date: `2026-08-15`
+- Deployed follow-up `MDL-PROFILE-03` keeps `qwen3.7-max` text-only with thinking disabled
   and keep `qwen3.7-max-2026-05-17` / `qwen3.7-max-preview` text-only with
   thinking enabled. The adapter contains no model-name inference; native image
   capability remains absent and MiniMax MCP remains independent. Red-first
   focused tests are green, direct text/tool probes passed for all three model
-  identifiers, and deployment E2E remains the final gate.
-- Snapshot date: `2026-07-29`
+  identifiers, and the deployed base is `ab7c144`.
+- Snapshot date: `2026-08-14`
+- Wave 4.5 = CLOSED. Gate A PASS -> Product Acceptance PASS -> Final-SHA
+  Closure Audit PASS. Accepted final pair: FinOS
+  `a6c38f08b613c2a02647aa3f938a8335072e6c2a` / Zebra
+  `6afbafa306ebbdd67956023d0924d66ea1545f99`; shared package
+  `@zebra-agent/task-ui@0.1.2` tarball SHA-256
+  `0d2678991857694aab94b44bff8265fdc11bb16cc3096d8440207f4820c19fdc`,
+  16,180 bytes, 23 entries. Shared reducer semantics: a failed/cancelled
+  interrupted assistant partial remains visible with `status="error"` and is
+  never upgraded to a canonical final (no final actions/source binding).
+  Evidence: shared task-ui/Desktop checks and artifact verification pass;
+  FinOS browser smoke `92/92`, frontend build green, Phase4/public/background
+  `45/45`, Gate2/4 `48/48`, full baseline zero new failures, visual evidence
+  reviewed, no P0-P2 actionable findings. Wave 5 backend is active separately
+  in its own lane and outside the Wave 4.5 closure. No PR, merge, or deploy;
+  feature-branch publication is owner-authorized.
+- Snapshot date: `2026-08-13`
+- Wave 4 = CLOSED. Final pair: FinOS `6e84e23b22d11a1f89afa9d73e8f17c9e47382a5`
+  / Zebra `da97dc3ac9ffe300076f4c68031b96a627e6dd58`, both ahead-only from
+  `f839149` / `314e6be`, with `codex/finos-next` and `codex/finos-runtime-next`
+  untouched. Independent audit: PASS with one P3 governance correction
+  (`P3-GOV-01`), fixed by the Wave 4.5 docs-only commit.
+- Wave 4.5 = GO, Phases 0 and 2 complete on `codex/znx-wave45-task-ui-foundation-v1`
+  from exact base `da97dc3`; `ZNX-TEVID-01` is `Done` and
+  `ZNX-UI-FOUNDATION-01` is registered (owned paths, non-goals, FinOS peer
+  coordination). Phase 2 extracted the proven generic Task UI surface into the
+  shared `@zebra-agent/task-ui@0.1.0` package (no Tauri dependency, no FinOS
+  business types, one reducer per Task, extension slots) and rewired Zebra
+  Desktop onto it with the old lib/component duplicates deleted. Contract
+  commit `3a385d2` added public `approval_id` to raw `approval_requested`,
+  pinned by fixture and acknowledged by the FinOS peer (Phase 1 landed at
+  FinOS `84f81ba`). Desktop checks 21/21, build +0.2% vs base, E2E failures
+  identical to exact base.
+  Gate A runtime closure landed on the same branch: tool-capable model
+  streams now emit deltas progressively (browsers render mid-stream), cancel
+  stays authoritative (no late failed/completed), and provider failures are
+  classified durably — non-retryable rejections -> `failed`, retryable
+  HTTP 500/transport -> `suspended` with lease released and normalized-only
+  payloads. Playwright E2E is now 8/8 (was 3/5 at base); full pytest
+  `2199 passed, 8 failed, 9 skipped` (one inherited failure fixed, zero new);
+  eval 10/10; bundle unchanged from Phase 2.
+- Snapshot date: `2026-08-11`
+- `Wave 2.5 / Goal-Plan v1 = Product Acceptance PASS`. The activation closure
+  on `codex/znx-goal-plan-act-01` adds two independent, generic Stable Task
+  contracts: strict default-false `plan_required`, and the existing
+  `completion_contract.required_evidence`. A real DeepSeek two-round Goal
+  produced Plan revisions before authoritative FinOS typed reads, closed the
+  Plan, completed, then preserved the same Stable Task, stable Goal, evidence,
+  and Plan revision continuity on follow-up. Terminal publication and worker
+  lease release now share one SQLite completion transaction, so immediate
+  follow-up no longer races a visible `SESSION_COMPLETED`. Post-hotfix targeted
+  tests are `117 passed`; full pytest is `2110 passed, 9 failed, 9 skipped` with
+  the exact-base failure set; eval is `10/10`, and static/file-size findings are
+  unchanged inherited sets. Gate 2 real dual-repository E2E is `1 passed`.
+  No Planner, fixed financial Plan, new permission, GUI, or deployment was added.
+- `ZNX-GOALPLAN-01` closes the existing Plan lifecycle on
+  `codex/znx-goal-plan-v1` from exact base `0a81c6d`, then combines cleanly with
+  Gate 2 at `aa8c4d5`. Stable Task now projects its root Goal and latest mutable
+  durable Plan, reconstructs both for continuation/retry/resume/worker paths,
+  and rejects normal completion while Plan steps remain open. Closed Plans do
+  not fabricate Goal success, and no-Plan one-shot tasks remain compatible.
+  Goal/Plan plus Gate 2 targeted validation is `136 passed`; full pytest is
+  `2085 passed, 9 failed, 9 skipped` with the exact-base failure set. Release
+  eval is `10/10`; changed-path Ruff/compileall/diff-check pass. Full Ruff is
+  11 inherited findings versus 13 at exact base, while Mypy and file-size retain
+  the same 13 inherited findings. FinOS compatibility smoke is `23 passed`; no
+  regression appeared in the real dual-repository Gate 2 E2E (`1 passed`). No
+  FinOS source, stable branch, GUI, provider, or deployment change was made.
 - AOR-DEF-01 follow-up review closes durable continuation evidence,
   shared capability preflight, and trusted skill scope/state/content-digest
   checks; focused follow-up tests are 70 passed and no deployment occurred.

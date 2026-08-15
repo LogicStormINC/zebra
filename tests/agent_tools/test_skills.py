@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus
-from agent_tools import SkillsListTool, SkillsReadTool
+from agent_tools import SkillsListTool, SkillsReadTool, skills_catalog
 from agent_tools.skills_catalog import LocalSkillCatalog, SkillCatalogError
 
 
@@ -73,6 +73,30 @@ def test_oversized_skill_is_listed_but_full_body_remains_bounded(tmp_path: Path)
     with pytest.raises(SkillCatalogError) as raised:
         catalog.read("large")
     assert raised.value.reason == "file_too_large"
+
+
+def test_skill_read_rejects_digest_drift_after_catalog_discovery(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    skill = _skill(tmp_path, "evidence", "evidence", "Collect bounded evidence.")
+    skill_file = skill / "SKILL.md"
+    original_read = skills_catalog._read_utf8
+
+    def rewrite_before_read(path: Path) -> tuple[str, int]:
+        if path == skill_file:
+            skill_file.write_text(
+                "---\nname: evidence\ndescription: Changed guidance.\n---\n\n# evidence\nNEW\n",
+                encoding="utf-8",
+            )
+        return original_read(path)
+
+    monkeypatch.setattr(skills_catalog, "_read_utf8", rewrite_before_read)
+
+    with pytest.raises(SkillCatalogError) as raised:
+        LocalSkillCatalog((tmp_path,)).read("evidence")
+
+    assert raised.value.reason == "digest_mismatch"
 
 
 def test_skill_list_bounds_aggregate_metadata_output(tmp_path: Path) -> None:

@@ -81,3 +81,24 @@ def validate_tool_call_pairing(messages: Sequence[SessionMessage]) -> None:
             f"assistant tool_calls without matching tool results before model "
             f"request: {missing}; provider would reject the dangling calls"
         )
+
+
+def is_raw_dsml_tool_request(content: str) -> bool:
+    marker = "<｜｜DSML｜｜tool_calls>"
+    marker_index = 0
+    while True:
+        marker_index = content.find(marker, marker_index)
+        if marker_index < 0:
+            return False
+        invoke_index = content.find("invoke name=", marker_index + len(marker))
+        if (
+            not _is_inside_fenced_code_block(content, marker_index)
+            and invoke_index >= 0
+            and not _is_inside_fenced_code_block(content, invoke_index)
+        ):
+            return True
+        marker_index += len(marker)
+
+
+def _is_inside_fenced_code_block(content: str, position: int) -> bool:
+    return sum(line.lstrip().startswith("```") for line in content[:position].splitlines()) % 2 == 1

@@ -12,6 +12,7 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
+from agent_core.domain.skills import SkillComponentIdentity, normalize_skill_components
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_runtime import (
     normalize_mcp_resource_ids,
@@ -24,9 +25,12 @@ from agent_storage import (
     SQLiteArtifactPayloadStore,
     SQLiteEventStore,
     SQLiteProjectionStore,
+    SQLiteSkillsStateStore,
     SQLiteWorkspaceProjectionStore,
     store_initial_text_attachments,
 )
+from agent_tools.skills_catalog import LocalSkillCatalog
+from agent_tools.skills_scope import build_scoped_skill_roots, normalize_skill_owner
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_cli.cli_database import (
@@ -52,6 +56,11 @@ def _run_result(
     mcp_prompt_id, mcp_prompt_arguments = parse_mcp_prompt_selection(
         namespace.mcp_prompt,
         namespace.mcp_prompt_arg,
+    )
+    skill_components, skill_component_identities = _skill_grant_snapshot(
+        settings,
+        normalize_skill_components(namespace.skill),
+        owner=namespace.skill_owner,
     )
     if (mcp_allowlist or mcp_resource_ids or mcp_prompt_id) and network_profile.name not in {
         NetworkProfileName.MCP_PROXY_ONLY,
@@ -93,6 +102,8 @@ def _run_result(
             network_profile=network_profile,
             mcp_allowlist=mcp_allowlist,
             attachments=attachments,
+            skill_owner=namespace.skill_owner if skill_component_identities else None,
+            granted_skill_component_identities=skill_component_identities,
         )
         session = execution_result.harness_result.session
         payload = serialize_run_execution(execution_result)
@@ -107,6 +118,8 @@ def _run_result(
                 network_profile=network_profile.name.value,
                 network_allowlist=network_profile.domain_allowlist,
                 mcp_allowlist=mcp_allowlist,
+                skill_components=skill_components,
+                skill_component_identities=skill_component_identities,
             )
         )
         session = bootstrap.session
@@ -144,3 +157,36 @@ def _run_result(
             **payload,
         },
     )
+
+
+def _skill_grant_snapshot(
+    settings: ZebraAgentSettings,
+    requested: tuple[str, ...],
+    *,
+    owner: str | None = None,
+) -> tuple[tuple[str, ...], tuple[SkillComponentIdentity, ...]]:
+    normalized_owner = None if owner is None else normalize_skill_owner(owner)
+    if not requested:
+        return (), ()
+    roots = build_scoped_skill_roots(
+        system=settings.skill_roots_system,
+        admin=settings.skill_roots_admin,
+        user=settings.skill_roots,
+        repo=settings.skill_roots_repo,
+        owner=normalized_owner,
+    )
+    if not roots:
+        raise ValueError("requested Skill component is unavailable")
+    metadata = LocalSkillCatalog(
+        roots,
+        skills_state=SQLiteSkillsStateStore(settings.skills_state_path),
+    ).list()[0]
+    available = {
+        item.name: item.component_identity()
+        for item in metadata
+        if normalized_owner is None or item.owner == normalized_owner
+    }
+    if any(name not in available for name in requested):
+        raise ValueError("requested Skill component is unavailable")
+    identities = tuple(available[name] for name in requested)
+    return tuple(identity.name for identity in identities), identities

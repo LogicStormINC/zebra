@@ -39,9 +39,9 @@ test("shows the resolved Runtime class and no-silent-fallback policy", async ({ 
 test("renders a long provider response progressively and converges durably", async ({ page }) => {
   await submit(page, "E2E_LONG_STREAM render every ordered fragment");
 
-  await expect(page.getByText(/long-000\|/)).toBeVisible();
-  await expect(page.getByText(/long-063\|/)).not.toBeVisible();
-  await expect(page.getByText(/long-063\|/)).toBeVisible();
+  await expect(assistantMessage(page).getByText(/long-000\|/)).toBeVisible();
+  await expect(assistantMessage(page).getByText(/long-063\|/)).not.toBeVisible();
+  await expect(assistantMessage(page).getByText(/long-063\|/)).toBeVisible();
   await expect(page.getByText("已完成", { exact: true })).toBeVisible();
 
   expect(await assistantMarkers(page, "long")).toEqual(markers("long", 64));
@@ -60,12 +60,15 @@ test("reloads during a long stream and resumes without duplicate deltas", async 
 
 test("stops a running stream without a late completion", async ({ page, request }) => {
   await submit(page, "E2E_STOP_STREAM cancel before the provider finishes");
-  await expect(page.getByText(/stop-003\|/)).toBeVisible();
+  await expect(assistantMessage(page).getByText(/stop-003\|/)).toBeVisible();
   const sessionId = await activeSessionId(page);
 
-  await page.locator('[aria-label="停止任务"] button').click();
+  await page.getByLabel("停止任务").click();
   await expect.poll(async () => (await session(request, sessionId)).status).toBe("cancelled");
   await expect(page.getByText("已停止", { exact: true })).toBeVisible();
+  // W45-P4-02: the interrupted partial survives the cancel as an error
+  // message instead of being deleted (it never becomes a canonical final).
+  await expect(assistantMessage(page).getByText(/stop-003\|/)).toBeVisible();
 
   await page.waitForTimeout(5_000);
   const stream = await request.get(`${API_URL}/tasks/${sessionId}/stream`, { headers: AUTH_HEADERS });
@@ -75,18 +78,20 @@ test("stops a running stream without a late completion", async ({ page, request 
   expect((await session(request, sessionId)).status).toBe("cancelled");
 
   await submit(page, "E2E_APPROVAL continue the cancelled Task internally");
-  await expect(page.getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".x-markdown").filter({ hasText: "APPROVAL_COMPLETE" }).first(),
+  ).toBeVisible();
   await expect(page.getByText("Agent 需要人工确认")).not.toBeVisible();
 });
 
 test("continues a completed task through an invisible internal Segment", async ({ page, request }) => {
   await submit(page, "E2E_FOLLOW_UP_ONE complete the first turn");
-  await expect(page.getByText("FIRST_COMPLETE", { exact: true })).toBeVisible();
+  await expect(assistantMessage(page).getByText("FIRST_COMPLETE", { exact: true })).toBeVisible();
   await expect(page.getByText("已完成", { exact: true })).toBeVisible();
   const firstSessionId = await activeSessionId(page);
 
   await submit(page, "E2E_FOLLOW_UP_TWO continue after the terminal turn");
-  await expect(page.getByText("SECOND_COMPLETE", { exact: true })).toBeVisible();
+  await expect(assistantMessage(page).getByText("SECOND_COMPLETE", { exact: true })).toBeVisible();
   await expect(page.getByText("E2E_FOLLOW_UP_TWO continue after the terminal turn", { exact: true })).toBeVisible();
   const secondSessionId = await activeSessionId(page);
 
@@ -99,7 +104,7 @@ test("continues a completed task through an invisible internal Segment", async (
 
 test("executes a local command without an approval interruption", async ({ page }) => {
   await submit(page, "E2E_APPROVAL browser approval");
-  await expect(page.getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
+  await expect(assistantMessage(page).getByText("APPROVAL_COMPLETE", { exact: true })).toBeVisible();
   await expect(page.getByText("已完成", { exact: true })).toBeVisible();
   await expect(page.getByText("Agent 需要人工确认")).not.toBeVisible();
 });
@@ -127,6 +132,13 @@ async function assistantMarkers(page: Page, prefix: string): Promise<string[]> {
   const assistant = page.locator("section").filter({ hasText: "Zebra Agent" }).last();
   const text = await assistant.textContent();
   return text?.match(new RegExp(`${prefix}-\\d{3}\\|`, "g")) ?? [];
+}
+
+function assistantMessage(page: Page) {
+  // The task title (semantic-title feature) mirrors the model answer in the
+  // page heading, so message-content assertions must be scoped to the
+  // rendered Markdown body to stay unambiguous.
+  return page.locator(".x-markdown").last();
 }
 
 function markers(prefix: string, count: number): string[] {

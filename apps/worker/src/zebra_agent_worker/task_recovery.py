@@ -14,6 +14,7 @@ from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.model_media import ModelMediaInput
 from agent_core.domain.session_history import normalize_history_session_ids
+from agent_core.domain.skills import SkillComponentIdentity
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
@@ -33,6 +34,7 @@ class RecoveredTask:
     mcp_allowlist: tuple[str, ...] | None
     preapproved_readonly_tools: tuple[str, ...] | None
     skill_components: tuple[str, ...] | None
+    skill_component_identities: tuple[SkillComponentIdentity, ...] | None
     agent_definition: AgentDefinition | None
     history_session_ids: tuple[str, ...] | None
     max_attempts: int
@@ -104,6 +106,7 @@ def recover_task(
         mcp_allowlist=workspace.mcp_allowlist,
         preapproved_readonly_tools=workspace.preapproved_readonly_tools,
         skill_components=workspace.skill_components,
+        skill_component_identities=workspace.skill_component_identities,
         agent_definition=agent_definition,
         history_session_ids=_history_session_ids(task_payload.get("history_session_ids")),
         max_attempts=_optional_positive_int(task_payload.get("max_attempts")) or 1,

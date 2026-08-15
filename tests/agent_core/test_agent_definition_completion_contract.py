@@ -19,6 +19,7 @@ from agent_core.harness import (
     HarnessContext,
     HarnessLoop,
     HarnessModelStep,
+    HarnessStopReason,
     HarnessTask,
     SingleAttemptOrchestrator,
 )
@@ -222,16 +223,24 @@ def test_required_evidence_can_arrive_in_any_tool_order() -> None:
     assert result.attempt_result.metadata["completion_evidence_satisfied"] is True
 
 
-def test_repeated_missing_evidence_suspends_without_looping() -> None:
+def test_repeated_missing_evidence_fails_without_retry() -> None:
     definition = _definition()
     gateway = ScriptedGateway(
         (_completion("No typed evidence."), _completion("Still no typed evidence."))
     )
 
-    result = _run(gateway, EvidenceTools(), definition, max_model_calls=2)
+    result = _run(
+        gateway,
+        EvidenceTools(),
+        definition,
+        max_attempts=2,
+        max_model_calls=2,
+    )
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
     assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert result.run_result.stop_reason is HarnessStopReason.COMPLETION_EVIDENCE_MISSING
+    assert result.run_result.attempts_used == 1
     assert len(gateway.requests) == 2
     assert sum(
         "missing_completion_evidence" in message.content
@@ -301,7 +310,7 @@ def test_default_tool_loop_completion_is_gated_by_contract() -> None:
         synthesize_tool_results=None,
     )
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
     assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
     assert len(gateway.requests) == 2
 
@@ -634,6 +643,7 @@ def _run(
     tools: EvidenceTools,
     definition: AgentDefinition | None,
     *,
+    max_attempts: int = 1,
     max_model_calls: int | None = None,
     synthesize_tool_results: bool | None = True,
 ):
@@ -644,6 +654,7 @@ def _run(
         HarnessTask(
             title="Neutral evidence task",
             user_input="Collect the required typed evidence.",
+            max_attempts=max_attempts,
             max_model_calls=max_model_calls,
             agent_definition=definition,
         ),

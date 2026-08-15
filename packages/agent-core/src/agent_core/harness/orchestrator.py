@@ -115,7 +115,7 @@ class SingleAttemptOrchestrator:
             messages,
             self._model_gateway,
             allow_tools=True,
-            user_goal=task.user_input,
+            user_goal=task.stable_goal,
             created_at=context.attempt.started_at,
             **({"media_inputs": task.media_inputs} if task.media_inputs else {}),
         )

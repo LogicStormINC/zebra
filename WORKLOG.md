@@ -1,5 +1,264 @@
 # Progress Log
 
+## 2026-08-14 Wave 4.5 final docs-only closure
+
+- Wave 4.5 = CLOSED: Gate A PASS -> Product Acceptance PASS -> Final-SHA
+  Closure Audit PASS; `ZNX-UI-FOUNDATION-01` marked `Done` with all
+  acceptance criteria checked
+- accepted final implementation pair: FinOS
+  `a6c38f08b613c2a02647aa3f938a8335072e6c2a` / Zebra
+  `6afbafa306ebbdd67956023d0924d66ea1545f99`; shared package
+  `@zebra-agent/task-ui@0.1.2` tarball SHA-256
+  `0d2678991857694aab94b44bff8265fdc11bb16cc3096d8440207f4820c19fdc`,
+  16,180 bytes, 23 entries
+- shared reducer semantics recorded: a failed/cancelled interrupted assistant
+  partial stays visible with `status="error"` and is never upgraded to a
+  canonical final (no final actions/source binding)
+- evidence recorded: shared task-ui/Desktop checks and artifact verification;
+  FinOS browser smoke `92/92`, frontend build, Phase4/public/background
+  `45/45`, Gate2/4 `48/48`, full baseline zero new, visual evidence reviewed,
+  no P0-P2 actionable findings
+- Wave 5 backend: active separately in its own lane, outside the Wave 4.5
+  closure; no PR/deploy in this lane; feature-branch publication owner-authorized
+
+## 2026-08-14 Wave 4.5 Phase 4 interrupted-assistant partial preservation (0.1.2)
+
+- red-first: `session_failed`/`session_cancelled` were in
+  `STREAM_RESET_EVENTS`, so a real interruption deleted the already streamed
+  assistant partial; contract assertions added first (shared core check +
+  Desktop streaming-messages check) and failed against the old reducer
+- minimal fix in `event-reducer.ts`: failed/cancelled interruption now keeps
+  the sorted/merged partial as a `ChatMessage` with `status="error"`; the
+  message keeps its `model-stream:<call>` key and is never upgraded to a
+  canonical final (no final actions/source binding); normal resets
+  (`model_request_started`, `harness_attempt_started`, approval, clarification,
+  `session_completed`, `session_suspended`) keep their existing discard
+  semantics, pinned by new contract assertions; no deltas before interruption
+  -> nothing preserved
+- Desktop consumes the same reducer: `checks/streaming-messages.check.ts`
+  recovered-case now expects the two interrupted partials as error messages;
+  E2E stop-test gained a real assertion that the partial survives cancel, and
+  the follow-up APPROVAL_COMPLETE assertion is scoped to the markdown blocks
+  (the partial legitimately renders in the optimistic tail)
+- validation: task-ui contract check + package typecheck green; Desktop
+  checks 21/21; build 1,353.05 kB (+0.17 kB vs 0.1.1); Playwright E2E 8/8;
+  `git diff --check` clean
+- `@zebra-agent/task-ui@0.1.2` packed to /tmp/task-ui-pack-012, 23 entries,
+  SHA-256 `0d2678991857694aab94b44bff8265fdc11bb16cc3096d8440207f4820c19fdc`,
+  16,180 bytes, contract check green from the artifact; handoff sent to FinOS
+
+## 2026-08-13 Wave 4.5 Phase 4 generic shared-UI additions (package 0.1.1)
+
+- FinOS consumption decisions: consume `defaultTurnDisclosure`/`TurnSection`
+  as the single source of truth for turn disclosure (running open, succeeded
+  collapsed, waiting/failed/canceled open), `AssistantMessage.renderSources`
+  (exact-final-bound), and `NewContentCue` (bare aria-live cue; scroll
+  anchoring consumer-side); DECLINED a generic `QueuedFollowupList` primitive
+  (adapter-specific composer/queue) — not built
+- added to `@zebra-agent/task-ui` 0.1.1: `core/turn-disclosure.ts`
+  (deterministic mapping + contract assertions, red-first),
+  `react/TurnSection.tsx` (native details disclosure, data-status/data-turn-id,
+  overridable), `react/NewContentCue.tsx` (aria-live + onDismiss),
+  `AssistantMessage.renderSources` slot rendered before the tail actions;
+  exported from both barrels
+- Zebra Desktop reuse analysis: no turn grouping or sources/new-content UI
+  exists in Desktop, so no forced Desktop wiring and no duplicates; Desktop
+  build + checks + task-ui contract check pass (bundle 1,352.88 kB, +0.42 kB
+  from the new barrel exports); FinOS stays on frozen 0.1.0 tarball until the
+  0.1.1 artifact + SHA-256 is handed off
+
+## 2026-08-13 Wave 4.5 Gate A PASS + Phase 4 start
+
+- root decision: Gate A = PASS on the exact pair FinOS
+  `d0cdb2bf1bbed9c65bf8f5b4336c9898be412575` / Zebra
+  `dd510aaffb3e6527c4e05cca3cdb61cb3e584710` / task-ui tarball SHA-256
+  `33b01e6910c7852fd1c0a4a7f77f9acc0f39a0b2d90d7b76d1de7e49826f5741`;
+  accepted evidence includes Zebra E2E 8/8, full `2199/8/9` vs base
+  `2185/9/9`, eval 10/10, FinOS transport 12/12 / browser 10/10 /
+  synthetic 20/20, no P0-P3 actionable findings
+- docs-only acceptance commit records Gate A PASS, the exact pair, and marks
+  the ZNX-UI-FOUNDATION-01 acceptance boxes; task stays `In Progress` for
+  Phase 4/5; Wave 5 backend is NOT STARTED pending a detailed owner plan
+- Phase 4 start: red-first generic additions to `@zebra-agent/task-ui`
+  (turn disclosure defaults, elapsed/tool/plan/clarification/approval
+  rendering, exact-final-bound source/message action slots, scroll/new-content
+  cues if generic) with Desktop reuse only; queued-follow-up edit primitive
+  only on a demonstrated shared need; no FinOS business types, no
+  Planner/scheduler, no second state machine, no Tauri dependency
+
+## 2026-08-13 Wave 4.5 Gate A runtime closure (progressive/cancel/failure)
+
+- red diagnostics first (live curl + sqlite probes against the e2e API):
+  - task stream delivers initial + attempt events progressively, but every
+    `model_response_delta` arrived only after resume completed — root cause:
+    `complete_model` buffered text deltas whenever tools were advertised
+    (`capture()`), so tool-capable streams could never render progressively
+  - cancel already worked at the worker boundary once deltas flow (the
+    recorder raises `ExecutionInterrupted` on the next append after an
+    external `SESSION_CANCELLED`; finalize's terminal-state guard keeps
+    cancelled authoritative — `test_worker_streaming_stops_cleanly_after_durable_cancellation`
+    was inherited-failing at base and now passes)
+  - provider failure: streaming `finish_reason=content_filter` is wrapped by
+    `parse_completion` as `ModelResponseRejectedError(retryable=False)`; the
+    worker classified ALL response rejections as resumable SUSPENDED — a
+    non-retryable rejection never became durable failed
+- fixes (smallest shared boundaries, no new state machine):
+  - `model_request.py`: deltas emit progressively for tool-capable streams;
+    removed the end-of-stream re-emission; `public_output_committed` now
+    covers tools, so a rejection after public deltas fails closed (no
+    duplicate/repair after visible text); rejection before any public delta
+    still repairs once
+  - `openai_payloads.py`: finish-reason validation is provider-neutral
+    (content_filter/length/unsupported are non-retryable rejections on every
+    OpenAI-compatible provider, not only the DeepSeek router path)
+  - `execution_errors.py`: classification matrix pinned by tests —
+    `ModelResponseRejectedError(retryable=False)` and
+    `ModelProviderError(retryable=False)` -> durable FAILED;
+    retryable variants -> durable SUSPENDED (resumable); provider/rejection
+    payloads carry only normalized reason (`error_message` scrubbed), no raw
+    message/URL/credential; lease always released
+  - `mock-provider.mjs`: `content_filter` now delivered as a real streaming
+    finish_reason over HTTP 200 (the wire contract), keeping HTTP 500 as the
+    retryable transport case covered by deterministic tests
+- new deterministic tests: streaming progress (2 red-first) + repair safety
+  (2), worker classification matrix (4), retryable suspend + resumable
+  completion (2), HTTP resume bounded for failed/suspended (2), task-ui
+  tool-call provisional-text discard (1)
+- validation: full pytest `2199 passed, 8 failed, 9 skipped` (base was
+  `2185/9/9`; one inherited failure fixed, zero new); Playwright E2E 8/8
+  (was 3/5 at base); desktop checks 21/21; task-ui core contract check pass;
+  build `1,352.46 kB / gzip 429.07` (+0.2% vs base, unchanged from Phase 2);
+  eval 10/10; touched-path Ruff/Mypy/`git diff --check` clean; file-size and
+  full Ruff findings match the inherited sets
+
+## 2026-08-13 Wave 4.5 E2E harness repair (post Phase 2, Gate A prep)
+
+- Playwright E2E re-run at HEAD: 5 passed / 3 failed (base was 3/5). Fixed
+  inherited harness staleness, not product behavior:
+  - semantic-title feature mirrors the model answer in h1/h2 task titles, so
+    strict text locators collided with the message body; assistant-content
+    assertions are now scoped to `.x-markdown` (continuation + approval tests
+    now pass, product assertions unchanged)
+  - cancel click selector `[aria-label="停止任务"] button` matched nothing in
+    the current antd DOM (aria-label lands on the button itself); now
+    `page.getByLabel("停止任务")`
+- remaining 3 failures are inherited runtime/harness issues, root-caused:
+  - long-stream progressive + stop/cancel: `/sessions` local execution runs
+    `run_local_harness` synchronously inside the create request
+    (`apps/api/.../app.py::_create_and_execute_session`), so the browser only
+    receives events after completion — mid-stream assertions and the cancel
+    button are unreachable through this harness; needs async/worker execution
+    path (runtime change, out of lane scope)
+  - failure terminal: `ModelProviderError` (mock returns HTTP 500 for
+    content_filter) propagates out of `_create_and_execute_session` → 500,
+    session stays `ready`, UI never shows 失败; runtime error-handling gap
+    (out of lane scope)
+
+## 2026-08-13 Wave 4.5 Phase 2 shared task-ui extraction + Desktop rewire
+
+- contract commit `3a385d2` (before Phase 2 code): raw `approval_requested`
+  payload now carries `approval_id` (= segment/session id), fixture pinned in
+  `tests/agent_core/test_approval_request_public_contract.py`; exact fixture
+  sent to FinOS peer, acknowledged, FinOS Phase 1 pinned it
+  (`84f81ba` on `codex/fnx-wave45-aceagent-ui-foundation-v1`)
+- new shared package `UI/packages/task-ui` (`@zebra-agent/task-ui@0.1.0`):
+  core `event-reducer`, `timeline-projector`, `runtime-activity`, `task-plan`,
+  `clarification`, `approval`, `public-types`; react `AssistantMessage`,
+  `ExecutionDisclosure` (public-safe, no raw args/output/policy),
+  `ToolCallGroup` (detail slot), `TaskPlan`, `ClarificationCard`,
+  `ApprovalCard` (extra-details slot), `RuntimeActivityCard`; testing
+  `fixtures` + `core.contract.check`. No Tauri dependency; no FinOS business
+  type; extension slots only
+- Zebra Desktop rewired onto the package; the six moved lib modules and six
+  moved component files were deleted (no second reducer/component set); desktop
+  adapters `AssistantMessageBlock`/`SessionApprovalPanel` keep desktop-only
+  insight cards and web.search approval details via shared slots
+- validation at candidate HEAD: all 21 desktop deterministic checks pass,
+  package typecheck + core contract check pass, `pnpm build` = 1,352.46 kB JS
+  (gzip 429.07) vs exact base 1,349.64 kB (gzip 428.38) with vite `resolve.dedupe`
+  (8193 vs 8190 modules); Playwright E2E 3 passed / 5 failed, byte-identical
+  result at exact base `da97dc3` (inherited, zero new failures)
+- Gate A pending: no PR/merge/push/deploy; Wave 5 stays frozen
+
+## 2026-08-13 Wave 4.5 Phase 0 governance correction and baseline
+
+- exact base verified: `HEAD == merge-base == da97dc3ac9ffe300076f4c68031b96a627e6dd58`,
+  clean tree, created `codex/znx-wave45-task-ui-foundation-v1` from that SHA;
+  no source checkout, `next`/`stable`/`integration` branch modified
+- docs-only commit: `ZNX-TEVID-01` marked `Done` with all acceptance checked,
+  Wave 4 closure pair `6e84e23 / da97dc3` recorded, `P3-GOV-01` fixed,
+  `ZNX-UI-FOUNDATION-01` registered with owned paths/non-goals and FinOS peer
+  contract coordination rule; `PROGRESS.md` snapshot updated
+- next: Phase 2 shared `@zebra-agent/task-ui` extraction and Desktop rewire;
+  stop at Gate A, Wave 5 stays frozen
+
+## 2026-08-11 ZNX-PLAN-MIXED-BATCH-01 required Plan mixed-batch closure
+
+- started from `codex/finos-runtime-next@50742da95e8ee9afb267150e2f8e0a884e3cfad7`
+  on `codex/znx-plan-mixed-batch-closure`; no FinOS, provider credential,
+  integration branch, push, merge, or deployment change
+- fixed the shared activation gate so exactly one non-empty `agent.plan` in a
+  no-Plan mixed completion is the only retained/executed call; multiple Plan
+  calls use the existing bounded correction/fail-closed path
+- red tests cover later Plan selection, paired follow-up context, no business
+  proposal/policy/execution before `PLAN_UPDATED`, Plan-before-business ordering,
+  selector/batch modes, and multiple-Plan rejection
+- targeted Goal/Plan/loop and User Skill matrices pass (`45` + `70`); candidate
+  full pytest is `2144 passed, 9 failed, 9 skipped` against exact base
+  `2141 passed, 9 failed, 9 skipped` with the same failures; eval is `10/10`
+- changed-path Ruff/Mypy/compileall/diff-check pass; full file-size/Ruff/Mypy
+  findings match the inherited base `13`/`11`/`13` sets
+
+## 2026-08-11 ZNX-GOAL-PLAN-ACT-01 product acceptance closure
+
+- retained the existing Goal/Plan lifecycle and added only two independent
+  generic execution contracts: durable default-false `plan_required` and the
+  existing AgentDefinition `required_evidence`
+- red-first tests prove Plan-before-business-tool ordering, one bounded
+  correction then explicit failure, evidence trust/failure semantics,
+  clarification/retry/rollover continuity, and no-contract compatibility
+- FinOS declares `authoritative_financial_evidence` only for explicit
+  Goal-oriented personal-finance tasks; only authorized, schema-valid,
+  successful trusted typed reads emit `authoritative_typed_read`
+- fixed the real terminal-follow-up race without weakening handoff safety:
+  completion event, projections, and owning worker-lease deletion commit in one
+  SQLite transaction after memory/title finalization
+- rebased cleanly over Zebra `dfd6a2c` and FinOS `268ed03`; post-rebase Zebra
+  targeted tests are `117 passed`, full pytest is `2110 passed, 9 failed,
+  9 skipped`, and the nine failures match the exact base
+- release eval is `10/10`; file-size keeps the same 13 paths, Ruff the same 11
+  findings, and Mypy the same 13 findings as the recorded base
+- real DeepSeek acceptance passed with first Plan revision before first
+  authoritative evidence, seven Plan revisions across two rounds, a closed final
+  Plan, the same Stable Task and Goal, and no terminal/lease race
+- FinOS full discover is `760 tests, 4 inherited failures, 12 skipped`; UI hotfix
+  tests are `122 passed`; Gate 2 real dual-repository E2E is `1 passed`
+- no Planner Agent, classifier, DAG, fixed Review/finance Plan, new permission,
+  GUI, deployment, stable integration branch change, or FinOS workflow engine
+  was added
+
+## 2026-08-10 ZNX-GOALPLAN-01 Goal/Plan v1 lifecycle
+
+- started red-first from exact Zebra base `0a81c6d` on
+  `codex/znx-goal-plan-v1`, then combined cleanly with Gate 2 `aa8c4d5`
+- reused the existing Stable Task, `SessionPlan`, `agent.plan`, `PLAN_UPDATED`,
+  and `Session.task_plan` paths; root Goal remains stable while the latest Plan
+  persists across continuation, retry, suspend/resume, reconstruction, and rollover
+- normal completion now receives one bounded Plan-closing opportunity and then
+  suspends with `task_plan_incomplete` if pending/in-progress work remains;
+  cancelled/closed Plans permit but never fabricate Goal completion
+- deterministic WAITING_INPUT and real workspace snapshot/resume E2E paths pass;
+  Goal/Plan plus Gate 2 targeted validation is `136 passed`
+- full pytest is `2085 passed, 9 failed, 9 skipped`, matching the untouched
+  exact-base failure set; release eval is `10/10`, changed-path Ruff/compileall
+  and diff-check pass, and full static/file-size findings are inherited
+- FinOS compatibility smoke is `23 passed` across Stable Task follow-up,
+  clarification, retry/resume, WAITING_INPUT, public conversation, and model selection
+- real dual-repository Gate 2 E2E is `1 passed` across Review v4 main/reference,
+  typed reads, executed Skill provenance, candidate/save/history, and same-Task correction
+- no Planner Agent, sub-agent, scheduler, finance/Review workflow, GUI, FinOS
+  source, stable branch, provider, or deployment change was added
+
 ## 2026-08-02 AOR-DEF-01 governance P1 scope and size correction
 
 - task-card `Owned paths` now explicitly names

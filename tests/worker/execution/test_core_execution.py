@@ -6,8 +6,15 @@ from pathlib import Path
 from threading import Event, Thread
 
 import zebra_agent_worker.execution as worker_execution_module
-from agent_core.domain.events import EventType
-from agent_core.domain.identifiers import new_artifact_id, new_event_id, new_message_id
+from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.application.session_projection import apply_event
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import (
+    new_artifact_id,
+    new_event_id,
+    new_message_id,
+    new_tool_call_id,
+)
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.model_media import (
@@ -18,6 +25,7 @@ from agent_core.domain.model_media import (
 from agent_core.domain.modeling import ModelCompletion, ModelTextDelta, ModelToolDefinition
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_runs import ToolRunRecord
+from agent_core.domain.tools import ToolCall
 from agent_core.ports.runtime import EffectiveRuntimeAuthority, RuntimeClass
 from agent_runtime import LocalRuntime
 from agent_security import LocalPolicyEngine, NetworkProfile
@@ -29,6 +37,7 @@ from agent_storage import (
     SQLiteFinosJournalGrantStore,
     SQLiteLeaseStore,
     SQLiteModelCallStore,
+    SQLiteProjectionStore,
     SQLiteToolRunStore,
     SQLiteWorkspaceProjectionStore,
 )
@@ -37,6 +46,7 @@ from worker_execution_support import (
     _assistant_only_gateway,
     _build_execution_service,
     _created_at,
+    _final_response,
     _seed_ready_session,
     _seed_ready_session_with_input,
     _settings,
@@ -70,6 +80,115 @@ def test_worker_execution_service_completes_ready_session(
     model_calls = SQLiteModelCallStore(database_path).list_for_session(session_id)
     assert len(model_calls) == 1
     assert isinstance(model_calls[0], ModelCallRecord)
+
+
+def test_worker_rehydrates_goal_and_plan_across_suspend_resume(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session_with_input(
+        database_path,
+        tmp_path,
+        user_input="Identify the causes of recent repeated losses.",
+    )
+    event_store = SQLiteEventStore(database_path)
+    projection_store = SQLiteProjectionStore(database_path)
+    session = projection_store.get_session(session_id)
+    assert session is not None
+    additions = (
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=3,
+            event_type=EventType.USER_MESSAGE_RECEIVED,
+            actor=EventActor.USER,
+            payload={"content": "Exclude the CICC account for now."},
+            created_at=_created_at(),
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=4,
+            event_type=EventType.PLAN_UPDATED,
+            actor=EventActor.HARNESS,
+            payload={
+                "steps": [
+                    {
+                        "step_id": "compare",
+                        "content": "Compare recent journals",
+                        "status": "in_progress",
+                    }
+                ]
+            },
+            created_at=_created_at(),
+        ),
+    )
+    for event in additions:
+        event_store.append(event)
+        session = apply_event(session, event)
+    projection_store.save_session(session)
+
+    first_gateway = ScriptedModelGateway(
+        responses=(_final_response("Premature."), _final_response("Still premature."))
+    )
+    close_plan = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.plan",
+        arguments={
+            "steps": [
+                {
+                    "step_id": "compare",
+                    "content": "Compare recent journals",
+                    "status": "completed",
+                }
+            ]
+        },
+        created_at=_created_at(),
+    )
+    second_gateway = ScriptedModelGateway(
+        responses=(
+            ScriptedModelResponse(
+                completion=ModelCompletion(
+                    assistant_message=SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Closing the plan.",
+                        created_at=_created_at(),
+                    ),
+                    tool_calls=(close_plan,),
+                )
+            ),
+            _final_response("Evidence-backed final."),
+            _final_response("Evidence-backed final."),
+        )
+    )
+    gateways = iter((first_gateway, second_gateway))
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda _settings: next(gateways),
+    )
+
+    first = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-plan-1",
+        executed_at=_created_at(),
+    )
+    second = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-plan-2",
+        executed_at=_created_at(),
+    )
+
+    first_request = "\n".join(message.content for message in first_gateway.requests[0])
+    assert first.session.status is SessionStatus.SUSPENDED
+    assert first.attempt_result.metadata["stop_reason"] == "task_plan_incomplete"
+    assert "Stable task goal" in first_request
+    assert "Identify the causes" in first_request
+    assert "Current durable task plan" in first_request
+    assert "Exclude the CICC account" in first_request
+    assert second.session.status is SessionStatus.COMPLETED
+    task = SQLiteAgentTaskStore(database_path).ensure_for_session(session_id)
+    assert task.goal == "Identify the causes of recent repeated losses."
+    assert task.task_plan.summary["completed"] == 1
 
 
 def test_worker_persists_effective_runtime_authority_before_attempt(
@@ -452,7 +571,7 @@ def test_worker_narrows_preapproved_mcp_scope_after_native_media_disables_tool(
     assert captured[0]["preapproved_readonly_tools"] == (search_tool,)
 
 
-def test_worker_scopes_account_change_proposal_gate_to_the_v2_or_v3_task_binding(
+def test_worker_scopes_account_change_proposal_gate_to_v2_v3_or_v4_binding(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -482,6 +601,7 @@ def test_worker_scopes_account_change_proposal_gate_to_the_v2_or_v3_task_binding
             ("finos.journals.v1", False),
             ("finos.journals.v2", True),
             ("finos.journals.v3", True),
+            ("finos.journals.v4", True),
         )
     ):
         database_path = tmp_path / f"worker-{index}.db"

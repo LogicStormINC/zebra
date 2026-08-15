@@ -50,6 +50,11 @@ RESEARCH_TOOL = ModelToolDefinition(
     description="Delegate bounded research.",
     parameters={"type": "object", "properties": {}},
 )
+PLAN_TOOL = ModelToolDefinition(
+    name="agent.plan",
+    description="Maintain the durable task plan.",
+    parameters={"type": "object", "properties": {}},
+)
 
 
 def test_delegation_guidance_follows_effective_tool_manifest() -> None:
@@ -66,6 +71,57 @@ def test_delegation_guidance_follows_effective_tool_manifest() -> None:
     assert parent_messages[0].role is MessageRole.SYSTEM
     assert "Answer directly" in parent_messages[0].content
     assert "delegation_reason" in parent_messages[0].content
+    assert "must first call agent.plan" not in parent_messages[0].content
+    assert [message.role for message in direct_messages] == [MessageRole.USER]
+
+
+def test_plan_activation_guidance_follows_effective_tool_manifest(
+    tmp_path: Path,
+) -> None:
+    created_at = datetime(2026, 8, 10, 20, 0, tzinfo=UTC)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    task = HarnessTask(
+        title="Investigate",
+        user_input="Investigate a complex issue.",
+        workspace_root=workspace,
+    )
+
+    planned_messages = HarnessModelStep(
+        context_compiler=StaticContextCompiler(),
+        available_tools=(PLAN_TOOL,)
+    ).build_initial_messages(task, created_at=created_at)
+    combined_messages = HarnessModelStep(
+        available_tools=(PLAN_TOOL, RESEARCH_TOOL)
+    ).build_initial_messages(task, created_at=created_at)
+    required_messages = HarnessModelStep(available_tools=(PLAN_TOOL,)).build_initial_messages(
+        HarnessTask(
+            title="Required",
+            user_input="Complete the explicit Goal.",
+            plan_required=True,
+        ),
+        created_at=created_at,
+    )
+    direct_messages = HarnessModelStep().build_initial_messages(
+        task, created_at=created_at
+    )
+
+    assert [message.role for message in planned_messages] == [
+        MessageRole.SYSTEM,
+        MessageRole.SYSTEM,
+        MessageRole.USER,
+    ]
+    assert "must first call agent.plan" in planned_messages[-2].content
+    assert "requires durable coordination" in planned_messages[-2].content
+    assert "Short linear sequences" in planned_messages[-2].content
+    assert "verify them with at least one relevant authoritative typed read" in (
+        planned_messages[-2].content
+    )
+    assert planned_messages[-1].role is MessageRole.USER
+    assert "delegation_reason" in combined_messages[0].content
+    assert combined_messages[-1].role is MessageRole.USER
+    assert "plan_required=true" in required_messages[0].content
+    assert "required_plan_not_created" in required_messages[0].content
     assert [message.role for message in direct_messages] == [MessageRole.USER]
 
 
@@ -309,7 +365,7 @@ def test_tool_result_message_keeps_structured_status_and_operation_key() -> None
     }
 
 
-def test_harness_model_step_repairs_rejected_model_response_once() -> None:
+def test_harness_model_step_repairs_rejected_model_response_before_public_delta() -> None:
     created_at = datetime(2026, 7, 23, 9, 10, tzinfo=UTC)
 
     class RejectThenCompleteGateway:
@@ -322,7 +378,6 @@ def test_harness_model_step_repairs_rejected_model_response_once() -> None:
         def complete_stream(self, messages, *, tools=(), on_text_delta):
             self.requests.append(list(messages))
             if len(self.requests) == 1:
-                on_text_delta(ModelTextDelta(index=0, content="Preparing report."))
                 raise ModelResponseRejectedError(
                     "invalid_tool_arguments_json",
                     phase="tool_arguments",
@@ -376,3 +431,52 @@ def test_harness_model_step_repairs_rejected_model_response_once() -> None:
         for event in events
         if event.event_type is EventType.MODEL_RESPONSE_DELTA
     ] == ["Report ready."]
+
+
+def test_harness_model_step_does_not_repair_after_public_delta() -> None:
+    created_at = datetime(2026, 7, 23, 9, 10, tzinfo=UTC)
+
+    class RejectAfterDeltaGateway:
+        def __init__(self) -> None:
+            self.requests: list[list[SessionMessage]] = []
+
+        def complete(self, messages, *, tools=()):
+            raise AssertionError("streaming path expected")
+
+        def complete_stream(self, messages, *, tools=(), on_text_delta):
+            self.requests.append(list(messages))
+            on_text_delta(ModelTextDelta(index=0, content="Preparing report."))
+            raise ModelResponseRejectedError(
+                "invalid_tool_arguments_json",
+                phase="tool_arguments",
+                retryable=True,
+                provider_tool_name="files__write",
+                error_position=116,
+            )
+
+    gateway = RejectAfterDeltaGateway()
+    events = []
+    step = HarnessModelStep(
+        available_tools=(RESEARCH_TOOL,),
+        event_sink=events.append,
+    )
+    with pytest.raises(ModelResponseRejectedError):
+        step.request_completion(
+            [
+                SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.USER,
+                    content="Create the report.",
+                    created_at=created_at,
+                )
+            ],
+            gateway,
+            allow_tools=True,
+        )
+
+    assert len(gateway.requests) == 1
+    assert [
+        event.payload["content_delta"]
+        for event in events
+        if event.event_type is EventType.MODEL_RESPONSE_DELTA
+    ] == ["Preparing report."]

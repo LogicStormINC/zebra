@@ -24,10 +24,7 @@ from agent_core.harness import (
 )
 from agent_core.harness.completion_evidence import persisted_completion_evidence_events
 from agent_core.harness.model_capabilities import declared_model_capabilities
-from agent_core.harness.models import (
-    HarnessAttemptResult,
-    HarnessEventDraft,
-)
+from agent_core.harness.models import HarnessAttemptResult, HarnessEventDraft
 from agent_integrations import build_model_gateway
 from agent_runtime import LocalToolGateway, bind_native_media_inputs
 from agent_security import (
@@ -67,6 +64,7 @@ from zebra_agent_worker.approved_continuation import (
     ApprovedContinuationError,
     recover_approved_continuation,
 )
+from zebra_agent_worker.attempt_lifecycle import execute_attempt
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.clarification_continuation import (
     ClarificationContinuationError,
@@ -81,7 +79,6 @@ from zebra_agent_worker.continuation_lifecycle import (
     mark_clarification_continuation_started,
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
-from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import finalize_execution
 from zebra_agent_worker.finos_journal_provider import (
@@ -291,11 +288,19 @@ class SessionExecutionService:
                 database_path=self._database_path,
                 session_id=session_id,
             )
+            private_skill_owners = {
+                identity.namespace
+                for identity in task.skill_component_identities or ()
+                if identity.scope == "user" and identity.namespace != "user"
+            }
+            if len(private_skill_owners) > 1:
+                raise WorkerExecutionError("task grants Skills from multiple private owners")
             skill_roots = build_scoped_skill_roots(
                 system=self._settings.skill_roots_system,
                 admin=self._settings.skill_roots_admin,
                 user=self._settings.skill_roots,
                 repo=self._settings.skill_roots_repo,
+                owner=next(iter(private_skill_owners), None),
             )
             skills_state = (
                 SQLiteSkillsStateStore(self._settings.skills_state_path)
@@ -317,6 +322,7 @@ class SessionExecutionService:
                 web_search_endpoint=self._settings.web_search_endpoint,
                 skill_roots=skill_roots,
                 skills_state=skills_state,
+                granted_skill_component_identities=task.skill_component_identities,
                 mcp_servers=with_task_workspace_root(self._settings.mcp_servers, task_workspace),
                 mcp_allowlist=task.mcp_allowlist,
                 disabled_mcp_tools=(
@@ -368,8 +374,10 @@ class SessionExecutionService:
                 network_allowlist=effective_network_profile.domain_allowlist,
                 **auth.harness_authority(task, tool_gateway.effective_mcp_tools),
                 skill_components=tool_gateway.effective_skill_components,
+                skill_component_identities=tool_gateway.effective_skill_component_identities,
                 agent_definition=task.agent_definition,
                 agent_context=agent_context,
+                trusted_evidence_tools=local_tool_gateway.trusted_evidence_tools,
                 model_id=task.model_id,
                 model_capabilities=declared_model_capabilities(
                     model_gateway,
@@ -383,10 +391,15 @@ class SessionExecutionService:
                 attachments=task.attachments,
                 media_inputs=native_media_inputs,
                 runtime_evidence=task.runtime_evidence,
+                goal=task_record.goal,
+                plan_required=task_record.plan_required,
+                task_plan=task_record.task_plan,
             ),
             session=claimed.recovery.session,
             attempt=HarnessAttempt(number=1, started_at=started_at),
-            completion_evidence_events=persisted_completion_evidence_events(session_events),
+            completion_evidence_events=persisted_completion_evidence_events(
+                item.event for item in task_events
+            ),
         )
         try:
             continuation = recover_approved_continuation(session_events)
@@ -422,7 +435,6 @@ class SessionExecutionService:
                 clarification_id=str(clarification.tool_call.tool_call_id),
                 started_at=started_at,
             )
-        context = replace(context, session=claimed.recovery.session)
         recorder = DurableHarnessEventRecorder(
             session=claimed.recovery.session,
             workspace=claimed.recovery.workspace,
@@ -439,7 +451,10 @@ class SessionExecutionService:
                 {"attempt_number": 1},
                 created_at=started_at,
             )
-        context = replace(context, session=recorder.session)
+        context = replace(
+            context,
+            session=recorder.session.model_copy(update={"task_plan": task_record.task_plan}),
+        )
 
         def persist_event(draft: HarnessEventDraft) -> None:
             if draft.event_type is EventType.CONTEXT_COMPACTED:
@@ -500,36 +515,31 @@ class SessionExecutionService:
             event_sink=persist_event,
         )
         try:
-            if continuation is not None:
-                attempt_result = orchestrator.continue_approved_tool_call(
-                    context,
-                    initial_completion=continuation.completion,
-                    tool_call=continuation.tool_call,
-                    remaining_tool_calls=continuation.remaining_tool_calls,
-                    conversation=continuation.conversation,
-                    model_calls_used=continuation.model_calls_used,
-                    tool_calls_executed=continuation.tool_calls_executed,
-                )
-            elif clarification is not None:
-                attempt_result = orchestrator.continue_clarification(
-                    context,
-                    tool_call=clarification.tool_call,
-                    response=clarification.response,
-                    conversation=clarification.conversation,
-                    model_calls_used=clarification.model_calls_used,
-                    tool_calls_executed=clarification.tool_calls_executed,
-                    assistant_message=clarification.assistant_message,
-                )
-            else:
-                attempt_result = orchestrator.run(context)
-        except Exception as exc:
-            attempt_result = exception_attempt_result(
-                exc, error_metadata(exc, clarification, continuation)
+            attempt_result, suspension_snapshot = execute_attempt(
+                orchestrator,
+                context,
+                continuation=continuation,
+                clarification=clarification,
+                runtime=runtime,
+                runtime_handle=runtime_handle,
             )
         finally:
             cleanup_error = close_tool_gateway(tool_gateway)
         if cleanup_error is not None:
             attempt_result = runtime_cleanup_failure_result(cleanup_error, attempt_result)
+        completion_lease_released = False
+
+        def persist_completed(event: SessionEvent) -> SessionEvent:
+            nonlocal completion_lease_released
+            self._event_store.append_completed_and_release_lease(
+                event,
+                session=recorder.session,
+                workspace=recorder.workspace,
+                worker_id=claimed.lease.worker_id,
+            )
+            completion_lease_released = True
+            return event
+
         emitted_events = finalize_execution(
             recorder=recorder,
             attempt_result=attempt_result,
@@ -538,11 +548,14 @@ class SessionExecutionService:
             title_service=SessionTitleService(model_gateway),
             event_store=self._event_store,
             started_at=started_at,
+            suspension_snapshot=suspension_snapshot,
+            completion_sink=persist_completed,
         )
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:
             raise WorkerExecutionError("session projection missing after worker execution")
-        self._claim_service.release_claim(claimed)
+        if not completion_lease_released:
+            self._claim_service.release_claim(claimed)
         return ExecutedSession(
             session=final_session,
             events=emitted_events,

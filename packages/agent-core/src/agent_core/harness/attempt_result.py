@@ -46,6 +46,23 @@ def action_fingerprint(tool_call: ToolCall) -> str:
     )
 
 
+def executed_action_fingerprints(
+    messages: list[SessionMessage],
+    *,
+    since: datetime | None = None,
+) -> set[str]:
+    completed_ids = {
+        message.tool_call_id for message in messages if message.role is MessageRole.TOOL
+    }
+    return {
+        action_fingerprint(call)
+        for message in messages
+        if since is None or message.created_at >= since
+        for call in message.tool_calls
+        if (call.provider_call_id or str(call.tool_call_id)) in completed_ids
+    }
+
+
 def observation_fingerprint(tool_call: ToolCall, tool_result: ToolResult) -> str | None:
     if tool_result.metadata.get("reason") == "repeated_tool_call":
         return None

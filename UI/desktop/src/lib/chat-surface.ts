@@ -1,13 +1,5 @@
 import { ZebraApiError } from "./zebra-api";
-
-export { streamEventsToMessages } from "./streaming-messages";
-
-export interface ChatMessage {
-  key: string;
-  role: "assistant" | "user";
-  status?: "success" | "error";
-  content: string;
-}
+export type { ChatMessage } from "@zebra-agent/task-ui";
 
 export interface ConversationSeed {
   key: string;

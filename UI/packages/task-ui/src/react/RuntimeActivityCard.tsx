@@ -2,8 +2,8 @@ import { FileSearchOutlined } from "@ant-design/icons";
 import { ThoughtChain } from "@ant-design/x";
 import { Button, Tooltip } from "antd";
 import { createStyles } from "antd-style";
-import React from "react";
-import { runtimeActivityTiming, type RuntimeActivityProjection } from "../lib/runtime-activity";
+import { useEffect, useState } from "react";
+import { runtimeActivityTiming, type RuntimeActivityProjection } from "../core/runtime-activity.ts";
 
 const useStyle = createStyles(({ css }) => ({
   row: css`
@@ -38,21 +38,28 @@ const useStyle = createStyles(({ css }) => ({
   `,
 }));
 
-interface AgentActivityCardProps {
+interface RuntimeActivityCardProps {
   activity: RuntimeActivityProjection;
   onShowDetails: () => void;
+  detailsLabel?: string;
+  silentDetail?: string;
 }
 
-export function AgentActivityCard({ activity, onShowDetails }: AgentActivityCardProps) {
+export function RuntimeActivityCard({
+  activity,
+  onShowDetails,
+  detailsLabel = "查看运行日志",
+  silentDetail = "仍在处理，暂时没有新的运行记录",
+}: RuntimeActivityCardProps) {
   const { styles } = useStyle();
-  const [mountedAt] = React.useState(() => Date.now());
-  const [now, setNow] = React.useState(() => Date.now());
-  React.useEffect(() => {
+  const [mountedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
   const timing = runtimeActivityTiming(activity, now, mountedAt);
-  const detail = timing.silent ? "仍在处理，暂时没有新的运行记录" : activity.detail;
+  const detail = timing.silent ? silentDetail : activity.detail;
 
   return (
     <section aria-live="polite" className={styles.row} role="status">
@@ -64,9 +71,9 @@ export function AgentActivityCard({ activity, onShowDetails }: AgentActivityCard
         title={<span className={styles.title}>{activity.title}</span>}
         variant="text"
       />
-      <Tooltip title="查看运行日志">
+      <Tooltip title={detailsLabel}>
         <Button
-          aria-label="查看运行日志"
+          aria-label={detailsLabel}
           className={`${styles.action} zebra-runtime-action`}
           icon={<FileSearchOutlined />}
           onClick={onShowDetails}

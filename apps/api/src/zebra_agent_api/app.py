@@ -15,6 +15,7 @@ from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import ArtifactId, SessionId, new_event_id
 from agent_core.domain.model_media import ModelMediaInput
+from agent_core.domain.skills import SkillComponentIdentity
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_integrations import GitHubPullRequestTransport, build_model_gateway
 from agent_runtime import (
@@ -40,6 +41,8 @@ from agent_storage import (
     list_confirmed_repo_memories,
 )
 from agent_storage.session_attachments import RegisteredTaskMedia, TaskAttachmentMediaResolver
+from agent_tools.skills_catalog import LocalSkillCatalog
+from agent_tools.skills_scope import normalize_skill_owner
 from zebra_agent_config import (
     ModelCatalogEntry,
     ZebraAgentSettings,
@@ -79,12 +82,13 @@ from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
-from zebra_agent_api.task_final_identity import final_message_identity
 from zebra_agent_api.skills_admin import (
     ApiSkillsAdminMixin,
+    private_skill_owner,
     runtime_skills_state,
     scoped_skill_roots,
 )
+from zebra_agent_api.task_final_identity import final_message_identity
 from zebra_agent_api.task_image_attachments import (
     StagedTaskImages,
     cleanup_staged_task_images,
@@ -129,6 +133,15 @@ class ZebraAgentApi(
         parsed = payloads.parse_create_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
+        raw_skill_owner = payload.get("skill_owner")
+        if raw_skill_owner is not None and not isinstance(raw_skill_owner, str):
+            return bad_request("skill_owner must be an opaque string when provided")
+        try:
+            skill_owner = (
+                normalize_skill_owner(raw_skill_owner) if raw_skill_owner is not None else None
+            )
+        except ValueError as error:
+            return bad_request(str(error))
         try:
             model_entry = select_model_catalog_entry(self.settings, parsed["model"])
         except ValueError as error:
@@ -137,6 +150,12 @@ class ZebraAgentApi(
             parsed["agent_definition"] = bind_server_resolved_agent_definition(
                 parsed["agent_definition"],
                 self.settings,
+            )
+        except ValueError as error:
+            return bad_request(str(error))
+        try:
+            skill_grant = _skill_grant_snapshot(
+                self.settings, parsed["skill_components"], owner=skill_owner
             )
         except ValueError as error:
             return bad_request(str(error))
@@ -172,12 +191,14 @@ class ZebraAgentApi(
                 parsed,
                 model_entry=model_entry,
                 session_id=session_id,
+                skill_grant=skill_grant,
             )
             if parsed["execute"]
             else self._create_queued_session(
                 parsed,
                 model_entry=model_entry,
                 session_id=session_id,
+                skill_grant=skill_grant,
             )
         )
         if idempotency_key is None or response.status_code != 201:
@@ -293,6 +314,9 @@ class ZebraAgentApi(
         *,
         model_entry: ModelCatalogEntry,
         session_id: SessionId | None,
+        skill_grant: tuple[
+            tuple[str, ...], tuple[SkillComponentIdentity, ...]
+        ],
     ) -> ApiResponse:
         try:
             staged_images = (
@@ -308,6 +332,7 @@ class ZebraAgentApi(
             return bad_request(str(error))
         images_durable = False
         try:
+            skill_components, skill_component_identities = skill_grant
             bootstrap = SessionBootstrapService().build(
                 SessionBootstrapCommand(
                     title=str(parsed["title"]),
@@ -321,10 +346,13 @@ class ZebraAgentApi(
                     tool_profile=ToolProfile(str(parsed["tool_profile"])),
                     network_profile=str(parsed["network_profile"]),
                     network_allowlist=tuple(parsed["network_allowlist"]),
+                    skill_components=skill_components,
+                    skill_component_identities=skill_component_identities,
                     **auth.command_fields(parsed),
                     history_session_ids=parsed["history_session_ids"],
                     max_model_calls=parsed["max_model_calls"],
                     max_tool_calls=parsed["max_tool_calls"],
+                    plan_required=parsed["plan_required"],
                     agent_definition=parsed["agent_definition"],
                     model_id=model_entry.id,
                     session_id=session_id,
@@ -361,6 +389,7 @@ class ZebraAgentApi(
                 "tool_profile": str(parsed["tool_profile"]),
                 "max_model_calls": parsed["max_model_calls"],
                 "max_tool_calls": parsed["max_tool_calls"],
+                "plan_required": parsed["plan_required"],
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
                 **auth.response_fields(parsed),
@@ -386,6 +415,9 @@ class ZebraAgentApi(
         *,
         model_entry: ModelCatalogEntry,
         session_id: SessionId | None,
+        skill_grant: tuple[
+            tuple[str, ...], tuple[SkillComponentIdentity, ...]
+        ],
     ) -> ApiResponse:
         try:
             model_gateway = build_model_gateway(
@@ -484,8 +516,11 @@ class ZebraAgentApi(
                 tool_profile=ToolProfile(str(parsed["tool_profile"])),
                 network_profile=network_profile,
                 web_search_endpoint=self.settings.web_search_endpoint,
-                skill_roots=scoped_skill_roots(self.settings),
+                skill_roots=scoped_skill_roots(
+                    self.settings, owner=private_skill_owner(skill_grant[1])
+                ),
                 skills_state=runtime_skills_state(self.settings),
+                granted_skill_component_identities=skill_grant[1],
                 mcp_servers=(
                     with_task_workspace_root(
                         self.settings.mcp_servers, staged_images.workspace_root
@@ -497,6 +532,7 @@ class ZebraAgentApi(
                 trusted_local=trusted_local,
                 max_model_calls=parsed["max_model_calls"],
                 max_tool_calls=parsed["max_tool_calls"],
+                plan_required=parsed["plan_required"],
                 agent_definition=parsed["agent_definition"],
                 model_id=model_entry.id,
                 session_history=SQLiteSessionHistory(
@@ -568,6 +604,7 @@ class ZebraAgentApi(
                 "executed": True,
                 "model": model_entry.id,
                 "status": session.status.value,
+                "plan_required": parsed["plan_required"],
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "artifact_output_contract": result.attempt_result.metadata.get(
                     "output_contract"
@@ -610,6 +647,30 @@ def _agent_definition_response(
 ) -> dict[str, object]:
     definition = parsed["agent_definition"]
     return {} if definition is None else {"agent_definition": definition.model_dump(mode="json")}
+
+
+def _skill_grant_snapshot(
+    settings: ZebraAgentSettings,
+    requested: tuple[str, ...] | None = None,
+    *,
+    owner: str | None = None,
+) -> tuple[tuple[str, ...], tuple[SkillComponentIdentity, ...]]:
+    normalized_owner = None if owner is None else normalize_skill_owner(owner)
+    selected = () if requested is None else requested
+    if not selected:
+        return (), ()
+    roots = scoped_skill_roots(settings, owner=normalized_owner)
+    if not roots:
+        raise ValueError("requested Skill component is unavailable")
+    metadata = LocalSkillCatalog(
+        roots,
+        skills_state=runtime_skills_state(settings),
+    ).list()[0]
+    available = {item.name: item.component_identity() for item in metadata}
+    if any(name not in available for name in selected):
+        raise ValueError("requested Skill component is unavailable")
+    identities = tuple(available[name] for name in selected)
+    return tuple(identity.name for identity in identities), identities
 
 
 def create_app(
