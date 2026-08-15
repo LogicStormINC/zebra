@@ -279,6 +279,8 @@ def test_completion_evidence_correction_remains_bounded_across_clarification(
         responses=(
             _response("Still no authoritative evidence."),
             _response("Still no authoritative evidence."),
+            _response("Attempt 2 still no authoritative evidence."),
+            _response("Attempt 2 still no authoritative evidence."),
         )
     )
     gateways = iter((initial, resumed))
@@ -291,6 +293,7 @@ def test_completion_evidence_correction_remains_bounded_across_clarification(
         tmp_path,
         agent_definition=_authoritative_evidence_definition(),
         max_corrections_per_attempt=1,
+        max_attempts=2,
     )
     task = SQLiteAgentTaskStore(database_path).ensure_for_session(session_id)
     SQLiteFinosJournalGrantStore(database_path).bind(
@@ -315,13 +318,25 @@ def test_completion_evidence_correction_remains_bounded_across_clarification(
     assert failed.attempt_result.metadata["stop_reason"] == (
         "completion_evidence_missing_after_correction"
     )
-    assert len(resumed.requests) == 2  # resumed completion + one typed correction
+    # Attempt 1 (resumed): completion + one typed correction; then the
+    # retryable after-correction code schedules Attempt 2 with its own
+    # completion + one typed correction before the terminal.
+    assert len(resumed.requests) == 4
     assert sum(
         message.metadata.get("missing_completion_evidence") is not None
         for request in resumed.requests
         for message in request
         if message.role is MessageRole.SYSTEM
-    ) == 1
+    ) == 2
+    assert failed.attempt_result.metadata.get("stop_reason") != (
+        "attempt_reconstruction_invalid"
+    )
+    starts = [
+        event
+        for event in SQLiteEventStore(database_path).list_for_session(session_id)
+        if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+    ]
+    assert [event.payload["attempt_sequence"] for event in starts] == [1, 2]
     clarification = next(
         event
         for event in SQLiteEventStore(database_path).list_for_session(session_id)
@@ -331,6 +346,57 @@ def test_completion_evidence_correction_remains_bounded_across_clarification(
         message.get("metadata", {}).get("missing_completion_evidence") is not None
         for message in clarification.payload["conversation"]
     ) == 0
+
+
+def test_guarded_clarification_resumes_same_attempt_without_reconstruction_mismatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "guarded-clarification.sqlite"
+    clarify_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.clarify",
+        arguments={"question": "Which account?"},
+        created_at=NOW,
+    )
+    initial = ScriptedModelGateway(
+        responses=(_response("I need one answer.", clarify_call),)
+    )
+    resumed = ScriptedModelGateway(
+        responses=(_response("Done with the requested summary."),)
+    )
+    gateways = iter((initial, resumed))
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: next(gateways),
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        max_attempts=2,
+    )
+    service = _execution_service(database_path)
+
+    waiting = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+    assert waiting.session.status is SessionStatus.WAITING_INPUT
+
+    create_app(database_path).append_session_message(
+        str(session_id),
+        {"content": "Main account", "clarification_id": str(clarify_call.tool_call_id)},
+    )
+    completed = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+
+    assert completed.session.status is SessionStatus.COMPLETED
+    assert len(resumed.requests) == 1
+    assert completed.attempt_result.metadata.get("stop_reason") != (
+        "attempt_reconstruction_invalid"
+    )
+    starts = [
+        event
+        for event in SQLiteEventStore(database_path).list_for_session(session_id)
+        if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+    ]
+    assert [event.payload["attempt_sequence"] for event in starts] == [1]
 
 
 def test_clarification_continuation_fails_closed_after_start_marker() -> None:
@@ -507,6 +573,7 @@ def _seed_session(
     plan_required: bool = False,
     agent_definition: AgentDefinition | None = None,
     max_corrections_per_attempt: int = 0,
+    max_attempts: int = 1,
 ):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -517,6 +584,7 @@ def _seed_session(
             plan_required=plan_required,
             agent_definition=agent_definition,
             max_corrections_per_attempt=max_corrections_per_attempt,
+            max_attempts=max_attempts,
         )
     )
     event_store = SQLiteEventStore(database_path)

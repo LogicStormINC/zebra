@@ -158,6 +158,7 @@ def _seed_session(database_path: Path, workspace_root: Path):
             user_input="Run the requested batch.",
             workspace_root=workspace_root.resolve(),
             policy_profile="workspace_write",
+            max_attempts=2,
         )
     )
     event_store = SQLiteEventStore(database_path)
