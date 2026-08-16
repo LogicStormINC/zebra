@@ -498,26 +498,27 @@ aggregate without treating `PostgresControlPlaneStores` as local
 
 ### CLOUD-WORKSPACE-CP-E2E-01 - Control-Plane Provisioned E2E
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `QA / SRE`
 - Depends on: API/RT/GC children.
 - Owned paths: `tests/compose/effect_default_e2e/` (workspace_command,
   seed passthrough, scenario `workspace_cp_provisioned_side_effect`,
   scratch-volume helper), `docs/CLOUD_WORKSPACE_CP_PLAN_v1.0.md`.
-- The product chain is proven end-to-end on the rig by a manual
-  reproduction recorded in the session evidence: git source -> API
-  command -> dedicated-mount materialization (revision+digest persisted)
-  -> session bound to `workspace://<id>` -> gVisor side effect written
-  into the provisioned tree -> `session_completed` with exactly one
-  `succeeded` effect. The automated scenario drives the same chain and
-  currently blocks on a macOS-only rig fixture issue: `chmod` mode on
-  freshly erased APFS scratch volumes does not persist reliably through
-  the colima virtiofs share for the gVisor container-user write
-  preflight; the scenario passes it after materialization on manual
-  timing. On Linux CI (tmpfs scratch) this fixture issue does not apply.
-  The scenario records mounted/workspace/session/proof facts and the
-  probe stderr for diagnosis.
+- Closeout evidence: the automated scenario
+  `workspace_cp_provisioned_side_effect` passes on the rig and the full
+  runner returns `ZEBRA_EFFECT_DEFAULT_E2E=PASS` with all 11 scenarios
+  green. The macOS fixture blocker is fixed by applying the chmod from
+  inside the colima VM (`_ensure_writable_through_share`: host chmod +
+  guest chmod + guest-side write probe with bounded retries), which
+  bypasses the virtiofs host-side attribute-cache delay on freshly
+  erased APFS scratch volumes. A second fixture bug was fixed in the
+  same pass: the Worker-death scenario now kills the whole `uv`
+  process tree (`start_new_session` + `os.killpg`); killing only the
+  wrapper orphaned the worker, which then suspended the session itself
+  via model-call timeout instead of exercising the death-recovery
+  contract. The recovered session now reaches `session_completed`
+  through the completed-tool continuation with zero re-execution.
 
 ### CLOUD-WORKSPACE-CP-CON-01 - Workspace Control Plane Domain And Port Contract
 

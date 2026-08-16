@@ -190,6 +190,23 @@ def _log_tail(path: Path, lines: int = 8) -> str:
     return "\n".join(content[-lines:])
 
 
+def _kill_worker_tree(worker: subprocess.Popen[bytes]) -> None:
+    """Kill the uv wrapper and its python child as one process group.
+
+    Killing only the wrapper orphans the worker; the orphan then times out
+    its model call and suspends the session itself, which is not the
+    Worker-death contract under test.
+    """
+    import signal as _signal
+
+    try:
+        os.killpg(os.getpgid(worker.pid), _signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
+    worker.kill()
+    worker.wait(timeout=30)
+
+
 def _background_worker(runner: Runner, *, name: str) -> subprocess.Popen[bytes]:
     env = {
         **os.environ,
@@ -214,6 +231,7 @@ def _background_worker(runner: Runner, *, name: str) -> subprocess.Popen[bytes]:
         ),
         cwd=runner.run_root,
         env=env,
+        start_new_session=True,
         stdout=(runner.run_root / f"worker-{name}.log").open("wb"),
         stderr=subprocess.STDOUT,
     )
@@ -248,8 +266,7 @@ def scenario_worker_death_recovers(runner: Runner) -> None:
         if worker.poll() is not None:
             break
         time.sleep(1)
-    worker.kill()
-    worker.wait(timeout=30)
+    _kill_worker_tree(worker)
     (HANG_FLAG_DIR / "hang-started").unlink(missing_ok=True)
     # The killed Worker's lease must expire before recovery can reclaim;
     # lease TTL defaults to 30s and expiry is the designed recovery trigger.
@@ -448,7 +465,49 @@ def _mount_scratch_volume(label: str) -> Path | None:
     if not _os.path.ismount(mounted):
         _sp.run(("hdiutil", "detach", device, "-force"), capture_output=True, check=False)
         return None
+    _ensure_writable_through_share(mounted)
     return mounted
+
+
+def _ensure_writable_through_share(root: Path) -> bool:
+    """Make the scratch tree writable for the gVisor container-user preflight.
+
+    Host-side ``chmod`` on a freshly erased APFS volume is not picked up
+    reliably by the colima virtiofs guest attribute cache, so the mode change
+    is applied from inside the VM as well (the guest applies it to the same
+    shared view the sandbox bind-mounts), and a guest-side write probe with
+    bounded retries gates the scenario on the preflight actually passing.
+    """
+    import subprocess as _sp
+    import time as _t
+
+    _sp.run(("chmod", "-R", "777", str(root)), capture_output=True, check=False)
+    probe_path = root / ".write-preflight"
+    last_error = ""
+    for _ in range(10):
+        probe = _sp.run(
+            (
+                "colima",
+                "ssh",
+                "--profile",
+                "zebra-gvisor",
+                "--",
+                "sh",
+                "-c",
+                f"chmod -R 777 {root} 2>/dev/null; "
+                f"echo ok > {probe_path} 2>&1 && cat {probe_path}",
+            ),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if probe.returncode == 0 and probe.stdout.strip().endswith("ok"):
+            probe_path.unlink(missing_ok=True)
+            return True
+        last_error = (probe.stderr or probe.stdout or "").strip()[-200:]
+        _t.sleep(2)
+    print(f"[fixture] VM write preflight kept failing: {last_error!r}")
+    return False
 
 
 def _create_git_source(runner: Runner) -> str:
@@ -529,15 +588,17 @@ def scenario_workspace_cp(runner: Runner) -> None:
         check=False,
         env_extra=cp_env,
     )
-    import subprocess as _chmod
-
-    _chmod.run(("chmod", "-R", "777", str(cp_root)), capture_output=True, check=False)
+    # The materialized tree is created by the VM-side worker; make it
+    # writable for the gVisor container user through the shared view.
+    writable = _ensure_writable_through_share(cp_root)
     approval = runner.uv(
         str(runner.runner_dir / "approve_and_resume.py"),
         env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": seeded["session_id"]},
         check=False,
     )
     for _ in range(3):
+        if _status(runner, seeded["session_id"]) == "completed":
+            break
         runner.uv(
             "-m",
             "zebra_agent_worker.main",
@@ -548,6 +609,7 @@ def scenario_workspace_cp(runner: Runner) -> None:
             check=False,
             env_extra=cp_env,
         )
+        _ensure_writable_through_share(cp_root)
     status = _status(runner, seeded["session_id"])
     instance = runner.uv_json(
         str(runner.runner_dir / "workspace_command.py"),
@@ -558,9 +620,10 @@ def scenario_workspace_cp(runner: Runner) -> None:
     runner.record(
         "workspace_cp_provisioned_side_effect",
         created.get("status") == 201
-        and seeded["status"] == 201
+        and seeded.get("status") == 201
         and approval.returncode == 0
         and mounted
+        and writable
         and status == "completed"
         and instance.get("workspace", {}).get("state") == "ready"
         and instance.get("workspace", {}).get("materialized_revision") == revision
@@ -571,6 +634,7 @@ def scenario_workspace_cp(runner: Runner) -> None:
             "workspace_id": workspace_id,
             "cp_root": str(cp_root),
             "mounted": mounted,
+            "writable_through_share": writable,
             "session_status": status,
             "workspace": instance,
             "proof_present": proof.is_file(),

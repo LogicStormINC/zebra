@@ -45,8 +45,17 @@
   completed-tool continuation recovery (`recover_approved_continuation`
   completed adjudication plus the `continue_completed_tool` harness path,
   covering executed and failed terminal outcomes) and command-consumption
-  skip logging shipped with regression tests; the single registered
-  follow-up is completing a suspended session through the command lane.
+  skip logging shipped with regression tests; the suspended-command-lane
+  recovery follow-up is closed: the rig failure was a fixture bug (killing
+  only the `uv` wrapper orphaned the worker, which suspended the session
+  itself via model-call timeout); the scenario now kills the whole process
+  tree and the killed session recovers through the completed-tool
+  continuation to `session_completed` with zero re-execution.
+  `CLOUD-WORKSPACE-CP-E2E-01` is `Done`: the automated
+  `workspace_cp_provisioned_side_effect` scenario passes on the gVisor rig
+  and the full runner returns `ZEBRA_EFFECT_DEFAULT_E2E=PASS` (11/11
+  scenarios). The macOS APFS chmod fixture blocker is fixed by applying the
+  mode change from inside the colima VM plus a guest-side write probe.
   `CLOUD-WORKSPACE-CP-PLAN-01` is registered as `Planning` for the P0.3
   Workspace Control Plane, splitting seven path-bounded successor cards
   (contract, PostgreSQL authority, provisioning provider, API command
