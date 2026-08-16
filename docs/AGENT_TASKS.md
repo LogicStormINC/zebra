@@ -373,6 +373,31 @@ aggregate without treating `PostgresControlPlaneStores` as local
 - no replacement of the remaining cloud API compatibility paths; those stay an
   explicit command-only API blocker
 
+### CLOUD-WORKSPACE-CP-CON-01 - Workspace Control Plane Domain And Port Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `CORE`
+- Depends on: `CLOUD-WORKSPACE-CP-PLAN-01`; activated under the maintainer's
+  standing continuation instruction.
+- Branch: `zebra-cloud-trench` (batch closeout continuation)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/workspace_control.py` (new),
+  `packages/agent-core/src/agent_core/ports/workspace_control.py` (new),
+  focused `tests/agent_core/test_workspace_control_contract.py` (new),
+  plus the `domain`/`ports` export registrations.
+- Delivers the provider-neutral P0.3 contract: `WorkspaceSource` (git
+  pinning required, archive artifact pairing, sha256 digests),
+  `WorkspaceInstance` with ready-state revision+digest invariants, the
+  pure lifecycle transition table (pending/provisioning/ready/sealed/
+  released/failed/uncertain with deterministic uncertain resolution and
+  snapshot only from ready/sealed), `WorkspaceProvisionCommand`,
+  `WorkspaceOperationReceipt`, `WorkspaceSnapshotRef`, and the
+  `WorkspaceProvisionerPort`/`WorkspaceVolumePort` seams. Zero migrations,
+  no runtime selection, local SQLite untouched.
+- Validation: focused contract tests `11 passed`; `make test`
+  `2234 passed, 274 skipped`; `make check` green.
+
 ### CLOUD-WORKSPACE-CP-PLAN-01 - Cloud Workspace Control Plane Plan
 
 - Status: `Planning`

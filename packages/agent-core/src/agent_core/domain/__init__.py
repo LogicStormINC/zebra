@@ -197,6 +197,16 @@ from agent_core.domain.tools import (
     ToolResult,
     ToolRisk,
 )
+from agent_core.domain.workspace_control import (
+    WorkspaceAction,
+    WorkspaceId,
+    WorkspaceInstance,
+    WorkspaceLifecycleState,
+    WorkspaceSource,
+    WorkspaceSourceKind,
+    WorkspaceTransitionError,
+    next_workspace_state,
+)
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 
 __all__ = [
@@ -360,6 +370,14 @@ __all__ = [
     "ToolResult",
     "ToolRisk",
     "WorkerLease",
+    "WorkspaceAction",
+    "WorkspaceId",
+    "WorkspaceInstance",
+    "WorkspaceLifecycleState",
+    "WorkspaceSource",
+    "WorkspaceSourceKind",
+    "WorkspaceTransitionError",
+    "next_workspace_state",
     "WorkspaceProjection",
     "WorkspaceBindingRevision",
     "WorkspaceStatus",

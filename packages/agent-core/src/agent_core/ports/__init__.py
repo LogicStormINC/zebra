@@ -141,6 +141,13 @@ from agent_core.ports.subagents import SubagentPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_core.ports.tool_run_store import ToolRunStorePort
 from agent_core.ports.workspace import WorkspacePort
+from agent_core.ports.workspace_control import (
+    WorkspaceOperationReceipt,
+    WorkspaceProvisionCommand,
+    WorkspaceProvisionerPort,
+    WorkspaceSnapshotRef,
+    WorkspaceVolumePort,
+)
 from agent_core.ports.workspace_projection_store import (
     WorkerProjectionCommitResult,
     WorkerProjectionTransactionPort,
@@ -182,6 +189,11 @@ __all__ = [
     "DeliveryTransactionPort",
     "EffectDispatchPort",
     "EffectStateReadPort",
+    "WorkspaceOperationReceipt",
+    "WorkspaceProvisionCommand",
+    "WorkspaceProvisionerPort",
+    "WorkspaceSnapshotRef",
+    "WorkspaceVolumePort",
     "EffectLedgerPort",
     "EffectLedgerStatus",
     "EffectReservation",
