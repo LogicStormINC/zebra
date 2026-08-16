@@ -6,6 +6,20 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-16`
+- 非产品决策收口（maintainer directive "除接入 Trench 外相关的功能全部
+  做完，多租户也要开发完毕，用户体系是外挂的"）：多租户三切片全部落地——
+  v23 迁移把租户 namespace 持久化到 session 投影（TASK_PREPARED host
+  context 绑定一次），API 会话/任务/审批/流/AG-UI/users/tenants 内存读面
+  全部按调用方租户隔离（跨租户 404，未绑定会话保持 operator 域），默认
+  Cloud Worker 经 `TenantScopedAuthorityResolver` 在每次 Attempt 前持久化
+  `execution_authority_resolved`（issuer 钉定、租户 namespace per-scope、
+  外来 issuer fail closed）；顺带修复 `validate_event_payload` 的
+  python-mode dump 泄漏 datetime 到 PostgreSQL Jsonb 的缺陷。扩展体系
+  `EXT-PLUGIN-01`/`EXT-HOOK-01` 与 `ARCH-129-ACP-01`/`ARCH-129-CTX-01`
+  按 blanket activation 全部实现并登记 `Done`。剩余 `Locked` 均为治理性
+  门控而非工程缺口：`EXT-MARKETPLACE-01`（私有云 GA 前置）、Mem0 消费链
+  （Provider admission: DENIED）、`AGENT-DEF-STO-01`（本地 SQLite Registry，
+  云端产品定位推迟）。rig E2E 在 authority 事件入流后仍 `PASS` 11/11。
 - Agent Definition chain closed: the full runtime chain
   REG（`AGENT-DEF-PG-01`，v19 迁移 + `PostgresAgentRegistry` + draft/version/
   release/eval evidence）→ DRAFT（`AGENT-DEF-DRAFT-01`，物化服务 + API）→

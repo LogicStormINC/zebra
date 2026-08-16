@@ -20005,8 +20005,14 @@ closed when a requested sandbox profile cannot be established or resumed.
 
 ### ARCH-129-ACP-01 - ACP Entry Adapter
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `zebra-cloud-trench`（batch closeout continuation）
+- 实现：`agent_integrations.acp.AcpEntryAdapter`——initialize/resume/cancel/
+  approve/reject 全部经已提交 API 路由面（同 Policy/Tool Gateway/审批/澄清/
+  effect fence），ACP 重连从 durable sequence checkpoint 续播且不重复已
+  完成副作用；协议本地 `AcpResponse` 保证包边界（依赖门禁测试锁定），
+  ACP 类型不进 `agent-core`。提交 `892aaf94`；测试 4/4。
 - Suggested role: `APP / CORE / SECURITY / QA`
 - Depends on: `ARCH-129-RT-01` merged and explicit maintainer activation
 - Branch: `TBD (suggested: codex/arch-129-acp-adapter)`
@@ -20049,8 +20055,13 @@ Tool Gateway, approval, clarification, cancellation, and resume contracts.
 
 ### ARCH-129-CTX-01 - Optional Code Intelligence Adapter
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `zebra-cloud-trench`（batch closeout continuation）
+- 实现：`agent_context.code_intelligence.CodeIntelligenceIndex`——有界词法
+  符号 definitions/references/search，file/range 溯源、文件/字节/结果/行数
+  显式上限与确定性截断；非权威提示索引，不扩权、`agent-core` 零依赖。
+  提交 `892aaf94`；测试 5/5。
 - Suggested role: `CTX / TOOLS / QA`
 - Depends on: `ARCH-129-RT-01` merged and explicit maintainer activation
 - Branch: `TBD (suggested: codex/arch-129-code-intelligence)`
@@ -21638,8 +21649,14 @@ P127/P132-P138 elicitation non-goal per ADR-014 §7.
 
 ### EXT-PLUGIN-01 - Plugin Manifest And Lifecycle
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `zebra-cloud-trench`（maintainer blanket activation
+  "除接入 Trench 外全部做完"）
+- 实现：`agent_core.domain.plugins`（manifest v0.1 模型、四类 entry、
+  sha256 provenance、稳定组件身份、五层状态机分层转换、不可变安装记录
+  digest 钉定）+ `agent_integrations.plugins.PluginRegistry`（operator
+  生命周期 + bundle 布局校验）。提交 `01316e41`；测试 7/7。
 - Suggested role: `CORE / TOOLS / SECURITY / QA`
 - Depends on: `EXT-0` contract frozen and explicit maintainer activation
 - Branch: `TBD (suggested: codex/ext-plugin-01-manifest-lifecycle)`
@@ -21666,8 +21683,14 @@ beside the Session Event Store.
 
 ### EXT-HOOK-01 - Hook Contract
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `zebra-cloud-trench`
+- 实现：`agent_core.harness.hooks` 追加 EXT-HOOK-01 合同——
+  HookDefinition/HookOutcome（pre/post tool use、stop、session start、
+  artifact created），kind 钉定 fail-open/fail-closed、有界超时、稳定排序、
+  deny>require_approval>allow 决议；hook 不绕过 Policy、不改执行事实。
+  提交 `01316e41`；测试 6/6。
 - Suggested role: `CORE / SECURITY / QA`
 - Depends on: `EXT-PLUGIN-01` activation
 - Branch: `TBD`
@@ -21693,7 +21716,7 @@ classification. Hooks never bypass Policy or mutate result facts.
 
 ### EXT-MARKETPLACE-01 - Plugin Marketplace Distribution
 
-- Status: `Locked`
+- Status: `Locked`（依赖私有云 GA，ADR-014 Phase C/D；非当前工程缺口）
 - Owner: `Unassigned`
 - Suggested role: `CORE / SECURITY / DEVOPS`
 - Depends on: `EXT-PLUGIN-01` + `EXT-HOOK-01` activation and private-cloud GA
