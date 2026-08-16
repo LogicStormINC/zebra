@@ -39,9 +39,11 @@ from zebra_agent_worker.clarification_continuation import (
     ClarificationContinuationError,
     recover_clarification_continuation,
 )
+from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.continuation_lifecycle import (
     mark_approved_continuation_started,
     mark_clarification_continuation_started,
+    mark_completed_continuation_started,
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
@@ -367,7 +369,16 @@ class SessionExecutionService:
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
                 ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
-        if continuation is not None:
+        if continuation is not None and continuation.completed_output is not None:
+            claimed = mark_completed_continuation_started(
+                claimed,
+                event_store=self._event_store,
+                recovery_service=self._recovery_service,
+                tool_name=continuation.tool_call.name,
+                tool_call_id=str(continuation.tool_call.tool_call_id),
+                started_at=started_at,
+            )
+        elif continuation is not None:
             claimed = mark_approved_continuation_started(
                 claimed,
                 event_store=self._event_store,
@@ -444,28 +455,12 @@ class SessionExecutionService:
             event_sink=persist_event,
         )
         try:
-            if continuation is not None:
-                attempt_result = orchestrator.continue_approved_tool_call(
-                    context,
-                    initial_completion=continuation.completion,
-                    tool_call=continuation.tool_call,
-                    remaining_tool_calls=continuation.remaining_tool_calls,
-                    conversation=continuation.conversation,
-                    model_calls_used=continuation.model_calls_used,
-                    tool_calls_executed=continuation.tool_calls_executed,
-                )
-            elif clarification is not None:
-                attempt_result = orchestrator.continue_clarification(
-                    context,
-                    tool_call=clarification.tool_call,
-                    response=clarification.response,
-                    conversation=clarification.conversation,
-                    model_calls_used=clarification.model_calls_used,
-                    tool_calls_executed=clarification.tool_calls_executed,
-                    assistant_message=clarification.assistant_message,
-                )
-            else:
-                attempt_result = orchestrator.run(context)
+            attempt_result = run_continuation(
+                orchestrator,
+                context,
+                continuation=continuation,
+                clarification=clarification,
+            )
         except Exception as exc:
             attempt_result = exception_attempt_result(
                 exc, error_metadata(exc, clarification, continuation)

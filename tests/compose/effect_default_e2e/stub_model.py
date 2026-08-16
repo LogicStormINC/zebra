@@ -10,13 +10,22 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 SIDE_EFFECT_MARKER = os.environ.get("ZEBRA_EFFECT_E2E_MARKER", "WRITE-FILE")
 SIDE_EFFECT_COMMAND = os.environ.get(
     "ZEBRA_EFFECT_E2E_COMMAND",
     '["sh", "-c", "printf effect-e2e-proof > effect-proof.txt"]',
 )
+SLOW_COMMAND = os.environ.get(
+    "ZEBRA_EFFECT_E2E_SLOW_COMMAND",
+    '["sh", "-c", "sleep 15; printf lease-loss-proof > lease-proof.txt"]',
+)
+HANG_MARKER = os.environ.get("ZEBRA_EFFECT_E2E_HANG_MARKER", "HANG-AFTER-TOOL")
+HANG_SECONDS = float(os.environ.get("ZEBRA_EFFECT_E2E_HANG_SECONDS", "120"))
+HANG_FLAG_DIR = os.environ.get("ZEBRA_EFFECT_E2E_FLAG_DIR", "/tmp/zebra-effect-e2e-flags")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -42,6 +51,13 @@ class Handler(BaseHTTPRequestHandler):
             isinstance(message, dict) and message.get("role") == "tool"
             for message in body.get("messages", [])
         )
+        slow = "SLOW-FILE" in user_prompt
+        flags = Path(HANG_FLAG_DIR)
+        if has_tool_result and HANG_MARKER in user_prompt and not (flags / "hang-used").exists():
+            flags.mkdir(parents=True, exist_ok=True)
+            (flags / "hang-used").write_text("1")
+            (flags / "hang-started").write_text("1")
+            time.sleep(HANG_SECONDS)
         wants_side_effect = (
             SIDE_EFFECT_MARKER in user_prompt and not has_tool_result and command_tool is not None
         )
@@ -55,7 +71,8 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(f"data: {json.dumps(payload)}\n\n".encode())
 
         if wants_side_effect:
-            arguments = json.dumps({"command": json.loads(SIDE_EFFECT_COMMAND)})
+            selected = SLOW_COMMAND if slow else SIDE_EFFECT_COMMAND
+            arguments = json.dumps({"command": json.loads(selected)})
             chunk(
                 {
                     "id": call_id,

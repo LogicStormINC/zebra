@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from uuid import UUID
 
 from agent_core.domain.events import EventType, SessionEvent
@@ -20,6 +20,9 @@ class ApprovedContinuation:
     conversation: tuple[SessionMessage, ...] = ()
     model_calls_used: int = 1
     tool_calls_executed: int = 0
+    completed_output: str | None = None
+    completed_status: str = "executed"
+    completed_metadata: dict[str, object] | None = None
 
 
 def recover_approved_continuation(
@@ -28,18 +31,29 @@ def recover_approved_continuation(
     requested: SessionEvent | None = None
     granted: SessionEvent | None = None
     execution_started = False
+    completed: SessionEvent | None = None
     for event in events:
         if event.event_type is EventType.APPROVAL_REQUESTED:
             requested = event
             granted = None
             execution_started = False
+            completed = None
         elif requested is not None and event.event_type is EventType.APPROVAL_GRANTED:
             granted = event
         elif granted is not None and event.event_type is EventType.TOOL_EXECUTION_STARTED:
             execution_started = True
+        elif (
+            granted is not None
+            and requested is not None
+            and event.event_type is EventType.TOOL_EXECUTION_COMPLETED
+            and _optional_string(event.payload.get("tool_call_id"))
+            == _optional_string(requested.payload.get("tool_call_id"))
+            and event.payload.get("status") in {"executed", "failed"}
+        ):
+            completed = event
     if requested is None or granted is None:
         return None
-    if execution_started:
+    if execution_started and completed is None:
         raise ApprovedContinuationError(
             "approved tool continuation has uncertain prior execution state"
         )
@@ -77,7 +91,7 @@ def recover_approved_continuation(
         created_at=requested.created_at,
         tool_calls=(tool_call,),
     )
-    return ApprovedContinuation(
+    continuation = ApprovedContinuation(
         completion=ModelCompletion(
             assistant_message=assistant_message,
             tool_calls=(tool_call,),
@@ -94,6 +108,21 @@ def recover_approved_continuation(
             default=0,
         ),
     )
+    if completed is not None:
+        if continuation.remaining_tool_calls:
+            raise ApprovedContinuationError(
+                "completed multi-call batches stay uncertain for the remaining calls"
+            )
+        output = completed.payload.get("output")
+        metadata = completed.payload.get("metadata")
+        return replace(
+            continuation,
+            tool_calls_executed=continuation.tool_calls_executed + 1,
+            completed_output=output if isinstance(output, str) else "",
+            completed_status=str(completed.payload.get("status") or "executed"),
+            completed_metadata=metadata if isinstance(metadata, dict) else None,
+        )
+    return continuation
 
 
 def _required_string(payload: dict[str, object], key: str) -> str:

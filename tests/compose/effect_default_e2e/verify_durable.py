@@ -117,6 +117,61 @@ def effect_summary() -> int:
     return 0
 
 
+def expire_lease(session_id: str) -> int:
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "UPDATE worker_leases SET acquired_at = now() - interval '15 seconds',"
+            " heartbeat_at = now() - interval '10 seconds',"
+            " expires_at = now() - interval '5 seconds'"
+            " WHERE session_id = %s",
+            (uuid.UUID(session_id),),
+        )
+        (updated,) = (cursor.rowcount,)
+    connection.commit()
+    print(json.dumps({"expired_leases": updated[0]}))
+    return 0
+
+
+def tool_events(session_id: str) -> int:
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT sequence, event_type, payload FROM session_events"
+            " WHERE session_id = %s"
+            " AND (event_type LIKE 'tool%%' OR event_type LIKE 'tests%%'"
+            " OR event_type LIKE 'session_%%')"
+            " ORDER BY sequence",
+            (uuid.UUID(session_id),),
+        )
+        rows = cursor.fetchall()
+    print(
+        json.dumps(
+            {
+                "events": [
+                    {
+                        "sequence": row[0],
+                        "type": row[1],
+                        "status": row[2].get("status"),
+                        "output": str(row[2].get("output", ""))[:240],
+                    }
+                    for row in rows
+                ]
+            }
+        )
+    )
+    return 0
+
+
+def rotate_epoch() -> int:
+    from agent_storage.postgres.epoch import rotate_control_plane_epoch
+
+    epoch = rotate_control_plane_epoch(
+        os.environ["ZEBRA_DATABASE_URL"],
+        deployment_namespace=os.environ["ZEBRA_DEPLOYMENT_NAMESPACE"],
+    )
+    print(json.dumps({"rotated_epoch": str(epoch)}))
+    return 0
+
+
 def handoff_read(session_id: str) -> int:
     cloud = cloud_composition_from_environment()
     stores = postgres_control_plane_stores(
@@ -150,6 +205,9 @@ COMMANDS = {
     "current-revision": current_revision,
     "lease-rows": lease_rows,
     "handoff-read": handoff_read,
+    "expire-lease": expire_lease,
+    "tool-events": tool_events,
+    "rotate-epoch": rotate_epoch,
 }
 
 
@@ -161,6 +219,12 @@ def main(argv: list[str]) -> int:
     if argv[1] == "current-revision" and len(argv) < 3:
         print("current-revision requires a session id", file=sys.stderr)
         return 64
+    if argv[1] == "tool-events" and len(argv) < 3:
+        print("tool-events requires a session id", file=sys.stderr)
+        return 64
+    if argv[1] == "expire-lease" and len(argv) < 3:
+        print("expire-lease requires a session id", file=sys.stderr)
+        return 64
     if argv[1] == "session-status" and len(argv) < 3:
         print("session-status requires a session id", file=sys.stderr)
         return 64
@@ -170,7 +234,14 @@ def main(argv: list[str]) -> int:
     if argv[1] == "handoff-read" and len(argv) < 3:
         print("handoff-read requires a session id", file=sys.stderr)
         return 64
-    if argv[1] in {"session-status", "event-types", "handoff-read", "current-revision"}:
+    if argv[1] in {
+        "session-status",
+        "event-types",
+        "handoff-read",
+        "current-revision",
+        "expire-lease",
+        "tool-events",
+    }:
         return command(argv[2])
     return command()
 

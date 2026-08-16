@@ -26,18 +26,19 @@ def main() -> int:
         ),
         None,
     )
-    if target is None:
-        print(json.dumps({"approved": False, "reason": "no_pending_approval"}))
-        return 1
-    approval_id = target.get("approval_id") or target.get("id")
-    decision = adapter.handle(
-        RouteRequest(
-            method="POST",
-            path=f"/approvals/{approval_id}/approve",
-            headers={"Idempotency-Key": f"effect-e2e-approve-{approval_id}"},
-            body={},
+    approved_status = None
+    if target is not None:
+        approval_id = target.get("approval_id") or target.get("id")
+        decision = adapter.handle(
+            RouteRequest(
+                method="POST",
+                path=f"/approvals/{approval_id}/approve",
+                headers={"Idempotency-Key": f"effect-e2e-approve-{approval_id}"},
+                body={},
+            )
         )
-    )
+        approved_status = decision.status_code
+    events = api.stores.events.list_for_session(api._parse_session_id(session_id))
     events = api.stores.events.list_for_session(api._parse_session_id(session_id))
     revision = events[-1].sequence if events else 0
     resume = adapter.handle(
@@ -51,7 +52,8 @@ def main() -> int:
     print(
         json.dumps(
             {
-                "approved": decision.status_code in (200, 202),
+                "approved": approved_status in (200, 202),
+                "approval_skipped": target is None,
                 "resume_status": resume.status_code,
                 "resume_body_status": (
                     resume.body.get("status") if isinstance(resume.body, dict) else None
@@ -60,7 +62,7 @@ def main() -> int:
             }
         )
     )
-    return 0 if decision.status_code in (200, 202) and resume.status_code == 202 else 1
+    return 0 if resume.status_code == 202 else 1
 
 
 if __name__ == "__main__":

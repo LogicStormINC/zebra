@@ -20,7 +20,22 @@
   dirty-mainline handoff snapshot lives on
   `codex/cloudline-worktree-snapshot`. `EMB-TRN-READ-E2E-01` remains
   `In Progress` and fail-closed pending isolated cross-service inputs.
-- `CLOUD-EFFECT-DEFAULT-E2E-01` is `In Progress` with its execution tier
+- `CLOUD-EFFECT-DEFAULT-E2E-01` is `Done` with the full 10-scenario matrix
+  passing on the rig: the two 2026-08-16 fault-injection scenarios verify
+  that killing the Worker during the post-tool model turn recovers to a
+  deterministic suspension with zero re-execution, and that rotating the
+  control-plane epoch mid-execution rejects the stale terminal mutation
+  while the effect reaches deterministic uncertain reconciliation. The
+  completed-tool continuation recovery (`recover_approved_continuation`
+  completed adjudication plus the `continue_completed_tool` harness path,
+  covering executed and failed terminal outcomes) and command-consumption
+  skip logging shipped with regression tests; the single registered
+  follow-up is completing a suspended session through the command lane.
+  `CLOUD-WORKSPACE-CP-PLAN-01` is registered as `Planning` for the P0.3
+  Workspace Control Plane, splitting seven path-bounded successor cards
+  (contract, PostgreSQL authority, provisioning provider, API command
+  surface, Worker runtime wiring, GC/reconcile, default-entrypoint E2E).
+  Previously `In Progress` with its execution tier
   validated on a test-only gVisor rig: the default Worker executed a real,
   policy-approved `command.run` side effect inside a gVisor sandbox through
   the durable command lane; PostgreSQL holds exactly one `succeeded` Effect

@@ -43,6 +43,7 @@ EXECUTION_TIER_SCENARIOS = (
     "worker_restart_no_duplicate",
     "lease_loss_uncertain_reconcile",
     "session_completed_governed_memory",
+    "worker_death_mid_continuation_recovers",
 )
 
 CLOUD_ENV = {
@@ -76,6 +77,8 @@ class Runner:
         self.stub_process: subprocess.Popen[bytes] | None = None
         self.run_root = Path(EVIDENCE_DIR)
         self.runner_dir = RUNNER_DIR
+        self.project_root = ROOT
+        self.cloud_env = CLOUD_ENV
         self.workspace = Path(
             os.environ.get("ZEBRA_EFFECT_E2E_WORKSPACE", str(self.run_root / "workspace"))
         )
@@ -365,7 +368,10 @@ class Runner:
             else:
                 from execution_tier import run_execution_tier
 
-                run_execution_tier(self)
+                try:
+                    run_execution_tier(self)
+                except Exception as error:  # noqa: BLE001 - evidence must record the failure
+                    self.record("execution_tier", False, {"error": repr(error)})
             result["scenarios"] = self.scenarios
             result["passed"] = self.failures == 0 and execution_enabled
             _write_result(self.run_root, result)

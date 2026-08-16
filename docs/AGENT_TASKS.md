@@ -373,9 +373,24 @@ aggregate without treating `PostgresControlPlaneStores` as local
 - no replacement of the remaining cloud API compatibility paths; those stay an
   explicit command-only API blocker
 
+### CLOUD-WORKSPACE-CP-PLAN-01 - Cloud Workspace Control Plane Plan
+
+- Status: `Planning`
+- Owner: `lukeding`
+- Suggested role: `ARCH / STORAGE / RUNTIME / QA`
+- Depends on: maintainer activation; freezes the P0.3 gap from the
+  2026-08-12 periodic review into seven path-bounded successor cards
+  (contract, PostgreSQL authority, provisioning provider, API command
+  surface, Worker runtime wiring, GC/reconcile, default-entrypoint E2E).
+- Branch: pending activation
+- Owned paths: `docs/CLOUD_WORKSPACE_CP_PLAN_v1.0.md` (this slice only)
+- Planning-only: no production code, migration or runtime selection is
+  authorized. Workspace bytes stay in object storage; PostgreSQL remains
+  the single authority; the local SQLite profile is untouched.
+
 ### CLOUD-EFFECT-DEFAULT-E2E-01 - Default Entrypoint Real Side-Effect Acceptance
 
-- Status: `In Progress`
+- Status: `Done`
 - Suggested role: `QA / SRE`
 - Depends on: the merged `CLOUD-EFFECT-COMP-CLOSE-01` composition closeout;
   execution tier is blocked on a gVisor-capable engine plus the execution-tier
@@ -400,6 +415,17 @@ aggregate without treating `PostgresControlPlaneStores` as local
   worker fail-closed with zero Effect side effects, and the API handoff
   Effect read pass; the runner exits `BLOCKED` (2) with the execution tier
   skipped as `gvisor_engine_absent`.
+- 2026-08-16 update: the matrix is complete — 10/10 scenarios PASS on the
+  rig including two fault-injection scenarios. `worker_death_mid_
+  continuation_recovers` kills the Worker during the post-tool model turn
+  and verifies the deterministic fail-safe posture: lease TTL expiry
+  triggers recovery, the dead attempt lands in `suspended`, and the
+  approved side effect is never re-executed (completed-tool continuation
+  recovery is unit-covered; completing a suspended session through the
+  command lane is the registered successor gap). `lease_loss_uncertain_
+  reconcile` rotates the control-plane epoch mid-execution and verifies
+  the stale terminal mutation is rejected while the effect reaches a
+  deterministic uncertain reconciliation with zero replay.
 - Recorded findings: the inline execution path never populates outbox
   `claim_fencing_token` (reserved for the dispatch-consumer lane). The
   2026-08-14 wedge was root-caused on 2026-08-15 and fixed:

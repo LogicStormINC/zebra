@@ -1,6 +1,6 @@
 # CLOUD-EFFECT-DEFAULT-E2E-01 - Default Entrypoint Real Side-Effect Acceptance
 
-- 状态：`In Progress`（8/9 场景通过并落盘；lease-loss 故障注入待设计）
+- 状态：`Done`（2026-08-16：10/10 场景通过并落盘）
 - Owner: `lukeding`
 - 基线：`zebra-cloud-trench`（2026-08-14 maintainer batch closeout 之后）
 - 输入：[CLOUD_Effect默认接线与应用组合收口方案_v1.0.md](./CLOUD_Effect默认接线与应用组合收口方案_v1.0.md)
@@ -39,10 +39,11 @@ Effect 执行边界。该 gate 是收口方案第 4.6 节定义的最终验收�
 | replay_consistency | started/completed 事件与 outbox 终态一致、terminal_event_id 绑定 | pass |
 | payload_object_binding | 请求与结果 payload 均进入版本化 MinIO，metadata `finalized` | pass |
 | session_completed_governed_memory | 无工具会话真实 COMPLETED，governed Memory 收尾经聚合（空计划不伪造提交） | pass |
-| lease_loss_uncertain_reconcile | 待故障注入设计 | skipped |
+| worker_death_mid_continuation_recovers | 工具完成后、最终模型轮中被杀 Worker；TTL 到期触发恢复；断言确定性挂起、零重复执行、outbox 恰 2（含前一场景） | pass |
+| lease_loss_uncertain_reconcile | 工具执行中轮转 control-plane epoch；断言陈旧 terminal 被拒、效果进入确定 uncertain 归还、零重放 | pass |
 
-2026-08-14 本机全矩阵记录（见"复现"）：9 个场景 8 pass + 1 显式
-skip，`ZEBRA_EFFECT_DEFAULT_E2E=PASS`（exit 0）。
+2026-08-16 本机全矩阵记录（见"复现"）：10 个场景全 pass，
+`ZEBRA_EFFECT_DEFAULT_E2E=PASS`（exit 0）；无引擎时仍为 `BLOCKED`（2）。
 
 ## 执行层语义备注（证据驱动）
 
@@ -72,11 +73,16 @@ skip，`ZEBRA_EFFECT_DEFAULT_E2E=PASS`（exit 0）。
   真实副作用 → 最终模型轮 → `session_completed`（final answer）。
   E2E 的 `side_effect_schedule_claim_complete` 断言已收紧为会话必须
   `completed`；全矩阵保持 PASS。
-- **仍开放**：`recover_approved_continuation` 对已开始执行后的
-  fail-closed 是正确的防重放防御，但真正的进程内中途崩溃恢复（工具
-  执行中 Worker 死亡）仍无 durable checkpoint——与
-  `lease_loss_uncertain_reconcile` 故障注入同属一张 successor 卡。
-  命令消费失败 reason 仍不打日志（可观测性小项）。
+- **2026-08-16 successor 交付**：已完成的工具调用（含 failed 终态）
+  现在可从事件账本确定性恢复续跑而不重执行
+  （`recover_approved_continuation` completed 裁决 +
+  `continue_completed_tool`，回归测试锁定"cloud recorder 上 legacy
+  upsert 不可达 + 单次 started/completed"）；命令消费 skip 的 reason
+  落 stderr；两个故障注入场景进入矩阵。
+- **唯一遗留**：Worker 死亡后经命令通道把 suspended 会话推进到完成
+  （命令被接受但消费者越过投影后闲置）——精确记录于
+  `worker_death_mid_continuation_recovers` 的 detail，属 suspended
+  resume 语义 successor。
 
 ## 复现
 

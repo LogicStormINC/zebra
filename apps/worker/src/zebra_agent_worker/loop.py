@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -92,6 +93,12 @@ class WorkerLoopService:
                 executed_ids.append(command_result.session_id)
             elif command_result.status == "skipped":
                 skipped_ids.append(command_result.session_id)
+                print(
+                    f"worker command skipped: session={command_result.session_id} "
+                    f"kind={command_result.command_kind} reason={command_result.reason}",
+                    file=sys.stderr,
+                    flush=True,
+                )
         ready_sessions = self._projection_store.list_ready_sessions(limit=batch_size)
         ready_ids = tuple(str(session.session_id) for session in ready_sessions)
         for session in ready_sessions:
@@ -104,8 +111,14 @@ class WorkerLoopService:
                     worker_id=worker_id,
                     lease_ttl_seconds=lease_ttl_seconds,
                 )
-            except (LeaseConflictError, SessionRecoveryError, SessionResumeError):
+            except (LeaseConflictError, SessionRecoveryError, SessionResumeError) as skip_error:
                 skipped_ids.append(session_id)
+                print(
+                    f"worker session skipped: session={session_id} "
+                    f"reason={type(skip_error).__name__}: {skip_error}",
+                    file=sys.stderr,
+                    flush=True,
+                )
                 continue
             executed_ids.append(session_id)
         return WorkerLoopCycleResult(

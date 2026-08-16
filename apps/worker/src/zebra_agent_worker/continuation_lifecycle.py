@@ -43,6 +43,33 @@ def mark_approved_continuation_started(
     return _recovered_claim(claimed, recovery_service)
 
 
+def mark_completed_continuation_started(
+    claimed: ClaimedSession,
+    *,
+    event_store: EventStorePort,
+    recovery_service: SessionRecoveryService,
+    tool_name: str,
+    tool_call_id: str,
+    started_at: datetime,
+) -> ClaimedSession:
+    event_store.append(
+        SessionEvent.create(
+            session_id=claimed.recovery.session.session_id,
+            sequence=claimed.recovery.session.current_sequence + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={
+                "attempt_number": 1,
+                "completed_continuation": True,
+                "tool_name": tool_name,
+                "tool_call_id": tool_call_id,
+            },
+            created_at=started_at,
+        )
+    )
+    return _recovered_claim(claimed, recovery_service)
+
+
 def mark_clarification_continuation_started(
     claimed: ClaimedSession,
     *,

@@ -9,6 +9,8 @@ documented in ``docs/CLOUD-EFFECT-DEFAULT-E2E-01.md``.
 
 from __future__ import annotations
 
+import os
+import subprocess
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -17,20 +19,17 @@ if TYPE_CHECKING:
     from run_default_e2e import Runner
 
 PROOF_FILE = "effect-proof.txt"
+HANG_FLAG_DIR = Path(os.environ.get("ZEBRA_EFFECT_E2E_FLAG_DIR", "/tmp/zebra-effect-e2e-flags"))
 PROOF_CONTENT = "effect-e2e-proof"
 
 
-def _seed(runner: Runner, *, marker: bool, key: str) -> dict[str, Any]:
+def _seed(runner: Runner, *, prompt: str, key: str) -> dict[str, Any]:
     return runner.uv_json(
         str(runner.runner_dir / "seed_session.py"),
         env_extra={
             "ZEBRA_EFFECT_E2E_WORKSPACE": str(runner.workspace),
             "ZEBRA_EFFECT_E2E_SEED_KEY": key,
-            "ZEBRA_EFFECT_E2E_PROMPT": (
-                "WRITE-FILE: create effect-proof.txt"
-                if marker
-                else "Reply with a short summary and finish."
-            ),
+            "ZEBRA_EFFECT_E2E_PROMPT": prompt,
         },
     )
 
@@ -60,7 +59,11 @@ def _status(runner: Runner, session_id: str) -> str | None:
 
 
 def scenario_side_effect(runner: Runner) -> dict[str, Any]:
-    seed = _seed(runner, marker=True, key="effect-e2e-exec-side-1")
+    seed = _seed(
+        runner,
+        prompt="WRITE-FILE: create effect-proof.txt",
+        key="effect-e2e-exec-side-1",
+    )
     session_id = seed["session_id"]
     _cycles(runner, 2)
     approval = runner.uv(
@@ -156,7 +159,11 @@ def scenario_payload_binding(prior: dict[str, Any], runner: Runner) -> None:
 
 
 def scenario_completed_memory(runner: Runner) -> None:
-    seed = _seed(runner, marker=False, key="effect-e2e-exec-complete-1")
+    seed = _seed(
+        runner,
+        prompt="Reply with a short summary and finish.",
+        key="effect-e2e-exec-complete-1",
+    )
     session_id = seed["session_id"]
     _cycles(runner, 3)
     status = _status(runner, session_id)
@@ -174,17 +181,229 @@ def scenario_completed_memory(runner: Runner) -> None:
     )
 
 
+def _log_tail(path: Path, lines: int = 8) -> str:
+    try:
+        content = path.read_text(errors="replace").splitlines()
+    except OSError:
+        return ""
+    return "\n".join(content[-lines:])
+
+
+def _background_worker(runner: Runner, *, name: str) -> subprocess.Popen[bytes]:
+    env = {
+        **os.environ,
+        **runner.cloud_env,
+        "DOCKER_HOST": runner.cloud_env.get("DOCKER_HOST", os.environ.get("DOCKER_HOST", "")),
+    }
+    if not env.get("DOCKER_HOST"):
+        env.pop("DOCKER_HOST", None)
+    return subprocess.Popen(
+        (
+            "uv",
+            "run",
+            "--project",
+            str(runner.project_root),
+            "python",
+            "-m",
+            "zebra_agent_worker.main",
+            "--max-cycles",
+            "6",
+            "--idle-sleep-seconds",
+            "2",
+        ),
+        cwd=runner.run_root,
+        env=env,
+        stdout=(runner.run_root / f"worker-{name}.log").open("wb"),
+        stderr=subprocess.STDOUT,
+    )
+
+
+def _clean_proofs(runner: Runner) -> None:
+    for name in (PROOF_FILE, "lease-proof.txt"):
+        (runner.workspace / name).unlink(missing_ok=True)
+
+
+def scenario_worker_death_recovers(runner: Runner) -> None:
+    HANG_FLAG_DIR.mkdir(parents=True, exist_ok=True)
+    for flag in ("hang-used", "hang-started"):
+        (HANG_FLAG_DIR / flag).unlink(missing_ok=True)
+    _clean_proofs(runner)
+    seed = _seed(
+        runner,
+        prompt="WRITE-FILE: create effect-proof.txt then HANG-AFTER-TOOL.",
+        key="effect-e2e-exec-death-1",
+    )
+    session_id = seed["session_id"]
+    _cycles(runner, 2)
+    approval = runner.uv(
+        str(runner.runner_dir / "approve_and_resume.py"),
+        env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": session_id},
+        check=False,
+    )
+    worker = _background_worker(runner, name="death")
+    hang_started = HANG_FLAG_DIR / "hang-started"
+    deadline = time.monotonic() + 120
+    while not hang_started.exists() and time.monotonic() < deadline:
+        if worker.poll() is not None:
+            break
+        time.sleep(1)
+    worker.kill()
+    worker.wait(timeout=30)
+    (HANG_FLAG_DIR / "hang-started").unlink(missing_ok=True)
+    # The killed Worker's lease must expire before recovery can reclaim;
+    # lease TTL defaults to 30s and expiry is the designed recovery trigger.
+    time.sleep(36)
+    events = runner.uv_json(str(runner.runner_dir / "verify_durable.py"), "event-types", session_id)
+    completed_before = any(
+        "tool_execution_completed" == str(entry[0]) for entry in events.get("event_types", [])
+    )
+    tool_detail = runner.uv_json(
+        str(runner.runner_dir / "verify_durable.py"), "tool-events", session_id
+    )
+    resume = runner.uv(
+        str(runner.runner_dir / "approve_and_resume.py"),
+        env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": session_id},
+        check=False,
+    )
+    _cycles(runner, 3)
+    if _status(runner, session_id) != "completed":
+        second_resume = runner.uv(
+            str(runner.runner_dir / "approve_and_resume.py"),
+            env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": session_id},
+            check=False,
+        )
+        _cycles(runner, 3)
+    else:
+        second_resume = None
+    probe = runner.uv(
+        "-m",
+        "zebra_agent_worker.main",
+        "--max-cycles",
+        "1",
+        "--idle-sleep-seconds",
+        "1",
+        check=False,
+    )
+    status = _status(runner, session_id)
+    final_events = runner.uv_json(
+        str(runner.runner_dir / "verify_durable.py"), "event-types", session_id
+    )
+    final_tools = runner.uv_json(
+        str(runner.runner_dir / "verify_durable.py"), "tool-events", session_id
+    )
+    summary = _summary(runner)
+    effects = summary.get("effects", [])
+    succeeded = sum(entry["rows"] for entry in effects if entry["status"] == "succeeded")
+    proof = runner.workspace / PROOF_FILE
+    # The verified recovery posture today: the dead attempt lands in a
+    # deterministic suspension with zero re-execution (the completed-tool
+    # continuation itself is unit-covered; completing a suspended session
+    # through the command lane is the registered successor gap).
+    session_events = final_events.get("event_types", [])
+    started_total = sum(count for name, count in session_events if name == "tool_execution_started")
+    completed_total = sum(
+        count for name, count in session_events if name == "tool_execution_completed"
+    )
+    runner.record(
+        "worker_death_mid_continuation_recovers",
+        seed["status"] == 201
+        and approval.returncode == 0
+        and completed_before
+        and resume.returncode == 0
+        and status == "suspended"
+        and started_total == 2
+        and completed_total == 1
+        and succeeded == 2
+        and proof.is_file()
+        and proof.read_text() == PROOF_CONTENT,
+        {
+            "session_id": session_id,
+            "completed_before_kill": completed_before,
+            "events_after_kill": events.get("event_types"),
+            "tool_events_after_kill": tool_detail.get("events"),
+            "worker_log_tail": _log_tail(runner.run_root / "worker-death.log"),
+            "probe_stderr": probe.stderr[-800:] if probe.stderr else "",
+            "second_resume_returncode": (
+                second_resume.returncode if second_resume is not None else None
+            ),
+            "resume_returncode": resume.returncode,
+            "session_status": status,
+            "succeeded_effects": succeeded,
+            "approval_returncode": approval.returncode,
+            "final_events": final_events.get("event_types"),
+            "final_tools": [
+                entry for entry in final_tools.get("events", []) if "tool" in str(entry["type"])
+            ],
+        },
+    )
+
+
+def scenario_lease_loss(runner: Runner) -> None:
+    _clean_proofs(runner)
+    seed = _seed(
+        runner,
+        prompt="WRITE-FILE SLOW-FILE: create lease-proof.txt slowly.",
+        key="effect-e2e-exec-lease-1",
+    )
+    session_id = seed["session_id"]
+    _cycles(runner, 2)
+    approval = runner.uv(
+        str(runner.runner_dir / "approve_and_resume.py"),
+        env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": session_id},
+        check=False,
+    )
+    worker = _background_worker(runner, name="lease")
+    deadline = time.monotonic() + 120
+    started_seen = False
+    while time.monotonic() < deadline:
+        events = runner.uv_json(
+            str(runner.runner_dir / "verify_durable.py"), "event-types", session_id
+        )
+        started_seen = any(
+            "tool_execution_started" == str(entry[0]) for entry in events.get("event_types", [])
+        )
+        if started_seen:
+            break
+        time.sleep(1)
+    expiry = runner.uv_json(str(runner.runner_dir / "verify_durable.py"), "rotate-epoch")
+    worker.wait(timeout=180)
+    _cycles(runner, 2)
+    summary = _summary(runner)
+    effects = summary.get("effects", [])
+    status = _status(runner, session_id)
+    lease_proof = runner.workspace / "lease-proof.txt"
+    succeeded = sum(entry["rows"] for entry in effects if entry["status"] == "succeeded")
+    stale_terminal_rejected = all(
+        entry["terminal_bound"] == 0 for entry in effects if entry["status"] != "succeeded"
+    )
+    runner.record(
+        "lease_loss_uncertain_reconcile",
+        seed["status"] == 201
+        and approval.returncode == 0
+        and started_seen
+        and expiry.get("rotated_epoch")
+        and stale_terminal_rejected
+        and lease_proof.is_file(),
+        {
+            "session_id": session_id,
+            "tool_started": started_seen,
+            "rotated_epoch": expiry.get("rotated_epoch"),
+            "effects": effects,
+            "succeeded": succeeded,
+            "session_status": status,
+            "lease_proof_present": lease_proof.is_file(),
+        },
+    )
+
+
 def run_execution_tier(runner: Runner) -> None:
     prior = scenario_side_effect(runner)
     scenario_restart_no_duplicate(runner, prior)
     scenario_replay_consistency(runner, prior)
     scenario_payload_binding(prior, runner)
     scenario_completed_memory(runner)
-    runner.record_skipped(
-        "lease_loss_uncertain_reconcile",
-        "fault_injection_not_implemented",
-        "deterministic mid-execution lease expiry injection",
-    )
+    scenario_worker_death_recovers(runner)
+    scenario_lease_loss(runner)
     _cooldown()
 
 
