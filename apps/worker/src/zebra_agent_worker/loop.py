@@ -218,6 +218,7 @@ def build_worker_loop_service(
         active_namespace: str | None = cloud_bundle.deployment_namespace
         active_dispatch: EffectDispatchPort | None = cloud_bundle.effect_dispatch
         active_artifact_factory = cloud_bundle.artifact_factory
+        active_workspace_resolver_factory = cloud_bundle.workspace_resolver_factory
         active_provider_factory: (
             Callable[[SessionId], CloudProviderContinuationCoordinator] | None
         ) = cloud_bundle.provider_continuation_factory
@@ -229,6 +230,7 @@ def build_worker_loop_service(
         active_namespace = deployment_namespace
         active_dispatch = effect_dispatch
         active_artifact_factory = None
+        active_workspace_resolver_factory = None
         active_provider_factory = cloud_provider_continuation_factory
     if settings.live_events.redis_url is not None:
         namespace = getattr(active_stores, "deployment_namespace", None)
@@ -265,6 +267,11 @@ def build_worker_loop_service(
         deployment_namespace=active_namespace,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,
+        workspace_resolver=(
+            active_workspace_resolver_factory()
+            if active_workspace_resolver_factory is not None
+            else None
+        ),
     )
     command_consumer = SessionCommandConsumer(
         execution_stores,

@@ -42,6 +42,12 @@ class RouteAdapter:
             return agui_response
         if method == "GET" and request.path == "/sessions":
             return self.app.list_sessions(request.query or {})
+        if method == "POST" and request.path == "/workspaces":
+            return self.app.create_workspace(request.body or {})
+        if method == "GET" and request.path == "/workspaces":
+            return bad_request("list workspaces is not part of the command surface")
+        if method == "GET" and request.path.startswith("/workspaces/"):
+            return self.app.get_workspace(request.path.removeprefix("/workspaces/"))
         if method == "POST" and request.path == "/sessions":
             return self.app.create_session(
                 request.body or {},

@@ -23,7 +23,7 @@ def create_queued_session(
         SessionBootstrapCommand(
             title=str(parsed["title"]),
             user_input=str(parsed["prompt"]),
-            workspace_root=Path(str(parsed["workspace"])).expanduser().resolve(),
+            workspace_root=_workspace_root(str(parsed["workspace"])),
             policy_profile=str(parsed["policy_profile"]),
             tool_profile=ToolProfile(str(parsed["tool_profile"])),
             network_profile=str(parsed["network_profile"]),
@@ -73,3 +73,10 @@ def create_queued_session(
             "attachments": [ref.to_mapping() for ref in attachment_refs],
         },
     )
+
+
+def _workspace_root(reference: str) -> Path:
+    """Control-plane references keep their uri shape; plain paths resolve."""
+    if reference.startswith("workspace://"):
+        return Path(reference)
+    return Path(reference).expanduser().resolve()

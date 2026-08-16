@@ -12,6 +12,7 @@ from uuid import uuid4
 import psycopg
 import pytest
 from agent_core.domain.workspace_control import (
+    WorkspaceAction,
     WorkspaceId,
     WorkspaceLifecycleState,
     WorkspaceSource,
@@ -192,3 +193,114 @@ def test_snapshot_restore_and_release_roundtrip(
     receipt = provisioner.release(workspace_id)
     assert receipt.resulting_state is WorkspaceLifecycleState.RELEASED
     assert not Path(instance.volume_ref or "").exists()
+
+
+def test_runtime_resolver_provisions_and_fences(
+    dsn: str, git_repo: tuple[str, str], tmp_path: Path
+) -> None:
+    from agent_core.ports.workspace_control import WorkspaceProvisionCommand
+    from agent_runtime import (
+        WorkspaceRuntimeResolutionError,
+        WorkspaceRuntimeResolver,
+    )
+
+    provisioner, _ = _provisioner(dsn, tmp_path)
+    locator, revision = git_repo
+    workspace_id = WorkspaceId(uuid4())
+    provisioner.provision(
+        WorkspaceProvisionCommand(
+            workspace_id=workspace_id,
+            deployment_namespace="cloud-a",
+            source=WorkspaceSource(
+                kind=WorkspaceSourceKind.GIT_REPOSITORY,
+                locator=locator,
+                pinned_revision=revision,
+            ),
+            quota_bytes=1024 * 1024,
+            idempotency_key=f"provision-{workspace_id}",
+        )
+    )
+    resolver = WorkspaceRuntimeResolver(provisioner)
+    reference = f"workspace://{workspace_id}"
+
+    root = resolver.resolve(reference, session_id=uuid4())
+    assert (root / "README.md").is_file()
+    assert resolver.resolve("/tmp/plain/path", session_id=uuid4()) == Path("/tmp/plain/path")
+
+    ready_root = resolver.resolve_ready(reference, session_id=uuid4())
+    assert ready_root == root
+    resolver.verify_revision(reference, materialized_revision=revision)
+    with pytest.raises(WorkspaceRuntimeResolutionError, match="drifted"):
+        resolver.verify_revision(reference, materialized_revision="other-rev")
+
+    unknown = WorkspaceId(uuid4())
+    with pytest.raises(WorkspaceRuntimeResolutionError):
+        resolver.resolve(f"workspace://{unknown}", session_id=uuid4())
+    with pytest.raises(WorkspaceRuntimeResolutionError):
+        resolver.resolve("workspace://not-a-uuid", session_id=uuid4())
+
+
+def test_namespace_quota_enforced_before_creation(
+    dsn: str, git_repo: tuple[str, str], tmp_path: Path
+) -> None:
+    from agent_runtime.workspace_provisioner import WorkspaceProvisionerError
+
+    store = PostgresWorkspaceControlStore(dsn, deployment_namespace="cloud-a")
+    objects = _ObjectStore()
+    provisioner = PostgresWorkspaceProvisioner(
+        store,
+        volume_root=tmp_path / "volumes",
+        artifact_reader=objects.read,
+        snapshot_writer=objects.write,
+        snapshot_reader=objects.read,
+        namespace_quota_bytes=1024 * 1024,
+    )
+    locator, revision = git_repo
+    first = provisioner.provision(
+        WorkspaceProvisionCommand(
+            workspace_id=WorkspaceId(uuid4()),
+            deployment_namespace="cloud-a",
+            source=WorkspaceSource(
+                kind=WorkspaceSourceKind.GIT_REPOSITORY,
+                locator=locator,
+                pinned_revision=revision,
+            ),
+            quota_bytes=768 * 1024,
+            idempotency_key="quota-first",
+        )
+    )
+    assert first.state is WorkspaceLifecycleState.READY
+    with pytest.raises(WorkspaceProvisionerError, match="quota exceeded"):
+        provisioner.provision(
+            WorkspaceProvisionCommand(
+                workspace_id=WorkspaceId(uuid4()),
+                deployment_namespace="cloud-a",
+                source=WorkspaceSource(
+                    kind=WorkspaceSourceKind.GIT_REPOSITORY,
+                    locator=locator,
+                    pinned_revision=revision,
+                ),
+                quota_bytes=768 * 1024,
+                idempotency_key="quota-second",
+            )
+        )
+    assert store.namespace_live_quota_bytes() == 768 * 1024
+
+
+def test_stale_provisioning_swept_to_uncertain(dsn: str, tmp_path: Path) -> None:
+    store = PostgresWorkspaceControlStore(dsn, deployment_namespace="cloud-a")
+    workspace_id = WorkspaceId(uuid4())
+    store.create_pending(
+        WorkspaceSource(
+            kind=WorkspaceSourceKind.HOST_REFERENCE,
+            locator="host://worker-a/existing",
+        ),
+        workspace_id=workspace_id,
+        quota_bytes=1024,
+        owner_session_id=None,
+        idempotency_key=f"stale-{workspace_id}",
+    )
+    store.transition(workspace_id, WorkspaceAction.PROVISION_START)
+    assert store.expire_stale_provisioning(older_than_seconds=0) == (workspace_id,)
+    assert store.get(workspace_id).state is WorkspaceLifecycleState.UNCERTAIN
+    assert store.expire_stale_provisioning(older_than_seconds=0) == ()

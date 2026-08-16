@@ -85,6 +85,9 @@ class Runner:
         runtime_image = os.environ.get("ZEBRA_EFFECT_E2E_RUNTIME_IMAGE")
         if runtime_image:
             CLOUD_ENV["ZEBRA_RUNTIME_IMAGE"] = runtime_image
+        volume_root = os.environ.get("ZEBRA_WORKSPACE_VOLUME_ROOT", "").strip()
+        if volume_root:
+            CLOUD_ENV["ZEBRA_WORKSPACE_VOLUME_ROOT"] = volume_root
 
     def record(self, name: str, passed: bool, detail: dict[str, Any]) -> None:
         status = "pass" if passed else "fail"

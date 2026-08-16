@@ -36,7 +36,7 @@ def _seed(runner: Runner, *, prompt: str, key: str) -> dict[str, Any]:
 
 def _cycles(runner: Runner, count: int) -> None:
     for _ in range(count):
-        runner.uv(
+        result = runner.uv(
             "-m",
             "zebra_agent_worker.main",
             "--max-cycles",
@@ -45,6 +45,7 @@ def _cycles(runner: Runner, count: int) -> None:
             "1",
             check=False,
         )
+        runner.last_cycle_stderr = (result.stderr or "")[-500:]
 
 
 def _summary(runner: Runner) -> dict[str, Any]:
@@ -404,6 +405,7 @@ def run_execution_tier(runner: Runner) -> None:
     scenario_completed_memory(runner)
     scenario_worker_death_recovers(runner)
     scenario_lease_loss(runner)
+    scenario_workspace_cp(runner)
     _cooldown()
 
 
@@ -415,3 +417,164 @@ def cleanup_workspace(runner: Runner) -> None:
     for entry in Path(runner.workspace).glob("*"):
         if entry.is_file():
             entry.unlink(missing_ok=True)
+
+
+def _mount_scratch_volume(label: str) -> Path | None:
+    """Rig helper: create a scratch volume that auto-mounts under /Volumes.
+
+    The colima VM shares /Volumes, so the default mount point is directly
+    bindable into gVisor sandboxes and satisfies the dedicated-mount quota
+    gate without any custom mount dance.
+    """
+    import os as _os
+    import subprocess as _sp
+    import time as _t
+
+    device = _sp.run(
+        ("hdiutil", "attach", "-nomount", "ram://262144"),
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    if not device:
+        return None
+    _sp.run(
+        ("diskutil", "eraseDisk", "APFS", label, "GPTFormat", device),
+        capture_output=True,
+        check=False,
+    )
+    _t.sleep(3)
+    mounted = Path("/Volumes") / label
+    if not _os.path.ismount(mounted):
+        _sp.run(("hdiutil", "detach", device, "-force"), capture_output=True, check=False)
+        return None
+    return mounted
+
+
+def _create_git_source(runner: Runner) -> str:
+    import subprocess as _sp
+
+    repo = runner.run_root / "cp-source-repo"
+    if repo.exists():
+        _sp.run(("rm", "-rf", str(repo)), check=False)
+    repo.mkdir(parents=True)
+    for command in (
+        ("git", "init", "--quiet"),
+        ("git", "config", "user.email", "cp@example"),
+        ("git", "config", "user.name", "CP"),
+    ):
+        _sp.run((*command[:1], "-C", str(repo), *command[1:]), check=True, capture_output=True)
+    (repo / "TASK.md").write_text("# control-plane workspace\nrun the side effect\n")
+    _sp.run(("git", "-C", str(repo), "add", "."), check=True, capture_output=True)
+    _sp.run(
+        ("git", "-C", str(repo), "commit", "--quiet", "-m", "initial"),
+        check=True,
+        capture_output=True,
+    )
+    return str(repo)
+
+
+def scenario_workspace_cp(runner: Runner) -> None:
+    """Full chain: git source -> API command -> mounted materialization ->
+    approved side effect inside the provisioned tree -> completed."""
+    import subprocess as _sp
+
+    volume_root = Path(runner.cloud_env.get("ZEBRA_WORKSPACE_VOLUME_ROOT", ""))
+    if not volume_root:
+        runner.record_skipped(
+            "workspace_cp_provisioned_side_effect",
+            "volume_root_not_configured",
+            "ZEBRA_WORKSPACE_VOLUME_ROOT on a gVisor rig",
+        )
+        return
+    import time as _t
+
+    label = f"ZEBRACPE2E{int(_t.time()) % 100000}"
+    cp_root = _mount_scratch_volume(label)
+    mounted = cp_root is not None
+    repo = _create_git_source(runner)
+    revision = _sp.run(
+        ("git", "-C", repo, "rev-parse", "HEAD"),
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    created = runner.uv_json(
+        str(runner.runner_dir / "workspace_command.py"),
+        env_extra={
+            "ZEBRA_EFFECT_E2E_SOURCE_REPO": repo,
+            "ZEBRA_EFFECT_E2E_SOURCE_REVISION": revision,
+        },
+    )
+    workspace_id = created["workspace_id"]
+    seeded = runner.uv_json(
+        str(runner.runner_dir / "seed_session.py"),
+        env_extra={
+            "ZEBRA_EFFECT_E2E_WORKSPACE": f"workspace://{workspace_id}",
+            "ZEBRA_EFFECT_E2E_SEED_KEY": f"cp-session-{workspace_id}",
+            "ZEBRA_EFFECT_E2E_PROMPT": "WRITE-FILE: create cp-proof.txt",
+        },
+    )
+    cp_env = {
+        "ZEBRA_WORKSPACE_VOLUME_ROOT": str(cp_root),
+        "ZEBRA_WORKSPACE_VOLUME_LAYOUT": "root",
+    }
+    probe = runner.uv(
+        "-m",
+        "zebra_agent_worker.main",
+        "--max-cycles",
+        "1",
+        "--idle-sleep-seconds",
+        "1",
+        check=False,
+        env_extra=cp_env,
+    )
+    import subprocess as _chmod
+
+    _chmod.run(("chmod", "-R", "777", str(cp_root)), capture_output=True, check=False)
+    approval = runner.uv(
+        str(runner.runner_dir / "approve_and_resume.py"),
+        env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": seeded["session_id"]},
+        check=False,
+    )
+    for _ in range(3):
+        runner.uv(
+            "-m",
+            "zebra_agent_worker.main",
+            "--max-cycles",
+            "2",
+            "--idle-sleep-seconds",
+            "1",
+            check=False,
+            env_extra=cp_env,
+        )
+    status = _status(runner, seeded["session_id"])
+    instance = runner.uv_json(
+        str(runner.runner_dir / "workspace_command.py"),
+        env_extra={"ZEBRA_EFFECT_E2E_WORKSPACE_ID": workspace_id},
+    )
+    probe_tail = (probe.stderr or "")[-600:] if probe else ""
+    proof = cp_root / PROOF_FILE
+    runner.record(
+        "workspace_cp_provisioned_side_effect",
+        created.get("status") == 201
+        and seeded["status"] == 201
+        and approval.returncode == 0
+        and mounted
+        and status == "completed"
+        and instance.get("workspace", {}).get("state") == "ready"
+        and instance.get("workspace", {}).get("materialized_revision") == revision
+        and (cp_root / "TASK.md").is_file()
+        and proof.is_file()
+        and proof.read_text() == "effect-e2e-proof",
+        {
+            "workspace_id": workspace_id,
+            "cp_root": str(cp_root),
+            "mounted": mounted,
+            "session_status": status,
+            "workspace": instance,
+            "proof_present": proof.is_file(),
+            "approval_returncode": approval.returncode,
+            "probe_stderr": probe_tail,
+        },
+    )

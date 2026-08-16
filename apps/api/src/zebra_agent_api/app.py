@@ -59,6 +59,10 @@ from zebra_agent_api.api_scm_mixin import ApiScmMixin
 from zebra_agent_api.api_session_handoff_mixin import ApiSessionHandoffMixin
 from zebra_agent_api.api_session_read_mixin import ApiSessionReadMixin
 from zebra_agent_api.api_status_mixin import ApiStatusMixin
+from zebra_agent_api.api_workspace_mixin import (
+    WorkspaceApiMixin,
+    WorkspaceControlStorePort,
+)
 from zebra_agent_api.factory import create_app as create_app
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
@@ -95,12 +99,14 @@ class ZebraAgentApi(
     ApiScmMixin,
     ApiApprovalControlMixin,
     ApiSkillsAdminMixin,
+    WorkspaceApiMixin,
 ):
     database_path: Path
     settings: ZebraAgentSettings
     _stores: ControlPlaneStores | None = None
     live_event_fanout: LiveEventFanoutPort | None = None
     effect_state: EffectStateReadPort | None = None
+    workspace_control_store: WorkspaceControlStorePort | None = None
     administrative_context_namespace: str | None = None
     credential_broker: CredentialBroker | None = None
     github_transport: GitHubPullRequestTransport | None = None
@@ -128,6 +134,27 @@ class ZebraAgentApi(
         parsed = parse_create_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed
+        workspace_source = parsed.get("workspace_source")
+        if workspace_source is not None:
+            from uuid import uuid4 as _uuid4
+
+            from agent_core.domain.workspace_control import WorkspaceId as _WorkspaceId
+
+            if self.workspace_control_store is None:
+                return bad_request(
+                    "workspace_source requires the cloud workspace control plane"
+                )
+            workspace_id = _WorkspaceId(_uuid4())
+            self.workspace_control_store.create_pending(
+                workspace_source,
+                workspace_id=workspace_id,
+                quota_bytes=256 * 1024 * 1024,
+                owner_session_id=None,
+                idempotency_key=(
+                    f"session-workspace:{idempotency_key or workspace_id}"
+                ),
+            )
+            parsed["workspace"] = f"workspace://{workspace_id}"
         if trusted_local_mode_enabled(self.settings):
             parsed["network_profile"] = "full-trusted-local"
             parsed["network_allowlist"] = []

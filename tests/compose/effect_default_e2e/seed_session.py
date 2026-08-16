@@ -12,7 +12,8 @@ from zebra_agent_config import load_settings
 
 
 def main() -> int:
-    workspace = os.environ["ZEBRA_EFFECT_E2E_WORKSPACE"]
+    workspace = os.environ.get("ZEBRA_EFFECT_E2E_WORKSPACE", "")
+    source_json = os.environ.get("ZEBRA_EFFECT_E2E_WORKSPACE_SOURCE")
     settings = load_settings()
     api = create_app(settings=settings)
     adapter = RouteAdapter(api)
@@ -24,10 +25,11 @@ def main() -> int:
             body={
                 "prompt": os.environ["ZEBRA_EFFECT_E2E_PROMPT"],
                 "title": "effect default e2e",
-                "workspace": workspace,
+                **({} if source_json else {"workspace": workspace}),
                 "execute": False,
                 "policy_profile": "workspace_write",
                 "tool_profile": "general",
+                **({"workspace_source": json.loads(source_json)} if source_json else {}),
             },
         )
     )

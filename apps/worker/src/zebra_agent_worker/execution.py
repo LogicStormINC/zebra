@@ -18,6 +18,7 @@ from agent_core.harness import (
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_integrations import build_model_gateway
+from agent_runtime.workspace_runtime_resolver import WorkspaceRuntimeResolver
 from agent_security import (
     LocalPolicyEngine,
     PolicyProfile,
@@ -72,6 +73,7 @@ from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_gateway_runtime import build_worker_tool_gateway
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
+from zebra_agent_worker.workspace_resolution import apply_workspace_resolver
 
 
 class SessionExecutionService:
@@ -84,6 +86,7 @@ class SessionExecutionService:
         settings: ZebraAgentSettings | None = None,
         stores: ControlPlaneStores | PostgresControlPlaneStores | None = None,
         effect_dispatch: EffectDispatchPort | None = None,
+        workspace_resolver: WorkspaceRuntimeResolver | None = None,
         worker_projection_transaction: WorkerProjectionTransactionPort | None = None,
         deployment_namespace: str | None = None,
         cloud_artifact_factory: artifact_runtime.CloudArtifactCoordinatorFactory | None = None,
@@ -146,6 +149,7 @@ class SessionExecutionService:
             deployment_namespace=deployment_namespace,
         )
         self._effect_dispatch = effect_dispatch
+        self._workspace_resolver = workspace_resolver
         self._session_history = active_stores.session_history
         self._handoff_gate = handoff.SessionHandoffRecoveryGate(
             str(database_path),
@@ -240,6 +244,8 @@ class SessionExecutionService:
             )
         except (FileNotFoundError, ValueError) as exc:
             raise WorkerExecutionError(str(exc)) from exc
+        if self._workspace_resolver is not None:
+            task = apply_workspace_resolver(task, self._workspace_resolver, session_id)
         trusted_local = trusted_local_mode_enabled(self._settings)
         effective_network_profile = resolve_effective_network_profile(
             task.network_profile,

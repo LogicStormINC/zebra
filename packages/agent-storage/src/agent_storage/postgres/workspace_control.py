@@ -172,6 +172,57 @@ class PostgresWorkspaceControlStore:
             ).fetchall()
         return tuple(_row_to_instance(row, self.deployment_namespace) for row in rows)
 
+    def expire_stale_provisioning(self, *, older_than_seconds: int) -> tuple[WorkspaceId, ...]:
+        """Crash-orphan sweep: stale provisioning becomes uncertain for reconcile."""
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT workspace_id FROM workspace_control_instances
+                WHERE deployment_namespace = %s AND state = 'provisioning'
+                  AND updated_at < transaction_timestamp() - (%s * interval '1 second')
+                ORDER BY updated_at ASC
+                """,
+                (self.deployment_namespace, max(0, older_than_seconds)),
+            ).fetchall()
+            expired: list[WorkspaceId] = []
+            for row in rows:
+                workspace_id = WorkspaceId(row["workspace_id"])
+                updated = connection.execute(
+                    """
+                    UPDATE workspace_control_instances
+                    SET state = 'uncertain', updated_at = transaction_timestamp()
+                    WHERE deployment_namespace = %s AND workspace_id = %s
+                      AND state = 'provisioning'
+                    RETURNING workspace_id
+                    """,
+                    (self.deployment_namespace, workspace_id),
+                ).fetchone()
+                if updated is not None:
+                    self._append_operation(
+                        connection,
+                        workspace_id,
+                        action="expire_stale_provisioning",
+                        idempotency_key=f"expire:{workspace_id}:{uuid4()}",
+                        resulting_state=WorkspaceLifecycleState.UNCERTAIN,
+                    )
+                    expired.append(workspace_id)
+        return tuple(expired)
+
+    def namespace_live_quota_bytes(self) -> int:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT coalesce(sum(quota_bytes), 0) AS live_quota
+                FROM workspace_control_instances
+                WHERE deployment_namespace = %s
+                  AND state NOT IN ('released', 'failed')
+                """,
+                (self.deployment_namespace,),
+            ).fetchone()
+        if row is None:
+            return 0
+        return int(row["live_quota"])
+
     def record_snapshot(self, snapshot: WorkspaceSnapshotRef) -> WorkspaceSnapshotRef:
         with self._database.connect() as connection:
             connection.execute(

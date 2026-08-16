@@ -55,35 +55,60 @@ class PostgresWorkspaceProvisioner(WorkspaceProvisionerPort):
         artifact_reader: BytesReader,
         snapshot_writer: BytesWriter,
         snapshot_reader: BytesReader,
+        namespace_quota_bytes: int | None = None,
+        single_root_layout: bool = False,
     ) -> None:
         self._store = store
         self._volume_root = volume_root
         self._artifact_reader = artifact_reader
         self._snapshot_writer = snapshot_writer
         self._snapshot_reader = snapshot_reader
+        self._namespace_quota_bytes = namespace_quota_bytes
+        self._single_root_layout = single_root_layout
+
+    @property
+    def store(self) -> PostgresWorkspaceControlStore:
+        return self._store
 
     def provision(self, command: WorkspaceProvisionCommand) -> WorkspaceInstance:
-        existing = self._store.get(command.workspace_id)
-        if existing is None:
-            existing, _ = self._store.create_pending(
+        if (
+            self._namespace_quota_bytes is not None
+            and self._store.get(command.workspace_id) is None
+        ):
+            live = self._store.namespace_live_quota_bytes()
+            if live + command.quota_bytes > self._namespace_quota_bytes:
+                raise WorkspaceProvisionerError(
+                    "namespace workspace quota exceeded: "
+                    f"{live} live + {command.quota_bytes} requested "
+                    f"> {self._namespace_quota_bytes} budget"
+                )
+        if self._store.get(command.workspace_id) is None:
+            self._store.create_pending(
                 command.source,
                 workspace_id=command.workspace_id,
                 quota_bytes=command.quota_bytes,
                 owner_session_id=command.owner_session_id,
                 idempotency_key=command.idempotency_key,
             )
+        return self.provision_existing(command.workspace_id)
+
+    def provision_existing(self, workspace_id: WorkspaceId) -> WorkspaceInstance:
+        """Provision from the instance's own durable source facts."""
+        existing = self._store.get(workspace_id)
+        if existing is None:
+            raise WorkspaceProvisionerError("workspace instance is missing")
         if existing.state is not WorkspaceLifecycleState.PENDING:
             return existing
-        self._store.transition(command.workspace_id, WorkspaceAction.PROVISION_START)
-        target = self._volume_path(command.workspace_id)
-        shutil.rmtree(target, ignore_errors=True)
+        self._store.transition(workspace_id, WorkspaceAction.PROVISION_START)
+        target = self._volume_path(workspace_id)
+        _reset_target(target)
         try:
-            revision, digest = self._materialize(command.source, target)
+            revision, digest = self._materialize(existing.source, target)
         except WorkspaceMaterializationError:
-            self._store.transition(command.workspace_id, WorkspaceAction.PROVISION_MARK_UNCERTAIN)
+            self._store.transition(workspace_id, WorkspaceAction.PROVISION_MARK_UNCERTAIN)
             raise
         instance, _ = self._store.transition(
-            command.workspace_id,
+            workspace_id,
             WorkspaceAction.PROVISION_SUCCEED,
             materialized_revision=revision,
             content_digest=digest,
@@ -154,6 +179,10 @@ class PostgresWorkspaceProvisioner(WorkspaceProvisionerPort):
             volume_ref=str(target),
         )
         return restored
+
+    def expire_stale_provisioning(self, *, older_than_seconds: int) -> tuple[WorkspaceId, ...]:
+        """Delegate the crash-orphan sweep; reconcile_uncertain resolves them."""
+        return self._store.expire_stale_provisioning(older_than_seconds=older_than_seconds)
 
     def release(self, workspace_id: WorkspaceId) -> WorkspaceOperationReceipt:
         instance = self._store.get(workspace_id)
@@ -227,7 +256,23 @@ class PostgresWorkspaceProvisioner(WorkspaceProvisionerPort):
         return instance
 
     def _volume_path(self, workspace_id: WorkspaceId) -> Path:
+        if self._single_root_layout:
+            return self._volume_root
         return self._volume_root / str(workspace_id)
+
+
+def _reset_target(target: Path) -> None:
+    """Mount points keep their mount; plain directories are replaced."""
+    import os
+
+    if os.path.ismount(target):
+        for child in target.iterdir():
+            if child.is_dir() and not child.is_symlink():
+                shutil.rmtree(child, ignore_errors=True)
+            else:
+                child.unlink(missing_ok=True)
+        return
+    shutil.rmtree(target, ignore_errors=True)
 
 
 def _tar_directory(root: Path) -> bytes:

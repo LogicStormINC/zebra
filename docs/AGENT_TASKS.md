@@ -430,6 +430,91 @@ aggregate without treating `PostgresControlPlaneStores` as local
   `ZEBRA_WORKSPACE_CONTROL_POSTGRES_TEST_RESULT=PASS` and deterministic
   cleanup; `make test` `2234 passed, 279 skipped`; `make check` green.
 
+### CLOUD-WORKSPACE-CP-API-01 - Workspace Command And Read Surface
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `APP / API`
+- Depends on: `CLOUD-WORKSPACE-CP-PG-01`; activated under the maintainer's
+  standing continuation instruction.
+- Branch: `zebra-cloud-trench` (batch closeout continuation)
+- Owned paths: `apps/api/src/zebra_agent_api/api_workspace_mixin.py` (new),
+  `session_payloads.py` (`workspace_source` parsing), `session_queue.py`
+  (uri-preserving workspace root), `app.py` binding, `factory.py` cloud
+  wiring, `routes.py` endpoints, focused
+  `tests/api/test_workspace_control_routes.py` (new).
+- Delivers: `POST /workspaces` (idempotent pending creation, 201 with a
+  `workspace://<id>` uri), `GET /workspaces/{id}` projection reads, and
+  create-session `workspace_source` acceptance that is mutually exclusive
+  with plain `workspace` paths and binds the session to the control-plane
+  reference; the cloud factory composes `PostgresWorkspaceControlStore`
+  from the resolved namespace and explicit injection stays available.
+- Validation: focused route tests `5/5`; full backend green.
+
+### CLOUD-WORKSPACE-CP-RT-01 - Worker Workspace Runtime Resolution
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `RUNTIME / WORKER`
+- Depends on: `CLOUD-WORKSPACE-CP-PROV-01`.
+- Owned paths:
+  `packages/agent-runtime/src/agent_runtime/workspace_runtime_resolver.py` (new),
+  `workspace_provisioner.py` (`provision_existing`, mount-preserving reset,
+  single-root layout),
+  `apps/worker/src/zebra_agent_worker/workspace_resolution.py` (new),
+  `execution.py` resolver seam, `cloud_composition.py` factory (env-driven
+  volume root, self-describing snapshot object uris over the immutable
+  object store), `loop.py` pass-through.
+- Delivers: `WorkspaceRuntimeResolver` resolves `workspace://` references
+  through `provision_existing` (durable-source provisioning, unknown ids
+  fail closed), `resolve_ready` continuation path, `verify_revision`
+  drift fencing, and plain-path passthrough for the local profile; the
+  worker applies it to recovered tasks before runtime provisioning, and
+  task recovery preserves uri references instead of resolving them to
+  cwd-relative paths.
+- Validation: real PostgreSQL matrix `11/11` PASS including resolver
+  coverage; worker resolution test green; full backend green.
+
+### CLOUD-WORKSPACE-CP-GC-01 - Quota, Stale Sweep And Reconcile
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / RUNTIME`
+- Depends on: `CLOUD-WORKSPACE-CP-RT-01`.
+- Owned paths: `postgres/workspace_control.py` (expire sweep, namespace
+  quota accounting), `workspace_provisioner.py` (quota enforcement,
+  sweep delegation).
+- Delivers: namespace live-quota accounting with fail-closed provision
+  rejection when a namespace budget would be exceeded, and a
+  crash-orphan sweep that CAS-transitions stale `provisioning` instances
+  into `uncertain` for deterministic reconciliation through the existing
+  resolve-succeed/resolve-fail path.
+- Validation: real PostgreSQL matrix `11/11` PASS (quota rejection,
+  accounting, stale sweep idempotence).
+
+### CLOUD-WORKSPACE-CP-E2E-01 - Control-Plane Provisioned E2E
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Suggested role: `QA / SRE`
+- Depends on: API/RT/GC children.
+- Owned paths: `tests/compose/effect_default_e2e/` (workspace_command,
+  seed passthrough, scenario `workspace_cp_provisioned_side_effect`,
+  scratch-volume helper), `docs/CLOUD_WORKSPACE_CP_PLAN_v1.0.md`.
+- The product chain is proven end-to-end on the rig by a manual
+  reproduction recorded in the session evidence: git source -> API
+  command -> dedicated-mount materialization (revision+digest persisted)
+  -> session bound to `workspace://<id>` -> gVisor side effect written
+  into the provisioned tree -> `session_completed` with exactly one
+  `succeeded` effect. The automated scenario drives the same chain and
+  currently blocks on a macOS-only rig fixture issue: `chmod` mode on
+  freshly erased APFS scratch volumes does not persist reliably through
+  the colima virtiofs share for the gVisor container-user write
+  preflight; the scenario passes it after materialization on manual
+  timing. On Linux CI (tmpfs scratch) this fixture issue does not apply.
+  The scenario records mounted/workspace/session/proof facts and the
+  probe stderr for diagnosis.
+
 ### CLOUD-WORKSPACE-CP-CON-01 - Workspace Control Plane Domain And Port Contract
 
 - Status: `Done`

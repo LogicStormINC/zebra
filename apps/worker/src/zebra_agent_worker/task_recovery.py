@@ -73,7 +73,11 @@ def recover_task(
     return RecoveredTask(
         title=resolved_title,
         user_input=user_input,
-        workspace_root=Path(workspace.workspace_root).expanduser().resolve(),
+        workspace_root=(
+            Path(workspace.workspace_root)
+            if str(workspace.workspace_root).startswith("workspace:/")
+            else Path(workspace.workspace_root).expanduser().resolve()
+        ),
         policy_profile=policy_profile,
         tool_profile=workspace.tool_profile,
         network_profile=parse_network_profile(

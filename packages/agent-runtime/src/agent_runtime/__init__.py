@@ -95,6 +95,10 @@ from agent_runtime.workspace_quota import (
     WorkspaceQuotaEvidence,
     require_workspace_quota,
 )
+from agent_runtime.workspace_runtime_resolver import (
+    WorkspaceRuntimeResolutionError,
+    WorkspaceRuntimeResolver,
+)
 
 __all__ = [
     "LocalRuntime",
@@ -156,6 +160,8 @@ __all__ = [
     "materialize_git",
     "materialize_snapshot_bytes",
     "workspace_tree_digest",
+    "WorkspaceRuntimeResolver",
+    "WorkspaceRuntimeResolutionError",
     "build_mcp_capability_inventory",
     "discover_mcp_resources",
     "discover_mcp_prompts",

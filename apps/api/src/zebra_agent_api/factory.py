@@ -15,6 +15,7 @@ from agent_storage import (
 )
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
+from zebra_agent_api.api_workspace_mixin import WorkspaceControlStorePort
 from zebra_agent_api.credential_broker import build_default_credential_broker
 from zebra_agent_api.session_context_namespace import resolve_context_namespace
 
@@ -34,6 +35,7 @@ def create_app(
     credential_env: Mapping[str, str] | None = None,
     github_transport: GitHubPullRequestTransport | None = None,
     effect_state: EffectStateReadPort | None = None,
+    workspace_control_store: WorkspaceControlStorePort | None = None,
 ) -> ZebraAgentApi:
     from zebra_agent_api.app import ZebraAgentApi
 
@@ -74,10 +76,20 @@ def create_app(
     active_broker = credential_broker
     if active_broker is None:
         active_broker = build_default_credential_broker(active_settings.scm, env=credential_env)
+    if workspace_control_store is None and composed_stores is not None:
+        from agent_storage import PostgresWorkspaceControlStore
+
+        namespace = getattr(composed_stores, "deployment_namespace", None)
+        if isinstance(namespace, str) and namespace.strip():
+            workspace_control_store = PostgresWorkspaceControlStore(
+                active_settings.database_url,
+                deployment_namespace=namespace,
+            )
     return ZebraAgentApi(
         database_path=active_database_path,
         settings=active_settings,
         _stores=active_stores,
+        workspace_control_store=workspace_control_store,
         live_event_fanout=live_event_fanout,
         administrative_context_namespace=resolve_context_namespace(
             administrative_context_namespace, context_administrative_namespace
