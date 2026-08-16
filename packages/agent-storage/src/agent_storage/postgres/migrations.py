@@ -15,6 +15,9 @@ from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATI
 from agent_storage.postgres.provider_continuation_migration import (
     PROVIDER_CONTINUATION_MIGRATION,
 )
+from agent_storage.postgres.workspace_control_migration import (
+    WORKSPACE_CONTROL_MIGRATION,
+)
 
 MIGRATIONS = (
     Migration(
@@ -462,4 +465,5 @@ MIGRATIONS = (
     DELIVERY_TRANSACTION_MIGRATION,
     MIGRATION_RECOVERY_MIGRATION,
     HOST_AUTH_MIGRATION,
+    WORKSPACE_CONTROL_MIGRATION,
 )

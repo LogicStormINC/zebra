@@ -110,6 +110,9 @@ from agent_storage.postgres.provider_continuations import (
 from agent_storage.postgres.session_handoff_dispatch import PostgresHandoffDispatchStore
 from agent_storage.postgres.session_handoffs import PostgresSessionHandoffStore
 from agent_storage.postgres.session_history import PostgresSessionHistory
+from agent_storage.postgres.workspace_control import (
+    PostgresWorkspaceControlStore,
+)
 from agent_storage.postgres.workspaces import (
     PostgresWorkspaceProjectionConflictError,
     PostgresWorkspaceProjectionStore,
@@ -143,6 +146,7 @@ __all__ = [
     "HostRegistryBindingError",
     "HostRegistryRecord",
     "PostgresHostAuthorityStore",
+    "PostgresWorkspaceControlStore",
     "PostgresMemoryDeliveryLedger",
     "PostgresMemoryDeliveryStore",
     "NativeMemoryConflictError",

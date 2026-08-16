@@ -1,0 +1,21 @@
+name: zebra-workspace-control-test
+
+services:
+  postgres:
+    image: postgres:17.5-alpine3.21
+    environment:
+      POSTGRES_DB: zebra
+      POSTGRES_USER: zebra
+      POSTGRES_PASSWORD: zebra-test-password
+    ports:
+      - "127.0.0.1:25498:5432"
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U zebra -d zebra]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks: [dependencies]
+
+networks:
+  dependencies:
+    name: zebra-workspace-control-test-dependencies

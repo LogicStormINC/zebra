@@ -373,6 +373,32 @@ aggregate without treating `PostgresControlPlaneStores` as local
 - no replacement of the remaining cloud API compatibility paths; those stay an
   explicit command-only API blocker
 
+### CLOUD-WORKSPACE-CP-PG-01 - Workspace Control Plane PostgreSQL Authority
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE`
+- Depends on: `CLOUD-WORKSPACE-CP-CON-01`; activated under the maintainer's
+  standing continuation instruction.
+- Branch: `zebra-cloud-trench` (batch closeout continuation)
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/workspace_control_migration.py` (new, v18),
+  `packages/agent-storage/src/agent_storage/postgres/workspace_control.py` (new),
+  migration registry/import registration, `agent_storage` exports,
+  `tests/agent_storage/test_postgres_workspace_control.py` (new),
+  `tests/compose/workspace_control/` (new runner).
+- Delivers migration v18 (namespace-bound instance table with ready-state
+  revision+digest CHECK constraints and an uncertain partial index,
+  idempotent operation receipts with a unique namespace+idempotency key,
+  snapshot facts) and the `PostgresWorkspaceControlStore` adapter: CAS
+  transitions that consult the frozen domain table, idempotent pending
+  creation per key, namespace-scoped reads, uncertain listing, and
+  snapshot recording. Dict-row mapping matches the shared
+  `PostgresDatabase` connection factory.
+- Validation: real PostgreSQL 17.5 matrix `5/5` with
+  `ZEBRA_WORKSPACE_CONTROL_POSTGRES_TEST_RESULT=PASS` and deterministic
+  cleanup; `make test` `2234 passed, 279 skipped`; `make check` green.
+
 ### CLOUD-WORKSPACE-CP-CON-01 - Workspace Control Plane Domain And Port Contract
 
 - Status: `Done`
