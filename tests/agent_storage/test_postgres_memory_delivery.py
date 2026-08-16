@@ -258,7 +258,7 @@ def test_v11_upgrade_and_checksum_gate(postgres_dsn: str) -> None:
         with psycopg.connect(isolated) as connection:
             assert connection.execute(
                 "SELECT version FROM zebra_schema_migrations ORDER BY version"
-            ).fetchall()[-1] == (19,)
+            ).fetchall()[-1] == (22,)
             connection.execute(
                 "UPDATE zebra_schema_migrations SET checksum = 'bad' WHERE version = 11"
             )
@@ -334,11 +334,12 @@ def _insert_authority(dsn: str, memory_id: MemoryId) -> str:
             INSERT INTO governed_memory_records (
                 deployment_namespace, memory_id, revision, memory_type, text,
                 confidence, status, visibility, tenant_id, user_id, repo_id,
+                authority_issuer, namespace_id, definition_id,
                 source_session_id, source_event_start, source_event_end,
                 source_commit_sha, superseded_by, expires_at, created_at,
                 updated_at, creation_key, content_digest, provenance_digest
             ) VALUES ("""
-            + ", ".join(["%s"] * 22)
+            + ", ".join(["%s"] * 25)
             + ")",
             memory_values("delivery-test", entry),
         )

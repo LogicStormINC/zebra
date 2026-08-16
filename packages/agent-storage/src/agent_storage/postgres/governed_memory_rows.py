@@ -9,7 +9,11 @@ from agent_core.domain.governed_memories import (
     GovernedMemoryEntry,
     GovernedMemoryTombstone,
 )
-from agent_core.domain.identifiers import MemoryId, SessionId
+from agent_core.domain.identifiers import (
+    AgentDefinitionId,
+    MemoryId,
+    SessionId,
+)
 from agent_core.domain.memories import (
     MemoryQuery,
     MemoryRecord,
@@ -53,6 +57,9 @@ def memory_values(namespace: str, entry: GovernedMemoryEntry) -> tuple[object, .
         record.tenant_id,
         record.user_id,
         record.repo_id,
+        record.authority_issuer,
+        record.namespace_id,
+        record.definition_id,
         record.source_session_id,
         record.source_event_start,
         record.source_event_end,
@@ -78,6 +85,11 @@ def authority_from_row(row: dict[str, Any]) -> GovernedMemoryEntry | GovernedMem
             tenant_id=row["tenant_id"],
             user_id=row["user_id"],
             repo_id=row["repo_id"],
+            authority_issuer=row["authority_issuer"],
+            namespace_id=row["namespace_id"],
+            definition_id=(
+                None if row["definition_id"] is None else AgentDefinitionId(row["definition_id"])
+            ),
             provenance_digest=row["provenance_digest"],
             created_at=row["created_at"],
             updated_at=row["updated_at"],
@@ -103,6 +115,11 @@ def record_from_row(row: dict[str, Any]) -> MemoryRecord:
         tenant_id=row["tenant_id"],
         user_id=row["user_id"],
         repo_id=row["repo_id"],
+        authority_issuer=row["authority_issuer"],
+        namespace_id=row["namespace_id"],
+        definition_id=(
+            None if row["definition_id"] is None else AgentDefinitionId(row["definition_id"])
+        ),
         source_session_id=(
             None if row["source_session_id"] is None else SessionId(row["source_session_id"])
         ),
@@ -159,6 +176,9 @@ def _query_rows(
         ("user_id", query.user_id),
         ("repo_id", query.repo_id),
         ("source_session_id", query.source_session_id),
+        ("authority_issuer", query.authority_issuer),
+        ("namespace_id", query.namespace_id),
+        ("definition_id", query.definition_id),
     ):
         if value is not None:
             clauses.append(f"{column} = %s")

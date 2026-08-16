@@ -14,7 +14,7 @@ from pydantic import (
     model_validator,
 )
 
-from agent_core.domain.identifiers import MemoryId
+from agent_core.domain.identifiers import AgentDefinitionId, MemoryId
 from agent_core.domain.memories import (
     MemoryRecord,
     MemoryStatus,
@@ -153,6 +153,9 @@ class GovernedMemoryTombstone(BaseModel):
     tenant_id: str | None = None
     user_id: str | None = None
     repo_id: str | None = None
+    authority_issuer: str | None = None
+    namespace_id: str | None = None
+    definition_id: AgentDefinitionId | None = None
     provenance_digest: str
     created_at: datetime
     updated_at: datetime
@@ -162,6 +165,18 @@ class GovernedMemoryTombstone(BaseModel):
     @classmethod
     def require_namespace(cls, value: str) -> str:
         return _canonical_text(value, field_name="deployment_namespace")
+
+    @model_validator(mode="after")
+    def require_scope_consistency(self) -> Self:
+        scope_fields = (self.authority_issuer, self.namespace_id, self.definition_id)
+        if any(field is not None for field in scope_fields) and not all(
+            field is not None for field in scope_fields
+        ):
+            raise ValueError(
+                "Definition Memory scope requires authority_issuer, namespace_id"
+                " and definition_id together"
+            )
+        return self
 
     @field_validator("provenance_digest")
     @classmethod

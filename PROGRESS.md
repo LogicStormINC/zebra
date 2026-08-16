@@ -5,7 +5,18 @@
 
 ## Current Mainline Snapshot
 
-- Snapshot date: `2026-08-14`
+- Snapshot date: `2026-08-16`
+- Agent Definition chain closed: the full runtime chain
+  REG（`AGENT-DEF-PG-01`，v19 迁移 + `PostgresAgentRegistry` + draft/version/
+  release/eval evidence）→ DRAFT（`AGENT-DEF-DRAFT-01`，物化服务 + API）→
+  BIND（`AGENT-DEF-BIND-01`，`AgentDefinitionSnapshot` + TASK_PREPARED +
+  投影镜像 + 恢复校验）→ MEM（`AGENT-DEF-MEM-01`，Definition 域 governed
+  Memory，v21 迁移）→ TRUST（`AGENT-DEF-TRUST-01`，内容信任与威胁模型）→
+  EVAL（`AGENT-DEF-EVAL-01`，`AgentVersionPublicationGate`）→
+  PUB（`AGENT-DEF-PUB-01`，受控发布 API + enforcement_mode，v22 迁移）全部
+  `Done`；真实 PostgreSQL 矩阵 437 passed，本地套件 1290 passed，`make check`
+  （file sizes/ruff/mypy 649/eval gate 10/10）全绿。`AGENT-DEF-STO-01`（本地
+  SQLite Registry）按产品定位继续推迟。
 - Durable positioning (2026-08-16, maintainer): the product is the cloud
   agent; the local agent exists to develop and prove the agent runtime and
   is not an independent product goal. Recorded explicitly in `AGENTS.md`

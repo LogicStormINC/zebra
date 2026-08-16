@@ -82,10 +82,11 @@ def import_sqlite_governed_memories(
                 INSERT INTO governed_memory_records (
                     deployment_namespace, memory_id, revision, memory_type, text,
                     confidence, status, visibility, tenant_id, user_id, repo_id,
+                    authority_issuer, namespace_id, definition_id,
                     source_session_id, source_event_start, source_event_end,
                     source_commit_sha, superseded_by, expires_at, created_at, updated_at,
                     creation_key, content_digest, provenance_digest
-                ) VALUES ({", ".join(["%s"] * 22)})
+                ) VALUES ({", ".join(["%s"] * 25)})
                 """,
                 _postgres_values(deployment_namespace, item),
             )
@@ -238,6 +239,9 @@ def _require_same_row(item: _PreparedRow, row: dict[str, Any]) -> None:
         "tenant_id",
         "user_id",
         "repo_id",
+        "authority_issuer",
+        "namespace_id",
+        "definition_id",
         "source_session_id",
         "source_event_start",
         "source_event_end",

@@ -162,12 +162,13 @@ def _create_or_get(
         """
         INSERT INTO governed_memory_records (
             deployment_namespace, memory_id, revision, memory_type, text, confidence,
-            status, visibility, tenant_id, user_id, repo_id, source_session_id,
+            status, visibility, tenant_id, user_id, repo_id, authority_issuer,
+            namespace_id, definition_id, source_session_id,
             source_event_start, source_event_end, source_commit_sha, superseded_by,
             expires_at, created_at, updated_at, creation_key, content_digest,
             provenance_digest
         ) VALUES ("""
-        + ", ".join(["%s"] * 22)
+        + ", ".join(["%s"] * 25)
         + ") RETURNING *",
         memory_values(namespace, entry),
     ).fetchone()
@@ -454,6 +455,11 @@ def _scope_column(visibility: MemoryVisibility) -> str:
 
 
 def _scope_value(record: MemoryRecord) -> str:
+    if record.authority_issuer is not None:
+        return (
+            f"{record.authority_issuer}|{record.namespace_id}|"
+            f"{record.definition_id}"
+        )
     value = {
         MemoryVisibility.REPO: record.repo_id,
         MemoryVisibility.USER: record.user_id,
@@ -461,6 +467,22 @@ def _scope_value(record: MemoryRecord) -> str:
     }[record.visibility]
     assert value is not None
     return value
+
+
+def _scope_predicate(record: MemoryRecord) -> tuple[str, tuple[object, ...]]:
+    if record.authority_issuer is not None:
+        return (
+            "authority_issuer = %s AND namespace_id = %s AND definition_id = %s",
+            (
+                record.authority_issuer,
+                record.namespace_id,
+                record.definition_id,
+            ),
+        )
+    return (
+        f"{_scope_column(record.visibility)} = %s",
+        (_scope_value(record),),
+    )
 
 
 def _revision_for(rows: list[dict[str, Any]], memory_id: MemoryId) -> int:

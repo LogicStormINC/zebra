@@ -56,6 +56,11 @@ class AgentReleaseTransitionError(ValueError):
     """Raised when a Release attempts an invalid lifecycle transition."""
 
 
+class AgentReleaseEnforcementMode(StrEnum):
+    SAFE_BOUNDARY = "safe-boundary"
+    IMMEDIATE = "immediate"
+
+
 class AgentDefinitionScope(BaseModel):
     """Opaque authority scope for one Definition metadata aggregate."""
 
@@ -245,6 +250,9 @@ class AgentRelease(BaseModel):
     definition_digest: str
     actor_ref: str = Field(min_length=1, max_length=512)
     reason_class: str | None = Field(default=None, max_length=128)
+    enforcement_mode: AgentReleaseEnforcementMode = (
+        AgentReleaseEnforcementMode.SAFE_BOUNDARY
+    )
     effective_at: datetime
 
     @field_validator("authority_issuer", "namespace_id", "environment", "actor_ref")
@@ -275,6 +283,11 @@ class AgentRelease(BaseModel):
     def validate_lifecycle_shape(self) -> Self:
         if self.status is not AgentReleaseStatus.PUBLISHED and self.reason_class is None:
             raise ValueError("deprecated and revoked Releases require reason_class")
+        if (
+            self.status is AgentReleaseStatus.PUBLISHED
+            and self.enforcement_mode is AgentReleaseEnforcementMode.IMMEDIATE
+        ):
+            raise ValueError("published Releases must use safe-boundary enforcement")
         return self
 
     @classmethod
@@ -311,6 +324,9 @@ class AgentRelease(BaseModel):
         revision: int,
         actor_ref: str,
         reason_class: str,
+        enforcement_mode: AgentReleaseEnforcementMode = (
+            AgentReleaseEnforcementMode.SAFE_BOUNDARY
+        ),
         effective_at: datetime,
     ) -> Self:
         allowed = {
@@ -334,6 +350,7 @@ class AgentRelease(BaseModel):
                 "revision": revision,
                 "actor_ref": actor_ref,
                 "reason_class": reason_class,
+                "enforcement_mode": enforcement_mode,
                 "effective_at": effective_at,
             }
         )

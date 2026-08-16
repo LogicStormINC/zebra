@@ -40,6 +40,7 @@ def create_app(
     workspace_control_store: WorkspaceControlStorePort | None = None,
     agent_registry: AgentRegistryPort | None = None,
     publisher_grants: PublisherGrantPort | None = None,
+    publication_security_revocation_actors: frozenset[str] = frozenset(),
 ) -> ZebraAgentApi:
     from zebra_agent_api.app import ZebraAgentApi
 
@@ -116,4 +117,5 @@ def create_app(
         effect_state=effect_state,
         agent_registry=agent_registry,
         publisher_grants=publisher_grants,
+        publication_security_revocation_actors=publication_security_revocation_actors,
     )

@@ -337,13 +337,14 @@ def _insert_memory(dsn: str, namespace: str, entry: GovernedMemoryEntry) -> None
             """
             INSERT INTO governed_memory_records (
                 deployment_namespace, memory_id, revision, memory_type, text, confidence,
-                status, visibility, tenant_id, user_id, repo_id, source_session_id,
+                status, visibility, tenant_id, user_id, repo_id,
+                authority_issuer, namespace_id, definition_id, source_session_id,
                 source_event_start, source_event_end, source_commit_sha, superseded_by,
                 expires_at, created_at, updated_at, creation_key, content_digest,
                 provenance_digest
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
             """,
             values,

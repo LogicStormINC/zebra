@@ -9,6 +9,7 @@ from agent_core.domain.agent_definitions import (
     AgentDefinitionScope,
     AgentDefinitionVersion,
     AgentRelease,
+    AgentReleaseEnforcementMode,
     AgentReleaseStatus,
 )
 from agent_core.domain.identifiers import (
@@ -238,7 +239,8 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
                 changed = connection.execute(
                     """
                     UPDATE agent_release_records
-                    SET status = %s, reason_class = %s, revision = revision + 1
+                    SET status = %s, reason_class = %s,
+                        enforcement_mode = %s, revision = revision + 1
                     WHERE authority_issuer = %s AND namespace_id = %s
                       AND definition_id = %s AND environment = %s
                       AND release_id = %s AND revision = %s
@@ -247,6 +249,7 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
                     (
                         release.status.value,
                         release.reason_class,
+                        release.enforcement_mode.value,
                         *scope_key,
                         release.environment,
                         release.release_id,
@@ -277,8 +280,8 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
                 INSERT INTO agent_release_records (
                     authority_issuer, namespace_id, definition_id, environment,
                     release_id, version_id, status, revision, definition_digest,
-                    actor_ref, reason_class, effective_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    actor_ref, reason_class, enforcement_mode, effective_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     *scope_key,
@@ -290,6 +293,7 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
                     release.definition_digest,
                     release.actor_ref,
                     release.reason_class,
+                    release.enforcement_mode.value,
                     release.effective_at,
                 ),
             )
@@ -375,7 +379,7 @@ class PostgresAgentRegistry(AgentDraftAuthorityMixin):
         return (
             "SELECT authority_issuer, namespace_id, definition_id, release_id,"
             " version_id, environment, status, revision, definition_digest,"
-            " actor_ref, reason_class, effective_at"
+            " actor_ref, reason_class, enforcement_mode, effective_at"
             " FROM agent_release_records"
             " WHERE authority_issuer = %s AND namespace_id = %s AND definition_id = %s"
         )
@@ -468,5 +472,6 @@ def _release_from_row(row: dict[str, Any]) -> AgentRelease:
         definition_digest=row["definition_digest"],
         actor_ref=row["actor_ref"],
         reason_class=row["reason_class"],
+        enforcement_mode=AgentReleaseEnforcementMode(row["enforcement_mode"]),
         effective_at=row["effective_at"],
     )

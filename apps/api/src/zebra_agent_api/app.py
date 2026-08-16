@@ -54,6 +54,7 @@ from zebra_agent_worker import (
 
 from zebra_agent_api.agent_definition_binding import resolve_definition_binding
 from zebra_agent_api.agent_definitions import ApiAgentDefinitionsMixin
+from zebra_agent_api.agent_release_api import ApiAgentReleaseMixin
 from zebra_agent_api.api_approval_control_mixin import ApiApprovalControlMixin
 from zebra_agent_api.api_artifact_read_mixin import ApiArtifactReadMixin
 from zebra_agent_api.api_command_mixin import ApiCommandMixin
@@ -105,6 +106,7 @@ class ZebraAgentApi(
     ApiSkillsAdminMixin,
     WorkspaceApiMixin,
     ApiAgentDefinitionsMixin,
+    ApiAgentReleaseMixin,
 ):
     database_path: Path
     settings: ZebraAgentSettings
@@ -117,6 +119,7 @@ class ZebraAgentApi(
     github_transport: GitHubPullRequestTransport | None = None
     agent_registry: AgentRegistryPort | None = None
     publisher_grants: PublisherGrantPort | None = None
+    publication_security_revocation_actors: frozenset[str] = frozenset()
     _parse_session_id = staticmethod(parse_session_id)
 
     def create_session(

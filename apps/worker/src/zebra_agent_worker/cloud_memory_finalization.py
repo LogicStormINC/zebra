@@ -10,10 +10,11 @@ from agent_core.application import (
     MemoryCandidatePromotionPlanner,
 )
 from agent_core.application.memory_reviews import memory_review_scope_query
-from agent_core.domain.events import SessionEvent
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.governed_memories import GovernedMemoryEntry
 from agent_core.domain.governed_memory_operations import WorkerMemoryMutationPlan
-from agent_core.domain.identifiers import MemoryId
+from agent_core.domain.identifiers import AgentDefinitionId, MemoryId
 from agent_core.domain.memories import (
     MemoryQuery,
     MemoryRecord,
@@ -48,15 +49,19 @@ def finalize_cloud_memory(
         raise ValueError("cloud Memory finalization requires Worker mutation authority")
     session = recorder.session
     events = event_store.list_for_session(session.session_id)
-    confirmed = memory_store.list_for_worker(_confirmed_repo_query(recorder), authority=authority)
+    definition_scope = _definition_scope_from_events(events)
+    confirmed = memory_store.list_for_worker(
+        _confirmed_memory_query(
+            recorder,
+            definition_scope=definition_scope,
+        ),
+        authority=authority,
+    )
     extraction = MemoryCandidateExtractionPlanner().plan(
         session=session,
         events=events,
         next_sequence=recorder.next_sequence,
-        command=MemoryCandidateExtractionCommand(
-            repo_id=str(recorder.workspace.workspace_root),
-            extracted_at=started_at,
-        ),
+        command=_extraction_command(recorder, started_at, definition_scope),
         confirmed_records=tuple(entry.record for entry in confirmed),
     )
     if not extraction.records and not extraction.stale_records:
@@ -132,10 +137,65 @@ def _review_scope_entries(
     return tuple(entries.values())
 
 
-def _confirmed_repo_query(recorder: DurableHarnessEventRecorder) -> MemoryQuery:
+def _confirmed_memory_query(
+    recorder: DurableHarnessEventRecorder,
+    *,
+    definition_scope: tuple[str, str, AgentDefinitionId] | None,
+) -> MemoryQuery:
+    if definition_scope is not None:
+        authority_issuer, namespace_id, definition_id = definition_scope
+        return MemoryQuery(
+            authority_issuer=authority_issuer,
+            namespace_id=namespace_id,
+            definition_id=definition_id,
+            statuses=(MemoryStatus.CONFIRMED,),
+            limit=500,
+        )
     return MemoryQuery(
         repo_id=str(recorder.workspace.workspace_root),
         visibility=MemoryVisibility.REPO,
         statuses=(MemoryStatus.CONFIRMED,),
         limit=500,
+    )
+
+
+def _definition_scope_from_events(
+    events: tuple[SessionEvent, ...] | list[SessionEvent],
+) -> tuple[str, str, AgentDefinitionId] | None:
+    """Durable Definition scope from the TASK_PREPARED snapshot; never drafts."""
+    for event in events:
+        if event.event_type is not EventType.TASK_PREPARED:
+            continue
+        raw = event.payload.get("definition_snapshot")
+        if not isinstance(raw, dict):
+            continue
+        try:
+            snapshot = AgentDefinitionSnapshot.model_validate(raw)
+        except ValueError:
+            continue
+        return (
+            snapshot.authority_issuer,
+            snapshot.namespace_id,
+            snapshot.definition_id,
+        )
+    return None
+
+
+def _extraction_command(
+    recorder: DurableHarnessEventRecorder,
+    started_at: datetime,
+    definition_scope: tuple[str, str, AgentDefinitionId] | None,
+) -> MemoryCandidateExtractionCommand:
+    if definition_scope is None:
+        return MemoryCandidateExtractionCommand(
+            repo_id=str(recorder.workspace.workspace_root),
+            extracted_at=started_at,
+        )
+    authority_issuer, namespace_id, definition_id = definition_scope
+    return MemoryCandidateExtractionCommand(
+        repo_id=str(recorder.workspace.workspace_root),
+        extracted_at=started_at,
+        authority_issuer=authority_issuer,
+        namespace_id=namespace_id,
+        definition_id=definition_id,
     )

@@ -14,7 +14,7 @@ from agent_core.domain.governed_memories import (
     GovernedMemoryCreate,
     GovernedMemoryLifecycleMutation,
 )
-from agent_core.domain.identifiers import MemoryId
+from agent_core.domain.identifiers import AgentDefinitionId, MemoryId
 from agent_core.domain.memories import (
     MemoryQuery,
     MemoryRecord,
@@ -37,6 +37,9 @@ class MemoryCandidateExtractionCommand:
     repo_id: str
     user_id: str | None = None
     tenant_id: str | None = None
+    authority_issuer: str | None = None
+    namespace_id: str | None = None
+    definition_id: AgentDefinitionId | None = None
     extracted_at: datetime | None = None
 
 
@@ -175,6 +178,16 @@ def _candidate_records_and_refresh_targets(
 ]:
     records: list[MemoryRecord] = []
     seen_keys: set[tuple[str, str, tuple[str, ...], str | None, str]] = set()
+    scope_updates: dict[str, object] = {}
+    if command.authority_issuer is not None:
+        scope_updates = {
+            "authority_issuer": command.authority_issuer,
+            "namespace_id": command.namespace_id,
+            "definition_id": command.definition_id,
+            "tenant_id": None,
+            "user_id": None,
+            "repo_id": None,
+        }
     for event in events:
         for candidate in candidates_from_session_event(
             event,
@@ -186,7 +199,12 @@ def _candidate_records_and_refresh_targets(
             record_key = candidate_key(candidate, event)
             if record_key not in seen_keys:
                 seen_keys.add(record_key)
-                records.append(candidate)
+                record = (
+                    candidate.model_copy(update=scope_updates)
+                    if scope_updates
+                    else candidate
+                )
+                records.append(record)
     return tuple(records), _refresh_targets(events)
 
 

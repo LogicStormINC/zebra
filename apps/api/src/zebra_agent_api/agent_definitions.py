@@ -1,8 +1,8 @@
-"""Bounded Agent Definition draft and Version materialization API surface.
+"""Agent Definition draft, Version materialization and gated publication API.
 
-Exposes draft create/update, deterministic validation and immutable Version
-materialization only. There is no publish, deprecate or revoke route here;
-Release mutation stays behind the later publication gate.
+Draft create/update, deterministic validation and immutable Version
+materialization are always available; publish, deprecate and revoke are gated
+on publication gate evidence and publisher authority.
 """
 
 from __future__ import annotations
@@ -202,7 +202,7 @@ class ApiAgentDefinitionsMixin:
 
 
 def handle_agent_definition_route(
-    app: ApiAgentDefinitionsMixin,
+    app: Any,
     request: RouteRequest,
 ) -> ApiResponse | None:
     """Dispatch ``/agent-definitions/...`` POST routes; None means no match."""
@@ -218,24 +218,60 @@ def handle_agent_definition_route(
     definition_id = segments[0]
     body = request.body or {}
     if segments[1:] == ("draft",):
-        return app.create_or_update_draft(
-            definition_id,
-            body,
-            host_context=request.host_context,
+        return _as_response(
+            app.create_or_update_draft(
+                definition_id,
+                body,
+                host_context=request.host_context,
+            )
         )
     if segments[1:] == ("draft", "validate"):
-        return app.validate_draft(
-            definition_id,
-            body,
-            host_context=request.host_context,
+        return _as_response(
+            app.validate_draft(
+                definition_id,
+                body,
+                host_context=request.host_context,
+            )
         )
     if segments[1:] == ("versions",):
-        return app.materialize_version(
-            definition_id,
-            body,
-            host_context=request.host_context,
+        return _as_response(
+            app.materialize_version(
+                definition_id,
+                body,
+                host_context=request.host_context,
+            )
+        )
+    if segments[1:] == ("release",):
+        return _as_response(
+            app.publish_release(
+                definition_id,
+                body,
+                host_context=request.host_context,
+            )
+        )
+    if segments[1:] == ("release", "deprecate"):
+        return _as_response(
+            app.deprecate_release(
+                definition_id,
+                body,
+                host_context=request.host_context,
+            )
+        )
+    if segments[1:] == ("release", "revoke"):
+        return _as_response(
+            app.revoke_release(
+                definition_id,
+                body,
+                host_context=request.host_context,
+            )
         )
     return None
+
+
+def _as_response(value: Any) -> ApiResponse | None:
+    if value is None or isinstance(value, ApiResponse):
+        return value
+    raise TypeError("agent definition route returned a non-response")
 
 
 def _parse_draft_payload(

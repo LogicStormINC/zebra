@@ -41,8 +41,7 @@ from agent_storage.postgres.governed_memory_transaction_support import (
     _replace_record,
     _revision_for,
     _rewrite_event,
-    _scope_column,
-    _scope_value,
+    _scope_predicate,
     _store_receipt,
 )
 from agent_storage.postgres.leases import (
@@ -200,12 +199,13 @@ def commit_administrative(
     if candidate.revision != request.expected_revision:
         raise GovernedMemoryConflictError("administrative review Memory revision changed")
     _lock_scopes(connection, namespace, (candidate.record,))
+    scope_predicate, scope_parameters = _scope_predicate(candidate.record)
     locked_rows = connection.execute(
         f"""
         SELECT * FROM governed_memory_records
         WHERE deployment_namespace = %s
           AND memory_type = %s AND visibility = %s
-          AND {_scope_column(candidate.record.visibility)} = %s
+          AND {scope_predicate}
           AND (memory_id = %s OR status = 'confirmed')
         ORDER BY memory_id FOR UPDATE
         """,
@@ -213,7 +213,7 @@ def commit_administrative(
             namespace,
             candidate.record.memory_type.value,
             candidate.record.visibility.value,
-            _scope_value(candidate.record),
+            *scope_parameters,
             request.memory_id,
         ),
     ).fetchall()

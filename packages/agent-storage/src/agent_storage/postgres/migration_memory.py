@@ -66,11 +66,13 @@ def replay_memory_snapshot(
             """INSERT INTO governed_memory_records (
                 deployment_namespace, memory_id, revision, memory_type, text,
                 confidence, status, visibility, tenant_id, user_id, repo_id,
+                authority_issuer, namespace_id, definition_id,
                 source_session_id, source_event_start, source_event_end,
                 source_commit_sha, superseded_by, expires_at, created_at, updated_at,
                 creation_key, content_digest, provenance_digest
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s)""",
             values,
         )
     if records:
@@ -168,6 +170,9 @@ def _postgres_values(namespace: str, record: MemoryRecord) -> tuple[object, ...]
         record.tenant_id,
         record.user_id,
         record.repo_id,
+        record.authority_issuer,
+        record.namespace_id,
+        record.definition_id,
         record.source_session_id,
         record.source_event_start,
         record.source_event_end,

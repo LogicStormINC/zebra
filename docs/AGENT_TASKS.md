@@ -190,8 +190,12 @@ does not authorize production code, migrations or activation of its successor.
   mainline and has unlocked the Core contract and its authority-snapshot successor.
 - `AGENT-DEF-CON-01` is `Done`: its provider-neutral Core Definition/Version/Release
   models and Registry Port are merged into the cloud mainline. The follow-up
-  `AGENT-AUTH-SNAPSHOT-01` is also `Done`; no successor is activated, and local
-  SQLite Registry, PostgreSQL adapters and runtime wiring remain deferred or locked.
+  `AGENT-AUTH-SNAPSHOT-01` is also `Done`. The Definition chain
+  `AGENT-DEF-PG-01`（REG）、`AGENT-DEF-DRAFT-01`、`AGENT-DEF-BIND-01`、
+  `AGENT-DEF-MEM-01`、`AGENT-DEF-TRUST-01`、`AGENT-DEF-EVAL-01`、
+  `AGENT-DEF-PUB-01` are all `Done` on `zebra-cloud-trench`（v19-v22 迁移，
+  真实 PostgreSQL 矩阵 437 passed）；`AGENT-DEF-STO-01`（本地 SQLite
+  Registry）按产品定位继续推迟，不再是云端链前置依赖。
 - Cloud aggregate and Artifact task state is maintained in the cloud board below;
   `CLOUD-SCOPE-CON-01` is `Done`, and the explicitly activated
   `CLOUD-SESSION-HISTORY-PG-01` is now `Done` after its host PostgreSQL
@@ -21890,10 +21894,13 @@ Registry Port in `agent-core`, with no infrastructure dependency.
 
 ### AGENT-DEF-STO-01 - Local SQLite Registry Authority
 
-- Status: `Locked`
+- Status: `Locked`（云端主线按产品定位推迟 SQLite Registry）
 - Owner: `Unassigned`
 - Suggested branch: `codex/agent-def-sto-01`
 - Depends on: `AGENT-DEF-CON-01` merged to `main`
+- 说明：`AGENT-DEF-PG-01` 已按云端主线直接以 PostgreSQL 实现（v19/v20/v22
+  迁移 + `PostgresAgentRegistry`），本地 SQLite Registry 继续推迟；本卡不再
+  是云端链的前置依赖。
 - Owned paths: `packages/agent-storage/src/agent_storage/agent_registry.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`,
   `tests/agent_storage/test_agent_registry.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
@@ -21912,10 +21919,15 @@ CAS publication/revocation, idempotency and namespace isolation.
 
 ### AGENT-DEF-PG-01 - Private-Cloud PostgreSQL Registry Adapter
 
-- Status: `Locked`
-- Owner: `Unassigned`
-- Suggested branch: `codex/agent-def-pg-01`
-- Depends on: `AGENT-DEF-STO-01` merged to `main`
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Depends on: `AGENT-DEF-STO-01` merged to `main`（云端主线按产品定位直接
+  以 PostgreSQL 实现，依赖推迟；closeout 已记录该决策）
+- 实现：v19 迁移（records/versions/releases/draft/validation/eval evidence）、
+  `PostgresAgentRegistry`（CAS revision、单 Published 唯一索引、就地
+  deprecate/revoke 转换）、Draft/Version 物化服务、受控发布 API；提交
+  `196cddc2`、`11f223f1` 及后续链提交。
 - Owned paths:
   `packages/agent-storage/src/agent_storage/postgres_agent_registry.py`,
   `packages/agent-storage/migrations/agent_registry/`,
@@ -21941,10 +21953,14 @@ configured connection contract.
 
 ### AGENT-DEF-DRAFT-01 - Draft Validation And Version Materialization
 
-- Status: `Locked`
-- Owner: `Unassigned`
-- Suggested branch: `codex/agent-def-draft-01`
-- Depends on: `AGENT-DEF-STO-01` merged to `main`
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Depends on: `AGENT-DEF-STO-01` merged to `main`（云端主线以 PG registry
+  直接实现，依赖按 AGENT-DEF-PG-01 closeout 处理）
+- 实现：`AgentDefinitionDraft`/validation evidence 域模型、
+  `AgentDefinitionDraftService`（publisher grant ceiling 收窄、乐观 revision、
+  幂等物化）、draft/validate/versions API 路由、v19 draft 表；提交 `196cddc2`。
 - Owned paths: `packages/agent-core/src/agent_core/application/agent_definitions.py`,
   `apps/api/src/zebra_agent_api/agent_definitions.py`,
   `apps/api/src/zebra_agent_api/app.py`, `tests/api/test_agent_definitions.py`,
@@ -22033,10 +22049,14 @@ or effect scope hash is an external authority snapshot.
 
 ### AGENT-DEF-BIND-01 - Immutable Task Definition Binding
 
-- Status: `Locked`
-- Owner: `Unassigned`
-- Suggested branch: `codex/agent-def-bind-01`
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
 - Depends on: `AGENT-DEF-DRAFT-01` and `AGENT-AUTH-SNAPSHOT-01` merged to `main`
+- 实现：`AgentDefinitionSnapshot`（canonical digest、production/eval purpose）、
+  `DefinitionBindingService`（发布解析 + 受限 eval 精确固定）、TASK_PREPARED
+  可选快照、投影镜像（v20 迁移）、worker 恢复 digest 校验、create-session
+  binding；提交 `11f223f1`，矩阵 10/10（PG）。
 - Owned paths: `packages/agent-core/src/agent_core/contracts/events.py`,
   `packages/agent-core/src/agent_core/domain/workspaces.py`,
   `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
@@ -22070,10 +22090,15 @@ candidate Version without creating a Release.
 
 ### AGENT-DEF-MEM-01 - Definition-Scoped Governed Memory
 
-- Status: `Locked`
-- Owner: `Unassigned`
-- Suggested branch: `codex/agent-def-mem-01`
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
 - Depends on: `AGENT-DEF-BIND-01` merged to `main`
+- 实现：`MemoryRecord`/`MemoryQuery`/tombstone 增加
+  `(authority_issuer, namespace_id, definition_id)` 全有或全无 scope；v21 迁移
+  （列 + 可见性约束放开 + scope 一致性约束）；PG rows/事务/导入/迁移路径写入
+  新 scope、不再写 legacy 列；worker 云终态从 TASK_PREPARED 快照提取 scope；
+  矩阵 5/5（PG）。
 - Owned paths: `packages/agent-core/src/agent_core/domain/memories.py`,
   `packages/agent-core/src/agent_core/ports/memory_store.py`,
   `packages/agent-core/src/agent_core/application/memory_candidates.py`,
@@ -22107,11 +22132,14 @@ without turning Memory or an external provider into execution truth.
 
 ### AGENT-DEF-TRUST-01 - Publication And Ingress Trust Coverage
 
-- Status: `Locked`
-- Owner: `Unassigned`
-- Suggested branch: `codex/agent-def-trust-01`
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
 - Depends on: `AGENT-DEF-DRAFT-01`, `AGENT-DEF-BIND-01` and
   `AGENT-DEF-MEM-01` merged to `main`
+- 实现：`agent_security/agent_definitions.py`（内容信任不授权、跨 scope/引用
+  替换/注入标记 fail closed）、威胁模型
+  `docs/Agent_Definition威胁模型_v1.0.md`、矩阵 5/5。
 - Owned paths: `packages/agent-context/src/agent_context/trust.py`,
   `packages/agent-security/src/agent_security/agent_definitions.py`,
   `tests/test_agent_definition_trust_contract_matrix.py`,
@@ -22132,10 +22160,13 @@ to Registry, Skill, Memory, knowledge and Eval ingress.
 
 ### AGENT-DEF-EVAL-01 - Agent Version Publication Gate
 
-- Status: `Locked`
-- Owner: `Unassigned`
-- Suggested branch: `codex/agent-def-eval-01`
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
 - Depends on: `AGENT-DEF-DRAFT-01` and `AGENT-DEF-TRUST-01` merged to `main`
+- 实现：`agent_observability/agent_versions.py`
+  `AgentVersionPublicationGate`（逐条件显式 reason、缺失证据 pending、
+  LLM-as-judge 仅补充）、`evals/agent_definitions/` 样例、门测试 5/5。
 - Owned paths: `packages/agent-observability/src/agent_observability/agent_versions.py`,
   `evals/agent_definitions/`, `tests/agent_observability/test_agent_version_gate.py`,
   `docs/operator_runbook.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
@@ -22155,11 +22186,16 @@ produce an auditable `AgentVersionPublicationGate` decision.
 
 ### AGENT-DEF-PUB-01 - Gated Definition Publication API
 
-- Status: `Locked`
-- Owner: `Unassigned`
-- Suggested branch: `codex/agent-def-pub-01`
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
 - Depends on: `AGENT-DEF-EVAL-01`, `AGENT-DEF-TRUST-01`,
   `AGENT-DEF-DRAFT-01` and `AGENT-DEF-STO-01` merged to `main`
+- 实现：`AgentReleaseEnforcementMode`（safe-boundary/immediate，v22 迁移 +
+  已发布必须 safe-boundary 约束）、`AgentDefinitionPublicationService`
+  （PublicationGateEvidence 精确 digest/version 校验、deprecate/revoke typed
+  证据、immediate 需 security-revocation actor）、publish/deprecate/revoke
+  API 路由；API 测试 11/11。
 - Owned paths: `packages/agent-core/src/agent_core/application/agent_definitions.py`,
   `apps/api/src/zebra_agent_api/agent_definitions.py`,
   `apps/api/src/zebra_agent_api/app.py`, `tests/api/test_agent_definitions.py`,

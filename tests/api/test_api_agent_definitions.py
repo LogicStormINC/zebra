@@ -15,7 +15,11 @@ from agent_core.domain.agent_definition_drafts import (
     AgentDefinitionDraft,
     AgentDefinitionDraftValidation,
 )
-from agent_core.domain.agent_definitions import AgentDefinition, AgentDefinitionScope
+from agent_core.domain.agent_definitions import (
+    AgentDefinition,
+    AgentDefinitionScope,
+    AgentRelease,
+)
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import (
     AgentDefinitionId,
@@ -69,6 +73,7 @@ class _MemoryRegistry:
         self.drafts: dict[tuple, AgentDefinitionDraft] = {}
         self.validations: dict[tuple, list[AgentDefinitionDraftValidation]] = {}
         self.versions: dict[tuple, object] = {}
+        self.releases: list[AgentRelease] = []
 
     def get_definition(self, scope: AgentDefinitionScope) -> AgentDefinition | None:
         return self.definitions.get(scope.scope_key)
@@ -122,10 +127,33 @@ class _MemoryRegistry:
         self.versions[(scope.scope_key, version.version_id)] = version
         return version
 
-    def resolve_published(self, scope: AgentDefinitionScope, *, environment: str) -> None:
-        return None
+    def resolve_published(
+        self, scope: AgentDefinitionScope, *, environment: str
+    ) -> AgentRelease | None:
+        from agent_core.domain.agent_definitions import AgentReleaseStatus
 
-    def append_release(self, release: object, *, expected_revision: int | None = None) -> object:
+        matches = [
+            release
+            for release in self.releases
+            if release.authority_issuer == scope.authority_issuer
+            and release.namespace_id == scope.namespace_id
+            and release.definition_id == scope.definition_id
+            and release.environment == environment
+            and release.status is AgentReleaseStatus.PUBLISHED
+        ]
+        if not matches:
+            return None
+        return max(matches, key=lambda release: release.revision)
+
+    def append_release(
+        self, release: AgentRelease, *, expected_revision: int | None = None
+    ) -> AgentRelease:
+        self.releases = [
+            existing
+            for existing in self.releases
+            if existing.release_id != release.release_id
+        ]
+        self.releases.append(release)
         return release
 
     def record_eval_evidence(self, evidence: object) -> None:
@@ -351,14 +379,14 @@ def test_no_registry_composed_fails_closed(tmp_path: Path) -> None:
     assert response.status_code == 503
 
 
-def test_release_routes_do_not_exist(tmp_path: Path) -> None:
+def test_non_publication_routes_do_not_exist(tmp_path: Path) -> None:
     registry = _MemoryRegistry()
     adapter = _adapter(tmp_path, registry)
     definition_id = str(AgentDefinitionId(uuid4()))
     response = _post(
         adapter,
-        f"/agent-definitions/{definition_id}/release",
-        {"version_id": str(AgentDefinitionVersionId(uuid4())), "environment": "production"},
+        f"/agent-definitions/{definition_id}/marketplace",
+        {"version_id": str(AgentDefinitionVersionId(uuid4()))},
         host_context=_host_context(),
     )
     assert response.status_code == 404
@@ -377,3 +405,173 @@ def test_unknown_draft_fields_rejected(tmp_path: Path) -> None:
         host_context=_host_context(),
     )
     assert response.status_code == 400
+
+
+def _publish_payload(
+    registry: _MemoryRegistry,
+    adapter: RouteAdapter,
+    definition_id: str,
+) -> dict[str, object]:
+    """Create draft, validate, materialize; return a valid publish payload."""
+    created = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/draft",
+        _definition_payload(),
+        host_context=_host_context(),
+    )
+    assert created.status_code == 200
+    validation = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/draft/validate",
+        {},
+        host_context=_host_context(),
+    )
+    assert validation.status_code == 200
+    version_id = str(AgentDefinitionVersionId(uuid4()))
+    materialized = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/versions",
+        {"version_id": version_id, "version": 1},
+        host_context=_host_context(),
+    )
+    assert materialized.status_code == 201
+    digest = materialized.body["definition_digest"]
+    return {
+        "version_id": version_id,
+        "environment": "production",
+        "gate": {
+            "passed": True,
+            "policy_version": "policies/evals/release@v5",
+            "definition_digest": digest,
+        },
+    }
+
+
+def test_publish_requires_passing_gate_and_supersedes_atomically(tmp_path: Path) -> None:
+    registry = _MemoryRegistry()
+    adapter = _adapter(tmp_path, registry)
+    definition_id = str(AgentDefinitionId(uuid4()))
+    payload = _publish_payload(registry, adapter, definition_id)
+    denied = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/release",
+        {**payload, "gate": {**payload["gate"], "passed": False}},
+        host_context=_host_context(),
+    )
+    assert denied.status_code == 409
+    published = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/release",
+        payload,
+        host_context=_host_context(),
+    )
+    assert published.status_code == 201
+    assert published.body["status"] == "published"
+    scope = _scope_of(registry, definition_id)
+    resolved = registry.resolve_published(scope, environment="production")
+    assert resolved is not None
+    assert str(resolved.version_id) == payload["version_id"]
+    # republishing the same version is idempotent at the service level
+    replayed = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/release",
+        payload,
+        host_context=_host_context(),
+    )
+    assert replayed.status_code == 201
+
+
+def _scope_of(registry: _MemoryRegistry, definition_id: str) -> AgentDefinitionScope:
+    return AgentDefinitionScope(
+        authority_issuer="https://issuer.example",
+        namespace_id="tenant-a",
+        definition_id=AgentDefinitionId(definition_id),
+    )
+
+
+def test_deprecate_and_revoke_append_typed_evidence(tmp_path: Path) -> None:
+    registry = _MemoryRegistry()
+    adapter = _adapter(tmp_path, registry)
+    definition_id = str(AgentDefinitionId(uuid4()))
+    payload = _publish_payload(registry, adapter, definition_id)
+    published = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/release",
+        payload,
+        host_context=_host_context(),
+    )
+    assert published.status_code == 201
+    deprecated = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/release/deprecate",
+        {
+            "environment": "production",
+            "reason_class": "rollback",
+            "enforcement_mode": "safe-boundary",
+        },
+        host_context=_host_context(),
+    )
+    assert deprecated.status_code == 200
+    assert deprecated.body["status"] == "deprecated"
+    assert deprecated.body["reason_class"] == "rollback"
+    assert deprecated.body["enforcement_mode"] == "safe-boundary"
+    scope = _scope_of(registry, definition_id)
+    assert registry.resolve_published(scope, environment="production") is None
+    revoked = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/release/revoke",
+        {
+            "environment": "production",
+            "reason_class": "security",
+            "enforcement_mode": "immediate",
+        },
+        host_context=_host_context(),
+    )
+    assert revoked.status_code == 403
+
+
+def test_immediate_revoke_requires_security_authority(tmp_path: Path) -> None:
+    registry = _MemoryRegistry()
+    stores = sqlite_control_plane_stores(tmp_path / "control.sqlite")
+    grants = StaticPublisherGrantResolver(
+        {
+            "publisher-b@tenant-a": PublisherGrantCeiling(
+                authority_issuer="https://issuer.example",
+                namespace_id="tenant-a",
+                allowed_references=GRANTED_REFS,
+            )
+        }
+    )
+    app = create_app(
+        str(tmp_path / "api.sqlite"),
+        settings=_settings(),
+        stores=stores,
+        agent_registry=registry,
+        publisher_grants=grants,
+        publication_security_revocation_actors=frozenset({"publisher-b"}),
+    )
+    adapter = RouteAdapter(app)
+    definition_id = str(AgentDefinitionId(uuid4()))
+    payload = _publish_payload(registry, adapter, definition_id)
+    published = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/release",
+        payload,
+        host_context=_host_context(),
+    )
+    assert published.status_code == 201
+    revoked = _post(
+        adapter,
+        f"/agent-definitions/{definition_id}/release/revoke",
+        {
+            "environment": "production",
+            "reason_class": "security",
+            "enforcement_mode": "immediate",
+        },
+        host_context=_host_context(),
+    )
+    assert revoked.status_code == 200
+    assert revoked.body["status"] == "revoked"
+    assert revoked.body["enforcement_mode"] == "immediate"
+    scope = _scope_of(registry, definition_id)
+    assert registry.resolve_published(scope, environment="production") is None

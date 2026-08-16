@@ -192,6 +192,9 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (17, "host_authority_registry_replay_audit", 64),
         (18, "workspace_control_instances_operations_snapshots", 64),
         (19, "agent_definition_registry", 64),
+        (20, "workspace_definition_snapshot_mirror", 64),
+        (21, "governed_memory_definition_scope", 64),
+        (22, "agent_release_enforcement_mode", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [
@@ -343,6 +346,7 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         "runtime_workspace_writable",
         "snapshot_id",
         "snapshot_path",
+        "definition_snapshot",
     ]
     task_constraint_sql = "\n".join(row[0] for row in task_constraints)
     assert all(
