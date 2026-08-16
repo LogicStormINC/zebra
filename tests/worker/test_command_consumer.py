@@ -145,3 +145,47 @@ def _command_event(command: SessionCommand, sequence: int) -> SessionEvent:
         payload=command.event_payload(),
         idempotency_key=command.idempotency_key,
     )
+
+
+def test_worker_loop_skips_poisoned_ready_sessions_without_crashing(tmp_path, monkeypatch):
+    """One failing ready session must not kill the whole worker loop."""
+    from zebra_agent_worker.execution_finalization import WorkerExecutionError
+    from zebra_agent_worker.loop import WorkerLoopService
+
+    class _PoisonedExecution:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def execute_session(self, session_id, **_kwargs):
+            self.calls += 1
+            raise WorkerExecutionError("poisoned session")
+
+    class _ReadyProjection:
+        def list_ready_sessions(self, *, limit):
+            from datetime import UTC, datetime
+
+            from agent_core.domain.identifiers import new_session_id
+            from agent_core.domain.sessions import Session as _Session
+
+            return [
+                _Session(
+                    session_id=new_session_id(),
+                    status="ready",
+                    title="poisoned",
+                    created_at=datetime(2026, 8, 16, 12, 0, tzinfo=UTC),
+                    updated_at=datetime(2026, 8, 16, 12, 0, tzinfo=UTC),
+                    current_sequence=0,
+                )
+            ]
+
+    execution = _PoisonedExecution()
+    loop = WorkerLoopService(
+        projection_store=_ReadyProjection(),
+        execution_service=execution,
+        sleep=lambda _: None,
+        command_consumer=None,
+    )
+    result = loop.poll_once(worker_id="worker-a", batch_size=1, lease_ttl_seconds=30)
+    assert execution.calls == 1
+    assert len(result.skipped_session_ids) == 1
+    assert result.executed_session_ids == ()

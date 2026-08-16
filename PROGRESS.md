@@ -63,7 +63,16 @@
   and the E2E matrix asserts it. The post-start fail-closed resume
   defense intentionally stays; genuine mid-execution Worker death
   checkpointing, the lease-loss fault-injection scenario and
-  command-consumption failure logging remain on the successor card. Previously: the repository now carries a fail-closed runner
+  command-consumption failure logging remain on the successor card. The
+  suspended-command-lane item closed on 2026-08-16: a local reproduction
+  with a real hanging gateway proved that the exact durable death shape
+  (completed approved tool plus a dangling model request from the killed
+  Worker) already recovers through the completed-tool continuation to
+  `completed` with zero re-execution — locked by a regression test — and
+  the earlier `suspended` observation was rig-specific; the E2E death
+  scenario now asserts completion. The worker loop additionally skips
+  poisoned ready sessions with a logged reason instead of crashing the
+  whole Worker on `WorkerExecutionError`. Previously: the repository now carries a fail-closed runner
   (`tests/compose/effect_default_e2e/`) that drives real PostgreSQL 17.5,
   MinIO, the committed API application object, the default Worker entrypoint
   and a provider-shaped OpenAI-compatible stub model. The composition

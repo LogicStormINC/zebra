@@ -296,10 +296,10 @@ def scenario_worker_death_recovers(runner: Runner) -> None:
     effects = summary.get("effects", [])
     succeeded = sum(entry["rows"] for entry in effects if entry["status"] == "succeeded")
     proof = runner.workspace / PROOF_FILE
-    # The verified recovery posture today: the dead attempt lands in a
-    # deterministic suspension with zero re-execution (the completed-tool
-    # continuation itself is unit-covered; completing a suspended session
-    # through the command lane is the registered successor gap).
+    # The verified recovery contract: a Worker killed during the post-tool
+    # model turn recovers through the completed-tool continuation to
+    # completion with zero re-execution (locked by the local regression
+    # test with a real gateway; any suspension here is a rig finding).
     session_events = final_events.get("event_types", [])
     started_total = sum(count for name, count in session_events if name == "tool_execution_started")
     completed_total = sum(
@@ -311,7 +311,7 @@ def scenario_worker_death_recovers(runner: Runner) -> None:
         and approval.returncode == 0
         and completed_before
         and resume.returncode == 0
-        and status == "suspended"
+        and status == "completed"
         and started_total == 2
         and completed_total == 1
         and succeeded == 2

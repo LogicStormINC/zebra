@@ -25,6 +25,7 @@ from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose
 from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
+from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
 )
@@ -111,7 +112,12 @@ class WorkerLoopService:
                     worker_id=worker_id,
                     lease_ttl_seconds=lease_ttl_seconds,
                 )
-            except (LeaseConflictError, SessionRecoveryError, SessionResumeError) as skip_error:
+            except (
+                LeaseConflictError,
+                SessionRecoveryError,
+                SessionResumeError,
+                WorkerExecutionError,
+            ) as skip_error:
                 skipped_ids.append(session_id)
                 print(
                     f"worker session skipped: session={session_id} "

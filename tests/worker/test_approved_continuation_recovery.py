@@ -208,3 +208,111 @@ def _settings(database_path: Path) -> ZebraAgentSettings:
             model="test-model",
         ),
     )
+
+
+def test_completed_tool_with_dangling_model_request_recovers(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A Worker killed mid final model turn must resume to completion.
+
+    The ledger carries a dangling MODEL_REQUEST_STARTED (no response) after
+    the durably completed approved tool; recovery must re-issue the model
+    call through the completed-tool continuation instead of suspending.
+    """
+    database_path = tmp_path / "dangling-request.sqlite"
+    created_at = datetime(2026, 8, 16, 12, 0, tzinfo=UTC)
+    tool_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="command.run",
+        arguments={"command": [sys.executable, "-c", "print('dangling-ok')"]},
+        created_at=created_at,
+        provider_call_id="call_dangling",
+    )
+    initial_gateway = _gateway("Run once.", tool_call=tool_call)
+    final_gateway = _gateway("dangling-ok")
+    gateways = iter((initial_gateway, final_gateway))
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: next(gateways),
+    )
+    session_id = _seed_session(database_path, tmp_path)
+    service = _execution_service(database_path)
+
+    waiting = service.execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=created_at,
+    )
+    assert waiting.session.status is SessionStatus.WAITING_APPROVAL
+    assert (
+        create_app(database_path, settings=_settings(database_path))
+        .approve(str(session_id), {"operator": "t", "reason": "ok"})
+        .body["status"]
+        == SessionStatus.RUNNING.value
+    )
+
+    event_store = SQLiteEventStore(database_path)
+    events = event_store.list_for_session(session_id)
+    requested = next(
+        event for event in events if event.event_type is EventType.APPROVAL_REQUESTED
+    )
+    pending_id = requested.payload["tool_call_id"]
+    sequence = events[-1].sequence
+    for event_type, payload in (
+        (
+            EventType.HARNESS_ATTEMPT_STARTED,
+            {"attempt_number": 1},
+        ),
+        (
+            EventType.TOOL_EXECUTION_STARTED,
+            {
+                "attempt_number": 1,
+                "tool_name": "command.run",
+                "tool_call_id": pending_id,
+            },
+        ),
+        (
+            EventType.TOOL_EXECUTION_COMPLETED,
+            {
+                "attempt_number": 1,
+                "tool_name": "command.run",
+                "tool_call_id": pending_id,
+                "status": "executed",
+                "output": "dangling-ok",
+                "metadata": {},
+            },
+        ),
+        (
+            EventType.MODEL_REQUEST_STARTED,
+            {"attempt_number": 1, "model_call_id": "dangling-call"},
+        ),
+    ):
+        sequence += 1
+        event_store.append(
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=sequence,
+                event_type=event_type,
+                actor=EventActor.HARNESS,
+                payload=payload,
+                created_at=created_at,
+            )
+        )
+
+    recovered = service.execute_session(
+        session_id,
+        worker_id="worker-a",
+        executed_at=created_at,
+    )
+
+    assert recovered.session.status is SessionStatus.COMPLETED
+    ledger = SQLiteEventStore(database_path).list_for_session(session_id)
+    started = sum(
+        event.event_type is EventType.TOOL_EXECUTION_STARTED for event in ledger
+    )
+    completed_tools = sum(
+        event.event_type is EventType.TOOL_EXECUTION_COMPLETED for event in ledger
+    )
+    assert started == 1
+    assert completed_tools == 1
