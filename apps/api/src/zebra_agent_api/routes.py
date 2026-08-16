@@ -14,6 +14,7 @@ from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.task_routes import handle_task_route
+from zebra_agent_api.tenant_guard import tenant_scope_response
 
 
 @dataclass(frozen=True)
@@ -38,11 +39,16 @@ class RouteAdapter:
             return self.app.get_mcp_capabilities()
         if method == "GET" and request.path == "/capabilities/mcp/prompts":
             return self.app.get_mcp_prompts()
+        tenant_response = tenant_scope_response(self.app, request)
+        if tenant_response is not None:
+            return tenant_response
         agui_response = handle_agui_command(self.app, request)
         if agui_response is not None:
             return agui_response
         if method == "GET" and request.path == "/sessions":
-            return self.app.list_sessions(request.query or {})
+            return self.app.list_sessions(
+                request.query or {}, host_context=request.host_context
+            )
         if method == "POST" and request.path == "/workspaces":
             return self.app.create_workspace(request.body or {})
         if method == "GET" and request.path == "/workspaces":
@@ -72,7 +78,7 @@ class RouteAdapter:
             if len(parts) == 2 and parts[1] == "reject":
                 return self.app.reject(parts[0], request.body or {})
         if method == "GET" and request.path == "/approvals":
-            return self.app.list_approvals()
+            return self.app.list_approvals(host_context=request.host_context)
         if method == "GET" and request.path.startswith("/approvals/"):
             parts = _approval_path_parts(request.path)
             if len(parts) == 1:

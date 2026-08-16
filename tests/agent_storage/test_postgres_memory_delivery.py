@@ -258,7 +258,7 @@ def test_v11_upgrade_and_checksum_gate(postgres_dsn: str) -> None:
         with psycopg.connect(isolated) as connection:
             assert connection.execute(
                 "SELECT version FROM zebra_schema_migrations ORDER BY version"
-            ).fetchall()[-1] == (22,)
+            ).fetchall()[-1] == (23,)
             connection.execute(
                 "UPDATE zebra_schema_migrations SET checksum = 'bad' WHERE version = 11"
             )

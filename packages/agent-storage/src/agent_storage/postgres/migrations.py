@@ -24,6 +24,9 @@ from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATI
 from agent_storage.postgres.provider_continuation_migration import (
     PROVIDER_CONTINUATION_MIGRATION,
 )
+from agent_storage.postgres.session_tenant_migration import (
+    SESSION_TENANT_NAMESPACE_MIGRATION,
+)
 from agent_storage.postgres.workspace_control_migration import WORKSPACE_CONTROL_MIGRATION
 from agent_storage.postgres.workspace_definition_snapshot_migration import (
     WORKSPACE_DEFINITION_SNAPSHOT_MIGRATION,
@@ -480,4 +483,5 @@ MIGRATIONS = (
     WORKSPACE_DEFINITION_SNAPSHOT_MIGRATION,
     GOVERNED_MEMORY_SCOPE_MIGRATION,
     AGENT_RELEASE_ENFORCEMENT_MIGRATION,
+    SESSION_TENANT_NAMESPACE_MIGRATION,
 )

@@ -108,7 +108,7 @@ def insert_child_projections(
 ) -> None:
     created_at = request.envelope.created_at.isoformat()
     connection.execute(
-        "INSERT INTO session_projections VALUES (?, ?, 'ready', ?, ?, 3, NULL, NULL, ?)",
+        "INSERT INTO session_projections VALUES (?, ?, 'ready', ?, ?, 3, NULL, NULL, NULL, ?)",
         (
             str(operation.target_session_id),
             request.create_request.title,

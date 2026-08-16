@@ -80,7 +80,23 @@ def apply_event(session: Session, event: SessionEvent) -> Session:
         updates["task_plan"] = task_plan
     if event.event_type is EventType.SESSION_TITLE_UPDATED:
         updates["title"] = _session_title_from_event(event)
+    if event.event_type is EventType.TASK_PREPARED and projected.namespace_id is None:
+        tenant_namespace = _tenant_namespace_from_event(event)
+        if tenant_namespace is not None:
+            updates["namespace_id"] = tenant_namespace
     return projected.model_copy(update=updates)
+
+
+def _tenant_namespace_from_event(event: SessionEvent) -> str | None:
+    """Bind the durable tenant namespace once, from the host authority context."""
+    raw = event.payload.get("host_context")
+    if not isinstance(raw, dict):
+        return None
+    namespace = raw.get("namespace_id")
+    if not isinstance(namespace, str):
+        return None
+    stripped = namespace.strip()
+    return stripped or None
 
 
 def _session_title_from_event(event: SessionEvent) -> str:

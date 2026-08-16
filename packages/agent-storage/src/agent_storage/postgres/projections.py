@@ -90,21 +90,24 @@ def save_session_in_transaction(
         """
         INSERT INTO session_projections (
             deployment_namespace, session_id, title, status, created_at,
-            updated_at, current_sequence, approval_context_json,
+            updated_at, current_sequence, namespace_id, approval_context_json,
             clarification_context_json, task_plan_json
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (deployment_namespace, session_id) DO UPDATE SET
             title = EXCLUDED.title,
             status = EXCLUDED.status,
             created_at = EXCLUDED.created_at,
             updated_at = EXCLUDED.updated_at,
             current_sequence = EXCLUDED.current_sequence,
+            namespace_id = COALESCE(
+                session_projections.namespace_id, EXCLUDED.namespace_id
+            ),
             approval_context_json = EXCLUDED.approval_context_json,
             clarification_context_json = EXCLUDED.clarification_context_json,
             task_plan_json = EXCLUDED.task_plan_json
         WHERE session_projections.current_sequence < EXCLUDED.current_sequence
         RETURNING session_id, title, status, created_at, updated_at,
-                  current_sequence, approval_context_json,
+                  current_sequence, namespace_id, approval_context_json,
                   clarification_context_json, task_plan_json
         """,
         _session_values(deployment_namespace, session),
@@ -137,7 +140,7 @@ def get_session_in_transaction(
 
 _SELECT_SESSION = """
 SELECT session_id, title, status, created_at, updated_at, current_sequence,
-       approval_context_json, clarification_context_json, task_plan_json
+       namespace_id, approval_context_json, clarification_context_json, task_plan_json
 FROM session_projections
 """
 
@@ -151,6 +154,7 @@ def _session_values(namespace: str, session: Session) -> tuple[object, ...]:
         session.created_at,
         session.updated_at,
         session.current_sequence,
+        session.namespace_id,
         Jsonb(session.approval_context.model_dump(mode="json"))
         if session.approval_context
         else None,

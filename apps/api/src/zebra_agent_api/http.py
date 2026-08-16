@@ -119,6 +119,19 @@ def create_http_app(
         if body_error is not None:
             return body_error
         if _is_agui_stream_request(request):
+            from zebra_agent_api.tenant_guard import (
+                session_tenant_denied,
+                tenant_forbidden_response,
+            )
+
+            agui_thread = _stream_resource_id(request.url.path).split("/")[0]
+            if session_tenant_denied(
+                api.stores.sessions,
+                agui_thread,
+                getattr(request.state, "host_context", None),
+            ):
+                denied = tenant_forbidden_response(agui_thread)
+                return JSONResponse(status_code=denied.status_code, content=denied.body)
             agui_stream = prepare_agui_stream(
                 api.stores,
                 request.url.path,

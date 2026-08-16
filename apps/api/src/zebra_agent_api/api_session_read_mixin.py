@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from pathlib import Path
 
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.approval_read import ApprovalReadApi
@@ -10,6 +11,7 @@ from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_context_control import SessionContextControlApi
 from zebra_agent_api.session_list import SessionListApi
 from zebra_agent_api.session_read import SessionReadApi
+from zebra_agent_api.tenant_guard import scope_session_list_response
 
 
 class ApiSessionReadMixin:
@@ -20,11 +22,22 @@ class ApiSessionReadMixin:
     def get_session(self, session_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_session(session_id)
 
-    def list_sessions(self, query: Mapping[str, str]) -> ApiResponse:
-        return SessionListApi(self.stores).list_sessions(query)
+    def list_sessions(
+        self,
+        query: Mapping[str, str],
+        *,
+        host_context: HostContextEnvelope | None = None,
+    ) -> ApiResponse:
+        response = SessionListApi(self.stores).list_sessions(query)
+        return scope_session_list_response(self.stores.sessions, response, host_context)
 
-    def list_approvals(self) -> ApiResponse:
-        return ApprovalReadApi(self.stores).list_approvals()
+    def list_approvals(
+        self,
+        *,
+        host_context: HostContextEnvelope | None = None,
+    ) -> ApiResponse:
+        response = ApprovalReadApi(self.stores).list_approvals()
+        return scope_session_list_response(self.stores.sessions, response, host_context)
 
     def get_approval(self, approval_id: str) -> ApiResponse:
         return ApprovalReadApi(self.stores).get_approval(approval_id)
