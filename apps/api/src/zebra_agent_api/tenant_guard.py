@@ -126,3 +126,13 @@ def tenant_scope_response(
             if target and session_tenant_denied(sessions, target, host_context):
                 return tenant_forbidden_response(target)
     return None
+
+def tenant_memory_denied(
+    host_context: HostContextEnvelope | None,
+    resource_tenant: str,
+) -> bool:
+    """Memory tenant reads: the caller's namespace must match the tenant key."""
+    namespace = tenant_namespace(host_context)
+    if namespace is None:
+        return False
+    return namespace != resource_tenant

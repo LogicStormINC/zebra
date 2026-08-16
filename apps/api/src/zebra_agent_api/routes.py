@@ -14,7 +14,11 @@ from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.task_routes import handle_task_route
-from zebra_agent_api.tenant_guard import tenant_scope_response
+from zebra_agent_api.tenant_guard import (
+    tenant_forbidden_response,
+    tenant_memory_denied,
+    tenant_scope_response,
+)
 
 
 @dataclass(frozen=True)
@@ -85,6 +89,8 @@ class RouteAdapter:
                 return self.app.get_approval(parts[0])
         if method == "GET" and request.path.startswith("/users/"):
             parts = _users_path_parts(request.path)
+            if parts and tenant_memory_denied(request.host_context, parts[0]):
+                return tenant_forbidden_response(parts[0])
             if len(parts) == 2 and parts[1] == "memory":
                 return self.app.get_user_memory(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
@@ -93,6 +99,8 @@ class RouteAdapter:
                 return self.app.get_user_memory_queue_summary(parts[0])
         if method == "POST" and request.path.startswith("/users/"):
             parts = _users_path_parts(request.path)
+            if parts and tenant_memory_denied(request.host_context, parts[0]):
+                return tenant_forbidden_response(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
                 return self.app.preview_user_memory_queue(parts[0], request.body or {})
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":
@@ -105,6 +113,8 @@ class RouteAdapter:
                 return self.app.expire_user_memory(parts[0], parts[2], request.body or {})
         if method == "GET" and request.path.startswith("/tenants/"):
             parts = _tenants_path_parts(request.path)
+            if parts and tenant_memory_denied(request.host_context, parts[0]):
+                return tenant_forbidden_response(parts[0])
             if len(parts) == 2 and parts[1] == "memory":
                 return self.app.get_tenant_memory(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
@@ -113,6 +123,8 @@ class RouteAdapter:
                 return self.app.get_tenant_memory_queue_summary(parts[0])
         if method == "POST" and request.path.startswith("/tenants/"):
             parts = _tenants_path_parts(request.path)
+            if parts and tenant_memory_denied(request.host_context, parts[0]):
+                return tenant_forbidden_response(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
                 return self.app.preview_tenant_memory_queue(parts[0], request.body or {})
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":

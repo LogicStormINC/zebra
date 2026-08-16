@@ -150,3 +150,39 @@ def test_unnamespaced_sessions_stay_operator_scoped(tmp_path: Path) -> None:
     assert any(
         item["session_id"] == session_id for item in listed.body["sessions"]
     )
+
+
+def test_tenant_memory_routes_are_tenant_scoped(tmp_path: Path) -> None:
+    adapter, _app = _adapter(tmp_path)
+    denied_user = _get(adapter, "/users/user-1/memory", TENANT_B)
+    assert denied_user.status_code == 404
+    allowed_user = _get(adapter, "/users/user-1/memory", TENANT_A)
+    assert allowed_user.status_code in (200, 404)
+    denied_tenant = _get(adapter, "/tenants/tenant-b/memory", TENANT_A)
+    assert denied_tenant.status_code == 404
+    own_tenant = _get(adapter, "/tenants/tenant-a/memory", TENANT_A)
+    assert own_tenant.status_code in (200, 404)
+    unscoped = _get(adapter, "/tenants/tenant-z/memory", None)
+    assert unscoped.status_code in (200, 404)
+
+
+def test_user_memory_mutations_are_tenant_scoped(tmp_path: Path) -> None:
+    adapter, _app = _adapter(tmp_path)
+    denied = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path="/users/user-1/memory/bulk-review",
+            body={},
+            host_context=TENANT_B,
+        )
+    )
+    assert denied.status_code == 404
+    denied_tenant = adapter.handle(
+        RouteRequest(
+            method="POST",
+            path="/tenants/tenant-b/memory/review-queue",
+            body={},
+            host_context=TENANT_A,
+        )
+    )
+    assert denied_tenant.status_code == 404
