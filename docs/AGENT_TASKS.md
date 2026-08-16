@@ -373,6 +373,37 @@ aggregate without treating `PostgresControlPlaneStores` as local
 - no replacement of the remaining cloud API compatibility paths; those stay an
   explicit command-only API blocker
 
+### CLOUD-WORKSPACE-CP-PROV-01 - Workspace Materialization Provider
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `RUNTIME / STORAGE`
+- Depends on: `CLOUD-WORKSPACE-CP-PG-01`; activated under the maintainer's
+  standing continuation instruction.
+- Branch: `zebra-cloud-trench` (batch closeout continuation)
+- Owned paths:
+  `packages/agent-runtime/src/agent_runtime/workspace_materialization.py` (new),
+  `packages/agent-runtime/src/agent_runtime/workspace_provisioner.py` (new),
+  runtime export registration,
+  `tests/agent_runtime/test_workspace_materialization.py` (new),
+  `tests/agent_storage/test_postgres_workspace_provisioner.py` (new),
+  `tests/compose/workspace_control/run-postgres-tests.sh` (matrix extended).
+- Delivers deterministic materialization: a stable content digest over the
+  materialized tree, git clone/checkout against the pinned revision with
+  forged-digest rejection, archive extraction with traversal/link guards,
+  and digest-verified snapshot extraction; the `PostgresWorkspaceProvisioner`
+  orchestrates them over the v18 authority — CAS start, uncertain on any
+  materialization failure, ready with revision+digest+volume on success,
+  deterministic uncertain reconciliation (resolve-succeed/resolve-fail),
+  snapshot (tree digest + tar.gz via injected object IO) and restore
+  roundtrips, and release with volume cleanup. Volume layout is
+  directory-based under an injected root; the dedicated mount remains
+  deployment composition.
+- Validation: local materialization matrix `8/8`; real PostgreSQL matrix
+  (store + provisioner) `8/8` with
+  `ZEBRA_WORKSPACE_CONTROL_POSTGRES_TEST_RESULT=PASS`; `make test`
+  `2242 passed, 282 skipped`; `make check` green.
+
 ### CLOUD-WORKSPACE-CP-PG-01 - Workspace Control Plane PostgreSQL Authority
 
 - Status: `Done`
