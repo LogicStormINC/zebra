@@ -4,7 +4,9 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+from agent_core.application.agent_definitions import PublisherGrantPort
 from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
+from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_integrations import GitHubPullRequestTransport, RedisCommittedEventPublisher
 from agent_security import CredentialBroker
 from agent_storage import (
@@ -36,6 +38,8 @@ def create_app(
     github_transport: GitHubPullRequestTransport | None = None,
     effect_state: EffectStateReadPort | None = None,
     workspace_control_store: WorkspaceControlStorePort | None = None,
+    agent_registry: AgentRegistryPort | None = None,
+    publisher_grants: PublisherGrantPort | None = None,
 ) -> ZebraAgentApi:
     from zebra_agent_api.app import ZebraAgentApi
 
@@ -85,6 +89,19 @@ def create_app(
                 active_settings.database_url,
                 deployment_namespace=namespace,
             )
+    if agent_registry is None and composed_stores is not None:
+        from agent_core.application.agent_definitions import (
+            StaticPublisherGrantResolver,
+        )
+        from agent_storage import PostgresAgentRegistry
+
+        namespace = getattr(composed_stores, "deployment_namespace", None)
+        if isinstance(namespace, str) and namespace.strip():
+            agent_registry = PostgresAgentRegistry(
+                active_settings.database_url,
+                deployment_namespace=namespace,
+            )
+            publisher_grants = publisher_grants or StaticPublisherGrantResolver({})
     return ZebraAgentApi(
         database_path=active_database_path,
         settings=active_settings,
@@ -97,4 +114,6 @@ def create_app(
         credential_broker=active_broker,
         github_transport=github_transport,
         effect_state=effect_state,
+        agent_registry=agent_registry,
+        publisher_grants=publisher_grants,
     )

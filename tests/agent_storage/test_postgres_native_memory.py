@@ -69,7 +69,7 @@ def test_v12_schema_is_migrated_and_constructor_does_not_run_ddl(dsn: str) -> No
         "native_memory_retrieval",
         "native_memory_scopes",
     ]
-    assert version == (12,)
+    assert version == (19,)
 
     empty_schema = f"native_memory_empty_{uuid4().hex}"
     with psycopg.connect(dsn) as connection:
@@ -359,13 +359,13 @@ def test_v11_upgrade_applies_v12_without_rewriting_history(postgres_dsn: str) ->
         with psycopg.connect(isolated) as connection:
             assert connection.execute(
                 "SELECT max(version), count(*) FROM zebra_schema_migrations"
-            ).fetchone() == (12, 12)
+            ).fetchone() == (19, 19)
             assert connection.execute(
                 "SELECT name FROM zebra_schema_migrations WHERE version = 11"
             ).fetchone() == ("memory_delivery_ledger",)
             assert connection.execute(
-                "SELECT name FROM zebra_schema_migrations WHERE version = 12"
-            ).fetchone() == ("native_memory_gateway",)
+                "SELECT name FROM zebra_schema_migrations WHERE version = 19"
+            ).fetchone() == ("agent_definition_registry",)
     finally:
         with psycopg.connect(postgres_dsn) as connection:
             connection.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))

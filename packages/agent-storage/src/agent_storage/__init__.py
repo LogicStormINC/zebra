@@ -67,6 +67,8 @@ from agent_storage.memory_lookup import (
 )
 from agent_storage.model_calls import SQLiteModelCallStore
 from agent_storage.postgres import (
+    AgentDefinitionEvalEvidence,
+    AgentRegistryStorageError,
     FencedAgentTaskStorePort,
     GovernedMemoryImportError,
     GovernedMemoryImportQuarantine,
@@ -89,6 +91,7 @@ from agent_storage.postgres import (
     NativeMemoryRecallHit,
     NativeMemoryReset,
     NativeMemoryStaleGenerationError,
+    PostgresAgentRegistry,
     PostgresAgentTaskConflictError,
     PostgresAgentTaskStore,
     PostgresCloudArtifactPayloadStore,
@@ -214,6 +217,9 @@ __all__ = [
     "HostRegistryRecord",
     "PostgresHostAuthorityStore",
     "PostgresWorkspaceControlStore",
+    "AgentDefinitionEvalEvidence",
+    "AgentRegistryStorageError",
+    "PostgresAgentRegistry",
     "GovernedMemoryImportError",
     "GovernedMemoryImportQuarantine",
     "GovernedMemoryImportReport",

@@ -1,5 +1,11 @@
 """Domain models for Zebra Agent."""
 
+from agent_core.domain.agent_definition_drafts import (
+    AgentDefinitionDraft,
+    AgentDefinitionDraftValidation,
+    AgentDraftValidationIssue,
+    AgentDraftValidationStatus,
+)
 from agent_core.domain.agent_definitions import (
     AgentDefinition,
     AgentDefinitionScope,
@@ -266,6 +272,10 @@ __all__ = [
     "AgentRelease",
     "AgentReleaseStatus",
     "AgentReleaseTransitionError",
+    "AgentDefinitionDraft",
+    "AgentDefinitionDraftValidation",
+    "AgentDraftValidationIssue",
+    "AgentDraftValidationStatus",
     "canonical_agent_definition_digest",
     "AttachmentContextInput",
     "DeliveryAuditRecord",

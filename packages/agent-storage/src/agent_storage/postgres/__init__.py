@@ -1,5 +1,10 @@
 """PostgreSQL adapters used by the explicit cloud control-plane composition."""
 
+from agent_storage.postgres.agent_registry import (
+    AgentDefinitionEvalEvidence,
+    AgentRegistryStorageError,
+    PostgresAgentRegistry,
+)
 from agent_storage.postgres.agent_tasks import (
     FencedAgentTaskStorePort,
     PostgresAgentTaskConflictError,
@@ -147,6 +152,9 @@ __all__ = [
     "HostRegistryRecord",
     "PostgresHostAuthorityStore",
     "PostgresWorkspaceControlStore",
+    "PostgresAgentRegistry",
+    "AgentRegistryStorageError",
+    "AgentDefinitionEvalEvidence",
     "PostgresMemoryDeliveryLedger",
     "PostgresMemoryDeliveryStore",
     "NativeMemoryConflictError",

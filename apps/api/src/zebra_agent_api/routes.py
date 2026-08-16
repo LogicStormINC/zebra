@@ -10,6 +10,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
 
 from zebra_agent_api.ag_ui_command import handle_agui_command
+from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.task_routes import handle_task_route
@@ -57,6 +58,9 @@ class RouteAdapter:
         task_response = handle_task_route(self.app, request)
         if task_response is not None:
             return task_response
+        agent_definition_response = handle_agent_definition_route(self.app, request)
+        if agent_definition_response is not None:
+            return agent_definition_response
         if request.path.startswith("/sessions/") and _is_hidden_internal_segment(
             self.app, request.path
         ):

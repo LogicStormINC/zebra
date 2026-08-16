@@ -8,12 +8,14 @@ from agent_core.application import (
     SessionMessageAppendService,
     attach_refs_to_user_event,
 )
+from agent_core.application.agent_definitions import PublisherGrantPort
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
+from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_integrations import (
     GitHubPullRequestTransport,
     ModelProviderSettings,
@@ -50,6 +52,7 @@ from zebra_agent_worker import (
     WorkerExecutionError,
 )
 
+from zebra_agent_api.agent_definitions import ApiAgentDefinitionsMixin
 from zebra_agent_api.api_approval_control_mixin import ApiApprovalControlMixin
 from zebra_agent_api.api_artifact_read_mixin import ApiArtifactReadMixin
 from zebra_agent_api.api_command_mixin import ApiCommandMixin
@@ -100,6 +103,7 @@ class ZebraAgentApi(
     ApiApprovalControlMixin,
     ApiSkillsAdminMixin,
     WorkspaceApiMixin,
+    ApiAgentDefinitionsMixin,
 ):
     database_path: Path
     settings: ZebraAgentSettings
@@ -110,6 +114,8 @@ class ZebraAgentApi(
     administrative_context_namespace: str | None = None
     credential_broker: CredentialBroker | None = None
     github_transport: GitHubPullRequestTransport | None = None
+    agent_registry: AgentRegistryPort | None = None
+    publisher_grants: PublisherGrantPort | None = None
     _parse_session_id = staticmethod(parse_session_id)
 
     def create_session(

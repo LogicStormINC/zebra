@@ -1,5 +1,8 @@
 """Immutable PostgreSQL migration catalog."""
 
+from agent_storage.postgres.agent_registry_migration import (
+    AGENT_REGISTRY_MIGRATION,
+)
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
 from agent_storage.postgres.control_plane_migration import CONTROL_PLANE_MIGRATION
 from agent_storage.postgres.delivery_transaction_migration import (
@@ -15,9 +18,7 @@ from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATI
 from agent_storage.postgres.provider_continuation_migration import (
     PROVIDER_CONTINUATION_MIGRATION,
 )
-from agent_storage.postgres.workspace_control_migration import (
-    WORKSPACE_CONTROL_MIGRATION,
-)
+from agent_storage.postgres.workspace_control_migration import WORKSPACE_CONTROL_MIGRATION
 
 MIGRATIONS = (
     Migration(
@@ -466,4 +467,5 @@ MIGRATIONS = (
     MIGRATION_RECOVERY_MIGRATION,
     HOST_AUTH_MIGRATION,
     WORKSPACE_CONTROL_MIGRATION,
+    AGENT_REGISTRY_MIGRATION,
 )
