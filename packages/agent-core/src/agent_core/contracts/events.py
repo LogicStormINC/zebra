@@ -493,4 +493,4 @@ def validate_event_payload(
         raise EventPayloadValidationError(
             f"invalid payload for {event_type.value}",
         ) from exc
-    return validated.model_dump()
+    return validated.model_dump(mode="json")

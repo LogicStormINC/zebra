@@ -228,6 +228,8 @@ def build_worker_loop_service(
         active_provider_factory: (
             Callable[[SessionId], CloudProviderContinuationCoordinator] | None
         ) = cloud_bundle.provider_continuation_factory
+        active_authority_resolver = cloud_bundle.authority_resolver
+        active_authority_scope_provider = cloud_bundle.authority_scope_provider
     else:
         from agent_storage import sqlite_control_plane_stores
 
@@ -238,6 +240,8 @@ def build_worker_loop_service(
         active_artifact_factory = None
         active_workspace_resolver_factory = None
         active_provider_factory = cloud_provider_continuation_factory
+        active_authority_resolver = None
+        active_authority_scope_provider = None
     if settings.live_events.redis_url is not None:
         namespace = getattr(active_stores, "deployment_namespace", None)
         if namespace is None and settings.deployment == "local":
@@ -278,6 +282,8 @@ def build_worker_loop_service(
             if active_workspace_resolver_factory is not None
             else None
         ),
+        execution_authority_resolver=active_authority_resolver,
+        execution_authority_scope_provider=active_authority_scope_provider,
     )
     command_consumer = SessionCommandConsumer(
         execution_stores,

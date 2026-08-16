@@ -6,8 +6,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from uuid import uuid4
 
+from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import Session
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
+from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_runtime import WorkspaceRuntimeResolver
 from agent_storage import (
     CloudCompositionSettings,
@@ -33,6 +36,8 @@ class CloudWorkerComposition:
     artifact_factory: Callable[[SessionId], CloudToolOutputArtifactCoordinator]
     provider_continuation_factory: Callable[[SessionId], CloudProviderContinuationCoordinator]
     workspace_resolver_factory: Callable[[], WorkspaceRuntimeResolver | None] | None = None
+    authority_resolver: ExecutionAuthorityResolverPort | None = None
+    authority_scope_provider: Callable[[Session], OpaqueAuthorityScope] | None = None
 
 
 def compose_cloud_worker(
@@ -144,6 +149,25 @@ def compose_cloud_worker(
             )
         )
 
+    from hashlib import sha256 as _sha
+
+    from zebra_agent_worker.runtime_authority import TenantScopedAuthorityResolver
+
+    issuer = cloud.history_scope.authority_issuer
+    policy_digest = _sha(f"deployment-authority:{issuer}".encode()).hexdigest()
+    authority_resolver = TenantScopedAuthorityResolver(
+        authority_issuer=issuer,
+        policy_ref="policy/deployment-authority@1",
+        policy_version="1",
+        policy_effective_digest=policy_digest,
+    )
+
+    def authority_scope_provider(session: Session) -> OpaqueAuthorityScope:
+        return OpaqueAuthorityScope(
+            authority_issuer=issuer,
+            namespace_id=session.namespace_id or stores.deployment_namespace,
+        )
+
     return CloudWorkerComposition(
         stores=stores,
         effect_dispatch=dispatch,
@@ -152,4 +176,6 @@ def compose_cloud_worker(
         artifact_factory=artifact_factory,
         provider_continuation_factory=provider_factory,
         workspace_resolver_factory=workspace_resolver_factory,
+        authority_resolver=authority_resolver,
+        authority_scope_provider=authority_scope_provider,
     )

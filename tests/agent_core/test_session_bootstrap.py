@@ -87,7 +87,7 @@ def test_session_bootstrap_persists_only_secret_free_host_context() -> None:
 
     persisted = result.events[2].payload["host_context"]
     assert persisted["grant_id"] == "grant-1"
-    assert persisted["resource_refs"] == (
+    assert persisted["resource_refs"] == [
         {"resource_type": "trench.event", "resource_id": "evt-1"},
-    )
+    ]
     assert "authorization" not in str(persisted).lower()

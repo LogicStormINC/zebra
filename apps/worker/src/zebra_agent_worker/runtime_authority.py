@@ -1,8 +1,9 @@
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Protocol
+from typing import Any, Protocol
 
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -17,10 +18,12 @@ from agent_core.domain.execution_authority import (
     ExternalAuthorityGrant,
 )
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import Session
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_core.ports.runtime import EffectiveRuntimeAuthority
 
+from zebra_agent_worker.authority_types import AuthorityScopeProvider
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 
 
@@ -354,3 +357,128 @@ def runtime_cleanup_failure_result(
             "tool_calls_executed": prior.metadata.get("tool_calls_executed", 0),
         },
     )
+
+@dataclass(frozen=True)
+class TenantScopedAuthorityResolver:
+    """Deployment-issuer authority; the tenant namespace comes per request scope.
+
+    The cloud Worker serves every tenant of the deployment: each Attempt
+    resolves authority for the session's bound tenant namespace (or the
+    deployment fallback for operator-scoped sessions). The issuer stays
+    pinned to the configured deployment issuer; any other issuer fails
+    closed.
+    """
+
+    authority_issuer: str
+    policy_ref: str
+    policy_version: str
+    policy_effective_digest: str
+    subject: str = "deployment-trusted"
+    audience: str = "zebra"
+    granted_authorities: tuple[str, ...] = ("agent.execute",)
+    lifetime_seconds: int = 900
+
+    def _delegate(
+        self,
+        namespace_id: str,
+    ) -> TrustedLocalExecutionAuthorityResolver:
+        return TrustedLocalExecutionAuthorityResolver(
+            authority_issuer=self.authority_issuer,
+            namespace_id=namespace_id,
+            policy_ref=self.policy_ref,
+            policy_version=self.policy_version,
+            policy_effective_digest=self.policy_effective_digest,
+            subject=self.subject,
+            audience=self.audience,
+            granted_authorities=self.granted_authorities,
+            lifetime_seconds=self.lifetime_seconds,
+        )
+
+    def _require_issuer(self, scope: OpaqueAuthorityScope) -> None:
+        if scope.authority_issuer != self.authority_issuer:
+            raise ExecutionAuthorityResolutionError(
+                "execution authority issuer does not match the deployment"
+                " issuer; failing closed"
+            )
+
+    def resolve_for_attempt(
+        self,
+        request: ExecutionAuthorityResolutionRequest,
+    ) -> ExecutionAuthoritySnapshot:
+        self._require_issuer(request.scope)
+        return self._delegate(request.scope.namespace_id).resolve_for_attempt(request)
+
+    def revalidate_attempt(
+        self,
+        request: ExecutionAuthorityRevalidationRequest,
+    ) -> ExecutionAuthorityRevalidation:
+        self._require_issuer(request.scope)
+        return self._delegate(request.scope.namespace_id).revalidate_attempt(request)
+
+
+def attempt_authority_scope(
+    static_scope: OpaqueAuthorityScope | None,
+    provider: Callable[[Session], OpaqueAuthorityScope] | None,
+    session: Session,
+) -> OpaqueAuthorityScope | None:
+    """Per-session scope: the bound tenant namespace, or the static scope."""
+    if provider is None:
+        return static_scope
+    return provider(session)
+
+
+def validate_authority_wiring(
+    resolver: ExecutionAuthorityResolverPort | None,
+    static_scope: OpaqueAuthorityScope | None,
+    provider: Callable[[Session], OpaqueAuthorityScope] | None,
+) -> None:
+    """A configured resolver requires a static scope or a per-session provider."""
+    if resolver is not None and static_scope is None and provider is None:
+        raise ValueError(
+            "execution_authority_scope (or a per-session provider) is required"
+            " for an authority resolver"
+        )
+
+
+@dataclass(frozen=True)
+class AttemptAuthorityEvidence:
+    """Persist attempt authority evidence before execution starts."""
+
+    resolver: ExecutionAuthorityResolverPort | None
+    static_scope: OpaqueAuthorityScope | None
+    scope_provider: AuthorityScopeProvider | None
+    recovery_service: Any
+    event_store: Any
+
+    def persist(
+        self,
+        recorder: DurableHarnessEventRecorder,
+        claimed: Any,
+        session_events: Any,
+        *,
+        session_id: SessionId,
+        started_at: datetime,
+    ) -> tuple[Any, Any]:
+        if persist_attempt_authority(
+            recorder,
+            self.resolver,
+            attempt_authority_scope(
+                self.static_scope,
+                self.scope_provider,
+                claimed.recovery.session,
+            ),
+            session_id=session_id,
+            existing_events=session_events,
+            attempt_number=1,
+            created_at=started_at,
+        ):
+            from zebra_agent_worker.claims import ClaimedSession
+
+            return (
+                ClaimedSession(
+                    recovery=self.recovery_service.recover_session(session_id),
+                    lease=claimed.lease,
+                ),
+                self.event_store.list_for_session(session_id),
+            )
+        return claimed, session_events

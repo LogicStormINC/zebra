@@ -6,7 +6,6 @@ from pathlib import Path
 
 from agent_context import LocalContextCompiler
 from agent_core.application import SessionTitleService
-from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.harness import (
@@ -16,7 +15,6 @@ from agent_core.harness import (
     SingleAttemptOrchestrator,
 )
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
-from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_integrations import build_model_gateway
 from agent_runtime.workspace_runtime_resolver import WorkspaceRuntimeResolver
 from agent_security import (
@@ -27,24 +25,23 @@ from agent_security import (
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 from zebra_agent_config import ZebraAgentSettings, load_settings, trusted_local_mode_enabled
 
+import zebra_agent_worker.authority_types as authority_types
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
 import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
 import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
-from zebra_agent_worker.approved_continuation import (
-    ApprovedContinuationError,
-    recover_approved_continuation,
-)
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
-from zebra_agent_worker.clarification_continuation import (
-    ClarificationContinuationError,
-    recover_clarification_continuation,
-)
 from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.continuation_lifecycle import (
     mark_approved_continuation_started,
     mark_clarification_continuation_started,
     mark_completed_continuation_started,
+)
+from zebra_agent_worker.continuation_recovery import (
+    ApprovedContinuationError,
+    ClarificationContinuationError,
+    recover_approved_continuation,
+    recover_clarification_continuation,
 )
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
@@ -64,10 +61,11 @@ from zebra_agent_worker.provider_continuation_execution import CloudProviderCont
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
 from zebra_agent_worker.runtime_authority import (
+    AttemptAuthorityEvidence,
     close_tool_gateway,
-    persist_attempt_authority,
     persist_runtime_authority,
     runtime_cleanup_failure_result,
+    validate_authority_wiring,
 )
 from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_gateway_runtime import build_worker_tool_gateway
@@ -91,11 +89,15 @@ class SessionExecutionService:
         deployment_namespace: str | None = None,
         cloud_artifact_factory: artifact_runtime.CloudArtifactCoordinatorFactory | None = None,
         cloud_provider_continuation_factory: CloudProviderContinuationFactory | None = None,
-        execution_authority_resolver: ExecutionAuthorityResolverPort | None = None,
-        execution_authority_scope: OpaqueAuthorityScope | None = None,
+        execution_authority_resolver: authority_types.AuthorityResolver | None = None,
+        execution_authority_scope: authority_types.AuthorityScope | None = None,
+        execution_authority_scope_provider: authority_types.AuthorityScopeProvider | None = None,
     ) -> None:
-        if execution_authority_resolver is not None and execution_authority_scope is None:
-            raise ValueError("execution_authority_scope is required for an authority resolver")
+        validate_authority_wiring(
+            execution_authority_resolver,
+            execution_authority_scope,
+            execution_authority_scope_provider,
+        )
         cloud_artifact_factory = artifact_runtime.validate_cloud_artifact_factory(
             cloud_artifact_factory,
             worker_projection_transaction,
@@ -161,6 +163,7 @@ class SessionExecutionService:
         self._cloud_provider_continuation_factory = cloud_provider_continuation_factory
         self._execution_authority_resolver = execution_authority_resolver
         self._execution_authority_scope = execution_authority_scope
+        self._execution_authority_scope_provider = execution_authority_scope_provider
 
     def execute_session(
         self,
@@ -264,20 +267,19 @@ class SessionExecutionService:
             ownership_check=ownership_check,
         )
         try:
-            if persist_attempt_authority(
-                authority_recorder,
+            claimed, session_events = AttemptAuthorityEvidence(
                 self._execution_authority_resolver,
                 self._execution_authority_scope,
+                self._execution_authority_scope_provider,
+                self._recovery_service,
+                self._event_store,
+            ).persist(
+                authority_recorder,
+                claimed,
+                session_events,
                 session_id=session_id,
-                existing_events=session_events,
-                attempt_number=1,
-                created_at=started_at,
-            ):
-                claimed = ClaimedSession(
-                    recovery=self._recovery_service.recover_session(session_id),
-                    lease=claimed.lease,
-                )
-                session_events = self._event_store.list_for_session(session_id)
+                started_at=started_at,
+            )
         except ValueError as exc:
             raise WorkerExecutionError(str(exc)) from exc
         try:
