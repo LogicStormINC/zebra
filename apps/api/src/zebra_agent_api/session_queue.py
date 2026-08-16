@@ -4,6 +4,7 @@ from pathlib import Path
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_storage import ControlPlaneStores
@@ -18,6 +19,7 @@ def create_queued_session(
     parsed: CreateSessionPayload,
     *,
     host_context: HostContextEnvelope | None = None,
+    definition_snapshot: AgentDefinitionSnapshot | None = None,
 ) -> ApiResponse:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -33,6 +35,7 @@ def create_queued_session(
             max_model_calls=parsed["max_model_calls"],
             max_tool_calls=parsed["max_tool_calls"],
             host_context=host_context,
+            definition_snapshot=definition_snapshot,
         )
     )
     events, attachment_refs = persist_initial_attachments(

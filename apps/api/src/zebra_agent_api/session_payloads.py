@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TypedDict
+from uuid import UUID
 
 from agent_core.domain.attachments import TextAttachmentInput
+from agent_core.domain.identifiers import AgentDefinitionId
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
@@ -35,6 +37,8 @@ class CreateSessionPayload(TypedDict):
     mcp_prompt_arguments: dict[str, str]
     history_session_ids: tuple[str, ...] | None
     attachments: tuple[TextAttachmentInput, ...]
+    definition_id: AgentDefinitionId | None
+    definition_environment: str | None
 
 
 CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
@@ -224,6 +228,18 @@ def parse_create_session_payload(
         NetworkProfileName.FULL_TRUSTED_LOCAL,
     }:
         return bad_request("MCP selections require an MCP-capable network profile")
+    definition_id = None
+    raw_definition_id = payload.get("definition_id")
+    if raw_definition_id is not None:
+        if not isinstance(raw_definition_id, str):
+            return bad_request("definition_id must be a UUID string")
+        try:
+            definition_id = AgentDefinitionId(UUID(raw_definition_id))
+        except ValueError:
+            return bad_request("definition_id must be a UUID string")
+    definition_environment = payload.get("definition_environment", "production")
+    if not isinstance(definition_environment, str) or not definition_environment.strip():
+        return bad_request("definition_environment must be a non-blank string")
 
     return {
         "prompt": prompt.strip(),
@@ -243,6 +259,8 @@ def parse_create_session_payload(
         "mcp_prompt_arguments": dict(raw_prompt_arguments),
         "history_session_ids": history_session_ids,
         "attachments": attachments,
+        "definition_id": definition_id,
+        "definition_environment": definition_environment,
     }
 
 

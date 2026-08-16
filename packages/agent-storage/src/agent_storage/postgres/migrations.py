@@ -19,6 +19,9 @@ from agent_storage.postgres.provider_continuation_migration import (
     PROVIDER_CONTINUATION_MIGRATION,
 )
 from agent_storage.postgres.workspace_control_migration import WORKSPACE_CONTROL_MIGRATION
+from agent_storage.postgres.workspace_definition_snapshot_migration import (
+    WORKSPACE_DEFINITION_SNAPSHOT_MIGRATION,
+)
 
 MIGRATIONS = (
     Migration(
@@ -468,4 +471,5 @@ MIGRATIONS = (
     HOST_AUTH_MIGRATION,
     WORKSPACE_CONTROL_MIGRATION,
     AGENT_REGISTRY_MIGRATION,
+    WORKSPACE_DEFINITION_SNAPSHOT_MIGRATION,
 )

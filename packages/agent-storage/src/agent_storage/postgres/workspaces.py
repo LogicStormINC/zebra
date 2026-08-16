@@ -9,6 +9,7 @@ from agent_core.application.workspace_projection import (
 from agent_core.application.workspace_projection import (
     rebuild_workspace,
 )
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseLostError
@@ -202,7 +203,7 @@ def save_workspace_in_transaction(
     row = connection.execute(
         f"""
         INSERT INTO workspace_projections ({_WORKSPACE_COLUMNS})
-        VALUES ({", ".join(["%s"] * 22)})
+        VALUES ({", ".join(["%s"] * 23)})
         ON CONFLICT (deployment_namespace, session_id) DO UPDATE SET
             workspace_root = EXCLUDED.workspace_root,
             prepared_at = EXCLUDED.prepared_at,
@@ -223,7 +224,8 @@ def save_workspace_in_transaction(
             runtime_network_enforcement = EXCLUDED.runtime_network_enforcement,
             runtime_workspace_writable = EXCLUDED.runtime_workspace_writable,
             snapshot_id = EXCLUDED.snapshot_id,
-            snapshot_path = EXCLUDED.snapshot_path
+            snapshot_path = EXCLUDED.snapshot_path,
+            definition_snapshot = EXCLUDED.definition_snapshot
         WHERE workspace_projections.current_sequence < EXCLUDED.current_sequence
         RETURNING {_WORKSPACE_RETURNING_COLUMNS}
         """,
@@ -270,7 +272,8 @@ deployment_namespace, session_id, workspace_root, prepared_at, updated_at,
 current_sequence, status, policy_profile, tool_profile, network_profile,
 network_allowlist, mcp_allowlist, skill_components, last_attempt_number,
 runtime_name, runtime_engine, runtime_image, runtime_spec_digest,
-runtime_network_enforcement, runtime_workspace_writable, snapshot_id, snapshot_path
+runtime_network_enforcement, runtime_workspace_writable, snapshot_id, snapshot_path,
+definition_snapshot
 """.strip()
 
 _WORKSPACE_RETURNING_COLUMNS = """
@@ -278,7 +281,7 @@ session_id, workspace_root, prepared_at, updated_at, current_sequence, status,
 policy_profile, tool_profile, network_profile, network_allowlist, mcp_allowlist,
 skill_components, last_attempt_number, runtime_name, runtime_engine, runtime_image,
 runtime_spec_digest, runtime_network_enforcement, runtime_workspace_writable,
-snapshot_id, snapshot_path
+snapshot_id, snapshot_path, definition_snapshot
 """.strip()
 
 
@@ -309,6 +312,13 @@ def _workspace_values(
         workspace.runtime_workspace_writable,
         workspace.snapshot_id,
         workspace.snapshot_path,
+        (
+            None
+            if workspace.definition_snapshot is None
+            else Jsonb(
+                workspace.definition_snapshot.model_dump(mode="json", exclude_none=True)
+            )
+        ),
     )
 
 
@@ -322,4 +332,8 @@ def _workspace_from_row(row: dict[str, Any]) -> WorkspaceProjection:
         values["mcp_allowlist"] = tuple(values["mcp_allowlist"])
     if values["skill_components"] is not None:
         values["skill_components"] = tuple(values["skill_components"])
+    if values["definition_snapshot"] is not None:
+        values["definition_snapshot"] = AgentDefinitionSnapshot.model_validate(
+            values["definition_snapshot"]
+        )
     return WorkspaceProjection.model_validate(values)

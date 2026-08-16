@@ -52,6 +52,7 @@ from zebra_agent_worker import (
     WorkerExecutionError,
 )
 
+from zebra_agent_api.agent_definition_binding import resolve_definition_binding
 from zebra_agent_api.agent_definitions import ApiAgentDefinitionsMixin
 from zebra_agent_api.api_approval_control_mixin import ApiApprovalControlMixin
 from zebra_agent_api.api_artifact_read_mixin import ApiArtifactReadMixin
@@ -164,6 +165,14 @@ class ZebraAgentApi(
         if trusted_local_mode_enabled(self.settings):
             parsed["network_profile"] = "full-trusted-local"
             parsed["network_allowlist"] = []
+        definition_snapshot = resolve_definition_binding(
+            self.agent_registry,
+            self.publisher_grants,
+            parsed,
+            host_context=host_context,
+        )
+        if isinstance(definition_snapshot, ApiResponse):
+            return definition_snapshot
         try:
             validate_mcp_capability_selection(
                 self.settings.mcp_servers,
@@ -190,13 +199,23 @@ class ZebraAgentApi(
 
         response = (
             self.queue_cloud_run(
-                create_queued_session(self.stores, parsed, host_context=host_context),
+                create_queued_session(
+                    self.stores,
+                    parsed,
+                    host_context=host_context,
+                    definition_snapshot=definition_snapshot,
+                ),
                 idempotency_key=idempotency_key,
             )
             if parsed["execute"] and self.settings.deployment == "cloud"
             else self._create_and_execute_session(parsed)
             if parsed["execute"]
-            else create_queued_session(self.stores, parsed, host_context=host_context)
+            else create_queued_session(
+                self.stores,
+                parsed,
+                host_context=host_context,
+                definition_snapshot=definition_snapshot,
+            )
         )
         if idempotency_key is None or response.status_code != 201:
             return response

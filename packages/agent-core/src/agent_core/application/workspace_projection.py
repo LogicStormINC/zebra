@@ -1,3 +1,4 @@
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
@@ -34,6 +35,7 @@ def rebuild_workspace(events: list[SessionEvent]) -> WorkspaceProjection:
         network_allowlist=_network_allowlist_from_event(prepared_event),
         mcp_allowlist=_mcp_allowlist_from_event(prepared_event),
         skill_components=_skill_components_from_event(prepared_event),
+        definition_snapshot=_definition_snapshot_from_event(prepared_event),
     )
     for event in events:
         if event.sequence < prepared_event.sequence:
@@ -72,6 +74,7 @@ def apply_event(
         updates["network_allowlist"] = _network_allowlist_from_event(event)
         updates["mcp_allowlist"] = _mcp_allowlist_from_event(event)
         updates["skill_components"] = _skill_components_from_event(event)
+        updates["definition_snapshot"] = _definition_snapshot_from_event(event)
     if event.event_type is EventType.RUNTIME_PROVISIONED:
         updates["runtime_name"] = _required_payload_string(event, "runtime_class")
         updates["runtime_engine"] = _required_payload_string(event, "engine")
@@ -183,6 +186,24 @@ def _skill_components_from_event(event: SessionEvent) -> tuple[str, ...] | None:
         return normalize_skill_components(value)
     except ValueError as exc:
         raise WorkspaceProjectionError("task_prepared contains invalid skill_components") from exc
+
+
+def _definition_snapshot_from_event(
+    event: SessionEvent,
+) -> AgentDefinitionSnapshot | None:
+    if "definition_snapshot" not in event.payload:
+        return None
+    value = event.payload["definition_snapshot"]
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise WorkspaceProjectionError("task_prepared contains invalid definition_snapshot")
+    try:
+        return AgentDefinitionSnapshot.model_validate(value)
+    except ValueError as exc:
+        raise WorkspaceProjectionError(
+            "task_prepared contains invalid definition_snapshot"
+        ) from exc
 
 
 def _optional_attempt_number(event: SessionEvent) -> int | None:

@@ -37,6 +37,9 @@ from agent_core.contracts.session_control_events import (
     SessionResumedPayload,
     SessionSuspendedPayload,
 )
+from agent_core.domain.agent_definition_snapshots import (
+    AgentDefinitionSnapshot,
+)
 from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CHOICE_CHARS,
     MAX_CLARIFICATION_CHOICES,
@@ -107,6 +110,10 @@ class TaskPreparedPayload(BaseModel):
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
     host_context: HostContextEnvelope | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
+    definition_snapshot: AgentDefinitionSnapshot | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )
