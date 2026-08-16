@@ -13,6 +13,29 @@ This project is building a Codex-like engineering agent platform with these arch
 - disposable and resumable sandbox
 - trace and eval driven iteration
 
+## Product Positioning (durable decision, 2026-08-16)
+
+The product is the **cloud agent**: an independent, multi-session Agent
+Runtime service (control plane, stateless workers, sandbox fleet) consumed
+by business systems such as Trench through signed authority and opaque
+namespaces.
+
+The **local agent** (local SQLite profile, Desktop, CLI) exists to develop,
+mature and prove the agent runtime. It is the development vehicle and the
+compatibility baseline — not an independent product goal.
+
+Consequences for contributors:
+
+- local-first execution is a development strategy and regression baseline,
+  not the end state; cloud composition is the delivery target
+- new capabilities land with "local behavior unchanged, cloud explicitly
+  composed"; feature work that only benefits the local surface has no
+  standing unless it hardens the runtime contract
+- prioritization on the mainline follows cloud product value (Trench
+  integration, multi-worker scale-out, production operations), consistent
+  with ADR-012 and the deferred-local posture already recorded in
+  `PROGRESS.md`
+
 ## Source Of Truth
 
 Read these files first before making architectural or workflow changes:

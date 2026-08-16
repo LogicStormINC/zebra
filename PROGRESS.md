@@ -6,6 +6,11 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-14`
+- Durable positioning (2026-08-16, maintainer): the product is the cloud
+  agent; the local agent exists to develop and prove the agent runtime and
+  is not an independent product goal. Recorded explicitly in `AGENTS.md`
+  (Product Positioning) and the `README.md` introduction; mainline
+  prioritization follows cloud product value per ADR-012.
 - Maintainer batch closeout: the entire 2026-08-10 to 2026-08-12 cloudline
   stack (`CLOUD-INTEGRATION-REG-01`, `CLOUD-TRN-NEXT-PLAN-01`, the three
   `QA-CLOUDLINE` quality baselines, the three `ARCH-CONFIG` boundary cards,

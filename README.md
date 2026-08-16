@@ -2,8 +2,14 @@
 
 # Zebra Agent
 
-Zebra Agent is an embeddable, local-first Agent Runtime microservice with an
-optional desktop operator surface. It turns Agent requests into durable,
+Zebra Agent is an embeddable Agent Runtime service whose product target is
+the **cloud agent**: an independent, multi-session execution plane (control
+plane, stateless workers, sandbox fleet) consumed by business systems. The
+local agent — the local SQLite profile with its optional desktop and CLI
+operator surfaces — exists to develop, mature and prove the runtime; it is
+the development vehicle and compatibility baseline, not the product goal.
+Local-first execution is therefore a development strategy, while cloud
+composition is the delivery target. Zebra turns Agent requests into durable,
 streamable, stoppable, resumable, and auditable execution while remaining
 independent of the business system that calls it.
 
