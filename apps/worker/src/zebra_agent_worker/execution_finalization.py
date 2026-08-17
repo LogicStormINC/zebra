@@ -115,7 +115,11 @@ def _finalize_execution(
         )
     if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
         if cloud_memory_store is not None:
-            if deployment_namespace is None or projection_store is None or workspace_store is None:
+            if (
+                deployment_namespace is None
+                or projection_store is None
+                or workspace_store is None
+            ):
                 raise ValueError(
                     "cloud Memory finalization requires its complete projection context"
                 )

@@ -248,6 +248,73 @@ def test_committed_aggregate_uses_fenced_indexes() -> None:
     tool_indexer.index_event.assert_not_called()
 
 
+def test_persisted_cloud_effect_event_uses_fenced_indexes() -> None:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Cloud Effect terminal indexes",
+            user_input="continue",
+            workspace_root=Path("/tmp/cloud-effect-terminal-indexes"),
+        )
+    )
+    workspace = rebuild_workspace(list(bootstrap.events))
+    authority = WorkerMutationAuthority(
+        deployment_namespace="cloud-a",
+        session_id=bootstrap.session.session_id,
+        lease_fence=LeaseFence(
+            control_plane_epoch=uuid4(),
+            fencing_token=7,
+            owner_instance_id="worker-a",
+        ),
+        expected_stream_revision=bootstrap.session.current_sequence,
+    )
+    model_indexer = Mock()
+    tool_indexer = Mock()
+    projection_store = Mock()
+    workspace_store = Mock()
+    event = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=bootstrap.session.current_sequence + 1,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 1},
+        created_at=datetime(2026, 8, 12, 10, 0, tzinfo=UTC),
+    )
+    transaction = Mock()
+    expected_session = apply_session_event(bootstrap.session, event)
+    expected_workspace = apply_workspace_event(workspace, event)
+    transaction.project_persisted_worker_event.return_value = WorkerProjectionCommitResult(
+        event=event,
+        session=expected_session,
+        workspace=expected_workspace,
+    )
+    recorder = DurableHarnessEventRecorder(
+        session=bootstrap.session,
+        workspace=workspace,
+        event_store=Mock(),
+        projection_store=projection_store,
+        workspace_store=workspace_store,
+        model_call_indexer=model_indexer,
+        tool_run_indexer=tool_indexer,
+        worker_projection_transaction=transaction,
+        worker_mutation_authority=authority,
+    )
+
+    recorder.accept_persisted_event(event)
+
+    transaction.project_persisted_worker_event.assert_called_once_with(
+        event,
+        expected_session,
+        expected_workspace,
+        authority=authority,
+    )
+    model_indexer.index_worker_event.assert_called_once_with(event, authority=authority)
+    tool_indexer.index_worker_event.assert_called_once_with(event, authority=authority)
+    model_indexer.index_event.assert_not_called()
+    tool_indexer.index_event.assert_not_called()
+    projection_store.save_session.assert_not_called()
+    workspace_store.save_workspace.assert_not_called()
+
+
 @pytest.mark.parametrize("missing", ["transaction", "authority"])
 def test_recorder_rejects_partial_projection_transaction_configuration(
     missing: str,
@@ -357,6 +424,12 @@ def test_accept_persisted_event_uses_fenced_indexing_and_advances_projections() 
         created_at=datetime(2026, 8, 15, 0, 0, tzinfo=UTC),
     )
 
+    transaction.project_persisted_worker_event.return_value = WorkerProjectionCommitResult(
+        event=completed,
+        session=apply_session_event(bootstrap.session, completed),
+        workspace=apply_workspace_event(workspace, completed),
+    )
+
     accepted = recorder.accept_persisted_event(completed)
 
     assert accepted == completed
@@ -364,7 +437,9 @@ def test_accept_persisted_event_uses_fenced_indexing_and_advances_projections() 
     tool_store.upsert.assert_not_called()
     tool_store.index_worker_event.assert_called_once_with(completed, authority=authority)
     transaction.commit_worker_event.assert_not_called()
-    saved_session = projection_store.save_session.call_args.args[0]
-    assert saved_session.current_sequence == completed.sequence
-    workspace_store.save_workspace.assert_called_once()
+    transaction.project_persisted_worker_event.assert_called_once()
+    projected = transaction.project_persisted_worker_event.call_args.args
+    assert projected[1].current_sequence == completed.sequence
+    projection_store.save_session.assert_not_called()
+    workspace_store.save_workspace.assert_not_called()
     assert recorder.session.current_sequence == completed.sequence

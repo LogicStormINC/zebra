@@ -1,0 +1,69 @@
+services:
+  fake-model:
+    image: python:3.12-slim-bookworm
+    command: [python, /fixtures/fake_model.py]
+    volumes:
+      - ${ZEBRA_CLOUD_EFFECT_FIXTURE_DIR:?set ZEBRA_CLOUD_EFFECT_FIXTURE_DIR}/fake_model.py:/fixtures/fake_model.py:ro
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 2s
+    networks: [dependencies]
+
+  workspace-init:
+    image: python:3.12-slim-bookworm
+    user: "0:0"
+    command: [/bin/sh, -ec, "mkdir -p /workspace && chown 65532:65532 /workspace"]
+    volumes:
+      - cloud-effect-workspace:/workspace
+    security_opt: [no-new-privileges:true]
+    restart: "no"
+    networks: [dependencies]
+
+  zebra-api:
+    environment:
+      ZEBRA_MODEL_PROVIDER: e2e
+      ZEBRA_MODEL_API_KEY_ENV: ZEBRA_E2E_MODEL_API_KEY
+      ZEBRA_MODEL_BASE_URL: http://fake-model:8080
+      ZEBRA_MODEL_NAME: zebra-cloud-effect-e2e
+      ZEBRA_MODEL_MAX_RETRIES: "0"
+      ZEBRA_E2E_MODEL_API_KEY: zebra-cloud-effect-e2e-key
+      ZEBRA_SESSION_HANDOFF_ENABLED: "true"
+    volumes:
+      - cloud-effect-workspace:/workspace
+    depends_on:
+      fake-model:
+        condition: service_healthy
+      workspace-init:
+        condition: service_completed_successfully
+
+  zebra-worker:
+    environment:
+      ZEBRA_MODEL_PROVIDER: e2e
+      ZEBRA_MODEL_API_KEY_ENV: ZEBRA_E2E_MODEL_API_KEY
+      ZEBRA_MODEL_BASE_URL: http://fake-model:8080
+      ZEBRA_MODEL_NAME: zebra-cloud-effect-e2e
+      ZEBRA_MODEL_MAX_RETRIES: "0"
+      ZEBRA_E2E_MODEL_API_KEY: zebra-cloud-effect-e2e-key
+    volumes:
+      - cloud-effect-workspace:/workspace
+    depends_on:
+      fake-model:
+        condition: service_healthy
+      workspace-init:
+        condition: service_completed_successfully
+
+volumes:
+  cloud-effect-workspace:

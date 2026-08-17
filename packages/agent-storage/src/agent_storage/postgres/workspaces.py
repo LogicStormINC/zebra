@@ -26,7 +26,10 @@ from agent_core.ports.workspace_projection_store import (
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.events import append_event_in_transaction
+from agent_storage.postgres.events import (
+    append_event_in_transaction,
+    read_event_in_transaction,
+)
 from agent_storage.postgres.leases import assert_current_lease_fence
 from agent_storage.postgres.projections import (
     get_session_in_transaction,
@@ -75,6 +78,66 @@ class PostgresWorkspaceProjectionStore(
                 self._database.deployment_namespace,
                 event,
             )
+            if persisted_event.sequence != authority.expected_stream_revision + 1:
+                raise PostgresWorkspaceProjectionConflictError(
+                    "canonical Event does not follow the expected stream revision"
+                )
+            canonical_session, canonical_workspace, already_projected = (
+                self._resolve_canonical_projections(
+                    connection,
+                    persisted_event,
+                    session,
+                    workspace,
+                )
+            )
+            if already_projected:
+                return WorkerProjectionCommitResult(
+                    event=persisted_event,
+                    session=canonical_session,
+                    workspace=canonical_workspace,
+                )
+            stored_session = save_session_in_transaction(
+                connection,
+                self._database.deployment_namespace,
+                canonical_session,
+            )
+            stored_workspace = save_workspace_in_transaction(
+                connection,
+                self._database.deployment_namespace,
+                canonical_workspace,
+            )
+            return WorkerProjectionCommitResult(
+                event=persisted_event,
+                session=stored_session,
+                workspace=stored_workspace,
+            )
+
+    def project_persisted_worker_event(
+        self,
+        event: SessionEvent,
+        session: Session,
+        workspace: WorkspaceProjection,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> WorkerProjectionCommitResult:
+        """Project an Event atomically committed by a fenced companion aggregate."""
+        self._validate_worker_commit(event, session, workspace, authority)
+        with self._database.connect() as connection:
+            assert_current_lease_fence(
+                connection,
+                self._database.deployment_namespace,
+                event.session_id,
+                authority.lease_fence,
+            )
+            persisted_event = read_event_in_transaction(
+                connection,
+                self._database.deployment_namespace,
+                event.event_id,
+            )
+            if persisted_event != event:
+                raise PostgresWorkspaceProjectionConflictError(
+                    "persisted Worker Event does not match projection input"
+                )
             if persisted_event.sequence != authority.expected_stream_revision + 1:
                 raise PostgresWorkspaceProjectionConflictError(
                     "canonical Event does not follow the expected stream revision"

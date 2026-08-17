@@ -17,10 +17,11 @@ from agent_core.domain.governed_memories import (
 )
 from agent_core.domain.governed_memory_operations import (
     AdministrativeMemoryReviewRequest,
+    GovernedMemoryOperationKind,
     WorkerMemoryMutationPlan,
 )
 from agent_core.domain.governed_memory_receipts import GovernedMemoryCommitResult
-from agent_core.domain.identifiers import MemoryId
+from agent_core.domain.identifiers import MemoryId, SessionId
 from agent_core.domain.memories import MemoryQuery, MemoryRecord, MemoryVisibility
 from agent_core.domain.memory_delivery import MemoryDeliveryScope
 from agent_core.ports.aggregate_mutation import AdministrativeMutationCAS, WorkerMutationAuthority
@@ -32,6 +33,7 @@ from agent_core.ports.governed_memory_store import (
 )
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.governed_memory_receipt_reads import read_operation_receipt
 from agent_storage.postgres.governed_memory_rows import authority_from_row, query_records
 from agent_storage.postgres.governed_memory_transaction_support import _lock_session
 from agent_storage.postgres.governed_memory_transactions import (
@@ -126,6 +128,21 @@ class PostgresGovernedMemoryStore(GovernedMemoryStorePort):
                 plan,
                 authority,
                 delivery_scope=self._delivery_scope,
+            )
+
+    def get_worker_commit_receipt(
+        self,
+        operation_id: str,
+        *,
+        session_id: SessionId,
+    ) -> GovernedMemoryCommitResult | None:
+        with self._database.connect() as connection:
+            return read_operation_receipt(
+                connection,
+                self._database.deployment_namespace,
+                operation_id,
+                kind=GovernedMemoryOperationKind.WORKER_CANDIDATES,
+                session_id=session_id,
             )
 
     def commit_administrative_review(

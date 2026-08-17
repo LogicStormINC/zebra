@@ -31,6 +31,7 @@ from worker_execution_support import (
     _seed_ready_session_with_input,
     _tool_gateway,
 )
+from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.control import SessionControlService
 
@@ -318,6 +319,49 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
 
     assert captured[0].name.value == "domain-allowlist"
     assert captured[0].domain_allowlist == ("docs.example.com",)
+
+
+def test_cloud_setup_only_is_persistently_rejected_before_model_start(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session_with_input(
+        database_path,
+        tmp_path,
+        user_input="Install the setup dependencies first.",
+        network_profile="setup-only",
+    )
+    settings = ZebraAgentSettings(
+        profile="cloud",
+        database_url=str(database_path),
+        api=ApiSettings(auth_token=None),
+        model=ModelSettings(
+            provider="test",
+            api_key_env="TEST_API_KEY",
+            base_url="https://example.test",
+            model="test-model",
+        ),
+    )
+    service = _build_execution_service(database_path)
+    service._settings = settings
+    service._artifact_payload_store = None
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: (_ for _ in ()).throw(AssertionError("model must not start")),
+    )
+
+    result = service.execute_session(
+        session_id,
+        worker_id="worker-cloud-setup",
+        executed_at=_created_at(),
+    )
+
+    assert result.session.status is SessionStatus.FAILED
+    assert result.attempt_result.metadata["stop_reason"] == "unsupported_runtime_capability"
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert events[-1].event_type is EventType.SESSION_FAILED
+    assert events[-1].payload["metadata"]["network_profile"] == "setup-only"
 
 
 def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) -> None:

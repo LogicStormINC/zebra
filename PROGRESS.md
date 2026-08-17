@@ -47,8 +47,17 @@
   `CLOUD-EFFECT-COMP-CLOSE-01` implementation merged as `bbd6108d`. All of
   these cards are recorded `Done`; per-card prose in
   `docs/AGENT_TASKS.md` is preserved as historical evidence. The preserved
-  dirty-mainline handoff snapshot lives on
-  `codex/cloudline-worktree-snapshot`. `EMB-TRN-READ-E2E-01` remains
+  dirty-mainline handoff snapshot was kept on
+  `codex/cloudline-worktree-snapshot` (removed 2026-08-17 during branch
+  cleanup; superseded by mainline history). Follow-up correction
+  (2026-08-17): the post-review gaps the card owner had reopened on
+  `codex/cloud-effect-comp-close-01` — unknown Memory commit recovery
+  (`cloud_memory_recovery`), fail-closed execution preflight
+  (`execution_preflight`), receipt read validation, and the real-PostgreSQL
+  compose runner under `tests/compose/cloud_effect_composition/` — were
+  merged back into `zebra-cloud-trench`; `CLOUD-EFFECT-COMP-CLOSE-01` is
+  `In Progress` again until its focused test acceptance criterion is
+  re-verified. `EMB-TRN-READ-E2E-01` remains
   `In Progress` and fail-closed pending isolated cross-service inputs.
 - `CLOUD-EFFECT-DEFAULT-E2E-01` is `Done` with the full 10-scenario matrix
   passing on the rig: the two 2026-08-16 fault-injection scenarios verify
