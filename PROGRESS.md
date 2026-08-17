@@ -6,14 +6,15 @@
 ## Current Mainline Snapshot
 
 - Snapshot date: `2026-08-10`
-- `CLOUD-EFFECT-COMP-CLOSE-01` is in `Review` on
-  `codex/cloud-effect-comp-close-01` after explicit maintainer activation. It
-  is a narrow application-composition gate: default Cloud Worker Effect,
-  Artifact, Provider Continuation and governed Memory finalization plus API
-  handoff Effect reads. The focused local matrix is `21 passed, 22 skipped`
-  (the skipped PostgreSQL cases require `ZEBRA_TEST_POSTGRES_DSN`); changed-path
-  Ruff and diff checks pass. It does not make the API command-only or the
-  platform production-ready.
+- `CLOUD-EFFECT-COMP-CLOSE-01` is back `In Progress` on
+  `codex/cloud-effect-comp-close-01` for review corrections. It remains a narrow
+  application-composition gate: default Cloud Worker Effect, Artifact, Provider
+  Continuation and governed Memory finalization plus API handoff Effect reads.
+  The earlier focused local matrix is not sufficient acceptance evidence: the
+  terminal Cloud Effect projection, unknown Memory commit recovery, Cloud
+  `setup-only` handling and the missing PostgreSQL+object-store runner are being
+  corrected before the task may return to Review. It does not make the API
+  command-only or the platform production-ready.
 - `CLOUD-TRN-NEXT-PLAN-01` is in `Review` on
   `codex/cloud-trench-next-plan-01`, intentionally stacked after the regression
   fix. The inspected next-step plan is recorded in

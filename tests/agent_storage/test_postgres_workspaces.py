@@ -128,6 +128,47 @@ def test_worker_commit_returns_canonical_projections_after_lost_ack_retry(
     ]
 
 
+def test_worker_projects_effect_persisted_event_without_second_append(
+    postgres_dsn: str,
+    workspace_namespace: str,
+) -> None:
+    session_id = new_session_id()
+    created, persisted = _events(session_id)
+    lease = _seed_session(postgres_dsn, workspace_namespace, created)
+    event_store = _events_store(postgres_dsn, workspace_namespace)
+    event_store.append(persisted)
+    session = rebuild_session([created, persisted])
+    workspace = rebuild_workspace([created, persisted])
+    store = _store(postgres_dsn, workspace_namespace)
+    authority = _authority(workspace_namespace, lease, expected_revision=created.sequence)
+
+    committed = store.project_persisted_worker_event(
+        persisted,
+        session,
+        workspace,
+        authority=authority,
+    )
+
+    assert committed.event == persisted
+    assert committed.session == session
+    assert committed.workspace == workspace
+    assert _events_store(postgres_dsn, workspace_namespace).list_for_session(session_id) == [
+        created,
+        persisted,
+    ]
+    assert _sessions(postgres_dsn, workspace_namespace).get_session(session_id) == session
+    assert store.get_workspace(session_id) == workspace
+    assert (
+        store.project_persisted_worker_event(
+            persisted,
+            session,
+            workspace,
+            authority=authority,
+        )
+        == committed
+    )
+
+
 @pytest.mark.parametrize("tampered_projection", ["session", "workspace"])
 def test_worker_commit_rejects_projection_content_not_derived_from_event(
     postgres_dsn: str,

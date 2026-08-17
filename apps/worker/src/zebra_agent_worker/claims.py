@@ -75,7 +75,10 @@ class SessionClaimService:
         *,
         lease_ttl_seconds: int,
     ) -> ClaimedSession:
-        recovery = self._recovery_service.recover_session(lease.session_id)
+        recovery = self._recovery_service.recover_session(
+            lease.session_id,
+            worker_lease=lease,
+        )
         renewed = self.heartbeat_lease(
             lease,
             lease_ttl_seconds=lease_ttl_seconds,

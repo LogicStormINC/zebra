@@ -175,12 +175,29 @@ class DurableHarnessEventRecorder:
             raise ValueError("execution event session_id does not match recorder")
         if event.sequence != self.next_sequence:
             raise ValueError("execution event sequence does not match recorder")
-        self._model_call_indexer.index_event(event)
-        self._tool_run_indexer.index_event(event)
-        self._session = apply_event(self._session, event)
-        self._workspace = apply_workspace_event(self._workspace, event)
-        self._projection_store.save_session(self._session)
-        self._workspace_store.save_workspace(self._workspace)
+        authority = self._worker_mutation_authority
+        if authority is None:
+            self._model_call_indexer.index_event(event)
+            self._tool_run_indexer.index_event(event)
+            self._session = apply_event(self._session, event)
+            self._workspace = apply_workspace_event(self._workspace, event)
+            self._projection_store.save_session(self._session)
+            self._workspace_store.save_workspace(self._workspace)
+        else:
+            assert self._worker_projection_transaction is not None
+            next_session = apply_event(self._session, event)
+            next_workspace = apply_workspace_event(self._workspace, event)
+            committed = self._worker_projection_transaction.project_persisted_worker_event(
+                event,
+                next_session,
+                next_workspace,
+                authority=authority,
+            )
+            event = committed.event
+            self._model_call_indexer.index_worker_event(event, authority=authority)
+            self._tool_run_indexer.index_worker_event(event, authority=authority)
+            self._session = committed.session
+            self._workspace = committed.workspace
         self._advance_authority(event)
         self._events.append(event)
         return event

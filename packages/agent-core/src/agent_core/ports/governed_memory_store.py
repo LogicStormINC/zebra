@@ -12,7 +12,7 @@ from agent_core.domain.governed_memory_operations import (
     WorkerMemoryMutationPlan,
 )
 from agent_core.domain.governed_memory_receipts import GovernedMemoryCommitResult
-from agent_core.domain.identifiers import MemoryId
+from agent_core.domain.identifiers import MemoryId, SessionId
 from agent_core.domain.memories import (
     MemoryQuery,
     MemoryRecord,
@@ -101,6 +101,15 @@ class GovernedMemoryStorePort(Protocol):
         *,
         authority: WorkerMutationAuthority,
     ) -> GovernedMemoryCommitResult: ...
+
+    def get_worker_commit_receipt(
+        self,
+        operation_id: str,
+        *,
+        session_id: SessionId,
+    ) -> GovernedMemoryCommitResult | None:
+        """Read a committed Worker receipt; it never creates or retries an operation."""
+        ...
 
     def commit_administrative_review(
         self,

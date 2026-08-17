@@ -208,6 +208,37 @@ def test_delivery_scope_enqueues_confirmed_authority_once_on_replay(
     assert row == (1, "pending", 2)
 
 
+def test_worker_receipt_lookup_is_read_only_and_bound_to_its_session(
+    memory_environment: _MemoryEnvironment,
+) -> None:
+    record = _candidate(memory_environment, text="read the committed Worker receipt")
+    plan = _plan(
+        memory_environment,
+        operation_id="memory:receipt-lookup",
+        expected_revision=1,
+        records=(record,),
+        confirmed=(record.memory_id,),
+    )
+
+    committed = memory_environment.store.commit_worker_candidates(
+        plan,
+        authority=_authority(memory_environment, 1),
+    )
+    receipt = memory_environment.store.get_worker_commit_receipt(
+        plan.operation_id,
+        session_id=memory_environment.session_id,
+    )
+
+    assert receipt is not None
+    assert receipt.replayed
+    assert receipt.receipt == committed.receipt
+    with pytest.raises(GovernedMemoryConflictError, match="session"):
+        memory_environment.store.get_worker_commit_receipt(
+            plan.operation_id,
+            session_id=new_session_id(),
+        )
+
+
 def test_delete_retains_content_free_tombstone_and_hides_compatibility_reads(
     memory_environment: _MemoryEnvironment,
 ) -> None:

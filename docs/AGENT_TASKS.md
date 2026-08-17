@@ -242,7 +242,7 @@ confirmed repo memory by current-task relevance within a token budget.
 
 ### CLOUD-EFFECT-COMP-CLOSE-01 - Default Cloud Effect Composition Closeout
 
-- Status: `Review`
+- Status: `In Progress`
 - Owner: `Codex`
 - Suggested role: `CORE / STORAGE / WORKER / API / QA`
 - Depends on: `CLOUD-INTEGRATION-REG-01@8bbdf5b5`; explicitly activated by the
@@ -254,6 +254,7 @@ confirmed repo memory by current-task relevance within a token budget.
   `packages/agent-core/src/agent_core/ports/__init__.py`,
   `packages/agent-core/src/agent_core/ports/artifact_object_store.py`,
   `packages/agent-core/src/agent_core/ports/memory_store.py`,
+  `packages/agent-core/src/agent_core/ports/workspace_projection_store.py`,
   `packages/agent-core/src/agent_core/application/memory_candidates.py`,
   `packages/agent-storage/src/agent_storage/effect_ledger.py`,
   `packages/agent-storage/src/agent_storage/postgres/outbox.py`,
@@ -261,13 +262,22 @@ confirmed repo memory by current-task relevance within a token budget.
   `packages/agent-storage/src/agent_storage/runtime_composition.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`,
   `packages/agent-storage/src/agent_storage/memory_lookup.py`,
+  `packages/agent-storage/src/agent_storage/postgres/governed_memories.py`,
+  `packages/agent-storage/src/agent_storage/postgres/governed_memory_transaction_support.py`,
+  `packages/agent-storage/src/agent_storage/postgres/governed_memory_receipt_reads.py` (new),
+  `packages/agent-storage/src/agent_storage/postgres/workspaces.py`,
   `packages/agent-storage/src/agent_storage/session_attachments.py`,
   `apps/worker/src/zebra_agent_worker/cloud_composition.py` (new),
   `apps/worker/src/zebra_agent_worker/loop.py`,
   `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
+  `apps/worker/src/zebra_agent_worker/execution_preflight.py` (new, if needed),
+  `apps/worker/src/zebra_agent_worker/recovery.py`,
   `apps/worker/src/zebra_agent_worker/effect_runtime.py`,
   `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
   `apps/worker/src/zebra_agent_worker/cloud_memory_finalization.py` (new),
+  `apps/worker/src/zebra_agent_worker/cloud_memory_recovery.py` (new),
+  `apps/worker/src/zebra_agent_worker/continuation_lifecycle.py`,
   `apps/worker/src/zebra_agent_worker/runtime_setup.py`,
   `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
   `apps/worker/src/zebra_agent_worker/provider_continuation_execution.py`,
@@ -279,6 +289,7 @@ confirmed repo memory by current-task relevance within a token budget.
   `apps/api/src/zebra_agent_api/api_session_handoff_mixin.py`,
   `apps/api/src/zebra_agent_api/app.py`,
   `apps/api/src/zebra_agent_api/factory.py`,
+  `packages/agent-core/src/agent_core/ports/governed_memory_store.py`,
   focused tests under `tests/agent_core/`, `tests/agent_storage/`,
   `tests/worker/`, `tests/api/`, and `tests/compose/cloud_effect_composition/`
   (new), plus this card and its focused `PROGRESS.md` record.
@@ -301,12 +312,12 @@ aggregate without treating `PostgresControlPlaneStores` as local
   the local byte-store API; local execution retains the existing ledger path.
 - [x] A completed cloud Session finalizes governed Memory via one fenced
   `WorkerMemoryMutationPlan`/receipt, never local `MemoryStorePort.upsert()`.
-- [x] Focused tests cover local compatibility, cloud construction failures,
+- [ ] Focused tests cover local compatibility, cloud construction failures,
   Effect state reads and completed-session aggregate acceptance. A real-service
   default-entrypoint runner is included when Docker services are available; its
   shared test workspace mount is not Workspace Control Plane evidence.
 
-#### Review evidence
+#### Review evidence and corrective scope
 
 - Focused local matrix: `21 passed, 22 skipped` across Worker finalization,
   projection transaction, storage composition, Cloud profile and Effect ledger
@@ -316,8 +327,12 @@ aggregate without treating `PostgresControlPlaneStores` as local
   500 lines; the repository size gate now reports only four pre-existing files
   outside this task. Repository Mypy reports 21 inherited errors; none are in
   the new Worker composition or Memory-finalization paths.
-- A PostgreSQL+object-store default-entrypoint run remains review evidence to
-  collect in a service-enabled environment; this task makes no production claim.
+- The review found three P1 regressions: terminal Cloud Effect projection used
+  local `upsert()` compatibility adapters; an unknown governed-Memory commit
+  outcome became unrecoverable after `SESSION_COMPLETED`; and Cloud
+  `setup-only` could stop the poller. It also found that the claimed Compose
+  runner did not exist. These are the active corrective scope; the task cannot
+  return to `Review` until the regression tests and real-service runner exist.
 
 #### Explicit Non-Goals
 

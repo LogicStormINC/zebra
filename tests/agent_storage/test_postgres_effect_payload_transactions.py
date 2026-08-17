@@ -363,6 +363,73 @@ def test_terminal_payload_binding_failure_rolls_back_all_three_writes(dsn: str) 
     assert tuple(record.artifact_id for record in reconcilable) == (reservation.artifact_id,)
 
 
+def test_stale_terminal_payload_becomes_uncertain_without_replay(dsn: str) -> None:
+    namespace, session_id, initial_authority = _prepared_worker(dsn)
+    artifacts = PostgresCloudArtifactPayloadStore(dsn, deployment_namespace=namespace)
+    effects = PostgresEffectDispatchStore(dsn, deployment_namespace=namespace)
+    input_reservation, input_receipt = _stage_payload(
+        artifacts,
+        initial_authority,
+        sequence=1,
+    )
+    started = _artifact_event(input_reservation, EventType.TOOL_EXECUTION_STARTED)
+    effects.schedule_with_payload(
+        _schedule_request(session_id, started, input_reservation),
+        authority=initial_authority,
+        artifact_finalize=_finalize(input_reservation, input_receipt, started),
+    )
+    claim = effects.claim_next(
+        session_id,
+        fence=initial_authority.lease_fence,
+        claim_ttl=timedelta(minutes=1),
+    )
+    assert claim is not None
+    terminal_authority = initial_authority.model_copy(update={"expected_stream_revision": 1})
+    output_reservation, output_receipt = _stage_payload(
+        artifacts,
+        terminal_authority,
+        sequence=2,
+    )
+    terminal = _artifact_event(output_reservation, EventType.TOOL_EXECUTION_COMPLETED)
+    leases = PostgresLeaseStore(dsn, deployment_namespace=namespace)
+    leases.release(session_id, fence=initial_authority.lease_fence)
+    takeover = leases.acquire(
+        session_id,
+        owner_instance_id="takeover-worker",
+        ttl=timedelta(minutes=5),
+    )
+
+    with pytest.raises(LeaseLostError):
+        effects.complete_with_payload(
+            claim,
+            result=_result(),
+            terminal_event=terminal,
+            authority=terminal_authority,
+            artifact_finalize=_finalize(output_reservation, output_receipt, terminal),
+        )
+
+    assert _effect_status(dsn) == "claimed"
+    assert _metadata(artifacts, namespace, output_reservation).lifecycle_status is (
+        CloudArtifactPayloadLifecycleStatus.STAGED
+    )
+    assert len(PostgresEventStore(dsn, deployment_namespace=namespace).list_for_session(session_id)) == 2
+    reconcilable = effects.list_reconcilable(
+        session_id,
+        current_fence=takeover.fence,
+    )
+    assert len(reconcilable) == 1
+    resolved = effects.reconcile_expired(
+        reconcilable[0].dispatch.dispatch_id,
+        old_claim=reconcilable[0],
+        current_fence=takeover.fence,
+        evidence=EffectEvidence(reason_code="lease_lost_after_provider_success"),
+    )
+
+    assert resolved.status is EffectDispatchStatus.UNCERTAIN
+    assert _effect_status(dsn) == "uncertain"
+    assert len(PostgresEventStore(dsn, deployment_namespace=namespace).list_for_session(session_id)) == 2
+
+
 def _prepared_worker(dsn: str) -> tuple[str, SessionId, WorkerMutationAuthority]:
     namespace = f"effect-payload-{uuid4()}"
     bootstrap_control_plane_epoch(dsn, deployment_namespace=namespace)

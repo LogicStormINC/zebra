@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, new_session_id
-from agent_core.domain.leases import LeaseLostError
+from agent_core.domain.leases import LeaseLostError, WorkerLease
 from agent_storage import (
     LeaseConflictError,
     SQLiteEventStore,
@@ -190,8 +190,16 @@ def test_session_claim_does_not_return_if_lease_expires_during_recovery(
     clock = ManualClock(CLAIMED_AT)
 
     class SlowRecoveryService(SessionRecoveryService):
-        def recover_session(self, requested_session_id: SessionId) -> RecoveredSession:
-            recovered = super().recover_session(requested_session_id)
+        def recover_session(
+            self,
+            requested_session_id: SessionId,
+            *,
+            worker_lease: WorkerLease | None = None,
+        ) -> RecoveredSession:
+            recovered = super().recover_session(
+                requested_session_id,
+                worker_lease=worker_lease,
+            )
             clock.now += timedelta(seconds=31)
             return recovered
 

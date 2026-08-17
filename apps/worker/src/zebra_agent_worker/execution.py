@@ -9,6 +9,7 @@ from agent_core.application import SessionTitleService
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import SessionStatus
 from agent_core.harness import (
     HarnessAttempt,
     HarnessContext,
@@ -18,11 +19,7 @@ from agent_core.harness import (
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_integrations import build_model_gateway
-from agent_security import (
-    LocalPolicyEngine,
-    PolicyProfile,
-    resolve_effective_network_profile,
-)
+from agent_security import LocalPolicyEngine, PolicyProfile, resolve_effective_network_profile
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 from zebra_agent_config import (
     ZebraAgentSettings,
@@ -57,6 +54,7 @@ from zebra_agent_worker.execution_finalization import (
     WorkerExecutionError,
     finalize_execution,
 )
+from zebra_agent_worker.execution_preflight import prepare_execution_preflight
 from zebra_agent_worker.execution_storage import resolve_execution_storage
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.model_call_index import ModelCallIndexer
@@ -115,16 +113,6 @@ class SessionExecutionService:
         self._event_store = active_stores.events
         self._projection_store = active_stores.sessions
         self._workspace_store = active_stores.workspaces
-        self._recovery_service = SessionRecoveryService(
-            self._event_store,
-            self._projection_store,
-            self._workspace_store,
-        )
-        self._control_service = SessionControlService(
-            database_path,
-            settings=self._settings,
-            stores=active_stores,
-        )
         self._artifact_payload_store = storage.artifact_payload_store
         self._artifact_payload_reader = storage.artifact_payload_reader
         self._provider_continuation_store = storage.provider_continuation_store
@@ -138,6 +126,24 @@ class SessionExecutionService:
         self._model_call_indexer = ModelCallIndexer(active_stores.model_calls)
         self._tool_run_indexer = ToolRunIndexer(
             active_stores.tool_runs, self._artifact_payload_store
+        )
+        self._recovery_service = SessionRecoveryService(
+            self._event_store,
+            self._projection_store,
+            self._workspace_store,
+            worker_projection_transaction=worker_projection_transaction,
+            deployment_namespace=deployment_namespace,
+            model_call_indexer=(
+                self._model_call_indexer if worker_projection_transaction is not None else None
+            ),
+            tool_run_indexer=(
+                self._tool_run_indexer if worker_projection_transaction is not None else None
+            ),
+        )
+        self._control_service = SessionControlService(
+            database_path,
+            settings=self._settings,
+            stores=active_stores,
         )
         self._projection_recorder_factory = WorkerProjectionRecorderFactory(
             stores=active_stores,
@@ -202,16 +208,25 @@ class SessionExecutionService:
         cloud_continuation = provider_runtime.cloud_for_session(
             self._cloud_provider_continuation_factory, session_id
         )
-        try:
-            restored = self._control_service.restore_suspended_workspace(
-                session_id,
-                resumed_at=started_at,
-            )
-        except SessionControlError as exc:
-            raise WorkerExecutionError(str(exc)) from exc
+        restored = None
+        if claimed.recovery.session.status is SessionStatus.SUSPENDED:
+            if self._settings.profile == "cloud":
+                raise WorkerExecutionError(
+                    "cloud suspended-session restoration is not supported by the default Worker"
+                )
+            try:
+                restored = self._control_service.restore_suspended_workspace(
+                    session_id,
+                    resumed_at=started_at,
+                )
+            except SessionControlError as exc:
+                raise WorkerExecutionError(str(exc)) from exc
         if restored is not None:
             claimed = ClaimedSession(
-                recovery=self._recovery_service.recover_session(session_id),
+                recovery=self._recovery_service.recover_session(
+                    session_id,
+                    worker_lease=claimed.lease,
+                ),
                 lease=claimed.lease,
             )
         recovered_handoff = handoff.recover_worker_handoff(
@@ -246,18 +261,20 @@ class SessionExecutionService:
             task.network_profile,
             trusted_local=trusted_local,
         )
-        try:
-            model_gateway = build_model_gateway(self._settings)
-        except ValueError:
-            raise
+        authority_recorder, preflight_failure = prepare_execution_preflight(
+            recorder_factory=self._projection_recorder_factory,
+            claimed=claimed,
+            ownership_check=ownership_check,
+            network_profile=effective_network_profile.name.value,
+            has_local_artifact_store=self._artifact_payload_store is not None,
+            attempt_number=1,
+            started_at=started_at,
+        )
+        if preflight_failure is not None:
+            return preflight_failure
+        model_gateway = build_model_gateway(self._settings)
         runtime_handle = None
         effect_recorder: list[DurableHarnessEventRecorder] = []
-        authority_recorder = self._projection_recorder_factory.build(
-            session=claimed.recovery.session,
-            workspace=claimed.recovery.workspace,
-            lease=claimed.lease,
-            ownership_check=ownership_check,
-        )
         try:
             if persist_attempt_authority(
                 authority_recorder,
@@ -269,7 +286,10 @@ class SessionExecutionService:
                 created_at=started_at,
             ):
                 claimed = ClaimedSession(
-                    recovery=self._recovery_service.recover_session(session_id),
+                    recovery=self._recovery_service.recover_session(
+                        session_id,
+                        worker_lease=claimed.lease,
+                    ),
                     lease=claimed.lease,
                 )
                 session_events = self._event_store.list_for_session(session_id)
@@ -300,7 +320,10 @@ class SessionExecutionService:
             )
             if persist_runtime_authority(authority_recorder, authority, created_at=started_at):
                 claimed = ClaimedSession(
-                    recovery=self._recovery_service.recover_session(session_id),
+                    recovery=self._recovery_service.recover_session(
+                        session_id,
+                        worker_lease=claimed.lease,
+                    ),
                     lease=claimed.lease,
                 )
             local_tool_gateway = build_worker_tool_gateway(
@@ -378,6 +401,7 @@ class SessionExecutionService:
                 tool_name=continuation.tool_call.name,
                 tool_call_id=str(continuation.tool_call.tool_call_id),
                 started_at=started_at,
+                recorder=authority_recorder,
             )
         elif clarification is not None:
             claimed = mark_clarification_continuation_started(
@@ -386,6 +410,7 @@ class SessionExecutionService:
                 recovery_service=self._recovery_service,
                 clarification_id=str(clarification.tool_call.tool_call_id),
                 started_at=started_at,
+                recorder=authority_recorder,
             )
         context = HarnessContext(
             task=context.task,

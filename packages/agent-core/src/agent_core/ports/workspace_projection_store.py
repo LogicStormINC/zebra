@@ -34,3 +34,13 @@ class WorkerProjectionTransactionPort(Protocol):
         *,
         authority: WorkerMutationAuthority,
     ) -> WorkerProjectionCommitResult: ...
+
+    def project_persisted_worker_event(
+        self,
+        event: SessionEvent,
+        session: Session,
+        workspace: WorkspaceProjection,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> WorkerProjectionCommitResult:
+        """Fence and project an Event already committed by another aggregate."""

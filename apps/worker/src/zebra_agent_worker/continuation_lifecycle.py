@@ -4,6 +4,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.ports import EventStorePort
 
 from zebra_agent_worker.claims import ClaimedSession
+from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.recovery import SessionRecoveryService
 
 
@@ -15,6 +16,7 @@ def mark_approved_continuation_started(
     tool_name: str,
     tool_call_id: str,
     started_at: datetime,
+    recorder: DurableHarnessEventRecorder | None = None,
 ) -> ClaimedSession:
     next_sequence = claimed.recovery.session.current_sequence + 1
     for event_type, payload in (
@@ -29,16 +31,18 @@ def mark_approved_continuation_started(
             },
         ),
     ):
-        event_store.append(
-            SessionEvent.create(
-                session_id=claimed.recovery.session.session_id,
-                sequence=next_sequence,
-                event_type=event_type,
-                actor=EventActor.HARNESS,
-                payload=payload,
-                created_at=started_at,
-            )
+        event = SessionEvent.create(
+            session_id=claimed.recovery.session.session_id,
+            sequence=next_sequence,
+            event_type=event_type,
+            actor=EventActor.HARNESS,
+            payload=payload,
+            created_at=started_at,
         )
+        if recorder is None:
+            event_store.append(event)
+        else:
+            recorder.append_event(event)
         next_sequence += 1
     return _recovered_claim(claimed, recovery_service)
 
@@ -50,21 +54,24 @@ def mark_clarification_continuation_started(
     recovery_service: SessionRecoveryService,
     clarification_id: str,
     started_at: datetime,
+    recorder: DurableHarnessEventRecorder | None = None,
 ) -> ClaimedSession:
-    event_store.append(
-        SessionEvent.create(
-            session_id=claimed.recovery.session.session_id,
-            sequence=claimed.recovery.session.current_sequence + 1,
-            event_type=EventType.HARNESS_ATTEMPT_STARTED,
-            actor=EventActor.HARNESS,
-            payload={
-                "attempt_number": 1,
-                "clarification_continuation": True,
-                "clarification_id": clarification_id,
-            },
-            created_at=started_at,
-        )
+    event = SessionEvent.create(
+        session_id=claimed.recovery.session.session_id,
+        sequence=claimed.recovery.session.current_sequence + 1,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "clarification_continuation": True,
+            "clarification_id": clarification_id,
+        },
+        created_at=started_at,
     )
+    if recorder is None:
+        event_store.append(event)
+    else:
+        recorder.append_event(event)
     return _recovered_claim(claimed, recovery_service)
 
 
@@ -73,6 +80,9 @@ def _recovered_claim(
     recovery_service: SessionRecoveryService,
 ) -> ClaimedSession:
     return ClaimedSession(
-        recovery=recovery_service.recover_session(claimed.recovery.session.session_id),
+        recovery=recovery_service.recover_session(
+            claimed.recovery.session.session_id,
+            worker_lease=claimed.lease,
+        ),
         lease=claimed.lease,
     )
