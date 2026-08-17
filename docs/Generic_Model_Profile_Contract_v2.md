@@ -93,8 +93,9 @@ configured Qwen-compatible endpoint:
 | `qwen-flash-native-v1` | `qwen3.7-flash-2026-07-15` | text + image | disabled | yes | yes |
 | `qwen-flash-alias-native-v1` | `qwen3.7-flash` | text + image | disabled | yes | yes |
 | `qwen-plus-native-v1` | `qwen3.7-plus` | text + image | disabled | no until independently verified | no until independently verified |
-| `qwen-max-text-v1` | `qwen3.7-max` | text only | disabled | n/a | n/a |
+| `qwen-max-text-v1` | `qwen3.7-max` | text only | enabled | n/a | n/a |
 | `qwen-max-dated-thinking-v1` | `qwen3.7-max-2026-05-17` | text only | enabled | n/a | n/a |
+| `qwen-max-dated-20260520-thinking-v1` | `qwen3.7-max-2026-05-20` | text only | enabled | n/a | n/a |
 | `qwen-max-preview-thinking-v1` | `qwen3.7-max-preview` | text only | enabled | n/a | n/a |
 
 The alias Flash profile is backed by the 2026-08-02 DashScope-compatible probe:

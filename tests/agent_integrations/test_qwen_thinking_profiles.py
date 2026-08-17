@@ -13,8 +13,9 @@ from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 @pytest.mark.parametrize(
     ("profile_id", "model", "enable_thinking"),
     [
-        ("qwen-max-text-v1", "qwen3.7-max", False),
+        ("qwen-max-text-v1", "qwen3.7-max", True),
         ("qwen-max-dated-thinking-v1", "qwen3.7-max-2026-05-17", True),
+        ("qwen-max-dated-20260520-thinking-v1", "qwen3.7-max-2026-05-20", True),
         ("qwen-max-preview-thinking-v1", "qwen3.7-max-preview", True),
     ],
 )

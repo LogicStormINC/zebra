@@ -57,10 +57,17 @@ MODEL_PROFILES: Mapping[str, ModelProfile] = MappingProxyType(
             expected_provider="qwen",
             expected_model="qwen3.7-max",
             media_capabilities=ModelMediaCapabilities(),
+            thinking_mode=ModelThinkingMode.ENABLED,
         ),
         "qwen-max-dated-thinking-v1": ModelProfile(
             expected_provider="qwen",
             expected_model="qwen3.7-max-2026-05-17",
+            media_capabilities=ModelMediaCapabilities(),
+            thinking_mode=ModelThinkingMode.ENABLED,
+        ),
+        "qwen-max-dated-20260520-thinking-v1": ModelProfile(
+            expected_provider="qwen",
+            expected_model="qwen3.7-max-2026-05-20",
             media_capabilities=ModelMediaCapabilities(),
             thinking_mode=ModelThinkingMode.ENABLED,
         ),
