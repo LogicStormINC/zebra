@@ -1080,6 +1080,41 @@ read-only Trench vertical slice.
   this seam when Host write tools enter the default composition)
 - no reconcile-path templating beyond the fixed pinned path
 
+### AL-HOST-CONFORMANCE-01 - Host Conformance Kit
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `QA / CORE`
+- Branch: `codex/al-host-conformance-01` (from `cloud-agent` after #215)
+- Owned paths: `tests/conformance/host_v1/**` (new), this card and
+  `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] Two in-process fake Hosts with completely different business
+  vocabularies (trench-style evidence/timeline reads + note writes vs
+  catalog/workflow vocabulary) pass the SAME parametrised suite — 18
+  tests green.
+- [x] The suite drives the REAL paths end to end: wire manifest parsing
+  with declared resource bindings, generic resource resolution, scope and
+  resource admission denial, namespace-mismatch denial via workload
+  identity pinning — every denial leaves the business snapshot byte-stable
+  (zero writes).
+- [x] Write-timeout → uncertain → reconcile convergence is exercised per
+  Host through the pinned-profile reconciler.
+- [x] Manifest growth changes the digest while the original manifest and
+  its declared bindings stay byte-identical (frozen-surface semantics).
+- [x] Zero-branch gate: production sources under agent-core and the
+  Worker contain neither fake-Host vocabulary nor Host names; the
+  vocabulary gates from earlier cards keep guarding Worker and control
+  plane.
+
+#### Explicit Non-Goals
+
+- Redis-flush PG replay and K8s/gVisor gates require live infrastructure
+  and remain with the rig/EMB runners; the in-repo kit covers the
+  Host-protocol invariants.
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in
