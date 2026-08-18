@@ -812,6 +812,36 @@ read-only Trench vertical slice.
 - no PostgreSQL implementation (`AL-CONNECTOR-PG-01`, migration v24+)
 - no Worker egress resolution (`AL-HOST-EGRESS-01`)
 
+### AL-TASK-BIND-CON-01 - Task Binding Snapshots And Capability Intersection
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `CORE / ARCH`
+- Branch: `codex/al-task-bind-con-01` (from `cloud-agent@754ab6fe`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/task_bindings.py` (new),
+  domain registration, focused tests, this card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] `AgentCapabilityCeilingSnapshot`, `HostCapabilitySnapshot` and
+  `TaskBindingSnapshot` are immutable, digest-canonical domain models;
+  `HostCapabilitySnapshot.from_manifest` freezes a manifest plus its grant
+  anchors in one call.
+- [x] Effective capabilities = Definition ceiling ∩ manifest ∩ grant ∩
+  Zebra policy; empty intersections fail closed at binding time.
+- [x] Snapshots carry digests and bounded references only — no secrets, raw
+  JWTs, or credentials; naive timestamps rejected.
+- [x] Manifest or grant drift changes the binding digest (verified).
+- [x] Focused tests 6 passed; agent-core suite 435 passed; `make check`
+  green.
+
+#### Explicit Non-Goals
+
+- no PostgreSQL TaskBindingStore (`AL-TASK-ADMISSION-PG-01`)
+- no `TASK_BOUND` event emission or API seam (admission card)
+- no Worker authority resolution (`AL-AUTH-WORKER-01`)
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in

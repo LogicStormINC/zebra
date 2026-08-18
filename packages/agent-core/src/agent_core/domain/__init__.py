@@ -218,6 +218,13 @@ from agent_core.domain.session_handoff import (
     validate_session_handoff,
 )
 from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.task_bindings import (
+    AgentCapabilityCeilingSnapshot,
+    HostCapabilitySnapshot,
+    TaskBindingSnapshot,
+    bind_task,
+    compute_effective_capabilities,
+)
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.domain.tools import (
@@ -284,6 +291,9 @@ __all__ = [
     "HostConnectorBinding",
     "HostConnectorProfileVersion",
     "HostConnectorStatus",
+    "AgentCapabilityCeilingSnapshot",
+    "HostCapabilitySnapshot",
+    "TaskBindingSnapshot",
     "accepts_new_tasks",
     "fails_closed_for_running_tasks",
     "HostEffectReceipt",
@@ -295,6 +305,8 @@ __all__ = [
     "grant_scope",
     "grant_scope_set",
     "intersect_capabilities",
+    "bind_task",
+    "compute_effective_capabilities",
     "uncertain_receipt",
     "HostGrantExpiredError",
     "HostGrantMismatchError",
