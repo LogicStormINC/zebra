@@ -7,13 +7,11 @@ from uuid import UUID
 
 from agent_core.domain.artifact_payloads import StoredArtifactPayload
 from agent_core.domain.identifiers import ArtifactId
-
-from agent_storage.artifact_payloads import SQLiteArtifactPayloadStore
-from agent_storage.artifacts import SessionArtifact
+from agent_core.ports import ArtifactPayloadStorePort, SessionArtifact
 
 
 def payload_for_artifact_uri(
-    payload_store: SQLiteArtifactPayloadStore,
+    payload_store: ArtifactPayloadStorePort,
     uri: str | None,
 ) -> StoredArtifactPayload | None:
     if uri is None:
@@ -23,6 +21,12 @@ def payload_for_artifact_uri(
     if artifact_id is None:
         return None
     return payload_store.get_payload(artifact_id)
+
+
+def artifact_id_from_uri(uri: str | None) -> ArtifactId | None:
+    if uri is None:
+        return None
+    return _artifact_id_from_uri(urlparse(uri))
 
 
 def _artifact_id_from_uri(parsed) -> ArtifactId | None:  # type: ignore[no-untyped-def]
@@ -118,7 +122,8 @@ def serialize_session_artifact_projection(
         "preview": artifact.preview,
         "preview_state": artifact.preview_state,
         "metadata": artifact.metadata,
-        "retrieval": retrieval or serialize_artifact_retrieval(
+        "retrieval": retrieval
+        or serialize_artifact_retrieval(
             artifact.uri,
             lifecycle=lifecycle,
         ),

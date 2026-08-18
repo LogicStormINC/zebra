@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import UTC, datetime
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Protocol
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
@@ -23,9 +23,9 @@ from agent_core.domain.web_resource import (
     WebResourceIdError,
     WebResourceStorePort,
 )
-from agent_tools.web_envelope import WEB_ENVELOPE_CAPABILITY_VERSION, WebResultEnvelope
 
 from agent_tools.contracts import ToolContract
+from agent_tools.web_envelope import WEB_ENVELOPE_CAPABILITY_VERSION, WebResultEnvelope
 
 #: Fraction of the token budget reserved for the tail when no question is given.
 DEFAULT_TAIL_RESERVE = 0.1

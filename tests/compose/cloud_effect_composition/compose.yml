@@ -1,0 +1,59 @@
+name: zebra-cloud-effect-composition-test
+
+services:
+  postgres:
+    image: postgres:17.5-alpine3.21
+    environment:
+      POSTGRES_DB: zebra
+      POSTGRES_USER: zebra
+      POSTGRES_PASSWORD: zebra-cloud-effect-test-password
+    ports:
+      - "127.0.0.1:${ZEBRA_CLOUD_EFFECT_POSTGRES_PORT:-25463}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U zebra -d zebra]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 3s
+    networks: [dependencies]
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: [server, /data]
+    environment:
+      MINIO_ROOT_USER: zebra-cloud-effect
+      MINIO_ROOT_PASSWORD: zebra-cloud-effect-test-secret
+    ports:
+      - "127.0.0.1:${ZEBRA_CLOUD_EFFECT_MINIO_PORT:-29100}:9000"
+    healthcheck:
+      test: [CMD, curl, --fail, http://localhost:9000/minio/health/live]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 3s
+    networks: [dependencies]
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: zebra-cloud-effect
+      MINIO_ROOT_PASSWORD: zebra-cloud-effect-test-secret
+    entrypoint: [/bin/sh, -ec]
+    command:
+      - |
+        mc alias set zebra http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing zebra/zebra-artifacts
+        mc version enable zebra/zebra-artifacts
+    networks: [dependencies]
+
+volumes:
+  postgres-data:
+
+networks:
+  dependencies:
+    name: ${ZEBRA_CLOUD_EFFECT_NETWORK:-zebra-cloud-effect-composition-test-dependencies}

@@ -24,10 +24,22 @@ from agent_integrations.github_app import (
     GitHubAppInstallationToken,
     GitHubAppTokenTransport,
 )
+from agent_integrations.mem0 import (
+    Mem0AgentMemoryGateway,
+    Mem0GatewayConfig,
+    Mem0ProviderRefLookup,
+    encode_mem0_namespace,
+)
 from agent_integrations.model_errors import ModelProviderError
 from agent_integrations.openai_compatible import (
     OpenAICompatibleModelGateway,
     build_model_gateway,
+)
+from agent_integrations.provider_settings import ModelProviderSettings, ScmProviderSettings
+from agent_integrations.redis_live_fanout import (
+    RedisCommittedEventPublisher,
+    RedisLiveEventError,
+    RedisLiveEventFanout,
 )
 from agent_integrations.scm import (
     GitHubProxyPullRequestTransport,
@@ -72,7 +84,15 @@ __all__ = [
     "GitHubProxyPullRequestTransport",
     "GitHubPullRequestTransport",
     "OpenAICompatibleModelGateway",
+    "ModelProviderSettings",
+    "ScmProviderSettings",
+    "RedisLiveEventError",
+    "RedisCommittedEventPublisher",
+    "RedisLiveEventFanout",
     "ModelProviderError",
+    "Mem0AgentMemoryGateway",
+    "Mem0GatewayConfig",
+    "Mem0ProviderRefLookup",
     "PullRequestPlan",
     "PullRequestRequest",
     "ScmIntegrationError",
@@ -87,4 +107,5 @@ __all__ = [
     "build_pull_request_gateway",
     "build_github_pull_request_proxy_request",
     "deepseek_profile",
+    "encode_mem0_namespace",
 ]

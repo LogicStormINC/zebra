@@ -85,6 +85,31 @@ def test_sqlite_projection_store_respects_ready_session_limit(tmp_path: Path) ->
     assert [session.session_id for session in ready] == [first.session_id]
 
 
+def test_sqlite_projection_store_lists_waiting_approvals_in_update_order(
+    tmp_path: Path,
+) -> None:
+    store = SQLiteProjectionStore(tmp_path / "projections.db")
+    base_time = datetime(2026, 6, 19, 23, 45, tzinfo=UTC)
+    first = Session.create(title="first", created_at=base_time).model_copy(
+        update={"status": SessionStatus.WAITING_APPROVAL, "updated_at": base_time}
+    )
+    second = Session.create(title="second", created_at=base_time).model_copy(
+        update={
+            "status": SessionStatus.WAITING_APPROVAL,
+            "updated_at": base_time.replace(minute=46),
+        }
+    )
+    running = Session.create(title="running", created_at=base_time).model_copy(
+        update={"status": SessionStatus.RUNNING, "updated_at": base_time}
+    )
+    for session in (second, running, first):
+        store.save_session(session)
+
+    waiting = store.list_waiting_approval_sessions()
+
+    assert [session.session_id for session in waiting] == [first.session_id, second.session_id]
+
+
 def test_sqlite_projection_store_lists_recent_sessions_newest_first(tmp_path: Path) -> None:
     store = SQLiteProjectionStore(tmp_path / "projections.db")
     base_time = datetime(2026, 6, 20, 0, 0, tzinfo=UTC)

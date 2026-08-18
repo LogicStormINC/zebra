@@ -1,0 +1,12 @@
+.git
+.github
+.venv
+.zebra-agent
+UI
+docs
+tests
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+docker/.env
+docker/*.test.env

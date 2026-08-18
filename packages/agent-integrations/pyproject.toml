@@ -4,14 +4,18 @@ version = "0.1.0"
 description = "Provider integrations for Zebra Agent."
 requires-python = ">=3.12,<4.0"
 dependencies = [
+    "ag-ui-protocol==0.1.19",
     "agent-core",
+    "agent-security",
+    "agent-tools",
     "httpx>=0.28.1,<0.29.0",
-    "zebra-agent-config",
+    "redis>=6.4.0,<7.0.0",
 ]
 
 [tool.uv.sources]
 agent-core = { workspace = true }
-zebra-agent-config = { workspace = true }
+agent-security = { workspace = true }
+agent-tools = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

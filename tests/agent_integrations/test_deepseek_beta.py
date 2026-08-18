@@ -9,6 +9,7 @@ from agent_core.domain.modeling import ModelToolDefinition
 from agent_integrations import (
     DEEPSEEK_BETA_PROFILES,
     DeepSeekBetaGateway,
+    ModelProviderSettings,
     build_deepseek_beta_gateway,
 )
 from zebra_agent_config import load_settings
@@ -232,7 +233,15 @@ def test_fim_beta_failure_falls_back_to_stable_chat_without_state_mutation() -> 
 
 def test_beta_gateway_is_disabled_by_default_and_validates_endpoint_isolation() -> None:
     assert all(profile.enabled_by_default is False for profile in DEEPSEEK_BETA_PROFILES)
-    settings = load_settings(env={})
+    loaded = load_settings(env={})
+    settings = ModelProviderSettings(
+        provider=loaded.model.provider,
+        api_key_env=loaded.model.api_key_env,
+        base_url=loaded.model.base_url,
+        model=loaded.model.model,
+        deepseek_beta_enabled=loaded.model.deepseek_beta_enabled,
+        deepseek_beta_base_url=loaded.model.deepseek_beta_base_url,
+    )
     with pytest.raises(ValueError, match="disabled"):
         build_deepseek_beta_gateway(settings, env={"DEEPSEEK_API_KEY": "secret"})
     with pytest.raises(ValueError, match="stable endpoint"):

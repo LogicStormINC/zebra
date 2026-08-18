@@ -4,6 +4,7 @@ import pytest
 from agent_integrations import (
     GitHubProxyPullRequestTransport,
     PullRequestRequest,
+    ScmProviderSettings,
     ScmUnavailableError,
     build_pull_request_gateway,
 )
@@ -19,7 +20,6 @@ from scm_support import (
     _network_env,
     _now,
 )
-from zebra_agent_config import ScmSettings
 
 
 def test_build_pull_request_gateway_blocks_remote_execution_by_default_network_profile(
@@ -128,7 +128,7 @@ def test_build_pull_request_gateway_rejects_proxy_mode_without_endpoint() -> Non
 def test_build_pull_request_gateway_rejects_unknown_provider() -> None:
     with pytest.raises(ScmUnavailableError, match="unsupported SCM provider"):
         build_pull_request_gateway(
-            ScmSettings(
+            ScmProviderSettings(
                 provider="unknown",
                 github_owner=None,
                 github_repo=None,

@@ -8,8 +8,11 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.model_gateway import ModelResponseRejectedError
-from agent_integrations import OpenAICompatibleModelGateway, build_model_gateway
-from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from agent_integrations import (
+    ModelProviderSettings,
+    OpenAICompatibleModelGateway,
+    build_model_gateway,
+)
 
 
 def test_openai_compatible_gateway_serializes_messages_and_parses_completion() -> None:
@@ -79,7 +82,14 @@ def test_openai_compatible_gateway_parses_tool_calls() -> None:
                 content="Read the README",
                 created_at=_created_at(),
             )
-        ]
+        ],
+        tools=(
+            ModelToolDefinition(
+                name="files.read",
+                description="Read one file.",
+                parameters={"type": "object", "properties": {}},
+            ),
+        ),
     )
 
     assert completion.assistant_message.content == "Tool calls proposed."
@@ -527,17 +537,12 @@ def test_build_model_gateway_loads_api_key_from_dotenv_local(monkeypatch, tmp_pa
     )
 
 
-def _settings() -> ZebraAgentSettings:
-    return ZebraAgentSettings(
-        profile="test",
-        database_url=":memory:",
-        api=ApiSettings(auth_token=None),
-        model=ModelSettings(
-            provider="deepseek",
-            api_key_env="DEEPSEEK_API_KEY",
-            base_url="https://api.deepseek.com",
-            model="deepseek-v4-flash",
-        ),
+def _settings() -> ModelProviderSettings:
+    return ModelProviderSettings(
+        provider="deepseek",
+        api_key_env="DEEPSEEK_API_KEY",
+        base_url="https://api.deepseek.com",
+        model="deepseek-v4-flash",
     )
 
 
@@ -600,7 +605,7 @@ def _handle_tool_call_completion(request: httpx.Request) -> httpx.Response:
                                 "id": "call_1",
                                 "type": "function",
                                 "function": {
-                                    "name": "files.read",
+                                    "name": "files__read",
                                     "arguments": '{"path":"README.md"}',
                                 },
                             }

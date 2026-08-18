@@ -1,57 +1,162 @@
 """Storage adapters for Zebra Agent."""
 
+from agent_core.domain.leases import (
+    LeaseCheckpointRegressionError,
+    LeaseConflictError,
+    LeaseFence,
+    LeaseLostError,
+)
+from agent_core.ports import (
+    EffectLedgerStatus,
+    EffectReservation,
+    HandoffDispatch,
+    HandoffSourceFacts,
+    IdempotencyRecord,
+    LoadedProviderContinuation,
+    SessionArtifact,
+    StoredContextCapsule,
+)
+
 from agent_storage.agent_tasks import SQLiteAgentTaskStore
+from agent_storage.artifact_objects import S3ArtifactObjectStore
+from agent_storage.artifact_payload_reads import (
+    CloudArtifactPayloadReader,
+    LocalArtifactPayloadReader,
+)
 from agent_storage.artifact_payloads import (
     ArtifactPayloadMissingError,
     SQLiteArtifactPayloadStore,
 )
 from agent_storage.artifact_projection import (
+    artifact_id_from_uri,
     payload_for_artifact_uri,
     serialize_artifact_lifecycle,
     serialize_artifact_retrieval,
     serialize_session_artifact_projection,
 )
-from agent_storage.artifacts import SessionArtifact, SQLiteArtifactStore
+from agent_storage.artifacts import SQLiteArtifactStore, compose_session_artifacts
+from agent_storage.composition import (
+    ControlPlaneStores,
+    sqlite_control_plane_stores,
+)
 from agent_storage.context_lifecycle import (
     ActiveContextProjectionConflictError,
     ImmutableContextCapsuleConflictError,
     SQLiteContextLifecycleStore,
-    StoredContextCapsule,
 )
 from agent_storage.delivery_audit import SQLiteDeliveryAuditStore
 from agent_storage.effect_ledger import (
-    EffectLedgerStatus,
     EffectReplayRejectedError,
-    EffectReservation,
     SQLiteEffectLedger,
 )
+from agent_storage.event_rows import SessionEventIdempotencyConflictError
 from agent_storage.idempotency import (
     IdempotencyConflictError,
-    IdempotencyRecord,
     SQLiteIdempotencyStore,
     new_idempotency_record,
 )
-from agent_storage.leases import LeaseConflictError, SQLiteLeaseStore
+from agent_storage.leases import SQLiteLeaseStore
+from agent_storage.live_event_store import (
+    PostCommitPublishingEventStore,
+    with_committed_event_publisher,
+)
 from agent_storage.memories import SQLiteMemoryStore
 from agent_storage.memory_lookup import (
     list_confirmed_repo_memories,
     list_confirmed_repo_memory_texts,
 )
 from agent_storage.model_calls import SQLiteModelCallStore
+from agent_storage.postgres import (
+    AgentDefinitionEvalEvidence,
+    AgentRegistryStorageError,
+    FencedAgentTaskStorePort,
+    GovernedMemoryImportError,
+    GovernedMemoryImportQuarantine,
+    GovernedMemoryImportReport,
+    HostAuthorityStorageError,
+    HostGrantAttempt,
+    HostGrantAuditRecord,
+    HostGrantReplayDecision,
+    HostRegistryBindingError,
+    HostRegistryRecord,
+    MemoryDeliveryClaim,
+    MemoryDeliveryConflictError,
+    MemoryDeliverySearchAdmission,
+    MemoryProviderMapping,
+    NativeMemoryConflictError,
+    NativeMemoryError,
+    NativeMemoryMutation,
+    NativeMemoryNamespaceError,
+    NativeMemoryOperation,
+    NativeMemoryRecallHit,
+    NativeMemoryReset,
+    NativeMemoryStaleGenerationError,
+    PostgresAgentRegistry,
+    PostgresAgentTaskConflictError,
+    PostgresAgentTaskStore,
+    PostgresCloudArtifactPayloadStore,
+    PostgresContextLifecycleConflictError,
+    PostgresContextLifecycleStore,
+    PostgresContextMaterializationConflictError,
+    PostgresContextMaterializationStore,
+    PostgresControlPlaneEpochError,
+    PostgresDeliveryAuditStore,
+    PostgresDeliveryTransactionStore,
+    PostgresEffectDispatchStore,
+    PostgresEventStore,
+    PostgresGovernedMemoryStore,
+    PostgresHandoffDispatchStore,
+    PostgresHostAuthorityStore,
+    PostgresIdempotencyStore,
+    PostgresLeaseStore,
+    PostgresMemoryDeliveryLedger,
+    PostgresMemoryDeliveryStore,
+    PostgresMigrationError,
+    PostgresModelToolProjectionConflictError,
+    PostgresModelToolProjectionStore,
+    PostgresNativeMemoryGateway,
+    PostgresProjectionConflictError,
+    PostgresProjectionStore,
+    PostgresProviderContinuationConflictError,
+    PostgresProviderContinuationStore,
+    PostgresSessionArtifactReadStore,
+    PostgresSessionHandoffStore,
+    PostgresSessionHistory,
+    PostgresWorkspaceControlStore,
+    PostgresWorkspaceProjectionConflictError,
+    PostgresWorkspaceProjectionStore,
+    apply_postgres_migrations,
+    attach_segment_for_worker_in_transaction,
+    attach_segment_in_transaction,
+    bootstrap_control_plane_epoch,
+    import_sqlite_governed_memories,
+    read_control_plane_epoch,
+    rebuild_task_in_transaction,
+    rotate_control_plane_epoch,
+)
+from agent_storage.postgres_composition import (
+    PostgresControlPlaneStores,
+    postgres_control_plane_stores,
+)
+from agent_storage.postgres_model_tool_compat import (
+    PostgresModelCallProjectionAdapter,
+    PostgresToolRunProjectionAdapter,
+)
 from agent_storage.projections import SQLiteProjectionStore
-from agent_storage.provider_continuations import (
-    LoadedProviderContinuation,
-    SQLiteProviderContinuationStore,
+from agent_storage.provider_continuations import SQLiteProviderContinuationStore
+from agent_storage.runtime_composition import (
+    CloudCompositionSettings,
+    cloud_composition_from_environment,
+    compose_control_plane_stores,
 )
 from agent_storage.session_attachments import (
     load_attachment_contexts,
+    load_attachment_contexts_from_reader,
     store_initial_text_attachments,
     store_text_attachments,
 )
 from agent_storage.session_handoff_dispatch import SQLiteHandoffDispatchStore
-from agent_storage.session_handoff_facts import HandoffSourceFacts
 from agent_storage.session_handoff_rows import (
-    HandoffDispatch,
     HandoffIdempotencyConflictError,
     HandoffStorageConflictError,
 )
@@ -64,6 +169,12 @@ from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
 
 __all__ = [
     "ArtifactPayloadMissingError",
+    "CloudArtifactPayloadReader",
+    "S3ArtifactObjectStore",
+    "ControlPlaneStores",
+    "PostgresControlPlaneStores",
+    "PostgresModelCallProjectionAdapter",
+    "PostgresToolRunProjectionAdapter",
     "EffectLedgerStatus",
     "EffectReplayRejectedError",
     "EffectReservation",
@@ -76,16 +187,95 @@ __all__ = [
     "HandoffSourceFacts",
     "ImmutableContextCapsuleConflictError",
     "LeaseConflictError",
+    "LeaseCheckpointRegressionError",
+    "LeaseFence",
+    "LeaseLostError",
     "SessionArtifact",
+    "SessionEventIdempotencyConflictError",
     "LoadedProviderContinuation",
     "list_confirmed_repo_memories",
+    "artifact_id_from_uri",
     "SQLiteMemoryStore",
+    "LocalArtifactPayloadReader",
     "list_confirmed_repo_memory_texts",
     "load_attachment_contexts",
+    "load_attachment_contexts_from_reader",
     "payload_for_artifact_uri",
+    "PostgresAgentTaskConflictError",
+    "PostgresAgentTaskStore",
+    "FencedAgentTaskStorePort",
+    "PostgresCloudArtifactPayloadStore",
+    "PostgresEventStore",
+    "PostgresHandoffDispatchStore",
+    "PostgresIdempotencyStore",
+    "PostgresGovernedMemoryStore",
+    "HostAuthorityStorageError",
+    "HostGrantAuditRecord",
+    "HostGrantAttempt",
+    "HostGrantReplayDecision",
+    "HostRegistryBindingError",
+    "HostRegistryRecord",
+    "PostgresHostAuthorityStore",
+    "PostgresWorkspaceControlStore",
+    "AgentDefinitionEvalEvidence",
+    "AgentRegistryStorageError",
+    "PostgresAgentRegistry",
+    "GovernedMemoryImportError",
+    "GovernedMemoryImportQuarantine",
+    "GovernedMemoryImportReport",
+    "import_sqlite_governed_memories",
+    "PostgresSessionHandoffStore",
+    "PostgresSessionHistory",
+    "PostgresEffectDispatchStore",
+    "PostgresControlPlaneEpochError",
+    "PostgresContextLifecycleConflictError",
+    "PostgresContextLifecycleStore",
+    "PostgresContextMaterializationConflictError",
+    "PostgresContextMaterializationStore",
+    "PostgresDeliveryAuditStore",
+    "PostgresDeliveryTransactionStore",
+    "PostgresLeaseStore",
+    "PostgresMemoryDeliveryLedger",
+    "PostgresMemoryDeliveryStore",
+    "MemoryDeliveryClaim",
+    "MemoryDeliveryConflictError",
+    "MemoryDeliverySearchAdmission",
+    "MemoryProviderMapping",
+    "NativeMemoryConflictError",
+    "NativeMemoryError",
+    "NativeMemoryMutation",
+    "NativeMemoryNamespaceError",
+    "NativeMemoryOperation",
+    "NativeMemoryRecallHit",
+    "NativeMemoryReset",
+    "NativeMemoryStaleGenerationError",
+    "PostgresNativeMemoryGateway",
+    "PostgresModelToolProjectionConflictError",
+    "PostgresModelToolProjectionStore",
+    "PostgresMigrationError",
+    "PostgresProjectionConflictError",
+    "PostgresProjectionStore",
+    "PostgresProviderContinuationConflictError",
+    "PostgresProviderContinuationStore",
+    "PostgresSessionArtifactReadStore",
+    "PostgresWorkspaceProjectionConflictError",
+    "PostgresWorkspaceProjectionStore",
     "serialize_artifact_lifecycle",
     "serialize_artifact_retrieval",
     "serialize_session_artifact_projection",
+    "compose_session_artifacts",
+    "sqlite_control_plane_stores",
+    "postgres_control_plane_stores",
+    "CloudCompositionSettings",
+    "cloud_composition_from_environment",
+    "compose_control_plane_stores",
+    "apply_postgres_migrations",
+    "attach_segment_in_transaction",
+    "attach_segment_for_worker_in_transaction",
+    "bootstrap_control_plane_epoch",
+    "read_control_plane_epoch",
+    "rotate_control_plane_epoch",
+    "rebuild_task_in_transaction",
     "SQLiteArtifactPayloadStore",
     "SQLiteAgentTaskStore",
     "SQLiteArtifactStore",
@@ -95,6 +285,8 @@ __all__ = [
     "SQLiteEventStore",
     "SQLiteIdempotencyStore",
     "SQLiteLeaseStore",
+    "PostCommitPublishingEventStore",
+    "with_committed_event_publisher",
     "SQLiteModelCallStore",
     "SQLiteProjectionStore",
     "SQLiteProviderContinuationStore",

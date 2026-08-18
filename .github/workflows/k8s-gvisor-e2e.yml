@@ -1,0 +1,47 @@
+name: Kubernetes gVisor E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      kube_context:
+        description: Kubernetes context on the gVisor-enabled runner
+        required: true
+        type: string
+      test_image:
+        description: Digest-pinned Python image available to the cluster
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  gvisor-e2e:
+    name: gVisor Kubernetes evidence
+    runs-on: [self-hosted, linux, kubernetes, gvisor]
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install kubectl and Helm
+        uses: azure/setup-kubectl@776406bce94f63e41d62190c1a3e2a7b3c4a1b9d # v4.0.0
+        with:
+          version: v1.34.8
+      - name: Install Helm
+        uses: azure/setup-helm@1a1d7c4f5b5f8fbb4b9d07c96f8cf4e4bfbf9bca # v4.3.0
+        with:
+          version: v4.2.3
+      - name: Run fail-closed gVisor drill
+        env:
+          ZEBRA_K8S_CONTEXT: ${{ inputs.kube_context }}
+          ZEBRA_K8S_TEST_IMAGE: ${{ inputs.test_image }}
+          ZEBRA_K8S_EVIDENCE_DIR: k8s-gvisor-evidence
+        run: bash tests/k8s/gvisor/run-e2e.sh
+      - name: Retain Kubernetes evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: k8s-gvisor-evidence
+          path: k8s-gvisor-evidence
+          if-no-files-found: error
+          retention-days: 14

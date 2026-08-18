@@ -33,6 +33,7 @@ from agent_security.credentials import (
     REDACTED_SECRET,
     ScmCredentialBoundary,
     ScmCredentialCapability,
+    ScmCredentialSettings,
 )
 from agent_security.delivery import (
     CommitPolicy,
@@ -114,6 +115,7 @@ __all__ = [
     "REDACTED_SECRET",
     "SUPPORTED_NETWORK_PROFILES",
     "ScmCredentialBoundary",
+    "ScmCredentialSettings",
     "ScmCredentialCapability",
     "SetupDownload",
     "SetupDownloadEvidence",
@@ -148,4 +150,37 @@ __all__ = [
     "resolve_artifact_retained_until",
     "resolve_artifact_retention_policy",
     "serialize_artifact_access_projection",
+]
+from agent_security.host_grant import (
+    DecodedHostGrant,
+    HostGrantAlgorithmError,
+    HostGrantBindingError,
+    HostGrantSecurityError,
+    HostGrantVerificationConfig,
+    HostGrantVerifier,
+    JwtAlgorithm,
+    VerifiedHostGrant,
+)
+from agent_security.jwt_adapter import (
+    CachingJwksKeyResolver,
+    DecodedJwtGrant,
+    HostGrantDecodeError,
+    JwksKeyResolver,
+    PyJwtHostGrantDecoder,
+)
+
+__all__ = [
+    "DecodedHostGrant",
+    "HostGrantAlgorithmError",
+    "HostGrantBindingError",
+    "HostGrantSecurityError",
+    "HostGrantVerificationConfig",
+    "HostGrantVerifier",
+    "JwtAlgorithm",
+    "VerifiedHostGrant",
+    "CachingJwksKeyResolver",
+    "DecodedJwtGrant",
+    "HostGrantDecodeError",
+    "JwksKeyResolver",
+    "PyJwtHostGrantDecoder",
 ]

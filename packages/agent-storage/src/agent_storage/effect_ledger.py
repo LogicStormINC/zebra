@@ -1,37 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import StrEnum
 from pathlib import Path
 
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import EffectIdentity
 from agent_core.domain.tools import ToolResult
+from agent_core.ports.effect_ledger import (
+    EffectLedgerPort,
+    EffectLedgerStatus,
+    EffectReservation,
+)
 
 from agent_storage.database import SQLiteDatabase
 
 
-class EffectLedgerStatus(StrEnum):
-    RESERVED = "reserved"
-    EXECUTING = "executing"
-    SUCCEEDED = "succeeded"
-    FAILED_NO_EFFECT = "failed_no_effect"
-    UNCERTAIN = "uncertain"
-
-
 class EffectReplayRejectedError(ValueError):
     """Raised when an effect cannot safely be executed or replayed."""
-
-
-@dataclass(frozen=True, slots=True)
-class EffectReservation:
-    root_session_id: SessionId
-    identity: EffectIdentity
-    status: EffectLedgerStatus
-    attempt: int
-    result: ToolResult | None = None
-    replay: bool = False
 
 
 _SCHEMA = """
@@ -49,7 +34,7 @@ CREATE TABLE IF NOT EXISTS effect_ledger (
 """
 
 
-class SQLiteEffectLedger:
+class SQLiteEffectLedger(EffectLedgerPort):
     def __init__(self, database_path: str | Path) -> None:
         self._database = SQLiteDatabase(database_path)
         with self._database.connect() as connection:

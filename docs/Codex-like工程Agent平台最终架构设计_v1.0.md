@@ -17,7 +17,7 @@ lang: zh-CN
 | 适用范围 | 通用执行型 Agent、工程自动化 Agent、私有化 Agent Runtime |
 | 核心定位 | 可嵌入的本地优先 Agent Runtime 微服务；可扩展到私有云和外部 namespace 隔离 |
 | 架构基线 | 公开前沿实践 + 可落地工程约束 |
-| 关键原则 | Event Store 是事实源；Harness 无状态；Sandbox 无凭证、可销毁、可恢复 |
+| 关键原则 | Event Store 是唯一执行事实源；Harness 无状态；Sandbox 无凭证、可销毁、可恢复 |
 
 > **最终结论**：本方案不再以“Orchestrator 持有会话状态 + Docker 执行 + Redis Memory”为核心，而采用“持久会话事件流 + 无状态 Harness + Context Compiler + Typed Tool Gateway + Policy/Credential/Egress 控制 + 可恢复沙箱 + Eval 闭环”的目标架构。该组合借鉴 Claude Code、Codex 等执行型 Agent 的 Harness 与交互模式，但 Zebra Agent 的产品目标是构建可承载多类任务的 Agent Runtime 与工作台，不是把写代码或 Git 交付作为默认目的。
 
@@ -87,7 +87,7 @@ Durable Session Event Store
 
 | 优先级 | 架构决策 | 原因 |
 |---|---|---|
-| P0 | Append-only Session Event Store 是唯一事实来源 | 支持崩溃恢复、重放、审计、幂等和横向扩展 |
+| P0 | Append-only Session Event Store 是唯一执行事实来源 | 支持崩溃恢复、重放、审计、幂等和横向扩展 |
 | P0 | Harness Worker 无状态 | Worker 可随时销毁和重启，不把任务可靠性绑定到进程 |
 | P0 | 所有动作经过 Typed Tool Gateway 与 Policy PDP/PEP | 模型只能提出动作，不能决定安全边界 |
 | P0 | 凭证永不进入 Sandbox | 从根本上降低 prompt injection、恶意代码和供应链依赖造成的泄露风险 |
@@ -103,7 +103,7 @@ Durable Session Event Store
 | 公开体系 | 可复用经验 | 本方案对应决策 |
 |---|---|---|
 | OpenAI Codex | Sandbox 与审批是两层不同控制；Agent Loop 负责上下文管理；稳定 Prompt 前缀有利于缓存；Subagent 继承安全边界 [R1][R2][R3] | 分离技术边界与审批策略；引入 Context Compiler；子 Agent 不绕过 Policy |
-| Anthropic Managed Agents | Session 为外部持久事件日志，Harness 与 Sandbox 可被销毁并重建；凭证置于 Sandbox 外 [R4][R5] | Event Store 唯一事实源；Stateless Harness；Credential Broker |
+| Anthropic Managed Agents | Session 为外部持久事件日志，Harness 与 Sandbox 可被销毁并重建；凭证置于 Sandbox 外 [R4][R5] | Event Store 唯一执行事实源；Stateless Harness；Credential Broker |
 | OpenHands SDK | Agent、Conversation、Tool、Workspace、Event、Security 独立；支持压缩长历史与远程 Agent Server [R6] | 模块化 SDK；Conversation/Event 投影；Condenser/Compaction |
 | Aider | Repo Map 以文件、符号和关键定义帮助模型理解大仓库 [R7] | Repo Map + rg + AST/LSP + 动态文件读取，而非先做全仓库向量化 |
 | MCP | OAuth 2.1、最小 Scope、Audience 校验；明确禁止 Token Passthrough [R8] | MCP 统一进入 Gateway；凭证托管；资源级 Capability |
@@ -176,7 +176,7 @@ Context 需要来源、信任级别、相关性、Token 成本、有效期和 Co
 ```mermaid
 flowchart TB
     CLIENT["入口与协议层<br/>CLI / TUI · Web · IDE/ACP · GitHub/GitLab App"]
-    CONTROL["控制平面<br/>Session API · Append-only Event Store · Projection · Scheduler/Workflow · Approval"]
+    CONTROL["控制平面<br/>Session API · Append-only Event Store · Agent Registry · Projection · Scheduler/Workflow · Approval"]
     AGENT["Agent 平面<br/>Stateless Harness · Model Gateway · Context Compiler · Subagent Primitives"]
     SECURITY["动作与安全平面<br/>Typed Tool Gateway · Policy PDP/PEP · Credential & Egress Broker · Hooks"]
     EXEC["执行平面<br/>Sandbox Manager · Docker/gVisor/Kata/Firecracker/K8s Agent Sandbox<br/>Git Worktree · Cache · Snapshot"]
@@ -198,7 +198,7 @@ flowchart TB
 | 层 | 核心组件 | 主要职责 |
 |---|---|---|
 | 入口与协议层 | CLI、TUI、Web、ACP、Git App | 用户交互、流式输出、Diff 展示、审批、取消 |
-| 控制平面 | Session API、Event Store、Projection、Scheduler、Approval | 生命周期、持久状态、租约、重试、暂停恢复、查询 |
+| 控制平面 | Session API、Event Store、Agent Registry、Projection、Scheduler、Approval | 执行生命周期、Definition 发布、持久状态、租约、重试、暂停恢复、查询 |
 | Agent 平面 | Stateless Harness、Model Gateway、Context Compiler、Subagent Primitives | Agent Loop、模型调用、上下文构造、计划与停止判断 |
 | 动作与安全平面 | Typed Tool Gateway、Policy PDP/PEP、Credential/Egress Broker、Hooks | 参数校验、风险判断、权限签发、外部访问和审计 |
 | 执行平面 | Sandbox Manager、Runtime Adapter、Worktree、Snapshot | 隔离执行、资源限制、文件修改、测试、环境恢复 |
@@ -208,7 +208,7 @@ flowchart TB
 
 ## 6.1 Append-only Session Event Store
 
-Event Store 是平台唯一事实来源。所有任务状态由按序事件投影而来，而不是由一个可变 JSON 或进程内对象直接覆盖。
+Event Store 是平台唯一耐久执行事实来源。所有 Task、Segment、Attempt 和动作状态由按序事件投影而来，而不是由一个可变 JSON、Registry 或进程内对象直接覆盖。Agent Registry 只作为 Definition/Version/Release 元数据 authority，不参与执行恢复。
 
 ### 6.1.1 事件基本结构
 
@@ -335,6 +335,33 @@ Scheduler 只负责粗粒度生命周期，不将所有 Token 流和工具输出
 - 云端版：可使用 Temporal 管理暂停、定时器、审批信号、重试和补偿；细粒度 Agent 事件仍存 PostgreSQL Event Store。
 - 每个 Session 同一时刻只允许一个主写租约；只读 Subagent 可并行。
 - 支持 Budget、Deadline、最大步数、最大连续失败次数和取消传播。
+
+## 6.5 Agent Definition Registry
+
+Agent Registry 为 Zebra 增加可复用配置控制面，详细合同见 ADR-016：
+
+- `AgentDefinition` 是逻辑配置身份，不是运行实体、外部主体或多 Agent 角色；
+- `AgentDefinitionVersion` 创建即不可变，内容变化必须生成新 version/digest；
+- `AgentRelease` 在 `(authority_issuer, namespace_id, definition_id, environment)` 内记录发布、弃用和
+  撤销历史；当前发布版本只是可重建 projection；
+- Registry 是 Definition 元数据 authority，不保存 checkpoint、Tool result、Attempt
+  权限或其他执行恢复状态；
+- Task 创建把 resolved `AgentDefinitionSnapshot` 写入 `TASK_PREPARED`，恢复只重放
+  Event，不回读 mutable draft 或 `latest`；
+- 发布前 Eval 只允许 evaluator authority 在隔离的 non-production environment
+  exact-pin immutable candidate Version，并记录 `binding_purpose=eval`；该路径不创建
+  Release，也不是生产默认选择；
+- 每个 Attempt 单独解析并持久化 `ExecutionAuthoritySnapshot`，Definition 固定配置
+  不能延长、扩大或替代外部 authority；
+- 发布只固定组件 identity/scope/version/digest，真正 Granted 在 Task binding 时由
+  external authority、Enabled 状态和 Zebra Policy 共同计算；
+- 本地使用 SQLite、私有云使用 PostgreSQL；每个环境只允许一个 Registry authority，
+  迁移使用停写、校验和切换，不 dual-write。
+
+ADR-016 合并只解锁 Core contract；Registry、Publication、Task binding、Memory、Trust
+和 Eval 必须继续按 `docs/AGENT_TASKS.md` 的依赖任务推进。
+本节描述目标合同，不代表 Registry 或 Attempt authority 已在当前代码中实现；实际状态
+以 `PROGRESS.md` 和任务验收证据为准。
 
 # 7. Stateless Harness 与 Agent Loop
 
@@ -881,15 +908,17 @@ SBOM、Secret Scan、Security Review
 
 # 14. Memory 设计
 
-## 14.1 三种存储必须分离
+## 14.1 四类存储职责必须分离
 
 ```text
-Session Event Store：真实、完整、不可变的任务历史
+Agent Registry：Definition、immutable Version 和 append-only Release metadata
+Session Event Store：真实、完整、不可变的 Task/Segment/Attempt 执行历史
 Artifact Store：大体积执行证据和产物
 Memory Store：从历史中抽取的派生知识，可失效、可删除、可纠正
 ```
 
-Working Memory 应由 Event Projection 生成，而不是依赖语义 Memory Server 才能恢复任务。
+Agent Registry 不保存执行状态；Working Memory 应由 Event Projection 生成，而不是依赖
+Registry 或语义 Memory Server 才能恢复任务。
 
 ## 14.2 长期记忆类型
 
@@ -1147,6 +1176,12 @@ full_trusted_local
 | `policies` | 版本化 Agent 策略、Profile、外部 authority 上界 |
 | `memories` | 派生记忆、来源、版本、有效期 |
 | `eval_cases` / `eval_runs` | 评测任务、基线、结果和版本对比 |
+| Agent Definition records（逻辑） | scoped identity 与 mutable draft metadata；不含执行状态 |
+| Agent Definition Version records（逻辑） | immutable payload、schema、digest 与 validation evidence reference |
+| Agent Release/Audit records（逻辑） | append-only publish/deprecate/revoke history、CAS revision、actor 与幂等证据 |
+
+上述 Registry 表属于 Definition metadata authority，不属于 Session Event Store
+projection；具体物理表名和拆表方式由 Adapter task 决定。
 
 ## 19.2 外部 API
 
@@ -1228,11 +1263,13 @@ flowchart LR
     subgraph Local[本地优先模式]
       L1[CLI/TUI/IDE ACP] --> L2[单进程 Agent Core]
       L2 --> L3[SQLite WAL]
+      L2 --> L6[SQLite Agent Registry]
       L2 --> L4[Rootless Docker + Worktree]
       L2 --> L5[本地 Artifact]
     end
     subgraph Cloud[团队/私有云模式]
       C1[API/Web/ACP] --> C2[PostgreSQL Event Store]
+      C1 --> C9[PostgreSQL Agent Registry]
       C1 --> C3[Workflow/Scheduler]
       C3 --> C4[Stateless Harness Workers]
       C2 --> C4
@@ -1251,6 +1288,7 @@ flowchart LR
 | 语言与 API | Python 3.12+、FastAPI、Pydantic v2、asyncio | 同一核心 SDK，API 服务水平扩展 |
 | CLI/TUI | Typer + Rich，后续 Textual | Web React/Next.js，IDE 使用 ACP |
 | Event/Projection | SQLite WAL | PostgreSQL + 分区/归档 |
+| Agent Registry | SQLite，单 authority | PostgreSQL，单 authority；离线校验切换，不 dual-write |
 | 调度 | 单进程队列或 DB Lease | DB Scheduler；复杂暂停恢复可接 Temporal |
 | Artifact | 本地内容寻址目录 | S3 / MinIO |
 | Cache | 本地目录 | Redis，仅用于 Cache/实时协同，不作事实源 |
@@ -1634,7 +1672,7 @@ runtime:
 
 | ADR | 决定 |
 |---|---|
-| ADR-001 | Session Event Store 为唯一事实源，Memory 不是状态源 |
+| ADR-001 | Session Event Store 为唯一执行事实源，Memory 不是状态源 |
 | ADR-002 | Harness Worker 无状态并通过事件重放恢复 |
 | ADR-003 | Typed Tool 为默认执行接口，Shell 仅作受控逃生口 |
 | ADR-004 | 凭证由 Broker 托管，禁止进入 Sandbox |
@@ -1647,13 +1685,16 @@ runtime:
 | ADR-011 | Redis Memory、Temporal、OPA 等均通过 Adapter 接入，不绑定核心领域模型 |
 | ADR-012 | Zebra 是 Agent Runtime 微服务；认证和业务用户/租户/订阅/计费均外置 |
 | ADR-013 | 用户只感知稳定 Task；Session/Context Segment rollover 由后端自动处理且普通 UI 不可见 |
+| ADR-014 | Skill、MCP、Plugin 采用统一五层扩展状态机和受治理生命周期；metadata 不直接赋权 |
+| ADR-015 | Zebra Embedded 以 AG-UI 暴露 Headless Runtime；Trench 直接采用 CopilotKit，Zebra 不建设 React SDK |
+| ADR-016 | Agent Registry 是 Definition 元数据 authority；Task 配置 snapshot 与 Attempt 权限 snapshot 分离 |
 
 # 28. 最终结论
 
 这套最终架构的关键不在于模块数量，而在于三个不可逆的核心选择：
 
 ```text
-1. Session Event Store 是事实中心；
+1. Session Event Store 是执行事实中心；
 2. Harness 是可替换、可横向扩展的无状态 Worker；
 3. Sandbox 是无原始凭证、受硬边界控制、可销毁和可恢复的执行环境。
 ```

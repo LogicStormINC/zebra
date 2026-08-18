@@ -7,6 +7,11 @@ from agent_core.application import SessionBootstrapCommand, SessionBootstrapServ
 from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.host_authority import (
+    HostContextEnvelope,
+    HostResourceRef,
+    HostTechnicalLimits,
+)
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import SessionStatus
 from agent_storage import (
@@ -38,6 +43,42 @@ def test_task_create_list_and_control_route_to_active_segment(tmp_path: Path) ->
     assert cancelled.body["session_id"] == task_id
     assert cancelled.body["status"] == "cancelled"
     assert read.body["status"] == "cancelled"
+
+
+def test_task_route_persists_verified_host_context_for_worker_recovery(tmp_path: Path) -> None:
+    context = HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id="trench",
+        namespace_id="tenant-a",
+        workspace_ref="workspace-a",
+        resource_refs=(HostResourceRef(type="trench.event", id="evt-1"),),
+        scopes=("event.read",),
+        limits=HostTechnicalLimits(
+            max_runtime_seconds=300,
+            max_model_tokens=100_000,
+            max_artifact_bytes=10_485_760,
+        ),
+        origin="https://trench.example.com",
+        policy_version="policy-v1",
+    )
+    database = tmp_path / "host-task.sqlite"
+    adapter = RouteAdapter(create_app(database))
+
+    created = adapter.handle(
+        RouteRequest(
+            "POST",
+            "/tasks",
+            body={"title": "Host task", "prompt": "Read event", "workspace": str(tmp_path)},
+            host_context=context,
+        )
+    )
+
+    assert created.status_code == 201
+    events = SQLiteEventStore(database).list_for_session(
+        SessionId(UUID(created.body["session_id"]))
+    )
+    task_prepared = next(event for event in events if event.event_type is EventType.TASK_PREPARED)
+    assert task_prepared.payload["host_context"]["grant_id"] == "grant-1"
 
 
 def test_task_routes_keep_one_identity_across_automatic_follow_up_rollover(

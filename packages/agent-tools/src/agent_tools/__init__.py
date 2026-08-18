@@ -13,8 +13,19 @@ if TYPE_CHECKING:
     from agent_tools.builtin.plan import PlanTool, plan_contract
     from agent_tools.builtin.search import WorkspaceSearchTool, files_search_contract
     from agent_tools.builtin.tests import TestsRunTool, tests_run_contract
-    from agent_tools.contracts import RegisteredTool, ToolContract
-    from agent_tools.effect_guard import EffectGuardedToolGateway, effect_identity
+    from agent_tools.contracts import (
+        RegisteredTool,
+        ToolContract,
+        ToolExecutionLocation,
+        ToolIdempotency,
+        ToolReceipt,
+        ToolRisk,
+    )
+    from agent_tools.effect_guard import (
+        EffectGuardedToolGateway,
+        FencedEffectToolGateway,
+    )
+    from agent_tools.effect_guard_support import effect_identity
     from agent_tools.executor import ToolExecutor
     from agent_tools.mcp_disclosure import (
         AuthorizedMcpToolCatalog,
@@ -63,6 +74,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CommandRunTool",
     "EffectGuardedToolGateway",
+    "FencedEffectToolGateway",
     "ClarifyTool",
     "FileReadTool",
     "GitStatusTool",
@@ -83,6 +95,10 @@ __all__ = [
     "SkillsReadTool",
     "TestsRunTool",
     "ToolContract",
+    "ToolExecutionLocation",
+    "ToolIdempotency",
+    "ToolReceipt",
+    "ToolRisk",
     "ToolExecutor",
     "ToolOutputProjector",
     "ToolOutputEnvelope",
@@ -123,6 +139,10 @@ _EXPORTS = {
         "agent_tools.effect_guard",
         "EffectGuardedToolGateway",
     ),
+    "FencedEffectToolGateway": (
+        "agent_tools.effect_guard",
+        "FencedEffectToolGateway",
+    ),
     "AuthorizedMcpToolCatalog": (
         "agent_tools.mcp_disclosure",
         "AuthorizedMcpToolCatalog",
@@ -146,6 +166,10 @@ _EXPORTS = {
     "SkillsListTool": ("agent_tools.skills", "SkillsListTool"),
     "SkillsReadTool": ("agent_tools.skills", "SkillsReadTool"),
     "RegisteredTool": ("agent_tools.contracts", "RegisteredTool"),
+    "ToolExecutionLocation": ("agent_tools.contracts", "ToolExecutionLocation"),
+    "ToolIdempotency": ("agent_tools.contracts", "ToolIdempotency"),
+    "ToolReceipt": ("agent_tools.contracts", "ToolReceipt"),
+    "ToolRisk": ("agent_tools.contracts", "ToolRisk"),
     "SessionSearchTool": ("agent_tools.session_history", "SessionSearchTool"),
     "TestsRunTool": ("agent_tools.builtin.tests", "TestsRunTool"),
     "ToolContract": ("agent_tools.contracts", "ToolContract"),
@@ -165,7 +189,7 @@ _EXPORTS = {
     "WebSearchTransport": ("agent_tools.web_search", "WebSearchTransport"),
     "build_mcp_proxy_request": ("agent_tools.mcp_proxy", "build_mcp_proxy_request"),
     "command_run_contract": ("agent_tools.builtin.command", "command_run_contract"),
-    "effect_identity": ("agent_tools.effect_guard", "effect_identity"),
+    "effect_identity": ("agent_tools.effect_guard_support", "effect_identity"),
     "clarify_contract": ("agent_tools.builtin.clarify", "clarify_contract"),
     "file_read_contract": ("agent_tools.builtin.files", "file_read_contract"),
     "files_list_contract": ("agent_tools.builtin.listing", "files_list_contract"),

@@ -7,6 +7,8 @@ from agent_core.domain.tools import ToolCall
 from agent_core.domain.web import WebTargetError, parse_web_target
 from agent_core.domain.web_search import (
     WebSearchInputError,
+)
+from agent_core.domain.web_search import (
     parse_web_search_input as parse_legacy_web_search_input,
 )
 from agent_tools.search_pipeline import SearchInputError, parse_search_query
@@ -190,7 +192,7 @@ def _parse_web_search_input_for_policy(
     web_pipeline_v2: bool,
 ) -> tuple[str, int]:
     if web_pipeline_v2:
-        parsed = parse_search_query(arguments)
-    else:
-        parsed = parse_legacy_web_search_input(arguments)
-    return parsed.query, parsed.limit
+        parsed_v2 = parse_search_query(arguments)
+        return parsed_v2.query, parsed_v2.limit
+    parsed_legacy = parse_legacy_web_search_input(arguments)
+    return parsed_legacy.query, parsed_legacy.limit

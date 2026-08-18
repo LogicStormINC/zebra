@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from agent_core.domain.memories import MemoryVisibility
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_review_execution import (
     _queued_memory_records,
@@ -23,6 +24,7 @@ from zebra_agent_api.session_payloads import parse_queue_sweep_preview_payload
 def _preview_memory_queue(
     *,
     database_path: Path,
+    stores: ControlPlaneStores,
     payload: dict[str, object],
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
@@ -32,6 +34,7 @@ def _preview_memory_queue(
         return parsed
     all_records = _queued_memory_records(
         database_path=database_path,
+        stores=stores,
         expected_visibility=expected_visibility,
         expected_scope_id=expected_scope_id,
     )
@@ -69,7 +72,7 @@ def _preview_memory_queue(
             projected_status=projected_status,
         ),
         "memory_ids": [str(record.memory_id) for record in filtered_records],
-        "memories": _serialize_records(database_path=database_path, records=filtered_records),
+        "memories": _serialize_records(stores=stores, records=filtered_records),
     }
     if expected_visibility is MemoryVisibility.REPO:
         body["session_id"] = expected_scope_id

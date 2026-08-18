@@ -11,7 +11,16 @@ from agent_core.application import (
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.context_capsule import ContextCapsule, PendingToolState
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_storage import SQLiteArtifactPayloadStore, store_initial_text_attachments
+from agent_core.domain.host_authority import (
+    HostContextEnvelope,
+    HostResourceRef,
+    HostTechnicalLimits,
+)
+from agent_storage import (
+    LocalArtifactPayloadReader,
+    SQLiteArtifactPayloadStore,
+    store_initial_text_attachments,
+)
 from zebra_agent_worker.task_recovery import recover_task
 
 
@@ -50,7 +59,7 @@ def test_worker_recovers_only_captured_prompt_bytes(
         list(events),
         workspace=rebuild_workspace(list(events)),
         fallback_title="fallback",
-        attachment_store=SQLiteArtifactPayloadStore(database),
+        attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(database)),
     )
 
     assert len(recovered.attachments) == 1
@@ -111,7 +120,7 @@ def test_worker_reinjects_latest_durable_context_capsule(tmp_path: Path) -> None
         events,
         workspace=rebuild_workspace(events),
         fallback_title="fallback",
-        attachment_store=SQLiteArtifactPayloadStore(database),
+        attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(database)),
     )
 
     assert recovered.runtime_evidence[0].summary == "Finish the refactor"
@@ -140,7 +149,43 @@ def test_worker_recovery_carries_skill_components_snapshot(tmp_path: Path) -> No
         events,
         workspace=workspace,
         fallback_title="fallback",
-        attachment_store=SQLiteArtifactPayloadStore(database),
+        attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(database)),
     )
 
     assert recovered.skill_components == ("Review", "evidence")
+
+
+def test_worker_recovery_restores_secret_free_host_context(tmp_path: Path) -> None:
+    database = tmp_path / "sessions.sqlite"
+    context = HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id="trench",
+        namespace_id="tenant-a",
+        workspace_ref="workspace-a",
+        resource_refs=(HostResourceRef(type="trench.event", id="evt-1"),),
+        scopes=("event.read",),
+        limits=HostTechnicalLimits(
+            max_runtime_seconds=300,
+            max_model_tokens=100_000,
+            max_artifact_bytes=10_485_760,
+        ),
+        origin="https://trench.example.com",
+        policy_version="policy-v1",
+    )
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Host recovery",
+            user_input="Read one event",
+            workspace_root=tmp_path,
+            host_context=context,
+        )
+    )
+
+    recovered = recover_task(
+        list(bootstrap.events),
+        workspace=rebuild_workspace(list(bootstrap.events)),
+        fallback_title="fallback",
+        attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(database)),
+    )
+
+    assert recovered.host_context == context

@@ -2,12 +2,12 @@ from collections.abc import Callable, Mapping
 
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
-from agent_core.domain.tools import ToolCall
+from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
 from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.hooks import VerifierHook
-from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.model_request import allowed_response_repairs
+from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
@@ -112,6 +112,45 @@ class SequentialToolLoop:
             fingerprints=fingerprints,
             metadata=batch.metadata,
             fallback_message=completion.assistant_message.content,
+        )
+
+    def continue_completed(
+        self,
+        context: HarnessContext,
+        *,
+        completion: ModelCompletion,
+        tool_call: ToolCall,
+        tool_result: ToolResult,
+        conversation: tuple[SessionMessage, ...],
+        model_calls_used: int,
+        tool_calls_executed: int,
+        assistant_message: str,
+    ) -> HarnessAttemptResult:
+        messages = list(conversation)
+        if not messages:
+            self._model_step.append_tool_batch(
+                messages,
+                completion=completion,
+                tool_calls=(tool_call,),
+            )
+        self._model_step.append_tool_result(
+            messages,
+            tool_call=tool_call,
+            tool_result=tool_result,
+            created_at=context.attempt.started_at,
+        )
+        return self._request_next_completion(
+            context,
+            messages=messages,
+            emitted_events=HarnessEventBuffer(self._event_sink),
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            fingerprints=_executed_action_fingerprints(messages),
+            metadata={
+                "completed_continuation": True,
+                "tool_call_id": str(tool_call.tool_call_id),
+            },
+            fallback_message=assistant_message,
         )
 
     def continue_clarification(

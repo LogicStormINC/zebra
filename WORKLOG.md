@@ -1,5 +1,685 @@
 # Progress Log
 
+## 2026-08-03 - CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 audit
+
+- Activated the sidebar-approved governance-only Context lifecycle conformance
+  card on `codex/cloud-agg-fence-ctx-lifecycle-con-01`; Context Core/Storage and
+  focused test paths were read-only audit targets.
+- Recorded the method matrix for Worker compaction, administrative recovery,
+  cloud fail-closed legacy methods and read-only Context Materialization. Existing
+  Context lifecycle `14/14`, administrative recovery `19/19` and Context
+  Materialization `4/4` evidence were reconciled with the v7 schema and task
+  Owned-path records.
+- Sidebar ChatGPT returned `BLOCK-GAP`: `commit_administrative_activation` does
+  not validate `CONTEXT_COMPACTED` or recovery `capsule_id` binding inside the
+  Store boundary. The audit remains `In Progress`; no production code, test,
+  migration or Schema changed.
+- Registered the minimal Ready successor `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`
+  with adapter/test-only Owned paths. `CLOUD-AGG-FENCE-01` remains Locked.
+
+## 2026-08-03 - CLOUD-DELIVERY-TXN-PG-01 activation
+
+- Sidebar ChatGPT approved fast-forwarding `codex/cloud-control-plane-pg-01` into
+  `zebra-cloud-trench` and selecting `CLOUD-DELIVERY-TXN-PG-01` as the next task.
+- Claimed `codex/cloud-delivery-txn-pg-01` in the isolated worktree
+  `/Users/lukeding/.codex/worktrees/cloud-delivery-txn-pg-01/zebra-agent`.
+- Narrowed this slice to Core delivery transaction contracts/Ports, PostgreSQL
+  adapters/migrations/focused tests and governance. API, Worker, Runtime, Provider
+  HTTP, Desktop, SQLite, Redis, Mem0, CopilotKit/Trench and application Compose
+  remain explicitly out of scope.
+
+## 2026-08-03 - CLOUD-CONTROL-PLANE-PG-01 activation
+
+- Sidebar ChatGPT approved `CLOUD-CONTROL-PLANE-PG-01` after all aggregate
+  PostgreSQL adapter/read-composition dependencies reached `Done`.
+- Claimed `codex/cloud-control-plane-pg-01` in the isolated worktree
+  `/Users/lukeding/.codex/worktrees/cloud-control-plane-pg-01/zebra-agent`.
+- Narrowed Owned paths to Core control-plane contracts, Storage PostgreSQL
+  composition/adapters/migrations/focused tests and governance. API, Worker,
+  Runtime, Provider HTTP, Desktop, SQLite, Redis, Mem0 and application Compose
+  remain explicitly out of scope.
+- The implementation choice is the sidebar-approved cloud-only `CloudControlPlane`
+  plus `PostgresControlPlaneStores`; the existing local `ControlPlaneStores` stays
+  unchanged until a later API/Worker mapping task.
+- Implemented Core cloud contract and Event-derived Model/Tool projection Port,
+  PostgreSQL v14 idempotency/audit schema and adapters, namespace-bound
+  `PostgresControlPlaneStores`, and the focused Compose runner. Changed-path Ruff,
+  Mypy and Eval `10/10` pass; the Compose matrix reports `11 passed` and
+  `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`. Full `make test` reports
+  `2037 passed, 217 skipped, 1 failed`; the only failure is the two known inherited
+  file-size violations in the Desktop stylesheet and governed-memory test.
+- Sidebar ChatGPT reviewed the implementation and approved `CLOUD-CONTROL-PLANE-PG-01`
+  for `Done`. API/Worker profile selection, Delivery transaction, aggregate fencing,
+  Runtime, Redis and application Compose remain separate gates.
+- Implementation committed as `b84d464d` (`feat(storage): add cloud postgres control
+  plane composition`) on the isolated branch.
+
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 formal closeout
+
+- Sidebar ChatGPT accepted the implementation and the follow-up P1/P2 fixes:
+  `CLOUD-PROVIDER-CONT-PG-01` moves from `In Progress` to `Done` with baseline
+  `abd7a7f0`, PostgreSQL Compose `4/4 PASS`, prior governance commit
+  `54ce86a7` and this closeout governance commit.
+- The registry contains no `CLOUD-PROVIDER-CONT-PG-02`. The only registered
+  successor, `CLOUD-CONTROL-PLANE-PG-01`, remains `Locked` because its
+  aggregate PostgreSQL adapter/read-composition dependencies are not all
+  closed. No new implementation card is activated in this turn.
+- Runtime, Worker scheduling, Provider HTTP, Desktop, local SQLite, Redis,
+  Mem0, application Compose and CopilotKit/Trench paths remain locked or out of
+  scope.
+
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 review findings fixed
+
+- Closed the two P1 risks from implementation review: a cloud Provider
+  Continuation factory now requires an explicitly composed `ControlPlaneStores`
+  profile, preventing the Worker constructor from silently falling back to
+  SQLite; and expiration sweep idempotency now hashes the caller's optional
+  `as_of` input, so a lost-response retry with omitted `as_of` replays the same
+  management operation.
+- Added the P2 replay guard at the cloud Worker acceptance boundary: returned
+  Session/Workspace projections must equal deterministic Event replay before
+  indexers or local state advance.
+- Added regression coverage for all three findings. Focused deterministic
+  Worker/storage tests pass `7/7` when PostgreSQL fixtures are not configured;
+  the isolated PostgreSQL Compose matrix passes `4/4` with
+  `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS`. Changed Ruff and
+  strict Mypy (9 source files) pass; the repository size check still reports
+  only its two inherited violations outside this task. Follow-up commit:
+  `abd7a7f0`.
+- Sidebar closeout is now accepted and the card is `Done`; no Runtime, API,
+  Desktop, SQLite, Redis, Mem0 or application Docker behavior was selected.
+
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 implementation slice
+
+- Implemented the cloud-only Core continuation artifact/Port and extended the
+  selection Event contract with external authority and payload SHA evidence;
+  the existing local SQLite continuation Port and behavior remain unchanged.
+- Added PostgreSQL migration v13 and a fenced aggregate adapter. Payload bytes,
+  metadata, canonical selection Event, Session/Workspace projections and Event
+  binding share one transaction; retries use the request digest, reads enforce
+  scope/session/provider/model/capability/TTL/SHA/size, deletion is fenced and
+  soft, and expiration sweep is full-namespace, administrative-CAS, audited and
+  idempotent.
+- Added the explicit cloud Worker seam, including cloud recovery, aggregate
+  acceptance without a second projection save, and a separate composition helper
+  to keep `execution.py` at the repository's 500-line hard limit.
+- Validation: focused deterministic Worker/Core suites `10 passed`; full suite
+  `2034 passed, 215 skipped, 1 failed` only on the two inherited repository file
+  size violations; changed-source Mypy `9` files clean; changed Ruff/format clean;
+  release Eval `10/10`; real PostgreSQL Compose `4/4` with
+  `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS`.
+- Committed the isolated implementation branch as `0942f256` without touching
+  the root worktree's dirty `AGENTS.md`. The implementation card remains
+  `In Progress` until a separate sidebar closeout review is available; that
+  review is the only remaining closeout gate.
+
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-01 activation
+
+- Sidebar ChatGPT returned `ACCEPTED`: `CLOUD-PROVIDER-CONT-PG-PLAN-01` is
+  `Done`, and `CLOUD-PROVIDER-CONT-PG-01` is `In Progress`.
+- Created isolated worktree `/Users/lukeding/.codex/worktrees/cloud-provider-cont-pg-01/zebra-agent`
+  on `codex/cloud-provider-cont-pg-01`, based on `f6c8a926`.
+- Reserved PostgreSQL migration v13 and registered the exact Core, Storage,
+  Worker, focused-test and governance Owned paths. Local SQLite, Runtime/API,
+  Desktop, Redis, Mem0 and Docker application paths remain excluded.
+- Next: audit v12 and existing aggregate transaction helpers before editing code.
+
+## 2026-08-03 - CLOUD-PROVIDER-CONT-PG-PLAN-01 planning
+
+- The maintainer requested the next plan under the current Zebra Cloud status
+  snapshot. The sidebar ChatGPT architecture review selected a separate docs-only
+  planning card instead of activating the locked PostgreSQL implementation or
+  broadening into Control Plane composition.
+- Registered owner `lukeding (Cloud Architecture Maintainer)`, branch
+  `docs/cloud-provider-cont-pg-plan`, isolated worktree and documentation-only
+  owned paths.
+- Wrote the Provider Continuation authority plan. A follow-up sidebar review
+  removed the proposed duplicate continuation fence in favor of the existing
+  `WorkerMutationAuthority/LeaseFence`, and separated external opaque authority
+  identity from the internal PostgreSQL deployment namespace.
+- `CLOUD-PROVIDER-CONT-PG-01` remains `Locked`. No production code, migration,
+  Runtime, Provider HTTP, Desktop, SQLite, Redis, Mem0, Docker application or
+  deployment behavior changed.
+- The focused plan is `290` lines. Link/terminology checks and
+  `git diff --check` pass; after the fresh worktree ran `make sync`, release Eval
+  passes `10/10`. The card remains `Planning` for maintainer review and does not
+  activate its implementation successor.
+
+## 2026-08-03 - cloud mainline activation gate
+
+- Sidebar ChatGPT review found no legal `Ready` or `In Progress` successor after
+  `AGENT-AUTH-SNAPSHOT-01` closeout.
+- Updated the task registry, progress log and implementation plan to remove the
+  stale “only AUTH may be active” wording and record the maintainer activation
+  gate.
+- No production code, Compose, migration or new tests changed; Runtime, Worker
+  composition, Provider HTTP, Desktop, SQLite, PostgreSQL Registry, Redis and
+  Mem0 consumer work remain locked.
+
+## 2026-08-03 - AGENT-AUTH-SNAPSHOT-01 implementation
+
+- Continued the registered cloud-neutral authority task after the sidebar
+  decision review confirmed it is the only legal active mainline action.
+- Added immutable Attempt authority resolution/revalidation contracts, durable
+  resolved/revalidated events and an explicit Worker seam. External authority
+  verification remains fail-closed unless a resolver is configured.
+- Kept Runtime, PostgreSQL Registry, Worker composition, Provider HTTP, Desktop,
+  SQLite, Redis and Mem0 consumer selection locked.
+- Focused authority tests pass `6/6`; Worker suite passes `93 passed, 13 skipped`;
+  Core suite passes `355/355`; excluded-baseline Mypy passes `501` source files,
+  changed Ruff/format and Eval `10/10` pass. The full suite is `2031 passed,
+  211 skipped, 1 failed` only because of the two pre-existing file-size violations
+  outside this task.
+
+## 2026-08-03 - AGENT-AUTH-SNAPSHOT-01 formal closeout
+
+- Merged commit `50ad8d1c` into `zebra-cloud-trench`; the root user's dirty
+  `AGENTS.md` remained unchanged and was not staged.
+- Closed the task as `Done`. Runtime, Worker composition, Provider HTTP, Desktop,
+  SQLite, PostgreSQL Registry, Redis and Mem0 consumer remain locked; no Compose,
+  migration or storage adapter was introduced.
+
+## 2026-08-03 - CLOUD-CONTEXT-PG-01 formal closeout
+
+- The host rerun of
+  `tests/compose/context_materialization/run-postgres-tests.sh` passed `4/4`
+  and emitted `ZEBRA_CONTEXT_MATERIALIZATION_POSTGRES_TEST_RESULT=PASS`.
+  Container, network and volume cleanup completed successfully.
+- The first host attempt failed before materialization because the expired test
+  row collided with the existing confirmed repo/type singleton index. Commit
+  `e4caf730` corrected only that fixture by using a distinct Memory type; no
+  production schema or authority rule was weakened.
+- Accepted `CLOUD-CONTEXT-PG-01` as `Done`. The adapter remains unselected by
+  Runtime/Worker/API composition and `ControlPlaneStores`.
+
+## 2026-08-03 - CLOUD-CONTEXT-PG-01 implementation handoff
+
+- Activated the PostgreSQL successor after `CLOUD-CONTEXT-CON-01` closed. Added
+  `PostgresContextMaterializationStore` plus a bounded row helper that combines
+  Session History, active Context Capsule and governed Memory in one read-only
+  transaction.
+- Added isolated PostgreSQL tests and
+  `tests/compose/context_materialization/run-postgres-tests.sh`. Local adapter
+  tests are `4 skipped` without a DSN; related Storage is `5 passed, 16 skipped`,
+  full Storage is `149 passed, 172 skipped`, Core is `350/350`, and Eval is
+  `10/10`.
+- Kept `ControlPlaneStores`, API/Worker startup, Runtime, Provider HTTP,
+  Desktop, SQLite, Redis and Mem0 unchanged. The card is in `Review` pending
+  host Compose evidence.
+
+## 2026-08-03 - CLOUD-CONTEXT-CON-01 formal closeout
+
+- Registered, claimed and completed the Core-only Context Materialization
+  contract after Session History host PostgreSQL `3/3` passed.
+- Added ADR-020 plus `ContextMaterializationRequest`,
+  `ContextMaterialization`, revisioned generation identity and the read-only
+  `ContextMaterializationPort`. The contract composes Session History, active
+  Context Capsule and confirmed governed Memory without adding a database table,
+  migration, write path or runtime selector.
+- Validation is `3/3` focused, `16/16` related scope/Capsule, `350/350` full
+  Core, changed Ruff/format/strict Mypy, diff check and Eval `10/10`. The size
+  gate still reports only the two inherited violations outside this card.
+- Closed `CLOUD-CONTEXT-CON-01` as `Done`; only `CLOUD-CONTEXT-PG-01` is the
+  next explicit successor and remains `Locked` until activated.
+
+## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 formal closeout
+
+- The corrected host rerun used
+  `tests/compose/session_history/run-postgres-tests.sh` against the isolated
+  PostgreSQL 17.5 profile and passed `3/3`, emitting
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS`.
+- The runner removed the test container, volume and network. Local focused
+  validation remains `13 passed, 3 skipped`; Eval is `10/10` and changed static
+  checks remain green.
+- Accepted the adapter implementation and the test-fixture correction, then
+  moved `CLOUD-SESSION-HISTORY-PG-01` from `Review` to `Done`. Runtime, Worker,
+  Provider HTTP, Desktop, SQLite, Redis, Mem0 and Provider Continuation remain
+  locked or unselected.
+
+## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 host failure triage
+
+- The first host Compose run reached PostgreSQL and executed the focused suite,
+  but failed before the adapter assertions because the test fixture created a
+  `TOOL_EXECUTION_COMPLETED` Event with an incomplete payload.
+- Corrected only the owned test fixture to satisfy the existing event contract
+  (`attempt_number`, `tool_name`, `status`, `output`, `metadata`). The adapter,
+  migrations and runtime composition are unchanged.
+- Local focused validation remains `13 passed, 3 skipped`; host Compose must be
+  rerun before the card can leave `Review`.
+
+## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 implementation handoff
+
+- Added the namespace-scoped PostgreSQL Session History adapter, JSONB row
+  decoding, public exports, parity/isolation tests and an isolated Compose runner.
+- Local validation is `13 passed, 3 skipped`; changed static checks, shell syntax,
+  diff check and Eval `10/10` pass. The card moved to `Review` pending host
+  Compose evidence.
+- Kept `ControlPlaneStores`, API/Worker composition, Runtime, Provider
+  Continuation, Desktop, Redis, Mem0 and Host verifier unchanged.
+
+## 2026-08-03 - CLOUD-SESSION-HISTORY-PG-01 activation
+
+- Activated the next low-risk cloud slice after `CLOUD-SCOPE-CON-01` closed:
+  PostgreSQL Session History read composition only.
+- Claimed only the new adapter, exports, parity tests and isolated Compose
+  runner. No write aggregate, Lease fence, backend selector, Runtime, Desktop,
+  Redis, Mem0 or Host verifier is in scope.
+
+## 2026-08-03 - CLOUD-SCOPE-CON-01 task registration
+
+- Registered the sole current cloud `Ready` card after the previous audit found
+  no legal implementation slice. The card freezes the accepted opaque
+  `(authority_issuer, namespace_id)` boundary and bounded session allow-list.
+- Kept external membership, Tenant/User/Organization modeling, namespace
+  mapping, PostgreSQL adapters, Runtime selection and Mem0 delivery out of
+  scope. The next adapter activation remains a maintainer decision after this
+  Core contract is reviewed.
+
+## 2026-08-03 - CLOUD-SCOPE-CON-01 implementation and review handoff
+
+- Added `OpaqueAuthorityScope` in `agent-core` with immutable opaque identity,
+  canonical UUID allow-list, explicit full-scope/deny-all semantics and fail-
+  closed validation for business fields and over-limit input.
+- Validation: focused Core `9/9`, complete Core `347/347`, relevant scope/history
+  regressions `32/32`, Ruff/format/strict Mypy/diff and Eval `10/10` pass.
+  `make check` reproduces only the inherited Desktop stylesheet and governed
+  PostgreSQL test size violations.
+- Moved `CLOUD-SCOPE-CON-01` to `Review`; Provider Continuation and Session
+  History adapter cards remain Locked and no backend/runtime selection changed.
+
+## 2026-08-03 - CLOUD-SCOPE-CON-01 formal review closeout
+
+- Closed `CLOUD-SCOPE-CON-01` from `Review` to `Done` after reviewing the
+  integrated implementation `4006a0ba`, owned-path diff and focused evidence.
+- Accepted Core `9/9`, full Core `347/347`, relevant regressions `32/32`, static
+  checks, diff check and Eval `10/10`. The repository size gate still reports
+  only the two inherited violations outside this task.
+- Kept `CLOUD-PROVIDER-CONT-PG-01` and `CLOUD-SESSION-HISTORY-PG-01` locked;
+  the next adapter requires one explicit maintainer activation.
+
+## 2026-07-30 CLOUD-MEMORY-PG-01 implementation and review
+
+- added PostgreSQL v10 governed Memory authority, revision CAS, Worker/Admin aggregate
+  receipts, no-text tombstones and restart-safe content-free management snapshots
+- added explicit SQLite `mode=ro` keyset preflight/import with content-free quarantine,
+  one PostgreSQL transaction, target table lock, idempotent replay and FTS rebuild
+- closed canonical-ID typing, exact Event mapping, receipt-anchor validation and stable
+  deployment signing-key findings; final storage/import review found no open P0/P1
+- isolated PostgreSQL 17.5 validation passed `29/29` and cleaned its Compose container,
+  network and volume; release Eval passed `10/10`
+- full tests passed `1977` with `162` skips and one inherited Desktop size failure;
+  full Ruff/Mypy retained only known issues in untouched Web/Harness/Security files
+- removed the attempted optional Worker/API runtime seam after review proved that
+  terminal finalization, active-set concurrency and mixed-store recovery require the
+  later unified cloud composition rather than an optional adapter switch
+
+## 2026-07-29 CLOUD-MEMORY-PG-01 activation
+
+- fast-forwarded reviewed Core governed-memory contract `4bda7f72` into
+  `zebra-cloud-trench`, removed its clean task worktree/branch and created this
+  PostgreSQL v10 task from the updated mainline
+- claimed only v10 authority/receipt adapters, aggregate transactions, repeatable
+  import/rebuild tooling, narrow cloud composition seams and focused tests
+- kept Mem0 delivery, local SQLite feature work, Desktop, generic runtime selection
+  and production cutover outside the task
+
+## 2026-07-29 CLOUD-MEMORY-CON-01 completion
+
+- added governed Memory entry/tombstone, creation/revision transition, Worker/Admin
+  operation and content-free replay receipt contracts behind a namespace-bound Port
+- extracted no-I/O candidate, promotion and review planning while preserving local
+  wrapper ordering and per-refresh-target bounded reads
+- closed review findings for Session CAS binding, canonical-evidence tamper resistance
+  and regenerated-ID/time retry stability without adding LeaseFence to the digest
+- validation: Core `320 passed`; API/Worker `411 passed, 14 skipped`; strict Core Mypy,
+  changed-path Ruff and diff check pass; release Eval `10/10`
+- full tests: `1971 passed, 145 skipped, 1 failed`; the sole failure is the inherited
+  Desktop `CodexConversationPane.styles.ts` 561/500 size gate and reproduces on the
+  untouched `zebra-cloud-trench`
+- kept PostgreSQL v10, Mem0 v11, runtime selector, SQLite feature work and Desktop out
+  of scope
+
+## 2026-07-29 CLOUD-MEMORY-CON-01 activation
+
+- fast-forwarded reviewed governed-memory plan `2c43af0f` into
+  `zebra-cloud-trench`, removed its clean worktree/branch and created this Core task
+- claimed focused provider-neutral authority/Port, pure planner and Core test paths;
+  no SQL, Mem0, runtime selector, SQLite behavior or Desktop is in scope
+
+
+## 2026-07-29 CLOUD-MEMORY-PG-PLAN-01 activation
+
+- stopped `CLOUD-SESSION-HISTORY-PG-01` before implementation after independent
+  audits showed request-provided UUIDs are not an approved tenant/session scope
+- verified Mem0 adapter and Lease/Effect prerequisites are integrated, then found the
+  governed `MemoryStorePort` still has only a SQLite implementation
+- created isolated `codex/cloud-memory-pg-plan-01` and claimed a docs-only planning
+  boundary so PostgreSQL Memory authority precedes the Mem0 delivery ledger
+- froze the 344-line v10/v11 contract and split Core contract, PostgreSQL authority
+  and Mem0 delivery cards with non-overlapping dependencies and owned paths
+- two independent audit lanes and two review rounds closed six P1 contract gaps;
+  final review reports no open P0/P1; diff check and release Eval `10/10` pass
+
+
+## 2026-07-28 CTX-MEM-01 Context Continuity And Governed Recall
+
+- audited GitHub issue `#197` against the runtime path and found three real gaps:
+  no exact multi-turn tail guarantee, terminal classification after persistent
+  context overflow, and recency-only confirmed-memory recall
+- compared official Codex/OpenAI, Claude, Pi Agent and Hermes behavior and
+  recorded the Zebra-specific v1.1 architecture before runtime changes
+- preserved the latest three real user turns and complete tool groups, rendered
+  middle history from the existing ContextCapsule, and added one stricter retry
+  from original history before recoverable suspension
+- reused MemoryReviewService to auto-confirm only reconstructable, low-risk,
+  conflict-free candidates and retained all uncertain candidates for review
+- added repo-scoped SQLite FTS5 recall with deterministic fallback, stable-rule
+  lane, expiry/deduplication checks and a token budget
+- validation: `63 passed` focused; changed-file Ruff passed; relevant Mypy passed
+  over `158` source files; release eval `10/10`; full suite `1747 passed, 8
+  skipped, 9 failed`, with all nine failures reproduced on untouched `main`
+- `make check` remains blocked only by inherited 561/500 and 505/500 file-size
+  violations outside the task; all task source files remain below 500 lines
+- committed the owned implementation as `752a3154`, pushed
+  `codex/issue-197-context-memory-continuity`, and opened PR `#198` with
+  `Closes #197`; merge remains a maintainer action
+- GitHub Actions run `30332213200` created seven zero-step failures; the Backend
+  quality check annotation says the jobs were not started because account
+  payments failed or the spending limit must be increased. This is an external
+  billing gate, not a code/test result.
+
+## 2026-07-28 MEM-MEM0-ADP-01 Mem0 Gateway Adapter
+
+- activated isolated `codex/mem0-adapter-01`, stacked on the reviewed Mem0 Spike;
+  merge remains blocked by the full predecessor chain
+- implemented the provider-neutral Core Gateway over Mem0 REST using existing
+  `httpx`, with no SDK, runtime wiring, Store mutation or write retry
+- added default-disabled configuration, explicit insecure-local HTTP, opaque
+  namespace hashing, canonical provider UUIDs and environment-proxy opt-in
+- added bounded streaming, bounded hit parsing, redacted degraded outcomes and a
+  process-local circuit with one half-open probe
+- delete consumes a namespace-aware provider-ref lookup; missing/failing lookup
+  degrades and no hidden in-memory identity map was introduced
+- independent review found and verified fixes for delete false-not-found, lookup
+  exception leakage, provider-ref traversal, breaker reset, unbounded responses,
+  cleartext credential opt-in and all-invalid-hit schema drift
+- focused Core/Adapter tests pass `36/36`; pinned Compose lifecycle passes `3/3`;
+  Ruff, Mypy, diff check and release Eval `10/10` pass
+- full suite is `1784 passed, 10 skipped, 9 failed`; the nine failures exactly
+  match the inherited provider, expired SCM fixture, file-size and cancellation
+  baseline, so the task moves to local `Review` without push or PR
+
+## 2026-07-28 MEM-MEM0-SPIKE-01 Mem0 OSS Contract And Operations Probe
+
+- combined the reviewed Store, Gateway and Compose prerequisites on isolated
+  branch `codex/mem0-contract-spike-01`; the branch remains local and stacked
+- added a non-root, read-only deterministic OpenAI-compatible embedding service
+  and isolated test Compose project with its own network, ports and volumes
+- exercised the pinned Mem0 server through authenticated REST calls for
+  `infer=false`, namespace filters, expiration, update/history, restart and delete
+- proved duplicate delivery creates distinct IDs; expired search ignores
+  `show_expired=true`; provider 503 maps to `502/provider_unavailable`; dimension
+  mismatch maps to `502/unknown`; provider stall reaches the caller deadline
+- kept Zebra `MemoryStorePort` authoritative and recorded the required Adapter
+  delivery mapping, opaque namespace and hit-revalidation boundaries
+- preserved real-provider validation as a separate credentialed release gate
+- focused Ruff and Mypy pass; Compose render passes; isolated real-server Spike
+  passes `2/2`; release Eval passes `10/10`; `git diff --check` passes
+- full suite is `1761 passed, 9 skipped, 9 failed`; the nine failures exactly
+  match the inherited provider, expired SCM fixture, file-size and cancellation
+  baseline, so merge/PR remains blocked and the task moves to local `Review`
+
+## 2026-07-28 MEM-GW-CON-01 Provider-neutral Agent Memory Gateway Contract
+
+- activated `codex/mem-gw-con-01` in an isolated worktree stacked directly on
+  local reviewed `CLOUD-STO-AUTH-01`; no main workspace changes were touched
+- limited implementation to one Core Port/value module, its public exports and
+  one focused contract test; no provider dependency or runtime wiring was added
+- initial test collection found the new worktree had not installed workspace
+  packages; `make sync` resolved the environment before contract validation
+- gateway contract `13 passed`; all agent-core tests `221 passed`; strict Mypy
+  passed `116` source files; touched Ruff, diff check and release Eval `10/10` passed
+- final full suite: `1760 passed, 8 skipped, 9 failed`; the failure set exactly
+  matches the inherited auth-branch baseline (2 provider expectations, 5 expired
+  SCM credential fixtures, 1 untouched file-size gate, 1 Worker cancellation race)
+- `make check` stops at the two untouched file-size violations (`561/500`,
+  `505/500`); moved the task to Review with the local stacked merge gate intact
+
+## 2026-07-28 CLOUD-PG-01 PostgreSQL Event And Projection Storage
+
+- treated the maintainer's “continue” after the database review checkpoint as
+  approval of its five explicit decisions; kept merge, GitHub CI and production
+  gates unsatisfied
+- registered and claimed isolated branch `codex/cloud-pg-01-events-v1`, stacked
+  on `CLOUD-PG-PLAN-01`; reused the healthy PostgreSQL 17.5 service owned by
+  `CLOUD-COMPOSE-INFRA-01` without copying or changing Compose
+- added only psycopg 3 (`3.3.4` resolved), short connections, an explicit
+  migration runner and Event/Projection Adapters; added no pool, ORM, Alembic,
+  testcontainers, API/Worker selector or partial `ControlPlaneStores`
+- migration history records version/name/SHA-256 and runs under a transaction
+  advisory lock; concurrent first migration, repeated migration, checksum drift
+  and unknown versions are tested fail closed
+- implemented namespace-scoped Event stream CAS and Event insert in one
+  transaction, including concurrent sequence > 0 writers, concurrent retries,
+  namespace isolation and insert-failure rollback
+- fixed the shared SQLite idempotency root cause: a reused key returns the first
+  Event only when the business fingerprint matches, otherwise it raises an
+  explicit conflict
+- implemented JSONB Projection round trips and ordered reads; saves allow exact
+  retries and lagging replay but reject phantom/ahead streams, stale versions and
+  different content at the same sequence
+- final real PostgreSQL focused tests: `14 passed`; combined PostgreSQL/SQLite
+  focused tests: `22 passed`; complete storage suite: `113 passed`
+- created a custom-format `pg_dump --no-owner`, restored it into fresh temporary
+  database `zebra_cloud_pg_01_restore_final`, and reran the PostgreSQL contract:
+  `14 passed`; then deleted only that temporary database and dump
+- full `make test` with real PostgreSQL: `1762 passed, 8 skipped, 9 failed`; the
+  failures match the inherited two provider expectations, five expired SCM
+  fixtures, one untouched file-size test and one Worker cancellation race
+- Eval release gate passes `10/10`; touched Ruff/Mypy pass. Repository Ruff/Mypy
+  retain the inherited `13/4` errors, and `make check` retains the two untouched
+  `561/500` and `505/500` file-size violations
+- independent final review found no remaining P0, P1 or P2; task moved to Review,
+  branch remains local and unpushed
+
+## 2026-07-28 CLOUD-PG-PLAN-01 PostgreSQL Migration And Recovery Review
+
+- registered and claimed the docs-only `CLOUD-PG-PLAN-01` task on isolated local
+  branch `codex/cloud-pg-plan-01`, stacked on reviewed `CLOUD-STO-AUTH-01`
+- continued under the maintainer's temporary GitHub Actions billing waiver;
+  preserved all CI, merge and production gates as unsatisfied
+- traced the complete `ControlPlaneStores` authority rather than treating the
+  initial Event/Projection adapter slice as permission for partial backend cutover
+- selected a maintenance-window migration with canonical export manifests,
+  full validation, one atomic `ACTIVE` authority boundary and no dual-write
+- separated Event fact commits from replayable Projection progress and assigned
+  multi-table atomicity to focused aggregate Ports rather than a global unit of work
+- defined expand/contract schema compatibility, rollback-candidate tests,
+  PostgreSQL/object manifest coupling, logical restore validation and production
+  PITR admission gates
+- required restore-time epoch rotation and same-transaction fencing checks for
+  Lease/Effect/Outbox mutations before any endpoint reopens
+- kept RPO, RTO, retention and drill frequency explicitly `TBD`, which blocks
+  production traffic until maintainers approve measured values
+- independent reader testing exposed and closed the runtime/importer ACTIVE-gate
+  conflict, missing object commit ordering, restore identity transitions,
+  sequence/canonicalization ambiguity and cross-task test-scope drift
+- final independent reader pass found no remaining P0, P1 or P2 design issue
+- `make sync` passes; `git diff --check` passes; Eval release gate passes `10/10`
+- initial `make eval` before workspace sync failed during import because the new
+  worktree lacked `agent_observability`; the synchronized rerun passed
+- full `make test`: `1747 passed, 8 skipped, 9 failed`; failures match the inherited
+  provider, expired SCM fixture, file-size and Worker cancellation baseline
+- `make check` stops at the two untouched `561/500` and `505/500` file-size
+  violations; this docs-only task did not modify either file
+- implementation remains blocked on five explicit review decisions in the
+  decision record; no PostgreSQL adapter, migration or cloud selector was added
+
+## 2026-07-24 CLOUD-STO-AUTH-01 Complete Authoritative Store Composition
+
+- activated one isolated local branch, `codex/cloud-sto-auth-01`, based directly
+  on `CLOUD-STO-SEAM-01`; required merge order remains
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`
+- used separate Core/Storage, API, Worker/test and final review lanes within the
+  registered owned paths; final independent review found no P0-P2 issue
+- extended the existing flat `ControlPlaneStores` across context lifecycle,
+  handoff/dispatch, idempotency, effects, governed memory, artifact payload and
+  indexes, provider continuation, scoped session history and delivery audit
+- added focused Core Ports and made SQLite adapters conform without introducing
+  a backend hierarchy, selector, cloud service or dependency
+- removed `legacy_database_path` and the temporary coherence guard after API,
+  SSE and Worker stopped reconstructing target stores from a path
+- preserved `SQLiteSkillsStateStore`, runtime filesystem configuration and
+  derived web caches as explicit non-authoritative local-profile exclusions
+- added A/B regressions for idempotency/attachments/SSE, compaction/recovery,
+  handoff/dispatch, effect replay, memory review, artifact/model/tool indexes,
+  provider continuation and session history; each proves the legacy path was
+  not created before inspection
+- retained `MemoryStorePort` as the governed authority; Mem0 or another semantic
+  memory provider remains a separately gated, degraded-safe derived Gateway
+- final authoritative A/B tests: `9 passed`; combined focused validation:
+  `365 passed`; all 54 changed Python files pass Ruff and format checks;
+  `git diff --check` passes; Eval release gate passes `10/10`
+- full `make test`: `1747 passed, 8 skipped, 9 failed`; failures match the prior
+  baseline (2 provider expectations, 5 expired SCM fixtures, 1 untouched
+  file-size test and 1 Worker cancellation race)
+- repository `make check` stops at the two untouched `561/500` and `505/500`
+  files; independent full Ruff/Mypy runs retain only 13/4 errors in untouched
+  harness, web and security paths
+- moved the task to `Review`; branch remains local and unpushed
+## 2026-07-24 CLOUD-COMPOSE-INFRA-01 Docker Compose Dependency Baseline
+
+- maintainer required every database dependency to be represented through Docker
+  Compose while separating base dependencies, optional auxiliaries and future
+  Zebra main-container lifecycles
+- live GitHub audit found PR `#194` still open with runner-allocation failures;
+  that investigation was paused when the maintainer reprioritized Compose work
+- the first Redis Agent Memory V0 proposal was replaced after a live Mem0 audit:
+  Mem0 OSS fits self-hosted Compose better, but its official Compose remains a
+  development example and its public API image is not a reproducibly pinned release
+- created isolated worktree `zebra-agent-cloud-compose-infra-01` on
+  `codex/cloud-compose-infra-01`, stacked on `CLOUD-STO-SEAM-01`; merge order is
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-COMPOSE-INFRA-01`
+- registered a dependency-only active card and a separate locked Zebra
+  application-container card before adding deployment files
+- added `compose.dependencies.yml` for Zebra PostgreSQL, erasable Redis, MinIO and
+  isolated Mem0 PostgreSQL; added `compose.mem0.yml` for an auth-enabled,
+  telemetry-disabled API/migration overlay with separate history persistence
+- built the Mem0 boot-smoke image from release commit
+  `ca2abca2b884e038d3e525070e79d3057ef2012c` with `mem0ai==2.0.13`, non-root
+  execution and a read-only root filesystem; no Dashboard, Graph or MCP sidecar
+- generated a universal 78-package hash lock from the reviewed upstream input,
+  added a matching `psycopg-binary==3.3.4` runtime input for the slim image, and
+  made the build reject upstream drift, missing direct inputs and broken packages
+- redirected Mem0's generated client identity config to tmpfs after the first
+  read-only boot exposed an attempted `/home/mem0/.mem0` write; the authoritative
+  root filesystem stays read-only and only the separate history volume is durable
+- replaced the first setup-status health probe after review showed that it wrote
+  one durable audit row every 10 seconds; the final probe uses Mem0's audit-skipped
+  OpenAPI route for liveness plus a direct `SELECT 1` against the application DB
+- verified image `sha256:0892c163df54c7535d78f0a7afcdadb4fa4f69e006d7d2aa4eaf9c851722d58a`:
+  UID/GID `10001`, `mem0ai==2.0.13`, `psycopg==3.3.4` and
+  `psycopg-binary==3.3.4`
+- verified the real Compose stack: base PostgreSQL, Redis and MinIO are healthy;
+  MinIO init and Mem0 migration exit `0`; Mem0 PostgreSQL and API are healthy;
+  Alembic reaches `006`, setup status returns `200`, and anonymous memory access
+  returns `401`
+- left real memory write/search and vector initialization unexecuted because the
+  committed sentinel is boot-only; those provider-backed semantics remain the
+  credential-gated `MEM-MEM0-SPIKE-01`
+- kept `MemoryStorePort` authoritative and registered provider-neutral Gateway
+  plus Mem0 contract-Spike tasks before any adapter implementation
+- independent Compose/dependency review found no remaining code-level blocker;
+  `git diff --check`, deterministic lock comparison, upstream-input comparison,
+  both Compose renders and the Linux ARM64/AMD64 hash-lock resolution pass
+- repository `make test` remains at the reproduced baseline of `1744 passed`,
+  `8 skipped`, `9 failed`; Eval is `10/10`, while `make check` remains blocked by
+  two pre-existing file-size violations, 13 Ruff errors and 4 Mypy errors outside
+  this task's owned paths
+
+## 2026-07-23 CLOUD-STO-SEAM-01 Control-Plane Storage Composition Seam
+
+- maintainer reprioritized Zebra durable storage and memory foundations ahead of
+  further Trench work and explicitly allowed subagent-assisted implementation
+- audited API/Worker storage construction, task dependencies and official Redis
+  Agent Memory boundaries in three independent read-only lanes
+- confirmed the first seam can reuse existing Event/Projection/Workspace/Task/Lease
+  Ports without waiting for Host/AG-UI contracts or adding a cloud dependency
+- created isolated worktree `zebra-agent-cloud-sto-seam-01` on branch
+  `codex/cloud-sto-seam-01`, stacked on the local `EMB-PLAN-01` baseline; it may
+  not merge before PR `#194`
+- kept PostgreSQL/S3 as durable truth/payload stores, ordinary Redis ephemeral,
+  and Redis Agent Memory separate from the governed local `MemoryStorePort`
+- added one lazy `ControlPlaneStores` bundle for Event, Session Projection,
+  Workspace Projection, Task and Lease Ports; API, SSE and Worker reuse it
+- preserved all CLI helper signatures and added database-side waiting-approval
+  projection reads instead of an unbounded in-memory status scan
+- independent review found context-compaction and handoff split-write hazards;
+  partial split backends now fail closed at API, Worker and direct lifecycle roots
+- same-path spy regressions prove every composed Port is used; distinct-path
+  regressions prove rejection occurs before the decoy database is created
+- rejected SQLite `:memory:` composition because the existing per-operation
+  connection model cannot preserve one in-memory database across Store calls
+- final focused composition/approval/context/handoff regressions: `56 passed`;
+  API suite: `309 passed, 5` time-expired SCM fixture failures reproduced on base;
+  Worker suite: `68 passed, 1` pre-existing cancellation race reproduced on base
+- full `make test`: `1744 passed, 8 skipped, 9 failed`; every failure was reproduced
+  on the base branch (2 provider expectation drifts, 5 expired SCM fixtures,
+  1 existing file-size test and 1 cancellation race)
+- touched-file Ruff and `git diff --check` pass; Eval gate is `10/10`; repository
+  `make check` remains blocked by the two pre-existing 561/500 and 505/500 files,
+  while base and task branches share the same 13 Ruff and 4 Mypy baseline errors
+- moved the card to `Review`; branch remains local, stacked and unpushed
+
+## 2026-07-23 EMB-AGUI-SPIKE-01 Official Python AG-UI Compatibility Spike
+
+- maintainer explicitly activated the Zebra-side Spike with all production
+  AG-UI, Trench, cloud, and Host authorization cards still Locked
+- registered exact task ownership for the SDK pin, isolated fixtures/tests,
+  compatibility record, and governance files
+- selected a stacked `codex/emb-agui-spike-01` worktree because the architecture
+  branch is reviewed locally but not yet merged; merge order remains mandatory
+- pinned `ag-ui-protocol==0.1.19` as a dev-only dependency and added isolated,
+  responsibility-split fixtures, bounded SSE decoding, and three test modules
+- first collection exposed and fixed an `ag_ui` test-package shadowing collision;
+  the non-package directory boundary is now documented
+- focused validation passes: `11 passed`; focused Ruff passes after three
+  mechanical import-order fixes
+- task-owned format, lock consistency, diff whitespace, file-size, and
+  production-import checks pass; release Eval passes 10/10 cases
+- full `make test` collected 1,763 tests and reported nine failures; replaying
+  the exact node IDs against the architecture baseline reproduced all nine
+- `make check` remains blocked by two pre-existing oversized files; standalone
+  Ruff reports 13 and Mypy reports four pre-existing findings, with identical
+  baseline output
+- moved the task to `Review`; production AG-UI wiring remains Locked and the
+  stacked branch cannot merge before `EMB-PLAN-01`
+
+## 2026-07-23 EMB-PLAN-01 Zebra Embedded Architecture Consolidation
+
+- claimed the documentation-only architecture task on `zebra-cloud-trench` and
+  preserved the user's existing `AGENTS.md` modification
+- replaced the 4,288-line concatenated Embedded draft with one target architecture
+  aligned to ADR-012, stable Task/Segment authority, and the cloud Runtime blueprint
+- removed the custom Zebra React SDK, pgvector, Graphiti, Spark-first, dynamic
+  Python, and premature microservice plans from the active target
+- selected Trench-owned CopilotKit React v2 + Copilot Runtime/BFF -> Zebra AG-UI
+  as the supported production topology; browser direct connection remains spike-only
+- recorded ADR-015 for durable-state, HostSessionGrant, interrupt, surface, shared
+  state, tool receipt, Artifact, and security boundaries
+- added the dependency-ordered Embedded/Trench task roadmap from compatibility
+  spikes through read-only, collaboration, analysis, writeback, optional Redis
+  Agent Memory, namespace isolation, and GA
+- kept every implementation task `Locked`; Phase B and Trench implementation still
+  require explicit maintainer activation after merged prerequisites
+- synchronized README, PROGRESS, the final architecture ADR index, task registry,
+  task plan, and findings
+- targeted document checks pass for line limits, local links, single target title,
+  task status/ID consistency, trailing whitespace, and diff whitespace; the
+  repository-wide file-size gate remains blocked by untouched pre-existing
+  `CodexConversationPane.styles.ts` (561/500) and `events.py` (505/500)
+- moved `EMB-PLAN-01` to `Review`; no implementation task was activated
+
 ## 2026-07-19 WEB-UX-01 Trusted Local Read-Only Web Auto Execution
 
 - registered and claimed `WEB-UX-01` on
@@ -5798,3 +6478,1714 @@ actual byte access.
   files (pre-existing failures in `web_crawl.py`, `mcp_proxy_policy.py`, and
   the `web-native` test/tool cluster confirmed unrelated via `git stash`
   comparison against the base commit).
+# 2026-07-28 CTX-MEM-01 Issue #197 Context Continuity
+
+- verified main at `f7d16c45`; preserved dirty user-owned `AGENTS.md` and
+  `.zebra-agent/sessions.sqlite` in the main checkout
+- created `codex/issue-197-context-memory-continuity` in isolated worktree
+  `../zebra-agent-issue-197` from `origin/main`
+- ran `make sync`; corrected focused baseline passed `33` tests
+- confirmed no implementation overlap with stacked `MEM-GW-CON-01`; shared
+  governance files may require ordinary rebase reconciliation later
+- completed current official-source comparison for Codex/OpenAI, Claude,
+  Pi Agent and Hermes; design and implementation plan are being written first
+
+
+## 2026-07-28 CLOUD-LEASE-PLAN-01 Lease And Effect Dispatch Contract
+
+- created `codex/cloud-lease-plan-01` in
+  `../zebra-agent-cloud-lease-plan-01` from local `CLOUD-PG-01@15c386db`;
+- registered and claimed the docs-only task before changing the contract;
+- ran three independent read-only audits over Lease/Worker lifecycle,
+  Effect/Outbox crash windows and task/owned-path decomposition;
+- found P0 stale-worker gaps: no epoch/token, checkpoint used as a fence,
+  get-before-update heartbeat, deleted generations, no runtime heartbeat and
+  unfenced Worker Event/Effect writes;
+- found P0 Effect crash windows across started Event, ledger reservation,
+  provider call and terminal Event, plus response-cache idempotency that cannot
+  reserve commit/PR effects;
+- wrote `docs/CLOUD_Lease_Fencing_Effect_Outbox合同_v1.0.md` and split the locked
+  parent into Core, PostgreSQL Lease, Effect Outbox and Worker consumer cards;
+- kept Redis/Kafka/Temporal, generic Unit of Work/inbox, cloud selection,
+  cutover and production claims outside this task.
+- first reader review reported `3 P0 / 4 P1`; the contract was corrected for
+  PITR epoch semantics, new-owner reconciliation, aggregate scope, background
+  heartbeat, retry attempts, exact owned paths and merged dependency gates;
+- final reader review reports `0 P0 / 0 P1` and approves Review status;
+- fresh-worktree `make eval` initially failed before dependency sync, then passed
+  `10/10` after `make sync`; `make check` retains the two inherited untouched
+  file-size violations at `561/500` and `505/500`;
+- both task-owned docs are below the 600-line limit and `git diff --check` passes.
+
+## 2026-07-28 CLOUD-LEASE-CON-01 Core Lease And Fencing Contract
+
+- created local stacked worktree `../zebra-agent-cloud-lease-con-01` on branch
+  `codex/cloud-lease-con-01` from reviewed plan commit `e373786b`;
+- claimed the task and expanded exact owned paths before touching every newly
+  discovered API, Worker and compatibility-test caller;
+- added immutable Core Lease fence/errors and replaced caller-clock mutations
+  with TTL-based acquire plus full-fence heartbeat/release Ports;
+- retained SQLite generations, added local control-plane epoch, injected clock,
+  idempotent legacy/partial-schema fail-closed migration and bounded TTL;
+- persisted complete fences through handoff reserve/commit and aborted incomplete
+  legacy reservations instead of treating checkpoint as a fencing token;
+- changed Worker claim to acquire before recovery, CAS the recovered checkpoint,
+  and fenced-release on recovery failure without adding background heartbeat;
+- focused matrix passes `55/55`; broader storage/Worker/API matrix passes 496
+  with 14 PostgreSQL skips and retains six inherited failures;
+- full repository suite passes `1765`, skips `22` and retains the nine confirmed
+  inherited failures (two DeepSeek, five expired SCM fixtures, file size, cancellation);
+- targeted Mypy passes 151 package files plus the two touched app modules; Eval
+  passes `10/10`; Ruff and `git diff --check` pass;
+- final independent reviews report `0 P0 / 0 P1 / 0 P2` after exercising partial
+  migration concurrency and the old direct callers;
+- `make check` retains only the inherited untouched file-size violations at
+  `561/500` and `505/500`; GitHub Actions remains intentionally skipped under
+  the maintainer's temporary billing-limit direction.
+
+## 2026-07-28 CLOUD-LEASE-PG-01 PostgreSQL Epoch And Lease Adapter
+
+- created local stacked worktree `../zebra-agent-cloud-lease-pg-01` on branch
+  `codex/cloud-lease-pg-01` from `CLOUD-LEASE-CON-01@816a1e3b`;
+- claimed the task under the maintainer's explicit continuation while preserving
+  the unmerged-dependency, no-push and no-production boundaries;
+- added additive migration v2, strict epoch bootstrap/read/restore rotation and a
+  namespace-scoped `PostgresLeaseStore` without constructor DDL or new dependency;
+- standardized mutation locking as epoch `FOR SHARE` then Lease row mutation, with
+  rotation taking the conflicting epoch update lock;
+- added real PostgreSQL tests for migration compatibility, constructor isolation,
+  epoch lifecycle, DB-clock acquisition, same/different owner races, heartbeat,
+  retained release/reacquire, expiry, complete fence rejection, namespace/clock
+  isolation and restore concurrency;
+- used the existing `CLOUD-COMPOSE-INFRA-01` PostgreSQL 17.5 dependency container;
+  no Docker configuration was copied or modified in this task;
+- real PostgreSQL focused matrix passes `34/34`; all storage tests pass `147/147`;
+  critical concurrency/rotation tests passed ten consecutive runs;
+- full suite with PostgreSQL enabled passes `1799`, skips `8`, and retains the nine
+  inherited failures; Eval passes `10/10`, Ruff/Mypy/diff-check pass;
+- two final read-only reviews report `0 P0 / 0 P1 / 0 P2`; `make check` retains only
+  the inherited untouched file-size violations at `561/500` and `505/500`.
+
+## 2026-07-28 CLOUD-EFFECT-OUTBOX-01 Fenced Effect Dispatch Aggregate
+
+- continued from integrated cloud baseline `31969e22` in writable worktree
+  `zebra-cloud-mainline` on `codex/cloud-effect-outbox-01`, leaving the original
+  dirty `main` checkout untouched;
+- added typed Effect schedule/claim/status/evidence contracts and one additive
+  PostgreSQL v3 aggregate table carrying both Effect reservation and Outbox intent;
+- extracted a connection-aware Event append and strict epoch-then-Lease fence
+  assertion so schedule, claim and terminal writes share one transaction and lock order;
+- implemented fenced schedule, `FOR UPDATE SKIP LOCKED` claim, success/failure/
+  uncertain terminalization, expired-claim reconciliation, explicit resolution,
+  failed-no-effect retry and operator dead-letter transitions;
+- preserved separate execution Session authority and root Session dedupe scope;
+  raw credentials/payloads, Worker wiring, broker, Redis and generic UoW remain out;
+- Core/storage matrix passes `367` locally; focused contract tests pass `22` with
+  PostgreSQL cases skipped inside the Seatbelt sandbox. Ruff, Mypy and diff-check pass;
+- full suite passes `1837`, skips `59`, and retains the same nine inherited failures
+  (two provider expectations, five expired SCM fixtures, file-size gate and Worker
+  cancellation race);
+- added a separate real-PostgreSQL fault suite using namespace-scoped temporary
+  triggers; it proves schedule-Outbox insert, terminal-Outbox update and retry-
+  Outbox insert failures roll back their same-transaction Events. The three tests
+  statically validate and skip cleanly when a real DSN is absent;
+- ran the complete PostgreSQL matrix in a dedicated host Docker Compose project
+  against PostgreSQL 17.5: `49 passed in 3.74s`. This includes migrations,
+  Event/Projection, Lease, Effect dispatch and trigger fault rollback. The script
+  removed its dedicated container, volume and network after success; task moved to Review.
+- final focused Core/storage matrix passes `367` with `49` PostgreSQL skips inside
+  the sandbox; Ruff and Mypy pass, direct Eval passes `10/10`, and `git diff --check`
+  passes. `make eval` itself cannot initialize `~/.cache/uv` under Seatbelt, so the
+  already-synced virtual environment ran the identical release-check script directly.
+
+## 2026-07-28 CLOUD-EFFECT-CONSUMER-01 Worker Fenced Effect Consumer
+
+- activated a local stacked implementation branch from
+  `CLOUD-EFFECT-OUTBOX-01@69e34c0c`; this is not a merge, push or rollout waiver;
+- split acquire from recovery so a dedicated background heartbeat thread starts
+  before recovery, records the first ownership/database failure and stops before
+  one fenced release on every exit;
+- added ownership checks to durable Worker Event boundaries and restricted
+  parallel tool execution to read-only tools under the fenced consumer;
+- retained the SQLite Effect ledger as the default path; an explicitly injected
+  `EffectDispatchPort` now persists governed ToolCall artifacts, atomically
+  schedules/claims/terminalizes Effects and reconciles expired claims to
+  `uncertain` without automatic replay;
+- deterministic regressions cover heartbeat loss, stale ownership after schedule,
+  provider-success/terminal-commit crash, response loss after terminal commit,
+  failed-result uncertainty and legacy helper compatibility;
+- Worker plus agent-tools regression passes `227` tests and retains only the
+  confirmed inherited cancellation race; the final full suite passes `1844`, skips `60`
+  and retains the same nine inherited failures; changed-file Ruff, strict Mypy,
+  `git diff --check` and release Eval `10/10` pass;
+- real PostgreSQL consumer coverage in `tests/worker/test_fenced_effect_consumer.py`
+  passes `58/58` against the isolated Docker Compose PostgreSQL 17.5 service on
+  2026-07-29. The helper reported
+  `ZEBRA_EFFECT_CONSUMER_POSTGRES_TEST_RESULT=PASS`, then removed its dedicated
+  container, volume and network. The card is ready for Review; this evidence does
+  not select a cloud backend or waive dependency merge requirements.
+- fetched the exact business baseline `zebra-cloud-trench@375dca92` into the
+  isolated clone and replayed the nine remaining full-suite failures in a detached
+  temporary worktree. All `9/9` reproduce on that baseline, including provider
+  contract expectations, expired SCM test credentials, two file-size violations
+  and the Worker cancellation race. The temporary worktree was removed afterward.
+  This proves the cloud stack adds no failure to that set, but it does not waive the
+  repository rule that prevents merge while the complete suite is red.
+- split the confirmed business-baseline failures into five non-overlapping repair
+  cards. Provider and SCM audits found stale tests/fixtures with correct production
+  behavior; Worker audit found a real durable-cancellation finalization race; the
+  size gate is one Desktop style extraction and one existing Core contract move.
+  Activated only `BASE-MDL-EXPECT-01`; later cards remain Ready and path-bounded.
+- `BASE-MDL-EXPECT-01` changed only two stale tests: the positive OpenAI-compatible
+  case now advertises its tool and DeepSeek invalid reasoning asserts the typed
+  retryable rejection. Provider files pass `41/41`, the security trio passes
+  `3/3`, Ruff passes, and the full suite improves to `1846 passed, 60 skipped,
+  7 failed`. Activated `BASE-SCM-CRED-01` next.
+- `BASE-SCM-CRED-01` replaces three non-expiry-specialized fixed dates with one
+  `datetime.max` test expiry. Production expiry-first validation is untouched.
+  Pull-request tests pass `25/25`, SCM/broker regressions pass `40/40`, Ruff passes,
+  and the full suite improves to `1851 passed, 60 skipped, 2 failed`. Activated
+  `BASE-WKR-CANCEL-01` next.
+- `BASE-WKR-CANCEL-01` now treats only typed `ExecutionInterrupted` at the unique
+  finalization boundary as an externally won durable terminal race. A broader
+  append-event guard was tested and removed because it blocked legitimate
+  post-completion memory/title events. Focused tests pass `3/3`, Worker passes
+  `77` with one skip, Ruff/Mypy pass, and the full suite improves to `1853 passed,
+  60 skipped, 1 failed`. Activated `BASE-UI-SIZE-01` next.
+- `BASE-UI-SIZE-01` moves only WorkspaceIdle-owned classes into its own 122-line
+  style module; the shared conversation style drops from 561 to 443 lines. Desktop
+  TypeScript/Vite build and composer layout pass with bundled Node 24 and the
+  already-installed dependency tree. The size gate now reports only the 505-line
+  Core Event contract. Activated `BASE-EVT-SIZE-01` next.
+- maintainer clarified that this branch is the new Zebra microservice mainline and
+  Desktop/local-agent content is out of scope. The preceding Desktop style change
+  was therefore restored exactly, its task card removed, and Desktop build removed
+  from subsequent acceptance. Core/API/Worker/storage/cloud-service validation
+  remains active; `BASE-EVT-SIZE-01` continues because `agent-core` is shared by
+  the microservices.
+- `BASE-EVT-SIZE-01` moves `ContextCapsuleCreatedPayload` into the existing focused
+  context contract module and keeps an explicit compatibility re-export. Core/
+  Storage context tests pass `6/6`, focused Ruff and Core strict Mypy pass, source
+  files are `480/119` lines, the microservice file-size gate passes `901` files,
+  backend tests pass `1851` with `60` skips, and release Eval passes `10/10`.
+  Global Ruff/Mypy still report the known Web-pipeline baseline outside this card.
+- fast-forwarded the isolated local business branch `zebra-cloud-trench` from
+  `375dca92` to the verified microservice stack at `2759345c`; the original dirty
+  `main` worktree and external remote remain untouched. Target-branch verification
+  passes microservice file-size `901`, backend `1851 passed, 60 skipped`, and Eval
+  `10/10`. Activated `CLOUD-LEASE-01` only for combined evidence documentation;
+  full aggregate fencing remains locked.
+- completed the `CLOUD-LEASE-01` combined acceptance record. It reconciles real
+  PostgreSQL Lease `34/34`, Outbox `49/49` and combined consumer `58/58` evidence
+  with the current microservice backend/file-size/Eval gates, while explicitly
+  excluding Desktop, exactly-once claims, runtime backend selection, full aggregate
+  fencing and production cutover. Parent card moved to Review; `CLOUD-AGG-FENCE-01`
+  remains Locked.
+- activated documentation-only `CLOUD-AGG-FENCE-PLAN-01` on
+  `codex/cloud-agg-fence-plan-01` from the clean integrated cloud baseline. The
+  task owns only the aggregate path inventory and governance records; production
+  adapters, runtime selection and Desktop remain out of scope.
+- completed the read-only authority and transaction inventory across Context,
+  Handoff, Workspace/Task, Model/Tool, continuation/history, Artifact payload/read,
+  Effect payload linkage and delivery audit/idempotency. The resulting v1.0 path
+  document separates authoritative payloads from Event-derived projections and
+  read models, registers dependency-ordered implementation cards, and leaves every
+  production card plus the parent gate Locked pending inventory review.
+- validated the inventory and registry with `git diff --check`, confirmed the new
+  focused document is `178` lines, and confirmed no implementation card was
+  accidentally made Ready or In Progress. The planning card is ready for Review.
+- accepted the validated documentation-only inventory for local mainline
+  integration. Only the prerequisite contract card becomes Ready; no PostgreSQL
+  aggregate adapter or parent safety gate is unlocked by this acceptance.
+- fast-forwarded the accepted inventory onto the isolated local
+  `zebra-cloud-trench`, created `codex/cloud-agg-fence-con-01`, and claimed the only
+  Ready implementation prerequisite. Scope is Core authority contract plus focused
+  tests and governance; database adapters and Desktop remain excluded.
+- implemented the minimal Core authority contract without changing any existing
+  Store Port: complete `WorkerMutationAuthority` and fence-free
+  `AdministrativeMutationCAS`, both strict, frozen and namespace/stream-CAS aware.
+  Focused tests pass `19/19`; all Core tests pass `270/270`; changed-file Ruff and
+  strict Mypy over `121` Core files pass; Eval passes `10/10`. Full Core Ruff still
+  reports three inherited import-order findings outside owned paths. The older root
+  virtualenv lacks `psycopg`, so repository-wide collection through that fallback
+  environment is invalid and is not reported as a code regression.
+- accepted the Core authority contract for isolated local mainline integration.
+  Only the fenced Workspace projection becomes Ready; all later aggregate adapters
+  and the complete fencing gate remain Locked.
+- fast-forwarded the accepted contract onto isolated `zebra-cloud-trench`, created
+  `codex/cloud-agg-workspace-pg-01`, and claimed the only Ready adapter card. Owned
+  implementation is limited to Workspace PostgreSQL schema/adapter, focused Worker
+  transaction seam, real PostgreSQL tests and governance.
+- implemented PostgreSQL migration v4 and the namespace-scoped Workspace projection
+  adapter. Worker authority is revalidated transaction-locally before Event,
+  Session and Workspace commit; the adapter independently rejects supplied
+  projections whose content is not derived from the Event.
+- added the optional Worker transaction seam through loop composition,
+  `SessionExecutionService` and the durable recorder while preserving the default
+  SQLite Store path. The transaction result returns the canonical stored Event,
+  Session and Workspace so regenerated lost-response retries cannot fork Recorder
+  memory from PostgreSQL. A focused recorder factory keeps `execution.py` below the
+  source hard limit; no runtime backend selector or Desktop build was added.
+- local validation passes focused Ruff, strict Core/Storage Mypy over `163` files,
+  microservice file-size over `907` tracked and new files, Core/Storage/Worker `467 passed, 64
+  skipped`, release Eval `10/10` and eval tests `3/3`. The repository-wide size
+  command still reports the known out-of-scope Desktop stylesheet at `561` lines.
+  Initial host Compose evidence passed `71/71`; final host rerun remains required
+  after the semantic-validation and factory refactor.
+- the first expanded host rerun passed `79/80`; its only failure was a test fixture
+  fixed at `2026-07-29 09:00 UTC` while the run occurred at `04:23 UTC`, correctly
+  violating `prepared_at <= updated_at` when the Recorder used the real clock.
+  Moved the fixture to a stable historical timestamp without weakening the schema
+  constraint. The repeated host PostgreSQL 17.5 matrix then passed `80/80` in
+  `6.30s`; its dedicated container and volume were removed. The pre-existing
+  shared-network ownership warning is informational and no unknown network was
+  deleted. `CLOUD-AGG-WORKSPACE-PG-01` is accepted for Review and unlocks only
+  `CLOUD-AGG-TASK-PG-01`.
+- fast-forwarded the accepted Workspace adapter onto local `zebra-cloud-trench`,
+  created the isolated `codex/cloud-agg-task-pg-01` worktree and claimed the only
+  Ready implementation card. Other sessions may audit successor cards in parallel
+  but cannot edit the shared migration hotspot until this card integrates.
+- implemented PostgreSQL migration v5 and split the Task adapter into a 176-line
+  read facade, 315-line transaction module and 171-line lineage module. Read APIs
+  are pure; explicit rebuild and caller-owned rollover share one Task advisory lock.
+- two read-only review rounds fixed tuple-row caller compatibility, lock ordering,
+  deterministic stale-row cleanup, typed uniqueness conflicts, cross-Task foreign
+  keys, ambiguous Handoff lineage, artifact identity and SQLite reason parity.
+  Final review found no remaining P0-P2 issues.
+- local validation passes Ruff, strict Core/Storage Mypy over `166` files, the
+  microservice size gate over `911` tracked and new files, related backend/API
+  regressions `473 passed, 77 skipped`, and release Eval `10/10`.
+- the isolated PostgreSQL 17.5 host matrix passes `32/32` in `6.38s`; its dedicated
+  container and volume were removed. The existing shared-network ownership warning
+  is informational and no unknown network was deleted. The Task card moves to
+  Review and unlocks only Model/Tool for the next serialized migration.
+- created separate Codex sidebar tasks for Model/Tool, Context Lifecycle and
+  Handoff planning from `zebra-cloud-trench`. They may audit in parallel but must
+  wait for the current migration owner before implementation.
+## 2026-07-29 - CLOUD-ART-OBJ-CON-01
+
+- Based `codex/cloud-art-obj-con-01` on local `zebra-cloud-trench@8035c61b` after
+  verifying the claimed task and its documentation-only Owned paths.
+- Added ADR-017 and linked the final architecture, aggregate-fencing inventory and
+  phase-level Trench breakdown without selecting an object provider, SDK, object
+  key encoding, migration, API route or cloud runtime profile.
+- Recorded the provider-neutral Artifact authority and recovery contract: stable
+  `artifact://` identity, opaque external references, staged/finalize/compensate,
+  fenced Worker writes, management reconciliation and retention prune semantics.
+- Validation: changed-document local links and `git diff --check` pass. The
+  repository file-size gate checks `1025` source files and retains only baseline
+  violations in the untouched Desktop stylesheet (`561/500`) and PostgreSQL
+  migrations (`508/500`); both match `8035c61b` exactly.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 preflight
+
+- Confirmed `zebra-cloud-trench@d11cf9e9` is clean and that Handoff exclusively owns
+  migration v8.
+- Audited the current Artifact domain/Port, local SQLite adapter, Worker/Event write
+  seams, PostgreSQL transaction patterns, dependency manifests and MinIO Compose.
+- Tightened the Locked v9 task with explicit dependency, owned paths, lifecycle
+  ordering, management recovery, fault-matrix and non-goal boundaries.
+- Selected direct low-level botocore as the minimum future S3 dependency and required
+  MinIO bucket versioning plus exact object-version evidence; no dependency was added
+  while the card remains Locked.
+- Froze the single metadata-table boundary, staged/finalized/compensated/pruning/pruned
+  transitions, exact Event/object/fence bindings and real PostgreSQL/MinIO failure
+  windows. `MISSING` remains an inspection result rather than a lifecycle fact.
+- No implementation, dependency, migration, runtime selector, SQLite or Desktop file
+  changed; v9 remains blocked until the active Handoff card reaches Review and is
+  integrated.
+- Validation: `git diff --check` passes and the changed-path audit contains only the
+  five governance files. The repository source-size gate still reports exactly the
+  two inherited violations: untouched Desktop stylesheet `561/500` and active
+  PostgreSQL migration hotspot `508/500`; Handoff v8 already owns the required split.
+
+## 2026-07-29 - CLOUD-ART-LIFECYCLE-CON-01 activation
+
+- Split the cloud-only Artifact lifecycle contract from the Locked v9 adapter so Core
+  work can proceed without competing for Handoff's migration v8 hotspot.
+- Claimed one focused branch and path-bounded card for domain, Port, public exports,
+  Core tests and governance only.
+- Preserved local `ArtifactPayloadStorePort`, SQLite, PostgreSQL, MinIO, Worker,
+  runtime selection and Desktop outside the owned paths.
+
+## 2026-07-29 - CLOUD-ART-LIFECYCLE-CON-01 implementation
+
+- Added focused provider-neutral object expectation/receipt/verification/delete and
+  safe-cleanup contracts plus an immutable object Port.
+- Added cloud reserve, Event binding, lifecycle mutation/query models, exact record
+  state validation and authority-separated metadata Port.
+- Split source and test modules so every new file remains below the 300-line target.
+- Review found and drove fixes for management CAS, exact Event/object binding,
+  contradictory state evidence and raw query validation.
+- Validation: focused contract/authority/SQLite `45/45`, all Core `290/290`, strict
+  Core Mypy `126` files, changed-scope Ruff and `git diff --check` pass. The global
+  size gate retains only inherited Desktop `561/500` and migration `508/500` failures.
+
+## 2026-07-29 - CLOUD-ART-OBJECT-S3-01 activation
+
+- Split the immutable object adapter from the still-Locked PostgreSQL Artifact
+  lifecycle card so it can proceed without competing for migration v8.
+- Claimed botocore dependency, focused storage adapter/export, MinIO bucket-versioning
+  bootstrap, isolated real-object tests and governance paths only.
+- Kept PostgreSQL metadata/migration, orchestration, signed delivery, Worker/API,
+  SQLite, runtime selection and Desktop outside the task.
+
+## 2026-07-29 - CLOUD-ART-OBJECT-S3-01 implementation
+
+- Added a direct low-level botocore adapter for immutable conditional put, verified
+  head/read and exact-version delete. Keys hash the deployment namespace and never
+  expose the raw namespace or provider locator through Core.
+- Mapped absence, integrity mismatch, immutable identity conflict and provider
+  ambiguity separately. Invalid version/timestamp/body evidence fails closed through
+  typed domain errors rather than leaking SDK or validation exceptions.
+- Enabled MinIO bucket versioning and added an isolated host Compose runner with its
+  own project, loopback ports, network and volume cleanup.
+- Validation: real MinIO and focused adapter matrix `15/15`; all storage tests `130`
+  passed with `87` environment-gated skips; strict storage Mypy `49` files, scoped
+  Ruff and `git diff --check` pass. No PostgreSQL migration, SQLite, Worker/API,
+  runtime selection or Desktop file changed.
+
+## 2026-07-29 - CLOUD-AGG-HANDOFF-PG-01 migration v8 foundation
+
+- Corrected the task registry: Handoff PostgreSQL remains In Progress, while the
+  already integrated Artifact lifecycle contract is Review.
+- Split migration definitions and execution from the historical catalog; v1-v7 names
+  and checksums remain byte-identical and the former 508-line hotspot is now 443 lines.
+- Added v8 operation, immutable envelope and fenced dispatch tables with namespace,
+  identity, status-shape, full LeaseFence and exact child-envelope constraints. The
+  existing v5 Task/Segment index remains the only lineage projection.
+- Validation: scoped Ruff and strict Mypy pass; isolated PostgreSQL 17.5 applies v1-v8
+  concurrently and repeatably with `6/6` migration tests, then removes the container,
+  network and volume.
+
+## 2026-07-29 - CLOUD-AGG-HANDOFF-PG-01 fenced dispatch
+
+- Added namespace-scoped source-fact hashing with retained Lease generation evidence
+  and the same Workspace/authority/task revision inputs as the local compatibility
+  path.
+- Added child-specific PostgreSQL claim/reclaim with database time,
+  `FOR UPDATE SKIP LOCKED`, random token rotation and exact full-fence receipts.
+- ACK verifies the exact token, child, expiry and complete current LeaseFence in one
+  transaction. Workspace revision drift returns current facts without acknowledging.
+- Validation: isolated PostgreSQL migration/dispatch matrix `13/13`; all storage tests
+  `130` passed with `94` environment-gated skips; strict storage Mypy `54` files,
+  scoped Ruff and `git diff --check` pass.
+- Review fixes: Artifact refs remain API-compatible non-UUID text and are bound across
+  committed operation/envelope by composite FK; active Lease checks use database time;
+  Workspace rows stay share-locked across revision comparison and ACK. Real tests
+  cover future caller time, artifact mismatch and concurrent Workspace update blocking.
+
+## 2026-07-29 - CLOUD-AGG-HANDOFF-PG-01 atomic aggregate closeout
+
+- Added the PostgreSQL SessionHandoffPort facade and one-connection aggregate commit
+  across parent/child Events, Session and Workspace projections, v5 Task rollover,
+  Envelope, dispatch and operation status.
+- Added a shared canonical request digest so reserve, fresh commit and committed replay
+  bind title, reason, prompt, principal, actor, requested authority and Envelope work
+  content. Replays compare immutable reservation identity rather than mutable status.
+- Added database JSON/column identity checks and an UPDATE/DELETE rejection trigger for
+  committed Envelopes; explicit maintenance cleanup requires a session-local opt-in.
+- Serialized Lease acquisition and terminal commit with one advisory boundary. Worker
+  recovery now receives the exact acquired LeaseFence, rejecting stale same-owner
+  generations, and cloud drift suspension uses WorkerProjectionTransactionPort.
+- Kept child Workspace state Event-rebuildable by removing runtime/snapshot side writes.
+- Real PostgreSQL 17.5 aggregate/dispatch/migration tests pass `20/20`, including stale
+  facts, concurrent successor, injected late rollback, immutable Envelope and lost-
+  response replay. Core/Storage/API/Worker suites pass `822/822` with `102` skips;
+  scoped Ruff and `git diff --check` pass. Full Mypy retains the same six inherited
+  errors in untouched web-crawl, MCP policy and Worker export files.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 activation
+
+- Fast-forwarded reviewed Handoff v8 through `cfe40713` into `zebra-cloud-trench`,
+  removed its clean merged task worktree/branch and created this task from that head.
+- Moved the v9 card from Locked to In Progress with one owner and branch. Its owned
+  boundary remains PostgreSQL lifecycle metadata, the reviewed S3 object adapter,
+  focused Worker Event orchestration, real PostgreSQL/MinIO tests and governance.
+- Preserved SQLite, Desktop, runtime selection, signed delivery, Effect linkage and
+  generic Artifact read composition outside this task.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 migration v9 foundation
+
+- Added a canonical Core reservation digest binding namespace and every logical
+  Artifact reservation input before provider I/O.
+- Added v9 lifecycle metadata with namespace/session/Event identity, intended Event
+  sequence, complete reserve fence, request/object/Event evidence, monotonic revision
+  and exact staged/finalized/compensated/pruning/pruned shapes.
+- Added non-authoritative transition idempotency and management audit ledgers without
+  creating a second Artifact projection. Reconcile and retention indexes are scoped by
+  namespace plus Session.
+- Resolved the locator boundary: `(namespace, artifact_id)` is the logical locator;
+  PostgreSQL does not copy the S3 adapter's private key encoding.
+- Fresh-worktree `make sync` completed. Focused Core tests pass `17/17`; scoped Ruff,
+  strict Mypy and `git diff --check` pass; isolated PostgreSQL 17.5 v1-v9 migration
+  tests pass `6/6` and clean their container, network and volume.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 reserve authority
+
+- Added the first PostgreSQL metadata adapter slice: fenced Worker reservation and
+  namespace/Artifact/Session-scoped metadata reads.
+- Reserve validates the complete LeaseFence and exact stream revision in its write
+  transaction. Canonical retries return the original row; changed requests, Artifact
+  collisions, stale authorities and cross-scope attempts fail without partial writes.
+- Real PostgreSQL v1-v9 migration plus reserve tests pass `11/11`, including two-client
+  concurrent idempotency. Focused Ruff and strict Mypy pass.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 Worker lifecycle
+
+- Added explicit fenced transactions for object receipt recording, canonical Event
+  finalize, safe compensation, prune start and exact-version prune completion.
+- Every Worker replay still validates the current LeaseFence and stream revision.
+  Lifecycle row locks and revisions serialize transitions; a mutation ledger detects
+  changed idempotent retries without becoming a second fact source.
+- Finalize reads the canonical Event JSON and requires its nested metadata URI.
+  Compensation proves object absence/deletion and rejects any occupied reserved Event
+  slot, including an unrelated Event outcome.
+- Real PostgreSQL migration/lifecycle tests pass `16/16`; focused Ruff and strict
+  Mypy pass across all v9 adapter modules and tests.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 management recovery
+
+- Added management finalize/compensate/prune entry points backed by explicit Session
+  stream CAS and immutable operation/operator/reason audit rows; no Worker fence is
+  fabricated for recovery.
+- Management metadata, mutation ledger and audit commit in one PostgreSQL transaction.
+  Reused operation IDs bind the complete request and audit meaning; changed retries
+  fail closed. Reconcile listing is namespace/Session/age/status scoped and read-only.
+- PostgreSQL now owns lifecycle transition timestamps. Worker reserve retries validate
+  both the live fence and stream CAS before returning a prior row.
+- Real PostgreSQL migration/lifecycle/management tests pass `19/19`; focused Ruff,
+  strict Mypy and `git diff --check` pass.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 Tool-output orchestration
+
+- Added a default-off Worker coordinator that captures complete Tool output bytes and
+  stable Artifact identity before parallel completion, then uses the sequential Event
+  sink for fenced reserve, versioned object put/head, receipt recording, canonical
+  Event append and finalize.
+- Added a narrow `LocalToolGateway` projector injection. Validation failures now use
+  the same output projection path; existing external URIs remain opaque, while an
+  uncaptured managed URI fails before Event append.
+- Cloud Artifact composition requires PostgreSQL Worker projection authority and fails
+  fast when combined with fenced Effect dispatch, whose atomic linkage remains a
+  successor task.
+- P0/P1 review removed unsafe inline object deletion: once object I/O succeeds, any
+  prepare/Event/finalize uncertainty remains staged for audited management reconcile.
+- Worker+Runtime tests pass `260` with `10` skips; Storage tests pass `131` with `114`
+  skips. The isolated real PostgreSQL+MinIO matrix passes `24/24`; focused Ruff,
+  strict Mypy and `git diff --check` pass.
+
+## 2026-07-29 - CLOUD-ART-PAYLOAD-PG-01 fault-matrix closeout
+
+- Expanded the isolated real PostgreSQL+MinIO matrix to `30/30`: concurrent retention
+  prune has exactly one lifecycle-CAS winner and one audit row; lost put/Event
+  acknowledgements, sequence drift, explicit Event rejection and finalize failure all
+  preserve staged evidence without unsafe inline object deletion.
+- Worker/Runtime regression passes `260/260` with `16` environment-gated skips;
+  Storage passes `131/131` with `114` environment-gated skips. Focused Ruff, strict
+  Mypy, `git diff --check` and the `10/10` release eval pass. Full Mypy retains the
+  same six inherited errors in three untouched files; full Ruff retains ten inherited
+  Web/Harness import-order or unused-import findings; the size gate retains only the
+  untouched Desktop stylesheet violation.
+- The task moved to Review. SQLite and Desktop remain unchanged; fenced Effect payload
+  linkage and generic Artifact read composition remain explicit successor tasks.
+
+## 2026-07-29 - CLOUD-EFFECT-PAYLOAD-ATOMIC-01 activation
+
+- Fast-forwarded the reviewed Artifact v9 slice into `zebra-cloud-trench@b87760b6`,
+  removed its clean merged task worktree/branch and created this focused successor.
+- Verified both dependencies are integrated: Effect outbox `69e34c0c` and Artifact
+  payload `b87760b6`. Claimed one owner, branch and explicit owned-path boundary.
+- The task will bind a verified immutable Effect request object to the intent Event and
+  outbox row in one PostgreSQL transaction. It does not add SQLite/Desktop behavior,
+  runtime selection, a broker, signed delivery or a generic Unit of Work.
+
+## 2026-07-29 - CLOUD-EFFECT-PAYLOAD-ATOMIC-01 implementation
+
+- Added stable cloud Effect request Artifact identity, shared object staging and
+  finalized-only cross-Worker reads. Provider bytes stay outside PostgreSQL locks.
+- Added payload-aware schedule, complete and uncertain transitions that atomically
+  commit the canonical Event, Artifact finalize and Effect outbox mutation. No v10
+  migration was required; replay now conflicts on a changed payload reference.
+- Effect terminal outputs captured by the cloud projector use the same atomic boundary;
+  unknown managed URIs fail closed, while external references and the local SQLite path
+  preserve their existing behavior.
+- Real PostgreSQL 17.5 plus versioned MinIO integration passes `53/53` and removes its
+  isolated containers, network and volumes. Tools/Worker/Runtime pass `418/418` with
+  `17` environment-gated skips; Storage passes `131/131` with `121` skips. Changed-file
+  Ruff, release Eval `10/10` and `git diff --check` pass. Full Mypy retains four
+  inherited errors in untouched Web/Policy files; the size gate retains only the
+  untouched Desktop stylesheet violation.
+- Final P0/P1 review found and closed attempt-specific request Artifact identity and
+  stale-fence wording gaps. Effect identity now survives a new ToolCall ID; tests prove
+  initial stale zero-write, mid-flight takeover as management-visible `STAGED`, durable
+  response-loss replay and terminal rollback without unsafe object deletion.
+
+## 2026-07-29 - CLOUD-ART-READ-COMP-01 activation
+
+- Created `codex/cloud-art-read-comp-01` from `zebra-cloud-trench@4480ca66` and
+  claimed one owner with focused Storage/API/test paths.
+- Verified PostgreSQL Model/Tool v6 and Artifact payload v9 are integrated ancestors.
+  The task reuses their existing tables and the current API read contract; it owns no
+  migration, SQLite feature work, Desktop path or complete runtime selection.
+
+## 2026-07-29 - CLOUD-ART-READ-COMP-01 implementation
+
+- Added a required read-only payload capability distinct from the local write/prune
+  Port. SQLite keeps its existing behavior, including physical missing-file detection;
+  cloud lifecycle states and object failures have typed fail-closed outcomes.
+- PostgreSQL composes Model/Tool Artifacts from one `UNION ALL` snapshot and reuses the
+  shared sanitizer, truncation and ordering implementation. Source Event IDs remain
+  internal read evidence and are not added to the public response.
+- Cloud content requires canonical `artifact://UUID`, matching v9 Event ID/sequence,
+  `FINALIZED` metadata and exact recorded object-version GET with response metadata and
+  byte verification. A custom cloud reader disables legacy SQLite prune before any
+  payload lookup, preventing split authority even on an ID collision.
+- The isolated PostgreSQL 17.5 plus versioned MinIO matrix passes `39/39` and cleans its
+  containers, network and volumes. The full suite records `1943` passed and `145`
+  skipped, with only the inherited Desktop stylesheet size-gate failure. Changed Ruff,
+  Core/Storage Mypy,
+  `git diff --check` and Eval `10/10` pass; full Mypy retains the same four inherited
+  errors in untouched Web/Policy files. Two independent P0/P1 reviews found no open
+  issue after the binding, exact-version, lifecycle and control-boundary fixes.
+
+## 2026-07-30 - CLOUD-AGG-CTX-ADMIN-PG-01 implementation
+
+- Added an explicit API composition namespace for PostgreSQL historical Context
+  recovery. The local SQLite branch and manual compaction behavior remain unchanged.
+- PostgreSQL administrative activation now locks the Session stream and verifies the
+  current Session and Workspace projections before appending the recovery Event. A
+  missing, stale or altered projection fails with zero writes instead of being rebuilt.
+- API recovery uses the aggregate's canonical Event and projections and performs no
+  second Session/Workspace save. Active-pointer `updated_at` uses the recovery Event,
+  not the historical capsule creation time.
+- The isolated PostgreSQL 17.5 matrix passes `19/19`; API/Storage regressions pass
+  `323/323` with `14` skips; focused Ruff, strict Mypy and `git diff --check` pass.
+  Full tests are `1977 passed, 167 skipped` with only the inherited Desktop stylesheet
+  561/500 size-gate failure.
+
+## 2026-08-02 - MEM-GW-DEL-PLAN-01 planning slice
+
+- Confirmed the requested planning channel is the sidebar ChatGPT (`chatgpt.com`)
+  thread; the implementation session remains the only writer to the Zebra worktree.
+- The read-only review used the real `zebra-cloud-trench@ac9801c2` mainline and
+  concluded that `MEM-GW-DEL-01` must remain `Locked`. The v11 plan now separates
+  Core certainty, PostgreSQL atomic enqueue, scoped Mem0 reset/rebuild and runtime
+  consumer/reconciliation into four child cards.
+- Added `docs/Zebra Cloud Memory Delivery Ledger v11实施计划.md` and synchronized
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md` and `findings.md`. No code,
+  SQL migration, provider call, Worker wiring or SQLite behavior changed.
+- `git diff --check` passes. `make check` stops at the inherited
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` file-size violation
+  (`561/500`); no cloud planning file is implicated.
+- The mainline clone had a stale alternate pointing at a deleted temporary checkout.
+  Reachable objects were restored from the local Zebra checkout so the plan worktree
+  could be checked out; this repair is recorded as repository evidence only.
+- Next owner action: explicitly activate `MEM-GW-DEL-CON-01` and
+  `MEM-MEM0-RESET-SPIKE-01` only after their reviewed dependencies are integrated.
+
+## 2026-08-02 - MEM-GW-DEL-CON-01 activation
+
+- The maintainer explicitly activated only the Core certainty child on
+  `codex/mem-gw-del-con-01`; reset Spike and all storage/runtime cards remain
+  `Locked`.
+- The claimed owned paths are provider-neutral Core domain/Port values, the
+  existing Gateway mutation result and focused Core tests. No SQL, HTTP, Mem0,
+  Worker or local SQLite composition changes are authorized in this slice.
+
+## 2026-08-02 - MEM-GW-DEL-CON-01 implementation
+
+- Added `MemoryDeliveryScope`, metadata-only operation records, typed certainty,
+  bounded state transitions and a provider-neutral `MemoryDeliveryLedgerPort`.
+- Extended `MemoryGatewayMutationResult` with typed certainty while keeping existing
+  adapters source-compatible through conservative defaults; `detail` is not a
+  retry/control signal.
+- Focused Core/Mem0 tests pass `361/361`; strict Mypy passes `133` Core files,
+  changed-path Ruff and `git diff --check` pass, and release Eval is `10/10`.
+- Full suite passes `1995`, skips `167`, with only the inherited
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` size-gate failure
+  (`561/500`). Desktop remains out of scope.
+- Child moved to `Review`; PostgreSQL v11, scoped Mem0 reset and runtime consumer
+  remain locked successors and were not modified.
+
+## 2026-08-02 - MEM-MEM0-RESET-SPIKE-01 activation and implementation
+
+- Following the sidebar ChatGPT plan, activated `codex/mem0-reset-spike-01` with
+  exact Compose, response-proxy, Mem0 spike test and compatibility-doc boundaries.
+  Core, PostgreSQL delivery, Worker, Adapter and local SQLite paths remain locked.
+- Added a test-only proxy that proves an upstream-committed `POST /memories` can
+  produce an unknown client outcome, plus a reset-fault control used only by the
+  isolated test. Added the scoped A/g1 -> A/g2 -> A/g3 and B/g1 reset/rebuild probe.
+- The probe fails closed on undocumented/unbounded list behavior, duplicate page
+  objects, missing metadata, provider-row residue or cross-scope leakage. It uses
+  only read-only SQL for the PostgreSQL oracle and always tears down its isolated
+  project/volumes.
+- Static Ruff, Python compilation, Compose config and skipped/collection tests pass;
+  host Docker execution remains required before this child can enter Review.
+
+## 2026-08-02 - MEM-MEM0-RESET-SPIKE-01 bounded-enumeration result
+
+- The isolated host Compose run reached the Mem0 API and response-loss proxy, then
+  failed at the deliberate OpenAPI gate before any memory publish. The pinned
+  `GET /memories` parameters were `agent_id`, `run_id`, `show_expired`, `top_k` and
+  `user_id`; no `page/page_size` or `offset/limit` contract exists.
+- `top_k` cannot prove complete namespace enumeration, so the child is marked
+  `Blocked` per the plan. The test never called global `/reset`, and its fixture
+  removed the isolated containers, network and volumes. `MEM-GW-DEL-01`, the PG
+  ledger and runtime consumer remain locked.
+
+## 2026-08-02 - MEM-GW-DEL-PG-01 activation
+
+- Activated `codex/mem-gw-del-pg-01` after the Core certainty contract was
+  integrated. The implementation is limited to PostgreSQL v11 migrations,
+  metadata-only delivery operations/mappings, atomic v10 enqueue, claim/CAS and
+  batch authority revalidation.
+- The reset Spike's bounded-enumeration block is independent and does not unlock
+  the parent or runtime consumer. No Worker defaults, Mem0 HTTP calls or local
+  SQLite composition are changed in this slice.
+
+## 2026-08-02 - MEM-GW-DEL-PG-01 implementation
+
+- Added PostgreSQL migration v11 and the metadata-only delivery scope,
+  operation and provider mapping tables. Added the independent
+  `PostgresMemoryDeliveryLedger` with idempotent enqueue, random `SKIP LOCKED`
+  claims, DB-time CAS, typed certainty, quarantine and batch search admission.
+- Added an explicit `delivery_scope` seam to the PostgreSQL governed Memory
+  store. Confirmed/purged lifecycle changes enqueue in the same v10 transaction;
+  default store composition remains unchanged.
+- Host Compose runner result: `24 passed` for the focused migration/ledger/
+  authority matrix. A separate run of `tests/agent_storage` passed `295` with
+  one pre-existing skip. No application container or provider HTTP request was
+  started.
+
+## 2026-08-02 - MEM-GW-DEL-PG-01 review handoff
+
+- Moved the PostgreSQL child to `Review` after the focused Compose and full
+  PostgreSQL storage matrices passed. The parent ledger and runtime consumer
+  remain locked by the independent scoped reset block.
+
+## 2026-08-02 - MEM-MEM0-RESET-ALT-01 activation
+
+- The sidebar ChatGPT plan selected the single next candidate task:
+  `MEM-MEM0-RESET-ALT-01`. Claimed `codex/mem0-reset-alt-01` with owned paths
+  limited to the isolated Compose spike, validation record and governance.
+- The slice will distinguish logical generation reset from physical provider
+  deletion. It must make an unknown publish orphan explicit and cannot enable
+  the Worker, Mem0 HTTP, Desktop or local SQLite composition.
+
+## 2026-08-02 - MEM-MEM0-RESET-ALT-01 review handoff
+
+- Added `docker/compose.mem0-reset-alt.test.yml` and the host runner under
+  `tests/spikes/mem0_reset_alt/`; the profile starts only PostgreSQL 17.5 and
+  always removes its project, volume and network.
+- The runner passed `2` tests and emitted `B/PARTIAL`: known mappings can be
+  deleted and old generations are fenced, but a provider orphan created before
+  a lost response has no recoverable ledger mapping. The focused delivery runner
+  passed `24`; the full storage matrix passed `295` with one pre-existing skip.
+- Moved the card to `Review`. The original reset Spike stays `Blocked`, and the
+  parent/runtime consumer stay `Locked`; no production or provider code changed.
+
+## 2026-08-02 - MEM-PROVIDER-DEL-COMPLIANCE-01 activation
+
+- The sidebar ChatGPT plan selected `MEM-PROVIDER-DEL-COMPLIANCE-01` as the only
+  Ready successor after the alternative reset's `B/PARTIAL` result. Created the
+  isolated `codex/mem-provider-del-compliance-01` worktree and claimed the card.
+- Added the provider-neutral ADR-018 contract and a test-only specification
+  matrix. The contract requires deterministic recovery, deterministic physical
+  deletion and complete scoped coverage; it classifies Mem0 as
+  `Experimental/Research` and keeps Runtime admission `BLOCKED`.
+- No Provider HTTP, Worker/Consumer, Desktop, local SQLite composition, runtime
+  code or PostgreSQL schema was touched. Focused delivery (`24`) and full storage
+  (`295 passed, 1 skipped`) remain regression evidence from the predecessor task.
+
+## 2026-08-02 - MEM-PROVIDER-DEL-COMPLIANCE-01 review handoff
+
+- ADR-018 and `tests/specs/test_memory_provider_deletion_compliance.py` are
+  complete. The focused specification suite passes `2`; changed-path Ruff,
+  format, Mypy, compilation and `git diff --check` pass.
+- `make check` stops at two pre-existing file-size violations outside Owned paths:
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` (`561/500`) and
+  `tests/agent_storage/test_postgres_governed_memories.py` (`765/700`).
+- Contract verdict is `PASS`; current Mem0 admission is `BLOCKED`, and the reset
+  Spike, delivery consumer, parent ledger and Runtime composition stay locked.
+
+## 2026-08-02 - MEM-PROVIDER-DEL-COMPLIANCE-01 closeout
+
+- Accepted ADR-018 and moved the task to `Done`. Mem0 is now explicitly denied
+  from the current Memory mainline and deferred until new provider evidence.
+
+## 2026-08-02 - MEM-PG-NATIVE-ADMISSION-SPIKE-01 activation and implementation
+
+- Created and claimed `codex/mem-pg-native-admission-spike-01` from
+  `zebra-cloud-trench@a01f887`. The only active implementation is a test-only
+  PostgreSQL-native admission boundary; no production path is in scope.
+- Added `docs/ADR-019_PostgreSQL_Native_Memory_Backend_Admission.md`, a
+  PostgreSQL-only Compose profile and eight focused cases covering deterministic
+  identity/recovery, atomic authority/retrieval, generation fences, complete
+  deletion, namespace isolation and minimum recall.
+- Host Compose result: PostgreSQL `17.5-alpine3.21`, `8 passed`,
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`; the container, volume and network
+  were removed by the runner. Runtime and all application containers remain
+  locked.
+
+## 2026-08-02 - MEM-PG-NATIVE-ADMISSION-SPIKE-01 review handoff
+
+- Full PostgreSQL storage regression ran in a separate isolated Compose project:
+  `303 passed, 1 skipped` (`295` predecessor cases plus the eight new admission
+  cases). The focused runner and full matrix both cleaned their containers,
+  volumes and networks.
+- ADR-019 is accepted with `PASS` for architecture admission only. The next
+  production candidate `MEM-GW-PG-NATIVE-01` remains `Locked`; Runtime and all
+  application/provider paths remain locked, and Mem0 remains denied/deferred.
+- Changed-path Ruff, format, Mypy, compilation and diff checks pass. The only
+  repository check blocker is the two inherited file-size violations recorded in
+  ADR-019.
+
+## 2026-08-02 - MEM-GW-PG-NATIVE-01 activation
+
+- Activated the sole PostgreSQL-native production successor after the reviewed
+  admission `PASS`; claimed `codex/mem-gw-pg-native-01` with storage-only Owned
+  paths.
+- The implementation boundary is the `agent-storage` PostgreSQL migration and
+  gateway plus real PostgreSQL Compose tests. Runtime, Worker, Provider HTTP,
+  Desktop, Redis, SQLite composition and Mem0 reset/enumeration remain locked.
+- Next step is to inspect the v10/v11 migration and transaction contracts before
+  adding the smallest production schema/API slice.
+
+## 2026-08-02 - MEM-GW-PG-NATIVE-01 review handoff
+
+- Added PostgreSQL migration v12 and the storage-only native Gateway. The
+  authority row, retrieval projection and operation result share one transaction;
+  generation CAS and scoped physical reset/delete are explicit APIs, while the
+  existing provider-neutral Gateway Port remains unchanged.
+- The focused isolated PostgreSQL 17.5 runner passes `10`; the full
+  `tests/agent_storage` matrix passes `313 passed, 1 skipped`; and the existing
+  v11 delivery runner passes `24`. All Compose resources were removed by their
+  runners after validation.
+- Changed-path Ruff, format, strict Mypy, compilation and `git diff --check` pass.
+  `make check` is blocked only by the inherited Desktop stylesheet and governed
+  memory test file-size violations already recorded in the predecessor handoff.
+- Moved `MEM-GW-PG-NATIVE-01` to `Review`. Runtime, Worker, Provider HTTP,
+  Desktop, SQLite, Redis and Mem0 paths remain outside this card.
+
+## 2026-08-02 - CLOUD-AGG-WORKSPACE-PG-01 formal review closeout
+
+- Reviewed the integrated Workspace implementation at `8b924d74` and its
+  acceptance/governance handoff at `eb021ff2`. The sole direct dependency,
+  `CLOUD-AGG-FENCE-CON-01`, is `Done`; no unresolved dependency was consumed.
+- Audited the implementation diff against the task's declared Core, PostgreSQL,
+  Worker, test and Compose evidence paths. No control-plane selector, application
+  profile, Provider HTTP, Desktop, SQLite, Redis or Mem0 path is part of the
+  implementation.
+- Accepted the recorded evidence: PostgreSQL `17.5` host matrix `80/80`, related
+  regressions `467` with `64` PostgreSQL skips, strict Core/Storage Mypy over
+  `163` files, microservice size gate `907` and Eval `10/10`.
+- Closed `CLOUD-AGG-WORKSPACE-PG-01` from `Review` to `Done`. This review slice
+  made no production or Compose changes and did not unlock Runtime, Worker
+  startup, Provider HTTP or the application Compose profile; Task/Segment is the
+  next review target.
+
+## 2026-08-02 - CLOUD-AGG-TASK-PG-01 formal review closeout
+
+- Reviewed the integrated Task/Segment implementation at `2675c56a` and its
+  acceptance/governance handoff at `4ba6e332`. The direct authority dependency,
+  `CLOUD-AGG-FENCE-CON-01`, is `Done`; Workspace is already `Done`.
+- Audited the implementation diff against the declared PostgreSQL adapter,
+  migration, focused-test and governance paths. No Context, Handoff, Model/Tool,
+  Control Plane, Runtime, Worker startup, Provider HTTP, Desktop, SQLite, Redis
+  or Mem0 composition is part of this card.
+- Accepted the recorded evidence: PostgreSQL `17.5` host matrix `32/32`, related
+  regressions `473` with `77` PostgreSQL skips, strict Mypy over `166` files,
+  microservice size gate `911` and Eval `10/10`.
+- Closed `CLOUD-AGG-TASK-PG-01` from `Review` to `Done`. This review slice made
+  no production or Compose changes and did not unlock Runtime, Worker startup,
+  Provider HTTP or the application Compose profile; Model/Tool is the next
+  dependency-ordered review target.
+
+## 2026-08-02 - CLOUD-MODEL-TOOL-PG-01 formal review closeout
+
+- Reviewed the integrated Model/Tool implementation at `4acd8ae8`, stale
+  projection fixes at `5e44c0b7` and `d6e3f5c2`, and the v6 acceptance evidence.
+  Both direct dependencies, `CLOUD-AGG-FENCE-CON-01` and
+  `CLOUD-AGG-WORKSPACE-PG-01`, are `Done`.
+- Audited the declared projection, migration, Worker index/replay and focused
+  test paths. The card keeps Model/Tool Event-derived and does not add authority,
+  Context/Handoff writes, Control Plane selection, Runtime, Provider HTTP,
+  Desktop, SQLite, Redis or Mem0 composition.
+- Accepted the recorded focused Worker `7/7` and isolated PostgreSQL `17.5`
+  migration/projection `7/7` evidence. No new Compose execution or production
+  edit was made by the review slice.
+- Closed `CLOUD-MODEL-TOOL-PG-01` from `Review` to `Done`. Context remains a
+  separate Review card; Runtime, Worker startup, Provider HTTP and the
+  application Compose profile remain locked.
+
+## 2026-08-02 - CLOUD-AGG-CTX-PG-01 formal review closeout
+
+- Reviewed the integrated Context implementation at `0c170c5d`, canonical-link
+  fixes at `2e2a5276` and v7 migration registry coverage at `6d541f79`. All direct
+  dependencies—Fence Contract, Workspace, Task and Model/Tool v6—are `Done`.
+- Audited the declared Core Port, PostgreSQL v7 adapter/migration, Worker/API
+  seam and focused test paths. The card does not add Task/Segment writes,
+  generic transactions, Handoff/Artifact authority, Control Plane selection,
+  Runtime, Provider HTTP, Desktop, SQLite, Redis or Mem0 composition.
+- Accepted the recorded isolated PostgreSQL `17.5` matrix `14/14`, focused
+  SQLite/Worker regressions `11/11`, changed-scope Ruff, strict Mypy and diff
+  checks. No new Compose execution or production edit was made by this review.
+- Closed `CLOUD-AGG-CTX-PG-01` from `Review` to `Done`. Administrative Context
+  recovery remains a separate Review card; Handoff, Artifact, Control Plane and
+  runtime/provider paths remain locked or separately in Review.
+
+## 2026-08-02 - CLOUD-AGG-HANDOFF-CON-01 formal review closeout
+
+- Reviewed the integrated dispatch contract at `f7d73dd3` and lease-claim
+  correction at `4492f475`. Aggregate fencing, Lease fencing and staged Handoff
+  contract dependencies are all `Done`; the historical task branch is retained
+  only as a source reference because the corrected implementation is already on
+  the cloud mainline.
+- Audited the declared Core dispatch Port, SQLite compatibility storage, Worker
+  recovery seam and focused API/Worker/Storage tests. No PostgreSQL migration,
+  Handoff aggregate authority, generic transaction, API route, Runtime, Provider
+  HTTP, Desktop, Redis or Mem0 composition is included.
+- Accepted the recorded `290` related tests, changed-scope Ruff, strict Mypy and
+  diff checks; the current-HEAD focused regression run passed `22/22`. No Compose
+  run or production edit was made by this review.
+- Closed `CLOUD-AGG-HANDOFF-CON-01` from `Review` to `Done`. PostgreSQL Handoff
+  v8 remains the next Review gate; Runtime, Worker startup, Provider HTTP and
+  application Compose selection remain locked.
+
+## 2026-08-02 - CLOUD-AGG-HANDOFF-PG-01 formal review closeout
+
+- Reviewed migration foundation `a678938b`, fenced dispatch `d23d824c` and the
+  integrated Handoff aggregate `cfe40713`. Aggregate fencing, Workspace, Task and
+  portable Handoff dispatch dependencies are all `Done`.
+- Audited the declared v8 migration, PostgreSQL aggregate/dispatch adapters, Core
+  Port, API/Worker recovery seam and focused tests. No Artifact authority, generic
+  transaction, Control Plane selection, Runtime, Provider HTTP, Desktop, SQLite,
+  Redis or Mem0 composition is included.
+- Accepted the recorded PostgreSQL v1-v8 `20/20` and Core/Storage/API/Worker
+  `822/822` evidence with `102` skips, scoped Ruff and diff checks; the current-HEAD
+  Core/Worker focused regression run passed `17/17`. No Compose run or production
+  edit was made by this review.
+- Closed `CLOUD-AGG-HANDOFF-PG-01` from `Review` to `Done`. Artifact, Context
+  administrative recovery, Control Plane and runtime/provider paths remain
+  separately in Review or locked.
+
+## 2026-08-02 - CLOUD-AGG-CTX-ADMIN-PG-01 formal review closeout
+
+- Reviewed integrated implementation `ac9801c2` and activation record `d11cf9e9`;
+  the Context lifecycle and Workspace dependencies are both `Done`. The card's
+  Owned paths were reconciled to explicitly name the integrated
+  `session_context_recovery.py` adapter and `test_session_context_recovery_postgres.py`
+  matrix already used by the implementation.
+- Audited the API composition namespace seam, PostgreSQL administrative CAS call,
+  canonical aggregate result handling and focused recovery tests. No manual
+  compact, migration, selector, full Store bundle, Runtime, Provider HTTP,
+  Desktop, SQLite feature work, Redis or Mem0 composition was added.
+- Accepted the recorded PostgreSQL `19/19`, API/Storage `323/323` with `14`
+  skips, Ruff, strict Mypy and diff checks. No Compose run or production edit was
+  made by this review.
+- Closed `CLOUD-AGG-CTX-ADMIN-PG-01` from `Review` to `Done`; runtime, provider,
+  Desktop and application Compose selection remain separately in Review or locked.
+
+## 2026-08-02 - EMB-PLAN-01 formal review closeout
+
+- Reviewed integrated architecture commit `8d1650bf`; Runtime Blueprint and
+  service-boundary prerequisites are `Done`, and the CopilotKit-over-custom-SDK
+  direction is the accepted maintainer decision.
+- Confirmed all five architecture-plan steps and synchronized ADR-015, the
+  Embedded target, Trench breakdown, task registry and progress records. The two
+  unrelated repository size-gate violations remain documented.
+- No implementation card, Compose service, PostgreSQL migration, Runtime or
+  Desktop behavior was activated by this review.
+- Closed `EMB-PLAN-01` from `Review` to `Done`; `EMB-AGUI-SPIKE-01` remains a
+  separately activated Review card and cloud/provider gates remain independent.
+
+## 2026-08-02 - CLOUD-STO-SEAM-01 formal review closeout
+
+- Reviewed integrated composition implementation `c4c1f593`; `EMB-PLAN-01` is
+  `Done`, Runtime Phase A is complete and the maintainer activation is recorded.
+- Audited the declared API/Worker wiring, flat `ControlPlaneStores`, local SQLite
+  builder, projection Port and focused tests. No PostgreSQL, Redis, S3, migration,
+  cloud credential, backend selection, Memory Gateway replacement, Desktop or
+  user-visible behavior was added.
+- Accepted the existing focused/full/quality evidence and the current-HEAD
+  storage/API/Worker composition regression `20/20`. No Compose run or production
+  edit was made by this review.
+- Closed `CLOUD-STO-SEAM-01` from `Review` to `Done`; `CLOUD-STO-AUTH-01` remains
+  the next authoritative-store composition gate with its own merge-order rules.
+
+## 2026-08-02 - CLOUD-STO-AUTH-01 formal review closeout
+
+- Reviewed integrated authoritative composition implementation `7be231e7`;
+  `EMB-PLAN-01` and `CLOUD-STO-SEAM-01` are `Done`, and explicit maintainer
+  activation was recorded before implementation.
+- Audited the declared Core Ports, Storage bundle, API/Worker composition and
+  authoritative-composition tests. Legacy constructor fallback is removed, while
+  PostgreSQL, Redis, S3/MinIO, Mem0, backend selection, Desktop and Runtime stay
+  out of scope.
+- Accepted recorded A/B composition `9 passed`, combined focused `365 passed`,
+  Eval `10/10`, Ruff/Mypy/diff evidence and the current-HEAD focused regression
+  `11/11`. No Compose run or production edit was made by this review.
+- Closed `CLOUD-STO-AUTH-01` from `Review` to `Done`; Compose dependency,
+  PostgreSQL migration and Memory Gateway cards retain their own gates.
+
+## 2026-08-02 - CLOUD-COMPOSE-INFRA-01 formal review closeout
+
+- Reviewed integrated dependency stack `b23b8e762`; Embedded architecture,
+  local storage composition and authoritative Store composition are `Done`, with
+  explicit maintainer activation recorded.
+- Audited the separated PostgreSQL/Redis/MinIO/Mem0 dependency services, optional
+  Mem0 overlay, named volumes, health checks, loopback bindings, non-root image and
+  safe environment template. Zebra API/Worker containers remain out of scope.
+- Accepted existing Compose render/hash, dependency health, Mem0 migration/API/
+  auth and boot-only sentinel evidence. No Docker-socket operation or production
+  edit was made by this review; container health is not production evidence.
+- Closed `CLOUD-COMPOSE-INFRA-01` from `Review` to `Done`; Mem0 contract/adapter,
+  PostgreSQL adapter, application-image and Runtime cards retain separate gates.
+
+## 2026-08-02 - CLOUD-ART-OBJ-CON-01 formal review closeout
+
+- Reviewed integrated ADR-017 contract commit `486fd884`; aggregate fencing and
+  the Compose/MinIO dependency baseline are `Done`.
+- Confirmed ADR-017 remains the single provider-neutral Artifact payload authority,
+  separating PostgreSQL metadata, object bytes, stable `artifact://` identity,
+  temporary access URLs and opaque external references without choosing an SDK or
+  provider.
+- Accepted existing Markdown link, terminology, scoped line-limit and diff checks.
+  No implementation dependency, migration, Compose service, API route, Runtime,
+  Desktop or production edit was made by this review.
+- Closed `CLOUD-ART-OBJ-CON-01` from `Review` to `Done`; lifecycle, object,
+  payload, Effect linkage and read-composition cards retain separate gates.
+
+## 2026-08-02 - CLOUD-ART-LIFECYCLE-CON-01 formal review closeout
+
+- Reviewed integrated Core contract implementation `0444c5d9`; aggregate fencing
+  and Artifact authority dependencies are `Done`.
+- Audited the cloud-only lifecycle Port/domain, authority-separated Protocol
+  methods, typed failures and local compatibility boundary. No PostgreSQL, S3 SDK,
+  MinIO, Worker orchestration, Effect linkage, API route or Runtime was added.
+- Accepted recorded focused compatibility `45/45`, Core `290/290`, strict Mypy,
+  Ruff, diff and documented size evidence; current-HEAD focused contract tests
+  passed `21/21`. No Compose run or production edit was made by this review.
+- Closed `CLOUD-ART-LIFECYCLE-CON-01` from `Review` to `Done`; object, payload,
+  Effect, read-composition and Runtime cards retain their own gates.
+
+## 2026-08-02 - CLOUD-ART-OBJECT-S3-01 formal review closeout
+
+- Reviewed integrated object adapter implementation `ce22ae8d`; Artifact
+  lifecycle, authority and Compose/MinIO dependencies are `Done`.
+- Audited direct botocore usage, namespace-private keys, conditional put, verified
+  head/read, exact-version deletion and provider-error mapping. No PostgreSQL
+  metadata, lifecycle orchestration, Worker/API wiring, Effect linkage, SQLite or
+  Runtime selection was added.
+- Accepted MinIO `15/15`, storage `130` with `87` skips, strict Mypy/Ruff/diff
+  evidence and current-HEAD adapter `14/14` with one MinIO-gated skip. No Compose
+  run or production edit was made by this review.
+- Closed `CLOUD-ART-OBJECT-S3-01` from `Review` to `Done`; payload authority,
+  Effect linkage, reads and Runtime cards retain separate gates.
+
+## 2026-08-02 - CLOUD-ART-PAYLOAD-PG-01 formal review closeout
+
+- Reviewed integrated v9 chain `f0e714c8`, `3443da58`, `9e26dc26`, `8fcc8995`
+  and fault-matrix completion `b87760b6`; lifecycle, object, Artifact authority
+  and Handoff v8 dependencies are `Done`.
+- Audited the PostgreSQL v9 metadata/ledgers, provider-neutral lifecycle adapter,
+  S3-compatible object boundary and Worker Event preparation seam. Local payload
+  Port/SQLite, v10, signed URLs, Effect linkage, read composition, Desktop and
+  Runtime selection remain unchanged.
+- Accepted PostgreSQL `19/19`, Core `17/17`, PostgreSQL+MinIO `30/30`, Worker/
+  Runtime `260/260` with `16` skips and Storage `131/131` with `114` skips. No
+  Compose run or production edit was made by this review.
+- Closed `CLOUD-ART-PAYLOAD-PG-01` from `Review` to `Done`; Effect linkage,
+  read composition, delivery APIs and Runtime/provider cards retain separate gates.
+
+## 2026-08-02 - CLOUD-EFFECT-PAYLOAD-ATOMIC-01 formal review closeout
+
+- Reviewed integrated Effect/Artifact binding implementation `4480ca66`; Artifact
+  v9 payload authority and Effect Outbox dependencies are `Done`.
+- Audited provider-outside-lock ordering, atomic intent Event/outbox/finalization,
+  staged uncertainty evidence and the no-v10 boundary. No SQLite, broker, generic
+  Unit of Work, signed delivery, Desktop or Runtime selector was added.
+- Accepted PostgreSQL+MinIO `53/53`, Tools/Worker/Runtime `418/418` with `17`
+  skips, Storage `131/131` with `121` skips and current-HEAD focused `13/13`.
+  No Compose run or production edit was made by this review.
+- Closed `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` from `Review` to `Done`; delivery APIs,
+  read composition, provider selection and Runtime startup retain separate gates.
+
+## 2026-08-02 - CLOUD-ART-READ-COMP-01 formal review closeout
+
+- Reviewed integrated read composition implementation `934de7b0`; Model/Tool v6
+  and Artifact v9 payload dependencies are `Done`.
+- Audited the namespace/Session snapshot, Event-derived projection reads,
+  finalized payload/object evidence, existing sanitizer/access policy and disabled
+  legacy prune boundary. No Artifact mutation, new table/migration, signed route,
+  SQLite feature, Desktop or Runtime selector was added.
+- Accepted PostgreSQL+MinIO `39/39`, full `1943` with `145` skips, static/Eval
+  evidence and current focused read `17/17` with one skip. No Compose run or
+  production edit was made by this review.
+- Closed `CLOUD-ART-READ-COMP-01` from `Review` to `Done`; delivery APIs, Session
+  History, complete Control Plane and Runtime/provider cards retain separate gates.
+
+## 2026-08-02 - CLOUD-PG-PLAN-01 formal review closeout
+
+- Reviewed integrated docs-only migration/recovery model `e1e71139`; authoritative
+  Store composition is `Done`, and the CI-billing waiver remains local-evidence-only.
+- Confirmed one authoritative backend profile, abort/rollback distinction,
+  backup/PITR, restore validation, fencing reset, Artifact consistency and outbox
+  reconciliation gates without adding an Adapter, migration executable, cloud
+  dependency, dual-write or production RPO/RTO claim.
+- Accepted document reader, link, terminology, line-limit and diff evidence. No
+  Compose run or production edit was made by this review.
+- Closed `CLOUD-PG-PLAN-01` from `Review` to `Done`; `CLOUD-PG-01` is the next
+  implementation Review gate and Lease/Runtime/provider paths remain gated.
+
+## 2026-08-02 - CLOUD-PG-01 formal review closeout
+
+- Reviewed integrated PostgreSQL Event/Projection implementation `15c386db`;
+  migration checksums, advisory-lock serialization, Event CAS/idempotency,
+  namespace isolation and replay-safe Projection writes are present.
+- Accepted recorded Compose PostgreSQL `14/14`, storage `113/113` and
+  custom-format dump/restore `14/14` evidence. Current-head local validation
+  passes `8` SQLite/storage cases with `14` PostgreSQL cases skipped because no
+  service was available in this sandbox.
+- Confirmed no selector, API/Worker wiring, pool, ORM, Alembic, testcontainers,
+  online migration or production claim was added. Closed `CLOUD-PG-01` from
+  `Review` to `Done`; the Lease contract plan is the next gate.
+
+## 2026-08-02 - CLOUD-LEASE-PLAN-01 formal review closeout
+
+- Reviewed integrated contract `e373786b`; epoch ownership, database-time TTL,
+  fenced aggregate transaction boundaries and the uncertain external-effect
+  crash matrix are explicit and internally consistent.
+- Accepted `make eval` `10/10`, 449-line contract and clean diff evidence. No
+  Python implementation, migration, runtime selector, Redis, broker, Compose
+  operation or production claim was added.
+- Closed `CLOUD-LEASE-PLAN-01` from `Review` to `Done`; Core Lease, PostgreSQL
+  Lease, Effect Outbox and Worker consumer remain independently gated children.
+
+## 2026-08-02 - CLOUD-LEASE-01 formal review closeout
+
+- Reviewed `docs/CLOUD_Lease_Effect_联合验收记录_v1.0.md` and accepted the
+  combined Lease `34/34`, Outbox `49/49`, consumer `58/58`, backend `1851
+  passed, 60 skipped`, file-size `901` and Eval `10/10` evidence.
+- Confirmed the gate is one-namespace fenced Lease plus Event/Effect delivery;
+  it makes no exactly-once, complete aggregate-fencing, runtime-selection or
+  production-readiness claim.
+- Closed `CLOUD-LEASE-01` from `Review` to `Done`; `CLOUD-AGG-FENCE-01` remains
+  `Locked` for the next aggregate-authority phase.
+
+## 2026-08-02 - MEM-PG-NATIVE-ADMISSION-SPIKE-01 formal review closeout
+
+- Accepted ADR-019 and its test-only per-schema PostgreSQL boundary. Recorded
+  host Compose evidence is `8/8` with
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`; the current sandbox has no PG
+  service, so its rerun reports `8 skipped`.
+- Confirmed the admission unlocks only the separately activated PostgreSQL-native
+  storage implementation. Mem0 remains denied/deferred and Worker, Provider
+  HTTP, Desktop, SQLite, Redis and Runtime remain gated.
+- Closed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` from `Review` to `Done`.
+
+## 2026-08-02 - MEM-GW-PG-NATIVE-01 formal review closeout
+
+- Reviewed integrated implementation `91fd5964`; v12 migration, atomic
+  authority/retrieval projection, operation recovery, generation fencing,
+  complete scoped deletion and deterministic native recall are storage-only.
+- Accepted recorded Compose PostgreSQL `10/10`, full storage `313 passed, 1
+  skipped` and delivery `24 passed` evidence. Current-head focused tests have
+  no PostgreSQL service and report `18 skipped`.
+- Closed `MEM-GW-PG-NATIVE-01` from `Review` to `Done`; Runtime, Worker,
+  Provider HTTP, Desktop, SQLite, Redis and Mem0 remain unselected.
+
+## 2026-08-02 - MEM-GW-DEL-PG-01 formal review closeout
+
+- Reviewed integrated implementation `a30c8b5e`; v11 metadata delivery ledger,
+  atomic v10 enqueue, independent claim/CAS, certainty mapping, quarantine and
+  batch authority revalidation are present.
+- Accepted host Compose PostgreSQL `24/24` evidence covering fresh/upgrade,
+  rollback, replay, stale ACK, namespace, unknown/in-flight quarantine and
+  search admission. No application container, provider HTTP, Worker default or
+  local SQLite composition was changed.
+- Closed `MEM-GW-DEL-PG-01` from `Review` to `Done`; the parent ledger and Mem0
+  consumer remain locked by the scoped-reset enumeration block.
+
+## 2026-08-02 - MEM-MEM0-RESET-ALT-01 formal review closeout
+
+- Accepted the explicit `B/PARTIAL` result: generation fencing and known mapping
+  deletion are bounded, but the lost-response provider orphan remains
+  unrecoverable from the ledger.
+- Recorded host Compose evidence is `2 passed` with
+  `ZEBRA_MEM0_RESET_ALT_VERDICT=B`; the current sandbox reports `2 skipped`
+  without PostgreSQL. No production, Worker, Provider HTTP or SQLite path was
+  changed.
+- Closed `MEM-MEM0-RESET-ALT-01` from `Review` to `Done` as validation only;
+  Mem0 consumer, parent ledger and Runtime remain locked.
+
+## 2026-08-02 - CLOUD-MEMORY-PG-PLAN-01 formal review closeout
+
+- Reviewed integrated contract `2c43af0f`; PostgreSQL governed Memory is the
+  cloud fact source and Mem0 remains a rebuildable derived index without
+  lifecycle/content authority.
+- Accepted the current 366-line contract, cross-document reference/diff checks
+  and release Eval `10/10`. No Python/SQL, migration, Mem0 call, selector,
+  Desktop or production cutover was added.
+- Closed `CLOUD-MEMORY-PG-PLAN-01` from `Review` to `Done`; Core mutation,
+  PostgreSQL authority and delivery cards retain independent gates.
+
+## 2026-08-02 - CLOUD-MEMORY-CON-01 formal review closeout
+
+- Reviewed integrated Core implementation `4bda7f72`; typed revision/CAS,
+  content-free receipts/tombstones and pure candidate/promotion/review planners
+  are present without I/O.
+- Accepted recorded Core `320/320`, API/Worker `411` with `14` skips, strict
+  Mypy/Ruff, Eval `10/10` and diff evidence. Current focused validation passes
+  `39/39`.
+- Closed `CLOUD-MEMORY-CON-01` from `Review` to `Done`; PostgreSQL v10,
+  delivery, Mem0 and runtime selection remain separate gates.
+
+## 2026-08-02 - CLOUD-MEMORY-PG-01 formal review closeout
+
+- Reviewed integrated v10 authority implementation `0d812451`; PostgreSQL is
+  the namespace-scoped governed Memory fact source with receipts, tombstones,
+  revision CAS, aggregate transactions and explicit SQLite import.
+- Accepted recorded PostgreSQL `29/29`, full `1977` with `162` skips,
+  static/Eval `10/10` and P0/P1 evidence. Current focused validation passes `6`
+  with `18` PostgreSQL cases skipped without a service.
+- Closed `CLOUD-MEMORY-PG-01` from `Review` to `Done`; Mem0 delivery, runtime
+  selector, API/Worker composition, Desktop, SQLite feature work and cutover
+  remain gated.
+
+## 2026-08-02 - MEM-GW-CON-01 formal review closeout
+
+- Reviewed integrated provider-neutral Core contract `8c61ad66`; confirmed-only
+  publication, opaque namespace, Zebra `MemoryId` revalidation and typed
+  degraded/disabled outcomes are present without provider types in Core.
+- Accepted contract `13/13`, agent-core `221/221`, strict Mypy/Ruff, Eval `10/10`
+  and diff evidence. No Mem0 SDK/REST, credentials, Docker, delivery, API/Worker
+  or runtime wiring was added.
+- Closed `MEM-GW-CON-01` from `Review` to `Done`; Mem0 Spike/Adapter remain
+  deferred and no provider is runtime-selected.
+
+## 2026-08-02 - MEM-GW-DEL-CON-01 formal review closeout
+
+- Reviewed integrated Core certainty implementation `0db22a9f`; provider-neutral
+  scope identity, operation/CAS states and terminal unknown quarantine are
+  explicit without infrastructure imports.
+- Accepted Core/Mem0 `361/361`, strict Mypy, Ruff, Eval `10/10` and diff evidence;
+  current focused validation passes `18/18`.
+- Closed `MEM-GW-DEL-CON-01` from `Review` to `Done`; PostgreSQL, Mem0 HTTP,
+  Worker and Runtime remain separate gates.
+
+## 2026-08-02 - MEM-GW-DEL-PLAN-01 formal review closeout
+
+- Re-reviewed the v11 docs-only plan against the current branch; provider-neutral
+  Gateway, Core certainty and PostgreSQL v11 ledger are Done, while the scoped
+  reset Spike remains Blocked on bounded enumeration.
+- Accepted the updated dependency/status matrix, preserved the PostgreSQL fact
+  source and kept the parent ledger, Worker and Mem0 Runtime locked.
+- Closed `MEM-GW-DEL-PLAN-01` from `Review` to `Done`; `make eval` and
+  `git diff --check` passed. No SQL, HTTP, Worker, Mem0 or SQLite runtime wiring
+  was added.
+
+## 2026-08-02 - MEM-MEM0-SPIKE-01 formal review closeout
+
+- Accepted the pinned Mem0 OSS REST/Compose contract and deterministic-provider
+  evidence: host isolated Compose `2/2`, current focused `24 passed, 2 skipped`
+  without Docker, Eval `10/10` and diff checks pass.
+- Kept real-provider compatibility as a separate credential gate and Mem0 as a
+  rebuildable derived index; the scoped reset Spike remains Blocked and Runtime
+  admission remains denied/deferred.
+- Closed `MEM-MEM0-SPIKE-01` from `Review` to `Done` without changing the
+  governed Memory authority or production composition.
+
+## 2026-08-02 - MEM-MEM0-ADP-01 formal review closeout
+
+- Accepted the disabled-safe Mem0 Gateway boundary: confirmed-only publish,
+  `infer=false`, opaque namespace, bounded response parsing, typed degraded
+  outcomes and canonical provider UUID validation.
+- Recorded host evidence is focused Core/Adapter `36/36` and pinned Compose
+  lifecycle `3/3`; current Adapter validation passes `23/23`, Eval `10/10` and
+  diff checks pass.
+- Closed `MEM-MEM0-ADP-01` from `Review` to `Done` as an implementation contract
+  only. v11 mapping/idempotency, scoped reset and Runtime admission remain gated;
+  Mem0 is still denied/deferred and not runtime-selected.
+
+## 2026-08-03 - EMB-AGUI-SPIKE-01 formal review closeout
+
+- Integrated the test-only official Python AG-UI compatibility slice with
+  development-only `ag-ui-protocol==0.1.19`; no production route, Worker,
+  CopilotKit/Trench, React SDK or UI code was added.
+- Focused protocol tests pass `11/11`; the current full suite is
+  `2008 passed, 197 skipped, 1 failed` solely on the two inherited file-size
+  violations (`561/500`, `765/700`). Ruff, format, `uv lock --check`, Eval
+  `10/10` and diff checks pass; no failure is in the Owned paths.
+- Closed `EMB-AGUI-SPIKE-01` from `Review` to `Done`; `EMB-AGUI-CON-01` and
+  Trench CopilotKit Runtime/BFF remain separate future gates.
+
+## 2026-08-03 - cloud board status reconciliation
+
+- Corrected stale Current Board and architecture-plan wording so the registered
+  statuses match the formal closeouts: Embedded architecture/AG-UI, local Store
+  composition, Compose dependencies, PostgreSQL plan/adapter, Lease parent and
+  Memory prerequisite slices are Done where their cards are Done.
+- Preserved the actual gates: production AG-UI/Trench, complete cloud backend
+  selection, full aggregate fencing, Memory parent/consumer and Mem0 Runtime
+  remain locked; `CTX-MEM-01` remains Review.
+- No production code, Docker service, migration or runtime selector changed.
+
+## 2026-08-03 - CLOUD-DELIVERY-TXN-PG-01 implementation review
+
+- Added the provider-neutral Core delivery transaction state machine and Port,
+  including claim, processing, UNKNOWN/FAILED quarantine, atomic commit and replay
+  result contracts. Existing receipt and audit records remain the payload boundary.
+- Added PostgreSQL v15 `delivery_transactions` and a namespace-bound adapter that
+  uses one connection transaction for receipt + audit + COMMITTED state. No API,
+  Worker, Runtime, Provider HTTP, SQLite, Redis, Mem0 or Trench path was changed.
+- Focused Core tests pass `2/2` (`tests/agent_core` is `359/359`); delivery
+  transaction Compose PostgreSQL tests pass `12/12`; existing Control Plane
+  Compose regression passes `11/11`; changed-file Ruff/Mypy and diff checks pass.
+- Sidebar ChatGPT reviewed the implementation and evidence and approved closing
+  `CLOUD-DELIVERY-TXN-PG-01` from `Review` to `Done`; API/Worker wiring remains
+  a separate successor seam.
+
+## 2026-08-03 - CLOUD-AGG-FENCE-CTX-SEMANTIC-01 implementation review handoff
+
+- Activated the path-bounded successor on
+  `codex/cloud-agg-fence-ctx-semantic-01` after the Context lifecycle audit
+  identified a Store-level administrative Event semantic gap.
+- Added Store validation for `CONTEXT_COMPACTED`, nested capsule identity and
+  `recovered_from_capsule_id`, plus three zero-write PostgreSQL regressions and
+  an isolated `tests/compose/context_lifecycle/` runner. No migration, API/Worker
+  wiring, Runtime selection or provider path changed.
+- Changed-file Ruff/Mypy, `uv lock --check`, `bash -n`, Compose config and
+  `git diff --check` pass. The host PostgreSQL matrix passes `18/18` and cleans
+  its container, volume and network. The card is handed to sidebar review;
+  parent Context conformance and aggregate fencing remain gated.
+
+## 2026-08-03 - CLOUD-AGG-FENCE-CTX-SEMANTIC-01 sidebar closeout
+
+- Sidebar ChatGPT returned a structured `CLOSEOUT-OK`: the Store-level Event
+  type, nested capsule binding and recovery binding checks satisfy the registered
+  acceptance, and the `18/18` PostgreSQL evidence is accepted.
+- Moved `CLOUD-AGG-FENCE-CTX-SEMANTIC-01` from `Review` to `Done` and closed the
+  parent audit `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01` `BLOCK-GAP` as `Done`.
+  `CLOUD-AGG-FENCE-01` remains `Locked`; no API/Worker/runtime or provider scope
+  was unlocked.
+## 2026-08-05 - CLOUD-PG-MIG-01 claim
+
+- Claimed `CLOUD-PG-MIG-01` on `codex/cloud-pg-mig-01` in the isolated
+  worktree `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-pg-mig-01`.
+- Root `AGENTS.md` has an unrelated uncommitted user edit and is preserved;
+  it is not in this task's staged paths.
+- The first implementation slice is limited to deterministic SQLite snapshot
+  export, PostgreSQL cutover guard and focused PostgreSQL evidence. Backup/PITR,
+  object restore, Redis/Mem0 rebuild, multi-Worker drills and production
+  runtime selection remain separate gates.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Event-first import slice
+
+- Added migration v16 `control_plane_cutovers` with one namespace-scoped ACTIVE
+  record and a transaction-scoped guarded write helper.
+- Added restricted Event-first snapshot import: it verifies the manifest and
+  importer identity, requires an empty target, appends contiguous Event streams,
+  then rebuilds Session projections from Event history. Unsupported authority
+  tables fail closed instead of being silently dropped.
+- The PostgreSQL 17.5 runner now passes `15/15` with deterministic cleanup;
+  the remaining work is full authority-table import coverage and runtime ACTIVE
+  write wiring.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 migration module split
+
+- Split canonical SQLite snapshot export/manifest verification into
+  `migration_snapshot.py`; cutover fencing and Event-first import remain in
+  `migration_recovery.py`. Both source files are below the repository's 300-line
+  target and the package re-export surface is unchanged.
+- Changed-path Ruff, strict Mypy, local migration tests (`2 passed, 7 skipped`)
+  and the PostgreSQL 17.5 runner (`15 passed`, PASS sentinel) remain green.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Workspace replay slice
+
+- The restricted importer now rebuilds `workspace_projections` from imported
+  `task_prepared` Event streams using the existing Core projection reducer and
+  PostgreSQL transaction adapter. Targets containing Workspace rows fail closed.
+- Event-derived `model_call_projections` and `tool_run_projections` are now
+  rebuilt through the existing indexer in the same import transaction; their
+  target rows are also covered by the empty-schema guard.
+- Added the focused Workspace replay regression; the PostgreSQL 17.5 runner
+  passes `16/16` with deterministic cleanup and the same PASS sentinel.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 schema-wide empty-target guard
+
+- Replaced the table allowlist in the importer preflight with a schema-wide
+  PostgreSQL base-table scan, excluding only `zebra_schema_migrations`; any
+  occupied unrelated table now fails closed before Event writes.
+- Added the occupied-target regression. The PostgreSQL 17.5 runner passes
+  `17/17` with deterministic cleanup and `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Task index replay slice
+
+- The importer now rebuilds Event-derived `agent_tasks`, `execution_segments`
+  and `task_event_index` through the existing lineage reducer in the same
+  transaction, with task lineage conflicts failing closed.
+- The focused replay regression verifies the root Task/active Segment binding;
+  the PostgreSQL 17.5 runner remains green at `17/17` with deterministic cleanup.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Context capsule replay slice
+
+- Added a dedicated Context replay module. SQLite capsule payload bytes are
+  checksum-verified, validated against the capsule-created Event and its
+  preceding compaction Event, then inserted with the active pointer only when
+  all namespace/session/artifact bindings and pointer Event sequence agree.
+- Split Cutover fencing into `migration_cutover.py` so every migration source
+  file remains below the 300-line target. The PostgreSQL 17.5 runner passes
+  `18/18` with deterministic cleanup and `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Handoff replay slice
+
+- Added `migration_handoff_rows.py` and `migration_handoff.py` to decode and
+  replay SQLite Handoff operations, immutable envelopes and pending or fully
+  fenced claimed dispatch rows after Event import. Envelope checksums, operation
+  timestamps/depth, source/target Event bindings, dispatch ownership and
+  namespace-scoped relations fail closed before PostgreSQL commit.
+- `session_lineage` remains a rebuild assertion: the importer compares every
+  source row with rebuilt `execution_segments` instead of copying a second
+  lineage authority. SQLite `acked` dispatch is rejected because the legacy row
+  has no authoritative ACK timestamp; no status is guessed.
+- Focused local tests pass `2 passed, 12 skipped`; the PostgreSQL 17.5 Compose
+  runner passes `20/20` and emits `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, with
+  deterministic container, volume and network cleanup. Changed-path Ruff and
+  strict Mypy pass.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Idempotency replay slice
+
+- Added `migration_idempotency.py` and extended the restricted snapshot importer
+  for namespace-scoped SQLite idempotency receipts. Action/key/request identity,
+  HTTP status range, JSON-object response and timezone-aware timestamp are
+  validated before any PostgreSQL insert; malformed receipts roll back with zero
+  writes.
+- The focused local matrix is `2 passed, 14 skipped`; the PostgreSQL 17.5
+  migration runner passes `22/22` with `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and
+  deterministic cleanup. Delivery Audit remains deferred because its legacy
+  SQLite table has no stable row identity for preserving append order.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Governed Memory replay slice
+
+- Added `migration_memory.py` and replayed the canonical `memory_records` table
+  after Event import. The slice validates Memory model fields, content and
+  provenance digests, namespace scope/singleton and supersession relations, and
+  source session/Event ranges before inserting the namespace-scoped PostgreSQL
+  authority row; malformed input rolls back with zero writes.
+- The focused local matrix is `2 passed, 16 skipped`; the PostgreSQL 17.5
+  migration runner passes `24/24` with `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and
+  deterministic cleanup. Artifact, Effect/Delivery, Delivery Audit and Provider
+  continuation remain deferred where the legacy schema cannot prove cloud
+  authority fields or stable append order.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 Delivery Audit replay slice
+
+- Extended the canonical snapshot contract to v2 with opt-in
+  `__zebra_source_rowid` capture. Delivery Audit replay requires this explicit
+  ordering evidence, validates session/status/metadata/timestamp contracts, and
+  inserts rows in source order so PostgreSQL's generated `audit_id` preserves
+  the local `ORDER BY rowid` read behavior. The source rowid is not treated as
+  a business identity.
+- The focused local matrix is `2 passed, 18 skipped`; the PostgreSQL 17.5
+  migration runner passes `26/26` with `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` and
+  deterministic cleanup. Artifact, Effect/Delivery and Provider continuation
+  remain deferred because their legacy schemas still lack non-derivable cloud
+  authority fields.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 remaining authority mapping audit
+
+- Audited the remaining SQLite `artifact_payloads`, `effect_ledger`,
+  `delivery_audit_records` and `provider_continuation_artifacts` contracts against
+  their PostgreSQL authority tables. Each lacks at least one non-derivable lease,
+  Event, request/idempotency, object or stable-order binding; status-name
+  similarity is not treated as migration evidence.
+- Recorded the permitted next paths: versioned snapshot/export evidence or an
+  explicit legacy quarantine/rebuild flow. Until then the importer remains
+  unsupported-table fail-closed and the migration target remains zero-write.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 legacy authority zero-write regression
+
+- Added a parameterized PostgreSQL regression for the three remaining legacy
+  authority tables: `artifact_payloads`, `effect_ledger` and
+  `provider_continuation_artifacts`.
+- Each table is paired with a valid Session Event in the snapshot; the importer
+  rejects the snapshot before Event append and the target remains empty. This
+  confirms that status-name similarity cannot create a partial cloud authority.
+- Local focused matrix: `2 passed, 21 skipped`; PostgreSQL 17.5 Compose runner:
+  `29 passed`, `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, with container, volume and
+  network cleanup. No authority mapping was activated.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-CON-01 registered Locked
+
+- Registered a governance-only successor for the remaining Artifact,
+  Effect/Delivery and Provider legacy mappings.
+- The successor must split one child per source and choose either a complete
+  versioned export or an explicit manifest-backed quarantine/rebuild flow. It
+  remains `Locked`; no implementation, runtime wiring or authority activation
+  was performed.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 field-level legacy mapping matrix
+
+- Expanded `docs/CLOUD-PG-MIG-01.md` with direct-versus-unavailable fields for
+  Artifact payload, Effect/Delivery and Provider continuation legacy rows.
+- The matrix explicitly rejects promoting `tenant_id` to namespace, status names
+  to lifecycle authority, or Event payloads to historical lease/request evidence.
+  No implementation or successor activation changed.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-ARTIFACT-01 activation
+
+- The maintainer explicitly activated the first path-bounded legacy child under
+  `CLOUD-PG-MIG-LEGACY-CON-01`: `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`.
+- The child runs on `codex/cloud-pg-mig-legacy-artifact-01` in
+  `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-pg-mig-legacy-artifact-01`.
+  Its Owned paths are limited to the Artifact quarantine module, focused test,
+  isolated runner and evidence document; parent governance records remain on the
+  migration branch.
+- The selected disposition is manifest-backed quarantine/rebuild. Effect/Delivery
+  and Provider continuation remain unregistered and inactive, and no PostgreSQL
+  Artifact authority write or runtime wiring is authorized.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-ARTIFACT-01 Review handoff
+
+- Implemented the path-bounded quarantine module, focused test, PostgreSQL 17.5
+  runner and evidence document in child commit `fe585c49` on
+  `codex/cloud-pg-mig-legacy-artifact-01`. The manifest binds the source
+  snapshot digest, canonical Artifact rows, unavailable authority fields and
+  quarantine disposition; no payload bytes or PostgreSQL Artifact authority are
+  written.
+- Validation: local focused matrix `3 passed, 1 skipped`; changed-path Ruff,
+  strict Mypy, Bash/Compose config and `git diff --check` pass; isolated
+  PostgreSQL 17.5 matrix `4 passed` with
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS` and deterministic cleanup.
+  Unsupported legacy input is rejected before Event writes and both
+  `session_events` and `artifact_payload_metadata` remain at zero rows.
+- Moved the child to `Review`; independent review is still required before
+  `Done`. Effect/Delivery and Provider continuation remain unregistered and
+  inactive.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-ARTIFACT-01 independent review
+
+- Reviewed the manifest-bound quarantine at the child Owned paths. No blocking
+  SQL, deserialization, authority-boundary or cleanup issue was found. Tightened
+  the JSON trust boundary so `NaN`/`Infinity` cannot enter snapshot
+  canonicalization, with a focused regression in child commit `f0d56a62`.
+- Revalidated the child through `fefa3261`: local focused matrix `4 passed,
+  1 skipped`; PostgreSQL `17.5-alpine3.21` runner `5 passed`, emits
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`, and removes container,
+  volume and network. The child remains `Review` pending merge; no runtime or
+  Artifact authority activation is implied.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-ARTIFACT-01 merged and closed
+
+- With explicit maintainer authorization, merged child commits through
+  `fefa3261` into parent `codex/cloud-pg-mig-01` as `bed02e4a`; no conflicts
+  occurred and the parent worktree's unrelated `.zebra-agent/sessions.sqlite`
+  change was preserved.
+- Post-merge validation remained green: local focused matrix `4 passed, 1
+  skipped`; PostgreSQL `17.5-alpine3.21` runner `5 passed` with
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`, deterministic cleanup,
+  changed-path static checks and `git diff --check`.
+- Closed `CLOUD-PG-MIG-LEGACY-ARTIFACT-01` as `Done`. The parent migration stays
+  `In Progress`; Effect/Delivery and Provider continuation remain unregistered
+  and inactive.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 activation
+
+- After Artifact was merged and closed, explicitly activated the next
+  path-bounded legacy child: `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01`.
+- The child owns only the `effect_ledger` quarantine module, focused test,
+  PostgreSQL 17.5 runner and evidence document on
+  `codex/cloud-pg-mig-legacy-effect-delivery-01`; parent governance records
+  remain on `codex/cloud-pg-mig-01`.
+- The selected disposition is manifest-backed quarantine/rebuild because the
+  legacy row cannot prove execution/dispatch identity, request hash, payload
+  Artifact, intent/terminal Event, claim evidence or namespace authority. No
+  PostgreSQL Effect/Delivery authority write or runtime wiring is authorized.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 merged and closed
+
+- With explicit maintainer authorization, merged child commit `84087e08` into
+  parent `codex/cloud-pg-mig-01` as `62d2e601`; no conflicts occurred and the
+  parent worktree's unrelated `.zebra-agent/sessions.sqlite` change was
+  preserved.
+- Post-merge validation remained green: local focused matrix `4 passed, 1
+  skipped`; PostgreSQL `17.5-alpine3.21` runner `5 passed` with
+  `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS`, deterministic
+  cleanup, changed-path static checks and `git diff --check`.
+- Closed `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01` as `Done`. The parent
+  migration stays `In Progress`; Provider continuation remains unregistered
+  and inactive.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-PROVIDER-01 activation
+
+- After Effect/Delivery was merged and closed, explicitly activated the next
+  path-bounded legacy child: `CLOUD-PG-MIG-LEGACY-PROVIDER-01`.
+- The child owns only the `provider_continuation_artifacts` quarantine module,
+  focused test, PostgreSQL 17.5 runner and evidence document on
+  `codex/cloud-pg-mig-legacy-provider-01`; parent governance records remain on
+  `codex/cloud-pg-mig-01`.
+- The selected disposition is manifest-backed quarantine/rebuild because the
+  legacy row cannot prove deployment/scope authority, continuation selection
+  Event, idempotency/request hash or accepted LeaseFence. No PostgreSQL Provider
+  authority write or runtime wiring is authorized.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-PROVIDER-01 merged and closed
+
+- With explicit maintainer authorization, merged child commit `b74f1c27` into
+  parent `codex/cloud-pg-mig-01` as `5f275d4b`; no conflicts occurred and the
+  parent worktree's unrelated `.zebra-agent/sessions.sqlite` change was
+  preserved.
+- Post-merge validation remained green: local focused matrix `4 passed, 1
+  skipped`; PostgreSQL `17.5-alpine3.21` runner `5 passed` with
+  `ZEBRA_PG_MIG_LEGACY_PROVIDER_TEST_RESULT=PASS`, deterministic cleanup,
+  changed-path static checks and `git diff --check`.
+- Closed `CLOUD-PG-MIG-LEGACY-PROVIDER-01` as `Done`. The parent migration stays
+  `In Progress`; the three legacy successor quarantine slices are now complete,
+  while no cloud authority write or runtime cutover is implied.
+
+## 2026-08-05 - CLOUD-PG-MIG-LEGACY-CON-01 governance closeout
+
+- Closed the governance parent after Artifact, Effect/Delivery and Provider
+  Continuation children completed their independent quarantine contracts and
+  were merged into `codex/cloud-pg-mig-01`.
+- Final evidence includes zero-write PostgreSQL preflights, manifest/tamper
+  verification, local strict static checks, and cleaned PostgreSQL 17.5 runners
+  for all three source tables. The main `CLOUD-PG-MIG-01` migration remains
+  `In Progress`; no cloud authority or runtime cutover is implied.
+
+## 2026-08-05 - CLOUD-PG-MIG-01 mainline closeout and CLOUD-REC-BACKUP-01 activation
+
+- Re-ran the main PostgreSQL 17.5 migration runner after all legacy successor
+  boundaries closed: `29 passed`,
+  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, with container, volume and network
+  cleanup. Local recovery-focused checks and changed-path static checks remain
+  green.
+- Closed `CLOUD-PG-MIG-01` as `Done`. Its Event-first import, projection and
+  cutover evidence is complete; unsupported legacy authority tables remain
+  fail-closed quarantine inputs and no runtime cutover is implied.
+- Activated the next mainline recovery child `CLOUD-REC-BACKUP-01` on
+  `codex/cloud-rec-backup-01`, limited to logical `pg_dump`/`pg_restore`,
+  checksum manifest and fresh-database verification. Physical PITR/WAL,
+  production credentials, RPO/RTO and DR claims remain out of scope.
+
+## 2026-08-05 - CLOUD-REC-BACKUP-01 logical portability closeout
+
+- Added the path-bounded PostgreSQL 17.5 recovery-backup Compose runner and
+  verifier on `codex/cloud-rec-backup-01`. It seeds one deterministic
+  namespace-scoped Event, dumps a non-empty custom archive with
+  `--no-owner --no-privileges`, records and verifies a SHA-256 manifest, and
+  restores into a fresh `template0` database.
+- The runner passed `RECOVERY_BACKUP_SEED=PASS migrations=16 events=1`,
+  `RECOVERY_BACKUP_VERIFY=PASS migrations=16 events=1`,
+  `RECOVERY_BACKUP_MANIFEST=PASS` for a non-empty archive (159,803 bytes in the
+  final merged-branch rerun), and
+  `ZEBRA_PG_RECOVERY_BACKUP_TEST_RESULT=PASS`; all Compose and temporary
+  resources were cleaned up. Ruff, strict Mypy, Bash syntax and diff checks
+  passed.
+- Child commits `3b62e593` and `b8a82f21` were fast-forward merged into the
+  parent migration branch at `b8a82f21`. `CLOUD-REC-BACKUP-01` is now `Done`;
+  physical PITR/WAL, object restore, RPO/RTO, DR and the remaining recovery
+  children stay out of scope.
+
+## 2026-08-05 - CLOUD-REC-RESTORE-01 activation
+
+- Activated `CLOUD-REC-RESTORE-01` as the next path-bounded recovery child on
+  `codex/cloud-rec-restore-01`, after `CLOUD-PG-MIG-01` and
+  `CLOUD-REC-BACKUP-01` closed. Its scope is a development-only fresh-instance
+  PostgreSQL restore, S3-compatible Artifact manifest/checksum validation,
+  Redis Event replay rebuild and control-plane epoch rotation.
+- Fencing/outbox reconciliation, multi-Worker drills, physical PITR, production
+  credentials and RPO/RTO/DR claims remain inactive or explicitly out of scope.
+
+## 2026-08-05 - CLOUD-REC-RESTORE-01 closeout
+
+- The isolated PostgreSQL/Redis/MinIO runner passed
+  `RECOVERY_RESTORE_SEED=PASS migrations=16 events=1 lease_token=1`,
+  `RECOVERY_RESTORE_ARCHIVE=PASS` for a 159,998-byte archive,
+  `RECOVERY_RESTORE_CLEAR=PASS artifact=absent redis=flushed`,
+  `RECOVERY_RESTORE_VERIFY=PASS migrations=16 events=1`, and
+  `ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS`.
+- Verification restored into `template0`, rebuilt a deleted versioned Artifact
+  by its manifest/checksum, replayed the restored Event into flushed Redis, and
+  rotated the control-plane epoch. The stale source lease was rejected and a
+  fresh fencing token was acquired/released; all resources were cleaned up.
+- Child commits `10ccc458` and `bd0291c4` were fast-forward merged into
+  `codex/cloud-pg-mig-01` at `bd0291c4`. `CLOUD-REC-RESTORE-01` is now `Done`;
+  rollback/outbox reconciliation, multi-Worker drills, physical PITR, RPO/RTO
+  and DR readiness remain outside this child.
+
+## 2026-08-05 - CLOUD-REC-DRILL-01 activation
+
+- Activated `CLOUD-REC-DRILL-01` as the final recovery child on
+  `codex/cloud-rec-drill-01`, after migration, logical backup and fresh-instance
+  restore evidence closed. Its local-only scope is rollback-versus-restore
+  decision evidence, fenced Effect outbox reconciliation, a same-dispatch
+  multi-worker claim race and observed recovery timing/zero-loss counts.
+- No provider calls, runtime Worker wiring, automatic replay of uncertain
+  external effects, production failover, RPO/RTO or DR claim is authorized.
+
+## 2026-08-05 - CLOUD-REC-DRILL-01 closeout
+
+- The isolated PostgreSQL 17.5 drill passed
+  `RECOVERY_DRILL_VERIFY=PASS events=2 recovery_ms=86.47` and emitted
+  `ZEBRA_PG_RECOVERY_DRILL_TEST_RESULT=PASS` after deterministic cleanup.
+- The report recorded one same-dispatch claim winner, one reconciliation winner,
+  two durable Events, one outbox row, zero rollback Events/outbox rows, zero
+  lost Events and explicit stale-terminal rejection; an uncertain dispatch was
+  resolved only as `failed_no_effect`.
+- Child commits `214eadb2` and `08a7f3e6` were fast-forward merged into
+  `codex/cloud-pg-mig-01` at `08a7f3e6`. `CLOUD-REC-DRILL-01` and the local
+  `CLOUD-REC-01` evidence gate are now `Done`; production PITR, RPO/RTO,
+  failover and DR readiness remain external gates.
+
+## 2026-08-05 - TRN-CPK-SPIKE-01 merge and EMB-HOST-CON-01 activation
+
+- Trench `codex/trn-cpk-spike-01` was merged into Trench `main` at `5c59b22`.
+  After refreshing the worktree lockfile dependencies, `make check` passed
+  Python `65 + 49`, frontend `17`, both frontend builds, lint, Alembic heads/
+  offline upgrade and `git diff --check`; the CopilotKit channel-manager warning
+  remains non-blocking.
+- Activated `EMB-HOST-CON-01` on `codex/emb-host-con-01` with Core-only owned
+  paths. JWT/JWKS adapters, API/AG-UI routing, Trench imports and production
+  wiring remain outside this contract slice.
+
+## 2026-08-05 - EMB-HOST-CON-01 closeout
+
+- Added the provider-neutral `HostSessionGrant`, `HostContextEnvelope`, opaque
+  `HostResourceRef`, bounded `HostTechnicalLimits` and typed fail-closed errors
+  in `agent-core`; no raw JWT, Trench import or runtime wiring is present.
+- Commit `ca59753b` is validated by `16/16` focused tests and `386/386`
+  `tests/agent_core` tests. Changed-path Ruff, format, Mypy and `git diff
+  --check` pass; Eval is `10/10`.
+- Full suite evidence is `2097 passed, 271 skipped, 2 failed`; failures are the
+  pre-existing MCP prompt atomicity and file-size-gate baseline defects. The
+  task is `Done`; Host verifier, AG-UI projection and Trench production slices
+  remain separately locked.
+
+## 2026-08-05 - EMB-AGUI-CON-01 activation
+
+- Activated the next dependency-ordered successor on
+  `codex/emb-agui-con-01` after Host authority closeout. Owned paths are only
+  the `agent-integrations` AG-UI projection package, its explicit protocol
+  dependency/lock entries, contract tests and governance records.
+- The slice will map immutable Session Events to the reviewed AG-UI 0.1.19
+  event model, deterministic Task/thread and Segment/run identities, bounded
+  cursors, interrupt snapshots and reconnect tails.
+- No API/Worker route, SSE transport, Redis live fan-out, Trench/CopilotKit
+  runtime, Host transport or JWT/JWKS adapter is activated.
+
+## 2026-08-05 - EMB-AGUI-CON-01 closeout
+
+- Added the pure `agent-integrations` projection contract: stable Task/thread
+  and Segment/run identity, bounded opaque cursors, text/tool/state/error
+  mapping, interrupt snapshots and deterministic resume identity. The reviewed
+  `ag-ui-protocol==0.1.19` is now an explicit package dependency with lock entry.
+- Commit `5485fc2e` passes `5/5` focused projection tests and the package suite
+  `132 passed, 3 skipped`; changed-path Ruff, format, strict Mypy, lock, diff
+  checks and Eval `10/10` pass.
+- Full suite evidence is `2102 passed, 271 skipped, 2 failed`; failures remain
+  the pre-existing MCP prompt atomicity and repository file-size-gate defects.
+  The task is `Done`; API/Worker/SSE, Redis, Host transport and Trench runtime
+  successors remain separately locked.

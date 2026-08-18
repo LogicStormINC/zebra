@@ -1,0 +1,9 @@
+{
+  "case_id": "agent-definition-release-gate-sample",
+  "category": "recovery",
+  "title": "Deterministic replay evidence for Definition publication",
+  "prompt": "Replay the agent run and verify recovery, safety and cost conditions.",
+  "min_events": 3,
+  "min_tool_results": 1,
+  "max_cost_usd": 2.0
+}

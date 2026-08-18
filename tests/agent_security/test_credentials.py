@@ -1,5 +1,4 @@
-from agent_security import REDACTED_SECRET, ScmCredentialBoundary
-from zebra_agent_config import ScmSettings
+from agent_security import REDACTED_SECRET, ScmCredentialBoundary, ScmCredentialSettings
 
 
 def test_scm_credential_boundary_uses_no_token_for_local_only() -> None:
@@ -34,14 +33,7 @@ def test_scm_credential_boundary_keeps_token_env_and_redacts_value() -> None:
 def test_scm_credential_boundary_settings_snapshot_excludes_token_value() -> None:
     snapshot = ScmCredentialBoundary().settings_snapshot(_github_scm())
 
-    assert snapshot == {
-        "provider": "github",
-        "github_owner": "octo-org",
-        "github_repo": "zebra-agent",
-        "github_token_env": "GITHUB_TOKEN",
-        "github_api_base_url": "https://api.github.com",
-        "pull_request_dry_run": True,
-    }
+    assert snapshot == {"provider": "github", "token_env": "GITHUB_TOKEN"}
     assert "secret-token" not in str(snapshot)
 
 
@@ -55,23 +47,9 @@ def test_scm_credential_boundary_redacted_snapshot_does_not_expose_token() -> No
     assert capability.redacted()["token_value"] == REDACTED_SECRET
 
 
-def _local_scm() -> ScmSettings:
-    return ScmSettings(
-        provider="local-only",
-        github_owner=None,
-        github_repo=None,
-        github_token_env=None,
-        github_api_base_url="https://api.github.com",
-        pull_request_dry_run=True,
-    )
+def _local_scm() -> ScmCredentialSettings:
+    return ScmCredentialSettings(provider="local-only")
 
 
-def _github_scm() -> ScmSettings:
-    return ScmSettings(
-        provider="github",
-        github_owner="octo-org",
-        github_repo="zebra-agent",
-        github_token_env="GITHUB_TOKEN",
-        github_api_base_url="https://api.github.com",
-        pull_request_dry_run=True,
-    )
+def _github_scm() -> ScmCredentialSettings:
+    return ScmCredentialSettings(provider="github", token_env="GITHUB_TOKEN")

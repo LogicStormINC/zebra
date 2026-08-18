@@ -1,0 +1,35 @@
+{
+  "schema_version": "zebra.cloudline.runner-manifest.v1",
+  "runners": [
+    {
+      "id": "application",
+      "script": "tests/compose/application/run-smoke.sh",
+      "timeout_seconds": 600,
+      "evidence_env": "ZEBRA_APPLICATION_EVIDENCE_DIR"
+    },
+    {
+      "id": "live-fanout",
+      "script": "tests/compose/live_fanout/run-redis-tests.sh",
+      "timeout_seconds": 300,
+      "evidence_env": "ZEBRA_LIVE_FANOUT_EVIDENCE_DIR"
+    },
+    {
+      "id": "recovery-pitr",
+      "script": "tests/compose/recovery_pitr/run-pitr.sh",
+      "timeout_seconds": 600,
+      "evidence_env": "ZEBRA_PG_PITR_EVIDENCE_DIR"
+    },
+    {
+      "id": "recovery-s3",
+      "script": "tests/compose/recovery_s3/run-s3-recovery.sh",
+      "timeout_seconds": 600,
+      "evidence_env": "ZEBRA_S3_RECOVERY_EVIDENCE_DIR"
+    },
+    {
+      "id": "recovery-restore",
+      "script": "tests/compose/recovery_restore/run-recovery-tests.sh",
+      "timeout_seconds": 600,
+      "evidence_env": "ZEBRA_RECOVERY_RESTORE_EVIDENCE_DIR"
+    }
+  ]
+}

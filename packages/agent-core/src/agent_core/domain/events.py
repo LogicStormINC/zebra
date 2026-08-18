@@ -15,6 +15,7 @@ from agent_core.domain.identifiers import (
 class EventType(StrEnum):
     SESSION_CREATED = "session_created"
     SESSION_TITLE_UPDATED = "session_title_updated"
+    SESSION_COMMAND_ACCEPTED = "session_command_accepted"
     USER_MESSAGE_RECEIVED = "user_message_received"
     TASK_PREPARED = "task_prepared"
     RUNTIME_PROVISIONED = "runtime_provisioned"
@@ -35,6 +36,8 @@ class EventType(StrEnum):
     SUBAGENT_COMPLETED = "subagent_completed"
     SUBAGENT_FAILED = "subagent_failed"
     SUBAGENT_CANCELLED = "subagent_cancelled"
+    EXECUTION_AUTHORITY_RESOLVED = "execution_authority_resolved"
+    EXECUTION_AUTHORITY_REVALIDATED = "execution_authority_revalidated"
     HARNESS_ATTEMPT_STARTED = "harness_attempt_started"
     TOOL_CALL_PROPOSED = "tool_call_proposed"
     POLICY_DECISION_MADE = "policy_decision_made"

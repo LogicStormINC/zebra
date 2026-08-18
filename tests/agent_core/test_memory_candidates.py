@@ -358,9 +358,51 @@ def test_procedure_refresh_does_not_expire_confirmed_preference() -> None:
     assert len(result.records) == 1
     assert any(record.memory_type is MemoryType.PROCEDURE for record in result.records)
     assert store.records[0].status is MemoryStatus.CONFIRMED
-    assert not any(
-        event.event_type is EventType.MEMORY_REVIEW_RECORDED for event in result.events
+    assert not any(event.event_type is EventType.MEMORY_REVIEW_RECORDED for event in result.events)
+
+
+def test_each_refresh_target_keeps_its_own_bounded_legacy_query() -> None:
+    session = _completed_session()
+    records = [
+        _memory_record(
+            session,
+            memory_type=memory_type,
+            text=f"stale {memory_type.value} {index}",
+            status=MemoryStatus.CONFIRMED,
+        )
+        for memory_type in (MemoryType.PROJECT_RULE, MemoryType.PROCEDURE)
+        for index in range(120)
+    ]
+    store = _InMemoryMemoryStore(records=records)
+
+    MemoryCandidateExtractionService(store).extract(
+        session=session,
+        events=[
+            _tool_event(
+                session=session,
+                sequence=4,
+                tool_name="files.read",
+                output="# no extracted governance facts",
+                metadata={"path": "AGENTS.md", "byte_count": 31, "truncated": False},
+            ),
+            _tool_event(
+                session=session,
+                sequence=5,
+                tool_name="tests.run",
+                metadata={"command": ["make", "check"], "cwd": ".", "preset": "smoke"},
+            ),
+        ],
+        next_sequence=6,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
     )
+
+    assert [query.limit for query in store.queries] == [100, 100]
+    assert [set(query.memory_types) for query in store.queries] == [
+        {MemoryType.PROJECT_RULE, MemoryType.ARCHITECTURE_FACT},
+        {MemoryType.PROCEDURE},
+    ]
+    assert sum(record.status is MemoryStatus.EXPIRED for record in store.records) == 200
+    assert sum(record.status is MemoryStatus.CONFIRMED for record in store.records) == 40
 
 
 def test_memory_candidate_extraction_skips_sensitive_or_failed_commands() -> None:
@@ -425,17 +467,17 @@ def test_memory_candidate_extraction_requires_completed_session() -> None:
 class _InMemoryMemoryStore:
     def __init__(self, records: list[MemoryRecord] | None = None) -> None:
         self.records: list[MemoryRecord] = list(records or [])
+        self.queries: list = []
 
     def upsert(self, record: MemoryRecord) -> MemoryRecord:
         self.records = [
-            existing
-            for existing in self.records
-            if existing.memory_id != record.memory_id
+            existing for existing in self.records if existing.memory_id != record.memory_id
         ]
         self.records.append(record)
         return record
 
     def list(self, query) -> list[MemoryRecord]:
+        self.queries.append(query)
         records = list(self.records)
         if getattr(query, "repo_id", None) is not None:
             records = [record for record in records if record.repo_id == query.repo_id]

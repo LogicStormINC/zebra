@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_core.domain.memories import MemoryQuery
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_inventory_review_metrics_read import (
     _read_memory_backlog_pressure_signals,
@@ -19,12 +20,14 @@ from zebra_agent_api.memory_pressure_classification_read import (
 def _read_memory_pressure_action_hints(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     pressure = _read_memory_backlog_pressure_signals(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -42,12 +45,14 @@ def _read_memory_pressure_action_hints(
 def _read_memory_pressure_escalation_recommendations(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     action_view = _read_memory_pressure_action_hints(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -65,12 +70,14 @@ def _read_memory_pressure_escalation_recommendations(
 def _read_memory_escalation_follow_up_windows(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     escalation_view = _read_memory_pressure_escalation_recommendations(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -89,12 +96,14 @@ def _read_memory_escalation_follow_up_windows(
 def _read_memory_follow_up_overdue_flags(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     follow_up_view = _read_memory_escalation_follow_up_windows(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,

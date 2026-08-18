@@ -4,6 +4,7 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
+from agent_storage import ControlPlaneStores
 from zebra_agent_worker import SessionControlError, SessionControlService
 
 from zebra_agent_api.responses import ApiResponse, conflict
@@ -17,6 +18,8 @@ def cancel_session_control(
     database_path: Path,
     session_id: str,
     payload: dict[str, object],
+    *,
+    stores: ControlPlaneStores | None = None,
 ) -> ApiResponse:
     parsed = parse_cancel_session_payload(payload)
     if isinstance(parsed, ApiResponse):
@@ -24,7 +27,9 @@ def cancel_session_control(
     del parsed
 
     try:
-        result = SessionControlService(database_path).cancel_session(SessionId(UUID(session_id)))
+        result = SessionControlService(database_path, stores=stores).cancel_session(
+            SessionId(UUID(session_id))
+        )
     except SessionControlError as error:
         message = str(error)
         if message == "session was not found":
@@ -53,6 +58,8 @@ def suspend_session_control(
     database_path: Path,
     session_id: str,
     payload: dict[str, object],
+    *,
+    stores: ControlPlaneStores | None = None,
 ) -> ApiResponse:
     parsed = parse_suspend_session_payload(payload)
     if isinstance(parsed, ApiResponse):
@@ -60,7 +67,9 @@ def suspend_session_control(
     del parsed
 
     try:
-        result = SessionControlService(database_path).suspend_session(SessionId(UUID(session_id)))
+        result = SessionControlService(database_path, stores=stores).suspend_session(
+            SessionId(UUID(session_id))
+        )
     except SessionControlError as error:
         message = str(error)
         if message == "session was not found":

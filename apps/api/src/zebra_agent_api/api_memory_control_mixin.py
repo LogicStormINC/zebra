@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from agent_core.application import MemoryReviewAction
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_memory_control import (
@@ -23,6 +24,7 @@ from zebra_agent_api.session_memory_control import (
 
 class ApiMemoryControlMixin:
     database_path: Path
+    stores: ControlPlaneStores
 
     def confirm_session_memory(
         self,
@@ -32,6 +34,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_session_memory(
             database_path=self.database_path,
+            stores=self.stores,
             session_id=session_id,
             memory_id=memory_id,
             payload=payload,
@@ -47,6 +50,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_session_memory(
             database_path=self.database_path,
+            stores=self.stores,
             session_id=session_id,
             memory_id=memory_id,
             payload=payload,
@@ -61,6 +65,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_session_memory_bulk(
             database_path=self.database_path,
+            stores=self.stores,
             session_id=session_id,
             payload=payload,
         )
@@ -72,6 +77,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_session_memory_queue(
             database_path=self.database_path,
+            stores=self.stores,
             session_id=session_id,
             payload=payload,
         )
@@ -83,6 +89,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return preview_session_memory_queue(
             database_path=self.database_path,
+            stores=self.stores,
             session_id=session_id,
             payload=payload,
         )
@@ -95,6 +102,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_user_memory(
             database_path=self.database_path,
+            stores=self.stores,
             user_id=user_id,
             memory_id=memory_id,
             payload=payload,
@@ -110,6 +118,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_user_memory(
             database_path=self.database_path,
+            stores=self.stores,
             user_id=user_id,
             memory_id=memory_id,
             payload=payload,
@@ -124,6 +133,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_user_memory_bulk(
             database_path=self.database_path,
+            stores=self.stores,
             user_id=user_id,
             payload=payload,
         )
@@ -135,6 +145,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_user_memory_queue(
             database_path=self.database_path,
+            stores=self.stores,
             user_id=user_id,
             payload=payload,
         )
@@ -146,6 +157,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return preview_user_memory_queue(
             database_path=self.database_path,
+            stores=self.stores,
             user_id=user_id,
             payload=payload,
         )
@@ -158,6 +170,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_tenant_memory(
             database_path=self.database_path,
+            stores=self.stores,
             tenant_id=tenant_id,
             memory_id=memory_id,
             payload=payload,
@@ -173,6 +186,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_tenant_memory(
             database_path=self.database_path,
+            stores=self.stores,
             tenant_id=tenant_id,
             memory_id=memory_id,
             payload=payload,
@@ -187,6 +201,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_tenant_memory_bulk(
             database_path=self.database_path,
+            stores=self.stores,
             tenant_id=tenant_id,
             payload=payload,
         )
@@ -198,6 +213,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return review_tenant_memory_queue(
             database_path=self.database_path,
+            stores=self.stores,
             tenant_id=tenant_id,
             payload=payload,
         )
@@ -209,6 +225,7 @@ class ApiMemoryControlMixin:
     ) -> ApiResponse:
         return preview_tenant_memory_queue(
             database_path=self.database_path,
+            stores=self.stores,
             tenant_id=tenant_id,
             payload=payload,
         )

@@ -1,7 +1,8 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
 from typing import cast
+
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.task_api import TaskReadApi
@@ -12,18 +13,17 @@ MAX_SESSION_LIMIT = 100
 
 @dataclass(frozen=True)
 class SessionListApi:
-    database_path: Path
+    stores: ControlPlaneStores
 
     def list_sessions(self, query: Mapping[str, str]) -> ApiResponse:
-        response = TaskReadApi(self.database_path).list(query)
+        response = TaskReadApi(self.stores).list(query)
         if response.status_code != 200:
             return response
         body = dict(response.body)
         body.pop("tasks", None)
         sessions = cast(list[dict[str, object]], body["sessions"])
         body["sessions"] = [
-            {key: value for key, value in item.items() if key != "task_id"}
-            for item in sessions
+            {key: value for key, value in item.items() if key != "task_id"} for item in sessions
         ]
         return ApiResponse(response.status_code, body)
 

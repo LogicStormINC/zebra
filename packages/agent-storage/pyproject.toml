@@ -5,6 +5,8 @@ description = "Durable storage adapters for Zebra Agent."
 requires-python = ">=3.12,<4.0"
 dependencies = [
     "agent-core",
+    "botocore>=1.42.97,<1.43.0",
+    "psycopg[binary]>=3.2.10,<4.0.0",
 ]
 
 [tool.uv.sources]

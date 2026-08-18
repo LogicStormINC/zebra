@@ -33,6 +33,7 @@ from agent_storage import (
 )
 from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings, trusted_local_mode_enabled
+from zebra_agent_worker.provider_configuration import model_provider_settings
 
 
 @dataclass(frozen=True)
@@ -73,7 +74,7 @@ def execute_durable_run(
         prompt=prompt,
         title=title,
         workspace_root=workspace_root,
-        model_gateway=build_model_gateway(settings),
+        model_gateway=build_model_gateway(model_provider_settings(settings)),
         policy_profile=policy_profile,
         tool_profile=tool_profile,
         network_profile=effective_network_profile,

@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.tool_profiles import ToolProfile
@@ -40,8 +41,9 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     runtime_network_enforcement,
                     runtime_workspace_writable,
                     snapshot_id,
-                    snapshot_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    snapshot_path,
+                    definition_snapshot
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     workspace_root = excluded.workspace_root,
                     prepared_at = excluded.prepared_at,
@@ -54,6 +56,7 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     network_allowlist = excluded.network_allowlist,
                     mcp_allowlist = excluded.mcp_allowlist,
                     skill_components = excluded.skill_components,
+                    definition_snapshot = excluded.definition_snapshot,
                     last_attempt_number = excluded.last_attempt_number,
                     runtime_name = excluded.runtime_name,
                     runtime_engine = excluded.runtime_engine,
@@ -94,6 +97,15 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     workspace.runtime_workspace_writable,
                     workspace.snapshot_id,
                     workspace.snapshot_path,
+                    (
+                        None
+                        if workspace.definition_snapshot is None
+                        else json.dumps(
+                            workspace.definition_snapshot.model_dump(
+                                mode="json", exclude_none=True
+                            )
+                        )
+                    ),
                 ),
             )
         return workspace
@@ -123,7 +135,8 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     runtime_network_enforcement,
                     runtime_workspace_writable,
                     snapshot_id,
-                    snapshot_path
+                    snapshot_path,
+                    definition_snapshot
                 FROM workspace_projections
                 WHERE session_id = ?
                 """,
@@ -166,6 +179,13 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                 ),
                 "snapshot_id": row["snapshot_id"],
                 "snapshot_path": row["snapshot_path"],
+                "definition_snapshot": (
+                    None
+                    if row["definition_snapshot"] is None
+                    else AgentDefinitionSnapshot.model_validate(
+                        json.loads(row["definition_snapshot"])
+                    )
+                ),
             }
         )
 
@@ -194,7 +214,8 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
                     runtime_network_enforcement TEXT,
                     runtime_workspace_writable INTEGER,
                     snapshot_id TEXT,
-                    snapshot_path TEXT
+                    snapshot_path TEXT,
+                    definition_snapshot TEXT
                 )
                 """
             )
@@ -229,3 +250,6 @@ class SQLiteWorkspaceProjectionStore(WorkspaceProjectionStorePort):
             ensure_column(connection, "workspace_projections", "skill_components", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_id", "TEXT")
             ensure_column(connection, "workspace_projections", "snapshot_path", "TEXT")
+            ensure_column(
+                connection, "workspace_projections", "definition_snapshot", "TEXT"
+            )

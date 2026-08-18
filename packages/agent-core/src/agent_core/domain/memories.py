@@ -3,7 +3,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from agent_core.domain.identifiers import MemoryId, SessionId
+from agent_core.domain.identifiers import AgentDefinitionId, MemoryId, SessionId
 
 
 class MemoryType(StrEnum):
@@ -41,6 +41,9 @@ class MemoryRecord(BaseModel):
     tenant_id: str | None = None
     user_id: str | None = None
     repo_id: str | None = None
+    authority_issuer: str | None = None
+    namespace_id: str | None = None
+    definition_id: AgentDefinitionId | None = None
     source_session_id: SessionId | None = None
     source_event_start: int | None = Field(default=None, ge=0)
     source_event_end: int | None = Field(default=None, ge=0)
@@ -61,6 +64,24 @@ class MemoryRecord(BaseModel):
         object.__setattr__(self, "repo_id", _normalize_optional_text(self.repo_id))
         object.__setattr__(
             self,
+            "authority_issuer",
+            _normalize_optional_text(self.authority_issuer),
+        )
+        object.__setattr__(
+            self,
+            "namespace_id",
+            _normalize_optional_text(self.namespace_id),
+        )
+        scope_fields = (self.authority_issuer, self.namespace_id, self.definition_id)
+        if any(field is not None for field in scope_fields) and not all(
+            field is not None for field in scope_fields
+        ):
+            raise ValueError(
+                "Definition Memory scope requires authority_issuer, namespace_id"
+                " and definition_id together"
+            )
+        object.__setattr__(
+            self,
             "source_commit_sha",
             _normalize_optional_text(self.source_commit_sha),
         )
@@ -77,11 +98,14 @@ class MemoryRecord(BaseModel):
         ):
             raise ValueError("source event range must be ordered")
         if self.visibility is MemoryVisibility.REPO and self.repo_id is None:
-            raise ValueError("repo visibility requires repo_id")
+            if self.authority_issuer is None:
+                raise ValueError("repo visibility requires repo_id")
         if self.visibility is MemoryVisibility.USER and self.user_id is None:
-            raise ValueError("user visibility requires user_id")
+            if self.authority_issuer is None:
+                raise ValueError("user visibility requires user_id")
         if self.visibility is MemoryVisibility.TENANT and self.tenant_id is None:
-            raise ValueError("tenant visibility requires tenant_id")
+            if self.authority_issuer is None:
+                raise ValueError("tenant visibility requires tenant_id")
         if self.status is MemoryStatus.SUPERSEDED and self.superseded_by is None:
             raise ValueError("superseded memory requires superseded_by")
         if self.superseded_by is not None and self.status is not MemoryStatus.SUPERSEDED:
@@ -95,6 +119,10 @@ class MemoryQuery(BaseModel):
     tenant_id: str | None = None
     user_id: str | None = None
     repo_id: str | None = None
+    authority_issuer: str | None = None
+    namespace_id: str | None = None
+    definition_id: AgentDefinitionId | None = None
+    text_query: str | None = None
     source_session_id: SessionId | None = None
     memory_types: tuple[MemoryType, ...] = ()
     statuses: tuple[MemoryStatus, ...] = (MemoryStatus.CONFIRMED,)
@@ -106,8 +134,35 @@ class MemoryQuery(BaseModel):
         object.__setattr__(self, "tenant_id", _normalize_optional_text(self.tenant_id))
         object.__setattr__(self, "user_id", _normalize_optional_text(self.user_id))
         object.__setattr__(self, "repo_id", _normalize_optional_text(self.repo_id))
-        if self.tenant_id is None and self.user_id is None and self.repo_id is None:
+        object.__setattr__(
+            self,
+            "authority_issuer",
+            _normalize_optional_text(self.authority_issuer),
+        )
+        object.__setattr__(
+            self,
+            "namespace_id",
+            _normalize_optional_text(self.namespace_id),
+        )
+        object.__setattr__(self, "text_query", _normalize_optional_text(self.text_query))
+        legacy_scoped = any(
+            field is not None
+            for field in (self.tenant_id, self.user_id, self.repo_id)
+        )
+        definition_scoped = any(
+            field is not None
+            for field in (self.authority_issuer, self.namespace_id, self.definition_id)
+        )
+        if not legacy_scoped and not definition_scoped:
             raise ValueError("memory query requires at least one scope")
+        if definition_scoped and not all(
+            field is not None
+            for field in (self.authority_issuer, self.namespace_id, self.definition_id)
+        ):
+            raise ValueError(
+                "Definition Memory query requires authority_issuer, namespace_id"
+                " and definition_id together"
+            )
         if self.visibility is MemoryVisibility.REPO and self.repo_id is None:
             raise ValueError("repo visibility query requires repo_id")
         if self.visibility is MemoryVisibility.USER and self.user_id is None:

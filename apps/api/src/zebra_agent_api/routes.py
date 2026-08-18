@@ -5,13 +5,20 @@ from hashlib import sha256
 from typing import Any
 from uuid import UUID
 
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
-from agent_storage import SQLiteAgentTaskStore
 
+from zebra_agent_api.ag_ui_command import handle_agui_command
+from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
-from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.task_routes import handle_task_route
+from zebra_agent_api.tenant_guard import (
+    tenant_forbidden_response,
+    tenant_memory_denied,
+    tenant_scope_response,
+)
 
 
 @dataclass(frozen=True)
@@ -21,6 +28,7 @@ class RouteRequest:
     body: dict[str, Any] | None = None
     headers: dict[str, str] | None = None
     query: dict[str, str] | None = None
+    host_context: HostContextEnvelope | None = None
 
 
 @dataclass(frozen=True)
@@ -35,15 +43,34 @@ class RouteAdapter:
             return self.app.get_mcp_capabilities()
         if method == "GET" and request.path == "/capabilities/mcp/prompts":
             return self.app.get_mcp_prompts()
+        tenant_response = tenant_scope_response(self.app, request)
+        if tenant_response is not None:
+            return tenant_response
+        agui_response = handle_agui_command(self.app, request)
+        if agui_response is not None:
+            return agui_response
         if method == "GET" and request.path == "/sessions":
-            return self.app.list_sessions(request.query or {})
+            return self.app.list_sessions(
+                request.query or {}, host_context=request.host_context
+            )
+        if method == "POST" and request.path == "/workspaces":
+            return self.app.create_workspace(request.body or {})
+        if method == "GET" and request.path == "/workspaces":
+            return bad_request("list workspaces is not part of the command surface")
+        if method == "GET" and request.path.startswith("/workspaces/"):
+            return self.app.get_workspace(request.path.removeprefix("/workspaces/"))
         if method == "POST" and request.path == "/sessions":
             return self.app.create_session(
-                request.body or {}, idempotency_key=_idempotency_key(request)
+                request.body or {},
+                idempotency_key=_idempotency_key(request),
+                host_context=request.host_context,
             )
         task_response = handle_task_route(self.app, request)
         if task_response is not None:
             return task_response
+        agent_definition_response = handle_agent_definition_route(self.app, request)
+        if agent_definition_response is not None:
+            return agent_definition_response
         if request.path.startswith("/sessions/") and _is_hidden_internal_segment(
             self.app, request.path
         ):
@@ -55,13 +82,15 @@ class RouteAdapter:
             if len(parts) == 2 and parts[1] == "reject":
                 return self.app.reject(parts[0], request.body or {})
         if method == "GET" and request.path == "/approvals":
-            return self.app.list_approvals()
+            return self.app.list_approvals(host_context=request.host_context)
         if method == "GET" and request.path.startswith("/approvals/"):
             parts = _approval_path_parts(request.path)
             if len(parts) == 1:
                 return self.app.get_approval(parts[0])
         if method == "GET" and request.path.startswith("/users/"):
             parts = _users_path_parts(request.path)
+            if parts and tenant_memory_denied(request.host_context, parts[0]):
+                return tenant_forbidden_response(parts[0])
             if len(parts) == 2 and parts[1] == "memory":
                 return self.app.get_user_memory(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
@@ -70,6 +99,8 @@ class RouteAdapter:
                 return self.app.get_user_memory_queue_summary(parts[0])
         if method == "POST" and request.path.startswith("/users/"):
             parts = _users_path_parts(request.path)
+            if parts and tenant_memory_denied(request.host_context, parts[0]):
+                return tenant_forbidden_response(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
                 return self.app.preview_user_memory_queue(parts[0], request.body or {})
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":
@@ -82,6 +113,8 @@ class RouteAdapter:
                 return self.app.expire_user_memory(parts[0], parts[2], request.body or {})
         if method == "GET" and request.path.startswith("/tenants/"):
             parts = _tenants_path_parts(request.path)
+            if parts and tenant_memory_denied(request.host_context, parts[0]):
+                return tenant_forbidden_response(parts[0])
             if len(parts) == 2 and parts[1] == "memory":
                 return self.app.get_tenant_memory(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
@@ -90,6 +123,8 @@ class RouteAdapter:
                 return self.app.get_tenant_memory_queue_summary(parts[0])
         if method == "POST" and request.path.startswith("/tenants/"):
             parts = _tenants_path_parts(request.path)
+            if parts and tenant_memory_denied(request.host_context, parts[0]):
+                return tenant_forbidden_response(parts[0])
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
                 return self.app.preview_tenant_memory_queue(parts[0], request.body or {})
             if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":
@@ -124,12 +159,39 @@ class RouteAdapter:
             if len(parts) == 3 and parts[1:] == ("context", "recover"):
                 return self.app.recover_session_context(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "messages":
+                if self.app.settings.deployment == "cloud":
+                    command = _cloud_command_payload("message", request.body or {})
+                    if isinstance(command, ApiResponse):
+                        return command
+                    return self.app.submit_command(
+                        parts[0], command, idempotency_key=_idempotency_key(request)
+                    )
                 return self.app.append_session_message(parts[0], request.body or {})
-            if len(parts) == 2 and parts[1] == "cancel":
+            if len(parts) == 2 and parts[1] == "commands":
+                return self.app.submit_command(
+                    parts[0],
+                    request.body or {},
+                    idempotency_key=_idempotency_key(request),
+                )
+            if len(parts) == 2 and parts[1] in {"stop", "cancel", "suspend"}:
+                if self.app.settings.deployment == "cloud":
+                    command = _cloud_command_payload(parts[1], request.body or {})
+                    if isinstance(command, ApiResponse):
+                        return command
+                    return self.app.submit_command(
+                        parts[0], command, idempotency_key=_idempotency_key(request)
+                    )
+                if parts[1] == "suspend":
+                    return self.app.suspend_session(parts[0], request.body or {})
                 return self.app.cancel_session(parts[0], request.body or {})
-            if len(parts) == 2 and parts[1] == "suspend":
-                return self.app.suspend_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "resume":
+                if self.app.settings.deployment == "cloud":
+                    command = _cloud_command_payload("resume", request.body or {})
+                    if isinstance(command, ApiResponse):
+                        return command
+                    return self.app.submit_command(
+                        parts[0], command, idempotency_key=_idempotency_key(request)
+                    )
                 return self.app.resume_session(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overview":
                 return self.app.get_memory_operations_overview(parts[0], request.body or {})
@@ -380,6 +442,20 @@ def _idempotency_key(request: RouteRequest) -> str | None:
     return None
 
 
+def _cloud_command_payload(kind: str, payload: dict[str, Any]) -> dict[str, object] | ApiResponse:
+    expected_revision = payload.get("expected_revision")
+    if not isinstance(expected_revision, int) or isinstance(expected_revision, bool):
+        return bad_request("expected_revision is required for cloud commands")
+    command_payload = {key: value for key, value in payload.items() if key != "expected_revision"}
+    if kind == "message" and command_payload.get("attachments"):
+        return bad_request("cloud message commands require durable attachment references")
+    return {
+        "kind": kind,
+        "expected_revision": expected_revision,
+        "payload": command_payload,
+    }
+
+
 def _principal_identity_hash(request: RouteRequest) -> str:
     authorization = next(
         (
@@ -406,7 +482,11 @@ def _is_hidden_internal_segment(app: ZebraAgentApi, path: str) -> bool:
         session_id = SessionId(UUID(raw))
     except ValueError:
         return False
-    return SQLiteAgentTaskStore(app.database_path).is_internal_segment(session_id)
+    try:
+        task = app.stores.tasks.ensure_for_session(session_id)
+    except ValueError:
+        return False
+    return str(task.task_id) != str(session_id)
 
 
 def _not_found(request: RouteRequest) -> ApiResponse:

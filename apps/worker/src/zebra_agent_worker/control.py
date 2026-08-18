@@ -15,7 +15,11 @@ from agent_core.ports.runtime import (
     RuntimeSnapshot,
     RuntimeSnapshotStatus,
 )
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
+from agent_storage import (
+    ControlPlaneStores,
+    PostgresControlPlaneStores,
+    sqlite_control_plane_stores,
+)
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_worker.recovery import (
@@ -54,12 +58,14 @@ class SessionControlService:
         database_path: Path,
         *,
         settings: ZebraAgentSettings | None = None,
+        stores: ControlPlaneStores | PostgresControlPlaneStores | None = None,
     ) -> None:
         self._database_path = database_path
         self._settings = settings or load_settings()
-        self._event_store = SQLiteEventStore(database_path)
-        self._projection_store = SQLiteProjectionStore(database_path)
-        self._workspace_store = SQLiteWorkspaceProjectionStore(database_path)
+        active_stores = stores or sqlite_control_plane_stores(database_path)
+        self._event_store = active_stores.events
+        self._projection_store = active_stores.sessions
+        self._workspace_store = active_stores.workspaces
         self._recovery_service = SessionRecoveryService(
             self._event_store,
             self._projection_store,

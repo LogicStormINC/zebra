@@ -1,4 +1,5 @@
 import json
+from collections.abc import Iterable
 from datetime import datetime
 from enum import StrEnum
 from hashlib import sha256
@@ -13,6 +14,77 @@ class ToolCallStatus(StrEnum):
     PROPOSED = "proposed"
     EXECUTED = "executed"
     FAILED = "failed"
+
+
+class ToolExecutionLocation(StrEnum):
+    ZEBRA = "zebra"
+    HOST = "host"
+    SANDBOX = "sandbox"
+
+
+class ToolRisk(StrEnum):
+    READ = "read"
+    WRITE = "write"
+    NETWORK = "network"
+    ADMIN = "admin"
+
+
+class ToolIdempotency(StrEnum):
+    NONE = "none"
+    OPTIONAL = "optional"
+    REQUIRED = "required"
+
+
+class ToolReceipt(BaseModel):
+    """Versioned, non-secret execution receipt embedded in ToolResult."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    tool_name: str = Field(min_length=1, max_length=256)
+    execution_location: ToolExecutionLocation
+    scopes: tuple[str, ...] = Field(min_length=1, max_length=32)
+    risk: ToolRisk
+    status: str = Field(min_length=1, max_length=64)
+    output_bytes: int = Field(ge=0, le=4_194_304)
+    idempotency_key: str | None = Field(default=None, max_length=512)
+    schema_version: str = Field(default="1", min_length=1, max_length=32)
+
+    @field_validator("tool_name", "status", "schema_version")
+    @classmethod
+    def normalize_receipt_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("tool receipt text must not be blank")
+        return normalized
+
+    @field_validator("scopes", mode="before")
+    @classmethod
+    def normalize_receipt_scopes(cls, value: object) -> tuple[str, ...]:
+        if isinstance(value, str | bytes) or value is None:
+            raise ValueError("tool receipt scopes must be a sequence")
+        if not isinstance(value, Iterable):
+            raise ValueError("tool receipt scopes must be a sequence")
+        normalized = tuple(str(scope).strip() for scope in value)
+        if not normalized or any(not scope for scope in normalized):
+            raise ValueError("tool receipt scopes must not be blank")
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("tool receipt scopes must not contain duplicates")
+        return normalized
+
+    @field_validator("idempotency_key")
+    @classmethod
+    def normalize_idempotency_key(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("idempotency_key must not be blank when set")
+        return normalized
+
+    def as_metadata(self) -> dict[str, object]:
+        """Return a JSON-safe receipt without credentials or raw tool output."""
+
+        return self.model_dump(mode="json")
 
 
 class ToolCall(BaseModel):
@@ -78,3 +150,4 @@ class ToolResult(BaseModel):
     status: ToolCallStatus
     output: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
+    receipt: ToolReceipt | None = None

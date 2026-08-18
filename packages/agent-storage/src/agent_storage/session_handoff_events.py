@@ -1,5 +1,5 @@
 import json
-import sqlite3
+from collections.abc import Mapping
 from typing import Any
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -9,7 +9,7 @@ from agent_core.ports.session_handoff import HandoffOperation, SessionHandoffCom
 def build_handoff_events(
     operation: HandoffOperation,
     request: SessionHandoffCommitRequest,
-    workspace: sqlite3.Row,
+    workspace: Mapping[str, Any],
 ) -> tuple[SessionEvent, ...]:
     envelope = request.envelope
     parent = SessionEvent.create(
@@ -67,16 +67,16 @@ def build_handoff_events(
                 "policy_profile": workspace["policy_profile"],
                 "tool_profile": workspace["tool_profile"],
                 "network_profile": workspace["network_profile"],
-                "network_allowlist": json.loads(workspace["network_allowlist"]),
+                "network_allowlist": _json_value(workspace["network_allowlist"]),
                 "mcp_allowlist": (
                     None
                     if workspace["mcp_allowlist"] is None
-                    else json.loads(workspace["mcp_allowlist"])
+                    else _json_value(workspace["mcp_allowlist"])
                 ),
                 "skill_components": (
                     None
                     if workspace["skill_components"] is None
-                    else json.loads(workspace["skill_components"])
+                    else _json_value(workspace["skill_components"])
                 ),
             },
         ),
@@ -96,15 +96,19 @@ def build_handoff_events(
     return (parent, *child_events)
 
 
+def _json_value(value: Any) -> Any:
+    return json.loads(value) if isinstance(value, str) else value
+
+
 def insert_child_projections(
-    connection: sqlite3.Connection,
+    connection: Any,
     operation: HandoffOperation,
     request: SessionHandoffCommitRequest,
-    workspace: sqlite3.Row,
+    workspace: Mapping[str, Any],
 ) -> None:
     created_at = request.envelope.created_at.isoformat()
     connection.execute(
-        "INSERT INTO session_projections VALUES (?, ?, 'ready', ?, ?, 3, NULL, NULL, ?)",
+        "INSERT INTO session_projections VALUES (?, ?, 'ready', ?, ?, 3, NULL, NULL, NULL, ?)",
         (
             str(operation.target_session_id),
             request.create_request.title,

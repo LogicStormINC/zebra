@@ -1,5 +1,8 @@
+from typing import cast
+
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.model_calls import ModelCallRecord
+from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from agent_core.ports.model_call_store import ModelCallStorePort
 
 
@@ -19,13 +22,9 @@ class ModelCallIndexer:
                 or _optional_str(event.payload, "model_name")
             ),
             input_tokens=_optional_int(event.payload, "input_tokens"),
-            estimated_input_tokens=_optional_int(
-                event.payload, "estimated_input_tokens"
-            ),
+            estimated_input_tokens=_optional_int(event.payload, "estimated_input_tokens"),
             input_token_limit=_optional_int(event.payload, "input_token_limit"),
-            input_token_estimate_error=_optional_int(
-                event.payload, "input_token_estimate_error"
-            ),
+            input_token_estimate_error=_optional_int(event.payload, "input_token_estimate_error"),
             output_tokens=_optional_int(event.payload, "output_tokens"),
             total_tokens=_optional_int(event.payload, "total_tokens"),
             latency_ms=_optional_int(event.payload, "latency_ms"),
@@ -37,6 +36,14 @@ class ModelCallIndexer:
         )
         self._model_call_store.upsert(record)
         return record
+
+    def index_worker_event(
+        self, event: SessionEvent, *, authority: WorkerMutationAuthority
+    ) -> ModelCallRecord | None:
+        index = getattr(self._model_call_store, "index_worker_event", None)
+        if callable(index):
+            return cast(ModelCallRecord | None, index(event, authority=authority))
+        return self.index_event(event)
 
 
 def _optional_str(payload: dict[str, object], key: str) -> str | None:

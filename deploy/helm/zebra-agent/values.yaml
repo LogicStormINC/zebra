@@ -1,0 +1,81 @@
+image:
+  repository: ghcr.io/example/zebra-agent
+  digest: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+profile: cloud
+deploymentNamespace: ""
+runtimeClassName: gvisor
+runtimeImage: ""
+
+workspaceQuota:
+  enabled: true
+
+serviceAccount:
+  create: true
+  name: ""
+
+secrets:
+  databaseUrl:
+    name: ""
+    key: database-url
+  s3:
+    name: ""
+    accessKeyKey: access-key
+    secretKeyKey: secret-key
+  liveRedisUrl:
+    name: ""
+    key: redis-url
+  memorySigningKey:
+    name: ""
+    key: signing-key
+  apiAuthToken:
+    name: ""
+    key: auth-token
+
+config:
+  authorityIssuer: ""
+  historyScopeNamespace: ""
+  continuationScopeNamespace: ""
+  s3Endpoint: ""
+  s3Bucket: zebra-artifacts
+  s3Region: us-east-1
+  s3KeyPrefix: zebra/artifacts/v1
+  liveStreamMaxLength: 1000
+  liveStreamKeyPrefix: zebra:live:v1
+
+api:
+  replicas: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+worker:
+  replicas: 2
+  idleSleepSeconds: 1.0
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+migration:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+podAnnotations: {}

@@ -12,12 +12,12 @@ from agent_core.domain.attachments import (
 )
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-
-from agent_storage.artifact_payloads import SQLiteArtifactPayloadStore
+from agent_core.ports.artifact_payload_read import ArtifactPayloadReadPort
+from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 
 
 def store_text_attachments(
-    store: SQLiteArtifactPayloadStore,
+    store: ArtifactPayloadStorePort,
     *,
     session_id: SessionId,
     message_event: SessionEvent,
@@ -71,7 +71,7 @@ def store_text_attachments(
 
 
 def load_attachment_contexts(
-    store: SQLiteArtifactPayloadStore,
+    store: ArtifactPayloadStorePort,
     refs: tuple[SessionAttachmentRef, ...],
 ) -> tuple[AttachmentContextInput, ...]:
     contexts: list[AttachmentContextInput] = []
@@ -109,8 +109,50 @@ def load_attachment_contexts(
     return tuple(contexts)
 
 
+def load_attachment_contexts_from_reader(
+    reader: ArtifactPayloadReadPort,
+    *,
+    session_id: SessionId,
+    refs: tuple[SessionAttachmentRef, ...],
+) -> tuple[AttachmentContextInput, ...]:
+    """Recover immutable attachment text without granting payload write access."""
+    contexts: list[AttachmentContextInput] = []
+    for ref in refs:
+        payload = reader.read_payload_bytes(session_id, f"artifact://{ref.attachment_id}")
+        if len(payload) != ref.size_bytes:
+            raise ValueError("attachment payload size does not match durable metadata")
+        if sha256(payload).hexdigest() != ref.sha256:
+            raise ValueError("attachment payload digest does not match durable metadata")
+        try:
+            text = payload.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError("attachment payload is no longer valid UTF-8") from exc
+        contexts.append(
+            AttachmentContextInput(
+                attachment_id=ref.attachment_id,
+                file_name=ref.file_name,
+                media_type=ref.media_type,
+                text=text,
+                source_type=ref.source_type,
+                source_server=ref.source_server,
+                source_id=ref.source_id,
+                source_argument_names=ref.source_argument_names,
+                original_media_type=ref.original_media_type,
+                original_size_bytes=ref.original_size_bytes,
+                original_sha256=ref.original_sha256,
+                page_count=ref.page_count,
+                paragraph_count=ref.paragraph_count,
+                worksheet_count=ref.worksheet_count,
+                cell_count=ref.cell_count,
+                slide_count=ref.slide_count,
+                extraction_status=ref.extraction_status,
+            )
+        )
+    return tuple(contexts)
+
+
 def store_initial_text_attachments(
-    store: SQLiteArtifactPayloadStore,
+    store: ArtifactPayloadStorePort,
     events: tuple[SessionEvent, ...],
     attachments: tuple[TextAttachmentInput, ...],
 ) -> tuple[tuple[SessionEvent, ...], tuple[SessionAttachmentRef, ...]]:

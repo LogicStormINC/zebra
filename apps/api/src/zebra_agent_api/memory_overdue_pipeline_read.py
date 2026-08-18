@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_core.domain.memories import MemoryQuery
+from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_inventory_review_metrics_read import (
     _count_memory_types,
@@ -32,12 +33,14 @@ from zebra_agent_api.memory_pressure_pipeline_read import (
 def _read_memory_overdue_age_buckets(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_follow_up_overdue_flags(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -55,18 +58,21 @@ def _read_memory_overdue_age_buckets(
 def _read_memory_overdue_type_rollups(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_age_buckets(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
     )
     queue_rows = _read_memory_inventory(
         database_path=database_path,
+        stores=stores,
         query=queue_query,
     )
     overdue_counts = (
@@ -96,18 +102,21 @@ def _read_memory_overdue_type_rollups(
 def _read_memory_overdue_visibility_rollups(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_age_buckets(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
     )
     queue_rows = _read_memory_inventory(
         database_path=database_path,
+        stores=stores,
         query=queue_query,
     )
     overdue_counts = (
@@ -138,12 +147,14 @@ def _read_memory_overdue_visibility_rollups(
 def _read_memory_overdue_trend_signals(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_age_buckets(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -160,12 +171,14 @@ def _read_memory_overdue_trend_signals(
 def _read_memory_overdue_intervention_hints(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_trend_signals(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -183,12 +196,14 @@ def _read_memory_overdue_intervention_hints(
 def _read_memory_overdue_escalation_lanes(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_intervention_hints(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -206,12 +221,14 @@ def _read_memory_overdue_escalation_lanes(
 def _read_memory_overdue_recovery_paths(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_escalation_lanes(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -229,12 +246,14 @@ def _read_memory_overdue_recovery_paths(
 def _read_memory_overdue_resolution_checkpoints(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_recovery_paths(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -252,12 +271,14 @@ def _read_memory_overdue_resolution_checkpoints(
 def _read_memory_overdue_resolution_outcomes(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_resolution_checkpoints(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,
@@ -275,12 +296,14 @@ def _read_memory_overdue_resolution_outcomes(
 def _read_memory_overdue_closure_decisions(
     *,
     database_path: Path,
+    stores: ControlPlaneStores | None,
     queue_query: MemoryQuery,
     inventory_query: MemoryQuery,
     as_of: datetime,
 ) -> dict[str, object]:
     overdue_view = _read_memory_overdue_resolution_outcomes(
         database_path=database_path,
+        stores=stores,
         queue_query=queue_query,
         inventory_query=inventory_query,
         as_of=as_of,

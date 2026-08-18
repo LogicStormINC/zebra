@@ -5,7 +5,9 @@ from datetime import datetime
 from pathlib import Path
 
 from agent_core.application.session_projection import apply_event
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.sessions import Session
@@ -27,6 +29,8 @@ class SessionBootstrapCommand:
     max_attempts: int = 1
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
+    host_context: HostContextEnvelope | None = None
+    definition_snapshot: AgentDefinitionSnapshot | None = None
     created_at: datetime | None = None
 
 
@@ -85,6 +89,24 @@ class SessionBootstrapService:
                     "max_attempts": command.max_attempts,
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,
+                    **(
+                        {
+                            "host_context": command.host_context.model_dump(
+                                mode="json", exclude_none=True
+                            )
+                        }
+                        if command.host_context is not None
+                        else {}
+                    ),
+                    **(
+                        {
+                            "definition_snapshot": command.definition_snapshot.model_dump(
+                                mode="json", exclude_none=True
+                            )
+                        }
+                        if command.definition_snapshot is not None
+                        else {}
+                    ),
                 },
                 created_at=session.created_at,
             ),

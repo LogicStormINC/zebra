@@ -5,7 +5,7 @@ import pytest
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelInvocationPolicy, ModelToolChoice, ModelToolDefinition
-from agent_integrations import build_deepseek_beta_gateway
+from agent_integrations import ModelProviderSettings, build_deepseek_beta_gateway
 from zebra_agent_config import load_settings
 
 
@@ -13,7 +13,17 @@ def test_real_deepseek_beta_capabilities() -> None:
     if os.environ.get("ZEBRA_DEEPSEEK_BETA_SMOKE") != "1":
         pytest.skip("set ZEBRA_DEEPSEEK_BETA_SMOKE=1 for the real beta provider smoke")
     settings = load_settings()
-    gateway = build_deepseek_beta_gateway(settings)
+    model = settings.model
+    gateway = build_deepseek_beta_gateway(
+        ModelProviderSettings(
+            provider=model.provider,
+            api_key_env=model.api_key_env,
+            base_url=model.base_url,
+            model=model.model,
+            deepseek_beta_enabled=model.deepseek_beta_enabled,
+            deepseek_beta_base_url=model.deepseek_beta_base_url,
+        )
+    )
 
     strict = gateway.complete_strict_tools(
         [_message("Call smoke.echo exactly once with value beta-ready.")],

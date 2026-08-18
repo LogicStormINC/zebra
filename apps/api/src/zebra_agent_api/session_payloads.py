@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TypedDict
+from uuid import UUID
 
 from agent_core.domain.attachments import TextAttachmentInput
+from agent_core.domain.identifiers import AgentDefinitionId
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.domain.workspace_control import WorkspaceSource
 from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
@@ -20,6 +23,7 @@ class CreateSessionPayload(TypedDict):
     prompt: str
     title: str
     workspace: str
+    workspace_source: WorkspaceSource | None
     execute: bool
     policy_profile: str
     tool_profile: str
@@ -33,6 +37,8 @@ class CreateSessionPayload(TypedDict):
     mcp_prompt_arguments: dict[str, str]
     history_session_ids: tuple[str, ...] | None
     attachments: tuple[TextAttachmentInput, ...]
+    definition_id: AgentDefinitionId | None
+    definition_environment: str | None
 
 
 CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
@@ -111,6 +117,17 @@ def parse_create_session_payload(
     workspace = payload.get("workspace", ".")
     if not isinstance(workspace, str) or not workspace.strip():
         return bad_request("workspace must be a non-blank string when provided")
+    raw_workspace_source = payload.get("workspace_source")
+    workspace_source: WorkspaceSource | None = None
+    if raw_workspace_source is not None:
+        if workspace.strip() not in {".", ""}:
+            return bad_request("workspace and workspace_source are mutually exclusive")
+        if not isinstance(raw_workspace_source, dict):
+            return bad_request("workspace_source must be an object")
+        try:
+            workspace_source = WorkspaceSource.model_validate(raw_workspace_source)
+        except ValueError as error:
+            return bad_request(f"workspace_source is invalid: {error}")
 
     execute = payload.get("execute", False)
     if not isinstance(execute, bool):
@@ -139,13 +156,9 @@ def parse_create_session_payload(
         ("max_tool_calls", max_tool_calls, 64),
     ):
         if value is not None and (
-            not isinstance(value, int)
-            or isinstance(value, bool)
-            or not 1 <= value <= maximum
+            not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= maximum
         ):
-            return bad_request(
-                f"{field} must be an integer from 1 to {maximum} when provided"
-            )
+            return bad_request(f"{field} must be an integer from 1 to {maximum} when provided")
     assert max_model_calls is None or isinstance(max_model_calls, int)
     assert max_tool_calls is None or isinstance(max_tool_calls, int)
     network_profile = payload.get("network_profile", "none")
@@ -215,11 +228,24 @@ def parse_create_session_payload(
         NetworkProfileName.FULL_TRUSTED_LOCAL,
     }:
         return bad_request("MCP selections require an MCP-capable network profile")
+    definition_id = None
+    raw_definition_id = payload.get("definition_id")
+    if raw_definition_id is not None:
+        if not isinstance(raw_definition_id, str):
+            return bad_request("definition_id must be a UUID string")
+        try:
+            definition_id = AgentDefinitionId(UUID(raw_definition_id))
+        except ValueError:
+            return bad_request("definition_id must be a UUID string")
+    definition_environment = payload.get("definition_environment", "production")
+    if not isinstance(definition_environment, str) or not definition_environment.strip():
+        return bad_request("definition_environment must be a non-blank string")
 
     return {
         "prompt": prompt.strip(),
         "title": title.strip(),
         "workspace": workspace.strip(),
+        "workspace_source": workspace_source,
         "execute": execute,
         "policy_profile": policy_profile,
         "tool_profile": tool_profile,
@@ -233,6 +259,8 @@ def parse_create_session_payload(
         "mcp_prompt_arguments": dict(raw_prompt_arguments),
         "history_session_ids": history_session_ids,
         "attachments": attachments,
+        "definition_id": definition_id,
+        "definition_environment": definition_environment,
     }
 
 

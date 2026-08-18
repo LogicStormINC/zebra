@@ -2,8 +2,14 @@
 
 # Zebra Agent
 
-Zebra Agent is an embeddable, local-first Agent Runtime microservice with an
-optional desktop operator surface. It turns Agent requests into durable,
+Zebra Agent is an embeddable Agent Runtime service whose product target is
+the **cloud agent**: an independent, multi-session execution plane (control
+plane, stateless workers, sandbox fleet) consumed by business systems. The
+local agent — the local SQLite profile with its optional desktop and CLI
+operator surfaces — exists to develop, mature and prove the runtime; it is
+the development vehicle and compatibility baseline, not the product goal.
+Local-first execution is therefore a development strategy, while cloud
+composition is the delivery target. Zebra turns Agent requests into durable,
 streamable, stoppable, resumable, and auditable execution while remaining
 independent of the business system that calls it.
 
@@ -57,8 +63,17 @@ candidate. It includes:
 - pull-request and `main` quality gates for backend, desktop, and real gVisor
 
 Private-cloud deployment, external-namespace isolation, ACP, and optional
-code-intelligence work remains outside the active implementation scope. Cloud
-deployment does not change the product boundary above. Read
+code-intelligence remain outside the verified implementation baseline. Cloud
+deployment does not change the product boundary above. Trench owns CopilotKit
+React v2 and its Runtime/BFF, while Zebra exposes an AG-UI adapter and retains
+durable Task/Event/Policy authority. Cloud-foundation work in local Review now
+includes the complete Store composition seam, the dependency-only Compose stack,
+the derived Mem0 Gateway lane, isolated PostgreSQL Event/Projection Adapters and
+the PostgreSQL epoch/Lease Adapter. Real PostgreSQL and restore/concurrency
+evidence exists, but runtime composition still selects SQLite because partial
+PostgreSQL wiring would split authority. Redis live state, object storage, Effect
+Outbox/consumer wiring and Trench production wiring remain locked. See
+[docker/README.md](./docker/README.md). Read
 [PROGRESS.md](./PROGRESS.md) for the live project snapshot and
 [docs/AGENT_TASKS.md](./docs/AGENT_TASKS.md) for task ownership and status. The
 adaptive execution boundary is specified in
@@ -123,7 +138,7 @@ The current repository does not claim:
 
 - Kubernetes or distributed Sandbox orchestration
 - private-cloud or multi-tenant production readiness
-- PostgreSQL/object-storage control-plane durability
+- complete PostgreSQL/object-storage control-plane composition or production durability
 - centralized production Credential/Egress Broker services
 - ACP or optional code-intelligence adapters
 - unrestricted browser automation or autonomous production deployment
@@ -148,6 +163,8 @@ them in frontend storage, request payloads, tracked files, responses, or logs.
 - `tests/`: deterministic, contract, smoke, and integration coverage
 - `evals/`: release and provider evaluation cases
 - `docs/`: architecture, governance, acceptance records, and operator runbooks
+- `docker/`: dependency Compose and optional auxiliary-service overlays; no Zebra
+  application image exists yet
 
 `agent-core` remains infrastructure-independent. Other packages may depend on
 core; packages must not import from applications.
@@ -192,8 +209,12 @@ Start with [docs/operator_runbook.md](./docs/operator_runbook.md).
 Focused references:
 
 - service boundary: [docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md](./docs/ADR-012_Zebra_Agent_Runtime微服务与外部业务边界.md)
+- Embedded target: [docs/Zebra Embedded 生产级目标架构.md](./docs/Zebra%20Embedded%20生产级目标架构.md)
+- CopilotKit/AG-UI boundary: [docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md](./docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md)
+- Embedded task roadmap: [docs/Zebra Embedded与Trench实施任务拆解_v1.0.md](./docs/Zebra%20Embedded与Trench实施任务拆解_v1.0.md)
 - production Runtime: [docs/生产级Runtime实施方案_v1.0.md](./docs/生产级Runtime实施方案_v1.0.md)
 - context lifecycle: [docs/上下文生命周期与混合压缩架构方案_v1.0.md](./docs/上下文生命周期与混合压缩架构方案_v1.0.md)
+- context continuity and governed memory v1.1: [docs/上下文连续性与治理记忆改进方案_v1.1.md](./docs/上下文连续性与治理记忆改进方案_v1.1.md)
 - Task continuity and internal Segments: [docs/ADR-013_用户任务连续性与内部执行分段.md](./docs/ADR-013_用户任务连续性与内部执行分段.md)
 - automatic rollover roadmap: [docs/透明Context_Segment与自动Rollover实施方案_v1.0.md](./docs/透明Context_Segment与自动Rollover实施方案_v1.0.md)
 - historical handoff safety contract: [docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md](./docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md)

@@ -3,6 +3,7 @@ from dataclasses import replace
 from pathlib import Path
 from threading import Event, Thread
 
+from agent_core.application.mock_model import ScriptedModelGateway
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
@@ -30,6 +31,8 @@ from worker_execution_support import (
     _seed_ready_session_with_input,
     _tool_gateway,
 )
+from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.control import SessionControlService
 
 
@@ -57,6 +60,48 @@ def test_worker_execution_service_completes_ready_session(
     model_calls = SQLiteModelCallStore(database_path).list_for_session(session_id)
     assert len(model_calls) == 1
     assert isinstance(model_calls[0], ModelCallRecord)
+
+
+def test_worker_execution_keeps_recovered_lease_during_long_model_call(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+    complete = ScriptedModelGateway.complete
+    heartbeat_lease = SessionClaimService.heartbeat_lease
+    background_heartbeat = Event()
+
+    def slow_complete(self, messages, *, tools=()):
+        assert background_heartbeat.wait(timeout=2)
+        return complete(self, messages, tools=tools)
+
+    def observed_heartbeat(self, lease, *, lease_ttl_seconds, checkpoint=None):
+        if checkpoint is None:
+            background_heartbeat.set()
+        return heartbeat_lease(
+            self,
+            lease,
+            lease_ttl_seconds=lease_ttl_seconds,
+            checkpoint=checkpoint,
+        )
+
+    monkeypatch.setattr(ScriptedModelGateway, "complete", slow_complete)
+    monkeypatch.setattr(SessionClaimService, "heartbeat_lease", observed_heartbeat)
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-long-model",
+        executed_at=_created_at(),
+        lease_ttl_seconds=1,
+    )
+
+    assert result.session.status is SessionStatus.COMPLETED
+    assert SQLiteLeaseStore(database_path).get(session_id) is None
 
 
 def test_worker_persists_effective_runtime_authority_before_attempt(
@@ -274,6 +319,49 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
 
     assert captured[0].name.value == "domain-allowlist"
     assert captured[0].domain_allowlist == ("docs.example.com",)
+
+
+def test_cloud_setup_only_is_persistently_rejected_before_model_start(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session_with_input(
+        database_path,
+        tmp_path,
+        user_input="Install the setup dependencies first.",
+        network_profile="setup-only",
+    )
+    settings = ZebraAgentSettings(
+        profile="cloud",
+        database_url=str(database_path),
+        api=ApiSettings(auth_token=None),
+        model=ModelSettings(
+            provider="test",
+            api_key_env="TEST_API_KEY",
+            base_url="https://example.test",
+            model="test-model",
+        ),
+    )
+    service = _build_execution_service(database_path)
+    service._settings = settings
+    service._artifact_payload_store = None
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: (_ for _ in ()).throw(AssertionError("model must not start")),
+    )
+
+    result = service.execute_session(
+        session_id,
+        worker_id="worker-cloud-setup",
+        executed_at=_created_at(),
+    )
+
+    assert result.session.status is SessionStatus.FAILED
+    assert result.attempt_result.metadata["stop_reason"] == "unsupported_runtime_capability"
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert events[-1].event_type is EventType.SESSION_FAILED
+    assert events[-1].payload["metadata"]["network_profile"] == "setup-only"
 
 
 def test_worker_execution_service_indexes_tool_run(tmp_path: Path, monkeypatch) -> None:

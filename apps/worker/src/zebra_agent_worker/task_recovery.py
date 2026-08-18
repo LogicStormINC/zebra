@@ -5,15 +5,22 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from agent_core.application import attachment_refs_from_event
+from agent_core.application.agent_definition_binding import (
+    DefinitionBindingError,
+    validate_recovered_snapshot,
+)
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.workspaces import WorkspaceProjection
+from agent_core.ports import ArtifactPayloadReadPort
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_security import NetworkProfile, PolicyProfile, parse_network_profile
-from agent_storage import SQLiteArtifactPayloadStore, load_attachment_contexts
+from agent_storage import load_attachment_contexts_from_reader
 
 
 @dataclass(frozen=True)
@@ -32,6 +39,8 @@ class RecoveredTask:
     max_tool_calls: int | None
     attachments: tuple[AttachmentContextInput, ...]
     runtime_evidence: tuple[RuntimeEvidenceInput, ...]
+    host_context: HostContextEnvelope | None
+    definition_snapshot: AgentDefinitionSnapshot | None
 
 
 def recover_task(
@@ -39,7 +48,7 @@ def recover_task(
     *,
     workspace: WorkspaceProjection,
     fallback_title: str,
-    attachment_store: SQLiteArtifactPayloadStore,
+    attachment_reader: ArtifactPayloadReadPort,
     active_capsule: ContextCapsule | None = None,
     handoff_evidence: RuntimeEvidenceInput | None = None,
 ) -> RecoveredTask:
@@ -60,16 +69,22 @@ def recover_task(
     resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
     policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
     try:
-        attachments = load_attachment_contexts(
-            attachment_store,
-            attachment_refs_from_event(user_event),
+        attachments = load_attachment_contexts_from_reader(
+            attachment_reader,
+            session_id=user_event.session_id,
+            refs=attachment_refs_from_event(user_event),
         )
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"queued session attachment recovery failed: {exc}") from exc
+    definition_snapshot = _definition_snapshot(task_payload.get("definition_snapshot"))
     return RecoveredTask(
         title=resolved_title,
         user_input=user_input,
-        workspace_root=Path(workspace.workspace_root).expanduser().resolve(),
+        workspace_root=(
+            Path(workspace.workspace_root)
+            if str(workspace.workspace_root).startswith("workspace:/")
+            else Path(workspace.workspace_root).expanduser().resolve()
+        ),
         policy_profile=policy_profile,
         tool_profile=workspace.tool_profile,
         network_profile=parse_network_profile(
@@ -83,11 +98,26 @@ def recover_task(
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
         attachments=attachments,
+        host_context=_host_context(task_payload.get("host_context")),
+        definition_snapshot=definition_snapshot,
         runtime_evidence=(
             *_context_capsule_evidence(events, active_capsule=active_capsule),
             *((handoff_evidence,) if handoff_evidence is not None else ()),
         ),
     )
+
+
+def _definition_snapshot(value: object) -> AgentDefinitionSnapshot | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("queued session definition_snapshot must be an object")
+    try:
+        snapshot = AgentDefinitionSnapshot.model_validate(value)
+        validate_recovered_snapshot(snapshot)
+        return snapshot
+    except (ValueError, DefinitionBindingError) as exc:
+        raise ValueError(f"queued session Definition snapshot is invalid: {exc}") from exc
 
 
 def _history_session_ids(value: object) -> tuple[str, ...] | None:
@@ -167,3 +197,14 @@ def _optional_positive_int(value: object) -> int | None:
     if not isinstance(value, int) or isinstance(value, bool):
         return None
     return value if value > 0 else None
+
+
+def _host_context(value: object) -> HostContextEnvelope | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("queued session host_context must be an object")
+    try:
+        return HostContextEnvelope.model_validate(value)
+    except ValueError as exc:
+        raise ValueError("queued session host_context is invalid") from exc

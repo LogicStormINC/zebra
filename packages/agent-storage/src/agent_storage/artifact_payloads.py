@@ -14,6 +14,7 @@ from agent_core.domain.artifact_payloads import (
     StoredArtifactPayload,
 )
 from agent_core.domain.identifiers import ArtifactId, SessionId, new_artifact_id
+from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 
 from agent_storage.database import SQLiteDatabase, ensure_column
 
@@ -22,7 +23,7 @@ class ArtifactPayloadMissingError(FileNotFoundError):
     """Raised when durable artifact payload metadata exists but the file is missing."""
 
 
-class SQLiteArtifactPayloadStore:
+class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
     def __init__(
         self,
         database_path: str | Path,
@@ -31,8 +32,7 @@ class SQLiteArtifactPayloadStore:
     ) -> None:
         self._database = SQLiteDatabase(database_path)
         default_root = (
-            self._database.database_path.parent
-            / f"{self._database.database_path.stem}-artifacts"
+            self._database.database_path.parent / f"{self._database.database_path.stem}-artifacts"
         )
         self._root = (
             Path(root_path).expanduser().resolve(strict=False)
@@ -147,9 +147,7 @@ class SQLiteArtifactPayloadStore:
                 else None
             ),
             pruned_at=(
-                datetime.fromisoformat(row["pruned_at"])
-                if row["pruned_at"] is not None
-                else None
+                datetime.fromisoformat(row["pruned_at"]) if row["pruned_at"] is not None else None
             ),
             created_at=datetime.fromisoformat(row["created_at"]),
         )

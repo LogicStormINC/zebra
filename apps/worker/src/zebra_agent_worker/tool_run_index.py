@@ -1,16 +1,18 @@
+from typing import cast
 
 from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.tool_runs import ToolRunRecord
+from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
+from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.tool_run_store import ToolRunStorePort
-from agent_storage import SQLiteArtifactPayloadStore
 
 
 class ToolRunIndexer:
     def __init__(
         self,
         tool_run_store: ToolRunStorePort,
-        artifact_payload_store: SQLiteArtifactPayloadStore | None = None,
+        artifact_payload_store: ArtifactPayloadStorePort | None = None,
     ) -> None:
         self._tool_run_store = tool_run_store
         self._artifact_payload_store = artifact_payload_store
@@ -36,6 +38,14 @@ class ToolRunIndexer:
         )
         self._tool_run_store.upsert(record)
         return record
+
+    def index_worker_event(
+        self, event: SessionEvent, *, authority: WorkerMutationAuthority
+    ) -> ToolRunRecord | None:
+        index = getattr(self._tool_run_store, "index_worker_event", None)
+        if callable(index):
+            return cast(ToolRunRecord | None, index(event, authority=authority))
+        return self.index_event(event)
 
     def _capture_output_payload_uri(self, event: SessionEvent) -> str | None:
         if self._artifact_payload_store is None:
@@ -69,8 +79,7 @@ def _artifact_uri_from_payload(payload: dict[str, object]) -> str | None:
 
 def _payload_file_name(tool_name: str, sequence: int) -> str:
     safe_name = "".join(
-        character if character.isalnum() else "-"
-        for character in tool_name.strip().lower()
+        character if character.isalnum() else "-" for character in tool_name.strip().lower()
     ).strip("-")
     normalized = safe_name or "tool-output"
     return f"{normalized}-{sequence}.txt"

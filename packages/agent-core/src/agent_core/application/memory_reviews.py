@@ -33,6 +33,7 @@ class MemoryReviewCommand:
     action: MemoryReviewAction
     operator: str
     reason: str
+    actor: EventActor = EventActor.USER
     created_at: datetime | None = None
 
     def __post_init__(self) -> None:
@@ -55,6 +56,24 @@ class MemoryReviewResult:
 @dataclass(frozen=True)
 class MemoryReviewService:
     def review(
+        self,
+        *,
+        session: Session,
+        record: MemoryRecord,
+        next_sequence: int,
+        command: MemoryReviewCommand,
+        existing_records: tuple[MemoryRecord, ...] = (),
+    ) -> MemoryReviewResult:
+        """SQLite-compatible wrapper around the pure review planner."""
+        return self.plan(
+            session=session,
+            record=record,
+            next_sequence=next_sequence,
+            command=command,
+            existing_records=existing_records,
+        )
+
+    def plan(
         self,
         *,
         session: Session,
@@ -95,7 +114,7 @@ class MemoryReviewService:
             session_id=session.session_id,
             sequence=next_sequence,
             event_type=EventType.MEMORY_REVIEW_RECORDED,
-            actor=EventActor.USER,
+            actor=command.actor,
             payload={
                 "memory_id": str(record.memory_id),
                 "memory_type": record.memory_type.value,

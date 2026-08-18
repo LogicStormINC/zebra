@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from uuid import UUID
 
 from agent_core.domain import ArtifactAccessDescriptor
-from agent_core.domain.artifact_payloads import StoredArtifactPayload
 from agent_core.domain.identifiers import SessionId
+from agent_core.ports import ArtifactPayloadReadInspection, SessionArtifact
 from agent_security import (
     ArtifactAccessProjection,
     PolicyProfile,
@@ -17,20 +16,16 @@ from agent_security import (
 from agent_security import (
     policy_rank as shared_policy_rank,
 )
-from agent_storage import (
-    SessionArtifact,
-    SQLiteArtifactPayloadStore,
-    SQLiteWorkspaceProjectionStore,
-    payload_for_artifact_uri,
-)
+from agent_storage import ControlPlaneStores
 
+from zebra_agent_api.artifact_payload_read import describe_artifact_payload
 from zebra_agent_api.responses import ApiResponse, conflict
 
 
 @dataclass(frozen=True)
 class ArtifactAccessContext:
     projection: ArtifactAccessProjection
-    payload: StoredArtifactPayload | None
+    payload: ArtifactPayloadReadInspection | None
 
     @property
     def allowed(self) -> bool:
@@ -50,12 +45,12 @@ class ArtifactAccessContext:
 
 
 def classify_session_artifact_access(
-    database_path: Path,
     *,
+    stores: ControlPlaneStores,
     session_id: str,
     artifact: SessionArtifact,
 ) -> ArtifactAccessContext:
-    payload = payload_record_for_uri(database_path, artifact.uri)
+    payload = describe_artifact_payload(stores, SessionId(UUID(session_id)), artifact.uri)
     projection = build_artifact_access_projection(
         ArtifactAccessDescriptor(
             kind=artifact.kind,
@@ -64,7 +59,7 @@ def classify_session_artifact_access(
             preview_redacted=artifact.preview_state["redacted"],
             preview_truncated=artifact.preview_state["truncated"],
         ),
-        session_policy_profile=session_policy_profile(database_path, session_id),
+        session_policy_profile=session_policy_profile(stores, session_id),
     )
     return ArtifactAccessContext(
         projection=projection,
@@ -196,17 +191,8 @@ def artifact_policy_denied_reason(
     return f"artifact_{action}_requires_{access.required_policy_profile}_policy"
 
 
-def payload_record_for_uri(
-    database_path: Path,
-    uri: str | None,
-) -> StoredArtifactPayload | None:
-    return payload_for_artifact_uri(SQLiteArtifactPayloadStore(database_path), uri)
-
-
-def session_policy_profile(database_path: Path, session_id: str) -> str:
-    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
-        SessionId(UUID(session_id))
-    )
+def session_policy_profile(stores: ControlPlaneStores, session_id: str) -> str:
+    workspace = stores.workspaces.get_workspace(SessionId(UUID(session_id)))
     if workspace is None or workspace.policy_profile is None:
         return PolicyProfile.WORKSPACE_WRITE.value
     return workspace.policy_profile

@@ -3,6 +3,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
@@ -35,6 +36,7 @@ class WorkspaceProjection(BaseModel):
     network_allowlist: tuple[str, ...] = ()
     mcp_allowlist: tuple[str, ...] | None = None
     skill_components: tuple[str, ...] | None = None
+    definition_snapshot: AgentDefinitionSnapshot | None = None
     last_attempt_number: int | None = None
     runtime_name: str | None = None
     runtime_engine: str | None = None

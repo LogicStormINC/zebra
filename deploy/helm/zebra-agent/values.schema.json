@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "image",
+    "profile",
+    "deploymentNamespace",
+    "runtimeClassName",
+    "runtimeImage",
+    "workspaceQuota",
+    "secrets",
+    "config"
+  ],
+  "properties": {
+    "image": {
+      "type": "object",
+      "required": ["repository", "digest"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "pullPolicy": {"type": "string", "enum": ["IfNotPresent", "Always"]}
+      }
+    },
+    "profile": {"type": "string", "enum": ["cloud", "production"]},
+    "deploymentNamespace": {"type": "string", "minLength": 1},
+    "runtimeClassName": {"const": "gvisor"},
+    "runtimeImage": {"type": "string", "minLength": 1},
+    "workspaceQuota": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {"enabled": {"const": true}}
+    },
+    "serviceAccount": {
+      "type": "object",
+      "required": ["create"],
+      "properties": {"create": {"type": "boolean"}, "name": {"type": "string"}}
+    },
+    "secrets": {
+      "type": "object",
+      "required": ["databaseUrl", "s3", "liveRedisUrl", "memorySigningKey"],
+      "properties": {
+        "databaseUrl": {
+          "type": "object",
+          "required": ["name", "key"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1},
+            "key": {"type": "string", "minLength": 1}
+          }
+        },
+        "s3": {
+          "type": "object",
+          "required": ["name", "accessKeyKey", "secretKeyKey"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1},
+            "accessKeyKey": {"type": "string", "minLength": 1},
+            "secretKeyKey": {"type": "string", "minLength": 1}
+          }
+        },
+        "liveRedisUrl": {
+          "type": "object",
+          "required": ["name", "key"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1},
+            "key": {"type": "string", "minLength": 1}
+          }
+        },
+        "memorySigningKey": {
+          "type": "object",
+          "required": ["name", "key"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1},
+            "key": {"type": "string", "minLength": 1}
+          }
+        },
+        "apiAuthToken": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "key": {"type": "string"}
+          }
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "required": [
+        "authorityIssuer",
+        "historyScopeNamespace",
+        "continuationScopeNamespace",
+        "s3Endpoint",
+        "s3Bucket",
+        "s3Region",
+        "s3KeyPrefix"
+      ],
+      "properties": {
+        "authorityIssuer": {"type": "string", "minLength": 1},
+        "historyScopeNamespace": {"type": "string", "minLength": 1},
+        "continuationScopeNamespace": {"type": "string", "minLength": 1},
+        "s3Endpoint": {"type": "string", "minLength": 1},
+        "s3Bucket": {"type": "string", "minLength": 1},
+        "s3Region": {"type": "string", "minLength": 1},
+        "s3KeyPrefix": {"type": "string", "minLength": 1},
+        "liveStreamMaxLength": {"type": "integer", "minimum": 1},
+        "liveStreamKeyPrefix": {"type": "string", "minLength": 1}
+      }
+    },
+    "api": {"$ref": "#/$defs/workload"},
+    "worker": {"$ref": "#/$defs/workload"},
+    "migration": {"type": "object"}
+  },
+  "$defs": {
+    "workload": {
+      "type": "object",
+      "required": ["replicas", "resources"],
+      "properties": {
+        "replicas": {"type": "integer", "minimum": 2},
+        "resources": {"type": "object"}
+      }
+    }
+  }
+}

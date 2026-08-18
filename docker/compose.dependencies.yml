@@ -1,0 +1,119 @@
+name: zebra-dependencies
+
+services:
+  postgres:
+    image: postgres:17.5-alpine3.21
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${ZEBRA_POSTGRES_DB:-zebra}
+      POSTGRES_USER: ${ZEBRA_POSTGRES_USER:-zebra}
+      POSTGRES_PASSWORD: ${ZEBRA_POSTGRES_PASSWORD:?set ZEBRA_POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:${ZEBRA_POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - dependencies
+
+  redis-live:
+    image: redis:8.2.1-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    ports:
+      - "127.0.0.1:${ZEBRA_REDIS_LIVE_PORT:-16379}:6379"
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      - dependencies
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: [server, /data, --console-address, ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${ZEBRA_MINIO_ROOT_USER:?set ZEBRA_MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${ZEBRA_MINIO_ROOT_PASSWORD:?set ZEBRA_MINIO_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:${ZEBRA_MINIO_API_PORT:-19000}:9000"
+      - "127.0.0.1:${ZEBRA_MINIO_CONSOLE_PORT:-19001}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: [CMD, curl, --fail, http://localhost:9000/minio/health/live]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - dependencies
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${ZEBRA_MINIO_ROOT_USER:?set ZEBRA_MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${ZEBRA_MINIO_ROOT_PASSWORD:?set ZEBRA_MINIO_ROOT_PASSWORD}
+      ZEBRA_MINIO_BUCKET: ${ZEBRA_MINIO_BUCKET:-zebra-artifacts}
+    entrypoint: [/bin/sh, -ec]
+    command:
+      - |
+        mc alias set zebra http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing "zebra/$${ZEBRA_MINIO_BUCKET}"
+        mc version enable "zebra/$${ZEBRA_MINIO_BUCKET}"
+    networks:
+      - dependencies
+
+  # Mem0 is a derived semantic index, so its database is isolated from Zebra's
+  # authoritative PostgreSQL service and can be rebuilt independently.
+  mem0-postgres:
+    profiles: [mem0]
+    image: pgvector/pgvector:0.8.0-pg17@sha256:40b404964359299eefdd5f8518facf1886c562848cf4de13b6eaf91cb70c2b87
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${ZEBRA_MEM0_POSTGRES_DB:-mem0}
+      POSTGRES_USER: ${ZEBRA_MEM0_POSTGRES_USER:-mem0}
+      POSTGRES_PASSWORD: ${ZEBRA_MEM0_POSTGRES_PASSWORD:?set ZEBRA_MEM0_POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:${ZEBRA_MEM0_POSTGRES_PORT:-15433}:5432"
+    volumes:
+      - mem0-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - dependencies
+
+volumes:
+  postgres-data:
+  minio-data:
+  mem0-postgres-data:
+
+networks:
+  dependencies:
+    name: zebra-dependencies

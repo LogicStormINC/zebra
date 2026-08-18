@@ -42,6 +42,15 @@ class SQLiteSessionHistory(SessionHistoryPort):
             frozenset(allowed_session_ids) if allowed_session_ids is not None else None
         )
 
+    def scoped(
+        self,
+        allowed_session_ids: tuple[str, ...] | None,
+    ) -> SessionHistoryPort:
+        return SQLiteSessionHistory(
+            self._database.database_path,
+            allowed_session_ids=allowed_session_ids,
+        )
+
     def query(self, request: SessionHistoryRequest) -> SessionHistoryResult:
         if request.mode is SessionHistoryMode.READ:
             return self._read(request)
@@ -239,9 +248,7 @@ def _message(row: Row) -> SessionHistoryMessage | None:
     return SessionHistoryMessage(
         sequence=row["sequence"],
         role=(
-            "user"
-            if row["event_type"] == EventType.USER_MESSAGE_RECEIVED.value
-            else "assistant"
+            "user" if row["event_type"] == EventType.USER_MESSAGE_RECEIVED.value else "assistant"
         ),
         content=bounded,
         created_at=datetime.fromisoformat(row["created_at"]),

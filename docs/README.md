@@ -17,6 +17,9 @@ Use these files for implementation, task claiming, collaboration, and phase prog
 - `实施任务拆解与阶段验收.md`: historical Phase 0-8 dependency and acceptance baseline
 - `02_Codex-like工程Agent平台_多人协作任务分配与RACI_v1.0.md`: collaboration model, ownership, and review rules
 - `AGENT_TASKS.md`: current executable task registry
+- `ADR-016_Agent_Definition控制面与版本发布边界.md`: accepted Agent Definition
+  metadata authority, Task/Attempt snapshot separation, release and migration
+  contract; implementation remains task-gated
 - `DeepSeek_V4_模型适配与专项优化方案_v1.0.md`: implemented `DS-OPT-01`
   provider-profile, protocol-safety, routing, caching, observability, and Eval baseline
 - `上下文生命周期与混合压缩架构方案_v1.0.md`: implemented `CTX-LC-01`
@@ -28,6 +31,9 @@ Use these files for implementation, task claiming, collaboration, and phase prog
   boundary and explicit production prerequisites
 - `主线架构工程完成度审计与收口计划_v1.0.md`: current evidence-backed
   completion assessment and remaining platform boundary
+- `Wigolo_Web_Intelligence原生化架构与实施计划_v1.0.md`: planned, not yet
+  implemented provider-neutral `web.*` contracts, wigolo Provider boundary,
+  Zebra-owned research/security, durable Watch, task order, and acceptance gates
 - `operator_runbook.md`: current local operator workflow for CLI, API, and stream replay
 - `TASK_CARD_TEMPLATE.md`: template for adding or splitting tasks
 - `CODEOWNERS.template`: ownership template for GitHub
@@ -38,3 +44,13 @@ Use these files for implementation, task claiming, collaboration, and phase prog
 - `agent架构设计0.1.0.md` is an older design exploration document.
 
 Historical documents must not override the active execution set.
+
+## Accepted Directions And Non-Executable Proposals
+
+- `Zebra Agent Runtime Upgrade Proposal v2.0.md` is the accepted direction for a
+  versioned Agent Definition control plane. Locally accepted ADR-016 is the stable decision
+  authority and corrects the proposal wherever they differ. Implementation tasks
+  remain `Locked` until ADR-016 is merged and the registry explicitly advances them.
+
+Accepted directions become executable only after their required ADR is approved
+and a path-bounded implementation task is explicitly activated in `AGENT_TASKS.md`.

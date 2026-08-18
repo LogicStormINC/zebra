@@ -1,0 +1,52 @@
+name: zebra-effect-default-e2e
+
+services:
+  postgres:
+    image: postgres:17.5-alpine3.21
+    environment:
+      POSTGRES_DB: zebra
+      POSTGRES_USER: zebra
+      POSTGRES_PASSWORD: zebra-effect-e2e-password
+    ports:
+      - "127.0.0.1:25497:5432"
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U zebra -d zebra]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks: [dependencies]
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: [server, /data, --console-address, ":9001"]
+    environment:
+      MINIO_ROOT_USER: zebra-effect-e2e
+      MINIO_ROOT_PASSWORD: zebra-effect-e2e-secret
+    ports:
+      - "127.0.0.1:25496:9000"
+    healthcheck:
+      test: [CMD, curl, --fail, http://localhost:9000/minio/health/live]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks: [dependencies]
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: zebra-effect-e2e
+      MINIO_ROOT_PASSWORD: zebra-effect-e2e-secret
+    entrypoint: [/bin/sh, -ec]
+    command:
+      - |
+        mc alias set zebra http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing zebra/zebra-artifacts
+        mc version enable zebra/zebra-artifacts
+    networks: [dependencies]
+
+networks:
+  dependencies:
+    name: zebra-effect-default-e2e-dependencies

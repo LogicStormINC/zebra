@@ -10,8 +10,15 @@ from pydantic import (
 )
 
 from agent_core.contracts.context_events import (
+    ContextCapsuleCreatedPayload as ContextCapsuleCreatedPayload,
+)
+from agent_core.contracts.context_events import (
     ContextCompactedPayload,
     ContextContinuationSelectedPayload,
+)
+from agent_core.contracts.execution_authority import (
+    ExecutionAuthorityResolvedPayload,
+    ExecutionAuthorityRevalidatedPayload,
 )
 from agent_core.contracts.handoff_events import (
     SessionHandoffCommittedPayload,
@@ -25,9 +32,13 @@ from agent_core.contracts.model_events import (
     ModelResponseReceivedPayload,
 )
 from agent_core.contracts.runtime_events import RuntimeProvisionedPayload
+from agent_core.contracts.session_commands import SessionCommandAcceptedPayload
 from agent_core.contracts.session_control_events import (
     SessionResumedPayload,
     SessionSuspendedPayload,
+)
+from agent_core.domain.agent_definition_snapshots import (
+    AgentDefinitionSnapshot,
 )
 from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CHOICE_CHARS,
@@ -35,8 +46,8 @@ from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CONTEXT_CHARS,
     MAX_CLARIFICATION_QUESTION_CHARS,
 )
-from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.events import EventType
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.plans import MAX_PLAN_STEPS, PlanStep, SessionPlan
@@ -98,6 +109,14 @@ class TaskPreparedPayload(BaseModel):
     max_attempts: int | None = None
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
+    host_context: HostContextEnvelope | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
+    definition_snapshot: AgentDefinitionSnapshot | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
     @field_validator("title", "user_input")
     @classmethod
@@ -129,9 +148,7 @@ class TaskPreparedPayload(BaseModel):
 
     @field_validator("history_session_ids")
     @classmethod
-    def ensure_valid_history_session_ids(
-        cls, value: list[str] | None
-    ) -> list[str] | None:
+    def ensure_valid_history_session_ids(cls, value: list[str] | None) -> list[str] | None:
         return None if value is None else list(normalize_history_session_ids(value))
 
     @field_validator("max_attempts", "max_model_calls", "max_tool_calls")
@@ -358,9 +375,7 @@ class ClarificationRequestedPayload(BaseModel):
     response_schema: dict[str, Any] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    elicitation_source: str | None = Field(
-        default=None, exclude_if=lambda value: value is None
-    )
+    elicitation_source: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @field_validator("attempt_number")
     @classmethod
@@ -416,36 +431,10 @@ class ClarificationRespondedPayload(BaseModel):
         return normalized
 
 
-class ContextCapsuleCreatedPayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    capsule_id: str
-    artifact_id: str
-    schema_version: str
-    source_hash: str
-    source_event_range: ContextSourceEventRange
-    previous_capsule_id: str | None = None
-
-    @field_validator(
-        "capsule_id",
-        "artifact_id",
-        "schema_version",
-        "source_hash",
-        "previous_capsule_id",
-    )
-    @classmethod
-    def ensure_capsule_text(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("context capsule event fields must not be blank")
-        return stripped
-
-
 _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SESSION_CREATED: SessionCreatedPayload,
     EventType.SESSION_TITLE_UPDATED: SessionTitleUpdatedPayload,
+    EventType.SESSION_COMMAND_ACCEPTED: SessionCommandAcceptedPayload,
     EventType.USER_MESSAGE_RECEIVED: UserMessageReceivedPayload,
     EventType.TASK_PREPARED: TaskPreparedPayload,
     EventType.RUNTIME_PROVISIONED: RuntimeProvisionedPayload,
@@ -470,6 +459,8 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SUBAGENT_COMPLETED: SubagentLifecyclePayload,
     EventType.SUBAGENT_FAILED: SubagentLifecyclePayload,
     EventType.SUBAGENT_CANCELLED: SubagentLifecyclePayload,
+    EventType.EXECUTION_AUTHORITY_RESOLVED: ExecutionAuthorityResolvedPayload,
+    EventType.EXECUTION_AUTHORITY_REVALIDATED: ExecutionAuthorityRevalidatedPayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
     EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
 }
@@ -502,4 +493,4 @@ def validate_event_payload(
         raise EventPayloadValidationError(
             f"invalid payload for {event_type.value}",
         ) from exc
-    return validated.model_dump()
+    return validated.model_dump(mode="json")

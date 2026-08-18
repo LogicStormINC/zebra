@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
 
-from agent_storage import SQLiteIdempotencyStore, new_idempotency_record
+from agent_core.ports import IdempotencyStorePort
+from agent_storage import new_idempotency_record
 
 from zebra_agent_api.responses import ApiResponse
 
@@ -16,14 +16,14 @@ def request_hash(payload: dict[str, object]) -> str:
 
 def replay_idempotent_response(
     *,
-    database_path: Path,
+    store: IdempotencyStorePort,
     action: str,
     idempotency_key: str | None,
     payload: dict[str, object],
 ) -> ApiResponse | None:
     if idempotency_key is None:
         return None
-    existing = SQLiteIdempotencyStore(database_path).get(
+    existing = store.get(
         action=action,
         idempotency_key=idempotency_key,
     )
@@ -42,7 +42,7 @@ def replay_idempotent_response(
 
 def save_idempotent_response(
     *,
-    database_path: Path,
+    store: IdempotencyStorePort,
     action: str,
     idempotency_key: str | None,
     payload: dict[str, object],
@@ -52,7 +52,7 @@ def save_idempotent_response(
         response.body["idempotency_key"] = None
         return response
     response.body["idempotency_key"] = idempotency_key
-    SQLiteIdempotencyStore(database_path).save(
+    store.save(
         new_idempotency_record(
             action=action,
             idempotency_key=idempotency_key,

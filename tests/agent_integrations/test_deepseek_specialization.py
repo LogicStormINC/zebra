@@ -288,7 +288,7 @@ def test_deepseek_thinking_tool_response_requires_valid_reasoning_content() -> N
         },
     )
 
-    with pytest.raises(ValueError, match="requires reasoning_content"):
+    with pytest.raises(ModelResponseRejectedError) as caught:
         _gateway(lambda request: response).complete(
             [_message("read proof")],
             tools=(_tool(),),
@@ -297,6 +297,10 @@ def test_deepseek_thinking_tool_response_requires_valid_reasoning_content() -> N
                 reasoning_effort=ModelReasoningEffort.HIGH,
             ),
         )
+
+    assert caught.value.reason == "invalid_response_shape"
+    assert caught.value.phase == "response_payload"
+    assert caught.value.retryable is True
 
 
 def test_provider_reasoning_is_rejected_outside_assistant_tool_call_message() -> None:

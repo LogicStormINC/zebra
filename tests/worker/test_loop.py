@@ -123,12 +123,10 @@ def test_worker_loop_skips_already_leased_ready_session(
         lambda settings: _assistant_only_gateway(settings=settings),
     )
     lease_store = SQLiteLeaseStore(database_path)
-    held_at = datetime.now(UTC)
     lease_store.acquire(
         session_id,
-        worker_id="worker-held",
-        acquired_at=held_at,
-        expires_at=held_at.replace(second=0, microsecond=0) + timedelta(minutes=5),
+        owner_instance_id="worker-held",
+        ttl=timedelta(minutes=5),
     )
 
     result = build_worker_loop_service(

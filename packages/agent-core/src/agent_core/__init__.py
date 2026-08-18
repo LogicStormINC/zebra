@@ -1,6 +1,14 @@
 """Core package for Zebra Agent."""
+
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
-from agent_core.domain.leases import WorkerLease
+from agent_core.domain.leases import (
+    DEFAULT_MAX_LEASE_TTL,
+    LeaseCheckpointRegressionError,
+    LeaseConflictError,
+    LeaseFence,
+    LeaseLostError,
+    WorkerLease,
+)
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.modeling import (
     ModelCallMetadata,
@@ -83,5 +91,10 @@ __all__ = [
     "ModelUsage",
     "ScriptedModelGateway",
     "ScriptedModelResponse",
+    "LeaseCheckpointRegressionError",
+    "LeaseConflictError",
+    "DEFAULT_MAX_LEASE_TTL",
+    "LeaseFence",
+    "LeaseLostError",
     "WorkerLease",
 ]

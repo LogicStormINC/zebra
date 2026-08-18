@@ -20,19 +20,18 @@ from agent_core.domain.session_handoff import (
     SessionLineage,
     validate_session_handoff,
 )
+from agent_core.ports import EffectStateReadPort
 from agent_core.ports.session_handoff import (
     HandoffOperation,
     SessionHandoffCommitRequest,
     SessionHandoffCreateRequest,
+    canonical_handoff_request_hash,
 )
 from agent_storage import (
+    ControlPlaneStores,
     HandoffIdempotencyConflictError,
     HandoffStorageConflictError,
-    SQLiteContextLifecycleStore,
-    SQLiteEffectLedger,
-    SQLiteEventStore,
-    SQLiteProjectionStore,
-    SQLiteSessionHandoffStore,
+    sqlite_control_plane_stores,
 )
 
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict
@@ -63,12 +62,19 @@ class _ParsedCreate(TypedDict):
 
 
 class SessionHandoffApi:
-    def __init__(self, database_path: Path) -> None:
-        self._database_path = database_path
-        self._handoffs = SQLiteSessionHandoffStore(database_path)
-        self._events = SQLiteEventStore(database_path)
-        self._sessions = SQLiteProjectionStore(database_path)
-        self._effects = SQLiteEffectLedger(database_path)
+    def __init__(
+        self,
+        database_path: Path,
+        stores: ControlPlaneStores | None = None,
+        *,
+        effect_state: EffectStateReadPort | None = None,
+    ) -> None:
+        active_stores = stores or sqlite_control_plane_stores(database_path)
+        self._context_lifecycle = active_stores.context_lifecycle
+        self._handoffs = active_stores.handoffs
+        self._events = active_stores.events
+        self._sessions = active_stores.sessions
+        self._effects = effect_state or active_stores.effects
 
     def create(
         self,
@@ -117,17 +123,11 @@ class SessionHandoffApi:
             principal_identity_hash=principal_identity_hash,
             actor_kind=actor_kind,
         )
-        request_hash = _hash_json(
-            {
-                "source_session_id": source_session_id,
-                "title": request.title,
-                "reason": request.reason.value,
-                "stage_prompt": request.stage_prompt,
-                "focus": request.focus,
-                "objective": parsed["objective"],
-                "completed_work": parsed["completed_work"],
-                "pending_work": parsed["pending_work"],
-            }
+        request_hash = canonical_handoff_request_hash(
+            request,
+            objective=parsed["objective"],
+            completed_work=parsed["completed_work"],
+            pending_work=parsed["pending_work"],
         )
         if not preview:
             try:
@@ -135,7 +135,7 @@ class SessionHandoffApi:
                     request,
                     request_hash=request_hash,
                     expected_source_stream_version=facts.stream_version,
-                    source_lease_fencing_token=facts.lease_fencing_token,
+                    source_lease_fence=facts.lease_fence,
                     authority_revision=facts.authority_revision,
                     workspace_revision=facts.workspace_revision,
                     task_profile_revision=facts.task_profile_revision,
@@ -162,7 +162,7 @@ class SessionHandoffApi:
                 body["idempotent_replay"] = True
                 return ApiResponse(200, body)
         events = self._events.list_for_session(source_id)
-        capsule = SQLiteContextLifecycleStore(self._database_path).get_active_capsule(source_id)
+        capsule = self._context_lifecycle.get_active_capsule(source_id)
         completed_work = parsed["completed_work"]
         if actor_kind is HandoffActorKind.AUTOMATION and not completed_work:
             completed_work = _conversation_checkpoint(events)

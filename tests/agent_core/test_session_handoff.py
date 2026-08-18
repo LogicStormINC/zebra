@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from agent_core.domain.identifiers import HandoffId, SessionId
 from agent_core.domain.session_handoff import (
     CompletedToolEvidence,
     EffectIdentity,
+    HandoffActorKind,
     HandoffReason,
     HandoffSideEffectClass,
     SessionHandoffEnvelope,
@@ -19,11 +21,44 @@ from agent_core.domain.session_handoff import (
     validate_session_handoff,
 )
 from agent_core.domain.sessions import SessionStatus
+from agent_core.ports.session_handoff import (
+    SessionHandoffCreateRequest,
+    canonical_handoff_request_hash,
+)
 from pydantic import ValidationError
 
 SOURCE_ID = SessionId(UUID("00000000-0000-0000-0000-000000000001"))
 TARGET_ID = SessionId(UUID("00000000-0000-0000-0000-000000000002"))
 HANDOFF_ID = HandoffId(UUID("00000000-0000-0000-0000-000000000003"))
+
+
+def test_canonical_handoff_request_hash_binds_server_derived_identity() -> None:
+    request = SessionHandoffCreateRequest(
+        source_session_id=SOURCE_ID,
+        idempotency_key="retry-key",
+        title="Storage stage",
+        reason=HandoffReason.OPERATOR_HANDOFF,
+        stage_prompt="Implement storage",
+        principal_identity_hash="principal-a",
+        actor_kind=HandoffActorKind.OPERATOR,
+        requested_authority=frozenset({"read", "write"}),
+    )
+
+    original = canonical_handoff_request_hash(
+        request,
+        objective="Continue",
+        completed_work=("core",),
+        pending_work=("storage",),
+    )
+    changed = canonical_handoff_request_hash(
+        replace(request, principal_identity_hash="principal-b"),
+        objective="Continue",
+        completed_work=("core",),
+        pending_work=("storage",),
+    )
+
+    assert len(original) == 64
+    assert changed != original
 
 
 def test_session_lineage_enforces_root_and_linear_child_shape() -> None:

@@ -1,0 +1,75 @@
+name: zebra-mem0-spike
+
+services:
+  fake-openai:
+    profiles: [mem0]
+    image: python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de
+    command: [python, /app/fake_openai.py]
+    user: "65534:65534"
+    volumes:
+      - ./mem0/fake_openai.py:/app/fake_openai.py:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).read()
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    networks:
+      - dependencies
+
+  mem0-api:
+    depends_on:
+      fake-openai:
+        condition: service_healthy
+    environment:
+      OPENAI_BASE_URL: http://fake-openai:8080/v1
+      OPENAI_API_BASE: http://fake-openai:8080/v1
+
+  mem0-response-loss:
+    profiles: [mem0]
+    image: python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de
+    command: [python, /app/fault_proxy.py]
+    environment:
+      UPSTREAM_HOST: mem0-api
+      UPSTREAM_PORT: "8000"
+      DROP_ONCE_METHOD: POST
+      DROP_ONCE_PATH: /memories
+    depends_on:
+      mem0-api:
+        condition: service_healthy
+    volumes:
+      - ./mem0/fault_proxy.py:/app/fault_proxy.py:ro
+    ports:
+      - "127.0.0.1:${ZEBRA_MEM0_PROXY_PORT:-28089}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).read()
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    networks:
+      - dependencies
+
+networks:
+  dependencies:
+    name: zebra-mem0-spike-dependencies

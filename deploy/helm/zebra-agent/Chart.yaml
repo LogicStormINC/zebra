@@ -1,0 +1,6 @@
+apiVersion: v2
+name: zebra-agent
+description: Fail-closed cloud/production deployment for Zebra Agent
+type: application
+version: 0.1.0
+appVersion: "cloud"

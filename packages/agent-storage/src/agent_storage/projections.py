@@ -26,16 +26,20 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     created_at,
                     updated_at,
                     current_sequence,
+                    namespace_id,
                     approval_context_json,
                     clarification_context_json,
                     task_plan_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_id) DO UPDATE SET
                     title = excluded.title,
                     status = excluded.status,
                     created_at = excluded.created_at,
                     updated_at = excluded.updated_at,
                     current_sequence = excluded.current_sequence,
+                    namespace_id = COALESCE(
+                        session_projections.namespace_id, excluded.namespace_id
+                    ),
                     approval_context_json = excluded.approval_context_json,
                     clarification_context_json = excluded.clarification_context_json,
                     task_plan_json = excluded.task_plan_json
@@ -47,6 +51,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     session.created_at.isoformat(),
                     session.updated_at.isoformat(),
                     session.current_sequence,
+                    session.namespace_id,
                     _approval_context_json(session.approval_context),
                     _clarification_context_json(session.clarification_context),
                     _task_plan_json(session.task_plan),
@@ -65,6 +70,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     created_at,
                     updated_at,
                     current_sequence,
+                    namespace_id,
                     approval_context_json,
                     clarification_context_json,
                     task_plan_json
@@ -83,6 +89,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"],
                 "current_sequence": row["current_sequence"],
+                "namespace_id": row["namespace_id"],
                 "approval_context": _approval_context_from_json(row["approval_context_json"]),
                 "clarification_context": _clarification_context_from_json(
                     row["clarification_context_json"]
@@ -104,6 +111,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     created_at,
                     updated_at,
                     current_sequence,
+                    namespace_id,
                     approval_context_json,
                     clarification_context_json,
                     task_plan_json
@@ -123,7 +131,51 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
                     "current_sequence": row["current_sequence"],
+                    "namespace_id": row["namespace_id"],
                     "approval_context": _approval_context_from_json(row["approval_context_json"]),
+                    "clarification_context": _clarification_context_from_json(
+                        row["clarification_context_json"]
+                    ),
+                    "task_plan": _task_plan_from_json(row["task_plan_json"]),
+                }
+            )
+            for row in rows
+        ]
+
+    def list_waiting_approval_sessions(self) -> list[Session]:
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    session_id,
+                    title,
+                    status,
+                    created_at,
+                    updated_at,
+                    current_sequence,
+                    namespace_id,
+                    approval_context_json,
+                    clarification_context_json,
+                    task_plan_json
+                FROM session_projections
+                WHERE status = ?
+                ORDER BY updated_at ASC, created_at ASC, session_id ASC
+                """,
+                (SessionStatus.WAITING_APPROVAL.value,),
+            ).fetchall()
+        return [
+            Session.model_validate(
+                {
+                    "session_id": row["session_id"],
+                    "title": row["title"],
+                    "status": SessionStatus(row["status"]),
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                    "current_sequence": row["current_sequence"],
+                    "namespace_id": row["namespace_id"],
+                    "approval_context": _approval_context_from_json(
+                        row["approval_context_json"]
+                    ),
                     "clarification_context": _clarification_context_from_json(
                         row["clarification_context_json"]
                     ),
@@ -146,6 +198,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     created_at,
                     updated_at,
                     current_sequence,
+                    namespace_id,
                     approval_context_json,
                     clarification_context_json,
                     task_plan_json
@@ -164,6 +217,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
                     "current_sequence": row["current_sequence"],
+                    "namespace_id": row["namespace_id"],
                     "approval_context": _approval_context_from_json(row["approval_context_json"]),
                     "clarification_context": _clarification_context_from_json(
                         row["clarification_context_json"]
@@ -194,6 +248,7 @@ class SQLiteProjectionStore(ProjectionStorePort):
             ensure_column(connection, "session_projections", "approval_context_json", "TEXT")
             ensure_column(connection, "session_projections", "clarification_context_json", "TEXT")
             ensure_column(connection, "session_projections", "task_plan_json", "TEXT")
+            ensure_column(connection, "session_projections", "namespace_id", "TEXT")
 
 
 def _approval_context_json(context: ApprovalContext | None) -> str | None:

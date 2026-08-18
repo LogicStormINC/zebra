@@ -1,15 +1,16 @@
 """Worker app package for Zebra Agent."""
 
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
+from zebra_agent_worker.command_consumer import CommandConsumption, SessionCommandConsumer
 from zebra_agent_worker.control import (
     CancelledSession,
     SessionControlError,
     SessionControlService,
     SuspendedSession,
 )
-from zebra_agent_worker.execution import (
+from zebra_agent_worker.execution import SessionExecutionService
+from zebra_agent_worker.execution_finalization import (
     ExecutedSession,
-    SessionExecutionService,
     WorkerExecutionError,
 )
 from zebra_agent_worker.loop import (
@@ -30,11 +31,13 @@ from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
 __all__ = [
     "ClaimedSession",
+    "CommandConsumption",
     "CancelledSession",
     "ExecutedSession",
     "ModelCallIndexer",
     "RecoveredSession",
     "SessionClaimService",
+    "SessionCommandConsumer",
     "SessionControlError",
     "SessionControlService",
     "SessionExecutionService",

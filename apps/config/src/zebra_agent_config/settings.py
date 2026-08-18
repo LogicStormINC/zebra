@@ -1,34 +1,18 @@
 from __future__ import annotations
 
-import json
 import os
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urlparse
 
+from zebra_agent_config import mcp_settings
 from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
 
-MAX_MCP_SERVERS = 3
-_MCP_NAME_RE = re.compile(r"^[a-z][a-z0-9_-]{0,19}$")
-_MCP_BEARER_ENV_RE = re.compile(r"^[A-Z][A-Z0-9_]{0,63}$")
-_BLOCKED_MCP_EXECUTABLES = frozenset(
-    {
-        "bash",
-        "cmd",
-        "cmd.exe",
-        "dash",
-        "fish",
-        "npx",
-        "powershell",
-        "powershell.exe",
-        "pwsh",
-        "sh",
-        "uvx",
-        "zsh",
-    }
-)
+MAX_MCP_SERVERS = mcp_settings.MAX_MCP_SERVERS
+McpHttpServerSettings = mcp_settings.McpHttpServerSettings
+McpServerSettings = mcp_settings.McpServerSettings
+_read_mcp_servers = mcp_settings._read_mcp_servers
 
 
 @dataclass(frozen=True)
@@ -59,6 +43,13 @@ class SessionHandoffSettings:
 
 
 @dataclass(frozen=True)
+class LiveEventSettings:
+    redis_url: str | None = None
+    stream_max_length: int = 1_000
+    key_prefix: str = "zebra:live:v1"
+
+
+@dataclass(frozen=True)
 class ScmSettings:
     provider: str
     github_owner: str | None
@@ -66,26 +57,6 @@ class ScmSettings:
     github_token_env: str | None
     github_api_base_url: str
     pull_request_dry_run: bool
-
-
-@dataclass(frozen=True)
-class McpServerSettings:
-    name: str
-    command: str
-    args: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True)
-class McpHttpServerSettings:
-    """A remote MCP server reached over Streamable HTTP.
-
-    The bearer token is never stored: only the environment variable name that
-    holds it, resolved by the transport at call time.
-    """
-
-    name: str
-    url: str
-    bearer_token_env: str | None = None
 
 
 @dataclass(frozen=True)
@@ -113,6 +84,7 @@ class ZebraAgentSettings:
     api: ApiSettings
     model: ModelSettings
     session_handoff: SessionHandoffSettings = field(default_factory=SessionHandoffSettings)
+    live_events: LiveEventSettings = field(default_factory=LiveEventSettings)
     runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
     setup: SetupSettings = field(default_factory=SetupSettings)
     scm: ScmSettings = field(
@@ -134,6 +106,21 @@ class ZebraAgentSettings:
     skills_state_path: str = ".zebra-agent/skills-state.sqlite"
     mcp_servers: tuple[McpServerSettings | McpHttpServerSettings, ...] = ()
     mcp_elicitation_enabled: bool = True
+    host_tool_endpoint: str | None = None
+    host_tool_workload_identity: str | None = None
+    host_tool_shared_secret: str | None = None
+
+    @property
+    def deployment(self) -> str:
+        return "cloud" if self.profile in {"cloud", "production"} else "local"
+
+    @property
+    def storage_authority(self) -> str:
+        return "postgresql" if self.deployment == "cloud" else "sqlite"
+
+    @property
+    def runtime_isolation(self) -> str:
+        return self.runtime.runtime_class
 
 
 def trusted_local_mode_enabled(settings: ZebraAgentSettings) -> bool:
@@ -158,13 +145,20 @@ def load_settings(
         if deepseek_model:
             values["ZEBRA_MODEL_NAME"] = deepseek_model
     profile = _read(values, "ZEBRA_PROFILE", default="local")
+    database_url = _read(
+        values,
+        "ZEBRA_DATABASE_URL",
+        default=".zebra-agent/sessions.sqlite",
+    )
+    runtime = _load_runtime_settings(values, profile=profile)
+    _validate_profile_contract(
+        profile=profile,
+        database_url=database_url,
+        runtime=runtime,
+    )
     return ZebraAgentSettings(
         profile=profile,
-        database_url=_read(
-            values,
-            "ZEBRA_DATABASE_URL",
-            default=".zebra-agent/sessions.sqlite",
-        ),
+        database_url=database_url,
         api=ApiSettings(
             auth_token=_read_optional(values, "ZEBRA_API_AUTH_TOKEN"),
         ),
@@ -198,7 +192,8 @@ def load_settings(
         session_handoff=SessionHandoffSettings(
             enabled=_read_bool(values, "ZEBRA_SESSION_HANDOFF_ENABLED", default=False),
         ),
-        runtime=_load_runtime_settings(values, profile=profile),
+        live_events=_load_live_event_settings(values),
+        runtime=runtime,
         setup=load_setup_settings(values),
         scm=_load_scm_settings(values),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
@@ -216,6 +211,9 @@ def load_settings(
         mcp_elicitation_enabled=_read_bool(
             values, "ZEBRA_MCP_ELICITATION", default=True
         ),
+        host_tool_endpoint=_read_optional(values, "ZEBRA_HOST_TOOL_ENDPOINT"),
+        host_tool_workload_identity=_read_optional(values, "ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY"),
+        host_tool_shared_secret=_read_optional(values, "ZEBRA_HOST_TOOL_SHARED_SECRET"),
     )
 
 
@@ -227,12 +225,10 @@ def _load_runtime_settings(
     runtime_class = _read(
         values,
         "ZEBRA_RUNTIME_CLASS",
-        default="gvisor" if profile == "production" else "trusted-local",
+        default="trusted-local",
     )
     if runtime_class not in {"trusted-local", "os-sandbox", "oci-rootless", "gvisor"}:
         raise ValueError("ZEBRA_RUNTIME_CLASS is unsupported")
-    if profile == "production" and runtime_class != "gvisor":
-        raise ValueError("ZEBRA_PROFILE=production requires ZEBRA_RUNTIME_CLASS=gvisor")
     engine = _read(values, "ZEBRA_RUNTIME_ENGINE", default="docker")
     if engine not in {"docker", "podman"}:
         raise ValueError("ZEBRA_RUNTIME_ENGINE must be docker or podman")
@@ -247,10 +243,16 @@ def _load_runtime_settings(
     require_workspace_quota = _read_bool(
         values,
         "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA",
-        default=profile == "production",
+        default=profile in {"cloud", "production"},
     )
-    if profile == "production" and not require_workspace_quota:
-        raise ValueError("ZEBRA_PROFILE=production requires a storage-enforced workspace quota")
+    if (
+        profile in {"cloud", "production"}
+        and runtime_class == "gvisor"
+        and not require_workspace_quota
+    ):
+        raise ValueError(
+            f"ZEBRA_PROFILE={profile} requires a storage-enforced workspace quota"
+        )
     return RuntimeSettings(
         runtime_class=runtime_class,
         engine=engine,
@@ -281,96 +283,30 @@ def _load_runtime_settings(
     )
 
 
-def _read_mcp_servers(
-    values: Mapping[str, str],
-) -> tuple[McpServerSettings | McpHttpServerSettings, ...]:
-    raw = values.get("ZEBRA_MCP_SERVERS", "").strip()
-    if not raw:
-        return ()
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise ValueError("ZEBRA_MCP_SERVERS must be valid JSON") from exc
-    if not isinstance(payload, dict):
-        raise ValueError("ZEBRA_MCP_SERVERS must be a JSON object")
-    if len(payload) > MAX_MCP_SERVERS:
-        raise ValueError(f"ZEBRA_MCP_SERVERS supports at most {MAX_MCP_SERVERS} servers")
-    servers: list[McpServerSettings | McpHttpServerSettings] = []
-    for name in sorted(payload):
-        if not isinstance(name, str) or not _MCP_NAME_RE.fullmatch(name):
-            raise ValueError(f"invalid MCP server name: {name!r}")
-        entry = payload[name]
-        if not isinstance(entry, dict):
-            raise ValueError(f"MCP server {name} must be a JSON object")
-        kind = entry.get("kind", "stdio")
-        if kind == "stdio":
-            servers.append(_read_stdio_mcp_server(name, entry))
-        elif kind == "http":
-            servers.append(_read_http_mcp_server(name, entry))
-        else:
-            raise ValueError(f"MCP server {name} has unsupported kind {kind!r}")
-    return tuple(servers)
-
-
-def _read_stdio_mcp_server(name: str, entry: Mapping[str, object]) -> McpServerSettings:
-    extra = set(entry) - {"kind", "command", "args"}
-    if extra:
-        raise ValueError(f"MCP server {name} supports only command and args")
-    command = entry.get("command")
-    if not isinstance(command, str) or not command.strip():
-        raise ValueError(f"MCP server {name} requires command")
-    command_path = Path(command).expanduser()
-    if not command_path.is_absolute():
-        raise ValueError(f"MCP server {name} command must be absolute")
-    try:
-        resolved_command = command_path.resolve(strict=True)
-    except OSError as exc:
-        raise ValueError(f"MCP server {name} command does not exist") from exc
-    if not resolved_command.is_file() or not os.access(resolved_command, os.X_OK):
-        raise ValueError(f"MCP server {name} command must be executable")
-    if resolved_command.name.lower() in _BLOCKED_MCP_EXECUTABLES:
-        raise ValueError(f"MCP server {name} command is not allowed")
-    args = _read_mcp_args(name, entry.get("args", []), resolved_command.name.lower())
-    return McpServerSettings(name=name, command=str(resolved_command), args=args)
-
-
-def _read_http_mcp_server(name: str, entry: Mapping[str, object]) -> McpHttpServerSettings:
-    extra = set(entry) - {"kind", "url", "bearer_token_env"}
-    if extra:
-        raise ValueError(f"MCP http server {name} supports only url and bearer_token_env")
-    url = entry.get("url")
-    if not isinstance(url, str) or not url.strip():
-        raise ValueError(f"MCP http server {name} requires a url")
-    parsed = urlparse(url.strip())
-    if parsed.scheme != "https" or not parsed.hostname:
-        raise ValueError(f"MCP http server {name} url must be a valid https url")
-    bearer_token_env = entry.get("bearer_token_env")
-    if bearer_token_env is not None:
-        if (
-            not isinstance(bearer_token_env, str)
-            or not _MCP_BEARER_ENV_RE.fullmatch(bearer_token_env)
-        ):
-            raise ValueError(f"MCP http server {name} bearer_token_env is invalid")
-    return McpHttpServerSettings(
-        name=name,
-        url=url.strip(),
-        bearer_token_env=bearer_token_env if isinstance(bearer_token_env, str) else None,
+def _load_live_event_settings(values: Mapping[str, str]) -> LiveEventSettings:
+    return LiveEventSettings(
+        redis_url=_read_optional(values, "ZEBRA_LIVE_REDIS_URL"),
+        stream_max_length=_read_int(
+            values,
+            "ZEBRA_LIVE_STREAM_MAX_LENGTH",
+            default=1_000,
+        ),
+        key_prefix=_read(values, "ZEBRA_LIVE_STREAM_KEY_PREFIX", default="zebra:live:v1"),
     )
 
 
-def _read_mcp_args(name: str, value: object, executable: str) -> tuple[str, ...]:
-    if not isinstance(value, list) or len(value) > 16:
-        raise ValueError(f"MCP server {name} args must be a list with at most 16 entries")
-    args: list[str] = []
-    for item in value:
-        if not isinstance(item, str) or not item or len(item) > 1024 or "\0" in item:
-            raise ValueError(f"MCP server {name} contains an invalid argument")
-        args.append(item)
-    if sum(len(item) for item in args) > 4096:
-        raise ValueError(f"MCP server {name} arguments are too large")
-    if executable.startswith("python") and any(item in {"-c", "-m"} for item in args):
-        raise ValueError(f"MCP server {name} cannot use inline Python execution")
-    return tuple(args)
+def _validate_profile_contract(
+    *,
+    profile: str,
+    database_url: str,
+    runtime: RuntimeSettings,
+) -> None:
+    if profile not in {"cloud", "production"}:
+        return
+    if runtime.runtime_class != "gvisor":
+        raise ValueError(f"ZEBRA_PROFILE={profile} requires ZEBRA_RUNTIME_CLASS=gvisor")
+    if not database_url.startswith(("postgresql://", "postgres://")):
+        raise ValueError(f"ZEBRA_PROFILE={profile} requires a PostgreSQL DSN")
 
 
 def _load_scm_settings(values: Mapping[str, str]) -> ScmSettings:

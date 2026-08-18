@@ -4,7 +4,14 @@
 > Status, owner, branch, and evidence must be maintained by humans.
 > Current execution range: local Beta and single-host production foundations are
 > complete through `main@d586a8f`. `QA-GOV-02` closes stale governance state;
-> ACP and optional code intelligence remain locked.
+> `AGENT-DEF-ADR-01`, `AGENT-DEF-CON-01` and `AGENT-AUTH-SNAPSHOT-01` are
+> accepted and closed. The cloud-mainline aggregate evidence review is closed
+> with `PASS`; `CLOUD-AGG-FENCE-01` is now `Done` as a governance gate. The
+> local recovery evidence gate is closed after its path-bounded migration,
+> backup, restore and drill children; runtime, application wiring and production
+> rollout remain separately gated.
+> Local SQLite Registry work remains deferred. ACP and optional code intelligence
+> remain locked.
 
 ## Global Rules
 
@@ -16,10 +23,157 @@
 
 ## Status Legend
 
-`Locked` / `Ready` / `In Progress` / `Review` / `Blocked` / `Done`
+`Locked` / `Planning` / `Ready` / `In Progress` / `Review` / `Blocked` / `Done`
+
+`Planning` is reserved for an explicitly owned docs-only architecture gate. It
+does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLOUD-EFFECT-COMP-CLOSE-01` is `Done`, verified end-to-end on 2026-08-18:
+  after the rebased first implementation (`bbd6108d`) and the merged-back
+  corrective scope (receipt-based recovery of lost commit responses,
+  fail-closed execution preflight, `2026-08-17`), the real-PostgreSQL
+  compose runner passes `19 passed` with
+  `ZEBRA_CLOUD_EFFECT_COMPOSITION_TEST_RESULT=PASS`. The typed
+  `CloudWorkerComposition` replaces the unsafe `ControlPlaneStores` cast, the
+  API handoff reads the narrow `EffectStateReadPort`, and cloud Memory
+  finalization commits through the governed aggregate with receipt-based
+  recovery of lost commit responses. Profile axes, command-only API, live
+  SSE, host auth and AG-UI routes from the same stack are mainline;
+  Workspace Control Plane remains unimplemented and separately gated.
+- `CLOUD-TRN-NEXT-PLAN-01` is `Review` on
+  `codex/cloud-trench-next-plan-01`. It records the evidence-backed path from
+  cloud-mainline stabilization to the first production Trench read-only slice.
+  All newly reserved successor IDs remain `Locked`; the only immediate closeout
+  remains `CLOUD-INTEGRATION-REG-01`.
+- `QA-CLOUDLINE-PY-01` is `Review` on
+  `codex/qa-cloudline-py-01`. It owns the Python size, Ruff and Mypy baseline
+  after the regression fix. The integrated Zebra line now passes Mypy over
+  `617` source files and the complete backend is `2210 passed, 275 skipped`;
+  the validated snapshot of the concurrent PostgreSQL / Memory size fixes is
+  still isolated and the original dirty worktree remains untouched.
+- `QA-CLOUDLINE-DESKTOP-01` is in `Review` on
+  `codex/qa-cloudline-desktop-01`. It split the remaining Desktop stylesheet
+  size violation and made long-stream/stop Playwright regressions deterministic
+  after the Python baseline. Its visual contract stays unchanged; Node 22 build,
+  static checks, file-size validation, and all eight E2E tests pass. A macOS
+  packaged `.app` build passes; `tauri-driver` itself reports macOS unsupported,
+  so packaged WebDriver evidence remains a Linux CI gate.
+- `QA-CLOUDLINE-CI-01` is in `Review` on
+  `codex/qa-cloudline-ci-01`. It owns the canonical Quality workflow and the
+  packaged Desktop driver helper needed to revalidate the full Gate 0 matrix
+  after the Lease, atomicity, stylesheet, and event-driven assertion fixes.
+  Local OS sandbox smoke and the 20-cycle soak now pass; canonical remote
+  workflow evidence is not claimed until this line is pushed and run.
+- `ARCH-CONFIG-BOUNDARY-01` is in `Review` on
+  `codex/arch-config-boundary-01`. It freezes the provider-neutral configuration
+  boundary and adds a dependency contract before Integrations and Security
+  configuration decoupling.
+- `ARCH-CONFIG-INTEGRATIONS-01` is in `Review` on
+  `codex/arch-config-integrations-01`. It removes aggregate Settings inputs from
+  Model and SCM adapters through typed provider settings while preserving app
+  environment compatibility.
+- `ARCH-CONFIG-SECURITY-01` is in `Review` on
+  `codex/arch-config-security-01`. It removes the remaining aggregate config
+  import from Security credentials and preserves secret/redaction contracts.
+- `CLOUD-DEPLOY-PROFILE-CON-01` is in `Review` on
+  `codex/cloud-deploy-profile-con-01`. It freezes the deployment/storage/runtime
+  matrix and rejection contract before API/Worker composition changes.
+- `CLOUD-INTEGRATION-REG-01` is `Review` on
+  `codex/cloud-integration-regressions-01`. It repairs the branch-specific
+  recovered-Lease heartbeat checkpoint regression and restores lazy local API
+  Store composition without weakening explicit cloud fail-closed startup.
+- `EMB-AGUI-CMD-01` is `Review` on `codex/cloud-real-svc-ci-01`. The
+  activated slice owns only the API AG-UI command route/composition and focused
+  tests; it submits run/resume/stop intents to the existing durable command
+  service and does not construct Worker execution in the route.
+- `EMB-AGUI-STREAM-01` is `Review` on `codex/cloud-real-svc-ci-01`.
+  The activated slice owns the AG-UI replay/live-tail composition and focused
+  SSE tests; durable Event Store replay remains authoritative and no command or
+  Worker execution is added here.
+- `EMB-HOST-GW-01` is `Review` on `codex/cloud-real-svc-ci-01`. The
+  activated slice owns only the typed Host Tool manifest/invoke adapter,
+  workload identity and scope/SSRF/receipt boundaries; it does not add a
+  Trench endpoint or business-domain write path.
+- `CLOUD-PROVIDER-CONT-PG-PLAN-01` is `Done` on
+  `docs/cloud-provider-cont-pg-plan`. It freezes Provider Continuation external
+  authority, internal namespace, existing Lease fence, atomic Event binding,
+  lifecycle and scoped management rules. `CLOUD-PROVIDER-CONT-PG-01` is
+  `In Progress` on `codex/cloud-provider-cont-pg-01`; only its registered Owned
+  paths and migration v13 are authorized.
+
+- `EMB-PLAN-01` is `Done` on `zebra-cloud-trench`; it consolidates the Zebra
+  Embedded target architecture and registers the dependency-ordered
+  CopilotKit/AG-UI, cloud, Trench, analysis, writeback, memory, and GA roadmap.
+- `EMB-AGUI-SPIKE-01` is `Done` on `codex/emb-agui-spike-01`; its development-only
+  official Python protocol compatibility matrix is integrated. Trench
+  `TRN-CPK-SPIKE-01` is also merged to Trench `main` at `5c59b22` with its
+  focused and full checks green. `EMB-HOST-CON-01` is `Done` on
+  `codex/emb-host-con-01`; `EMB-AGUI-CON-01` is `Done` on
+  `codex/emb-agui-con-01`. Production API/Worker routing, CopilotKit/Trench
+  integration and React SDK work remain separately gated.
+- `CTX-MEM-01` is `Review` in PR `#198` on
+  `codex/issue-197-context-memory-continuity`. It closes GitHub issue `#197`
+  without depending on the stacked semantic-memory gateway: same-Task recovery
+  remains Event/Capsule-backed, while confirmed local memories gain governed
+  promotion and query-aware SQLite recall.
+- `CLOUD-STO-SEAM-01` is `Done` on `codex/cloud-sto-seam-01`; it preserves the
+  local SQLite profile and adds no cloud backend.
+- `CLOUD-STO-AUTH-01` is `Done` on `codex/cloud-sto-auth-01`; it completes the
+  authoritative local Store bundle without selecting a cloud backend.
+- `MEM-GW-CON-01` is `Done` on `codex/mem-gw-con-01`. Its provider-neutral
+  contract is integrated; Mem0, PostgreSQL delivery, Worker and Runtime remain
+  separate gates and no provider is runtime-selected.
+- `CLOUD-COMPOSE-INFRA-01` is `Done` on `codex/cloud-compose-infra-01`; it
+  defines only the dependency Compose stack. Zebra application containers remain
+  a separate locked task.
+- `CLOUD-LIVE-01` is `Done` on `codex/cloud-live-01`; it owns only the
+  provider-neutral live-event fan-out Port, the Redis Streams adapter and an
+  isolated Redis evidence runner. It does not select a Runtime, wire API/Worker
+  startup, create application Compose or make Redis authoritative.
+- `CLOUD-COMPOSE-APP-01` is `Done` on `codex/cloud-compose-app-01`; it
+  owns the separate Zebra migration/API/Worker image and application Compose
+  overlay. The base PostgreSQL/Redis/MinIO dependency stack remains an external
+  lifecycle, and this card does not activate Redis live routing or aggregate gates.
+- `CLOUD-REC-01` is `Done` as the local recovery evidence gate after all four
+  children were independently validated and merged. The migration, logical
+  backup, fresh restore and rollback/reconcile/race evidence is local-only; no
+  production RPO/RTO, PITR, DR or failover claim is implied.
+- `MEM-MEM0-SPIKE-01` is `Done` on `codex/mem0-contract-spike-01`. The pinned
+  OSS REST/Compose contract is recorded and its deterministic provider evidence
+  is accepted; real-provider compatibility remains a separate credential gate.
+- `MEM-MEM0-ADP-01` is `Done` on `codex/mem0-adapter-01` as a disabled-safe,
+  provider-neutral integration implementation. Mem0 is still `Provider
+  admission: DENIED` and `Mainline candidate: DEFERRED` under ADR-019; the
+  adapter is not runtime-selected and remains outside the active consumer path.
+- `MEM-GW-DEL-PLAN-01` is `Done` on `codex/mem-gw-del-plan-closeout-01`. The
+  v11 delivery/deletion plan and four path-bounded child cards are durable; the
+  parent remains locked because the scoped reset/rebuild gate is blocked.
+- `MEM-GW-DEL-CON-01` is `Done` on `codex/mem-gw-del-con-closeout-01`. It owns
+  only provider-neutral Core certainty/state values and focused tests;
+  PostgreSQL, Mem0 reset and Worker wiring remain separate gates.
+- `MEM-PROVIDER-DEL-COMPLIANCE-01` is `Done` on
+  `codex/mem-provider-del-compliance-01`. It completed the only Ready successor
+  after the `MEM-MEM0-RESET-ALT-01` `B/PARTIAL` result. ADR-018 defines the
+  provider-neutral gate and records Mem0 as not admitted to the Runtime mainline.
+- `MEM-PG-NATIVE-ADMISSION-SPIKE-01` is `Done` on
+  `codex/mem-pg-native-admission-spike-01`. Its isolated PostgreSQL profile
+  passed the admission matrix; Runtime remains locked even on `PASS`.
+- `MEM-GW-PG-NATIVE-01` is `Done` on
+  `codex/mem-gw-pg-native-01`. It owns only the PostgreSQL-native storage
+  gateway, migration and isolated storage tests; Runtime, Worker, Provider HTTP,
+  Desktop, SQLite and Redis composition remain locked.
+- `CLOUD-PG-PLAN-01` and `CLOUD-PG-01` are `Done` on their dedicated branches;
+  PostgreSQL Event/Projection remains gated by complete cloud composition.
+- `CLOUD-LEASE-CON-01`, `CLOUD-LEASE-PG-01`, `CLOUD-EFFECT-OUTBOX-01`, and
+  `CLOUD-EFFECT-CONSUMER-01` are `Done` on the isolated local business branch.
+  Their parent `CLOUD-LEASE-01` is also `Done`; full aggregate fencing remains
+  `Locked`.
+- Exact replay on `zebra-cloud-trench@375dca92` proves all nine remaining suite
+  failures are business-baseline defects. `BASE-MDL-EXPECT-01`,
+  `BASE-SCM-CRED-01`, `BASE-WKR-CANCEL-01`, and `BASE-EVT-SIZE-01` are `Done`.
+  No microservice baseline repair card remains active.
 - `QA-GOV-02` closes the governance reconciliation through PR `#144`.
 - `ARCH-RT-BP-01` is `Done` on
   `codex/arch-runtime-deployment-blueprint`; its scope is documentation only.
@@ -36,7 +190,6304 @@
 - `QA-148-MDL-01` is `Done` via PR `#156`.
 - `ARCH-129-ACP-01` and `ARCH-129-CTX-01` remain `Locked` pending explicit
   maintainer activation.
-- No other card is `Ready`, `In Progress`, `Review`, or `Blocked`.
+- `AGENT-DEF-ADR-01` is `Done`; its accepted ADR-016 is merged into the cloud
+  mainline and has unlocked the Core contract and its authority-snapshot successor.
+- `AGENT-DEF-CON-01` is `Done`: its provider-neutral Core Definition/Version/Release
+  models and Registry Port are merged into the cloud mainline. The follow-up
+  `AGENT-AUTH-SNAPSHOT-01` is also `Done`. The Definition chain
+  `AGENT-DEF-PG-01`（REG）、`AGENT-DEF-DRAFT-01`、`AGENT-DEF-BIND-01`、
+  `AGENT-DEF-MEM-01`、`AGENT-DEF-TRUST-01`、`AGENT-DEF-EVAL-01`、
+  `AGENT-DEF-PUB-01` are all `Done` on `zebra-cloud-trench`（v19-v22 迁移，
+  真实 PostgreSQL 矩阵 437 passed）；`AGENT-DEF-STO-01`（本地 SQLite
+  Registry）按产品定位继续推迟，不再是云端链前置依赖。
+- Cloud aggregate and Artifact task state is maintained in the cloud board below;
+  `CLOUD-SCOPE-CON-01` is `Done`, and the explicitly activated
+  `CLOUD-SESSION-HISTORY-PG-01` is now `Done` after its host PostgreSQL
+  evidence passed. `CLOUD-CONTEXT-CON-01` is now `Done` on its claimed branch;
+  its PostgreSQL successor, Provider Continuation and all other successor
+  adapters remain `Locked`.
+- `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` is `Done` on the isolated
+  `codex/cloud-agg-fence-handoff-dispatch-con-01` worktree. It is a governance-only
+  audit of Handoff and dispatch mutation authority. Sidebar ChatGPT returned
+  `CLOSEOUT-OK` for the initial `Planning -> Review` with audit result `BLOCK-GAP`;
+  AUTH-01, DISPATCH-01 and their PostgreSQL runners subsequently closed the gaps.
+  Local closeout records `PASS`; production runtime selection remains forbidden and
+  the parent `CLOUD-AGG-FENCE-01` is now `Done` as a governance gate.
+- `CLOUD-AGG-FENCE-MODEL-TOOL-01` is `Done` on
+  `codex/cloud-agg-fence-model-tool-01` at implementation commit `31347989`.
+  Its PostgreSQL runner passes `8/8` and the existing Control Plane runner passes
+  `11/11`; the parent aggregate gate is closed, while all runtime/application
+  Compose choices remain locked.
+
+## Context Continuity And Governed Memory Board
+
+### CTX-MEM-01 - Issue #197 Context Continuity And Governed Recall
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CTX / CORE / STORAGE`
+- Depends on: merged `CTX-LC-01`; intentionally independent of the local stacked
+  `MEM-GW-CON-01` provider gateway contract
+- Branch: `codex/issue-197-context-memory-continuity`
+- PR: `#198`
+- Review blocker: GitHub Actions run `30332213200` has zero executed steps; its
+  annotation reports an account payment/spending-limit gate.
+- Worktree: `../zebra-agent-issue-197`
+- Owned paths:
+  `docs/上下文连续性与治理记忆改进方案_v1.1.md` (new),
+  `docs/superpowers/plans/2026-07-28-issue-197-context-memory-continuity.md` (new),
+  `packages/agent-context/src/agent_context/conversation.py`,
+  `packages/agent-core/src/agent_core/application/memory_candidate_promotions.py` (new),
+  `packages/agent-core/src/agent_core/application/__init__.py`,
+  `packages/agent-core/src/agent_core/application/memory_reviews.py`,
+  `packages/agent-core/src/agent_core/domain/memories.py`,
+  `packages/agent-core/src/agent_core/harness/context_recovery.py` (new),
+  `packages/agent-core/src/agent_core/harness/model_step.py`,
+  `packages/agent-storage/src/agent_storage/memories.py`,
+  `packages/agent-storage/src/agent_storage/memory_search.py` (new),
+  `packages/agent-storage/src/agent_storage/memory_lookup.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_storage.py` (new),
+  `apps/worker/src/zebra_agent_worker/execution_errors.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
+  `tests/agent_context/test_conversation_history.py`,
+  `tests/agent_core/test_context_window_gate.py`,
+  `tests/agent_core/test_memory_candidate_promotions.py` (new),
+  `tests/agent_core/test_memory_reviews.py`,
+  `tests/agent_storage/test_sqlite_memories.py`,
+  `tests/worker/test_execution_finalization.py`,
+  `tests/worker/test_worker_context_lifecycle.py`,
+  `README.md`, `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Close the real parts of issue `#197` through one provider-neutral path: preserve
+the most recent user turns and complete tool groups during compaction, retry one
+stricter projection before a recoverable context pause, automatically confirm
+only deterministic high-evidence memory candidates without conflicts, and rank
+confirmed repo memory by current-task relevance within a token budget.
+
+#### Acceptance
+
+- [x] Compaction keeps the initial objective, at least the latest three real
+  user turns, and complete unresolved or recent tool call/result groups.
+- [x] A first over-budget projection gets one stricter retry from the original
+  messages; persistent overflow suspends with typed plan diagnostics instead of
+  producing a terminal Session failure.
+- [x] Only candidates reconstructed from direct user preference syntax,
+  successful local command/test evidence, or a complete `AGENTS.md` read may be
+  auto-confirmed; conflicting candidates stay queued for review.
+- [x] Confirmed repo memories are retrieved by SQLite FTS relevance plus a small
+  stable-rule lane, deduplicated and bounded by tokens rather than only count.
+- [x] Existing Event Store, Artifact, Capsule, Policy and manual memory-review
+  authority remain unchanged; no provider gateway or vector dependency is added.
+- [x] Focused regressions, full tests, static checks and release evals pass, or
+  inherited unrelated blockers are recorded with reproducible evidence.
+
+#### Explicit Non-Goals
+
+- no hidden chain-of-thought persistence
+- no automatic promotion of episodic, failed-attempt, external Web/MCP, or
+  model-inferred memories
+- no semantic provider or Mem0 integration; `MEM-GW-CON-01` owns that contract
+- no automatic child Session or Subagent creation to escape a context limit
+
+## Cloud Integration Stabilization Board
+
+### CLOUD-EFFECT-COMP-CLOSE-01 - Default Cloud Effect Composition Closeout
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE / STORAGE / WORKER / API / QA`
+- Depends on: `CLOUD-INTEGRATION-REG-01@8bbdf5b5`; explicitly activated by the
+  maintainer as one integrated, path-bounded implementation slice.
+- Branch: `codex/cloud-effect-comp-close-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-effect-comp-close-01/zebra-agent`
+- Owned paths:
+  `packages/agent-core/src/agent_core/ports/effect_state.py` (new),
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-core/src/agent_core/ports/artifact_object_store.py`,
+  `packages/agent-core/src/agent_core/ports/memory_store.py`,
+  `packages/agent-core/src/agent_core/ports/workspace_projection_store.py`,
+  `packages/agent-core/src/agent_core/ports/governed_memory_store.py`,
+  `packages/agent-core/src/agent_core/application/memory_candidates.py`,
+  `packages/agent-storage/src/agent_storage/effect_ledger.py`,
+  `packages/agent-storage/src/agent_storage/postgres/outbox.py`,
+  `packages/agent-storage/src/agent_storage/postgres_composition.py`,
+  `packages/agent-storage/src/agent_storage/runtime_composition.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `packages/agent-storage/src/agent_storage/memory_lookup.py`,
+  `packages/agent-storage/src/agent_storage/postgres/governed_memories.py`,
+  `packages/agent-storage/src/agent_storage/postgres/governed_memory_transaction_support.py`,
+  `packages/agent-storage/src/agent_storage/postgres/governed_memory_receipt_reads.py` (new),
+  `packages/agent-storage/src/agent_storage/postgres/workspaces.py`,
+  `packages/agent-storage/src/agent_storage/session_attachments.py`,
+  `apps/worker/src/zebra_agent_worker/cloud_composition.py` (new),
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
+  `apps/worker/src/zebra_agent_worker/execution_preflight.py` (new),
+  `apps/worker/src/zebra_agent_worker/recovery.py`,
+  `apps/worker/src/zebra_agent_worker/effect_runtime.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `apps/worker/src/zebra_agent_worker/cloud_memory_finalization.py` (new),
+  `apps/worker/src/zebra_agent_worker/cloud_memory_recovery.py` (new),
+  `apps/worker/src/zebra_agent_worker/continuation_lifecycle.py`,
+  `apps/worker/src/zebra_agent_worker/runtime_setup.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `apps/worker/src/zebra_agent_worker/provider_continuation_execution.py`,
+  `apps/worker/src/zebra_agent_worker/session_handoff.py`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/worker_projection.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/api/src/zebra_agent_api/api_session_handoff_mixin.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  focused tests under `tests/agent_core/`, `tests/agent_storage/`,
+  `tests/worker/`, `tests/api/`, and `tests/compose/cloud_effect_composition/`
+  (new), plus this card and its focused `PROGRESS.md` record.
+
+#### Goal
+
+Make the default cloud Worker use the fenced Effect dispatch, cloud Artifact
+coordinator, cloud Provider Continuation coordinator and governed Memory
+aggregate without treating `PostgresControlPlaneStores` as local
+`ControlPlaneStores`; give API handoff only a read-only Effect state dependency.
+
+#### Acceptance
+
+- [x] SQLite ledger and PostgreSQL outbox both implement a narrow
+  `EffectStateReadPort`; API handoff cannot schedule or claim Effects.
+- [x] The default cloud Worker resolves one typed cloud bundle and fails before
+  execution when dispatch, object writer, projection transaction, namespace or
+  continuation scope is absent.
+- [x] Cloud Effect payloads use the existing fenced Artifact coordinator, never
+  the local byte-store API; local execution retains the existing ledger path.
+- [x] A completed cloud Session finalizes governed Memory via one fenced
+  `WorkerMemoryMutationPlan`/receipt, never local `MemoryStorePort.upsert()`.
+- [x] Focused tests cover local compatibility, cloud construction failures,
+  Effect state reads and completed-session aggregate acceptance. A real-service
+  default-entrypoint runner is included when Docker services are available; its
+  shared test workspace mount is not Workspace Control Plane evidence.
+
+#### Review evidence and corrective scope
+
+- Focused local matrix: `21 passed, 22 skipped` across Worker finalization,
+  projection transaction, storage composition, Cloud profile and Effect ledger
+  tests. The skipped PostgreSQL Effect/Governed-Memory cases require
+  `ZEBRA_TEST_POSTGRES_DSN` and were not substituted with SQLite.
+- Changed-path Ruff and `git diff --check` pass. `execution.py` is exactly
+  500 lines; the repository size gate now reports only four pre-existing files
+  outside this task. Repository Mypy reports 21 inherited errors; none are in
+  the new Worker composition or Memory-finalization paths.
+- A PostgreSQL+object-store default-entrypoint run remains review evidence to
+  collect in a service-enabled environment; this task makes no production claim.
+- The post-merge review found three P1 regressions: terminal Cloud Effect
+  projection used local `upsert()` compatibility adapters; an unknown
+  governed-Memory commit outcome became unrecoverable after
+  `SESSION_COMPLETED`; and Cloud `setup-only` could stop the poller. It also
+  found that the claimed Compose runner did not exist. The corrective
+  implementation (`cloud_memory_recovery`, `execution_preflight`,
+  `governed_memory_receipt_reads`, `tests/compose/cloud_effect_composition/`)
+  was merged back into `zebra-cloud-trench` on 2026-08-17; the acceptance
+  checkbox above stays open until the regression tests and the real-service
+  runner are verified in this composition.
+- Verification closeout (2026-08-18): the real-PostgreSQL compose runner
+  (`tests/compose/cloud_effect_composition/run-postgres-tests.sh`, isolated
+  PostgreSQL + MinIO) passes `19 passed` with
+  `ZEBRA_CLOUD_EFFECT_COMPOSITION_TEST_RESULT=PASS`. The first run exposed
+  one contract gap — a cross-session receipt lookup raised the generic
+  identity-reuse conflict instead of a session-scoped one — fixed by
+  splitting the session mismatch into its own
+  `GovernedMemoryConflictError` in `governed_memory_receipt_reads.py`;
+  the full local matrix re-passes (`124 passed` across storage and worker
+  suites, Ruff/Mypy clean).
+
+#### Explicit Non-Goals
+
+- no Profile matrix, API command queue, Runtime isolation, Workspace Control
+  Plane, Redis/AG-UI, Trench, migration, Helm or production-readiness claim
+- no replacement of the remaining cloud API compatibility paths; those stay an
+  explicit command-only API blocker
+
+### CLOUD-WORKSPACE-CP-PROV-01 - Workspace Materialization Provider
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `RUNTIME / STORAGE`
+- Depends on: `CLOUD-WORKSPACE-CP-PG-01`; activated under the maintainer's
+  standing continuation instruction.
+- Branch: `zebra-cloud-trench` (batch closeout continuation)
+- Owned paths:
+  `packages/agent-runtime/src/agent_runtime/workspace_materialization.py` (new),
+  `packages/agent-runtime/src/agent_runtime/workspace_provisioner.py` (new),
+  runtime export registration,
+  `tests/agent_runtime/test_workspace_materialization.py` (new),
+  `tests/agent_storage/test_postgres_workspace_provisioner.py` (new),
+  `tests/compose/workspace_control/run-postgres-tests.sh` (matrix extended).
+- Delivers deterministic materialization: a stable content digest over the
+  materialized tree, git clone/checkout against the pinned revision with
+  forged-digest rejection, archive extraction with traversal/link guards,
+  and digest-verified snapshot extraction; the `PostgresWorkspaceProvisioner`
+  orchestrates them over the v18 authority — CAS start, uncertain on any
+  materialization failure, ready with revision+digest+volume on success,
+  deterministic uncertain reconciliation (resolve-succeed/resolve-fail),
+  snapshot (tree digest + tar.gz via injected object IO) and restore
+  roundtrips, and release with volume cleanup. Volume layout is
+  directory-based under an injected root; the dedicated mount remains
+  deployment composition.
+- Validation: local materialization matrix `8/8`; real PostgreSQL matrix
+  (store + provisioner) `8/8` with
+  `ZEBRA_WORKSPACE_CONTROL_POSTGRES_TEST_RESULT=PASS`; `make test`
+  `2242 passed, 282 skipped`; `make check` green.
+
+### CLOUD-WORKSPACE-CP-PG-01 - Workspace Control Plane PostgreSQL Authority
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE`
+- Depends on: `CLOUD-WORKSPACE-CP-CON-01`; activated under the maintainer's
+  standing continuation instruction.
+- Branch: `zebra-cloud-trench` (batch closeout continuation)
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/workspace_control_migration.py` (new, v18),
+  `packages/agent-storage/src/agent_storage/postgres/workspace_control.py` (new),
+  migration registry/import registration, `agent_storage` exports,
+  `tests/agent_storage/test_postgres_workspace_control.py` (new),
+  `tests/compose/workspace_control/` (new runner).
+- Delivers migration v18 (namespace-bound instance table with ready-state
+  revision+digest CHECK constraints and an uncertain partial index,
+  idempotent operation receipts with a unique namespace+idempotency key,
+  snapshot facts) and the `PostgresWorkspaceControlStore` adapter: CAS
+  transitions that consult the frozen domain table, idempotent pending
+  creation per key, namespace-scoped reads, uncertain listing, and
+  snapshot recording. Dict-row mapping matches the shared
+  `PostgresDatabase` connection factory.
+- Validation: real PostgreSQL 17.5 matrix `5/5` with
+  `ZEBRA_WORKSPACE_CONTROL_POSTGRES_TEST_RESULT=PASS` and deterministic
+  cleanup; `make test` `2234 passed, 279 skipped`; `make check` green.
+
+### CLOUD-WORKSPACE-CP-API-01 - Workspace Command And Read Surface
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `APP / API`
+- Depends on: `CLOUD-WORKSPACE-CP-PG-01`; activated under the maintainer's
+  standing continuation instruction.
+- Branch: `zebra-cloud-trench` (batch closeout continuation)
+- Owned paths: `apps/api/src/zebra_agent_api/api_workspace_mixin.py` (new),
+  `session_payloads.py` (`workspace_source` parsing), `session_queue.py`
+  (uri-preserving workspace root), `app.py` binding, `factory.py` cloud
+  wiring, `routes.py` endpoints, focused
+  `tests/api/test_workspace_control_routes.py` (new).
+- Delivers: `POST /workspaces` (idempotent pending creation, 201 with a
+  `workspace://<id>` uri), `GET /workspaces/{id}` projection reads, and
+  create-session `workspace_source` acceptance that is mutually exclusive
+  with plain `workspace` paths and binds the session to the control-plane
+  reference; the cloud factory composes `PostgresWorkspaceControlStore`
+  from the resolved namespace and explicit injection stays available.
+- Validation: focused route tests `5/5`; full backend green.
+
+### CLOUD-WORKSPACE-CP-RT-01 - Worker Workspace Runtime Resolution
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `RUNTIME / WORKER`
+- Depends on: `CLOUD-WORKSPACE-CP-PROV-01`.
+- Owned paths:
+  `packages/agent-runtime/src/agent_runtime/workspace_runtime_resolver.py` (new),
+  `workspace_provisioner.py` (`provision_existing`, mount-preserving reset,
+  single-root layout),
+  `apps/worker/src/zebra_agent_worker/workspace_resolution.py` (new),
+  `execution.py` resolver seam, `cloud_composition.py` factory (env-driven
+  volume root, self-describing snapshot object uris over the immutable
+  object store), `loop.py` pass-through.
+- Delivers: `WorkspaceRuntimeResolver` resolves `workspace://` references
+  through `provision_existing` (durable-source provisioning, unknown ids
+  fail closed), `resolve_ready` continuation path, `verify_revision`
+  drift fencing, and plain-path passthrough for the local profile; the
+  worker applies it to recovered tasks before runtime provisioning, and
+  task recovery preserves uri references instead of resolving them to
+  cwd-relative paths.
+- Validation: real PostgreSQL matrix `11/11` PASS including resolver
+  coverage; worker resolution test green; full backend green.
+
+### CLOUD-WORKSPACE-CP-GC-01 - Quota, Stale Sweep And Reconcile
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / RUNTIME`
+- Depends on: `CLOUD-WORKSPACE-CP-RT-01`.
+- Owned paths: `postgres/workspace_control.py` (expire sweep, namespace
+  quota accounting), `workspace_provisioner.py` (quota enforcement,
+  sweep delegation).
+- Delivers: namespace live-quota accounting with fail-closed provision
+  rejection when a namespace budget would be exceeded, and a
+  crash-orphan sweep that CAS-transitions stale `provisioning` instances
+  into `uncertain` for deterministic reconciliation through the existing
+  resolve-succeed/resolve-fail path.
+- Validation: real PostgreSQL matrix `11/11` PASS (quota rejection,
+  accounting, stale sweep idempotence).
+
+### CLOUD-WORKSPACE-CP-E2E-01 - Control-Plane Provisioned E2E
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `QA / SRE`
+- Depends on: API/RT/GC children.
+- Owned paths: `tests/compose/effect_default_e2e/` (workspace_command,
+  seed passthrough, scenario `workspace_cp_provisioned_side_effect`,
+  scratch-volume helper), `docs/CLOUD_WORKSPACE_CP_PLAN_v1.0.md`.
+- Closeout evidence: the automated scenario
+  `workspace_cp_provisioned_side_effect` passes on the rig and the full
+  runner returns `ZEBRA_EFFECT_DEFAULT_E2E=PASS` with all 11 scenarios
+  green. The macOS fixture blocker is fixed by applying the chmod from
+  inside the colima VM (`_ensure_writable_through_share`: host chmod +
+  guest chmod + guest-side write probe with bounded retries), which
+  bypasses the virtiofs host-side attribute-cache delay on freshly
+  erased APFS scratch volumes. A second fixture bug was fixed in the
+  same pass: the Worker-death scenario now kills the whole `uv`
+  process tree (`start_new_session` + `os.killpg`); killing only the
+  wrapper orphaned the worker, which then suspended the session itself
+  via model-call timeout instead of exercising the death-recovery
+  contract. The recovered session now reaches `session_completed`
+  through the completed-tool continuation with zero re-execution.
+
+### CLOUD-WORKSPACE-CP-CON-01 - Workspace Control Plane Domain And Port Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `CORE`
+- Depends on: `CLOUD-WORKSPACE-CP-PLAN-01`; activated under the maintainer's
+  standing continuation instruction.
+- Branch: `zebra-cloud-trench` (batch closeout continuation)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/workspace_control.py` (new),
+  `packages/agent-core/src/agent_core/ports/workspace_control.py` (new),
+  focused `tests/agent_core/test_workspace_control_contract.py` (new),
+  plus the `domain`/`ports` export registrations.
+- Delivers the provider-neutral P0.3 contract: `WorkspaceSource` (git
+  pinning required, archive artifact pairing, sha256 digests),
+  `WorkspaceInstance` with ready-state revision+digest invariants, the
+  pure lifecycle transition table (pending/provisioning/ready/sealed/
+  released/failed/uncertain with deterministic uncertain resolution and
+  snapshot only from ready/sealed), `WorkspaceProvisionCommand`,
+  `WorkspaceOperationReceipt`, `WorkspaceSnapshotRef`, and the
+  `WorkspaceProvisionerPort`/`WorkspaceVolumePort` seams. Zero migrations,
+  no runtime selection, local SQLite untouched.
+- Validation: focused contract tests `11 passed`; `make test`
+  `2234 passed, 274 skipped`; `make check` green.
+
+### CLOUD-WORKSPACE-CP-PLAN-01 - Cloud Workspace Control Plane Plan
+
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: All seven path-bounded successor cards are `Done`; the plan is fully executed.
+- Owner: `lukeding`
+- Suggested role: `ARCH / STORAGE / RUNTIME / QA`
+- Depends on: maintainer activation; freezes the P0.3 gap from the
+  2026-08-12 periodic review into seven path-bounded successor cards
+  (contract, PostgreSQL authority, provisioning provider, API command
+  surface, Worker runtime wiring, GC/reconcile, default-entrypoint E2E).
+- Branch: pending activation
+- Owned paths: `docs/CLOUD_WORKSPACE_CP_PLAN_v1.0.md` (this slice only)
+- Planning-only: no production code, migration or runtime selection is
+  authorized. Workspace bytes stay in object storage; PostgreSQL remains
+  the single authority; the local SQLite profile is untouched.
+
+### CLOUD-EFFECT-DEFAULT-E2E-01 - Default Entrypoint Real Side-Effect Acceptance
+
+- Status: `Done`
+- Suggested role: `QA / SRE`
+- Depends on: the merged `CLOUD-EFFECT-COMP-CLOSE-01` composition closeout;
+  execution tier is blocked on a gVisor-capable engine plus the execution-tier
+  implementation.
+- Branch: `zebra-cloud-trench` (runner committed directly on the merged
+  cloudline under the 2026-08-14 maintainer batch closeout)
+- Owned paths: `tests/compose/effect_default_e2e/` (runner, stub, seed,
+  durable verifier, compose file, contract test),
+  `docs/CLOUD-EFFECT-DEFAULT-E2E-01.md`
+- Execution tier validated on 2026-08-14 against a test-only gVisor rig
+  (colima `zebra-gvisor` VM dockerd + runsc, host tunnel, dual-view dedicated
+  workspace mount): the default Worker executed a policy-approved
+  `command.run` side effect inside a real gVisor sandbox through the durable
+  command lane; the outbox holds exactly one `succeeded` row with terminal
+  Event and payload binding, both request/result payloads are finalized in
+  versioned MinIO, repeated Worker cycles do not duplicate the effect, replay
+  stays consistent, and a no-tool session reaches `COMPLETED` with governed
+  Memory finalization (empty plans commit nothing). Result:
+  `ZEBRA_EFFECT_DEFAULT_E2E=PASS` with `lease_loss_uncertain_reconcile`
+  explicitly skipped pending a fault-injection design.
+- Composition tier (no gVisor engine): infrastructure, session acceptance,
+  worker fail-closed with zero Effect side effects, and the API handoff
+  Effect read pass; the runner exits `BLOCKED` (2) with the execution tier
+  skipped as `gvisor_engine_absent`.
+- 2026-08-16 update: the matrix is complete — 10/10 scenarios PASS on the
+  rig including two fault-injection scenarios. `worker_death_mid_
+  continuation_recovers` kills the Worker during the post-tool model turn
+  and verifies the deterministic fail-safe posture: lease TTL expiry
+  triggers recovery, the dead attempt lands in `suspended`, and the
+  approved side effect is never re-executed (completed-tool continuation
+  recovery is unit-covered; completing a suspended session through the
+  command lane is the registered successor gap). `lease_loss_uncertain_
+  reconcile` rotates the control-plane epoch mid-execution and verifies
+  the stale terminal mutation is rejected while the effect reaches a
+  deterministic uncertain reconciliation with zero replay.
+- Recorded findings: the inline execution path never populates outbox
+  `claim_fencing_token` (reserved for the dispatch-consumer lane). The
+  2026-08-14 wedge was root-caused on 2026-08-15 and fixed:
+  `DurableHarnessEventRecorder.accept_persisted_event` sent guard-committed
+  events down the legacy `index_event` path whose cloud Event-derived
+  adapter forbids `upsert`, aborting projection advancement and wedging
+  finalization. The fix mirrors the transaction path (advance view, fenced
+  `index_worker_event`, save projections) with a regression test; the
+  approved side-effect session now reaches `completed` with a final model
+  turn on the rig, and the E2E asserts it. Still open on the successor
+  card: durable checkpointing for genuine mid-execution Worker death
+  (the post-start fail-closed resume defense stays), the
+  `lease_loss_uncertain_reconcile` fault-injection scenario, and
+  command-consumption failure logging.
+- Contract tests: `6 passed`; changed-path Ruff passes.
+- Explicit non-goals: the rig is test-only fixture evidence; Workspace
+  Control Plane, multi-tenant isolation and production rollout remain
+  unclaimed.
+
+### CLOUD-TRN-NEXT-PLAN-01 - Cloud And Trench Next Execution Plan
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `ARCH / PM / QA`
+- Depends on: `CLOUD-INTEGRATION-REG-01` review evidence; this docs branch is
+  intentionally stacked on its implementation commit and must merge after it
+- Branch: `codex/cloud-trench-next-plan-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-trench-next-plan-01/zebra-agent`
+- Owned paths:
+  `docs/Zebra Cloud与Trench下一阶段执行计划_v1.0.md` (new), this card and
+  successor reservation table in `docs/AGENT_TASKS.md`, and the focused current
+  snapshot in `PROGRESS.md`
+
+#### Goal
+
+Replace an ambiguous “continue cloud/Trench” direction with one evidence-backed,
+dependency-ordered execution plan that first restores a green cloud baseline,
+then closes production composition/live/recovery gates, and finally delivers a
+read-only Trench vertical slice.
+
+#### Acceptance
+
+- [x] Code, package dependencies, composition roots, CI, current task state and
+  authoritative architecture/phase/Embedded documents are inspected.
+- [x] Verified blockers are separated from already completed contracts/adapters.
+- [x] Successor tasks have stable IDs, dependency order, reserved path boundaries,
+  acceptance, non-goals and planning estimates.
+- [x] No successor is activated and no production code, migration or Trench file
+  changes as part of this planning card.
+- [x] The plan preserves `CLOUD-INTEGRATION-REG-01` as the first merge and keeps
+  the concurrent original-worktree changes outside this branch.
+
+#### Locked Successor Reservations
+
+The full scope and acceptance for each reservation are authoritative in
+`docs/Zebra Cloud与Trench下一阶段执行计划_v1.0.md`. Before implementation,
+exactly one eligible row must be expanded into a claimed card with a human owner,
+branch, worktree and frozen Owned paths.
+
+| Gate | Locked task IDs | Unlock condition |
+| --- | --- | --- |
+| 0 | `QA-CLOUDLINE-PY-01`, `QA-CLOUDLINE-DESKTOP-01`, `QA-CLOUDLINE-CI-01` | regression fix merged and concurrent changes handed off |
+| 1 | `ARCH-CONFIG-BOUNDARY-01`, `ARCH-CONFIG-INTEGRATIONS-01`, `ARCH-CONFIG-SECURITY-01`, `CLOUD-DEPLOY-PROFILE-CON-01`, `CLOUD-DEPLOY-PROFILE-01`, `CLOUD-COMMAND-API-CON-01`, `CLOUD-COMMAND-RUN-01`, `CLOUD-COMMAND-CTRL-01` | Gate 0 canonical CI green, then each listed dependency |
+| 2 | `CLOUD-LIVE-WIRE-CON-01`, `CLOUD-LIVE-PUBLISH-01`, `CLOUD-LIVE-SSE-01`, `CLOUD-REC-PROD-CON-01`, `CLOUD-REC-PG-PITR-01`, `CLOUD-REC-S3-01`, `CLOUD-DEPLOY-HELM-01`, `CLOUD-K8S-GVISOR-E2E-01`, `CLOUD-REAL-SVC-CI-01` | command/profile baseline plus task-specific infrastructure |
+| 3 | `EMB-TOOL-CON-01`, `EMB-AUTH-CON-01`, `EMB-AUTH-PG-01`, `EMB-AUTH-HTTP-01`, `EMB-AUTH-01`, `EMB-AGUI-CMD-01`, `EMB-AGUI-STREAM-01`, `EMB-AGUI-API-01`, `EMB-HOST-GW-01` | Gate 0 for contract cards; real-service cloud baseline for adapters/endpoints |
+| 4 | `TRN-READ-PLAN-01`, `TRN-READ-01`, `TRN-CPK-BFF-01`, `TRN-PANEL-01`, `EMB-TRN-READ-E2E-01` | Gate 0 plus stable Zebra contracts unlock Trench planning; implementations keep their listed dependencies |
+
+#### Explicit Non-Goals
+
+- no implementation activation, code cleanup, migration allocation or CI edit
+- no P4 shared-state, P5 analysis, P6 writeback, Mem0 runtime or Agent Definition runtime
+- no claim that Compose evidence equals Kubernetes production readiness
+
+### QA-CLOUDLINE-PY-01 - Python Quality Baseline
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `QA / CORE / STORAGE`
+- Depends on: merged `CLOUD-INTEGRATION-REG-01`; this worktree is based on
+  `codex/cloud-trench-next-plan-01`
+- Branch: `codex/qa-cloudline-py-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/qa-cloudline-py-01/zebra-agent`
+- Owned paths:
+  `packages/agent-core/src/agent_core/harness/orchestrator.py`,
+  `packages/agent-core/src/agent_core/harness/sequential_loop.py`,
+  `packages/agent-security/src/agent_security/mcp_proxy_policy.py`,
+  `packages/agent-tools/src/agent_tools/search_pipeline.py`,
+  `packages/agent-tools/src/agent_tools/web_crawl.py`,
+  `packages/agent-tools/src/agent_tools/web_projection.py`,
+  `packages/agent-storage/src/agent_storage/s3_error_mapping.py`,
+  `packages/agent-storage/src/agent_storage/artifact_objects.py`,
+  `packages/agent-storage/src/agent_storage/runtime_composition.py`,
+  `packages/agent-storage/src/agent_storage/postgres/__init__.py`,
+  `packages/agent-storage/src/agent_storage/postgres/context_lifecycle.py`,
+  `packages/agent-storage/src/agent_storage/postgres/provider_continuations.py`,
+  `tests/agent_core/test_harness_model_step.py`,
+  `tests/agent_tools/test_search_pipeline.py`,
+  `tests/agent_tools/test_web_projection.py`,
+  `tests/integration/test_web_native_e2e.py`,
+  `tests/agent_storage/test_postgres_governed_memories.py`,
+  `tests/agent_storage/governed_memory_test_support.py` (new), this card in
+  `docs/AGENT_TASKS.md`, and the focused status in `PROGRESS.md`
+
+#### Goal
+
+Close the Python quality gate after `CLOUD-INTEGRATION-REG-01`, including the
+three source/test size violations, Ruff import/unused findings and the Mypy
+errors exposed after the complete workspace dependency sync.
+
+#### Acceptance
+
+- `make sync` completes before static checks.
+- `scripts/check_file_sizes.py`, full Ruff and full Mypy pass on this branch.
+- Focused tests for changed tool, storage and harness paths pass; no behavior
+  change is introduced by import organization or JSON metadata narrowing.
+- The concurrent PG/Memory handoff snapshot is validated in this branch and the
+  original dirty worktree is not modified.
+
+#### Closeout
+
+- `make sync` completed; full Ruff passes and Mypy passes for all `596` source
+  files.
+- The three Python/test size violations are below their limits. Focused tests
+  pass `34 passed, 10 skipped`; the full backend suite is `2104 passed, 271
+  skipped, 1 failed`.
+- The sole full-suite failure is the one Desktop-owned size violation in
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` (`561/500`). It
+  is intentionally left for `QA-CLOUDLINE-DESKTOP-01` and is not a Python task
+  failure.
+- Original `zebra-cloud-trench` concurrent changes remain untouched; their
+  validated size/export snapshot is now reproducible on this branch.
+
+#### Explicit Non-Goals
+
+- no API/Worker runtime, Profile, migration, Desktop or Trench feature work
+- no broad Mypy configuration relaxation or dependency addition
+- no destructive cleanup of the original worktree
+
+### QA-CLOUDLINE-DESKTOP-01 - Desktop Quality And Streaming Regressions
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `QA / DESKTOP`
+- Depends on: `QA-CLOUDLINE-PY-01` review commit `908f1989ca32`
+- Branch: `codex/qa-cloudline-desktop-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/qa-cloudline-desktop-01/zebra-agent`
+- Owned paths:
+  `UI/desktop/src/components/CodexConversationPane.styles.ts`,
+  `UI/desktop/src/components/CodexConversationPane.content.styles.ts`,
+  `UI/desktop/e2e/desktop-streaming.spec.ts`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Remove the last repository file-size violation without changing the composer
+visual contract, and make long-stream and stop assertions event-driven rather
+than timing- or multi-match-dependent.
+
+#### Acceptance
+
+- Both style modules remain below the repository source-file limit and the
+  composer layout check still finds the existing CSS contract.
+- Node 22 Desktop build and every `checks/*.check.ts` script pass.
+- The eight Desktop streaming Playwright tests pass under the supported Node
+  runtime, or an environment-only blocker is recorded with command evidence.
+- `pnpm tauri:check` is blocked only by the machine's global USTC Cargo mirror
+  returning 404; `cargo --config /tmp/zebra-cargo-direct-config.toml check
+  --locked` passes against rsproxy without a source change.
+- No broad timeout increase, visual redesign, or unrelated UI cleanup.
+
+#### Explicit Non-Goals
+
+- no API/Worker, Python, migration, Profile or Trench implementation work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+### QA-CLOUDLINE-CI-01 - Canonical Gate 0 Quality Baseline
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `QA / CI`
+- Depends on: `QA-CLOUDLINE-PY-01` review commit `908f1989ca32` and
+  `QA-CLOUDLINE-DESKTOP-01` review commit `debdaa16`
+- Branch: `codex/qa-cloudline-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/qa-cloudline-ci-01/zebra-agent`
+- Owned paths: `.github/workflows/quality.yml`,
+  `scripts/packaged_desktop_e2e.py`, this task card, and the focused status in
+  `PROGRESS.md`
+
+#### Goal
+
+Close the Gate 0 canonical quality baseline after the two QA branches. Keep
+the workflow's existing Backend, Desktop, packaged Tauri, gVisor, quota and OS
+sandbox jobs; repair only verified environment or contract drift exposed by the
+new commits.
+
+#### Acceptance
+
+- The canonical workflow is syntactically valid and explicitly bypasses proxy
+  routing for loopback API/provider traffic.
+- Packaged Tauri E2E follows the durable suspended-state and event-driven
+  streaming contracts rather than stale terminal/fixed-fragment assertions.
+- Local reproductions pass for Backend quality, Desktop checks/build/E2E, and
+  packaged helper static validation; remote job evidence is reported separately
+  when the branch is not pushed.
+- No CI job is removed, made advisory, or hidden behind a broad retry.
+
+#### Closeout
+
+- `make sync` completed; `make test` passed `2105 passed, 271 skipped`, and
+  `make check` passed the file-size gate (`1212` files), Ruff, Mypy (`596`
+  source files), and the ten-case release eval.
+- Node 22 / pnpm 10.28.2 Desktop checks and build pass; the eight Playwright
+  streaming tests pass with `NO_PROXY=127.0.0.1,localhost`.
+- Tauri `cargo check --locked` passes with the direct rsproxy config. The
+  repository's default `pnpm tauri:check` remains machine-blocked by the
+  global USTC mirror returning 404; no source or lockfile change was made.
+- The old PR #194 run `30992835876` is useful only as pre-fix evidence: its
+  Backend, Desktop and packaged failures correspond to the now-closed size,
+  Lease checkpoint, atomicity and stale packaged-state assertions. No remote
+  rerun is claimed from this unpushed branch. The integrated line additionally
+  passes `make test` with `2210 passed, 275 skipped`, builds the macOS packaged
+  `.app`, and passes the local OS sandbox smoke/soak; macOS packaged WebDriver
+  is unsupported by `tauri-driver` and is therefore left to the Linux CI job.
+
+#### Explicit Non-Goals
+
+- no Profile, command API, recovery, Helm, gVisor implementation, Auth or Trench
+  feature work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+### ARCH-CONFIG-BOUNDARY-01 - Packages/Apps Configuration Boundary Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `ARCH / CONFIG`
+- Depends on: Gate 0 canonical quality review commit `109ec4e4`
+- Branch: `codex/arch-config-boundary-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/arch-config-boundary-01/zebra-agent`
+- Owned paths: `docs/ADR-021_配置边界与Provider-neutral输入合同.md`,
+  `tests/config/test_package_dependency_boundaries.py`, this task card, and
+  the focused status in `PROGRESS.md`
+
+#### Goal
+
+Freeze one provider-neutral settings input boundary and make package/app
+layering executable: reusable `packages/*` may not import `apps/*`, while app
+composition remains the only place that maps environment-backed settings into
+provider-specific adapters.
+
+#### Acceptance
+
+- The contract documents the allowed dependency direction and minimum mapping
+  fields for Integrations and Security.
+- A deterministic dependency test fails if any package source imports
+  `zebra_agent_config` or an `apps.*` module; current violations are recorded
+  as successor work rather than hidden.
+- No second aggregate settings object or runtime behavior is introduced.
+
+#### Explicit Non-Goals
+
+- no Integrations or Security import rewrite in this card
+- no Profile implementation, command API, recovery, deployment or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- Added ADR-021 with the single settings aggregate, provider-neutral adapter
+  inputs, dependency direction, and successor migration order.
+- Added two executable boundary tests: packages cannot import app/composition
+  roots, and the five existing `zebra_agent_config` imports are an exact,
+  finite successor inventory. Focused contract validation passes `2 tests`,
+  Ruff and Mypy.
+
+### ARCH-CONFIG-INTEGRATIONS-01 - Typed Integration Provider Settings
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `INTEGRATIONS / CONFIG`
+- Depends on: `ARCH-CONFIG-BOUNDARY-01` review commit `7e5c5360`
+- Branch: `codex/arch-config-integrations-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/arch-config-integrations-01/zebra-agent`
+- Owned paths: `packages/agent-integrations/`, its focused tests/pyproject,
+  `tests/config/test_package_dependency_boundaries.py`, API/Worker/CLI
+  composition mapping required to call the typed builders, this task card, and
+  the focused status in `PROGRESS.md`
+
+#### Goal
+
+Make Model, DeepSeek beta, SCM and credential integration builders accept only
+their minimum typed provider settings. Preserve environment variable names,
+credential redaction, retry and network policy behavior at app composition.
+
+#### Acceptance
+
+- `agent-integrations` has no `zebra_agent_config` import or dependency.
+- Model and SCM provider settings are immutable and contain no database,
+  runtime, session or aggregate Settings fields.
+- Package tests, boundary inventory, Mypy and affected API/Worker/CLI tests pass.
+
+#### Explicit Non-Goals
+
+- no Security credential implementation rewrite beyond the SCM input type
+- no Profile, command API, recovery, deployment, Helm/gVisor or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- Added immutable `ModelProviderSettings` and `ScmProviderSettings`; Model,
+  DeepSeek beta, SCM and credential builders no longer accept the aggregate
+  `ZebraAgentSettings` or import `zebra_agent_config`. The package dependency
+  and lockfile entries were removed.
+- API, Worker and CLI composition roots map only the required fields; model
+  environment lookup and SCM credential/network/redaction behavior remain in
+  their existing seams. The boundary inventory is reduced to the one Security
+  credential import owned by `ARCH-CONFIG-SECURITY-01`.
+- Focused Integrations/API/CLI/boundary validation passes `158 passed, 3
+  skipped`; Ruff, file-size gate (`1213` files), and Mypy (`598` source files)
+  pass.
+
+### ARCH-CONFIG-SECURITY-01 - Credential Boundary Configuration Decoupling
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `SECURITY / CONFIG`
+- Depends on: `ARCH-CONFIG-BOUNDARY-01` review commit `7e5c5360` and
+  `ARCH-CONFIG-INTEGRATIONS-01` review commit `fe200bb6`
+- Branch: `codex/arch-config-security-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/arch-config-security-01/zebra-agent`
+- Owned paths: `packages/agent-security/`, its focused tests/pyproject, the
+  boundary inventory in `tests/config/test_package_dependency_boundaries.py`,
+  this task card, and the focused status in `PROGRESS.md`
+
+#### Goal
+
+Make Security credential policy consume only provider/token references that it
+needs. It must not read environment/config aggregates or import `apps/config`.
+
+#### Acceptance
+
+- `agent-security` has no `zebra_agent_config` import or dependency.
+- Credential validation, token redaction and snapshot behavior remain explicit
+  and secret-safe.
+- Security tests, boundary inventory, Ruff and Mypy pass.
+
+#### Explicit Non-Goals
+
+- no Profile, command API, recovery, deployment, Integrations or Trench work
+- no plaintext secret persistence or change to the original dirty worktree
+
+#### Closeout
+
+- Added immutable `ScmCredentialSettings` containing only provider and token
+  environment reference. `agent-security` no longer imports or depends on
+  `zebra_agent_config`; its redacted capability and snapshot stay secret-safe.
+- Boundary inventory is now empty. Focused Security/boundary validation passes
+  `6 tests`; Ruff, file-size gate (`1215` files), and Mypy (`598` source files)
+  pass.
+
+### CLOUD-DEPLOY-PROFILE-CON-01 - Deployment Profile Matrix Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `ARCH / DEPLOY`
+- Depends on: `ARCH-CONFIG-INTEGRATIONS-01` and `ARCH-CONFIG-SECURITY-01` review
+  commits `fe200bb6` and `f1d27669`
+- Branch: `codex/cloud-deploy-profile-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-deploy-profile-con-01/zebra-agent`
+- Owned paths: `docs/ADR-022_Deployment_Profile矩阵与权威轴合同.md`,
+  `tests/config/test_profile_contract.py`,
+  `tests/test_cloud_api_worker_profile_composition.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, this task card, and the
+  focused status in `PROGRESS.md`
+
+#### Goal
+
+Freeze one unambiguous matrix for deployment, storage authority and runtime
+isolation. Local remains lazy SQLite/trusted-local; cloud and production use
+PostgreSQL plus gVisor and fail closed. `cloud + trusted-local` and
+`production + SQLite` are invalid combinations.
+
+#### Acceptance
+
+- ADR-022 states the axes, valid combinations, rejected combinations and
+  composition ownership without creating a second Settings aggregate.
+- Focused contract tests cover local compatibility and the rejection/production
+  cases; implementation may be completed by the dependent Profile task.
+
+#### Explicit Non-Goals
+
+- no API/Worker/Compose composition implementation in this contract card
+- no command API, recovery, Helm/gVisor or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- ADR-022 records the only valid local/ci/test and cloud/production matrix,
+  explicit deployment/storage/runtime axes, and fail-closed rules.
+- `ZebraAgentSettings` exposes read-only axis views and validates PostgreSQL +
+  gVisor + quota for cloud/production. Focused config/cloud matrix validation
+  passes `30 tests`; Ruff and Mypy (`598` source files) pass.
+
+### CLOUD-DEPLOY-PROFILE-01 - Profile Implementation And Application Composition
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `ARCH / DEPLOY / API / WORKER`
+- Depends on: `CLOUD-DEPLOY-PROFILE-CON-01` review commit `322a0233`
+- Branch: `codex/cloud-deploy-profile-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-deploy-profile-01/zebra-agent`
+- Owned paths: `apps/config/src/zebra_agent_config/settings.py`,
+  `packages/agent-storage/src/agent_storage/runtime_composition.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  `apps/api/src/zebra_agent_api/storage_composition.py`,
+  `apps/api/src/zebra_agent_api/api_scm_mixin.py`,
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `apps/worker/src/zebra_agent_worker/provider_configuration.py`,
+  `docker/migrate.py`, `docker/compose.application.yml`,
+  `tests/compose/application/run-smoke.sh`,
+  `tests/test_cloud_api_worker_profile_composition.py`, this task card, and
+  the focused status in `PROGRESS.md`
+
+#### Goal
+
+Make API, Worker, storage composition and the application Compose smoke path
+consume the same validated deployment/storage/runtime profile. Production must
+select PostgreSQL authority and the isolated runtime just like cloud; local,
+CI and test keep lazy SQLite compatibility.
+
+#### Acceptance
+
+- local/cloud/production composition tests prove one profile selection reaches
+  API, Worker and storage without string-specific authority forks.
+- cloud/production startup uses PostgreSQL stores and fails closed on invalid
+  runtime or DSN; local/test startup remains lazy and SQLite-compatible.
+- application Compose smoke uses the same profile contract and validates the
+  production axes; focused Ruff, Mypy, file-size and matrix tests pass.
+
+#### Explicit Non-Goals
+
+- no command API, live Redis, recovery, Helm/gVisor deployment or Trench work
+- no second settings aggregate and no change to the original dirty
+  `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- API, Worker, Storage composition and the migration entrypoint now consume the
+  explicit `storage_authority` axis. Both `cloud` and `production` select
+  PostgreSQL and deployment namespace wiring; local/CI/test remain SQLite.
+- Application Compose and its smoke script pass the gVisor digest/quota inputs,
+  while invalid profile/runtime/DSN combinations continue to fail during config
+  load. MCP config parsing was split into `mcp_settings.py` to keep the source
+  file-size gate below 500 lines without changing its public exports.
+- Focused profile/composition validation passes `11 tests`; full backend passes
+  `2113 passed, 271 skipped`; `make check` passes (`1216` files, Ruff, Mypy
+  `599`, eval `10/10`). Compose `config --quiet` passes. Full application
+  Compose execution was attempted but Docker Hub BuildKit authorization timed
+  out before a service image could build; dependency containers were cleaned up.
+
+### CLOUD-COMMAND-API-CON-01 - Stateless API Command Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `CORE / API / STORAGE`
+- Depends on: `CLOUD-DEPLOY-PROFILE-01` review commit `99b73707`
+- Branch: `codex/cloud-command-api-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-command-api-con-01/zebra-agent`
+- Owned paths: `packages/agent-core/src/agent_core/contracts/session_commands.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/__init__.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `tests/agent_core/test_session_command_contract.py`,
+  `docs/ADR-023_Stateless_Command与Revision合同.md`, this task card, and the
+  focused status in `PROGRESS.md`
+
+#### Goal
+
+Define one provider-neutral durable command envelope for run, resume, message,
+stop, cancel and suspend. Commands carry an idempotency key and expected
+revision; API/cloud callers submit intent while local execute compatibility is
+explicitly outside this contract.
+
+#### Acceptance
+
+- Command kinds, target identity, expected revision, idempotency key and
+  payload validation are typed, bounded and provider-neutral.
+- The contract maps command kinds to durable event intent and status outcomes
+  without constructing a Runtime or Harness.
+- Duplicate/revision-conflict semantics are deterministic and covered by
+  focused tests; core package boundaries and file-size/Ruff/Mypy gates pass.
+
+#### Explicit Non-Goals
+
+- no API route, Worker consumer, Runtime side effect, Redis/live wiring,
+  recovery, deployment or Trench work
+- no second configuration aggregate and no change to the original dirty
+  `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- ADR-023 and `SessionCommand` freeze the provider-neutral command envelope,
+  bounded JSON payload, command-specific validation, stable fingerprint and
+  `session_command_accepted` event payload.
+- Deterministic admission checks idempotency replay/conflict before optimistic
+  revision conflict, so retries remain safe after the stream advances. Focused
+  core/event validation passes `18 tests`; Ruff, Mypy (`600` files) and the file
+  size gate (`1217` files) pass.
+- No API route, Worker wake-up, Runtime side effect or production deployment is
+  claimed; those remain the explicitly dependent command-run/control cards.
+
+### CLOUD-COMMAND-RUN-01 - Run/Resume Command And Worker Wake-up
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / WORKER / STORAGE`
+- Depends on: `CLOUD-COMMAND-API-CON-01` review commit `af8ec37b`
+- Branch: `codex/cloud-command-run-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-command-run-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/command_submission.py`,
+  `apps/api/src/zebra_agent_api/api_command_mixin.py`,
+  `apps/api/src/zebra_agent_api/app.py`, `apps/api/src/zebra_agent_api/routes.py`,
+  `apps/worker/src/zebra_agent_worker/command_consumer.py`,
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `tests/api/test_session_command_routes.py`,
+  `tests/worker/test_command_consumer.py`,
+  `tests/worker/test_worker_storage_composition.py`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Submit run/resume/message intent as durable `SessionCommand` Events and let a
+stateless Worker claim the command stream after restart. API command handling
+must not construct a Harness or Runtime; existing local execute compatibility
+remains explicitly isolated.
+
+#### Acceptance
+
+- The command route requires an idempotency key and expected revision, appends
+  one accepted intent, returns duplicate/revision-conflict deterministically,
+  and never invokes Runtime/Harness in the API process.
+- Worker command consumption is restart-safe, claims only accepted command
+  Events, and routes run/resume/message to the existing execution services.
+- Focused API/Worker tests cover duplicate commands, concurrent revision
+  conflict, worker restart/replay and local compatibility; full validation is
+  green: `2128 passed, 271 skipped`, Ruff, Mypy (603 files), file-size gate
+  (1219 files), and eval release gate (10/10).
+
+#### Explicit Non-Goals
+
+- no stop/cancel/suspend control consumer (owned by `CLOUD-COMMAND-CTRL-01`)
+- no Redis/live publish, production recovery, Helm/gVisor deployment or Trench
+  work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+### CLOUD-COMMAND-CTRL-01 - Stop/Cancel/Suspend Control Commands
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / WORKER / STORAGE`
+- Depends on: `CLOUD-COMMAND-RUN-01` review commit `e049006b`
+- Branch: `codex/cloud-command-ctrl-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-command-ctrl-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/routes.py`,
+  `apps/worker/src/zebra_agent_worker/command_consumer.py`,
+  `tests/api/test_session_command_routes.py`,
+  `tests/worker/test_command_consumer.py`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Route cloud stop/cancel/suspend/resume controls through the durable command
+  seam. The API appends intent only; a Worker applies the existing typed control
+  service after claiming the accepted command Event.
+
+#### Acceptance
+
+- Cloud control routes require idempotency key and expected revision and return
+  deterministic accepted/duplicate/revision-conflict responses without Runtime
+  or projection side effects in the API process.
+- Worker control consumption invokes the existing `SessionControlService` for
+  stop/cancel/suspend and keeps resume on the execution service; replay is
+  restart-safe and fenced by the durable command stream.
+- Focused API/Worker tests cover control routing, duplicate/competing commands,
+  Worker-side effects and local route compatibility; `13` focused tests and
+  the full suite (`2134 passed, 271 skipped`) are green. Ruff, Mypy (603 files),
+  file-size gate (1224 files), and eval release gate (10/10) pass.
+
+#### Explicit Non-Goals
+
+- no Redis/live publish, production recovery, Helm/gVisor deployment or Trench
+  work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- Cloud `stop` is intentionally mapped to the existing durable cancellation
+  transition because the domain has no separate `SESSION_STOPPED` state; local
+  `/stop` keeps the same compatibility mapping. Cloud cancel/suspend/resume and
+  the generic command route all append the same accepted command Event.
+- Worker control claims invoke `SessionControlService` only after command
+  acceptance; API composition does not build Runtime/Harness for these routes.
+
+### CLOUD-LIVE-WIRE-CON-01 - Event Commit/Live Publish Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `CORE / STORAGE / INTEGRATIONS`
+- Depends on: `CLOUD-COMMAND-CTRL-01` review commit `74d830eb`
+- Branch: `codex/cloud-live-wire-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-live-wire-con-01/zebra-agent`
+- Owned paths: `packages/agent-core/src/agent_core/ports/committed_event_publisher.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-storage/src/agent_storage/live_event_store.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_live_event_publication_contract.py`,
+  `docs/ADR-024_Event提交后实时发布合同.md`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Freeze one shared post-commit publication seam for canonical Session Events.
+Durable append success is authoritative; live publish is duplicate-tolerant and
+degrades without rolling back or hiding the committed Event. Replay captures a
+live barrier before durable replay and filters by durable sequence.
+
+#### Acceptance
+
+- A store decorator publishes only the Event returned by a successful durable
+  append; append failures never invoke the publisher.
+- Publisher exceptions do not turn a committed Event into an API/Worker failure;
+  duplicate retries may publish again and remain safe for the live consumer.
+- The contract documents SQLite direct append and PostgreSQL transaction seams;
+  transaction-boundary wiring remains the explicit successor task. Focused
+  contract tests (`28` including live fanout) and the full suite (`2138 passed,
+  271 skipped`) are green; Ruff, Mypy (605 files), file-size gate (1224 files),
+  and eval release gate (10/10) pass.
+
+#### Explicit Non-Goals
+
+- no Redis composition, HTTP/SSE live tail, production recovery or deployment
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- ADR-024 freezes the commit/publish ordering and replay barrier. The new
+  `CommittedEventPublisherPort` plus `PostCommitPublishingEventStore` provide a
+  shared direct-append seam without adding Redis to Core or making live delivery
+  authoritative.
+- PostgreSQL aggregate transactions that call `append_event_in_transaction`
+  remain explicitly unwired until `CLOUD-LIVE-PUBLISH-01` supplies a commit-safe
+  composition/outbox hook.
+
+### CLOUD-LIVE-PUBLISH-01 - Redis Live Publisher Composition
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `INTEGRATIONS / API / WORKER / STORAGE`
+- Depends on: `CLOUD-LIVE-WIRE-CON-01` review commit `62b1b328`
+- Branch: `codex/cloud-live-publish-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-live-publish-01/zebra-agent`
+- Owned paths: `apps/config/src/zebra_agent_config/settings.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `packages/agent-integrations/src/agent_integrations/redis_live_fanout.py`,
+  `packages/agent-storage/src/agent_storage/live_event_store.py`,
+  `docker/compose.application.yml`, `docker/.env.application.example`,
+  `docker/README.md`, `.env.example`, `tests/config/`,
+  `tests/agent_integrations/`, `tests/agent_storage/`,
+  `tests/api/test_live_publish_composition.py`,
+  `tests/worker/test_worker_storage_composition.py`,
+  this task card, and the focused status in `PROGRESS.md`
+
+#### Goal
+
+Compose one namespace-bound Redis committed-event publisher in cloud API and
+Worker processes. Durable Event append remains authoritative; publisher outage
+must degrade to replay and never roll back the append.
+
+#### Acceptance
+
+- Cloud settings parse an explicit live Redis URL and bounded stream options;
+  local settings remain live-disabled by default.
+- API and Worker composition wrap the shared Event store once with the
+  post-commit publisher, using the same deployment namespace and Redis stream
+  envelope; injected local stores remain compatible.
+- Publisher adapter tests cover namespace binding, duplicate-safe envelopes and
+  Redis failure degradation; Compose config carries the dependency URL. Focused
+  validation passes (`46` tests), full suite passes (`2145 passed, 271 skipped`),
+  and the real Redis runner emits `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`.
+
+#### Explicit Non-Goals
+
+- no SSE consumer/replay endpoint (owned by `CLOUD-LIVE-SSE-01`)
+- no PostgreSQL aggregate-transaction outbox migration; direct EventStore append
+  wiring is explicit, while transaction seams remain a follow-up risk
+- no production recovery, Helm/gVisor deployment or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+#### Closeout
+
+- `RedisCommittedEventPublisher` binds the shared post-commit contract to one
+  namespace; API and Worker use `with_committed_event_publisher` exactly once.
+  Cloud Compose supplies `redis://redis-live:6379/0`; local remains opt-in.
+- Direct EventStore append publication is verified. PostgreSQL aggregate
+  transaction calls that bypass `EventStorePort.append` remain a named follow-up
+  risk for the outbox/commit hook; this card does not claim those paths are live.
+
+### CLOUD-LIVE-SSE-01 - Durable Replay And Redis Live Tail
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / INTEGRATIONS / QA`
+- Depends on: `CLOUD-LIVE-PUBLISH-01` review commit `1aa0a703`
+- Branch: `codex/cloud-live-sse-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-live-sse-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  `apps/api/src/zebra_agent_api/http.py`,
+  `apps/api/src/zebra_agent_api/session_streaming.py`,
+  `packages/agent-integrations/src/agent_integrations/redis_live_fanout.py`,
+  `tests/api/test_session_streaming.py`, `tests/api/http_app/`,
+  `tests/api/test_live_session_streaming.py`, this task card, and the focused
+  status in `PROGRESS.md`
+
+#### Goal
+
+Serve session SSE by replaying durable Events first, then tailing Redis after a
+captured barrier. Redis is an ephemeral accelerator: trim, disconnect, malformed
+entries or API restart fall back to durable polling without claiming loss.
+
+#### Acceptance
+
+- The stream captures a namespace/session barrier before durable replay and
+  emits each Event at most once per cursor; durable sequence and live cursor are
+  monotonic across reconnects.
+- Redis live failures, trim gaps and duplicate entries do not lose durable
+  Events; the stream continues with durable polling and closes on terminal state.
+- API composition exposes the same optional fanout used by the publisher; local
+  SQLite SSE behavior and auth/cursor validation remain compatible. Focused
+  streaming tests, full suite, Ruff, Mypy and file-size gates pass.
+
+#### Review Evidence
+
+- Commit: pending on `codex/cloud-live-sse-01`
+- Focused streaming/auth tests: `27 passed`
+- Full suite: `2147 passed, 271 skipped`
+- `make check`: file-size `1228` files, Ruff clean, Mypy `605` files, eval `10/10`
+- The live tail is intentionally optional; Redis errors clear the live cursor
+  and preserve durable polling as the lossless recovery path.
+
+#### Explicit Non-Goals
+
+- no new AG-UI protocol projection or auth middleware
+- no PostgreSQL transaction outbox, production recovery, Helm/gVisor deployment
+  or Trench work
+- no change to the original dirty `zebra-cloud-trench` worktree
+
+### CLOUD-REC-PROD-CON-01 - Production Recovery Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `SRE / STORAGE / SECURITY`
+- Depends on: Gate 0 canonical quality baseline and the local recovery evidence
+  gate; implementation is documentation/evidence-only and may run alongside
+  the live stream task.
+- Branch: `codex/cloud-rec-prod-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-rec-prod-con-01/zebra-agent`
+- Owned paths: `docs/CLOUD-REC-PROD-CON-01.md` (new),
+  `docs/CLOUD-REC-PROD-CON-01-evidence.schema.json` (new), this task card, and
+  the focused status in `PROGRESS.md`
+
+#### Goal
+
+Freeze the production recovery contract before any PITR or object-backup
+implementation: PostgreSQL physical backup/WAL, S3-compatible Artifact backup,
+RPO/RTO measurement, credential and restore-epoch rotation, and accountable
+drill evidence.
+
+#### Acceptance
+
+- The contract distinguishes pre-cutover abort, post-`ACTIVE` application
+  rollback, database restore and site failover; no path returns to stale SQLite.
+- A machine-readable evidence schema and operator checklist bind the target
+  recovery point, Event/Projection/Artifact/Lease invariants, restore epoch,
+  namespace, credential rotation, RPO/RTO measurements and cleanup proof.
+- Production RPO/RTO, retention, PITR and failover remain `TBD` until a real
+  provider/isolated restore drill supplies measured evidence; local logical dump
+  or re-uploading a Worker-local payload cannot satisfy the contract.
+- The document names backup/restore identities, least privilege, immutable
+  retention, object checksum/version checks, Redis rebuild and uncertain Effect
+  reconciliation without adding runtime code, credentials or provider wiring.
+
+#### Review Evidence
+
+- This card is documentation-only; no production service or migration is
+  changed. Existing local backup/restore/drill records are explicitly labeled
+  as non-production evidence.
+- `docs/CLOUD-REC-PROD-CON-01-evidence.schema.json` parses with the standard
+  JSON parser; the contract document is 137 lines and the schema is 174 lines.
+- `make sync && make check`: file-size `1229` files, Ruff clean, Mypy `605`
+  files, eval `10/10`; full suite `2147 passed, 271 skipped`.
+- The production values remain `TBD`; no RPO/RTO, PITR, failover or provider
+  readiness is claimed from local Compose evidence.
+
+#### Explicit Non-Goals
+
+- no PITR provider, WAL job, S3/MinIO runner or Kubernetes deployment
+- no RPO/RTO number, production credential or failover claim without measured
+  evidence
+- no changes to the original dirty `zebra-cloud-trench` worktree
+
+### CLOUD-REC-PG-PITR-01 - PostgreSQL Physical PITR Drill
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / SRE`
+- Depends on: `CLOUD-REC-PROD-CON-01` review commit `c75b31d4` and an
+  available Docker PostgreSQL runner
+- Branch: `codex/cloud-rec-pg-pitr-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-rec-pg-pitr-01/zebra-agent`
+- Owned paths: `tests/compose/recovery_pitr/compose.yml`,
+  `tests/compose/recovery_pitr/run-pitr.sh`,
+  `tests/compose/recovery_pitr/verify_pitr.py`,
+  `docs/CLOUD-REC-PG-PITR-01.md` (new), this task card, and the focused status
+  in `PROGRESS.md`
+
+#### Goal
+
+Prove a production-like PostgreSQL physical base backup plus archived-WAL
+restore to a named recovery point, then rebuild the Session Projection and
+rotate the control-plane epoch before a replacement Lease owner can write.
+
+#### Acceptance
+
+- The runner uses physical `pg_basebackup` and WAL archive/recovery, restores a
+  fresh data volume to an explicit named recovery point, and excludes a
+  post-target Event.
+- Evidence checks Event count/max revision, contiguous Session sequence,
+  namespace-negative reads, Projection replay equality, old epoch write
+  rejection, replacement Lease epoch and measured drill RPO/RTO.
+- Compose cleanup is deterministic and the report labels the result
+  `production-like`/`local-only`; no production RPO/RTO, failover or provider
+  readiness claim is inferred.
+- The real runner emits a machine-readable PostgreSQL-scoped report with the
+  production recovery contract's recovery-point, invariant, measurement and
+  cleanup fields; it does not masquerade as the full contract before S3
+  evidence lands, and leaves no containers, volumes or temporary credentials
+  behind.
+
+#### Review Evidence
+
+- `bash tests/compose/recovery_pitr/run-pitr.sh` passed with
+  `ZEBRA_PG_RECOVERY_PITR_TEST_RESULT=PASS` and
+  `PITR_CLEANUP=PASS`; the runner removed its project containers and volumes.
+- Physical base backup digest:
+  `48cf4ad242410ecb40322840ed3cf19d91dfe4bf5c52063d25190c7688873710`;
+  archived WAL count `7`; named restore point `zebra_pitr_target_v1` at
+  `0/60011F0`.
+- Recovered Event evidence: `4` Events, max revision `3`, contiguous sequence,
+  post-target Event excluded, Projection rebuilt at revision `3`, namespace
+  negative read empty, old epoch write rejected, replacement Lease epoch
+  acquired and released.
+- Measured local drill values: RPO `0.077309s`, RTO `6.462744s`. These are
+  production-like Docker measurements only, not approved production SLOs.
+- `make check`: file-size `1229` files, Ruff clean, Mypy `605` files, eval
+  `10/10`; full suite `2147 passed, 271 skipped`.
+
+#### Explicit Non-Goals
+
+- no managed-cloud backup credentials, failover topology or production cutover
+- no S3 object restore (owned by `CLOUD-REC-S3-01`)
+- no application deployment, API/Worker wiring or original dirty worktree edits
+
+### CLOUD-REC-S3-01 - Artifact Object Backup And Restore Drill
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / SRE`
+- Depends on: `CLOUD-REC-PROD-CON-01` review commit `c75b31d4`, the existing
+  S3/MinIO Artifact adapter and an available Docker MinIO runner
+- Branch: `codex/cloud-rec-s3-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-rec-s3-01/zebra-agent`
+- Owned paths: `tests/compose/recovery_s3/compose.yml`,
+  `tests/compose/recovery_s3/run-s3-recovery.sh`,
+  `tests/compose/recovery_s3/verify_s3_recovery.py`,
+  `docs/CLOUD-REC-S3-01.md` (new), this task card, and the focused status in
+  `PROGRESS.md`
+
+#### Goal
+
+Prove that an Artifact payload can be restored from an independent versioned
+object backup after the source object version is deleted, while PostgreSQL
+Artifact metadata/ref, checksum, size and namespace remain consistent.
+
+#### Acceptance
+
+- The runner creates a versioned backup copy through the object provider, deletes
+  the source object version, and restores from the backup copy; it never reads a
+  Worker-local payload as the backup source.
+- Source/backup object metadata and bytes match the immutable expectation;
+  PostgreSQL `artifact_payload_metadata` ref is checked and updated only by an
+  explicit, guarded recovery-repair step in the evidence runner.
+- Namespace-negative metadata/object reads fail closed; backup version, restored
+  version, checksum, size, repair guard and cleanup are recorded in a
+  machine-readable report.
+- The real MinIO runner passes with deterministic cleanup and labels itself
+  `production-like`/`local-only`; no production object retention or DR claim is
+  inferred.
+
+#### Explicit Non-Goals
+
+- no cloud credentials, cross-region replication or production retention policy
+- no new runtime Artifact repair API; the runner's guarded SQL is evidence-only
+- no PostgreSQL PITR, Kubernetes deployment or original dirty worktree edits
+
+#### Review Evidence
+
+- `bash tests/compose/recovery_s3/run-s3-recovery.sh` passed with
+  `ZEBRA_S3_RECOVERY_TEST_RESULT=PASS` and
+  `S3_RECOVERY_CLEANUP=PASS`; the runner removed its project containers and
+  volumes.
+- Source object version `077ce385-9ed0-4c52-ba83-581f51b0fc7b` was deleted;
+  independent backup version `425c0b48-d3cc-487a-80fe-ccdaf95acc46` restored
+  source version `9a393bce-70c5-4839-af5d-4a28e17664c9`.
+- SHA-256 `be181d4f360260be24d015b15e375cb4de473b8928d145b94c4974115de12022`,
+  size `35`, provider metadata, namespace-negative reads and PostgreSQL ref
+  consistency all pass; guarded repair affected exactly one row at lifecycle
+  revision `3`.
+- `make check`: file-size `1230` files, Ruff clean, Mypy `605` files, eval
+  `10/10`; full suite `2147 passed, 271 skipped`.
+- Evidence is MinIO/local-only; no production object retention, replication,
+  RPO/RTO or DR readiness is claimed.
+
+### CLOUD-DEPLOY-HELM-01 - Kubernetes/Helm Application Deployment
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `SRE / PLATFORM / SECURITY`
+- Depends on: `CLOUD-DEPLOY-PROFILE-01` review evidence, recovery contract
+  review and the existing non-root application image/Compose overlay
+- Branch: `codex/cloud-deploy-helm-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-deploy-helm-01/zebra-agent`
+- Owned paths: `deploy/helm/zebra-agent/` (new),
+  `tests/deploy/test_helm_chart.py` (new), `docs/CLOUD-DEPLOY-HELM-01.md`
+  (new), this task card, and the focused status in `PROGRESS.md`
+
+#### Goal
+
+Provide a fail-closed Helm chart for the cloud/production profile: migration
+Job, API, Worker, Service, probes, resources, PDBs, non-root/read-only pods,
+gVisor RuntimeClass and secret references without embedding database credentials.
+
+#### Acceptance
+
+- Chart values schema requires a digest-pinned image, PostgreSQL DSN Secret,
+  gVisor RuntimeClass, workspace quota and the explicit deployment namespace;
+  invalid local/trusted-local or missing secret references fail closed.
+- Rendered resources include one migration Job, API/Worker Deployments, Service,
+  health probes, bounded resources, PDBs and least-privilege pod/container
+  security contexts; API/Worker do not run database migrations implicitly.
+- Database/S3/Redis/auth material arrives only through Secret refs; chart
+  templates contain no password literals or generated Secret data.
+- Static render tests pass and any available `helm lint/template` evidence is
+  recorded; isolated task-level Kubernetes evidence may be recorded, but no
+  managed production rollout is claimed.
+
+#### Explicit Non-Goals
+
+- no managed database, cluster credentials or production deploy
+- no gVisor runtime implementation or cluster-level NetworkPolicy/E2E
+- no changes to Docker image, API/Worker code or original dirty worktree edits
+
+#### Review Evidence
+
+- Static chart tests: `4 passed`; the values schema rejects missing digest,
+  namespace, runtime image and required Secret names.
+- `helm lint` with a digest-pinned image and explicit cloud values: `1 chart(s)
+  linted, 0 chart(s) failed`; the only message is Helm's optional icon notice.
+- `helm template` renders `7` resources: migration Job, API/Worker Deployments,
+  API Service, two PDBs and ServiceAccount. Default values fail closed with
+  schema errors.
+- On isolated `colima-zebra-gvisor` (Ubuntu 24.04.4/k3s v1.34.8/containerd 2.3.1),
+  a real Helm install passed: migration hook, API `2/2`, Worker `2/2`, Service,
+  `RuntimeClass=gvisor`, `/proc/version=4.19.0-gvisor`, UID `65532`, production
+  `/health`, and Worker Pod deletion/recovery. The migration/ServiceAccount hook
+  ordering defect found by this run is fixed with weights `-20`/`-10` and covered
+  by the chart test.
+- PostgreSQL reached migration v17 and the Host registry seed passed; Helm release
+  and namespace cleanup passed. This remains local task evidence, not managed
+  production or canonical remote CI evidence.
+
+### CLOUD-REAL-SVC-CI-01 - Canonical Real-Service CI
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `QA / SRE / PLATFORM`
+- Depends on: live Redis publisher/SSE and PostgreSQL/S3 recovery runners already
+  present in this integration worktree
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `.github/workflows/quality.yml`,
+  `tests/compose/cloudline/` (new), `docs/CLOUD-REAL-SVC-CI-01.md` (new),
+  this task card, and focused `PROGRESS.md`
+
+#### Goal
+
+Bring the canonical PostgreSQL, Redis, application, PITR and S3 recovery
+evidence into controlled CI jobs with fixed timeouts, machine-readable logs and
+always-cleanup semantics. A failed runner must identify its contract boundary.
+
+#### Acceptance
+
+- CI invokes the real-service runners with pinned toolchain/runtime inputs,
+  bounded job timeouts and retained evidence artifacts.
+- Every runner has deterministic Compose project names and cleanup on success,
+  failure and cancellation; credentials remain test-only and are not persisted.
+- The aggregation surface reports each contract runner separately and fails the
+  job when any runner fails; no skipped/optional runner is counted as coverage.
+- Static workflow/runner tests pass and the local runner matrix is executable
+  when Docker is available. CI wiring does not claim a Kubernetes cluster.
+
+#### Explicit Non-Goals
+
+- no production credentials, deployment, managed service or Kubernetes rollout
+- no weakening of existing backend/Desktop/gVisor/quota quality gates
+- no changes to domain adapters beyond runner compatibility fixes
+
+#### Review Evidence
+
+- Manifest/static workflow tests: `2 passed`; Ruff and Mypy are clean for the
+  runner wrapper/tests; Ruby YAML parser and `actionlint` accept
+  `.github/workflows/quality.yml` after duplicate proxy keys were removed.
+- Local Docker matrix completed with independent project cleanup: application
+  Compose `PASS`, Redis live fan-out `1 passed`, PostgreSQL PITR `PASS`, S3
+  recovery `PASS`, and PostgreSQL/Redis/MinIO fresh restore `PASS`.
+- The integrated Zebra line `codex/full-plan-zebra-01@741a471f` re-ran the
+  application runner after seeding a valid test-only Host registry required by
+  the fail-closed Host Grant authorizer; API and Worker both stayed healthy.
+- PITR evidence recorded `events=4`, `revision=3`, old epoch rejection and
+  `RPO=0.121072s`, `RTO=6.691080s`; S3 evidence recorded checksum and guarded
+  PostgreSQL ref repair; every runner reported cleanup or its own `EXIT` trap.
+- The first application attempt hit a transient Docker Hub BuildKit OAuth EOF;
+  after the pinned `docker/dockerfile:1.7` image was available, the same runner
+  passed. A locked Linux container also ran the cloud-agent workspace quota
+  smoke with a real 8 MiB tmpfs and observed `ENOSPC`; no remote GitHub Actions
+  run or managed Kubernetes claim is made here.
+
+### CLOUD-K8S-GVISOR-E2E-01 - Kubernetes gVisor End-to-End Evidence
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `SRE / PLATFORM / SECURITY`
+- Depends on: `CLOUD-DEPLOY-HELM-01`, `CLOUD-REAL-SVC-CI-01` and a real Linux
+  Kubernetes cluster with a registered `gvisor` RuntimeClass
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `tests/k8s/gvisor/` (new),
+  `.github/workflows/k8s-gvisor-e2e.yml` (new),
+  `docs/CLOUD-K8S-GVISOR-E2E-01.md` (new), this task card, and focused
+  `PROGRESS.md`
+
+#### Goal
+
+Provide a fail-closed Kubernetes runner for real API/Worker-shaped Pods,
+gVisor runtime, workspace quota, NetworkPolicy and long-task checkpoint resume
+across Worker Pod deletion. The runner must clean its namespace and retain
+machine-readable evidence.
+
+#### Acceptance
+
+- Preflight rejects a cluster without a Ready node, `gvisor` RuntimeClass or
+  enforced NetworkPolicy instead of silently falling back to runc.
+- API and Worker Pods use digest-pinned images, gVisor, non-root/read-only
+  security context, explicit resources and a namespace ResourceQuota.
+- A long Worker task resumes from a PVC checkpoint after its Pod is deleted;
+  an oversized PVC is rejected by quota; the allowed API path succeeds while a
+  blocked path is denied.
+- Runner evidence records runtime handler, restart/resume, quota denial,
+  network policy and cleanup. No local non-gVisor cluster is counted as E2E.
+
+#### Explicit Non-Goals
+
+- no production cluster credentials, managed cluster or rollout
+- no fallback to runc/crun when gVisor is unavailable
+- no claim of completion until a real Linux gVisor-enabled cluster passes
+
+#### Review Evidence
+
+- The isolated `colima-zebra-gvisor` Linux cluster passed the runner after the
+  Worker API egress policy was added: `ZEBRA_K8S_GVISOR_E2E_RESULT=PASS`,
+  `WORKER_RESTART_RESUME=PASS checkpoint=2`, `WORKSPACE_QUOTA=PASS`,
+  `NETWORK_POLICY=PASS`, and namespace cleanup succeeded. Runtime evidence is
+  Ubuntu 24.04.4 / k3s v1.34.8 / containerd 2.3.1 with
+  `RuntimeClass/gvisor` handler `runsc`.
+- This is task-level local Linux evidence only; it does not claim remote
+  canonical CI, a managed cluster, or a production rollout.
+
+### EMB-TOOL-CON-01 - Host Tool Contract Extension
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `CORE / TOOLS / SECURITY`
+- Depends on: completed `EMB-HOST-CON-01`, `EMB-AGUI-CON-01` and Gate 0 quality
+  baseline
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `packages/agent-core/src/agent_core/domain/tools.py`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `packages/agent-tools/src/agent_tools/contracts.py`,
+  `packages/agent-tools/src/agent_tools/__init__.py`,
+  `tests/agent_tools/test_host_tool_contract.py` (new), this task card and
+  focused `PROGRESS.md`
+
+#### Goal
+
+Extend the existing `ToolContract`/`ToolResult` seam with execution location,
+scope, risk, timeout, output size, idempotency and a versioned receipt schema.
+Do not create a parallel Host Tool model.
+
+#### Acceptance
+
+- Existing tools retain compatible defaults and model-tool projection behavior.
+- Host tools require explicit non-empty scopes, bounded timeout/output limits and
+  an execution location/risk/idempotency declaration.
+- Receipt metadata has a stable version and carries no secret or raw credential;
+  duplicate scopes and invalid bounds fail closed.
+- Focused contract tests, package tests, Ruff/Mypy and full quality gates pass.
+
+#### Explicit Non-Goals
+
+- no JWT verification, PostgreSQL replay ledger, HTTP route or Trench code
+- no changes to existing builtin behavior beyond contract defaults
+
+#### Review Evidence
+
+- Core `ToolResult` now carries an optional typed `ToolReceipt`; the existing
+  `ToolContract` adds execution location, scopes, risk, timeout, output bound,
+  idempotency and receipt schema version without a parallel Host Tool model.
+- Focused contract/compatibility tests: `20 passed`; broader domain/tool checks:
+  `30 passed`; Ruff and Mypy are clean for the changed modules.
+- Host contracts reject missing/duplicate scopes, unbounded metadata and missing
+  required idempotency keys; receipt serialization contains only bounded,
+  non-secret metadata. Existing local tools retain their defaults.
+
+### EMB-AUTH-CON-01 - Host Grant/JWT Security Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `SECURITY / CORE`
+- Depends on: completed `EMB-HOST-CON-01`, `EMB-TOOL-CON-01` and Gate 0 quality
+  baseline
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `packages/agent-security/src/agent_security/host_grant.py` (new),
+  `packages/agent-security/src/agent_security/__init__.py`,
+  `tests/agent_security/test_host_grant_contract.py` (new), this task card and
+  focused `PROGRESS.md`
+
+#### Goal
+
+Freeze provider-neutral Host Grant verification inputs: algorithm pinning,
+issuer/JWKS, audience/subject/jti, clock skew, exact origin allowlist,
+namespace/resource/scope binding and typed fail-closed errors. JWT decoding and
+key retrieval remain an adapter concern.
+
+#### Acceptance
+
+- HS algorithms, wildcard origins, non-HTTPS JWKS and malformed issuer/audience
+  fail closed; allowed algorithms are explicit and immutable.
+- Verification accepts only a structurally validated `HostSessionGrant`, checks
+  time/jti/origin/scope/resource bindings and returns secret-free context.
+- Raw bearer tokens and signing material never appear in the contract result,
+  receipt or error representation; replay ledger is a later PostgreSQL task.
+- Focused security tests, package tests, Ruff/Mypy and full quality gates pass.
+
+#### Explicit Non-Goals
+
+- no JWT dependency/key fetch, HTTP middleware, CORS wiring or replay storage
+- no production issuer/JWKS credentials or Trench imports
+
+#### Review Evidence
+
+- `HostGrantVerificationConfig` pins asymmetric algorithms (`RS256`/`ES256`),
+  HTTPS issuer/JWKS, exact origins and bounded clock skew; wildcard origins,
+  HS algorithms and malformed URLs fail closed.
+- `HostGrantVerifier` accepts only decoded `HostSessionGrant` claims, checks
+  algorithm, issuer/audience/host binding, time, jti, required scopes/resources
+  and returns only `HostContextEnvelope`; raw bearer tokens are not represented.
+- Focused security plus existing Host authority tests: `24 passed`; Ruff and
+  Mypy are clean for the changed security modules. JWT decoding/JWKS and replay
+  remain explicitly separate adapters.
+
+### EMB-AUTH-PG-01 - Host Registry And Replay Ledger
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / SECURITY / QA`
+- Depends on: `EMB-AUTH-CON-01`, production Profile and `CLOUD-REAL-SVC-CI-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: next available PostgreSQL migration (`v17`), focused Host
+  registry/grant audit adapter and tests under `packages/agent-storage/` and
+  `tests/agent_storage/`, `tests/compose/host_auth_pg/` (new), this task card
+  and focused `PROGRESS.md`
+
+#### Goal
+
+Persist the namespace-bound Host issuer/tenant registry, secret-free Grant
+audit evidence and an atomic PostgreSQL `jti` replay ledger. The adapter must
+remain provider-neutral and must not import API, JWT or Trench code.
+
+#### Acceptance
+
+- Registry rows are keyed by deployment namespace, Host application and opaque
+  tenant namespace; inactive or unknown bindings fail closed.
+- A concurrent replay race accepts exactly one attempt and records both the
+  accepted and replay audit outcomes in the same transaction boundary.
+- Audit and replay rows contain only bounded identifiers/digests, never bearer
+  tokens or signing material; reads and writes cannot cross deployment
+  namespaces.
+- Migration checksum/concurrency tests, focused adapter tests and a real
+  PostgreSQL Compose runner pass; no constructor performs implicit DDL.
+
+#### Explicit Non-Goals
+
+- no JWT decoding, JWKS retrieval, HTTP middleware, CORS or Trench imports
+- no Redis replay cache or production migration activation outside `v17`
+
+#### Review Evidence
+
+- PostgreSQL migration `v17` adds the deployment-scoped Host registry, replay
+  ledger and append-only audit tables with bounded fields and digest-only
+  checks; migration catalog/checksum/concurrency tests pass.
+- The adapter performs registry binding, active/algorithm/expiry checks and
+  replay insertion plus accepted/replay/rejected audit in one transaction.
+  Two concurrent real PostgreSQL consumers produce exactly one accepted and
+  one replay outcome; the replay ledger contains one row.
+- Real Compose runner `tests/compose/host_auth_pg/run-postgres-tests.sh` passes
+  `4 passed` and reports `ZEBRA_HOST_AUTH_POSTGRES_TEST_RESULT=PASS`; the
+  existing control-plane runner passes `11 passed`. No constructor DDL is
+  covered, and a second deployment namespace cannot read the first audit.
+- `make check` passes: file-size `1241` files, Ruff, Mypy `608` files and eval
+  `10/10`.
+
+### EMB-AUTH-HTTP-01 - API Auth Middleware And Exact CORS
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / SECURITY`
+- Depends on: `EMB-AUTH-PG-01` and the command/profile baseline
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/http.py`, focused API auth/config
+  tests under `tests/api/`, this task card and focused `PROGRESS.md`
+
+#### Goal
+
+Make HTTP composition enforce Host Grant authorization before route/business
+dispatch for non-local profiles and derive CORS from an injected registry-backed
+exact-origin policy. Preserve local bearer-token compatibility without making it
+an Embedded/cloud fallback.
+
+#### Acceptance
+
+- Local profile behavior remains compatible, including public health and the
+  existing optional local bearer token.
+- Cloud/production requests without a Grant, with a disallowed origin or with
+  an authorizer-rejected scope stop before `RouteAdapter.handle`; missing
+  authorizer configuration fails closed.
+- CORS never reflects an arbitrary Origin for non-local profiles; allowed
+  preflight and normal responses carry only the exact registry-backed origin.
+- Focused HTTP/config tests, API tests, Ruff/Mypy and `make check` pass.
+
+#### Explicit Non-Goals
+
+- no JWT parsing/JWKS network client or new signing dependency
+- no PostgreSQL schema/adapter changes, AG-UI route implementation or Trench code
+
+#### Review Evidence
+
+- `create_http_app` now keeps local optional bearer auth and public health
+  behavior, while cloud/production routes require an injected Host Grant
+  authorizer before body parsing or `RouteAdapter.handle` dispatch. Missing
+  authorizer, missing Grant, disallowed origin and authorizer scope rejection
+  all fail closed with secret-free responses.
+- Wildcard/reflected CORS was removed from the non-local path. Exact HTTPS
+  origins are normalized from the injected registry-backed adapter policy;
+  Starlette preflight and normal responses never echo an untrusted Origin.
+- Focused HTTP/auth matrix: `5 passed`; existing HTTP/command/live/stream
+  matrix: `52 passed`; `make check` passes with file-size `1244` files, Ruff,
+  Mypy `608` files and eval `10/10`.
+
+
+### EMB-AUTH-01 - Production Host Auth Gate
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `SECURITY / API / STORAGE`
+- Depends on: `EMB-AUTH-CON-01`, `EMB-AUTH-PG-01` and `EMB-AUTH-HTTP-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: focused production Host Grant decoder/authorizer composition,
+  integration evidence tests/docs, this task card and focused `PROGRESS.md`
+
+#### Goal
+
+Close the existing P3 Host-auth parent gate by composing signed Grant
+verification, registry lookup, PostgreSQL replay/audit and the HTTP seam. Keep
+JWT/JWKS transport bounded and injectable; never persist or log raw bearer data.
+
+#### Acceptance
+
+- A real signed RS256 Grant is accepted only for its registered issuer,
+  audience, exact origin, namespace and required scope; forged, expired,
+  wrong-scope and replayed Grants fail before business dispatch.
+- PostgreSQL audit records accepted, replay and rejected outcomes and the
+  local profile remains compatible; no secret enters responses or durable rows.
+- The JWT library decision, key-resolution timeout/cache seam and failure
+  mapping are documented by focused tests; no Trench imports are introduced.
+
+#### Explicit Non-Goals
+
+- no Trench Tool implementation, AG-UI endpoint or Host Gateway
+- no browser service credentials, wildcard CORS or unbounded JWKS fetch
+
+#### Review Evidence
+
+- The production composition now exposes a PostgreSQL-backed
+  `PostgresHostGrantRequestAuthorizer`: it loads active registry rows, verifies
+  a signed RS256 Grant, checks issuer/audience/host/namespace/origin/scope,
+  consumes `jti` atomically and maps replay to a secret-free HTTP rejection.
+- The production `create_http_app` factory now composes that authorizer by
+  default when the concrete PostgreSQL cloud store bundle is active; explicit
+  injection remains available for tests and alternate composition roots.
+- JWT decision is `PyJWT[crypto]` with an injectable key resolver. The bundled
+  resolver pins registry HTTPS JWKS URIs, uses a bounded 5-second timeout and
+  300-second cache, and decoder failures do not expose token or key details.
+- Real PostgreSQL/API matrix passes `5 passed` through
+  `tests/compose/host_auth_pg/run-postgres-tests.sh`; it covers signed accept,
+  replay, wrong scope/origin, audit and digest-only persistence. Decoder unit
+  tests pass `3`, the combined HTTP/auth matrix passes `45`, and `make check`
+  passes with file-size `1245` files, Ruff, Mypy `610` files and eval `10/10`.
+
+### EMB-AGUI-CMD-01 - AG-UI Command Endpoint
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / INTEGRATIONS / QA`
+- Depends on: command control, `EMB-AUTH-HTTP-01`, and `EMB-AGUI-CON-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/ag_ui_command.py` (new),
+  `apps/api/src/zebra_agent_api/routes.py`,
+  `tests/api/test_agui_command_routes.py` (new), this task card and focused
+  `PROGRESS.md`
+
+#### Goal
+
+Expose one bounded AG-UI command envelope for `run`, `resume`, and `stop`.
+Resolve the stable `threadId` to the active durable Segment, validate the
+official `RunAgentInput` where applicable, and append only a command intent.
+
+#### Acceptance
+
+- Valid run/resume/stop requests append exactly one durable command event and
+  return the command service's accepted/duplicate/conflict outcome.
+- Invalid IDs, payloads, stale revisions, and unknown actions map to bounded
+  RFC 9457-style problem bodies without calling business execution.
+- The API route does not construct or import Worker Harness execution services;
+  a focused source/test guard proves command-only composition.
+- Local and cloud HTTP auth behavior remains owned by existing middleware; this
+  slice adds no auth bypass, CORS policy, storage migration, or Trench code.
+
+#### Explicit Non-Goals
+
+- no AG-UI SSE/replay route (owned by `EMB-AGUI-STREAM-01`)
+- no Worker execution, Redis fan-out, JWT/JWKS, Host Tool Gateway or Trench code
+
+#### Review Evidence
+
+- `POST /agui/commands` and the thread/run aliases validate the bounded
+  `run`/`resume`/`stop` envelope, resolve the active durable Segment and call
+  only `app.submit_command`.
+- Focused command tests: `5 passed`; the combined command, auth and stream
+  matrix is `204 passed, 3 skipped`. A source guard proves the route does not
+  import or construct Worker execution services.
+
+### EMB-AGUI-STREAM-01 - AG-UI Replay And Stream Endpoint
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / INTEGRATIONS / QA`
+- Depends on: `EMB-AGUI-CMD-01`, live SSE, `EMB-AUTH-HTTP-01`, and
+  `EMB-AGUI-CON-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/ag_ui_stream.py` (new),
+  `apps/api/src/zebra_agent_api/http.py`,
+  `tests/api/test_agui_stream_routes.py` (new), this task card and focused
+  `PROGRESS.md`
+
+#### Goal
+
+Expose `GET /agui/threads/{threadId}/runs/{runId}/stream` as a durable AG-UI
+projection. Replay starts from an exact opaque cursor, live tails new durable
+Events, and each emitted SSE record carries the cursor of the Event that caused
+it.
+
+#### Acceptance
+
+- Initial replay, reconnect, interrupt/resume, terminal error/success and
+  forward-compatible unknown Events are covered by golden SSE tests.
+- A reconnect cursor is validated against the requested Task/run and exact
+  durable Event; no business command is retried or created by streaming.
+- Durable polling is the lossless fallback when optional live fan-out is absent;
+  the route never makes Redis a second authority.
+- Invalid thread/run/cursor requests map to bounded problem details before the
+  streaming response starts.
+
+#### Explicit Non-Goals
+
+- no new Event Store, Redis schema, command behavior, JWT/JWKS or Trench code
+- no API-side Worker execution or Copilot Runtime
+
+#### Review Evidence
+
+- `GET /agui/threads/{threadId}/runs/{runId}/stream` replays from an exact
+  durable cursor, polls the Event Store as the lossless fallback, and emits
+  one opaque cursor per projected SSE event. Unknown durable events advance the
+  cursor without inventing business output.
+- Golden replay/reconnect/live-tail and malformed-cursor tests pass; the AG-UI
+  stream slice is included in the `204 passed, 3 skipped` integration matrix.
+
+### EMB-HOST-GW-01 - Typed Host Tool Gateway
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `INTEGRATIONS / SECURITY / QA`
+- Depends on: `EMB-TOOL-CON-01` and `EMB-AUTH-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/host_tools/`
+  (new), focused `tests/agent_integrations/test_host_tools.py`, this task card
+  and focused `PROGRESS.md`
+
+#### Goal
+
+Provide one typed, provider-neutral Host Tool Gateway that discovers the Host
+manifest, invokes a declared tool with workload identity and the intersection
+of Grant/manifest scopes, and returns bounded `ToolResult`/`ToolReceipt`
+metadata.
+
+#### Acceptance
+
+- Manifest entries reuse `ToolContract`; malformed, duplicate or unbounded
+  entries fail closed and cannot create a parallel Tool model.
+- Endpoint parsing and DNS resolution reject non-HTTPS, credentials, private,
+  loopback, metadata and rebinding targets before transport execution.
+- Timeout, 4xx/5xx, invalid body and output-limit failures become structured
+  recoverable `ToolResult` values; transport credentials never enter output,
+  metadata or receipts.
+- Workload identity, required scope intersection, resource binding and required
+  idempotency are validated before invoke; focused integration/security tests
+  and changed-path quality checks pass.
+
+#### Explicit Non-Goals
+
+- no Trench read Tool implementation or business schema knowledge
+- no API route, Worker Harness, JWT decoder, replay store or Redis dependency
+- no destructive/write Host Tool admission beyond the declared contract
+
+#### Review Evidence
+
+- The typed gateway reuses `ToolContract`, verifies manifest digest and Host
+  workload identity, intersects Grant/manifest scopes, validates resource and
+  idempotency bindings, and returns bounded recoverable `ToolResult`/receipt
+  metadata for timeout, transport, HTTP and output-limit failures.
+- HTTPS/SSRF, secret-redaction and failure mapping tests pass: `7 passed`; the
+  Integrations package suite is `143 passed, 3 skipped`, with changed-path
+  Ruff/Mypy and `uv lock --check` green.
+
+### EMB-AGUI-API-01 - Production AG-UI Gate
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / INTEGRATIONS / QA`
+- Depends on: `EMB-AGUI-CMD-01` and `EMB-AGUI-STREAM-01`
+- Branch: `codex/cloud-real-svc-ci-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-real-svc-ci-01/zebra-agent`
+- Owned paths: integration evidence, this task card and focused `PROGRESS.md`
+
+#### Review Evidence
+
+- Command-only API composition, durable AG-UI replay/live tail, and existing
+  Host Grant HTTP gating are integrated without API-side Worker execution.
+- The combined API/Integrations matrix passes `204 passed, 3 skipped`; this
+  parent remains `Review` until the branch is merged and the release gates are
+  repeated on the resulting mainline.
+
+### EMB-TRN-READ-E2E-01 - Trench Read-Only Cross-Service Acceptance
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Suggested role: `QA / SRE / PLATFORM`
+- Depends on: `TRN-READ-01`, `TRN-CPK-BFF-01`, `TRN-PANEL-01`,
+  `EMB-AGUI-API-01`, `EMB-HOST-RUNTIME-01`, `TRN-HOST-READ-AUTH-01`,
+  and the reviewed Host Tool contract
+- Branch: `codex/emb-trn-read-e2e-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/emb-trn-read-e2e-01/zebra-agent`
+- Owned paths: `tests/compose/trench_read_e2e/` (new),
+  `docs/EMB-TRN-READ-E2E-01.md` (new), this task card and focused
+  `PROGRESS.md`
+
+#### Goal
+
+Provide one fail-closed runner for the real Trench Event Detail → BFF → Zebra
+API/Worker → durable stream/read Tool boundary. It must retain per-scenario
+evidence and compare a read-only Trench business snapshot before and after the
+run.
+
+#### Acceptance
+
+- The runner requires real Zebra/Trench HTTP, PostgreSQL, Redis and object-store
+  health inputs; missing credentials or operator hooks produce a structured
+  blocked result and a non-zero exit code, never a skip or pass.
+- Read task, long task, disconnect/replay, Worker restart, stop/resume, Grant
+  replay and bounded Host Tool failure each have an independently named result.
+- The runner sends browser cookies only to Trench/BFF or the Grant exchange,
+  never to Zebra; evidence contains no cookie, Grant, DSN or response secret.
+- The Trench business snapshot is byte-for-byte stable across the read-only
+  scenarios. Host Tool execution must use the reviewed Worker composition and
+  signed Trench service binding; any missing external input remains `BLOCKED`.
+
+#### Explicit Non-Goals
+
+- no Trench implementation changes, schema changes or frontend changes
+- no production credential provisioning, rollout or Kubernetes/gVisor claim
+- no treating focused Trench/Zebra tests as a real cross-service pass
+
+#### Review Evidence
+
+- The runner manifest, contract tests and evidence schema are added in this
+  branch. The integrated Trench stack passes its focused backend (`66` API,
+  `49` cleaning), migration SQL and frontend build/test/lint; the integrated
+  Zebra stack passes `make check`, `2209 passed, 275 skipped`, and all five
+  local Cloudline runners. Host runtime and Trench service-auth successors are
+  now implemented and reviewed; the actual cross-service execution still
+  returns `BLOCKED` with all 16 deployment inputs missing. No real
+  cross-service pass is claimed until an isolated PG/Redis/object-store
+  deployment supplies the inputs.
+
+### EMB-HOST-RUNTIME-01 - Worker Host Tool runtime composition
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `WORKER / API / INTEGRATIONS / SECURITY`
+- Depends on: `EMB-HOST-GW-01`, `EMB-AUTH-HTTP-01`, and the Trench-side
+  `TRN-HOST-READ-AUTH-01` service-auth contract.
+- Branch/worktree: `codex/emb-host-runtime-01` /
+  `/Users/lukeding/.codex/worktrees/emb-host-runtime-01/zebra-agent`.
+- Owned paths: `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/domain/host_authority.py`,
+  `apps/api/src/zebra_agent_api/http.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/routes.py`,
+  `apps/api/src/zebra_agent_api/task_api.py`,
+  `apps/api/src/zebra_agent_api/task_routes.py`,
+  `apps/api/src/zebra_agent_api/session_queue.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `packages/agent-integrations/src/agent_integrations/host_tools/gateway.py`,
+  `packages/agent-tools/src/agent_tools/effect_guard.py`,
+  `packages/agent-tools/src/agent_tools/effect_guard_support.py`,
+  `packages/agent-tools/src/agent_tools/legacy_effect_guard.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, focused API/Core/Worker/
+  Tool tests, this task card and focused `PROGRESS.md`.
+
+#### Goal
+
+Carry only the verified, non-secret Host authority context from the API command
+boundary into durable task recovery, then compose the typed Host Tool Gateway in
+the Worker execution path without creating a second Tool model or bypassing
+Lease/Fence ownership.
+
+#### Acceptance
+
+- Raw bearer Grants never enter Events, `RecoveredTask`, model context, Tool
+  output, receipts or evidence; only validated `HostContextEnvelope` fields are
+  persisted and replayed.
+- Worker manifest discovery and workload/namespace/resource/scope binding fail
+  closed before the model can select a Host Tool; malformed or changed manifests
+  cannot silently fall back to local execution.
+- Host read Tools remain read-only in the effect guard, while any future Host
+  write contract remains fenced and idempotent; lease loss prevents invocation
+  and no Trench business write is admitted by this card.
+- Focused fake-transport and API→Event→Worker recovery tests prove context
+  binding, expiry/mismatch rejection, manifest exposure, bounded failure mapping
+  and cleanup.
+
+#### Explicit Non-Goals
+
+- no Trench route/schema implementation, browser-session changes or production
+  credential provisioning (owned by `TRN-HOST-READ-AUTH-01` and deployment work)
+- no new parallel Tool registry, JWT decoder or replay ledger
+- no activation of the cross-service E2E gate before both sides are merged
+
+#### Review Evidence
+
+- `make check` passes: file-size gate (`1261` files, zero violations), Ruff,
+  Mypy (`617` source files) and release Eval (`10/10`).
+- Full `make test` passes (`2209` tests, `275` skipped); the focused
+  API/Core/Worker/Integrations/Effect Guard matrix is included (`69` tests).
+- Real cross-service E2E remains separately blocked until isolated services and
+  Grant/Worker inputs are provisioned; no deployment pass is claimed.
+
+### CLOUD-INTEGRATION-REG-01 - Lease And API Composition Regressions
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `WORKER / API / QA`
+- Depends on: `zebra-cloud-trench@978e02de`
+- Branch: `codex/cloud-integration-regressions-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-integration-regressions-01/zebra-agent`
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/factory.py`,
+  `tests/worker/execution/test_core_execution.py`,
+  `tests/api/test_mcp_prompt_api.py`, this card in `docs/AGENT_TASKS.md`, and the
+  cloud composition regression in `tests/test_cloud_api_worker_profile_composition.py`,
+  plus the focused closeout record in `PROGRESS.md`.
+
+#### Goal
+
+Repair two integration regressions at their shared lifecycle boundaries: start
+background Lease maintenance from the recovery-renewed checkpoint, and preserve
+lazy SQLite composition until a validated local request needs authoritative
+storage. Explicit cloud composition remains fail closed at application startup.
+
+#### Acceptance
+
+- A Worker execution that lasts beyond one heartbeat interval retains ownership
+  after recovery advanced the Lease checkpoint and releases the Lease on exit.
+- Invalid MCP prompt resolution returns `400` without creating the configured
+  local SQLite database; constructing the local API alone also performs no write.
+- Explicit cloud startup and caller-injected `ControlPlaneStores` behavior remain
+  covered by the existing composition matrix.
+- Focused regressions, the complete backend suite, changed-path Ruff/Mypy, file
+  size and diff checks are run; unrelated inherited blockers are separated from
+  task-owned failures.
+
+#### Explicit Non-Goals
+
+- no Lease Store contract or fencing semantics change
+- no PostgreSQL migration or cloud authority change
+- no API route, MCP protocol, Desktop or Trench feature work
+
+#### Closeout
+
+- Worker execution now reuses `SessionClaimService.claim_session`, so the
+  background heartbeat starts from the recovery-renewed Lease checkpoint and
+  the existing cleanup path handles recovery failure.
+- Local/test API construction again leaves `_stores` lazy. Explicit cloud
+  startup still composes its complete Store bundle immediately and fails closed;
+  the stable `zebra_agent_api.app.create_app` import remains available through a
+  focused 58-line factory module.
+- Both regressions failed before the fix and pass afterward. The focused API,
+  cloud composition, claim, heartbeat and execution matrix is `33 passed, 1
+  skipped`; the deterministic long-call test waits for a real background
+  heartbeat rather than relying on a fixed sleep.
+- Full backend validation is `2104 passed, 271 skipped, 1 failed`. The sole
+  failure is the repository size gate's four out-of-scope files; this task
+  removes `app.py` from that list and keeps `execution.py` below the hard limit.
+- Changed-path Ruff, format and `git diff --check` pass; release Eval is `10/10`.
+  Full Ruff's 10 findings and Mypy's 13 findings are unchanged, out-of-scope
+  baseline defects. A local Desktop streaming attempt reached the API but the
+  Playwright-managed provider uniformly failed as `transport_error`; it did not
+  reproduce `LeaseCheckpointRegressionError` and is not counted as passing E2E.
+
+## Zebra Embedded And Trench Architecture Board
+
+### EMB-PLAN-01 - Embedded Architecture Consolidation
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `ARCH / DOC / PM`
+- Depends on: `ARCH-RT-BP-01`, `ARCH-SVC-BOUNDARY-01`, maintainer direction to
+  use CopilotKit instead of a Zebra React SDK
+- Branch: `zebra-cloud-trench`
+- Owned paths:
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/ADR-015_Zebra_Embedded与CopilotKit_AGUI边界.md` (new),
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md` (new),
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `README.md`, `task_plan.md`,
+  `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Replace the conflicting concatenated Embedded drafts with one production target
+architecture, remove the custom Zebra React SDK plan, define the supported
+CopilotKit Runtime/BFF to Zebra AG-UI boundary, and produce an executable,
+dependency-ordered task roadmap without activating implementation prematurely.
+
+#### Acceptance
+
+- [x] One authoritative Embedded target remains; superseded React SDK and
+  Postgres/pgvector memory plans are removed.
+- [x] ADR-015 fixes the CopilotKit, AG-UI, durable authority, HostSessionGrant,
+  and external business-domain boundaries.
+- [x] The task plan defines per-card dependencies, owned paths, acceptance gates,
+  and explicit non-goals from architecture through GA.
+- [x] All implementation cards remain `Locked` until the maintainer explicitly
+  activates the next card and its prerequisites are merged.
+- [x] `PROGRESS.md`, `README.md`, planning records, and architecture ADR index are
+  synchronized; task-owned documents pass link, line-limit, consistency, and
+  diff checks. The repository-wide file-size gate retains two unrelated baseline
+  violations recorded in `WORKLOG.md`.
+
+#### Explicit Non-Goals
+
+- implementing AG-UI, CopilotKit, PostgreSQL, Redis, object storage, Kubernetes,
+  Trench tools, analysis, writeback, or Agent Memory
+- changing existing local SQLite/Desktop behavior
+- claiming private-cloud or multi-tenant production readiness
+
+#### Closeout
+
+- Formal review covered the integrated architecture commit `8d1650bf`; its
+  prerequisites `ARCH-RT-BP-01` and `ARCH-SVC-BOUNDARY-01` are both `Done`, and
+  the CopilotKit-over-custom-SDK direction is the accepted maintainer decision.
+- The five task-plan steps are complete. The architecture, ADR-015, Trench
+  breakdown, registry and progress records are synchronized; no implementation
+  card was activated by this closeout.
+- Existing document link, terminology, line-limit and diff evidence is accepted;
+  the two unrelated repository size-gate violations remain documented. No code,
+  Compose service, PostgreSQL migration, Runtime or Desktop behavior changed.
+- Closing this card records the Embedded/Trench architecture baseline only.
+  `EMB-AGUI-SPIKE-01` is separately closed as a test-only compatibility slice;
+  cloud storage, Runtime and provider implementation cards keep their own gates.
+
+### EMB-AGUI-SPIKE-01 - Zebra AG-UI Protocol Compatibility Spike
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `INTEGRATIONS / QA / DOC`
+- Depends on completed `EMB-PLAN-01`; explicitly activated as a stacked local
+  branch by maintainer direction on 2026-07-23. The test-only slice is now
+  integrated without production AG-UI wiring.
+- Branch: `codex/emb-agui-spike-01`
+- Owned paths: `pyproject.toml`, `uv.lock`, `tests/spikes/ag_ui/` (new),
+  `docs/AG-UI协议兼容性验证记录.md` (new), `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Pin and exercise the official Python AG-UI protocol SDK in an isolated test-only
+slice before any production API or Worker adapter exists. Prove the exact event,
+SSE, tool-call, state, interrupt/resume, and forward-compatibility assumptions
+that the later `EMB-AGUI-CON-01` contract may safely adopt.
+
+#### Acceptance
+
+- [x] `ag-ui-protocol` is pinned to one exact reviewed version in the development
+  dependency and lock file; no runtime package imports it.
+- [x] A canonical stream covers run, text, tool-call, tool-result, state snapshot,
+  state delta, message snapshot, and successful finish events.
+- [x] The official encoder produces a valid SSE stream that round-trips through
+  an independent bounded decoder while preserving event order and identifiers.
+- [x] Interrupt fixtures prove snapshot-before-interrupt ordering, same-thread
+  full resume coverage, expiry/payload validation expectations, and idempotency
+  keys without implementing Zebra approval logic.
+- [x] Unknown/custom events and schema drift have an explicit observed behavior;
+  the validation note records the version matrix and production follow-ups.
+- [x] Focused tests pass, then `make test` and `make check` are run or every
+  unrelated baseline blocker is recorded with evidence.
+
+#### Explicit Non-Goals
+
+- production AG-UI routes, adapters, dependency injection, Event Store mapping,
+  HostSessionGrant, CopilotKit/Trench code, or UI changes
+- changing Zebra Domain Event, Task, Segment, Approval, or Worker behavior
+- treating a Spike fixture as the final `EMB-AGUI-CON-01` contract
+
+#### Closeout
+
+- Accepted `ag-ui-protocol==0.1.19` as a development-only dependency. The
+  canonical event stream, bounded independent SSE decoder, interrupt/resume
+  fixtures and explicit CUSTOM/RAW/unknown-event behavior pass in isolation.
+- Focused protocol validation passes `11/11`; the current full suite is
+  `2008 passed, 197 skipped, 1 failed`, with the single failure asserting the
+  two inherited file-size violations (`561/500` and `765/700`). Ruff, format,
+  `uv lock --check`, release Eval `10/10` and `git diff --check` pass; no failure
+  is in this task's Owned paths.
+- Closed `EMB-AGUI-SPIKE-01` from `Review` to `Done`. No API/Worker route,
+  Event Store mapping, CopilotKit/Trench code, React SDK or UI behavior was added;
+  `EMB-AGUI-CON-01` remains a separate future contract gate.
+
+### EMB-HOST-CON-01 - Generic Host Authority Contracts
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE / SECURITY / INTEGRATIONS`
+- Depends on: completed `EMB-PLAN-01`, `EMB-AGUI-SPIKE-01`, and Trench
+  `TRN-CPK-SPIKE-01` merged at `5c59b22`.
+- Branch: `codex/emb-host-con-01`
+- Worktree: `../zebra-agent-emb-host-con-01`
+- Owned paths: `packages/agent-core/src/agent_core/domain/host_authority.py`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `tests/agent_core/test_host_authority.py`, and this card's governance records
+  in `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md`, and `WORKLOG.md`.
+
+#### Goal
+
+Freeze the provider-neutral Host authority boundary before any AG-UI adapter or
+Host Gateway exists: immutable HostSessionGrant claims, a validated context
+envelope, opaque resource references, exact origin/issuer/audience checks,
+technical limits and typed fail-closed errors.
+
+#### Acceptance
+
+- Grant claims reject blank/duplicate scopes and resources, malformed origins,
+  extra fields, invalid timestamp ordering, expired/not-yet-valid grants and
+  issuer/audience/Host-app/origin mismatches.
+- Context derivation carries only validated namespace, workspace, resources,
+  scopes, limits and policy metadata; no raw JWT or Trench import enters Core.
+- Scope and resource checks are deterministic and fail closed; limits are
+  bounded positive integers with explicit upper ceilings.
+- Focused contract tests cover valid derivation and every rejection family;
+  changed-path Ruff, strict Mypy and `git diff --check` pass.
+
+#### Closeout
+
+- Implementation commit: `ca59753b`.
+- `tests/agent_core/test_host_authority.py` passes `16/16`; the full
+  `tests/agent_core` suite passes `386/386`.
+- Changed-path Ruff, format, Mypy and diff checks pass; release Eval passes
+  `10/10`.
+- Full repository validation records `2097 passed, 271 skipped, 2 failed`.
+  The two failures are pre-existing MCP prompt atomicity and file-size-gate
+  baseline defects; the size gate also reports five untouched over-limit files.
+- No JWT/JWKS, API, AG-UI, Trench or runtime wiring was added.
+
+#### Explicit non-goals
+
+- no JWT signature/JWKS adapter, token persistence, API route, AG-UI projection,
+  Trench dependency, Host registry, runtime selection or production secret.
+
+### EMB-AGUI-CON-01 - Durable AG-UI Projection Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE / INTEGRATIONS / QA`
+- Depends on: completed `EMB-HOST-CON-01`, `EMB-AGUI-SPIKE-01` and Trench
+  `TRN-CPK-SPIKE-01` merged at `5c59b22`.
+- Branch: `codex/emb-agui-con-01`
+- Worktree: `../zebra-agent-emb-agui-con-01`
+- Owned paths: `packages/agent-integrations/pyproject.toml`, `uv.lock`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/`,
+  `tests/agent_integrations/test_ag_ui_projection.py`, and this card's
+  governance records in `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md` and `WORKLOG.md`.
+
+#### Goal
+
+Freeze one pure, replayable mapping from durable Zebra Session Events to the
+reviewed AG-UI event model: stable Task/thread and Segment run identity, text
+and tool events, state/error snapshots, cursors and reconnect tails, without
+adding an API route, Worker behavior or Trench dependency.
+
+#### Acceptance
+
+- Golden fixtures cover text, tool, state, error, terminal success and
+  reconnect-tail projections using the pinned `ag-ui-protocol==0.1.19` model.
+- The mapper rejects mixed sessions, non-monotonic/duplicate sequences and
+  invalid cursors; the cursor binds task, run and the exact durable event.
+- Interrupt projection emits state/messages before a `RUN_FINISHED` interrupt;
+  resume identity is deterministic and does not mutate durable state.
+- The projection is pure and provider-neutral: no Event Store writes, API/
+  Worker/Trench imports, CopilotKit runtime or Host transport.
+
+#### Closeout
+
+- Implementation commit: `5485fc2e`.
+- `tests/agent_integrations` passes `132 passed, 3 skipped`; the focused
+  projection matrix passes `5/5` and validates every output through the pinned
+  official AG-UI event union.
+- Changed-path Ruff, format, strict Mypy, `uv lock --check`, diff checks and
+  release Eval `10/10` pass. The full suite records `2102 passed, 271 skipped,
+  2 failed`; the two failures are the pre-existing MCP prompt atomicity and
+  repository file-size-gate defects.
+- No API/Worker route, SSE transport, Redis fan-out, Host transport,
+  JWT/JWKS, Trench or CopilotKit runtime wiring was added.
+
+#### Explicit non-goals
+
+- no HTTP/SSE endpoint, Redis live fan-out, API/Worker wiring, JWT/JWKS or
+  Trench/CopilotKit runtime integration.
+
+### CLOUD-STO-SEAM-01 - Control-Plane Storage Composition Seam
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE / API / WORKER`
+- Depends on: locally reviewed `EMB-PLAN-01`, completed Runtime Phase A, and
+  explicit maintainer activation on 2026-07-23. This is a stacked local task and
+  cannot merge before `EMB-PLAN-01`.
+- Branch: `codex/cloud-sto-seam-01`
+- Owned paths: `apps/api/src/zebra_agent_api/` (storage wiring only),
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/control.py`,
+  `apps/worker/src/zebra_agent_worker/session_handoff.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
+  `apps/worker/src/zebra_agent_worker/continuation_lifecycle.py`,
+  `apps/worker/src/zebra_agent_worker/context_lifecycle.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `packages/agent-core/src/agent_core/ports/projection_store.py`,
+  `packages/agent-storage/src/agent_storage/composition.py` (new),
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `packages/agent-storage/src/agent_storage/projections.py`,
+  `tests/agent_storage/test_storage_composition.py` (new),
+  `tests/agent_storage/test_sqlite_projection_store.py`,
+  `tests/api/test_api_storage_composition.py` (new),
+  `tests/worker/test_worker_storage_composition.py` (new), `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Create one typed bundle for the existing Event, Projection, Workspace, Task and
+Lease Ports so API, SSE and Worker control-plane flows no longer choose SQLite
+inside request or execution logic.
+
+#### Acceptance
+
+- [x] One flat `ControlPlaneStores` value and one local SQLite builder exist; no
+  backend hierarchy, backend enum, config switch or new dependency is introduced.
+- [x] API, SSE and Worker receive the same injected ports; constructors for the
+  five target SQLite stores remain only in the local builder.
+- [x] Same-path spies prove every composed Port is used, and distinct-path tests
+  prove the partial seam fails before any hidden fallback or split write.
+- [x] Existing local SQLite behavior remains compatible and focused tests,
+  `make test`, `make check`, and `git diff --check` pass or blockers are recorded.
+
+#### Explicit Non-Goals
+
+- PostgreSQL, Redis, S3, migrations, dual-write, cloud credentials or production
+  backend selection
+- replacing local `MemoryStorePort` with any derived semantic-memory provider
+- inventing Ports for legacy stores not needed by this first control-plane seam
+- changing CLI, Desktop, Domain Event, Task, Policy, runtime or user-visible behavior
+
+#### Closeout
+
+- Formal review targeted the integrated composition implementation at `c4c1f593`;
+  `EMB-PLAN-01` is now `Done`, Runtime Phase A is complete, and the maintainer
+  activation was recorded before implementation.
+- The diff remains confined to the declared API/Worker wiring, flat
+  `ControlPlaneStores`, local SQLite builder, projection Port and focused tests.
+  It does not add PostgreSQL, Redis, S3, migrations, cloud credentials, backend
+  selection, Memory Gateway replacement, Desktop or user-visible behavior.
+- Existing focused/full/quality evidence is accepted; the current-HEAD storage,
+  API and Worker composition regression run passed `20/20`. No Compose execution
+  or production edit was needed for this closeout.
+- Closing this card records only the local control-plane composition seam.
+  `CLOUD-STO-AUTH-01` remains the next authoritative-store composition gate and
+  retains its own activation and merge-order constraints.
+
+### CLOUD-STO-AUTH-01 - Complete Authoritative Store Composition
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE / CORE / API / WORKER`
+- Depends on: explicit maintainer activation for local stacked work on 2026-07-24.
+  Development is based directly on local `CLOUD-STO-SEAM-01`; push, PR and merge
+  remain blocked until `EMB-PLAN-01 -> CLOUD-STO-SEAM-01` lands in that order.
+- Branch: `codex/cloud-sto-auth-01`
+- Worktree: `../zebra-agent-cloud-sto-auth-01`
+- Owned paths:
+  - focused Store Protocols and their value records under
+    `packages/agent-core/src/agent_core/{ports,domain}/`; no Event, Session or
+    Task state-machine changes
+  - `packages/agent-storage/src/agent_storage/{composition,__init__,context_lifecycle,session_handoffs,session_handoff_dispatch,session_handoff_facts,session_handoff_rows,idempotency,effect_ledger,memories,memory_lookup,artifact_payloads,artifact_projection,artifacts,session_attachments,model_calls,tool_runs,provider_continuations,session_history,delivery_audit}.py`
+  - API composition and target Store wiring under `apps/api/src/zebra_agent_api/`
+    limited to storage composition, context, handoff, idempotency, artifact,
+    delivery-audit and memory call sites
+  - Worker composition and target Store wiring under
+    `apps/worker/src/zebra_agent_worker/` limited to loop, control, execution,
+    handoff, context, recovery, indexing and finalization call sites
+  - authoritative-composition tests under `tests/{agent_storage,api,worker}/`
+  - `docs/AGENT_TASKS.md`, `docs/Zebra Embedded 生产级目标架构.md`,
+    `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+    `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Compose every durable collaborator that can advance a Session, gate an effect or
+own governed memory before any PostgreSQL backend is selectable.
+
+#### Acceptance
+
+- [x] The existing flat `ControlPlaneStores` exposes typed boundaries for
+  context lifecycle, handoff/dispatch, idempotency, effect ledger, governed
+  memory, artifact payload and indexes, provider continuation, session history
+  and delivery audit; the SQLite builder is their only API/Worker constructor root.
+- [x] API, SSE and Worker consume one injected bundle. Target `SQLite*`
+  constructors are absent from those call sites, excluding skills state and web
+  derived caches.
+- [x] Distinct-backend A/B regressions cover context compaction and recovery,
+  handoff commit/dispatch/recovery, idempotency and effect replay, memory review,
+  artifact/index recovery, provider continuation and session history without
+  writing or reading the legacy path.
+- [x] Same-path SQLite behavior remains compatible and `:memory:` remains
+  rejected because the adapters use independent connections.
+- [x] `legacy_database_path` and `require_legacy_database_coherence` are removed
+  only after every target flow consumes the bundle; focused tests, `make test`,
+  `make check`, file-size checks and `git diff --check` pass or blockers are recorded.
+
+#### Explicit Non-Goals
+
+- PostgreSQL, Redis, S3/MinIO, migrations, dual-write, backend selection and new
+  infrastructure dependencies
+- Mem0, embeddings and the derived semantic-memory Gateway; Zebra's
+  `MemoryStorePort` remains the governed authority
+- CLI, Desktop, AG-UI, Trench, Host auth, Policy, Runtime, Event or Task behavior
+- `SQLiteSkillsStateStore`, web-derived caches, schema redesign, data migration
+  and performance or naming refactors
+
+#### Validation And Handoff
+
+- Authoritative A/B composition regressions: `9 passed`; combined focused
+  Core/Storage/API/Worker coverage: `365 passed`.
+- Full `make test`: `1747 passed, 8 skipped, 9 failed`; all nine failures match
+  the inherited baseline (2 provider expectations, 5 expired SCM fixtures,
+  1 untouched file-size gate, 1 Worker cancellation race).
+- All 54 changed Python files pass Ruff and format checks; `git diff --check`
+  passes; release Eval passes `10/10`.
+- Repository `make check` stops at two untouched file-size violations
+  (`561/500`, `505/500`). Independent full Ruff and Mypy retain only the known
+  untouched baseline of 13 and 4 errors respectively.
+- Branch is local and unpushed. Required merge order remains
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-STO-AUTH-01`.
+
+#### Closeout
+
+- Formal review targeted integrated authoritative composition implementation
+  `7be231e7`; `EMB-PLAN-01` and `CLOUD-STO-SEAM-01` are now `Done`, and the
+  explicit maintainer activation was recorded before implementation.
+- The diff remains within the declared Core Ports, Storage bundle, API/Worker
+  composition and authoritative-composition tests. It removes legacy constructor
+  fallback without selecting PostgreSQL, Redis, S3/MinIO, Mem0, a backend switch,
+  Desktop or Runtime behavior.
+- Existing evidence is accepted: A/B composition `9 passed`, combined focused
+  coverage `365 passed`, recorded `make test`/quality results, Ruff, Mypy, Eval
+  `10/10` and `git diff --check`; current-HEAD composition regressions pass
+  `11/11`. No Compose execution or production edit was needed for this closeout.
+- Closing this card records the authoritative local Store bundle only. Memory
+  Gateway, Compose dependency, PostgreSQL migration and cloud backend cards retain
+  their own gates.
+
+### MEM-GW-CON-01 - Provider-neutral Agent Memory Gateway Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE / INTEGRATIONS`
+- Depends on: local reviewed `CLOUD-STO-AUTH-01` and explicit maintainer
+  continuation on 2026-07-28. This is a stacked local task; merge remains blocked
+  until the authoritative Store chain lands.
+- Branch: `codex/mem-gw-con-01`
+- Worktree: `../zebra-agent-mem-gw-con-01`
+- Owned paths:
+  `packages/agent-core/src/agent_core/ports/agent_memory_gateway.py` (new),
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `tests/agent_core/test_agent_memory_gateway_contract.py` (new),
+  `docs/AGENT_TASKS.md`, `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Define the smallest provider-neutral publish, search and delete boundary for a
+derived semantic-memory service without weakening Zebra's governed memory truth.
+
+#### Acceptance
+
+- [x] Only confirmed Zebra memories can cross the publication contract; opaque
+  namespace, Zebra `MemoryId` and idempotency key are mandatory.
+- [x] Search hits contain only a Zebra `MemoryId`, opaque provider reference and
+  separately named provider score, so callers must revalidate lifecycle and text
+  through `MemoryStorePort`.
+- [x] Success, partial, not-found, degraded and disabled outcomes are typed;
+  unavailable searches cannot expose hits and do not require exceptions.
+- [x] Core contains no Mem0, Redis, HTTP or provider SDK type; focused tests,
+  Ruff, Mypy and relevant repository gates pass or blockers are recorded.
+
+#### Explicit Non-Goals
+
+- Mem0 SDK/REST calls, credentials, Docker, configuration or feature flags
+- delivery/outbox wiring, API/Worker integration, prompt admission or migration
+- changing `MemoryStorePort`, `MemoryRecord`, extraction, review or lifecycle rules
+
+#### Validation And Handoff
+
+- Gateway contract: `13 passed`; all `221` agent-core tests passed.
+- Strict Mypy passed all `116` agent-core source files; touched Python files pass
+  Ruff; release Eval passed `10/10`; `git diff --check` passed.
+- Final full suite: `1760 passed, 8 skipped, 9 failed`. The same nine inherited
+  failures recorded by `CLOUD-STO-AUTH-01` remain: two stale provider
+  expectations, five expired SCM credential fixtures, one untouched file-size
+  gate and one Worker cancellation race.
+- `make check` stops at the two untouched file-size violations (`561/500`,
+  `505/500`). The branch remains local and stacked; Mem0 adapter work is still
+  locked behind the Compose baseline, this contract and a credentialed Spike.
+
+#### Closeout
+
+- Formal review covered integrated Core contract `8c61ad66`; confirmed-only
+  publication, opaque namespace, Zebra `MemoryId` revalidation and typed
+  degraded/disabled outcomes are present without provider types in Core.
+- Recorded contract `13/13`, agent-core `221/221`, strict Mypy/Ruff, Eval `10/10`
+  and diff evidence is accepted. No Mem0 SDK/REST, credentials, Docker,
+  delivery, API/Worker or runtime wiring was added.
+- Closed `MEM-GW-CON-01` from `Review` to `Done`; the Mem0 Spike/Adapter remain
+  separately deferred and no provider is runtime-selected.
+
+### CLOUD-COMPOSE-INFRA-01 - Docker Compose Dependency Baseline
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SRE / RUNTIME`
+- Depends on: explicit maintainer activation on 2026-07-24. Development is
+  stacked on `CLOUD-STO-SEAM-01`; merge order remains
+  `EMB-PLAN-01 -> CLOUD-STO-SEAM-01 -> CLOUD-COMPOSE-INFRA-01`.
+- Branch: `codex/cloud-compose-infra-01`
+- Owned paths: `docker/compose.dependencies.yml`, `docker/compose.mem0.yml`,
+  `docker/mem0/`, `docker/.env.example`, `docker/README.md`, `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Create a version-pinned Docker Compose baseline that separates PostgreSQL,
+ephemeral live Redis, MinIO and Mem0 data dependencies from the optional Mem0
+service and from future Zebra API/Worker application containers.
+
+#### Acceptance
+
+- database and object-storage containers live only in `compose.dependencies.yml`;
+  the optional Mem0 service lives in `compose.mem0.yml`, while Zebra
+  API/Worker/migration containers do not appear in this task
+- Zebra PostgreSQL, MinIO, Mem0 PostgreSQL and Mem0 history have separate named
+  volumes; `redis-live` has a separate failure domain and remains non-authoritative
+- images use explicit versions, services have health checks and host ports bind
+  to loopback by default
+- Mem0 source and the `mem0ai` package are pinned for a reproducible boot-smoke
+  image; the optional service keeps auth enabled, telemetry disabled and adds no
+  Dashboard, Graph or MCP sidecar
+- `docker compose config` passes and the base PostgreSQL/Redis/MinIO services
+  plus Mem0 PostgreSQL/API start healthy without committing credentials or
+  requiring a real model credential for the health check
+- docs record that Mem0's official Compose is a development stack and that
+  write/search, idempotency, deletion and namespace behavior remain gated by a
+  separate contract Spike; container health is not production evidence
+
+#### Validation Evidence (2026-07-24)
+
+- both Compose renders and the reproducible 78-package hash lock pass; the pinned
+  image runs as UID/GID `10001` with read-only root, all capabilities dropped and
+  `no-new-privileges`
+- base PostgreSQL, Redis and MinIO are healthy; MinIO init and Mem0 migration exit
+  `0`; Mem0 PostgreSQL and API are healthy after Alembic `006`
+- `/auth/setup-status` returns `200` and an anonymous memory request returns `401`;
+  no provider-backed write/search was attempted with the boot-only sentinel
+
+#### Explicit Non-Goals
+
+- PostgreSQL, Redis, object-storage or AgentMemoryGateway adapters
+- switching API/Worker away from the local SQLite profile
+- Zebra application images, migration jobs, Kubernetes, Helm, HA, PITR or GA claims
+- publishing a production Mem0 image or treating Mem0 as the durable Task/Event
+  or governed-memory fact source
+
+#### Closeout
+
+- Formal review targeted the integrated dependency stack at `b23b8e762`; Embedded
+  architecture, local storage composition and authoritative Store composition are
+  all `Done`, with explicit maintainer activation recorded.
+- The stack keeps PostgreSQL, Redis, MinIO and Mem0 data dependencies in the
+  dependency Compose file, the optional Mem0 service in its overlay, and Zebra
+  API/Worker containers out of scope. Volumes, health checks, loopback bindings,
+  non-root boot-smoke hardening and the safe environment template remain within
+  the declared paths.
+- Existing validation is accepted: both Compose renders, 78-package hash lock,
+  base dependency health, Mem0 migration/API/auth checks and boot-only sentinel
+  evidence. No new Docker-socket operation or production edit was needed for
+  this closeout; container health is not promoted to production evidence.
+- Closing this card records the dependency-container baseline only. Mem0 contract
+  and adapter cards, PostgreSQL adapters, Zebra application images and Runtime
+  selection retain separate gates.
+
+### CLOUD-LIVE-01 - Redis Live Event Fan-out Adapter
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `INTEGRATIONS / API / STORAGE`
+- Depends on: merged `CLOUD-COMPOSE-INFRA-01` and the durable PostgreSQL Event
+  contract; this card does not require unlocking `CLOUD-AGG-FENCE-01`.
+- Branch: `codex/cloud-live-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-live-01/zebra-agent`
+- Owned paths: `packages/agent-core/src/agent_core/ports/live_event_fanout.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-integrations/src/agent_integrations/redis_live_fanout.py`,
+  `packages/agent-integrations/src/agent_integrations/__init__.py`, the
+  `agent-integrations` and `agent-security` dependency metadata plus lockfile, focused Core and
+  integration tests, `tests/compose/live_fanout/`, this task card, `task_plan.md`,
+  `PROGRESS.md`, `docs/CLOUD-LIVE-01.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`.
+
+#### Goal
+
+Provide the first cloud live-state seam without making Redis a fact source:
+durable PostgreSQL replay establishes the client cursor, a Redis Stream barrier
+is captured before replay, and the adapter then returns only post-barrier events
+whose canonical sequence is newer than the durable cursor. Redis keys and payloads
+must remain namespace-scoped and bounded; loss or corruption is fail-closed and
+the caller can rebuild from PostgreSQL.
+
+#### Acceptance
+
+- Core exposes no Redis types and defines an immutable event envelope, opaque
+  stream cursor/batch and `LiveEventFanoutPort` for barrier capture, publish and
+  post-barrier reads.
+- The Redis adapter uses a versioned, encoded namespace/session stream key,
+  bounded `XADD`, explicit schema fields and strict event deserialization; a
+  cross-namespace or malformed entry is rejected rather than returned.
+- The replay-plus-tail contract is deterministic: events already covered by the
+  durable sequence are filtered, events appended after the captured barrier are
+  observable, and `next_cursor` advances past every inspected entry, including
+  filtered replay duplicates.
+- Unit tests cover namespace isolation, barrier ordering, duplicate filtering,
+  malformed payloads, bounded configuration and Redis failure propagation; an
+  isolated Redis Compose runner covers publish/barrier/tail behavior against the
+  pinned dependency image and cleans its resources.
+- No API/Worker startup wiring, Runtime selector, application Compose overlay,
+  PostgreSQL migration, SQLite change, Mem0 consumer, Redis lease/fencing or
+  production rollout is included.
+
+#### Implementation handoff
+
+- This card is the separately authorized live fan-out implementation slice. The
+  adapter is reusable but remains unselected by API/Worker composition until a
+  later runtime-routing card explicitly owns that wiring.
+
+#### Closeout
+
+- Independent local review passed after the focused, full-repository and real
+  Redis Compose checks; the branch was fast-forward merged into
+  `zebra-cloud-trench` at `cfbebcf7`.
+- This closeout does not authorize API/Worker startup wiring, Runtime selection,
+  application Compose, Redis authority or any aggregate gate unlock.
+
+#### Validation evidence (2026-08-04)
+
+- Core and Redis adapter regressions pass `24/24`; the full
+  `tests/agent_integrations` package passes `127 passed, 3 skipped`.
+- Changed-path Ruff, strict Mypy for the new Port/adapter, `uv lock --check`,
+  Compose config, shell syntax and `git diff --check` pass. The package metadata
+  now declares the existing `agent-security -> agent-tools` import chain and the
+  new `redis` client explicitly, so an isolated package install is reproducible.
+- `make check` remains blocked only by five pre-existing file-size violations
+  outside this card (`UI/desktop/...styles.ts`, API `app.py`, two PostgreSQL
+  adapters and the governed-memory test); no new violation is introduced.
+- The host-side Redis runner passed against the pinned `redis:8.2.1-alpine`
+  service: `1 passed` and
+  `ZEBRA_LIVE_FANOUT_REDIS_TEST_RESULT=PASS`. The runner removed its container
+  and network; the card is closed as `Done` without authorizing API/Worker
+  runtime selection.
+
+### MEM-MEM0-SPIKE-01 - Mem0 OSS Contract And Operations Probe
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `INTEGRATIONS / STORAGE / SECURITY`
+- Depends on: locally reviewed `CLOUD-COMPOSE-INFRA-01`, `CLOUD-STO-AUTH-01`,
+  `MEM-GW-CON-01` and explicit maintainer continuation on 2026-07-28. A local
+  deterministic OpenAI-compatible embedding stub may validate OSS semantics;
+  real-provider compatibility remains credential-gated.
+- Branch: `codex/mem0-contract-spike-01`
+- Worktree: `../zebra-agent-mem0-contract-spike-01`
+- Owned paths: `docker/compose.mem0.test.yml` (new), focused files under
+  `docker/mem0/`, `tests/spikes/mem0/` (new),
+  `docs/Mem0 OSS协议兼容性验证记录.md` (new), `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `README.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Pin the self-hosted OSS REST contract and prove whether Mem0 can remain a
+degraded-safe semantic index behind Zebra's governed memory lifecycle.
+
+#### Acceptance
+
+- exact OSS paths and response shapes are captured for `infer=false`, metadata
+  filters, expiration, search, update, history and deletion
+- restart, duplicate delivery, timeout, provider failure and embedding-dimension
+  changes have explicit observed outcomes
+- authenticated requests cannot bypass Zebra's opaque namespace checks; Mem0 is
+  never exposed as the tenant authorization boundary
+- every search hit carries a Zebra memory reference and is revalidated against
+  the authoritative `MemoryStorePort` before prompt admission
+- deterministic provider coverage is not evidence of real OpenAI compatibility;
+  the credentialed provider check remains explicitly unverified
+
+#### Validation and handoff
+
+- isolated real-server contract test covers authentication, `infer=false`, scope,
+  duplicate delivery, expiration, update/history, restart, delete, provider 503,
+  caller timeout and embedding-dimension mismatch
+- fixed-version gaps are explicit: duplicate add is not idempotent,
+  `search(show_expired=true)` omits expired records and dimension mismatch maps to
+  generic `502/unknown`
+- next Adapter must own a delivery mapping/ledger, hash Zebra namespaces, impose
+  a caller deadline and revalidate every hit through `MemoryStorePort`
+- the implementation is integrated after its Store, Gateway and Compose
+  predecessors; real-provider compatibility remains a separate gate and this
+  contract result does not admit Mem0 to Runtime
+
+#### Closeout
+
+- Accepted the pinned Mem0 OSS contract, namespace and degraded-failure evidence;
+  duplicate delivery, expired-search behavior, provider failures and caller
+  deadline boundaries are explicit.
+- Host isolated Compose evidence is `2/2`; current focused validation passes
+  `24` with `2` Docker-dependent cases skipped in the sandbox. Release Eval is
+  `10/10` and `git diff --check` passes.
+- Closed `MEM-MEM0-SPIKE-01` from `Review` to `Done`. Mem0 remains a derived,
+  rebuildable index; the reset Spike is `Blocked`, Runtime admission remains
+  denied/deferred, and no production composition changed.
+
+### MEM-MEM0-ADP-01 - Mem0 Gateway Adapter
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `INTEGRATIONS / SECURITY`
+- Depends on: completed `MEM-MEM0-SPIKE-01` and the explicit maintainer
+  continuation on 2026-07-28. The implementation is integrated; delivery-ledger
+  persistence and Runtime admission remain separate gates.
+- Branch: `codex/mem0-adapter-01`
+- Worktree: `../zebra-agent-mem0-adapter-01`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/mem0/` (new),
+  `packages/agent-integrations/src/agent_integrations/__init__.py`,
+  `tests/agent_integrations/mem0/` (new), `docs/AGENT_TASKS.md`,
+  `tests/spikes/mem0/test_mem0_oss_contract.py`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Implement the provider-neutral Gateway contract over only the Mem0 behavior proven
+by the Spike, with no Mem0 type escaping the integration package.
+
+#### Acceptance
+
+- only confirmed Zebra memory is published and extraction is fixed to `infer=false`
+- opaque namespace and Zebra memory references survive every request and response
+- timeout, rate limit, partial response and provider errors return degraded outcomes
+- local profile and Run execution remain functional when Mem0 is disabled or down
+
+#### Validation and handoff
+
+- default-disabled configuration performs no network I/O; HTTP credentials require
+  explicit insecure-local opt-in and environment proxies are disabled by default
+- publish fixes `infer=false`; namespace is SHA-256 mapped; responses expose only
+  canonical Mem0 UUID, Zebra `MemoryId` and provider score
+- timeout, rate limit, 5xx, oversized/schema-drift responses and an open circuit
+  return typed degraded outcomes; a half-open circuit admits one probe
+- delete requires the future namespace-aware delivery-ledger lookup; absent or
+  failing lookup degrades, lookup miss is not-found, and no in-memory map is added
+- focused contract tests and the pinned real Compose Mem0 lifecycle pass; no
+  runtime wiring or automatic write retry is included before `MEM-GW-DEL-01`
+
+#### Closeout
+
+- Accepted the disabled-safe Mem0 Gateway implementation: confirmed-only
+  publication, fixed `infer=false`, opaque namespace hashing, bounded responses,
+  typed degraded outcomes, canonical UUID validation and a single half-open
+  circuit probe are covered without provider types escaping the integration layer.
+- Recorded host evidence is focused Core/Adapter `36/36` and pinned Compose
+  lifecycle `3/3`; current Adapter validation passes `23/23`, with no Docker
+  socket dependency in the sandbox. Eval `10/10` and `git diff --check` pass.
+- Closed `MEM-MEM0-ADP-01` from `Review` to `Done` as an implementation
+  contract only. The future v11 ledger still owns provider mapping/idempotency,
+  the reset Spike is `Blocked`, and Mem0 Runtime admission remains denied/deferred.
+
+### CLOUD-MEMORY-PG-PLAN-01 - PostgreSQL Governed Memory Authority Plan
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-memory-pg-plan-01`
+- Depends on: integrated PostgreSQL v1-v9 foundation, `CLOUD-STO-AUTH-01`,
+  `MEM-GW-CON-01` and `MEM-MEM0-ADP-01`
+- Owned paths: `docs/CLOUD_PostgreSQL_Governed_Memory_权威与迁移合同_v1.0.md`
+  (new), `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, and `WORKLOG.md`
+- Goal: freeze the PostgreSQL governed-memory fact source, atomic mutation,
+  namespace, migration and Mem0-derived-index boundaries before implementation.
+- Acceptance: every Memory read/write caller is assigned to a fact or projection;
+  blind upsert races, review/Event atomicity, scope isolation, search parity,
+  migration/rebuild order and real-PostgreSQL gates are explicit; implementation is
+  split into dependency-ordered path-bounded cards.
+- Non-goals: no Python/SQL implementation, SQLite behavior change, Mem0 call,
+  backend selector, Desktop, Host tenant directory or production cutover claim.
+- Evidence: the 366-line contract inventories the SQLite-only fact source and
+  freezes v10 authority/operation receipts, pure mutation plans, Worker/Admin
+  aggregate boundaries, tombstones, namespace/search/import gates and the v11
+  Mem0 delivery certainty/rebuild protocol. Two preflight audits and two review
+  rounds closed six P1 gaps; final review found no open P0/P1. `git diff --check`,
+  cross-document task references and release Eval `10/10` pass.
+
+#### Closeout
+
+- Formal review accepted the integrated docs-only contract from `2c43af0f`;
+  PostgreSQL governed Memory is the cloud fact source, while Mem0 remains a
+  rebuildable derived index with no lifecycle or content authority.
+- The current contract is `366` lines and passes cross-document references,
+  terminology/diff checks and release Eval `10/10`. No Python/SQL, migration,
+  Mem0 call, selector, Desktop or production cutover was added.
+- Closed `CLOUD-MEMORY-PG-PLAN-01` from `Review` to `Done`; Core mutation,
+  PostgreSQL authority and delivery cards retain their own gates.
+
+### CLOUD-MEMORY-CON-01 - Governed Memory Mutation Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-memory-con-01`
+- Depends on: reviewed `CLOUD-MEMORY-PG-PLAN-01`
+- Owned paths: `packages/agent-core/src/agent_core/domain/governed_memories.py`,
+  `governed_memory_operations.py` and `governed_memory_receipts.py` (new),
+  `packages/agent-core/src/agent_core/ports/governed_memory_store.py` (new),
+  focused pure planning seams in `memory_{candidates,candidate_promotions,reviews}.py`,
+  their public exports, focused Core tests, focused clarifications in the governed
+  Memory PostgreSQL contract, and this task's governance records
+- Goal: replace unversioned cloud writes with typed creation idempotency, record
+  revision CAS, Worker candidate and administrative review aggregate requests.
+- Acceptance: stale/missing authority cannot form a valid mutation; Worker and
+  administrative authority are not interchangeable; deleted content cannot enter
+  results/audit; tombstones are representable without a `MemoryRecord`; candidate,
+  promotion and review plans perform no I/O; the local `MemoryStorePort` wrappers
+  remain behavior-compatible.
+- Non-goals: no SQL, SQLite behavior change, Mem0, API/Worker composition, backend
+  selector or generic Unit of Work.
+- Evidence: Worker/Admin requests bind namespace, Session and stream CAS while the
+  Worker retry digest excludes LeaseFence and regenerated identifiers/timestamps;
+  canonical creation evidence and no-text tombstones fail closed. Pure planners
+  retain the SQLite wrapper's per-refresh-target `limit=100` behavior. Core tests
+  pass `320/320`, API/Worker pass `411` with `14` gated skips, strict Core Mypy and
+  changed-path Ruff pass, release Eval is `10/10`, and `git diff --check` passes.
+  Full tests are `1971 passed, 145 skipped, 1 inherited Desktop file-size failure`;
+  the same 561/500 violation reproduces on untouched `zebra-cloud-trench`.
+
+#### Closeout
+
+- Formal review covered integrated Core implementation `4bda7f72`; typed
+  revision/CAS, content-free receipts/tombstones and pure candidate/promotion/
+  review planners are present without I/O.
+- Recorded Core `320/320`, API/Worker `411` with `14` skips, strict Mypy/Ruff,
+  Eval `10/10` and diff evidence is accepted. Current-head focused validation
+  passes `39/39`.
+- Closed `CLOUD-MEMORY-CON-01` from `Review` to `Done`. PostgreSQL v10,
+  delivery, Mem0, runtime selection, SQLite feature work and Desktop remain
+  separate gates.
+
+### CLOUD-MEMORY-PG-01 - PostgreSQL Governed Memory Authority
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-memory-pg-01`
+- Depends on: `CLOUD-MEMORY-CON-01` and integrated PostgreSQL v1-v9
+- Owned paths: PostgreSQL governed Memory migration/adapter/aggregate/operation-receipt
+  modules, the focused Worker-authority revisioned-read seam in the Core governed
+  Memory Port, explicit SQLite import/rebuild tooling,
+  isolated PostgreSQL runner and focused tests, plus this task's governance records
+- Migration: v10 `governed_memory_authority`; v1-v9 remain immutable.
+- Goal: move Zebra governed Memory facts to namespace-scoped PostgreSQL before any
+  Mem0 delivery runtime is enabled.
+- Acceptance: query/search safety, revision CAS, concurrent review, candidate/Event/
+  Projection atomicity, stale-fence zero-write, response-loss replay, namespace
+  isolation and repeatable import pass against real PostgreSQL 17.5.
+- Non-goals: no Mem0 delivery, Desktop/SQLite feature work, API/Worker runtime
+  composition, complete backend selector, Host tenant directory or production cutover.
+- Evidence: v10 authority, no-text tombstones, content-free persistent scans, canonical
+  receipts and offline SQLite import pass the isolated PostgreSQL 17.5 matrix `29/29`.
+  The full suite passes `1977` with `162` environment skips and only the inherited
+  Desktop 561/500 file-size failure. Changed-path Ruff/Mypy, release Eval `10/10` and
+  final P0/P1 review pass. An attempted optional Worker seam was removed after review:
+  terminal finalization, active-set validation and a verifiable unified cloud Store
+  bundle must land atomically in the later runtime-composition task.
+
+#### Closeout
+
+- Formal review covered integrated v10 implementation `0d812451`; PostgreSQL is
+  the namespace-scoped governed Memory fact source with content-free receipts,
+  tombstones, revision CAS, aggregate transactions and explicit SQLite import.
+- Recorded isolated PostgreSQL `29/29`, full `1977` with `162` skips, strict
+  static checks, Eval `10/10` and final P0/P1 review evidence is accepted.
+  Current-head focused validation passes `6` with `18` PostgreSQL cases skipped
+  because no service is available in this sandbox.
+- Closed `CLOUD-MEMORY-PG-01` from `Review` to `Done`. No Mem0 delivery,
+  runtime selector, API/Worker composition, Desktop, SQLite feature change or
+  production cutover was added.
+
+### MEM-GW-DEL-01 - Memory Delivery And Deletion Ledger
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `STORAGE / WORKER`
+- Depends on: completed `MEM-GW-DEL-CON-01`, `MEM-MEM0-RESET-SPIKE-01`,
+  `MEM-GW-DEL-PG-01`, `MEM-GW-DEL-RUN-01`, integrated `MEM-MEM0-ADP-01`,
+  reviewed Lease/Effect baseline and `CLOUD-MEMORY-PG-01`
+- Branch: `TBD`
+- Owned paths: none while `Locked`; implementation is split across the four
+  child cards registered below. Governance status and evidence are coordinated
+  by `MEM-GW-DEL-PLAN-01`.
+
+#### Goal
+
+Make publish/delete retryable and auditable while keeping Zebra lifecycle state
+authoritative and Mem0 fully rebuildable.
+
+#### Acceptance
+
+- duplicate delivery cannot create a second governed memory
+- stale or deleted Mem0 hits are rejected by authoritative-store revalidation
+- delete evidence retains no deleted content and reconciliation has bounded retries
+- a documented rebuild path repopulates derived Mem0 data from confirmed Zebra memory
+- provider mutation outcomes distinguish applied, definite-no-effect and unknown;
+  unknown publish outcomes are never retried automatically
+
+#### Explicit unlock blockers
+
+- The v10 authority mutation and v11 operation enqueue must be owned by one
+  PostgreSQL transaction boundary.
+- The Core Gateway result must expose typed certainty; parsing `detail` strings is
+  forbidden.
+- A scoped, management-only provider namespace reset/rebuild must be proven. A
+  global or unbounded Mem0 reset does not satisfy this gate.
+- Search admission must batch-revalidate active mapping, scope/generation and the
+  current confirmed/unexpired PostgreSQL record before returning a hit.
+
+### MEM-GW-DEL-PLAN-01 - Memory Delivery Ledger v11 Plan And Task Split
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `ARCH / STORAGE / INTEGRATIONS`
+- Depends on: reviewed `CLOUD-MEMORY-PG-01`, `MEM-GW-CON-01`,
+  `MEM-MEM0-SPIKE-01` and `MEM-MEM0-ADP-01`
+- Branch: `codex/mem-gw-del-plan-01`
+- Worktree: `../zebra-mem-gw-del-plan-01`
+- Owned paths: `docs/Zebra Cloud Memory Delivery Ledger v11实施计划.md` (new),
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `findings.md`,
+  `WORKLOG.md`
+
+#### Goal
+
+Record the reviewed v11 design, keep `MEM-GW-DEL-01` locked, and register four
+path-bounded child cards with explicit dependencies, non-goals and Docker Compose
+acceptance evidence.
+
+#### Acceptance
+
+- [x] Parent remains `Locked` and has no broad cross-layer owned paths.
+- [x] Core certainty, PostgreSQL atomic enqueue, scoped reset Spike and runtime
+  consumer/rebuild are separate cards with non-overlapping implementation paths.
+- [x] The v11 three-table model, certainty state machine, unknown-result quarantine,
+  search revalidation and rebuild high-watermark gate are durable in `docs/`.
+- [x] Re-review the split after the docs-only validation and leave child cards
+  `Locked` until their dependencies are integrated and explicitly activated.
+
+#### Handoff
+
+This is a docs-only planning slice. It does not add SQL, HTTP calls, Worker wiring,
+provider reset endpoints or local SQLite changes. The four child cards below are
+the only allowed implementation entry points.
+
+### MEM-GW-DEL-CON-01 - Core Memory Delivery Certainty Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `CORE`
+- Depends on: reviewed `MEM-GW-CON-01` and `CLOUD-MEMORY-CON-01`; explicitly
+  activated by the maintainer on 2026-08-02 after the v11 plan review.
+- Branch: `codex/mem-gw-del-con-01`
+- Worktree: `../zebra-mem-gw-del-con-01`
+- Owned paths: `packages/agent-core/src/agent_core/ports/agent_memory_gateway.py`,
+  `packages/agent-core/src/agent_core/domain/memory_delivery.py` (new),
+  `packages/agent-core/src/agent_core/ports/memory_delivery.py` (new), Core
+  exports and focused Core tests. This activation handoff may update the task
+  registry, `task_plan.md`, `PROGRESS.md`, `findings.md` and `WORKLOG.md`; no
+  provider, storage or runtime paths are owned here.
+
+#### Goal
+
+Freeze provider-neutral scope identity, operation/certainty values, CAS-safe state
+transitions and stable idempotency keys without importing SQL, HTTP, Mem0 or Redis.
+
+#### Acceptance
+
+- All illegal status/certainty combinations are rejected by typed Core values.
+- `unknown` has no automatic retry operation and cannot be downgraded to success.
+- Core tests prove the state machine and the package boundary remains provider-neutral.
+
+#### Validation and handoff
+
+- Core and Mem0 focused tests pass `361/361`; the full suite passes `1995` with
+  `167` skips and one inherited Desktop file-size failure
+  (`UI/desktop/src/components/CodexConversationPane.styles.ts`, `561/500`).
+- Strict Mypy passes all `133` Core source files, changed-path Ruff and
+  `git diff --check` pass, and the release Eval is `10/10`.
+- The legacy Adapter remains source-compatible through conservative defaults:
+  `succeeded` maps to `applied`, degraded outcomes to `unknown`, and disabled or
+  not-found outcomes to `definite_no_effect`. The runtime child must emit explicit
+  certainty and must not use `detail` as a control signal.
+
+#### Closeout
+
+- Formal review covered integrated Core certainty implementation `0db22a9f`;
+  provider-neutral scope identity, operation/CAS states, typed certainty and
+  terminal unknown quarantine are present without infrastructure imports.
+- Recorded Core/Mem0 `361/361`, strict Mypy over `133` Core files, Ruff, Eval
+  `10/10` and diff evidence is accepted. Current focused validation passes
+  `18/18`.
+- Closed `MEM-GW-DEL-CON-01` from `Review` to `Done`; SQL, HTTP, Mem0, Redis,
+  Worker and runtime wiring remain outside the card.
+
+### MEM-MEM0-RESET-SPIKE-01 - Scoped Mem0 Namespace Reset And Rebuild Probe
+
+- Status: `Blocked`
+- Owner: `lukeding`
+- Suggested role: `INTEGRATIONS / SECURITY / SRE`
+- Depends on: merged `MEM-MEM0-SPIKE-01`, `CLOUD-COMPOSE-INFRA-01`,
+  `MEM-GW-CON-01` and `CLOUD-STO-AUTH-01`
+- Branch: `codex/mem0-reset-spike-01`
+- Worktree: `../zebra-mem0-reset-spike-01`
+- Owned paths: `docker/compose.mem0.test.yml`, focused files under `docker/mem0/`,
+  `tests/spikes/mem0/`, and `docs/Mem0 OSS协议兼容性验证记录.md`. The maintainer
+  activated this test-only slice on 2026-08-02 after the sidebar ChatGPT review;
+  this activation handoff may update the task registry, `task_plan.md`, `PROGRESS.md`,
+  `findings.md` and `WORKLOG.md`. No Core, PostgreSQL ledger, Worker, Adapter or
+  local SQLite paths are owned here.
+
+#### Goal
+
+Prove whether a provider namespace can be enumerated and purged by scope and
+generation under an explicit management gate, without exposing an unbounded global
+reset.
+
+#### Acceptance
+
+- Enumeration, pagination/limits, purge, restart, duplicate and unknown-object
+  behavior are recorded with a deterministic Compose test.
+- Cross-scope isolation and operator authorization are proven.
+- If safe scoped reset is unavailable, the card becomes `Blocked` and the parent
+  cannot unlock; a global `/reset` is never accepted as a substitute.
+
+#### Current handoff
+
+- Compose config, a test-only response-loss proxy and the gated reset test are
+  implemented. Static Ruff, Python compilation, Compose config validation and the
+  non-Docker test collection pass.
+- Host Docker execution ran with the isolated project and failed closed at the
+  OpenAPI gate: pinned `GET /memories` exposes only `agent_id`, `run_id`,
+  `show_expired`, `top_k` and `user_id`, with no documented `page/page_size` or
+  `offset/limit`. The test command was `ZEBRA_RUN_MEM0_RESET_SPIKE=1 uv run pytest
+  -q tests/spikes/mem0/test_mem0_namespace_reset.py`; it returned one explicit
+  `Blocked` failure before publishing data, and the project/volumes were removed.
+- Because complete scoped enumeration cannot be proven, this child is `Blocked`;
+  `MEM-GW-DEL-01` and the runtime consumer remain locked. Do not reinterpret
+  `top_k` as pagination or replace this gate with global `/reset`.
+
+### MEM-MEM0-RESET-ALT-01 - Scoped Reset Alternative Validation
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `INTEGRATIONS / STORAGE / SRE`
+- Depends on: integrated `MEM-GW-DEL-PG-01` at `3cd0b98`; independent of the
+  blocked provider enumeration Spike. This card does not unlock the runtime
+  consumer by itself.
+- Branch: `codex/mem0-reset-alt-01`
+- Worktree: `../zebra-mem0-reset-alt-01`
+- Owned paths: `docker/compose.mem0-reset-alt.test.yml`,
+  `tests/spikes/mem0_reset_alt/`, `docs/Mem0 Scoped Reset Alternative 验证记录.md`,
+  and this task's governance updates in `docs/AGENT_TASKS.md`, `task_plan.md`,
+  `PROGRESS.md`, `findings.md` and `WORKLOG.md`.
+- Non-goals: no production packages, Mem0 HTTP, Worker/Consumer, Desktop,
+  local SQLite composition, or changes to `MEM-MEM0-RESET-SPIKE-01`.
+
+#### Activation handoff
+
+The sidebar ChatGPT plan made this the single candidate `Ready` task after the
+v11 ledger merge. The owner claimed it on 2026-08-02 and narrowed the work to a
+test-only validation: determine whether `scope/generation` plus confirmed
+provider mappings can make logical reset safe without provider enumeration.
+
+#### Goal and acceptance
+
+- Prove old-generation search admission is fenced after a logical generation
+  switch, and known mappings can be deleted without a provider-wide scan.
+- Simulate an upstream-committed publish with a lost response; prove the
+  resulting unknown operation is quarantined and its provider orphan cannot be
+  recovered from the ledger. The result must be recorded as partial, not passed
+  off as a complete physical reset.
+- Run the isolated PostgreSQL Compose matrix with deterministic cleanup. Keep
+  the existing `24` focused delivery tests and `295 passed, 1 skipped` storage
+  matrix as regression baselines.
+
+#### Current implementation handoff
+
+- Added only the isolated PostgreSQL Compose profile, a deterministic in-memory
+  provider stand-in and two test cases. No production package, Provider HTTP,
+  Worker, Desktop or SQLite path changed.
+- The alternative runner passes `2` tests and emits
+  `ZEBRA_MEM0_RESET_ALT_VERDICT=B`: logical generation fencing and known mapping
+  deletion work, but a provider object committed before a lost response remains
+  an orphan that the ledger cannot recover.
+- Existing delivery focused runner remains `24 passed`; the full
+  `tests/agent_storage` matrix remains `295 passed, 1 skipped`. The parent,
+  original reset Spike and runtime consumer remain locked pending a separate
+  deletion-compliance decision.
+
+#### Closeout
+
+- Formal review accepted the recorded `B/PARTIAL` result: logical reset and
+  known mapping deletion are bounded, while an unknown provider orphan remains
+  unrecoverable from the ledger.
+- Current-head validation without PostgreSQL reports `2 skipped`; the recorded
+  host Compose result is `2 passed` with
+  `ZEBRA_MEM0_RESET_ALT_VERDICT=B` and deterministic cleanup.
+- Closed `MEM-MEM0-RESET-ALT-01` from `Review` to `Done` as a validation-only
+  result. `MEM-MEM0-RESET-SPIKE-01`, `MEM-GW-DEL-RUN-01` and the parent remain
+  locked; Mem0 is not admitted to the runtime.
+
+### MEM-PROVIDER-DEL-COMPLIANCE-01 - Provider Deletion Compliance Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `ARCHITECTURE / INTEGRATIONS / SECURITY`
+- Depends on: integrated Memory Delivery Ledger v11 (`284425f`) and
+  `MEM-MEM0-RESET-ALT-01` verdict `B/PARTIAL`; no other task dependency.
+- Branch: `codex/mem-provider-del-compliance-01`
+- Worktree: `../zebra-mem-provider-del-compliance-01`
+- Owned paths: `docs/ADR-018_Memory Provider Deletion Compliance Contract.md`,
+  `tests/specs/test_memory_provider_deletion_compliance.py`, and governance
+  updates in `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `findings.md`
+  and `WORKLOG.md`.
+- Non-goals: no production packages, SQL/migrations, Provider HTTP, Mem0
+  enumeration, Worker/Consumer, Desktop, local SQLite composition or Runtime
+  selection.
+
+#### Goal and acceptance
+
+- Define a provider-neutral Deletion Compliance Contract with deterministic
+  recovery, deterministic physical deletion and complete scoped coverage.
+- Define the allowed coverage proof alternatives: complete enumeration,
+  deterministic lookup, or an atomic namespace drop. Best effort is not proof.
+- Define one capability matrix and one admission policy. A provider is admitted
+  to the Runtime Memory mainline only on `PASS`; otherwise it is Experimental or
+  Research and cannot unlock `MEM-GW-DEL-RUN-01`.
+- Record the current Mem0 result as logical fencing `PASS`, mapping deletion
+  `PASS`, ambiguous-create recovery `FAIL/UNPROVEN`, complete scoped deletion
+  `FAIL/UNPROVEN`, and Runtime admission `BLOCKED`.
+- Add specification tests that fail if the contract weakens these requirements
+  or accidentally admits Mem0. Preserve the existing `24` focused delivery
+  tests and `295 passed, 1 skipped` storage matrix as regression evidence.
+
+#### Implementation handoff
+
+- The contract is a governance and specification boundary, not a runtime API.
+- `MEM-MEM0-RESET-SPIKE-01` remains `Blocked`; `MEM-GW-DEL-RUN-01`, its parent,
+  and Runtime composition remain `Locked`.
+- The task may close `PASS` when the contract and admission policy are explicit;
+  that result does not unlock Runtime. Re-admission requires a future provider
+  capability change plus a fresh evidence run.
+
+#### Review handoff
+
+- ADR-018 and the test-only specification matrix are complete. The focused
+  contract suite passes `2`; changed-path Ruff, format, Mypy, compilation and
+  `git diff --check` pass.
+- `make check` reaches the repository file-size gate but remains blocked by two
+  unrelated baseline violations: `UI/desktop/src/components/CodexConversationPane.styles.ts`
+  (`561/500`) and `tests/agent_storage/test_postgres_governed_memories.py`
+  (`765/700`). No Owned path is implicated.
+- Verdict: `PASS` for the Provider Deletion Compliance Contract and `BLOCKED`
+  for current Mem0 Runtime admission. This card does not unlock any consumer or
+  Runtime task.
+
+#### Closeout
+
+- ADR-018 is accepted. Mem0 is `Provider admission: DENIED` and
+  `Mainline candidate: DEFERRED`; re-entry requires new upstream capability
+  evidence and a new admission run.
+- The next candidate is deliberately PostgreSQL-native and does not depend on
+  the blocked Mem0 enumeration or consumer cards.
+
+### MEM-PG-NATIVE-ADMISSION-SPIKE-01 - PostgreSQL-Native Memory Admission
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / ARCHITECTURE / SECURITY`
+- Depends on: `zebra-cloud-trench@a01f887`, completed
+  `MEM-PROVIDER-DEL-COMPLIANCE-01`, accepted ADR-018, `MEM-MEM0-RESET-ALT-01`
+  `B/PARTIAL`, PostgreSQL Memory Authority v10 and Memory Delivery Ledger v11.
+  It has no dependency on the blocked Mem0 reset Spike or its consumer.
+- Branch: `codex/mem-pg-native-admission-spike-01`
+- Worktree: `../zebra-mem-pg-native-admission-spike-01`
+- Owned paths: `docs/ADR-019_PostgreSQL_Native_Memory_Backend_Admission.md`,
+  `tests/agent_storage/test_postgres_native_memory_admission.py`,
+  `tests/compose/postgres_native_memory_admission/`, and governance updates in
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md` and `WORKLOG.md`.
+- Non-goals: no production package, migration, API/Worker/Consumer, Mem0 HTTP,
+  Provider HTTP, Desktop, Redis, SQLite composition, Runtime composition or
+  existing Mem0 orphan cleanup.
+
+#### Goal and acceptance
+
+- Validate deterministic `memory_id`/`operation_id` identity and ambiguous-commit
+  recovery through one PostgreSQL authority boundary.
+- Prove authority and retrieval projection commit/rollback atomically, stale
+  generation writers are rejected, complete scoped deletion removes every
+  content-bearing row, and namespace isolation is preserved.
+- Prove the minimum recall contract: namespace/scope/current-generation/status
+  filtering, optional topic filtering, `top_k` result limiting and deterministic
+  tie-breaking. `top_k` is not a deletion primitive.
+- Produce exactly one explicit `ZEBRA_PG_NATIVE_ADMISSION_VERDICT` from the
+  capability matrix. `PASS` admits only the architecture and unlocks no Runtime.
+
+#### Implementation handoff
+
+- The test-only schema is created inside a per-test PostgreSQL schema and is not
+  a production migration. The isolated Compose profile starts PostgreSQL only.
+- `MEM-MEM0-RESET-SPIKE-01` stays `Blocked`; `MEM-GW-DEL-RUN-01`, its parent,
+  and Runtime stay `Locked`; `MEM-GW-PG-NATIVE-01` is now activated separately.
+
+#### Review handoff
+
+- ADR-019 is `Accepted` with architecture verdict `PASS`. The focused isolated
+  runner passes `8` cases on PostgreSQL `17.5-alpine3.21` and emits
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS`.
+- The full `tests/agent_storage` matrix passes `303 passed, 1 skipped` (`295`
+  predecessor cases plus `8` admission cases). Changed-path Ruff, format, Mypy,
+  compilation and `git diff --check` pass.
+- `make check` remains blocked only by the two inherited file-size violations:
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` (`561/500`) and
+  `tests/agent_storage/test_postgres_governed_memories.py` (`765/700`).
+- `PASS` admitted only the PostgreSQL-native architecture. It unlocked the
+  separately activated storage implementation; Mem0, Worker, Provider HTTP,
+  Desktop, SQLite, Redis and Runtime still require their own explicit gates.
+
+#### Closeout
+
+- Formal review accepted ADR-019 and the isolated test-only admission boundary;
+  the real PostgreSQL `8/8` matrix and explicit
+  `ZEBRA_PG_NATIVE_ADMISSION_VERDICT=PASS` are the architecture evidence.
+- Current-head validation without a PostgreSQL service collects all eight cases
+  as skipped; this does not replace the recorded host Compose evidence.
+- Closed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` from `Review` to `Done`. Only the
+  separately activated storage implementation is unlocked; Mem0, Worker,
+  Provider HTTP, Desktop, SQLite, Redis and Runtime remain gated.
+
+### MEM-GW-PG-NATIVE-01 - PostgreSQL-Native Memory Backend Implementation
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE`
+- Depends on: reviewed `MEM-PG-NATIVE-ADMISSION-SPIKE-01` with `PASS`, accepted
+  ADR-018 and ADR-019, PostgreSQL Memory Authority v10, Memory Delivery Ledger
+  v11, and explicit maintainer activation on 2026-08-02.
+- Branch: `codex/mem-gw-pg-native-01`
+- Worktree: `../zebra-mem-gw-pg-native-01`
+- Owned paths: `packages/agent-storage/**`, the PostgreSQL migration directory
+  and migration registry, `tests/agent_storage/**`,
+  `tests/compose/postgres_native/**`, and governance updates in
+  `PROGRESS.md`, `docs/AGENT_TASKS.md`, `task_plan.md` and `WORKLOG.md`.
+
+#### Production scope
+
+- Implement a PostgreSQL-native Memory Gateway inside `agent-storage` that
+  satisfies the existing provider-neutral memory semantics without selecting a
+  runtime composition.
+- Commit authority and retrieval projection in one transaction, with
+  deterministic `namespace_id`, `scope_id`, `generation`, `operation_id` and
+  `memory_id` identity. A retry after an ambiguous commit must recover the
+  original result by `operation_id`.
+- Enforce expected-generation CAS, complete scoped physical deletion, and
+  namespace/scope/current-generation/status/topic/top-k deterministic recall.
+- Add production migration coverage for fresh bootstrap and upgrade from the
+  current v11 schema; do not use constructor DDL.
+
+#### Explicit non-goals
+
+- No changes under `packages/agent-runtime/**`, `apps/api/**`,
+  `apps/worker/**` or `apps/desktop/**`.
+- No Provider HTTP, Mem0 enumeration/reset/rebuild, Worker consumer, Redis,
+  SQLite composition, embedding/semantic ranking, external data migration or
+  production backend selector.
+- The Runtime remains `Locked`; this card delivers storage only and does not
+  imply a cloud cutover.
+
+#### Activation and acceptance
+
+- Activation is limited to this branch and these Owned paths. Any dependency on
+  an application composition root must become a separate successor card.
+- Focused real-PostgreSQL Compose tests must cover CRUD, deterministic retry and
+  response-loss recovery, atomic authority/retrieval projection, generation
+  fencing, reset/delete completeness, namespace isolation and recall ordering.
+- Fresh and v11-upgrade migrations must pass, and the existing delivery ledger
+  and governed-memory storage suites must remain green with no new skips.
+
+#### Review handoff
+
+- Added production migration v12 (`native_memory_gateway`) and the
+  `PostgresNativeMemoryGateway` storage implementation. Authority, retrieval
+  projection and operation audit commit in one PostgreSQL transaction; reset
+  physically removes scoped content while retaining operation audit rows.
+- The isolated PostgreSQL 17.5 Compose runner passes `10` focused cases, including
+  fresh/v11-upgrade migration, CRUD/replay, response-loss recovery, atomic
+  projection visibility, generation CAS/reset, complete delete, namespace/scope
+  isolation and deterministic recall. It emits
+  `ZEBRA_PG_NATIVE_GATEWAY_TEST_RESULT=PASS` and cleans its resources.
+- The full `tests/agent_storage` matrix passes `313 passed, 1 skipped`; the
+  existing delivery runner remains `24 passed`. Changed-path Ruff, format,
+  Mypy, compilation and `git diff --check` pass.
+- `make check` remains blocked only by the two inherited size violations in
+  `UI/desktop/src/components/CodexConversationPane.styles.ts` (`561/500`) and
+  `tests/agent_storage/test_postgres_governed_memories.py` (`765/700`). No new
+  violation or Runtime/Worker/Provider/SQLite/Redis composition was introduced.
+
+#### Gate
+
+This card is the only activated successor unlocked by the PostgreSQL-native
+admission result. Mem0 remains denied/deferred and the Runtime composition stays
+locked until the full cloud authority bundle is reviewed.
+
+#### Closeout
+
+- Formal review covered integrated implementation `91fd5964`; migration v12,
+  authority/retrieval atomicity, deterministic operation recovery, generation
+  fencing, complete scoped deletion and native recall are present under
+  `agent-storage` only.
+- Recorded real Compose PostgreSQL `10/10`, full storage `313 passed, 1
+  skipped` and delivery `24 passed` evidence is accepted. Current-head focused
+  validation without PostgreSQL reports `18 skipped` and does not replace the
+  host evidence.
+- Closed `MEM-GW-PG-NATIVE-01` from `Review` to `Done`. No Runtime, Worker,
+  Provider HTTP, Desktop, SQLite, Redis, Mem0 or backend selector was added;
+  Mem0 remains denied/deferred.
+
+### MEM-GW-DEL-PG-01 - PostgreSQL v11 Delivery Ledger And Atomic Enqueue
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE`
+- Depends on: completed `MEM-GW-DEL-CON-01`, integrated/reviewed
+  `CLOUD-MEMORY-PG-01` and migration governance
+- Branch: `codex/mem-gw-del-pg-01`
+- Worktree: `../zebra-mem-gw-del-pg-01`
+- Owned paths: new PostgreSQL delivery store/transaction modules under
+  `packages/agent-storage/src/agent_storage/postgres/`, `postgres/migrations.py`,
+  `governed_memory_transactions.py`, `governed_memory_transaction_support.py`,
+  focused PostgreSQL tests and a host-run Compose test script. Governance updates
+  remain owned by the plan card.
+
+#### Activation handoff
+
+The maintainer activated this card on 2026-08-02 after the Core certainty
+contract was integrated. The scoped Mem0 reset Spike is `Blocked` on its
+documented pagination gate, but that management-only limitation does not block
+the PostgreSQL authority and delivery ledger slice. The parent ledger and
+runtime consumer remain `Locked`; this card must not change Worker defaults,
+Mem0 calls or local SQLite composition.
+
+#### Current implementation handoff
+
+- v11 migration and metadata-only `PostgresMemoryDeliveryLedger` are implemented
+  under the owned PostgreSQL paths. Claims use `SKIP LOCKED`, random tokens and
+  database time; `claimed` and `in_flight` have separate expiry semantics.
+- An explicit `delivery_scope` on `PostgresGovernedMemoryStore` attaches publish
+  and delete enqueue to the v10 authority transaction. The default constructor
+  remains unchanged, so no Worker or local SQLite profile is activated.
+- The host runner `tests/spikes/memory_delivery/run-postgres-tests.sh` passes
+  `24` real PostgreSQL tests, including fresh/v1-v10 upgrade/checksum, scope
+  isolation, replay, atomic enqueue, stale ACK, unknown quarantine and batch
+  search admission. The reset Spike remains independently `Blocked`.
+
+#### Goal
+
+Implement migration v11, atomic enqueue with v10 authority mutations, independent
+claim/CAS, provider mappings and one-shot search revalidation without changing
+Worker or local SQLite composition.
+
+#### Acceptance
+
+- Fresh v1-v11 and v1-v10 upgrades pass migration/checksum/constraint checks.
+- Authority mutation plus operation enqueue is all-or-nothing; replay cannot create
+  a second delivery; stale ACKs perform zero writes.
+- Claims use `SKIP LOCKED`, random tokens, database time and separate claimed versus
+  in-flight crash semantics.
+- Search revalidation is a single batch snapshot/join and never returns Memory text
+  from the provider response.
+
+#### Closeout
+
+- Formal review covered integrated implementation `a30c8b5e`; v11 migration,
+  metadata-only delivery ledger, atomic v10 enqueue, claim/CAS, certainty mapping,
+  quarantine and batch authority revalidation are present.
+- Recorded host Compose PostgreSQL `24/24` evidence is accepted, covering fresh
+  and upgrade migrations, rollback, replay, stale ACK, namespace isolation,
+  unknown/in-flight quarantine and search admission. No application container,
+  provider HTTP, Worker default or SQLite composition was changed.
+- Closed `MEM-GW-DEL-PG-01` from `Review` to `Done`; the parent ledger and Mem0
+  consumer remain locked because scoped reset enumeration is still blocked.
+
+### MEM-GW-DEL-RUN-01 - Mem0 Delivery Consumer And Management Rebuild
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `WORKER / INTEGRATIONS`
+- Depends on: completed `MEM-GW-DEL-PG-01`, `MEM-MEM0-RESET-SPIKE-01`, and
+  integrated `MEM-MEM0-ADP-01`
+- Branch: `TBD`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/mem0/gateway.py`
+  certainty mapping/tests, `apps/worker/src/zebra_agent_worker/memory_delivery_consumer.py`
+  (new), management reconciliation/rebuild coordinator and PostgreSQL+Mem0
+  integration tests. Default `apps/*/main.py` and local SQLite composition are
+  explicitly out of scope. Governance updates remain owned by the plan card.
+- Admission note: this is a Mem0-specific consumer and is deferred from the
+  active critical path. Keep it `Locked` even if the PostgreSQL-native admission
+  Spike passes; Mem0 remains `Provider admission: DENIED` until a future
+  capability review.
+
+#### Goal
+
+Consume the v11 ledger with typed provider outcomes, quarantine unknown mutations,
+revalidate authority before publish/search/delete, and provide an operator-gated
+generation rebuild path.
+
+#### Acceptance
+
+- 2xx publish is `applied`; delete 2xx/404 converges; explicit rejection is
+  `definite_no_effect`; timeout, disconnect, 5xx and malformed success are `unknown`.
+- Unknown publish is never automatically retried and quarantines its scope.
+- Rebuild scans confirmed/unexpired v10 facts, drains a delivery high-watermark,
+  then atomically switches generation; old generation remains quarantined until a
+  safe scoped purge is confirmed.
+- Mem0, its PostgreSQL or the consumer can stop without changing Zebra Memory or
+  failing an Agent Run.
+
+### MEM-GW-GATE-01 - Semantic Memory Fault And Drift Gate
+
+- Status: `Locked`
+- Owner: `UNASSIGNED`
+- Suggested role: `QA / INTEGRATIONS / SRE`
+- Depends on: merged `MEM-GW-DEL-01`
+- Branch: `TBD`
+- Candidate owned paths: focused contract tests, fault injection and acceptance evidence
+
+#### Goal
+
+Prove the optional memory path remains safe across schema drift, outages, retries,
+deletion and index rebuilds before production activation.
+
+#### Acceptance
+
+- daily contract checks detect incompatible REST/version changes
+- outage, timeout, rate limit, duplicate, stale-hit and deletion matrices pass
+- Mem0 or its PostgreSQL loss never fails a Run or changes authoritative memory state
+- no second Zebra fact source or Graphiti fallback is introduced
+
+### CLOUD-PROFILE-COMPOSITION-CON-01 - Explicit Cloud/Local Profile Composition Contract
+
+- Status: `Done`
+- Owner: `UNASSIGNED`
+- Suggested role: `CORE / APP / STORAGE / SRE`
+- Depends on: merged `CLOUD-CONTROL-PLANE-PG-01` and the existing storage
+  composition seam
+- Branch: `TBD`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`
+
+#### Goal
+
+Freeze the smallest contract that lets API and Worker select one coherent cloud
+or local storage profile. The contract must make `ZEBRA_PROFILE=cloud` explicit,
+preserve the local SQLite default, reject an incomplete cloud bundle, and define
+the compatibility seam that exposes PostgreSQL's event-derived model/tool
+projection to callers that currently use `model_calls` and `tool_runs`.
+
+#### Acceptance
+
+- `ZEBRA_PROFILE=cloud` requires a valid PostgreSQL DSN, deployment namespace,
+  memory cursor signing key, object-store reader and bounded history/continuation
+  scopes; missing or invalid cloud configuration fails closed without SQLite fallback
+- an unset profile or `ZEBRA_PROFILE=local` continues to use the existing
+  `sqlite_control_plane_stores(database_path)` behavior with no local schema or
+  default change
+- API and Worker share one explicit stores-injection contract; no constructor
+  silently creates a second backend or dual-writes
+- the compatibility seam maps `model_calls` and `tool_runs` to the existing
+  PostgreSQL `model_tool_projections` adapter without duplicating an authority store
+- migration/DDL ownership, Redis live fan-out, Provider HTTP, Trench integration,
+  application Compose and production cutover remain outside this contract
+- this card is governance-only until a new sidebar review authorizes its successor;
+  no production code, tests or runtime selector changes are allowed here
+
+#### Closeout
+
+- Sidebar ChatGPT returned `CONTRACT-ACCEPTED` and approved `Review -> Done`.
+- `CLOUD-LIVE-01` is removed from this governance card's dependencies because the
+  contract does not cover live runtime or deployment. Any future live runtime task
+  must register its own dependency card before activation.
+- `implementation_authorized` and `successor_activation_authorized` remain `false`;
+  `CLOUD-COMPOSE-APP-01` stays `Blocked` and no aggregate or runtime gate changes.
+
+### CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SRE / APP / CORE`
+- Depends on: merged `CLOUD-COMPOSE-INFRA-01`, `CLOUD-PG-01`,
+  `CLOUD-LEASE-01`, `CLOUD-ART-01`, `CLOUD-PROFILE-COMPOSITION-CON-01` and
+  `CLOUD-LIVE-01` (currently `Done`)
+- Branch: `codex/cloud-compose-app-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-compose-app-01/zebra-agent`
+- Owned paths: `docker/compose.application.yml`, `docker/Dockerfile`,
+  `.dockerignore`, `docker/.env.application.example`, `docker/migrate.py`,
+  `docker/README.md`, `apps/api/pyproject.toml`, `uv.lock`,
+  `tests/compose/application/`, `docs/AGENT_TASKS.md`, `PROGRESS.md`,
+  `task_plan.md`, and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`
+
+#### Activation decision
+
+The profile contract and live fan-out dependency are `Done`. The maintainer's
+explicit continuation activated this separately owned application slice on
+2026-08-04. It does not unlock `CLOUD-AGG-FENCE-01` or select Redis live routing.
+
+#### Goal
+
+Build one non-root Zebra image with distinct migration, API and Worker targets,
+then run those targets through an application-only Compose overlay that joins
+the already-running `zebra-dependencies` network. PostgreSQL remains the cloud
+fact source; Redis remains optional live state and is not selected by startup.
+
+#### Acceptance
+
+- `docker/Dockerfile` uses the repository lockfile, installs all workspace
+  runtime packages once, and exposes separate `migrate`, `api` and `worker`
+  targets under a non-root runtime user.
+- `docker/compose.application.yml` defines only `zebra-migrate`, `zebra-api`
+  and `zebra-worker`; PostgreSQL, Redis, MinIO and Mem0 are not redeclared and
+  the dependency network is external by name.
+- Migration runs before API/Worker, retries only transient PostgreSQL readiness,
+  and fails on migration checksum or configuration errors.
+- API and Worker receive the complete explicit cloud profile bundle and cannot
+  fall back to SQLite; API health and Worker process smoke checks are covered by
+  an isolated Compose runner with deterministic cleanup.
+- The overlay does not wire `RedisLiveEventFanout` into API/Worker, does not
+  add a runtime selector, and does not unlock aggregate fencing or production
+  rollout.
+
+#### Initial validation
+
+- Application Compose renders with exactly the three main services, forces
+  `ZEBRA_PROFILE=cloud`, and declares the dependency network external; missing
+  cloud variables fail during Compose interpolation.
+- The migration wrapper passes Ruff/Mypy and applies all `15` known migrations
+  against isolated PostgreSQL `17.5-alpine3.21`; resources are cleaned up.
+- The isolated dependency fixture reaches healthy PostgreSQL and MinIO and
+  cleans its network. The first container attempt exposed that `uvicorn` was
+  only a root dev dependency under the production `--no-dev` sync; the API
+  runtime dependency is now declared in `apps/api/pyproject.toml` and locked
+  in `uv.lock`.
+- A complete three-container smoke passed with the same committed Dockerfile
+  and a temporary mirror-only Python base override: migration completed, API
+  and Worker became healthy, `/health` passed, and the API exposed
+  `PostgresControlPlaneStores`; the image reports runtime UID `65532`. The
+  pinned Docker Hub base in the committed Dockerfile still needs a direct
+  build/smoke run; the mirror is evidence of application behavior, not a
+  replacement for that source pin.
+- The same cloud environment was exercised from the synchronized host
+  workspace: API `/health` passed, `create_app` exposed
+  `PostgresControlPlaneStores`, and Worker completed one idle PostgreSQL cycle;
+  the fixture resources were removed afterward.
+
+#### Review handoff
+
+- The implementation is committed on `codex/cloud-compose-app-01` and the
+  worktree is clean. The application-only overlay, lockfile-based non-root
+  image, migration ordering and deterministic cleanup are ready for review.
+- Focused validation is green: the cloud API/Worker composition regression is
+  `5 passed`; lockfile, Ruff, Mypy, shell syntax and diff checks pass; the
+  mirror-base three-container smoke is `PASS` and reports UID `65532`.
+- Direct build/smoke of the pinned Docker Hub Python digest remains an external
+  evidence gap when the standalone Dockerfile default is used. The Application
+  Compose overlay now passes the helper-confirmed `linux/amd64` mirror through
+  `ZEBRA_APPLICATION_PYTHON_BASE_IMAGE`; its complete runner passes with
+  `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`, and PostgreSQL, MinIO and
+  network cleanup completes. The Dockerfile's official digest default remains
+  available for upstream builds; no source pin replacement, production rollout,
+  Redis live routing, Runtime selector or aggregate-gate unlock is authorized
+  by this mirror-only validation.
+
+#### Closeout
+
+- Independent review accepted the implementation as `PASS` and closed the card
+  as `Done`. The mirror-backed runner is the reproducible local evidence for
+  this environment; the official Docker Hub digest remains an explicitly
+  recorded external pull gap, not a source-pin change.
+- This closeout does not select Redis live routing, change Runtime backend
+  selection, unlock aggregate fencing or claim a production rollout.
+
+### CLOUD-REC-01 - Migration, Backup, Restore And Recovery Gate
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SRE / STORAGE / QA`
+- Depends on: `CLOUD-PG-PLAN-01`, `CLOUD-PG-01`, `CLOUD-LEASE-01`, completed
+  Artifact/PostgreSQL composition, `CLOUD-COMPOSE-APP-01` (`Done`) and
+  `CLOUD-AGG-FENCE-01` (`Done`)
+- Branch: `codex/cloud-pg-mig-01` (governance only)
+- Owned paths: none on the parent; implementation must be split into
+  path-bounded child cards before activation
+
+#### Goal
+
+Produce repeatable, evidence-backed migration, backup, restore, rollback and
+multi-Worker recovery gates for the cloud profile without making Mem0 or Redis
+an authority and without claiming production readiness from local Compose alone.
+
+#### Planned child boundaries
+
+1. `CLOUD-PG-MIG-01`: canonical SQLite snapshot/export/import policy, cutover
+   manifest, unique `ACTIVE` record and fail-closed runtime write checks.
+2. `CLOUD-REC-BACKUP-01`: development-only PostgreSQL logical backup
+   portability; physical backup/PITR, credentials and retention remain external
+   to this child.
+3. `CLOUD-REC-RESTORE-01`: fresh-instance restore, S3-compatible Artifact
+   manifest/checksum validation, Redis rebuild and Lease epoch/fencing reset.
+4. `CLOUD-REC-DRILL-01`: rollback-versus-restore runbook, outbox reconciliation,
+   multi-Worker crash/race drill and measured RPO/RTO record.
+
+#### Lock reason and acceptance
+
+- All four children are `Done` with isolated evidence runners and deterministic
+  cleanup; this parent closes the local recovery evidence gate.
+- Every child must use isolated PostgreSQL/MinIO evidence with deterministic
+  cleanup, preserve the single PostgreSQL fact source, and fail closed on
+  namespace, epoch, checksum, object or cutover inconsistencies.
+- Mem0 remains a confirmed-memory derived index that can be rebuilt; Redis is
+  ephemeral live state rebuilt from PostgreSQL Event replay. Neither enters the
+  migration authority set.
+- Production RPO/RTO, PITR, failover or DR readiness stays `TBD` until a real
+  environment measures and approves it; local evidence alone cannot close GA.
+
+#### Closeout
+
+- `CLOUD-PG-MIG-01`, `CLOUD-REC-BACKUP-01`, `CLOUD-REC-RESTORE-01` and
+  `CLOUD-REC-DRILL-01` are all merged into `codex/cloud-pg-mig-01` and their
+  registered PASS sentinels were re-run successfully.
+- This parent is `Done` for local migration/recovery evidence only. Runtime
+  selection, physical PITR, production failover, RPO/RTO and DR approval remain
+  external mainline gates.
+
+### CLOUD-PG-MIG-01 - Canonical SQLite Snapshot And PostgreSQL Cutover Evidence
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE / SRE / QA`
+- Depends on: `CLOUD-REC-01` (`Done`), `CLOUD-PG-PLAN-01` (`Done`),
+  `CLOUD-PG-01` (`Done`) and the existing PostgreSQL migration catalog
+- Branch: `codex/cloud-pg-mig-01`
+- Worktree: `../zebra-agent-cloud-pg-mig-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/` migration
+  recovery module(s) only; `tests/agent_storage/` focused migration/recovery
+  tests; `tests/compose/migration_recovery/` runner and Compose fixture;
+  `docs/CLOUD-PG-MIG-01.md`; and this card's governance records in
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`, `WORKLOG.md`
+
+#### Goal
+
+Provide the smallest reproducible migration evidence slice: a canonical,
+checksummed SQLite snapshot/export contract, restricted PostgreSQL import and
+rebuild checks, a unique `PREPARED -> VERIFIED -> ACTIVE` cutover record, and
+fail-closed writes when the namespace or active cutover is not valid.
+
+#### Acceptance
+
+- SQLite is read-only during export; canonical JSONL ordering, normalization,
+  counts and manifest hashes are deterministic and replayable.
+- Import runs only against an empty PostgreSQL schema with a restricted
+  migration identity, verifies the manifest before writes, and preserves Event
+  ordering before projections/rebuildable indexes.
+- Exactly one active cutover exists per deployment namespace; non-`ACTIVE`,
+  mismatched or duplicate activation attempts perform zero runtime writes.
+- The focused PostgreSQL 17.5 Compose runner proves replay, namespace
+  isolation, rollback/transaction failure and deterministic resource cleanup;
+  it emits `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS` only after all checks pass.
+
+#### Current slice evidence
+
+- SQLite canonical snapshot/export and manifest tamper detection are implemented;
+  the local matrix is `2 passed, 21 skipped` without PostgreSQL.
+- Migration v16 adds the unique ACTIVE cutover guard; the PostgreSQL 17.5
+  runner passes `29/29` with deterministic cleanup and the registered PASS
+  sentinel. Event-first import, Session/Workspace/Task rebuild, Model/Tool
+  projection replay, Context capsule/pointer verification and fenced Handoff
+  operation/envelope/dispatch replay are covered. SQLite lineage is checked
+  against rebuilt PostgreSQL Task segments; `acked` dispatch is rejected because
+  its source lacks an authoritative ACK timestamp. Idempotency receipts are
+  replayed into the namespace-scoped control-plane table, and governed Memory
+  rows are imported only after source scope/Event and content/provenance checks.
+  Snapshot v2 carries an explicit SQLite source rowid for Delivery Audit; rows
+  are inserted in that order so PostgreSQL `audit_id` preserves the local read
+  contract. Focused zero-write regressions reject legacy Artifact, Effect and
+  Provider continuation tables before any Event write; their authority mapping
+  and runtime write wiring remain gated.
+
+#### Review handoff
+
+- The migration implementation and all Owned paths are complete on
+  `codex/cloud-pg-mig-01`; the worktree retains only the unrelated generated
+  `.zebra-agent/sessions.sqlite` modification.
+- Local focused validation is `2 passed, 13 skipped` for the recovery module;
+  changed-path Ruff/Mypy and `git diff --check` pass.
+- PostgreSQL `17.5-alpine3.21` runner: `29 passed`, emits
+  `ZEBRA_PG_MIGRATION_TEST_RESULT=PASS`, and removes its container, volume and
+  network. Event ordering, projection rebuilds, cutover guards, namespace
+  isolation, transaction rollback and unsupported legacy zero-write boundaries
+  are covered.
+- `CLOUD-PG-MIG-01` is now `Done`; this closeout does not select runtime cloud
+  writes, SQLite fallback removal, production cutover or recovery children.
+
+### CLOUD-REC-BACKUP-01 - PostgreSQL Logical Backup And Restore Evidence
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SRE / STORAGE / QA`
+- Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-01` (`Done`),
+  `CLOUD-COMPOSE-APP-01` (`Done`) and `CLOUD-AGG-FENCE-01` (`Done`)
+- Branch: `codex/cloud-rec-backup-01`
+- Worktree: `../zebra-agent-cloud-rec-backup-01`
+- Owned paths:
+  `tests/compose/recovery_backup/` and
+  `docs/CLOUD-REC-BACKUP-01.md`. Parent recovery governance records remain
+  owned by `CLOUD-REC-01` on `codex/cloud-pg-mig-01`.
+
+#### Goal
+
+Prove development-only PostgreSQL logical backup portability by dumping the
+fully migrated source, recording a checksum manifest, restoring into a fresh
+database and comparing authoritative schema/data counts without claiming
+physical PITR or production recovery readiness.
+
+#### Acceptance
+
+- PostgreSQL `17.5-alpine3.21` source runs the v1-v16 catalog and a deterministic
+  Event seed; `pg_dump --format=custom --no-owner --no-privileges` produces a
+  non-empty archive with a SHA-256 manifest.
+- A fresh restore database is created before `pg_restore`; schema migration,
+  session stream and Event counts match the source, and restored rows can be
+  read through the namespace-scoped contract.
+- The runner emits `ZEBRA_PG_RECOVERY_BACKUP_TEST_RESULT=PASS` only after all
+  checks pass and removes the container, volume, network and temporary archive.
+- Physical base backup, WAL archive, PITR, credentials, object restore, RPO/RTO
+  and DR readiness remain explicit non-goals.
+
+#### Closeout
+
+- The isolated PostgreSQL 17.5 runner passed `RECOVERY_BACKUP_SEED=PASS
+  migrations=16 events=1` and `RECOVERY_BACKUP_VERIFY=PASS migrations=16
+  events=1` after restoring a non-empty custom archive.
+- The SHA-256 manifest check passed and the runner emitted
+  `ZEBRA_PG_RECOVERY_BACKUP_TEST_RESULT=PASS`; the container, volume, network
+  and temporary archive were cleaned up.
+- `CLOUD-REC-BACKUP-01` is complete; this child does not activate runtime cloud
+  writes, physical PITR, object restore, RPO/RTO or DR readiness.
+
+#### Explicit non-goals
+
+- No API/Worker runtime selector or SQLite fallback removal beyond the tested
+  cutover guard; no Redis live routing, Mem0 writes, object payload transfer,
+  PITR, production credentials, RPO/RTO or DR claim.
+- Backup/PITR, object restore, fencing/outbox reconciliation and multi-Worker
+  drills remain the separate `CLOUD-REC-*` children.
+
+### CLOUD-REC-RESTORE-01 - Fresh Instance Restore And Rebuild Evidence
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SRE / STORAGE / QA`
+- Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-BACKUP-01` (`Done`),
+  `CLOUD-REC-01` (`Done`), `CLOUD-COMPOSE-APP-01` (`Done`),
+  `CLOUD-LIVE-01` (`Done`) and `CLOUD-AGG-FENCE-01` (`Done`)
+- Branch: `codex/cloud-rec-restore-01`
+- Worktree: `../zebra-agent-cloud-rec-restore-01`
+- Owned paths:
+  `tests/compose/recovery_restore/` and
+  `docs/CLOUD-REC-RESTORE-01.md`. Parent recovery governance records remain
+  owned by `CLOUD-REC-01` on `codex/cloud-pg-mig-01`.
+
+#### Goal
+
+Prove a development-only fresh-instance recovery composition: restore the
+fully migrated PostgreSQL source into a new database, verify an S3-compatible
+Artifact object from its manifest/checksum contract, rebuild Redis live state
+from durable Events, and rotate the restored namespace's control-plane epoch
+before any runtime writer is enabled.
+
+#### Acceptance
+
+- PostgreSQL 17.5 source/restore databases run the v1-v16 catalog; a fresh
+  `template0` database is restored from a non-empty custom logical archive.
+- The Artifact object is versioned, verified by SHA-256/size metadata and
+  readable after an explicit object-loss/rebuild step; the manifest never
+  invents PostgreSQL lifecycle authority.
+- Redis is flushed and rebuilt by replaying the restored namespace's Event
+  through the existing live fan-out contract; the rebuilt stream is checked for
+  namespace/session/sequence identity and remains non-authoritative.
+- The restored control-plane epoch is rotated to a new value and the runner
+  emits `ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS` only after all checks pass.
+- Physical PITR/WAL, production credentials, object retention, runtime cloud
+  writes, measured RPO/RTO, failover and DR readiness remain non-goals.
+
+#### Lock reason
+
+This child was explicitly activated after the migration and logical-backup gates
+closed; its evidence is now closed. `CLOUD-REC-DRILL-01` was activated and
+completed independently.
+
+#### Closeout
+
+- The isolated PostgreSQL/Redis/MinIO runner passed
+  `RECOVERY_RESTORE_SEED=PASS migrations=16 events=1 lease_token=1`,
+  `RECOVERY_RESTORE_ARCHIVE=PASS` for a non-empty 159,998-byte archive,
+  `RECOVERY_RESTORE_CLEAR=PASS artifact=absent redis=flushed`,
+  `RECOVERY_RESTORE_VERIFY=PASS migrations=16 events=1`, and
+  `ZEBRA_PG_RECOVERY_RESTORE_TEST_RESULT=PASS`.
+- It restored a fresh `template0` database, rebuilt a deleted versioned Artifact
+  from its manifest/checksum, replayed the restored Event into flushed Redis,
+  rotated the control-plane epoch, rejected the stale source lease and acquired
+  a new fencing token. All resources were cleaned up.
+- Child commits `10ccc458` and `bd0291c4` were fast-forward merged into
+  `codex/cloud-pg-mig-01` at `bd0291c4`; this child does not activate runtime
+  cloud writes, physical PITR, RPO/RTO, DR or the rollback/drill card.
+
+### CLOUD-REC-DRILL-01 - Rollback, Outbox Reconcile And Worker Race Evidence
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `SRE / STORAGE / QA`
+- Depends on: `CLOUD-PG-MIG-01` (`Done`), `CLOUD-REC-BACKUP-01` (`Done`),
+  `CLOUD-REC-RESTORE-01` (`Done`), `CLOUD-REC-01` (`Done`) and
+  `CLOUD-AGG-FENCE-01` (`Done`)
+- Branch: `codex/cloud-rec-drill-01`
+- Worktree: `../zebra-agent-cloud-rec-drill-01`
+- Owned paths:
+  `tests/compose/recovery_drill/` and
+  `docs/CLOUD-REC-DRILL-01.md`. Parent recovery governance records remain
+  owned by `CLOUD-REC-01` on `codex/cloud-pg-mig-01`.
+
+#### Goal
+
+Prove a local-only rollback/recovery decision boundary for the PostgreSQL
+Effect outbox: a fenced worker crash becomes an evidence-bearing uncertain
+state, a replacement worker reconciles it exactly once, concurrent workers
+cannot claim or reconcile the same dispatch twice, and durable Event counts
+show no loss. Record observed local timing as a drill measurement only.
+
+#### Acceptance
+
+- PostgreSQL 17.5 applies the v1-v16 catalog; an invalid Event-version schedule
+  rolls back without an outbox write.
+- Two consumers race on one pending dispatch and exactly one claim wins; the
+  first worker is fenced out after epoch replacement, and the replacement
+  worker finds/reconciles the stale claim exactly once with evidence.
+- An uncertain dispatch is resolved only through the explicit no-effect outcome;
+  it never silently returns to pending or auto-replays an external effect.
+- The runner emits `ZEBRA_PG_RECOVERY_DRILL_TEST_RESULT=PASS` with a JSON report
+  containing local recovery milliseconds and zero-loss Event counts, then cleans
+  its PostgreSQL resources.
+- Provider calls, runtime Worker wiring, production failover, physical PITR,
+  measured production RPO/RTO and DR readiness remain non-goals.
+
+#### Lock reason
+
+This was the final local recovery child after migration, logical backup and
+fresh restore closeout. Its timing report is evidence for code-path behavior
+only; it does not authorize a production release.
+
+#### Closeout
+
+- Child commits `214eadb2` and `08a7f3e6` were fast-forward merged into
+  `codex/cloud-pg-mig-01` at `08a7f3e6`.
+- The runner emitted `RECOVERY_DRILL_VERIFY=PASS events=2 recovery_ms=86.47`
+  and `ZEBRA_PG_RECOVERY_DRILL_TEST_RESULT=PASS`; the report recorded one claim
+  winner, one reconciliation winner, zero rollback writes and zero lost Events.
+- This closes the child and the local recovery parent only; production PITR,
+  RPO/RTO, failover and DR readiness remain external gates.
+
+### CLOUD-PG-MIG-LEGACY-CON-01 - Legacy Authority Export And Quarantine Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
+- Depends on: `CLOUD-PG-MIG-01` mapping audit and the completed Artifact,
+  Effect/Delivery and Provider authority contracts
+- Branch: parent governance on `codex/cloud-pg-mig-01`
+- Owned paths: governance records only; each legacy source is implemented by an
+  independent child card below
+
+#### Goal
+
+Freeze the only safe choices for legacy `artifact_payloads`, `effect_ledger` and
+`provider_continuation_artifacts`: prove a versioned export that contains every
+cloud authority field, or preserve the source as an explicit quarantine/rebuild
+input. The contract must not synthesize a lease, Event identity, request hash,
+object version, dispatch evidence or namespace authority from unrelated rows.
+
+#### Acceptance
+
+- The source-to-target field matrix names every required field and marks each
+  value as directly present, provably derived, or unavailable.
+- Each source gets an independent child card and evidence runner; a child may
+  write PostgreSQL authority only after its preflight, ordering, checksum,
+  namespace and zero-write failure matrix is accepted.
+- Unsupported or incomplete legacy rows remain outside cloud authority and are
+  retained in the manifest-backed source snapshot or an explicitly governed
+  quarantine/rebuild artifact.
+- Unactivated children remain `Locked` until a maintainer activates them; no
+  API/Worker wiring, runtime cutover, Redis/Mem0 behavior or production
+  migration is implied by this registration.
+
+#### Activation decision
+
+- The maintainer explicitly activated the first path-bounded child on
+  2026-08-05: `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`; it is now `Done` after parent
+  merge `bed02e4a`.
+- The maintainer explicitly activated the next path-bounded child on 2026-08-05:
+  `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01`. Provider continuation remains
+  unregistered and inactive until its own source contract is selected.
+- The Artifact child chooses the manifest-backed quarantine/rebuild path because
+  the legacy row cannot prove reservation Lease, Event/object version,
+  idempotency/request hash or cloud lifecycle evidence. No PostgreSQL Artifact
+  authority write is authorized by this activation.
+- The Effect/Delivery child chooses the manifest-backed quarantine/rebuild path
+  because the legacy row cannot prove dispatch/claim identity, request hash,
+  payload Artifact, intent/terminal Event or delivery evidence. No PostgreSQL
+  Effect/Delivery authority write is authorized by that activation.
+- The maintainer explicitly activated the next path-bounded child on 2026-08-05:
+  `CLOUD-PG-MIG-LEGACY-PROVIDER-01`. It depends on the completed
+  `CLOUD-PROVIDER-CONT-PG-01` authority contract; no Provider continuation
+  authority write is authorized by this activation.
+
+#### Closeout
+
+- `CLOUD-PG-MIG-LEGACY-ARTIFACT-01`,
+  `CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01` and
+  `CLOUD-PG-MIG-LEGACY-PROVIDER-01` are all `Done` after their independent
+  field matrices, manifest-bound quarantine artifacts, zero-write PostgreSQL
+  preflights, static checks and cleanup evidence.
+- The Provider evidence closeout is merged into `codex/cloud-pg-mig-01` at
+  `5f275d4b`; the governance parent is now closed. No legacy quarantine was
+  promoted into cloud authority and no Runtime/API/Worker cutover is implied.
+
+### CLOUD-PG-MIG-LEGACY-ARTIFACT-01 - Artifact Legacy Export And Quarantine
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
+- Depends on: `CLOUD-PG-MIG-01` (`Done`),
+  `CLOUD-PG-MIG-LEGACY-CON-01` (`Done`), `CLOUD-ART-PAYLOAD-PG-01`
+  (`Done`) and `CLOUD-AGG-FENCE-ARTIFACT-01` (`Done`)
+- Branch: `codex/cloud-pg-mig-legacy-artifact-01`
+- Worktree: `../zebra-agent-cloud-pg-mig-legacy-artifact-01`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/migration_legacy_artifact.py`,
+  `tests/agent_storage/test_postgres_migration_legacy_artifact.py`,
+  `tests/compose/migration_legacy_artifact/`, and
+  `docs/CLOUD-PG-MIG-LEGACY-ARTIFACT-01.md`. Parent governance records remain
+  owned by `CLOUD-PG-MIG-LEGACY-CON-01`.
+
+#### Goal
+
+Preserve legacy `artifact_payloads` rows as a deterministic, manifest-bound
+quarantine/rebuild input without promoting incomplete metadata into the fenced
+PostgreSQL `artifact_payload_metadata` authority.
+
+#### Acceptance
+
+- The source-to-target matrix names every directly reusable, provably derivable
+  and unavailable authority field; unavailable fields are never synthesized.
+- A versioned quarantine artifact retains the canonical source snapshot digest,
+  source table, canonical row content/digests, unavailable-field reason and
+  disposition, with deterministic serialization and tamper detection.
+- The PostgreSQL preflight rejects the legacy source before Event writes and
+  proves zero rows in `artifact_payload_metadata`; the quarantine artifact can
+  still be loaded and verified afterward.
+- The isolated PostgreSQL 17.5 runner emits
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS` only after all checks pass and
+  removes its container, volume and network.
+
+#### Explicit non-goals
+
+- No write to `artifact_payload_metadata`, no object-byte transfer, no inferred
+  reservation Lease, Event identity, request hash, object version or lifecycle
+  transition; no API/Worker wiring, Runtime selector, SQLite fallback removal,
+  Effect/Delivery or Provider continuation behavior.
+
+#### Review handoff
+
+- Child implementation commits through `fefa3261` on
+  `codex/cloud-pg-mig-legacy-artifact-01` (including strict rejection of
+  non-finite JSON in `f0d56a62`); all child Owned paths are committed and the
+  worktree is clean.
+- Local focused validation: `4 passed, 1 skipped`; changed-path Ruff, strict
+  Mypy, Shell/Compose config and `git diff --check` pass.
+- PostgreSQL `17.5-alpine3.21` runner: `5 passed`, emits
+  `ZEBRA_PG_MIG_LEGACY_ARTIFACT_TEST_RESULT=PASS`, and removes its container,
+  volume and network. The preflight rejects `artifact_payloads` before Event
+  writes; `session_events` and `artifact_payload_metadata` remain empty, and
+  the quarantine reloads successfully afterward.
+- Independent review found no blocking issues. The child was merged into
+  `codex/cloud-pg-mig-01` at `bed02e4a` and is now `Done`; this closes only the
+  path-bounded Artifact quarantine slice. The parent migration is now `Done`,
+  and the other legacy successors are independently closed below.
+
+### CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01 - Effect/Delivery Legacy Export And Quarantine
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
+- Depends on: `CLOUD-PG-MIG-01` (`Done`),
+  `CLOUD-PG-MIG-LEGACY-CON-01` (`Done`),
+  `CLOUD-DELIVERY-TXN-PG-01` (`Done`) and
+  `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` (`Done`)
+- Branch: `codex/cloud-pg-mig-legacy-effect-delivery-01`
+- Worktree: `../zebra-agent-cloud-pg-mig-legacy-effect-delivery-01`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/migration_legacy_effect.py`,
+  `tests/agent_storage/test_postgres_migration_legacy_effect.py`,
+  `tests/compose/migration_legacy_effect/`, and
+  `docs/CLOUD-PG-MIG-LEGACY-EFFECT-DELIVERY-01.md`. Parent governance records
+  remain owned by `CLOUD-PG-MIG-LEGACY-CON-01`.
+
+#### Goal
+
+Preserve legacy `effect_ledger` rows as a deterministic, manifest-bound
+quarantine/rebuild input without promoting incomplete metadata into the fenced
+PostgreSQL `effect_outbox` authority.
+
+#### Acceptance
+
+- The source-to-target matrix names every directly reusable, structurally
+  comparable and unavailable authority field; unavailable fields are never
+  synthesized.
+- A versioned quarantine artifact retains the canonical source snapshot digest,
+  source table, canonical row content/digests, unavailable-field reason and
+  disposition, with deterministic serialization and tamper detection.
+- PostgreSQL preflight rejects a legacy `effect_ledger` source before Event
+  writes and proves zero rows in `effect_outbox`; the quarantine remains
+  loadable and verified afterward.
+- The isolated PostgreSQL 17.5 runner emits
+  `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS` only after all checks
+  pass and removes its container, volume and network.
+
+#### Explicit non-goals
+
+- No write to `effect_outbox`, no external-effect result transfer, no inferred
+  dispatch/claim identity, request hash, payload Artifact reference, intent or
+  terminal Event, LeaseFence, namespace or API/Worker/runtime wiring. Provider
+  continuation remains out of scope.
+
+#### Review handoff
+
+- Child implementation commit `84087e08` is complete across all Owned paths;
+  the child worktree is clean.
+- Local focused validation: `4 passed, 1 skipped`; changed-path Ruff, strict
+  Mypy, Bash/Compose config and `git diff --check` pass.
+- PostgreSQL `17.5-alpine3.21` runner: `5 passed`, emits
+  `ZEBRA_PG_MIG_LEGACY_EFFECT_DELIVERY_TEST_RESULT=PASS`, and removes its
+  container, volume and network. The preflight rejects `effect_ledger` before
+  Event writes; `session_events` and `effect_outbox` remain empty, and the
+  quarantine reloads successfully afterward.
+- Independent review found no blocking issues. The child was merged into
+  `codex/cloud-pg-mig-01` at `62d2e601` and is now `Done`; this closes only the
+  path-bounded Effect/Delivery quarantine slice. Provider continuation was
+  activated and is independently closed in its own child card below.
+
+### CLOUD-PG-MIG-LEGACY-PROVIDER-01 - Provider Continuation Legacy Export And Quarantine
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE / DATA GOVERNANCE / SRE`
+- Depends on: `CLOUD-PG-MIG-01` (`Done`),
+  `CLOUD-PG-MIG-LEGACY-CON-01` (`Done`) and
+  `CLOUD-PROVIDER-CONT-PG-01` (`Done`)
+- Branch: `codex/cloud-pg-mig-legacy-provider-01`
+- Worktree: `../zebra-agent-cloud-pg-mig-legacy-provider-01`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/migration_legacy_provider.py`,
+  `tests/agent_storage/test_postgres_migration_legacy_provider.py`,
+  `tests/compose/migration_legacy_provider/`, and
+  `docs/CLOUD-PG-MIG-LEGACY-PROVIDER-01.md`. Parent governance records remain
+  owned by `CLOUD-PG-MIG-LEGACY-CON-01`.
+
+#### Goal
+
+Preserve legacy `provider_continuation_artifacts` rows as a deterministic,
+manifest-bound quarantine/rebuild input without promoting incomplete metadata or
+opaque payload bytes into fenced PostgreSQL Provider Continuation authority.
+
+#### Acceptance
+
+- The source-to-target matrix names every directly reusable, structurally
+  comparable and unavailable authority field; unavailable fields are never
+  synthesized.
+- A versioned quarantine artifact retains the canonical source snapshot digest,
+  source table, canonical row content/digests, unavailable-field reason and
+  disposition, with deterministic serialization and tamper detection.
+- PostgreSQL preflight rejects a legacy `provider_continuation_artifacts` source
+  before Event writes and proves zero rows in the target Provider authority; the
+  quarantine remains loadable and verified afterward.
+- The isolated PostgreSQL 17.5 runner emits
+  `ZEBRA_PG_MIG_LEGACY_PROVIDER_TEST_RESULT=PASS` only after all checks pass and
+  removes its container, volume and network.
+
+#### Explicit non-goals
+
+- No write to `provider_continuation_artifacts`, no opaque payload transfer, no
+  inferred deployment namespace, authority issuer, namespace id, selection Event,
+  idempotency/request hash or accepted LeaseFence, and no API/Worker/runtime
+  wiring. This child does not modify the completed Provider authority card.
+
+#### Review handoff
+
+- Child implementation commit `b74f1c27` is complete across all Owned paths;
+  the child worktree is clean.
+- Local focused validation: `4 passed, 1 skipped`; changed-path Ruff, strict
+  Mypy, Bash/Compose config and `git diff --check` pass.
+- PostgreSQL `17.5-alpine3.21` runner: `5 passed`, emits
+  `ZEBRA_PG_MIG_LEGACY_PROVIDER_TEST_RESULT=PASS`, and removes its container,
+  volume and network. The preflight rejects `provider_continuation_artifacts`
+  before Event writes; `session_events` and the target Provider authority remain
+  empty, and the quarantine reloads successfully afterward.
+- Independent review found no blocking issues. The child was merged into
+  `codex/cloud-pg-mig-01` at `5f275d4b` and is now `Done`; this closes only the
+  path-bounded Provider Continuation quarantine slice. The parent migration is
+  `Done`.
+
+### CLOUD-API-WORKER-PG-01 - API And Worker PostgreSQL Storage Composition
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE / APP / STORAGE`
+- Depends on: `CLOUD-CONTROL-PLANE-PG-01` and
+  `CLOUD-PROFILE-COMPOSITION-CON-01` (`Done`); does not depend on
+  `CLOUD-LIVE-01` or application Compose
+- Branch: `codex/cloud-api-worker-pg-01`
+- Worktree: `../.codex/worktrees/zebra-cloud-api-worker-pg-01`
+- Owned paths: `apps/api/src/zebra_agent_api/{app,http,storage_composition}.py`,
+  `apps/worker/src/zebra_agent_worker/{loop,main}.py`,
+  `packages/agent-storage/src/agent_storage/{__init__,runtime_composition,postgres_composition,postgres_model_tool_compat}.py`,
+  focused files under `tests/` for API/Worker storage composition,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`
+
+#### Goal
+
+Make the explicit `cloud` profile compose one PostgreSQL-backed store bundle for
+both API and Worker, while preserving local SQLite as the default profile. Cloud
+configuration errors must fail before startup; no path may silently construct a
+SQLite store in the cloud profile.
+
+#### Acceptance
+
+- unset profile and `ZEBRA_PROFILE=local` preserve the existing SQLite composition
+- `ZEBRA_PROFILE=cloud` builds `PostgresControlPlaneStores` from one shared builder
+  and never calls `sqlite_control_plane_stores`
+- missing DSN, namespace, signing key, object-store or scope configuration fails
+  closed without partial stores
+- Worker cloud composition injects the existing PostgreSQL workspace transaction
+  and namespace fence without changing execution semantics
+- `model_calls` and `tool_runs` are read/index compatibility facades over the
+  existing PostgreSQL `model_tool_projections`; no second authority tables exist
+- focused local, cloud-selection, missing-config, compatibility and API/Worker
+  injection tests pass; no migration, Compose, Redis live or production claim is added
+
+#### Activation decision
+
+- Sidebar ChatGPT returned `IMPLEMENTATION-ACTIVATE-OK` for
+  `Planning -> In Progress` with `implementation_authorized: true`.
+- Sidebar ChatGPT returned `CLOSEOUT-OK` for `In Progress -> Review` after the
+  focused and PostgreSQL-backed evidence below. This is a review handoff only;
+  implementation and successor activation remain unauthorized.
+- Independent Review returned `MERGE-OK` for commit `d9fd0419`; the commit was
+  fast-forward merged into `zebra-cloud-trench`. The task is now closed as
+  `Done`; no successor activation or aggregate gate unlock was granted.
+- `CLOUD-AGG-FENCE-01` remains `Locked` and `CLOUD-COMPOSE-APP-01` remains
+  `Blocked`; this slice cannot activate either gate or any successor.
+
+#### Validation evidence
+
+- `uv run pytest -q tests/test_cloud_api_worker_profile_composition.py` -> 5 passed.
+- API app -> 21 passed; HTTP session creation -> 7 passed; Worker projection ->
+  5 passed; cloud artifact configuration -> 3 passed; combined regression -> 41
+  passed.
+- `tests/compose/control_plane/run-postgres-tests.sh` -> 11 passed and
+  `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`; Compose resources were removed
+  by the runner cleanup trap.
+- Ruff passed for all changed files; storage/Worker mypy passed; API mypy retains
+  the pre-existing `agent_security` export and `import-untyped` baseline.
+
+#### Goal
+
+Build one Zebra image and run migration, API and Worker as distinct commands over
+the real dependency adapters. Agent Memory remains optional and must not gate Run.
+
+#### Acceptance
+
+- dependency and application Compose projects remain independently operable and
+  join through one explicitly named network
+- API/Worker use PostgreSQL, object storage and live Redis without creating an
+  authoritative SQLite database
+- stopping Agent Memory does not prevent task creation, execution or recovery
+
+### CLOUD-PG-PLAN-01 - PostgreSQL Migration And Recovery Model Review
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE / SRE / SECURITY`
+- Depends on: locally reviewed `CLOUD-STO-AUTH-01` and maintainer direction on
+  2026-07-28 to continue local implementation while GitHub Actions is blocked by
+  an account billing/spending-limit gate. The waiver permits local evidence only;
+  it does not make this stacked branch mergeable or production-ready.
+- Branch: `codex/cloud-pg-plan-01`
+- Worktree: `../zebra-agent-cloud-pg-plan-01`
+- Owned paths: `docs/PostgreSQL迁移备份恢复与回滚评审_v1.0.md` (new),
+  `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Freeze the minimum migration, backup, restore and rollback contract required
+before a PostgreSQL control-plane Adapter may be implemented.
+
+#### Acceptance
+
+- authoritative scope and excluded derived/local stores are explicit
+- cutover avoids cross-backend dual-write and preserves one fact source
+- pre-cutover abort, post-cutover application rollback and disaster restore are
+  distinct procedures with fail-closed validation
+- backup/PITR, Artifact consistency, fencing reset and outbox reconciliation
+  requirements are concrete without inventing unapproved RPO/RTO numbers
+- `CLOUD-PG-01` receives exact implementation and test gates; no Adapter,
+  migration executable, cloud dependency or production claim is added
+
+#### Closeout
+
+- Formal review targeted the integrated docs-only migration/recovery model at
+  `e1e71139`; `CLOUD-STO-AUTH-01` is now `Done`, and the maintainer's
+  CI-billing waiver/direction is recorded as local-evidence-only.
+- The document freezes one authoritative backend profile, abort versus rollback,
+  backup/PITR, restore validation, fencing reset, Artifact consistency and outbox
+  reconciliation without adding an Adapter, migration executable, cloud service,
+  dual-write or production RPO/RTO claim.
+- Existing document reader, link, terminology, line-limit and diff evidence is
+  accepted. No Compose run or production edit was needed for this closeout.
+- Closing this card hands the exact implementation gates to `CLOUD-PG-01`; Lease,
+  Runtime, Provider HTTP, Desktop and application backend selection remain gated.
+
+### CLOUD-PG-01 - PostgreSQL Event And Projection Storage
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `STORAGE`
+- Depends on: locally reviewed `CLOUD-STO-AUTH-01` and `CLOUD-PG-PLAN-01`;
+  `CLOUD-COMPOSE-INFRA-01@b23b8e76` supplies the separately owned real PostgreSQL
+  dependency service. On 2026-07-28 the maintainer approved the five database
+  review decisions by directing this plan to continue while GitHub Actions is
+  billing-blocked. Required merge order and CI gates remain unchanged.
+- Branch: `codex/cloud-pg-01-events-v1`
+- Worktree: `../zebra-agent-cloud-pg-01`
+- Owned paths: `packages/agent-storage/pyproject.toml`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `packages/agent-storage/src/agent_storage/event_rows.py`,
+  `packages/agent-storage/src/agent_storage/sqlite.py`,
+  `packages/agent-storage/src/agent_storage/postgres/` (new),
+  `tests/agent_storage/test_postgres_*.py` (new),
+  `tests/agent_storage/test_sqlite_event_store.py`, `uv.lock`, `README.md`,
+  `docs/PostgreSQL迁移备份恢复与回滚评审_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Implement explicit PostgreSQL migration plus Event/Projection Port Adapters with
+single-namespace isolation, monotonic Event CAS and replay-safe Projection writes.
+
+#### Acceptance
+
+- migration versions/checksums are explicit, serialized by advisory lock and
+  never run implicitly from an Adapter constructor
+- Event append CAS, idempotency conflict detection, namespace isolation,
+  read-since and concurrent writer behavior pass against real PostgreSQL
+- Projection round-trip, ordering, idempotent same-version save, stale/conflicting
+  version rejection and Event replay rebuild pass against real PostgreSQL
+- SQLite idempotency reuse with different Event meaning fails closed rather than
+  preserving a cross-backend semantic split
+- no `ControlPlaneStores` selector, API/Worker wiring, pool, ORM, Alembic,
+  testcontainers, online migration or production claim is added
+
+#### Result
+
+- Added one explicit psycopg dependency, checksum-verified serialized migrations
+  and namespace-scoped PostgreSQL Event/Projection Adapters.
+- Event stream version CAS and Event insert share one transaction; business-level
+  idempotency conflicts now fail closed in both PostgreSQL and SQLite.
+- Projection writes reject missing/ahead Event streams, stale versions and
+  same-version content conflicts while allowing replay lag and exact retries.
+- Real Compose PostgreSQL tests pass `14/14`; all storage tests pass `113/113`;
+  custom-format dump/restore into a fresh temporary database passes the same
+  PostgreSQL contract `14/14` before cleanup.
+- Independent final review found no P0-P2 issue. Branch is local and unpushed;
+  cloud composition remains Locked until every authoritative Store has a
+  PostgreSQL Adapter and the dependency stack is merged in order.
+
+#### Closeout
+
+- Formal review covered integrated implementation `15c386db`; the migration
+  runner, Event/Projection adapters and SQLite semantic guard are present on
+  `zebra-cloud-trench`.
+- Recorded real Compose PostgreSQL `14/14`, storage `113/113` and custom-format
+  dump/restore `14/14` evidence is accepted. Current-head local validation adds
+  `8 passed, 14 skipped` without a PostgreSQL service; the skipped cases remain
+  gated on the user-host Compose runner.
+- No selector, API/Worker wiring, pool, ORM, Alembic, testcontainers, online
+  migration or production claim was added. Lease, Runtime, Provider HTTP,
+  Desktop and application backend selection remain separately gated.
+
+### CLOUD-LEASE-PLAN-01 - Lease, Fencing And Effect Dispatch Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE / STORAGE / WORKER / SECURITY`
+- Depends on: locally reviewed `CLOUD-PG-01` and maintainer direction to continue
+  local work while GitHub Actions is billing-blocked. This task may produce
+  local documentation evidence only; it does not unlock merge or production use.
+- Branch: `codex/cloud-lease-plan-01`
+- Worktree: `../zebra-agent-cloud-lease-plan-01`
+- Owned paths: `docs/CLOUD_Lease_Fencing_Effect_Outbox合同_v1.0.md` (new),
+  `docs/AGENT_TASKS.md`, `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`,
+  `PROGRESS.md`, `task_plan.md`, `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Freeze the minimum control-plane epoch, Lease fencing, atomic Effect dispatch
+and crash-recovery contract, then split the locked parent into independently
+reviewable, dependency-ordered implementation cards with bounded owned paths.
+
+#### Acceptance
+
+- checkpoint and ownership fencing are separate typed concepts; the fence is an
+  epoch plus owner instance and a token monotonic within that database lineage
+- PostgreSQL database time, full-fence CAS, restore epoch rotation and retained
+  Lease generations have executable state-transition and failure semantics
+- Event/Effect/Outbox scheduling and terminalization have narrow aggregate
+  transaction boundaries without introducing a generic Unit of Work
+- durable intent at-least-once discovery/claim, uncertain external effects and
+  operator reconciliation have an explicit crash matrix that never claims
+  exactly-once external execution
+- the parent remains `Locked`; Core contract, PostgreSQL Lease, Effect Outbox and
+  Worker consumer implementation each receive one path-bounded follow-up card
+
+#### Explicit Non-Goals
+
+- Python implementation, migration SQL, Store selection or runtime wiring
+- Redis, Kafka, Temporal, a generic inbox or a generic Unit of Work
+- dual-write, multi-namespace delivery, production cutover or production claims
+
+#### Validation And Handoff
+
+- Three read-only audits identified the current Lease, Worker and Effect crash
+  gaps; two reader-review rounds closed all P0/P1 findings.
+- `make eval` passes `10/10` after the new worktree was synchronized;
+  `git diff --check` passes and both task-owned docs remain below 600 lines.
+- Repository `make check` retains only the inherited untouched file-size
+  violations (`561/500`, `505/500`); no implementation or test file changed.
+- Branch is local and unpushed. Every implementation child remains `Locked` and
+  requires merged prerequisites plus explicit activation.
+
+#### Closeout
+
+- Formal review covered the integrated contract `e373786b`; the control-plane
+  epoch, database-time Lease fencing, aggregate transaction boundaries and
+  uncertain external-effect recovery matrix are accepted.
+- The parent remains implementation-locked by design. Core Lease, PostgreSQL
+  Lease, Effect Outbox and Worker consumer follow-up cards retain their own
+  owned paths and evidence gates; no generic inbox, Redis, broker, runtime
+  selector or production claim was introduced.
+- `make eval` passes `10/10`, the contract is `449` lines and `git diff --check`
+  passes. This closeout is documentation-only and uses no Compose or production
+  operation.
+
+### CLOUD-LEASE-CON-01 - Core Lease And Fencing Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Depends on: locally reviewed `CLOUD-LEASE-PLAN-01`; explicitly activated for
+  local stacked implementation by the maintainer on 2026-07-28. Merge still
+  requires `CLOUD-LEASE-PLAN-01` first.
+- Branch: `codex/cloud-lease-con-01`
+- Worktree: `../zebra-agent-cloud-lease-con-01`
+- Owned paths: `packages/agent-core/src/agent_core/domain/leases.py`,
+  `packages/agent-core/src/agent_core/{__init__,domain/__init__,ports/__init__,ports/lease_store}.py`,
+  `packages/agent-core/src/agent_core/ports/session_handoff.py`,
+  `packages/agent-storage/src/agent_storage/{__init__,leases,session_handoff_facts}.py`,
+  `packages/agent-storage/src/agent_storage/{session_handoffs,session_handoff_rows}.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/worker/src/zebra_agent_worker/claims.py`,
+  `tests/agent_storage/{test_sqlite_leases,test_session_handoffs}.py`,
+  `tests/api/test_session_handoff_routes.py`,
+  `tests/worker/{test_claims,test_loop,test_resume,test_worker_storage_composition}.py`,
+  `tests/cli/run/cli_run_support.py`,
+  `tests/test_session_resume_execute_contract_matrix.py`,
+  and this task's governance records
+- Goal: separate checkpoint from typed epoch/token/owner fencing and make every
+  Lease mutation a full-CAS contract while preserving local SQLite profile use.
+- Acceptance: active reacquire conflicts; release/takeover tokens are monotonic
+  within an epoch/database lineage; epoch mismatch enables immediate takeover;
+  stale epoch/token/owner and checkpoint regression fail closed; Worker claim
+  acquires before recovery without adding the later background heartbeat.
+- Non-goals: PostgreSQL, Worker lifecycle, Effect dispatch and composition.
+
+#### Validation And Handoff
+
+- Core exposes an immutable epoch/token/owner `LeaseFence`; SQLite retains each
+  generation and uses full-fence CAS for heartbeat/release while legacy and
+  partial-schema rows migrate idempotently to a released, token-zero state.
+- Handoff reserve/commit persists and compares the complete fence; incomplete
+  legacy tuples abort, and checkpoint changes no longer masquerade as ownership.
+- Worker claim acquires before recovery, advances checkpoint with the same fence
+  after successful recovery, and fenced-releases on recovery failure. TTL input
+  has a shared one-hour default maximum and is rejected before arithmetic overflow.
+- Focused task matrix passes `55/55`; independent final reviews report
+  `0 P0 / 0 P1 / 0 P2`. Ruff, targeted Mypy, Eval `10/10`, and
+  `git diff --check` pass.
+- Full-suite failures remain the inherited baseline only: two DeepSeek response
+  assertions, five expired SCM credential fixtures, one file-size gate and one
+  Worker cancellation race. `make check` stops on the two inherited untouched
+  file-size violations (`561/500`, `505/500`).
+- Branch remains local, unpushed and stacked on `CLOUD-LEASE-PLAN-01`; merge and
+  the next PostgreSQL card remain gated by prerequisite merge and activation.
+
+### CLOUD-LEASE-PG-01 - PostgreSQL Epoch And Lease Adapter
+
+- Status: `Done`
+- Owner: `Codex`
+- Depends on: locally reviewed `CLOUD-LEASE-CON-01` and `CLOUD-PG-01`;
+  explicitly activated for local stacked implementation by the maintainer on
+  2026-07-28. Merge still requires both dependency branches first.
+- Branch: `codex/cloud-lease-pg-01`
+- Worktree: `../zebra-agent-cloud-lease-pg-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{__init__,migrations,epoch,leases}.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_postgres_{migrations,leases}.py`, and this task's
+  governance records
+- Goal: implement database-clock Lease ownership and restore epoch rotation for
+  one immutable deployment namespace.
+- Acceptance: real PostgreSQL race, same-worker collision, heartbeat, release,
+  takeover, clock-skew, namespace and restore tests pass.
+- Non-goals: Store selection, API/Worker wiring, Effect/Outbox and cutover.
+
+#### Validation And Handoff
+
+- Additive migration v2 creates namespace epoch authority and retained Lease
+  generations without changing v1 SQL/checksum or implicitly bootstrapping an epoch.
+- Bootstrap is strict and one-time; restore rotation issues an internal fresh UUID.
+  Runtime Lease constructors never run DDL or create/rotate authority.
+- Acquire, heartbeat and release lock the epoch row before the Lease row, use
+  PostgreSQL transaction time, and mutate only through full-fence CAS. A real
+  blocking test proves restore rotation waits for an in-flight fenced heartbeat.
+- Real Docker Compose PostgreSQL 17.5 evidence: focused migration/Event/Projection/
+  Lease matrix `34/34`; all storage tests `147/147`; critical concurrency matrix
+  passed ten consecutive runs. Independent final reviews report
+  `0 P0 / 0 P1 / 0 P2`.
+- Ruff, storage Mypy, Eval `10/10`, and `git diff --check` pass. Full suite with
+  PostgreSQL enabled passes `1799`, skips `8`, and retains the nine confirmed
+  inherited failures. `make check` stops only on inherited untouched file-size
+  violations (`561/500`, `505/500`).
+- Branch remains local, unpushed and stacked on unmerged dependencies. Store
+  selection, database roles, Worker wiring, cutover and production claims remain
+  explicitly outside this card.
+
+### CLOUD-EFFECT-OUTBOX-01 - Fenced Effect Dispatch Aggregate
+
+- Status: `Done`
+- Owner: `Codex`
+- Depends on: `CLOUD-LEASE-PG-01` integrated at `31969e22` and explicit
+  maintainer activation on 2026-07-28
+- Branch: `codex/cloud-effect-outbox-01`
+- Worktree: cloud-mainline writable integration clone
+- Owned paths: `packages/agent-core/src/agent_core/domain/effect_dispatch.py` (new),
+  `packages/agent-core/src/agent_core/ports/effect_dispatch.py` (new),
+  `packages/agent-core/src/agent_core/{__init__,domain/__init__,ports/__init__}.py`,
+  `packages/agent-storage/src/agent_storage/postgres/{__init__,migrations,events,leases,effects,outbox}.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_core/test_effect_dispatch.py` (new),
+  `tests/agent_storage/test_postgres_effect_dispatch.py` (new),
+  `tests/agent_storage/test_postgres_effect_faults.py` (new),
+  `tests/agent_storage/test_postgres_migrations.py`, and governance records
+- Goal: atomically schedule and terminalize Event/Effect/Outbox mutations behind
+  a valid Lease fence, with claim and reconciliation states.
+- Acceptance: real PostgreSQL fault injection, concurrent idempotency, SKIP LOCKED,
+  stale-fence, explicit reconciliation/retry, crash-matrix and namespace tests pass.
+- Evidence: isolated Docker Compose PostgreSQL 17.5 matrix `49/49` on 2026-07-28;
+  dedicated test container, volume and network were removed after the run.
+- Non-goals: generic Unit of Work/inbox, Tool Gateway/Worker integration, broker.
+
+### CLOUD-EFFECT-CONSUMER-01 - Worker Fenced Effect Consumer
+
+- Status: `Done`
+- Owner: `Codex`
+- Depends on: locally reviewed `CLOUD-EFFECT-OUTBOX-01@69e34c0c` and explicit
+  maintainer activation on 2026-07-28. This is a local stacked implementation
+  waiver, not a merge, push, cutover or release waiver.
+- Branch: `codex/cloud-effect-consumer-01`
+- Worktree: cloud-mainline writable integration clone
+- Owned paths: `apps/worker/src/zebra_agent_worker/{loop,claims,resume,execution,execution_events,continuation_lifecycle,context_lifecycle,execution_finalization,runtime_authority,session_handoff}.py`,
+  `apps/worker/src/zebra_agent_worker/lease_heartbeat.py` (new),
+  `packages/agent-core/src/agent_core/harness/tool_execution.py`,
+  `packages/agent-tools/src/agent_tools/{__init__,effect_guard}.py`,
+  `tests/agent_tools/test_effect_guard.py`, `tests/worker/{test_loop,test_claims,test_resume}.py`,
+  `tests/worker/test_fenced_effect_consumer.py` (new), and governance records
+- Goal: acquire before recovery, maintain background heartbeat, bind Event/Effect
+  execution mutations to the
+  current fence and reconcile uncertain external Effects without auto-replay.
+- Acceptance: lease loss stops new model/Event/Effect work; every exit attempts
+  fenced release; provider-success crash and terminal-response crash tests pass.
+- Evidence: deterministic heartbeat, stale-fence, provider-success/terminal-commit
+  crash, response-loss replay and no-auto-replay tests pass. Worker plus agent-tools
+  regression is `227 passed` with only the confirmed inherited cancellation race;
+  the final full suite is `1844 passed, 60 skipped` with the same nine inherited
+  failures. Ruff, strict Mypy, diff-check and release Eval `10/10` pass. The
+  isolated Docker Compose PostgreSQL 17.5 consumer matrix passes `58/58` on
+  2026-07-29 and reports `ZEBRA_EFFECT_CONSUMER_POSTGRES_TEST_RESULT=PASS`; its
+  dedicated container, volume and network were removed after the run. All nine
+  remaining full-suite failures reproduce `9/9` on the exact business baseline
+  `zebra-cloud-trench@375dca92`; this confirms no cloud-stack regression but does
+  not waive the red-suite merge gate. No cloud backend is runtime-selected by
+  default.
+- Non-goals: Redis/Kafka, cloud backend selector, production rollout.
+
+## Zebra Cloud Business-Baseline Recovery Board
+
+These cards restore the Core/API/Worker quality baseline needed by the new Zebra
+microservices before any reviewed cloud stack is merged. Desktop is outside this
+cloud mainline and is not built or changed by these cards.
+
+### BASE-MDL-EXPECT-01 - Provider Rejection Contract Expectations
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/baseline-model-contract-01`
+- Depends on: exact baseline replay recorded on 2026-07-29
+- Owned paths: `tests/agent_integrations/test_openai_compatible.py`,
+  `tests/agent_integrations/test_deepseek_specialization.py`, and governance records
+- Goal: align two stale positive/negative tests with the existing typed model
+  rejection and advertised-tool boundary without changing production code.
+- Acceptance: advertised tool calls map back to internal names; unadvertised calls
+  remain rejected; invalid DeepSeek reasoning is a typed retryable rejection.
+- Evidence: both provider files pass `41/41`, the focused security trio passes
+  `3/3`, Ruff passes, and the full suite improves from nine to seven failures with
+  `1846 passed, 60 skipped`.
+
+### BASE-SCM-CRED-01 - Time-Stable SCM Credential Fixtures
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/baseline-scm-credential-fixtures-01`
+- Depends on: none; execute after `BASE-MDL-EXPECT-01` in the local repair stack
+- Owned paths: `tests/api/session_pull_request/pull_request_support.py` and
+  governance records
+- Goal: replace expired wall-clock fixture dates with one deterministic valid
+  credential expiry while preserving production expiry-first validation.
+- Acceptance: all session pull-request tests pass after the current date and the
+  production credential broker remains unchanged.
+- Evidence: session pull-request tests pass `25/25`, SCM/broker regressions pass
+  `40/40`, Ruff passes, and the full suite improves to `1851 passed, 60 skipped,
+  2 failed` with only the Worker race and file-size gate remaining.
+
+### BASE-WKR-CANCEL-01 - Durable Cancellation Finalization Race
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/baseline-worker-cancel-01`
+- Depends on: none; execute after `BASE-SCM-CRED-01` in the local repair stack
+- Owned paths: `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
+  `tests/worker/test_execution_finalization.py`,
+  `tests/worker/execution/test_core_execution.py`, and governance records
+- Goal: converge an external durable terminal state that wins during finalization
+  without leaking `ExecutionInterrupted` or overwriting cancellation as failure.
+- Acceptance: cancellation that wins at the durable append boundary converges at
+  finalization; lease loss and unrelated persistence errors still fail closed.
+- Evidence: focused finalization/cancellation tests pass `3/3`, the Worker suite
+  passes `77` with one expected platform skip, Ruff and strict Mypy pass, and the
+  full suite improves to `1853 passed, 60 skipped, 1 failed` with only the
+  repository file-size gate remaining.
+
+### BASE-EVT-SIZE-01 - Context Event Contract Extraction
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/baseline-event-contract-size-01`
+- Depends on: none; execute after `BASE-WKR-CANCEL-01` in the local repair stack
+- Owned paths: `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/context_events.py`,
+  `tests/agent_core/test_context_capsule_validation.py`, and governance records
+- Goal: move the context-capsule payload contract into the existing focused module
+  while preserving registry and public import compatibility.
+- Acceptance: event schema lookup is unchanged, no circular import is introduced,
+  Core source files remain below the limit, and contract tests plus strict Mypy pass.
+- Evidence: Core/Storage context contract tests pass `6/6`; `events.py` is `480`
+  lines and `context_events.py` is `119` lines; focused Ruff and Core strict Mypy
+  pass. The microservice file-size gate passes `901` files, backend tests pass
+  `1851` with `60` infrastructure/platform skips, and release Eval passes `10/10`.
+  Desktop remains outside this mainline.
+
+### CLOUD-LEASE-01 - Lease And Event/Effect Delivery Parent Gate
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Owned paths: `docs/CLOUD_Lease_Effect_联合验收记录_v1.0.md` (new) and governance
+  records
+- Depends on: all four Lease/Effect implementation cards and all four microservice
+  baseline repair cards integrated locally into `zebra-cloud-trench@2759345c`;
+  combined real PostgreSQL evidence `58/58` supplied by the maintainer on 2026-07-29
+- Goal: close Session Lease plus Event/Effect execution ownership and delivery;
+  it does not certify every Worker-owned aggregate as multi-Worker safe.
+- Acceptance: the combined race, restore, crash and duplicate-delivery matrix
+  passes without claiming exactly-once external execution.
+- Evidence: `docs/CLOUD_Lease_Effect_联合验收记录_v1.0.md` reconciles Lease
+  `34/34`, Outbox `49/49`, combined PostgreSQL/consumer `58/58`, microservice
+  backend `1851 passed, 60 skipped`, file-size `901` and Eval `10/10`.
+
+#### Closeout
+
+- Formal review accepted the combined acceptance record and its four child
+  boundaries: Lease `34/34`, Effect Outbox `49/49`, consumer `58/58`, backend
+  `1851 passed, 60 skipped`, file-size `901` and Eval `10/10`.
+- The record proves fenced Session Lease plus Event/Effect delivery within one
+  namespace, including restore, crash, duplicate-delivery and no-auto-replay
+  behavior. It explicitly does not claim exactly-once external execution,
+  complete aggregate fencing, runtime selection or production readiness.
+- Closed `CLOUD-LEASE-01` from `Review` to `Done`; `CLOUD-AGG-FENCE-01` remains
+  `Locked` until every Worker-owned aggregate receives its own authority and
+  PostgreSQL evidence.
+
+### CLOUD-AGG-FENCE-PLAN-01 - Worker Aggregate Fencing Path Inventory
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/cloud-agg-fence-plan-01`
+- Depends on: reviewed `CLOUD-LEASE-01` evidence and the integrated local
+  `zebra-cloud-trench@a0c6fcae` baseline
+- Owned paths: `docs/CLOUD_Worker_Aggregate_Fencing_路径盘点_v1.0.md` (new),
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`, `findings.md`, and
+  `WORKLOG.md`
+- Goal: inventory every authoritative Worker-owned aggregate, its current Store
+  Port and adapter, all mutation call sites and transaction boundaries, then split
+  `CLOUD-AGG-FENCE-01` into dependency-ordered path-bounded implementation cards.
+- Acceptance: every aggregate named by `CLOUD-AGG-FENCE-01` has an explicit source
+  of truth, PostgreSQL-adapter status, fencing gap, owned paths, dependency and
+  real-PostgreSQL acceptance matrix; no production code changes in this task.
+- Evidence: `docs/CLOUD_Worker_Aggregate_Fencing_路径盘点_v1.0.md` records the
+  authority map, transaction seams, shared-file hotspots, implementation DAG and
+  per-card real PostgreSQL matrix. It explicitly keeps read models out of the
+  authority layer and keeps API delivery commands outside the Worker Lease lane.
+
+### CLOUD-AGG-FENCE-CON-01 - Worker Mutation Fencing Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/cloud-agg-fence-con-01`
+- Depends on: approved and integrated `CLOUD-AGG-FENCE-PLAN-01`
+- Owned paths: focused aggregate Store Ports under
+  `packages/agent-core/src/agent_core/ports/`, one focused transaction contract,
+  corresponding `tests/agent_core/`, and governance records
+- Goal: make namespace, full LeaseFence, expected revision and administrative CAS
+  explicit without implementing an infrastructure adapter.
+- Acceptance: missing or stale Worker authority is not expressible as a valid
+  mutation request; API CAS and Worker fenced writes are distinct typed paths.
+- Evidence: `WorkerMutationAuthority` reuses the complete frozen `LeaseFence` and
+  requires canonical namespace, Session and expected stream revision;
+  `AdministrativeMutationCAS` is a separate strict type that rejects a fence.
+  Focused tests pass `19/19`, all Core tests pass `270/270`, changed-file Ruff and
+  strict Mypy over `121` Core files pass, and release Eval passes `10/10`.
+  Repository-wide execution through the older root virtualenv cannot collect the
+  cloud tree because that environment lacks `psycopg`; this card imports no storage.
+
+### CLOUD-AGG-WORKSPACE-PG-01 - Fenced Workspace Projection
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/cloud-agg-workspace-pg-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`
+- Owned paths: `packages/agent-core/src/agent_core/ports/workspace_projection_store.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-storage/src/agent_storage/postgres/{workspaces,projections,migrations,leases,__init__}.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`, focused PostgreSQL
+  Workspace/migration tests,
+  `apps/worker/src/zebra_agent_worker/{execution_events,execution,loop,worker_projection}.py`,
+  focused Worker injection tests, the host Compose runner, and governance records
+- Goal: persist Workspace as an Event-derived fenced projection, never as a second
+  fact source.
+- Acceptance: stale epoch/token/owner and old sequence writes change zero rows;
+  Event/Session/Workspace failure and replay matrices pass on PostgreSQL.
+- Current evidence: the initial host Compose matrix passed `71/71`; after adding
+  strict Event-derived content validation and the Worker injection
+  factory and canonical lost-response retry handling, local Core/Storage/Worker
+  regressions pass `467` with `64` PostgreSQL
+  skips, strict Core/Storage Mypy passes `163` files, the microservice file-size
+  gate passes `907` tracked and new files and Eval passes `10/10`. The final
+  PostgreSQL 17.5 host Compose matrix passes `80/80`, and its dedicated container
+  and volume are removed after the run.
+- Runtime selection is intentionally deferred to `CLOUD-CONTROL-PLANE-PG-01`;
+  this card proves an injectable Worker seam, not an enabled cloud composition root.
+
+#### Closeout
+
+- Formal review targeted the integrated implementation at `8b924d74` and the
+  acceptance/governance handoff at `eb021ff2`. Its sole direct dependency,
+  `CLOUD-AGG-FENCE-CON-01`, is `Done`; no Review, Locked, Blocked or Proposed
+  dependency was treated as complete.
+- The implementation diff is confined to the card's declared Core Port,
+  PostgreSQL adapter/migration, Worker injection, focused tests and Compose
+  evidence paths. It does not change the control-plane selector, application
+  profile, Provider transport, Desktop, SQLite, Redis or Mem0 composition.
+- Existing evidence is accepted: PostgreSQL `17.5` host matrix `80/80`, related
+  Core/Storage/Worker regressions `467` with `64` PostgreSQL skips, strict
+  Core/Storage Mypy over `163` files, microservice size gate `907`, and Eval
+  `10/10`. No Compose run was needed for this closeout.
+- Closing this card only makes the Task/Segment card the next dependency-ordered
+  review target. It does not activate `CLOUD-CONTROL-PLANE-PG-01` or unlock
+  Runtime, Worker startup, Provider HTTP or the application Compose profile.
+
+### CLOUD-AGG-TASK-PG-01 - PostgreSQL Task And Segment Index
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/cloud-agg-task-pg-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{agent_tasks,task_index_transactions,task_lineage,migrations,__init__}.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`, focused migration and
+  real PostgreSQL Task tests, the host Compose runner, and governance records
+- Goal: provide a read-without-write Task index and connection-scoped rollover
+  primitive for Handoff transactions.
+- Acceptance: concurrent rollover has one winner, task event order is unique,
+  rebuild is idempotent and reads never trigger hidden writes.
+- Evidence: reads remain pure; explicit rebuild deterministically replaces stale
+  Segment/Event rows; rebuild and rollover share a Task advisory lock; Handoff
+  received/committed Events require matching target, handoff, stage, checksum and
+  artifact identities; expected uniqueness races map to one typed conflict. Ruff,
+  strict Mypy over `166` files, the `911`-file microservice size gate, `473 passed,
+  77 skipped` related regressions and Eval `10/10` pass. The isolated PostgreSQL
+  17.5 host Compose matrix passes `32/32`, then removes its container and volume.
+
+#### Closeout
+
+- Formal review targeted the integrated implementation at `2675c56a` and the
+  acceptance/governance handoff at `4ba6e332`. Its sole direct dependency,
+  `CLOUD-AGG-FENCE-CON-01`, is `Done`; Workspace is also `Done` and is not used
+  as an implicit substitute for any other Review card.
+- The implementation diff is confined to the declared PostgreSQL Task/Segment
+  adapter, migration registry, focused tests and governance paths. It does not
+  alter Context, Handoff, Model/Tool, Control Plane, Runtime, Worker startup,
+  Provider HTTP, Desktop, SQLite, Redis or Mem0 composition.
+- Existing evidence is accepted: PostgreSQL `17.5` host matrix `32/32`, related
+  regressions `473` with `77` PostgreSQL skips, strict Mypy over `166` files,
+  microservice size gate `911`, and Eval `10/10`. No Compose run was needed for
+  this closeout.
+- Closing this card only makes `CLOUD-MODEL-TOOL-PG-01` the next
+  dependency-ordered Review target. It does not activate
+  `CLOUD-CONTROL-PLANE-PG-01` or unlock Runtime, Worker startup, Provider HTTP
+  or the application Compose profile.
+
+### CLOUD-AGG-CTX-PG-01 - Fenced Context Lifecycle Aggregate
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-agg-ctx-pg-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
+  `CLOUD-AGG-TASK-PG-01`, and merged `CLOUD-MODEL-TOOL-PG-01` migration v6.
+- Owned paths: `packages/agent-core/src/agent_core/ports/context_lifecycle_store.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-storage/src/agent_storage/{__init__,composition,context_lifecycle}.py`,
+  `packages/agent-storage/src/agent_storage/postgres/{__init__,context_lifecycle,migrations}.py`,
+  `apps/worker/src/zebra_agent_worker/context_lifecycle.py`,
+  `apps/api/src/zebra_agent_api/session_context_control.py`,
+  `apps/worker/src/zebra_agent_worker/{execution,execution_events}.py`,
+  focused Context lifecycle PostgreSQL/API/Worker tests, and this task's governance records.
+- Migration: v7 `fenced_context_lifecycle`; v1-v6 and their checksums are immutable.
+- Goal: commit immutable capsule content, `CONTEXT_COMPACTED`,
+  `CONTEXT_CAPSULE_CREATED`, active pointer, and their Event-derived Session/Workspace
+  projection revisions under one Context-specific authority boundary.
+- Acceptance: content/idempotency, pointer CAS, stale fence, duplicate sequence,
+  administrative CAS, two-Event projection revision, and rollback matrices pass on
+  real PostgreSQL; no Task/Segment index write or generic Worker transaction expansion.
+- Evidence: host PostgreSQL 17.5 runner passes `14/14`, covering v1-v7 migration
+  registry/checksums, v7 composite Event/pointer constraints, canonical retries,
+  stale fence, pointer CAS, administrative CAS, and injected Workspace projection
+  rollback. Focused SQLite/Worker regressions pass `11/11`; changed-scope Ruff,
+  strict Mypy, and `git diff --check` pass.
+
+#### Closeout
+
+- Formal review targeted the integrated Context implementation at `0c170c5d`,
+  canonical-link fixes at `2e2a5276` and v7 registry coverage at `6d541f79`.
+  All direct dependencies—Fence Contract, Workspace, Task and Model/Tool v6—are
+  `Done`.
+- The implementation diff is confined to the declared Context Core Port,
+  PostgreSQL v7 adapter/migration, Worker/API seam and focused tests. It does not
+  add Task/Segment writes, a generic transaction, Handoff/Artifact authority,
+  Control Plane selection, Runtime, Provider HTTP, Desktop, SQLite, Redis or
+  Mem0 composition.
+- Existing evidence is accepted: isolated PostgreSQL `17.5` matrix `14/14`,
+  focused SQLite/Worker regressions `11/11`, changed-scope Ruff, strict Mypy and
+  `git diff --check`. No Compose run was needed for this closeout.
+- Closing this card only records the Context lifecycle gate. Handoff, Artifact,
+  Control Plane, Runtime, Worker startup, Provider HTTP and the application
+  Compose profile remain locked or separately in Review.
+
+### CLOUD-AGG-HANDOFF-PG-01 - PostgreSQL Handoff And Dispatch Aggregate
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-agg-handoff-pg-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
+  `CLOUD-AGG-TASK-PG-01`, and `CLOUD-AGG-HANDOFF-CON-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/{session_handoffs,session_handoff_transactions,session_handoff_dispatch,session_handoff_facts,handoff_migration,migration_runner,migration_types,migrations,leases,task_lineage,__init__}.py`,
+  `packages/agent-storage/src/agent_storage/{session_handoff_events,__init__}.py`,
+  `packages/agent-core/src/agent_core/ports/session_handoff.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/worker/src/zebra_agent_worker/{execution,session_handoff}.py`, focused Core,
+  storage and Worker Handoff tests, real PostgreSQL Handoff/dispatch tests, the host
+  Compose runner, and this task's governance records
+- Migration: v8; split the current migration catalog before adding v8 so source
+  files return below the repository's 500-line hard limit.
+- Goal: preserve the existing all-or-nothing Handoff boundary and add fenced,
+  multi-Worker dispatch claim/ack.
+- Acceptance: stale source facts cause zero writes, concurrent successor is unique,
+  all Handoff rows roll back together, and old claims cannot acknowledge new work.
+- Evidence: isolated PostgreSQL v1-v8 aggregate/dispatch matrix passes `20/20`.
+  One transaction commits parent/child Events, Session/Workspace projections, v5 Task
+  rollover, immutable Envelope, dispatch and operation state; injected late failure
+  rolls every row back, stale facts write nothing, concurrent successors have one
+  winner, and lost-response replay validates the canonical request identity. Claim and
+  ACK use database time, `FOR UPDATE SKIP LOCKED`, random token rotation and the complete
+  LeaseFence. Worker recovery threads its acquired fence without owner rediscovery and
+  uses the existing fenced projection transaction for cloud drift suspension. Core,
+  Storage, API and Worker suites pass `822/822` with `102` environment-gated skips;
+  scoped Ruff and `git diff --check` pass. Full Mypy retains six inherited errors in
+  untouched web-crawl, MCP policy and Worker export files.
+
+#### Closeout
+
+- Formal review targeted migration foundation `a678938b`, fenced dispatch
+  `d23d824c` and the integrated aggregate `cfe40713`. Its direct dependencies—
+  aggregate fencing, Workspace, Task and portable Handoff dispatch—are all
+  `Done`; the implementation is already integrated on the cloud mainline.
+- The implementation remains within the declared v8 migration, PostgreSQL
+  aggregate/dispatch adapters, Core Handoff Port, API/Worker recovery seam and
+  focused tests. It does not add Artifact authority, a generic transaction,
+  Control Plane selection, Runtime, Provider HTTP, Desktop, SQLite, Redis or
+  Mem0 composition.
+- Existing evidence is accepted: isolated PostgreSQL v1-v8 `20/20`, recorded
+  Core/Storage/API/Worker `822/822` with `102` environment skips, scoped Ruff,
+  `git diff --check`, and the current-HEAD Core/Worker focused regression `17/17`.
+  No new Compose execution or production edit was needed for this closeout.
+- Closing this card records the Handoff v8 aggregate gate only. Artifact,
+  Context administrative recovery, Control Plane, Runtime, Worker startup,
+  Provider HTTP and application Compose selection remain separately in Review or
+  locked.
+
+### CLOUD-AGG-CTX-ADMIN-PG-01 - PostgreSQL Administrative Context Recovery
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-agg-ctx-admin-pg-01`
+- Depends on: `CLOUD-AGG-CTX-PG-01` and `CLOUD-AGG-WORKSPACE-PG-01`
+- Worktree: `../zebra-cloud-ctx-admin-pg-01`
+- Owned paths: `apps/api/src/zebra_agent_api/{app,api_session_read_mixin,http,session_context_control,session_context_recovery,session_context_postgres_recovery}.py`,
+  `tests/api/{test_session_context_control,test_api_storage_composition,test_session_context_recovery_postgres,test_postgres_context_recovery}.py`, focused
+  PostgreSQL Context recovery tests and runner,
+  `packages/agent-storage/src/agent_storage/postgres/{context_lifecycle,context_authority}.py`,
+  and this task's governance records
+- Goal: map historical-capsule recovery in an explicitly injected PostgreSQL
+  Context store to the existing `commit_administrative_activation` transaction.
+- Acceptance: namespace comes only from composition; expected Session revision and
+  active capsule are explicit CAS inputs; canonical Event/Session/Workspace results
+  are returned without a second projection write; stale/missing pointer and Workspace
+  facts fail closed; the existing HTTP request/response remains compatible.
+- Non-goals: PostgreSQL manual compact, new capsule creation, migration, backend
+  selector, full PostgreSQL Store bundle, environment configuration or Desktop.
+- Evidence: the API receives namespace only through explicit composition, preserves
+  the SQLite compatibility branch and uses the canonical PostgreSQL aggregate result
+  without a second projection save. The transaction locks the stream and rejects
+  missing or changed Session/Workspace facts before append; historical pointer time
+  comes from the recovery Event. The isolated PostgreSQL 17.5 matrix passes `19/19`,
+  API/Storage regressions pass `323/323` with `14` environment skips, focused Ruff,
+  strict Mypy and `git diff --check` pass. Full tests are `1977 passed, 167 skipped`
+  with only the inherited Desktop stylesheet 561/500 size-gate failure.
+
+#### Closeout
+
+- Formal review targeted the integrated implementation at `ac9801c2` and its
+  activation record `d11cf9e9`; the direct Context lifecycle and Workspace
+  dependencies are `Done`. Review reconciled the card's Owned paths to name the
+  integrated `session_context_recovery.py` adapter and
+  `test_session_context_recovery_postgres.py` matrix explicitly.
+- The resulting diff is confined to the declared API composition/recovery seam,
+  PostgreSQL Context CAS adapter and focused recovery tests. It does not add
+  manual compact, a new capsule transaction, migration, backend selector, full
+  Store bundle, Runtime, Provider HTTP, Desktop, SQLite feature work, Redis or
+  Mem0 composition.
+- Existing evidence is accepted: isolated PostgreSQL `19/19`, API/Storage
+  regressions `323/323` with `14` skips, focused Ruff, strict Mypy and
+  `git diff --check`. No new Compose execution or production edit was needed
+  for this closeout.
+- Closing this card records only administrative historical recovery. Handoff,
+  Artifact, Control Plane, Runtime, Worker startup, Provider HTTP and application
+  Compose selection remain separately in Review or locked.
+
+### CLOUD-AGG-HANDOFF-CON-01 - Fenced Handoff Dispatch Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-agg-handoff-con-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-LEASE-CON-01`, and the existing
+  `CTX-HO-01A`, `CTX-HO-01B`, `CTX-HO-01C` Handoff contracts
+- Owned paths: `packages/agent-core/src/agent_core/ports/handoff_dispatch_store.py`,
+  `packages/agent-storage/src/agent_storage/{session_handoff_dispatch,session_handoff_rows,session_handoffs}.py`,
+  `apps/worker/src/zebra_agent_worker/session_handoff.py`,
+  `tests/agent_storage/test_session_handoffs.py`,
+  `tests/api/test_api_storage_composition.py`, and
+  `tests/worker/test_session_handoff_dispatch.py`
+- Goal: make each dispatch claim an unforgeable Lease-fenced receipt so an expired
+  or superseded Worker cannot acknowledge a reclaimed child delivery.
+- Acceptance: fresh and migrated SQLite stores persist a random claim token and
+  full LeaseFence; incomplete legacy claims are safely requeued; reclaim rotates
+  the token; stale token/fence/expiry ACK attempts fail; existing local/API behavior
+  and the legacy `SessionHandoffPort` batch wrappers remain compatible.
+- Non-goals: no PostgreSQL migration, Handoff aggregate implementation, generic
+  authority abstraction, API route change, or removal of compatibility wrappers.
+- Evidence: claim and ACK verify the child Session's current complete LeaseFence
+  in the same SQLite transaction as dispatch mutation; reclaim rotates a standard-
+  library random token, incomplete legacy claims are requeued, and old receipts
+  cannot ACK after release/takeover. Changed-scope Ruff and strict Mypy pass;
+  `290` Core/Storage/Worker/API tests and `git diff --check` pass.
+
+#### Closeout
+
+- Formal review targeted the integrated dispatch contract at `f7d73dd3` and the
+  lease-claim correction at `4492f475`; the implementation is present on the
+  cloud mainline, while the historical task branch remains a source reference.
+  All direct dependencies—aggregate fencing, core Lease fencing and the staged
+  Handoff contracts—are `Done`.
+- The diff is confined to the declared Core dispatch Port, SQLite compatibility
+  storage, Worker recovery seam and focused API/Worker/Storage tests. It does not
+  add a PostgreSQL migration, Handoff aggregate authority, generic transaction,
+  API route, Runtime, Provider HTTP, Desktop, Redis or Mem0 composition.
+- Existing evidence is accepted: recorded `290` related Core/Storage/Worker/API
+  tests, changed-scope Ruff, strict Mypy and `git diff --check`; an additional
+  current-HEAD focused regression run passed `22/22`. No Compose run or
+  production edit was needed for this closeout.
+- Closing this card records only the portable Lease-fenced dispatch contract.
+  `CLOUD-AGG-HANDOFF-PG-01` remains the next v8 PostgreSQL Review gate; Runtime,
+  Worker startup, Provider HTTP and application Compose selection remain locked.
+
+### CLOUD-MODEL-TOOL-PG-01 - PostgreSQL Model And Tool Projections
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-model-tool-pg-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-AGG-WORKSPACE-PG-01`
+- Owned paths: focused PostgreSQL model/tool modules, current migration hotspot,
+  Worker index/replay wiring and real PostgreSQL tests
+- Goal: maintain Model/Tool as replayable Event-derived projections.
+- Acceptance: same-event replay is idempotent, different content fails closed,
+  stale Worker writes zero rows and partial projection failure is recoverable.
+- Evidence: migration v6 adds namespace-scoped Event-derived Model/Tool indexes;
+  Worker indexing validates the current full fence, while management replay reads
+  only committed Events and never writes Artifact payloads. Focused Worker tests
+  pass `7/7`; isolated PostgreSQL 17.5 migration/projection tests pass `7/7`.
+
+#### Closeout
+
+- Formal review targeted the integrated implementation at `4acd8ae8`, stale
+  projection fixes at `5e44c0b7` and `d6e3f5c2`, and the recorded v6 acceptance
+  evidence. Direct dependencies `CLOUD-AGG-FENCE-CON-01` and
+  `CLOUD-AGG-WORKSPACE-PG-01` are both `Done`.
+- The implementation remains an Event-derived read projection. Its diff is
+  limited to Model/Tool projection storage, Worker index/replay wiring, the v6
+  migration and focused tests; it does not introduce a second authority or
+  touch Context, Handoff, Control Plane, Runtime, Provider HTTP, Desktop,
+  SQLite, Redis or Mem0 composition.
+- Existing evidence is accepted: focused Worker tests `7/7`, isolated
+  PostgreSQL `17.5` migration/projection tests `7/7`, and the task's recorded
+  static/replay checks. No Compose run was needed for this closeout.
+- Closing this card only records the Model/Tool projection gate. It does not
+  activate `CLOUD-CONTROL-PLANE-PG-01` or unlock Runtime, Worker startup,
+  Provider HTTP or the application Compose profile; Context remains a separate
+  Review card.
+
+### CLOUD-SCOPE-CON-01 - Opaque Authority Namespace Read Scope Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE / API / STORAGE / SECURITY`
+- Depends on: accepted `ADR-012`, `CLOUD-AGG-FENCE-CON-01` and the existing
+  `SessionHistoryPort` allow-list boundary
+- Branch: `codex/cloud-scope-con-01`
+- Owned paths: `docs/CLOUD_Opaque_Authority_Scope_合同_v1.0.md`,
+  `packages/agent-core/src/agent_core/domain/cloud_scope.py` (new),
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `tests/agent_core/test_cloud_scope.py` (new), and this task's governance
+  records
+
+#### Goal
+
+Freeze the opaque `(authority_issuer, namespace_id)` identity and bounded
+`allowed_session_ids` read scope that PostgreSQL Provider Continuation and
+Session History adapters must consume. Do not create a Zebra Tenant or resolve
+external membership.
+
+#### Acceptance
+
+- [x] Core exposes an immutable scope value with canonical identity and an
+  explicit allow-list/deny-all distinction.
+- [x] Blank, untrimmed, duplicate, invalid and over-limit values fail closed.
+- [x] The contract states that external-to-deployment namespace mapping is
+  trusted composition responsibility and is never guessed from a DSN.
+- [x] Focused Core tests and release Eval pass; no SQL, migration, Runtime,
+  Provider HTTP, Desktop, Redis or Mem0 behavior changes.
+
+#### Validation And Handoff
+
+- `tests/agent_core/test_cloud_scope.py` passes `9/9`; the complete Core suite
+  passes `347/347`; the Session History/aggregate scope regression set passes
+  `32/32`.
+- Changed-path Ruff, format, strict Mypy and `git diff --check` pass; release
+  Eval passes `10/10`.
+- `make check` retains the exact two inherited file-size violations in the
+  untouched Desktop stylesheet (`561/500`) and governed-memory PostgreSQL test
+  (`765/700`).
+- No PostgreSQL migration, adapter, Runtime selector, Host verifier, Desktop,
+  Redis or Mem0 behavior changed. The two successor adapter cards remain
+  `Locked` pending explicit activation.
+
+#### Closeout
+
+- Formal review accepted the contract implementation at `4006a0ba` and the
+  registration/claim records `a898ce09`/`258c0c40`.
+- The Core value object is the only authority introduced: it preserves the
+  accepted opaque identity, rejects malformed or over-broad read scopes, and
+  never derives the internal deployment namespace. No storage or runtime
+  behavior changed.
+- Focused Core `9/9`, complete Core `347/347`, relevant regression `32/32`,
+  strict Mypy/Ruff/format/diff and Eval `10/10` evidence is accepted. The two
+  inherited file-size violations remain outside this card.
+- Closing this card does not activate either PostgreSQL adapter. The maintainer
+  must explicitly choose `CLOUD-PROVIDER-CONT-PG-01` or
+  `CLOUD-SESSION-HISTORY-PG-01` next.
+
+#### Explicit Non-Goals
+
+- PostgreSQL Provider Continuation or Session History adapters
+- HostSessionGrant verification or external business membership
+- Tenant/User/Organization models
+- runtime backend selection or application Compose wiring
+
+### CLOUD-PROVIDER-CONT-PG-PLAN-01 - Provider Continuation PostgreSQL Authority Plan
+
+- Status: `Done`
+- Type: Architecture / Governance / Docs-only
+- Owner: `lukeding (Cloud Architecture Maintainer)`
+- Branch: `docs/cloud-provider-cont-pg-plan`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-provider-cont-pg-plan/zebra-agent`
+- Depends on: completed `CLOUD-AGG-FENCE-CON-01`, completed
+  `CLOUD-SCOPE-CON-01`, accepted ADR-012 external authority boundary and the
+  maintainer's explicit request to plan the next cloud-mainline step
+- Owned paths: `docs/architecture/cloud-provider-continuation-pg-plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `task_plan.md`, and `WORKLOG.md`
+- Goal: freeze the authority identity, physical namespace key, existing Lease
+  fence reuse, same-transaction Event binding, TTL/SHA/soft-delete lifecycle and
+  management-scoped sweep required before PostgreSQL implementation.
+
+#### Acceptance
+
+- [x] External `(authority_issuer, namespace_id)` identity and trusted mapping
+  to internal `deployment_namespace` are unambiguous and introduce no Tenant model.
+- [x] Provider Continuation reuses complete `WorkerMutationAuthority` and does
+  not introduce a second continuation-specific fence.
+- [x] The physical key, idempotency, lock order, Event-reference integrity,
+  TTL/SHA/soft-delete and management-sweep rules are frozen.
+- [x] The implementation unlock gate, owned-path handoff, real PostgreSQL test
+  matrix and migration-ownership check are explicit.
+- [x] Docs links, terminology, line limits and `git diff --check` pass; no
+  production code, migration, Runtime, Provider HTTP, Desktop, SQLite, Redis,
+  Mem0, Docker application or deployment behavior changes.
+
+#### Closeout Rule
+
+- The maintainer accepted this plan in the sidebar architecture review and
+  separately activated `CLOUD-PROVIDER-CONT-PG-01`. This card does not own
+  implementation code or migration v13.
+
+### CLOUD-PROVIDER-CONT-PG-01 - Fenced Provider Continuation Payload
+
+- Status: `Done`
+- Owner: `lukeding (Cloud Architecture Maintainer)`
+- Branch: `codex/cloud-provider-cont-pg-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-provider-cont-pg-01/zebra-agent`
+- Baseline: `f6c8a926f83498fbb578aa61f96efe1b87ef3bd6`
+- Migration: `v13`, serialized after the immutable v1-v12 catalog
+- Depends on: completed `CLOUD-PROVIDER-CONT-PG-PLAN-01`,
+  `CLOUD-AGG-FENCE-CON-01`, completed `CLOUD-SCOPE-CON-01` and an approved
+  authority/namespace boundary
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/context_continuation.py`,
+  `packages/agent-core/src/agent_core/contracts/context_events.py`,
+  `packages/agent-core/src/agent_core/ports/provider_continuation_store.py`,
+  `packages/agent-core/src/agent_core/ports/provider_continuation_cloud.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `packages/agent-storage/src/agent_storage/postgres/provider_continuations.py`,
+  `packages/agent-storage/src/agent_storage/postgres/provider_continuation_migration.py`,
+  `packages/agent-storage/src/agent_storage/postgres/migrations.py`,
+  `apps/worker/src/zebra_agent_worker/execution_events.py`,
+  `apps/worker/src/zebra_agent_worker/provider_continuation_commit.py`,
+  `apps/worker/src/zebra_agent_worker/provider_continuation_execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/loop.py`, and focused
+  `tests/agent_core/test_provider_continuation_cloud.py`,
+  `tests/agent_storage/test_postgres_provider_continuations.py`,
+  `tests/worker/test_provider_continuation_commit.py`, and
+  `tests/compose/provider_continuation/`. Governance records for this card are
+  also owned. Existing local SQLite continuation behavior, Runtime selector,
+  API/Provider HTTP, Desktop, Redis, Mem0 and Docker application files are
+  excluded.
+- Goal: make opaque continuation payload shared, authority-scoped and validated
+  by the existing Worker Lease fence without creating a Zebra Tenant model.
+- Implementation commit: `39bbe444` contains the registered Core, PostgreSQL,
+  Worker, focused-test, Compose and governance slice. Follow-up `abd7a7f0`
+  closes the two P1 review risks (implicit SQLite fallback and omitted-`as_of`
+  sweep retry hashing) and the P2 Event-replay projection guard.
+- Acceptance: stale authority and cross-namespace access fail, TTL/SHA/delete
+  semantics match SQLite, Event references are committed atomically and remain
+  resolvable, lost-response retries return the canonical receipt, and sweep is
+  explicitly management-scoped with real PostgreSQL Compose evidence.
+
+#### Closeout
+
+- Sidebar closeout accepted the implementation, owned-path boundary, review
+  fixes, governance synchronization and PostgreSQL Compose evidence. The card
+  is `Done` on `abd7a7f0` plus this governance closeout commit.
+- The registry has no `CLOUD-PROVIDER-CONT-PG-02`. The registered
+  `CLOUD-CONTROL-PLANE-PG-01` successor remains `Locked` until every aggregate
+  PostgreSQL adapter/read-composition dependency is closed; no next card is
+  activated by this closeout.
+
+### CLOUD-ART-PAYLOAD-PG-01 - Shared Artifact Payload Authority
+
+- Status: `Done`
+- Owner: `lukeding`
+- Depends on: `CLOUD-ART-LIFECYCLE-CON-01`, `CLOUD-ART-OBJECT-S3-01`, and completed
+  `CLOUD-AGG-HANDOFF-PG-01`; all three dependencies are integrated in
+  `zebra-cloud-trench`.
+- Branch: `codex/cloud-art-payload-pg-01`
+- Owned paths: focused cloud Artifact lifecycle Port/domain under `agent-core`,
+  PostgreSQL metadata and provider-neutral S3-compatible object adapters under
+  `agent-storage`, `packages/agent-storage/pyproject.toml`, `uv.lock`, migration v9
+  and exports, focused Worker Event preparation seam plus the narrow optional
+  `LocalToolGateway` output-projector injection in `agent-runtime`, MinIO bucket-versioning
+  bootstrap, isolated PostgreSQL/MinIO Compose runner, Artifact lifecycle/fault tests,
+  and this task's governance records
+- Migration: v9; the immutable v1-v8 catalog is integrated at `cfe40713`.
+- Goal: replace local filesystem payload authority with cross-Worker storage.
+- Acceptance: idempotency/conflict, SHA, stale fence, cross-process read, object/
+  metadata fault compensation, prune/sweep concurrency and namespace tests pass.
+  A fenced metadata reserve must precede object I/O and Event creation; the Event
+  receives the stable `artifact://` URI before append; only a committed Event plus
+  verified object may finalize metadata. Because v9 has no fenced pre-delete claim,
+  the Worker coordinator must not delete after an Event/object outcome becomes
+  uncertain; it leaves staged evidence for explicitly authorized management reconcile
+  without replaying the Event or synthesizing bytes.
+- Contract boundary: do not extend the local `ArtifactPayloadStorePort` with optional
+  authority arguments. Add a focused cloud lifecycle Port that requires namespace,
+  complete `WorkerMutationAuthority`, expected binding and idempotency on every Worker
+  mutation; preserve the old Port and SQLite implementation for local compatibility.
+- Object adapter: add direct `botocore>=1.42.97,<1.43.0` to `agent-storage`; do not
+  add boto3/s3transfer, MinIO SDK, an async AWS SDK or hand-written SigV4. Use
+  conditional put, Zebra SHA-256/size metadata, verified head/read and bucket
+  `VersionId` for exact deletion; ETag is not a payload digest.
+- Non-goals: no Desktop/local SQLite feature work, runtime backend selector, API
+  signed-URL route, Effect payload linkage, Artifact read composition, provider
+  lifecycle rules, multipart upload, or production credential policy.
+- Current evidence: v9 preserves immutable v1-v8 and adds one lifecycle authority
+  table plus append-oriented mutation and management audit ledgers. Reservation
+  identity has one shared Core SHA-256 contract; DB constraints bind intended Event
+  sequence to the reserved stream revision, complete LeaseFence, exact Event identity,
+  lifecycle evidence and DB-time transition ordering. Isolated PostgreSQL 17.5
+  migration and lifecycle tests pass `19/19`; focused Core contract tests pass
+  `17/17`. The adapter now covers complete Worker reserve/object/finalize/compensate/
+  prune transitions plus audited management recovery and scoped reconcile listing.
+  The optional Worker seam captures bytes before parallel Tool completion, reserves
+  the exact terminal Event slot before Event creation, preserves external URIs and
+  rejects uncaptured managed URIs. Lost put/Event acknowledgements, sequence drift,
+  finalize failure and concurrent retention prune retain recoverable evidence without
+  unsafe Worker deletion. Real PostgreSQL+MinIO tests pass `30/30`; Worker/Runtime
+  pass `260/260` and Storage passes `131/131`.
+
+#### Closeout
+
+- Formal review covered the integrated v9 chain `f0e714c8`, `3443da58`,
+  `9e26dc26`, `8fcc8995` and fault-matrix completion `b87760b6`. Lifecycle,
+  object, Artifact authority and Handoff v8 dependencies are all `Done`.
+- The implementation remains within the declared cloud lifecycle Port, PostgreSQL
+  v9 metadata/ledgers, S3-compatible adapter, Worker Event preparation seam and
+  focused PostgreSQL/MinIO tests. It does not change the local payload Port or
+  SQLite, add a v10 migration, select Runtime, expose signed URLs, link Effects,
+  add read composition or change Desktop behavior.
+- Existing evidence is accepted: isolated PostgreSQL migration/lifecycle `19/19`,
+  Core `17/17`, PostgreSQL+MinIO `30/30`, Worker/Runtime `260/260` with `16`
+  skips and Storage `131/131` with `114` skips. No new Compose run or production
+  edit was needed for this closeout.
+- Closing this card records Artifact v9 payload authority only. Effect linkage,
+  read composition, delivery APIs and Runtime/provider selection retain separate
+  gates.
+
+### CLOUD-ART-LIFECYCLE-CON-01 - Cloud Artifact Lifecycle Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-art-lifecycle-con-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01` and `CLOUD-ART-OBJ-CON-01`
+- Owned paths: `packages/agent-core/src/agent_core/domain/{cloud_artifact_payloads,cloud_artifact_requests,artifact_objects}.py`
+  (new), `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `packages/agent-core/src/agent_core/ports/{cloud_artifact_payload_store,artifact_object_store}.py`
+  (new), `packages/agent-core/src/agent_core/ports/__init__.py`, focused
+  `tests/agent_core/test_{cloud_artifact_payload,artifact_object}_contract.py` (new),
+  and this task's governance records
+- Goal: define the minimum provider-neutral staged/finalize/compensate/prune contract
+  required by ADR-017 without implementing an adapter or changing local behavior.
+- Acceptance: every Worker mutation requires complete `WorkerMutationAuthority`;
+  management reconciliation requires `AdministrativeMutationCAS` plus explicit
+  operator/reason audit context; lifecycle,
+  idempotency, Event binding, object verification and typed conflict/state outcomes
+  are explicit; invalid namespace, digest, size, timestamps and transition requests
+  fail at the Core boundary.
+- Compatibility: the existing `ArtifactPayloadStorePort`, local lifecycle enums and
+  SQLite adapter remain byte-for-byte unchanged and require no cloud-only arguments.
+- Non-goals: no PostgreSQL migration/adapter, S3 SDK, MinIO, Worker orchestration,
+  Effect linkage, API route, runtime selection, local SQLite or Desktop change.
+- Evidence: focused provider-neutral object and cloud lifecycle modules keep every
+  source/test file below the 300-line target; Worker operations require complete
+  `WorkerMutationAuthority`, while management operations require
+  `AdministrativeMutationCAS` plus immutable operator/reason context. Exact Event,
+  object digest/size/version, namespace, Session and lifecycle evidence bindings fail
+  closed. Focused contract/authority/SQLite compatibility tests pass `45/45`; all Core
+  tests pass `290/290`; strict Core Mypy passes `126` files, changed-scope Ruff and
+  `git diff --check` pass. The repository size gate retains only the two inherited
+  Desktop `561/500` and active migration `508/500` violations.
+
+#### Closeout
+
+- Formal review targeted integrated Core contract implementation `0444c5d9`; its
+  aggregate-fencing and Artifact authority dependencies are both `Done`.
+- The cloud-only lifecycle Port/domain, authority-separated Protocol methods,
+  typed failures and focused contract tests remain the complete scope. The local
+  `ArtifactPayloadStorePort` and SQLite behavior remain unchanged; no PostgreSQL,
+  S3 SDK, MinIO, Worker orchestration, Effect linkage, API route or Runtime was added.
+- Existing evidence is accepted: focused contract/authority/SQLite compatibility
+  `45/45`, all Core `290/290`, strict Mypy, Ruff, diff and documented size-gate
+  baseline; current-HEAD focused contract tests pass `21/21`. No Compose run or
+  production edit was needed for this closeout.
+- Closing this card records the provider-neutral Artifact lifecycle contract only;
+  object adapter, payload authority, Effect linkage, reads and Runtime retain
+  separate gates.
+
+### CLOUD-ART-OBJECT-S3-01 - S3-Compatible Immutable Artifact Object Adapter
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-art-object-s3-01`
+- Depends on: `CLOUD-ART-LIFECYCLE-CON-01`, `CLOUD-ART-OBJ-CON-01`, and reviewed
+  `CLOUD-COMPOSE-INFRA-01` MinIO baseline
+- Owned paths: `packages/agent-storage/pyproject.toml`, `uv.lock`, focused
+  `packages/agent-storage/src/agent_storage/{artifact_objects,s3_error_mapping,__init__}.py`,
+  `docker/compose.dependencies.yml`, `docker/README.md`, isolated Artifact object
+  Compose runner, focused adapter/real-MinIO tests, and this task's governance records
+- Goal: implement the frozen `ArtifactObjectStorePort` with immutable conditional put,
+  verified head/read and exact-version deletion across Workers.
+- Acceptance: direct low-level botocore is the only new SDK dependency; object keys are
+  adapter-internal and namespace-scoped; same content is canonical, different content
+  never overwrites; digest/size/version mismatches fail closed; missing, mismatch,
+  permission/transport ambiguity remain distinct; MinIO bucket versioning and
+  cross-client real-container tests pass.
+- Non-goals: no PostgreSQL metadata/migration, lifecycle orchestration, Worker/API
+  wiring, signed-URL delivery surface, multipart upload, Effect linkage, SQLite,
+  runtime backend selection or Desktop.
+- Evidence: isolated MinIO bucket-versioning/cross-client matrix passes `15/15`;
+  all storage tests pass `130` with `87` environment-gated skips; strict storage
+  Mypy passes `49` source files; changed-scope Ruff and `git diff --check` pass.
+
+#### Closeout
+
+- Formal review targeted integrated object adapter implementation `ce22ae8d`;
+  Artifact lifecycle, Artifact authority and Compose/MinIO dependencies are now
+  all `Done`.
+- The adapter remains an object-only boundary using direct low-level botocore,
+  namespace-private keys, conditional put, verified head/read and exact-version
+  deletion. It does not add PostgreSQL metadata, lifecycle orchestration,
+  Worker/API wiring, signed delivery, Effect linkage, SQLite or Runtime selection.
+- Existing evidence is accepted: isolated real-MinIO `15/15`, storage `130` with
+  `87` skips, strict Mypy over `49` files, Ruff and `git diff --check`; current-HEAD
+  adapter tests pass `14/14` with the MinIO-gated test skipped. No new Compose run
+  or production edit was needed for this closeout.
+- Closing this card records only the immutable object adapter. Artifact payload
+  authority, Effect linkage, read composition and Runtime retain separate gates.
+
+### CLOUD-ART-OBJ-CON-01 - Artifact Object And Metadata Authority Contract
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-art-obj-con-01`
+- Depends on: `CLOUD-AGG-FENCE-CON-01` and the reviewed
+  `CLOUD-COMPOSE-INFRA-01` MinIO dependency baseline
+- Owned paths: `docs/ADR-017_Artifact对象存储与元数据权威边界.md`,
+  `docs/Zebra Embedded 生产级目标架构.md`,
+  `docs/CLOUD_Worker_Aggregate_Fencing_路径盘点_v1.0.md`,
+  `docs/Zebra Embedded与Trench实施任务拆解_v1.0.md`, `PROGRESS.md`,
+  `task_plan.md`, `findings.md`, and `WORKLOG.md`
+- Goal: freeze the provider-neutral authority, identity, lifecycle, compensation,
+  fencing and reconciliation contract before implementing shared Artifact payloads.
+- Acceptance: the ADR distinguishes PostgreSQL metadata, object bytes,
+  `artifact://` identity, temporary access URLs and opaque external references;
+  defines staged/finalized/pruning/pruned recovery and typed idempotency conflicts;
+  and links the dependency DAG without selecting an SDK, provider, key encoding,
+  API route, migration version or runtime profile.
+- Evidence: ADR-017 is the single cloud payload contract source and is linked from
+  the production architecture, aggregate inventory and Trench task breakdown.
+  Markdown links, `git diff --check`, terminology and scoped file-size checks pass;
+  no implementation dependency, migration or runtime profile was selected.
+
+#### Closeout
+
+- Formal review targeted integrated ADR-017 contract commit `486fd884`; aggregate
+  fencing and the reviewed Compose/MinIO dependency baseline are both `Done`.
+- ADR-017 remains the single provider-neutral Artifact payload authority: it
+  separates PostgreSQL metadata, object bytes, stable `artifact://` identity,
+  temporary access URLs and opaque external references, and freezes lifecycle,
+  compensation, fencing and reconciliation without choosing an SDK or provider.
+- Existing Markdown link, terminology, scoped line-limit and `git diff --check`
+  evidence is accepted. No implementation dependency, migration, Compose service,
+  API route, Runtime, Desktop or production edit was added by this closeout.
+- Closing this card unlocks only the already planned Artifact lifecycle contract;
+  payload adapters, object SDK choice, Effect linkage, Artifact reads and Runtime
+  selection retain separate gates.
+
+### CLOUD-EFFECT-PAYLOAD-ATOMIC-01 - Effect Payload And Intent Linkage
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-effect-payload-atomic-01`
+- Depends on: `CLOUD-ART-PAYLOAD-PG-01` integrated at `b87760b6` and
+  `CLOUD-EFFECT-OUTBOX-01` integrated at `69e34c0c`.
+- Owned paths: focused Effect/Artifact aggregate contracts under `agent-core` only if
+  the existing Ports cannot express the transaction, `packages/agent-tools/src/agent_tools/effect_guard.py`,
+  focused PostgreSQL outbox/Artifact transaction coordination under `agent-storage`,
+  narrow Worker composition changes required to remove the current fail-fast guard,
+  isolated PostgreSQL/MinIO runner and effect-payload fault/integration tests, plus
+  this task's governance records
+- Goal: prevent durable Effect intents from referencing unavailable local payloads.
+- Acceptance: another Worker can claim/read; an initially stale fence fails before
+  object I/O with no metadata/Event/outbox, while a mid-flight takeover preserves
+  fenced `STAGED` evidence for management reconcile rather than deleting inline.
+  Schedule failure leaves no untracked orphan and response-loss recovery is safe.
+  The object provider must not be enlisted in a PostgreSQL transaction; reserve and
+  verified object receipt precede one database transaction that commits the intent
+  Event, outbox row and Artifact finalization. Unknown provider or database outcomes
+  remain recoverable without automatic Effect replay or unsafe object deletion.
+- Non-goals: no new SQLite behavior, Desktop, runtime backend selector, signed delivery,
+  broker, generic Unit of Work, multipart upload or production credential policy.
+- Evidence: stable request Artifact identity survives schedule acknowledgement loss;
+  only finalized metadata is readable across Workers. PostgreSQL payload-aware schedule
+  and terminal methods atomically commit Event, Artifact finalize and outbox mutation,
+  while provider I/O remains outside database locks. Unknown managed result URIs fail
+  closed and different payload refs conflict on replay. Real PostgreSQL+MinIO tests pass
+  `53/53`; Tools/Worker/Runtime pass `418/418` with `17` environment-gated skips and
+  Storage passes `131/131` with `121` environment-gated skips. No v10 migration was added.
+
+#### Closeout
+
+- Formal review targeted integrated Effect/Artifact binding implementation
+  `4480ca66`; Artifact v9 payload authority and Effect Outbox dependencies are
+  both `Done`.
+- The transaction keeps provider I/O outside PostgreSQL locks, commits the intent
+  Event, outbox row and Artifact finalization atomically, and preserves staged
+  evidence for unknown outcomes. No new SQLite behavior, broker, generic Unit of
+  Work, v10 migration, signed delivery, Desktop or Runtime selector was added.
+- Existing evidence is accepted: PostgreSQL+MinIO `53/53`, Tools/Worker/Runtime
+  `418/418` with `17` skips, Storage `131/131` with `121` skips; current-HEAD
+  focused Effect/Worker regressions pass `13/13`. No new Compose run or production
+  edit was needed for this closeout.
+- Closing this card records Effect-to-Artifact transaction linkage only. Delivery
+  APIs, read composition, provider selection and Runtime startup retain separate
+  gates.
+
+### CLOUD-SESSION-HISTORY-PG-01 - PostgreSQL Session History Read Model
+
+- Status: `Done`
+- Owner: `Codex`
+- Depends on: PostgreSQL Event/Session Projection and completed
+  `CLOUD-SCOPE-CON-01`; the trusted composition supplies the approved
+  external-to-deployment namespace mapping
+- Branch: `codex/cloud-session-history-pg-01`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/session_history.py`
+  (new), `packages/agent-storage/src/agent_storage/postgres/__init__.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_postgres_session_history.py` (new),
+  `tests/compose/session_history/` (new), focused governance records
+- Goal: provide namespace-scoped consistent history reads without adding a write aggregate.
+- Acceptance: SQLite/PG behavior, pagination, safety filters, stable ordering and
+  allowed-session isolation match; Lease fencing is explicitly not applicable;
+  no `ControlPlaneStores` backend selector is changed.
+
+#### Validation And Handoff
+
+- [x] The adapter and JSONB row decoding remain read-only and under the repository
+  file-size target; no migration, write aggregate, Lease fence, Store selector,
+  Runtime, Desktop, Redis or Mem0 path changed.
+- [x] Local focused coverage passes `13 passed, 3 skipped`: PostgreSQL tests are
+  environment-gated without `ZEBRA_TEST_POSTGRES_DSN`, while SQLite parity and
+  the shared scope contract run locally.
+- [x] Changed-path Ruff, format, strict Mypy for the new adapter/row modules,
+  shell syntax and `git diff --check` pass; release Eval passes `10/10`.
+- [x] Host verification ran through
+  `tests/compose/session_history/run-postgres-tests.sh` and returned
+  `ZEBRA_SESSION_HISTORY_POSTGRES_TEST_RESULT=PASS` with `3 passed`; the
+  Compose container, volume and network were removed by the runner.
+- The first host attempt reached PostgreSQL but stopped in the test fixture
+  because `TOOL_EXECUTION_COMPLETED` lacked required payload fields; the fixture
+  was corrected in the Review follow-up before the passing rerun.
+
+#### Review Boundary
+
+- The adapter consumes the trusted deployment namespace plus
+  `OpaqueAuthorityScope`; it never derives external membership or a business
+  Tenant from the DSN or database.
+- This card does not select PostgreSQL in `ControlPlaneStores`, wire API/Worker
+  startup, or unlock Provider Continuation. Those remain separately gated.
+
+#### Closeout
+
+- Formal review accepted the read-only adapter and fixture correction at
+  `90e27497` and `da53b476`. The adapter keeps every Event/Projection query
+  namespace-scoped and consumes only the trusted `OpaqueAuthorityScope`.
+- Accepted evidence: local focused `13 passed, 3 skipped`, host PostgreSQL
+  Compose `3 passed`, changed Ruff/format/strict Mypy, shell syntax, diff check
+  and Eval `10/10`. `make check` retains only the two inherited file-size
+  violations outside this card.
+- No migration, write aggregate, Lease fence, Store selector, Runtime, Worker,
+  Provider HTTP, Desktop, Redis or Mem0 composition changed. The next adapter
+  still requires an explicit activation.
+
+### CLOUD-CONTEXT-CON-01 - Context Materialization Boundary Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Depends on: `CLOUD-SCOPE-CON-01`, `CLOUD-SESSION-HISTORY-PG-01`,
+  `CLOUD-MEMORY-CON-01`, `CLOUD-MEMORY-PG-01`, `CLOUD-AGG-CTX-PG-01` and
+  `CLOUD-AGG-CTX-ADMIN-PG-01`
+- Branch: `codex/cloud-context-con-01`
+- Worktree: `../zebra-agent-context-contract`
+- Owned paths: `docs/ADR-020_Context_Materialization_Boundary.md`,
+  `packages/agent-core/src/agent_core/domain/context_materialization.py` (new),
+  `packages/agent-core/src/agent_core/ports/context_materialization.py` (new),
+  their Core exports, `tests/agent_core/test_context_materialization.py` (new),
+  and this task's governance records
+- Goal: freeze the provider-neutral read boundary that assembles current
+  Session History, the active Context Capsule and confirmed governed Memory into
+  an ephemeral Context input generation.
+- Acceptance: the request carries trusted opaque namespace scope, Session CAS
+  revision, active-capsule expectation and explicit Memory visibility query;
+  results carry source generations and only confirmed, unexpired, scope-checked
+  Memory entries; rebuild is a deterministic reread; stale expectations,
+  deny-all scope, duplicate Memory revisions and invalid limits fail closed.
+- Explicit non-goals: no PostgreSQL adapter or migration, no Event/Session/
+  Context/Memory write, no `ControlPlaneStores` selector, no Worker/API/runtime
+  wiring, no Desktop, SQLite, Redis or Mem0 path.
+
+#### Validation And Handoff
+
+- [x] Core request/result/Port types enforce opaque Session scope, exact Session
+  revision and active Capsule expectation, bounded ordered History, explicit
+  confirmed-only Memory query, visibility matching, expiry and revisioned
+  generation identity.
+- [x] Focused contract tests pass `3/3`; related scope/Capsule Core tests pass
+  `16/16`; the full Core suite passes `350/350`.
+- [x] Changed-path Ruff, format and strict Mypy pass; release Eval passes
+  `10/10`; `git diff --check` passes. The repository size gate retains only the
+  two inherited violations in the untouched Desktop stylesheet and governed
+  Memory test.
+- [x] ADR-020 records create/continue/recovery, snapshot/expiry/rebuild and the
+  no-write boundary. No PostgreSQL service was needed because this slice owns
+  only the Core contract.
+
+#### Closeout
+
+- Formal review accepted ADR-020 and the Core contract at the current branch
+  commit. The materialization envelope is ephemeral and does not replace Event,
+  Context Capsule or governed Memory authority.
+- Closing this card unlocks only `CLOUD-CONTEXT-PG-01` for explicit activation.
+  Runtime, Worker/API composition, Provider HTTP, Desktop, SQLite, Redis, Mem0
+  and `ControlPlaneStores` remain locked or unselected.
+
+### CLOUD-CONTEXT-PG-01 - PostgreSQL Context Materialization Read Composition
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/cloud-context-pg-01`
+- Worktree: `../zebra-agent-context-pg`
+- Depends on: `CLOUD-CONTEXT-CON-01`, `CLOUD-SESSION-HISTORY-PG-01`,
+  `CLOUD-MEMORY-PG-01`, `CLOUD-AGG-CTX-PG-01` and
+  `CLOUD-AGG-CTX-ADMIN-PG-01`
+- Owned paths: PostgreSQL Context materialization read composition under
+  `packages/agent-storage`, focused PostgreSQL/Compose tests and runner, and
+  the task's governance records
+- Goal: implement one namespace-scoped, read-only PostgreSQL composition for
+  the Context Materialization Port without creating a second Context or Memory
+  authority.
+- Acceptance: one consistent read generation combines Session History, active
+  Capsule and governed Memory; session/capsule/memory revisions are checked
+  before return; rebuild and expiry are read-only; cross-namespace and
+  cross-visibility reads fail closed; host PostgreSQL matrix passes.
+- Non-goals: no runtime selection, Worker startup, provider HTTP,
+  `ControlPlaneStores`, application Compose, Desktop, SQLite, Redis or Mem0.
+
+#### Validation And Handoff
+
+- [x] The adapter uses one `SET TRANSACTION READ ONLY` PostgreSQL transaction
+  for Session revision, safe History, active Capsule and eligible governed
+  Memory; it does not call the three source Stores through separate connections.
+- [x] The Memory row helper preserves existing query ordering and adds a
+  transaction-local authority-entry path with confirmed/expiry filtering.
+- [x] Local adapter tests are environment-gated (`4 skipped` without a DSN);
+  related PostgreSQL/read regressions pass `5 passed, 16 skipped`, full Storage
+  passes `149 passed, 172 skipped`, and full Core passes `350/350`.
+- [x] Changed-path Ruff, format, strict Mypy, shell syntax, diff check and Eval
+  `10/10` pass. The repository size gate retains only the two inherited
+  violations in the untouched Desktop stylesheet and governed Memory test.
+- [x] Host verification passed through
+  `tests/compose/context_materialization/run-postgres-tests.sh`: the isolated
+  PostgreSQL 17.5 matrix reported `4 passed` and
+  `ZEBRA_CONTEXT_MATERIALIZATION_POSTGRES_TEST_RESULT=PASS`; the runner removed
+  its container, network and volume.
+
+#### Review Boundary
+
+- The constructor receives the internal deployment namespace from trusted
+  composition; the request separately carries opaque external scope and
+  business Memory visibility. No namespace or Tenant mapping is derived here.
+- This adapter is read-only and is not selected in `ControlPlaneStores`; Runtime,
+  Worker/API startup, Provider HTTP, Desktop, SQLite, Redis and Mem0 remain out
+  of scope.
+
+#### Closeout
+
+- Formal review accepted implementation commit `b739ab5a` and the follow-up
+  fixture correction `e4caf730`. Local Storage/Core/Eval and changed-path static
+  evidence remain green, and the host PostgreSQL acceptance gate is complete.
+- Closing this card records PostgreSQL Context materialization only. Runtime,
+  Worker/API composition, Provider HTTP, Desktop, SQLite, Redis, Mem0 and
+  `ControlPlaneStores` selection remain separate gates.
+
+### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/cloud-art-read-comp-01`
+- Depends on: `CLOUD-MODEL-TOOL-PG-01` and `CLOUD-ART-PAYLOAD-PG-01`
+- Owned paths: focused read-only Artifact Port/domain under `agent-core`, PostgreSQL
+  Model/Tool and payload read composition under `agent-storage`, cloud API store
+  composition seam, focused API/Storage contract tests, and this task's governance
+  records
+- Goal: compose Artifact reads from Model/Tool projections and payload lifecycle
+  without creating another Artifact authority table.
+- Acceptance: SQLite/PG list, order, redaction and lifecycle semantics match and
+  missing indexes can be rebuilt from Events.
+- Non-goals: no new Artifact authority table or migration, SQLite feature work,
+  Desktop, signed-URL delivery, runtime backend selector, lifecycle mutation or
+  production credential policy.
+- Evidence: PostgreSQL reads use one namespace/Session-scoped `UNION ALL` snapshot
+  over the replayable v6 indexes and reuse the local Artifact composer. Cloud reads
+  require canonical URI, exact Event binding, finalized v9 metadata and the recorded
+  S3 object version; other lifecycle/object outcomes fail closed. Custom cloud readers
+  disable legacy prune. The isolated PostgreSQL 17.5 plus versioned MinIO matrix passes
+  `39/39`; the full repository passes `1943` tests with `145` gated skips and only the
+  inherited Desktop stylesheet size failure. Changed Ruff, Core/Storage Mypy,
+  `git diff --check` and Eval `10/10` pass; full Mypy retains four inherited errors in
+  two untouched files.
+
+#### Closeout
+
+- Formal review targeted integrated read composition implementation `934de7b0`;
+  Model/Tool v6 and Artifact v9 payload dependencies are both `Done`.
+- The read path remains one namespace/Session-scoped snapshot over Event-derived
+  projections plus finalized v9 payload/object evidence. It reuses existing
+  sanitization/access policy and does not create an Artifact authority table,
+  mutation path, signed-URL route, SQLite feature, Desktop or Runtime selector.
+- Existing evidence is accepted: PostgreSQL+versioned MinIO `39/39`, full suite
+  `1943` with `145` skips, Ruff, Core/Storage Mypy, diff and Eval `10/10`; current
+  focused read tests pass `17/17` with one environment-gated skip. No new Compose
+  run or production edit was needed for this closeout.
+- Closing this card records read-only Artifact composition only. Delivery APIs,
+  Session History, complete Control Plane and Runtime/provider selection retain
+  separate gates.
+
+### CLOUD-DELIVERY-TXN-PG-01 - PostgreSQL Delivery Command Transaction
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: cloud Effect dispatch and merged `CLOUD-CONTROL-PLANE-PG-01`
+- Branch: `codex/cloud-delivery-txn-pg-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-delivery-txn-pg-01/zebra-agent`
+- Owned paths: `packages/agent-core/` delivery transaction contract, state model
+  and persistence Ports; `packages/agent-storage/` PostgreSQL delivery transaction
+  adapter, migration and focused tests; `docs/architecture/cloud-delivery-txn-pg-plan.md`
+  and governance records in this registry, `PROGRESS.md`, `task_plan.md` and
+  `WORKLOG.md`
+- Goal: define and persist a cloud-only delivery transaction receipt/audit boundary
+  without conflating API authority with Worker Lease fencing. API/Worker wiring is
+  a later seam and is not part of this card.
+- Acceptance: concurrent same key has one owner, request mismatch conflicts,
+  crash recovery does not repeat external actions, and receipt/audit has no
+  half-state; all focused verification runs against real PostgreSQL. Implemented
+  v15 transaction authority and focused evidence are recorded in the task plan;
+  API/Worker wiring remains a successor seam.
+- Activation: sidebar ChatGPT approved activation after the control-plane
+  fast-forward merge; Owner, branch and isolated worktree above are authoritative.
+- Explicit non-goals: no `apps/api/`, `apps/worker/`, `packages/agent-runtime/`,
+  Provider HTTP, Desktop, local SQLite changes, Redis, Mem0, CopilotKit/Trench,
+  application Compose, runtime selection or production cutover.
+- Closeout: sidebar ChatGPT approved `Review` -> `Done` after Core, delivery
+  transaction Compose PostgreSQL and Control Plane regression evidence.
+
+### CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - Context Lifecycle Fencing Conformance Audit
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-CTX-PG-01`,
+  `CLOUD-AGG-CTX-ADMIN-PG-01`, `CLOUD-CONTEXT-PG-01` and merged
+  `CLOUD-DELIVERY-TXN-PG-01`
+- Branch: `codex/cloud-agg-fence-ctx-lifecycle-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-ctx-lifecycle-con-01/zebra-agent`
+- Owned paths: `docs/AGENT_TASKS.md`,
+  `docs/architecture/cloud-agg-fence-ctx-lifecycle-conformance-01.md`, the
+  existing Zebra Cloud status/gate/closeout governance documents,
+  `PROGRESS.md`, `task_plan.md`, `findings.md` and `WORKLOG.md`. The Context
+  Core contracts, PostgreSQL adapter/read composition, focused tests and
+  related commits are read-only audit targets; they are not writable paths.
+- Goal: build a method-by-method matrix proving namespace, aggregate identity,
+  Worker LeaseFence or administrative CAS, PostgreSQL predicates/locks, stale
+  owner rejection and read-only composition for every Context lifecycle path.
+  Do not add production code, tests, Schema or Migration in this card.
+- Acceptance: every Context mutation is either proven fenced/CAS or has an
+  explicit, path-bounded gap; direct adapter bypass, old token/owner,
+  namespace drift, stale pointer and read-composition writes are accounted for.
+- Evidence: Worker compaction, administrative recovery, fail-closed legacy cloud
+  methods and read composition are now all `PASS`. The former Store semantic gap
+  is closed by `CLOUD-AGG-FENCE-CTX-SEMANTIC-01`; its real PostgreSQL matrix is
+  `18/18` with zero-write regressions for invalid Event type and capsule bindings.
+- Closeout boundary: sidebar ChatGPT explicitly required this governance-only
+  card before activating `CLOUD-AGG-FENCE-01`; sidebar ChatGPT returned
+  `CLOSEOUT-OK` for the successor and allowed this audit's `BLOCK-GAP` to close.
+
+### CLOUD-AGG-FENCE-CTX-SEMANTIC-01 - Administrative Context Event Semantics
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: the `BLOCK-GAP` recorded by
+  `CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01`
+- Branch: `codex/cloud-agg-fence-ctx-semantic-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-ctx-semantic-01/zebra-agent`
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/context_lifecycle.py`,
+  focused `tests/agent_storage/` and `tests/api/` Context recovery tests,
+  `tests/compose/context_lifecycle/`, and this task's governance records. No
+  API/Worker startup, Runtime selector, Provider HTTP, SQLite, Redis, Mem0,
+  CopilotKit/Trench or application Compose.
+- Goal: make the PostgreSQL administrative Context activation boundary reject
+  a non-`CONTEXT_COMPACTED` Event and require recovery payload identity to bind
+  to the requested `capsule_id`, without changing the existing HTTP contract or
+  adding a migration.
+- Acceptance: wrong Event type, missing/wrong capsule binding, wrong namespace,
+  stale stream revision and stale active pointer all produce zero writes;
+  correct recovery remains atomic and the real PostgreSQL focused matrix passes.
+- Evidence: the Store guard and three zero-write regression cases are complete;
+  `tests/compose/context_lifecycle/run-postgres-tests.sh` passes `18/18` on
+  PostgreSQL `17.5-alpine3.21`. Changed-file Ruff, strict Mypy, `bash -n`,
+  Compose config and `git diff --check` pass. Sidebar ChatGPT approved closeout;
+  no migration or runtime composition changed.
+- Closeout: sidebar ChatGPT returned `CLOSEOUT-OK`, approved `Review -> Done`,
+  allowed the parent Context audit's `BLOCK-GAP` to close, and explicitly kept
+  `CLOUD-AGG-FENCE-01` `Locked` because other aggregate cards remain pending.
+
+### CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01 - Handoff And Dispatch Mutation Authority Conformance Audit
+
+- Status: `Done`
+- Owner: `governance/planning`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01`,
+  `CLOUD-AGG-HANDOFF-CON-01`, `CLOUD-LEASE-PG-01`, and the accepted Context
+  conformance closeout. This card does not unlock the parent aggregate gate.
+- Branch: `codex/cloud-agg-fence-handoff-dispatch-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-handoff-dispatch-con-01/zebra-agent`
+- Base: `zebra-cloud-trench@765ede43`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`, and
+  `docs/CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01.md`
+- Read-only audit targets: Handoff/dispatch Core contracts and Ports,
+  `packages/agent-context/src/agent_context/session_handoff.py`, all matching
+  PostgreSQL Handoff/dispatch/lease/Event/delivery-audit adapters and migrations,
+  Worker Handoff/claim/finalization seams, focused Handoff/dispatch/delivery
+  tests and existing PostgreSQL Compose runners, plus the `CLOUD-AGG-HANDOFF-PG-01`
+  and delivery-audit closeout evidence.
+- Goal: prove that every Handoff and durable dispatch mutation carries the
+  canonical `WorkerMutationAuthority`/`LeaseFence`, binds Session/Task/Handoff/
+  destination/namespace identity at the persistence boundary, rejects stale or
+  cross-namespace authority before writes, and publishes work only inside the
+  same PostgreSQL transaction as its durable authority record.
+- Acceptance: the audit records an HD-01..HD-12 method matrix, exact existing
+  PostgreSQL commands and row-count assertions, and one of `PASS` or
+  `BLOCK-GAP`. Missing enforcement or real evidence is a blocker; no production
+  successor is activated automatically. A `PASS` moves this audit to `Review`
+  for separate sidebar closeout; a `BLOCK-GAP` may remain in `Review` for that
+  closeout but cannot move to `Done`, with only the explicitly scoped,
+  separately locked successors recorded below.
+- Audit result: `PASS`. The initial sidebar ChatGPT review returned `CLOSEOUT-OK`
+  for `Planning -> Review` with `BLOCK-GAP`; AUTH-01, DISPATCH-01 and their
+  PostgreSQL runners subsequently closed the recorded gaps. Neither successor
+  unlocks the parent gate or selects a runtime profile.
+- Required follow-up cards: `CLOUD-AGG-FENCE-HANDOFF-AUTH-01` and
+  `CLOUD-AGG-FENCE-DISPATCH-01` are both `Done`; the parent gate remains `Locked`.
+- Explicit non-goals: no changes to `packages/agent-core/`,
+  `packages/agent-context/`, `packages/agent-storage/`, `apps/worker/`,
+  `apps/api/`, `tests/`, `evals/`, migrations, Compose runners, Runtime,
+  Provider HTTP, SQLite, Redis, Mem0, CopilotKit/Trench, application Docker or
+  the dirty root `AGENTS.md`.
+- Validation boundary: the successor runners record PostgreSQL
+  `17.5-alpine3.21`, exact commands, sentinels/counts, cleanup and
+  `git diff --check`; no API or Worker process is started by this governance card.
+
+### CLOUD-AGG-FENCE-HANDOFF-AUTH-01 - Handoff Reserve And Abort Authority
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Done` closeout,
+  `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01` and a new sidebar
+  activation decision. Sidebar returned `IMPLEMENTATION-ACTIVATE-OK` and
+  authorized `Locked -> In Progress` on the isolated branch below. Independent
+  sidebar implementation Review returned `CLOSEOUT-OK` and approved
+  `Review -> Done`; the parent gate remains locked. The dispatch successor was
+  locked at this closeout and is now separately `Done`.
+- Branch: `codex/cloud-agg-fence-handoff-auth-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-handoff-auth-01/zebra-agent`
+- Base: `zebra-cloud-trench@a765e068`
+- Implementation commit: `6a04f1cd03aea96d9d04ba702832d1fffb1292e1`
+- Owned paths after activation: `packages/agent-core/src/agent_core/ports/`
+  Handoff authority seam; `packages/agent-storage/src/agent_storage/postgres/`
+  Handoff reservation, commit precondition and abort seams; focused Handoff
+  PostgreSQL tests; `tests/compose/session_handoff_authority/`;
+  `docs/CLOUD-AGG-FENCE-HANDOFF-AUTH-01.md`; and governance records. Existing
+  local SQLite behavior, dispatch semantics and unrelated aggregate adapters are
+  out of scope.
+- Goal: bind reserve and abort to the canonical WorkerMutationAuthority or an
+  explicitly approved AdministrativeMutationCAS, current source LeaseFence,
+  source stream/workspace/request identity and zero-write CAS semantics.
+- Acceptance: wrong namespace, owner, epoch, token, expiry, stream, workspace,
+  request identity and stale CAS all fail before writes; authorized retry is
+  idempotent; real PostgreSQL evidence records row counts and cleanup.
+- Evidence: the cloud-only `SessionHandoffAbortPort` carries
+  `AdministrativeMutationCAS`; PostgreSQL reserve rechecks and locks Lease,
+  stream and Workspace facts before insert; abort locks the operation and the
+  same source facts before a status CAS. The dedicated PostgreSQL `17.5`
+  runner passes `15/15` with marker
+  `ZEBRA_HANDOFF_AUTH_POSTGRES_TEST_RESULT=PASS`; containers, volume and network
+  are removed by the runner. Focused deterministic tests pass `14` with `15`
+  PostgreSQL-gated skips, SQLite/Core regressions pass `29` with `23` skips,
+  changed Ruff and strict Mypy pass, and no migration changed.
+- Closeout: independent sidebar ChatGPT returned `CLOSEOUT-OK` for
+  `Review -> Done` with `implementation_authorized: false`. The parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Explicit non-goals: no dispatch Port redesign, Runtime/API/Worker profile
+  selection, SQLite, Redis, Mem0, Provider HTTP, CopilotKit/Trench or parent-gate
+  unlock.
+
+### CLOUD-AGG-FENCE-DISPATCH-01 - Dispatch Stream Pointer And Replay Fencing
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-AGG-FENCE-HANDOFF-DISPATCH-CON-01` `Done` closeout,
+  `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-HANDOFF-PG-01`, accepted `Done`
+  `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`, and a new sidebar activation decision.
+- Branch: `codex/cloud-agg-fence-dispatch-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-dispatch-01/zebra-agent`
+- Base: `zebra-cloud-trench@4a10883a`
+- Activation: sidebar ChatGPT returned `IMPLEMENTATION-ACTIVATE-OK` and
+  approved `Locked -> In Progress`; only this successor is active. The parent
+  gate remains `Locked`.
+- Owned paths after activation: `packages/agent-core/src/agent_core/handoff/`
+  dispatch files and the minimum Handoff types needed for operation/revision/
+  token contracts; `packages/agent-storage/src/agent_storage/postgres/`
+  dispatch files and only the existing claim/ACK adapter seam; focused dispatch
+  tests under `packages/agent-storage/tests/` and `tests/`; the dedicated
+  `tests/compose/session_handoff_dispatch/` runner; and governance records.
+  Handoff reservation authority remains owned by
+  `CLOUD-AGG-FENCE-HANDOFF-AUTH-01`.
+- Goal: bind claim and ACK to Handoff operation identity, expected stream and
+  active-pointer revision, full LeaseFence and claim token, with replay-safe and
+  namespace-safe zero-write behavior.
+- Acceptance: two-worker race has one winner; stale fence/token/expiry/stream/
+  pointer and cross-namespace attempts write zero rows; authorized replay returns
+  an equivalent result; PostgreSQL evidence includes exact commands and counts.
+- Current implementation evidence: the cloud receipt/Port and PostgreSQL adapter
+  now bind operation identity, child stream/pointer revisions and the canonical
+  WorkerMutationAuthority without migration/DDL or SQLite changes. The dedicated
+  PostgreSQL 17.5 runner passes `14/14` with explicit
+  `ZEBRA_HANDOFF_DISPATCH_POSTGRES_TEST_RESULT=PASS`; local scoped Review is
+  `REVIEW-OK` and post-merge closeout is `CLOSEOUT-OK`. Implementation commit:
+  `6c1ceffa`; governance closeout `48bb942a` was fast-forward merged to
+  `zebra-cloud-trench`. The parent gate remains `Locked`.
+- Explicit non-goals: no reserve/abort authority redesign, migration/DDL,
+  Runtime/API/Worker profile selection, application Compose, SQLite, Redis,
+  Mem0, Provider HTTP, CopilotKit/Trench, production rollout or parent-gate
+  unlock.
+
+### CLOUD-AGG-FENCE-MODEL-TOOL-01 - Model/Tool Projection Revision Fencing
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-MODEL-TOOL-PG-01` `Done`, `CLOUD-AGG-FENCE-CON-01`
+  `Done`, and the maintainer's request to continue the cloud mainline.
+- Branch: `codex/cloud-agg-fence-model-tool-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-model-tool-01/zebra-agent`
+- Base: `zebra-cloud-trench@d622c720`
+- Activation: the maintainer explicitly requested continuation after
+  `CLOUD-AGG-FENCE-DISPATCH-01`; this is the only active successor. The parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/model_tool_projections.py`,
+  `tests/agent_storage/test_postgres_model_tool_projections.py`,
+  `tests/compose/model_tool/`, `docs/CLOUD-AGG-FENCE-MODEL-TOOL-01.md`, and
+  the governance records listed in this registry, `PROGRESS.md`, `task_plan.md`
+  and `docs/Zebra Cloud 主线当前状态与后续工作.md`.
+- Goal: make every Worker Model/Tool projection mutation bind the canonical
+  Event sequence to `WorkerMutationAuthority.expected_stream_revision` inside
+  its PostgreSQL transaction, while keeping replay management-only and
+  Event-derived.
+- Acceptance: stale or mismatched expected stream revision, namespace, session
+  or LeaseFence rejects before projection writes; valid same-Event replay stays
+  idempotent; a conflicting Event identity remains fail-closed; stream drift,
+  rollback and cross-namespace cases have zero-write evidence on PostgreSQL
+  17.5; a repository-owned runner emits a PASS sentinel and cleans resources.
+- Evidence: implementation commit `31347989` binds Event sequence to
+  `expected_stream_revision + 1` and the locked current stream inside the
+  PostgreSQL transaction. The dedicated runner passes `8/8` with
+  `ZEBRA_MODEL_TOOL_POSTGRES_TEST_RESULT=PASS`; the existing Control Plane
+  runner passes `11/11` with `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`.
+  Focused tests cover wrong revision, namespace/session, stale fence, stream
+  drift, conflicting Event identity, idempotent replay and rollback; resources
+  are cleaned by both runners. Local static checks pass.
+- Closeout: local Review is `REVIEW-OK`; this card is `Done` and the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Explicit non-goals: no migration/DDL, Event authority redesign, SQLite
+  behavior, API/Worker profile selection, Runtime, application Compose, Redis,
+  Mem0, Provider HTTP, CopilotKit/Trench, Artifact changes or parent-gate
+  unlock.
+
+### CLOUD-AGG-FENCE-PROVIDER-01 - Provider Continuation Lifecycle Fencing Conformance
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-PROVIDER-CONT-PG-01` `Done`,
+  `CLOUD-AGG-FENCE-CON-01` `Done`, and merged
+  `CLOUD-AGG-FENCE-MODEL-TOOL-01` evidence.
+- Branch: `codex/cloud-agg-fence-provider-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-provider-01/zebra-agent`
+- Base: `zebra-cloud-trench@5694032c`
+- Activation: the maintainer requested continuation after the Model/Tool
+  conformance closeout. This is the only active successor; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `packages/agent-storage/src/agent_storage/postgres/provider_continuations.py`,
+  `tests/agent_storage/test_postgres_provider_continuations.py`,
+  `tests/compose/provider_continuation/`,
+  `docs/CLOUD-AGG-FENCE-PROVIDER-01.md`, and the governance records listed in
+  this registry, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`.
+- Goal: make every Worker Provider Continuation mutation, including soft
+  delete, bind the canonical `WorkerMutationAuthority.expected_stream_revision`
+  to the locked Session stream in the same PostgreSQL transaction while
+  preserving the existing v13 payload/Event contract.
+- Acceptance: stale or mismatched stream revision, namespace/session or
+  LeaseFence rejects before payload mutation; valid deletion remains
+  idempotent; rollback and zero-write evidence run against PostgreSQL 17.5;
+  the repository-owned runner emits a PASS sentinel and cleans all resources.
+- Evidence: `delete_for_worker` now reuses `lock_expected_stream` after the
+  current LeaseFence check, so stale stream authorities fail before the
+  continuation row is changed. Focused PostgreSQL evidence passes `4/4` with
+  `ZEBRA_PROVIDER_CONTINUATION_POSTGRES_TEST_RESULT=PASS`; the matrix covers
+  stale stream zero-write, transaction rollback, namespace scope, TTL/SHA,
+  soft-delete and idempotent replay. The runner now installs the
+  `agent-storage` package explicitly, fixing its prior psycopg collection gap,
+  and removes its container, volume and network.
+- Closeout: implementation commit `816a1ae0`; changed Ruff, strict Mypy,
+  format, shell syntax, Compose config, local provider regressions and
+  `git diff --check` pass. This card is `Done`; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Explicit non-goals: no migration/DDL, Provider HTTP, SQLite behavior,
+  Runtime/API/Worker profile selection, application Compose, Redis, Mem0,
+  Artifact or Delivery changes, and no parent-gate unlock.
+
+### CLOUD-AGG-FENCE-ARTIFACT-01 - Artifact Lifecycle Fencing Conformance Evidence
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-ART-PAYLOAD-PG-01` `Done`,
+  `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` `Done`, `CLOUD-AGG-FENCE-CON-01` `Done`,
+  and merged `CLOUD-AGG-FENCE-PROVIDER-01` evidence.
+- Branch: `codex/cloud-agg-fence-artifact-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-artifact-01/zebra-agent`
+- Base: `zebra-cloud-trench@da21d324`
+- Activation: the maintainer requested continuation after Provider fencing
+  closeout. This is the only active successor; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `tests/compose/artifact_payload/`,
+  `docs/CLOUD-AGG-FENCE-ARTIFACT-01.md`, and the governance records listed in
+  this registry, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`. Existing Artifact Core,
+  PostgreSQL adapter and focused tests are read-only audit targets.
+- Goal: provide reproducible PostgreSQL 17.5 evidence for every Worker Artifact
+  lifecycle transition's namespace, LeaseFence, expected stream revision,
+  lifecycle CAS, idempotency and rollback boundary without changing v9 schema
+  or adapter behavior.
+- Acceptance: the runner collects the existing focused Artifact matrix with
+  `psycopg` available, emits a PASS sentinel and removes all resources; the
+  audit matrix covers reserve, object receipt, finalize/Event binding,
+  compensation, prune, stale authority, replay and management separation.
+- Evidence: `tests/compose/artifact_payload/run-postgres-tests.sh` uses
+  `postgres:17.5-alpine3.21`, installs the `agent-storage` package for
+  reproducible psycopg collection, passes `13/13` with
+  `ZEBRA_ARTIFACT_PAYLOAD_POSTGRES_TEST_RESULT=PASS`, and removes its
+  container, volume and network. The focused matrix covers stale LeaseFence and
+  stream authority, namespace/session isolation, concurrent reserve, lifecycle
+  revision CAS, canonical Event binding, compensation, exact-version prune,
+  idempotent replay, rollback and management CAS/audit separation.
+- Closeout: shell syntax, Compose config and `git diff --check` pass. No
+  adapter, migration or local behavior changed. This card is `Done`; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Explicit non-goals: no Artifact adapter redesign, migration/DDL, object-store
+  provider change, SQLite behavior, Runtime/API/Worker profile selection,
+  application Compose, Redis, Mem0, Delivery changes or parent-gate unlock.
+
+### CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01 - Effect-to-Artifact Transaction Conformance Evidence
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-EFFECT-PAYLOAD-ATOMIC-01` `Done`,
+  `CLOUD-ART-PAYLOAD-PG-01` `Done`, `CLOUD-AGG-FENCE-CON-01` `Done`, and merged
+  `CLOUD-AGG-FENCE-ARTIFACT-01` evidence.
+- Branch: `codex/cloud-agg-fence-effect-payload-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-effect-payload-01/zebra-agent`
+- Base: `zebra-cloud-trench@d44965c9`
+- Activation: the maintainer requested continuation after Artifact conformance
+  closeout. This is the only active successor; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `tests/compose/effect_payload/`,
+  `docs/CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01.md`, and the governance records listed
+  in this registry, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`. Existing Effect/Artifact
+  adapter, Core contracts and focused tests are read-only audit targets.
+- Goal: provide reproducible PostgreSQL evidence that payload-aware Effect
+  schedule and terminal transitions bind Worker authority and atomically commit
+  Event, Artifact lifecycle and outbox state, while unknown outcomes remain
+  recoverable and do not replay external effects.
+- Acceptance: the runner collects the focused matrix with `psycopg` available,
+  emits a PASS sentinel and cleans resources; the audit covers stale fence,
+  takeover, atomic finalize, terminal success/uncertain, replay, conflicting
+  identity, rollback and staged recovery.
+- Evidence: `tests/compose/effect_payload/run-postgres-tests.sh` uses
+  `postgres:17.5-alpine3.21`, installs the `agent-storage` package for
+  reproducible psycopg collection, passes `7/7` with
+  `ZEBRA_EFFECT_PAYLOAD_POSTGRES_TEST_RESULT=PASS`, and removes its container,
+  volume and network. The focused matrix covers stale fence before any state,
+  atomic intent/Event/Artifact/outbox commit, lost-response replay, conflicting
+  identity, terminal success/uncertain transitions and takeover reconciliation.
+- Closeout: shell syntax, Compose config and `git diff --check` pass. No
+  adapter, migration or local behavior changed. This card is `Done`; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Explicit non-goals: no Effect/Artifact adapter redesign, migration/DDL,
+  object provider, SQLite behavior, Runtime/API/Worker profile selection,
+  application Compose, Redis, Mem0, Provider HTTP, Delivery changes or
+  parent-gate unlock.
+
+### CLOUD-AGG-FENCE-DELIVERY-01 - Delivery Transaction Boundary Conformance Evidence
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-DELIVERY-TXN-PG-01` `Done`,
+  `CLOUD-AGG-FENCE-CON-01` `Done`, and merged
+  `CLOUD-AGG-FENCE-EFFECT-PAYLOAD-01` evidence.
+- Branch: `codex/cloud-agg-fence-delivery-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-delivery-01/zebra-agent`
+- Base: `zebra-cloud-trench@29d8fd1b`
+- Activation: the maintainer requested continuation after Effect/Artifact
+  conformance closeout. This is the only active successor; the parent
+  `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Owned paths: `tests/compose/delivery_transaction/`,
+  `docs/CLOUD-AGG-FENCE-DELIVERY-01.md`, and the governance records listed in
+  this registry, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`. Delivery Core/PostgreSQL
+  implementation and focused tests are read-only audit targets.
+- Goal: prove the API command delivery transaction's namespace, idempotency,
+  claim-token, receipt/audit atomicity and crash/replay semantics, while making
+  its runner reproducible in a clean workspace environment.
+- Acceptance: the runner installs `agent-storage` for psycopg collection,
+  emits a PASS sentinel and cleans resources; the audit explicitly records that
+  Delivery uses command claim/receipt authority, not Worker Lease fencing, and
+  therefore does not unlock the Worker aggregate parent.
+- Evidence: the corrected `tests/compose/delivery_transaction/run-postgres-tests.sh`
+  installs the `agent-storage` workspace package, runs PostgreSQL
+  `17.5-alpine3.21`, passes `12/12` with
+  `ZEBRA_DELIVERY_TRANSACTION_POSTGRES_TEST_RESULT=PASS`, and removes its
+  container, volume and network. The matrix covers concurrent one-owner claim,
+  hash conflict, claim-token fencing, receipt/audit atomic rollback, replay and
+  UNKNOWN/FAILED non-replay.
+- Closeout: shell syntax, Compose config and `git diff --check` pass. No
+  Delivery adapter, migration or runtime wiring changed. This card is `Done`;
+  the parent `CLOUD-AGG-FENCE-01` remains `Locked`.
+- Explicit non-goals: no Delivery adapter redesign, API/Worker wiring, external
+  action execution, migration/DDL, SQLite behavior, Runtime/profile selection,
+  application Compose, Redis, Mem0, Provider HTTP or parent-gate unlock.
+
+### CLOUD-AGG-FENCE-REVIEW-01 - Aggregate Fencing Gate Evidence Review
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: all path-bounded aggregate conformance cards marked `Done`,
+  including Context, Handoff/Dispatch, Workspace/Task, Model/Tool, Provider,
+  Artifact, Effect/Artifact and Delivery boundary evidence.
+- Branch: `codex/cloud-agg-fence-review-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-review-01/zebra-agent`
+- Base: `zebra-cloud-trench@7a13f7a3`
+- Activation: the maintainer requested continuation after the Delivery
+  conformance closeout. This governance-only review is the only active slice;
+  no Runtime/API/Worker profile or application Compose activation is implied.
+- Owned paths: `docs/CLOUD-AGG-FENCE-REVIEW-01.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md` and
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`. All production adapters,
+  migrations, tests and runners are read-only evidence.
+- Goal: reconcile every aggregate fencing matrix, migration/composition
+  boundary and non-Worker Delivery distinction, then move the parent
+  `CLOUD-AGG-FENCE-01` to `Review` only if its evidence is complete. Review does
+  not authorize runtime selection or production cutover.
+- Acceptance: the review records exact runner counts and PASS sentinels,
+  confirms zero-write/stale-fence/rollback coverage and names any remaining
+  gates. Parent status must remain `Locked` if any evidence or ownership is
+  incomplete; no implementation paths may be changed by this card.
+- Explicit non-goals: no production code, migration/DDL, SQLite, Runtime,
+  API/Worker wiring, Redis, Mem0, Provider HTTP, application Compose or
+  production rollout.
+- Evidence: the review records Context `18/18`, Handoff auth/dispatch `15/15`
+  and `14/14`, Workspace/Task `36/36`, Model/Tool `8/8`, Provider `4/4`,
+  Artifact `13/13`, Effect/Artifact `7/7` and Delivery `12/12`; all PASS
+  sentinels and cleanup results are present. Delivery is explicitly a command
+  lane, not Worker Lease fencing.
+- Closeout: review result `PASS`; parent `CLOUD-AGG-FENCE-01` moved
+  `Locked -> Review`. No implementation or runtime activation is authorized.
+
+### CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01 - Workspace / Task Mutation Fencing Conformance Audit
+
+- Status: `Done`
+- Owner: `governance/planning`
+- Depends on: `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-WORKSPACE-PG-01`,
+  `CLOUD-AGG-TASK-PG-01` and the accepted Handoff aggregate transaction.
+- Branch: `codex/cloud-agg-fence-workspace-task-con-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-workspace-task-con-01/zebra-agent`
+- Base: `zebra-cloud-trench@29a79bf7`
+- Owned paths: `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md` and
+  `docs/CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01.md` only.
+- Read-only audit targets: Workspace projection/Session/Event PostgreSQL adapters,
+  Task/Segment index transactions, Handoff commit composition, their Core Ports,
+  focused tests and recorded PostgreSQL evidence. No production code, migration,
+  test or Compose runner is writable in this card.
+- Goal: prove namespace, WorkerMutationAuthority/LeaseFence, expected revision,
+  Task identity, transaction atomicity, stale rejection and zero-write behavior for
+  Workspace and Task paths, while separating Event-derived replay/management writes.
+- Audit result: `PASS`. Workspace Worker commit and Handoff-composed rollover are
+  locally fenced, the direct Task authority gap is implemented by
+  `CLOUD-AGG-FENCE-TASK-01` at `6a31929a`, and the repository-owned runner at
+  `49a8c026` passes `36/36` on PostgreSQL `17.5-alpine3.21` with cleanup.
+- Follow-ups: `CLOUD-AGG-FENCE-TASK-01` and
+  `CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01` are `Done`; neither successor
+  unlocks the parent gate.
+- Explicit non-goals: no API/Worker selector, Runtime, application Compose, Redis,
+  Mem0, Provider HTTP, CopilotKit/Trench, SQLite feature work or parent-gate unlock.
+
+### CLOUD-AGG-FENCE-TASK-01 - Fenced PostgreSQL Task Rollover Authority
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` `Review` with `BLOCK-GAP`,
+  `CLOUD-AGG-FENCE-CON-01`, `CLOUD-AGG-TASK-PG-01`, `CLOUD-AGG-WORKSPACE-PG-01`
+  and the accepted Handoff aggregate transaction.
+- Branch: `codex/cloud-agg-fence-task-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-task-01/zebra-agent`
+- Base: `zebra-cloud-trench@5969533d`
+- Implementation commit: `6a31929a`
+- Owned paths: the Core `FencedAgentTaskStorePort`, PostgreSQL Task facade and
+  transaction helper, focused `tests/agent_storage/test_postgres_agent_tasks.py`,
+  exports and this task's governance records. No migration or Compose runner is
+  owned by this card.
+- Goal: make Worker-owned direct Task rollover require the canonical
+  `WorkerMutationAuthority`, current source LeaseFence, namespace, source Session
+  and expected stream revision, while preserving SQLite and the existing Handoff
+  transaction helper.
+- Acceptance: legacy cloud direct rollover fails closed without authority; valid
+  Worker rollover commits one Segment under the current fence; stale fence,
+  namespace, Session and stream revision attempts produce zero writes; concurrent
+  rollover still has one winner; Handoff/dispatch regressions remain green.
+- Current evidence: Task/PostgreSQL focused matrix passes `23/23`; Handoff/dispatch
+  regression matrix passes `24/24`; changed Ruff, strict Mypy over the three changed
+  source modules, `uv lock --check`, compilation and `git diff --check` pass. The
+  tests use an existing PostgreSQL 17.5 Compose service ad hoc; the repository-owned
+  Workspace/Task evidence runner is closed separately at `49a8c026` with `36/36`.
+- Review state: local `REVIEW-OK` completed the scoped implementation review and
+  moved this card to `Done`. No Runtime/API/Worker selector, application Compose,
+  Redis, Mem0, SQLite feature work or parent-gate unlock is implied.
+
+### CLOUD-AGG-FENCE-WORKSPACE-TASK-EVIDENCE-01 - Reproducible Workspace/Task PostgreSQL Evidence
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: `CLOUD-AGG-FENCE-WORKSPACE-TASK-CON-01` `Done` with `PASS`,
+  `CLOUD-AGG-FENCE-TASK-01` `Done`, `CLOUD-AGG-WORKSPACE-PG-01`,
+  `CLOUD-AGG-TASK-PG-01` and `CLOUD-AGG-FENCE-CON-01`.
+- Branch: `codex/cloud-agg-fence-workspace-task-evidence-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-workspace-task-evidence-01/zebra-agent`
+- Base: `zebra-cloud-trench@026995cf`
+- Owned paths: `tests/compose/workspace_task/compose.yml`,
+  `tests/compose/workspace_task/run-postgres-tests.sh`, and this card's governance
+  records. Existing migrations, adapters and application Compose are read-only.
+- Goal: make the Workspace/Task PostgreSQL 17.5 focused evidence reproducible from
+  the current checkout, with an explicit Compose lifecycle, exact test targets,
+  pass/fail sentinel and deterministic resource cleanup.
+- Acceptance: the runner validates Compose config, starts a pinned PostgreSQL
+  `17.5-alpine3.21` service, runs the Workspace, Task and migration matrices with
+  the repository's `uv` environment, emits
+  `ZEBRA_WORKSPACE_TASK_POSTGRES_TEST_RESULT=PASS` only on success, and removes
+  its container, volume and network on exit. No migration, Runtime/API/Worker
+  selector, application Compose or parent-gate change is allowed.
+- Evidence: from the repository root, `tests/compose/workspace_task/run-postgres-tests.sh`
+  at `49a8c026` started PostgreSQL `17.5-alpine3.21`, ran the three focused files,
+  passed `36/36`, emitted `ZEBRA_WORKSPACE_TASK_POSTGRES_TEST_RESULT=PASS`, and
+  removed its container, volume and network. Local `REVIEW-OK` closed the card as
+  `Done`. The runner sets `PYTHONPATH` only for the existing `agent-context` source
+  package required by the Worker test import; no production dependency or runtime
+  composition changed.
+
+### CLOUD-CONTROL-PLANE-PG-01 - Complete PostgreSQL Store Composition
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: all aggregate PostgreSQL adapter and read-composition cards above
+- Branch: `codex/cloud-control-plane-pg-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-control-plane-pg-01/zebra-agent`
+- Owned paths: `packages/agent-core/` control-plane command/query contracts and
+  related Ports; `packages/agent-storage/` PostgreSQL composition, adapters,
+  migrations and focused tests; `docs/architecture/cloud-control-plane-pg-plan.md`,
+  `docs/Zebra Cloud 主线当前状态与后续工作.md`; governance records in this
+  registry, `PROGRESS.md`, `task_plan.md` and `WORKLOG.md`
+- Goal: add a cloud-only `CloudControlPlane` contract and
+  `PostgresControlPlaneStores` composition while retaining the existing local
+  `ControlPlaneStores` contract unchanged.
+- Acceptance: the cloud contract expresses every completed PostgreSQL adapter
+  without local-only write Ports, required dependencies fail before a bundle is
+  returned, migration checksums remain immutable, and a real PostgreSQL Compose
+  matrix proves namespace isolation, projection reads and restore-safe
+  composition.
+- Activation: sidebar ChatGPT approved activation after every aggregate adapter
+  and read-composition dependency reached `Done`; Owner `codex`, branch and
+  isolated worktree above are authoritative for this slice.
+- Explicit non-goals: no `apps/api/`, `apps/worker/`, `packages/agent-runtime/`,
+  Provider HTTP, Desktop, local SQLite changes, Redis, Mem0, application Compose,
+  runtime backend selection or production cutover. Those remain separate gates.
+- Validation: the focused PostgreSQL Compose runner reports `11 passed` and
+  `ZEBRA_CONTROL_PLANE_POSTGRES_TEST_RESULT=PASS`; changed-path Ruff/Mypy,
+  `git diff --check` and release Eval `10/10` pass. Full `make test` reports
+  `2037 passed, 217 skipped, 1` known inherited file-size failure; no new size
+  violation was introduced.
+- Implementation commit: `b84d464d` on the isolated worktree above.
+- Closeout: sidebar ChatGPT approved Option B implementation and authorized this
+  card to move from `In Progress` to `Done`. API/Worker profile selection,
+  Delivery transaction and aggregate fencing remain independent future gates.
+
+### CLOUD-AGG-FENCE-01 - Full Worker Aggregate Fencing Gate
+
+- Status: `Done`
+- Owner: `codex`
+- Depends on: PostgreSQL Adapters for every authoritative Worker-owned aggregate,
+  merged `CLOUD-LEASE-01`, and approved `CLOUD-AGG-FENCE-PLAN-01` inventory
+- Branch: `codex/cloud-agg-fence-review-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-agg-fence-review-01/zebra-agent`
+- Owned paths: no production paths were authorized by this governance card; the
+  evidence and governance paths are owned by `CLOUD-AGG-FENCE-REVIEW-01`.
+- Goal: require ContextLifecycle, Handoff/dispatch, Workspace/Task, Model/Tool run,
+  provider continuation/history, Artifact and delivery-audit transactions to
+  validate the current Lease fence in their own PostgreSQL transaction.
+- Acceptance: stale epoch/token/owner tests pass per aggregate on real PostgreSQL;
+  only then may the project claim complete multi-Worker safety.
+- Current child gates: Context, Handoff/Dispatch, Workspace/Task, Model/Tool,
+  Provider, Artifact, Effect/Artifact and Delivery boundary evidence are all
+  `Done` with recorded real PostgreSQL PASS matrices. Delivery is an API
+  command lane and is not counted as Worker Lease fencing.
+- Review result: `PASS`; the maintainer continuation instruction closed the
+  governance gate as `Done`. This closeout authorizes only the separately
+  registered recovery evidence sequence; Runtime/API/Worker profile selection,
+  application Compose, Redis live fan-out and production rollout remain
+  independently gated and out of scope.
 
 Completed phase boards below are retained as task-level audit history. They do
 not define current execution order.
@@ -10597,7 +17048,8 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 
 ### FINOS-HAR-03 - Recoverable Bounded Material Reads
 
-- Status: `Review`
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: PR #169 merged 2026-07-18.
 - Owner: `Codex`
 - Suggested role: `CORE / INTEGRATION`
 - Depends on: `FINOS-MCP-02`
@@ -13590,8 +20042,14 @@ closed when a requested sandbox profile cannot be established or resumed.
 
 ### ARCH-129-ACP-01 - ACP Entry Adapter
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `zebra-cloud-trench`（batch closeout continuation）
+- 实现：`agent_integrations.acp.AcpEntryAdapter`——initialize/resume/cancel/
+  approve/reject 全部经已提交 API 路由面（同 Policy/Tool Gateway/审批/澄清/
+  effect fence），ACP 重连从 durable sequence checkpoint 续播且不重复已
+  完成副作用；协议本地 `AcpResponse` 保证包边界（依赖门禁测试锁定），
+  ACP 类型不进 `agent-core`。提交 `892aaf94`；测试 4/4。
 - Suggested role: `APP / CORE / SECURITY / QA`
 - Depends on: `ARCH-129-RT-01` merged and explicit maintainer activation
 - Branch: `TBD (suggested: codex/arch-129-acp-adapter)`
@@ -13634,8 +20092,13 @@ Tool Gateway, approval, clarification, cancellation, and resume contracts.
 
 ### ARCH-129-CTX-01 - Optional Code Intelligence Adapter
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `zebra-cloud-trench`（batch closeout continuation）
+- 实现：`agent_context.code_intelligence.CodeIntelligenceIndex`——有界词法
+  符号 definitions/references/search，file/range 溯源、文件/字节/结果/行数
+  显式上限与确定性截断；非权威提示索引，不扩权、`agent-core` 零依赖。
+  提交 `892aaf94`；测试 5/5。
 - Suggested role: `CTX / TOOLS / QA`
 - Depends on: `ARCH-129-RT-01` merged and explicit maintainer activation
 - Branch: `TBD (suggested: codex/arch-129-code-intelligence)`
@@ -13916,7 +20379,8 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-SEG-01 - Stable Task And Automatic Internal Execution Segments
 
-- Status: `Review`
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: PR #176 merged 2026-07-19; successor CTX-SEG-02 is `Done`.
 - Owner: `Codex`
 - Suggested role: `ARCHITECTURE / CONTEXT / DESKTOP / QA`
 - Depends on: merged `CTX-HO-01E`, merged `CTX-LC-01`, explicit maintainer decision
@@ -14614,7 +21078,8 @@ cancel, and accessibility contracts.
 
 ### WEB-UX-01 - Trusted Local Read-Only Web Auto Execution
 
-- Status: `Review`
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: PR #178 merged 2026-07-19.
 - Owner: `lukeding`
 - Suggested role: `SECURITY / APP / UI / QA`
 - Depends on: merged `P122-WEB-01`, `P126-WEB-01`, and explicit maintainer approval
@@ -14687,7 +21152,8 @@ side-effecting tools remain fail-closed or approval-gated.
 
 ### SUBAGENT-UX-01 - Model-Native Subagent Delegation
 
-- Status: `Review`
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: PR #177 merged 2026-07-19.
 - Owner: `lukeding`
 - Suggested role: `CORE / RUNTIME / QA`
 - Depends on: explicit maintainer approval
@@ -14800,6 +21266,48 @@ treat caller-supplied hard-budget exhaustion as a recoverable suspension.
 - replaying provider-private continuation or raw tool output across Segments
 - removing explicit caller budgets or repeated-action stopping conditions
 - hard-coded finance, stock, or intent-specific routing heuristics
+
+## Extension Architecture Planning
+
+### EXT-PLAN-01 - Skill, MCP, And Plugin Architecture Upgrade Plan
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `DOC / ARCH / SECURITY / PRODUCT`
+- Depends on: existing EXT-0, Skill and MCP delivery cards; no production code
+- Branch: `codex/ext-plan-01-skill-mcp-plugin-docs`
+- Owned paths: `docs/Skill_MCP_Plugin扩展体系优化升级方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Record a durable, evidence-based upgrade plan for Zebra's Skill, MCP, and
+Plugin extension system. Preserve the existing typed Gateway, deterministic
+Policy, task-scoped authority, durable Event/Artifact, recovery, and local-first
+boundaries while defining the smallest safe path toward standard Skill
+governance, remote MCP, declarative Plugins, Hooks, and a later marketplace.
+
+#### Acceptance
+
+- [x] Current implemented Skill and MCP capabilities are separated from actual
+  gaps; delivered progressive disclosure, task allowlists, Resources, Prompts,
+  Policy, approval, events, and recovery are not planned again.
+- [x] Availability, installation, enablement, task grant, and per-call approval
+  are separate authority states; no earlier state implies a later one.
+- [x] Skill v2, remote MCP/OAuth, declarative Plugin, Hook, Registry,
+  supply-chain, observability, and Eval boundaries have explicit gates.
+- [x] Local-first sequencing is preserved and public marketplace work remains
+  locked behind private-cloud GA and security prerequisites.
+- [x] `PROGRESS.md` records the planning state without activating capability.
+
+#### Explicit Non-Goals
+
+- product-code, configuration, dependency, database, API, CLI, Worker, Desktop,
+  runtime, Policy, or schema changes
+- activating Skill Registry, MCP Marketplace, remote MCP, OAuth, Plugin, Hook,
+  or connector implementation tasks
+- importing another agent runtime's authority or permission semantics without a
+  separate Zebra security review
 
 ## Extension System (EXT) Task Board
 
@@ -15181,8 +21689,14 @@ P127/P132-P138 elicitation non-goal per ADR-014 §7.
 
 ### EXT-PLUGIN-01 - Plugin Manifest And Lifecycle
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `zebra-cloud-trench`（maintainer blanket activation
+  "除接入 Trench 外全部做完"）
+- 实现：`agent_core.domain.plugins`（manifest v0.1 模型、四类 entry、
+  sha256 provenance、稳定组件身份、五层状态机分层转换、不可变安装记录
+  digest 钉定）+ `agent_integrations.plugins.PluginRegistry`（operator
+  生命周期 + bundle 布局校验）。提交 `01316e41`；测试 7/7。
 - Suggested role: `CORE / TOOLS / SECURITY / QA`
 - Depends on: `EXT-0` contract frozen and explicit maintainer activation
 - Branch: `TBD (suggested: codex/ext-plugin-01-manifest-lifecycle)`
@@ -15209,8 +21723,14 @@ beside the Session Event Store.
 
 ### EXT-HOOK-01 - Hook Contract
 
-- Status: `Locked`
-- Owner: `Unassigned`
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `zebra-cloud-trench`
+- 实现：`agent_core.harness.hooks` 追加 EXT-HOOK-01 合同——
+  HookDefinition/HookOutcome（pre/post tool use、stop、session start、
+  artifact created），kind 钉定 fail-open/fail-closed、有界超时、稳定排序、
+  deny>require_approval>allow 决议；hook 不绕过 Policy、不改执行事实。
+  提交 `01316e41`；测试 6/6。
 - Suggested role: `CORE / SECURITY / QA`
 - Depends on: `EXT-PLUGIN-01` activation
 - Branch: `TBD`
@@ -15236,7 +21756,7 @@ classification. Hooks never bypass Policy or mutate result facts.
 
 ### EXT-MARKETPLACE-01 - Plugin Marketplace Distribution
 
-- Status: `Locked`
+- Status: `Locked`（依赖私有云 GA，ADR-014 Phase C/D；非当前工程缺口）
 - Owner: `Unassigned`
 - Suggested role: `CORE / SECURITY / DEVOPS`
 - Depends on: `EXT-PLUGIN-01` + `EXT-HOOK-01` activation and private-cloud GA
@@ -15260,3 +21780,506 @@ isolation completing in private cloud.
 
 - public open marketplace before private-cloud GA
 - bypassing the install/enable/grant/approve five-layer state machine
+
+### ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `ARCHITECTURE / DOCS / QA`
+- Depends on: current mainline architecture and explicit maintainer request
+- Branch: `codex/runtime-upgrade-v2-doc-alignment`
+- Worktree: `../zebra-agent-runtime-v2-doc-alignment`
+- Owned paths: `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`,
+  `docs/README.md`, `PROGRESS.md`, `docs/AGENT_TASKS.md`, `task_plan.md`,
+  `findings.md`, `WORKLOG.md`
+
+#### Goal
+
+Reconcile the Runtime v2 proposal with Zebra's implemented Task/Segment, Skill,
+Memory, Trust/Security and Eval baselines; record the accepted direction without
+turning it into executable architecture before the focused ADR is approved.
+
+#### Acceptance
+
+- implemented capabilities are not described as missing
+- `AgentTask` execution identity is distinct from a future reusable
+  `AgentDefinition` and version registry
+- Event Store authority, governed derived Memory and replaceable knowledge
+  providers remain separate
+- trust is typed provenance/risk evidence and never a hard-coded scalar authority
+- package and phase recommendations preserve current dependency rules and use
+  explicit ADR/task activation gates
+- README/PROGRESS/task registry point to one consistent proposal status
+- a fresh reader review can distinguish current, local/unmerged and proposed state
+
+#### Explicit Non-Goals
+
+- Python implementation, package creation, schema migration or Runtime wiring
+- modifying the final architecture source of truth before a focused ADR is approved
+- activating Agent Registry, memory, trust or evaluation implementation cards
+
+#### Validation And Handoff
+
+- proposal reduced from 1,078 lines to a 447-line accepted-direction delta and remains
+  below the repository Markdown limit
+- fresh-reader review correctly identified the current Runtime baseline, existing
+  Skill/Memory/Trust/Eval foundations, non-executable status, and ADR-first next step
+- ambiguity follow-up clarified review versus approval, object lifecycle ownership,
+  Definition/Attempt snapshot separation, optional-provider degradation, revocation
+  choice, deployment authority, and Agent-version publication gates
+- relative document links and `git diff --check` pass
+- Eval release gate passes 10/10 after `make sync`
+- repository file-size gate retains two pre-existing violations in
+  `CodexConversationPane.styles.ts` (561/500) and `events.py` (505/500); neither
+  file is modified by this docs-only task
+- no implementation task is unlocked; the next action is the path-bounded
+  `AGENT-DEF-ADR-01` Gate A ADR task
+- accepted task chain registers one ADR plus ten `Locked` Core, SQLite,
+  PostgreSQL, draft/version, Attempt authority, binding, Memory, Trust, Eval and
+  gated-publication tasks
+
+## Agent Definition V2 Task Board
+
+Direction source: `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`.
+Decision source: `docs/ADR-016_Agent_Definition控制面与版本发布边界.md`.
+
+Execution rule: `AGENT-AUTH-SNAPSHOT-01` is `Done`; no implementation task is
+currently active. A maintainer must explicitly activate a registered `Locked`
+card by updating its status, owner, branch and worktree before coding. Local
+SQLite Registry work is intentionally deferred on the cloud microservice
+mainline; every other later task remains `Locked` until explicit activation and
+dependency review, and a locked card's paths must be rechecked and narrowed
+against ADR-016 before it is claimed.
+
+### AGENT-DEF-ADR-01 - Definition Authority And Snapshot ADR
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/agent-def-adr-01`
+- Worktree: `../zebra-agent-agent-def-adr-01`
+- Depends on: accepted Runtime v2 direction
+- Owned paths: `docs/ADR-016_Agent_Definition控制面与版本发布边界.md`,
+  `docs/Codex-like工程Agent平台最终架构设计_v1.0.md`,
+  `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`, `docs/README.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`
+
+#### Goal
+
+Freeze Definition/Version/Release authority, opaque external namespace,
+publication/revocation, schema evolution, local/cloud Store authority, and the
+Task/Attempt snapshot split before implementation begins.
+
+#### Acceptance
+
+- `AgentDefinitionSnapshot` is immutable for a Task and contains configuration,
+  never durable execution permission
+- `ExecutionAuthoritySnapshot` is validated per Attempt under ADR-012 and cannot
+  be bypassed by a frozen Definition
+- Registry is the Definition metadata authority; Session Event Store remains the
+  only durable execution fact source
+- `(authority_issuer, namespace_id)` is the isolation key; no Zebra Tenant/User/
+  Organization domain is introduced
+- release, Skill, external authority, Credential, and security-policy revocation
+  semantics are distinct and fail closed where required
+- final architecture records the stable decision and unlock criteria for
+  `AGENT-DEF-CON-01`
+
+#### Explicit Non-Goals
+
+- Python, SQL, API, CLI or UI implementation
+- creating a second Task/Event/Skill/Memory runtime
+- activating any later Agent Definition task
+
+#### Validation And Handoff
+
+- ADR-016 is 354 lines and remains below the Markdown limit; the final architecture
+  is an allowed primary-architecture exception
+- two-pass fresh-reader review found and then verified closure of the publication/
+  Eval dependency cycle, Release uniqueness/scope, durable authority revalidation,
+  revocation authority and binding-fence boundaries
+- the final task DAG is acyclic: ADR -> Core -> SQLite/Attempt authority; SQLite ->
+  Draft/PostgreSQL; Draft + authority -> Binding -> Memory -> Trust -> Eval -> Publish
+- relative document targets exist, `git diff --check` passes and Eval passes 10/10
+- full repository checks retain the exact parent-branch baseline: 13 Ruff findings,
+  4 mypy findings and two file-size violations; none is in this task's modified files
+- the ADR is merged into `zebra-cloud-trench`; only `AGENT-DEF-CON-01` is
+  unlocked and no storage, API, runtime or publication task is activated
+
+#### Closeout
+
+- Accepted the ADR-016 decision and its dependency DAG on the current cloud
+  mainline. The architecture keeps Registry metadata, Event execution facts and
+  external Attempt authority as separate authorities.
+- The review evidence and documentation gates are complete; the two inherited
+  file-size violations remain outside this task. `AGENT-DEF-CON-01` is the only
+  follow-up permitted to move forward.
+
+### AGENT-DEF-CON-01 - Core Definition And Registry Contracts
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/agent-def-con-01`
+- Worktree: `../zebra-agent-agent-def-con-01`
+- Depends on: merged `AGENT-DEF-ADR-01`
+- Owned paths: `packages/agent-core/src/agent_core/domain/agent_definitions.py`,
+  `packages/agent-core/src/agent_core/domain/identifiers.py`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `packages/agent-core/src/agent_core/ports/agent_registry.py`,
+  `packages/agent-core/src/agent_core/ports/__init__.py`,
+  `tests/agent_core/test_agent_definitions.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Implement the smallest immutable Definition/Version/Release models and narrow
+Registry Port in `agent-core`, with no infrastructure dependency.
+
+#### Acceptance
+
+- schema, digest, version ordering and lifecycle transitions are deterministic
+- published content cannot be mutated in place
+- references contain no secrets, executable code or unversioned capabilities
+- negative tests cover namespace mismatch, digest drift and invalid transitions
+
+#### Validation And Handoff
+
+- Frozen Core models cover Definition, immutable Version, append-only Release and
+  the narrow Registry Port; stable component references are pinned and digests are
+  deterministic.
+- Focused Core tests pass `355/355`; changed-path Ruff/format, Mypy over the Core
+  package (`138` files) and `git diff --check` pass.
+- No SQLite/PostgreSQL adapter, API, Worker or Runtime wiring is included. The
+  cloud-neutral successor is `AGENT-AUTH-SNAPSHOT-01`; local SQLite Registry work
+  remains deferred for this cloud branch.
+
+#### Closeout
+
+- The contract is merged into `zebra-cloud-trench`; its dependency is satisfied for
+  the authority snapshot task while storage and publication remain separately gated.
+
+### AGENT-DEF-STO-01 - Local SQLite Registry Authority
+
+- Status: `Locked`（云端主线按产品定位推迟 SQLite Registry）
+- Owner: `Unassigned`
+- Suggested branch: `codex/agent-def-sto-01`
+- Depends on: `AGENT-DEF-CON-01` merged to `main`
+- 说明：`AGENT-DEF-PG-01` 已按云端主线直接以 PostgreSQL 实现（v19/v20/v22
+  迁移 + `PostgresAgentRegistry`），本地 SQLite Registry 继续推迟；本卡不再
+  是云端链的前置依赖。
+- Owned paths: `packages/agent-storage/src/agent_storage/agent_registry.py`,
+  `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_storage/test_agent_registry.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Implement the local single-authority Registry Adapter with additive schema,
+CAS publication/revocation, idempotency and namespace isolation.
+
+#### Acceptance
+
+- SQLite restart, migration, concurrent publish and revoke paths are tested
+- every query keys on `(authority_issuer, namespace_id)` where applicable
+- no Event/Task checkpoint, Tool result or mutable execution state is stored
+- PostgreSQL remains a separate private-cloud Adapter task, never dual-write
+
+### AGENT-DEF-PG-01 - Private-Cloud PostgreSQL Registry Adapter
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Depends on: `AGENT-DEF-STO-01` merged to `main`（云端主线按产品定位直接
+  以 PostgreSQL 实现，依赖推迟；closeout 已记录该决策）
+- 实现：v19 迁移（records/versions/releases/draft/validation/eval evidence）、
+  `PostgresAgentRegistry`（CAS revision、单 Published 唯一索引、就地
+  deprecate/revoke 转换）、Draft/Version 物化服务、受控发布 API；提交
+  `196cddc2`、`11f223f1` 及后续链提交。
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres_agent_registry.py`,
+  `packages/agent-storage/migrations/agent_registry/`,
+  `tests/agent_storage/test_postgres_agent_registry.py`,
+  `docker/dependencies/compose.agent-definition.yml`, `docs/operator_runbook.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Implement the private-cloud PostgreSQL Registry Adapter against the same Core
+Port and manage only its database dependency through Docker Compose. The Zebra
+application container remains outside this task and consumes the dependency by
+configured connection contract.
+
+#### Acceptance
+
+- PostgreSQL schema, transaction/CAS, namespace, restart and migration tests pass
+- dependency Compose and the Zebra application container remain separate layers
+- one deployment environment selects exactly one Registry authority
+- SQLite-to-PostgreSQL transition uses export/import verification and cutover,
+  never runtime dual-write
+- credentials stay outside images, events, Definition metadata and logs
+
+### AGENT-DEF-DRAFT-01 - Draft Validation And Version Materialization
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Depends on: `AGENT-DEF-STO-01` merged to `main`（云端主线以 PG registry
+  直接实现，依赖按 AGENT-DEF-PG-01 closeout 处理）
+- 实现：`AgentDefinitionDraft`/validation evidence 域模型、
+  `AgentDefinitionDraftService`（publisher grant ceiling 收窄、乐观 revision、
+  幂等物化）、draft/validate/versions API 路由、v19 draft 表；提交 `196cddc2`。
+- Owned paths: `packages/agent-core/src/agent_core/application/agent_definitions.py`,
+  `apps/api/src/zebra_agent_api/agent_definitions.py`,
+  `apps/api/src/zebra_agent_api/app.py`, `tests/api/test_agent_definitions.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Expose bounded draft create/update, validation and immutable Version materialization
+without adding release mutation, a marketplace or business user/tenant model.
+
+#### Acceptance
+
+- every mutation validates external publisher authority, optimistic revision and
+  idempotency
+- Definition can only narrow publisher grant
+- secrets, unpinned references and cross-namespace access fail closed
+- validation failures remain draft evidence and never create a Version
+- Version-level Eval gates Release rather than Version materialization
+- this task exposes no publish, deprecate or revoke operation
+- no Desktop UI or public marketplace is added
+
+### AGENT-AUTH-SNAPSHOT-01 - Durable Attempt Authority Snapshot Contract
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `codex/agent-authority-snapshot-01`
+- Worktree: `../zebra-agent-agent-authority-snapshot-01`
+- Depends on: `AGENT-DEF-CON-01` merged to `main`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/execution_authority.py`,
+  `packages/agent-core/src/agent_core/domain/execution_authority_support.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/ports/execution_authority.py`,
+  `packages/agent-core/src/agent_core/contracts/execution_authority.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/runtime_authority.py`,
+  `tests/test_execution_authority_snapshot_contract_matrix.py`,
+  `tests/worker/test_execution_authority_snapshot.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Implement the ADR-012/015 schema, resolver Port and durable pre-Attempt event for
+`ExecutionAuthoritySnapshot`; do not pretend the current Runtime authority digest
+or effect scope hash is an external authority snapshot.
+
+#### Acceptance
+
+- a schema-validated authority event is durable before model/tool execution
+- same-Attempt resume/failover revalidates expiry/revocation without expansion
+- every accepted revalidation carries a recoverable effective snapshot and later
+  revalidation starts from the latest durable effective snapshot; missing evidence
+  fails closed
+- a distinct new Attempt resolves a new snapshot and applies Zebra narrowing
+- tokens, Credentials and replayable secrets are never persisted
+- local trusted resolution has an explicit issuer/scope; external signed authority
+  verification remains fail closed unless a configured verifier is present
+- the task splits existing `contracts/events.py` before adding logic if necessary
+  to restore the repository file-size limit
+
+#### Pre-Ready Check
+
+- map every Attempt creation/resume/retry caller and narrow Owned paths before claim
+- split external OIDC/business-authority adapter work if it cannot fit this contract
+  slice without broad API/config ownership
+
+#### Validation And Handoff
+
+- Commit `50ad8d1c` adds the immutable authority/grant/limits models, resolver Port,
+  schema-validated resolved/revalidated events, recoverable latest-snapshot replay
+  and explicit Worker seam. External verification remains fail-closed unless a
+  resolver is explicitly composed.
+- Focused authority tests pass `6/6`; Core passes `355/355`; Worker passes
+  `93 passed, 13 skipped`; changed Ruff/format, excluded-baseline Mypy (`501`
+  source files), `uv lock --check`, Eval `10/10` and diff checks pass.
+- The full suite is `2031 passed, 211 skipped, 1 failed` only on the two inherited
+  repository file-size violations outside this task. No database, migration,
+  Registry adapter, Runtime composition, Provider HTTP, Desktop, Redis or Mem0
+  consumer was added.
+
+#### Closeout
+
+- Merged into `zebra-cloud-trench`; Runtime, Worker composition, Provider HTTP,
+  Desktop, SQLite, PostgreSQL Registry, Redis and Mem0 consumer remain locked.
+
+### AGENT-DEF-BIND-01 - Immutable Task Definition Binding
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Depends on: `AGENT-DEF-DRAFT-01` and `AGENT-AUTH-SNAPSHOT-01` merged to `main`
+- 实现：`AgentDefinitionSnapshot`（canonical digest、production/eval purpose）、
+  `DefinitionBindingService`（发布解析 + 受限 eval 精确固定）、TASK_PREPARED
+  可选快照、投影镜像（v20 迁移）、worker 恢复 digest 校验、create-session
+  binding；提交 `11f223f1`，矩阵 10/10（PG）。
+- Owned paths: `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/domain/workspaces.py`,
+  `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
+  `packages/agent-storage/src/agent_storage/workspaces.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/cli/src/zebra_agent_cli/run_command_execution.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `tests/test_agent_definition_binding_contract_matrix.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Resolve one immutable Definition Version into a Task-level snapshot while consuming
+the separate durable Attempt authority contract. Production creation resolves the
+current Published Release; a bounded pre-publication Eval path may exact-pin a
+candidate Version without creating a Release.
+
+#### Acceptance
+
+- `TASK_PREPARED` carries a backward-compatible optional Definition snapshot
+- candidate binding is limited to explicit Eval purpose, evaluator authority and an
+  isolated non-production environment; it cannot become the production default
+- existing policy/tool/network/MCP/Skill fields are resolved once and reused,
+  not duplicated in a parallel execution configuration
+- recovery validates Definition digest without reading mutable draft state
+- same-Attempt resume/failover rejects expired, revoked or widened authority;
+  a distinct new Attempt validates a fresh snapshot that may differ, then applies
+  Definition capability, Zebra Policy, Approval and Sandbox narrowing
+- legacy Tasks without a Definition retain current behavior
+
+### AGENT-DEF-MEM-01 - Definition-Scoped Governed Memory
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Depends on: `AGENT-DEF-BIND-01` merged to `main`
+- 实现：`MemoryRecord`/`MemoryQuery`/tombstone 增加
+  `(authority_issuer, namespace_id, definition_id)` 全有或全无 scope；v21 迁移
+  （列 + 可见性约束放开 + scope 一致性约束）；PG rows/事务/导入/迁移路径写入
+  新 scope、不再写 legacy 列；worker 云终态从 TASK_PREPARED 快照提取 scope；
+  矩阵 5/5（PG）。
+- Owned paths: `packages/agent-core/src/agent_core/domain/memories.py`,
+  `packages/agent-core/src/agent_core/ports/memory_store.py`,
+  `packages/agent-core/src/agent_core/application/memory_candidates.py`,
+  `packages/agent-storage/src/agent_storage/memories.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `tests/test_agent_definition_memory_contract_matrix.py`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Bind governed derived Memory to Definition scope/policy/version compatibility
+without turning Memory or an external provider into execution truth.
+
+#### Acceptance
+
+- new durable isolation uses `(authority_issuer, namespace_id)` plus explicit
+  Definition scope; legacy `tenant_id/user_id` columns are compatibility input only
+- legacy rows migrate only through a trusted explicit issuer/namespace mapping;
+  implementations must not infer issuer or business relationships, perform bare
+  legacy-key lookup, or write new records using the legacy columns
+- source event range, lifecycle, deletion and supersede semantics are preserved
+- provider mapping, timeout reconciliation and deletion propagation are idempotent
+- optional provider outage degrades by frozen policy; required capability fails
+- Event Store remains the only durable Task/Attempt execution fact source
+
+#### Pre-Ready Check
+
+- map all API/CLI/Worker Memory read/write/query callers before claim
+- expand or split Owned paths so legacy-key migration covers every ingress without
+  granting broad temporary shared ownership
+
+### AGENT-DEF-TRUST-01 - Publication And Ingress Trust Coverage
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Depends on: `AGENT-DEF-DRAFT-01`, `AGENT-DEF-BIND-01` and
+  `AGENT-DEF-MEM-01` merged to `main`
+- 实现：`agent_security/agent_definitions.py`（内容信任不授权、跨 scope/引用
+  替换/注入标记 fail closed）、威胁模型
+  `docs/Agent_Definition威胁模型_v1.0.md`、矩阵 5/5。
+- Owned paths: `packages/agent-context/src/agent_context/trust.py`,
+  `packages/agent-security/src/agent_security/agent_definitions.py`,
+  `tests/test_agent_definition_trust_contract_matrix.py`,
+  `docs/Agent_Definition威胁模型_v1.0.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Apply typed provenance/risk evidence and publisher/execution authority separation
+to Registry, Skill, Memory, knowledge and Eval ingress.
+
+#### Acceptance
+
+- content trust never grants tools, network, files, Memory write or publication
+- publisher grant, Definition snapshot and Attempt authority are independently traced
+- cross-issuer/namespace, prompt-injection and reference-substitution tests fail closed
+- external authority/Credential/security-policy revocation cannot use Definition
+  release continuation policy as a bypass
+
+### AGENT-DEF-EVAL-01 - Agent Version Publication Gate
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Depends on: `AGENT-DEF-DRAFT-01` and `AGENT-DEF-TRUST-01` merged to `main`
+- 实现：`agent_observability/agent_versions.py`
+  `AgentVersionPublicationGate`（逐条件显式 reason、缺失证据 pending、
+  LLM-as-judge 仅补充）、`evals/agent_definitions/` 样例、门测试 5/5。
+- Owned paths: `packages/agent-observability/src/agent_observability/agent_versions.py`,
+  `evals/agent_definitions/`, `tests/agent_observability/test_agent_version_gate.py`,
+  `docs/operator_runbook.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Aggregate existing deterministic Eval/replay evidence by Definition version and
+produce an auditable `AgentVersionPublicationGate` decision.
+
+#### Acceptance
+
+- results pin Definition, fixture, dataset, evaluator and policy versions
+- regression, safety, recovery, cost and latency conditions have explicit reasons
+- LLM-as-judge is supplemental and cannot replace deterministic/security gates
+- gate evidence and operator runbook inputs are complete; this task does not mutate
+  Release state
+
+### AGENT-DEF-PUB-01 - Gated Definition Publication API
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `zebra-cloud-trench`
+- Depends on: `AGENT-DEF-EVAL-01`, `AGENT-DEF-TRUST-01`,
+  `AGENT-DEF-DRAFT-01` and `AGENT-DEF-STO-01` merged to `main`
+- 实现：`AgentReleaseEnforcementMode`（safe-boundary/immediate，v22 迁移 +
+  已发布必须 safe-boundary 约束）、`AgentDefinitionPublicationService`
+  （PublicationGateEvidence 精确 digest/version 校验、deprecate/revoke typed
+  证据、immediate 需 security-revocation actor）、publish/deprecate/revoke
+  API 路由；API 测试 11/11。
+- Owned paths: `packages/agent-core/src/agent_core/application/agent_definitions.py`,
+  `apps/api/src/zebra_agent_api/agent_definitions.py`,
+  `apps/api/src/zebra_agent_api/app.py`, `tests/api/test_agent_definitions.py`,
+  `docs/operator_runbook.md`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Expose publish, deprecate and revoke operations only after the immutable Version
+has auditable Eval and Trust evidence. Keep Release history append-only and derive
+the current published Version as a projection.
+
+#### Acceptance
+
+- publish requires a passing `AgentVersionPublicationGate` for the exact Version
+  digest and validates current publisher authority
+- one full `(authority_issuer, namespace_id, definition_id, environment)` scope has
+  at most one effective Published Release; CAS publication atomically supersedes it
+- deprecate/revoke append typed actor, `reason_class`, `enforcement_mode` and
+  `effective_at` evidence; immediate enforcement requires security authority
+- multiple effective current releases are treated as corruption and fail closed
+- every mutation is namespace-bound and idempotent; rollback means publishing a
+  previously immutable Version through the same gate, never mutating history
+- no Desktop UI, public marketplace or autonomous publication is added

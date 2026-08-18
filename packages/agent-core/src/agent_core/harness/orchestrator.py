@@ -4,15 +4,15 @@ from dataclasses import replace
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
-from agent_core.domain.tools import ToolCall
+from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness.hooks import (
     NoopPlanner,
     NoopVerifier,
     PlannerHook,
     VerifierHook,
 )
-from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.model_request import allowed_response_repairs
+from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
     HarnessAttemptResult,
     HarnessContext,
@@ -146,6 +146,29 @@ class SingleAttemptOrchestrator:
             conversation=conversation,
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
+        )
+
+    def continue_completed_tool(
+        self,
+        context: HarnessContext,
+        *,
+        completion: ModelCompletion,
+        tool_call: ToolCall,
+        tool_result: ToolResult,
+        conversation: tuple[SessionMessage, ...],
+        model_calls_used: int,
+        tool_calls_executed: int,
+        assistant_message: str,
+    ) -> HarnessAttemptResult:
+        return self._tool_loop.continue_completed(
+            context,
+            completion=completion,
+            tool_call=tool_call,
+            tool_result=tool_result,
+            conversation=conversation,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            assistant_message=assistant_message,
         )
 
     def continue_clarification(

@@ -20,7 +20,7 @@ from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.web import TruncationScope, WebTargetError, parse_web_target
 
 from agent_tools.contracts import ToolContract
-from agent_tools.web_envelope import WEB_ENVELOPE_CAPABILITY_VERSION, WebResultEnvelope
+from agent_tools.web_envelope import WebResultEnvelope
 
 MAX_SEARCH_QUERY_CHARS = 500
 DEFAULT_SEARCH_LIMIT = 8

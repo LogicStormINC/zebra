@@ -33,7 +33,16 @@ class SessionResumeService:
             claimed_at=resumed_at,
             lease_ttl_seconds=lease_ttl_seconds,
         )
-        if claimed.recovery.is_terminal:
+        return self.require_resumable(claimed)
+
+    def require_resumable(
+        self,
+        claimed: ClaimedSession,
+        *,
+        release_on_failure: bool = True,
+    ) -> ResumedSession:
+        if not claimed.recovery.is_terminal:
+            return ResumedSession(claimed=claimed)
+        if release_on_failure:
             self._claim_service.release_claim(claimed)
-            raise SessionResumeError("cannot resume terminal session")
-        return ResumedSession(claimed=claimed)
+        raise SessionResumeError("cannot resume terminal session")

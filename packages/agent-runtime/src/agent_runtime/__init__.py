@@ -79,10 +79,25 @@ from agent_runtime.workspace import (
     WorkspaceLayout,
     WorkspacePathError,
 )
+from agent_runtime.workspace_materialization import (
+    WorkspaceMaterializationError,
+    materialize_archive,
+    materialize_git,
+    materialize_snapshot_bytes,
+    workspace_tree_digest,
+)
+from agent_runtime.workspace_provisioner import (
+    PostgresWorkspaceProvisioner,
+    WorkspaceProvisionerError,
+)
 from agent_runtime.workspace_quota import (
     WorkspaceQuotaError,
     WorkspaceQuotaEvidence,
     require_workspace_quota,
+)
+from agent_runtime.workspace_runtime_resolver import (
+    WorkspaceRuntimeResolutionError,
+    WorkspaceRuntimeResolver,
 )
 
 __all__ = [
@@ -138,6 +153,15 @@ __all__ = [
     "WorkspacePathError",
     "WorkspaceQuotaError",
     "WorkspaceQuotaEvidence",
+    "WorkspaceMaterializationError",
+    "WorkspaceProvisionerError",
+    "PostgresWorkspaceProvisioner",
+    "materialize_archive",
+    "materialize_git",
+    "materialize_snapshot_bytes",
+    "workspace_tree_digest",
+    "WorkspaceRuntimeResolver",
+    "WorkspaceRuntimeResolutionError",
     "build_mcp_capability_inventory",
     "discover_mcp_resources",
     "discover_mcp_prompts",

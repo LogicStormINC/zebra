@@ -2,9 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from zebra_agent_config import ScmSettings
-
 REDACTED_SECRET = "<redacted>"
+
+
+@dataclass(frozen=True)
+class ScmCredentialSettings:
+    """The provider and token reference required by credential policy."""
+
+    provider: str
+    token_env: str | None = None
 
 
 @dataclass(frozen=True)
@@ -30,7 +36,7 @@ class ScmCredentialCapability:
 class ScmCredentialBoundary:
     def capability_from_settings(
         self,
-        settings: ScmSettings,
+        settings: ScmCredentialSettings,
         *,
         token_value: str | None = None,
     ) -> ScmCredentialCapability:
@@ -41,21 +47,17 @@ class ScmCredentialBoundary:
                 token_value=None,
             )
         if settings.provider == "github":
-            if settings.github_token_env is None:
+            if settings.token_env is None:
                 raise ValueError("github SCM provider requires a token environment name")
             return ScmCredentialCapability(
                 provider=settings.provider,
-                token_env=settings.github_token_env,
+                token_env=settings.token_env,
                 token_value=token_value,
             )
         raise ValueError(f"unsupported SCM provider: {settings.provider}")
 
-    def settings_snapshot(self, settings: ScmSettings) -> dict[str, object]:
+    def settings_snapshot(self, settings: ScmCredentialSettings) -> dict[str, object]:
         return {
             "provider": settings.provider,
-            "github_owner": settings.github_owner,
-            "github_repo": settings.github_repo,
-            "github_token_env": settings.github_token_env,
-            "github_api_base_url": settings.github_api_base_url,
-            "pull_request_dry_run": settings.pull_request_dry_run,
+            "token_env": settings.token_env,
         }

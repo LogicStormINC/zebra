@@ -110,6 +110,7 @@ class Session(BaseModel):
     created_at: datetime
     updated_at: datetime
     current_sequence: int = Field(default=0, ge=0)
+    namespace_id: str | None = Field(default=None, max_length=255)
     approval_context: ApprovalContext | None = None
     clarification_context: ClarificationContext | None = None
     task_plan: SessionPlan = Field(default_factory=SessionPlan)
