@@ -21,8 +21,12 @@
   幂等短路 + 中段崩溃注入全回滚验收，P1.3 修复）。进度 9/16。
 - 批次 3 进行中：`AL-AUTH-WORKER-01` 已完成（#213，P0.4 合同级闭环：
   绑定→Attempt 权限链 + fail-closed 漂移/过期 + 只收窄重校验 + v25 绑定
-  读取）。进度 10/16。剩余 `AL-HOST-EGRESS-01`（pinned Profile 出站 +
-  cloud composition 换装 bound resolver 的接线点）→ `AL-HOST-EFFECT-01`。
+  读取）。进度 10/16。`AL-HOST-EGRESS-01` 已完成（#214，P0.2 实现侧：
+  HostEgressResolver 按绑定钉定不可变 Profile 修订、内存态短期凭证、
+  revoked/missing fail-closed、deprecated 续服务、未绑定回退 legacy
+  env）。进度 11/16。剩余 `AL-HOST-EFFECT-01`（Host 写工具经 Effect
+  回执与 reconcile，衔接 Fenced Effect 体系与
+  `reconcile_path_template`）。
 - 原：批次 3 待激活要点：`AL-AUTH-WORKER-01`（P0.4：
   `BoundHostExecutionAuthorityResolver` 从 TaskBindingSnapshot 构造
   `ExecutionAuthoritySnapshot.from_request()`，需 worker recovery 增加绑定
