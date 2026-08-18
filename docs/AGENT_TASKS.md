@@ -21871,6 +21871,39 @@ mainline; every other later task remains `Locked` until explicit activation and
 dependency review, and a locked card's paths must be rechecked and narrowed
 against ADR-016 before it is claimed.
 
+### QA-RIG-SCRATCH-VOL-01 - Detach Rig Scratch Volumes After Scenario Runs
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `QA / SRE`
+- Depends on: merged `CLOUD-EFFECT-DEFAULT-E2E-01` rig; discovered during the
+  2026-08-18 host cleanup, where five leaked `ZEBRACPE2E*` RAM volumes had
+  accumulated on the maintainer Desktop across rig runs.
+- Branch: `codex/qa-rig-scratch-vol-01`
+- Owned paths: `tests/compose/effect_default_e2e/execution_tier.py`, this task
+  card and its focused `PROGRESS.md` record.
+
+#### Goal
+
+The workspace-control-plane rig scenario must not leak its scratch volume:
+`_mount_scratch_volume` only detached the RAM device when mounting failed, so
+every successful run left an APFS volume mounted on the host.
+
+#### Acceptance
+
+- [x] The scratch volume is owned by a context manager that force-detaches the
+  RAM device on every exit path (success, scenario failure, mount failure).
+- [x] Scenario evidence (`cp_root` paths, proof files) is still recorded inside
+  the volume lifetime; the fail-closed `mounted=False` flow is unchanged.
+- [x] Contract tests pass (`6 passed`) and Ruff is clean; the module keeps the
+  same pre-existing mypy posture (compose runners are outside the `make check`
+  mypy gate, which covers `packages apps` only).
+
+#### Explicit Non-Goals
+
+- no rig runtime or scenario-assertion changes beyond volume lifetime
+- no changes to the colima/gVisor fixture semantics
+
 ### AGENT-DEF-ADR-01 - Definition Authority And Snapshot ADR
 
 - Status: `Done`

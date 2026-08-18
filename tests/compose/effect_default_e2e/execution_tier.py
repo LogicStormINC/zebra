@@ -12,6 +12,8 @@ from __future__ import annotations
 import os
 import subprocess
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -436,37 +438,44 @@ def cleanup_workspace(runner: Runner) -> None:
             entry.unlink(missing_ok=True)
 
 
-def _mount_scratch_volume(label: str) -> Path | None:
-    """Rig helper: create a scratch volume that auto-mounts under /Volumes.
+@contextmanager
+def _scratch_volume(label: str) -> Iterator[Path | None]:
+    """Rig helper: mount a scratch volume under /Volumes for exactly one scenario.
 
     The colima VM shares /Volumes, so the default mount point is directly
     bindable into gVisor sandboxes and satisfies the dedicated-mount quota
-    gate without any custom mount dance.
+    gate without any custom mount dance. The RAM device is always detached
+    when the scenario exits, success or failure, so repeated rig runs do not
+    accumulate mounted volumes on the host Desktop.
     """
-    import os as _os
-    import subprocess as _sp
-    import time as _t
-
-    device = _sp.run(
+    device = subprocess.run(
         ("hdiutil", "attach", "-nomount", "ram://262144"),
         capture_output=True,
         text=True,
         check=False,
     ).stdout.strip()
     if not device:
-        return None
-    _sp.run(
-        ("diskutil", "eraseDisk", "APFS", label, "GPTFormat", device),
-        capture_output=True,
-        check=False,
-    )
-    _t.sleep(3)
-    mounted = Path("/Volumes") / label
-    if not _os.path.ismount(mounted):
-        _sp.run(("hdiutil", "detach", device, "-force"), capture_output=True, check=False)
-        return None
-    _ensure_writable_through_share(mounted)
-    return mounted
+        yield None
+        return
+    try:
+        subprocess.run(
+            ("diskutil", "eraseDisk", "APFS", label, "GPTFormat", device),
+            capture_output=True,
+            check=False,
+        )
+        time.sleep(3)
+        mounted = Path("/Volumes") / label
+        if not os.path.ismount(mounted):
+            yield None
+            return
+        _ensure_writable_through_share(mounted)
+        yield mounted
+    finally:
+        subprocess.run(
+            ("hdiutil", "detach", device, "-force"),
+            capture_output=True,
+            check=False,
+        )
 
 
 def _ensure_writable_through_share(root: Path) -> bool:
@@ -549,96 +558,96 @@ def scenario_workspace_cp(runner: Runner) -> None:
     import time as _t
 
     label = f"ZEBRACPE2E{int(_t.time()) % 100000}"
-    cp_root = _mount_scratch_volume(label)
-    mounted = cp_root is not None
-    repo = _create_git_source(runner)
-    revision = _sp.run(
-        ("git", "-C", repo, "rev-parse", "HEAD"),
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
-    created = runner.uv_json(
-        str(runner.runner_dir / "workspace_command.py"),
-        env_extra={
-            "ZEBRA_EFFECT_E2E_SOURCE_REPO": repo,
-            "ZEBRA_EFFECT_E2E_SOURCE_REVISION": revision,
-        },
-    )
-    workspace_id = created["workspace_id"]
-    seeded = runner.uv_json(
-        str(runner.runner_dir / "seed_session.py"),
-        env_extra={
-            "ZEBRA_EFFECT_E2E_WORKSPACE": f"workspace://{workspace_id}",
-            "ZEBRA_EFFECT_E2E_SEED_KEY": f"cp-session-{workspace_id}",
-            "ZEBRA_EFFECT_E2E_PROMPT": "WRITE-FILE: create cp-proof.txt",
-        },
-    )
-    cp_env = {
-        "ZEBRA_WORKSPACE_VOLUME_ROOT": str(cp_root),
-        "ZEBRA_WORKSPACE_VOLUME_LAYOUT": "root",
-    }
-    probe = runner.uv(
-        "-m",
-        "zebra_agent_worker.main",
-        "--max-cycles",
-        "1",
-        "--idle-sleep-seconds",
-        "1",
-        check=False,
-        env_extra=cp_env,
-    )
-    # The materialized tree is created by the VM-side worker; make it
-    # writable for the gVisor container user through the shared view.
-    writable = _ensure_writable_through_share(cp_root)
-    approval = runner.uv(
-        str(runner.runner_dir / "approve_and_resume.py"),
-        env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": seeded["session_id"]},
-        check=False,
-    )
-    for _ in range(3):
-        if _status(runner, seeded["session_id"]) == "completed":
-            break
-        runner.uv(
+    with _scratch_volume(label) as cp_root:
+        mounted = cp_root is not None
+        repo = _create_git_source(runner)
+        revision = _sp.run(
+            ("git", "-C", repo, "rev-parse", "HEAD"),
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        created = runner.uv_json(
+            str(runner.runner_dir / "workspace_command.py"),
+            env_extra={
+                "ZEBRA_EFFECT_E2E_SOURCE_REPO": repo,
+                "ZEBRA_EFFECT_E2E_SOURCE_REVISION": revision,
+            },
+        )
+        workspace_id = created["workspace_id"]
+        seeded = runner.uv_json(
+            str(runner.runner_dir / "seed_session.py"),
+            env_extra={
+                "ZEBRA_EFFECT_E2E_WORKSPACE": f"workspace://{workspace_id}",
+                "ZEBRA_EFFECT_E2E_SEED_KEY": f"cp-session-{workspace_id}",
+                "ZEBRA_EFFECT_E2E_PROMPT": "WRITE-FILE: create cp-proof.txt",
+            },
+        )
+        cp_env = {
+            "ZEBRA_WORKSPACE_VOLUME_ROOT": str(cp_root),
+            "ZEBRA_WORKSPACE_VOLUME_LAYOUT": "root",
+        }
+        probe = runner.uv(
             "-m",
             "zebra_agent_worker.main",
             "--max-cycles",
-            "2",
+            "1",
             "--idle-sleep-seconds",
             "1",
             check=False,
             env_extra=cp_env,
         )
-        _ensure_writable_through_share(cp_root)
-    status = _status(runner, seeded["session_id"])
-    instance = runner.uv_json(
-        str(runner.runner_dir / "workspace_command.py"),
-        env_extra={"ZEBRA_EFFECT_E2E_WORKSPACE_ID": workspace_id},
-    )
-    probe_tail = (probe.stderr or "")[-600:] if probe else ""
-    proof = cp_root / PROOF_FILE
-    runner.record(
-        "workspace_cp_provisioned_side_effect",
-        created.get("status") == 201
-        and seeded.get("status") == 201
-        and approval.returncode == 0
-        and mounted
-        and writable
-        and status == "completed"
-        and instance.get("workspace", {}).get("state") == "ready"
-        and instance.get("workspace", {}).get("materialized_revision") == revision
-        and (cp_root / "TASK.md").is_file()
-        and proof.is_file()
-        and proof.read_text() == "effect-e2e-proof",
-        {
-            "workspace_id": workspace_id,
-            "cp_root": str(cp_root),
-            "mounted": mounted,
-            "writable_through_share": writable,
-            "session_status": status,
-            "workspace": instance,
-            "proof_present": proof.is_file(),
-            "approval_returncode": approval.returncode,
-            "probe_stderr": probe_tail,
-        },
-    )
+        # The materialized tree is created by the VM-side worker; make it
+        # writable for the gVisor container user through the shared view.
+        writable = _ensure_writable_through_share(cp_root)
+        approval = runner.uv(
+            str(runner.runner_dir / "approve_and_resume.py"),
+            env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": seeded["session_id"]},
+            check=False,
+        )
+        for _ in range(3):
+            if _status(runner, seeded["session_id"]) == "completed":
+                break
+            runner.uv(
+                "-m",
+                "zebra_agent_worker.main",
+                "--max-cycles",
+                "2",
+                "--idle-sleep-seconds",
+                "1",
+                check=False,
+                env_extra=cp_env,
+            )
+            _ensure_writable_through_share(cp_root)
+        status = _status(runner, seeded["session_id"])
+        instance = runner.uv_json(
+            str(runner.runner_dir / "workspace_command.py"),
+            env_extra={"ZEBRA_EFFECT_E2E_WORKSPACE_ID": workspace_id},
+        )
+        probe_tail = (probe.stderr or "")[-600:] if probe else ""
+        proof = cp_root / PROOF_FILE
+        runner.record(
+            "workspace_cp_provisioned_side_effect",
+            created.get("status") == 201
+            and seeded.get("status") == 201
+            and approval.returncode == 0
+            and mounted
+            and writable
+            and status == "completed"
+            and instance.get("workspace", {}).get("state") == "ready"
+            and instance.get("workspace", {}).get("materialized_revision") == revision
+            and (cp_root / "TASK.md").is_file()
+            and proof.is_file()
+            and proof.read_text() == "effect-e2e-proof",
+            {
+                "workspace_id": workspace_id,
+                "cp_root": str(cp_root),
+                "mounted": mounted,
+                "writable_through_share": writable,
+                "session_status": status,
+                "workspace": instance,
+                "proof_present": proof.is_file(),
+                "approval_returncode": approval.returncode,
+                "probe_stderr": probe_tail,
+            },
+        )

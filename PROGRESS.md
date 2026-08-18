@@ -79,6 +79,14 @@
   produces the structured `BLOCKED` result (all 16 deployment inputs
   enumerated); it remains
   `In Progress` and fail-closed pending isolated cross-service inputs.
+  Host cleanup follow-up (`QA-RIG-SCRATCH-VOL-01`, `Done` 2026-08-18): the
+  2026-08-18 Desktop cleanup found seven leaked zebra RAM volumes — five
+  `ZEBRACPE2E*` rig scratch volumes (the effect-default E2E fixture only
+  detached on mount failure) plus workspace-CP probe mounts; all were
+  ejected and their mount points removed, and the rig fixture now owns its
+  scratch volume through a context manager that force-detaches on every exit
+  path, so repeated rig runs no longer accumulate volumes on the host.
+  `In Progress` and fail-closed pending isolated cross-service inputs.
 - `CLOUD-EFFECT-DEFAULT-E2E-01` is `Done` with the full 10-scenario matrix
   passing on the rig: the two 2026-08-16 fault-injection scenarios verify
   that killing the Worker during the post-tool model turn recovers to a
