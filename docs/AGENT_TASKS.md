@@ -21858,6 +21858,46 @@ turning it into executable architecture before the focused ADR is approved.
 - original handoff note: the accepted task chain registered one ADR plus ten
   gated-publication tasks
 
+### AL-PLAN-01 - Agent Layer 构建实施方案（规划收口）
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `ARCH / PM`
+- Depends on: `main@bb3a1bce`；方案文档
+  `docs/cloud-agent构建实施方案.md`，架构决策登记为
+  `docs/ADR-017_Agent_Layer边界与多Host接入.md`
+- Owned paths: 方案文档、ADR-017、本预留表和 `PROGRESS.md` 快照；不含
+  任何实现路径
+
+#### Goal
+
+正式批准 Agent Layer 方向（Agent Control Plane + Host Integration
+Plane，逻辑边界先行于微服务拆分），并把 16 张实施卡以 `Locked` 预留
+登记，替换"继续做云"的模糊方向。
+
+#### Locked Successor Reservations
+
+完整目标、Owned paths 与验收门以方案文档第九节为权威。激活任何一行
+前，必须将其展开为带 human owner、branch、worktree 与冻结 Owned paths
+的正式卡。迁移编号按当前头 v23 从 v24 起算，激活时复核。
+
+| 阶段 | Locked task IDs | 解锁条件 |
+| --- | --- | --- |
+| A 边界与协议 | `AL-BOUNDARY-CON-01`, `AL-HOST-CONTRACT-V1-01`, `AL-WORKER-GENERIC-01`, `AL-API-BOUNDARY-01` | ADR-017 生效后即可激活；`AL-WORKER-GENERIC-01` 依赖 `AL-HOST-CONTRACT-V1-01` |
+| B Connector 与 Binding | `AL-CONNECTOR-CON-01`, `AL-CONNECTOR-PG-01`, `AL-TASK-BIND-CON-01`, `AL-TASK-ADMISSION-PG-01` | 阶段 A 对应卡合并；PG 卡从迁移 v24 起 |
+| C 执行权限与 Egress | `AL-AUTH-WORKER-01`, `AL-HOST-EGRESS-01`, `AL-HOST-EFFECT-01` | `AL-TASK-ADMISSION-PG-01` 合并；Egress 后 Effect |
+| D API/Conformance/迁移 | `AL-QUERY-API-V1-01`, `AL-HOST-CONFORMANCE-01`, `AL-TRENCH-CUTOVER-01`, `AL-LEGACY-REMOVAL-01`, `AL-API-DECOUPLE-01` | C 阶段合并后逐张解锁；Cutover 后才能 Removal |
+
+#### Activation Notes
+
+- 架构收益最高的首发三张：`AL-HOST-CONTRACT-V1-01`、
+  `AL-WORKER-GENERIC-01`、`AL-CONNECTOR-CON-01`——完成后 Worker 彻底
+  摆脱 Trench 词汇，第二个 Host 可零分支接入。
+- 多 Host 零分支不变式（fake-host-b 通过同一 Conformance 套件且
+  agent-core/Worker 生产代码 diff = 0）是 Agent Layer 成立的核心门禁。
+- `EMB-TRN-READ-E2E-01`（真实 Trench 九场景验收）不阻塞 AL 卡激活，
+  两者可并行；Cutover 卡执行前必须先有该验收证据。
+
 ## Agent Definition V2 Task Board
 
 Direction source: `docs/Zebra Agent Runtime Upgrade Proposal v2.0.md`.
