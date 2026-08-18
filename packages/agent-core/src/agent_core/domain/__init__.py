@@ -1,5 +1,14 @@
 """Domain models for Zebra Agent."""
 
+from agent_core.domain.agent_capabilities import (
+    Capability,
+    GrantScope,
+    capability,
+    capability_set,
+    grant_scope,
+    grant_scope_set,
+    intersect_capabilities,
+)
 from agent_core.domain.agent_definition_drafts import (
     AgentDefinitionDraft,
     AgentDefinitionDraftValidation,
@@ -148,6 +157,16 @@ from agent_core.domain.host_authority import (
     HostSessionGrant,
     HostTechnicalLimits,
 )
+from agent_core.domain.host_capability_manifests import (
+    HostCapabilityManifestV1,
+    HostToolContractV1,
+    ResourceBindingRule,
+)
+from agent_core.domain.host_effect_receipts import (
+    HostEffectReceipt,
+    HostEffectStatus,
+    uncertain_receipt,
+)
 from agent_core.domain.leases import (
     DEFAULT_MAX_LEASE_TTL,
     LeaseCheckpointRegressionError,
@@ -252,6 +271,19 @@ __all__ = [
     "OpaqueAuthorityScope",
     "HostAuthorityError",
     "HostContextEnvelope",
+    "Capability",
+    "GrantScope",
+    "HostCapabilityManifestV1",
+    "HostEffectReceipt",
+    "HostEffectStatus",
+    "HostToolContractV1",
+    "ResourceBindingRule",
+    "capability",
+    "capability_set",
+    "grant_scope",
+    "grant_scope_set",
+    "intersect_capabilities",
+    "uncertain_receipt",
     "HostGrantExpiredError",
     "HostGrantMismatchError",
     "HostGrantNotYetValidError",

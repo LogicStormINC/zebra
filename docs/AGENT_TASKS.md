@@ -711,6 +711,39 @@ read-only Trench vertical slice.
 - no admission orchestration, registry or binding logic (successor cards)
 - no HTTP routes or composition changes in `apps/api`
 
+### AL-HOST-CONTRACT-V1-01 - Host Capability Manifest And Binding Contracts
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `CORE / ARCH`
+- Branch: `codex/al-host-contract-v1-01` (from `cloud-agent@d5e33b75`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/agent_capabilities.py` (new),
+  `packages/agent-core/src/agent_core/domain/host_capability_manifests.py` (new),
+  `packages/agent-core/src/agent_core/domain/host_effect_receipts.py` (new),
+  `packages/agent-core/src/agent_core/ports/host_credential_resolver.py` (new),
+  domain/ports registration, focused tests, this card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] Capability (stable Zebra semantics) and GrantScope (Host wording) are
+  distinct validated types with deterministic intersection semantics.
+- [x] `ResourceBindingRule` accepts only single-segment JSON pointers over
+  top-level arguments; JSONPath/scripts/templates are rejected at validation.
+- [x] `HostToolContractV1`/`HostCapabilityManifestV1` compute canonical
+  sha256 digests; duplicate tool names and bound violations are rejected.
+- [x] `HostEffectReceipt` records uncertain outcomes without payloads or
+  secrets; succeeded receipts require a business revision; naive timestamps
+  are rejected.
+- [x] `EphemeralHostCredential` + `HostWorkloadCredentialResolverPort` freeze
+  the phase-C credential seam (memory-only, never persisted or logged).
+- [x] Focused tests 14 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no wire parsing in integrations (successor adapter cards)
+- no PostgreSQL storage, admission flow, or Worker changes
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in

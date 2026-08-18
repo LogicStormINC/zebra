@@ -79,6 +79,10 @@ from agent_core.ports.handoff_dispatch_store import (
     HandoffDispatch,
     HandoffDispatchStorePort,
 )
+from agent_core.ports.host_credential_resolver import (
+    EphemeralHostCredential,
+    HostWorkloadCredentialResolverPort,
+)
 from agent_core.ports.idempotency_store import IdempotencyRecord, IdempotencyStorePort
 from agent_core.ports.lease_store import LeaseStorePort
 from agent_core.ports.live_event_fanout import (
@@ -197,6 +201,7 @@ __all__ = [
     "EffectLedgerPort",
     "EffectLedgerStatus",
     "EffectReservation",
+    "EphemeralHostCredential",
     "EventStorePort",
     "EffectiveRuntimeAuthority",
     "HandoffDispatch",
@@ -206,6 +211,7 @@ __all__ = [
     "SessionHandoffAbortPort",
     "SessionHandoffAbortRequest",
     "GovernedMemoryStorePort",
+    "HostWorkloadCredentialResolverPort",
     "GovernedMemoryScanCursor",
     "GovernedMemoryScanPage",
     "GovernedMemoryScanQuery",
