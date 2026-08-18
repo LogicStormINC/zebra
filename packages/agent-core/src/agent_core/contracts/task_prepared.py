@@ -29,6 +29,12 @@ class TaskPreparedPayload(BaseModel):
     skill_components: list[str] | None = _OPTIONAL_LIST
     skill_component_identities: list[SkillComponentIdentity] | None = _OPTIONAL_LIST
     agent_definition: AgentDefinition | None = _OPTIONAL_LIST
+    agent_context_digest: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+        exclude_if=lambda value: value is None,
+    )
     history_session_ids: list[str] | None = _OPTIONAL_LIST
     max_attempts: int | None = None
     max_corrections_per_attempt: int | None = None
