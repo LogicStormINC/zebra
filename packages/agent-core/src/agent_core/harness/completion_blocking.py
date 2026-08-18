@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from datetime import datetime
 
@@ -10,6 +10,8 @@ from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.plans import SessionPlan
+from agent_core.harness.attempt_result import build_attempt_result
+from agent_core.harness.coverage_verdict import CompletionEvidenceStatus
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,
@@ -116,6 +118,107 @@ def append_missing_evidence_observation(
     )
 
 
+def matching_evidence_producers(
+    definition: AgentDefinition | None,
+    missing: tuple[str, ...],
+    trusted_evidence_tools: Mapping[str, tuple[str, ...]],
+) -> tuple[str, ...]:
+    """Currently-advertised trusted producer tools that can satisfy at least
+    one of the missing typed-evidence requirements. A prompt-only correction
+    (no matching producer) must never dispatch; the correction budget may
+    increment only when at least one producer exists."""
+    return tuple(
+        dict.fromkeys(
+            tool
+            for item in _trusted_evidence_tools(definition, missing, trusted_evidence_tools)
+            for tool in _string_list(item.get("tools"))
+            if isinstance(tool, str)
+        )
+    )
+
+
+def schedule_evidence_correction(
+    context: HarnessContext,
+    *,
+    status: CompletionEvidenceStatus,
+    messages: list[SessionMessage],
+    emitted_events: list[HarnessEventDraft],
+    model_calls_used: int,
+    tool_calls_executed: int,
+    metadata: dict[str, object],
+    observation_count: int,
+    assistant_message: str,
+    fingerprints: set[str],
+    request_next_completion: Callable[..., HarnessAttemptResult],
+    include_evidence_detail: bool = False,
+) -> HarnessAttemptResult:
+    """Typed-tool-only correction scheduling (P1-3).
+
+    Only when at least one matching currently-advertised trusted producer
+    exists may the correction budget increment and the next dispatch use
+    tool_choice=required with only those tools. A prompt-only correction
+    fails closed with the legacy non-retryable code without dispatching.
+    Open-plan corrections stay separate (plan behavior unchanged).
+    """
+    if not status.open_plan_steps and not matching_evidence_producers(
+        context.task.agent_definition,
+        status.missing,
+        context.task.trusted_evidence_tools,
+    ):
+        detail = (
+            {
+                "completion_evidence_satisfied": False,
+                "completion_evidence_missing": list(status.missing),
+                "task_plan_open_steps": list(status.open_plan_steps),
+            }
+            if include_evidence_detail
+            else {}
+        )
+        return build_attempt_result(
+            outcome=completion_evidence_failure_outcome(status.open_plan_steps),
+            summary=blocked_completion_summary(status.open_plan_steps),
+            assistant_message=assistant_message,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            emitted_events=emitted_events,
+            metadata={
+                **metadata,
+                **detail,
+                "completion_evidence_observation_count": observation_count,
+                "stop_reason": blocked_completion_reason(
+                    status.open_plan_steps,
+                    correction_attempted=False,
+                ),
+            },
+        )
+    required_tools = append_missing_evidence_observation(
+        messages,
+        missing=status.missing,
+        open_plan_steps=status.open_plan_steps,
+        definition=context.task.agent_definition,
+        trusted_evidence_tools=context.task.trusted_evidence_tools,
+        created_at=context.attempt.started_at,
+    )
+    return request_next_completion(
+        context,
+        messages=messages,
+        emitted_events=emitted_events,
+        model_calls_used=model_calls_used,
+        tool_calls_executed=tool_calls_executed,
+        fingerprints=fingerprints,
+        metadata={
+            **metadata,
+            "completion_evidence_observation_count": observation_count + 1,
+            **(
+                {"required_evidence_tool_names": required_tools}
+                if required_tools
+                else {}
+            ),
+        },
+        fallback_message=assistant_message,
+    )
+
+
 def _trusted_evidence_tools(
     definition: AgentDefinition | None,
     missing: tuple[str, ...],
@@ -170,8 +273,16 @@ def completion_evidence_failure_outcome(
     return HarnessAttemptOutcome.SUSPENDED if open_plan_steps else HarnessAttemptOutcome.FAILED
 
 
-def blocked_completion_reason(open_plan_steps: tuple[str, ...]) -> str:
-    return "task_plan_incomplete" if open_plan_steps else "completion_evidence_missing"
+def blocked_completion_reason(
+    open_plan_steps: tuple[str, ...],
+    *,
+    correction_attempted: bool = False,
+) -> str:
+    if open_plan_steps:
+        return "task_plan_incomplete"
+    if correction_attempted:
+        return "completion_evidence_missing_after_correction"
+    return "completion_evidence_missing"
 
 
 def blocked_completion_summary(open_plan_steps: tuple[str, ...]) -> str:

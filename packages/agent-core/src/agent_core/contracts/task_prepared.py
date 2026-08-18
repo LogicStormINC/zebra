@@ -31,6 +31,9 @@ class TaskPreparedPayload(BaseModel):
     agent_definition: AgentDefinition | None = _OPTIONAL_LIST
     history_session_ids: list[str] | None = _OPTIONAL_LIST
     max_attempts: int | None = None
+    max_corrections_per_attempt: int | None = None
+    execution_profile_id: str | None = _OPTIONAL_LIST
+    retryable_stop_reasons: list[str] | None = _OPTIONAL_LIST
     max_model_calls: int | None = None
     max_tool_calls: int | None = None
     plan_required: bool = Field(
@@ -48,7 +51,12 @@ class TaskPreparedPayload(BaseModel):
             raise ValueError("field must not be blank")
         return stripped
 
-    @field_validator("workspace_root", "policy_profile", "model_id")
+    @field_validator(
+        "workspace_root",
+        "policy_profile",
+        "model_id",
+        "execution_profile_id",
+    )
     @classmethod
     def ensure_optional_text_not_blank(cls, value: str | None) -> str | None:
         if value is None:
@@ -98,3 +106,25 @@ class TaskPreparedPayload(BaseModel):
         if value <= 0:
             raise ValueError("field must be positive when provided")
         return value
+
+    @field_validator("max_corrections_per_attempt")
+    @classmethod
+    def ensure_correction_cap(cls, value: int | None) -> int | None:
+        if value is None:
+            return None
+        if value < 0:
+            raise ValueError("max_corrections_per_attempt must be non-negative")
+        return value
+
+    @field_validator("retryable_stop_reasons")
+    @classmethod
+    def ensure_retryable_reasons(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        normalized: list[str] = []
+        for reason in value:
+            if not isinstance(reason, str) or not reason.strip():
+                raise ValueError("retryable_stop_reasons must be non-blank codes")
+            if reason.strip() not in normalized:
+                normalized.append(reason.strip())
+        return normalized

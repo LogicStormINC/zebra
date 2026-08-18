@@ -5,6 +5,7 @@ from typing import Literal
 
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import TaskId
+from agent_core.harness.coverage_verdict import sanitize_public_coverage_verdict
 from agent_core.ports.agent_tasks import TaskEvent
 
 PUBLIC_CONVERSATION_SCHEMA_VERSION = "zebra.public-conversation.v1"
@@ -114,6 +115,9 @@ def project_public_conversation(
             continue
 
         if event_type in _PROGRESS_CONTENT:
+            coverage_verdict = sanitize_public_coverage_verdict(
+                event.payload.get("coverage_verdict")
+            )
             _set_event_item(
                 items,
                 task_event,
@@ -121,6 +125,12 @@ def project_public_conversation(
                 state=_PROGRESS_STATE[event_type],
                 disclosure=_PROGRESS_DISCLOSURE[event_type],
                 content=_PROGRESS_CONTENT[event_type],
+                data=(
+                    {"coverage_verdict": coverage_verdict}
+                    if event_type is EventType.SESSION_COMPLETED
+                    and coverage_verdict is not None
+                    else None
+                ),
             )
             continue
 
@@ -149,6 +159,9 @@ def project_public_conversation(
                 or _text(event.payload.get("summary"))
                 or "This task did not complete."
             )
+            coverage_verdict = sanitize_public_coverage_verdict(
+                event.payload.get("coverage_verdict")
+            )
             _set_event_item(
                 items,
                 task_event,
@@ -156,7 +169,14 @@ def project_public_conversation(
                 state="failed",
                 disclosure="open",
                 content=public_message,
-                data={"retryable": bool(event.payload.get("retryable", True))},
+                data={
+                    "retryable": bool(event.payload.get("retryable", True)),
+                    **(
+                        {"coverage_verdict": coverage_verdict}
+                        if coverage_verdict is not None
+                        else {}
+                    ),
+                },
             )
 
     projected = tuple(
@@ -218,6 +238,25 @@ def _public_final_event_ids(events: tuple[TaskEvent, ...]) -> set[str]:
         for item in events
         if item.event.event_type is EventType.SESSION_COMPLETED
     }
+    failed_segments = {
+        str(item.segment_id)
+        for item in events
+        if item.event.event_type in {EventType.SESSION_FAILED, EventType.SESSION_CANCELLED}
+    }
+    terminal_attempt = {
+        str(item.segment_id): item.event.payload.get("attempt_number")
+        for item in events
+        if item.event.event_type is EventType.SESSION_COMPLETED
+    }
+    accepted_attempts = {
+        (
+            str(item.segment_id),
+            item.event.payload.get("attempt_id") or item.event.payload.get("attempt_number"),
+        )
+        for item in events
+        if item.event.event_type is EventType.ATTEMPT_OUTCOME_RECORDED
+        and item.event.payload.get("outcome") == "completed"
+    }
     explicit: dict[str, TaskEvent] = {}
     legacy: dict[str, TaskEvent] = {}
     last_tool_sequence: dict[str, int] = {}
@@ -233,14 +272,35 @@ def _public_final_event_ids(events: tuple[TaskEvent, ...]) -> set[str]:
             continue
         response_stage = event.payload.get("response_stage")
         if response_stage == "final":
+            # Only the accepted attempt's candidate may become the canonical
+            # final: a failed attempt's final stays attempt-private (Wave 5).
+            if segment in failed_segments:
+                continue
+            event_attempt_id = event.payload.get("attempt_id")
+            event_attempt_number = event.payload.get("attempt_number")
+            if event_attempt_id is not None or event_attempt_number is not None:
+                # Wave 5 candidates require an authoritative accepted attempt
+                # fact; no-outcome/failed/retrying candidates remain private,
+                # closing the read window before ATTEMPT_OUTCOME_RECORDED.
+                if (
+                    segment,
+                    event_attempt_id or event_attempt_number,
+                ) not in accepted_attempts:
+                    continue
+            terminal = terminal_attempt.get(segment)
+            if (
+                terminal is not None
+                and event_attempt_number is not None
+                and event_attempt_number != terminal
+            ):
+                continue
             explicit[segment] = item
             continue
         if response_stage == "tool_loop" or segment not in completed_segments:
             continue
         tool_call_count = event.payload.get("tool_call_count")
         if tool_call_count == 0 or (
-            tool_call_count is None
-            and item.task_sequence > last_tool_sequence.get(segment, -1)
+            tool_call_count is None and item.task_sequence > last_tool_sequence.get(segment, -1)
         ):
             legacy[segment] = item
     return {str(item.event.event_id) for item in (*explicit.values(), *legacy.values())}
@@ -316,10 +376,7 @@ def _apply_clarification_event(
         public_choices = [
             normalized
             for choice in choices[:MAX_PUBLIC_CHOICES]
-            if (
-                normalized := _bounded_text(choice, limit=MAX_PUBLIC_CHOICE_CHARS)
-            )
-            is not None
+            if (normalized := _bounded_text(choice, limit=MAX_PUBLIC_CHOICE_CHARS)) is not None
         ]
         if public_choices:
             data["choices"] = public_choices

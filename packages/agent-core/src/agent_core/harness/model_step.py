@@ -22,8 +22,6 @@ from agent_core.domain.modeling import (
 from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness.capability_guidance import append_capability_guidance
 from agent_core.harness.context_recovery import (
-    merge_recovery_messages,
-    prepare_bounded_conversation,
     prepare_terminal_conversation,
 )
 from agent_core.harness.context_window import ContextWindowExceededError
@@ -35,16 +33,29 @@ from agent_core.harness.model_request import (
     context_window,
     with_context_plan,
 )
+from agent_core.harness.model_step_completions import (
+    _emit_continuation_selection,
+    _emit_text_delta,
+    prepare_conversation,
+    recover_conversation,
+)
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
+from agent_core.harness.orchestration_events import model_request_started_payload
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_core.harness.provider_continuation import (
     PreparedProviderContinuation,
-    continuation_event,
     prepare_provider_continuation,
+)
+from agent_core.harness.reconstruction import (
+    RequestReconstruction,
+    prepare_guarded_dispatch,
 )
 from agent_core.harness.required_tool_request import selected_model_tools
 from agent_core.harness.task_state_context import append_task_state_context
-from agent_core.harness.tool_result_message import tool_result_content, tool_result_status
+from agent_core.harness.tool_result_message import (
+    tool_message_append_tool_batch,
+    tool_message_append_tool_result,
+)
 from agent_core.ports.context_compiler import ContextCompilerPort
 from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
@@ -68,6 +79,8 @@ class HarnessModelStep:
         provider_continuation: ProviderContinuationRef | None = None,
         compaction_hook: CompactionHook | None = None,
         attempt_number: int = 1,
+        reconstruction: RequestReconstruction | None = None,
+        plan_revision_provider: Callable[[], int] | None = None,
     ) -> None:
         if conversation_token_budget is not None and conversation_token_budget <= 0:
             raise ValueError("conversation_token_budget must be positive")
@@ -80,6 +93,8 @@ class HarnessModelStep:
         self._event_sink = event_sink
         self._continuation_sink = continuation_sink
         self._attempt_number = attempt_number
+        self._reconstruction = reconstruction
+        self._plan_revision_provider = plan_revision_provider
         self._provider_continuation = provider_continuation
         self._compaction_hook = compaction_hook
         self._recovery_messages: tuple[SessionMessage, ...] = ()
@@ -94,28 +109,15 @@ class HarnessModelStep:
         created_at: datetime,
         media_inputs: tuple[ModelMediaInput, ...] = (),
     ) -> ConversationCompactionResult | None:
-        result = prepare_bounded_conversation(
+        return prepare_conversation(
+            self,
             messages,
             model_gateway,
             allow_tools=allow_tools,
-            available_tools=self._available_tools,
-            conversation_compactor=self._conversation_compactor,
-            conversation_token_budget=self._conversation_token_budget,
-            compaction_hook=self._compaction_hook,
             user_goal=user_goal,
             created_at=created_at,
             media_inputs=media_inputs,
         )
-        if result is not None and result.recovery_messages is not None:
-            recovery = merge_recovery_messages(
-                self._recovery_messages,
-                result.recovery_messages,
-                model_gateway,
-                media_inputs=media_inputs,
-            )
-            if recovery is not None:
-                self._recovery_messages = recovery
-        return result
 
     def recover_conversation(
         self,
@@ -124,18 +126,7 @@ class HarnessModelStep:
         *,
         media_inputs: tuple[ModelMediaInput, ...] = (),
     ) -> bool:
-        recovery = merge_recovery_messages(
-            self._recovery_messages,
-            tuple(messages),
-            model_gateway,
-            media_inputs=media_inputs,
-        )
-        if recovery is None:
-            return False
-        self._recovery_messages = recovery
-        self._provider_continuation = None
-        messages[:] = self._recovery_messages
-        return True
+        return recover_conversation(self, messages, model_gateway, media_inputs=media_inputs)
 
     def request_initial_completion(
         self,
@@ -173,6 +164,7 @@ class HarnessModelStep:
         response_repair_limit: int = 1,
         required_tool_names: tuple[str, ...] = (),
         invocation_policy: ModelInvocationPolicy | None = None,
+        step_kind: str = "initial",
     ) -> ModelCompletion:
         tools = selected_model_tools(
             self._available_tools,
@@ -195,8 +187,10 @@ class HarnessModelStep:
             raise ContextWindowExceededError(plan)
         validate_tool_call_pairing(messages)
         if self._event_sink is None:
-            if not media_inputs and self._provider_continuation is not None and isinstance(
-                model_gateway, ProviderContinuationCompletionPort
+            if (
+                not media_inputs
+                and self._provider_continuation is not None
+                and isinstance(model_gateway, ProviderContinuationCompletionPort)
             ):
                 try:
                     completion = model_gateway.complete_from_reference(
@@ -230,32 +224,47 @@ class HarnessModelStep:
                     on_delta=lambda _model_call_id, _delta: None,
                     response_repair_limit=response_repair_limit,
                     invocation_policy=invocation_policy,
+                    reconstruction=self._reconstruction,
+                    step_kind=step_kind,
+                    allow_tools=allow_tools,
+                    required_tool_names=required_tool_names,
                 )
             return with_context_plan(completion, plan)
         model_call_id = str(new_correlation_id())
+        current_plan_revision = (
+            self._plan_revision_provider() if self._plan_revision_provider else None
+        )
+        reconstruction_fields, response_repair_limit = prepare_guarded_dispatch(
+            self._reconstruction,
+            messages,
+            tools,
+            media_inputs=media_inputs,
+            gateway=model_gateway,
+            invocation_policy=invocation_policy,
+            response_repair_limit=response_repair_limit,
+            step_id=model_call_id,
+            step_kind=step_kind,
+            allow_tools=allow_tools,
+            required_tool_names=required_tool_names,
+            plan_revision=current_plan_revision,
+        )
         self._event_sink(
             HarnessEventDraft(
                 event_type=EventType.MODEL_REQUEST_STARTED,
                 actor=EventActor.HARNESS,
-                payload={
-                    "attempt_number": self._attempt_number,
-                    "model_call_id": model_call_id,
-                    "estimated_input_tokens": plan.estimated_input_tokens,
-                    "input_token_limit": plan.input_token_limit,
-                    "model_profile": plan.profile_name,
-                    "token_estimate_method": plan.estimate_method,
-                    "token_breakdown": plan.token_breakdown,
-                    "reserves": {
-                        "output": window.max_output_tokens,
-                        "reasoning": window.reasoning_reserve_tokens,
-                        "compaction": window.compaction_reserve_tokens,
-                        "protocol_and_emergency": window.protocol_reserve_tokens,
-                    },
-                },
+                payload=model_request_started_payload(
+                    attempt_number=self._attempt_number,
+                    model_call_id=model_call_id,
+                    plan=plan,
+                    window=window,
+                    reconstruction_fields=reconstruction_fields,
+                ),
             )
         )
-        if not media_inputs and self._provider_continuation is not None and isinstance(
-            model_gateway, ProviderContinuationCompletionPort
+        if (
+            not media_inputs
+            and self._provider_continuation is not None
+            and isinstance(model_gateway, ProviderContinuationCompletionPort)
         ):
             try:
                 completion = model_gateway.complete_from_reference(
@@ -284,6 +293,10 @@ class HarnessModelStep:
                     on_delta=self._emit_text_delta,
                     response_repair_limit=response_repair_limit,
                     invocation_policy=invocation_policy,
+                    reconstruction=self._reconstruction,
+                    step_kind=step_kind,
+                    allow_tools=allow_tools,
+                    required_tool_names=required_tool_names,
                 )
             finally:
                 self._provider_continuation = None
@@ -320,26 +333,11 @@ class HarnessModelStep:
         self._provider_continuation = selection.reference
         self._emit_continuation_selection(selection)
 
-    def _emit_continuation_selection(self, selection: PreparedProviderContinuation) -> None:
-        if self._event_sink is None:
-            return
-        self._event_sink(continuation_event(selection, attempt_number=self._attempt_number))
-
     def _emit_text_delta(self, model_call_id: str, delta: ModelTextDelta) -> None:
-        if self._event_sink is None:
-            return
-        self._event_sink(
-            HarnessEventDraft(
-                event_type=EventType.MODEL_RESPONSE_DELTA,
-                actor=EventActor.HARNESS,
-                payload={
-                    "attempt_number": self._attempt_number,
-                    "model_call_id": model_call_id,
-                    "delta_index": delta.index,
-                    "content_delta": delta.content,
-                },
-            )
-        )
+        _emit_text_delta(self, model_call_id, delta)
+
+    def _emit_continuation_selection(self, selection: PreparedProviderContinuation) -> None:
+        _emit_continuation_selection(self, selection)
 
     def append_tool_exchange(
         self,
@@ -369,9 +367,11 @@ class HarnessModelStep:
         completion: ModelCompletion,
         tool_calls: tuple[ToolCall, ...],
     ) -> None:
-        if not tool_calls:
-            raise ValueError("tool batch must not be empty")
-        messages.append(completion.assistant_message.model_copy(update={"tool_calls": tool_calls}))
+        tool_message_append_tool_batch(
+            messages,
+            completion=completion,
+            tool_calls=tool_calls,
+        )
 
     @staticmethod
     def append_tool_result(
@@ -381,18 +381,11 @@ class HarnessModelStep:
         tool_result: ToolResult,
         created_at: datetime,
     ) -> None:
-        messages.append(
-            SessionMessage(
-                message_id=new_message_id(),
-                role=MessageRole.TOOL,
-                content=tool_result_content(tool_result),
-                created_at=created_at,
-                tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
-                metadata={
-                    **tool_result.metadata,
-                    "tool_result_status": tool_result_status(tool_result),
-                },
-            )
+        tool_message_append_tool_result(
+            messages,
+            tool_call=tool_call,
+            tool_result=tool_result,
+            created_at=created_at,
         )
 
     def request_tool_result_completion(
@@ -430,15 +423,17 @@ class HarnessModelStep:
         )
 
     def build_initial_messages(
-        self, task: HarnessTask, *, created_at: datetime,
+        self,
+        task: HarnessTask,
+        *,
+        created_at: datetime,
         model_gateway: ModelGatewayPort | None = None,
     ) -> list[SessionMessage]:
         self._recovery_messages = ()
         messages: list[SessionMessage] = []
         if self._context_compiler is not None and task.workspace_root is not None:
             has_session_handoff = any(
-                evidence.kind == "session_handoff"
-                for evidence in task.runtime_evidence
+                evidence.kind == "session_handoff" for evidence in task.runtime_evidence
             )
             context_budget = (
                 max(

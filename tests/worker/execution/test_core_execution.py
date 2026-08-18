@@ -404,7 +404,7 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
         "zebra_agent_worker.execution.build_model_gateway",
         lambda settings: _assistant_only_gateway(settings=settings),
     )
-    monkeypatch.setattr("zebra_agent_worker.execution.LocalPolicyEngine", build_policy)
+    monkeypatch.setattr("zebra_agent_worker.attempt_execution.LocalPolicyEngine", build_policy)
 
     _build_execution_service(database_path).execute_session(
         session_id,
@@ -452,7 +452,7 @@ def test_worker_keeps_preapproved_readonly_mcp_scope_out_of_trusted_local(
         "zebra_agent_worker.execution.build_model_gateway",
         lambda settings: _assistant_only_gateway(settings=settings),
     )
-    monkeypatch.setattr("zebra_agent_worker.execution.LocalPolicyEngine", build_policy)
+    monkeypatch.setattr("zebra_agent_worker.attempt_execution.LocalPolicyEngine", build_policy)
 
     _build_execution_service(database_path, settings=settings).execute_session(
         session_id,
@@ -558,7 +558,7 @@ def test_worker_narrows_preapproved_mcp_scope_after_native_media_disables_tool(
         "agent_runtime.harness.build_mcp_transport",
         lambda *_args, **_kwargs: FakeMcpTransport(),
     )
-    monkeypatch.setattr(worker_execution_module, "LocalPolicyEngine", build_policy)
+    monkeypatch.setattr("zebra_agent_worker.attempt_execution.LocalPolicyEngine", build_policy)
 
     result = _build_execution_service(database_path, settings=settings).execute_session(
         session_id,
@@ -594,7 +594,7 @@ def test_worker_scopes_account_change_proposal_gate_to_v2_v3_or_v4_binding(
         "zebra_agent_worker.execution.build_model_gateway",
         lambda settings: _assistant_only_gateway(settings=settings),
     )
-    monkeypatch.setattr("zebra_agent_worker.execution.LocalPolicyEngine", build_policy)
+    monkeypatch.setattr("zebra_agent_worker.attempt_execution.LocalPolicyEngine", build_policy)
 
     for index, (contract_version, expected_gate) in enumerate(
         (
@@ -617,9 +617,7 @@ def test_worker_scopes_account_change_proposal_gate_to_v2_v3_or_v4_binding(
         )
         settings = replace(
             _settings(database_path),
-            finos_journal_provider=FinosJournalProviderSettings(
-                base_url="https://finos.internal"
-            ),
+            finos_journal_provider=FinosJournalProviderSettings(base_url="https://finos.internal"),
         )
 
         _build_execution_service(database_path, settings=settings).execute_session(

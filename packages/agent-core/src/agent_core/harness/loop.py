@@ -7,6 +7,7 @@ from agent_core.domain.identifiers import EventId, SessionId
 from agent_core.domain.sessions import Session
 from agent_core.harness.completion_blocking import enforce_plan_completion_coherence
 from agent_core.harness.completion_evidence import persisted_completion_evidence_events
+from agent_core.harness.coverage_verdict import safe_coverage_verdict
 from agent_core.harness.models import (
     HarnessAttempt,
     HarnessAttemptOutcome,
@@ -168,11 +169,16 @@ class HarnessLoop:
                 if attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
                 else EventType.SESSION_FAILED
             )
-            payload = {
+            payload: dict[str, object] = {
                 "attempt_number": attempt.number,
                 "summary": attempt_result.summary,
                 "metadata": attempt_result.metadata,
             }
+            coverage_verdict = safe_coverage_verdict(attempt_result.metadata)
+            if coverage_verdict is not None:
+                payload["coverage_verdict"] = coverage_verdict
+            if terminal_event_type is EventType.SESSION_FAILED:
+                payload["retryable"] = False
             recorder.record(
                 event_type=terminal_event_type,
                 actor=EventActor.HARNESS,

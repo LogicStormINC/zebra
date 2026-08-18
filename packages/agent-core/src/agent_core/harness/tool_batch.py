@@ -20,7 +20,10 @@ from agent_core.harness.concurrent_batch import (
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessContext, HarnessEventDraft
-from agent_core.harness.orchestration_events import policy_decision_payload
+from agent_core.harness.orchestration_events import (
+    policy_decision_payload,
+    tool_call_provider_payload,
+)
 from agent_core.harness.plan_step import execute_plan_call
 from agent_core.harness.policy_step import (
     policy_recovery_metadata,
@@ -85,10 +88,7 @@ class ToolBatchExecutor:
     ) -> ToolBatchResult:
         if not tool_calls:
             raise ValueError("tool batch must not be empty")
-        if (
-            tool_call_limit is not None
-            and tool_calls_executed + len(tool_calls) > tool_call_limit
-        ):
+        if tool_call_limit is not None and tool_calls_executed + len(tool_calls) > tool_call_limit:
             return self._terminal(
                 outcome=HarnessAttemptOutcome.SUSPENDED,
                 summary="tool call budget cannot fit the complete proposed batch",
@@ -192,6 +192,7 @@ class ToolBatchExecutor:
                             "tool_name": tool_call.name,
                             "tool_call_id": str(tool_call.tool_call_id),
                             "arguments": tool_call.arguments,
+                            **tool_call_provider_payload(tool_call),
                             "selection_summary": selection_summary,
                             "selection_metadata": selection_metadata,
                         },
@@ -455,6 +456,7 @@ class ToolBatchExecutor:
                         "tool_name": tool_call.name,
                         "tool_call_id": str(tool_call.tool_call_id),
                         "arguments": tool_call.arguments,
+                        **tool_call_provider_payload(tool_call),
                         "selection_summary": summary,
                         "selection_metadata": selection_metadata,
                     },
@@ -567,9 +569,7 @@ def _validator_passed(metadata: Mapping[str, object]) -> bool | None:
     return passed if isinstance(passed, bool) else None
 
 
-def _accumulate_failure(
-    metadata: dict[str, object], tool_name: str
-) -> dict[str, object]:
+def _accumulate_failure(metadata: dict[str, object], tool_name: str) -> dict[str, object]:
     prior_failures = metadata.get("recoverable_tool_failure_count", 0)
     failure_count = (
         prior_failures + 1

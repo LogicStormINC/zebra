@@ -409,6 +409,7 @@ class SequentialToolLoop:
                 model_calls_used=model_calls_used,
                 tool_calls_executed=tool_calls_executed,
                 emitted_events=emitted_events,
+                correction_attempted=True,
             )
         compaction_count = metadata.get("conversation_compaction_count")
         provisional_final = should_use_provisional_final(

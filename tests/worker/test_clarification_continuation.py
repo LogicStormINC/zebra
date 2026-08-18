@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -18,14 +18,21 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.model_gateway import ModelGatewayPort, ModelResponseRejectedError
 from agent_storage import (
+    FinosJournalGrant,
     SQLiteAgentTaskStore,
     SQLiteEventStore,
+    SQLiteFinosJournalGrantStore,
     SQLiteLeaseStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
 )
 from zebra_agent_api import create_app
-from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+from zebra_agent_config import (
+    ApiSettings,
+    FinosJournalProviderSettings,
+    ModelSettings,
+    ZebraAgentSettings,
+)
 from zebra_agent_worker import (
     SessionClaimService,
     SessionExecutionService,
@@ -38,6 +45,19 @@ from zebra_agent_worker.clarification_continuation import (
 )
 
 NOW = datetime(2026, 7, 15, 10, 0, tzinfo=UTC)
+
+
+class _PolicyAwareScriptedGateway(ScriptedModelGateway):
+    def complete_with_policy(
+        self,
+        messages,
+        *,
+        tools=(),
+        media_inputs=(),
+        invocation_policy=None,
+    ):
+        del media_inputs, invocation_policy
+        return self.complete(messages, tools=tools)
 
 
 def test_clarification_response_resumes_same_session_once(
@@ -213,10 +233,12 @@ def test_required_plan_nudge_remains_bounded_across_clarification(
         database_path,
         tmp_path,
         plan_required=True,
+        max_attempts=2,
     )
     service = _execution_service(database_path)
 
     waiting = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+    assert len(initial.requests) == 2  # proposal attempt + required-plan nudge
     create_app(database_path).append_session_message(
         str(session_id),
         {
@@ -230,7 +252,16 @@ def test_required_plan_nudge_remains_bounded_across_clarification(
     assert failed.session.status is SessionStatus.FAILED
     assert failed.attempt_result.metadata["stop_reason"] == "required_plan_not_created"
     assert len(resumed.requests) == 1
+    assert failed.attempt_result.metadata.get("stop_reason") != (
+        "attempt_reconstruction_invalid"
+    )
     events = SQLiteEventStore(database_path).list_for_session(session_id)
+    starts = [
+        event
+        for event in events
+        if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+    ]
+    assert [event.payload["attempt_sequence"] for event in starts] == [1]
     assert not any(
         event.event_type is EventType.TOOL_EXECUTION_STARTED
         and event.payload.get("tool_name") == "files.read"
@@ -238,7 +269,7 @@ def test_required_plan_nudge_remains_bounded_across_clarification(
     )
 
 
-def test_completion_evidence_nudge_remains_bounded_across_clarification(
+def test_completion_evidence_correction_remains_bounded_across_clarification(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -249,16 +280,18 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
         arguments={"question": "Which account?"},
         created_at=NOW,
     )
-    initial = ScriptedModelGateway(
-        responses=(
-            _response("The answer is ready."),
-            _response("I need one answer.", clarify_call),
-        )
+    # Under the typed-tool-only contract the model asks its clarification on
+    # the initial dispatch; the bounded evidence correction only runs after
+    # the continuation, with the genuine advertised producer forced.
+    initial = _PolicyAwareScriptedGateway(
+        responses=(_response("I need one answer.", clarify_call),)
     )
-    resumed = ScriptedModelGateway(
+    resumed = _PolicyAwareScriptedGateway(
         responses=(
             _response("Still no authoritative evidence."),
             _response("Still no authoritative evidence."),
+            _response("Attempt 2 still no authoritative evidence."),
+            _response("Attempt 2 still no authoritative evidence."),
         )
     )
     gateways = iter((initial, resumed))
@@ -270,6 +303,17 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
         database_path,
         tmp_path,
         agent_definition=_authoritative_evidence_definition(),
+        max_corrections_per_attempt=1,
+        max_attempts=2,
+    )
+    task = SQLiteAgentTaskStore(database_path).ensure_for_session(session_id)
+    SQLiteFinosJournalGrantStore(database_path).bind(
+        FinosJournalGrant(
+            task_id=task.task_id,
+            contract_version="finos.journals.v1",
+            grant="private-grant",
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+        )
     )
     service = _execution_service(database_path)
 
@@ -282,8 +326,28 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
 
     assert waiting.session.status is SessionStatus.WAITING_INPUT
     assert failed.session.status is SessionStatus.FAILED
-    assert failed.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
-    assert len(resumed.requests) == 1
+    assert failed.attempt_result.metadata["stop_reason"] == (
+        "completion_evidence_missing_after_correction"
+    )
+    # Attempt 1 (resumed): completion + one typed correction; then the
+    # retryable after-correction code schedules Attempt 2 with its own
+    # completion + one typed correction before the terminal.
+    assert len(resumed.requests) == 4
+    assert sum(
+        message.metadata.get("missing_completion_evidence") is not None
+        for request in resumed.requests
+        for message in request
+        if message.role is MessageRole.SYSTEM
+    ) == 2
+    assert failed.attempt_result.metadata.get("stop_reason") != (
+        "attempt_reconstruction_invalid"
+    )
+    starts = [
+        event
+        for event in SQLiteEventStore(database_path).list_for_session(session_id)
+        if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+    ]
+    assert [event.payload["attempt_sequence"] for event in starts] == [1, 2]
     clarification = next(
         event
         for event in SQLiteEventStore(database_path).list_for_session(session_id)
@@ -292,7 +356,58 @@ def test_completion_evidence_nudge_remains_bounded_across_clarification(
     assert sum(
         message.get("metadata", {}).get("missing_completion_evidence") is not None
         for message in clarification.payload["conversation"]
-    ) == 1
+    ) == 0
+
+
+def test_guarded_clarification_resumes_same_attempt_without_reconstruction_mismatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "guarded-clarification.sqlite"
+    clarify_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.clarify",
+        arguments={"question": "Which account?"},
+        created_at=NOW,
+    )
+    initial = ScriptedModelGateway(
+        responses=(_response("I need one answer.", clarify_call),)
+    )
+    resumed = ScriptedModelGateway(
+        responses=(_response("Done with the requested summary."),)
+    )
+    gateways = iter((initial, resumed))
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: next(gateways),
+    )
+    session_id = _seed_session(
+        database_path,
+        tmp_path,
+        max_attempts=2,
+    )
+    service = _execution_service(database_path)
+
+    waiting = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+    assert waiting.session.status is SessionStatus.WAITING_INPUT
+
+    create_app(database_path).append_session_message(
+        str(session_id),
+        {"content": "Main account", "clarification_id": str(clarify_call.tool_call_id)},
+    )
+    completed = service.execute_session(session_id, worker_id="worker-a", executed_at=NOW)
+
+    assert completed.session.status is SessionStatus.COMPLETED
+    assert len(resumed.requests) == 1
+    assert completed.attempt_result.metadata.get("stop_reason") != (
+        "attempt_reconstruction_invalid"
+    )
+    starts = [
+        event
+        for event in SQLiteEventStore(database_path).list_for_session(session_id)
+        if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+    ]
+    assert [event.payload["attempt_sequence"] for event in starts] == [1]
 
 
 def test_clarification_continuation_fails_closed_after_start_marker() -> None:
@@ -468,6 +583,8 @@ def _seed_session(
     *,
     plan_required: bool = False,
     agent_definition: AgentDefinition | None = None,
+    max_corrections_per_attempt: int = 0,
+    max_attempts: int = 1,
 ):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -477,6 +594,8 @@ def _seed_session(
             policy_profile="workspace_write",
             plan_required=plan_required,
             agent_definition=agent_definition,
+            max_corrections_per_attempt=max_corrections_per_attempt,
+            max_attempts=max_attempts,
         )
     )
     event_store = SQLiteEventStore(database_path)
@@ -523,6 +642,9 @@ def _execution_service(database_path: Path) -> SessionExecutionService:
             profile="test",
             database_url=str(database_path),
             api=ApiSettings(auth_token=None),
+            finos_journal_provider=FinosJournalProviderSettings(
+                base_url="https://finos.internal"
+            ),
             model=ModelSettings(
                 provider="test",
                 api_key_env="TEST_API_KEY",

@@ -206,7 +206,9 @@ def test_required_evidence_correction_rejects_unadvertised_tool_before_events() 
     )
 
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == "completion_evidence_missing"
+    assert result.attempt_result.metadata["stop_reason"] == (
+        "completion_evidence_missing_after_correction"
+    )
     assert tools.executions == []
     assert sum(
         event.event_type is EventType.MODEL_RESPONSE_RECEIVED for event in result.events

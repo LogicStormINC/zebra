@@ -1,6 +1,8 @@
 from agent_core.harness import HarnessContext, SingleAttemptOrchestrator
 from agent_core.harness.completion_blocking import enforce_plan_completion_coherence
+from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
+from agent_core.harness.reconstruction import ReconstructionMismatchError
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort, RuntimeSnapshot
 
 from zebra_agent_worker.approved_continuation import ApprovedContinuation
@@ -41,8 +43,15 @@ def execute_attempt(
         else:
             result = orchestrator.run(context)
     except Exception as exc:
+        pre_dispatch = isinstance(exc, ReconstructionMismatchError | ContextWindowExceededError)
         result = exception_attempt_result(
-            exc, error_metadata(exc, clarification, continuation)
+            exc,
+            error_metadata(
+                exc,
+                clarification,
+                continuation,
+                dispatch_attempted=not pre_dispatch,
+            ),
         )
     result = enforce_plan_completion_coherence(context, result)
     if result.outcome is not HarnessAttemptOutcome.SUSPENDED:
@@ -60,9 +69,7 @@ def execute_attempt(
                     "stop_reason": "runtime_snapshot_failed",
                     "error_type": type(exc).__name__,
                     "model_calls_used": result.metadata.get("model_calls_used", 0),
-                    "tool_calls_executed": result.metadata.get(
-                        "tool_calls_executed", 0
-                    ),
+                    "tool_calls_executed": result.metadata.get("tool_calls_executed", 0),
                 },
             ),
             None,

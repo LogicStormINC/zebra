@@ -8,6 +8,7 @@ from typing import Any
 
 from agent_core.domain.agent_definitions import AgentDefinition, AgentDefinitionContext
 from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.attempt_policy import MAX_CORRECTIONS_PER_ATTEMPT_CAP
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.model_media import ModelMediaInput, ordered_media_inputs
@@ -75,6 +76,10 @@ class HarnessTask:
     plan_required: bool = False
     task_plan: SessionPlan = field(default_factory=SessionPlan)
     trusted_evidence_tools: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    # Bounded evidence-correction budget. Legacy generic-harness default is one
+    # correction; the Hosted Worker always overrides this with the frozen Task
+    # policy value (0 = no correction) so the harness never hard-codes a budget.
+    max_corrections_per_attempt: int = 1
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -88,6 +93,15 @@ class HarnessTask:
             object.__setattr__(self, "goal", normalized_goal)
         if not isinstance(self.plan_required, bool):
             raise ValueError("harness task plan_required must be boolean")
+        if not isinstance(self.max_corrections_per_attempt, int) or isinstance(
+            self.max_corrections_per_attempt, bool
+        ):
+            raise ValueError("harness task max_corrections_per_attempt must be an integer")
+        if not 0 <= self.max_corrections_per_attempt <= MAX_CORRECTIONS_PER_ATTEMPT_CAP:
+            raise ValueError(
+                "harness task max_corrections_per_attempt must be within "
+                f"0..{MAX_CORRECTIONS_PER_ATTEMPT_CAP}"
+            )
         if not isinstance(self.trusted_evidence_tools, Mapping):
             raise ValueError("harness task trusted_evidence_tools must be a mapping")
         trusted_evidence_tools: dict[str, tuple[str, ...]] = {}
@@ -131,18 +145,14 @@ class HarnessTask:
         if self.model_id is not None and not self.model_id.strip():
             raise ValueError("harness task model_id must not be blank when set")
         object.__setattr__(self, "mcp_allowlist", normalize_mcp_allowlist(self.mcp_allowlist))
-        preapproved_readonly_tools = normalize_mcp_allowlist(
-            self.preapproved_readonly_tools
-        )
+        preapproved_readonly_tools = normalize_mcp_allowlist(self.preapproved_readonly_tools)
         if preapproved_readonly_tools and (
             self.policy_profile != "read_only"
             or self.network_profile != "mcp-proxy-only"
             or not set(preapproved_readonly_tools) <= set(self.mcp_allowlist)
         ):
             raise ValueError("preapproved read-only tools require scoped Task authority")
-        object.__setattr__(
-            self, "preapproved_readonly_tools", preapproved_readonly_tools
-        )
+        object.__setattr__(self, "preapproved_readonly_tools", preapproved_readonly_tools)
         object.__setattr__(
             self, "skill_components", normalize_skill_components(self.skill_components)
         )
@@ -198,12 +208,23 @@ class HarnessTask:
 class HarnessAttempt:
     number: int
     started_at: datetime
+    attempt_id: str | None = None
+    causal_attempt_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.number <= 0:
             raise ValueError("harness attempt number must be positive")
         if self.started_at.tzinfo is None:
             raise ValueError("harness attempt started_at must be timezone-aware")
+        if self.attempt_id is not None:
+            normalized_attempt_id = self.attempt_id.strip()
+            if not normalized_attempt_id:
+                raise ValueError("harness attempt_id must not be blank")
+            object.__setattr__(self, "attempt_id", normalized_attempt_id)
+        else:
+            object.__setattr__(self, "attempt_id", f"attempt-{self.number}")
+        if self.causal_attempt_id is None and self.number > 1:
+            object.__setattr__(self, "causal_attempt_id", f"attempt-{self.number - 1}")
 
 
 @dataclass(frozen=True)

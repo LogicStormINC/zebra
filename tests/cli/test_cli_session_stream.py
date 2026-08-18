@@ -8,9 +8,7 @@ from zebra_agent_cli.cli import execute
 
 def test_cli_stream_lists_persisted_events(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
-    session = SQLiteProjectionStore(database_path).save_session(
-        Session.create(title="CLI stream")
-    )
+    session = SQLiteProjectionStore(database_path).save_session(Session.create(title="CLI stream"))
     event_store = SQLiteEventStore(database_path)
     created = event_store.append(
         SessionEvent.create(
@@ -62,6 +60,7 @@ def test_cli_stream_lists_persisted_events(tmp_path: Path) -> None:
                     "network_profile": None,
                     "network_allowlist": None,
                     "max_attempts": None,
+                    "max_corrections_per_attempt": None,
                     "max_model_calls": None,
                     "max_tool_calls": None,
                 },

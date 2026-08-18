@@ -56,7 +56,13 @@ def evidence_correction_budget_failure(
     model_calls_used: int,
     tool_calls_executed: int,
     emitted_events: list[HarnessEventDraft],
+    correction_attempted: bool = False,
 ) -> HarnessAttemptResult:
+    stop_reason = (
+        "completion_evidence_missing_after_correction"
+        if correction_attempted
+        else "completion_evidence_missing"
+    )
     return build_attempt_result(
         outcome=HarnessAttemptOutcome.FAILED,
         summary="completion evidence contract is not satisfied",
@@ -64,5 +70,5 @@ def evidence_correction_budget_failure(
         model_calls_used=model_calls_used,
         tool_calls_executed=tool_calls_executed,
         emitted_events=emitted_events,
-        metadata={**metadata, "stop_reason": "completion_evidence_missing"},
+        metadata={**metadata, "stop_reason": stop_reason},
     )

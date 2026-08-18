@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass
 from hashlib import sha256
 
 from agent_core.domain.agent_definitions import (
@@ -15,12 +14,17 @@ from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCallStatus
 from agent_core.harness.attempt_result import build_attempt_result
 from agent_core.harness.completion_blocking import (
-    append_missing_evidence_observation,
     blocked_completion_reason,
     blocked_completion_summary,
     completion_evidence_failure_outcome,
     completion_evidence_observation_count,
     current_task_plan,
+    schedule_evidence_correction,
+)
+from agent_core.harness.coverage_verdict import (
+    PLAN_COMPLETION_REQUIREMENT,
+    CompletionEvidenceStatus,
+    completion_status_metadata,
 )
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
@@ -29,17 +33,6 @@ from agent_core.harness.models import (
     HarnessEventDraft,
 )
 from agent_core.harness.tool_batch import ToolBatchResult
-
-
-@dataclass(frozen=True)
-class CompletionEvidenceStatus:
-    satisfied: bool
-    missing: tuple[str, ...]
-    fingerprint: str
-    open_plan_steps: tuple[str, ...] = ()
-
-
-_PLAN_COMPLETION_REQUIREMENT = "task_plan_closed"
 
 
 def evaluate_context_completion_evidence(
@@ -53,7 +46,7 @@ def evaluate_context_completion_evidence(
     plan = current_task_plan(context, emitted_events)
     if not plan.open_step_ids:
         return status
-    missing = (*status.missing, _PLAN_COMPLETION_REQUIREMENT)
+    missing = (*status.missing, PLAN_COMPLETION_REQUIREMENT)
     fingerprint = sha256(
         json.dumps(
             {"evidence": status.fingerprint, "open_plan_steps": plan.open_step_ids},
@@ -61,7 +54,13 @@ def evaluate_context_completion_evidence(
             separators=(",", ":"),
         ).encode()
     ).hexdigest()
-    return CompletionEvidenceStatus(False, missing, fingerprint, plan.open_step_ids)
+    return CompletionEvidenceStatus(
+        False,
+        missing,
+        fingerprint,
+        plan.open_step_ids,
+        required=status.required,
+    )
 
 
 def persisted_completion_evidence_events(
@@ -136,7 +135,12 @@ def evaluate_completion_evidence(
             separators=(",", ":"),
         ).encode()
     ).hexdigest()
-    return CompletionEvidenceStatus(not missing, tuple(missing), fingerprint)
+    return CompletionEvidenceStatus(
+        not missing,
+        tuple(missing),
+        fingerprint,
+        required=len(definition.completion_contract.required_evidence),
+    )
 
 
 def _trusted_tool_execution(event: HarnessEventDraft) -> bool:
@@ -189,7 +193,7 @@ def completion_evidence_metadata(
     emitted_events: Iterable[HarnessEventDraft],
     metadata: Mapping[str, object],
 ) -> dict[str, object]:
-    return _completion_status_metadata(
+    return completion_status_metadata(
         evaluate_context_completion_evidence(context, emitted_events), metadata
     )
 
@@ -280,7 +284,7 @@ def complete_without_tools(
 ) -> HarnessAttemptResult:
     status = evaluate_context_completion_evidence(context, emitted_events)
     observation_count = completion_evidence_observation_count(messages, metadata)
-    metadata = _completion_status_metadata(status, metadata)
+    metadata = completion_status_metadata(status, metadata)
     if status.satisfied:
         return build_attempt_result(
             outcome=HarnessAttemptOutcome.COMPLETED,
@@ -295,7 +299,7 @@ def complete_without_tools(
             emitted_events=emitted_events,
             metadata=metadata,
         )
-    if observation_count >= 1:
+    if observation_count >= context.task.max_corrections_per_attempt:
         return build_attempt_result(
             outcome=completion_evidence_failure_outcome(status.open_plan_steps),
             summary=blocked_completion_summary(status.open_plan_steps),
@@ -306,34 +310,24 @@ def complete_without_tools(
             metadata={
                 **metadata,
                 "completion_evidence_observation_count": observation_count,
-                "stop_reason": blocked_completion_reason(status.open_plan_steps),
+                "stop_reason": blocked_completion_reason(
+                    status.open_plan_steps,
+                    correction_attempted=observation_count > 0,
+                ),
             },
         )
-    required_tools = append_missing_evidence_observation(
-        messages,
-        missing=status.missing,
-        open_plan_steps=status.open_plan_steps,
-        definition=context.task.agent_definition,
-        trusted_evidence_tools=context.task.trusted_evidence_tools,
-        created_at=context.attempt.started_at,
-    )
-    return request_next_completion(
+    return schedule_evidence_correction(
         context,
+        status=status,
         messages=messages,
         emitted_events=emitted_events,
         model_calls_used=model_calls_used,
         tool_calls_executed=tool_calls_executed,
+        metadata=metadata,
+        observation_count=observation_count,
+        assistant_message=assistant_message,
         fingerprints=fingerprints,
-        metadata={
-            **metadata,
-            "completion_evidence_observation_count": observation_count + 1,
-            **(
-                {"required_evidence_tool_names": required_tools}
-                if required_tools
-                else {}
-            ),
-        },
-        fallback_message=assistant_message,
+        request_next_completion=request_next_completion,
     )
 
 
@@ -353,7 +347,7 @@ def prepare_terminal_synthesis_evidence(
     if status.satisfied:
         return None
     observation_count = completion_evidence_observation_count(messages, metadata)
-    if observation_count >= 1:
+    if observation_count >= context.task.max_corrections_per_attempt:
         return build_attempt_result(
             outcome=completion_evidence_failure_outcome(status.open_plan_steps),
             summary=blocked_completion_summary(status.open_plan_steps),
@@ -366,34 +360,25 @@ def prepare_terminal_synthesis_evidence(
                 "completion_evidence_satisfied": False,
                 "completion_evidence_missing": list(status.missing),
                 "task_plan_open_steps": list(status.open_plan_steps),
-                "stop_reason": blocked_completion_reason(status.open_plan_steps),
+                "stop_reason": blocked_completion_reason(
+                    status.open_plan_steps,
+                    correction_attempted=observation_count > 0,
+                ),
             },
         )
-    required_tools = append_missing_evidence_observation(
-        messages,
-        missing=status.missing,
-        open_plan_steps=status.open_plan_steps,
-        definition=context.task.agent_definition,
-        trusted_evidence_tools=context.task.trusted_evidence_tools,
-        created_at=context.attempt.started_at,
-    )
-    return request_next_completion(
+    return schedule_evidence_correction(
         context,
+        status=status,
         messages=messages,
         emitted_events=emitted_events,
         model_calls_used=model_calls_used,
         tool_calls_executed=tool_calls_executed,
+        metadata=metadata,
+        observation_count=observation_count,
+        assistant_message=fallback_message,
         fingerprints=fingerprints,
-        metadata={
-            **metadata,
-            "completion_evidence_observation_count": observation_count + 1,
-            **(
-                {"required_evidence_tool_names": required_tools}
-                if required_tools
-                else {}
-            ),
-        },
-        fallback_message=fallback_message,
+        request_next_completion=request_next_completion,
+        include_evidence_detail=True,
     )
 
 
@@ -409,6 +394,7 @@ def terminal_synthesis_completion_evidence(
     status = evaluate_context_completion_evidence(context, emitted_events)
     if status.satisfied:
         return None
+    observation_count = completion_evidence_observation_count([], metadata)
     return build_attempt_result(
         outcome=completion_evidence_failure_outcome(status.open_plan_steps),
         summary=blocked_completion_summary(status.open_plan_steps),
@@ -421,7 +407,10 @@ def terminal_synthesis_completion_evidence(
             "completion_evidence_satisfied": False,
             "completion_evidence_missing": list(status.missing),
             "task_plan_open_steps": list(status.open_plan_steps),
-            "stop_reason": blocked_completion_reason(status.open_plan_steps),
+            "stop_reason": blocked_completion_reason(
+                status.open_plan_steps,
+                correction_attempted=observation_count > 0,
+            ),
         },
     )
 
@@ -430,23 +419,6 @@ def _needs_terminal_synthesis(metadata: Mapping[str, object]) -> bool:
     return metadata.get("validator_correction_required") is True or metadata.get(
         "tool_loop_no_progress"
     ) is True or metadata.get("policy_recovery_terminal_synthesis") is True
-
-
-def _completion_status_metadata(
-    status: CompletionEvidenceStatus,
-    metadata: Mapping[str, object],
-) -> dict[str, object]:
-    return {
-        **metadata,
-        "completion_evidence_satisfied": status.satisfied,
-        "completion_evidence_missing": list(status.missing),
-        "completion_evidence_fingerprint": status.fingerprint,
-        **(
-            {"task_plan_open_steps": list(status.open_plan_steps)}
-            if status.open_plan_steps
-            else {}
-        ),
-    }
 
 
 def _requirement_satisfied(

@@ -34,6 +34,11 @@ def test_session_bootstrap_service_builds_ready_session_events() -> None:
         "preapproved_readonly_tools": [],
         "skill_components": [],
         "max_attempts": 1,
+        "max_corrections_per_attempt": 0,
+        "retryable_stop_reasons": [
+            "model_execution_failed",
+            "completion_evidence_missing_after_correction",
+        ],
         "max_model_calls": None,
         "max_tool_calls": None,
     }

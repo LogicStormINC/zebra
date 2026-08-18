@@ -21,7 +21,10 @@ from agent_core.harness.models import (
     HarnessContext,
     HarnessEventDraft,
 )
-from agent_core.harness.orchestration_events import policy_decision_payload
+from agent_core.harness.orchestration_events import (
+    policy_decision_payload,
+    tool_call_provider_payload,
+)
 from agent_core.harness.policy_step import (
     policy_recovery_metadata,
     policy_stop_result,
@@ -67,8 +70,7 @@ class ConcurrentToolBatchExecutor:
         self._parallel_safe_tools = parallel_safe_tools
         self._parallel_batch_limits = dict(parallel_batch_limits or {})
         invalid_limits = (
-            not name.strip() or limit <= 0
-            for name, limit in self._parallel_batch_limits.items()
+            not name.strip() or limit <= 0 for name, limit in self._parallel_batch_limits.items()
         )
         if any(invalid_limits):
             raise ValueError("parallel batch limits require named tools and positive limits")
@@ -144,6 +146,7 @@ class ConcurrentToolBatchExecutor:
                         "tool_name": tool_call.name,
                         "tool_call_id": str(tool_call.tool_call_id),
                         "arguments": tool_call.arguments,
+                        **tool_call_provider_payload(tool_call),
                         "selection_summary": summary,
                         "selection_metadata": selection_metadata,
                     },
@@ -151,9 +154,7 @@ class ConcurrentToolBatchExecutor:
             )
             fingerprint = action_fingerprint(tool_call)
             if fingerprint in seen:
-                loop_guard_counts[fingerprint] = (
-                    loop_guard_counts.get(fingerprint, 0) + 1
-                )
+                loop_guard_counts[fingerprint] = loop_guard_counts.get(fingerprint, 0) + 1
                 duplicate_indices.add(index)
             seen.add(fingerprint)
             decision = self._policy_engine.evaluate_tool_call(tool_call)

@@ -16210,6 +16210,287 @@ any FinOS business type (`InvestorKnowledge`, `Thesis`, `Decision`,
 
 ### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
 
+### ZNX-WAVE5-OUTER-ATTEMPTS-01 - Wave 5 Complex Analysis Outer Attempt & Evidence Coverage v1
+
+- Status: `Review` (Gate 2 evidence ready; owner acceptance pending; no Phase 3)
+- Owner: `Vinson`
+- Branch: `codex/znx-hosted-outer-attempts-v1`
+- Worktree: `/Users/vinson/.codex/worktrees/058c/zebra`
+- Exact base: `1d19abbb57c4df5c9e8636db9c004638d7220ee8`
+  (Zebra Wave 4.5 Gate A acceptance record; remote-ref verified
+  `fork/codex/znx-wave45-task-ui-foundation-v1` = `1d19abb`)
+- Compatible FinOS exact base: `305223e7bf7bbc9ffc646ea488e89c7da8585c49`;
+  FinOS peer Gate 0 task `019ffe56-8b1e-74e2-9289-9ee8a3544aff`
+- Frozen shared package: `@zebra-agent/task-ui@0.1.0` SHA-256
+  `33b01e6910c7852fd1c0a4a7f77f9acc0f39a0b2d90d7b76d1de7e49826f5741`
+- Owned paths (Gate 0):
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`, `task_plan.md`,
+  `docs/znx-wave5-existing-state-audit-2026-08-14.md`,
+  new red/contract tests under `tests/` (no production code)
+- Owned paths (Phases 1-6, locked until owner accepts each gate):
+  `packages/agent-core/**` attempt/harness/coverage paths,
+  `packages/agent-storage/**` attempt/coverage/usage projection,
+  `apps/worker/**` execution/recovery,
+  `apps/api/**` profile binding and safe task projection,
+  backend tests/docs
+- Coordination: shared high-risk contracts (public task event, public
+  conversation, task projection, message identity, final identity,
+  attempt_summary, coverage_summary, web.py public response, task-ui public
+  types) change only via a separate contract commit + fixture with FinOS
+  peer notification before landing; this lane never modifies
+  `UI/packages/task-ui/**`, `UI/desktop/**`, FinOS source, next/stable, and
+  never creates/merges/pushes PRs or deploys.
+
+#### Goal
+
+Activate generic hosted outer attempts under one Stable Task (v1
+max_attempts=2, max_corrections_per_attempt=1, frozen at Task creation),
+generic final resource/evidence coverage, one bounded evidence correction per
+Attempt, deterministic crash/resume recovery, and per-attempt usage that can
+be settled once by the FinOS Credit lane. Zebra owns Attempt lifecycle, retry,
+coverage, correction and recovery; FinOS owns profile preflight, immutable
+resource manifest, owner authorization, read-only grant and Credit
+reserve/settle. No FinOS business type enters Zebra. Coverage-failed
+candidate finals stay attempt-private and never enter the public conversation
+or bind a business operation.
+
+#### DSH backend contracts (registered at Gate 0)
+
+- W5-DSH-01 Private Request Reconstruction Invariant: before every model
+  dispatch, actual request equals durable reconstruction across
+  `stable_task_id`, `attempt_id`, `turn_id`, `step_id`, `goal_revision`,
+  `plan_revision`, `resource_manifest_digest`, `messages_digest`,
+  `system_prompt_digest`, `tool_schema_digest`, `model_config_digest`,
+  `invocation_policy_digest`;
+  mismatch fails closed; full prompt/schema/grant/private resource never
+  public.
+- W5-DSH-02 Durable Execution Coordinates: Stable Task -> Attempt -> Turn ->
+  Step; Segment is an internal context carrier, not an Attempt or visible
+  Turn; stable identity/sequence/time/terminal reason/causal reference;
+  crash/resume must not duplicate, skip or cross evidence/final; reuse
+  existing event/session/segment seams, do not port a second DSH Turn/Step
+  system.
+- W5-DSH-03 Replay/Recovery Equivalence: deterministic crash tests at
+  attempt_started / model call / tool result / coverage report / retry
+  scheduled / Attempt 2 creation (before+after) / canonical final
+  (before+after) / Task terminal (before+after) / Credit settlement
+  (before+after); continuous, durable-replay and recovered execution yield
+  identical attempt identities/count, coverage/evidence, canonical final,
+  terminal, Goal/Plan revisions, usage, settlement.
+
+#### Gate 0 red-test matrix (all expected to FAIL at exact base)
+
+- R1 Hosted Worker starts Attempt 2 after retryable attempt-1 failure
+  (max_attempts=2 seeded; base: one `HARNESS_ATTEMPT_STARTED`, terminal
+  `attempt_number=1`).
+- R2 Evidence-correction failure is retryable when attempts remain and the
+  loop starts Attempt 2 (base: `should_retry=False`).
+- R3 Retryable-failed session resumes as Attempt 2 (base:
+  `SessionResumeError` on terminal session).
+- R4 Start coordinates on `HARNESS_ATTEMPT_STARTED`
+  (`attempt_id/attempt_sequence/started_at/causal_attempt_id`) plus a
+  durable attempt-outcome record separate from the Stable Task terminal
+  carrying `attempt_id/ended_at/terminal_reason` (exact type/storage shape
+  not prescribed); a retriable Attempt 1 must not terminalize the Stable
+  Task and Task terminal occurs only after the accepted/exhausted final
+  attempt (base: `SESSION_FAILED` is written immediately; no start schema).
+- R5 Behavioral fail-closed at the real dispatch seam: durable attempt
+  coordinate (2) differs from worker reconstruction (1) and the model
+  gateway must not be called; `MODEL_REQUEST_STARTED` schema accepting the
+  W5-DSH-01 digests/coordinates is a supporting assertion (base: gateway is
+  invoked despite mismatch; fields absent, `extra="forbid"`).
+- R6 Task terminal carries a coverage verdict (base: terminal payload has
+  none).
+- R7 Failed attempt candidate final is not public canonical final and
+  `final_message_identity` is None (base: candidate projected + identity
+  returned).
+- R8 Behavioral (Zebra-owned GAP only): every usage-bearing model record
+  links to a stable attempt identity at the existing task-event seam;
+  Task usage = sum(attempt usage) aggregation is independently red-tested
+  by the FinOS lane (FinOS R3), with Zebra later supplying the durable
+  per-attempt inputs (base: usage events carry no `attempt_id`).
+
+#### Gate 0 acceptance
+
+- [x] docs-first existing-state audit + task card committed (docs-only)
+- [x] deterministic red/contract tests committed and failing at exact base
+- [x] minimal focused baseline checks run; inherited exact-base failures
+      separated from new red failures
+- [x] worktree clean; exact branch/HEAD/merge-base/changed paths/tests/
+      security/gaps reported; no PR/merge/push/deploy; no production code
+- [x] owner acceptance of Gate 0 recorded before Phase 1 synchronization
+
+#### Phase 1 (Gate 1) evidence (2026-08-14)
+
+- synchronized: Gate 0 commits rebased onto accepted production `6afbafa`
+  (backup `refs/backup/wave5/zebra-gate0-ff129ce`; range-diff clean;
+  remote Wave 4.5 refs untouched)
+- red-first: 8 Phase 1 tests added, 7 failed on the synchronized base before
+  production edits
+- implementation: generic frozen `TaskAttemptPolicy` (max_attempts 1..2,
+  max_corrections_per_attempt 0..1, retryable codes, profile id);
+  Hosted Worker outer coordinator under one Stable Task
+  (`attempt_coordinator.py` + `attempt_events.py` + `attempt_execution.py`);
+  durable `HARNESS_ATTEMPT_STARTED` coordinates + new
+  `ATTEMPT_OUTCOME_RECORDED`; W5-DSH-01 pre-dispatch reconstruction guard
+  (fail closed, `attempt_reconstruction_invalid`); private dispatch
+  coordinates on `MODEL_REQUEST_STARTED`/`MODEL_RESPONSE_RECEIVED`; public
+  canonical final bound to the accepted attempt; terminal carries the real
+  accepted/exhausted attempt number
+- crash recovery: retriable outcome -> Attempt 2 resumes exactly once
+  (P1-4); non-retriable outcome before terminal -> terminal re-committed
+  once with no dispatch (P1-8); cancel mid-attempt stops without outcome
+  record; paused states (waiting/suspended) resume the same attempt
+- root correction: full request-envelope equality, frozen policy/budget
+  rollover, epoch/Turn identity, same-Attempt continuations, in-flight Step
+  fail-closed recovery, explicit no-manifest digest, provider tool envelope,
+  and a schema-validated FinOS peer fixture
+- results: Gate 1 `30 passed`; Gate 0 `8 passed / 3 failed` (only R2 x2 +
+  R6 remain for Phase 2); focused `38 passed`; full `2237/11/9` vs base
+  `2199/8/9` (zero new production regressions); eval `10/10`;
+  ruff 11 and mypy 13 identical to base; file-size gate same 10 inherited
+  violations (all Phase 1 files under limits)
+- [x] Gate 1 evidence documented in
+      `docs/znx-wave5-phase1-gate1-evidence-2026-08-14.md`; ready for owner
+      acceptance; no Phase 2, no push/PR/merge/deploy
+- [x] FinOS peer contract frozen in
+      `tests/fixtures/wave5_gate1_contract_delta_v1.json`; peer notification
+      sent separately with the final exact SHA
+
+#### Phase 2 (Gate 2) evidence (2026-08-15)
+
+- red-first: 15 Phase 2 test cases added/updated (new
+  `test_wave5_phase2_coverage_correction.py` + R2 x2 / R6 updated to the
+  exact-code contract); `10 failed / 15 passed` at starting HEAD `4797af8`
+  before any production edit
+- implementation (shared-root, no second engine): frozen
+  `max_corrections_per_attempt` now drives the existing correction path
+  (0 = no correction, 1 = exactly one, from the frozen Task policy);
+  exact retry code `completion_evidence_missing_after_correction` added to
+  the default/catalog retryable codes while `completion_evidence_missing`
+  stays absolutely non-retriable; safe coverage counts in the existing
+  completion-evidence status metadata; terminal `coverage_verdict`
+  (status/counts/message only) on SESSION_COMPLETED/SESSION_FAILED with
+  explicit `retryable=false`; outcome `result_metadata` carries the safe
+  counts for crash recovery; public projection exposes only the safe
+  verdict; W5-DSH-01 root correction lets the in-attempt correction dispatch
+  reconstruct (plain responses are not re-sent, runtime observations are
+  derived guidance excluded from the stable envelope)
+- results: Phase 2 + Gate 0 reds `25 passed`; Phase 1/Gate 1 suites
+  `30 passed`; focused `140 passed`; full `2254 passed / 8 failed /
+  9 skipped` vs Gate 1 `2237 / 11 / 9` (only the inherited 8 exact-base
+  failures remain; zero new regressions); eval `10/10`; ruff 11 / mypy 13
+  identical to base; file-size gate same 10 inherited violations
+- corrected after root audit (starting HEAD `3206c77`): P1-1 public verdict
+  sanitization (exact five-field safe object rebuilt from validated counts;
+  malformed verdicts fail closed), P1-2 full W5-DSH-01 envelope equality
+  (runtime guidance rebuilt from durable state, content + metadata digest,
+  tamper fails closed before the gateway), P1-3 typed-tool-only correction
+  (no matching producer = no correction dispatch, legacy code, no Attempt 2;
+  exhaustion scenario uses a genuine trusted producer); red-first
+  `18 failed / 14 passed` at `3206c77`; corrected final: Phase 2 + Gate 0
+  `25/25`, Gate 1 `30/30`, focused `177/177`, full `2273 passed / 8 failed /
+  9 skipped` (same inherited 8), eval `10/10`, ruff 11 / mypy 13 identical
+  to base, file-size gate same 10 inherited violations
+- re-audit rejection (starting HEAD `eeebae8`): real guarded clarification
+  continuation failed before the resumed provider call
+  (`attempt_reconstruction_invalid`) because `rebuild()` duplicated the prior
+  response on top of the recovered continuation conversation. Fixed at the
+  durable reconstruction seam: continuation replays only the durable tail
+  after the last snapshot boundary (clarification/approval requested),
+  provider-call-id mapping is seeded from the full stream, the continuation
+  envelope includes rebuilt runtime guidance, and the terminal-synthesis
+  final-answer instruction is derived from the durable provisional-final
+  response. Red-first: 3 tests red at `eeebae8` (guarded clarification,
+  guarded clarification + evidence correction, guarded approved batch);
+  green after. Corrected final: full `2274 passed / 8 failed / 9 skipped`
+  (same inherited 8), eval `10/10`, ruff 11 / mypy 13 identical to base,
+  file-size gate same 10 inherited violations
+- re-audit rejection 2 (starting HEAD `05e68c4`): the continuation fix
+  misclassified the required-plan nudge path as terminal synthesis under the
+  real DSH guard (plan_required=True, max_attempts=2) - the Task failed
+  before the nudge-driven request 2 (`attempt_reconstruction_invalid`,
+  requests=1). Fixed at the terminal-synthesis reconstruction decision:
+  exact durable discriminator (plain response with tool_call_count=0, no
+  following tool events, and no durable Plan while plan_required), private
+  optional `proposed_tool_names` on MODEL_RESPONSE_RECEIVED for byte-exact
+  nudge rebuilds, continuation guidance seeded from the recovered
+  conversation, and the envelope rebuild now derives full systems +
+  conversation through the same durable replay. Red-first: the upgraded
+  guarded plan-nudge clarification test red at `05e68c4`, green after;
+  corrected final: full `2274 passed / 8 failed / 9 skipped` (same inherited
+  8), eval `10/10`, ruff 11 / mypy 13 identical to base, file-size gate same
+  10 inherited violations; shared fixture unchanged
+- re-audit rejection 3 (starting HEAD `1ce6a8b`): two normal
+  terminal-synthesis flows were broken under the real DSH guard - guarded
+  validator correction (FinOS v3 validator passed=false) and guarded
+  no-progress convergence (repeated identical reads) both failed with
+  attempt_reconstruction_invalid before the tool-disabled terminal
+  dispatch. Fixed with one shared-root durable reconstruction change:
+  reachable batch scan (validator signal, state changes, observation
+  fingerprints), no-progress counter replayed with the harness's own
+  progress rule, and the three real terminal-synthesis triggers (plain
+  provisional final, validator rejection, convergence threshold) driving
+  the exact validator/no-progress/final-answer instruction rebuild.
+  Red-first: two Hosted Worker tests red at `1ce6a8b`, green after.
+  Corrected final: full `2276 passed / 8 failed / 9 skipped` (same inherited
+  8), eval `10/10`, ruff 11 / mypy 13 identical to base, file-size gate same
+  10 inherited violations; live validator/no-progress equivalence is now
+  covered (Phase 4 remains only the full crash/replay matrix); shared
+  fixture unchanged
+- re-audit rejection 4 (starting HEAD `26ef883`): the reconstruction
+  violated the runtime's evidence-before-terminal-synthesis precedence -
+  with missing completion evidence and a matching trusted producer it
+  rebuilt the validator/no-progress/final-answer guidance alongside the
+  missing-evidence observation, so the real evidence-correction dispatch
+  never matched (validator + evidence and convergence + evidence
+  combinations failed with attempt_reconstruction_invalid). Fixed at the
+  durable next-dispatch decision: terminal synthesis pending is gated on
+  evidence handling (pending = triggers AND NOT evidence_missing), the
+  validator trigger is any batch (the runtime flag persists until the
+  evidence gate returns None), evidence observations are rebuilt with the
+  historical per-batch evidence state, and the no-progress counter reuses
+  the harness's own update_observation_progress transition; the durable
+  terminal-synthesis reconstruction moved to the focused
+  terminal_synthesis.py (no new size violation). Red-first: two Hosted
+  Worker precedence tests red at `26ef883`, green after. Corrected final:
+  full `2278 passed / 8 failed / 9 skipped` (same inherited 8), eval
+  `10/10`, ruff 11 / mypy 13 identical to base, file-size gate same 10
+  inherited violations; shared fixture unchanged
+- re-audit rejection 5 (starting HEAD `8656cab`): the fourth runtime
+  terminal trigger, policy_recovery_terminal_synthesis (set after the second
+  recoverable policy DENY), was missing from the durable reconstruction - a
+  real guarded worker run with two recoverable DENY decisions failed closed
+  before request 3. Fixed at the shared durable reconstruction seam: the
+  policy-recovery signal is the POLICY_DECISION_MADE(deny) decision paired
+  with the following non-executed TOOL_EXECUTION_FAILED (the exact
+  recoverable_policy_deny_observation shape), the terminal state includes
+  the trigger (two denies) gated on evidence handling, and the per-batch
+  evidence loop fires the typed correction for policy-recovery terminal
+  entries too. Red-first: two Hosted Worker tests red at `8656cab`, green
+  after. Corrected final: full `2280 passed / 8 failed / 9 skipped` (same
+  inherited 8), eval `10/10`, ruff 11 / mypy 13 identical to base,
+  file-size gate same 10 inherited violations; shared fixture unchanged
+- peer fixture frozen: `tests/fixtures/wave5_gate2_contract_delta_v1.json`,
+  schema-validated by `test_wave5_gate2_peer_contract.py`; peer notification
+  (initial + corrected contract note) sent to FinOS task
+  `019ffe56-8b1e-74e2-9289-9ee8a3544aff` for notification/compatibility
+  review only (no FinOS edits, no next phase)
+- [x] Gate 2 evidence documented in
+      `docs/znx-wave5-phase2-gate2-evidence-2026-08-15.md`; ready for owner
+      acceptance; no Phase 3, no push/PR/merge/deploy
+
+#### Explicit Non-Goals
+
+- Planner, Scheduler, DAG, second registry/engine, FinOS-specific workflow,
+  UI Node Engine, Cordis, compaction, chunk packing, persistence batching,
+  any DSH runtime dependency, PR/merge/deploy/push;
+- no FinOS business types in Zebra, no automatic Core/Journal/Knowledge
+  write, no raw prompt/arguments/tool output/grant/policy in public
+  projection, no UI path changes, no next/stable modification, no subagents.
+
+### ZNX-GOAL-PLAN-ACT-01 - Goal/Plan Activation Closure
+
 - Status: `In Progress`
 - Owner: `Vinson`
 - Branch: `codex/znx-goal-plan-act-01`

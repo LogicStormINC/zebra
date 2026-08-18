@@ -86,12 +86,14 @@ def test_api_health_does_not_infer_native_image_capability_without_valid_profile
         ),
     )
 
-    assert create_app(settings=no_profile).health().body["runtime"][
-        "native_image_understanding"
-    ] is False
-    assert create_app(settings=text_only).health().body["runtime"][
-        "native_image_understanding"
-    ] is False
+    assert (
+        create_app(settings=no_profile).health().body["runtime"]["native_image_understanding"]
+        is False
+    )
+    assert (
+        create_app(settings=text_only).health().body["runtime"]["native_image_understanding"]
+        is False
+    )
 
 
 def test_api_health_fails_closed_for_invalid_model_profile(tmp_path: Path) -> None:
@@ -115,12 +117,13 @@ def test_api_health_fails_closed_for_invalid_model_profile(tmp_path: Path) -> No
         ),
     )
 
-    assert create_app(settings=unknown).health().body["runtime"][
-        "native_image_understanding"
-    ] is False
-    assert create_app(settings=mismatch).health().body["runtime"][
-        "native_image_understanding"
-    ] is False
+    assert (
+        create_app(settings=unknown).health().body["runtime"]["native_image_understanding"] is False
+    )
+    assert (
+        create_app(settings=mismatch).health().body["runtime"]["native_image_understanding"]
+        is False
+    )
 
 
 def test_api_health_reports_the_configured_build_commit(tmp_path: Path) -> None:
@@ -324,6 +327,7 @@ def test_api_get_session_stream_returns_persisted_events(tmp_path: Path) -> None
                 "network_profile": None,
                 "network_allowlist": None,
                 "max_attempts": None,
+                "max_corrections_per_attempt": None,
                 "max_model_calls": None,
                 "max_tool_calls": None,
             },

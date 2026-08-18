@@ -1,0 +1,90 @@
+{
+  "schema_version": "zebra-wave5-gate1-contract-delta-v1",
+  "events": [
+    {
+      "event_type": "task_prepared",
+      "payload": {
+        "title": "complex analysis",
+        "user_input": "analyze the frozen resources",
+        "max_attempts": 2,
+        "max_corrections_per_attempt": 1,
+        "execution_profile_id": "finos-complex-analysis-v1",
+        "retryable_stop_reasons": ["model_execution_failed"],
+        "max_model_calls": 4,
+        "max_tool_calls": 8
+      }
+    },
+    {
+      "event_type": "harness_attempt_started",
+      "payload": {
+        "attempt_number": 1,
+        "attempt_id": "attempt-1",
+        "attempt_sequence": 1,
+        "started_at": "2026-08-14T00:00:00+00:00",
+        "causal_attempt_id": null,
+        "turn_id": "turn:event-1",
+        "epoch_sequence": 0
+      }
+    },
+    {
+      "event_type": "model_request_started",
+      "payload": {
+        "attempt_number": 1,
+        "model_call_id": "model-call-1",
+        "stable_task_id": "stable-task-1",
+        "attempt_id": "attempt-1",
+        "turn_id": "turn:event-1",
+        "step_id": "model-call-1",
+        "goal_revision": 1,
+        "plan_revision": 1,
+        "resource_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "messages_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "system_prompt_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "tool_schema_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "model_config_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "invocation_policy_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    },
+    {
+      "event_type": "model_response_received",
+      "payload": {
+        "attempt_number": 1,
+        "attempt_id": "attempt-1",
+        "stable_task_id": "stable-task-1",
+        "model_call_id": "model-call-1",
+        "assistant_message": "candidate final",
+        "response_stage": "final"
+      }
+    },
+    {
+      "event_type": "attempt_outcome_recorded",
+      "payload": {
+        "attempt_id": "attempt-1",
+        "attempt_sequence": 1,
+        "outcome": "completed",
+        "ended_at": "2026-08-14T00:01:00+00:00",
+        "terminal_reason": "completed",
+        "retry_scheduled": false,
+        "next_attempt_sequence": null,
+        "summary": "accepted",
+        "turn_id": "turn:event-1",
+        "epoch_sequence": 0,
+        "result_metadata": {
+          "model_calls_used": 1,
+          "tool_calls_executed": 0
+        }
+      }
+    }
+  ],
+  "public_boundary": {
+    "canonical_final": "accepted-attempt-only",
+    "private_fields_excluded": [
+      "messages_digest",
+      "system_prompt_digest",
+      "tool_schema_digest",
+      "model_config_digest",
+      "invocation_policy_digest",
+      "resource_manifest_digest"
+    ]
+  }
+}

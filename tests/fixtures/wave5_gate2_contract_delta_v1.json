@@ -1,0 +1,163 @@
+{
+  "schema_version": "zebra-wave5-gate2-contract-delta-v1",
+  "coverage_classification": {
+    "retryable_after_bounded_correction": "completion_evidence_missing_after_correction",
+    "non_retryable_without_correction": "completion_evidence_missing",
+    "correction_requires_matching_advertised_producer": true,
+    "no_producer_behavior": "no correction dispatch; one initial model call only; completion_evidence_missing; no Attempt 2",
+    "max_corrections_per_attempt": {
+      "0": "no correction is performed; legacy non-retryable code",
+      "1": "exactly one bounded correction; then the retryable after-correction code"
+    }
+  },
+  "events": [
+    {
+      "event_type": "task_prepared",
+      "payload": {
+        "title": "complex analysis",
+        "user_input": "analyze the frozen resources",
+        "max_attempts": 2,
+        "max_corrections_per_attempt": 1,
+        "execution_profile_id": "finos-complex-analysis-v1",
+        "retryable_stop_reasons": [
+          "model_execution_failed",
+          "completion_evidence_missing_after_correction"
+        ],
+        "max_model_calls": 4,
+        "max_tool_calls": 8
+      }
+    },
+    {
+      "event_type": "harness_attempt_started",
+      "payload": {
+        "attempt_number": 1,
+        "attempt_id": "attempt-1",
+        "attempt_sequence": 1,
+        "started_at": "2026-08-15T00:00:00+00:00",
+        "causal_attempt_id": null,
+        "turn_id": "turn:event-1",
+        "epoch_sequence": 0
+      }
+    },
+    {
+      "event_type": "model_response_received",
+      "payload": {
+        "attempt_number": 1,
+        "attempt_id": "attempt-1",
+        "stable_task_id": "stable-task-1",
+        "model_call_id": "model-call-1",
+        "assistant_message": "candidate final without trusted evidence",
+        "response_stage": "final"
+      }
+    },
+    {
+      "event_type": "model_response_received",
+      "payload": {
+        "attempt_number": 1,
+        "attempt_id": "attempt-1",
+        "stable_task_id": "stable-task-1",
+        "model_call_id": "model-call-2",
+        "assistant_message": "candidate final still without trusted evidence",
+        "response_stage": "final"
+      }
+    },
+    {
+      "event_type": "attempt_outcome_recorded",
+      "payload": {
+        "attempt_id": "attempt-1",
+        "attempt_sequence": 1,
+        "outcome": "failed",
+        "ended_at": "2026-08-15T00:02:00+00:00",
+        "terminal_reason": "completion_evidence_missing_after_correction",
+        "retry_scheduled": true,
+        "next_attempt_sequence": 2,
+        "summary": "completion evidence contract is not satisfied",
+        "turn_id": "turn:event-1",
+        "epoch_sequence": 0,
+        "result_metadata": {
+          "stop_reason": "completion_evidence_missing_after_correction",
+          "model_calls_used": 2,
+          "tool_calls_executed": 0,
+          "completion_evidence_required_count": 1,
+          "completion_evidence_satisfied_count": 0,
+          "completion_evidence_missing_count": 1
+        }
+      }
+    },
+    {
+      "event_type": "harness_attempt_started",
+      "payload": {
+        "attempt_number": 2,
+        "attempt_id": "attempt-2",
+        "attempt_sequence": 2,
+        "started_at": "2026-08-15T00:03:00+00:00",
+        "causal_attempt_id": "attempt-1",
+        "turn_id": "turn:event-1",
+        "epoch_sequence": 0
+      }
+    },
+    {
+      "event_type": "attempt_outcome_recorded",
+      "payload": {
+        "attempt_id": "attempt-2",
+        "attempt_sequence": 2,
+        "outcome": "failed",
+        "ended_at": "2026-08-15T00:05:00+00:00",
+        "terminal_reason": "completion_evidence_missing_after_correction",
+        "retry_scheduled": false,
+        "next_attempt_sequence": null,
+        "summary": "completion evidence contract is not satisfied",
+        "turn_id": "turn:event-1",
+        "epoch_sequence": 0,
+        "result_metadata": {
+          "stop_reason": "completion_evidence_missing_after_correction",
+          "model_calls_used": 4,
+          "tool_calls_executed": 0,
+          "completion_evidence_required_count": 1,
+          "completion_evidence_satisfied_count": 0,
+          "completion_evidence_missing_count": 1
+        }
+      }
+    },
+    {
+      "event_type": "session_failed",
+      "payload": {
+        "attempt_number": 2,
+        "summary": "completion evidence contract is not satisfied",
+        "metadata": {
+          "stop_reason": "completion_evidence_missing_after_correction",
+          "model_calls_used": 4,
+          "tool_calls_executed": 0
+        },
+        "coverage_verdict": {
+          "status": "missing",
+          "required_count": 1,
+          "satisfied_count": 0,
+          "missing_count": 1,
+          "message": "Required evidence coverage is not satisfied; the task cannot complete without trusted evidence."
+        },
+        "retryable": false
+      }
+    }
+  ],
+  "public_boundary": {
+    "terminal_coverage_verdict": [
+      "status",
+      "required_count",
+      "satisfied_count",
+      "missing_count",
+      "message"
+    ],
+    "coverage_verdict_sanitized": true,
+    "malformed_verdict_policy": "fail_closed_omit_or_rebuild_valid_safe_verdict",
+    "private_fields_excluded_from_public_projection": [
+      "completion_evidence_missing",
+      "completion_evidence_fingerprint",
+      "requirement_ids",
+      "evidence_refs",
+      "digests",
+      "diagnostics",
+      "result_metadata"
+    ]
+  }
+}
