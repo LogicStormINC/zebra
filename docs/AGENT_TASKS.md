@@ -1048,6 +1048,38 @@ read-only Trench vertical slice.
   register real connectors)
 - no path-template invoke client (`AL-HOST-EFFECT-01`)
 
+### AL-HOST-EFFECT-01 - Host Write Effects With Bounded Reconciliation
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `WORKER / INTEGRATIONS`
+- Branch: `codex/al-host-effect-01` (from `cloud-agent@58a0656b`)
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/host_effect.py` (new), focused
+  tests, this card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] Unknown write outcomes (timeout, connection drop) record
+  ``uncertain`` receipts keyed by bounded ``provider_operation_id`` —
+  blind retries are structurally absent from the API.
+- [x] `HostEffectReconciler` settles uncertain receipts through the pinned
+  profile's ``reconcile_path_template``: succeeded responses must carry a
+  business revision; failed_no_effect converges; unknown status words,
+  HTTP errors, transport failures and reconcile-less profiles all keep
+  the receipt uncertain for the next bounded pass.
+- [x] Settled receipts are never re-reconciled (terminal states).
+- [x] Deterministic in-band outcomes require business revisions for
+  success and record explicit no-effect notes for failure.
+- [x] Focused tests 10 passed; worker suite 157 passed; `make check`
+  green.
+
+#### Explicit Non-Goals
+
+- no Effect Outbox persistence wiring (the Fenced Effect chain adopts
+  this seam when Host write tools enter the default composition)
+- no reconcile-path templating beyond the fixed pinned path
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in
