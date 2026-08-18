@@ -904,6 +904,38 @@ read-only Trench vertical slice.
 - no cloud command/query service extraction into `agent-control-plane`
   (rides with `AL-TASK-ADMISSION-PG-01`'s admission seam)
 
+### AL-QUERY-API-V1-01 - Task-Level AG-UI Replay Cursor
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / INTEGRATIONS`
+- Branch: `codex/al-query-api-v1-01` (from `cloud-agent@f986ab35`)
+- Owned paths:
+  `packages/agent-integrations/src/agent_integrations/ag_ui/task_stream.py`
+  (new), `apps/api/src/zebra_agent_api/ag_ui_stream.py`, focused tests,
+  this card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] `AgUiTaskProjector` groups cross-Segment `TaskEvent` streams into
+  contiguous Segments, reuses the per-segment projector unchanged, and
+  renumbers every emitted cursor into the Task's monotonic
+  `task_sequence` space — rollover no longer breaks thread continuity.
+- [x] A newly entered Segment continues as a `RunStartedEvent` in the same
+  thread (correct AG-UI run-continuation semantics), verified by test.
+- [x] The API stream (`prepare_agui_stream`/`tail_agui_events`) reads
+  `stores.tasks.read_events` (both SQLite and PostgreSQL implementations)
+  and terminates on Task status, not active-Segment status.
+- [x] Cursors stay bound to thread/run; foreign-run cursors and unordered
+  task events are rejected; empty streams carry no cursor.
+- [x] Focused tests 8 passed; API suite 379 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no new canonical `/v1/*` REST routes (ride with the admission card's
+  versioned surface)
+- no Redis tail changes (PG polling authority unchanged)
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in

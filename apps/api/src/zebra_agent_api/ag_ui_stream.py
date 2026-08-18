@@ -11,15 +11,16 @@ from uuid import UUID
 
 from ag_ui.core import Event
 from ag_ui.encoder import EventEncoder
-from agent_core.domain.events import EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.events import EventType
+from agent_core.domain.identifiers import TaskId
 from agent_core.domain.sessions import SessionStatus
+from agent_core.ports.agent_tasks import TaskEvent
 from agent_integrations.ag_ui import (
     AgUiCursor,
     AgUiProjectionError,
-    AgUiProjector,
     AgUiRunIdentity,
 )
+from agent_integrations.ag_ui.task_stream import AgUiTaskProjector
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.responses import ApiResponse
@@ -49,7 +50,7 @@ class _DisconnectableRequest(Protocol):
 @dataclass(frozen=True, slots=True)
 class AgUiStreamContext:
     stores: ControlPlaneStores
-    session_id: SessionId
+    task_id: TaskId
     identity: AgUiRunIdentity
     cursor: AgUiCursor | None
 
@@ -74,11 +75,10 @@ def prepare_agui_stream(
     task = stores.tasks.get_task(thread_id)
     if task is None:
         return _problem(404, "not_found", "AG-UI thread was not found", path)
-    session_id = task.active_segment_id
-    if stores.sessions.get_session(session_id) is None:
+    if stores.sessions.get_session(task.active_segment_id) is None:
         return _problem(409, "projection_incomplete", "active Segment is unavailable", path)
     identity = AgUiRunIdentity(
-        session_id=session_id,
+        session_id=task.active_segment_id,
         thread_id=thread_text,
         run_id=run_id,
     )
@@ -86,10 +86,14 @@ def prepare_agui_stream(
     if error is not None:
         return error
     try:
-        AgUiProjector().project(stores.events.list_for_session(session_id), identity, after=cursor)
+        AgUiTaskProjector().project_task(
+            stores.tasks.read_events(thread_id, -1),
+            identity,
+            after=cursor,
+        )
     except AgUiProjectionError:
         return _problem(400, "invalid_cursor", "cursor is not valid for this Task/run", path)
-    return AgUiStreamContext(stores, session_id, identity, cursor)
+    return AgUiStreamContext(stores, thread_id, identity, cursor)
 
 
 async def tail_agui_events(
@@ -102,11 +106,12 @@ async def tail_agui_events(
     last_delivery = monotonic()
     while not await request.is_disconnected():
         events = await asyncio.to_thread(
-            context.stores.events.list_for_session,
-            context.session_id,
+            context.stores.tasks.read_events,
+            context.task_id,
+            -1,
         )
         emitted = False
-        for next_cursor, projected in _project_new_events(
+        for next_cursor, projected in _project_new_task_events(
             events,
             context.identity,
             cursor,
@@ -115,15 +120,15 @@ async def tail_agui_events(
             emitted = True
             last_delivery = monotonic()
             yield projected
-        session = await asyncio.to_thread(
-            context.stores.sessions.get_session,
-            context.session_id,
+        task = await asyncio.to_thread(
+            context.stores.tasks.get_task,
+            context.task_id,
         )
-        if session is None:
+        if task is None:
             return
-        if events and events[-1].event_type in _TERMINAL_EVENTS:
+        if events and events[-1].event.event_type in _TERMINAL_EVENTS:
             return
-        if session.status in _TERMINAL_STATUSES:
+        if task.status in _TERMINAL_STATUSES:
             return
         if emitted:
             continue
@@ -133,26 +138,28 @@ async def tail_agui_events(
         await asyncio.sleep(_POLL_SECONDS)
 
 
-def _project_new_events(
-    events: list[SessionEvent],
+def _project_new_task_events(
+    events: list[TaskEvent] | tuple[TaskEvent, ...],
     identity: AgUiRunIdentity,
     after: AgUiCursor | None,
 ) -> list[tuple[AgUiCursor, str]]:
-    """Project one durable Event at a time so every SSE id is an exact cursor.
+    """Project one Task event at a time so every SSE id is an exact cursor.
 
-    ponytail: replaying the bounded stream for each new Event is intentionally
-    simple and keeps cursor-to-event attribution exact; a larger deployment can
-    replace this with a stateful projector without changing the wire contract.
+    ponytail: replaying the bounded Task stream for each new event is
+    intentionally simple and keeps cursor-to-event attribution exact across
+    Segment rollovers; a larger deployment can replace this with a stateful
+    projector without changing the wire contract.
     """
 
     start_sequence = after.sequence if after is not None else -1
     previous = after
     encoder = EventEncoder()
+    projector = AgUiTaskProjector()
     projected: list[tuple[AgUiCursor, str]] = []
-    for index, event in enumerate(events):
-        if event.sequence <= start_sequence:
+    for index, entry in enumerate(events):
+        if entry.task_sequence <= start_sequence:
             continue
-        projection = AgUiProjector().project(
+        projection = projector.project_task(
             events[: index + 1],
             identity,
             after=previous,
