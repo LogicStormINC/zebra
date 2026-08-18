@@ -79,6 +79,7 @@ from agent_core.ports.handoff_dispatch_store import (
     HandoffDispatch,
     HandoffDispatchStorePort,
 )
+from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.host_credential_resolver import (
     EphemeralHostCredential,
     HostWorkloadCredentialResolverPort,
@@ -212,6 +213,7 @@ __all__ = [
     "SessionHandoffAbortRequest",
     "GovernedMemoryStorePort",
     "HostWorkloadCredentialResolverPort",
+    "HostConnectorRegistryPort",
     "GovernedMemoryScanCursor",
     "GovernedMemoryScanPage",
     "GovernedMemoryScanQuery",

@@ -782,6 +782,36 @@ read-only Trench vertical slice.
 - no admission-time manifest freezing (`AL-TASK-BIND-CON-01` successors)
 - no deletion of the legacy adapter itself (`AL-LEGACY-REMOVAL-01`)
 
+### AL-CONNECTOR-CON-01 - Outbound Host Connector Contracts
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `CORE / ARCH`
+- Branch: `codex/al-connector-con-01` (from `cloud-agent@71f65c65`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/host_connectors.py` (new),
+  `packages/agent-core/src/agent_core/ports/host_connector_registry.py` (new),
+  domain/ports registration, focused tests, this card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] `HostConnectorProfileVersion` is immutable per revision with a
+  canonical digest; `base_uri` must be a bare HTTPS origin and path
+  templates are rooted and character-bounded (SSRF/redirect control).
+- [x] Credential references reject secret-bearing names; secrets never
+  enter the model — only bounded references resolvable at invocation time.
+- [x] `HostConnectorBinding` pins host_app_id + namespace_id to one profile
+  revision; lifecycle helpers freeze the plan table (published binds,
+  deprecated continues, revoked fails closed).
+- [x] `HostConnectorRegistryPort` declares operator-only write surface
+  (publish/bind); ordinary HostGrants cannot mutate it.
+- [x] Focused tests 9 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no PostgreSQL implementation (`AL-CONNECTOR-PG-01`, migration v24+)
+- no Worker egress resolution (`AL-HOST-EGRESS-01`)
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in
