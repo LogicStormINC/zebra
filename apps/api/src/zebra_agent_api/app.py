@@ -59,17 +59,6 @@ from zebra_agent_api.api_workspace_mixin import (
 )
 from zebra_agent_api.factory import create_app as create_app
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
-from zebra_agent_api.local_execution import (
-    LeaseConflictError,
-    SessionClaimService,
-    SessionExecutionService,
-    SessionRecoveryError,
-    SessionRecoveryService,
-    SessionResumeError,
-    SessionResumeService,
-    WorkerExecutionError,
-    run_local_harness,
-)
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
@@ -238,6 +227,17 @@ class ZebraAgentApi(
         if isinstance(session_key, ApiResponse):
             return session_key
 
+        from zebra_agent_api.local_execution import (
+            LeaseConflictError,
+            SessionClaimService,
+            SessionExecutionService,
+            SessionRecoveryError,
+            SessionRecoveryService,
+            SessionResumeError,
+            SessionResumeService,
+            WorkerExecutionError,
+        )
+
         claim_service = SessionClaimService(
             self.stores.leases,
             SessionRecoveryService(self.stores.events, self.stores.sessions),
@@ -401,6 +401,8 @@ class ZebraAgentApi(
                 ),
                 trusted_local=trusted_local,
             )
+            from zebra_agent_api.local_execution import run_local_harness
+
             result = run_local_harness(
                 prompt=str(parsed["prompt"]),
                 title=str(parsed["title"]),

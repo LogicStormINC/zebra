@@ -40,3 +40,31 @@ def test_the_seam_exists_and_is_bounded() -> None:
     text = seam.read_text(encoding="utf-8")
     assert "run_local_harness" in text
     assert "SessionExecutionService" in text
+
+
+def test_execution_packages_are_local_extras_only() -> None:
+    pyproject = API_SRC.parents[1] / "pyproject.toml"
+    text = pyproject.read_text(encoding="utf-8")
+    dependencies = text.split("dependencies = [", 1)[1].split("]", 1)[0]
+    for forbidden in ("agent-runtime", "zebra-agent-worker"):
+        assert forbidden not in dependencies, f"{forbidden} must be a local extra"
+    extras = text.split("[project.optional-dependencies]", 1)[1]
+    assert "local = [" in extras
+    assert '"agent-runtime"' in extras
+    assert '"zebra-agent-worker"' in extras
+
+
+def test_seam_is_imported_lazily_outside_local_paths() -> None:
+    for module in _modules():
+        if module.name == SEAM_MODULE:
+            continue
+        text = module.read_text(encoding="utf-8")
+        if "from zebra_agent_api.local_execution import" in text:
+            # allowed only as a function-level (indented) import
+            for line in text.splitlines():
+                if "from zebra_agent_api.local_execution import" in line and not line.startswith(
+                    " "
+                ):
+                    raise AssertionError(
+                        f"{module.relative_to(API_SRC)} imports the seam at module level"
+                    )

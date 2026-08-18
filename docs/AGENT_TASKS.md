@@ -1115,6 +1115,39 @@ read-only Trench vertical slice.
   and remain with the rig/EMB runners; the in-repo kit covers the
   Host-protocol invariants.
 
+### AL-API-DECOUPLE-01 - Cloud API Artifact Drops Execution Packages
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / ARCH`
+- Branch: `codex/al-api-decouple-01` (from `cloud-agent@8c535b70`)
+- Owned paths: `apps/api/pyproject.toml`, `app.py`, `session_control.py`,
+  `tests/architecture/test_api_boundary.py`, focused test updates, this
+  card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] `agent-runtime` and `zebra-agent-worker` moved out of the API's
+  core dependencies into the `[local]` optional extra — a cloud-only
+  deployment installs the API without packaging Worker or Runtime
+  execution (ADR-017).
+- [x] The local execution seam is imported lazily (function-level) at
+  every call site; the API module imports cleanly without the Worker on
+  the path; local-profile behaviour is unchanged (API suite 384 passed
+  with the extras installed in the workspace).
+- [x] Boundary gate extended: core dependency list must not contain
+  execution packages, the `[local]` extra must, and any non-lazy seam
+  import fails the build.
+- [x] `make check` green.
+
+#### Explicit Non-Goals
+
+- no removal of the seam itself or the local profile (that is production
+  policy, not packaging)
+- sequencing note: completed before Cutover per the AL-PLAN-01 Phase D
+  unlock rule (only Removal is Cutover-gated); it is packaging-only and
+  reversible.
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in
