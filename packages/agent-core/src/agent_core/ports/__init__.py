@@ -143,6 +143,11 @@ from agent_core.ports.session_handoff import (
 )
 from agent_core.ports.session_history import SessionHistoryPort
 from agent_core.ports.subagents import SubagentPort
+from agent_core.ports.task_admission_transaction import (
+    TaskAdmissionReceipt,
+    TaskAdmissionRequest,
+    TaskAdmissionTransactionPort,
+)
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_core.ports.tool_run_store import ToolRunStorePort
 from agent_core.ports.workspace import WorkspacePort
@@ -214,6 +219,9 @@ __all__ = [
     "GovernedMemoryStorePort",
     "HostWorkloadCredentialResolverPort",
     "HostConnectorRegistryPort",
+    "TaskAdmissionReceipt",
+    "TaskAdmissionRequest",
+    "TaskAdmissionTransactionPort",
     "GovernedMemoryScanCursor",
     "GovernedMemoryScanPage",
     "GovernedMemoryScanQuery",

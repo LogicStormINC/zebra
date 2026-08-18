@@ -12,11 +12,18 @@
   `AL-CONNECTOR-PG-01`（#209，v24 迁移 + 真库 6 测试）、
   `AL-API-BOUNDARY-01`（#210，local seam + 边界门禁，P1.1 前半）。
   进度：7/16。
-- 批次 2 待激活：`AL-TASK-ADMISSION-PG-01`（原子 Admission，需要先读
-  `create_queued_session` 写序与崩溃注入面）、`AL-QUERY-API-V1-01`
-  （Task 级游标：`prepare/tail/_project_new_events` 改走
-  `stores.tasks.read_events`，需同步核对 SQLite 侧 read_events 实现
-  与投影器跨 Segment 游标语义）。
+- 批次 2 进行中：`AL-QUERY-API-V1-01` 已完成（#211，P1.2 修复：
+  `AgUiTaskProjector` 跨 Segment 投影 + `task_sequence` 游标，rollover
+  后 Host 线程不断流；API 流改读 `stores.tasks.read_events`、按 Task
+  状态终态）。进度 8/16。
+- 批次 2 剩余：`AL-TASK-ADMISSION-PG-01`——最重的在库卡，实施要点：
+  新增 `TaskAdmissionTransactionPort`（参照
+  `WorkerProjectionTransactionPort.commit_worker_event` 的既有原子提交
+  模式），一个 PG 事务写入 bootstrap events、session/workspace 投影、
+  agent task 行、`task_binding_snapshots`（需 v25 迁移）、task event
+  index 与幂等回执；Manifest 获取留在事务外；提交时以 expected
+  revision 校验 Definition Release 与 Connector Binding；验收含崩溃
+  注入（任一注入点不留半成品 Task）。
 - 批次 3 待激活：`AL-AUTH-WORKER-01`、`AL-HOST-EGRESS-01`、
   `AL-HOST-EFFECT-01`。
 - 批次 4：`AL-HOST-CONFORMANCE-01`；`AL-TRENCH-CUTOVER-01`/

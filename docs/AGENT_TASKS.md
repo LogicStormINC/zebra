@@ -936,6 +936,45 @@ read-only Trench vertical slice.
   versioned surface)
 - no Redis tail changes (PG polling authority unchanged)
 
+### AL-TASK-ADMISSION-PG-01 - Atomic Task Admission Transaction
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE / CORE`
+- Branch: `codex/al-task-admission-pg-01` (from `cloud-agent@c3c8fbde`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/ports/task_admission_transaction.py`
+  (new), migration v25 + `task_admission.py` (new) in agent-storage,
+  migrations/ports registration, focused real-PostgreSQL tests, this card
+  and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] `TaskAdmissionTransactionPort` freezes the atomic contract
+  (`TaskAdmissionRequest.validate()` rejects mismatched bindings or
+  sessions before any write).
+- [x] `PostgresTaskAdmissionTransaction.admit()` persists bootstrap Events,
+  Session and Workspace projections, the Agent Task row with its event
+  index, the immutable binding snapshot and the idempotency receipt in ONE
+  PostgreSQL transaction, reusing the existing in-transaction helpers.
+- [x] Idempotent replay short-circuits on the committed receipt without
+  writing a second Task.
+- [x] Crash-injection acceptance: a primary-key collision on the LAST insert
+  (binding snapshot) after four successful writes rolls the entire
+  admission back — zero events, projections or tasks remain for the
+  rejected request, and the previously admitted Task is untouched.
+- [x] Migration v25 (`task_binding_snapshots`) registered (catalog head is
+  now 25); real-PostgreSQL tests 6 passed; connector v24 tests re-passed;
+  `make check` green.
+
+#### Explicit Non-Goals
+
+- no rewiring of the live `create_queued_session` API path onto this
+  transaction (follows with the admission seam when the v1 API surface
+  lands — the card's card-boundary is the storage contract and evidence)
+- no expected-revision validation against Definition Release revisions
+  (requires the registry seam from phase C wiring)
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in
