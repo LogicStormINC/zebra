@@ -686,6 +686,31 @@ read-only Trench vertical slice.
 - [x] The plan preserves `CLOUD-INTEGRATION-REG-01` as the first merge and keeps
   the concurrent original-worktree changes outside this branch.
 
+### AL-BOUNDARY-CON-01 - Agent Control Plane Package Boundary
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `ARCH`
+- Branch: `codex/al-boundary-con-01` (from `cloud-agent@d0bef47d`)
+- Owned paths: `packages/agent-control-plane/**` (new), workspace
+  `pyproject.toml` members, `tests/architecture/test_control_plane_boundaries.py`
+  (new), this card and the focused `PROGRESS.md` record.
+
+#### Acceptance
+
+- [x] `agent-control-plane` workspace package exists, depends only on
+  `agent-core`, and ships the admission seam (`AgentAction` route vocabulary
+  with legacy `agent.run` compatibility) as its first real module.
+- [x] Architecture gate forbids importing Worker, Runtime, FastAPI/uvicorn,
+  storage adapters or `apps/` from the control plane, and pins its
+  pyproject to the core-only dependency set.
+- [x] `make check` and `make sync` green; boundary tests 3 passed.
+
+#### Explicit Non-Goals
+
+- no admission orchestration, registry or binding logic (successor cards)
+- no HTTP routes or composition changes in `apps/api`
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in

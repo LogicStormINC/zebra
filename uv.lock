@@ -9,6 +9,7 @@ resolution-markers = [
 [manifest]
 members = [
     "agent-context",
+    "agent-control-plane",
     "agent-core",
     "agent-integrations",
     "agent-observability",
@@ -39,6 +40,17 @@ wheels = [
 name = "agent-context"
 version = "0.1.0"
 source = { editable = "packages/agent-context" }
+dependencies = [
+    { name = "agent-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "agent-core", editable = "packages/agent-core" }]
+
+[[package]]
+name = "agent-control-plane"
+version = "0.1.0"
+source = { editable = "packages/agent-control-plane" }
 dependencies = [
     { name = "agent-core" },
 ]

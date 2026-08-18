@@ -27,6 +27,7 @@ members = [
     "apps/config",
     "apps/worker",
     "packages/agent-core",
+    "packages/agent-control-plane",
     "packages/agent-context",
     "packages/agent-integrations",
     "packages/agent-storage",
