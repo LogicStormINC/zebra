@@ -1,5 +1,62 @@
 # Task Plan
 
+## 2026-08-18 Follow-Up Work Plan (active)
+
+Decided after the branch cleanup and the `CLOUD-EFFECT-COMP-CLOSE-01`
+recovery/preflight merge (`41f72a12`). Priorities follow the durable product
+positioning: cloud agent first, Trench integration as the delivery target
+(ADR-012, `AGENTS.md`).
+
+### Phase 0 — Close the open loop (immediate)
+
+1. `CLOUD-EFFECT-COMP-CLOSE-01` acceptance verification: run
+   `tests/compose/cloud_effect_composition/run-postgres-tests.sh` against a
+   real PostgreSQL (+object store) Docker environment. On PASS, re-check the
+   focused-test acceptance criterion and move the card to closeout. This is
+   the only open engineering item from the merged WIP.
+2. Registry hygiene (docs-only slice): close stale cards whose PRs merged in
+   July — `CTX-SEG-01` (#176), `FINOS-HAR-03` (#169), `SUBAGENT-UX-01`
+   (#177), `WEB-UX-01` (#178) — and `CLOUD-WORKSPACE-CP-PLAN-01`, whose
+   seven successor cards are all `Done`. Refresh the `PROGRESS.md` snapshot
+   afterwards.
+3. Merge PR `#194` (`zebra-cloud-trench` → `main`, 751 files, mergeable)
+   once item 1 has its evidence. `main` is 360 commits behind and carries
+   none of the cloud mainline; this is the single largest operational risk.
+   After the merge, return to main-based branching per repository workflow.
+
+### Phase 1 — Product delivery evidence
+
+4. `EMB-TRN-READ-E2E-01` (In Progress, fail-closed): stand up the integrated
+   stack (Trench BFF + Zebra API/Worker + PostgreSQL + Redis + object
+   store), run the acceptance runner with real credentials, and collect
+   per-scenario evidence (read task, long task, disconnect/replay, Worker
+   restart, stop/resume, Grant replay, bounded Host Tool failure). This is
+   the acceptance proof for the core product claim — Zebra consumed by
+   Trench through signed authority.
+
+### Phase 2 — Next-era direction gate
+
+5. Decide `ARCH-RUNTIME-V2-PLAN-01` (Review): accept or revise the Runtime
+   v2.0 proposal already on `main` (`a6b47c3f`). If accepted, split it into
+   ADR-gated successor cards before any implementation. Nothing from the
+   proposal enters the registry as executable work before that ADR.
+
+### Explicitly out of plan (stays locked)
+
+- Mem0 consumption chain (`MEM-GW-DEL-01`, `MEM-GW-DEL-RUN-01`,
+  `MEM-GW-GATE-01`; `MEM-MEM0-RESET-SPIKE-01` blocked) — provider admission
+  is `DENIED`.
+- `EXT-MARKETPLACE-01` — gated on private-cloud GA (ADR-014 Phase C/D).
+- `AGENT-DEF-STO-01` — local SQLite Registry deferred by the cloud-first
+  product positioning.
+
+### Housekeeping
+
+- Update the `origin` URL to `git@github.com:LogicStormINC/zebra.git` (the
+  redirect currently works; do it before it silently breaks).
+
+---
+
 ## CLOUD-COMPOSE-APP-01 - Zebra Application Container Overlay (Done)
 
 1. `completed` - Claim the dependency-cleared application Compose card with a
