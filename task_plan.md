@@ -1,5 +1,25 @@
 # Task Plan
 
+## Agent Layer 构建实施（active, 2026-08-18 定案）
+
+权威方案：`docs/cloud-agent构建实施方案.md`；架构决策：ADR-017；
+预留登记：`AL-PLAN-01`（16 张 `AL-*` 卡，全部 `Locked`）。
+
+激活顺序（每张卡激活时冻结 owner/branch/Owned paths）：
+
+1. 阶段 A：`AL-BOUNDARY-CON-01` → `AL-HOST-CONTRACT-V1-01` →
+   `AL-WORKER-GENERIC-01`；`AL-API-BOUNDARY-01` 可与后两张并行。
+2. 阶段 B：`AL-CONNECTOR-CON-01` → `AL-CONNECTOR-PG-01`（迁移 v24 起）、
+   `AL-TASK-BIND-CON-01` → `AL-TASK-ADMISSION-PG-01`。
+3. 阶段 C：`AL-AUTH-WORKER-01`、`AL-HOST-EGRESS-01` → `AL-HOST-EFFECT-01`。
+4. 阶段 D：`AL-QUERY-API-V1-01` → `AL-HOST-CONFORMANCE-01` →
+   `AL-TRENCH-CUTOVER-01` → `AL-LEGACY-REMOVAL-01`、`AL-API-DECOUPLE-01`。
+
+并行约束：`EMB-TRN-READ-E2E-01`（真实 Trench 验收）与 AL 卡互不阻塞；
+`AL-TRENCH-CUTOVER-01` 执行前必须先拿到该验收证据。
+
+---
+
 ## 2026-08-18 Follow-Up Work Plan (executed)
 
 Decided after the branch cleanup and the `CLOUD-EFFECT-COMP-CLOSE-01`

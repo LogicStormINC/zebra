@@ -5,6 +5,20 @@
 
 ## Current Mainline Snapshot
 
+- Agent Layer direction ratified (2026-08-18, `AL-PLAN-01` `Done`): Zebra
+  Agent Layer = Agent Control Plane + Host Integration Plane, landing first
+  as a logical `agent-control-plane` application package inside `apps/api`
+  (no new microservice yet), with the Runtime untouched. The five
+  architecture decisions are recorded in ADR-017; the authoritative
+  engineering plan is `docs/cloud-agent构建实施方案.md` (review baseline
+  `main@bb3a1bce`, key claims re-verified on ratification day). Sixteen
+  `AL-*` implementation cards are registered `Locked` in four phases
+  (boundary/protocol, connector/task-binding, execution authority/egress,
+  API/conformance/migration); highest-leverage starters are
+  `AL-HOST-CONTRACT-V1-01`, `AL-WORKER-GENERIC-01` and
+  `AL-CONNECTOR-CON-01`, which together free the Worker from all Trench
+  vocabulary and enable zero-branch second-Host onboarding.
+
 - Snapshot date: `2026-08-16`
 - 非产品决策收口（maintainer directive "除接入 Trench 外相关的功能全部
   做完，多租户也要开发完毕，用户体系是外挂的"）：多租户三切片全部落地——
