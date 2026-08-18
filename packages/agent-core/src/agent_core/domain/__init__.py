@@ -162,6 +162,13 @@ from agent_core.domain.host_capability_manifests import (
     HostToolContractV1,
     ResourceBindingRule,
 )
+from agent_core.domain.host_connectors import (
+    HostConnectorBinding,
+    HostConnectorProfileVersion,
+    HostConnectorStatus,
+    accepts_new_tasks,
+    fails_closed_for_running_tasks,
+)
 from agent_core.domain.host_effect_receipts import (
     HostEffectReceipt,
     HostEffectStatus,
@@ -274,6 +281,11 @@ __all__ = [
     "Capability",
     "GrantScope",
     "HostCapabilityManifestV1",
+    "HostConnectorBinding",
+    "HostConnectorProfileVersion",
+    "HostConnectorStatus",
+    "accepts_new_tasks",
+    "fails_closed_for_running_tasks",
     "HostEffectReceipt",
     "HostEffectStatus",
     "HostToolContractV1",
