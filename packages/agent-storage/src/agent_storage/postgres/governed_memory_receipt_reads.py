@@ -37,12 +37,12 @@ def read_operation_receipt(
     ).fetchone()
     if row is None:
         return None
-    if (
-        row["operation_kind"] != kind.value
-        or row["session_id"] != session_id
-        or (request_digest is not None and row["request_digest"] != request_digest)
+    if row["operation_kind"] != kind.value or (
+        request_digest is not None and row["request_digest"] != request_digest
     ):
         raise GovernedMemoryConflictError("Memory operation identity was reused")
+    if row["session_id"] != session_id:
+        raise GovernedMemoryConflictError("Memory operation receipt belongs to another session")
     receipt = GovernedMemoryOperationReceipt.model_validate(row["result_json"])
     if (
         receipt.operation_id != operation_id

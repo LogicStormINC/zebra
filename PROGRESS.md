@@ -57,7 +57,18 @@
   compose runner under `tests/compose/cloud_effect_composition/` — were
   merged back into `zebra-cloud-trench`; `CLOUD-EFFECT-COMP-CLOSE-01` is
   `In Progress` again until its focused test acceptance criterion is
-  re-verified. `EMB-TRN-READ-E2E-01` remains
+  re-verified. Verification closeout (2026-08-18): the real-PostgreSQL
+  compose runner passes `19 passed` with
+  `ZEBRA_CLOUD_EFFECT_COMPOSITION_TEST_RESULT=PASS` (isolated PostgreSQL +
+  MinIO); one contract gap found and fixed — cross-session receipt lookups
+  now raise a session-scoped `GovernedMemoryConflictError` instead of the
+  generic identity-reuse message. The card is `Done`.
+  Registry hygiene (2026-08-18): stale cards whose PRs merged in July
+  (`CTX-SEG-01` #176, `FINOS-HAR-03` #169, `SUBAGENT-UX-01` #177,
+  `WEB-UX-01` #178) and `CLOUD-WORKSPACE-CP-PLAN-01` (all seven successors
+  `Done`) are closed; the registry now reflects reality with
+  `ARCH-RUNTIME-V2-PLAN-01` and `EMB-TRN-READ-E2E-01` as the only open
+  engineering items. `EMB-TRN-READ-E2E-01` remains
   `In Progress` and fail-closed pending isolated cross-service inputs.
 - `CLOUD-EFFECT-DEFAULT-E2E-01` is `Done` with the full 10-scenario matrix
   passing on the rig: the two 2026-08-16 fault-injection scenarios verify

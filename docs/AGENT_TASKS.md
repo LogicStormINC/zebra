@@ -30,12 +30,12 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
-- `CLOUD-EFFECT-COMP-CLOSE-01` is `In Progress` again. Its first
-  implementation was rebased onto the merged cloudline stack and fast-forward
-  merged into `zebra-cloud-trench` as `bbd6108d` and briefly recorded `Done`;
-  the post-review corrective scope was merged back from
-  `codex/cloud-effect-comp-close-01` on 2026-08-17 and the card stays open
-  until its focused test acceptance criterion is re-verified. The typed
+- `CLOUD-EFFECT-COMP-CLOSE-01` is `Done`, verified end-to-end on 2026-08-18:
+  after the rebased first implementation (`bbd6108d`) and the merged-back
+  corrective scope (receipt-based recovery of lost commit responses,
+  fail-closed execution preflight, `2026-08-17`), the real-PostgreSQL
+  compose runner passes `19 passed` with
+  `ZEBRA_CLOUD_EFFECT_COMPOSITION_TEST_RESULT=PASS`. The typed
   `CloudWorkerComposition` replaces the unsafe `ControlPlaneStores` cast, the
   API handoff reads the narrow `EffectStateReadPort`, and cloud Memory
   finalization commits through the governed aggregate with receipt-based
@@ -297,7 +297,7 @@ confirmed repo memory by current-task relevance within a token budget.
 
 ### CLOUD-EFFECT-COMP-CLOSE-01 - Default Cloud Effect Composition Closeout
 
-- Status: `In Progress`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `CORE / STORAGE / WORKER / API / QA`
 - Depends on: `CLOUD-INTEGRATION-REG-01@8bbdf5b5`; explicitly activated by the
@@ -367,7 +367,7 @@ aggregate without treating `PostgresControlPlaneStores` as local
   the local byte-store API; local execution retains the existing ledger path.
 - [x] A completed cloud Session finalizes governed Memory via one fenced
   `WorkerMemoryMutationPlan`/receipt, never local `MemoryStorePort.upsert()`.
-- [ ] Focused tests cover local compatibility, cloud construction failures,
+- [x] Focused tests cover local compatibility, cloud construction failures,
   Effect state reads and completed-session aggregate acceptance. A real-service
   default-entrypoint runner is included when Docker services are available; its
   shared test workspace mount is not Workspace Control Plane evidence.
@@ -394,6 +394,16 @@ aggregate without treating `PostgresControlPlaneStores` as local
   was merged back into `zebra-cloud-trench` on 2026-08-17; the acceptance
   checkbox above stays open until the regression tests and the real-service
   runner are verified in this composition.
+- Verification closeout (2026-08-18): the real-PostgreSQL compose runner
+  (`tests/compose/cloud_effect_composition/run-postgres-tests.sh`, isolated
+  PostgreSQL + MinIO) passes `19 passed` with
+  `ZEBRA_CLOUD_EFFECT_COMPOSITION_TEST_RESULT=PASS`. The first run exposed
+  one contract gap — a cross-session receipt lookup raised the generic
+  identity-reuse conflict instead of a session-scoped one — fixed by
+  splitting the session mismatch into its own
+  `GovernedMemoryConflictError` in `governed_memory_receipt_reads.py`;
+  the full local matrix re-passes (`124 passed` across storage and worker
+  suites, Ruff/Mypy clean).
 
 #### Explicit Non-Goals
 
@@ -572,7 +582,8 @@ aggregate without treating `PostgresControlPlaneStores` as local
 
 ### CLOUD-WORKSPACE-CP-PLAN-01 - Cloud Workspace Control Plane Plan
 
-- Status: `Planning`
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: All seven path-bounded successor cards are `Done`; the plan is fully executed.
 - Owner: `lukeding`
 - Suggested role: `ARCH / STORAGE / RUNTIME / QA`
 - Depends on: maintainer activation; freezes the P0.3 gap from the
@@ -17037,7 +17048,8 @@ it, expand the parent's authority, recursively delegate, or outlive its parent.
 
 ### FINOS-HAR-03 - Recoverable Bounded Material Reads
 
-- Status: `Review`
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: PR #169 merged 2026-07-18.
 - Owner: `Codex`
 - Suggested role: `CORE / INTEGRATION`
 - Depends on: `FINOS-MCP-02`
@@ -20367,7 +20379,8 @@ changing the current default of same-Session compaction or activating runtime be
 
 ### CTX-SEG-01 - Stable Task And Automatic Internal Execution Segments
 
-- Status: `Review`
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: PR #176 merged 2026-07-19; successor CTX-SEG-02 is `Done`.
 - Owner: `Codex`
 - Suggested role: `ARCHITECTURE / CONTEXT / DESKTOP / QA`
 - Depends on: merged `CTX-HO-01E`, merged `CTX-LC-01`, explicit maintainer decision
@@ -21065,7 +21078,8 @@ cancel, and accessibility contracts.
 
 ### WEB-UX-01 - Trusted Local Read-Only Web Auto Execution
 
-- Status: `Review`
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: PR #178 merged 2026-07-19.
 - Owner: `lukeding`
 - Suggested role: `SECURITY / APP / UI / QA`
 - Depends on: merged `P122-WEB-01`, `P126-WEB-01`, and explicit maintainer approval
@@ -21138,7 +21152,8 @@ side-effecting tools remain fail-closed or approval-gated.
 
 ### SUBAGENT-UX-01 - Model-Native Subagent Delegation
 
-- Status: `Review`
+- Status: `Done`
+- Closed 2026-08-18 during registry hygiene: PR #177 merged 2026-07-19.
 - Owner: `lukeding`
 - Suggested role: `CORE / RUNTIME / QA`
 - Depends on: explicit maintainer approval
