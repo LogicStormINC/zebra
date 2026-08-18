@@ -12,6 +12,8 @@ from pydantic import (
 from agent_core.contracts.context_events import (
     ContextCompactedPayload,
     ContextContinuationSelectedPayload,
+    TaskGoalRevisedPayload,
+    TaskGoalSetPayload,
 )
 from agent_core.contracts.handoff_events import (
     SessionHandoffCommittedPayload,
@@ -401,6 +403,8 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SUBAGENT_CANCELLED: SubagentLifecyclePayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
     EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
+    EventType.TASK_GOAL_SET: TaskGoalSetPayload,
+    EventType.TASK_GOAL_REVISED: TaskGoalRevisedPayload,
 }
 
 

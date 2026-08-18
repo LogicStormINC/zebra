@@ -90,3 +90,34 @@ class ContextContinuationSelectedPayload(BaseModel):
         if not normalized:
             raise ValueError("context continuation fields must not be blank")
         return normalized
+
+
+class TaskGoalSetPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_number: int | None = Field(default=None, gt=0)
+    binding: str = Field(min_length=1, max_length=32)
+    goal_text: str | None = Field(default=None, max_length=1024)
+    version: int = Field(default=1, ge=1)
+    source: str | None = Field(default=None, max_length=64)
+    previous_goal_version: int | None = Field(default=None, ge=1)
+    stable_task_id: str | None = Field(default=None, max_length=128)
+
+    @field_validator("binding")
+    @classmethod
+    def normalize_binding(cls, value: str) -> str:
+        normalized = value.strip().casefold()
+        if normalized not in {"conversational", "goal_bound"}:
+            raise ValueError("binding must be conversational or goal_bound")
+        return normalized
+
+
+class TaskGoalRevisedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_number: int | None = Field(default=None, gt=0)
+    goal_text: str = Field(min_length=1, max_length=1024)
+    version: int = Field(ge=1)
+    source: str | None = Field(default=None, max_length=64)
+    previous_goal_version: int | None = Field(default=None, ge=1)
+    stable_task_id: str | None = Field(default=None, max_length=128)

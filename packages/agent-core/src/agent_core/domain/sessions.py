@@ -4,6 +4,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 
 from agent_core.domain.clarifications import ClarificationContext
+from agent_core.domain.goals import Goal, GoalBinding
 from agent_core.domain.identifiers import SessionId, new_session_id
 from agent_core.domain.plans import SessionPlan
 
@@ -113,6 +114,8 @@ class Session(BaseModel):
     approval_context: ApprovalContext | None = None
     clarification_context: ClarificationContext | None = None
     task_plan: SessionPlan = Field(default_factory=SessionPlan)
+    goal_binding: GoalBinding = GoalBinding.CONVERSATIONAL
+    active_goal: Goal | None = None
 
     @classmethod
     def create(

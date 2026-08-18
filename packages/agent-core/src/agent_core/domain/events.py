@@ -17,6 +17,8 @@ class EventType(StrEnum):
     SESSION_TITLE_UPDATED = "session_title_updated"
     USER_MESSAGE_RECEIVED = "user_message_received"
     TASK_PREPARED = "task_prepared"
+    TASK_GOAL_SET = "task_goal_set"
+    TASK_GOAL_REVISED = "task_goal_revised"
     RUNTIME_PROVISIONED = "runtime_provisioned"
     PLAN_PROPOSED = "plan_proposed"
     PLAN_APPROVED = "plan_approved"

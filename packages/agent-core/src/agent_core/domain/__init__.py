@@ -39,6 +39,14 @@ from agent_core.domain.attachments import (
 from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.delivery_audit import DeliveryAuditRecord
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.goals import (
+    Goal,
+    GoalBinding,
+    apply_goal_event,
+    resolve_goal_binding,
+    revise_session_goal,
+    set_session_goal,
+)
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.memories import (
     MemoryQuery,
@@ -123,6 +131,12 @@ __all__ = [
     "RolloverReason",
     "SegmentVisibility",
     "SessionPlan",
+    "Goal",
+    "GoalBinding",
+    "apply_goal_event",
+    "resolve_goal_binding",
+    "revise_session_goal",
+    "set_session_goal",
     "StoredArtifactPayload",
     "SessionAttachmentRef",
     "TextAttachmentInput",
