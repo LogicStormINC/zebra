@@ -842,6 +842,38 @@ read-only Trench vertical slice.
 - no `TASK_BOUND` event emission or API seam (admission card)
 - no Worker authority resolution (`AL-AUTH-WORKER-01`)
 
+### AL-CONNECTOR-PG-01 - PostgreSQL Connector Registry
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `STORAGE`
+- Branch: `codex/al-connector-pg-01` (from `cloud-agent@d6003c69`)
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/host_connector_migration.py`
+  (new, v24), `host_connectors.py` (new), migrations registration, focused
+  real-PostgreSQL tests, this card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] Migration v24 creates `host_connector_profiles` (PK on namespace +
+  host + connector + revision) and `host_connector_bindings` (PK on
+  namespace + host + namespace_id) with status/revision constraints and
+  lookup indexes.
+- [x] Profile publishes are immutable per revision: re-publishing the same
+  digest is idempotent; a different digest at the same revision is
+  rejected.
+- [x] Namespace bindings pin via server-side CAS (`binding_revision`
+  increments); binding a missing profile revision fails closed.
+- [x] Deployment-namespace isolation verified (a profile in one namespace
+  is invisible in another).
+- [x] Real-PostgreSQL tests 6 passed against a disposable instance with
+  `ZEBRA_TEST_POSTGRES_DSN`; `make check` green.
+
+#### Explicit Non-Goals
+
+- no operator CLI (`zebra host register/publish/bind` comes with cutover)
+- no Worker egress resolution (`AL-HOST-EGRESS-01`)
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in
