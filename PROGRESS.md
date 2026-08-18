@@ -5,6 +5,22 @@
 
 ## Current Mainline Snapshot
 
+- Agent Layer Phase A executed (2026-08-18, PRs #204-#207 on `cloud-agent`):
+  `AL-BOUNDARY-CON-01` lands the `agent-control-plane` workspace package
+  (core-only dependency, boundary gate, `AgentAction` route vocabulary);
+  `AL-HOST-CONTRACT-V1-01` freezes the capability/grant-scope separation,
+  single-segment JSON-pointer resource binding rules, digest-canonical
+  manifest v1, uncertain effect receipts and the ephemeral credential seam;
+  `AL-WORKER-GENERIC-01` deletes the Worker's Trench tool/argument/resource
+  branches — resolution now runs generically from manifest binding rules,
+  legacy manifests are enriched by the Host adapter in integrations, and a
+  vocabulary gate forbids Host names in Worker production code;
+  `AL-CONNECTOR-CON-01` freezes immutable outbound connector profiles
+  (bare-HTTPS origins, secret-free credential refs) and namespace bindings
+  with published/deprecated/revoked lifecycle plus the operator-only
+  registry Port. Phase B implementation cards (`AL-CONNECTOR-PG-01` from
+  migration v24, `AL-TASK-BIND-CON-01`, `AL-TASK-ADMISSION-PG-01`) remain
+  `Locked` awaiting activation.
 - Agent Layer direction ratified (2026-08-18, `AL-PLAN-01` `Done`): Zebra
   Agent Layer = Agent Control Plane + Host Integration Plane, landing first
   as a logical `agent-control-plane` application package inside `apps/api`
