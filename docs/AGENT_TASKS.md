@@ -975,6 +975,42 @@ read-only Trench vertical slice.
 - no expected-revision validation against Definition Release revisions
   (requires the registry seam from phase C wiring)
 
+### AL-AUTH-WORKER-01 - Bound Host Execution Authority
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `WORKER / CORE`
+- Branch: `codex/al-auth-worker-01` (from `cloud-agent@4749984e`)
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/bound_execution_authority.py` (new),
+  `packages/agent-storage/src/agent_storage/postgres/task_admission.py`
+  (binding reader), focused tests, this card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] `BoundHostExecutionAuthorityResolver` satisfies
+  `ExecutionAuthorityResolverPort` and derives every Attempt snapshot from
+  the admission-frozen `TaskBindingSnapshot`: issuer/namespace pinned to
+  the Host capability snapshot, Definition digest and capability ceiling
+  from the binding, Zebra policy evidence = the binding policy digest —
+  the P0.4 two-chain split is closed at the contract level.
+- [x] Fail-closed verified: issuer mismatch, namespace drift (at both the
+  request model and resolver), and expired Host grants are rejected before
+  any snapshot is produced.
+- [x] Revalidation can only narrow: replacements pass
+  `ensure_not_expanded`, carry `effective_snapshot` + digest + expiry, and
+  post-expiry revalidation returns `EXPIRED` without a snapshot.
+- [x] `load_task_binding` reconstructs the latest immutable binding from
+  the v25 store with digest verification.
+- [x] Focused tests 7 passed; worker suite 139 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no cloud-composition swap of `TenantScopedAuthorityResolver` for bound
+  tasks (rides with `AL-HOST-EGRESS-01`'s pinned-profile wiring, which is
+  when the Worker first loads bindings end-to-end)
+- no API-side authority exposure
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in
