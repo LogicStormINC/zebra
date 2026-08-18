@@ -19,7 +19,11 @@
 - 批次 2 已完成：`AL-QUERY-API-V1-01`（#211）与
   `AL-TASK-ADMISSION-PG-01`（#212，迁移头 v25；六对象单事务 +
   幂等短路 + 中段崩溃注入全回滚验收，P1.3 修复）。进度 9/16。
-- 批次 3 待激活（依赖已满足）：`AL-AUTH-WORKER-01`（P0.4：
+- 批次 3 进行中：`AL-AUTH-WORKER-01` 已完成（#213，P0.4 合同级闭环：
+  绑定→Attempt 权限链 + fail-closed 漂移/过期 + 只收窄重校验 + v25 绑定
+  读取）。进度 10/16。剩余 `AL-HOST-EGRESS-01`（pinned Profile 出站 +
+  cloud composition 换装 bound resolver 的接线点）→ `AL-HOST-EFFECT-01`。
+- 原：批次 3 待激活要点：`AL-AUTH-WORKER-01`（P0.4：
   `BoundHostExecutionAuthorityResolver` 从 TaskBindingSnapshot 构造
   `ExecutionAuthoritySnapshot.from_request()`，需 worker recovery 增加绑定
   快照读取，复用 `AttemptAuthorityEvidence.persist` 注入点）、

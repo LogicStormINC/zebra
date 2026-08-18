@@ -1011,6 +1011,43 @@ read-only Trench vertical slice.
   when the Worker first loads bindings end-to-end)
 - no API-side authority exposure
 
+### AL-HOST-EGRESS-01 - Pinned Connector Profile Egress
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `WORKER / INTEGRATIONS`
+- Branch: `codex/al-host-egress-01` (from `cloud-agent@9dd4bde8`)
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/host_egress.py` (new), focused
+  tests, this card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] `HostEgressResolver` resolves one host_app_id + namespace_id to an
+  immutable Connector Profile revision through the operator-owned
+  registry: the egress endpoint follows the pinned profile, not deployment
+  globals (rotation test verifies endpoint change on revision change).
+- [x] Credentials are issued per invocation via
+  `HostWorkloadCredentialResolverPort` with profile refs and the Host
+  Grant's scopes — memory-only `EphemeralHostCredential`; during the
+  legacy window the token feeds the HMAC header path (documented ponytail
+  for the OAuth/mTLS adapters).
+- [x] Fail-closed lifecycle: bindings pointing at missing profile
+  revisions and revoked profiles are rejected; deprecated profiles keep
+  serving already-bound Tasks; unbound namespaces return ``None`` so the
+  legacy global-env path remains the fallback until
+  ``AL-LEGACY-REMOVAL-01``.
+- [x] Focused tests 8 passed; worker suite 147 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no manifest snapshot verification at egress time (full freeze lands when
+  admission stores complete manifests; the binding currently pins digests
+  only)
+- no composition wiring swap (rides with the cutover card when operators
+  register real connectors)
+- no path-template invoke client (`AL-HOST-EFFECT-01`)
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in
