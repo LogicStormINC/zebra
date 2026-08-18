@@ -874,6 +874,36 @@ read-only Trench vertical slice.
 - no operator CLI (`zebra host register/publish/bind` comes with cutover)
 - no Worker egress resolution (`AL-HOST-EGRESS-01`)
 
+### AL-API-BOUNDARY-01 - API Local Execution Seam
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `API / ARCH`
+- Branch: `codex/al-api-boundary-01` (from `cloud-agent` after #209)
+- Owned paths: `apps/api/src/zebra_agent_api/local_execution.py` (new),
+  `app.py`, `session_control.py`,
+  `tests/architecture/test_api_boundary.py` (new), this card and
+  `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] All Worker imports (`SessionClaimService`/`SessionExecutionService`,
+  control service, recovery/resume errors) moved behind the single
+  `zebra_agent_api.local_execution` seam; `app.py` and mixins no longer
+  import `zebra_agent_worker` or the `run_local_harness` execution entry.
+- [x] Architecture gate: no API module outside the seam may import
+  `zebra_agent_worker` or `agent_runtime`'s execution entry; the seam's
+  existence and content are asserted.
+- [x] Local profile behavior unchanged (API suite `371 passed`); gate plus
+  API suite `376 passed`; `make check` green.
+
+#### Explicit Non-Goals
+
+- no pyproject dependency removal (`AL-API-DECOUPLE-01` drops the packaged
+  dependency once the cloud artifact no longer needs the seam)
+- no cloud command/query service extraction into `agent-control-plane`
+  (rides with `AL-TASK-ADMISSION-PG-01`'s admission seam)
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in

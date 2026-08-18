@@ -23,7 +23,6 @@ from agent_integrations import (
 )
 from agent_runtime import (
     read_mcp_resource_attachments,
-    run_local_harness,
     validate_mcp_capability_selection,
 )
 from agent_security import (
@@ -34,22 +33,12 @@ from agent_security import (
 )
 from agent_storage import (
     ControlPlaneStores,
-    LeaseConflictError,
     list_confirmed_repo_memories,
     store_text_attachments,
 )
 from zebra_agent_config import (
     ZebraAgentSettings,
     trusted_local_mode_enabled,
-)
-from zebra_agent_worker import (
-    SessionClaimService,
-    SessionExecutionService,
-    SessionRecoveryError,
-    SessionRecoveryService,
-    SessionResumeError,
-    SessionResumeService,
-    WorkerExecutionError,
 )
 
 from zebra_agent_api.agent_definition_binding import resolve_definition_binding
@@ -70,6 +59,17 @@ from zebra_agent_api.api_workspace_mixin import (
 )
 from zebra_agent_api.factory import create_app as create_app
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
+from zebra_agent_api.local_execution import (
+    LeaseConflictError,
+    SessionClaimService,
+    SessionExecutionService,
+    SessionRecoveryError,
+    SessionRecoveryService,
+    SessionResumeError,
+    SessionResumeService,
+    WorkerExecutionError,
+    run_local_harness,
+)
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
