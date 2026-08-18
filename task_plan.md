@@ -16,7 +16,18 @@
   `AgUiTaskProjector` 跨 Segment 投影 + `task_sequence` 游标，rollover
   后 Host 线程不断流；API 流改读 `stores.tasks.read_events`、按 Task
   状态终态）。进度 8/16。
-- 批次 2 剩余：`AL-TASK-ADMISSION-PG-01`——最重的在库卡，实施要点：
+- 批次 2 已完成：`AL-QUERY-API-V1-01`（#211）与
+  `AL-TASK-ADMISSION-PG-01`（#212，迁移头 v25；六对象单事务 +
+  幂等短路 + 中段崩溃注入全回滚验收，P1.3 修复）。进度 9/16。
+- 批次 3 待激活（依赖已满足）：`AL-AUTH-WORKER-01`（P0.4：
+  `BoundHostExecutionAuthorityResolver` 从 TaskBindingSnapshot 构造
+  `ExecutionAuthoritySnapshot.from_request()`，需 worker recovery 增加绑定
+  快照读取，复用 `AttemptAuthorityEvidence.persist` 注入点）、
+  `AL-HOST-EGRESS-01`（Worker 按 pinned Connector Profile 经
+  `HostWorkloadCredentialResolverPort` 建网关，替换
+  `build_worker_tool_gateway` 的全局 env 路径）、`AL-HOST-EFFECT-01`
+  （Host 写工具走 Effect 回执 + reconcile，衔接既有 Fenced Effect 体系）。
+- 原：批次 2 剩余实施要点（已完成，留档）：
   新增 `TaskAdmissionTransactionPort`（参照
   `WorkerProjectionTransactionPort.commit_worker_event` 的既有原子提交
   模式），一个 PG 事务写入 bootstrap events、session/workspace 投影、

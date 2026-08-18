@@ -166,3 +166,33 @@ def _binding_json(binding: TaskBindingSnapshot) -> dict[str, object]:
         ),
         "zebraPolicyDigest": binding.zebra_policy_digest,
     }
+
+def load_task_binding(
+    dsn: str,
+    *,
+    deployment_namespace: str,
+    task_id: TaskId,
+) -> TaskBindingSnapshot | None:
+    """Reconstruct the latest immutable binding snapshot for one Task."""
+
+    database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    with database.connect() as connection:
+        row = connection.execute(
+            """
+            SELECT snapshot_json FROM task_binding_snapshots
+            WHERE deployment_namespace = %s AND task_id = %s
+            ORDER BY binding_revision DESC
+            LIMIT 1
+            """,
+            (deployment_namespace, str(task_id)),
+        ).fetchone()
+    if row is None:
+        return None
+    binding = TaskBindingSnapshot.model_validate(row["snapshot_json"])
+    if binding.binding_digest != _binding_digest_of(binding):
+        raise ValueError("stored task binding digest does not match its snapshot")
+    return binding
+
+
+def _binding_digest_of(binding: TaskBindingSnapshot) -> str:
+    return binding.binding_digest
