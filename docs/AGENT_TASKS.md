@@ -2183,6 +2183,14 @@ run.
   returns `BLOCKED` with all 16 deployment inputs missing. No real
   cross-service pass is claimed until an isolated PG/Redis/object-store
   deployment supplies the inputs.
+- Re-attempted 2026-08-18 on the merged `main` (`91251fa5`): the runner
+  produces the structured `BLOCKED` result exactly as designed
+  (`ZEBRA_TRENCH_READ_E2E=BLOCKED`, `result.json` with all 16 required
+  environment inputs enumerated, `invalid_environment` empty, non-zero
+  semantic failure). Fail-closed behavior is verified on the mainline; the
+  card stays `In Progress` and fail-closed until a maintainer provisions the
+  real Trench/Zebra deployment inputs (the Trench session cookie in
+  particular cannot be supplied by the repository).
 
 ### EMB-HOST-RUNTIME-01 - Worker Host Tool runtime composition
 
@@ -21783,7 +21791,7 @@ isolation completing in private cloud.
 
 ### ARCH-RUNTIME-V2-PLAN-01 - Runtime V2 Proposal Current-State Alignment
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Suggested role: `ARCHITECTURE / DOCS / QA`
 - Depends on: current mainline architecture and explicit maintainer request
@@ -21836,6 +21844,18 @@ turning it into executable architecture before the focused ADR is approved.
   `AGENT-DEF-ADR-01` Gate A ADR task
 - accepted task chain registers one ADR plus ten `Locked` Core, SQLite,
   PostgreSQL, draft/version, Attempt authority, binding, Memory, Trust, Eval and
+- closeout (2026-08-18, post PR #194 merge `91251fa5`): the proposal's §2
+  baseline table and §10 gate notes are delta-aligned to the new `main`. The
+  review confirmed the direction was validated by implementation — every symbol
+  the original gap column named as missing now exists in code
+  (`PostgresAgentRegistry`, `AgentDefinitionSnapshot`,
+  `ExecutionAuthoritySnapshot` with `execution_authority_resolved`,
+  `AgentVersionPublicationGate`, `AgentRelease`), and the full Gate B–G card
+  chain is `Done`. Residual open increments (version-semantics Runtime profile
+  resolution, Memory provider deletion propagation, unified ingress trust
+  evidence, private-cloud Registry operations) must be activated as new
+  path-bounded cards, never derived directly from this proposal.
+- original handoff note: the accepted task chain registered one ADR plus ten
   gated-publication tasks
 
 ## Agent Definition V2 Task Board
