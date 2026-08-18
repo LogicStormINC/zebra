@@ -9,12 +9,16 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
+from agent_core.domain.host_capability_manifests import ResourceBindingRule
 from agent_core.domain.tools import ToolCall
 from agent_tools.contracts import ToolContract, ToolExecutionLocation, ToolIdempotency, ToolRisk
+
+from agent_integrations.host_tools.legacy_bindings import infer_legacy_resource_bindings
 
 MAX_MANIFEST_TOOLS = 128
 MAX_MANIFEST_BYTES = 256 * 1024
 MAX_WORKLOAD_IDENTITY_LENGTH = 512
+MAX_BINDING_RULES_PER_TOOL = 8
 
 
 class HostToolGatewayError(ValueError):
@@ -64,6 +68,15 @@ class HostToolManifest:
     workload_identity: str
     tools: tuple[ToolContract, ...]
     digest: str
+    tool_resource_bindings: tuple[tuple[str, tuple[ResourceBindingRule, ...]], ...] = ()
+
+    def resource_bindings_for(self, name: str) -> tuple[ResourceBindingRule, ...]:
+        """Declared (or legacy-inferred) binding rules for one tool name."""
+
+        return next(
+            (rules for tool_name, rules in self.tool_resource_bindings if tool_name == name),
+            (),
+        )
 
     def __post_init__(self) -> None:
         if not isinstance(self.workload_identity, str):
@@ -97,6 +110,19 @@ class HostToolManifest:
         if len(raw_tools) > MAX_MANIFEST_TOOLS:
             raise HostToolGatewayError("manifest contains too many tools")
         tools = tuple(_tool_contract(item) for item in raw_tools)
+        parsed_bindings = tuple(
+            (tool.name, _tool_bindings(item))
+            for item, tool in zip(raw_tools, tools, strict=True)
+        )
+        declared_bindings = tuple(
+            (name, rules) for name, rules in parsed_bindings if rules
+        )
+        if declared_bindings:
+            tool_resource_bindings = declared_bindings
+        else:
+            tool_resource_bindings = infer_legacy_resource_bindings(
+                tuple(tool.name for tool in tools)
+            )
         canonical = {
             "workloadIdentity": identity,
             "tools": [_tool_payload(tool) for tool in tools],
@@ -108,7 +134,12 @@ class HostToolManifest:
         supplied = payload.get("manifestDigest", payload.get("manifest_digest"))
         if supplied is not None and supplied != digest:
             raise HostToolGatewayError("manifest digest does not match its contents")
-        return cls(workload_identity=identity, tools=tools, digest=digest)
+        return cls(
+            workload_identity=identity,
+            tools=tools,
+            digest=digest,
+            tool_resource_bindings=tool_resource_bindings,
+        )
 
     def get(self, name: str) -> ToolContract | None:
         return next((tool for tool in self.tools if tool.name == name), None)
@@ -171,6 +202,40 @@ class HostToolInvocation:
                 "Host Tool requires an idempotency key",
                 reason="idempotency_required",
             )
+
+
+def _tool_bindings(raw: object) -> tuple[ResourceBindingRule, ...]:
+    """Parse optional per-tool ``resourceBindings`` wire entries."""
+
+    if not isinstance(raw, Mapping):
+        return ()
+    value = raw.get("resourceBindings", raw.get("resource_bindings"))
+    if value is None:
+        return ()
+    if isinstance(value, str | bytes) or not isinstance(value, Sequence):
+        raise HostToolGatewayError("resource bindings must be an array")
+    if len(value) > MAX_BINDING_RULES_PER_TOOL:
+        raise HostToolGatewayError("tool declares too many resource bindings")
+    rules: list[ResourceBindingRule] = []
+    for entry in value:
+        if not isinstance(entry, Mapping):
+            raise HostToolGatewayError("resource binding entry must be an object")
+        try:
+            rules.append(
+                ResourceBindingRule(
+                    argument_pointer=str(
+                        entry.get("argumentPointer", entry.get("argument_pointer", ""))
+                    ),
+                    resource_type=str(
+                        entry.get("resourceType", entry.get("resource_type", ""))
+                    ),
+                    required=bool(entry.get("required", True)),
+                    match_mode="exact",
+                )
+            )
+        except ValueError as exc:
+            raise HostToolGatewayError("resource binding entry is invalid") from exc
+    return tuple(rules)
 
 
 def _tool_contract(raw: object) -> ToolContract:

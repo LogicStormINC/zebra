@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolIdempotency, ToolResult, ToolRisk
@@ -14,6 +14,7 @@ from agent_storage import SQLiteSkillsStateStore
 from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings
 
+from zebra_agent_worker.resource_binding import resolve_required_resource
 from zebra_agent_worker.task_recovery import RecoveredTask
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
 
@@ -92,7 +93,11 @@ class WorkerToolGateway:
             tool_call,
             self.host_context,
             idempotency_key=idempotency_key,
-            required_resource=_required_resource(self.host_context, tool_call),
+            required_resource=resolve_required_resource(
+                host_manifest.resource_bindings_for(tool_call.name),
+                tool_call,
+                self.host_context,
+            ),
             manifest=self.host_manifest,
         )
 
@@ -211,32 +216,3 @@ def _host_model_tools(manifest: HostToolManifest | None) -> tuple[ModelToolDefin
         )
         for tool in manifest.tools
     )
-
-
-def _required_resource(
-    context: HostContextEnvelope,
-    tool_call: ToolCall,
-) -> HostResourceRef | None:
-    argument_name = {
-        "events.get_event": "event_id",
-        "events.get_evidence": "event_id",
-        "events.get_related_events": "event_id",
-        "events.get_entity_timeline": "entity",
-        "events.get_topic": "topic",
-    }.get(tool_call.name)
-    if argument_name is None:
-        return None
-    value = tool_call.arguments.get(argument_name)
-    if not isinstance(value, str) or not value.strip():
-        return HostResourceRef(type="trench.resource", id="invalid")
-    expected_types = (
-        ("trench.event", "event")
-        if argument_name == "event_id"
-        else ("trench.entity", "entity")
-        if argument_name == "entity"
-        else ("trench.topic", "topic")
-    )
-    for resource in context.resource_refs:
-        if resource.resource_type in expected_types and resource.resource_id == value.strip():
-            return resource
-    return HostResourceRef(type=expected_types[0], id=value.strip())

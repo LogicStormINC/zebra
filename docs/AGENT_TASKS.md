@@ -744,6 +744,44 @@ read-only Trench vertical slice.
 - no wire parsing in integrations (successor adapter cards)
 - no PostgreSQL storage, admission flow, or Worker changes
 
+### AL-WORKER-GENERIC-01 - Worker Generic Resource Binding
+
+- Status: `Done`
+- Owner: `lukeding`
+- Suggested role: `WORKER / CORE`
+- Branch: `codex/al-worker-generic-01` (from `cloud-agent@bac8cdc5`)
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/resource_binding.py` (new),
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `packages/agent-integrations/src/agent_integrations/host_tools/contracts.py`,
+  `packages/agent-integrations/src/agent_integrations/host_tools/legacy_bindings.py`
+  (new), focused tests, this card and `PROGRESS.md`.
+
+#### Acceptance
+
+- [x] `_required_resource()` and its Trench tool/argument/type branches are
+  deleted from Worker production code; the Worker executes only the generic
+  extract→match→deny steps against manifest binding rules.
+- [x] `HostToolManifest` parses optional per-tool `resourceBindings` wire
+  entries; manifests that declare none fall back to the legacy Host adapter
+  (`legacy_bindings.py` in integrations — the one permitted Host-vocabulary
+  home) until `AL-LEGACY-REMOVAL-01` closes the legacy window.
+- [x] Denial semantics are preserved: matched resources return the granted
+  ref; unmatched or malformed arguments yield typed refs the invocation gate
+  rejects (`resource_denied`); tools without required rules impose no
+  resource requirement.
+- [x] Vocabulary gate: Worker production code contains no `trench`/`jazz`
+  tokens and no Host tool-name branches (added
+  `tests/worker/test_worker_host_vocabulary_gate.py`).
+- [x] Worker suite `132 passed, 13 skipped`; binding tests `7 passed`;
+  `make check` green.
+
+#### Explicit Non-Goals
+
+- no connector registry or pinned profile resolution (`AL-HOST-EGRESS-01`)
+- no admission-time manifest freezing (`AL-TASK-BIND-CON-01` successors)
+- no deletion of the legacy adapter itself (`AL-LEGACY-REMOVAL-01`)
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in
