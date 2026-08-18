@@ -1,22 +1,40 @@
 # Task Plan
 
-## Agent Layer 构建实施（active, 2026-08-18 定案）
+## Agent Layer 剩余实施计划（active，2026-08-18 刷新）
 
-权威方案：`docs/cloud-agent构建实施方案.md`；架构决策：ADR-017；
-预留登记：`AL-PLAN-01`（16 张 `AL-*` 卡，全部 `Locked`）。
+权威方案：`docs/cloud-agent构建实施方案.md`；架构决策：ADR-017。
+已完成 4/16：`AL-BOUNDARY-CON-01`、`AL-HOST-CONTRACT-V1-01`、
+`AL-WORKER-GENERIC-01`、`AL-CONNECTOR-CON-01`（PR #204-#207）。
 
-激活顺序（每张卡激活时冻结 owner/branch/Owned paths）：
+### 当前已解锁的三条并行线
 
-1. 阶段 A：`AL-BOUNDARY-CON-01` → `AL-HOST-CONTRACT-V1-01` →
-   `AL-WORKER-GENERIC-01`；`AL-API-BOUNDARY-01` 可与后两张并行。
-2. 阶段 B：`AL-CONNECTOR-CON-01` → `AL-CONNECTOR-PG-01`（迁移 v24 起）、
-   `AL-TASK-BIND-CON-01` → `AL-TASK-ADMISSION-PG-01`。
-3. 阶段 C：`AL-AUTH-WORKER-01`、`AL-HOST-EGRESS-01` → `AL-HOST-EFFECT-01`。
-4. 阶段 D：`AL-QUERY-API-V1-01` → `AL-HOST-CONFORMANCE-01` →
-   `AL-TRENCH-CUTOVER-01` → `AL-LEGACY-REMOVAL-01`、`AL-API-DECOUPLE-01`。
+1. API 边界线：`AL-API-BOUNDARY-01` — 把 cloud command/query application
+   service 从 `apps/api/app.py` 分离进 `agent-control-plane`；Cloud route
+   不导入 Worker；local 路径保持兼容（修 P1.1 前半）。
+2. 存储线：`AL-CONNECTOR-PG-01` — Connector Registry 的 PostgreSQL 实现
+   （迁移 v24 起、namespace 隔离、CAS、审计、并发更新测试）。
+3. 绑定域线：`AL-TASK-BIND-CON-01` — `AgentCapabilityCeilingSnapshot`、
+   `HostCapabilitySnapshot`、`TaskBindingSnapshot` 域与能力交集绑定服务
+   （修 P0.5 域侧）；随后 `AL-QUERY-API-V1-01`（Task 级重放游标，修 P1.2）。
 
-并行约束：`EMB-TRN-READ-E2E-01`（真实 Trench 验收）与 AL 卡互不阻塞；
-`AL-TRENCH-CUTOVER-01` 执行前必须先拿到该验收证据。
+### 汇合后的顺序
+
+- 线2+线3 汇合 → `AL-TASK-ADMISSION-PG-01`（原子 Admission 事务，修 P1.3）
+- → `AL-AUTH-WORKER-01`（BoundHostExecutionAuthorityResolver，修 P0.4）+
+  `AL-HOST-EGRESS-01`（Worker 按 pinned Connector Profile 建立 Host 网关，
+  修 P0.2 实现侧）→ `AL-HOST-EFFECT-01`（Host 写工具经 Effect 回执与对账）
+- 四线全汇合 → `AL-HOST-CONFORMANCE-01`（fake-host-a/b 与十条 CI 门禁）
+- → `AL-TRENCH-CUTOVER-01`（前置：`EMB-TRN-READ-E2E-01` 真实验收证据）
+- → `AL-LEGACY-REMOVAL-01`（删除 `ZEBRA_HOST_TOOL_*` 与 legacy 适配器）
+- → `AL-API-DECOUPLE-01`（API 产物不再打包 Worker 执行实现，收 P1.1）
+
+### 约束
+
+- 每张卡激活时冻结 owner/branch/Owned paths；迁移头激活时复核（当前 v23，
+  `AL-CONNECTOR-PG-01` 从 v24 起）。
+- `EMB-TRN-READ-E2E-01`（真实 Trench 验收）与 AL 卡互不阻塞；
+  Cutover 前必须先拿到该证据。
+- Host Egress Gateway 微服务拆分维持延期（方案第十三节七条真实需求触发）。
 
 ---
 
