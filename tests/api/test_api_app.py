@@ -362,7 +362,9 @@ def test_api_create_session_execute_persists_harness_events(
     monkeypatch,
 ) -> None:
     database_path = tmp_path / "sessions.sqlite"
-    original_run_local_harness = api_app_module.run_local_harness
+    import zebra_agent_api.local_execution as local_execution_seam
+
+    original_run_local_harness = local_execution_seam.run_local_harness
     captured_budgets: dict[str, int | None] = {}
 
     def capture_budgets(**kwargs):
@@ -392,7 +394,7 @@ def test_api_create_session_execute_persists_harness_events(
         )
 
     monkeypatch.setattr(api_app_module, "build_model_gateway", fake_build_model_gateway)
-    monkeypatch.setattr(api_app_module, "run_local_harness", capture_budgets)
+    monkeypatch.setattr(local_execution_seam, "run_local_harness", capture_budgets)
 
     response = create_app(database_path, settings=_settings(database_path)).create_session(
         {

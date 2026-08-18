@@ -6,7 +6,6 @@ from uuid import UUID
 from agent_core.domain.identifiers import SessionId
 from agent_storage import ControlPlaneStores
 
-from zebra_agent_api.local_execution import SessionControlError, SessionControlService
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_payloads import (
     parse_cancel_session_payload,
@@ -27,6 +26,8 @@ def cancel_session_control(
     del parsed
 
     try:
+        from zebra_agent_api.local_execution import SessionControlError, SessionControlService
+
         result = SessionControlService(database_path, stores=stores).cancel_session(
             SessionId(UUID(session_id))
         )
@@ -67,6 +68,8 @@ def suspend_session_control(
     del parsed
 
     try:
+        from zebra_agent_api.local_execution import SessionControlError, SessionControlService
+
         result = SessionControlService(database_path, stores=stores).suspend_session(
             SessionId(UUID(session_id))
         )

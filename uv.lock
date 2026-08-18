@@ -920,13 +920,17 @@ source = { editable = "apps/api" }
 dependencies = [
     { name = "agent-core" },
     { name = "agent-integrations" },
-    { name = "agent-runtime" },
     { name = "agent-security" },
     { name = "agent-storage" },
     { name = "fastapi" },
     { name = "pypdf" },
     { name = "uvicorn" },
     { name = "zebra-agent-config" },
+]
+
+[package.optional-dependencies]
+local = [
+    { name = "agent-runtime" },
     { name = "zebra-agent-worker" },
 ]
 
@@ -934,15 +938,16 @@ dependencies = [
 requires-dist = [
     { name = "agent-core", editable = "packages/agent-core" },
     { name = "agent-integrations", editable = "packages/agent-integrations" },
-    { name = "agent-runtime", editable = "packages/agent-runtime" },
+    { name = "agent-runtime", marker = "extra == 'local'", editable = "packages/agent-runtime" },
     { name = "agent-security", editable = "packages/agent-security" },
     { name = "agent-storage", editable = "packages/agent-storage" },
     { name = "fastapi", specifier = ">=0.116.1,<0.117.0" },
     { name = "pypdf", specifier = ">=6.14.2,<7.0.0" },
     { name = "uvicorn", specifier = ">=0.35.0,<0.36.0" },
     { name = "zebra-agent-config", editable = "apps/config" },
-    { name = "zebra-agent-worker", editable = "apps/worker" },
+    { name = "zebra-agent-worker", marker = "extra == 'local'", editable = "apps/worker" },
 ]
+provides-extras = ["local"]
 
 [[package]]
 name = "zebra-agent-cli"
