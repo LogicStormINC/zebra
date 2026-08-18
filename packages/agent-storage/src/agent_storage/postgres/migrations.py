@@ -17,6 +17,7 @@ from agent_storage.postgres.governed_memory_scope_migration import (
 )
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
 from agent_storage.postgres.host_auth_migration import HOST_AUTH_MIGRATION
+from agent_storage.postgres.host_connector_migration import HOST_CONNECTOR_MIGRATION
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.migration_types import Migration
@@ -484,4 +485,5 @@ MIGRATIONS = (
     GOVERNED_MEMORY_SCOPE_MIGRATION,
     AGENT_RELEASE_ENFORCEMENT_MIGRATION,
     SESSION_TENANT_NAMESPACE_MIGRATION,
+    HOST_CONNECTOR_MIGRATION,
 )
