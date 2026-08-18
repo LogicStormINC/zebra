@@ -37,18 +37,23 @@ Sandbox、Artifact、Event Store、Memory governance、Skill、Trust metadata、
 
 ## 2. 当前事实与真实增量
 
-下表的“现有基线”是本次基于 `origin/main@a6b47c3f` 的仓库核对结果；具体的
-implemented/tested/merged/deployed 状态继续以 `PROGRESS.md` 和对应任务验收证据为准。
+> **2026-08-18 增量对齐**：下表最初基于 `origin/main@a6b47c3f` 核对。PR #194
+> 合并（`91251fa5`）后，Gate B–G 对应的实现卡已全部 `Done`，本节按新 main
+> 重新核对：原“v2 真实缺口”列中的 Registry 权威 Store（`PostgresAgentRegistry`）、
+> Definition/Version/Release 域与 API、Task 级 `AgentDefinitionSnapshot` 绑定、
+> Attempt 级 `ExecutionAuthoritySnapshot`（含 `execution_authority_resolved`
+> durable event）与 `AgentVersionPublicationGate` 均已存在于代码。仍然真实
+> 开口的增量见下表最后一列的剩余项。
 
-| 领域 | 现有基线 | v2 真实缺口 |
+| 领域 | 现有基线（`91251fa5`） | v2 剩余缺口 |
 | --- | --- | --- |
-| 执行身份 | 稳定 `AgentTask`、内部 `ExecutionSegment`、Session Event Store | 可复用 Agent Definition 及其版本绑定 |
-| Runtime | Harness、Worker、恢复、Tool Gateway、Sandbox、Artifact、Streaming | Agent 版本到 Runtime profile 的确定性解析 |
+| 执行身份 | 稳定 `AgentTask`、内部 `ExecutionSegment`、Session Event Store、`AgentDefinitionSnapshot` Task 绑定 | 无核心缺口；剩余为快照合同的演进维护 |
+| Runtime | Harness、Worker、恢复、Tool Gateway、Sandbox、Artifact、Streaming、部署 Profile 轴 | Agent 版本到 Runtime profile 的确定性解析仍依赖 Profile 组合，未形成版本语义 |
 | Skill | Catalog、scope、digest、Task name-selection snapshot、enable/disable、provenance、Eval | 发布固定 component identity/digest；Task binding 生成 immutable content/grant snapshot |
-| Memory | Event 事实源、Context Capsule、governed `MemoryStorePort`、生命周期与来源 | Agent-scoped policy、provider mapping、版本兼容和删除传播 |
-| Trust/Security | typed trust level、provenance、untrusted output、Policy、Approval、Credential/Egress 边界 | Agent publish/grant authority 与所有 ingress 的统一 trust evidence |
-| Eval | Trace、local Eval runner、release gate、replay cases | 按 Agent version 聚合的质量基线、回归门禁和发布证据 |
-| Registry | Task/Skill/Extension 状态均有各自 Store | Agent Definition/Version/Release 的权威 Store 尚不存在 |
+| Memory | Event 事实源、Context Capsule、governed `MemoryStorePort`、生命周期与来源、Definition 域 governed Memory | Agent-scoped provider mapping、版本兼容和删除传播 |
+| Trust/Security | typed trust level、provenance、untrusted output、Policy、Approval、Credential/Egress 边界、发布信任与撤销 | 所有 ingress 的统一 trust evidence 汇聚面 |
+| Eval | Trace、local Eval runner、release gate、replay cases、`AgentVersionPublicationGate` | 按 Agent version 聚合的长期质量基线运营 |
+| Registry | `PostgresAgentRegistry`（Definition/Version/Release 权威 Store）已实现 | 私有云 Registry 数据库权限与运维合同的细化 |
 
 ### 2.1 名称边界
 
@@ -353,8 +358,15 @@ packages/agent-registry
 
 ## 10. 候选决策顺序（非执行 Phase）
 
-架构方向已经接受，Gate A 已由 `AGENT-DEF-ADR-01` 激活；Gate B-G 保持 `Locked`。
-每项开始前仍必须获得 owner、branch 和 Owned paths。
+架构方向已经接受，Gate A 已由 `AGENT-DEF-ADR-01` 激活并产出 `Accepted` 的
+ADR-016。**2026-08-18 状态**：Gate B–G 对应的实现卡（`AGENT-DEF-CON-01`、
+`AGENT-DEF-PG-01`、`AGENT-DEF-DRAFT-01`、`AGENT-AUTH-SNAPSHOT-01`、
+`AGENT-DEF-BIND-01`、`AGENT-DEF-MEM-01`、`AGENT-DEF-TRUST-01`、
+`AGENT-DEF-EVAL-01`、`AGENT-DEF-PUB-01`）已全部 `Done` 并随 PR #194 合并
+进 `main`；本节保留为决策顺序的历史记录。剩余开口项（版本语义的 Runtime
+profile 解析、Memory provider mapping 的删除传播、ingress trust 汇聚面、
+私有云 Registry 运维）如需继续，必须作为新登记的路径受限任务卡显式激活，
+不再从本提案直接派生。每项开始前仍必须获得 owner、branch 和 Owned paths。
 
 ### Gate A：决策冻结（`AGENT-DEF-ADR-01`）
 
@@ -458,6 +470,7 @@ v2 初始阶段不包含：
 - [生产级 Runtime 实施方案](./生产级Runtime实施方案_v1.0.md)
 - [上下文生命周期与混合压缩](./上下文生命周期与混合压缩架构方案_v1.0.md)
 
-架构方向已经接受，ADR-016 已在本地文档中标记 `Accepted`。在该文档分支
-合并到 `main` 前，所有实现任务仍为 `Locked`；合并后只允许
-`AGENT-DEF-CON-01` 首先转为 `Ready`，其余任务按依赖 DAG 解锁。
+架构方向已经接受，ADR-016 已标记 `Accepted`。原“文档分支合并前实现任务
+保持 `Locked`”的约束已完成其历史使命：实现任务按依赖 DAG 依次解锁并全部
+`Done`（2026-08-18 随 PR #194 合并进 `main`）。本提案自此作为方向与边界
+的权威记录维护；后续增量一律通过新任务卡显式激活。

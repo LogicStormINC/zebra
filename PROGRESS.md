@@ -67,8 +67,17 @@
   (`CTX-SEG-01` #176, `FINOS-HAR-03` #169, `SUBAGENT-UX-01` #177,
   `WEB-UX-01` #178) and `CLOUD-WORKSPACE-CP-PLAN-01` (all seven successors
   `Done`) are closed; the registry now reflects reality with
-  `ARCH-RUNTIME-V2-PLAN-01` and `EMB-TRN-READ-E2E-01` as the only open
-  engineering items. `EMB-TRN-READ-E2E-01` remains
+  `EMB-TRN-READ-E2E-01` as the only open engineering item.
+  `ARCH-RUNTIME-V2-PLAN-01` is `Done` (2026-08-18): the proposal's §2/§10
+  were delta-aligned to the post-#194 `main` — the review confirmed the
+  v2 direction was validated by implementation (Gate B–G cards all `Done`;
+  every originally-missing symbol exists in code), and residual increments
+  must be activated as new path-bounded cards.
+  PR #194 merged 2026-08-18 (`91251fa5`): `main` again carries the full
+  cloud mainline; branching returns to main-based flow.
+  `EMB-TRN-READ-E2E-01` was re-attempted on the merged main and correctly
+  produces the structured `BLOCKED` result (all 16 deployment inputs
+  enumerated); it remains
   `In Progress` and fail-closed pending isolated cross-service inputs.
 - `CLOUD-EFFECT-DEFAULT-E2E-01` is `Done` with the full 10-scenario matrix
   passing on the rig: the two 2026-08-16 fault-injection scenarios verify

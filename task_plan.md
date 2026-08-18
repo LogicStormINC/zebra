@@ -1,45 +1,45 @@
 # Task Plan
 
-## 2026-08-18 Follow-Up Work Plan (active)
+## 2026-08-18 Follow-Up Work Plan (executed)
 
 Decided after the branch cleanup and the `CLOUD-EFFECT-COMP-CLOSE-01`
 recovery/preflight merge (`41f72a12`). Priorities follow the durable product
 positioning: cloud agent first, Trench integration as the delivery target
-(ADR-012, `AGENTS.md`).
+(ADR-012, `AGENTS.md`). Execution status recorded 2026-08-18.
 
 ### Phase 0 — Close the open loop (immediate)
 
-1. `CLOUD-EFFECT-COMP-CLOSE-01` acceptance verification: run
-   `tests/compose/cloud_effect_composition/run-postgres-tests.sh` against a
-   real PostgreSQL (+object store) Docker environment. On PASS, re-check the
-   focused-test acceptance criterion and move the card to closeout. This is
-   the only open engineering item from the merged WIP.
-2. Registry hygiene (docs-only slice): close stale cards whose PRs merged in
-   July — `CTX-SEG-01` (#176), `FINOS-HAR-03` (#169), `SUBAGENT-UX-01`
-   (#177), `WEB-UX-01` (#178) — and `CLOUD-WORKSPACE-CP-PLAN-01`, whose
-   seven successor cards are all `Done`. Refresh the `PROGRESS.md` snapshot
-   afterwards.
-3. Merge PR `#194` (`zebra-cloud-trench` → `main`, 751 files, mergeable)
-   once item 1 has its evidence. `main` is 360 commits behind and carries
-   none of the cloud mainline; this is the single largest operational risk.
-   After the merge, return to main-based branching per repository workflow.
+1. `completed` - `CLOUD-EFFECT-COMP-CLOSE-01` acceptance verification: the
+   real-PostgreSQL compose runner passes `19 passed` with
+   `ZEBRA_CLOUD_EFFECT_COMPOSITION_TEST_RESULT=PASS`; one contract gap found
+   and fixed (cross-session receipt lookup now raises a session-scoped
+   conflict); the card is `Done`.
+2. `completed` - Registry hygiene: `CTX-SEG-01` (#176), `FINOS-HAR-03`
+   (#169), `SUBAGENT-UX-01` (#177), `WEB-UX-01` (#178), and
+   `CLOUD-WORKSPACE-CP-PLAN-01` closed; `PROGRESS.md` refreshed.
+3. `completed` - PR `#194` merged into `main` (`91251fa5`); local `main`
+   synced, `zebra-cloud-trench` deleted, branching back to main-based flow,
+   and `origin` updated to `git@github.com:LogicStormINC/zebra.git`.
 
 ### Phase 1 — Product delivery evidence
 
-4. `EMB-TRN-READ-E2E-01` (In Progress, fail-closed): stand up the integrated
-   stack (Trench BFF + Zebra API/Worker + PostgreSQL + Redis + object
-   store), run the acceptance runner with real credentials, and collect
-   per-scenario evidence (read task, long task, disconnect/replay, Worker
-   restart, stop/resume, Grant replay, bounded Host Tool failure). This is
-   the acceptance proof for the core product claim — Zebra consumed by
-   Trench through signed authority.
+4. `blocked on external inputs` - `EMB-TRN-READ-E2E-01`: re-attempted on the
+   merged main; the runner correctly produces the structured `BLOCKED`
+   result with all 16 required deployment inputs enumerated. Fail-closed is
+   verified; the real Trench/Zebra deployment inputs (notably the Trench
+   session cookie) must be provisioned by the maintainer to execute the
+   acceptance scenarios.
 
 ### Phase 2 — Next-era direction gate
 
-5. Decide `ARCH-RUNTIME-V2-PLAN-01` (Review): accept or revise the Runtime
-   v2.0 proposal already on `main` (`a6b47c3f`). If accepted, split it into
-   ADR-gated successor cards before any implementation. Nothing from the
-   proposal enters the registry as executable work before that ADR.
+5. `completed` - `ARCH-RUNTIME-V2-PLAN-01` closed: the v2.0 proposal was
+   delta-aligned to the post-#194 `main` (§2 baseline table, §10 gate
+   notes). Review verdict: the direction was validated by implementation —
+   Gate B–G cards all `Done`, every originally-missing symbol exists in
+   code. Residual increments (version-semantics Runtime profile resolution,
+   Memory provider deletion propagation, unified ingress trust evidence,
+   private-cloud Registry operations) must be activated as new
+   path-bounded cards when prioritized.
 
 ### Explicitly out of plan (stays locked)
 
