@@ -1,5 +1,16 @@
 # Task Plan
 
+## Agent Layer 实施终态（2026-08-18，13/16）
+
+在库可推进的 13 张卡全部完成（PR #204-#216）。剩余三张——
+`AL-TRENCH-CUTOVER-01`、`AL-LEGACY-REMOVAL-01`、`AL-API-DECOUPLE-01`——
+受 `EMB-TRN-READ-E2E-01` 真实 Trench 九场景验收证据硬门控：需要
+维护者供给隔离部署环境（Trench/Zebra HTTP、双栈 PG/Redis/对象存储、
+Grant exchange、restart hook、会话 cookie）。证据到位后按序执行
+Cutover（operator 注册真实连接器 + 组合根换装 bound resolver/pinned
+egress）→ 存量 Task drain → 删除 legacy 全局 env 与适配器 → API 产物
+解耦。
+
 ## Agent Layer 剩余实施计划（active，2026-08-18 刷新）
 
 权威方案：`docs/cloud-agent构建实施方案.md`；架构决策：ADR-017。

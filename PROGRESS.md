@@ -5,6 +5,26 @@
 
 ## Current Mainline Snapshot
 
+- Agent Layer phases B–D executed (2026-08-18, PRs #208-#216): Phase B
+  closed with `AL-TASK-BIND-CON-01` (immutable binding snapshots and
+  capability intersection), `AL-CONNECTOR-PG-01` (v24 registry, immutable
+  revisions, CAS bindings, real-PG evidence) and
+  `AL-TASK-ADMISSION-PG-01` (v25; one-transaction admission across events,
+  projections, task index, binding and idempotency with mid-transaction
+  crash-injection rollback). Phase C closed with `AL-AUTH-WORKER-01`
+  (P0.4: `BoundHostExecutionAuthorityResolver` derives Attempt authority
+  from the frozen binding with fail-closed drift/expiry and narrowing-only
+  revalidation), `AL-HOST-EGRESS-01` (P0.2 implementation side: pinned
+  immutable connector profiles with memory-only ephemeral credentials) and
+  `AL-HOST-EFFECT-01` (uncertain write receipts reconciled through the
+  pinned profile path; blind retries structurally absent). Phase D's
+  in-repo portion closed with `AL-QUERY-API-V1-01` (task-level AG-UI
+  cursors survive rollover) and `AL-HOST-CONFORMANCE-01` (two-vocabulary
+  fake hosts pass one shared 18-test suite over the real admission and
+  effect paths; zero-branch gates). 13/16 cards Done; the remaining three
+  (`AL-TRENCH-CUTOVER-01`, `AL-LEGACY-REMOVAL-01`, `AL-API-DECOUPLE-01`)
+  are hard-gated on `EMB-TRN-READ-E2E-01` real-stack acceptance evidence
+  and stay Locked until the maintainer provisions the deployment inputs.
 - Agent Layer Phase A executed (2026-08-18, PRs #204-#207 on `cloud-agent`):
   `AL-BOUNDARY-CON-01` lands the `agent-control-plane` workspace package
   (core-only dependency, boundary gate, `AgentAction` route vocabulary);
