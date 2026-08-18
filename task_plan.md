@@ -6,7 +6,24 @@
 已完成 4/16：`AL-BOUNDARY-CON-01`、`AL-HOST-CONTRACT-V1-01`、
 `AL-WORKER-GENERIC-01`、`AL-CONNECTOR-CON-01`（PR #204-#207）。
 
-### 当前已解锁的三条并行线
+### 批次执行状态（2026-08-18）
+
+- 批次 1 已完成并合并：`AL-TASK-BIND-CON-01`（#208，P0.5 域侧）、
+  `AL-CONNECTOR-PG-01`（#209，v24 迁移 + 真库 6 测试）、
+  `AL-API-BOUNDARY-01`（#210，local seam + 边界门禁，P1.1 前半）。
+  进度：7/16。
+- 批次 2 待激活：`AL-TASK-ADMISSION-PG-01`（原子 Admission，需要先读
+  `create_queued_session` 写序与崩溃注入面）、`AL-QUERY-API-V1-01`
+  （Task 级游标：`prepare/tail/_project_new_events` 改走
+  `stores.tasks.read_events`，需同步核对 SQLite 侧 read_events 实现
+  与投影器跨 Segment 游标语义）。
+- 批次 3 待激活：`AL-AUTH-WORKER-01`、`AL-HOST-EGRESS-01`、
+  `AL-HOST-EFFECT-01`。
+- 批次 4：`AL-HOST-CONFORMANCE-01`；`AL-TRENCH-CUTOVER-01`/
+  `AL-LEGACY-REMOVAL-01`/`AL-API-DECOUPLE-01` 受
+  `EMB-TRN-READ-E2E-01` 真实验收证据硬门控。
+
+### 原：当前已解锁的三条并行线（批次 1，已完成）
 
 1. API 边界线：`AL-API-BOUNDARY-01` — 把 cloud command/query application
    service 从 `apps/api/app.py` 分离进 `agent-control-plane`；Cloud route
