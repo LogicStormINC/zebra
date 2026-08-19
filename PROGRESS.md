@@ -21,10 +21,16 @@
   in-repo portion closed with `AL-QUERY-API-V1-01` (task-level AG-UI
   cursors survive rollover) and `AL-HOST-CONFORMANCE-01` (two-vocabulary
   fake hosts pass one shared 18-test suite over the real admission and
-  effect paths; zero-branch gates). 13/16 cards Done; the remaining three
-  (`AL-TRENCH-CUTOVER-01`, `AL-LEGACY-REMOVAL-01`, `AL-API-DECOUPLE-01`)
-  are hard-gated on `EMB-TRN-READ-E2E-01` real-stack acceptance evidence
-  and stay Locked until the maintainer provisions the deployment inputs.
+  effect paths; zero-branch gates). 14/16 cards Done:
+  `AL-API-DECOUPLE-01` (#217) additionally moved
+  `agent-runtime`/`zebra-agent-worker` out of the API's core dependencies
+  into a `[local]` extra with lazily imported seams, so a cloud-only
+  deployment packages the API without Worker or Runtime execution. The
+  remaining two (`AL-TRENCH-CUTOVER-01`, `AL-LEGACY-REMOVAL-01`) are
+  hard-gated on `EMB-TRN-READ-E2E-01` real-stack acceptance evidence and
+  stay Locked until the maintainer provisions the deployment inputs
+  (Trench/Zebra HTTP endpoints, both stacks' PG/Redis/object-store health,
+  Grant exchange, Worker restart hook, and the Trench session cookie).
 - Agent Layer Phase A executed (2026-08-18, PRs #204-#207 on `cloud-agent`):
   `AL-BOUNDARY-CON-01` lands the `agent-control-plane` workspace package
   (core-only dependency, boundary gate, `AgentAction` route vocabulary);

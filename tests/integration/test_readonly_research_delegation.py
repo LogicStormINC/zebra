@@ -177,6 +177,7 @@ def test_research_child_searches_then_reads_within_fixed_budget(tmp_path) -> Non
 
 
 def test_parent_corrects_missing_delegation_reason_before_child_creation(tmp_path) -> None:
+    (tmp_path / "evidence.txt").write_text("CORRECTED-CHILD-PROOF\n", encoding="utf-8")
     invalid_call = _call(
         "agent.research",
         {"objective": "Inspect the workspace evidence."},
@@ -196,7 +197,11 @@ def test_parent_corrects_missing_delegation_reason_before_child_creation(tmp_pat
             for completion in (
                 _completion("Delegating.", invalid_call),
                 _completion("Correcting the delegation contract.", corrected_call),
-                _completion("No workspace evidence was needed."),
+                _completion(
+                    "Checking the evidence file.",
+                    _call("files.read", {"path": "evidence.txt"}, "child_read"),
+                ),
+                _completion("Child collected CORRECTED-CHILD-PROOF."),
                 _completion("Parent completed after the corrected delegation."),
             )
         )

@@ -11,6 +11,7 @@ from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.subagents import DelegationMode
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
@@ -90,6 +91,7 @@ def run_local_harness(
     max_model_calls: int | None = None,
     max_tool_calls: int | None = None,
     web_pipeline_v2: bool = False,
+    delegation_mode: DelegationMode = DelegationMode.AUTO,
 ) -> HarnessLoopResult:
     tool_gateway = LocalToolGateway(
         workspace_root,
@@ -103,6 +105,7 @@ def run_local_harness(
         mcp_allowlist=mcp_allowlist,
         trusted_local=trusted_local,
         web_pipeline_v2=web_pipeline_v2,
+        delegation_mode=delegation_mode,
     )
     resolved_mcp_allowlist = (
         tuple(tool.name for tool in tool_gateway.effective_mcp_tools)
@@ -142,6 +145,7 @@ def run_local_harness(
                     context_compiler=context_compiler,
                     available_tools=tool_gateway.model_tools,
                     conversation_compactor=context_compiler,
+                    delegation_mode=delegation_mode.value,
                 ),
                 synthesize_tool_results=True,
                 parallel_safe_tools=tool_gateway.parallel_safe_tools,
@@ -161,6 +165,7 @@ class LocalToolGateway(ToolGatewayPort):
         *,
         model_gateway: ModelGatewayPort | None = None,
         research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
+        delegation_mode: DelegationMode = DelegationMode.AUTO,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
@@ -263,7 +268,12 @@ class LocalToolGateway(ToolGatewayPort):
             ):
                 registry.register(catalog_tool.contract, catalog_tool.handle)
         self._subagents: LocalResearchSubagentCoordinator | None = None
-        if model_gateway is not None and "agent.research" in enabled_names:
+        self._delegation_mode = delegation_mode
+        if (
+            model_gateway is not None
+            and "agent.research" in enabled_names
+            and delegation_mode is not DelegationMode.DISABLED
+        ):
             self._subagents = LocalResearchSubagentCoordinator(
                 LocalResearchSubagentRunner(model_gateway),
                 max_children=research_child_limit,
@@ -333,6 +343,14 @@ class LocalToolGateway(ToolGatewayPort):
                 or LocalWebSearchTransport(use_system_proxy=trusted_local),
             )
             registry.register(legacy_search.contract, legacy_search.handle)
+
+    @property
+    def delegation_mode(self) -> DelegationMode:
+        return self._delegation_mode
+
+    @property
+    def delegation_attempted(self) -> bool:
+        return self._subagents is not None and self._subagents.delegation_attempted
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:

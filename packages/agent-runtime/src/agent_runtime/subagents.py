@@ -18,6 +18,15 @@ ResearchRunner = Callable[
 ]
 
 
+class SubagentStageError(RuntimeError):
+    """Typed failure carrying a safe stage and reason code (no payloads)."""
+
+    def __init__(self, stage: str, reason: str) -> None:
+        super().__init__(f"{stage} {reason}")
+        self.stage = stage
+        self.reason = reason
+
+
 class SubagentLimitError(ValueError):
     """Raised before work starts when a child-agent bound would be exceeded."""
 
@@ -64,19 +73,33 @@ class LocalResearchSubagentCoordinator(SubagentPort):
         self._records: dict[SubagentId, _ChildRecord] = {}
         self._lock = Lock()
         self._closed = False
+        self._delegation_attempted = False
+
+    @property
+    def delegation_attempted(self) -> bool:
+        return self._delegation_attempted
+
+    def _active_count_locked(self) -> int:
+        return sum(
+            1
+            for record in self._records.values()
+            if not record.future.done() and record.cancelled_result is None
+        )
 
     def spawn(self, task: ResearchSubagentTask) -> SubagentId:
         with self._lock:
             if self._closed:
                 raise SubagentLimitError("subagent coordinator is closed")
-            if len(self._records) >= self._max_children:
-                raise SubagentLimitError("subagent child limit reached")
+            # SUBAGENT-COORD-FIX-01: completed children never occupy slots.
+            if self._active_count_locked() >= self._max_children:
+                raise SubagentLimitError("subagent active child limit reached")
             if task.depth > self._max_depth:
                 raise SubagentLimitError("subagent depth limit reached")
             if task.max_model_calls > self._max_model_calls:
                 raise SubagentLimitError("subagent model-call limit reached")
             if task.max_tool_calls > self._max_tool_calls:
                 raise SubagentLimitError("subagent tool-call limit reached")
+            self._delegation_attempted = True
             subagent_id = new_subagent_id()
             cancellation = Event()
             future = self._executor.submit(
@@ -88,9 +111,23 @@ class LocalResearchSubagentCoordinator(SubagentPort):
             self._records[subagent_id] = _ChildRecord(cancellation, future)
             return subagent_id
 
-    def join(self, subagent_id: SubagentId) -> ResearchSubagentResult:
+    def join(
+        self,
+        subagent_id: SubagentId,
+        *,
+        timeout_seconds: float | None = None,
+    ) -> ResearchSubagentResult:
+        # SUBAGENT-COORD-FIX-01: bounded join with a typed timeout failure.
         record = self._record(subagent_id)
-        return record.cancelled_result or record.future.result()
+        if record.cancelled_result is not None:
+            return record.cancelled_result
+        try:
+            return record.future.result(timeout=timeout_seconds)
+        except TimeoutError as exc:
+            raise SubagentStageError(
+                "stage=join",
+                "reason=subagent_join_deadline_exceeded",
+            ) from exc
 
     def cancel(self, subagent_id: SubagentId) -> bool:
         record = self._record(subagent_id)
