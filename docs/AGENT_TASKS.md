@@ -1148,6 +1148,32 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### SUBAGENT-PHASEA-06..08 - Subagent Phase A Second Slice
+
+- Status: `Done` (RUNTIME, TOOLSET core semantics); `Done (durable wiring
+  rides with Phase B)` (LIFECYCLE)
+- Owner: `lukeding`
+- Branch: `codex/subagent-phasea-2`
+- Owned paths: `agent-runtime/{research,subagents,harness}.py`, focused
+  tests.
+
+#### Acceptance evidence
+
+- [x] RUNTIME (P0.3 first half): `ReadOnlyToolGateway` and
+  `LocalResearchSubagentRunner` accept an injected parent `RuntimePort`;
+  the harness passes its runtime through. Children no longer build their
+  own `LocalRuntime` when a parent runtime exists; LocalRuntime remains
+  the explicit fallback (full cloud RuntimePort/workspace wiring is Phase
+  B durable cutover).
+- [x] TOOLSET: the researcher child toolset is a factory-built read-only
+  surface (files.read/files.search/git.status), never exposes
+  agent.research or any write tool (asserted by test).
+- [x] LIFECYCLE (P1.3 first half): the coordinator fires `on_spawned`
+  immediately at spawn, enabling realtime SUBAGENT_STARTED emission; the
+  durable event-sink wiring and progress events ride with Phase B child
+  tasks (post-hoc pair emission remains until then).
+- [x] Slice tests 3 passed; full regression 2436 passed; make check green.
+
 ### SUBAGENT-PHASEA-01..05 - Subagent Phase A First Slice
 
 Five Phase A cards from the Orchestrator/Subagent plan (authority:

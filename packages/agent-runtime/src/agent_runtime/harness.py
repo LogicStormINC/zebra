@@ -275,7 +275,7 @@ class LocalToolGateway(ToolGatewayPort):
             and delegation_mode is not DelegationMode.DISABLED
         ):
             self._subagents = LocalResearchSubagentCoordinator(
-                LocalResearchSubagentRunner(model_gateway),
+                LocalResearchSubagentRunner(model_gateway, runtime=runtime),
                 max_children=research_child_limit,
                 max_concurrency=research_child_limit,
             )
