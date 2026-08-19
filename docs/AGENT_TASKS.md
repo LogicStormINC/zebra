@@ -1148,6 +1148,37 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-REVIEW-FIXLOOP-01 - Bounded Implementer-Tester-Reviewer Loop
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-review-fixloop-01` (from `cloud-agent@56eb7cd0`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/application/review_fixloop.py` (new),
+  focused tests, this card.
+
+#### Acceptance
+
+- [x] `FixLoopMachine` covers the full phase graph: IMPLEMENTING →
+  TESTING → REVIEWING → (HUMAN_REVIEW →) MERGE_GATE → APPROVED, with
+  bounded restarts to IMPLEMENTING on failures and the terminal
+  REJECTED / LOOP_LIMIT_EXCEEDED states — every move is an explicit
+  legal transition; illegal moves and terminal no-ops raise.
+- [x] Reuse proven: implementation completion binds the
+  `WorktreeDiffArtifact` inside `WorktreeOwnership` (out-of-ownership
+  diffs rejected); review consumes `ReviewerVerdict`; merge consumes the
+  `MergeGateDecision`.
+- [x] Bounded loop: default 3 iterations; test failures, reviewer
+  rejections and merge conflicts all restart within the bound and settle
+  as LOOP_LIMIT_EXCEEDED beyond it; non-conflict merge failures reject
+  outright; needs_human blocks until the human decision.
+- [x] Focused tests 10 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no role-agent execution (the scheduler materializes the role children;
+  this machine is the deterministic loop contract)
+
 ### ORCH-WORKTREE-01 - Worktree Ownership And Merge Gate
 
 - Status: `Done`
