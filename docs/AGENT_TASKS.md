@@ -1148,6 +1148,38 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-PG-01 - Orchestration PostgreSQL Projections
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-pg-01` (from `cloud-agent@f24c6f58`)
+- Owned paths: `orchestration_migration.py` (new, v27),
+  `orchestration.py` (new), migrations registration, focused
+  real-PostgreSQL tests, this card.
+
+#### Acceptance
+
+- [x] Migration v27 creates the plan-13.1 projections:
+  `orchestration_runs` (status CHECK over the 12.1 state machine),
+  `orchestration_plan_revisions` (snapshot JSONB + digest),
+  `orchestration_nodes` (status CHECK over 12.2), `orchestration_dependencies`,
+  `orchestration_result_bundles` and `completion_gate_receipts`, with
+  parent/child lookup indexes.
+- [x] `PostgresOrchestrationStore`: atomic run creation with revision-1
+  rows; monotonic revision append (exact +1, CAS on the run pointer);
+  run-status transitions CAS-guarded AND domain-state-machine guarded;
+  snapshot roundtrip preserves the canonical digest; result bundles
+  upsert with linked gate receipts.
+- [x] Real-PostgreSQL tests 4 passed (roundtrip, revision monotonicity +
+  digest change + duplicate rejection, CAS + illegal-jump rejection,
+  bundle/receipt roundtrip); full regression 2495 passed; `make check`
+  green.
+
+#### Explicit Non-Goals
+
+- no scheduler loop (ORCH-SCHEDULER-01)
+- no wakeup outbox (parent continuation card owns the semantics)
+
 ### ORCH-VALIDATOR-01 - Deterministic Plan Validator
 
 - Status: `Done`
