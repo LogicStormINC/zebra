@@ -1148,6 +1148,36 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-SCHEDULER-01 - Deterministic DAG Scheduler
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-scheduler-01` (from `cloud-agent@00a03d98`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/application/orchestration_scheduling.py`
+  (new), node-status states added to the orchestration contracts, focused
+  tests, this card.
+
+#### Acceptance
+
+- [x] `select_ready` admits BLOCKED nodes whose dependencies all settled
+  (COMPLETED/SKIPPED), capped by in-flight parallelism slots.
+- [x] `on_node_terminal` covers every failure policy deterministically:
+  `fail_plan` cancels all non-terminal nodes and fails the run (terminals
+  untouched); `continue` skips only transitive dependents without failing
+  the run; `retry_once` requeues within the bounded attempt budget and
+  falls through to fail_plan when exhausted; `require_human` moves the
+  node to WAITING_APPROVAL and blocks the run without failing it.
+- [x] Cancellation: node cancellation fails the run and cancels siblings;
+  `cancel_run` reaches every non-terminal node; unknown nodes rejected.
+- [x] Focused tests 11 passed; full regression 2506 passed; `make check`
+  green.
+
+#### Explicit Non-Goals
+
+- no durability (the v27 store persists decisions; the scheduler stays pure)
+- no wall-clock timers (timeouts arrive as NodeOutcome from the runtime)
+
 ### ORCH-PG-01 - Orchestration PostgreSQL Projections
 
 - Status: `Done`
