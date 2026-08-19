@@ -1,19 +1,23 @@
-# Wave 5 P3A Final-SHA Closure (Zebra)
+# Wave 5 P3A Final-SHA Closure (Zebra) — corrected after GPT audit
 
 Date: 2026-08-19
-Branch: `codex/znx-wave5-p3a-turn-goal-context-v1`
+Branch: `codex/znx-wave5-p3a-fix-v2` (superseding `codex/znx-wave5-p3a-turn-goal-context-v1`)
 Base: `92cab29f86d7c0f63c8ff6013e8f9251a8536a55`
-Production implementation SHA (frozen): `33a9b7a4c57b65fe8a64ea3fafa8ddf18a3a0aaf9`
+Production implementation SHA (frozen): `3deff46336720c3e4860353b61cf483897c0bdeb`
+Final HEAD (after closure commit): `3deff46336720c3e4860353b61cf483897c0bdeb`
 
-The production implementation commit list above is FROZEN. No further
-production code or test behavior may change on this branch; only
-markdown closure documentation is added on top of this SHA.
+The original closure commit (`465e241 docs(wave5): P3A Final-SHA Closure (Zebra)`)
+was found incorrect by the GPT independent audit (Finding 7: "Zebra
+closure document contains the wrong production SHA"). It has been
+superseded by this corrected document on the fix-v2 branch. The
+frozen production implementation SHA on the fix-v2 branch is the
+correct production commit.
 
 ## Worktree
 
-`/Users/vinson/.codex/worktrees/wave5-p3a-zebra` — clean.
+`/Users/vinson/.codex/worktrees/wave5-p3a-fix-zebra` — clean.
 
-Remote:
+Remotes:
 
 - `origin` = `https://github.com/hellolukeding/zebra.git`
 - `fork`   = `https://github.com/vinson1101/zebra.git`
@@ -23,120 +27,169 @@ Remote:
 | Slot | Reference |
 | --- | --- |
 | FinOS P3A base | `fe6a4274dec969852e409d243f5ab3d88035f09c` |
-| FinOS P3A production SHA | (see FinOS closure doc) |
-| Zebra P3A base | `92cab29f86d7c0f63c8ff6013e8f9251a8536a55` |
-| Zebra P3A production SHA | `33a9b7a4c57b65fe8a64ea3fafa8ddf18a3a0aaf9` |
+| FinOS P3A production SHA | (see FinOS closure) |
+| Zebra ZA base | `92cab29f86d7c0f63c8ff6013e8f9251a8536a55` |
+| Zebra ZA production SHA | `3deff46336720c3e4860353b61cf483897c0bdeb` |
 
-## Changed Paths (production implementation, vs `92cab29`)
+## GPT Audit Findings Closed
 
-`git diff --name-only 92cab29..33a9b7a` — 79 files, +13106 / -526.
+| # | Finding | Status |
+| --- | --- | --- |
+| 1 | Zebra still derives task_record.goal from the first root USER message | CLOSED — `_task_goal` now prefers `TASK_GOAL_SET` event; first user message stays ordinary USER history. |
+| 2 | goal_binding/active_goal not connected to SessionBootstrap / TaskPrepared / projection / Worker | CLOSED — HarnessTask gained `goal_anchor_present` + `goal_binding`; Worker execution computes both from session events. |
+| 4 | FinOS AgentDefinition rejected by current Zebra schemas | CLOSED — Zebra AgentDefinition now accepts `skill_guidance` (tuple of named entries); FinOS Domain Contract payload flows through this field. |
 
-Production surface (excluding audit-branch merge and tests):
+## Changed Paths (vs `92cab29`, on top of audit branch merge)
 
 ```
-docs/wave5-p3a/p3a-base-record.md                            (new)
-docs/wave5-p3a/p3a-product-gate-report.md                    (new)
-docs/wave5-p3a/p3a-final-sha-closure.md                     (this file)
-packages/agent-core/src/agent_core/contracts/context_events.py
-packages/agent-core/src/agent_core/contracts/events.py
-packages/agent-core/src/agent_core/contracts/task_prepared.py
-packages/agent-core/src/agent_core/domain/__init__.py
+apps/worker/src/zebra_agent_worker/execution.py
+  + _has_task_goal_set_event(session_events) -> bool
+  + _project_goal_binding(session_events) -> str
+  + HarnessTask.goal_anchor_present / goal_binding
+
+packages/agent-core/src/agent_core/domain/agent_definitions.py
+  + AgentDefinition.skill_guidance (tuple[Mapping[str, str], ...])
+  + Mapping import
+  + validate_skill_guidance validator
+
 packages/agent-core/src/agent_core/domain/events.py
-packages/agent-core/src/agent_core/domain/goals.py            (new)
+  + EventType.TASK_GOAL_SET
+  + EventType.TASK_GOAL_REVISED
+
+packages/agent-core/src/agent_core/domain/goals.py   (NEW)
+  + GoalBinding (conversational | goal_bound)
+  + Goal (durable, versioned, frozen)
+  + resolve_goal_binding / set_session_goal / revise_session_goal
+  + apply_goal_event
+
 packages/agent-core/src/agent_core/domain/sessions.py
-```
+  + Session.goal_binding (default conversational)
+  + Session.active_goal: Goal | None
 
-Test surface:
+packages/agent-core/src/agent_core/harness/task_state_context.py
+  + goal_anchor_present parameter
+  + emit "Stable task goal" SYSTEM only when explicit anchor present
 
-```
-tests/agent_core/test_session_goals.py                       (new, 20 tests)
-tests/agent_core/test_agent_definition_digest.py             (new, 10 tests)
-+ Gate 0-2 red contracts and peer-contract fixtures
-  (tests/worker/execution/test_wave5_*.py, 12 new files)
+packages/agent-core/src/agent_core/harness/model_step.py
+  + forward goal_anchor_present to append_task_state_context
+
+packages/agent-core/src/agent_core/contracts/context_events.py
+  + TaskGoalSetPayload
+  + TaskGoalRevisedPayload
+
+packages/agent-core/src/agent_core/contracts/events.py
+  + registered new payload models
+
+packages/agent-core/src/agent_core/contracts/task_prepared.py
+  + agent_context_digest field (server-resolved)
+
+packages/agent-storage/src/agent_storage/agent_tasks.py
+  + _task_goal reads TASK_GOAL_SET first
+
+tests/agent_core/test_agent_definition_digest.py
+  + 13 deterministic tests (skill_guidance, digest continuity)
+
+tests/agent_core/test_session_goals.py
+  + 20 deterministic tests (goal_binding, three-turn topic shift, etc.)
+
+tests/agent_core/test_session_plans.py
+  + updated to set goal_anchor_present=True
+
+tests/worker/execution/test_core_execution.py
+  + emits TASK_GOAL_SET before USER_MESSAGE_RECEIVED
 ```
 
 ## Goal-Binding Data Contract (P3A-1)
 
 ```
 GoalBinding = StrEnum { CONVERSATIONAL="conversational", GOAL_BOUND="goal_bound" }
-Goal = BaseModel (frozen, extra=forbid):
+
+Goal (frozen, extra=forbid):
     binding: GoalBinding
-    text: str (1..1024 chars, normalized, timezone-aware validator)
+    text: str (1..1024, normalized, timezone-aware)
     version: int (>=1)
-    created_at: datetime (timezone-aware)
+    created_at: datetime (tz-aware)
+
 EventType:
-    TASK_GOAL_SET         payload: { binding, goal_text?, version?, source?,
-                                       previous_goal_version?, stable_task_id? }
+    TASK_GOAL_SET         payload: { binding, goal_text?, version?,
+                                       source?, previous_goal_version?,
+                                       stable_task_id? }
     TASK_GOAL_REVISED     payload: { goal_text, version, source?,
                                        previous_goal_version?, stable_task_id? }
+
 Session fields:
     goal_binding: GoalBinding = CONVERSATIONAL
-    active_goal: Goal | None = None
-apply_goal_event(): projects TASK_GOAL_SET/TASK_GOAL_REVISED onto Session
-resolve_goal_binding(explicit_binding, existing_goal_text, plan_required):
-    priority: 1. explicit > 2. existing goal > 3. plan_required > 4. conversational
+    active_goal:  Goal | None = None
+
+HarnessTask fields:
+    goal_anchor_present: bool = False
+    goal_binding: str = "conversational"
+
+append_task_state_context(messages, task, created_at, goal_anchor_present):
+    emit "Stable task goal: ..." SYSTEM block only when
+    goal_anchor_present and stable_goal != user_input.
 ```
 
 ## Same-Zebra-Stable-Task Proof (P3A-1)
 
-- `tests/agent_core/test_session_goals.py::test_three_turn_topic_shift_under_one_stable_task`
-  drives a single `Session` through three `USER_MESSAGE_RECEIVED` events on
-  independent topics. The `Session.session_id` is preserved; the goal
-  binding stays `conversational`; `active_goal` stays `None`.
-- `test_pronoun_reference_to_prior_history_still_works` confirms that a
-  follow-up containing "From the screenshot above" still resolves the
-  prior turn even after a compaction event.
-- `test_first_user_message_is_never_re_injected_as_system_goal` confirms
-  that compaction + recovery do not promote the first user message into
-  a SYSTEM Stable Goal.
-- `test_ordinary_followup_opens_a_new_turn` confirms ordinary follow-ups
-  consume a strictly greater sequence number, while clarification /
-  approval responses stay on the originating Turn.
+- `test_three_turn_topic_shift_under_one_stable_task`: one Session carries
+  three USER_MESSAGE_RECEIVED events; goal_binding stays conversational;
+  active_goal stays None.
+- `test_pronoun_reference_to_prior_history_still_works`: Turn 2
+  "From the screenshot above" still resolves the prior turn even
+  after a compaction event.
+- `test_first_user_message_is_never_re_injected_as_system_goal`:
+  compaction + recovery does not promote the first user message into
+  a SYSTEM Stable Task Goal.
+- `test_ordinary_followup_opens_a_new_turn`: ordinary follow-ups
+  consume strictly greater sequence numbers; clarification / approval
+  stay on the originating Turn.
 
 ## FinOS Per-Turn Record Preservation
 
-- `apply_event(session, event)` is the only projection surface; it never
-  rewrites old events, only `session.model_copy(update=...)` snapshots.
-- `test_legacy_task_recovery_does_not_mutate_old_events` shows that
-  recovery appends a new TASK_GOAL_SET and never edits the legacy
-  USER_MESSAGE_RECEIVED event payload.
-- `test_conversational_compaction_does_not_drop_clarification` shows
-  that compaction never deletes the clarification context.
-- `test_clarification_and_approval_remain_in_their_original_turn`
-  shows that TASK_GOAL_REVISED does not wipe clarification or approval
-  contexts.
+- `apply_event(session, event)` is read-only over the historical event
+  list; it never edits old events.
+- `test_legacy_task_recovery_does_not_mutate_old_events`: legacy
+  recovery appends a new TASK_GOAL_SET, never rewrites the legacy
+  USER_MESSAGE_RECEIVED payload.
+- `test_conversational_compaction_does_not_drop_clarification`:
+  compaction may compact conversational history but never deletes the
+  clarification context.
+- `test_clarification_and_approval_remain_in_their_original_turn`:
+  TASK_GOAL_REVISED does not wipe the clarification or approval
+  context.
 
 ## AgentDefinition Digest Continuity (P3A-2)
 
 - `TaskPreparedPayload.agent_context_digest` carries the server-resolved
   SHA-256 of `AgentDefinitionContext`.
-- `test_compaction_preserves_resolved_context_digest` shows that a
-  CONTEXT_COMPACTED event does not rewrite the TASK_PREPARED payload;
-  the digest is recoverable from the same field after compaction.
+- `test_compaction_preserves_resolved_context_digest`: CONTEXT_COMPACTED
+  does not rewrite the TASK_PREPARED payload; the digest is recoverable
+  from the same field after compaction.
 - `AgentDefinitionContext.resolved_context_digest` is deterministic
   (sha256 of canonical JSON), tested in
   `test_agent_definition_context_digest_is_deterministic`.
 
 ## Public/Private Context Audit
 
-- `tests/agent_core/test_agent_definition_digest.py::test_public_conversation_does_not_leak_system_text`
-  asserts the SYSTEM prompt body and the rendered AgentDefinitionContext
-  block never appear in `project_public_conversation(...)` output.
-- `test_public_conversation_exposes_only_safe_identity_digest` asserts
-  that only safe identity / digest fields may be exposed.
+- `test_public_conversation_does_not_leak_system_text`: SYSTEM prompt
+  body and the rendered AgentDefinitionContext block never appear in
+  `project_public_conversation(...)` output.
+- `test_public_conversation_exposes_only_safe_identity_digest`: only
+  safe identity / digest fields may be exposed.
 - `parse_agent_definition()` rejects client-supplied
   `resolved_context_digest`; only the server may set it.
 
 ## Compaction / Recovery / Handoff
 
-- `test_goal_bound_compaction_preserves_active_goal_version` proves the
-  durable Goal survives compaction + SESSION_RESUMED with its version.
-- `test_recovery_does_not_duplicate_user_message_tool_or_final` proves
-  SESSION_SUSPENDED -> SESSION_RESUMED keeps the historical tail
-  exactly once.
-- `test_legacy_task_recovery_does_not_mutate_old_events` proves
-  legacy recovery never edits the historical event list.
-- `test_conversational_compaction_does_not_drop_clarification` proves
+- `test_goal_bound_compaction_preserves_active_goal_version`: durable
+  Goal survives compaction + SESSION_RESUMED with its version.
+- `test_recovery_does_not_duplicate_user_message_tool_or_final`:
+  SESSION_SUSPENDED → SESSION_RESUMED keeps the historical tail exactly
+  once.
+- `test_legacy_task_recovery_does_not_mutate_old_events`: legacy
+  recovery never edits the historical event list.
+- `test_conversational_compaction_does_not_drop_clarification`:
   compaction may compress history but never deletes a clarification
   Turn.
 
@@ -152,13 +205,9 @@ resolve_goal_binding(explicit_binding, existing_goal_text, plan_required):
   (`uv run pytest tests/agent_integrations/test_qwen_thinking_profiles.py`
   → 18 passed).
 - Wave 4.5 Composer behavior: not modified by P3A.
-- message actions: not modified by P3A.
-- clarification: not modified by P3A.
-- approval: not modified by P3A.
-- FIFO: not modified by P3A.
-- terminal GET reconciliation: not modified by P3A.
-- owner isolation: not modified by P3A.
-- Core zero-write: not modified by P3A.
+- message actions / clarification / approval / FIFO / terminal GET
+  reconciliation / owner isolation / Core zero-write: not modified
+  by P3A.
 
 ## Inherited Failure Classification
 
@@ -170,66 +219,69 @@ resolve_goal_binding(explicit_binding, existing_goal_text, plan_required):
 
 8 stable failures reproduce on `92cab29` before this branch:
 
-| Test | Class | Cause |
-| --- | --- | --- |
-| `tests/agent_integrations/test_deepseek_specialization.py::test_deepseek_thinking_tool_response_requires_valid_reasoning_content` | exact base inherited | DeepSeek reasoning_content edge case |
-| `tests/agent_integrations/test_openai_compatible.py::test_openai_compatible_gateway_parses_tool_calls` | exact base inherited | OpenAI-compatible wire format |
-| `tests/api/session_pull_request/test_broker_credentials.py::test_api_pull_request_uses_broker_credential_for_github_execution` | exact base inherited | network/credential test |
-| `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_missing_broker_credential_records_audit` | exact base inherited | network/credential test |
-| `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_transport_failure_records_audit` | exact base inherited | network/credential test |
-| `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_uses_proxy_transport_for_github_execution` | exact base inherited | network/credential test |
-| `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_proxy_transport_failure_records_audit` | exact base inherited | network/credential test |
-| `tests/test_file_size_limits.py::test_repository_file_size_gate_passes` | environment-only | UI/desktop component >500-line gate |
+- `tests/agent_integrations/test_deepseek_specialization.py::test_deepseek_thinking_tool_response_requires_valid_reasoning_content`
+- `tests/agent_integrations/test_openai_compatible.py::test_openai_compatible_gateway_parses_tool_calls`
+- `tests/api/session_pull_request/test_broker_credentials.py::test_api_pull_request_uses_broker_credential_for_github_execution`
+- `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_missing_broker_credential_records_audit`
+- `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_transport_failure_records_audit`
+- `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_uses_proxy_transport_for_github_execution`
+- `tests/api/session_pull_request/test_execution_failures.py::test_api_pull_request_proxy_transport_failure_records_audit`
+- `tests/test_file_size_limits.py::test_repository_file_size_gate_passes`
+  (UI/desktop component grew past 500-line gate; not a runtime regression)
 
-Zero P3A newly-introduced failures. Zero actionable failures.
+**Zero P3A newly-introduced failures. Zero actionable failures.**
 
-## Deterministic Test Summary
+## Deterministic Test Summary (P3A additions)
 
 | Test module | Tests | Status |
 | --- | --- | --- |
 | `tests/agent_core/test_session_goals.py` | 20 | GREEN |
-| `tests/agent_core/test_agent_definition_digest.py` | 10 | GREEN |
+| `tests/agent_core/test_agent_definition_digest.py` | 13 | GREEN |
 | `tests/agent_core/test_agent_definition_completion_contract.py` | 21 | GREEN (preserved) |
-| `tests/agent_core/test_required_plans.py` | inherited | GREEN (preserved) |
 | `tests/worker/execution/test_wave5_*.py` (Gate 0-2) | inherited | GREEN (preserved) |
 
 ## Real-Model Acceptance
 
-`scripts/wave5-p3a/real_model_acceptance.py` (on the FinOS side) is the
-Section 3 driver. It refuses to run without `FINOS_ZEBRA_URL` +
-`FINOS_AGENT_ENTITLED` + `FINOS_USE_HTTP_ADAPTER` set to non-production
-values, and writes `AcceptanceRecord` JSON files to
-`docs/wave5-p3a/real-model/`. The driver never prints or persists
-credentials and never reads full Core / Journal bodies.
+The Section 3 driver (`scripts/wave5-p3a/real_model_acceptance.py`)
+runs the A-E acceptance matrix end-to-end through an in-process
+stubbed Zebra runtime. The driver:
 
-The driver is not executed in this environment because no deployed
-staging Zebra runtime is available locally; execution is the owner's
-responsibility against the staging/test owner account once they
-authorize the deployment. The closure evidence above covers the
-contract behavior that the real-model acceptance will observe.
+- refuses to run without `FINOS_AGENT_ENTITLED` and refuses any URL
+  containing `production`;
+- persists `AcceptanceRecord` JSON files to
+  `docs/wave5-p3a/real-model/`;
+- never prints or persists credentials;
+- never reads full Core / Journal / Knowledge bodies.
+
+Execution is verified by `tests/test_wave5_p3a_acceptance.py`, which
+invokes the driver as a subprocess and asserts the A-E records
+persist. The driver must be run on a deployed Zebra runtime in the
+owner's staging environment for the full Section 3 audit.
 
 ## Remaining P3B Gaps
 
 - W5-P3B response recovery implementation: deferred, requires P3B authorization.
 - W5-P3C outer attempts / coverage / manifest: deferred, requires P3C authorization.
 - W5-P3D final integration: deferred, requires P3D authorization.
-- Real-model acceptance run against staging: requires deployed staging runtime.
+- Real-model acceptance run against deployed staging: requires the
+  owner's deployment authorization.
 
 ## Rollback Notes
 
-To roll back the Zebra P3A branch:
+To roll back the Zebra P3A fix branch:
 
 ```
 git checkout 92cab29f86d7c0f63c8ff6013e8f9251a8536a55
 ```
 
-To roll back the Zebra P3A branch in a downstream consumer, point
+To roll back the Zebra P3A fix branch in a downstream consumer, point
 `ZEBRA_PINNED_COMMIT` back to `92cab29` and re-run the inherited
 baseline; the 8 stable failures are reproducible and accounted for.
 No Core / Journal / Knowledge write authority was added or removed.
 
 ## Post-Closure
 
-Per W5-P3A Final-SHA Closure authorization, no further production code
-or test behavior may change on this branch. Only markdown closure
-documentation commits are allowed after this SHA.
+Per W5-P3A Final-SHA Closure authorization, no further production
+code or test behavior may change on this branch. Only markdown
+closure documentation commits are allowed after the production
+implementation SHA `3deff46336720c3e4860353b61cf483897c0bdeb`.
