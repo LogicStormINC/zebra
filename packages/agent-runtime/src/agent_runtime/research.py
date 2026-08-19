@@ -18,6 +18,7 @@ from agent_core.domain.subagents import (
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.ports.model_gateway import ModelGatewayPort
+from agent_core.ports.runtime import RuntimePort
 from agent_core.ports.subagents import SubagentPort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_security import LocalPolicyEngine, PolicyProfile
@@ -42,8 +43,16 @@ PROVENANCE = "local_read_only_research"
 
 
 class LocalResearchSubagentRunner:
-    def __init__(self, model_gateway: ModelGatewayPort) -> None:
+    def __init__(
+        self,
+        model_gateway: ModelGatewayPort,
+        *,
+        runtime: RuntimePort | None = None,
+    ) -> None:
         self._model_gateway = model_gateway
+        # SUBAGENT-RUNTIME-01: children reuse the parent RuntimePort instead
+        # of building their own LocalRuntime (P0.3).
+        self._runtime = runtime
 
     def __call__(
         self,
@@ -53,7 +62,7 @@ class LocalResearchSubagentRunner:
     ) -> ResearchSubagentResult:
         if cancellation.is_set():
             return cancelled_result(subagent_id)
-        tool_gateway = ReadOnlyToolGateway(task.workspace_root)
+        tool_gateway = ReadOnlyToolGateway(task.workspace_root, runtime=self._runtime)
         compiler = LocalContextCompiler()
         result = HarnessLoop().run(
             HarnessTask(
@@ -120,14 +129,25 @@ class LocalResearchSubagentRunner:
 
 
 class ReadOnlyToolGateway(ToolGatewayPort):
-    def __init__(self, workspace_root: Path) -> None:
+    """SUBAGENT-TOOLSET-01: the researcher child toolset.
+
+    Built through ChildToolsetFactoryPort semantics: read-only local tools
+    plus an injected parent RuntimePort; no write surface, no agent.research.
+    """
+
+    def __init__(
+        self,
+        workspace_root: Path,
+        *,
+        runtime: RuntimePort | None = None,
+    ) -> None:
         workspace = LocalWorkspace(workspace_root)
         workspace.ensure()
         registry = ToolRegistry()
         for tool in (
             FileReadTool(workspace),
             WorkspaceSearchTool(workspace),
-            GitStatusTool(LocalRuntime(), workspace),
+            GitStatusTool(runtime if runtime is not None else LocalRuntime(), workspace),
         ):
             registry.register(tool.contract, tool.handle)
         self._model_tools = registry.model_tools()

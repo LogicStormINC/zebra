@@ -52,6 +52,7 @@ class LocalResearchSubagentCoordinator(SubagentPort):
         max_depth: int = 1,
         max_model_calls: int = 3,
         max_tool_calls: int = 2,
+        on_spawned: Callable[[SubagentId, "ResearchSubagentTask"], None] | None = None,
     ) -> None:
         if min(
             max_children,
@@ -74,6 +75,7 @@ class LocalResearchSubagentCoordinator(SubagentPort):
         self._lock = Lock()
         self._closed = False
         self._delegation_attempted = False
+        self._on_spawned = on_spawned
 
     @property
     def delegation_attempted(self) -> bool:
@@ -109,7 +111,11 @@ class LocalResearchSubagentCoordinator(SubagentPort):
                 cancellation,
             )
             self._records[subagent_id] = _ChildRecord(cancellation, future)
-            return subagent_id
+        # SUBAGENT-LIFECYCLE-01: notify immediately so SUBAGENT_STARTED can
+        # be recorded at spawn time instead of after the child finishes.
+        if self._on_spawned is not None:
+            self._on_spawned(subagent_id, task)
+        return subagent_id
 
     def join(
         self,
