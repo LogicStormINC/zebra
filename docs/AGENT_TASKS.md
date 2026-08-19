@@ -1148,6 +1148,36 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### SUBAGENT-PARENT-CONT-01 - Parent Waiting Continuation And Wakeup
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/subagent-parent-cont-01` (from `cloud-agent@7dfcf3a8`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/parent_continuation.py` (new),
+  focused tests, this card.
+
+#### Acceptance
+
+- [x] `ParentContinuation` freezes the plan-8.4 resume payload
+  (parent_task_id, plan_revision, required_child_ids, completion_strategy,
+  resume_command_key); duplicate children and naive timestamps rejected.
+- [x] Completion strategies are deterministic: `all_success` waits for
+  every required child to settle; `any_success` resumes on the FIRST
+  success (or when all settle without one); `all_terminal` resumes when
+  every required child is terminal. Unknown children can never wake the
+  parent early.
+- [x] `evaluate_wakeup` emits the durable resume signal (command key,
+  settled count, any_success) exactly when the strategy settles; completed
+  children must carry result bundle digests.
+- [x] Focused tests 8 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no worker-loop integration of the waiting_children state (rides with
+  SUBAGENT-CLOUD-CUTOVER-01, which deletes the synchronous join path)
+- no budget ledger (`SUBAGENT-BUDGET-01`)
+
 ### SUBAGENT-DELEGATION-PG-01 - Durable Delegation Store
 
 - Status: `Done`
