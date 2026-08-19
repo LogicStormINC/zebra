@@ -1148,6 +1148,41 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-AGENT-DEF-01 - system/orchestrator@1 Definition
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-agent-def-01` (from `cloud-agent@4668a086`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/orchestrator_definition.py`
+  (new), focused tests, this card.
+
+#### Acceptance
+
+- [x] `system/orchestrator@1` is an ordinary definition: the module ships
+  its ref, capability profile ref, ceiling and tool surface as data — no
+  bypass privileges, no special-case code paths.
+- [x] Capability ceiling matches plan 6.2 exactly: eight
+  `orchestration.*` capabilities; the eight-entry forbidden list
+  (host.business.write … workspace.force_merge) is a literal blocklist
+  and can never appear in a tool scope.
+- [x] Tool surface matches plan 6.3 exactly: plan.submit/inspect,
+  task.spawn/list/wait/cancel, result.read, replan.submit — every scope
+  inside the ceiling; Agent Team tools stay locked (4 names, none
+  exposed).
+- [x] `validate_orchestrator_definition()` self-checks ceiling/surface
+  consistency; tamper tests prove a leaked or uncapped tool fails
+  validation.
+- [x] Focused tests 9 passed; agent-core suite 540 passed; `make check`
+  green.
+
+#### Explicit Non-Goals
+
+- no registry publication (operators publish via the normal
+  draft/version/release chain)
+- no tool handlers (they call Agent Layer application services in the
+  composition roots)
+
 ### ORCH-COMPLETION-GATE-01 - Five-Layer Completion Gate
 
 - Status: `Done`
