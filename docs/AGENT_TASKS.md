@@ -1148,6 +1148,35 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### SUBAGENT-DELEGATION-CON-01 - Parent-Child Delegation Contracts
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/subagent-delegation-con-01` (from `cloud-agent@3234578c`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/subagent_delegation.py` (new),
+  focused tests, this card.
+
+#### Acceptance
+
+- [x] `SubagentDelegationRequest` freezes the plan-8.3 idempotency key from
+  exactly (parent_task_id, parent_attempt_number, parent_tool_call_id,
+  delegation_index); role/objective changes never alter the key.
+- [x] `ParentChildLink` (root/parent/child lineage + both binding digests)
+  and `SubagentDelegationReceipt` (materialized vs replayed) match the
+  plan-13.2 shapes; naive timestamps rejected.
+- [x] `derive_child_binding` implements plan 7.2: child effective =
+  parent ∩ child ceiling ∩ requested ∩ child policy; capability overflow,
+  parent-digest drift and (when parent refs are supplied) resource
+  overflow all fail closed with typed errors; empty intersections are
+  rejected.
+- [x] Focused tests 10 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no PostgreSQL persistence (`SUBAGENT-DELEGATION-PG-01`, migration v26)
+- no parent continuation/wakeup (`SUBAGENT-PARENT-CONT-01`)
+
 ### SUBAGENT-PHASEA-06..08 - Subagent Phase A Second Slice
 
 - Status: `Done` (RUNTIME, TOOLSET core semantics); `Done (durable wiring
