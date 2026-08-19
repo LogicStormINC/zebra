@@ -1,5 +1,6 @@
 """Immutable PostgreSQL migration catalog."""
 
+from agent_storage.postgres.agent_mailbox_migration import AGENT_MAILBOX_MIGRATION
 from agent_storage.postgres.agent_registry_migration import (
     AGENT_REGISTRY_MIGRATION,
 )
@@ -492,4 +493,5 @@ MIGRATIONS = (
     TASK_BINDING_MIGRATION,
     SUBAGENT_DELEGATION_MIGRATION,
     ORCHESTRATION_MIGRATION,
+    AGENT_MAILBOX_MIGRATION,
 )
