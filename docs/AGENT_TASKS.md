@@ -1148,6 +1148,32 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-MAILBOX-CON-01 / ORCH-MAILBOX-PG-01 / ORCH-TEAM-01 - Agent Team Closeout
+
+- Status: `Done` (all three)
+- Owner: `lukeding`
+- Branches: `codex/orch-mailbox-con-01` (#236), `codex/orch-mailbox-pg-01`
+  (#237, migration v28), `codex/orch-team-01` (#238)
+- Owned paths: `agent-core/domain/agent_mailbox.py` (new),
+  `agent-storage/postgres/agent_mailbox{,_migration}.py` (new, v28),
+  `agent-core/domain/agent_team.py` (new), focused tests, these cards.
+
+#### Acceptance
+
+- [x] MAILBOX-CON: task assignments (lead only, member recipients),
+  direct messages (member or team broadcast) and final answers (teammates
+  to the lead only) with bounded bodies, sliding-window frequency policy
+  and content-keyed dedup (12 tests).
+- [x] MAILBOX-PG: v28 `agent_mailbox_messages` with team+dedup UNIQUE;
+  sends dedup to replay (never re-deliver), receives replay by cursor,
+  recipients isolated (3 real-PG tests).
+- [x] TEAM: first-version bounds as a typed contract — same namespace,
+  ≤4 agents including the lead, depth one (`assert_write_depth_one`),
+  one shared task list with member-only assignment, write tasks holding
+  mutually exclusive owned paths (nested-conflict rejection), ownership
+  always referencing a shared task; stable team digest (9 tests).
+- [x] Full regression 2595 passed; `make check` green.
+
 ### ORCH-CODE-CONFORMANCE-01 - Coding Multi-Agent Conformance Matrix
 
 - Status: `Done`

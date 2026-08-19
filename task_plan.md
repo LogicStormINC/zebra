@@ -1,5 +1,15 @@
 # Task Plan
 
+## Orchestrator/Subagent 方案终态（2026-08-19，25/25）
+
+全部 25 张卡完成（PR #218-#238）：Phase A 8（修复 Subagent）+
+Phase B 6（Durable Child，v26）+ Phase C 7（控制面，v27）+
+Phase D 3（Coding Multi-Agent）+ Phase E 3（Mailbox v28 + Team）。
+最终验证：全量回归 2595 passed、make check 全绿（ruff/mypy/
+文件尺寸/eval 10/10）。唯一外部阻塞：SUBAGENT-DIAG-REAL-01 的真实
+Provider 证据（`ZEBRA_SUBAGENT_DIAG_ENDPOINT/KEY` 未设置，fail-closed
+不伪造）。迁移头现为 v28。
+
 ## Orchestrator/Subagent 方案执行状态（2026-08-19 刷新）
 
 - Phase A 完成（#218/#219，8 卡）；**Phase B 全部完成（#220-#225，6 卡）**：
