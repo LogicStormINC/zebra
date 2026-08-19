@@ -1148,6 +1148,35 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### SUBAGENT-CLOUD-CUTOVER-01 - Cloud Parents Never Join Synchronously
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/subagent-cloud-cutover-01`
+- Owned paths: `agent-runtime/{research,harness}.py`,
+  `apps/worker/{tool_gateway_runtime,execution}.py`, focused tests, this
+  card.
+
+#### Acceptance
+
+- [x] `ResearchSubagentTool(wait_for_result=False)` spawns the child and
+  returns a running receipt with `resume=durable_wakeup` — the cloud
+  parent never blocks on a synchronous join (P0.5 root fix, plan 8.2).
+- [x] The worker composition threads `durable_delegation` and enables it
+  exactly when `settings.deployment == "cloud"`; the local profile keeps
+  the in-process fast path with identical result contracts.
+- [x] Durable receipts carry delegation metadata for wakeup correlation;
+  the local path is byte-unchanged (all prior delegation tests green).
+- [x] Cutover tests 3 passed; full regression 2470 passed; `make check`
+  green.
+
+#### Explicit Non-Goals
+
+- no removal of the ThreadPool executor itself (the local fast path keeps
+  it by design; durable child execution replaces it in Phase C scheduling)
+- no worker waiting_children loop integration (Phase C scheduler owns
+  parent suspension/resumption)
+
 ### SUBAGENT-RECOVERY-01 - Delegation Recovery Semantics
 
 - Status: `Done`

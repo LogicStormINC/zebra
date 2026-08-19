@@ -207,12 +207,14 @@ class ResearchSubagentTool:
         max_model_calls: int = 3,
         max_tool_calls: int = 2,
         max_depth: int = 1,
+        wait_for_result: bool = True,
     ) -> None:
         self._coordinator = coordinator
         self._workspace_root = workspace_root
         self._max_model_calls = max_model_calls
         self._max_tool_calls = max_tool_calls
         self._max_depth = max_depth
+        self._wait_for_result = wait_for_result
 
     @property
     def contract(self) -> ToolContract:
@@ -236,6 +238,30 @@ class ResearchSubagentTool:
         )
         try:
             subagent_id = self._coordinator.spawn(task)
+            if not self._wait_for_result:
+                # SUBAGENT-CLOUD-CUTOVER-01: cloud parents never block on a
+                # synchronous join; the durable wakeup resumes them when the
+                # child settles (plan 8.2).
+                return ToolResult(
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.EXECUTED,
+                    output=json.dumps(
+                        {
+                            "delegation_reason": delegation_reason.strip(),
+                            "subagent_id": str(subagent_id),
+                            "status": "running",
+                            "resume": "durable_wakeup",
+                        },
+                        separators=(",", ":"),
+                        sort_keys=True,
+                    ),
+                    metadata={
+                        "subagent_id": str(subagent_id),
+                        "subagent_status": "running",
+                        "durable_delegation": True,
+                        "delegation_reason": delegation_reason.strip(),
+                    },
+                )
             result = self._coordinator.join(subagent_id)
         except SubagentLimitError as exc:
             detail = str(exc)[:1000]
