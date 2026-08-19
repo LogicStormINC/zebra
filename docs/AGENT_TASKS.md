@@ -1148,6 +1148,35 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-AGUI-01 - AG-UI Orchestration State Projection
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-agui-01` (from `cloud-agent@9c0996f9`)
+- Owned paths:
+  `packages/agent-integrations/src/agent_integrations/ag_ui/orchestration_state.py`
+  (new), focused tests, this card.
+
+#### Acceptance
+
+- [x] `project_orchestration_state` emits the plan-14.2 structure from
+  durable facts: runId/status/planRevision/planDigest/completionStrategy
+  plus per-node childTaskId, role, status, activity, elapsedSeconds,
+  model/tool call usage, evidence count, budget usage and the gate
+  verdict view.
+- [x] Nodes without facts project as `blocked` with null child refs — the
+  graph is complete from materialization onward.
+- [x] Projection hygiene: JSON-serializable, zero secret material; a
+  passed gate on a non-completed node is rejected at input validation.
+- [x] Focused tests 5 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no HTTP route wiring (the AG-UI stream card owns transport; this is the
+  state object the UI consumes)
+- no live activity feed (progress events arrive via the durable event
+  stream)
+
 ### ORCH-AGENT-DEF-01 - system/orchestrator@1 Definition
 
 - Status: `Done`
