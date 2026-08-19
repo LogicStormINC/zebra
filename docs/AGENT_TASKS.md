@@ -1148,6 +1148,37 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-WORKTREE-01 - Worktree Ownership And Merge Gate
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-worktree-01` (from `cloud-agent@6e8040e2`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/worktree_orchestration.py`
+  (new), focused tests, this card.
+
+#### Acceptance
+
+- [x] `WorktreeOwnership` freezes the plan-9.2 claims (worktree id, child,
+  base revision, branch ref, owned paths, quota, runtime spec digest);
+  paths normalize/sort, traversal and duplicates rejected; prefix-based
+  `owns` semantics.
+- [x] Plan-time conflict rule: overlapping claims — exact or nested
+  directory containment — raise `WorktreeOwnershipError`; disjoint claims
+  pass. The ownership fingerprint binds identity to claims.
+- [x] `WorktreeDiffArtifact.bind` enforces changed paths ⊆ ownership.
+- [x] `evaluate_merge_gate` covers every plan-9.3 pre-check with typed
+  reasons: base revision drift, failed tests, failed reviewer, sensitive
+  files, pending effects, conflicts, human approval pending/rejected/
+  approved; all-clear approves. The Orchestrator can only REQUEST merges.
+- [x] Focused tests 17 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no git worktree provisioning I/O (the runtime owns provisioning; this
+  is the ownership/gate contract)
+- no auto-merge execution (Control Plane decision on approvals)
+
 ### ORCH-AGUI-01 - AG-UI Orchestration State Projection
 
 - Status: `Done`
