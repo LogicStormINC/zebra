@@ -1148,6 +1148,35 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-CODE-CONFORMANCE-01 - Coding Multi-Agent Conformance Matrix
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-code-conformance-01` (from `cloud-agent@3c905a27`)
+- Owned paths: `tests/conformance/code_multi_agent/**` (new), this card.
+
+#### Acceptance
+
+- [x] The plan-19.3 matrix is expressed as executable tests over the
+  landed deterministic contracts, 9 passing:
+  row1 isolated worktrees per write child (disjoint claims pass);
+  row2 parent paths stay outside child claims; row3 merge requires
+  tests+review+diff gate; row4 base-revision drift fails closed;
+  row5 conflicts produce an artifact reference and pending human gate;
+  row6 reviewer has no source write surface (ownership rejects);
+  row7 tester has no source write surface; row8 worktree binding is
+  durable data — crash-and-recover rebuilds identical claims.
+- [x] Plus an end-to-end loop integration: merge conflict drives the
+  bounded fix loop back to IMPLEMENTING and a corrected revision merges
+  to APPROVED.
+- [x] `make check` green; full conformance suites (host_v1 +
+  code_multi_agent) 27 passed.
+
+#### Explicit Non-Goals
+
+- no live git operations (matrix exercises the deterministic contracts;
+  the rig covers real git in effect-default E2E)
+
 ### ORCH-REVIEW-FIXLOOP-01 - Bounded Implementer-Tester-Reviewer Loop
 
 - Status: `Done`
