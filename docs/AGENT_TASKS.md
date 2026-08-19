@@ -1148,6 +1148,35 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### SUBAGENT-RECOVERY-01 - Delegation Recovery Semantics
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/subagent-recovery-01` (from `cloud-agent@a6d2ace2`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/subagent_recovery.py` (new),
+  focused tests, this card.
+
+#### Acceptance
+
+- [x] `resolve_recovery` maps the plan-15 failure-table rows
+  deterministically over durable facts: parent crash after delegation →
+  child keeps running, parent waits (continuation wakes it); child crash
+  without continuation → lease reclaim by another Worker; parent/child
+  cancel → propagate to child, stop new model/tool calls
+  (`stop_new_child_calls`), then emit the cancelled receipt.
+- [x] Terminal handling: cancelled children resume the parent; settled
+  strategies resume via the wakeup evaluation; unsettled strategies keep
+  waiting; terminals without continuations resume directly.
+- [x] No runtime guesswork: one pure function over
+  `DelegationRecoveryState` (durable facts only).
+- [x] Focused tests 8 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no Worker-loop integration (rides with SUBAGENT-CLOUD-CUTOVER-01)
+- no lease timing configuration (existing lease machinery owns expiry)
+
 ### SUBAGENT-BUDGET-01 - Reservation-Receipt Budget Ledger
 
 - Status: `Done`
