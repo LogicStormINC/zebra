@@ -1148,6 +1148,33 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### SUBAGENT-DELEGATION-PG-01 - Durable Delegation Store
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/subagent-delegation-pg-01`
+- Owned paths: `subagent_delegation_migration.py` (new, v26),
+  `subagent_delegation.py` (new), migrations registration, focused
+  real-PostgreSQL tests, this card.
+
+#### Acceptance
+
+- [x] Migration v26 creates `subagent_delegation_links` with PK on
+  (namespace, delegation_id), UNIQUE (namespace, parent_task_id,
+  idempotency_key) and UNIQUE (namespace, child_task_id); child index for
+  lineage queries.
+- [x] `PostgresSubagentDelegationStore.delegate()` materializes the child
+  Task through the atomic admission transaction and writes its link;
+  key replays return the ORIGINAL child (`status=replayed`), never a
+  second Task; divergent resolution fails closed.
+- [x] Real-PostgreSQL tests 3 passed (materialize+link, replay same child,
+  v26 table); full regression 2446 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no parent waiting/wakeup (`SUBAGENT-PARENT-CONT-01`)
+- no budget ledger (`SUBAGENT-BUDGET-01`)
+
 ### SUBAGENT-DELEGATION-CON-01 - Parent-Child Delegation Contracts
 
 - Status: `Done`
