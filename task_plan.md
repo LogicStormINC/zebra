@@ -1,5 +1,20 @@
 # Task Plan
 
+## Orchestrator/Subagent 方案执行状态（2026-08-19 刷新）
+
+- Phase A 完成（#218/#219，8 卡）；**Phase B 全部完成（#220-#225，6 卡）**：
+  DELEGATION-CON（四元组幂等键 + 收窄派生器）、DELEGATION-PG（v26 +
+  原子物化 + 同键回放原 Child）、PARENT-CONT（waiting 续体 + 三策略
+  deterministic wakeup）、BUDGET（预留-收据账本 fail-closed）、RECOVERY
+  （plan-15 失败表纯函数化）、CLOUD-CUTOVER（云端 spawn 即返回
+  durable_wakeup 回执，同步 join 在 cloud profile 下删除；本地 fast
+  path 不变）。进度 14/25；全量回归 2470 passed。
+- Phase C 待激活（7 卡）：ORCH-CONTRACT（Plan Proposal/Snapshot/Node/
+  Dependency/Run 状态机）→ ORCH-VALIDATOR（DAG/Authority/Resource/
+  Budget/Isolation 校验）→ ORCH-PG（v27+ 投影）→ ORCH-SCHEDULER →
+  ORCH-COMPLETION-GATE → ORCH-AGENT-DEF（system/orchestrator@1）→
+  ORCH-AGUI。
+
 ## Orchestrator/Subagent 方案执行状态（2026-08-18）
 
 权威方案：`docs/Zebra_Agent_Orchestrator与Subagent重构实施方案_v1.0.md`（25 卡）。
