@@ -46,6 +46,34 @@ class OrchestrationRunStatus(StrEnum):
     UNCERTAIN = "uncertain"
 
 
+class OrchestrationNodeStatus(StrEnum):
+    """Plan section 12.2 node states."""
+
+    BLOCKED = "blocked"
+    READY = "ready"
+    QUEUED = "queued"
+    RUNNING = "running"
+    WAITING_APPROVAL = "waiting_approval"
+    WAITING_CHILDREN = "waiting_children"
+    VERIFYING = "verifying"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    SKIPPED = "skipped"
+    UNCERTAIN = "uncertain"
+
+
+NODE_TERMINAL_STATUSES = frozenset(
+    {
+        OrchestrationNodeStatus.COMPLETED,
+        OrchestrationNodeStatus.FAILED,
+        OrchestrationNodeStatus.CANCELLED,
+        OrchestrationNodeStatus.SKIPPED,
+        OrchestrationNodeStatus.UNCERTAIN,
+    }
+)
+
+
 RUN_TERMINAL_STATUSES = frozenset(
     {
         OrchestrationRunStatus.COMPLETED,
