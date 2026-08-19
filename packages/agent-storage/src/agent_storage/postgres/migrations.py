@@ -28,6 +28,7 @@ from agent_storage.postgres.provider_continuation_migration import (
 from agent_storage.postgres.session_tenant_migration import (
     SESSION_TENANT_NAMESPACE_MIGRATION,
 )
+from agent_storage.postgres.subagent_delegation_migration import SUBAGENT_DELEGATION_MIGRATION
 from agent_storage.postgres.task_admission_migration import TASK_BINDING_MIGRATION
 from agent_storage.postgres.workspace_control_migration import WORKSPACE_CONTROL_MIGRATION
 from agent_storage.postgres.workspace_definition_snapshot_migration import (
@@ -488,4 +489,5 @@ MIGRATIONS = (
     SESSION_TENANT_NAMESPACE_MIGRATION,
     HOST_CONNECTOR_MIGRATION,
     TASK_BINDING_MIGRATION,
+    SUBAGENT_DELEGATION_MIGRATION,
 )
