@@ -1,5 +1,24 @@
 # Task Plan
 
+## Orchestrator/Subagent 方案执行状态（2026-08-18）
+
+权威方案：`docs/Zebra_Agent_Orchestrator与Subagent重构实施方案_v1.0.md`（25 卡）。
+
+- Phase A 已完成（PR #218/#219，主线 `40688147`）：CONTRACT-V2、
+  SELECTION、EVIDENCE-GATE、COORD-FIX 完成；RUNTIME/TOOLSET 完成
+  （P0.3 前半：父 RuntimePort 注入，全云端接线随 Phase B）；
+  LIFECYCLE 完成 spawn 实时回调（durable 事件接线随 Phase B）；
+  DIAG-REAL 闭环建成但真实 Provider 证据被凭据阻塞
+  （`ZEBRA_SUBAGENT_DIAG_ENDPOINT/KEY` 未设置，fail-closed 不伪造）。
+  全量回归 2436 passed，make check 全绿。
+- Phase B（6 卡）未开始：DELEGATION-CON/PG（幂等键
+  parent_task+attempt+tool_call+delegation_index）、PARENT-CONT
+  （waiting_children + wakeup）、BUDGET、RECOVERY、CLOUD-CUTOVER
+  （删 spawn/join 同步路径）。
+- Phase C（7 卡）、D（3 卡）、E（3 卡）未开始。
+- 方案修复的 P0.1/P0.4/P0.5/P1.7 已闭环；P0.2/P0.3 前半闭环；
+  P0.3 全量与 P0.5 根治依赖 Phase B。
+
 ## Agent Layer 实施终态（2026-08-18，14/16）
 
 在库可推进的 14 张卡全部完成（PR #204-#217，含 API-DECOUPLE 的
