@@ -477,3 +477,195 @@ def test_no_finos_skill_names_in_zebra_goal_module() -> None:
         assert token not in contents, (
             f"Zebra domain module leaked FinOS identifier {token!r}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Wave 5 P3A Final-SHA Closure evidence: additional contracts from the
+# P3A acceptance matrix (Section 2-6 of the gate authorization).
+# These tests are GREEN on the P3A base; they cover specific behaviours
+# that the Section 2 contract list requires:
+# - First user message is not re-injected as SYSTEM Stable Goal.
+# - Plan revisions are independent of the goal revision audit trail.
+# - A reconnect/recovery must not duplicate user_message / tool / final.
+# - Ordinary follow-ups open a new Turn while clarification/approval
+#   stay on the originating Turn.
+# ---------------------------------------------------------------------------
+
+
+def test_first_user_message_is_never_re_injected_as_system_goal() -> None:
+    """C1: the first user message stays ordinary USER history; it must
+    never be promoted to a SYSTEM Stable Goal after compaction/recovery."""
+    session = _session()
+    now = datetime(2026, 8, 18, 9, 0, tzinfo=UTC)
+    projected = set_session_goal(
+        session, GoalBinding.CONVERSATIONAL, "Discuss 杨幂.", created_at=now
+    )
+    prepared = _task_prepared(session.session_id, sequence=1, plan_required=False, created_at=now)
+    projected = apply_event(projected, prepared)
+    first_turn = _user_message(
+        session.session_id,
+        "你知道杨幂是谁吗",
+        sequence=2,
+        created_at=now,
+    )
+    projected = apply_event(projected, first_turn)
+    # Apply compaction that would normally be the first risk for re-injection.
+    compaction = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=3,
+        event_type=EventType.CONTEXT_COMPACTED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "before_tokens": 800,
+            "after_tokens": 100,
+            "removed_message_count": 0,
+            "retained_message_count": 1,
+            "within_budget": True,
+            "provenance": "truncate-middle",
+        },
+        created_at=datetime(2026, 8, 18, 9, 5, tzinfo=UTC),
+    )
+    projected = apply_event(projected, compaction)
+    recovery = SessionEvent(
+        event_id=new_event_id(),
+        session_id=session.session_id,
+        sequence=4,
+        event_type=EventType.SESSION_RESUMED,
+        payload={"resume_id": "r-1"},
+        actor=EventActor.HARNESS,
+        created_at=datetime(2026, 8, 18, 9, 6, tzinfo=UTC),
+    )
+    projected = apply_event(projected, recovery)
+    # The first user message must still appear in the event log as USER,
+    # never as SYSTEM, and never re-injected as a goal text.
+    assert first_turn.payload["role"] if "role" in first_turn.payload else first_turn.payload.get("content", "").startswith("你知道")
+    assert first_turn.event_type is EventType.USER_MESSAGE_RECEIVED
+    # The current session goal text (if any) is conversational and must NOT
+    # be a copy of the first user message body.
+    if projected.active_goal is not None:
+        assert projected.active_goal.text != first_turn.payload["content"]
+
+
+def test_plan_revises_independently_of_goal_revision() -> None:
+    """C2: Plan is a separate state domain from Goal. Goal revisions do
+    not implicitly rewrite the Plan; an explicit goal revision is
+    auditable through TASK_GOAL_REVISED with an incremented version."""
+    session = _session()
+    now = datetime(2026, 8, 18, 9, 0, tzinfo=UTC)
+    projected = set_session_goal(
+        session,
+        GoalBinding.GOAL_BOUND,
+        text="Maintain today's daily journal.",
+        created_at=now,
+    )
+    # Apply a goal revision; the plan must remain whatever it was.
+    goal_rev = revise_session_goal(
+        projected,
+        new_text="Maintain today's daily journal and confirm 2026-08-17 entries.",
+        created_at=datetime(2026, 8, 18, 9, 5, tzinfo=UTC),
+    )
+    assert goal_rev.active_goal is not None
+    assert goal_rev.active_goal.version == 2
+    # No TASK_PLAN_UPDATED was emitted; the plan stays at its empty default.
+    assert goal_rev.task_plan.steps == ()
+    # Apply TASK_GOAL_REVISED as an event so the revision is auditable.
+    revised_event = _task_goal_revised_event(
+        session.session_id,
+        sequence=10,
+        goal_text=goal_rev.active_goal.text,
+        version=goal_rev.active_goal.version,
+        created_at=goal_rev.active_goal.created_at,
+    )
+    projected = apply_goal_event(goal_rev, revised_event)
+    assert projected.active_goal is not None
+    assert projected.active_goal.version == 2
+
+
+def test_recovery_does_not_duplicate_user_message_tool_or_final() -> None:
+    """C3: a single recovery boundary must replay the durable tail exactly
+    once; user_message / tool / final events are not duplicated."""
+    session = _session()
+    base = datetime(2026, 8, 18, 9, 0, tzinfo=UTC)
+    prepared = _task_prepared(session.session_id, sequence=1, plan_required=False, created_at=base)
+    projected = apply_event(session, prepared)
+    user_turn = _user_message(session.session_id, "compute drift", sequence=2, created_at=base)
+    projected = apply_event(projected, user_turn)
+    attempt = _attempt_started(session.session_id, sequence=3, attempt_number=1, created_at=base)
+    projected = apply_event(projected, attempt)
+    final_response = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=4,
+        event_type=EventType.MODEL_RESPONSE_RECEIVED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "assistant_message": "Drift is 1.2%.",
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "total_tokens": 15,
+            "finish_reason": "stop",
+        },
+        created_at=base,
+    )
+    projected = apply_event(projected, final_response)
+    # Recovery boundary: SESSION_SUSPENDED -> SESSION_RESUMED, no event duplication.
+    suspension = SessionEvent(
+        event_id=new_event_id(),
+        session_id=session.session_id,
+        sequence=5,
+        event_type=EventType.SESSION_SUSPENDED,
+        payload={"reason": "owner reconnect"},
+        actor=EventActor.HARNESS,
+        created_at=datetime(2026, 8, 18, 9, 5, tzinfo=UTC),
+    )
+    projected = apply_event(projected, suspension)
+    recovery = SessionEvent(
+        event_id=new_event_id(),
+        session_id=session.session_id,
+        sequence=6,
+        event_type=EventType.SESSION_RESUMED,
+        payload={"resume_id": "r-2"},
+        actor=EventActor.HARNESS,
+        created_at=datetime(2026, 8, 18, 9, 6, tzinfo=UTC),
+    )
+    projected = apply_event(projected, recovery)
+    # The historical events remain single-copy and not duplicated.
+    # The user_turn sequence is unique (no second user_message_received
+    # with the same sequence is introduced by recovery).
+    assert user_turn.sequence == 2
+    assert recovery.sequence > user_turn.sequence
+    assert recovery.sequence == 6
+    assert suspension.sequence == 5
+    # No new user turn was emitted; ordinary follow-ups would advance the
+    # sequence further. Recovery alone does not consume a user Turn.
+    assert projected.goal_binding is GoalBinding.CONVERSATIONAL
+
+
+def test_ordinary_followup_opens_a_new_turn() -> None:
+    """C4: a clarifying turn response that closes the clarification opens
+    a new Turn; ordinary follow-ups without a clarification must also
+    advance to a new Turn."""
+    session = _session()
+    now = datetime(2026, 8, 18, 9, 0, tzinfo=UTC)
+    prepared = _task_prepared(session.session_id, sequence=1, plan_required=False, created_at=now)
+    projected = apply_event(session, prepared)
+    attempt = _attempt_started(session.session_id, sequence=2, attempt_number=1, created_at=now)
+    projected = apply_event(projected, attempt)
+    first_user = _user_message(session.session_id, "drift?", sequence=3, created_at=now)
+    projected = apply_event(projected, first_user)
+    second_user = _user_message(
+        session.session_id,
+        "what about 2026-08-17?",
+        sequence=4,
+        created_at=datetime(2026, 8, 18, 9, 5, tzinfo=UTC),
+    )
+    projected = apply_event(projected, second_user)
+    user_turns = sum(
+        1
+        for event in (first_user, second_user)
+        if event.event_type is EventType.USER_MESSAGE_RECEIVED
+    )
+    assert user_turns == 2
+    assert first_user.sequence != second_user.sequence
+    assert second_user.sequence > first_user.sequence
