@@ -480,7 +480,12 @@ class HarnessModelStep:
             created_at=created_at,
             plan_required=task.plan_required,
         )
-        append_task_state_context(messages, task, created_at=created_at)
+        append_task_state_context(
+            messages,
+            task,
+            created_at=created_at,
+            goal_anchor_present=task.goal_anchor_present,
+        )
         messages.append(
             SessionMessage(
                 message_id=new_message_id(),

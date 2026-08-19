@@ -10,8 +10,16 @@ def append_task_state_context(
     task: HarnessTask,
     *,
     created_at: datetime,
+    goal_anchor_present: bool = False,
 ) -> None:
-    if task.stable_goal != task.user_input:
+    """Append SYSTEM task-state context.
+
+    W5-P3A (Finding 1 fix): the "Stable task goal" SYSTEM block is
+    emitted only when ``goal_anchor_present`` is True. The first
+    USER_MESSAGE_RECEIVED body is ordinary USER history; it must
+    never be re-injected as a SYSTEM Stable Task Goal.
+    """
+    if goal_anchor_present and task.stable_goal and task.stable_goal != task.user_input:
         messages.append(
             SessionMessage(
                 message_id=new_message_id(),

@@ -78,6 +78,29 @@ from zebra_agent_worker.tool_run_index import ToolRunIndexer
 
 class WorkerExecutionError(ValueError): ...
 
+def _has_task_goal_set_event(session_events) -> bool:
+    """Return True iff a TASK_GOAL_SET event exists for this Stable Task."""
+    from agent_core.domain.events import EventType
+    return any(
+        event.event_type is EventType.TASK_GOAL_SET for event in session_events
+    )
+
+
+def _project_goal_binding(session_events) -> str:
+    """Project the goal_binding from the most recent TASK_GOAL_SET."""
+    from agent_core.domain.events import EventType
+    binding = "conversational"
+    for event in session_events:
+        if event.event_type is EventType.TASK_GOAL_SET:
+            payload = event.payload
+            raw = payload.get("binding")
+            if isinstance(raw, str) and raw in {"conversational", "goal_bound"}:
+                binding = raw
+    return binding
+
+
+
+
 
 @dataclass(frozen=True)
 class ExecutedSession:
@@ -336,6 +359,8 @@ class SessionExecutionService:
             task=HarnessTask(
                 title=task.title,
                 user_input=task_user_input,
+                goal_anchor_present=_has_task_goal_set_event(session_events),
+                goal_binding=_project_goal_binding(session_events),
                 max_attempts=task.max_attempts,
                 max_corrections_per_attempt=task.max_corrections_per_attempt,
                 max_model_calls=task.max_model_calls,

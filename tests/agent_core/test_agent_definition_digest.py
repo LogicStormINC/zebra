@@ -350,3 +350,45 @@ def test_agent_definition_goal_and_plan_are_separate() -> None:
     # AgentDefinition does not carry goal_text or plan steps.
     assert not hasattr(definition, "goal_text")
     assert not hasattr(definition, "steps")
+
+
+def test_agent_definition_skill_guidance_field_is_accepted() -> None:
+    """Finding 4 fix: the Zebra AgentDefinition schema now accepts a
+    ``skill_guidance`` field of named guidance entries; the FinOS
+    Domain Contract payload flows through this field without being
+    rejected by the server-side validator."""
+    from agent_core.domain.agent_definitions import AgentDefinition
+
+    definition = AgentDefinition(
+        agent_id="finos-aceagent",
+        version="1.0.0",
+        system_prompt_ref="system://finos-aceagent-domain-contract",
+        skill_refs=("skill://zebra-general-assistant",),
+        skill_guidance=(
+            {"name": "finos-domain-contract", "content": "You are AceAgent."},
+            {"name": "finos-capabilities", "content": "Honour typed reads only."},
+        ),
+    )
+    assert definition.agent_id == "finos-aceagent"
+    assert len(definition.skill_guidance) == 2
+    assert dict(definition.skill_guidance[0])["name"] == "finos-domain-contract"
+
+
+def test_agent_definition_rejects_blank_skill_guidance_name() -> None:
+    from agent_core.domain.agent_definitions import AgentDefinition
+    with pytest.raises(ValueError):
+        AgentDefinition(
+            agent_id="finos-aceagent",
+            version="1.0.0",
+            skill_guidance=({"name": "   ", "content": "x"},),
+        )
+
+
+def test_agent_definition_rejects_blank_skill_guidance_content() -> None:
+    from agent_core.domain.agent_definitions import AgentDefinition
+    with pytest.raises(ValueError):
+        AgentDefinition(
+            agent_id="finos-aceagent",
+            version="1.0.0",
+            skill_guidance=({"name": "n", "content": "   "},),
+        )

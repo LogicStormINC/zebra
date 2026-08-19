@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
 from typing import Any
@@ -129,6 +129,7 @@ class AgentDefinition(BaseModel):
     version: str
     system_prompt_ref: str | None = None
     skill_refs: tuple[str, ...] = ()
+    skill_guidance: tuple[Mapping[str, str], ...] = Field(default_factory=tuple)
     required_model_capabilities: tuple[str, ...] = ()
     capability_policy: dict[str, Any] = Field(default_factory=dict)
     memory_policy: dict[str, Any] = Field(default_factory=dict)
@@ -171,6 +172,25 @@ class AgentDefinition(BaseModel):
         if value is not None and _DIGEST.fullmatch(value.strip()) is None:
             raise ValueError("resolved_context_digest must be a lowercase SHA-256 digest")
         return value.strip() if value is not None else None
+
+    @field_validator("skill_guidance", mode="before")
+    @classmethod
+    def validate_skill_guidance(cls, value: Sequence[object]) -> tuple[Mapping[str, str], ...]:
+        if not isinstance(value, Sequence) or isinstance(value, str):
+            raise ValueError("skill_guidance must be a sequence")
+        normalized: list[Mapping[str, str]] = []
+        for item in value:
+            if not isinstance(item, Mapping):
+                raise ValueError("skill_guidance entries must be mappings")
+            entry = dict(item)
+            name = entry.get("name")
+            content = entry.get("content")
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError("skill_guidance name must be a non-blank string")
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError("skill_guidance content must be a non-blank string")
+            normalized.append({"name": name.strip(), "content": content.strip()})
+        return tuple(normalized)
 
     @field_validator("skill_refs", mode="before")
     @classmethod

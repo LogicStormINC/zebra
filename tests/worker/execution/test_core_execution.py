@@ -108,6 +108,18 @@ def test_worker_rehydrates_goal_and_plan_across_suspend_resume(
         SessionEvent.create(
             session_id=session_id,
             sequence=4,
+            event_type=EventType.TASK_GOAL_SET,
+            actor=EventActor.HARNESS,
+            payload={
+                "binding": "goal_bound",
+                "goal_text": "Identify the causes of recent repeated losses.",
+                "version": 1,
+            },
+            created_at=_created_at(),
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=5,
             event_type=EventType.PLAN_UPDATED,
             actor=EventActor.HARNESS,
             payload={

@@ -411,6 +411,7 @@ def test_reconstructed_context_separates_stable_goal_from_follow_up() -> None:
             title="Goal",
             user_input="Exclude the CICC account for now.",
             goal="Identify the causes of recent repeated losses.",
+            goal_anchor_present=True,
             task_plan=SessionPlan(
                 steps=(
                     PlanStep(

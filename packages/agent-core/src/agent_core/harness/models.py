@@ -50,6 +50,8 @@ class HarnessStopReason(StrEnum):
 class HarnessTask:
     title: str
     user_input: str
+    goal_anchor_present: bool = False
+    goal_binding: str = "conversational"
     max_attempts: int = 1
     max_model_calls: int | None = None
     max_tool_calls: int | None = None

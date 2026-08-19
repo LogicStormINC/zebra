@@ -356,7 +356,48 @@ def _task_from_connection(connection: sqlite3.Connection, task_id: TaskId) -> Ag
 
 
 def _task_goal(connection: sqlite3.Connection, root_session_id: str) -> str:
+    """Project the canonical task goal.
+
+    W5-P3A (Finding 1 fix): the goal MUST come from an explicit
+    TASK_GOAL_SET event when one exists; that goal_text is the only
+    source that may be re-injected as a SYSTEM Stable Task Goal by
+    ``append_task_state_context``. When no TASK_GOAL_SET has been
+    emitted, we fall back to the public_content / content of the first
+    USER_MESSAGE_RECEIVED for backward compatibility with pre-P3A
+    callers (this projection is informational; it is NOT emitted as
+    a SYSTEM block by ``append_task_state_context`` when the goal is
+    not explicitly anchored).
+    """
     row = connection.execute(
+        """
+        SELECT * FROM session_events
+        WHERE session_id = ? AND event_type = ?
+        ORDER BY sequence ASC LIMIT 1
+        """,
+        (root_session_id, EventType.TASK_GOAL_SET.value),
+    ).fetchone()
+    if row is not None:
+        payload = deserialize_event_row(row).payload
+        goal_text = payload.get("goal_text")
+        if isinstance(goal_text, str) and goal_text.strip():
+            return goal_text.strip()
+        # Goal-bound TASK_GOAL_SET without text falls back to the durable
+        # session title so the goal projection never silently degrades to
+        # the first user message body.
+        binding = payload.get("binding")
+        if binding == "goal_bound":
+            projection = connection.execute(
+                "SELECT title FROM session_projections WHERE session_id = ?",
+                (root_session_id,),
+            ).fetchone()
+            if projection is None:
+                raise ValueError("task goal projection is incomplete")
+            return str(projection["title"]).strip()
+    # Legacy path: read the first USER_MESSAGE_RECEIVED body. The
+    # resulting string is exposed via task.goal for legacy callers;
+    # ``append_task_state_context`` checks whether an explicit
+    # TASK_GOAL_SET anchor exists before re-injecting it as SYSTEM.
+    legacy = connection.execute(
         """
         SELECT * FROM session_events
         WHERE session_id = ? AND event_type = ?
@@ -364,19 +405,22 @@ def _task_goal(connection: sqlite3.Connection, root_session_id: str) -> str:
         """,
         (root_session_id, EventType.USER_MESSAGE_RECEIVED.value),
     ).fetchone()
-    if row is None:
-        projection = connection.execute(
-            "SELECT title FROM session_projections WHERE session_id = ?",
-            (root_session_id,),
-        ).fetchone()
-        if projection is None:
-            raise ValueError("task goal projection is incomplete")
-        return str(projection["title"]).strip()
-    payload = deserialize_event_row(row).payload
-    goal = payload.get("public_content", payload.get("content"))
-    if not isinstance(goal, str) or not goal.strip():
-        raise ValueError("task goal projection is invalid")
-    return goal.strip()
+    if legacy is not None:
+        payload = deserialize_event_row(legacy).payload
+        goal = payload.get("public_content", payload.get("content"))
+        if not isinstance(goal, str) or not goal.strip():
+            raise ValueError("task goal projection is invalid")
+        return goal.strip()
+    projection = connection.execute(
+        "SELECT title FROM session_projections WHERE session_id = ?",
+        (root_session_id,),
+    ).fetchone()
+    if projection is None:
+        raise ValueError("task goal projection is incomplete")
+    title = projection["title"]
+    if isinstance(title, str) and title.strip():
+        return title.strip()
+    return ""
 
 
 def _task_plan_required(connection: sqlite3.Connection, root_session_id: str) -> bool:
