@@ -1148,6 +1148,36 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-VALIDATOR-01 - Deterministic Plan Validator
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-validator-01` (from `cloud-agent@273add1b`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/application/orchestration_validation.py`
+  (new), focused tests, this card.
+
+#### Acceptance
+
+- [x] `validate_plan(proposal, context)` is a pure function over the
+  frozen contracts: it either freezes a revision-1 snapshot or raises a
+  typed `PlanValidationError` — no I/O, no runtime state.
+- [x] Checks with dedicated reason codes: `cycle_detected` (Kahn),
+  `depth_exceeded` (longest chain), `parallelism_exceeded`,
+  `unknown_role`, `role_not_published`, `capability_beyond_parent`,
+  `resource_beyond_parent`, `budget_beyond_parent` (node sum vs parent
+  remaining), `isolation_required`, `write_nodes_not_allowed` (first
+  version boundary), `write_node_requires_worktree`,
+  `write_node_requires_human_policy`.
+- [x] Every rejection branch has a focused test; the happy path freezes
+  into a snapshot with the summed reserved budget.
+- [x] Focused tests 11 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no Definition/Release registry lookups (context carries published roles)
+- no PostgreSQL persistence (ORCH-PG-01)
+
 ### ORCH-CONTRACT-01 - Orchestration Plan And Run Contracts
 
 - Status: `Done`
