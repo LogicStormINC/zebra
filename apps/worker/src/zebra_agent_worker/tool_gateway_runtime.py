@@ -123,6 +123,7 @@ def build_worker_tool_gateway(
     local_artifacts: ArtifactPayloadStorePort | None,
     cloud_artifacts: CloudToolOutputArtifactCoordinator | None,
     trusted_local: bool,
+    durable_delegation: bool = False,
 ) -> WorkerToolGateway:
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,
@@ -157,6 +158,7 @@ def build_worker_tool_gateway(
         output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
         trusted_local=trusted_local,
         web_pipeline_v2=settings.web_pipeline_v2,
+        durable_delegation=durable_delegation,
     )
     if task.host_context is None:
         return WorkerToolGateway(

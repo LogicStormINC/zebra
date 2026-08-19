@@ -166,6 +166,7 @@ class LocalToolGateway(ToolGatewayPort):
         model_gateway: ModelGatewayPort | None = None,
         research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
         delegation_mode: DelegationMode = DelegationMode.AUTO,
+        durable_delegation: bool = False,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
@@ -279,7 +280,11 @@ class LocalToolGateway(ToolGatewayPort):
                 max_children=research_child_limit,
                 max_concurrency=research_child_limit,
             )
-            research = ResearchSubagentTool(self._subagents, workspace_root)
+            research = ResearchSubagentTool(
+                self._subagents,
+                workspace_root,
+                wait_for_result=not durable_delegation,
+            )
             registry.register(research.contract, research.handle)
         self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
         self._parallel_safe_tools = registry.parallel_safe_names()
