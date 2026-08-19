@@ -1148,6 +1148,32 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### SUBAGENT-BUDGET-01 - Reservation-Receipt Budget Ledger
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/subagent-budget-01`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/orchestration_budget.py` (new),
+  focused tests, this card.
+
+#### Acceptance
+
+- [x] `BudgetReservation`/`BudgetUsageReceipt`/`BudgetLedger` implement the
+  plan-13.3 accounting: ceilings cover reservations, bookings book actual
+  usage, and both over-reservation and over-booking fail closed with
+  `BudgetExceededError` — never a prompt-level reminder.
+- [x] `remaining` nets out booked usage and unbooked reservations so a
+  parent cannot double-spend the same envelope.
+- [x] Pre-built over-reserved ledgers are rejected at validation.
+- [x] Focused tests 5 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no PostgreSQL ledger persistence (rides with the orchestration
+  projections, ORCH-PG-01)
+- no cost currency conversion
+
 ### SUBAGENT-PARENT-CONT-01 - Parent Waiting Continuation And Wakeup
 
 - Status: `Done`
