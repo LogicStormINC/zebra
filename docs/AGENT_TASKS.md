@@ -1148,6 +1148,37 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-CONTRACT-01 - Orchestration Plan And Run Contracts
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-contract-01` (from `cloud-agent@539f0826`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/orchestration.py` (new),
+  focused tests, this card.
+
+#### Acceptance
+
+- [x] `OrchestrationNodeProposal`/`OrchestrationDependency`/
+  `OrchestrationPlanProposal` freeze the plan-6.4 agent-facing surface:
+  goals, roles, capabilities, resources, isolation and budgets only —
+  unique node keys, declared-only dependencies, no self edges,
+  parallelism ≤ node count, non-zero budget axes.
+- [x] `OrchestrationPlanSnapshot` is revision-scoped with a canonical
+  digest; child materialization and replans both change the digest.
+- [x] Replan rule (plan 6.6) is structural: `next_revision` only appends
+  new nodes or cancels declared ones; redefinition, unknown cancels and
+  empty revisions are rejected.
+- [x] Run state machine (plan 12.1) is an explicit transition table with
+  `assert_run_transition`; the happy path is legal, illegal jumps raise,
+  and terminal states have no outgoing edges.
+- [x] Focused tests 14 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no DAG/authority validation (ORCH-VALIDATOR-01)
+- no PostgreSQL projections (ORCH-PG-01)
+
 ### SUBAGENT-CLOUD-CUTOVER-01 - Cloud Parents Never Join Synchronously
 
 - Status: `Done`
