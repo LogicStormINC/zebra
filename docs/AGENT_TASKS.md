@@ -1148,6 +1148,41 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### SUBAGENT-PHASEA-01..05 - Subagent Phase A First Slice
+
+Five Phase A cards from the Orchestrator/Subagent plan (authority:
+`docs/Zebra_Agent_Orchestrator与Subagent重构实施方案_v1.0.md`), delivered
+as one verified slice on `codex/subagent-phasea-1`.
+
+- Status: `Done` (CONTRACT-V2, SELECTION, EVIDENCE-GATE, COORD-FIX);
+  `Done with external evidence blocked` (DIAG-REAL)
+- Owner: `lukeding`
+- Owned paths: `agent-core/domain/subagents.py`, `agent-core/harness/model_step.py`,
+  `agent-runtime/{harness,research,subagents}.py`, focused tests.
+
+#### Acceptance evidence
+
+- [x] CONTRACT-V2: SubagentRole/DelegationMode/EvidenceRef/UsageReceipt/
+  CompletionGateReceipt/SubagentResultBundle with deterministic digests,
+  secret-free fields, timezone validation; completed bundles require usage
+  and a passed gate (15 tests).
+- [x] SELECTION: DelegationMode threads gateway→model_step→run_local_harness;
+  DISABLED never advertises agent.research; REQUIRED_ONCE/ORCHESTRATED swap
+  in the mandatory-delegation directive; delegation_attempted tracking
+  (P0.1). Provider tool_choice forcing stays with provider adapters.
+- [x] EVIDENCE-GATE: research_evidence_gate(evidence, successful_tools) —
+  zero evidence or zero successful tool calls can never report completed
+  (P0.4); legacy tests updated to the new contract.
+- [x] COORD-FIX: completed children free their slot (sequential Nth child
+  admitted — P1.7), bounded join with typed SubagentStageError
+  (stage+reason), delegation-attempt flag (P1.6 partially).
+- [x] DIAG-REAL: scripted-provider diagnostic loop records advertised
+  tools, selected tool, delegation reason and child stage with zero secret
+  material; the real-provider run is fail-closed behind
+  ZEBRA_SUBAGENT_DIAG_ENDPOINT/KEY (no credentials in this environment —
+  evidence explicitly blocked, never substituted).
+- [x] Full regression 2433 passed, 311 skipped; make check green.
+
 #### Locked Successor Reservations
 
 The full scope and acceptance for each reservation are authoritative in

@@ -35,8 +35,10 @@ def test_coordinator_enforces_child_and_depth_limits(tmp_path) -> None:
     first = coordinator.spawn(task)
 
     assert coordinator.join(first).status is SubagentStatus.COMPLETED
-    with pytest.raises(SubagentLimitError, match="child limit"):
-        coordinator.spawn(task)
+    # SUBAGENT-COORD-FIX-01: completed children free their slot, so the
+    # next sequential child is admitted.
+    second = coordinator.spawn(task)
+    assert coordinator.join(second).status is SubagentStatus.COMPLETED
     coordinator.close()
 
     depth_limited = LocalResearchSubagentCoordinator(_completed_runner, max_depth=1)
@@ -154,9 +156,12 @@ def test_invalid_delegation_reason_is_actionable_and_creates_no_child(tmp_path) 
     assert invalid.status is ToolCallStatus.FAILED
     assert "delegation_reason" in invalid.output
     assert "tool_validation_error" in invalid.output
-    assert valid.status is ToolCallStatus.EXECUTED
+    # SUBAGENT-EVIDENCE-GATE-01: this scripted child gathers no evidence and
+    # performs no successful tool call, so it can never report completed.
+    assert valid.status is ToolCallStatus.FAILED
+    assert valid.metadata["subagent_status"] == "failed"
+    assert valid.metadata["source_count"] == 0
     assert '"delegation_reason":"Separate evidence collection is useful."' in valid.output
-    assert '"usage":{"model_calls":1,"tool_calls":0}' in valid.output
 
 
 def test_child_write_request_is_denied_before_execution(tmp_path) -> None:

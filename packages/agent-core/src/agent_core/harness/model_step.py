@@ -51,6 +51,16 @@ MODEL_NATIVE_DELEGATION_GUIDANCE = (
     "delegation_reason explaining why direct work is less suitable."
 )
 
+MODEL_REQUIRED_DELEGATION_DIRECTIVE = (
+    "Subagent delegation (MANDATORY for this task):\n"
+    "- You MUST call agent.research exactly once before producing your final "
+    "answer.\n"
+    "- Answering without delegating is a task failure with reason "
+    "delegation_required_not_used.\n"
+    "- The call must include a specific objective and a concise "
+    "delegation_reason."
+)
+
 
 def _tool_result_content(tool_result: ToolResult) -> str:
     if tool_result.output:
@@ -72,6 +82,7 @@ class HarnessModelStep:
         *,
         available_tools: tuple[ModelToolDefinition, ...] = (),
         conversation_compactor: ConversationCompactorPort | None = None,
+        delegation_mode: str = "auto",
         conversation_token_budget: int | None = None,
         event_sink: Callable[[HarnessEventDraft], None] | None = None,
         continuation_sink: Callable[[ProviderContinuationRef, bytes | None, int | None], str | None]
@@ -93,6 +104,7 @@ class HarnessModelStep:
         self._attempt_number = attempt_number
         self._provider_continuation = provider_continuation
         self._compaction_hook = compaction_hook
+        self._delegation_mode = delegation_mode
 
     def prepare_conversation(
         self,
@@ -438,10 +450,15 @@ class HarnessModelStep:
                     )
                 )
         if any(tool.name == "agent.research" for tool in self._available_tools):
+            delegation_guidance = (
+                MODEL_REQUIRED_DELEGATION_DIRECTIVE
+                if self._delegation_mode in {"required_once", "orchestrated"}
+                else MODEL_NATIVE_DELEGATION_GUIDANCE
+            )
             if messages:
                 messages[-1] = messages[-1].model_copy(
                     update={
-                        "content": (f"{messages[-1].content}\n\n{MODEL_NATIVE_DELEGATION_GUIDANCE}")
+                        "content": (f"{messages[-1].content}\n\n{delegation_guidance}")
                     }
                 )
             else:
@@ -449,7 +466,7 @@ class HarnessModelStep:
                     SessionMessage(
                         message_id=new_message_id(),
                         role=MessageRole.SYSTEM,
-                        content=MODEL_NATIVE_DELEGATION_GUIDANCE,
+                        content=delegation_guidance,
                         created_at=created_at,
                     )
                 )

@@ -13,6 +13,7 @@ from agent_core.domain.subagents import (
     ResearchSubagentResult,
     ResearchSubagentTask,
     SubagentStatus,
+    research_evidence_gate,
 )
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
@@ -82,7 +83,18 @@ class LocalResearchSubagentRunner:
         )
         sources = _research_sources(result.events)
         completed = result.run_result.final_outcome.value == "completed"
-        status = SubagentStatus.COMPLETED if completed else SubagentStatus.FAILED
+        successful_tool_calls = sum(
+            1
+            for event in result.events
+            if event.event_type is EventType.TOOL_EXECUTION_COMPLETED
+        )
+        gate = research_evidence_gate(len(sources), successful_tool_calls)
+        # SUBAGENT-EVIDENCE-GATE-01: zero-evidence research never completes.
+        status = (
+            SubagentStatus.COMPLETED
+            if completed and gate.passed
+            else SubagentStatus.FAILED
+        )
         summary = str(
             result.attempt_result.metadata.get(
                 "assistant_message",
@@ -92,9 +104,15 @@ class LocalResearchSubagentRunner:
         return ResearchSubagentResult(
             subagent_id=subagent_id,
             status=status,
-            summary=summary or result.attempt_result.summary,
+            summary=(
+                summary or result.attempt_result.summary
+                if status is SubagentStatus.COMPLETED
+                else (
+                    f"[gate:{gate.reason_code}] {summary or result.attempt_result.summary}"
+                )
+            ),
             sources=sources,
-            confidence=1.0 if completed and sources else (0.5 if completed else 0.0),
+            confidence=1.0 if status is SubagentStatus.COMPLETED else 0.0,
             model_calls_used=result.run_result.model_calls_used,
             tool_calls_used=result.run_result.tool_calls_used,
             provenance=PROVENANCE,
