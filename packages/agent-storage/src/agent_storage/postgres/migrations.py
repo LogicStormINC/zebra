@@ -22,6 +22,7 @@ from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIG
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.migration_types import Migration
 from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATION
+from agent_storage.postgres.orchestration_migration import ORCHESTRATION_MIGRATION
 from agent_storage.postgres.provider_continuation_migration import (
     PROVIDER_CONTINUATION_MIGRATION,
 )
@@ -490,4 +491,5 @@ MIGRATIONS = (
     HOST_CONNECTOR_MIGRATION,
     TASK_BINDING_MIGRATION,
     SUBAGENT_DELEGATION_MIGRATION,
+    ORCHESTRATION_MIGRATION,
 )
