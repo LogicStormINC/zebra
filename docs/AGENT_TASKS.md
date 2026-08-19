@@ -1148,6 +1148,38 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### ORCH-COMPLETION-GATE-01 - Five-Layer Completion Gate
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/orch-completion-gate-01` (from `cloud-agent@8d29b26c`)
+- Owned paths:
+  `packages/agent-core/src/agent_core/application/completion_gate.py` (new),
+  focused tests, this card.
+
+#### Acceptance
+
+- [x] Completion authority is the Control Plane: `evaluate_gate` runs the
+  five plan-11 layers deterministically over `GateInput` (durable facts,
+  no model free-text trust) and fails closed at the first failing layer,
+  emitting one `CompletionGateReceipt` per evaluated layer for audit.
+- [x] Layer coverage: model-claim precondition; domain predicates
+  (required artifacts present, evidence + successful tools ≥ 1);
+  toolchain (failed checks / missing required evidence); policy and
+  authority (binding digest drift, expired grant, namespace mismatch,
+  capability expansion, uncertain effects); reviewer verdict as INPUT only
+  (fail rejects, needs_human escalates, required-but-missing rejects);
+  human approval (missing → blocked, rejection → failed, approval → pass).
+- [x] Blocked-vs-failed is explicit (`GateEvaluation.blocked`) so the
+  scheduler can suspend instead of cancelling.
+- [x] Focused tests 18 passed covering every rejection branch; `make
+  check` green.
+
+#### Explicit Non-Goals
+
+- no toolchain runners themselves (the runtime supplies results)
+- no approval UI (the AG-UI card surfaces it)
+
 ### ORCH-SCHEDULER-01 - Deterministic DAG Scheduler
 
 - Status: `Done`
