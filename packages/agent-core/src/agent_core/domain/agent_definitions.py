@@ -4,8 +4,10 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import date
 from hashlib import sha256
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import (
     BaseModel,
@@ -20,6 +22,12 @@ _IDENTIFIER = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,63}$")
 _VERSION = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$")
 _DIGEST = re.compile(r"^[a-f0-9]{64}$")
 _REFERENCE = re.compile(r"^(system|skill|eval)://([a-zA-Z][a-zA-Z0-9_-]{0,63})$")
+_OPAQUE_CONTEXT_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+_TIMEZONE = re.compile(r"^[A-Za-z][A-Za-z0-9_.+-]*(?:/[A-Za-z0-9_.+-]+)*$")
+_TRUSTED_CONTEXT_KEYS = frozenset(
+    {"temporal", "source_page", "authorized_account_refs", "preferences"}
+)
+_AGENT_PERSONALITIES = frozenset({"pragmatic", "concise", "coach"})
 SUPPORTED_MODEL_CAPABILITIES = frozenset({"text", "tools", "image"})
 MAX_COMPLETION_REQUIREMENTS = 32
 
@@ -44,6 +52,92 @@ def _normalize_reference(value: str, *, field_name: str, scheme: str) -> str:
     normalized = value.strip()
     if not normalized.startswith(f"{scheme}://") or _REFERENCE.fullmatch(normalized) is None:
         raise ValueError(f"{field_name} must use a supported {scheme}:// reference")
+    return normalized
+
+
+def normalize_trusted_context(
+    value: object,
+    *,
+    allow_empty: bool = False,
+) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError("trusted context must be an object")
+    unknown = set(value) - _TRUSTED_CONTEXT_KEYS
+    if unknown:
+        raise ValueError("trusted context contains unsupported fields")
+    normalized: dict[str, Any] = {}
+    temporal = value.get("temporal")
+    if temporal is not None:
+        if not isinstance(temporal, Mapping) or set(temporal) != {
+            "timezone",
+            "current_date",
+        }:
+            raise ValueError("trusted temporal context is invalid")
+        timezone_name = _trusted_context_text(
+            temporal.get("timezone"), "timezone", _TIMEZONE
+        )
+        try:
+            ZoneInfo(timezone_name)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError("trusted timezone is invalid") from exc
+        current_date = _trusted_context_text(temporal.get("current_date"), "current_date")
+        try:
+            if date.fromisoformat(current_date).isoformat() != current_date:
+                raise ValueError("trusted current_date is invalid")
+        except ValueError as exc:
+            raise ValueError("trusted current_date is invalid") from exc
+        normalized["temporal"] = {
+            "timezone": timezone_name,
+            "current_date": current_date,
+        }
+    source_page = value.get("source_page")
+    if source_page is not None:
+        normalized["source_page"] = _normalize_identity(
+            source_page,
+            field_name="trusted source_page",
+            pattern=_IDENTIFIER,
+        )
+    account_refs = value.get("authorized_account_refs")
+    if account_refs is not None:
+        if not isinstance(account_refs, Sequence) or isinstance(account_refs, str):
+            raise ValueError("trusted authorized_account_refs must be a sequence")
+        if not 1 <= len(account_refs) <= 64:
+            raise ValueError("trusted authorized_account_refs count is invalid")
+        refs: list[str] = []
+        for account_ref in account_refs:
+            normalized_ref = _trusted_context_text(
+                account_ref, "authorized_account_refs", _OPAQUE_CONTEXT_REF
+            )
+            if normalized_ref not in refs:
+                refs.append(normalized_ref)
+        normalized["authorized_account_refs"] = refs
+    preferences = value.get("preferences")
+    if preferences is not None:
+        if not isinstance(preferences, Mapping) or set(preferences) != {"agent_personality"}:
+            raise ValueError("trusted preferences are invalid")
+        personality = _trusted_context_text(
+            preferences.get("agent_personality"), "agent_personality"
+        )
+        if personality not in _AGENT_PERSONALITIES:
+            raise ValueError("trusted agent_personality is invalid")
+        normalized["preferences"] = {"agent_personality": personality}
+    if not normalized and not allow_empty:
+        raise ValueError("trusted context must not be empty")
+    return normalized
+
+
+def _trusted_context_text(
+    value: object,
+    field_name: str,
+    pattern: re.Pattern[str] | None = None,
+) -> str:
+    if not isinstance(value, str) or any(not character.isprintable() for character in value):
+        raise ValueError(f"trusted {field_name} is invalid")
+    normalized = value.strip()
+    if not normalized or len(normalized) > 128:
+        raise ValueError(f"trusted {field_name} is invalid")
+    if pattern is not None and pattern.fullmatch(normalized) is None:
+        raise ValueError(f"trusted {field_name} is invalid")
     return normalized
 
 
@@ -122,6 +216,33 @@ class CompletionEvidenceContract(BaseModel):
         return value
 
 
+class TrustedContextClaim(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    version: str = "1"
+    context: dict[str, Any]
+    signature: str
+
+    @field_validator("version")
+    @classmethod
+    def validate_version(cls, value: str) -> str:
+        if value != "1":
+            raise ValueError("unsupported trusted context claim version")
+        return value
+
+    @field_validator("context", mode="before")
+    @classmethod
+    def validate_context(cls, value: object) -> dict[str, Any]:
+        return normalize_trusted_context(value)
+
+    @field_validator("signature")
+    @classmethod
+    def validate_signature(cls, value: str) -> str:
+        if not isinstance(value, str) or _DIGEST.fullmatch(value) is None:
+            raise ValueError("trusted context claim signature is invalid")
+        return value
+
+
 class AgentDefinition(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -134,6 +255,7 @@ class AgentDefinition(BaseModel):
     capability_policy: dict[str, Any] = Field(default_factory=dict)
     memory_policy: dict[str, Any] = Field(default_factory=dict)
     trust_policy: dict[str, Any] = Field(default_factory=dict)
+    trusted_context_claim: TrustedContextClaim | None = Field(default=None, exclude=True)
     eval_suite_ref: str | None = None
     resolved_context_digest: str | None = Field(
         default=None,
@@ -148,7 +270,7 @@ class AgentDefinition(BaseModel):
     def normalize_identity(cls, value: str, info: ValidationInfo) -> str:
         return _normalize_identity(
             value,
-            field_name=info.field_name,
+            field_name=info.field_name or "agent definition",
             pattern=_IDENTIFIER if info.field_name == "agent_id" else _VERSION,
         )
 
@@ -172,6 +294,19 @@ class AgentDefinition(BaseModel):
         if value is not None and _DIGEST.fullmatch(value.strip()) is None:
             raise ValueError("resolved_context_digest must be a lowercase SHA-256 digest")
         return value.strip() if value is not None else None
+
+    @field_validator("trust_policy", mode="before")
+    @classmethod
+    def validate_trust_policy(cls, value: object) -> dict[str, Any]:
+        if value is None:
+            return {}
+        if not isinstance(value, Mapping):
+            raise ValueError("agent definition trust policy must be an object")
+        if not value:
+            return {}
+        if set(value) != {"trusted_context"}:
+            raise ValueError("agent definition trust policy is invalid")
+        return {"trusted_context": normalize_trusted_context(value.get("trusted_context"))}
 
     @field_validator("skill_guidance", mode="before")
     @classmethod
@@ -241,8 +376,14 @@ def parse_agent_definition(value: object) -> AgentDefinition | None:
         raise ValueError("resolved_context_digest is server-generated")
     if value.get("skill_guidance") not in (None, (), []):
         raise ValueError("skill_guidance must be resolved from trusted skill references")
+    if value.get("trust_policy") not in (None, {}):
+        raise ValueError("trust_policy is server-resolved")
     return AgentDefinition.model_validate(
-        {key: item for key, item in value.items() if key != "skill_guidance"}
+        {
+            key: item
+            for key, item in value.items()
+            if key not in {"skill_guidance", "trust_policy"}
+        }
     )
 
 
@@ -273,19 +414,11 @@ class AgentDefinitionContext:
                 pattern=_VERSION,
             ),
         )
-        try:
-            encoded_context = json.dumps(
-                dict(self.trusted_context),
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            )
-            normalized_context = json.loads(encoded_context)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("trusted context must be a JSON object") from exc
-        if not isinstance(normalized_context, dict):
-            raise ValueError("trusted context must be a JSON object")
-        object.__setattr__(self, "trusted_context", normalized_context)
+        object.__setattr__(
+            self,
+            "trusted_context",
+            normalize_trusted_context(self.trusted_context, allow_empty=True),
+        )
 
     def render(self) -> str:
         blocks = [f"Agent definition context: {self.agent_id}@{self.version}"]

@@ -1,8 +1,11 @@
-import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from agent_core.domain.agent_definitions import AgentDefinition, AgentDefinitionContext
+from agent_core.domain.agent_definitions import (
+    AgentDefinition,
+    AgentDefinitionContext,
+    normalize_trusted_context,
+)
 
 from agent_tools.skills_catalog import (
     LocalSkillCatalog,
@@ -69,15 +72,7 @@ def _trusted_context(policy: object) -> dict[str, object]:
         return {}
     if not isinstance(value, Mapping):
         raise ValueError("agent definition trusted context must be an object")
-    try:
-        normalized = json.loads(
-            json.dumps(dict(value), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        )
-    except (TypeError, ValueError) as exc:
-        raise ValueError("agent definition trusted context must be JSON data") from exc
-    if not isinstance(normalized, dict):
-        raise ValueError("agent definition trusted context must be an object")
-    return normalized
+    return normalize_trusted_context(value)
 
 
 def _reference_name(reference: str, scheme: str) -> str:
