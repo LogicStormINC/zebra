@@ -197,7 +197,7 @@ class ZebraAgentApi(
                     parsed,
                     host_context=host_context,
                     definition_snapshot=definition_snapshot,
-                    **_admission_kwargs(self.settings, self.stores),
+                    **_admission_kwargs(self.settings, self.stores, idempotency_key),
                 ),
                 idempotency_key=idempotency_key,
             )
@@ -209,7 +209,7 @@ class ZebraAgentApi(
                 parsed,
                 host_context=host_context,
                 definition_snapshot=definition_snapshot,
-                **_admission_kwargs(self.settings, self.stores),
+                **_admission_kwargs(self.settings, self.stores, idempotency_key),
             )
         )
         if response.status_code == 201 and host_context is not None:

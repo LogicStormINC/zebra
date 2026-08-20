@@ -126,6 +126,9 @@ def build_worker_tool_gateway(
     trusted_local: bool,
     durable_delegation: bool = False,
     egress_registry: HostConnectorRegistryPort | None = None,
+    delegation_store: object | None = None,
+    parent_task_id: object | None = None,
+    parent_binding_digest: str | None = None,
 ) -> WorkerToolGateway:
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,

@@ -69,7 +69,6 @@ DEFAULT_TEST_PRESETS = {
 }
 DEFAULT_RESEARCH_CHILD_LIMIT = 3
 
-
 def run_local_harness(
     *,
     prompt: str,
@@ -157,7 +156,6 @@ def run_local_harness(
     finally:
         tool_gateway.close()
 
-
 class LocalToolGateway(ToolGatewayPort):
     def __init__(
         self,
@@ -167,6 +165,9 @@ class LocalToolGateway(ToolGatewayPort):
         research_child_limit: int = DEFAULT_RESEARCH_CHILD_LIMIT,
         delegation_mode: DelegationMode = DelegationMode.AUTO,
         durable_delegation: bool = False,
+        delegation_store: object | None = None,
+        parent_task_id: object | None = None,
+        parent_binding_digest: str | None = None,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
@@ -278,13 +279,12 @@ class LocalToolGateway(ToolGatewayPort):
             self._subagents = LocalResearchSubagentCoordinator(
                 LocalResearchSubagentRunner(model_gateway, runtime=runtime),
                 max_children=research_child_limit,
-                max_concurrency=research_child_limit,
-            )
+                max_concurrency=research_child_limit)
             research = ResearchSubagentTool(
-                self._subagents,
-                workspace_root,
+                self._subagents, workspace_root,
                 wait_for_result=not durable_delegation,
-            )
+                delegation_store=delegation_store, parent_task_id=parent_task_id,
+                parent_binding_digest=parent_binding_digest)
             registry.register(research.contract, research.handle)
         self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
         self._parallel_safe_tools = registry.parallel_safe_names()
@@ -452,7 +452,6 @@ class LocalToolGateway(ToolGatewayPort):
                 self._runtime.destroy(self._runtime_handle)
                 self._runtime_handle = None
 
-
 def _optional_web_search_endpoint(
     value: str | None,
     *,
@@ -468,7 +467,6 @@ def _optional_web_search_endpoint(
                 f"web_search_endpoint is not a valid web target for web_pipeline_v2: {exc}"
             ) from exc
         return None
-
 
 def _output_projector(
     store: ArtifactPayloadStorePort | None,

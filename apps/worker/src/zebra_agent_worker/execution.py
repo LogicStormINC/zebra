@@ -98,6 +98,7 @@ class SessionExecutionService:
         execution_authority_scope_provider: authority_types.AuthorityScopeProvider | None = None,
         task_binding_loader: Callable[[SessionId], object] | None = None,
         egress_registry: HostConnectorRegistryPort | None = None,
+        delegation_store: object | None = None,
     ) -> None:
         validate_authority_wiring(
             execution_authority_resolver,
@@ -180,6 +181,7 @@ class SessionExecutionService:
         self._execution_authority_scope_provider = execution_authority_scope_provider
         self._task_binding_loader = task_binding_loader
         self._egress_registry = egress_registry
+        self._delegation_store = delegation_store
 
     def execute_session(
         self,
@@ -332,8 +334,10 @@ class SessionExecutionService:
                 runtime=runtime, runtime_handle=runtime_handle,
                 local_artifacts=self._artifact_payload_store,
                 cloud_artifacts=cloud_artifacts, trusted_local=trusted_local,
-                egress_registry=self._egress_registry, durable_delegation=(
-                    self._settings.deployment == "cloud"),
+                egress_registry=self._egress_registry,
+                delegation_store=self._delegation_store,
+                parent_task_id=session_id,
+                durable_delegation=self._settings.deployment == "cloud",
             )
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,
