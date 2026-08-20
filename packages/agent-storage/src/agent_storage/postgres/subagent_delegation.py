@@ -7,6 +7,7 @@ Replays return the original child — never a second Task.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -255,12 +256,28 @@ def child_terminal_summary_in_transaction(
 
 
 _CANONICAL_FALLBACK_SUMMARY = "child reached a terminal status"
-_SUMMARY_BYTE_BUDGET = 2048
+# The command contract measures json.dumps(payload, ensure_ascii=True)
+# bytes (CJK escapes to 6 bytes/char), so the canonical form budgets the
+# summary's JSON-escaped size — not raw UTF-8. Worst case is 16 children
+# (ParentContinuation.MAX_CHILDREN): 16 × 3 KiB + entry/envelope
+# overhead stays well inside the 64 KiB command payload limit.
+_PER_SUMMARY_JSON_BUDGET = 3 * 1024
+
+
+def _json_bytes(value: str) -> int:
+    return len(json.dumps(value, sort_keys=True, separators=(",", ":")).encode())
 
 
 def _canonical_summary(text: str) -> str:
     stripped = text.strip()
-    encoded = stripped.encode("utf-8")
-    if len(encoded) <= _SUMMARY_BYTE_BUDGET:
-        return stripped
-    return encoded[:_SUMMARY_BYTE_BUDGET].decode("utf-8", errors="ignore")
+    candidate = stripped
+    while candidate:
+        if _json_bytes(candidate) <= _PER_SUMMARY_JSON_BUDGET:
+            break
+        excess = _json_bytes(candidate) - _PER_SUMMARY_JSON_BUDGET
+        cut = min(len(candidate), excess + 16)
+        candidate = candidate[: len(candidate) - cut].rstrip()
+    # Both ends stay whitespace-free so the recovery side's defensive
+    # strip can never rewrite the canonical value the verifier compares
+    # against (a truncation boundary may legally land after a space).
+    return candidate or _CANONICAL_FALLBACK_SUMMARY

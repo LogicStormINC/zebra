@@ -404,3 +404,78 @@ def test_concurrent_api_creates_return_identical_full_responses(
         ).fetchone()
     assert int(sessions[0]) == 1, "exactly one session may exist"
     assert int(commands[0]) == 1, "exactly one run command may exist"
+
+
+def test_run_committed_receipt_unsynced_replay_heals(
+    postgres_dsn: str,
+    cloud_composition: CloudCompositionSettings,
+    namespace: str,
+    tmp_path: Path,
+) -> None:
+    """Crash AFTER the run event committed but BEFORE the idempotency
+    receipt body was synced: the stored body stays ready/no-command and
+    the stream head has advanced past the run's expected_revision. The
+    replay must rebuild the accepted command from the persisted event
+    (not re-submit into a conflict) and re-sync the stored body."""
+
+    from psycopg import connect
+
+    cloud = CloudCompositionSettings(
+        dsn=postgres_dsn,
+        deployment_namespace=namespace,
+        memory_cursor_signing_key=cloud_composition.memory_cursor_signing_key,
+        artifact_objects=cloud_composition.artifact_objects,
+        history_scope=cloud_composition.history_scope,
+        continuation_scope=cloud_composition.continuation_scope,
+    )
+    settings = _settings("http://127.0.0.1:9", postgres_dsn)
+    workspace_root = tmp_path / "workspace-unsynced"
+    workspace_root.mkdir()
+    app = create_app(
+        database_path=tmp_path / "unused.sqlite",
+        settings=settings,
+        cloud_composition=cloud,
+    )
+    payload = {
+        "title": "unsynced-e2e",
+        "prompt": PARENT_PROMPT,
+        "workspace": str(workspace_root),
+        "execute": True,
+    }
+    first = app.create_session(payload, idempotency_key="e2e-unsynced-1")
+    assert first.status_code == 201 and first.body.get("command") is not None
+    # Simulate the crash window: revert the stored receipt to the
+    # pre-command admission body.
+    unsynced_body = {
+        key: value for key, value in first.body.items() if key != "command"
+    }
+    unsynced_body["status"] = "ready"
+    with connect(postgres_dsn) as connection:
+        connection.execute(
+            """
+            UPDATE control_plane_idempotency_records
+            SET response_body = %s
+            WHERE deployment_namespace = %s AND action = 'session.create'
+                AND idempotency_key = 'e2e-unsynced-1'
+            """,
+            (json.dumps(unsynced_body), namespace),
+        )
+
+    healed = app.create_session(payload, idempotency_key="e2e-unsynced-1")
+    assert healed.status_code == 201, healed.body
+    assert healed.body.get("command") is not None, (
+        "the replay must rebuild the command from the persisted run event"
+    )
+    assert healed.body == first.body, "the healed body must equal the original"
+
+    with connect(postgres_dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT response_body FROM control_plane_idempotency_records
+            WHERE deployment_namespace = %s AND action = 'session.create'
+                AND idempotency_key = 'e2e-unsynced-1'
+            """,
+            (namespace,),
+        ).fetchone()
+    stored = row[0]
+    assert stored.get("command") is not None, "the stored body must be re-synced"
