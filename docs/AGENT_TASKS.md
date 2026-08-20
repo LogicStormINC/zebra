@@ -1148,6 +1148,34 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### COMPOSE-CLOSEOUT-F1 - Binding-Aware Attempt Authority (Default Composition)
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/compose-closeout-1` (from `cloud-agent@5aca1083`)
+- Owned paths: `apps/worker/src/zebra_agent_worker/{execution,loop,cloud_composition,bound_execution_authority}.py`,
+  focused tests, this card.
+
+#### Acceptance
+
+- [x] `SessionExecutionService` accepts an optional `task_binding_loader`;
+  before Attempt authority persists, `select_attempt_authority` loads the
+  v25 TaskBinding for the session and — when present — swaps in
+  `BoundHostExecutionAuthorityResolver` with the binding's issuer/namespace
+  scope; no binding or loader failure falls back to the deployment
+  resolver unchanged.
+- [x] The cloud Worker loop wires the loader from the bundle DSN
+  (`CloudWorkerComposition.dsn`, newly carried) via `load_task_binding`;
+  local profile is untouched (loader stays None).
+- [x] Full regression 2597 passed; `make check` green (execution.py back
+  under the 500-line gate via helper extraction).
+
+#### Explicit Non-Goals
+
+- F2 pinned egress in the tool gateway (next slice)
+- F3 admission default / F4 waiting loop / F5 real E2E / F6-7 cutover chain
+  (recorded in task_plan Phase F)
+
 ### ORCH-MAILBOX-CON-01 / ORCH-MAILBOX-PG-01 / ORCH-TEAM-01 - Agent Team Closeout
 
 - Status: `Done` (all three)

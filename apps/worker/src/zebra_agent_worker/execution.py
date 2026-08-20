@@ -30,6 +30,7 @@ import zebra_agent_worker.provider_continuation_execution as provider_runtime
 import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
 import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
+from zebra_agent_worker.bound_execution_authority import select_attempt_authority
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.continuation_lifecycle import (
@@ -92,6 +93,7 @@ class SessionExecutionService:
         execution_authority_resolver: authority_types.AuthorityResolver | None = None,
         execution_authority_scope: authority_types.AuthorityScope | None = None,
         execution_authority_scope_provider: authority_types.AuthorityScopeProvider | None = None,
+        task_binding_loader: Callable[[SessionId], object] | None = None,
     ) -> None:
         validate_authority_wiring(
             execution_authority_resolver,
@@ -172,6 +174,7 @@ class SessionExecutionService:
         self._execution_authority_resolver = execution_authority_resolver
         self._execution_authority_scope = execution_authority_scope
         self._execution_authority_scope_provider = execution_authority_scope_provider
+        self._task_binding_loader = task_binding_loader
 
     def execute_session(
         self,
@@ -268,20 +271,22 @@ class SessionExecutionService:
         )
         if preflight_failure is not None:
             return preflight_failure
-        try:
-            model_gateway = build_model_gateway(model_provider_settings(self._settings))
-        except ValueError:
-            raise
+        model_gateway = build_model_gateway(model_provider_settings(self._settings))
         runtime_handle = None
         effect_recorder: list[DurableHarnessEventRecorder] = []
         try:
-            claimed, session_events = AttemptAuthorityEvidence(
-                self._execution_authority_resolver,
-                self._execution_authority_scope,
-                self._execution_authority_scope_provider,
+            evidence = AttemptAuthorityEvidence(
+                *select_attempt_authority(
+                    self._execution_authority_resolver,
+                    self._execution_authority_scope,
+                    self._execution_authority_scope_provider,
+                    self._task_binding_loader,
+                    session_id,
+                ),
                 self._recovery_service,
                 self._event_store,
-            ).persist(
+            )
+            claimed, session_events = evidence.persist(
                 authority_recorder,
                 claimed,
                 session_events,

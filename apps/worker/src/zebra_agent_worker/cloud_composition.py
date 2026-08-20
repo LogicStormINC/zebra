@@ -38,6 +38,7 @@ class CloudWorkerComposition:
     workspace_resolver_factory: Callable[[], WorkspaceRuntimeResolver | None] | None = None
     authority_resolver: ExecutionAuthorityResolverPort | None = None
     authority_scope_provider: Callable[[Session], OpaqueAuthorityScope] | None = None
+    dsn: str | None = None
 
 
 def compose_cloud_worker(
@@ -178,4 +179,5 @@ def compose_cloud_worker(
         workspace_resolver_factory=workspace_resolver_factory,
         authority_resolver=authority_resolver,
         authority_scope_provider=authority_scope_provider,
+        dsn=cloud.dsn,
     )
