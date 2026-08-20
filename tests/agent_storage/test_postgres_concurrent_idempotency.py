@@ -9,11 +9,12 @@ Two races the serial tests cannot see:
 
 from __future__ import annotations
 
+import json
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from agent_core.application.session_bootstrap import (
@@ -508,3 +509,128 @@ def test_cancelled_child_produces_verifiable_wakeup(
         "the delivered summary must equal the durable canonical form the "
         "Worker verifier re-reads"
     )
+
+
+def test_canonical_summary_never_has_edge_whitespace_and_fits_budget() -> None:
+    """Truncation boundaries may land after a space — the canonical form
+    keeps both ends whitespace-free so the recovery side's defensive
+    strip can never rewrite it, and budgets the JSON-escaped bytes the
+    command contract actually measures (CJK escapes to 6 bytes/char)."""
+
+    from agent_storage.postgres.subagent_delegation import (
+        _canonical_summary,
+        _json_bytes,
+    )
+
+    cjk_heavy = ("摘要内容测试 " * 600) + "尾巴" * 900
+    canonical = _canonical_summary(cjk_heavy)
+    assert canonical == canonical.strip(), "no edge whitespace may survive"
+    assert _json_bytes(canonical) <= 3 * 1024
+
+    spacy = "ab " * 1400
+    spacy_canonical = _canonical_summary(spacy)
+    assert spacy_canonical == spacy_canonical.strip()
+    assert _json_bytes(spacy_canonical) <= 3 * 1024
+    # The un-truncated spacy text fits only after cutting; verify the cut
+    # really happened so the boundary case is exercised.
+    assert len(spacy_canonical) < len(spacy)
+
+
+def test_sixteen_children_wakeup_fits_command_contract(
+    postgres_dsn: str, namespace: str
+) -> None:
+    """16 children with long Chinese answers: the wakeup payload must
+    pass the SessionCommand contract (≤64 KiB JSON-escaped) and every
+    delivered summary must equal the canonical durable form."""
+
+    from agent_core.contracts import SessionCommand
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.identifiers import SessionId
+    from agent_storage.postgres.database import PostgresDatabase
+    from agent_storage.postgres.events import append_event_in_transaction
+    from agent_storage.postgres.subagent_delegation import (
+        child_terminal_summary_in_transaction,
+    )
+    from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
+
+    parent, children = _wakeup_setup(postgres_dsn, namespace, children=16)
+    long_answer = "部署回滚手册要点" * 500  # ~4000 CJK chars → ~24 KiB JSON
+    database = PostgresDatabase(postgres_dsn, deployment_namespace=namespace)
+    for child in children:
+        with database.connect() as connection:
+            current = connection.execute(
+                """
+                SELECT COALESCE(MAX(sequence), -1) AS current_sequence
+                FROM session_events
+                WHERE deployment_namespace = %s AND session_id = %s
+                """,
+                (namespace, str(child)),
+            ).fetchone()
+            append_event_in_transaction(
+                connection,
+                namespace,
+                SessionEvent.create(
+                    session_id=child,
+                    sequence=int(current["current_sequence"]) + 1,
+                    event_type=EventType.SESSION_COMPLETED,
+                    actor=EventActor.HARNESS,
+                    payload={
+                        "attempt_number": 1,
+                        "summary": "model completed without tool calls",
+                        "metadata": {"assistant_message": long_answer},
+                    },
+                    created_at=datetime.now(UTC),
+                ),
+            )
+        with connect(postgres_dsn) as connection:
+            connection.execute(
+                """
+                UPDATE session_projections
+                SET status = 'completed', updated_at = NOW()
+                WHERE deployment_namespace = %s AND session_id = %s
+                """,
+                (namespace, str(child)),
+            )
+
+    wakeup = ChildCompletionWakeupService(
+        postgres_dsn, deployment_namespace=namespace
+    )
+    # Terminalize the children the way the poll loop would, one by one:
+    # every intermediate step keeps waiting; the LAST settles the epoch.
+    for child in children[:-1]:
+        waiting = wakeup.process_child_terminal(
+            child, status=ChildTerminalStatus.COMPLETED
+        )
+        assert waiting is not None
+        assert waiting["decision"] == "keep_waiting"
+    result = wakeup.process_child_terminal(
+        children[-1], status=ChildTerminalStatus.COMPLETED
+    )
+    assert result is not None
+    assert result["decision"] == "resume"
+
+    events = _harness_resume_events(postgres_dsn, namespace, parent)
+    assert len(events) == 1
+    payload = events[0][0]
+    delivered = payload["payload"]["child_results"]
+    assert len(delivered) == 16
+    # Exactly the contract the SessionCommandConsumer reconstructs.
+    command = SessionCommand(
+        command_id=UUID(payload["command_id"]),
+        session_id=SessionId(UUID(payload["session_id"])),
+        kind=payload["kind"],
+        expected_revision=payload["expected_revision"],
+        idempotency_key=payload["idempotency_key"],
+        payload=payload["payload"],
+    )
+    assert command.kind.value == "resume"
+    encoded = json.dumps(command.payload, sort_keys=True, separators=(",", ":"))
+    assert len(encoded.encode()) <= 64 * 1024
+    with database.connect() as connection:
+        for item in delivered:
+            trusted = child_terminal_summary_in_transaction(
+                connection, namespace, TaskId(UUID(item["child_task_id"]))
+            )
+            assert item["summary"] == trusted, (
+                "delivered summaries must equal the canonical durable form"
+            )

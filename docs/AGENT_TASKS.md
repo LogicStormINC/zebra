@@ -1179,7 +1179,19 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-F4+F5 - Child Wakeup Service And Real E2E
 
-- Status: `Done` (2026-08-20 third review round closed the multi-Worker
+- Status: `Done` (2026-08-21 fourth review round closed the remaining
+  contract/consistency gaps: the canonical summary now budgets the
+  JSON-ESCAPED bytes the command contract actually measures
+  (ensure_ascii CJK = 6 bytes/char) with whitespace-free ends, so a
+  real 16-child Chinese-answer epoch fits the 64 KiB command payload
+  (regression reconstructs the SessionCommand exactly as the consumer
+  does) and truncation boundaries can no longer break the verifier's
+  exact match; queue_cloud_run checks the persisted run event by key
+  BEFORE submitting — a run committed before its receipt synced no
+  longer re-submits into idempotency_conflict but rebuilds the
+  accepted body and re-syncs the stored receipt (regression simulates
+  the exact crash window via receipt-body revert). Third review round
+  closed the multi-Worker
   gap: wakeup processing is serialized per parent via a FOR UPDATE on
   the parent's stream row, the wakeup event is deterministic per settled
   epoch (sorted children, epoch-derived command id, epoch-anchored

@@ -34,33 +34,43 @@ class ApiCommandMixin:
         if not events:
             return response
         command_key = f"{idempotency_key}:run" if idempotency_key else f"run:{session_text}"
-        command = submit_session_command(
-            self.stores,
-            session_text,
-            {"kind": "run", "expected_revision": events[-1].sequence},
-            idempotency_key=command_key,
+        # A run event committed by a concurrent create or by a request
+        # that crashed before the receipt body synced must NOT be
+        # re-submitted: the stream head has advanced past its
+        # expected_revision, so a fresh submission returns
+        # idempotency_conflict instead of duplicate. Rebuild the accepted
+        # body straight from the persisted event.
+        existing = next(
+            (event for event in events if event.idempotency_key == command_key),
+            None,
         )
-        if command.status_code != 202:
-            if command.body.get("status") == "duplicate":
-                # A concurrent create (or a crash after the run event
-                # committed) already queued this exact command — every
-                # caller must see the SAME create contract, so the
-                # accepted body is rebuilt from the persisted event.
-                existing = next(
-                    (
-                        event
-                        for event in self.stores.events.list_for_session(
-                            SessionId(session_id)
-                        )
-                        if event.idempotency_key == command_key
-                    ),
-                    None,
-                )
-                if existing is None:
+        if existing is not None:
+            command = _accepted_from_event(existing, session_text)
+        else:
+            command = submit_session_command(
+                self.stores,
+                session_text,
+                {"kind": "run", "expected_revision": events[-1].sequence},
+                idempotency_key=command_key,
+            )
+            if command.status_code != 202:
+                if command.body.get("status") == "duplicate":
+                    # Narrow race: the event landed between our list and
+                    # the submission — rebuild from the now-persisted row.
+                    events = self.stores.events.list_for_session(SessionId(session_id))
+                    existing = next(
+                        (
+                            event
+                            for event in events
+                            if event.idempotency_key == command_key
+                        ),
+                        None,
+                    )
+                    if existing is None:
+                        return command
+                    command = _accepted_from_event(existing, session_text)
+                else:
                     return command
-                command = _accepted_from_event(existing, session_text)
-            else:
-                return command
         body = dict(response.body)
         body.update({"executed": False, "status": "queued", "command": command.body})
         return ApiResponse(status_code=201, body=body)

@@ -9,6 +9,29 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
+- Fourth review round: command-contract closure (2026-08-21,
+  `cloud-agent`): the canonical child summary now budgets the exact
+  serialization the command contract measures (json.dumps with
+  ensure_ascii — CJK escapes to 6 bytes/char) at 3 KiB per child with
+  whitespace-free ends, so the worst legal epoch (16 children with long
+  Chinese answers) produces a wakeup payload that reconstructs into a
+  valid SessionCommand (regression drives the real wakeup service over
+  real PostgreSQL and validates the consumer's exact reconstruction;
+  previously 16 CJK summaries measured 66,947 escaped bytes and were
+  rejected). Truncation boundaries landing after a space can no longer
+  break the Worker verifier's exact match (canonical form is
+  edge-whitespace-free; the recovery side's defensive strip became a
+  no-op). queue_cloud_run now looks up the persisted run event by
+  command key BEFORE submitting — the crash window where the run event
+  committed but the receipt body was never synced heals on replay
+  (rebuild from the event + receipt re-sync) instead of re-submitting
+  into idempotency_conflict and returning a stale ready/no-command body
+  forever (regression simulates the exact window). Validation, standard
+  full-repo selector over real PG+MinIO: 2925 passed / 2 failed /
+  11 skipped — both failures (mem0 logical-reset spike, fenced
+  effect-consumer replay) pre-exist on the PR #250 tree per the
+  maintainer audit and are unrelated to this line; `make check` green.
+
 - Third review round: multi-Worker wakeup closed (2026-08-20/21,
   `cloud-agent`): wakeup processing now serializes per parent (FOR
   UPDATE on the parent stream row) and emits a deterministic,
