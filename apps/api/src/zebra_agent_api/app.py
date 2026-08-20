@@ -62,7 +62,7 @@ from zebra_agent_api.idempotency import replay_idempotent_response, save_idempot
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
-from zebra_agent_api.session_binding import freeze_binding_for_response
+from zebra_agent_api.session_binding import _admission_kwargs, freeze_binding_for_response
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_identity_read import _parse_session_id as parse_session_id
 from zebra_agent_api.session_payloads import (
@@ -197,6 +197,7 @@ class ZebraAgentApi(
                     parsed,
                     host_context=host_context,
                     definition_snapshot=definition_snapshot,
+                    **_admission_kwargs(self.settings, self.stores),
                 ),
                 idempotency_key=idempotency_key,
             )
@@ -208,12 +209,12 @@ class ZebraAgentApi(
                 parsed,
                 host_context=host_context,
                 definition_snapshot=definition_snapshot,
+                **_admission_kwargs(self.settings, self.stores),
             )
         )
         if response.status_code == 201 and host_context is not None:
-            freeze_binding_for_response(
-                response, host_context, definition_snapshot,
-                deployment=self.settings.deployment,
+            freeze_binding_for_response(response, host_context,
+                definition_snapshot, deployment=self.settings.deployment,
                 storage_authority=self.settings.storage_authority,
                 database_url=self.settings.database_url, stores=self.stores)
         if idempotency_key is None or response.status_code != 201:
@@ -479,7 +480,6 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
-
 
 def _model_provider_settings(settings: ZebraAgentSettings) -> ModelProviderSettings:
     model = settings.model

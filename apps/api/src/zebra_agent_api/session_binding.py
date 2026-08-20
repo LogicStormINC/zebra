@@ -123,3 +123,51 @@ def freeze_binding_for_response(
         deployment_namespace=str(getattr(stores, "deployment_namespace", "zebra")),
         dsn=database_url,
     )
+
+def _build_binding_snapshot(
+    session_id: object,
+    *,
+    host_context: HostContextEnvelope,
+    definition_snapshot_digest: str | None,
+) -> TaskBindingSnapshot:
+    """Build the binding model without persisting (used by atomic admission)."""
+
+    ceiling = AgentCapabilityCeilingSnapshot(
+        definition_snapshot_digest=definition_snapshot_digest or NO_CONNECTOR_DIGEST,
+        capability_profile_ref="profile/default@1",
+        capabilities=DEFAULT_CAPABILITIES,
+        resolved_at=datetime.now(UTC),
+    )
+    host = HostCapabilitySnapshot(
+        host_app_id=host_context.host_app_id,
+        authority_issuer=host_context.origin,
+        namespace_id=host_context.namespace_id,
+        grant_digest=envelope_grant_digest(host_context),
+        grant_expires_at=host_context.expires_at,
+        connector_id=f"{host_context.host_app_id}-unbound",
+        connector_profile_revision=1,
+        connector_profile_digest=NO_CONNECTOR_DIGEST,
+        manifest_digest=NO_CONNECTOR_DIGEST,
+        capabilities=DEFAULT_CAPABILITIES,
+        resource_binding_digest=NO_CONNECTOR_DIGEST,
+        bound_at=datetime.now(UTC),
+    )
+    return TaskBindingSnapshot(
+        task_id=str(session_id),
+        agent_capability_ceiling=ceiling,
+        host_capability=host,
+        zebra_policy_digest=NO_CONNECTOR_DIGEST,
+        effective_capabilities=DEFAULT_CAPABILITIES,
+        binding_revision=1,
+        bound_at=datetime.now(UTC),
+    )
+
+def _admission_kwargs(settings: object, stores: object) -> dict[str, str]:
+    """Cloud admission uses the atomic v25 transaction when PG is active."""
+    storage = getattr(settings, "storage_authority", "sqlite")
+    if storage != "postgresql":
+        return {}
+    return {
+        "admission_dsn": getattr(settings, "database_url", ""),
+        "admission_namespace": str(getattr(stores, "deployment_namespace", "zebra")),
+    }

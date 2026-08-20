@@ -1150,7 +1150,8 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-F6 - Worker-Loop Wakeup Integration
 
-- Status: `Done`
+- Status: `In Progress` (2026-08-19 maintainer audit: _process_child_wakeups
+  checks None then returns without querying or processing anything)
 - Owner: `lukeding`
 - Branch: `codex/compose-closeout-4` (from `cloud-agent@8c49ba0f`)
 - Owned paths: `apps/worker/src/zebra_agent_worker/loop.py`, this card.
@@ -1170,7 +1171,9 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-F4+F5 - Child Wakeup Service And Real E2E
 
-- Status: `Done`
+- Status: `In Progress` (2028-08-19 maintainer audit: _load_continuation
+  returns None; wakeup payload is not persisted to any command queue;
+  E2E is component-level, not a running API/Worker chain)
 - Owner: `lukeding`
 - Branch: `codex/compose-closeout-3` (from `cloud-agent@38004416`)
 - Owned paths:
@@ -1202,7 +1205,9 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-F2+F3 - Pinned Egress And Admission Binding Freeze
 
-- Status: `Done`
+- Status: `In Progress` (2026-08-19 maintainer audit: F2 egress_registry
+  is not instantiated in the Worker builder; F3 uses sequential writes +
+  silent exception fallback, not the v25 atomic transaction)
 - Owner: `lukeding`
 - Branch: `codex/compose-closeout-2` (from `cloud-agent@684691fb`)
 - Owned paths:
