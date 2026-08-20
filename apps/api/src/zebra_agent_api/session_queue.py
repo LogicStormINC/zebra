@@ -69,14 +69,11 @@ def create_queued_session(
 
         idempotency_record = None
         if idempotency_key:
-            import json as _json
+            import json
             from hashlib import sha256
 
             request_hash = sha256(
-                _json.dumps(
-                    {"title": parsed["title"], "prompt": parsed["prompt"]},
-                    sort_keys=True,
-                ).encode()
+                json.dumps(parsed, sort_keys=True, separators=(",", ":")).encode()
             ).hexdigest()
             idempotency_record = IdempotencyRecord(
                 action="session.create",

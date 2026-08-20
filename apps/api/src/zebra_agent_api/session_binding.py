@@ -113,7 +113,7 @@ def freeze_binding_for_response(
     Cloud + PostgreSQL only; refusal keeps today's behavior silently.
     """
 
-    
+
 
     assert isinstance(response, ApiResponse)
     if deployment != "cloud" or storage_authority != "postgresql":

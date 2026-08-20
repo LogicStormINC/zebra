@@ -229,6 +229,7 @@ class ResearchSubagentTool:
     ) -> ToolResult:
         """Materialize a durable child Task via the PostgreSQL delegation store."""
         import json as _json
+        from uuid import UUID as _UUID
 
         from agent_core.application.session_bootstrap import (
             SessionBootstrapCommand as _SBC,
@@ -243,26 +244,25 @@ class ResearchSubagentTool:
         from agent_core.domain.subagent_delegation import (
             SubagentDelegationRequest as _SDR,
         )
+        from agent_core.domain.subagent_delegation import derive_child_binding
         from agent_core.domain.subagents import SubagentRole as _Role
+        from agent_core.domain.tool_profiles import ToolProfile
         from agent_core.ports.task_admission_transaction import (
             TaskAdmissionRequest as _TAR,
         )
 
+        # Child runs READ_ONLY with the general (read-heavy) tool surface —
+        # never inherits the parent's write permissions (audit issue #1).
         bootstrap = _SBS().build(
             _SBC(
                 title=f"Research: {objective[:120]}",
                 user_input=objective,
                 workspace_root=Path(str(self._workspace_root)),
+                policy_profile="read_only",
+                tool_profile=ToolProfile.GENERAL,
+                network_profile="none",
             )
         )
-        child_admission = _TAR(
-            events=tuple(bootstrap.events),
-            session=bootstrap.session,
-            workspace=_rw(list(bootstrap.events)),
-        )
-        # SessionId IS a UUID (NewType); use it directly, never invent one
-        from uuid import UUID as _UUID
-
         parent_uuid = (
             self._parent_task_id
             if isinstance(self._parent_task_id, _UUID)
@@ -288,6 +288,24 @@ class ResearchSubagentTool:
             child_definition_snapshot_digest="0" * 64,
             child_capability_profile_ref="profile/researcher@1",
             expected_parent_binding_digest=self._parent_binding_digest or "0" * 64,
+        )
+        from agent_runtime.research_binding import _make_parent_binding_for_derivation
+
+        # Derive the narrowed child binding from the delegation request
+        child_task_id = bootstrap.session.session_id
+        child_binding = derive_child_binding(
+            # Parent binding from the expected digest (frozen at admission)
+            _make_parent_binding_for_derivation(parent_uuid, self._parent_binding_digest),
+            request,
+            child_task_id=TaskId(child_task_id),
+            child_definition_ceiling=_caps(["evidence.read"]),
+            zebra_child_policy_capabilities=_caps(["evidence.read"]),
+        )
+        child_admission = _TAR(
+            events=tuple(bootstrap.events),
+            session=bootstrap.session,
+            workspace=_rw(list(bootstrap.events)),
+            binding=child_binding,
         )
         from agent_storage.postgres.subagent_delegation import (
             PostgresSubagentDelegationStore,
