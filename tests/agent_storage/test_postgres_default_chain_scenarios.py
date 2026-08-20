@@ -479,3 +479,92 @@ def test_run_committed_receipt_unsynced_replay_heals(
         ).fetchone()
     stored = row[0]
     assert stored.get("command") is not None, "the stored body must be re-synced"
+
+
+def test_run_key_held_by_cancel_conflicts_instead_of_rebuild(
+    postgres_dsn: str,
+    cloud_composition: CloudCompositionSettings,
+    namespace: str,
+    tmp_path: Path,
+) -> None:
+    """The run pre-check must only rebuild a FULLY validated persisted
+    run command. A cancel wearing the same key is a different business
+    meaning: the create replay must return idempotency_conflict, never
+    a 201 whose command silently became the cancel."""
+
+    import zebra_agent_api.api_command_mixin as command_mixin
+    from psycopg import connect
+
+    cloud = CloudCompositionSettings(
+        dsn=postgres_dsn,
+        deployment_namespace=namespace,
+        memory_cursor_signing_key=cloud_composition.memory_cursor_signing_key,
+        artifact_objects=cloud_composition.artifact_objects,
+        history_scope=cloud_composition.history_scope,
+        continuation_scope=cloud_composition.continuation_scope,
+    )
+    settings = _settings("http://127.0.0.1:9", postgres_dsn)
+    workspace_root = tmp_path / "workspace-keycancel"
+    workspace_root.mkdir()
+    app = create_app(
+        database_path=tmp_path / "unused.sqlite",
+        settings=settings,
+        cloud_composition=cloud,
+    )
+    payload = {
+        "title": "keycancel-e2e",
+        "prompt": PARENT_PROMPT,
+        "workspace": str(workspace_root),
+        "execute": True,
+    }
+    # Crash after admission, before the run command submission.
+    original_submit = command_mixin.submit_session_command
+
+    def crashing_submit(*args, **kwargs):
+        raise RuntimeError("simulated crash after admission")
+
+    command_mixin.submit_session_command = crashing_submit
+    try:
+        with pytest.raises(RuntimeError, match="simulated crash"):
+            app.create_session(payload, idempotency_key="e2e-keycancel-1")
+    finally:
+        command_mixin.submit_session_command = original_submit
+    session_id = None
+    with connect(postgres_dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT session_id FROM session_streams
+            WHERE deployment_namespace = %s
+            """,
+            (namespace,),
+        ).fetchone()
+    session_id = str(row[0])
+
+    # A legitimate cancel submitted under the SAME command key.
+    stream_events = app.stores.events.list_for_session(SessionId(UUID(session_id)))
+    cancel = app.submit_command(
+        session_id,
+        {"kind": "cancel", "expected_revision": stream_events[-1].sequence},
+        idempotency_key="e2e-keycancel-1:run",
+    )
+    assert cancel.status_code == 202, cancel.body
+
+    replayed = app.create_session(payload, idempotency_key="e2e-keycancel-1")
+    assert replayed.status_code == 409, replayed.body
+    assert replayed.body["status"] == "idempotency_conflict"
+    assert replayed.body.get("command") is None
+
+    with connect(postgres_dsn) as connection:
+        commands = connection.execute(
+            """
+            SELECT payload ->> 'kind' AS kind, count(*) FROM session_events
+            WHERE deployment_namespace = %s
+                AND event_type = 'session_command_accepted'
+            GROUP BY 1
+            """,
+            (namespace,),
+        ).fetchall()
+    kinds = {row[0]: int(row[1]) for row in commands}
+    assert kinds == {"cancel": 1}, (
+        f"exactly the one cancel may exist, no run may be fabricated: {kinds}"
+    )

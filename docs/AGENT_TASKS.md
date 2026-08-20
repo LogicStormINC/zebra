@@ -1179,7 +1179,23 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-F4+F5 - Child Wakeup Service And Real E2E
 
-- Status: `Done` (2026-08-21 fourth review round closed the remaining
+- Status: `Done` (2026-08-21 fifth review round closed the two P1s the
+  maintainer found in PR #251: (1) the canonical-summary truncation now
+  binary-searches the LONGEST original prefix whose JSON-escaped form
+  fits the 3 KiB per-child budget — CJK answers (~6 escaped bytes/char)
+  keep ~500 real characters instead of collapsing to the fallback the
+  byte-count-as-character-count cut produced; regressions assert
+  non-fallback, original-prefix, near-budget results and that 16 CJK
+  children still reconstruct a valid SessionCommand; (2) the run-event
+  pre-check fully validates the persisted command before rebuilding —
+  event type, kind=run, session, key, empty payload and a
+  self-consistent fingerprint — and a key held by any other meaning
+  (e.g. a cancel wearing `<create-key>:run`) surfaces
+  idempotency_conflict through the create replay instead of silently
+  rebuilding the wrong command; the replay reconciler propagates that
+  conflict instead of falling back to the stale admission body
+  (regression reproduces the exact same-key-cancel scenario).
+  Fourth review round closed the remaining
   contract/consistency gaps: the canonical summary now budgets the
   JSON-ESCAPED bytes the command contract actually measures
   (ensure_ascii CJK = 6 bytes/char) with whitespace-free ends, so a

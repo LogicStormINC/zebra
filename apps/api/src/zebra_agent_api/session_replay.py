@@ -48,6 +48,10 @@ def reconcile_replayed_run(
     reconciled = app.queue_cloud_run(replayed, idempotency_key=idempotency_key)
     if reconciled is replayed or not isinstance(reconciled, ApiResponse):
         return replayed
+    if reconciled.status_code == 409:
+        # The command key is held by a different command meaning — the
+        # conflict must surface, never a stale admission body.
+        return reconciled
     if reconciled.status_code != 201:
         return replayed
     if getattr(settings, "storage_authority", "") == "postgresql":

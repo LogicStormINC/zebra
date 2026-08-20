@@ -270,14 +270,24 @@ def _json_bytes(value: str) -> int:
 
 def _canonical_summary(text: str) -> str:
     stripped = text.strip()
-    candidate = stripped
-    while candidate:
-        if _json_bytes(candidate) <= _PER_SUMMARY_JSON_BUDGET:
-            break
-        excess = _json_bytes(candidate) - _PER_SUMMARY_JSON_BUDGET
-        cut = min(len(candidate), excess + 16)
-        candidate = candidate[: len(candidate) - cut].rstrip()
+    if not stripped:
+        return _CANONICAL_FALLBACK_SUMMARY
+    if _json_bytes(stripped) <= _PER_SUMMARY_JSON_BUDGET:
+        return stripped
+    # Longest original PREFIX whose JSON-escaped form fits the budget.
+    # Prefix JSON size is monotonic in the character count, so a binary
+    # search finds it in O(log n) measurements — never shrinking the
+    # text to the fallback the way a byte-count-as-character-count cut
+    # did for CJK (6 escaped bytes per char).
+    low, high = 1, len(stripped)
+    while low < high:
+        middle = (low + high + 1) // 2
+        if _json_bytes(stripped[:middle]) <= _PER_SUMMARY_JSON_BUDGET:
+            low = middle
+        else:
+            high = middle - 1
     # Both ends stay whitespace-free so the recovery side's defensive
     # strip can never rewrite the canonical value the verifier compares
     # against (a truncation boundary may legally land after a space).
+    candidate = stripped[:low].rstrip()
     return candidate or _CANONICAL_FALLBACK_SUMMARY
