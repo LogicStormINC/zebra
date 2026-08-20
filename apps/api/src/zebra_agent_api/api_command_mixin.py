@@ -1,17 +1,27 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Protocol
 from uuid import UUID
 
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.command_submission import submit_session_command
-from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.responses import ApiResponse, conflict
 
 
 class _CommandApp(Protocol):
     stores: ControlPlaneStores
+
+
+class _RunEventMismatch:
+    """Sentinel: the key is taken by an event that is not OUR run command."""
+
+
+_RUN_EVENT_MISMATCH = _RunEventMismatch()
 
 
 class ApiCommandMixin:
@@ -38,12 +48,12 @@ class ApiCommandMixin:
         # that crashed before the receipt body synced must NOT be
         # re-submitted: the stream head has advanced past its
         # expected_revision, so a fresh submission returns
-        # idempotency_conflict instead of duplicate. Rebuild the accepted
-        # body straight from the persisted event.
-        existing = next(
-            (event for event in events if event.idempotency_key == command_key),
-            None,
-        )
+        # idempotency_conflict instead of duplicate. Only a FULLY
+        # validated persisted run command may be rebuilt — the same key
+        # held by any other meaning stays a conflict.
+        existing = _persisted_run_event(events, command_key, session_text)
+        if existing is _RUN_EVENT_MISMATCH:
+            return _run_key_conflict(session_text)
         if existing is not None:
             command = _accepted_from_event(existing, session_text)
         else:
@@ -56,16 +66,11 @@ class ApiCommandMixin:
             if command.status_code != 202:
                 if command.body.get("status") == "duplicate":
                     # Narrow race: the event landed between our list and
-                    # the submission — rebuild from the now-persisted row.
+                    # the submission — re-validate the persisted row.
                     events = self.stores.events.list_for_session(SessionId(session_id))
-                    existing = next(
-                        (
-                            event
-                            for event in events
-                            if event.idempotency_key == command_key
-                        ),
-                        None,
-                    )
+                    existing = _persisted_run_event(events, command_key, session_text)
+                    if existing is _RUN_EVENT_MISMATCH:
+                        return _run_key_conflict(session_text)
                     if existing is None:
                         return command
                     command = _accepted_from_event(existing, session_text)
@@ -89,6 +94,64 @@ class ApiCommandMixin:
             payload,
             idempotency_key=idempotency_key,
         )
+
+
+def _persisted_run_event(
+    events: list[SessionEvent], command_key: str, session_text: str
+) -> SessionEvent | _RunEventMismatch | None:
+    """Return the persisted run command for this key, a mismatch
+    sentinel when the key is held by another meaning, or None."""
+
+    for event in events:
+        if event.idempotency_key != command_key:
+            continue
+        if (
+            event.event_type is not EventType.SESSION_COMMAND_ACCEPTED
+            or not _is_genuine_run_event(event, command_key, session_text)
+        ):
+            return _RUN_EVENT_MISMATCH
+        return event
+    return None
+
+
+def _is_genuine_run_event(event: object, command_key: str, session_text: str) -> bool:
+    """Full business validation, mirroring decide_session_command's
+    same-key/same-meaning rule: type, kind, session, key, payload shape
+    and a self-consistent fingerprint."""
+
+    payload = getattr(event, "payload", {})
+    if payload.get("kind") != "run":
+        return False
+    if payload.get("session_id") != session_text:
+        return False
+    if payload.get("idempotency_key") != command_key:
+        return False
+    if payload.get("payload") != {}:
+        return False
+    expected_revision = payload.get("expected_revision")
+    if not isinstance(expected_revision, int) or isinstance(expected_revision, bool):
+        return False
+    fingerprint = payload.get("fingerprint")
+    if not isinstance(fingerprint, str):
+        return False
+    intent = {
+        "session_id": session_text,
+        "kind": "run",
+        "expected_revision": expected_revision,
+        "payload": {},
+    }
+    expected = hashlib.sha256(
+        json.dumps(intent, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    return fingerprint == expected
+
+
+def _run_key_conflict(session_text: str) -> ApiResponse:
+    return conflict(
+        session_id=session_text,
+        status="idempotency_conflict",
+        reason="command key is held by a different command meaning",
+    )
 
 
 def _accepted_from_event(event: object, session_text: str) -> ApiResponse:

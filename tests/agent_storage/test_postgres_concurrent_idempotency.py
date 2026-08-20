@@ -534,6 +534,16 @@ def test_canonical_summary_never_has_edge_whitespace_and_fits_budget() -> None:
     # The un-truncated spacy text fits only after cutting; verify the cut
     # really happened so the boundary case is exercised.
     assert len(spacy_canonical) < len(spacy)
+    assert spacy.startswith(spacy_canonical)
+
+    # CJK must keep a near-budget PREFIX of the real answer — never
+    # collapse to the fallback the way a byte-count-as-character-count
+    # cut did (6 escaped bytes per char emptied the whole text).
+    cjk_only = "部署回滚手册要点" * 700  # ~4900 chars, ~29 KiB escaped
+    cjk_canonical = _canonical_summary(cjk_only)
+    assert cjk_canonical != "child reached a terminal status"
+    assert cjk_only.startswith(cjk_canonical)
+    assert _json_bytes(cjk_canonical) > 2 * 1024
 
 
 def test_sixteen_children_wakeup_fits_command_contract(
@@ -633,4 +643,15 @@ def test_sixteen_children_wakeup_fits_command_contract(
             )
             assert item["summary"] == trusted, (
                 "delivered summaries must equal the canonical durable form"
+            )
+            assert item["summary"] != "child reached a terminal status", (
+                "the real answer must survive truncation, not collapse to fallback"
+            )
+            assert long_answer.startswith(item["summary"]), (
+                "the canonical form must be a prefix of the original answer"
+            )
+            from agent_storage.postgres.subagent_delegation import _json_bytes
+
+            assert _json_bytes(item["summary"]) > 2 * 1024, (
+                "truncation must stay near the budget, not shrink to noise"
             )

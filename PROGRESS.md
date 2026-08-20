@@ -9,6 +9,22 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
+- Fifth review round: truncation prefix + run-key semantics (2026-08-21,
+  `cloud-agent`): closes the two P1s found in PR #251. Canonical CJK
+  summaries keep the longest original prefix fitting the per-child
+  JSON-escaped budget via binary search — the previous cut emptied
+  4000-char Chinese answers into the shared fallback (both producer and
+  verifier read that fallback, so equality held while the answer was
+  gone); regressions now require non-fallback, original-prefix,
+  near-budget canonical forms plus the 16-child command-contract
+  reconstruction. The run pre-check validates the persisted event
+  completely (type, kind=run, session, key, empty payload,
+  self-consistent fingerprint) before rebuilding; a cancel wearing the
+  run key returns idempotency_conflict through the create replay (the
+  reconciler propagates the conflict instead of the stale admission
+  body). Standard full-repo selector over real PG+MinIO: 2926 passed /
+  2 pre-existing failures / 11 skipped; `make check` green.
+
 - Fourth review round: command-contract closure (2026-08-21,
   `cloud-agent`): the canonical child summary now budgets the exact
   serialization the command contract measures (json.dumps with
