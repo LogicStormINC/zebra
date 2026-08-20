@@ -12,6 +12,7 @@ narrow.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -176,3 +177,36 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
             raise ExecutionAuthorityResolutionError(
                 "bound Host grant has expired; failing closed"
             )
+
+
+def select_attempt_authority(
+    resolver: ExecutionAuthorityResolverPort | None,
+    static_scope: OpaqueAuthorityScope | None,
+    scope_provider: Callable[..., OpaqueAuthorityScope] | None,
+    task_binding_loader: Callable[..., object] | None,
+    session_id: object,
+) -> tuple[
+    ExecutionAuthorityResolverPort | None,
+    OpaqueAuthorityScope | None,
+    Callable[..., OpaqueAuthorityScope] | None,
+]:
+    """Phase F1: a frozen Task binding drives this Attempt's authority.
+
+    The deployment resolver/scope stay the fallback when no binding is
+    stored for the session; loader failures fall back the same way.
+    """
+
+    if task_binding_loader is None:
+        return resolver, static_scope, scope_provider
+    try:
+        loaded = task_binding_loader(session_id)
+    except Exception:
+        return resolver, static_scope, scope_provider
+    if not isinstance(loaded, TaskBindingSnapshot):
+        return resolver, static_scope, scope_provider
+    binding = loaded
+    scope = OpaqueAuthorityScope(
+        authority_issuer=binding.host_capability.authority_issuer,
+        namespace_id=binding.host_capability.namespace_id,
+    )
+    return BoundHostExecutionAuthorityResolver(binding=binding), scope, None

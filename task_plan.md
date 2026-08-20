@@ -1,5 +1,33 @@
 # Task Plan
 
+## 下一阶段：默认组合收口（Phase F，2026-08-19 定案）
+
+目标：把已落地的机制真正接进 Cloud API/Worker 默认组合，并留下
+Task admission → Child 完成 → Parent 唤醒的真实 E2E；随后执行
+Trench Cutover、drain 与 Legacy 删除。
+
+- F1 绑定感知权限：`SessionExecutionService` 在 Attempt 权限持久化前
+  加载 v25 TaskBinding（`load_task_binding`），命中即换装
+  `BoundHostExecutionAuthorityResolver`，未命中回退租户解析器。
+- F2 pinned 出站：`build_worker_tool_gateway` 云端优先
+  `HostEgressResolver`（v24 注册表），未绑定回退 legacy env。
+- F3 Admission 默认走 v25 原子事务（cloud profile 的 create 路径）。
+- F4 等待唤醒：云端 durable 委托后 Parent 进入 waiting_children，
+  终态经 `ParentContinuation` 唤醒。
+- F5 真实 E2E：compose + 真 PG 的 admission→child→wakeup 全链 runner。
+- F6/7 `AL-TRENCH-CUTOVER-01`（前置 EMB-TRN-READ-E2E-01 证据）→
+  drain → `AL-LEGACY-REMOVAL-01`。
+
+## Orchestrator/Subagent 方案终态（2026-08-19，25/25）
+
+全部 25 张卡完成（PR #218-#238）：Phase A 8（修复 Subagent）+
+Phase B 6（Durable Child，v26）+ Phase C 7（控制面，v27）+
+Phase D 3（Coding Multi-Agent）+ Phase E 3（Mailbox v28 + Team）。
+最终验证：全量回归 2595 passed、make check 全绿（ruff/mypy/
+文件尺寸/eval 10/10）。唯一外部阻塞：SUBAGENT-DIAG-REAL-01 的真实
+Provider 证据（`ZEBRA_SUBAGENT_DIAG_ENDPOINT/KEY` 未设置，fail-closed
+不伪造）。迁移头现为 v28。
+
 ## Orchestrator/Subagent 方案执行状态（2026-08-19 刷新）
 
 - Phase A 完成（#218/#219，8 卡）；**Phase B 全部完成（#220-#225，6 卡）**：

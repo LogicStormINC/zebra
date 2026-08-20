@@ -318,6 +318,23 @@ def build_worker_loop_service(
         execution_stores.leases,
         recovery_service,
     )
+    task_binding_loader = None
+    if cloud_memory_store is not None and settings.storage_authority == "postgresql":
+        from agent_storage.postgres.task_admission import load_task_binding as _load_binding
+
+        binding_dsn = cloud_bundle.dsn or ""
+        if binding_dsn:
+
+            def task_binding_loader(session_id: SessionId) -> object:
+                from agent_core.domain.identifiers import TaskId
+
+                assert active_namespace is not None
+                return _load_binding(
+                    binding_dsn,
+                    deployment_namespace=active_namespace,
+                    task_id=TaskId(session_id),
+                )
+
     execution_service = SessionExecutionService(
         database_path=database_path,
         claim_service=claim_service,
@@ -327,6 +344,7 @@ def build_worker_loop_service(
         effect_dispatch=active_dispatch,
         worker_projection_transaction=active_transaction,
         deployment_namespace=active_namespace,
+        task_binding_loader=task_binding_loader,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,
         workspace_resolver=(

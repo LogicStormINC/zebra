@@ -1148,6 +1148,60 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### COMPOSE-CLOSEOUT-F1 - Binding-Aware Attempt Authority (Default Composition)
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/compose-closeout-1` (from `cloud-agent@5aca1083`)
+- Owned paths: `apps/worker/src/zebra_agent_worker/{execution,loop,cloud_composition,bound_execution_authority}.py`,
+  focused tests, this card.
+
+#### Acceptance
+
+- [x] `SessionExecutionService` accepts an optional `task_binding_loader`;
+  before Attempt authority persists, `select_attempt_authority` loads the
+  v25 TaskBinding for the session and — when present — swaps in
+  `BoundHostExecutionAuthorityResolver` with the binding's issuer/namespace
+  scope; no binding or loader failure falls back to the deployment
+  resolver unchanged.
+- [x] The cloud Worker loop wires the loader from the bundle DSN
+  (`CloudWorkerComposition.dsn`, newly carried) via `load_task_binding`;
+  local profile is untouched (loader stays None).
+- [x] Full regression 2597 passed; `make check` green (execution.py back
+  under the 500-line gate via helper extraction).
+
+#### Explicit Non-Goals
+
+- F2 pinned egress in the tool gateway (next slice)
+- F3 admission default / F4 waiting loop / F5 real E2E / F6-7 cutover chain
+  (recorded in task_plan Phase F)
+
+### ORCH-MAILBOX-CON-01 / ORCH-MAILBOX-PG-01 / ORCH-TEAM-01 - Agent Team Closeout
+
+- Status: `Done` (all three)
+- Owner: `lukeding`
+- Branches: `codex/orch-mailbox-con-01` (#236), `codex/orch-mailbox-pg-01`
+  (#237, migration v28), `codex/orch-team-01` (#238)
+- Owned paths: `agent-core/domain/agent_mailbox.py` (new),
+  `agent-storage/postgres/agent_mailbox{,_migration}.py` (new, v28),
+  `agent-core/domain/agent_team.py` (new), focused tests, these cards.
+
+#### Acceptance
+
+- [x] MAILBOX-CON: task assignments (lead only, member recipients),
+  direct messages (member or team broadcast) and final answers (teammates
+  to the lead only) with bounded bodies, sliding-window frequency policy
+  and content-keyed dedup (12 tests).
+- [x] MAILBOX-PG: v28 `agent_mailbox_messages` with team+dedup UNIQUE;
+  sends dedup to replay (never re-deliver), receives replay by cursor,
+  recipients isolated (3 real-PG tests).
+- [x] TEAM: first-version bounds as a typed contract — same namespace,
+  ≤4 agents including the lead, depth one (`assert_write_depth_one`),
+  one shared task list with member-only assignment, write tasks holding
+  mutually exclusive owned paths (nested-conflict rejection), ownership
+  always referencing a shared task; stable team digest (9 tests).
+- [x] Full regression 2595 passed; `make check` green.
+
 ### ORCH-CODE-CONFORMANCE-01 - Coding Multi-Agent Conformance Matrix
 
 - Status: `Done`
