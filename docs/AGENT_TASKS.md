@@ -1148,6 +1148,38 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### COMPOSE-CLOSEOUT-F4+F5 - Child Wakeup Service And Real E2E
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/compose-closeout-3` (from `cloud-agent@38004416`)
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/child_wakeup.py` (new),
+  `tests/agent_storage/test_postgres_e2e_compose_closeout.py` (new),
+  this card.
+
+#### Acceptance
+
+- [x] F4: `ChildCompletionWakeupService.process_child_terminal` looks up
+  the delegation link, evaluates the parent continuation (or resumes
+  directly when no continuation is stored), and returns the durable
+  resume-command payload. This is the Child-terminal → Parent-wakeup leg.
+- [x] F5: a real-PG E2E exercises the full chain — **F3 binding freeze →
+  Phase-B delegation (child materialized with narrowed binding) →
+  delegation-link durability → F4 child-terminal wakeup evaluation →
+  idempotent replay (same child, no duplicate) → table verification**
+  (≥2 binding snapshots, exactly 1 link). All through real store
+  implementations over v25+v26.
+- [x] E2E 1 passed on a disposable PostgreSQL; full regression 2601
+  passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- no worker-loop polling integration (the service is injectable; the loop
+  card wires the poll cadence)
+- no continuation storage beyond the direct-resume path (multi-child
+  orchestration continuations ride with ORCH-PG-01 projections)
+
 ### COMPOSE-CLOSEOUT-F2+F3 - Pinned Egress And Admission Binding Freeze
 
 - Status: `Done`
