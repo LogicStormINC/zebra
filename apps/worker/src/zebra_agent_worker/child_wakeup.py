@@ -1,21 +1,21 @@
 """Child-completion wakeup service (Phase F4, real implementation).
 
 Polls delegation links for children that reached a terminal Session
-status, evaluates parent continuations, and writes durable resume
-commands into the parent's command queue.
+status, then appends a SESSION_COMMAND_ACCEPTED event to the PARENT's
+event stream. The existing SessionCommandConsumer picks it up and
+re-executes the parent on its next poll cycle.
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from uuid import uuid4
 
-from agent_core.domain.identifiers import TaskId
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.parent_continuation import (
-    ChildTerminalRecord,
     ChildTerminalStatus,
     ParentContinuation,
-    evaluate_wakeup,
 )
 from agent_core.domain.sessions import SessionStatus
 
@@ -29,30 +29,27 @@ _POLL_LIMIT = 16
 
 
 class ChildCompletionWakeupService:
-    """Evaluates terminal children and writes parent resume commands."""
+    """Evaluates terminal children and wakes parents via Event Store commands."""
 
     def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
         from agent_storage.postgres.database import PostgresDatabase
+        from agent_storage.postgres.events import append_event_in_transaction
 
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+        self._append_event = append_event_in_transaction
 
     @property
     def deployment_namespace(self) -> str:
         return self._database.deployment_namespace
 
     def poll_terminal_children(self) -> list[dict[str, object]]:
-        """Find children with terminal Session status that have delegation links.
-
-        Returns (child_task_id, status, parent_task_id, already_woken) tuples;
-        the caller processes each through `process_child_terminal`.
-        """
+        """Find children with terminal Session status that have delegation links."""
 
         namespace = self.deployment_namespace
         with self._database.connect() as connection:
             rows = connection.execute(
                 """
                 SELECT link.child_task_id, link.parent_task_id,
-                    link.terminal_at,
                     proj.status AS session_status
                 FROM subagent_delegation_links link
                 LEFT JOIN session_projections proj
@@ -86,71 +83,54 @@ class ChildCompletionWakeupService:
         status: ChildTerminalStatus,
         result_bundle_digest: str | None = None,
     ) -> dict[str, object] | None:
-        """Record a child terminal, evaluate the parent wakeup, and mark the link."""
+        """Append a resume command to the parent's event stream, then mark the link.
+
+        Order matters: the command event must land BEFORE the link is
+        marked terminal, so a crash between the two leaves the child
+        re-processable rather than lost.
+        """
 
         parent = self._find_parent(child_task_id)
         if parent is None:
             return None
-        # Mark the link as terminal so we don't re-process it
-        self._mark_link_terminal(child_task_id)
-        continuation = self._load_continuation(parent)
-        if continuation is None:
-            payload = {
-                "parent_task_id": str(parent),
-                "child_task_id": str(child_task_id),
-                "decision": "resume",
-                "reason": "child_terminal_no_continuation",
-                "any_success": status is ChildTerminalStatus.COMPLETED,
-            }
-        else:
-            terminal = ChildTerminalRecord(
-                child_task_id=child_task_id,
-                status=status,
-                result_bundle_digest=result_bundle_digest,
-                terminal_at=datetime.now(UTC),
-            )
-            wakeup = evaluate_wakeup(continuation, (terminal,))
-            if wakeup is None:
-                return None
-            payload = {
-                "parent_task_id": str(continuation.parent_task_id),
-                "child_task_id": str(child_task_id),
-                "decision": "resume",
-                "reason": "strategy_settled",
-                "resume_command_key": continuation.resume_command_key,
-                "any_success": wakeup.any_success,
-                "settled_children": wakeup.settled_child_count,
-            }
-        self._write_resume_command(payload)
-        return payload
-
-    def _write_resume_command(self, payload: dict[str, object]) -> None:
-        """Write a durable resume command for the parent Session.
-
-        The command rides the existing session_commands table, keyed by
-        the delegation idempotency key to prevent duplicates.
-        """
-
-        parent_id = str(payload.get("parent_task_id", ""))
-        if not parent_id:
-            return
+        parent_session = SessionId(parent)
         namespace = self.deployment_namespace
         with self._database.connect() as connection:
-            connection.execute(
+            current = connection.execute(
                 """
-                INSERT INTO session_commands (
-                    deployment_namespace, session_id, command_kind, payload,
-                    status, created_at
-                ) VALUES (%s, %s, 'resume', %s, 'pending', %s)
-                ON CONFLICT DO NOTHING
+                SELECT current_sequence FROM session_projections
+                WHERE deployment_namespace = %s AND session_id = %s
                 """,
-                (
-                    namespace,
-                    parent_id,
-                    _payload_jsonb(payload),
-                    datetime.now(UTC),
-                ),
+                (namespace, str(parent_session)),
+            ).fetchone()
+            if current is None:
+                return None
+            next_sequence = int(current["current_sequence"]) + 1
+            event = SessionEvent.create(
+                session_id=parent_session,
+                sequence=next_sequence,
+                event_type=EventType.SESSION_COMMAND_ACCEPTED,
+                actor=EventActor.HARNESS,
+                payload={
+                    "command_id": str(uuid4()),
+                    "session_id": str(parent_session),
+                    "kind": "resume",
+                    "expected_revision": int(current["current_sequence"]),
+                    "idempotency_key": f"child-wakeup:{child_task_id}",
+                    "payload": {},
+                    "fingerprint": _command_fingerprint(str(parent_session), "resume"),
+                },
+                created_at=datetime.now(UTC),
             )
+            self._append_event(connection, namespace, event)
+        self._mark_link_terminal(child_task_id)
+        return {
+            "parent_task_id": str(parent),
+            "child_task_id": str(child_task_id),
+            "decision": "resume",
+            "reason": "child_terminal",
+            "any_success": status is ChildTerminalStatus.COMPLETED,
+        }
 
     def _mark_link_terminal(self, child_task_id: TaskId) -> None:
         namespace = self.deployment_namespace
@@ -180,17 +160,11 @@ class ChildCompletionWakeupService:
         return TaskId(row["parent_task_id"])
 
     def _load_continuation(self, parent_task_id: TaskId) -> ParentContinuation | None:
-        """Load a stored parent continuation.
-
-        v1: single-child delegations resume directly (no continuation);
-        multi-child orchestration continuations ride with the
-        orchestration plan snapshots (ORCH-PG-01).
-        """
+        """Load a stored parent continuation (ORCH-PG projections)."""
 
         return None
 
+def _command_fingerprint(session_id: str, kind: str) -> str:
+    import hashlib
 
-def _payload_jsonb(payload: dict[str, object]) -> Any:
-    from psycopg.types.json import Jsonb
-
-    return Jsonb(payload)
+    return hashlib.sha256(f"{session_id}:{kind}".encode()).hexdigest()

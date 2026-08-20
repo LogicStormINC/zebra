@@ -34,9 +34,6 @@ from agent_storage import (
 from agent_storage.postgres.subagent_delegation import (
     PostgresSubagentDelegationStore,
 )
-from agent_storage.postgres.task_admission import (
-    save_task_binding,
-)
 from psycopg import connect
 from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 
@@ -137,15 +134,31 @@ def test_e2e_admission_freeze_delegate_complete_wakeup(
 ) -> None:
     """The full F-chain: freeze → delegate → child terminal → wakeup."""
 
-    # Step 1: Admission (F3) — freeze the parent binding
-    parent_task = TaskId(uuid4())
-    parent_binding = _parent_binding(parent_task)
-    digest = save_task_binding(
-        postgres_dsn,
-        deployment_namespace=namespace,
-        binding=parent_binding,
+    # Step 1: Admission (F3) — atomically create the parent session + binding
+    parent_bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="E2E parent",
+            user_input="delegate research",
+            workspace_root="/tmp/e2e-parent",
+        )
     )
-    assert digest == parent_binding.binding_digest
+    parent_task = TaskId(parent_bootstrap.session.session_id)
+    parent_binding = _parent_binding(parent_task)
+    from agent_core.ports.task_admission_transaction import TaskAdmissionRequest
+    from agent_storage.postgres.task_admission import (
+        PostgresTaskAdmissionTransaction,
+    )
+
+    PostgresTaskAdmissionTransaction(
+        postgres_dsn, deployment_namespace=namespace
+    ).admit(
+        TaskAdmissionRequest(
+            events=tuple(parent_bootstrap.events),
+            session=parent_bootstrap.session,
+            workspace=rebuild_workspace(list(parent_bootstrap.events)),
+            binding=parent_binding,
+        )
+    )
 
     # Step 2: Delegation (Phase B) — materialize the child atomically
     delegation_store = PostgresSubagentDelegationStore(
