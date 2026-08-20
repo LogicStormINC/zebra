@@ -23,6 +23,7 @@ def create_queued_session(
     definition_snapshot: AgentDefinitionSnapshot | None = None,
     admission_dsn: str | None = None,
     admission_namespace: str | None = None,
+    idempotency_key: str | None = None,
 ) -> ApiResponse:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -61,6 +62,33 @@ def create_queued_session(
             host_context=host_context,
             definition_snapshot=definition_snapshot,
         )
+        from datetime import UTC as _UTC
+        from datetime import datetime as _dt
+
+        from agent_core.ports.idempotency_store import IdempotencyRecord
+
+        idempotency_record = None
+        if idempotency_key:
+            import json as _json
+            from hashlib import sha256
+
+            request_hash = sha256(
+                _json.dumps(
+                    {"title": parsed["title"], "prompt": parsed["prompt"]},
+                    sort_keys=True,
+                ).encode()
+            ).hexdigest()
+            idempotency_record = IdempotencyRecord(
+                action="session.create",
+                idempotency_key=idempotency_key,
+                request_hash=request_hash,
+                status_code=201,
+                response_body={
+                    "session_id": str(bootstrap.session.session_id),
+                    "status": bootstrap.session.status.value,
+                },
+                created_at=_dt.now(_UTC),
+            )
         PostgresTaskAdmissionTransaction(
             admission_dsn, deployment_namespace=admission_namespace
         ).admit(
@@ -69,6 +97,7 @@ def create_queued_session(
                 session=bootstrap.session,
                 workspace=workspace,
                 binding=raw_binding if isinstance(raw_binding, TaskBindingSnapshot) else None,
+                idempotency=idempotency_record,
             )
         )
     else:

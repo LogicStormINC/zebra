@@ -346,6 +346,7 @@ def build_worker_loop_service(
     )
     task_binding_loader = None
     egress_registry = None
+    delegation_store = None
     if cloud_memory_store is not None and settings.storage_authority == "postgresql":
         from agent_storage.postgres.task_admission import load_task_binding as _load_binding
 
@@ -378,6 +379,13 @@ def build_worker_loop_service(
             egress_registry = PostgresHostConnectorRegistry(
                 wakeup_dsn, deployment_namespace=active_namespace
             )
+            from agent_storage.postgres.subagent_delegation import (
+                PostgresSubagentDelegationStore,
+            )
+
+            delegation_store = PostgresSubagentDelegationStore(
+                wakeup_dsn, deployment_namespace=active_namespace
+            )
 
 
     execution_service = SessionExecutionService(
@@ -391,6 +399,7 @@ def build_worker_loop_service(
         deployment_namespace=active_namespace,
         task_binding_loader=task_binding_loader,
         egress_registry=egress_registry,
+        delegation_store=delegation_store,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,
         workspace_resolver=(

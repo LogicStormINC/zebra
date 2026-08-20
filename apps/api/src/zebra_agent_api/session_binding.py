@@ -162,12 +162,17 @@ def _build_binding_snapshot(
         bound_at=datetime.now(UTC),
     )
 
-def _admission_kwargs(settings: object, stores: object) -> dict[str, str]:
+def _admission_kwargs(
+    settings: object, stores: object, idempotency_key: str | None = None
+) -> dict[str, str]:
     """Cloud admission uses the atomic v25 transaction when PG is active."""
     storage = getattr(settings, "storage_authority", "sqlite")
     if storage != "postgresql":
         return {}
-    return {
+    kwargs: dict[str, str] = {
         "admission_dsn": getattr(settings, "database_url", ""),
         "admission_namespace": str(getattr(stores, "deployment_namespace", "zebra")),
     }
+    if idempotency_key:
+        kwargs["idempotency_key"] = idempotency_key
+    return kwargs

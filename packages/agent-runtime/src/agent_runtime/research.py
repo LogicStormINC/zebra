@@ -3,10 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from threading import Event
+from uuid import uuid4
 
 from agent_context import LocalContextCompiler
 from agent_core.domain.events import EventType, SessionEvent
-from agent_core.domain.identifiers import SubagentId
+from agent_core.domain.identifiers import SubagentId, TaskId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.subagents import (
     ResearchSource,
@@ -208,6 +209,9 @@ class ResearchSubagentTool:
         max_tool_calls: int = 2,
         max_depth: int = 1,
         wait_for_result: bool = True,
+        delegation_store: object | None = None,
+        parent_task_id: object | None = None,
+        parent_binding_digest: str | None = None,
     ) -> None:
         self._coordinator = coordinator
         self._workspace_root = workspace_root
@@ -215,6 +219,88 @@ class ResearchSubagentTool:
         self._max_tool_calls = max_tool_calls
         self._max_depth = max_depth
         self._wait_for_result = wait_for_result
+        # Cloud durable mode: the store materializes the child as a real
+        # PostgreSQL Task instead of a ThreadPool thread (plan 8.1/8.2).
+        self._delegation_store = delegation_store
+        self._parent_task_id = parent_task_id
+        self._parent_binding_digest = parent_binding_digest
+
+    def _delegate_durable(
+        self, tool_call: ToolCall, objective: str, delegation_reason: str
+    ) -> ToolResult:
+        """Materialize a durable child Task via the PostgreSQL delegation store."""
+        import json as _json
+
+        from agent_core.application.session_bootstrap import (
+            SessionBootstrapCommand as _SBC,
+        )
+        from agent_core.application.session_bootstrap import (
+            SessionBootstrapService as _SBS,
+        )
+        from agent_core.application.workspace_projection import (
+            rebuild_workspace as _rw,
+        )
+        from agent_core.domain.agent_capabilities import capability_set as _caps
+        from agent_core.domain.subagent_delegation import (
+            SubagentDelegationRequest as _SDR,
+        )
+        from agent_core.domain.subagents import SubagentRole as _Role
+        from agent_core.ports.task_admission_transaction import (
+            TaskAdmissionRequest as _TAR,
+        )
+
+        bootstrap = _SBS().build(
+            _SBC(
+                title=f"Research: {objective[:120]}",
+                user_input=objective,
+                workspace_root=Path(str(self._workspace_root)),
+            )
+        )
+        child_admission = _TAR(
+            events=tuple(bootstrap.events),
+            session=bootstrap.session,
+            workspace=_rw(list(bootstrap.events)),
+        )
+        parent_uuid = getattr(self._parent_task_id, "uuid", None)
+        request = _SDR(
+            parent_task_id=TaskId(parent_uuid) if parent_uuid else TaskId(uuid4()),
+            parent_attempt_number=1,
+            parent_tool_call_id=str(tool_call.tool_call_id),
+            delegation_index=0,
+            role=_Role.RESEARCHER,
+            objective=objective,
+            requested_capabilities=frozenset(_caps(["evidence.read"])),
+            child_definition_snapshot_digest="0" * 64,
+            child_capability_profile_ref="profile/researcher@1",
+            expected_parent_binding_digest=self._parent_binding_digest or "0" * 64,
+        )
+        from agent_storage.postgres.subagent_delegation import (
+            PostgresSubagentDelegationStore,
+        )
+
+        assert isinstance(self._delegation_store, PostgresSubagentDelegationStore)
+        receipt = self._delegation_store.delegate(request, child_admission)
+        return ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.EXECUTED,
+            output=_json.dumps(
+                {
+                    "delegation_reason": delegation_reason.strip(),
+                    "child_task_id": str(receipt.child_task_id),
+                    "status": "materialized",
+                    "resume": "durable_wakeup",
+                    "replayed": receipt.status == "replayed",
+                },
+                separators=(",", ":"),
+                sort_keys=True,
+            ),
+            metadata={
+                "child_task_id": str(receipt.child_task_id),
+                "subagent_status": "materialized",
+                "durable_delegation": True,
+                "delegation_reason": delegation_reason.strip(),
+            },
+        )
 
     @property
     def contract(self) -> ToolContract:
@@ -237,6 +323,8 @@ class ResearchSubagentTool:
             depth=1,
         )
         try:
+            if self._delegation_store is not None and not self._wait_for_result:
+                return self._delegate_durable(tool_call, objective, delegation_reason)
             subagent_id = self._coordinator.spawn(task)
             if not self._wait_for_result:
                 # SUBAGENT-CLOUD-CUTOVER-01: cloud parents never block on a
