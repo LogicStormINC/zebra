@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from threading import Event
-from uuid import uuid4
 
 from agent_context import LocalContextCompiler
 from agent_core.domain.events import EventType, SessionEvent
@@ -261,9 +260,25 @@ class ResearchSubagentTool:
             session=bootstrap.session,
             workspace=_rw(list(bootstrap.events)),
         )
-        parent_uuid = getattr(self._parent_task_id, "uuid", None)
+        # SessionId IS a UUID (NewType); use it directly, never invent one
+        from uuid import UUID as _UUID
+
+        parent_uuid = (
+            self._parent_task_id
+            if isinstance(self._parent_task_id, _UUID)
+            else _UUID(str(self._parent_task_id))
+            if self._parent_task_id
+            else None
+        )
+        if parent_uuid is None:
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output='{"reason": "durable_delegation_requires_parent_task_id"}',
+                metadata={"reason": "durable_delegation_requires_parent_task_id"},
+            )
         request = _SDR(
-            parent_task_id=TaskId(parent_uuid) if parent_uuid else TaskId(uuid4()),
+            parent_task_id=TaskId(parent_uuid),
             parent_attempt_number=1,
             parent_tool_call_id=str(tool_call.tool_call_id),
             delegation_index=0,
@@ -299,6 +314,7 @@ class ResearchSubagentTool:
                 "subagent_status": "materialized",
                 "durable_delegation": True,
                 "delegation_reason": delegation_reason.strip(),
+                "suspend_after_turn": True,
             },
         )
 

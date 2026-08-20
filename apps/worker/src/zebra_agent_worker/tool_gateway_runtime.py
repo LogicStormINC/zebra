@@ -164,6 +164,9 @@ def build_worker_tool_gateway(
         trusted_local=trusted_local,
         web_pipeline_v2=settings.web_pipeline_v2,
         durable_delegation=durable_delegation,
+        delegation_store=delegation_store,
+        parent_task_id=parent_task_id,
+        parent_binding_digest=parent_binding_digest,
     )
     if task.host_context is None:
         return WorkerToolGateway(

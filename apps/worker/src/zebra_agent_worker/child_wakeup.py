@@ -123,18 +123,7 @@ class ChildCompletionWakeupService:
                 created_at=datetime.now(UTC),
             )
             self._append_event(connection, namespace, event)
-        self._mark_link_terminal(child_task_id)
-        return {
-            "parent_task_id": str(parent),
-            "child_task_id": str(child_task_id),
-            "decision": "resume",
-            "reason": "child_terminal",
-            "any_success": status is ChildTerminalStatus.COMPLETED,
-        }
-
-    def _mark_link_terminal(self, child_task_id: TaskId) -> None:
-        namespace = self.deployment_namespace
-        with self._database.connect() as connection:
+            # Mark the link terminal in the SAME transaction (atomic wakeup)
             connection.execute(
                 """
                 UPDATE subagent_delegation_links
@@ -144,6 +133,13 @@ class ChildCompletionWakeupService:
                 """,
                 (datetime.now(UTC), namespace, str(child_task_id)),
             )
+        return {
+            "parent_task_id": str(parent),
+            "child_task_id": str(child_task_id),
+            "decision": "resume",
+            "reason": "child_terminal",
+            "any_success": status is ChildTerminalStatus.COMPLETED,
+        }
 
     def _find_parent(self, child_task_id: TaskId) -> TaskId | None:
         namespace = self.deployment_namespace

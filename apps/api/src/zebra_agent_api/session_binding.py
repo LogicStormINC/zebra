@@ -1,3 +1,4 @@
+
 """Freeze the Task binding at cloud admission (Phase F3).
 
 The cloud create path derives an `AgentCapabilityCeilingSnapshot` from the
@@ -22,6 +23,8 @@ from agent_core.domain.task_bindings import (
     TaskBindingSnapshot,
 )
 from agent_storage.postgres.task_admission import save_task_binding
+
+from zebra_agent_api.responses import ApiResponse
 
 DEFAULT_CAPABILITIES = capability_set(["agent.execute"])
 NO_CONNECTOR_DIGEST = "0" * 64
@@ -110,7 +113,7 @@ def freeze_binding_for_response(
     Cloud + PostgreSQL only; refusal keeps today's behavior silently.
     """
 
-    from zebra_agent_api.responses import ApiResponse
+    
 
     assert isinstance(response, ApiResponse)
     if deployment != "cloud" or storage_authority != "postgresql":
@@ -176,3 +179,21 @@ def _admission_kwargs(
     if idempotency_key:
         kwargs["idempotency_key"] = idempotency_key
     return kwargs
+
+def _post_admission_idempotency(
+    settings: object, stores: object, idempotency_key: str | None,
+    response: ApiResponse, payload: dict[str, object],
+) -> ApiResponse:
+    """Local (non-PG) path saves the receipt separately; PG already did."""
+    from zebra_agent_api.idempotency import save_idempotent_response
+    if idempotency_key is None or getattr(response, 'status_code', 0) != 201:
+        return response
+    if getattr(settings, 'storage_authority', '') == 'postgresql':
+        return response
+    store = getattr(stores, "idempotency", None)
+    if store is None:
+        return response
+    return save_idempotent_response(
+        store=store, action='session.create',
+        idempotency_key=idempotency_key, payload=payload, response=response,
+    )
