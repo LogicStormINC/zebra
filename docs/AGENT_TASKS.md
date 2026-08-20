@@ -1150,7 +1150,8 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-F6 - Worker-Loop Wakeup Integration
 
-- Status: `Done` (2026-08-20 second audit round closed: wakeup commands
+- Status: `Done` (2026-08-20 third review round additionally closed the
+  multi-Worker wakeup race — see F4+F5; second audit round closed: wakeup commands
   are now HARNESS-actor only — a forged USER resume neither resumes a
   waiting parent nor injects results (restore fails closed without the
   trusted wakeup, proven by the forged-resume scenario test); the wakeup
@@ -1178,22 +1179,29 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-F4+F5 - Child Wakeup Service And Real E2E
 
-- Status: `Done` (2026-08-20 second audit round closed: the wakeup now
-  evaluates the durable ParentContinuation before waking — with parallel
-  delegations the parent stays suspended until EVERY epoch child is
-  terminal, then ONE wakeup carries all their real answers and the
-  resumed parent injects one result per delegated tool call (batch
-  continuation); concurrent admissions and concurrent delegations with a
-  shared key resolve through ON CONFLICT/race-replay (16-thread real-PG
-  tests: 1 create + 15 identical replays; 1 materialize + 15 winner
-  replays, no orphan children); a replayed create whose run command was
-  lost to a mid-flight crash re-submits it idempotently on retry. The
-  wakeup's next-sequence now derives from the event stream, not the
-  lagging projection. First-round note stands: wakeup results are
-  carried in the resume command and the real default-chain E2E suite —
-  including forged-resume, two-children-join and replay-requeue
-  scenarios — runs against real PostgreSQL + MinIO with only the model
-  transport scripted.)
+- Status: `Done` (2026-08-20 third review round closed the multi-Worker
+  gap: wakeup processing is serialized per parent via a FOR UPDATE on
+  the parent's stream row, the wakeup event is deterministic per settled
+  epoch (sorted children, epoch-derived command id, epoch-anchored
+  expected_revision) and carries a durable per-epoch idempotency key —
+  8 concurrent workers on one child emit exactly ONE wakeup, and two
+  children terminalizing concurrently join into ONE wakeup carrying
+  both results (the old both-keep_waiting stranding is gone). Cancelled
+  children now settle legally: the shared summary reader includes
+  session_cancelled and truncates to a 2048-byte UTF-8-safe canonical
+  form shared by producer and verifier, so a cancelled epoch resumes
+  and passes verification, and worst-case 16-child payloads stay far
+  inside the 64 KiB command contract. API-level create idempotency is
+  closed end to end: a duplicate run command is rebuilt into the
+  accepted shape from the persisted event, so 16 concurrent same-key
+  API creates ALL return 201 with one identical full body (including
+  the command) while exactly one session and one run command exist —
+  this also heals the crash-after-run-commit replay case. Regressions:
+  same-child×8, distinct-children concurrent join, cancelled-child
+  verification, and the full 16-thread API create suite, all over real
+  PostgreSQL. First/second-round notes stand: HARNESS-actor trust,
+  durable result verification, real-answer injection, storage-level
+  concurrency, two-phase replay reconciliation.)
 - Owner: `lukeding`
 - Branch: `codex/compose-closeout-3` (from `cloud-agent@38004416`)
 - Owned paths:

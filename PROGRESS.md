@@ -9,6 +9,28 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
+- Third review round: multi-Worker wakeup closed (2026-08-20/21,
+  `cloud-agent`): wakeup processing now serializes per parent (FOR
+  UPDATE on the parent stream row) and emits a deterministic,
+  per-epoch-idempotent wakeup event — 8 concurrent workers on one child
+  produce exactly one wakeup; two children terminalizing concurrently
+  join into one wakeup carrying both results (the prior race could emit
+  8 duplicate wakeups or strand the parent with zero). Cancelled
+  children settle legally (shared canonical reader includes
+  session_cancelled; 2048-byte UTF-8-safe truncation shared by producer
+  and verifier keeps worst-case 16-child payloads inside the 64 KiB
+  command contract while preserving exact-match verification). API
+  create idempotency is closed end to end: duplicate run commands are
+  rebuilt into the accepted shape from the persisted event — 16
+  concurrent same-key creates ALL return 201 with one identical full
+  body, and the crash-after-run-commit replay now heals instead of
+  returning a stale ready/no-command body forever. New real-PG
+  regressions: same-child×8, distinct-children concurrent join,
+  cancelled-child verification, 16-thread full-API create. Validation:
+  2431 non-PG + 461 real-PG tests, `make check` green. Remaining
+  follow-ups unchanged (Host manifest freeze at admission, Trench
+  inputs; E2E still application-level API, not HTTP/auth).
+
 - Second audit round closed on the durable delegation chain (2026-08-20,
   `cloud-agent`): the six P1 findings of the PR #248 review are fixed
   with real-PG evidence. Wakeup trust: only HARNESS-actor resume commands
