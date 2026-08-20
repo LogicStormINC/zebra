@@ -239,7 +239,11 @@ def parse_agent_definition(value: object) -> AgentDefinition | None:
         raise ValueError("agent_definition must be an object")
     if "resolved_context_digest" in value:
         raise ValueError("resolved_context_digest is server-generated")
-    return AgentDefinition.model_validate(value)
+    if value.get("skill_guidance") not in (None, (), []):
+        raise ValueError("skill_guidance must be resolved from trusted skill references")
+    return AgentDefinition.model_validate(
+        {key: item for key, item in value.items() if key != "skill_guidance"}
+    )
 
 
 @dataclass(frozen=True)

@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from agent_core.domain.events import EventType
+from agent_core.domain.goals import Goal
 from agent_core.domain.identifiers import HandoffId, SessionId, new_handoff_id, new_session_id
 from agent_core.domain.session_handoff import (
     HandoffOperationStatus,
@@ -44,6 +45,28 @@ from agent_storage.session_handoff_rows import (
 )
 from agent_storage.sqlite import SQLiteEventStore
 from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
+
+
+def _active_goal(connection: sqlite3.Connection, session_id: SessionId) -> Goal | None:
+    row = connection.execute(
+        """
+        SELECT goal_binding, active_goal_json
+        FROM session_projections
+        WHERE session_id = ?
+        """,
+        (str(session_id),),
+    ).fetchone()
+    if row is None:
+        raise HandoffStorageConflictError("source session projection is incomplete")
+    if row["goal_binding"] != "goal_bound":
+        return None
+    value = row["active_goal_json"]
+    if not isinstance(value, str) or not value.strip():
+        raise HandoffStorageConflictError("source goal projection is incomplete")
+    try:
+        return Goal.model_validate(json.loads(value))
+    except ValueError as exc:
+        raise HandoffStorageConflictError("source goal projection is invalid") from exc
 
 
 class SQLiteSessionHandoffStore(SessionHandoffPort):
@@ -385,7 +408,14 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
             ),
         )
         model_id = persisted_task_model_id(connection, operation.source_session_id)
-        events = build_handoff_events(operation, request, workspace, model_id=model_id)
+        source_goal = _active_goal(connection, operation.source_session_id)
+        events = build_handoff_events(
+            operation,
+            request,
+            workspace,
+            model_id=model_id,
+            source_goal=source_goal,
+        )
         for event in events:
             insert_event(connection, event)
         parent_sequence = operation.expected_source_stream_version + 1
@@ -396,7 +426,13 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
             """,
             (parent_sequence, envelope.created_at.isoformat(), str(operation.source_session_id)),
         )
-        insert_child_projections(connection, operation, request, workspace)
+        insert_child_projections(
+            connection,
+            operation,
+            request,
+            workspace,
+            source_goal=source_goal,
+        )
         attached = attach_handoff_segment_locked(
             connection,
             root_session_id=envelope.root_session_id,

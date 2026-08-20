@@ -3,6 +3,7 @@ import sqlite3
 from typing import Any
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.goals import Goal
 from agent_core.domain.plans import SessionPlan
 from agent_core.ports.session_handoff import HandoffOperation, SessionHandoffCommitRequest
 
@@ -13,6 +14,7 @@ def build_handoff_events(
     workspace: sqlite3.Row,
     *,
     model_id: str | None = None,
+    source_goal: Goal | None = None,
 ) -> tuple[SessionEvent, ...]:
     envelope = request.envelope
     parent = SessionEvent.create(
@@ -34,7 +36,7 @@ def build_handoff_events(
             "idempotency_key_hash": operation.idempotency_key_hash,
         },
     )
-    child_payloads: tuple[tuple[EventType, EventActor, dict[str, Any]], ...] = (
+    child_payloads: list[tuple[EventType, EventActor, dict[str, Any]]] = [
         (EventType.SESSION_CREATED, EventActor.SYSTEM, {"title": request.create_request.title}),
         (
             EventType.SESSION_HANDOFF_RECEIVED,
@@ -48,6 +50,22 @@ def build_handoff_events(
                 "checksum": envelope.checksum,
             },
         ),
+    ]
+    if source_goal is not None:
+        child_payloads.append(
+            (
+                EventType.TASK_GOAL_SET,
+                EventActor.HARNESS,
+                {
+                    "binding": "goal_bound",
+                    "goal_text": source_goal.text,
+                    "version": source_goal.version,
+                    "source": "session_handoff",
+                    "stable_task_id": str(envelope.root_session_id),
+                },
+            )
+        )
+    child_payloads.extend((
         (
             EventType.USER_MESSAGE_RECEIVED,
             EventActor.USER,
@@ -97,9 +115,11 @@ def build_handoff_events(
                     else json.loads(workspace["agent_definition"])
                 ),
                 **({"model_id": model_id} if model_id is not None else {}),
+                "goal_binding": "goal_bound" if source_goal is not None else "conversational",
+                **({"goal_text": source_goal.text} if source_goal is not None else {}),
             },
         ),
-    )
+    ))
     child_events = tuple(
         SessionEvent.create(
             session_id=operation.target_session_id,
@@ -120,24 +140,48 @@ def insert_child_projections(
     operation: HandoffOperation,
     request: SessionHandoffCommitRequest,
     workspace: sqlite3.Row,
+    *,
+    source_goal: Goal | None = None,
 ) -> None:
     created_at = request.envelope.created_at.isoformat()
     task_plan_json = _latest_task_plan_json(connection, operation.source_session_id)
+    child_sequence = 4 if source_goal is not None else 3
     connection.execute(
-        "INSERT INTO session_projections VALUES (?, ?, 'ready', ?, ?, 3, NULL, NULL, ?)",
+        """
+        INSERT INTO session_projections (
+            session_id,
+            title,
+            status,
+            created_at,
+            updated_at,
+            current_sequence,
+            approval_context_json,
+            clarification_context_json,
+            task_plan_json,
+            goal_binding,
+            active_goal_json
+        ) VALUES (?, ?, 'ready', ?, ?, ?, NULL, NULL, ?, ?, ?)
+        """,
         (
             str(operation.target_session_id),
             request.create_request.title,
             created_at,
             created_at,
+            child_sequence,
             task_plan_json,
+            "goal_bound" if source_goal is not None else "conversational",
+            (
+                json.dumps(source_goal.model_dump(mode="json"))
+                if source_goal is not None
+                else None
+            ),
         ),
     )
     columns = [row[1] for row in connection.execute("PRAGMA table_info(workspace_projections)")]
     values = [workspace[column] for column in columns]
     values[columns.index("session_id")] = str(operation.target_session_id)
     values[columns.index("updated_at")] = created_at
-    values[columns.index("current_sequence")] = 3
+    values[columns.index("current_sequence")] = child_sequence
     placeholders = ", ".join("?" for _ in columns)
     connection.execute(
         f"INSERT INTO workspace_projections ({', '.join(columns)}) VALUES ({placeholders})",

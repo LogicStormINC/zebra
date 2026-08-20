@@ -119,6 +119,35 @@ def test_child_projection_inherits_the_latest_durable_plan(tmp_path: Path) -> No
     }
 
 
+def test_goal_bound_handoff_preserves_the_active_goal_for_recovery(tmp_path: Path) -> None:
+    database_path = tmp_path / "handoff.db"
+    source_id = _seed_completed_source(
+        database_path,
+        tmp_path,
+        goal_binding="goal_bound",
+        goal_text="Maintain today's daily journal.",
+    )
+    store = SQLiteSessionHandoffStore(database_path)
+    operation, commit = _prepared_commit(store, source_id)
+
+    store.commit(commit)
+
+    child_events = SQLiteEventStore(database_path).list_for_session(
+        operation.target_session_id
+    )
+    assert [event.event_type for event in child_events] == [
+        EventType.SESSION_CREATED,
+        EventType.SESSION_HANDOFF_RECEIVED,
+        EventType.TASK_GOAL_SET,
+        EventType.USER_MESSAGE_RECEIVED,
+        EventType.TASK_PREPARED,
+    ]
+    recovered = rebuild_session(child_events)
+    assert recovered.active_goal is not None
+    assert recovered.active_goal.text == "Maintain today's daily journal."
+    assert recovered.active_goal.version == 1
+
+
 def test_child_recovery_revalidates_workspace_even_after_dispatch_ack(tmp_path: Path) -> None:
     database_path = tmp_path / "handoff.db"
     source = _seed_completed_source(database_path, tmp_path)
@@ -461,6 +490,8 @@ def _seed_completed_source(
     agent_definition: AgentDefinition | None = None,
     model_id: str | None = None,
     plan_steps: tuple[dict[str, str], ...] = (),
+    goal_binding: str = "conversational",
+    goal_text: str | None = None,
 ) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -470,6 +501,8 @@ def _seed_completed_source(
             policy_profile="local-safe",
             agent_definition=agent_definition,
             model_id=model_id,
+            goal_binding=goal_binding,
+            goal_text=goal_text,
             created_at=NOW,
         )
     )
@@ -477,7 +510,7 @@ def _seed_completed_source(
     events.append(
         SessionEvent.create(
             session_id=bootstrap.session.session_id,
-            sequence=3,
+            sequence=len(events),
             event_type=EventType.HARNESS_ATTEMPT_STARTED,
             actor=EventActor.HARNESS,
             payload={"attempt_number": 1},

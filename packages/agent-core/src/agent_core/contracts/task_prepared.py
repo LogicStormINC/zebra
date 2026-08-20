@@ -35,6 +35,8 @@ class TaskPreparedPayload(BaseModel):
         max_length=64,
         exclude_if=lambda value: value is None,
     )
+    goal_binding: str = Field(default="conversational")
+    goal_text: str | None = Field(default=None, max_length=1_024)
     history_session_ids: list[str] | None = _OPTIONAL_LIST
     max_attempts: int | None = None
     max_corrections_per_attempt: int | None = None
@@ -56,6 +58,26 @@ class TaskPreparedPayload(BaseModel):
         if not stripped:
             raise ValueError("field must not be blank")
         return stripped
+
+    @field_validator("goal_text")
+    @classmethod
+    def ensure_goal_text_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("goal_text must not be blank when provided")
+        return stripped
+
+    @model_validator(mode="after")
+    def ensure_goal_contract(self) -> "TaskPreparedPayload":
+        if self.goal_binding not in {"conversational", "goal_bound"}:
+            raise ValueError("goal_binding must be 'conversational' or 'goal_bound'")
+        if self.goal_binding == "goal_bound" and self.goal_text is None:
+            raise ValueError("goal_text is required when goal_binding is goal_bound")
+        if self.goal_binding == "conversational" and self.goal_text is not None:
+            raise ValueError("goal_text requires goal_binding goal_bound")
+        return self
 
     @field_validator(
         "workspace_root",

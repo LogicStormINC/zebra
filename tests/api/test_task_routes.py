@@ -40,6 +40,32 @@ def test_task_create_list_and_control_route_to_active_segment(tmp_path: Path) ->
     assert read.body["status"] == "cancelled"
 
 
+def test_task_context_control_routes_to_hidden_active_segment(tmp_path: Path) -> None:
+    database = tmp_path / "tasks.sqlite"
+    task_id = str(_seed_completed(database, tmp_path))
+    adapter = RouteAdapter(create_app(database))
+    appended = adapter.handle(
+        RouteRequest("POST", f"/tasks/{task_id}/messages", body={"content": "Continue"})
+    )
+
+    compacted = adapter.handle(
+        RouteRequest("POST", f"/tasks/{task_id}/context/compact", body={"focus": "continue"})
+    )
+    capsule_id = compacted.body["capsule"]["capsule_id"]
+    recovered = adapter.handle(
+        RouteRequest(
+            "POST",
+            f"/tasks/{task_id}/context/recover",
+            body={"capsule_id": capsule_id},
+        )
+    )
+
+    assert appended.status_code == 201
+    assert appended.body["rolled_over"] is True
+    assert compacted.status_code == 200
+    assert recovered.body["status"] == "recovered"
+
+
 def test_task_read_exposes_stable_final_message_identity(tmp_path: Path) -> None:
     database = tmp_path / "tasks.sqlite"
     task_id = str(

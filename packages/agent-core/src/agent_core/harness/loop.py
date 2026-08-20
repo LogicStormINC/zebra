@@ -54,6 +54,19 @@ class HarnessLoop:
             payload={"title": task.title},
             created_at=started_at,
         )
+        if task.goal_binding == "goal_bound" and task.goal is not None:
+            recorder.record(
+                event_type=EventType.TASK_GOAL_SET,
+                actor=EventActor.HARNESS,
+                payload={
+                    "binding": "goal_bound",
+                    "goal_text": task.goal,
+                    "version": 1,
+                    "source": "harness_bootstrap",
+                    "stable_task_id": str(session.session_id),
+                },
+                created_at=started_at,
+            )
         recorder.record(
             event_type=EventType.USER_MESSAGE_RECEIVED,
             actor=EventActor.USER,
@@ -103,6 +116,8 @@ class HarnessLoop:
                 "max_tool_calls": task.max_tool_calls,
                 **({"plan_required": True} if task.plan_required else {}),
                 **({"model_id": task.model_id} if task.model_id is not None else {}),
+                "goal_binding": task.goal_binding,
+                **({"goal_text": task.goal} if task.goal_binding == "goal_bound" else {}),
             },
         )
         attempt_results: list[HarnessAttemptResult] = []

@@ -62,3 +62,35 @@ def test_harness_loop_marks_failed_attempts_as_failed() -> None:
     assert result.session.status is SessionStatus.FAILED
     assert len(result.attempt_results) == 1
     assert result.events[-1].event_type is EventType.SESSION_FAILED
+
+
+def test_harness_loop_persists_a_goal_bound_root_before_the_first_turn() -> None:
+    captured_contexts: list[HarnessContext] = []
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Daily journal",
+            user_input="Continue today's journal.",
+            goal_binding="goal_bound",
+            goal_anchor_present=True,
+            goal="Maintain today's daily journal.",
+        ),
+        lambda context: (
+            captured_contexts.append(context)
+            or HarnessAttemptResult(
+                outcome=HarnessAttemptOutcome.COMPLETED,
+                summary="completed",
+            )
+        ),
+        created_at=datetime(2026, 6, 19, 20, 10, tzinfo=UTC),
+    )
+
+    assert [event.event_type for event in result.events[:4]] == [
+        EventType.SESSION_CREATED,
+        EventType.TASK_GOAL_SET,
+        EventType.USER_MESSAGE_RECEIVED,
+        EventType.TASK_PREPARED,
+    ]
+    assert result.events[1].payload["goal_text"] == "Maintain today's daily journal."
+    assert result.events[3].payload["goal_binding"] == "goal_bound"
+    assert captured_contexts[0].session.active_goal is not None
+    assert captured_contexts[0].session.active_goal.version == 1

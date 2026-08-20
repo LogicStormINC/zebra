@@ -8,6 +8,7 @@ from agent_core.application import (
     attach_refs_to_user_event,
 )
 from agent_core.application.session_projection import apply_event
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_storage import (
     SQLiteArtifactPayloadStore,
@@ -46,6 +47,14 @@ class ApiSessionMessageAppendMixin:
         session = projection_store.get_session(session_key)
         if session is None:
             return ApiResponse(404, {"session_id": session_id, "status": "not_found"})
+        if parsed["goal_text"] is not None and (
+            session.goal_binding.value != "goal_bound" or session.active_goal is None
+        ):
+            return conflict(
+                session_id=session_id,
+                status="goal_not_bound",
+                reason="goal_text requires an active goal-bound session",
+            )
         staged_images = None
         images_durable = False
         try:
@@ -58,6 +67,24 @@ class ApiSessionMessageAppendMixin:
         except ValueError as exc:
             return bad_request(str(exc))
         try:
+            goal_revision = None
+            if parsed["goal_text"] is not None:
+                assert session.active_goal is not None
+                goal_revision = SessionEvent.create(
+                    session_id=session_key,
+                    sequence=session.current_sequence + 1,
+                    event_type=EventType.TASK_GOAL_REVISED,
+                    actor=EventActor.USER,
+                    payload={
+                        "goal_text": parsed["goal_text"],
+                        "version": session.active_goal.version + 1,
+                        "previous_goal_version": session.active_goal.version,
+                        "source": "user_message",
+                        "stable_task_id": str(session_key),
+                    },
+                )
+                SQLiteEventStore(self.database_path).append(goal_revision)
+                session = projection_store.save_session(apply_event(session, goal_revision))
             event = SessionMessageAppendService().build_event(
                 session=session,
                 next_sequence=session.current_sequence + 1,
@@ -123,6 +150,8 @@ class ApiSessionMessageAppendMixin:
         }
         if attachment_refs:
             body["attachments"] = [ref.to_mapping() for ref in attachment_refs]
+        if goal_revision is not None and updated_session.active_goal is not None:
+            body["goal_version"] = updated_session.active_goal.version
         return ApiResponse(201, body)
 
     def _parse_session_id(self, session_id: str) -> SessionId | ApiResponse:

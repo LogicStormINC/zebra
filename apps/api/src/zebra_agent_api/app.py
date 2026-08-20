@@ -353,6 +353,8 @@ class ZebraAgentApi(
                     max_model_calls=parsed["max_model_calls"],
                     max_tool_calls=parsed["max_tool_calls"],
                     plan_required=parsed["plan_required"],
+                    goal_binding=parsed["goal_binding"],
+                    goal_text=parsed["goal_text"],
                     agent_definition=parsed["agent_definition"],
                     model_id=model_entry.id,
                     session_id=session_id,
@@ -390,6 +392,12 @@ class ZebraAgentApi(
                 "max_model_calls": parsed["max_model_calls"],
                 "max_tool_calls": parsed["max_tool_calls"],
                 "plan_required": parsed["plan_required"],
+                "goal_binding": parsed["goal_binding"],
+                **(
+                    {"goal_text": parsed["goal_text"]}
+                    if parsed["goal_text"] is not None
+                    else {}
+                ),
                 "network_profile": str(parsed["network_profile"]),
                 "network_allowlist": parsed["network_allowlist"],
                 **auth.response_fields(parsed),
@@ -533,6 +541,8 @@ class ZebraAgentApi(
                 max_model_calls=parsed["max_model_calls"],
                 max_tool_calls=parsed["max_tool_calls"],
                 plan_required=parsed["plan_required"],
+                goal_binding=parsed["goal_binding"],
+                goal_text=parsed["goal_text"],
                 agent_definition=parsed["agent_definition"],
                 model_id=model_entry.id,
                 session_history=SQLiteSessionHistory(
@@ -605,6 +615,12 @@ class ZebraAgentApi(
                 "model": model_entry.id,
                 "status": session.status.value,
                 "plan_required": parsed["plan_required"],
+                "goal_binding": parsed["goal_binding"],
+                **(
+                    {"goal_text": parsed["goal_text"]}
+                    if parsed["goal_text"] is not None
+                    else {}
+                ),
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "artifact_output_contract": result.attempt_result.metadata.get(
                     "output_contract"

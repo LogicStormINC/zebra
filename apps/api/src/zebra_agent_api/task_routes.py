@@ -103,6 +103,18 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
         return route_active_task(app.database_path, parts[0], app.get_session_diff)
     if method == "GET" and len(parts) == 2 and parts[1] == "context":
         return route_active_task(app.database_path, parts[0], app.get_session_context)
+    if method == "POST" and len(parts) == 3 and parts[1:] == ("context", "compact"):
+        return route_active_task(
+            app.database_path,
+            parts[0],
+            lambda active: app.compact_session_context(active, request.body or {}),
+        )
+    if method == "POST" and len(parts) == 3 and parts[1:] == ("context", "recover"):
+        return route_active_task(
+            app.database_path,
+            parts[0],
+            lambda active: app.recover_session_context(active, request.body or {}),
+        )
     if method == "GET" and len(parts) == 2 and parts[1] == "artifacts":
         return route_active_task(app.database_path, parts[0], app.get_session_artifacts)
     if method == "GET" and len(parts) == 3 and parts[1] == "artifacts":

@@ -46,6 +46,9 @@ class SessionBootstrapCommand:
     created_at: datetime | None = None
     session_id: SessionId | None = None
     model_id: str | None = None
+    goal_binding: str = "conversational"
+    goal_text: str | None = None
+    goal_source: str | None = None
 
     def __post_init__(self) -> None:
         TaskAttemptPolicy(
@@ -70,6 +73,10 @@ class SessionBootstrapService:
     def build(self, command: SessionBootstrapCommand) -> BootstrappedSession:
         if not isinstance(command.plan_required, bool):
             raise ValueError("plan_required must be boolean")
+        if command.goal_binding not in {"conversational", "goal_bound"}:
+            raise ValueError("goal_binding must be 'conversational' or 'goal_bound'")
+        if command.goal_binding == "goal_bound" and not (command.goal_text or "").strip():
+            raise ValueError("goal_text must be provided for goal-bound tasks")
         mcp_allowlist = normalize_mcp_allowlist(command.mcp_allowlist)
         preapproved_readonly_tools = normalize_mcp_allowlist(command.preapproved_readonly_tools)
         if preapproved_readonly_tools and (
@@ -98,6 +105,27 @@ class SessionBootstrapService:
             created_at=command.created_at,
             session_id=command.session_id,
         )
+        goal_events = ()
+        if command.goal_binding == "goal_bound":
+            goal_events = (
+                SessionEvent.create(
+                    session_id=session.session_id,
+                    sequence=1,
+                    event_type=EventType.TASK_GOAL_SET,
+                    actor=EventActor.HARNESS,
+                    payload={
+                        "binding": "goal_bound",
+                        "goal_text": (command.goal_text or "").strip(),
+                        "version": 1,
+                        "source": command.goal_source or "task_bootstrap",
+                        "stable_task_id": str(session.session_id),
+                    },
+                    created_at=session.created_at,
+                ),
+            )
+            user_sequence_offset = 2
+        else:
+            user_sequence_offset = 1
         events = (
             SessionEvent.create(
                 session_id=session.session_id,
@@ -107,9 +135,10 @@ class SessionBootstrapService:
                 payload={"title": command.title},
                 created_at=session.created_at,
             ),
+            *goal_events,
             SessionEvent.create(
                 session_id=session.session_id,
-                sequence=1,
+                sequence=user_sequence_offset,
                 event_type=EventType.USER_MESSAGE_RECEIVED,
                 actor=EventActor.USER,
                 payload={
@@ -124,7 +153,7 @@ class SessionBootstrapService:
             ),
             SessionEvent.create(
                 session_id=session.session_id,
-                sequence=2,
+                sequence=user_sequence_offset + 1,
                 event_type=EventType.TASK_PREPARED,
                 actor=EventActor.HARNESS,
                 payload={
@@ -174,6 +203,12 @@ class SessionBootstrapService:
                     "max_tool_calls": command.max_tool_calls,
                     **({"plan_required": True} if command.plan_required else {}),
                     **({"model_id": command.model_id} if command.model_id is not None else {}),
+                    "goal_binding": command.goal_binding,
+                    **(
+                        {"goal_text": (command.goal_text or "").strip()}
+                        if command.goal_binding == "goal_bound"
+                        else {}
+                    ),
                 },
                 created_at=session.created_at,
             ),

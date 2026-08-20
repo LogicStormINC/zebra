@@ -30,6 +30,8 @@ class CreateSessionPayload(TypedDict):
     max_model_calls: int | None
     max_tool_calls: int | None
     plan_required: bool
+    goal_binding: str
+    goal_text: str | None
     network_profile: str
     network_allowlist: list[str]
     mcp_allowlist: list[str]
@@ -64,6 +66,7 @@ class AppendSessionMessagePayload(TypedDict):
     content: str
     public_content: str | None
     clarification_id: str | None
+    goal_text: str | None
     attachments: tuple[TextAttachmentInput, ...]
     image_attachments: tuple[ImageAttachmentInput, ...]
 
@@ -131,6 +134,18 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
     for field, value in (("execute", execute), ("plan_required", plan_required)):
         if not isinstance(value, bool):
             return bad_request(f"{field} must be a boolean when provided")
+    goal_binding = payload.get("goal_binding", "conversational")
+    if goal_binding not in {"conversational", "goal_bound"}:
+        return bad_request("goal_binding must be 'conversational' or 'goal_bound'")
+    goal_text = payload.get("goal_text")
+    if goal_text is not None and (not isinstance(goal_text, str) or not goal_text.strip()):
+        return bad_request("goal_text must be a non-blank string when provided")
+    if isinstance(goal_text, str) and len(goal_text.strip()) > 1_024:
+        return bad_request("goal_text must not exceed 1024 characters")
+    if goal_binding == "goal_bound" and goal_text is None:
+        return bad_request("goal_text is required when goal_binding is goal_bound")
+    if goal_binding == "conversational" and goal_text is not None:
+        return bad_request("goal_text is only valid when goal_binding is goal_bound")
     policy_profile = payload.get("policy_profile", PolicyProfile.WORKSPACE_WRITE.value)
     if not isinstance(policy_profile, str):
         return bad_request("policy_profile must be a string when provided")
@@ -257,7 +272,10 @@ def parse_create_session_payload(payload: dict[str, object]) -> CreateSessionPay
             for attachment in parsed_attachments
             if isinstance(attachment, ImageAttachmentInput)
         ),
-        "skill_components": skill_components, "agent_definition": agent_definition,
+        "skill_components": skill_components,
+        "agent_definition": agent_definition,
+        "goal_binding": goal_binding,
+        "goal_text": goal_text.strip() if isinstance(goal_text, str) else None,
     }
 
 
@@ -299,6 +317,9 @@ def parse_cancel_session_payload(
 def parse_append_session_message_payload(
     payload: dict[str, object],
 ) -> AppendSessionMessagePayload | ApiResponse:
+    unknown_fields = sorted(payload.keys() - AppendSessionMessagePayload.__annotations__.keys())
+    if unknown_fields:
+        return bad_request(f"unknown session-message fields: {', '.join(unknown_fields)}")
     content = payload.get("content")
     if not isinstance(content, str) or not content.strip():
         return bad_request("content must be a non-blank string")
@@ -316,6 +337,15 @@ def parse_append_session_message_payload(
         return bad_request("clarification_id must be a non-blank string when provided")
     if clarification_id is not None and public_content is not None:
         return bad_request("clarification responses do not accept public_content")
+    goal_text = payload.get("goal_text")
+    if goal_text is not None and (
+        not isinstance(goal_text, str)
+        or not goal_text.strip()
+        or len(goal_text.strip()) > 1_024
+    ):
+        return bad_request("goal_text must be a non-blank string up to 1024 characters")
+    if clarification_id is not None and goal_text is not None:
+        return bad_request("clarification responses do not accept goal_text")
     try:
         parsed_attachments = parse_attachment_inputs(payload.get("attachments"))
     except ValueError as exc:
@@ -328,6 +358,7 @@ def parse_append_session_message_payload(
             public_content.strip() if isinstance(public_content, str) else None
         ),
         "clarification_id": clarification_id.strip() if clarification_id else None,
+        "goal_text": goal_text.strip() if isinstance(goal_text, str) else None,
         "attachments": tuple(
             attachment
             for attachment in parsed_attachments

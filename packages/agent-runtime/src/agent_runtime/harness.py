@@ -142,6 +142,8 @@ def run_local_harness(
     max_model_calls: int | None = None,
     max_tool_calls: int | None = None,
     plan_required: bool = False,
+    goal_binding: str = "conversational",
+    goal_text: str | None = None,
     web_pipeline_v2: bool = False,
     session_id: SessionId | None = None,
     initial_user_event_id: EventId | None = None,
@@ -183,6 +185,11 @@ def run_local_harness(
                 max_model_calls=max_model_calls,
                 max_tool_calls=max_tool_calls,
                 plan_required=plan_required,
+                goal_binding=goal_binding,
+                goal_anchor_present=(
+                    goal_binding == "goal_bound" and goal_text is not None
+                ),
+                goal=goal_text,
                 workspace_root=workspace_root,
                 policy_profile=policy_profile.value,
                 tool_profile=tool_profile,

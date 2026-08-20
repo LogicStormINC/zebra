@@ -1,5 +1,6 @@
 from agent_core.domain.clarifications import ClarificationContext
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.goals import apply_goal_event
 from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 
@@ -80,7 +81,10 @@ def apply_event(session: Session, event: SessionEvent) -> Session:
         updates["task_plan"] = task_plan
     if event.event_type is EventType.SESSION_TITLE_UPDATED:
         updates["title"] = _session_title_from_event(event)
-    return projected.model_copy(update=updates)
+    projected = projected.model_copy(update=updates)
+    if event.event_type in {EventType.TASK_GOAL_SET, EventType.TASK_GOAL_REVISED}:
+        return apply_goal_event(projected, event)
+    return projected
 
 
 def _session_title_from_event(event: SessionEvent) -> str:

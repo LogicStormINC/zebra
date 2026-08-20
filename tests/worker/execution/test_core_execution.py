@@ -133,6 +133,19 @@ def test_worker_rehydrates_goal_and_plan_across_suspend_resume(
             },
             created_at=_created_at(),
         ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=6,
+            event_type=EventType.TASK_GOAL_REVISED,
+            actor=EventActor.USER,
+            payload={
+                "goal_text": "Identify repeated losses while excluding CICC.",
+                "version": 2,
+                "previous_goal_version": 1,
+                "source": "user_message",
+            },
+            created_at=_created_at(),
+        ),
     )
     for event in additions:
         event_store.append(event)
@@ -194,12 +207,12 @@ def test_worker_rehydrates_goal_and_plan_across_suspend_resume(
     assert first.session.status is SessionStatus.SUSPENDED
     assert first.attempt_result.metadata["stop_reason"] == "task_plan_incomplete"
     assert "Stable task goal" in first_request
-    assert "Identify the causes" in first_request
+    assert "Identify repeated losses while excluding CICC." in first_request
     assert "Current durable task plan" in first_request
     assert "Exclude the CICC account" in first_request
     assert second.session.status is SessionStatus.COMPLETED
     task = SQLiteAgentTaskStore(database_path).ensure_for_session(session_id)
-    assert task.goal == "Identify the causes of recent repeated losses."
+    assert task.goal == "Identify repeated losses while excluding CICC."
     assert task.task_plan.summary["completed"] == 1
 
 

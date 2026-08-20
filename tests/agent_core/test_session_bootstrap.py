@@ -41,6 +41,8 @@ def test_session_bootstrap_service_builds_ready_session_events() -> None:
         ],
         "max_model_calls": None,
         "max_tool_calls": None,
+        "goal_binding": "conversational",
+        "goal_text": None,
     }
     assert result.session.status is SessionStatus.READY
     assert result.session.current_sequence == 2

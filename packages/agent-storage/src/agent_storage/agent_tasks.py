@@ -358,8 +358,8 @@ def _task_from_connection(connection: sqlite3.Connection, task_id: TaskId) -> Ag
 def _task_goal(connection: sqlite3.Connection, root_session_id: str) -> str:
     """Project the canonical task goal.
 
-    W5-P3A (Finding 1 fix): the goal MUST come from an explicit
-    TASK_GOAL_SET event when one exists; that goal_text is the only
+    W5-P3A: the goal MUST come from the latest explicit Goal event when one
+    exists; that goal_text is the only
     source that may be re-injected as a SYSTEM Stable Task Goal by
     ``append_task_state_context``. When no TASK_GOAL_SET has been
     emitted, we fall back to the public_content / content of the first
@@ -370,11 +370,19 @@ def _task_goal(connection: sqlite3.Connection, root_session_id: str) -> str:
     """
     row = connection.execute(
         """
-        SELECT * FROM session_events
-        WHERE session_id = ? AND event_type = ?
-        ORDER BY sequence ASC LIMIT 1
+        SELECT e.*
+        FROM session_events e
+        LEFT JOIN session_lineage l ON l.session_id = e.session_id
+        WHERE COALESCE(l.root_session_id, e.session_id) = ?
+          AND e.event_type IN (?, ?)
+        ORDER BY COALESCE(l.stage_index, 0) DESC, e.sequence DESC
+        LIMIT 1
         """,
-        (root_session_id, EventType.TASK_GOAL_SET.value),
+        (
+            root_session_id,
+            EventType.TASK_GOAL_SET.value,
+            EventType.TASK_GOAL_REVISED.value,
+        ),
     ).fetchone()
     if row is not None:
         payload = deserialize_event_row(row).payload
