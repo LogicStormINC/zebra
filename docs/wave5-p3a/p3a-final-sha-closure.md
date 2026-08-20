@@ -27,6 +27,15 @@ Date: 2026-08-21
   digest. No financial routing, mutable grant escalation, or second loop was
   added to Zebra.
 
+## Compatibility matrix
+
+| Row | Paths | Result |
+| --- | --- | --- |
+| FinOS `8dd2c25` | `finos/registered_journal.py`, registered-journal tests | inherited actual ancestor; untouched |
+| FinOS `c2f5f1a` | `web/app.js`, `web/index.html`, UI-shell test | inherited actual ancestor; untouched |
+| This Zebra correction | generic AgentDefinition resolver/context and tests | no FinOS business or UI type added |
+| Conflict handling | v4 correction | no merge, rebase, or cherry-pick; no new conflict resolution |
+
 ## Verification
 
 ```text
