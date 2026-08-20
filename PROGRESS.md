@@ -5,6 +5,40 @@
 
 ## Current Mainline Snapshot
 
+- Mainline branch is `cloud-agent` (it carries the cloud product line and
+  sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
+  on cut points).
+
+- Second audit round closed on the durable delegation chain (2026-08-20,
+  `cloud-agent`): the six P1 findings of the PR #248 review are fixed
+  with real-PG evidence. Wakeup trust: only HARNESS-actor resume commands
+  can wake a waiting parent (a USER resume neither resumes nor injects —
+  restore fails closed without the trusted wakeup); every delivered
+  child result is re-derived from the child's own terminal event inside
+  the wakeup transaction AND re-verified by the Worker (terminal link +
+  matching projection status + identical summary) before injection.
+  Real answers: the wakeup reads `metadata.assistant_message`, not the
+  lifecycle `summary`; the E2E's parent model can only finish after the
+  child's real answer arrives in its conversation. Concurrency:
+  admission idempotency claims keys with INSERT ... ON CONFLICT DO
+  NOTHING (16 threads → 1 create + 15 identical replays); delegation
+  losers roll their child back with the transaction and replay the
+  winner's link (16 threads → 1 materialize + 15 winner replays, no
+  orphans). Multi-child: the wakeup evaluates the durable
+  ParentContinuation — parallel delegations keep the parent suspended
+  until every epoch child is terminal, then one wakeup carries all
+  results and the parent injects one real result per delegated call.
+  Two-phase heal: a replayed create whose run command was lost re-
+  submits it under the same command key and syncs the stored body. The
+  wakeup append position derives from the event stream (MAX sequence),
+  not the lagging projection. Validation: 2431 non-PG + 457 real-PG
+  tests passed, `make check` green; new suites:
+  `test_postgres_default_chain_scenarios.py` (forged resume,
+  two-children join, replay requeue) and
+  `test_postgres_concurrent_idempotency.py`, all registered in the
+  compose runner. Known follow-ups unchanged: Host manifest/credential
+  freeze at admission, Trench cutover inputs.
+
 - Default-composition durable delegation proven end to end (2026-08-20,
   audit-fix branch on `cloud-agent`): the 2026-08-20 maintainer audit of
   PR #247 found all three "fixes" dead on the default path — the durable

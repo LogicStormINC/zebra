@@ -1,26 +1,34 @@
 """Child-completion wakeup service (Phase F4, real implementation).
 
 Polls delegation links for children that reached a terminal Session
-status, then appends a SESSION_COMMAND_ACCEPTED event carrying the
-child's terminal result summary to the PARENT's event stream and marks
-the link terminal — both in one transaction. The SessionCommandConsumer
-picks the command up and re-executes the parent on its next poll cycle;
-the resumed parent injects the carried results at the delegation point.
+status. Marking a child terminal does NOT by itself wake the parent:
+the service loads the durable ``ParentContinuation`` and evaluates the
+completion strategy — the parent only resumes once every child of the
+current delegation epoch is terminal, and the wakeup command then
+carries every child's REAL terminal answer (read back from each child's
+own event stream, never from caller input). Command append and link
+terminal update share one transaction.
 """
 
 from __future__ import annotations
 
 import hashlib
 from datetime import UTC, datetime
-from uuid import uuid4
+from typing import Any
+from uuid import UUID, uuid4
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.parent_continuation import (
+    ChildTerminalRecord,
     ChildTerminalStatus,
+    ContinuationDecision,
     ParentContinuation,
 )
 from agent_core.domain.sessions import SessionStatus
+from agent_storage.postgres.subagent_delegation import (
+    child_terminal_summary_in_transaction,
+)
 
 _STATUS_MAP: dict[str, ChildTerminalStatus] = {
     SessionStatus.COMPLETED.value: ChildTerminalStatus.COMPLETED,
@@ -72,8 +80,8 @@ class ChildCompletionWakeupService:
                 continue
             results.append(
                 {
-                    "child_task_id": TaskId(row["child_task_id"]),
-                    "parent_task_id": TaskId(row["parent_task_id"]),
+                    "child_task_id": TaskId(UUID(str(row["child_task_id"]))),
+                    "parent_task_id": TaskId(UUID(str(row["parent_task_id"]))),
                     "status": mapped,
                 }
             )
@@ -86,11 +94,13 @@ class ChildCompletionWakeupService:
         status: ChildTerminalStatus,
         result_bundle_digest: str | None = None,
     ) -> dict[str, object] | None:
-        """Append a resume command to the parent's event stream, then mark the link.
+        """Mark the child terminal, then wake the parent only when settled.
 
-        The command payload carries the child's terminal result summary so
-        the resumed parent injects the real result, not the materialization
-        stub. Command append and link terminal update share one transaction.
+        The resume command is emitted by the HARNESS actor and carries the
+        real terminal answer of EVERY child in the current delegation
+        epoch, re-read from each child's own event stream inside the same
+        transaction. Until the continuation settles, only the link is
+        marked terminal — no premature wakeup.
         """
 
         parent = self._find_parent(child_task_id)
@@ -98,43 +108,7 @@ class ChildCompletionWakeupService:
             return None
         parent_session = SessionId(parent)
         namespace = self.deployment_namespace
-        summary = self._child_terminal_summary(child_task_id)
         with self._database.connect() as connection:
-            current = connection.execute(
-                """
-                SELECT current_sequence FROM session_projections
-                WHERE deployment_namespace = %s AND session_id = %s
-                """,
-                (namespace, str(parent_session)),
-            ).fetchone()
-            if current is None:
-                return None
-            next_sequence = int(current["current_sequence"]) + 1
-            event = SessionEvent.create(
-                session_id=parent_session,
-                sequence=next_sequence,
-                event_type=EventType.SESSION_COMMAND_ACCEPTED,
-                actor=EventActor.HARNESS,
-                payload={
-                    "command_id": str(uuid4()),
-                    "session_id": str(parent_session),
-                    "kind": "resume",
-                    "expected_revision": int(current["current_sequence"]),
-                    "idempotency_key": f"child-wakeup:{child_task_id}",
-                    "payload": {
-                        "child_results": [
-                            {
-                                "child_task_id": str(child_task_id),
-                                "status": status.value,
-                                "summary": summary,
-                            }
-                        ]
-                    },
-                    "fingerprint": _command_fingerprint(str(parent_session), "resume"),
-                },
-                created_at=datetime.now(UTC),
-            )
-            self._append_event(connection, namespace, event)
             connection.execute(
                 """
                 UPDATE subagent_delegation_links
@@ -144,75 +118,173 @@ class ChildCompletionWakeupService:
                 """,
                 (datetime.now(UTC), namespace, str(child_task_id)),
             )
+            continuation = self.load_parent_continuation(parent)
+            if continuation is None:
+                return None
+            terminals = self._terminal_records(connection, namespace, parent)
+            decision, relevant = continuation.evaluate(terminals)
+            if decision is not ContinuationDecision.RESUME:
+                return {
+                    "parent_task_id": str(parent),
+                    "child_task_id": str(child_task_id),
+                    "decision": "keep_waiting",
+                    "reason": "children_outstanding",
+                    "settled_child_count": len(relevant),
+                    "required_child_count": len(continuation.required_child_ids),
+                }
+            child_results: list[dict[str, str]] = []
+            for record in relevant:
+                summary = child_terminal_summary_in_transaction(
+                    connection, namespace, record.child_task_id
+                )
+                child_results.append(
+                    {
+                        "child_task_id": str(record.child_task_id),
+                        "status": record.status.value,
+                        "summary": summary or "child reached a terminal status",
+                    }
+                )
+            current = connection.execute(
+                """
+                SELECT COALESCE(MAX(sequence), -1) AS current_sequence
+                FROM session_events
+                WHERE deployment_namespace = %s AND session_id = %s
+                """,
+                (namespace, str(parent_session)),
+            ).fetchone()
+            assert current is not None
+            last_sequence = int(current["current_sequence"])
+            next_sequence = last_sequence + 1
+            event = SessionEvent.create(
+                session_id=parent_session,
+                sequence=next_sequence,
+                event_type=EventType.SESSION_COMMAND_ACCEPTED,
+                actor=EventActor.HARNESS,
+                payload={
+                    "command_id": str(uuid4()),
+                    "session_id": str(parent_session),
+                    "kind": "resume",
+                    "expected_revision": last_sequence,
+                    "idempotency_key": f"child-wakeup:{parent}",
+                    "payload": {"child_results": child_results},
+                    "fingerprint": _command_fingerprint(str(parent_session), "resume"),
+                },
+                created_at=datetime.now(UTC),
+            )
+            self._append_event(connection, namespace, event)
         return {
             "parent_task_id": str(parent),
             "child_task_id": str(child_task_id),
             "decision": "resume",
-            "reason": "child_terminal",
-            "any_success": status is ChildTerminalStatus.COMPLETED,
+            "reason": "children_terminal",
+            "settled_child_count": len(relevant),
+            "any_success": any(
+                record.status is ChildTerminalStatus.COMPLETED for record in relevant
+            ),
         }
 
     def load_parent_continuation(
         self, parent_task_id: TaskId
     ) -> ParentContinuation | None:
-        """Rebuild the durable ParentContinuation from delegation events."""
+        """Rebuild the durable continuation for the CURRENT delegation epoch.
+
+        The epoch is every ``SUBAGENT_DELEGATED`` event after the last
+        resume/terminal boundary that still has a delegation after it —
+        children settled in earlier epochs no longer gate this one.
+        """
 
         namespace = self.deployment_namespace
         with self._database.connect() as connection:
             rows = connection.execute(
                 """
-                SELECT payload, created_at FROM session_events
+                SELECT event_type, payload, created_at FROM session_events
                 WHERE deployment_namespace = %s AND session_id = %s
-                    AND event_type = 'subagent_delegated'
+                    AND event_type IN (
+                        'subagent_delegated', 'session_resumed',
+                        'session_completed', 'session_failed', 'session_cancelled'
+                    )
                 ORDER BY sequence
                 """,
                 (namespace, str(parent_task_id)),
             ).fetchall()
-            link_rows = connection.execute(
-                """
-                SELECT child_task_id, terminal_at FROM subagent_delegation_links
-                WHERE deployment_namespace = %s AND parent_task_id = %s
-                """,
-                (namespace, str(parent_task_id)),
-            ).fetchall()
-        if not rows:
-            return None
-        children = [
-            TaskId(row["child_task_id"])
-            for row in link_rows
-            if str(row["child_task_id"]) in {str(r["child_task_id"]) for r in rows}
+        delegated_indexes = [
+            index
+            for index, row in enumerate(rows)
+            if row["event_type"] == "subagent_delegated"
         ]
+        if not delegated_indexes:
+            return None
+        cut = -1
+        for index, row in enumerate(rows):
+            if row["event_type"] == "subagent_delegated":
+                continue
+            if any(delegated > index for delegated in delegated_indexes):
+                cut = index
+        epoch: list[TaskId] = []
+        created_at = datetime.now(UTC)
+        seen: set[str] = set()
+        for index in delegated_indexes:
+            if index <= cut:
+                continue
+            payload = rows[index]["payload"] or {}
+            child_id = payload.get("child_task_id") if isinstance(payload, dict) else None
+            if not isinstance(child_id, str) or not child_id.strip():
+                continue
+            normalized = child_id.strip()
+            if normalized not in seen:
+                seen.add(normalized)
+                epoch.append(TaskId(UUID(normalized)))
+                created_at = rows[index]["created_at"]
+        if not epoch:
+            return None
         return ParentContinuation(
             parent_task_id=parent_task_id,
             plan_revision=1,
-            required_child_ids=tuple(children),
+            required_child_ids=tuple(epoch),
             completion_strategy="all_terminal",
             resume_command_key=f"child-wakeup:{parent_task_id}",
-            created_at=rows[0]["created_at"],
+            created_at=created_at,
         )
+
+    def _terminal_records(
+        self, connection: Any, namespace: str, parent: TaskId
+    ) -> tuple[ChildTerminalRecord, ...]:
+        rows = connection.execute(
+            """
+            SELECT link.child_task_id, link.terminal_at, proj.status
+            FROM subagent_delegation_links link
+            LEFT JOIN session_projections proj
+                ON proj.deployment_namespace = link.deployment_namespace
+                AND proj.session_id = link.child_task_id
+            WHERE link.deployment_namespace = %s AND link.parent_task_id = %s
+            """,
+            (namespace, str(parent)),
+        ).fetchall()
+        records: list[ChildTerminalRecord] = []
+        for row in rows:
+            mapped = _STATUS_MAP.get(row["status"])
+            if mapped is None or row["terminal_at"] is None:
+                continue
+            child_id = TaskId(UUID(str(row["child_task_id"])))
+            summary = child_terminal_summary_in_transaction(
+                connection, namespace, child_id
+            )
+            records.append(
+                ChildTerminalRecord(
+                    child_task_id=child_id,
+                    status=mapped,
+                    result_bundle_digest=(
+                        hashlib.sha256((summary or "").encode()).hexdigest()
+                        if mapped is ChildTerminalStatus.COMPLETED
+                        else None
+                    ),
+                    terminal_at=row["terminal_at"],
+                )
+            )
+        return tuple(records)
 
     def _load_continuation(self, parent_task_id: TaskId) -> ParentContinuation | None:
         return self.load_parent_continuation(parent_task_id)
-
-    def _child_terminal_summary(self, child_task_id: TaskId) -> str:
-        namespace = self.deployment_namespace
-        with self._database.connect() as connection:
-            row = connection.execute(
-                """
-                SELECT payload FROM session_events
-                WHERE deployment_namespace = %s AND session_id = %s
-                    AND event_type IN ('session_completed', 'session_failed')
-                ORDER BY sequence DESC
-                LIMIT 1
-                """,
-                (namespace, str(child_task_id)),
-            ).fetchone()
-        if row is None:
-            return "child reached a terminal status without a recorded summary"
-        summary = row["payload"].get("summary")
-        if isinstance(summary, str) and summary.strip():
-            return summary.strip()[:4000]
-        return "child reached a terminal status"
 
     def _find_parent(self, child_task_id: TaskId) -> TaskId | None:
         namespace = self.deployment_namespace
@@ -226,7 +298,7 @@ class ChildCompletionWakeupService:
             ).fetchone()
         if row is None:
             return None
-        return TaskId(row["parent_task_id"])
+        return TaskId(UUID(str(row["parent_task_id"])))
 
 
 def _command_fingerprint(session_id: str, kind: str) -> str:

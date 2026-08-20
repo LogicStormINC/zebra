@@ -1150,13 +1150,15 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-F6 - Worker-Loop Wakeup Integration
 
-- Status: `Done` (2026-08-20: the default-chain PG E2E
-  `test_postgres_default_chain_e2e.py` proves the loop wakeup leg live —
-  parent suspends waiting_children, child terminal wakeup appends the
-  resume command with the child result summary, the loop's command
-  consumer resumes the parent, and the parent completes with the injected
-  result. Prior audit finding of the empty `_process_child_wakeups` is
-  closed with real polling.)
+- Status: `Done` (2026-08-20 second audit round closed: wakeup commands
+  are now HARNESS-actor only — a forged USER resume neither resumes a
+  waiting parent nor injects results (restore fails closed without the
+  trusted wakeup, proven by the forged-resume scenario test); the wakeup
+  carries each child's REAL terminal answer re-read from the child's own
+  event stream, and the Worker re-verifies every delivered result against
+  the terminal link, child projection and child's own terminal event
+  before injection. First-round note stands: the default-chain E2E proves
+  the loop wakeup leg live.)
 - Owner: `lukeding`
 - Branch: `codex/compose-closeout-4` (from `cloud-agent@8c49ba0f`)
 - Owned paths: `apps/worker/src/zebra_agent_worker/loop.py`, this card.
@@ -1176,14 +1178,22 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-F4+F5 - Child Wakeup Service And Real E2E
 
-- Status: `Done` (2026-08-20: wakeup now carries the child's terminal
-  result summary inside the SESSION_COMMAND_ACCEPTED command payload;
-  `load_parent_continuation` rebuilds a real ParentContinuation from
-  SUBAGENT_DELEGATED events plus delegation links; the default-chain E2E
-  exercises the REAL API → Worker → agent.research → wakeup → resume
-  chain over real PostgreSQL + MinIO with only the model transport
-  scripted. Prior audit findings — `_load_continuation` returning None,
-  component-only E2E — are closed.)
+- Status: `Done` (2026-08-20 second audit round closed: the wakeup now
+  evaluates the durable ParentContinuation before waking — with parallel
+  delegations the parent stays suspended until EVERY epoch child is
+  terminal, then ONE wakeup carries all their real answers and the
+  resumed parent injects one result per delegated tool call (batch
+  continuation); concurrent admissions and concurrent delegations with a
+  shared key resolve through ON CONFLICT/race-replay (16-thread real-PG
+  tests: 1 create + 15 identical replays; 1 materialize + 15 winner
+  replays, no orphan children); a replayed create whose run command was
+  lost to a mid-flight crash re-submits it idempotently on retry. The
+  wakeup's next-sequence now derives from the event stream, not the
+  lagging projection. First-round note stands: wakeup results are
+  carried in the resume command and the real default-chain E2E suite —
+  including forged-resume, two-children-join and replay-requeue
+  scenarios — runs against real PostgreSQL + MinIO with only the model
+  transport scripted.)
 - Owner: `lukeding`
 - Branch: `codex/compose-closeout-3` (from `cloud-agent@38004416`)
 - Owned paths:

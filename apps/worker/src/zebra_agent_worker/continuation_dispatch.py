@@ -28,15 +28,16 @@ def run_continuation(
     child_wakeup: ChildWakeupContinuation | None = None,
 ) -> HarnessAttemptResult:
     if child_wakeup is not None:
-        return orchestrator.continue_completed_tool(
+        return orchestrator.continue_completed_tools(
             context,
             completion=child_wakeup_completion(child_wakeup),
-            tool_call=child_wakeup.tool_call,
-            tool_result=child_wakeup_tool_result(child_wakeup),
+            tool_calls=child_wakeup.tool_calls,
+            tool_results=child_wakeup_tool_results(child_wakeup),
             conversation=child_wakeup.conversation,
             model_calls_used=child_wakeup.model_calls_used,
             tool_calls_executed=child_wakeup.tool_calls_executed,
             assistant_message=child_wakeup.assistant_message,
+            metadata={"child_wakeup_continuation": True},
         )
     if continuation is not None and continuation.completed_output is not None:
         return orchestrator.continue_completed_tool(
@@ -90,47 +91,41 @@ def child_wakeup_completion(child_wakeup: ChildWakeupContinuation) -> ModelCompl
             role=MessageRole.ASSISTANT,
             content=child_wakeup.assistant_message,
             created_at=child_wakeup.tool_call.created_at,
-            tool_calls=(child_wakeup.tool_call,),
+            tool_calls=child_wakeup.tool_calls,
         ),
-        tool_calls=(child_wakeup.tool_call,),
+        tool_calls=child_wakeup.tool_calls,
     )
 
 
-def child_wakeup_tool_result(child_wakeup: ChildWakeupContinuation) -> ToolResult:
-    """Render the terminal child results as the delegated tool's real result."""
+def child_wakeup_tool_results(child_wakeup: ChildWakeupContinuation) -> tuple[ToolResult, ...]:
+    """Render each delegated call's terminal child result as its real result.
 
-    any_success = any(
-        result.status == "completed" for result in child_wakeup.child_results
-    )
-    payload = {
-        "status": "completed" if any_success else "failed",
-        "resume": "durable_wakeup",
-        "results": [
-            {
-                "child_task_id": result.child_task_id,
-                "status": result.status,
-                "summary": result.summary,
-            }
-            for result in child_wakeup.child_results
-        ],
-    }
-    return ToolResult(
-        tool_call_id=child_wakeup.tool_call.tool_call_id,
-        status=ToolCallStatus.EXECUTED if any_success else ToolCallStatus.FAILED,
-        output=json.dumps(payload, separators=(",", ":"), sort_keys=True),
-        metadata={
-            "child_task_id": child_wakeup.child_results[0].child_task_id,
-            "subagent_status": (
-                "completed" if any_success else "failed"
-            ),
-            "durable_delegation": True,
-            "child_results": [
-                {
-                    "child_task_id": result.child_task_id,
-                    "status": result.status,
-                    "summary": result.summary,
-                }
-                for result in child_wakeup.child_results
-            ],
-        },
-    )
+    ``tool_calls`` and ``child_results`` are aligned by the recovery: the
+    i-th result belongs to the i-th delegated call.
+    """
+
+    results: list[ToolResult] = []
+    for tool_call, delivery in zip(
+        child_wakeup.tool_calls, child_wakeup.child_results, strict=True
+    ):
+        executed = delivery.status == "completed"
+        payload = {
+            "status": delivery.status,
+            "resume": "durable_wakeup",
+            "child_task_id": delivery.child_task_id,
+            "summary": delivery.summary,
+        }
+        results.append(
+            ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.EXECUTED if executed else ToolCallStatus.FAILED,
+                output=json.dumps(payload, separators=(",", ":"), sort_keys=True),
+                metadata={
+                    "child_task_id": delivery.child_task_id,
+                    "subagent_status": delivery.status,
+                    "durable_delegation": True,
+                    "summary": delivery.summary,
+                },
+            )
+        )
+    return tuple(results)

@@ -65,8 +65,8 @@ class PostgresSubagentDelegationStore:
         A crash can never leave an orphan child: the admission rows and
         the link commit together or roll back together. Concurrent
         delegations with the same frozen key resolve through the link's
-        unique delegation_id — the loser rolls its child back and
-        replays the winner's.
+        unique delegation_id — the loser rolls its own child back with
+        the transaction and then replays the winner's link.
         """
 
         if child_admission.binding is not None and str(
@@ -78,43 +78,55 @@ class PostgresSubagentDelegationStore:
             return _replay_receipt(request, replay)
         namespace = self.deployment_namespace
         delegation_id = request.idempotency_key
-        with self._database.connect() as connection:
-            replay = _find_by_key_in(connection, namespace, request)
-            if replay is not None:
-                return _replay_receipt(request, replay)
-            receipt = self._admission.admit_in_transaction(
-                connection, namespace, child_admission
-            )
-            inserted = connection.execute(
-                _INSERT_LINK,
-                (
-                    namespace,
-                    delegation_id,
-                    request.idempotency_key,
-                    str(_root_of(request)),
-                    str(request.parent_task_id),
-                    request.expected_parent_binding_digest,
-                    str(receipt.task_id),
-                    receipt.binding_digest,
-                    None,
-                    None,
-                    datetime.now(UTC),
-                ),
-            ).fetchone()
-            if inserted is None:
-                existing = _find_by_key_in(connection, namespace, request)
-                if existing is None or str(existing.child_task_id) != str(receipt.task_id):
-                    # Raising inside the transaction rolls the orphan child
-                    # back with the failed link insert.
-                    raise DelegationReplayError(
-                        "delegation key resolved to a different child; failing closed"
+        try:
+            with self._database.connect() as connection:
+                replay = _find_by_key_in(connection, namespace, request)
+                if replay is not None:
+                    return _replay_receipt(request, replay)
+                receipt = self._admission.admit_in_transaction(
+                    connection, namespace, child_admission
+                )
+                inserted = connection.execute(
+                    _INSERT_LINK,
+                    (
+                        namespace,
+                        delegation_id,
+                        request.idempotency_key,
+                        str(_root_of(request)),
+                        str(request.parent_task_id),
+                        request.expected_parent_binding_digest,
+                        str(receipt.task_id),
+                        receipt.binding_digest,
+                        None,
+                        None,
+                        datetime.now(UTC),
+                    ),
+                ).fetchone()
+                if inserted is not None:
+                    return SubagentDelegationReceipt(
+                        delegation_id=delegation_id,
+                        idempotency_key=request.idempotency_key,
+                        child_task_id=receipt.task_id,
+                        child_binding_digest=receipt.binding_digest or "0" * 64,
                     )
-                return _replay_receipt(request, existing)
-            return SubagentDelegationReceipt(
-                delegation_id=delegation_id,
-                idempotency_key=request.idempotency_key,
-                child_task_id=receipt.task_id,
-                child_binding_digest=receipt.binding_digest or "0" * 64,
+                # A concurrent winner committed this key first. Raising
+                # rolls the loser's just-admitted child back with the
+                # transaction; the except branch replays the winner.
+                raise _DelegationRaceLost()
+        except _DelegationRaceLost:
+            winner = self._find_by_key(request)
+            if winner is None:
+                raise DelegationReplayError(
+                    "delegation race resolved without a winner; failing closed"
+                ) from None
+            return _replay_receipt(request, winner)
+
+    def child_terminal_summary(self, child_task_id: TaskId) -> str | None:
+        """The child's own terminal answer from its event stream (trusted)."""
+
+        with self._database.connect() as connection:
+            return child_terminal_summary_in_transaction(
+                connection, self.deployment_namespace, child_task_id
             )
 
     def get_link(self, child_task_id: TaskId) -> ParentChildLink | None:
@@ -196,3 +208,44 @@ def _root_of(request: SubagentDelegationRequest) -> TaskId:
     """Until the orchestration graph lands, the parent is the root."""
 
     return request.parent_task_id
+
+
+class _DelegationRaceLost(Exception):
+    """A concurrent delegation won this key; replay it after rollback."""
+
+
+def child_terminal_summary_in_transaction(
+    connection: Any,
+    namespace: str,
+    child_task_id: TaskId,
+) -> str | None:
+    """Read one child's terminal answer from its OWN event stream.
+
+    The real model answer lives in the terminal event's
+    ``metadata.assistant_message``; the top-level ``summary`` is only a
+    harness lifecycle label. Returns None when the child has no terminal
+    event yet.
+    """
+
+    row = connection.execute(
+        """
+        SELECT payload FROM session_events
+        WHERE deployment_namespace = %s AND session_id = %s
+            AND event_type IN ('session_completed', 'session_failed')
+        ORDER BY sequence DESC
+        LIMIT 1
+        """,
+        (namespace, str(child_task_id)),
+    ).fetchone()
+    if row is None:
+        return None
+    payload = row["payload"]
+    metadata = payload.get("metadata")
+    if isinstance(metadata, dict):
+        assistant = metadata.get("assistant_message")
+        if isinstance(assistant, str) and assistant.strip():
+            return assistant.strip()[:4000]
+    summary = payload.get("summary")
+    if isinstance(summary, str) and summary.strip():
+        return summary.strip()[:4000]
+    return "child reached a terminal status"

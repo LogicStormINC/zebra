@@ -77,6 +77,7 @@ from zebra_agent_api.session_payloads import (
 )
 from zebra_agent_api.session_prompt_inputs import resolve_mcp_prompt_attachment
 from zebra_agent_api.session_queue import create_queued_session
+from zebra_agent_api.session_replay import reconcile_replayed_run
 from zebra_agent_api.skills_admin import (
     ApiSkillsAdminMixin,
     runtime_skills_state,
@@ -134,7 +135,7 @@ class ZebraAgentApi(
             else None
         )
         if replayed is not None:
-            return replayed
+            return reconcile_replayed_run(self, replayed, payload, idempotency_key)
         parsed = parse_create_session_payload(payload)
         if isinstance(parsed, ApiResponse):
             return parsed

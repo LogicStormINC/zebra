@@ -40,7 +40,10 @@ from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
 from zebra_agent_worker.execution_context import harness_task_for_recovered
-from zebra_agent_worker.execution_continuations import recover_and_start_continuations
+from zebra_agent_worker.execution_continuations import (
+    build_child_result_verifier,
+    recover_and_start_continuations,
+)
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import (
@@ -219,11 +222,9 @@ class SessionExecutionService:
             self._cloud_provider_continuation_factory, session_id
         )
         claimed = restore_suspended_session_claim(
-            claimed,
-            cloud_deployment=self._settings.deployment == "cloud",
+            claimed, cloud_deployment=self._settings.deployment == "cloud",
             control_service=self._control_service,
-            recovery_service=self._recovery_service,
-            started_at=started_at,
+            recovery_service=self._recovery_service, started_at=started_at,
             event_store=self._event_store,
         )
         recovered_handoff = handoff.recover_worker_handoff(
@@ -390,6 +391,9 @@ class SessionExecutionService:
             started_at=started_at,
             recorder=authority_recorder,
             cleanup=lambda: close_tool_gateway(tool_gateway),
+            child_result_verifier=build_child_result_verifier(
+                self._delegation_store, self._projection_store
+            ),
         )
         continuation = continuations.approved
         clarification = continuations.clarification

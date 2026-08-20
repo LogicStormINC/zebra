@@ -171,6 +171,31 @@ class SingleAttemptOrchestrator:
             assistant_message=assistant_message,
         )
 
+    def continue_completed_tools(
+        self,
+        context: HarnessContext,
+        *,
+        completion: ModelCompletion,
+        tool_calls: tuple[ToolCall, ...],
+        tool_results: tuple[ToolResult, ...],
+        conversation: tuple[SessionMessage, ...],
+        model_calls_used: int,
+        tool_calls_executed: int,
+        assistant_message: str,
+        metadata: dict[str, object] | None = None,
+    ) -> HarnessAttemptResult:
+        return self._tool_loop.continue_completed_batch(
+            context,
+            completion=completion,
+            tool_calls=tool_calls,
+            tool_results=tool_results,
+            conversation=conversation,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            assistant_message=assistant_message,
+            metadata=metadata,
+        )
+
     def continue_clarification(
         self,
         context: HarnessContext,
