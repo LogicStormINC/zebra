@@ -37,6 +37,10 @@ from agent_core.contracts.session_control_events import (
     SessionResumedPayload,
     SessionSuspendedPayload,
 )
+from agent_core.contracts.subagent_events import (
+    SubagentDelegatedPayload,
+    SubagentLifecyclePayload,
+)
 from agent_core.domain.agent_definition_snapshots import (
     AgentDefinitionSnapshot,
 )
@@ -198,56 +202,6 @@ class ToolExecutionCompletedPayload(BaseModel):
         if not stripped:
             raise ValueError("field must not be blank")
         return stripped
-
-
-class SubagentLifecyclePayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    attempt_number: int
-    subagent_id: str
-    status: str
-    max_model_calls: int
-    max_tool_calls: int
-    max_depth: int
-    model_calls_used: int = 0
-    tool_calls_used: int = 0
-    source_count: int = 0
-    confidence: float = 0.0
-    provenance: str
-
-    @field_validator(
-        "attempt_number",
-        "max_model_calls",
-        "max_tool_calls",
-        "max_depth",
-    )
-    @classmethod
-    def ensure_positive_count(cls, value: int) -> int:
-        if value <= 0:
-            raise ValueError("subagent limits must be positive")
-        return value
-
-    @field_validator("model_calls_used", "tool_calls_used", "source_count")
-    @classmethod
-    def ensure_non_negative_count(cls, value: int) -> int:
-        if value < 0:
-            raise ValueError("subagent usage must not be negative")
-        return value
-
-    @field_validator("subagent_id", "status", "provenance")
-    @classmethod
-    def ensure_text_not_blank(cls, value: str) -> str:
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("subagent lifecycle fields must not be blank")
-        return stripped
-
-    @field_validator("confidence")
-    @classmethod
-    def ensure_confidence_in_range(cls, value: float) -> float:
-        if not 0.0 <= value <= 1.0:
-            raise ValueError("subagent confidence must be between zero and one")
-        return value
 
 
 class MemoryCandidateExtractedPayload(BaseModel):
@@ -459,6 +413,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.SUBAGENT_COMPLETED: SubagentLifecyclePayload,
     EventType.SUBAGENT_FAILED: SubagentLifecyclePayload,
     EventType.SUBAGENT_CANCELLED: SubagentLifecyclePayload,
+    EventType.SUBAGENT_DELEGATED: SubagentDelegatedPayload,
     EventType.EXECUTION_AUTHORITY_RESOLVED: ExecutionAuthorityResolvedPayload,
     EventType.EXECUTION_AUTHORITY_REVALIDATED: ExecutionAuthorityRevalidatedPayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,

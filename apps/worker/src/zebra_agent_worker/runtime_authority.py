@@ -476,7 +476,10 @@ class AttemptAuthorityEvidence:
 
             return (
                 ClaimedSession(
-                    recovery=self.recovery_service.recover_session(session_id),
+                    recovery=self.recovery_service.recover_session(
+                        session_id,
+                        worker_lease=claimed.lease,
+                    ),
                     lease=claimed.lease,
                 ),
                 self.event_store.list_for_session(session_id),

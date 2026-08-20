@@ -58,11 +58,15 @@ from zebra_agent_api.api_workspace_mixin import (
     WorkspaceControlStorePort,
 )
 from zebra_agent_api.factory import create_app as create_app
-from zebra_agent_api.idempotency import replay_idempotent_response
+from zebra_agent_api.idempotency import replay_idempotent_response, request_hash
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
-from zebra_agent_api.session_binding import _admission_kwargs, freeze_binding_for_response
+from zebra_agent_api.session_binding import (
+    _admission_kwargs,
+    _post_admission_idempotency,
+    freeze_binding_for_response,
+)
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_identity_read import _parse_session_id as parse_session_id
 from zebra_agent_api.session_payloads import (
@@ -190,35 +194,28 @@ class ZebraAgentApi(
             return bad_request(str(error))
         parsed["attachments"] = (*parsed["attachments"], *resource_attachments, *prompt_attachments)
 
-        response = (
-            self.queue_cloud_run(
-                create_queued_session(
-                    self.stores,
-                    parsed,
-                    host_context=host_context,
-                    definition_snapshot=definition_snapshot,
-                    **_admission_kwargs(self.settings, self.stores, idempotency_key),
-                ),
-                idempotency_key=idempotency_key,
+        admission_kwargs = _admission_kwargs(
+            self.settings, self.stores, idempotency_key,
+            request_hash(payload) if idempotency_key is not None else None,
+        )
+        def _queued() -> ApiResponse:
+            return create_queued_session(
+                self.stores, parsed, host_context=host_context,
+                definition_snapshot=definition_snapshot, **admission_kwargs,
             )
+
+        response = (
+            self.queue_cloud_run(_queued(), idempotency_key=idempotency_key)
             if parsed["execute"] and self.settings.deployment == "cloud"
             else self._create_and_execute_session(parsed)
             if parsed["execute"]
-            else create_queued_session(
-                self.stores,
-                parsed,
-                host_context=host_context,
-                definition_snapshot=definition_snapshot,
-                **_admission_kwargs(self.settings, self.stores, idempotency_key),
-            )
+            else _queued()
         )
         if response.status_code == 201 and host_context is not None:
             freeze_binding_for_response(response, host_context,
                 definition_snapshot, deployment=self.settings.deployment,
                 storage_authority=self.settings.storage_authority,
                 database_url=self.settings.database_url, stores=self.stores)
-        from zebra_agent_api.session_binding import _post_admission_idempotency
-
         result = _post_admission_idempotency(
             self.settings, self.stores, idempotency_key, response, payload
         )

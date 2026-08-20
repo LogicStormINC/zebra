@@ -196,6 +196,12 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (21, "governed_memory_definition_scope", 64),
         (22, "agent_release_enforcement_mode", 64),
         (23, "session_tenant_namespace", 64),
+        (24, "host_connector_registry", 64),
+        (25, "task_binding_snapshots", 64),
+        (26, "subagent_delegation_links", 64),
+        (27, "orchestration_projections", 64),
+        (28, "agent_mailbox", 64),
+        (29, "research_tool_profile", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [

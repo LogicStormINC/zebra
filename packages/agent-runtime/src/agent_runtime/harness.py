@@ -168,6 +168,7 @@ class LocalToolGateway(ToolGatewayPort):
         delegation_store: object | None = None,
         parent_task_id: object | None = None,
         parent_binding_digest: str | None = None,
+        parent_binding: object | None = None,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
@@ -284,7 +285,7 @@ class LocalToolGateway(ToolGatewayPort):
                 self._subagents, workspace_root,
                 wait_for_result=not durable_delegation,
                 delegation_store=delegation_store, parent_task_id=parent_task_id,
-                parent_binding_digest=parent_binding_digest)
+                parent_binding=parent_binding)
             registry.register(research.contract, research.handle)
         self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
         self._parallel_safe_tools = registry.parallel_safe_names()

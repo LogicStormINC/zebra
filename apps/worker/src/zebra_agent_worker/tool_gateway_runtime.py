@@ -129,6 +129,7 @@ def build_worker_tool_gateway(
     delegation_store: object | None = None,
     parent_task_id: object | None = None,
     parent_binding_digest: str | None = None,
+    parent_binding: object | None = None,
 ) -> WorkerToolGateway:
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,
@@ -167,6 +168,7 @@ def build_worker_tool_gateway(
         delegation_store=delegation_store,
         parent_task_id=parent_task_id,
         parent_binding_digest=parent_binding_digest,
+        parent_binding=parent_binding,
     )
     if task.host_context is None:
         return WorkerToolGateway(

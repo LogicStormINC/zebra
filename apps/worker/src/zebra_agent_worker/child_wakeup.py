@@ -1,13 +1,16 @@
 """Child-completion wakeup service (Phase F4, real implementation).
 
 Polls delegation links for children that reached a terminal Session
-status, then appends a SESSION_COMMAND_ACCEPTED event to the PARENT's
-event stream. The existing SessionCommandConsumer picks it up and
-re-executes the parent on its next poll cycle.
+status, then appends a SESSION_COMMAND_ACCEPTED event carrying the
+child's terminal result summary to the PARENT's event stream and marks
+the link terminal — both in one transaction. The SessionCommandConsumer
+picks the command up and re-executes the parent on its next poll cycle;
+the resumed parent injects the carried results at the delegation point.
 """
 
 from __future__ import annotations
 
+import hashlib
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -85,9 +88,9 @@ class ChildCompletionWakeupService:
     ) -> dict[str, object] | None:
         """Append a resume command to the parent's event stream, then mark the link.
 
-        Order matters: the command event must land BEFORE the link is
-        marked terminal, so a crash between the two leaves the child
-        re-processable rather than lost.
+        The command payload carries the child's terminal result summary so
+        the resumed parent injects the real result, not the materialization
+        stub. Command append and link terminal update share one transaction.
         """
 
         parent = self._find_parent(child_task_id)
@@ -95,6 +98,7 @@ class ChildCompletionWakeupService:
             return None
         parent_session = SessionId(parent)
         namespace = self.deployment_namespace
+        summary = self._child_terminal_summary(child_task_id)
         with self._database.connect() as connection:
             current = connection.execute(
                 """
@@ -117,13 +121,20 @@ class ChildCompletionWakeupService:
                     "kind": "resume",
                     "expected_revision": int(current["current_sequence"]),
                     "idempotency_key": f"child-wakeup:{child_task_id}",
-                    "payload": {},
+                    "payload": {
+                        "child_results": [
+                            {
+                                "child_task_id": str(child_task_id),
+                                "status": status.value,
+                                "summary": summary,
+                            }
+                        ]
+                    },
                     "fingerprint": _command_fingerprint(str(parent_session), "resume"),
                 },
                 created_at=datetime.now(UTC),
             )
             self._append_event(connection, namespace, event)
-            # Mark the link terminal in the SAME transaction (atomic wakeup)
             connection.execute(
                 """
                 UPDATE subagent_delegation_links
@@ -141,6 +152,68 @@ class ChildCompletionWakeupService:
             "any_success": status is ChildTerminalStatus.COMPLETED,
         }
 
+    def load_parent_continuation(
+        self, parent_task_id: TaskId
+    ) -> ParentContinuation | None:
+        """Rebuild the durable ParentContinuation from delegation events."""
+
+        namespace = self.deployment_namespace
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT payload, created_at FROM session_events
+                WHERE deployment_namespace = %s AND session_id = %s
+                    AND event_type = 'subagent_delegated'
+                ORDER BY sequence
+                """,
+                (namespace, str(parent_task_id)),
+            ).fetchall()
+            link_rows = connection.execute(
+                """
+                SELECT child_task_id, terminal_at FROM subagent_delegation_links
+                WHERE deployment_namespace = %s AND parent_task_id = %s
+                """,
+                (namespace, str(parent_task_id)),
+            ).fetchall()
+        if not rows:
+            return None
+        children = [
+            TaskId(row["child_task_id"])
+            for row in link_rows
+            if str(row["child_task_id"]) in {str(r["child_task_id"]) for r in rows}
+        ]
+        return ParentContinuation(
+            parent_task_id=parent_task_id,
+            plan_revision=1,
+            required_child_ids=tuple(children),
+            completion_strategy="all_terminal",
+            resume_command_key=f"child-wakeup:{parent_task_id}",
+            created_at=rows[0]["created_at"],
+        )
+
+    def _load_continuation(self, parent_task_id: TaskId) -> ParentContinuation | None:
+        return self.load_parent_continuation(parent_task_id)
+
+    def _child_terminal_summary(self, child_task_id: TaskId) -> str:
+        namespace = self.deployment_namespace
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload FROM session_events
+                WHERE deployment_namespace = %s AND session_id = %s
+                    AND event_type IN ('session_completed', 'session_failed')
+                ORDER BY sequence DESC
+                LIMIT 1
+                """,
+                (namespace, str(child_task_id)),
+            ).fetchone()
+        if row is None:
+            return "child reached a terminal status without a recorded summary"
+        summary = row["payload"].get("summary")
+        if isinstance(summary, str) and summary.strip():
+            return summary.strip()[:4000]
+        return "child reached a terminal status"
+
     def _find_parent(self, child_task_id: TaskId) -> TaskId | None:
         namespace = self.deployment_namespace
         with self._database.connect() as connection:
@@ -155,12 +228,6 @@ class ChildCompletionWakeupService:
             return None
         return TaskId(row["parent_task_id"])
 
-    def _load_continuation(self, parent_task_id: TaskId) -> ParentContinuation | None:
-        """Load a stored parent continuation (ORCH-PG projections)."""
-
-        return None
 
 def _command_fingerprint(session_id: str, kind: str) -> str:
-    import hashlib
-
     return hashlib.sha256(f"{session_id}:{kind}".encode()).hexdigest()

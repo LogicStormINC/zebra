@@ -27,7 +27,8 @@ set +e
   ZEBRA_TEST_S3_SECRET_KEY="zebra-cloud-effect-test-secret" \
     uv run --package agent-storage --with pytest pytest -q \
       tests/agent_storage/test_postgres_effect_payload_transactions.py \
-      tests/agent_storage/test_postgres_governed_memories.py
+      tests/agent_storage/test_postgres_governed_memories.py \
+      tests/agent_storage/test_postgres_default_chain_e2e.py
 )
 status=$?
 set -e
