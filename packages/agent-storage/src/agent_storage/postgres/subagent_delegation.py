@@ -219,19 +219,22 @@ def child_terminal_summary_in_transaction(
     namespace: str,
     child_task_id: TaskId,
 ) -> str | None:
-    """Read one child's terminal answer from its OWN event stream.
+    """Read one child's canonical terminal answer from its OWN event stream.
 
     The real model answer lives in the terminal event's
     ``metadata.assistant_message``; the top-level ``summary`` is only a
-    harness lifecycle label. Returns None when the child has no terminal
-    event yet.
+    harness lifecycle label. Cancelled children carry no answer, so the
+    fallback text is their canonical summary. The result is truncated to
+    a UTF-8-safe BYTE budget so worst-case epochs (16 children) stay far
+    inside the 64 KiB command contract; producer and verifier share this
+    canonical form, so equality checks remain exact.
     """
 
     row = connection.execute(
         """
         SELECT payload FROM session_events
         WHERE deployment_namespace = %s AND session_id = %s
-            AND event_type IN ('session_completed', 'session_failed')
+            AND event_type IN ('session_completed', 'session_failed', 'session_cancelled')
         ORDER BY sequence DESC
         LIMIT 1
         """,
@@ -240,12 +243,24 @@ def child_terminal_summary_in_transaction(
     if row is None:
         return None
     payload = row["payload"]
-    metadata = payload.get("metadata")
+    metadata = payload.get("metadata") if isinstance(payload, dict) else None
     if isinstance(metadata, dict):
         assistant = metadata.get("assistant_message")
         if isinstance(assistant, str) and assistant.strip():
-            return assistant.strip()[:4000]
-    summary = payload.get("summary")
+            return _canonical_summary(assistant)
+    summary = payload.get("summary") if isinstance(payload, dict) else None
     if isinstance(summary, str) and summary.strip():
-        return summary.strip()[:4000]
-    return "child reached a terminal status"
+        return _canonical_summary(summary)
+    return _CANONICAL_FALLBACK_SUMMARY
+
+
+_CANONICAL_FALLBACK_SUMMARY = "child reached a terminal status"
+_SUMMARY_BYTE_BUDGET = 2048
+
+
+def _canonical_summary(text: str) -> str:
+    stripped = text.strip()
+    encoded = stripped.encode("utf-8")
+    if len(encoded) <= _SUMMARY_BYTE_BUDGET:
+        return stripped
+    return encoded[:_SUMMARY_BYTE_BUDGET].decode("utf-8", errors="ignore")

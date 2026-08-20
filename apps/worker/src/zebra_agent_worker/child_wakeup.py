@@ -15,7 +15,7 @@ from __future__ import annotations
 import hashlib
 from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID, uuid5
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
@@ -37,6 +37,7 @@ _STATUS_MAP: dict[str, ChildTerminalStatus] = {
 }
 
 _POLL_LIMIT = 16
+_WAKEUP_NAMESPACE = UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8")
 
 
 class ChildCompletionWakeupService:
@@ -109,6 +110,20 @@ class ChildCompletionWakeupService:
         parent_session = SessionId(parent)
         namespace = self.deployment_namespace
         with self._database.connect() as connection:
+            # Serialize wakeup processing per parent: the stream row lock
+            # orders every claim → evaluate → emit sequence for this
+            # parent, so concurrent workers can neither duplicate the
+            # wakeup event nor both observe keep_waiting and strand it.
+            locked = connection.execute(
+                """
+                SELECT current_version FROM session_streams
+                WHERE deployment_namespace = %s AND session_id = %s
+                FOR UPDATE
+                """,
+                (namespace, str(parent_session)),
+            ).fetchone()
+            if locked is None:
+                return None
             connection.execute(
                 """
                 UPDATE subagent_delegation_links
@@ -118,7 +133,7 @@ class ChildCompletionWakeupService:
                 """,
                 (datetime.now(UTC), namespace, str(child_task_id)),
             )
-            continuation = self.load_parent_continuation(parent)
+            continuation = self._load_continuation_in(connection, namespace, parent)
             if continuation is None:
                 return None
             terminals = self._terminal_records(connection, namespace, parent)
@@ -133,7 +148,7 @@ class ChildCompletionWakeupService:
                     "required_child_count": len(continuation.required_child_ids),
                 }
             child_results: list[dict[str, str]] = []
-            for record in relevant:
+            for record in sorted(relevant, key=lambda item: str(item.child_task_id)):
                 summary = child_terminal_summary_in_transaction(
                     connection, namespace, record.child_task_id
                 )
@@ -153,23 +168,48 @@ class ChildCompletionWakeupService:
                 (namespace, str(parent_session)),
             ).fetchone()
             assert current is not None
-            last_sequence = int(current["current_sequence"])
-            next_sequence = last_sequence + 1
+            next_sequence = int(current["current_sequence"]) + 1
+            # The wakeup event is DETERMINISTIC per settled epoch so the
+            # event idempotency dedupe accepts concurrent processors:
+            # sorted children, an epoch-derived command id, and an
+            # expected_revision anchored to the epoch's own last
+            # delegation (not the evolving stream head).
+            epoch_children = sorted(
+                str(record.child_task_id) for record in relevant
+            )
+            epoch_digest = hashlib.sha256(
+                ":".join(epoch_children).encode()
+            ).hexdigest()
+            epoch_anchor = connection.execute(
+                """
+                SELECT COALESCE(MAX(sequence), 0) AS anchored_revision
+                FROM session_events
+                WHERE deployment_namespace = %s AND session_id = %s
+                    AND event_type = 'subagent_delegated'
+                """,
+                (namespace, str(parent_session)),
+            ).fetchone()
+            assert epoch_anchor is not None
             event = SessionEvent.create(
                 session_id=parent_session,
                 sequence=next_sequence,
                 event_type=EventType.SESSION_COMMAND_ACCEPTED,
                 actor=EventActor.HARNESS,
                 payload={
-                    "command_id": str(uuid4()),
+                    "command_id": str(
+                        uuid5(_WAKEUP_NAMESPACE, f"wakeup:{parent}:{epoch_digest}")
+                    ),
                     "session_id": str(parent_session),
                     "kind": "resume",
-                    "expected_revision": last_sequence,
+                    "expected_revision": int(epoch_anchor["anchored_revision"]),
                     "idempotency_key": f"child-wakeup:{parent}",
                     "payload": {"child_results": child_results},
-                    "fingerprint": _command_fingerprint(str(parent_session), "resume"),
+                    "fingerprint": _command_fingerprint(
+                        f"{parent}:{epoch_digest}", "resume"
+                    ),
                 },
                 created_at=datetime.now(UTC),
+                idempotency_key=f"wakeup:{parent}:{epoch_digest}",
             )
             self._append_event(connection, namespace, event)
         return {
@@ -193,9 +233,15 @@ class ChildCompletionWakeupService:
         children settled in earlier epochs no longer gate this one.
         """
 
-        namespace = self.deployment_namespace
         with self._database.connect() as connection:
-            rows = connection.execute(
+            return self._load_continuation_in(
+                connection, self.deployment_namespace, parent_task_id
+            )
+
+    def _load_continuation_in(
+        self, connection: Any, namespace: str, parent_task_id: TaskId
+    ) -> ParentContinuation | None:
+        rows = connection.execute(
                 """
                 SELECT event_type, payload, created_at FROM session_events
                 WHERE deployment_namespace = %s AND session_id = %s

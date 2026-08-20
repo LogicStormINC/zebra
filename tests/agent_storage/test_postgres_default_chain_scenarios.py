@@ -336,3 +336,71 @@ def test_replayed_create_requeues_missing_run_command(
     assert replayed_again.body == replayed.body, (
         "the healed body must itself replay verbatim"
     )
+
+
+def test_concurrent_api_creates_return_identical_full_responses(
+    postgres_dsn: str,
+    cloud_composition: CloudCompositionSettings,
+    namespace: str,
+    tmp_path: Path,
+) -> None:
+    """16 concurrent API creates with one key must all return the SAME
+    full 201 body (including the run command) — no 200-duplicate drift."""
+
+    from concurrent.futures import ThreadPoolExecutor
+
+    cloud = CloudCompositionSettings(
+        dsn=postgres_dsn,
+        deployment_namespace=namespace,
+        memory_cursor_signing_key=cloud_composition.memory_cursor_signing_key,
+        artifact_objects=cloud_composition.artifact_objects,
+        history_scope=cloud_composition.history_scope,
+        continuation_scope=cloud_composition.continuation_scope,
+    )
+    settings = _settings("http://127.0.0.1:9", postgres_dsn)
+    workspace_root = tmp_path / "workspace-api16"
+    workspace_root.mkdir()
+    app = create_app(
+        database_path=tmp_path / "unused.sqlite",
+        settings=settings,
+        cloud_composition=cloud,
+    )
+    payload = {
+        "title": "api16-e2e",
+        "prompt": PARENT_PROMPT,
+        "workspace": str(workspace_root),
+        "execute": True,
+    }
+
+    def create(_: int):
+        return app.create_session(payload, idempotency_key="e2e-api16-1")
+
+    with ThreadPoolExecutor(max_workers=16) as executor:
+        responses = list(executor.map(create, range(16)))
+
+    for response in responses:
+        assert response.status_code == 201, response.body
+        assert response.body.get("command") is not None
+    bodies = {json.dumps(response.body, sort_keys=True) for response in responses}
+    assert len(bodies) == 1, "every concurrent create must return one body"
+    from psycopg import connect
+
+    with connect(postgres_dsn) as connection:
+        sessions = connection.execute(
+            """
+            SELECT count(*) FROM session_streams
+            WHERE deployment_namespace = %s
+            """,
+            (namespace,),
+        ).fetchone()
+        commands = connection.execute(
+            """
+            SELECT count(*) FROM session_events
+            WHERE deployment_namespace = %s
+                AND event_type = 'session_command_accepted'
+                AND payload ->> 'kind' = 'run'
+            """,
+            (namespace,),
+        ).fetchone()
+    assert int(sessions[0]) == 1, "exactly one session may exist"
+    assert int(commands[0]) == 1, "exactly one run command may exist"

@@ -41,7 +41,26 @@ class ApiCommandMixin:
             idempotency_key=command_key,
         )
         if command.status_code != 202:
-            return command
+            if command.body.get("status") == "duplicate":
+                # A concurrent create (or a crash after the run event
+                # committed) already queued this exact command — every
+                # caller must see the SAME create contract, so the
+                # accepted body is rebuilt from the persisted event.
+                existing = next(
+                    (
+                        event
+                        for event in self.stores.events.list_for_session(
+                            SessionId(session_id)
+                        )
+                        if event.idempotency_key == command_key
+                    ),
+                    None,
+                )
+                if existing is None:
+                    return command
+                command = _accepted_from_event(existing, session_text)
+            else:
+                return command
         body = dict(response.body)
         body.update({"executed": False, "status": "queued", "command": command.body})
         return ApiResponse(status_code=201, body=body)
@@ -60,3 +79,21 @@ class ApiCommandMixin:
             payload,
             idempotency_key=idempotency_key,
         )
+
+
+def _accepted_from_event(event: object, session_text: str) -> ApiResponse:
+    """Rebuild the 202-accepted command body from the persisted event."""
+
+    payload = getattr(event, "payload", {})
+    return ApiResponse(
+        status_code=202,
+        body={
+            "session_id": session_text,
+            "command_id": payload.get("command_id"),
+            "kind": payload.get("kind", "run"),
+            "status": "accepted",
+            "event_type": "session_command_accepted",
+            "event_sequence": getattr(event, "sequence", None),
+            "expected_revision": payload.get("expected_revision"),
+        },
+    )
