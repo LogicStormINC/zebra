@@ -17,20 +17,13 @@ delegation chain end to end:
 from __future__ import annotations
 
 import json
-import os
-import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from uuid import UUID, uuid4
 
-import pytest
-from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventType
-from agent_storage import apply_postgres_migrations, bootstrap_control_plane_epoch
-from agent_storage.artifact_objects import S3ArtifactObjectStore
+from agent_core.domain.identifiers import SessionId
 from agent_storage.runtime_composition import CloudCompositionSettings
-from botocore.config import Config  # type: ignore[import-untyped]
-from botocore.session import Session as BotocoreSession  # type: ignore[import-untyped]
 from zebra_agent_api.factory import create_app
 from zebra_agent_worker.loop import build_worker_loop_service
 
@@ -40,6 +33,9 @@ PARENT_RESUMED_ANSWER = "PARENT_RESUMED_WITH_CHILD_EVIDENCE"
 CHILD_ANSWER = "CHILD_SUMMARY_E2E"
 
 MODEL_KEY_ENV = "ZEBRA_E2E_MODEL_KEY"
+# Scripted-delegation width: 1 (default) or 2 (multi-child scenario).
+SCRIPT_MODE: dict[str, int] = {"children": 1}
+CHILD_OBJECTIVE_2 = "CHILD_E2E_OBJECTIVE_2: locate the rollback playbook section."
 
 
 def _completion(content: str, finish: str = "stop") -> dict[str, object]:
@@ -84,6 +80,43 @@ def _tool_completion(call_id: str, name: str, arguments: dict[str, str]) -> dict
             }
         ],
         "usage": {"prompt_tokens": 16, "completion_tokens": 16, "total_tokens": 32},
+    }
+
+
+def _multi_tool_completion(
+    name: str, delegations: list[tuple[str, str]]
+) -> dict[str, object]:
+    """One completion proposing several agent.research calls at once."""
+
+    tool_calls = [
+        {
+            "id": f"call-{uuid4()}",
+            "type": "function",
+            "function": {
+                "name": name,
+                "arguments": json.dumps(
+                    {"objective": objective, "delegation_reason": reason}
+                ),
+            },
+        }
+        for objective, reason in delegations
+    ]
+    return {
+        "id": f"chatcmpl-{uuid4()}",
+        "object": "chat.completion",
+        "model": "stub-model",
+        "choices": [
+            {
+                "index": 0,
+                "finish_reason": "tool_calls",
+                "message": {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": tool_calls,
+                },
+            }
+        ],
+        "usage": {"prompt_tokens": 24, "completion_tokens": 24, "total_tokens": 48},
     }
 
 
@@ -140,9 +173,27 @@ def _scripted_response(body: dict[str, object]) -> dict[str, object]:
         (name for name in advertised if isinstance(name, str) and "research" in name),
         None,
     )
-    if "child_task_id" in joined and "PARENT_RESUMED" not in joined:
-        return _completion(PARENT_RESUMED_ANSWER)
+    child_evidence = joined.count(CHILD_ANSWER)
     if PARENT_PROMPT in joined and research_tool is not None:
+        expected_children = SCRIPT_MODE["children"]
+        if child_evidence >= expected_children and "PARENT_RESUMED" not in joined:
+            # The parent may only finish once EVERY child's REAL answer has
+            # been injected into the conversation.
+            return _completion(PARENT_RESUMED_ANSWER)
+        if expected_children >= 2:
+            return _multi_tool_completion(
+                research_tool,
+                [
+                    (
+                        CHILD_OBJECTIVE,
+                        "bounded read-only evidence needs isolation",
+                    ),
+                    (
+                        CHILD_OBJECTIVE_2,
+                        "the rollback evidence is independent",
+                    ),
+                ],
+            )
         return _tool_completion(
             f"call-{uuid4()}",
             research_tool,
@@ -151,7 +202,7 @@ def _scripted_response(body: dict[str, object]) -> dict[str, object]:
                 "delegation_reason": "bounded read-only evidence needs isolation",
             },
         )
-    if CHILD_OBJECTIVE in joined:
+    if CHILD_OBJECTIVE_2 in joined or CHILD_OBJECTIVE in joined:
         return _completion(CHILD_ANSWER)
     return _completion("ok")
 
@@ -184,71 +235,6 @@ class _StubModelHandler(BaseHTTPRequestHandler):
 
     def log_message(self, *args: object) -> None:
         return
-
-
-@pytest.fixture(scope="session")
-def postgres_dsn() -> str:
-    dsn = os.environ.get("ZEBRA_TEST_POSTGRES_DSN")
-    if not dsn:
-        pytest.skip("set ZEBRA_TEST_POSTGRES_DSN to run real PostgreSQL tests")
-    apply_postgres_migrations(dsn)
-    return dsn
-
-
-@pytest.fixture(scope="session")
-def cloud_composition(postgres_dsn: str) -> CloudCompositionSettings:
-    endpoint = os.environ.get("ZEBRA_TEST_S3_ENDPOINT")
-    if not endpoint:
-        pytest.skip("set ZEBRA_TEST_S3_ENDPOINT to run real artifact-store tests")
-    client = BotocoreSession().create_client(
-        "s3",
-        endpoint_url=endpoint,
-        aws_access_key_id=os.environ.get("ZEBRA_TEST_S3_ACCESS_KEY", ""),
-        aws_secret_access_key=os.environ.get("ZEBRA_TEST_S3_SECRET_KEY", ""),
-        region_name="us-east-1",
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-    )
-    issuer = OpaqueAuthorityScope(
-        authority_issuer="https://zebra-e2e.example.com",
-        namespace_id="e2e-history",
-    )
-    continuation = OpaqueAuthorityScope(
-        authority_issuer="https://zebra-e2e.example.com",
-        namespace_id="e2e-continuation",
-    )
-    return CloudCompositionSettings(
-        dsn=postgres_dsn,
-        deployment_namespace=f"default-chain-{uuid4()}",
-        memory_cursor_signing_key=b"e2e-memory-cursor-signing-key-32bytes!!",
-        artifact_objects=S3ArtifactObjectStore(
-            client,
-            bucket=os.environ.get("ZEBRA_TEST_S3_BUCKET", "zebra-artifacts"),
-            key_prefix="zebra/artifacts/v1",
-        ),
-        history_scope=issuer,
-        continuation_scope=continuation,
-    )
-
-
-@pytest.fixture
-def namespace(cloud_composition: CloudCompositionSettings) -> str:
-    namespace = f"default-chain-{uuid4()}"
-    bootstrap_control_plane_epoch(
-        cloud_composition.dsn, deployment_namespace=namespace
-    )
-    return namespace
-
-
-@pytest.fixture
-def stub_model_server():
-    server = ThreadingHTTPServer(("127.0.0.1", 0), _StubModelHandler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    os.environ[MODEL_KEY_ENV] = "stub-key"
-    yield f"http://127.0.0.1:{server.server_address[1]}"
-    server.shutdown()
-    server.server_close()
-    os.environ.pop(MODEL_KEY_ENV, None)
 
 
 def _settings(stub_url: str, dsn: str):
@@ -327,7 +313,7 @@ def test_default_chain_delegates_suspends_and_resumes(
     )
 
     stores = app.stores
-    from agent_core.domain.identifiers import SessionId, TaskId
+    from agent_core.domain.identifiers import TaskId
 
     events = stores.events.list_for_session(SessionId(UUID(session_id)))
     event_types = [event.event_type for event in events]
@@ -384,4 +370,21 @@ def test_default_chain_delegates_suspends_and_resumes(
     assistant = completed_event.payload.get("metadata", {}).get("assistant_message", "")
     assert PARENT_RESUMED_ANSWER in str(assistant), (
         "parent final answer must reflect the injected child result"
+    )
+
+    # The wakeup command must be HARNESS-actor and carry the child's REAL
+    # terminal answer (metadata.assistant_message), not a lifecycle label.
+    wakeup_commands = [
+        event
+        for event in events
+        if event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+        and event.actor.value == "harness"
+        and event.payload.get("kind") == "resume"
+    ]
+    assert wakeup_commands, "the trusted harness wakeup command must exist"
+    delivered = wakeup_commands[0].payload["payload"]["child_results"]
+    assert delivered[0]["child_task_id"] == child_task_id
+    assert delivered[0]["status"] == "completed"
+    assert CHILD_ANSWER in delivered[0]["summary"], (
+        "wakeup must carry the child's real model answer"
     )

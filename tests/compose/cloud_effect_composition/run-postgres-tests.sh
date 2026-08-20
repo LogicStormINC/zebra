@@ -28,7 +28,9 @@ set +e
     uv run --package agent-storage --with pytest pytest -q \
       tests/agent_storage/test_postgres_effect_payload_transactions.py \
       tests/agent_storage/test_postgres_governed_memories.py \
-      tests/agent_storage/test_postgres_default_chain_e2e.py
+      tests/agent_storage/test_postgres_default_chain_e2e.py \
+      tests/agent_storage/test_postgres_default_chain_scenarios.py \
+      tests/agent_storage/test_postgres_concurrent_idempotency.py
 )
 status=$?
 set -e

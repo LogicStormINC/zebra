@@ -136,6 +136,13 @@ def restore_suspended_session_claim(
             raise WorkerExecutionError(
                 "cloud suspended-session restoration is not supported by the default Worker"
             )
+        if not _has_trusted_child_wakeup(events):
+            # A USER resume command cannot substitute for the durable
+            # wakeup — without it the parent would re-run from scratch and
+            # the delegated results would be lost.
+            raise WorkerExecutionError(
+                "waiting_children suspension requires the harness wakeup to resume"
+            )
         event_store.append(
             SessionEvent.create(
                 session_id=claimed.lease.session_id,
@@ -174,6 +181,22 @@ def _is_waiting_children_suspension(events: list[SessionEvent]) -> bool:
         ):
             waiting = False
     return waiting
+
+
+def _has_trusted_child_wakeup(events: list[SessionEvent]) -> bool:
+    """A harness-actor resume command must exist after the last suspension."""
+
+    trusted = False
+    for event in events:
+        if event.event_type is EventType.SESSION_SUSPENDED:
+            trusted = False
+        elif (
+            event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+            and event.actor is EventActor.HARNESS
+            and event.payload.get("kind") == "resume"
+        ):
+            trusted = True
+    return trusted
 
 
 def start_recovered_continuation(

@@ -175,32 +175,21 @@ def _insert_or_load_idempotency(
     namespace: str,
     receipt: IdempotencyRecord,
 ) -> IdempotencyRecord | None:
-    """Return the existing receipt when the key already committed."""
+    """Claim the key atomically; return the existing receipt when taken.
 
-    existing = connection.execute(
-        """
-        SELECT action, idempotency_key, request_hash, status_code,
-               response_body, created_at
-        FROM control_plane_idempotency_records
-        WHERE deployment_namespace = %s AND action = %s AND idempotency_key = %s
-        """,
-        (namespace, receipt.action, receipt.idempotency_key),
-    ).fetchone()
-    if existing is not None:
-        return IdempotencyRecord(
-            action=existing["action"],
-            idempotency_key=existing["idempotency_key"],
-            request_hash=existing["request_hash"],
-            status_code=existing["status_code"],
-            response_body=dict(existing["response_body"]),
-            created_at=existing["created_at"],
-        )
-    connection.execute(
+    INSERT ... ON CONFLICT DO NOTHING closes the SELECT/INSERT race —
+    concurrent admissions with the same key see exactly one insert; the
+    losers read the winner's receipt and replay it.
+    """
+
+    inserted = connection.execute(
         """
         INSERT INTO control_plane_idempotency_records (
             deployment_namespace, action, idempotency_key, request_hash,
             status_code, response_body, created_at
         ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (deployment_namespace, action, idempotency_key) DO NOTHING
+        RETURNING idempotency_key
         """,
         (
             namespace,
@@ -211,8 +200,28 @@ def _insert_or_load_idempotency(
             Jsonb(receipt.response_body),
             receipt.created_at,
         ),
+    ).fetchone()
+    if inserted is not None:
+        return None
+    existing = connection.execute(
+        """
+        SELECT action, idempotency_key, request_hash, status_code,
+               response_body, created_at
+        FROM control_plane_idempotency_records
+        WHERE deployment_namespace = %s AND action = %s AND idempotency_key = %s
+        """,
+        (namespace, receipt.action, receipt.idempotency_key),
+    ).fetchone()
+    if existing is None:
+        raise ValueError("idempotency claim disappeared inside its own transaction")
+    return IdempotencyRecord(
+        action=existing["action"],
+        idempotency_key=existing["idempotency_key"],
+        request_hash=existing["request_hash"],
+        status_code=existing["status_code"],
+        response_body=dict(existing["response_body"]),
+        created_at=existing["created_at"],
     )
-    return None
 
 
 def _insert_binding_snapshot(

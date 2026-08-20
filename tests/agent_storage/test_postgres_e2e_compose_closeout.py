@@ -176,7 +176,58 @@ def test_e2e_admission_freeze_delegate_complete_wakeup(
     assert link is not None
     assert link.parent_task_id == parent_task
 
-    # Step 4: Child completes (F4) — process the terminal
+    # The default chain freezes the delegation join state in the parent
+    # stream; the wakeup legitimately requires it as the epoch record.
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_storage.postgres.database import PostgresDatabase
+    from agent_storage.postgres.events import append_event_in_transaction
+
+    _database = PostgresDatabase(postgres_dsn, deployment_namespace=namespace)
+    with _database.connect() as connection:
+        _current = connection.execute(
+            """
+            SELECT COALESCE(MAX(sequence), -1) AS current_sequence
+            FROM session_events
+            WHERE deployment_namespace = %s AND session_id = %s
+            """,
+            (namespace, str(parent_task)),
+        ).fetchone()
+        append_event_in_transaction(
+            connection,
+            namespace,
+            SessionEvent.create(
+                session_id=parent_bootstrap.session.session_id,
+                sequence=int(_current["current_sequence"]) + 1,
+                event_type=EventType.SUBAGENT_DELEGATED,
+                actor=EventActor.HARNESS,
+                payload={
+                    "attempt_number": 1,
+                    "child_task_id": str(child_task),
+                    "tool_name": "agent.research",
+                    "tool_call_id": "call-e2e",
+                    "arguments": {
+                        "objective": "Collect evidence for the E2E proof",
+                        "delegation_reason": "probe",
+                    },
+                    "assistant_message": "delegating",
+                    "conversation": [],
+                    "model_calls_used": 1,
+                    "tool_calls_executed": 1,
+                },
+                created_at=datetime.now(UTC),
+            ),
+        )
+
+    # Step 4: Child completes (F4) — terminal projection, then wakeup
+    with connect(postgres_dsn) as connection:
+        connection.execute(
+            """
+            UPDATE session_projections
+            SET status = 'completed', updated_at = NOW()
+            WHERE deployment_namespace = %s AND session_id = %s
+            """,
+            (namespace, str(child_task)),
+        )
     wakeup_service = ChildCompletionWakeupService(
         postgres_dsn, deployment_namespace=namespace
     )

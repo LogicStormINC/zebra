@@ -138,19 +138,49 @@ class SequentialToolLoop:
         tool_calls_executed: int,
         assistant_message: str,
     ) -> HarnessAttemptResult:
+        return self.continue_completed_batch(
+            context,
+            completion=completion,
+            tool_calls=(tool_call,),
+            tool_results=(tool_result,),
+            conversation=conversation,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            assistant_message=assistant_message,
+            metadata={"completed_continuation": True},
+        )
+
+    def continue_completed_batch(
+        self,
+        context: HarnessContext,
+        *,
+        completion: ModelCompletion,
+        tool_calls: tuple[ToolCall, ...],
+        tool_results: tuple[ToolResult, ...],
+        conversation: tuple[SessionMessage, ...],
+        model_calls_used: int,
+        tool_calls_executed: int,
+        assistant_message: str,
+        metadata: dict[str, object] | None = None,
+    ) -> HarnessAttemptResult:
+        """Inject one real result per delegated call, then continue the loop."""
+
         messages = list(conversation)
         if not messages:
             self._model_step.append_tool_batch(
                 messages,
                 completion=completion,
-                tool_calls=(tool_call,),
+                tool_calls=tool_calls,
             )
-        self._model_step.append_tool_result(
-            messages,
-            tool_call=tool_call,
-            tool_result=tool_result,
-            created_at=context.attempt.started_at,
-        )
+        if len(tool_results) != len(tool_calls):
+            raise ValueError("completed batch results must match the tool calls")
+        for tool_call, tool_result in zip(tool_calls, tool_results, strict=True):
+            self._model_step.append_tool_result(
+                messages,
+                tool_call=tool_call,
+                tool_result=tool_result,
+                created_at=context.attempt.started_at,
+            )
         return self._request_next_completion(
             context,
             messages=messages,
@@ -158,10 +188,7 @@ class SequentialToolLoop:
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
             fingerprints=_executed_action_fingerprints(messages),
-            metadata={
-                "completed_continuation": True,
-                "tool_call_id": str(tool_call.tool_call_id),
-            },
+            metadata=metadata or {},
             fallback_message=assistant_message,
         )
 
