@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from agent_context import LocalContextCompiler
 from agent_core.application import SessionTitleService
@@ -31,6 +32,9 @@ import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
 import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
 from zebra_agent_worker.bound_execution_authority import select_attempt_authority
+
+if TYPE_CHECKING:
+    from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.continuation_lifecycle import (
@@ -94,6 +98,7 @@ class SessionExecutionService:
         execution_authority_scope: authority_types.AuthorityScope | None = None,
         execution_authority_scope_provider: authority_types.AuthorityScopeProvider | None = None,
         task_binding_loader: Callable[[SessionId], object] | None = None,
+        egress_registry: HostConnectorRegistryPort | None = None,
     ) -> None:
         validate_authority_wiring(
             execution_authority_resolver,
@@ -175,6 +180,7 @@ class SessionExecutionService:
         self._execution_authority_scope = execution_authority_scope
         self._execution_authority_scope_provider = execution_authority_scope_provider
         self._task_binding_loader = task_binding_loader
+        self._egress_registry = egress_registry
 
     def execute_session(
         self,
@@ -275,7 +281,7 @@ class SessionExecutionService:
         runtime_handle = None
         effect_recorder: list[DurableHarnessEventRecorder] = []
         try:
-            evidence = AttemptAuthorityEvidence(
+            claimed, session_events = AttemptAuthorityEvidence(
                 *select_attempt_authority(
                     self._execution_authority_resolver,
                     self._execution_authority_scope,
@@ -285,8 +291,7 @@ class SessionExecutionService:
                 ),
                 self._recovery_service,
                 self._event_store,
-            )
-            claimed, session_events = evidence.persist(
+            ).persist(
                 authority_recorder,
                 claimed,
                 session_events,
@@ -327,16 +332,12 @@ class SessionExecutionService:
                     lease=claimed.lease,
                 )
             local_tool_gateway = build_worker_tool_gateway(
-                task,
-                settings=self._settings,
-                model_gateway=model_gateway,
-                session_history=self._session_history,
-                session_id=session_id,
-                runtime=runtime,
-                runtime_handle=runtime_handle,
+                task, settings=self._settings, model_gateway=model_gateway,
+                session_history=self._session_history, session_id=session_id,
+                runtime=runtime, runtime_handle=runtime_handle,
                 local_artifacts=self._artifact_payload_store,
-                cloud_artifacts=cloud_artifacts,
-                trusted_local=trusted_local,
+                cloud_artifacts=cloud_artifacts, trusted_local=trusted_local,
+                egress_registry=self._egress_registry,
             )
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,

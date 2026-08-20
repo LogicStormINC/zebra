@@ -7,6 +7,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolIdempotency, ToolResult, ToolRisk
 from agent_core.ports import ArtifactPayloadStorePort, ModelGatewayPort, SessionHistoryPort
+from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_integrations.host_tools import HostToolGateway, HostToolManifest, HostWorkloadIdentity
 from agent_runtime import LocalToolGateway
@@ -124,6 +125,7 @@ def build_worker_tool_gateway(
     cloud_artifacts: CloudToolOutputArtifactCoordinator | None,
     trusted_local: bool,
     durable_delegation: bool = False,
+    egress_registry: HostConnectorRegistryPort | None = None,
 ) -> WorkerToolGateway:
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,
@@ -166,6 +168,28 @@ def build_worker_tool_gateway(
             runtime=runtime,
             runtime_handle=runtime_handle,
         )
+    pinned = _resolve_pinned_gateway(task.host_context, egress_registry)
+    if pinned is not None:
+        try:
+            manifest = pinned.discover(task.host_context)
+            local_names = {tool.name for tool in local.model_tools}
+            host_names = {tool.name for tool in manifest.tools}
+            overlap = local_names & host_names
+            if overlap:
+                raise ValueError(
+                    f"Host Tool names overlap local tools: {', '.join(sorted(overlap))}"
+                )
+        except Exception:
+            local.close()
+            raise
+        return WorkerToolGateway(
+            local=local,
+            host=pinned,
+            host_context=task.host_context,
+            host_manifest=manifest,
+            runtime=runtime,
+            runtime_handle=runtime_handle,
+        )
     if not settings.host_tool_endpoint or not settings.host_tool_workload_identity:
         local.close()
         raise ValueError("Host Tool endpoint and workload identity are required")
@@ -200,6 +224,53 @@ def build_worker_tool_gateway(
         runtime=runtime,
         runtime_handle=runtime_handle,
     )
+
+
+def _resolve_pinned_gateway(
+    host_context: HostContextEnvelope,
+    egress_registry: HostConnectorRegistryPort | None,
+) -> HostToolGateway | None:
+    """Phase F2: pinned profile egress when a connector binding exists.
+
+    Returns None when no registry is wired or no binding matches (legacy
+    env fallback); revoked or missing profiles fail closed.
+    """
+
+    if egress_registry is None:
+        return None
+    from agent_core.ports.host_credential_resolver import EphemeralHostCredential
+
+    from zebra_agent_worker.host_egress import (
+        HostEgressResolver,
+        build_pinned_host_gateway,
+    )
+
+    class _CompatCredentials:
+        def issue(
+            self,
+            *,
+            credential_ref: str,
+            workload_identity_ref: str,
+            audience: str,
+            scopes: tuple[str, ...],
+            ttl_seconds: int,
+        ) -> EphemeralHostCredential:
+            from datetime import UTC, datetime
+
+            return EphemeralHostCredential(
+                token=f"compat:{credential_ref}",
+                audience=audience,
+                scopes=tuple(scopes),
+                expires_at_epoch=int(datetime.now(UTC).timestamp()) + ttl_seconds,
+            )
+
+    assert egress_registry is not None
+    resolver = HostEgressResolver(egress_registry, _CompatCredentials())
+    pinned = resolver.resolve(host_context)
+    if pinned is None:
+        return None
+    credential = resolver.issue_credential(pinned, host_context)
+    return build_pinned_host_gateway(pinned, host_context, credential)
 
 
 def _host_model_tools(manifest: HostToolManifest | None) -> tuple[ModelToolDefinition, ...]:
