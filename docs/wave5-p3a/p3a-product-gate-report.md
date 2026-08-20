@@ -4,18 +4,28 @@ Date: 2026-08-20
 
 | Gate | Result |
 | --- | --- |
-| Root goal binding and durable events | PASS |
-| Latest goal revision / handoff / recovery | PASS |
-| Trusted AgentDefinition context digest | PASS |
-| Stable Task context root API | PASS |
-| Focused Zebra regression | PASS — 80 tests |
-| Deployed staging | NOT RUN — no endpoint or deployment authority |
+| Durable goal/root/projection contract | PASS |
+| Legacy stream projection compatibility | PASS |
+| Stable Task / on-demand provider selection | Local deterministic PASS |
+| Trusted AgentDefinition context boundary | Local deterministic PASS |
+| Focused Zebra regression | PASS — 83 tests |
+| Deployed staging / real provider | NOT RUN / BLOCKED |
+| P3A Product Gate | NOT CLOSED |
+| Final-SHA Closure | NOT CLOSED |
 
-Frozen Zebra implementation: `3cc652cc7f6b950c0e66e40b89c271c9ba65cc72`.
-Compatible FinOS implementation: `7475e3a3c0f13d2a76b4c0c44c96a8c121d8af03`.
-The compatible local A–E evidence is byte-frozen in FinOS with SHA-256
-`e28b98b772f87d998c45f2ac8799d1f1e8d1e9969395c24ded18d070775dab99`.
+Zebra implementation:
+`26780f4f9a254f8d332fa1a7f8957f8cf7c50fc2`. Compatible FinOS implementation:
+`ff03023f7f51c776063a5100af5a4cbab654bbd6`. Both fix-v3 refs remain local and
+unpushed. Frozen evidence is owned by FinOS at
+`docs/wave5-p3a/real-model/p3a-local-evidence.json`, SHA-256
+`0394a9f417a1755e79614423002a01f8d12601534dd334e3961fded6d901b083`.
 
-The original uncommitted Worker/bootstrap/projection/task-prepared work was
-preserved and audited; it was incorporated into the shared durable root rather
-than reset. P3B is not authorized. Stop at P3A.
+The local integration uses an actual Zebra HTTP API, durable store, Worker,
+ContextCompiler, and ModelGateway, but the OpenAI-compatible model endpoint is
+deterministic. It is not a DeepSeek/Qwen or deployed-staging result.
+
+The full Zebra failure set matches exact synchronized `bbb6654`; no new Zebra
+failure is attributed. No remote verification, push, PR, merge, deploy,
+frontend/web/UI work, or P3B/C/D/5.5 work occurred.
+
+Stop at the corrected local P3A gate.
