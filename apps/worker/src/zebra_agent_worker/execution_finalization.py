@@ -113,7 +113,31 @@ def _finalize_execution(
                 "metadata": attempt_result.metadata,
             },
         )
-    if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
+    # Phase F4: if any tool signalled suspend_after_turn (durable delegation),
+    # the parent suspends instead of completing — the child's wakeup will resume it.
+    _suspend_signals = [
+        event for event in (recorder.events or ())
+        if getattr(event, 'event_type', None) is EventType.TOOL_EXECUTION_COMPLETED
+        and isinstance(getattr(event, 'payload', {}).get('metadata'), dict)
+        and event.payload['metadata'].get('suspend_after_turn') is True
+    ]
+    _suspended_for_children = bool(
+        _suspend_signals and attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    )
+    if _suspended_for_children:
+        recorder.append(
+            EventType.SESSION_SUSPENDED,
+            EventActor.HARNESS,
+            {
+                "reason": "waiting_children",
+                "child_task_ids": [
+                    signal.payload["metadata"].get("child_task_id")
+                    for signal in _suspend_signals
+                ],
+                "metadata": attempt_result.metadata,
+            },
+        )
+    if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED and not _suspended_for_children:
         if cloud_memory_store is not None:
             if (
                 deployment_namespace is None
