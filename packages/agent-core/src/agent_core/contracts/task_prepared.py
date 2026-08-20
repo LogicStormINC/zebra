@@ -35,8 +35,15 @@ class TaskPreparedPayload(BaseModel):
         max_length=64,
         exclude_if=lambda value: value is None,
     )
-    goal_binding: str = Field(default="conversational")
-    goal_text: str | None = Field(default=None, max_length=1_024)
+    goal_binding: str = Field(
+        default="conversational",
+        exclude_if=lambda value: value == "conversational",
+    )
+    goal_text: str | None = Field(
+        default=None,
+        max_length=1_024,
+        exclude_if=lambda value: value is None,
+    )
     history_session_ids: list[str] | None = _OPTIONAL_LIST
     max_attempts: int | None = None
     max_corrections_per_attempt: int | None = None

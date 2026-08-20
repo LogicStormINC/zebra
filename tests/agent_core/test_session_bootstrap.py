@@ -41,11 +41,33 @@ def test_session_bootstrap_service_builds_ready_session_events() -> None:
         ],
         "max_model_calls": None,
         "max_tool_calls": None,
-        "goal_binding": "conversational",
-        "goal_text": None,
     }
     assert result.session.status is SessionStatus.READY
     assert result.session.current_sequence == 2
+
+
+def test_task_prepared_omits_default_goal_contract_but_preserves_goal_bound_data() -> None:
+    default = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Legacy stream",
+            user_input="Keep the stream frozen.",
+            workspace_root=Path("/tmp/bootstrap"),
+        )
+    )
+    bound = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Goal-bound stream",
+            user_input="Continue the journal.",
+            workspace_root=Path("/tmp/bootstrap"),
+            goal_binding="goal_bound",
+            goal_text="Maintain today's journal.",
+        )
+    )
+
+    assert "goal_binding" not in default.events[-1].payload
+    assert "goal_text" not in default.events[-1].payload
+    assert bound.events[-1].payload["goal_binding"] == "goal_bound"
+    assert bound.events[-1].payload["goal_text"] == "Maintain today's journal."
 
 
 def test_session_bootstrap_persists_explicit_history_scope() -> None:
