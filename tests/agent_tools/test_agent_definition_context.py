@@ -28,6 +28,47 @@ def test_definition_refs_resolve_from_scoped_skill_catalog(tmp_path: Path) -> No
     assert "evidence lookup capability" in context.render()
 
 
+def test_definition_context_renders_frozen_trusted_structured_data(tmp_path: Path) -> None:
+    root = tmp_path / "system"
+    _write_skill(root, "system-prompt", "Follow the configured system policy.")
+    definition = AgentDefinition(
+        agent_id="agent-neutral",
+        version="1.0.0",
+        system_prompt_ref="system://system-prompt",
+        trust_policy={
+            "trusted_context": {
+                "temporal": {"timezone": "Asia/Shanghai", "current_date": "2026-08-20"},
+                "authorized_account_refs": ["main"],
+            }
+        },
+    )
+
+    context = resolve_agent_definition_context(
+        definition,
+        build_scoped_skill_roots(system=[root]),
+    )
+
+    assert context is not None
+    assert "Trusted structured context" in context.render()
+    assert '"authorized_account_refs": ["main"]' in context.render()
+    changed = definition.model_copy(
+        update={
+            "trust_policy": {
+                "trusted_context": {
+                    "temporal": {"timezone": "Asia/Shanghai", "current_date": "2026-08-21"},
+                    "authorized_account_refs": ["main"],
+                }
+            }
+        }
+    )
+    changed_context = resolve_agent_definition_context(
+        changed,
+        build_scoped_skill_roots(system=[root]),
+    )
+    assert changed_context is not None
+    assert context.resolved_context_digest != changed_context.resolved_context_digest
+
+
 @pytest.mark.parametrize(
     ("scope", "root_name"),
     ((SkillScope.USER, "user"), (SkillScope.REPO, "repo")),

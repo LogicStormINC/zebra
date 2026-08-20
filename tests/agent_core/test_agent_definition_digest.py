@@ -42,6 +42,12 @@ def _agent_definition() -> AgentDefinition:
         version="1.0.0",
         system_prompt_ref="system://aceagent-system",
         skill_refs=("skill://daily-journal",),
+        trust_policy={
+            "trusted_context": {
+                "temporal": {"timezone": "Asia/Shanghai", "current_date": "2026-08-20"},
+                "authorized_account_refs": ["main"],
+            }
+        },
         resolved_context_digest="0" * 64,
     )
 
@@ -52,6 +58,10 @@ def _agent_definition_context() -> AgentDefinitionContext:
         version="1.0.0",
         system_prompt="You are AceAgent. Honor FinOS ownership and typed-tool authority.",
         skill_guidance=(("daily-journal", "Persist only through typed tool calls."),),
+        trusted_context={
+            "temporal": {"timezone": "Asia/Shanghai", "current_date": "2026-08-20"},
+            "authorized_account_refs": ["main"],
+        },
     )
 
 
@@ -97,6 +107,18 @@ def test_agent_definition_digest_changes_when_definition_changes() -> None:
         skill_guidance=(("daily-journal", "Updated guidance."),),
     )
     assert base.resolved_context_digest != changed_skill.resolved_context_digest
+
+    changed_context = AgentDefinitionContext(
+        agent_id=base.agent_id,
+        version=base.version,
+        system_prompt=base.system_prompt,
+        skill_guidance=base.skill_guidance,
+        trusted_context={
+            "temporal": {"timezone": "Asia/Shanghai", "current_date": "2026-08-21"},
+            "authorized_account_refs": ["main"],
+        },
+    )
+    assert base.resolved_context_digest != changed_context.resolved_context_digest
 
 
 def test_harness_task_rejects_mismatched_agent_context() -> None:
@@ -248,6 +270,7 @@ def test_public_conversation_does_not_leak_system_text() -> None:
         "SYSTEM text leaked into public conversation projection"
     )
     assert "Trusted system prompt context" not in blob
+    assert "Asia/Shanghai" not in blob
 
 
 def test_public_conversation_exposes_only_safe_identity_digest() -> None:

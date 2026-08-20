@@ -1,4 +1,5 @@
-from collections.abc import Sequence
+import json
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from agent_core.domain.agent_definitions import AgentDefinition, AgentDefinitionContext
@@ -43,8 +44,13 @@ def resolve_agent_definition_context(
         version=definition.version,
         system_prompt=system_prompt,
         skill_guidance=tuple(skill_guidance),
+        trusted_context=_trusted_context(definition.trust_policy),
     )
-    if require_digest and (definition.system_prompt_ref or definition.skill_refs):
+    if require_digest and (
+        definition.system_prompt_ref
+        or definition.skill_refs
+        or context.trusted_context
+    ):
         if definition.resolved_context_digest is None:
             raise ValueError("agent definition resolved context digest is missing")
     if (
@@ -53,6 +59,25 @@ def resolve_agent_definition_context(
     ):
         raise ValueError("agent definition resolved context digest mismatch")
     return context
+
+
+def _trusted_context(policy: object) -> dict[str, object]:
+    if not isinstance(policy, Mapping):
+        raise ValueError("agent definition trust policy must be an object")
+    value = policy.get("trusted_context")
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ValueError("agent definition trusted context must be an object")
+    try:
+        normalized = json.loads(
+            json.dumps(dict(value), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError("agent definition trusted context must be JSON data") from exc
+    if not isinstance(normalized, dict):
+        raise ValueError("agent definition trusted context must be an object")
+    return normalized
 
 
 def _reference_name(reference: str, scheme: str) -> str:
