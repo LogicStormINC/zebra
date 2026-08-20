@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import UUID
 
 from agent_core.application import SessionTitleService
 from agent_core.domain.identifiers import SessionId
@@ -185,6 +186,21 @@ class WorkerLoopService:
 
         if self._child_wakeup_service is None:
             return
+        from agent_core.domain.identifiers import TaskId
+        from agent_core.domain.parent_continuation import ChildTerminalStatus
+
+        for terminal in self._child_wakeup_service.poll_terminal_children():
+            try:
+                self._child_wakeup_service.process_child_terminal(
+                    TaskId(UUID(str(terminal["child_task_id"]))),
+                    status=ChildTerminalStatus(str(terminal["status"])),
+                )
+            except Exception as error:
+                print(
+                    f"worker child wakeup failed: {error}",
+                    file=sys.stderr,
+                    flush=True,
+                )
 
     def run(
         self,
@@ -329,6 +345,7 @@ def build_worker_loop_service(
         recovery_service,
     )
     task_binding_loader = None
+    egress_registry = None
     if cloud_memory_store is not None and settings.storage_authority == "postgresql":
         from agent_storage.postgres.task_admission import load_task_binding as _load_binding
 
@@ -355,6 +372,7 @@ def build_worker_loop_service(
         worker_projection_transaction=active_transaction,
         deployment_namespace=active_namespace,
         task_binding_loader=task_binding_loader,
+        egress_registry=egress_registry,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,
         workspace_resolver=(
@@ -381,6 +399,13 @@ def build_worker_loop_service(
         wakeup_dsn = cloud_bundle.dsn or ""
         if wakeup_dsn and active_namespace is not None:
             child_wakeup_service = _Wakeup(
+                wakeup_dsn, deployment_namespace=active_namespace
+            )
+            from agent_storage.postgres.host_connectors import (
+                PostgresHostConnectorRegistry,
+            )
+
+            egress_registry = PostgresHostConnectorRegistry(
                 wakeup_dsn, deployment_namespace=active_namespace
             )
     cloud_memory_recovery = None

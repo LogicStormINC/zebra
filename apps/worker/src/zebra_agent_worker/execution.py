@@ -31,7 +31,6 @@ import zebra_agent_worker.provider_continuation_execution as provider_runtime
 import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
 import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
-from zebra_agent_worker.bound_execution_authority import select_attempt_authority
 
 if TYPE_CHECKING:
     from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
@@ -281,17 +280,13 @@ class SessionExecutionService:
         runtime_handle = None
         effect_recorder: list[DurableHarnessEventRecorder] = []
         try:
+            from zebra_agent_worker.bound_execution_authority import select_attempt_authority
+            evidence_args = select_attempt_authority(
+                self._execution_authority_resolver, self._execution_authority_scope,
+                self._execution_authority_scope_provider, self._task_binding_loader,
+                session_id)
             claimed, session_events = AttemptAuthorityEvidence(
-                *select_attempt_authority(
-                    self._execution_authority_resolver,
-                    self._execution_authority_scope,
-                    self._execution_authority_scope_provider,
-                    self._task_binding_loader,
-                    session_id,
-                ),
-                self._recovery_service,
-                self._event_store,
-            ).persist(
+                *evidence_args, self._recovery_service, self._event_store).persist(
                 authority_recorder,
                 claimed,
                 session_events,
@@ -337,7 +332,8 @@ class SessionExecutionService:
                 runtime=runtime, runtime_handle=runtime_handle,
                 local_artifacts=self._artifact_payload_store,
                 cloud_artifacts=cloud_artifacts, trusted_local=trusted_local,
-                egress_registry=self._egress_registry,
+                egress_registry=self._egress_registry, durable_delegation=(
+                    self._settings.deployment == "cloud"),
             )
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,

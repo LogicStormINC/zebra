@@ -6,6 +6,7 @@ from agent_core.application import SessionBootstrapCommand, SessionBootstrapServ
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_storage import ControlPlaneStores
 
@@ -20,6 +21,8 @@ def create_queued_session(
     *,
     host_context: HostContextEnvelope | None = None,
     definition_snapshot: AgentDefinitionSnapshot | None = None,
+    admission_dsn: str | None = None,
+    admission_namespace: str | None = None,
 ) -> ApiResponse:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -43,10 +46,36 @@ def create_queued_session(
         tuple(bootstrap.events),
         parsed["attachments"],
     )
-    for event in events:
-        stores.events.append(event)
-    stores.sessions.save_session(bootstrap.session)
-    stores.workspaces.save_workspace(rebuild_workspace(list(events)))
+    workspace = rebuild_workspace(list(events))
+    if admission_dsn and admission_namespace:
+        # Phase F3: cloud admission uses the atomic v25 transaction —
+        # events, projections, task index and binding persist or roll back
+        # together. Attachments are written first (idempotent payloads).
+        from agent_core.ports.task_admission_transaction import TaskAdmissionRequest
+        from agent_storage.postgres.task_admission import (
+            PostgresTaskAdmissionTransaction,
+        )
+
+        raw_binding = _derive_binding(
+            bootstrap.session.session_id,
+            host_context=host_context,
+            definition_snapshot=definition_snapshot,
+        )
+        PostgresTaskAdmissionTransaction(
+            admission_dsn, deployment_namespace=admission_namespace
+        ).admit(
+            TaskAdmissionRequest(
+                events=tuple(events),
+                session=bootstrap.session,
+                workspace=workspace,
+                binding=raw_binding if isinstance(raw_binding, TaskBindingSnapshot) else None,
+            )
+        )
+    else:
+        for event in events:
+            stores.events.append(event)
+        stores.sessions.save_session(bootstrap.session)
+        stores.workspaces.save_workspace(workspace)
     return ApiResponse(
         status_code=201,
         body={
@@ -83,3 +112,23 @@ def _workspace_root(reference: str) -> Path:
     if reference.startswith("workspace://"):
         return Path(reference)
     return Path(reference).expanduser().resolve()
+
+def _derive_binding(
+    session_id: object,
+    *,
+    host_context: HostContextEnvelope | None,
+    definition_snapshot: AgentDefinitionSnapshot | None,
+) -> object:
+    """Derive the TaskBindingSnapshot for atomic admission (F3)."""
+
+    if host_context is None:
+        return None
+    from zebra_agent_api.session_binding import _build_binding_snapshot
+
+    return _build_binding_snapshot(
+        session_id,
+        host_context=host_context,
+        definition_snapshot_digest=(
+            definition_snapshot.definition_digest if definition_snapshot else None
+        ),
+    )
