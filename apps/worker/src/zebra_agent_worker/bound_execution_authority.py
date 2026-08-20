@@ -200,8 +200,13 @@ def select_attempt_authority(
         return resolver, static_scope, scope_provider
     try:
         loaded = task_binding_loader(session_id)
-    except Exception:
-        return resolver, static_scope, scope_provider
+    except Exception as exc:
+        # Fail CLOSED: a binding-load failure for a session that should
+        # have a binding must never silently fall back to the broader
+        # deployment authority. The Attempt raises instead.
+        raise RuntimeError(
+            f"task binding load failed for {session_id}; failing closed: {exc}"
+        ) from exc
     if not isinstance(loaded, TaskBindingSnapshot):
         return resolver, static_scope, scope_provider
     binding = loaded

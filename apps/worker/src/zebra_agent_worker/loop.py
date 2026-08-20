@@ -362,6 +362,24 @@ def build_worker_loop_service(
                     task_id=TaskId(session_id),
                 )
 
+    child_wakeup_service = None
+    if cloud_memory_store is not None and settings.storage_authority == "postgresql":
+        from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService as _Wakeup
+
+        wakeup_dsn = cloud_bundle.dsn or ""
+        if wakeup_dsn and active_namespace is not None:
+            child_wakeup_service = _Wakeup(
+                wakeup_dsn, deployment_namespace=active_namespace
+            )
+            from agent_storage.postgres.host_connectors import (
+                PostgresHostConnectorRegistry,
+            )
+
+            egress_registry = PostgresHostConnectorRegistry(
+                wakeup_dsn, deployment_namespace=active_namespace
+            )
+
+
     execution_service = SessionExecutionService(
         database_path=database_path,
         claim_service=claim_service,
@@ -392,22 +410,6 @@ def build_worker_loop_service(
             stores=execution_stores,
         ),
     )
-    child_wakeup_service = None
-    if cloud_memory_store is not None and settings.storage_authority == "postgresql":
-        from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService as _Wakeup
-
-        wakeup_dsn = cloud_bundle.dsn or ""
-        if wakeup_dsn and active_namespace is not None:
-            child_wakeup_service = _Wakeup(
-                wakeup_dsn, deployment_namespace=active_namespace
-            )
-            from agent_storage.postgres.host_connectors import (
-                PostgresHostConnectorRegistry,
-            )
-
-            egress_registry = PostgresHostConnectorRegistry(
-                wakeup_dsn, deployment_namespace=active_namespace
-            )
     cloud_memory_recovery = None
     if cloud_memory_store is not None:
         assert active_namespace is not None
