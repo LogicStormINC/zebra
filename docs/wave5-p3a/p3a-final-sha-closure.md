@@ -1,16 +1,17 @@
-# Wave 5 P3A Final-SHA Closure — Zebra fix-v3
+# Wave 5 P3A Final-SHA Closure — Zebra fix-v4 compatibility candidate
 
 Date: 2026-08-20
 
 | Item | Value |
 | --- | --- |
-| Branch | `codex/znx-wave5-p3a-fix-v3` (local, unpushed) |
+| Branch | `codex/znx-wave5-p3a-fix-v4` (local, unpushed) |
 | Exact fix-v2 base | `bbb6654e12a6154da657151abe38a208626413c9` |
 | P3A implementation | `26780f4f9a254f8d332fa1a7f8957f8cf7c50fc2` |
-| Compatible FinOS implementation | `18aadd2d395f851f1e8422ee3086361699d8672f` |
-| Zebra checkout recorded by this evidence | `f70ef8262985589ed740d037acef131f94bfc6cc` |
+| Compatible FinOS implementation | `5bbc4ac78375d33cb2a91a9be7dd08781b1ba3d4` |
+| Required FinOS compatibility ancestor | `c2f5f1a455649fdf54dd0d0c23089978367c6b23` |
+| Zebra checkout recorded by this evidence | `9c7a0666579dc2cb90f2294faea198eeb9bd6d32` |
 | Frozen local evidence owner | FinOS `docs/wave5-p3a/real-model/p3a-local-evidence.json` |
-| Evidence SHA-256 | `4e138f8d3ce7ed1fda2e8e6773dd2380fac3373d699f2bc5569fc8c59b0b2f84` |
+| Evidence SHA-256 | `a973047b1d5aeb2aa4becaa4cfa712ece3fdeb94744768052bfd2dabcc346529` |
 
 ## Corrected local evidence
 
@@ -37,14 +38,26 @@ Date: 2026-08-20
 
 ```text
 Zebra focused P3A + cited legacy stream regressions: 83 passed
-FinOS focused P3A contract suite: 22 passed
+FinOS focused P3A/root/acceptance/typed-read/Slice6D suite: 26 passed
+FinOS day-precision Journal/Data Confirmation: 111 passed
+FinOS UI shell / immediate journal-list redraw: 136 passed
 ```
 
-Zebra's identical full command has the same nine failing IDs as exact
-synchronized `bbb6654` (current `2257 passed, 8 skipped`; base `2249 passed,
-8 skipped`). FinOS full discovery reports the same 23 failure IDs as exact
-`2532c2e` (current 947 discovered; base 949); the deterministic evidence is
-hashed above.
+The audited exact Zebra command `.venv/bin/python -m pytest -q` has the same
+nine failing IDs as exact `bbb6654` (current `2325 passed, 9 failed, 9
+skipped`; base `2317 passed, 9 failed, 9 skipped`). FinOS is rebased onto
+`c2f5f1a`, retaining its Journal/UI hotfix paths unchanged; its 19 P3A commits
+replayed without conflicts. The FinOS full discovery comparison is current 949
+tests (`15 failures, 8 errors, 16 skipped`) vs c2 923 (`5 failures, 7 errors,
+16 skipped`): all 12 base records match, and the 11 extra records are carried
+P3A Gate-0/Milestone2 contracts rather than compatibility-path regressions.
+
+The exact full-suite environment is `.venv/bin/python` `3.12.13`, pytest
+`8.4.2`, and:
+
+```text
+.venv/bin/python -m pytest -q
+```
 
 ## Disposition
 
@@ -53,5 +66,5 @@ deterministic OpenAI-compatible stub, not a real provider or deployed staging.
 
 **Product Gate is NOT CLOSED. Final-SHA Closure is NOT CLOSED.** Staging and a
 real-provider run are NOT RUN / BLOCKED without endpoint or authority. No
-remote verification, push, PR, merge, deploy, frontend/web/UI work, or
-P3B/C/D/5.5 work occurred. Stop at P3A.
+remote verification, push, PR, merge, deploy, new frontend/web/UI work, or
+P3B/C/D/5.5 work occurred. Stop at P3A compatibility gate.
