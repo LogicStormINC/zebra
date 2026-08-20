@@ -40,7 +40,7 @@ type, tool, second loop, or second state machine was introduced.
 | Zebra P3A + legacy stream + trusted-context focused command | 107 passed |
 | FinOS combined P3A/root/acceptance/Slice6D command | 31 passed |
 | FinOS Milestone2 boundary assertions | 3 passed |
-| FinOS Journal/Data Confirmation successor | 128 passed |
+| FinOS Journal/Data Confirmation successor | 136 passed |
 | FinOS UI shell | 136 passed |
 | Zebra full vs exact `bbb6654` | `2330 passed, 9 failed, 9 skipped` vs `2317 passed, 9 failed, 9 skipped`; IDs identical |
 | FinOS full vs exact `c2f5f1a` | `952 / 13 / 7 / 16` vs `923 / 5 / 7 / 16`; only 8 registered Gate-0 reds added |
