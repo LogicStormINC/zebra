@@ -179,12 +179,36 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
             )
 
 
+def load_bound_binding(
+    task_binding_loader: Callable[..., object] | None,
+    session_id: object,
+) -> TaskBindingSnapshot | None:
+    """Load the frozen binding once, sharing the F1 fail-closed contract.
+
+    Returns None only when no loader is wired or the session legitimately
+    has no stored binding; loader/storage failures raise instead of
+    falling back to the broader deployment authority.
+    """
+
+    if task_binding_loader is None:
+        return None
+    try:
+        loaded = task_binding_loader(session_id)
+    except Exception as exc:
+        raise RuntimeError(
+            f"task binding load failed for {session_id}; failing closed: {exc}"
+        ) from exc
+    return loaded if isinstance(loaded, TaskBindingSnapshot) else None
+
+
 def select_attempt_authority(
     resolver: ExecutionAuthorityResolverPort | None,
     static_scope: OpaqueAuthorityScope | None,
     scope_provider: Callable[..., OpaqueAuthorityScope] | None,
     task_binding_loader: Callable[..., object] | None,
     session_id: object,
+    *,
+    binding: TaskBindingSnapshot | None = None,
 ) -> tuple[
     ExecutionAuthorityResolverPort | None,
     OpaqueAuthorityScope | None,
@@ -196,20 +220,10 @@ def select_attempt_authority(
     stored for the session; loader failures fall back the same way.
     """
 
-    if task_binding_loader is None:
+    if binding is None and task_binding_loader is not None:
+        binding = load_bound_binding(task_binding_loader, session_id)
+    if binding is None:
         return resolver, static_scope, scope_provider
-    try:
-        loaded = task_binding_loader(session_id)
-    except Exception as exc:
-        # Fail CLOSED: a binding-load failure for a session that should
-        # have a binding must never silently fall back to the broader
-        # deployment authority. The Attempt raises instead.
-        raise RuntimeError(
-            f"task binding load failed for {session_id}; failing closed: {exc}"
-        ) from exc
-    if not isinstance(loaded, TaskBindingSnapshot):
-        return resolver, static_scope, scope_provider
-    binding = loaded
     scope = OpaqueAuthorityScope(
         authority_issuer=binding.host_capability.authority_issuer,
         namespace_id=binding.host_capability.namespace_id,

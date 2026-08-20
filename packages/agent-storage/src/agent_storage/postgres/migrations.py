@@ -27,6 +27,7 @@ from agent_storage.postgres.orchestration_migration import ORCHESTRATION_MIGRATI
 from agent_storage.postgres.provider_continuation_migration import (
     PROVIDER_CONTINUATION_MIGRATION,
 )
+from agent_storage.postgres.research_profile_migration import RESEARCH_TOOL_PROFILE_MIGRATION
 from agent_storage.postgres.session_tenant_migration import (
     SESSION_TENANT_NAMESPACE_MIGRATION,
 )
@@ -494,4 +495,5 @@ MIGRATIONS = (
     SUBAGENT_DELEGATION_MIGRATION,
     ORCHESTRATION_MIGRATION,
     AGENT_MAILBOX_MIGRATION,
+    RESEARCH_TOOL_PROFILE_MIGRATION,
 )

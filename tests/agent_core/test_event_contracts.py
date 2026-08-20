@@ -51,6 +51,7 @@ def test_validate_event_payload_accepts_budget_suspension_without_snapshot() -> 
         "snapshot_id": None,
         "snapshot_path": None,
         "reason": "tool_call_budget_exhausted",
+        "child_task_ids": None,
         "metadata": {"tool_call_limit": 2, "proposed_tool_call_count": 3},
     }
 

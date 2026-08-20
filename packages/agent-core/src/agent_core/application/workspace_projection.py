@@ -95,8 +95,12 @@ def apply_event(
             updates["snapshot_id"] = snapshot_id
             updates["snapshot_path"] = _required_payload_string(event, "snapshot_path")
     if event.event_type is EventType.SESSION_RESUMED:
-        updates["workspace_root"] = _required_payload_string(event, "workspace_root")
-        updates["runtime_name"] = _required_payload_string(event, "runtime_name")
+        resumed_root = _optional_payload_string(event, "workspace_root")
+        if resumed_root is not None:
+            # Snapshot resume re-provisions the workspace under a new root.
+            updates["workspace_root"] = resumed_root
+            updates["runtime_name"] = _required_payload_string(event, "runtime_name")
+        # Logical resumes (waiting_children) keep the live workspace as-is.
         updates["snapshot_id"] = None
         updates["snapshot_path"] = None
     return projection.model_copy(update=updates)

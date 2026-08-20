@@ -16,6 +16,7 @@ from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.ports.idempotency_store import IdempotencyRecord
 from agent_core.ports.task_admission_transaction import (
+    TaskAdmissionIdempotencyConflict,
     TaskAdmissionReceipt,
     TaskAdmissionRequest,
 )
@@ -40,47 +41,96 @@ class PostgresTaskAdmissionTransaction:
 
     def admit(self, request: TaskAdmissionRequest) -> TaskAdmissionReceipt:
         request.validate()
-        namespace = self.deployment_namespace
-        idempotent_replay = False
         with self._database.connect() as connection:
-            if request.idempotency is not None:
-                replayed = _insert_or_load_idempotency(
-                    connection,
-                    namespace,
-                    request.idempotency,
-                )
-                if replayed is not None:
-                    return TaskAdmissionReceipt(
-                        task_id=TaskId(UUID(str(request.events[0].session_id))),
-                        session_id=request.session.session_id,
-                        event_count=0,
-                        binding_digest=None,
-                        idempotent_replay=True,
-                    )
-                idempotent_replay = False
-            persisted_events = tuple(
-                append_event_in_transaction(connection, namespace, event)
-                for event in request.events
+            return self.admit_in_transaction(
+                connection, self.deployment_namespace, request
             )
-            save_session_in_transaction(connection, namespace, request.session)
-            save_workspace_in_transaction(connection, namespace, request.workspace)
-            root_session_id = SessionId(UUID(str(persisted_events[0].session_id)))
-            task = rebuild_task_in_transaction(connection, namespace, root_session_id)
-            binding_digest: str | None = None
-            if request.binding is not None:
-                binding_digest = _insert_binding_snapshot(
-                    connection,
-                    namespace,
-                    request.binding,
+
+    def admit_in_transaction(
+        self,
+        connection: Any,
+        namespace: str,
+        request: TaskAdmissionRequest,
+    ) -> TaskAdmissionReceipt:
+        """Run the full admission inside the CALLER's transaction.
+
+        The durable delegation store uses this to materialize the child
+        Task and its delegation link in one commit — no orphan child can
+        survive a crash between the two writes.
+        """
+
+        request.validate()
+        if request.idempotency is not None:
+            replayed = _insert_or_load_idempotency(
+                connection,
+                namespace,
+                request.idempotency,
+            )
+            if replayed is not None:
+                if replayed.request_hash != request.idempotency.request_hash:
+                    raise TaskAdmissionIdempotencyConflict(
+                        "idempotency key reused with a different request"
+                    )
+                return TaskAdmissionReceipt(
+                    task_id=TaskId(UUID(str(request.events[0].session_id))),
+                    session_id=request.session.session_id,
+                    event_count=0,
+                    binding_digest=None,
+                    idempotent_replay=True,
+                    replayed_record=replayed,
                 )
+        persisted_events = tuple(
+            append_event_in_transaction(connection, namespace, event)
+            for event in request.events
+        )
+        save_session_in_transaction(connection, namespace, request.session)
+        save_workspace_in_transaction(connection, namespace, request.workspace)
+        root_session_id = SessionId(UUID(str(persisted_events[0].session_id)))
+        task = rebuild_task_in_transaction(connection, namespace, root_session_id)
+        binding_digest: str | None = None
+        if request.binding is not None:
+            binding_digest = _insert_binding_snapshot(
+                connection,
+                namespace,
+                request.binding,
+            )
         return TaskAdmissionReceipt(
             task_id=task.task_id,
             session_id=root_session_id,
             event_count=len(persisted_events),
             binding_digest=binding_digest,
-            idempotent_replay=idempotent_replay,
         )
 
+
+
+def update_idempotency_response(
+    dsn: str,
+    *,
+    deployment_namespace: str,
+    action: str,
+    idempotency_key: str,
+    response_body: dict[str, object],
+) -> bool:
+    """Replace the stored response body after post-admission composition.
+
+    The admission transaction stores the receipt atomically as a claim
+    (so a duplicate create can never slip through); composition steps
+    that legitimately extend the 201 body afterwards (run-command
+    queueing) sync the stored replay body with this update. A crash
+    before the update replays the pre-command body — still honest.
+    """
+
+    database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    with database.connect() as connection:
+        updated = connection.execute(
+            """
+            UPDATE control_plane_idempotency_records
+            SET response_body = %s
+            WHERE deployment_namespace = %s AND action = %s AND idempotency_key = %s
+            """,
+            (Jsonb(response_body), deployment_namespace, action, idempotency_key),
+        ).rowcount
+    return updated > 0
 
 
 def save_task_binding(
@@ -197,13 +247,9 @@ def _insert_binding_snapshot(
 
 
 def _binding_json(binding: TaskBindingSnapshot) -> dict[str, object]:
-    return {
-        "hostCapability": binding.host_capability.model_dump(mode="json"),
-        "agentCapabilityCeiling": binding.agent_capability_ceiling.model_dump(
-            mode="json"
-        ),
-        "zebraPolicyDigest": binding.zebra_policy_digest,
-    }
+    """Full model dump — the snapshot must round-trip through validate()."""
+
+    return binding.model_dump(mode="json")
 
 def load_task_binding(
     dsn: str,

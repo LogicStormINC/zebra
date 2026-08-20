@@ -5,6 +5,7 @@ from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
 from agent_core.harness.clarification_step import clarification_tool_result
+from agent_core.harness.delegation_suspension import delegation_suspension_result
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_request import allowed_response_repairs
 from agent_core.harness.model_step import HarnessModelStep
@@ -103,6 +104,17 @@ class SequentialToolLoop:
         )
         if batch.terminal_result is not None:
             return batch.terminal_result
+        suspension = delegation_suspension_result(
+            context,
+            completion=completion,
+            messages=messages,
+            emitted_events=emitted_events,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=batch.tool_calls_executed,
+            metadata=batch.metadata,
+        )
+        if suspension is not None:
+            return suspension
         return self._request_next_completion(
             context,
             messages=messages,
@@ -259,6 +271,17 @@ class SequentialToolLoop:
         )
         if batch.terminal_result is not None:
             return batch.terminal_result
+        suspension = delegation_suspension_result(
+            context,
+            completion=completion,
+            messages=messages,
+            emitted_events=emitted_events,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=batch.tool_calls_executed,
+            metadata=batch.metadata,
+        )
+        if suspension is not None:
+            return suspension
         return self._request_next_completion(
             context,
             messages=messages,

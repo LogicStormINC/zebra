@@ -26,7 +26,10 @@ from agent_storage.postgres.task_admission import save_task_binding
 
 from zebra_agent_api.responses import ApiResponse
 
-DEFAULT_CAPABILITIES = capability_set(["agent.execute"])
+# The default cloud tool surface includes agent.research, so the default
+# admission capability set must cover delegating read-only evidence work:
+# a parent that cannot hold evidence.read cannot narrow a child to it.
+DEFAULT_CAPABILITIES = capability_set(["agent.execute", "evidence.read"])
 NO_CONNECTOR_DIGEST = "0" * 64
 
 
@@ -130,30 +133,55 @@ def freeze_binding_for_response(
 def _build_binding_snapshot(
     session_id: object,
     *,
-    host_context: HostContextEnvelope,
+    host_context: HostContextEnvelope | None,
     definition_snapshot_digest: str | None,
+    deployment_namespace: str = "zebra",
 ) -> TaskBindingSnapshot:
-    """Build the binding model without persisting (used by atomic admission)."""
+    """Build the binding model without persisting (used by atomic admission).
 
+    Host-bound sessions freeze the Host grant; internal cloud sessions
+    (no Host envelope) freeze a deployment-authority binding so they can
+    still narrow durable delegations — the capability set never exceeds
+    the default admission surface either way.
+    """
+
+    if host_context is None:
+        grant_digest = hashlib.sha256(
+            f"deployment-binding:{deployment_namespace}".encode()
+        ).hexdigest()
+        host = HostCapabilitySnapshot(
+            host_app_id="zebra-internal",
+            authority_issuer=f"urn:zebra:deployment:{deployment_namespace}",
+            namespace_id=deployment_namespace,
+            grant_digest=grant_digest,
+            connector_id="zebra-internal",
+            connector_profile_revision=1,
+            connector_profile_digest=grant_digest,
+            manifest_digest=grant_digest,
+            capabilities=DEFAULT_CAPABILITIES,
+            resource_binding_digest=grant_digest,
+            bound_at=datetime.now(UTC),
+        )
+    else:
+        host = HostCapabilitySnapshot(
+            host_app_id=host_context.host_app_id,
+            authority_issuer=host_context.origin,
+            namespace_id=host_context.namespace_id,
+            grant_digest=envelope_grant_digest(host_context),
+            grant_expires_at=host_context.expires_at,
+            connector_id=f"{host_context.host_app_id}-unbound",
+            connector_profile_revision=1,
+            connector_profile_digest=NO_CONNECTOR_DIGEST,
+            manifest_digest=NO_CONNECTOR_DIGEST,
+            capabilities=DEFAULT_CAPABILITIES,
+            resource_binding_digest=NO_CONNECTOR_DIGEST,
+            bound_at=datetime.now(UTC),
+        )
     ceiling = AgentCapabilityCeilingSnapshot(
         definition_snapshot_digest=definition_snapshot_digest or NO_CONNECTOR_DIGEST,
         capability_profile_ref="profile/default@1",
         capabilities=DEFAULT_CAPABILITIES,
         resolved_at=datetime.now(UTC),
-    )
-    host = HostCapabilitySnapshot(
-        host_app_id=host_context.host_app_id,
-        authority_issuer=host_context.origin,
-        namespace_id=host_context.namespace_id,
-        grant_digest=envelope_grant_digest(host_context),
-        grant_expires_at=host_context.expires_at,
-        connector_id=f"{host_context.host_app_id}-unbound",
-        connector_profile_revision=1,
-        connector_profile_digest=NO_CONNECTOR_DIGEST,
-        manifest_digest=NO_CONNECTOR_DIGEST,
-        capabilities=DEFAULT_CAPABILITIES,
-        resource_binding_digest=NO_CONNECTOR_DIGEST,
-        bound_at=datetime.now(UTC),
     )
     return TaskBindingSnapshot(
         task_id=str(session_id),
@@ -166,9 +194,18 @@ def _build_binding_snapshot(
     )
 
 def _admission_kwargs(
-    settings: object, stores: object, idempotency_key: str | None = None
+    settings: object,
+    stores: object,
+    idempotency_key: str | None = None,
+    idempotency_request_hash: str | None = None,
 ) -> dict[str, str]:
-    """Cloud admission uses the atomic v25 transaction when PG is active."""
+    """Cloud admission uses the atomic v25 transaction when PG is active.
+
+    The canonical request hash is computed ONCE by the caller from the raw
+    payload and threaded through verbatim, so the admission transaction
+    and the API replay check can never disagree about the same key.
+    """
+
     storage = getattr(settings, "storage_authority", "sqlite")
     if storage != "postgresql":
         return {}
@@ -178,21 +215,40 @@ def _admission_kwargs(
     }
     if idempotency_key:
         kwargs["idempotency_key"] = idempotency_key
+    if idempotency_key and idempotency_request_hash:
+        kwargs["idempotency_request_hash"] = idempotency_request_hash
     return kwargs
 
 def _post_admission_idempotency(
     settings: object, stores: object, idempotency_key: str | None,
     response: ApiResponse, payload: dict[str, object],
 ) -> ApiResponse:
-    """Local (non-PG) path saves the receipt separately; PG already did."""
-    from zebra_agent_api.idempotency import save_idempotent_response
+    """Sync the stored receipt with the final response body.
+
+    Local (non-PG) path saves the receipt separately; the PG path stored
+    it atomically inside admission, so only the response body needs the
+    post-composition sync (run-command queueing extends the 201 body).
+    """
     if idempotency_key is None or getattr(response, 'status_code', 0) != 201:
         return response
     if getattr(settings, 'storage_authority', '') == 'postgresql':
+        from agent_storage.postgres.task_admission import (
+            update_idempotency_response,
+        )
+
+        update_idempotency_response(
+            getattr(settings, "database_url", ""),
+            deployment_namespace=str(getattr(stores, "deployment_namespace", "zebra")),
+            action="session.create",
+            idempotency_key=idempotency_key,
+            response_body=response.body,
+        )
         return response
     store = getattr(stores, "idempotency", None)
     if store is None:
         return response
+    from zebra_agent_api.idempotency import save_idempotent_response
+
     return save_idempotent_response(
         store=store, action='session.create',
         idempotency_key=idempotency_key, payload=payload, response=response,

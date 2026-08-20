@@ -88,6 +88,28 @@ def _finalize_execution(
         SessionStatus.FAILED,
     }:
         return recorder.events
+    # Phase F4: a durable delegation suspends the parent BEFORE any terminal
+    # event — the session never completes while children are outstanding,
+    # and the wakeup resumes it with the real child result.
+    child_task_ids = _child_task_ids(attempt_result.metadata)
+    if (
+        attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+        and attempt_result.metadata.get("stop_reason") == "waiting_children"
+        and child_task_ids is not None
+    ):
+        recorder.append(
+            EventType.SESSION_SUSPENDED,
+            EventActor.HARNESS,
+            {
+                "reason": "waiting_children",
+                "child_task_ids": child_task_ids,
+                "metadata": {
+                    "stop_reason": "waiting_children",
+                    "assistant_message": attempt_result.metadata.get("assistant_message"),
+                },
+            },
+        )
+        return recorder.events
     if attempt_result.outcome not in {
         HarnessAttemptOutcome.SUSPENDED,
         HarnessAttemptOutcome.WAITING_APPROVAL,
@@ -113,67 +135,59 @@ def _finalize_execution(
                 "metadata": attempt_result.metadata,
             },
         )
-    # Phase F4: if any tool signalled suspend_after_turn (durable delegation),
-    # the parent suspends instead of completing — the child's wakeup will resume it.
-    _suspend_signals = [
-        event for event in (recorder.events or ())
-        if getattr(event, 'event_type', None) is EventType.TOOL_EXECUTION_COMPLETED
-        and isinstance(getattr(event, 'payload', {}).get('metadata'), dict)
-        and event.payload['metadata'].get('suspend_after_turn') is True
-    ]
-    _suspended_for_children = bool(
-        _suspend_signals and attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+        return recorder.events
+    else:
+        return recorder.events
+    if attempt_result.outcome is not HarnessAttemptOutcome.COMPLETED:
+        return recorder.events
+    if cloud_memory_store is not None:
+        if (
+            deployment_namespace is None
+            or projection_store is None
+            or workspace_store is None
+        ):
+            raise ValueError(
+                "cloud Memory finalization requires its complete projection context"
+            )
+        finalize_cloud_memory(
+            recorder=recorder,
+            memory_store=cloud_memory_store,
+            deployment_namespace=deployment_namespace,
+            event_store=event_store,
+            projection_store=projection_store,
+            workspace_store=workspace_store,
+            started_at=started_at,
+        )
+    else:
+        if memory_extraction_service is None or memory_promotion_service is None:
+            raise ValueError("local Memory finalization requires writable Memory services")
+        _finalize_local_memory(
+            recorder=recorder,
+            memory_extraction_service=memory_extraction_service,
+            memory_promotion_service=memory_promotion_service,
+            event_store=event_store,
+            started_at=started_at,
+        )
+    title_event = title_service.generate(
+        session=recorder.session,
+        events=event_store.list_for_session(recorder.session.session_id),
+        next_sequence=recorder.next_sequence,
     )
-    if _suspended_for_children:
-        recorder.append(
-            EventType.SESSION_SUSPENDED,
-            EventActor.HARNESS,
-            {
-                "reason": "waiting_children",
-                "child_task_ids": [
-                    signal.payload["metadata"].get("child_task_id")
-                    for signal in _suspend_signals
-                ],
-                "metadata": attempt_result.metadata,
-            },
-        )
-    if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED and not _suspended_for_children:
-        if cloud_memory_store is not None:
-            if (
-                deployment_namespace is None
-                or projection_store is None
-                or workspace_store is None
-            ):
-                raise ValueError(
-                    "cloud Memory finalization requires its complete projection context"
-                )
-            finalize_cloud_memory(
-                recorder=recorder,
-                memory_store=cloud_memory_store,
-                deployment_namespace=deployment_namespace,
-                event_store=event_store,
-                projection_store=projection_store,
-                workspace_store=workspace_store,
-                started_at=started_at,
-            )
-        else:
-            if memory_extraction_service is None or memory_promotion_service is None:
-                raise ValueError("local Memory finalization requires writable Memory services")
-            _finalize_local_memory(
-                recorder=recorder,
-                memory_extraction_service=memory_extraction_service,
-                memory_promotion_service=memory_promotion_service,
-                event_store=event_store,
-                started_at=started_at,
-            )
-        title_event = title_service.generate(
-            session=recorder.session,
-            events=event_store.list_for_session(recorder.session.session_id),
-            next_sequence=recorder.next_sequence,
-        )
-        if title_event is not None:
-            recorder.append_event(title_event)
+    if title_event is not None:
+        recorder.append_event(title_event)
     return recorder.events
+
+
+def _child_task_ids(metadata: dict[str, object]) -> list[str] | None:
+    """Extract validated waiting-children ids from attempt metadata."""
+
+    raw = metadata.get("child_task_ids")
+    if not isinstance(raw, list):
+        return None
+    ids = [item.strip() if isinstance(item, str) else "" for item in raw]
+    if not ids or any(not item for item in ids):
+        return None
+    return ids
 
 
 def _finalize_local_memory(

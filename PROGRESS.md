@@ -5,6 +5,43 @@
 
 ## Current Mainline Snapshot
 
+- Default-composition durable delegation proven end to end (2026-08-20,
+  audit-fix branch on `cloud-agent`): the 2026-08-20 maintainer audit of
+  PR #247 found all three "fixes" dead on the default path — the durable
+  child could never materialize (fabricated `derived.local` parent
+  binding + capability mismatch), the parent wrote SESSION_COMPLETED
+  before SESSION_SUSPENDED with a contract-violating payload, and the
+  idempotency hash diverged between API replay and PG admission (plus
+  non-serializable attachment/UUID payloads). All closed on the real
+  path: admission now freezes a binding for every cloud session
+  (Host-bound pins the Host grant; internal sessions pin a
+  deployment-authority binding) inside the atomic v25 transaction with a
+  round-trippable snapshot; the tool loop suspends the parent on
+  `suspend_after_turn` by freezing a `SUBAGENT_DELEGATED` join-state
+  event (conversation, counters, tool-call identity) BEFORE any terminal
+  event; the child runs READ_ONLY on a `research` tool profile (no
+  `agent.research` — durable depth 1 is additionally enforced against
+  the delegation link) with a binding narrowed to
+  `{agent.execute, evidence.read}`; the wakeup command carries the
+  child's terminal summary and the resumed parent injects it through the
+  completed-tool continuation (`SESSION_RESUMED` now legal for logical
+  resumes); idempotency uses ONE canonical hash computed by the API from
+  the raw payload, stores the full 201 body atomically (run-command
+  composition syncs it afterwards), replays it verbatim and 409s on
+  hash conflict; child admission + delegation link commit in one
+  transaction (no orphan children). Fixed three latent default-chain
+  bugs the old component tests could not see: `load_task_binding` wrote
+  a partial snapshot JSON no consumer could validate,
+  `AttemptAuthorityEvidence.persist` recovered without the worker lease
+  (cloud path always raised), and the workspace-projections CHECK
+  rejected the `research` profile (v29 migration). New E2E
+  `tests/agent_storage/test_postgres_default_chain_e2e.py` drives the
+  REAL default API + Worker loop + `agent.research` over real
+  PostgreSQL + MinIO with only the model transport scripted (registered
+  in the compose runner). Validation: 2431 non-PG + 452 PG tests
+  passed, `make check` green. Known follow-ups (explicitly not closed):
+  Host-connector manifest/credential freeze at admission (Worker still
+  discovers live at gateway build), and the Trench cutover chain.
 - Agent Layer phases B–D executed (2026-08-18, PRs #208-#216): Phase B
   closed with `AL-TASK-BIND-CON-01` (immutable binding snapshots and
   capability intersection), `AL-CONNECTOR-PG-01` (v24 registry, immutable

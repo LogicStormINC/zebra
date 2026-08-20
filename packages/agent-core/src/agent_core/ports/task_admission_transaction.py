@@ -52,6 +52,11 @@ class TaskAdmissionReceipt:
     event_count: int
     binding_digest: str | None
     idempotent_replay: bool = False
+    replayed_record: IdempotencyRecord | None = None
+
+
+class TaskAdmissionIdempotencyConflict(ValueError):
+    """The idempotency key was reused with a different canonical request."""
 
 
 class TaskAdmissionTransactionPort(Protocol):

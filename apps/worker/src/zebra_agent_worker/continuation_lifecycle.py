@@ -5,6 +5,7 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import EventStorePort
 
 from zebra_agent_worker.approved_continuation import ApprovedContinuation
+from zebra_agent_worker.child_wakeup_continuation import ChildWakeupContinuation
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.clarification_continuation import ClarificationContinuation
 from zebra_agent_worker.control import SessionControlError, SessionControlService
@@ -114,14 +115,38 @@ def restore_suspended_session_claim(
     control_service: SessionControlService,
     recovery_service: SessionRecoveryService,
     started_at: datetime,
+    event_store: EventStorePort | None = None,
 ) -> ClaimedSession:
-    """Restore a suspended local Session, or fail closed on the cloud Worker."""
+    """Restore a suspended Session, or fail closed on the cloud Worker.
+
+    A logical waiting_children suspension (durable delegation) has no
+    runtime snapshot to restore — the cloud Worker resumes it by emitting
+    SESSION_RESUMED and re-entering normal execution. Snapshot-based
+    suspensions keep the fail-closed cloud refusal.
+    """
     if claimed.recovery.session.status is not SessionStatus.SUSPENDED:
         return claimed
     if cloud_deployment:
-        raise WorkerExecutionError(
-            "cloud suspended-session restoration is not supported by the default Worker"
+        if event_store is None:
+            raise WorkerExecutionError(
+                "cloud suspended-session restoration requires the event store"
+            )
+        events = event_store.list_for_session(claimed.lease.session_id)
+        if not _is_waiting_children_suspension(events):
+            raise WorkerExecutionError(
+                "cloud suspended-session restoration is not supported by the default Worker"
+            )
+        event_store.append(
+            SessionEvent.create(
+                session_id=claimed.lease.session_id,
+                sequence=claimed.recovery.session.current_sequence + 1,
+                event_type=EventType.SESSION_RESUMED,
+                actor=EventActor.HARNESS,
+                payload={"reason": "waiting_children_resolved"},
+                created_at=started_at,
+            )
         )
+        return _recovered_claim(claimed, recovery_service)
     try:
         restored = control_service.restore_suspended_workspace(
             claimed.lease.session_id,
@@ -134,6 +159,23 @@ def restore_suspended_session_claim(
     return _recovered_claim(claimed, recovery_service)
 
 
+def _is_waiting_children_suspension(events: list[SessionEvent]) -> bool:
+    """True when the live suspension state is a logical waiting_children one."""
+
+    waiting = False
+    for event in events:
+        if event.event_type is EventType.SESSION_SUSPENDED:
+            waiting = event.payload.get("reason") == "waiting_children"
+        elif event.event_type in (
+            EventType.SESSION_RESUMED,
+            EventType.SESSION_COMPLETED,
+            EventType.SESSION_FAILED,
+            EventType.SESSION_CANCELLED,
+        ):
+            waiting = False
+    return waiting
+
+
 def start_recovered_continuation(
     claimed: ClaimedSession,
     *,
@@ -143,6 +185,7 @@ def start_recovered_continuation(
     recovery_service: SessionRecoveryService,
     started_at: datetime,
     recorder: DurableHarnessEventRecorder | None = None,
+    child_wakeup: ChildWakeupContinuation | None = None,
 ) -> ClaimedSession:
     """Emit the continuation start Events for the recovered active continuation."""
     if continuation is not None and continuation.completed_output is not None:
@@ -173,7 +216,44 @@ def start_recovered_continuation(
             started_at=started_at,
             recorder=recorder,
         )
+    if child_wakeup is not None:
+        return mark_child_wakeup_continuation_started(
+            claimed,
+            event_store=event_store,
+            recovery_service=recovery_service,
+            tool_call_id=str(child_wakeup.tool_call.tool_call_id),
+            started_at=started_at,
+            recorder=recorder,
+        )
     return claimed
+
+
+def mark_child_wakeup_continuation_started(
+    claimed: ClaimedSession,
+    *,
+    event_store: EventStorePort,
+    recovery_service: SessionRecoveryService,
+    tool_call_id: str,
+    started_at: datetime,
+    recorder: DurableHarnessEventRecorder | None = None,
+) -> ClaimedSession:
+    event = SessionEvent.create(
+        session_id=claimed.recovery.session.session_id,
+        sequence=claimed.recovery.session.current_sequence + 1,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "child_wakeup_continuation": True,
+            "tool_call_id": tool_call_id,
+        },
+        created_at=started_at,
+    )
+    if recorder is None:
+        event_store.append(event)
+    else:
+        recorder.append_event(event)
+    return _recovered_claim(claimed, recovery_service)
 
 
 def _recovered_claim(

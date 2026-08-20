@@ -36,19 +36,11 @@ if TYPE_CHECKING:
     from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.continuation_dispatch import run_continuation
-from zebra_agent_worker.continuation_lifecycle import (
-    restore_suspended_session_claim,
-    start_recovered_continuation,
-)
-from zebra_agent_worker.continuation_recovery import (
-    ApprovedContinuationError,
-    ClarificationContinuationError,
-    recover_approved_continuation,
-    recover_clarification_continuation,
-)
+from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
 from zebra_agent_worker.execution_context import harness_task_for_recovered
+from zebra_agent_worker.execution_continuations import recover_and_start_continuations
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import (
@@ -232,6 +224,7 @@ class SessionExecutionService:
             control_service=self._control_service,
             recovery_service=self._recovery_service,
             started_at=started_at,
+            event_store=self._event_store,
         )
         recovered_handoff = handoff.recover_worker_handoff(
             self._handoff_gate,
@@ -282,11 +275,18 @@ class SessionExecutionService:
         runtime_handle = None
         effect_recorder: list[DurableHarnessEventRecorder] = []
         try:
-            from zebra_agent_worker.bound_execution_authority import select_attempt_authority
+            from zebra_agent_worker.bound_execution_authority import (
+                load_bound_binding,
+                select_attempt_authority,
+            )
+            # Load the frozen binding ONCE: it drives both this Attempt's
+            # authority and the durable-delegation digest the tool gateway
+            # checks against binding drift.
+            task_binding = load_bound_binding(self._task_binding_loader, session_id)
             evidence_args = select_attempt_authority(
                 self._execution_authority_resolver, self._execution_authority_scope,
                 self._execution_authority_scope_provider, self._task_binding_loader,
-                session_id)
+                session_id, binding=task_binding)
             claimed, session_events = AttemptAuthorityEvidence(
                 *evidence_args, self._recovery_service, self._event_store).persist(
                 authority_recorder,
@@ -337,6 +337,10 @@ class SessionExecutionService:
                 egress_registry=self._egress_registry,
                 delegation_store=self._delegation_store,
                 parent_task_id=session_id,
+                parent_binding_digest=(
+                    task_binding.binding_digest if task_binding is not None else None
+                ),
+                parent_binding=task_binding,
                 durable_delegation=self._settings.deployment == "cloud",
             )
             tool_gateway = guard_worker_effects(
@@ -378,31 +382,18 @@ class SessionExecutionService:
             session=claimed.recovery.session,
             attempt=HarnessAttempt(number=1, started_at=started_at),
         )
-        try:
-            continuation = recover_approved_continuation(session_events)
-            clarification = recover_clarification_continuation(session_events)
-            if continuation is not None and clarification is not None:
-                raise WorkerExecutionError("session has multiple active continuations")
-        except (
-            ApprovedContinuationError,
-            ClarificationContinuationError,
-            WorkerExecutionError,
-        ) as exc:
-            cleanup_error = close_tool_gateway(tool_gateway)
-            if cleanup_error is not None:
-                raise WorkerExecutionError(
-                    f"{exc}; runtime cleanup failed: {cleanup_error}"
-                ) from cleanup_error
-            raise WorkerExecutionError(str(exc)) from exc
-        claimed = start_recovered_continuation(
+        claimed, continuations = recover_and_start_continuations(
             claimed,
-            continuation=continuation,
-            clarification=clarification,
+            session_events=session_events,
             event_store=self._event_store,
             recovery_service=self._recovery_service,
             started_at=started_at,
             recorder=authority_recorder,
+            cleanup=lambda: close_tool_gateway(tool_gateway),
         )
+        continuation = continuations.approved
+        clarification = continuations.clarification
+        child_wakeup = continuations.child_wakeup
         context = HarnessContext(
             task=context.task,
             session=claimed.recovery.session,
@@ -415,7 +406,11 @@ class SessionExecutionService:
             ownership_check=ownership_check,
         )
         effect_recorder.append(recorder)
-        if continuation is None and clarification is None:
+        if (
+            continuation is None
+            and clarification is None
+            and child_wakeup is None
+        ):
             recorder.append(
                 EventType.HARNESS_ATTEMPT_STARTED,
                 EventActor.HARNESS,
@@ -468,6 +463,7 @@ class SessionExecutionService:
                 context,
                 continuation=continuation,
                 clarification=clarification,
+                child_wakeup=child_wakeup,
             )
         except Exception as exc:
             attempt_result = exception_attempt_result(
