@@ -82,6 +82,44 @@ class PostgresTaskAdmissionTransaction:
         )
 
 
+
+def save_task_binding(
+    dsn: str,
+    *,
+    deployment_namespace: str,
+    binding: TaskBindingSnapshot,
+) -> str:
+    """Persist one immutable binding snapshot outside a full admission.
+
+    Phase F3: the cloud create path freezes the Task binding right after
+    session creation so the Worker's binding-aware authority (F1) and the
+    pinned egress (F2) can consume it. Revision conflicts fail closed.
+    """
+
+    database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    with database.connect() as connection:
+        existing = connection.execute(
+            """
+            SELECT binding_digest FROM task_binding_snapshots
+            WHERE deployment_namespace = %s AND task_id = %s
+                AND binding_revision = %s
+            """,
+            (
+                deployment_namespace,
+                str(binding.task_id),
+                binding.binding_revision,
+            ),
+        ).fetchone()
+        if existing is not None:
+            if existing["binding_digest"] != binding.binding_digest:
+                raise ValueError(
+                    "task binding revision is immutable and already exists "
+                    "with a different digest"
+                )
+            return binding.binding_digest
+        _insert_binding_snapshot(connection, deployment_namespace, binding)
+    return binding.binding_digest
+
 def _insert_or_load_idempotency(
     connection: Any,
     namespace: str,

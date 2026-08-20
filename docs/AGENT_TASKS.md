@@ -1148,6 +1148,42 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### COMPOSE-CLOSEOUT-F2+F3 - Pinned Egress And Admission Binding Freeze
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/compose-closeout-2` (from `cloud-agent@684691fb`)
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/{tool_gateway_runtime,execution,loop}.py`,
+  `apps/api/src/zebra_agent_api/{app,session_binding}.py`,
+  `packages/agent-storage/src/agent_storage/postgres/task_admission.py`
+  (save_task_binding), focused tests, this card.
+
+#### Acceptance
+
+- [x] F2: `build_worker_tool_gateway` resolves pinned egress FIRST when a
+  connector registry is wired — bound namespaces build the gateway from
+  the immutable profile via `HostEgressResolver` (compat HMAC credential
+  adapter), unbound namespaces fall back to the legacy env path, revoked
+  profiles fail closed. The cloud Worker loop constructs
+  `PostgresHostConnectorRegistry` from the bundle DSN and threads it
+  through `SessionExecutionService`; local profile untouched (None).
+- [x] F3: cloud create responses with a verified HostContextEnvelope now
+  freeze a `TaskBindingSnapshot` — ceiling from the published Definition
+  digest (or unbound marker), host capability snapshot with a content
+  digest of the envelope (grant digest = sha256 of scopes/resources/
+  policy/origin), persisted via `save_task_binding` with immutable
+  revision conflict rejection. Persistence refusal falls back silently to
+  today's behavior. This is the entry point F1's loader consumes.
+- [x] Wiring tests 4 passed; full regression 2597 passed; `make check`
+  green (both app.py and execution.py back under the size gate).
+
+#### Explicit Non-Goals
+
+- F4 waiting/wakeup loop and F5 real E2E (next slices)
+- manifest digest verification at admission (unbound marker until
+  connector-bound manifests exist)
+
 ### COMPOSE-CLOSEOUT-F1 - Binding-Aware Attempt Authority (Default Composition)
 
 - Status: `Done`
