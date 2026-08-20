@@ -58,7 +58,7 @@ from zebra_agent_api.api_workspace_mixin import (
     WorkspaceControlStorePort,
 )
 from zebra_agent_api.factory import create_app as create_app
-from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
+from zebra_agent_api.idempotency import replay_idempotent_response
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
@@ -217,15 +217,12 @@ class ZebraAgentApi(
                 definition_snapshot, deployment=self.settings.deployment,
                 storage_authority=self.settings.storage_authority,
                 database_url=self.settings.database_url, stores=self.stores)
-        if idempotency_key is None or response.status_code != 201:
-            return response
-        return save_idempotent_response(
-            store=self.stores.idempotency,
-            action="session.create",
-            idempotency_key=idempotency_key,
-            payload=payload,
-            response=response,
+        from zebra_agent_api.session_binding import _post_admission_idempotency
+
+        result = _post_admission_idempotency(
+            self.settings, self.stores, idempotency_key, response, payload
         )
+        return result if isinstance(result, ApiResponse) else response
 
     def resume_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
         parsed = parse_resume_session_payload(payload)
