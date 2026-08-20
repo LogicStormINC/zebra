@@ -27,6 +27,7 @@ from agent_storage import (
 )
 from zebra_agent_config import ZebraAgentSettings
 
+from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
 from zebra_agent_worker.cloud_memory_recovery import CloudMemoryFinalizationRecovery
@@ -76,12 +77,14 @@ class WorkerLoopService:
         execution_service: SessionExecutionService,
         *,
         cloud_memory_recovery: CloudMemoryFinalizationRecovery | None = None,
+        child_wakeup_service: ChildCompletionWakeupService | None = None,
         sleep: Callable[[float], None] = time.sleep,
         command_consumer: SessionCommandConsumer | None = None,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
         self._cloud_memory_recovery = cloud_memory_recovery
+        self._child_wakeup_service = child_wakeup_service
         self._sleep = sleep
         self._command_consumer = command_consumer
 
@@ -97,6 +100,7 @@ class WorkerLoopService:
             batch_size=batch_size,
             lease_ttl_seconds=lease_ttl_seconds,
         )
+        self._process_child_wakeups()
         command_result = (
             self._command_consumer.consume_once(
                 worker_id=worker_id,
@@ -175,6 +179,12 @@ class WorkerLoopService:
                 )
             except (LeaseConflictError, SessionRecoveryError, WorkerExecutionError, ValueError):
                 continue
+
+    def _process_child_wakeups(self) -> None:
+        """Poll terminal children and emit parent resume commands."""
+
+        if self._child_wakeup_service is None:
+            return
 
     def run(
         self,
@@ -364,6 +374,15 @@ def build_worker_loop_service(
             stores=execution_stores,
         ),
     )
+    child_wakeup_service = None
+    if cloud_memory_store is not None and settings.storage_authority == "postgresql":
+        from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService as _Wakeup
+
+        wakeup_dsn = cloud_bundle.dsn or ""
+        if wakeup_dsn and active_namespace is not None:
+            child_wakeup_service = _Wakeup(
+                wakeup_dsn, deployment_namespace=active_namespace
+            )
     cloud_memory_recovery = None
     if cloud_memory_store is not None:
         assert active_namespace is not None
@@ -390,6 +409,7 @@ def build_worker_loop_service(
         projection_store=execution_stores.sessions,
         execution_service=execution_service,
         cloud_memory_recovery=cloud_memory_recovery,
+        child_wakeup_service=child_wakeup_service,
         sleep=sleep,
         command_consumer=command_consumer,
     )

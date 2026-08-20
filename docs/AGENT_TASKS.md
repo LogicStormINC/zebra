@@ -1148,6 +1148,26 @@ read-only Trench vertical slice.
   unlock rule (only Removal is Cutover-gated); it is packaging-only and
   reversible.
 
+### COMPOSE-CLOSEOUT-F6 - Worker-Loop Wakeup Integration
+
+- Status: `Done`
+- Owner: `lukeding`
+- Branch: `codex/compose-closeout-4` (from `cloud-agent@8c49ba0f`)
+- Owned paths: `apps/worker/src/zebra_agent_worker/loop.py`, this card.
+
+#### Acceptance
+
+- [x] `WorkerLoopService.poll_once` now calls `_process_child_wakeups`
+  every cycle (after memory recovery, before command consumption) — the
+  F4 wakeup service fires in production, not just in tests.
+- [x] Cloud Worker builder constructs `ChildCompletionWakeupService` from
+  the bundle DSN; local profile unaffected (service stays None).
+- [x] Full regression 2601 passed; `make check` green.
+
+#### Explicit Non-Goals
+
+- F6/F7 Trench cutover chain (gated on EMB-TRN-READ-E2E-01 evidence)
+
 ### COMPOSE-CLOSEOUT-F4+F5 - Child Wakeup Service And Real E2E
 
 - Status: `Done`
