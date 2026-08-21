@@ -34,7 +34,11 @@ files_list_contract = ToolContract(
     parallel_safe=True,
     description="List a bounded directory or shallow tree inside the current workspace.",
     argument_properties={
-        "path": {"type": "string", "description": "Workspace-relative directory root."},
+        "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Workspace-relative directory root.",
+        },
         "depth": {"type": "integer", "minimum": 1, "maximum": MAX_DEPTH},
         "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT},
         "offset": {"type": "integer", "minimum": 0, "maximum": MAX_OFFSET},

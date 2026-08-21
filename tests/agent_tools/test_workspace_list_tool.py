@@ -49,6 +49,17 @@ def test_list_returns_stable_directories_before_files(tmp_path: Path) -> None:
     assert result.metadata["truncated"] is False
 
 
+def test_list_advertises_optional_non_blank_root(tmp_path: Path) -> None:
+    registry = ToolRegistry()
+    tool = WorkspaceListTool(LocalWorkspace(tmp_path))
+    registry.register(tool.contract, tool.handle)
+
+    definition = registry.model_tools()[0]
+
+    assert definition.parameters["required"] == []
+    assert definition.parameters["properties"]["path"]["minLength"] == 1
+
+
 def test_list_supports_relative_root_depth_and_pagination(tmp_path: Path) -> None:
     materials = tmp_path / "materials"
     nested = materials / "nested"

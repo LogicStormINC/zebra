@@ -32,6 +32,14 @@ TOOLS = (
         description="Read a workspace file.",
         parameters={"type": "object", "properties": {"path": {"type": "string"}}},
     ),
+    ModelToolDefinition(
+        name="files.list",
+        description="List a workspace root.",
+        parameters={
+            "type": "object",
+            "properties": {"path": {"type": "string", "minLength": 1}},
+        },
+    ),
 )
 
 
@@ -204,6 +212,51 @@ def test_unmarked_workspace_escape_deny_stays_terminal() -> None:
     assert len(model.requests) == 1
 
 
+def test_blank_workspace_root_deny_is_observed_then_corrected_in_one_attempt() -> None:
+    blank = _call("files.list", {"path": ""}, "blank")
+    sibling = _call("files.list", {"path": "unused"}, "sibling")
+    corrected = _call("files.list", {}, "corrected")
+    policy = _policy()
+    expected_deny = policy.evaluate_tool_call(blank)
+    model = _gateway(
+        _completion("List the workspace.", blank, sibling),
+        _completion("Use the default workspace root.", corrected),
+        _completion(FINAL_MARKER),
+    )
+    tools = RecordingTools()
+
+    result = _run(
+        model,
+        tools,
+        policy=policy,
+        max_parallel=1,
+        max_model_calls=3,
+    )
+
+    assert expected_deny.recoverable is True
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.run_result.attempts_used == 1
+    assert len(model.requests) == 3
+    assert result.run_result.tool_calls_used == 1
+    assert tools.calls == [corrected]
+    assert expected_deny.reason in next(
+        message.content
+        for message in model.requests[1]
+        if message.role is MessageRole.TOOL and message.tool_call_id == "blank"
+    )
+    retained_batch = next(
+        message
+        for message in model.requests[1]
+        if message.role is MessageRole.ASSISTANT and message.tool_calls
+    )
+    assert [call.provider_call_id for call in retained_batch.tool_calls] == ["blank"]
+    assert {
+        event.payload["tool_call_id"]
+        for event in result.events
+        if event.event_type is EventType.TOOL_EXECUTION_STARTED
+    } == {str(corrected.tool_call_id)}
+
+
 def test_unlisted_fragment_deny_stays_terminal() -> None:
     fragment = _fetch("https://unlisted.example.com/ledger#section", "unlisted")
     model = _gateway(_completion("Fetch the source.", fragment))
@@ -231,9 +284,14 @@ def _run(
     *,
     policy: LocalPolicyEngine,
     max_parallel: int,
+    max_model_calls: int | None = None,
 ) -> HarnessLoopResult:
     return HarnessLoop().run(
-        HarnessTask(title="Policy recovery", user_input="Produce the synthetic log."),
+        HarnessTask(
+            title="Policy recovery",
+            user_input="Produce the synthetic log.",
+            max_model_calls=max_model_calls,
+        ),
         SingleAttemptOrchestrator(
             model,
             policy,

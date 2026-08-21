@@ -42,6 +42,17 @@ def test_content_search_returns_ordered_bounded_evidence(tmp_path: Path) -> None
     assert result.metadata["next_offset"] is None
 
 
+def test_search_advertises_optional_non_blank_root(tmp_path: Path) -> None:
+    registry = ToolRegistry()
+    tool = WorkspaceSearchTool(LocalWorkspace(tmp_path))
+    registry.register(tool.contract, tool.handle)
+
+    definition = registry.model_tools()[0]
+
+    assert definition.parameters["required"] == ["query"]
+    assert definition.parameters["properties"]["path"]["minLength"] == 1
+
+
 def test_filename_search_supports_root_glob_and_pagination(tmp_path: Path) -> None:
     source = tmp_path / "src"
     source.mkdir()

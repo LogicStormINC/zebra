@@ -115,6 +115,7 @@ PATH_ARGUMENTS_BY_TOOL = {
     "files.search": ("path",),
     "git.status": ("cwd",),
 }
+OPTIONAL_WORKSPACE_ROOT_TOOLS = frozenset({"files.list", "files.search"})
 
 
 @dataclass(frozen=True)
@@ -139,7 +140,11 @@ class LocalPolicyEngine:
         tool_name = tool_call.name
         path_risk_reason = _path_risk_reason(tool_call)
         if path_risk_reason is not None:
-            return _deny(self.profile, path_risk_reason)
+            return _deny(
+                self.profile,
+                path_risk_reason,
+                recoverable=_is_recoverable_optional_workspace_root_input(tool_call),
+            )
         egress = classify_tool_egress(
             tool_call,
             network_profile=self.network_profile,
@@ -316,6 +321,8 @@ def _path_risk_reason(tool_call: ToolCall) -> str | None:
             continue
         if not isinstance(raw_path, str):
             return f"{tool_call.name} path argument {argument_name} must be a string"
+        if not raw_path.strip():
+            return f"{tool_call.name} path argument {argument_name} must be non-blank"
         if _is_unsafe_relative_path(raw_path):
             return f"{tool_call.name} path argument {argument_name} escapes workspace"
     if tool_call.name == "patch.apply":
@@ -353,6 +360,15 @@ def _is_unsafe_relative_path(raw_path: str) -> bool:
         return True
     parts = stripped.replace("\\", "/").split("/")
     return any(part == ".." for part in parts)
+
+
+def _is_recoverable_optional_workspace_root_input(tool_call: ToolCall) -> bool:
+    raw_path = tool_call.arguments.get("path")
+    return (
+        tool_call.name in OPTIONAL_WORKSPACE_ROOT_TOOLS
+        and isinstance(raw_path, str)
+        and not raw_path.strip()
+    )
 
 
 def _contains_sensitive_marker(value: str) -> bool:

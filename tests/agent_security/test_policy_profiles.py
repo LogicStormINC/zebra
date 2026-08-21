@@ -466,6 +466,32 @@ def test_path_traversal_is_denied_for_file_read() -> None:
     assert "escapes workspace" in decision.reason
 
 
+@pytest.mark.parametrize("tool_name", ("files.list", "files.search"))
+def test_blank_optional_workspace_root_is_recoverable_malformed_input(tool_name: str) -> None:
+    decision = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY).evaluate_tool_call(
+        _tool_call(tool_name, {"path": " "})
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert decision.recoverable is True
+    assert "non-blank" in decision.reason
+    assert "escapes workspace" not in decision.reason
+
+
+@pytest.mark.parametrize("tool_name", ("files.list", "files.search"))
+@pytest.mark.parametrize("path", ("/outside", r"\outside", "root/../outside", ".."))
+def test_optional_workspace_root_escape_remains_terminal(
+    tool_name: str, path: str
+) -> None:
+    decision = LocalPolicyEngine(profile=PolicyProfile.READ_ONLY).evaluate_tool_call(
+        _tool_call(tool_name, {"path": path})
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert decision.recoverable is False
+    assert "escapes workspace" in decision.reason
+
+
 @pytest.mark.parametrize("profile", list(PolicyProfile))
 def test_file_list_is_allowed_by_all_policy_profiles(profile: PolicyProfile) -> None:
     decision = LocalPolicyEngine(profile=profile).evaluate_tool_call(
