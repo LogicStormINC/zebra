@@ -9,6 +9,24 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
+- Review-round P2 closeout (2026-08-21, `cloud-agent`): the run-event
+  pre-check now validates through the CORE contract instead of a local
+  copy — the payload must parse as SessionCommandAcceptedPayload (UUID
+  command/session ids, enum kind, bounded fields), rebuild into a
+  SessionCommand, match kind=run/session/key/empty payload, and the
+  accepted fingerprint must equal the command's own core-computed
+  fingerprint. A durable event with a self-consistent fingerprint but a
+  non-UUID command_id (injected via raw SQL, i.e. direct store
+  corruption the validating append path would reject) now fails closed
+  into idempotency_conflict instead of being rebuilt as 202 accepted
+  (regression reproduces exactly that injection). Governance: the audit
+  follow-up rounds #248-#253 now have an ownership card
+  (COMPOSE-CLOSEOUT-AUDIT-FOLLOWUP-01) listing the actual branches and
+  owned paths; F4/F5's stale branch/ownership lines point to it. Note:
+  the no-filter full-repo number is subject to external-model drift —
+  the DeepSeek smoke test failed transiently in the maintainer's run on
+  an empty provider reasoning_content, independent of this line.
+
 - Fifth review round: truncation prefix + run-key semantics (2026-08-21,
   `cloud-agent`): closes the two P1s found in PR #251. Canonical CJK
   summaries keep the longest original prefix fitting the per-child
