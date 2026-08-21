@@ -9,6 +9,20 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
+- Maintainer line acceptance closed (2026-08-21, gate 5, reviewed at
+  `cloud-agent@5bab4b57`): the complete 59-path delta from
+  `e2f76046^1..5bab4b57` was reviewed across Host admission/freeze,
+  HTTP/auth, durable delegation, Effect replay, concurrency and recovery;
+  no new P0/P1/P2 Cloud blocker was found. Independent validation passed
+  `make check` (file-size `1441`, Ruff, Mypy `713`, Eval `10/10`) and a
+  no-filter full-repository run over real PostgreSQL + MinIO (`2938 passed /
+  0 failed / 11 skipped`); the isolated containers, network and volume were
+  removed. `COMPOSE-CLOSEOUT-AUDIT-FOLLOWUP-01` is `Done`. PR #257's
+  Backend and Cloud real-service checks are green; the inherited Packaged
+  Tauri stop-stream failure remains a separate non-Cloud repository gate.
+  Trench real acceptance (gate 3, 16 deployment inputs) is the remaining
+  product delivery gate.
+
 - Accepted-baseline delivery gates closed (2026-08-21, `cloud-agent`,
   PRs #255-#257): gate 4 — both inherited repo failures root-caused and
   fixed (mem0 spike insert lagged the 25-column governed-memory schema;
@@ -30,8 +44,8 @@
   409 conflict, and worker completion of the HTTP-created session.
   Validation: no-filter full-repo over real PG+MinIO 2938 passed /
   0 failed / 11 skipped; make check green (mypy 713 files). Remaining
-  gates: Trench real acceptance (inputs pending) and the maintainer's
-  line acceptance.
+  gate: Trench real acceptance (inputs pending); maintainer line
+  acceptance is closed above.
 
 - Strict-revision closeout (2026-08-21, `cloud-agent`, PR #254):
   expected_revision is now a strict int in BOTH SessionCommand and
