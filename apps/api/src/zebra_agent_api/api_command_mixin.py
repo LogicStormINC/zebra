@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from typing import Protocol
 from uuid import UUID
 
@@ -114,36 +112,43 @@ def _persisted_run_event(
     return None
 
 
-def _is_genuine_run_event(event: object, command_key: str, session_text: str) -> bool:
-    """Full business validation, mirroring decide_session_command's
-    same-key/same-meaning rule: type, kind, session, key, payload shape
-    and a self-consistent fingerprint."""
+def _is_genuine_run_event(event: SessionEvent, command_key: str, session_text: str) -> bool:
+    """Full business validation through the CORE contract, not a local
+    copy: the payload must parse as a SessionCommandAcceptedPayload
+    (UUID command/session ids, enum kind, bounded fields), rebuild into
+    a SessionCommand, and the accepted fingerprint must equal the
+    command's own core-computed fingerprint. Any malformation —
+    including a self-consistent fingerprint around a non-UUID
+    command_id — fails closed."""
 
-    payload = getattr(event, "payload", {})
-    if payload.get("kind") != "run":
+    from agent_core.contracts import (
+        SessionCommand,
+        SessionCommandAcceptedPayload,
+        SessionCommandKind,
+    )
+    from pydantic import ValidationError
+
+    try:
+        accepted = SessionCommandAcceptedPayload.model_validate(event.payload)
+        command = SessionCommand(
+            command_id=UUID(accepted.command_id),
+            session_id=SessionId(UUID(accepted.session_id)),
+            kind=accepted.kind,
+            expected_revision=accepted.expected_revision,
+            idempotency_key=accepted.idempotency_key,
+            payload=accepted.payload,
+        )
+    except (ValidationError, ValueError):
         return False
-    if payload.get("session_id") != session_text:
+    if command.kind is not SessionCommandKind.RUN:
         return False
-    if payload.get("idempotency_key") != command_key:
+    if command.idempotency_key != command_key:
         return False
-    if payload.get("payload") != {}:
+    if str(command.session_id) != session_text:
         return False
-    expected_revision = payload.get("expected_revision")
-    if not isinstance(expected_revision, int) or isinstance(expected_revision, bool):
+    if command.payload != {}:
         return False
-    fingerprint = payload.get("fingerprint")
-    if not isinstance(fingerprint, str):
-        return False
-    intent = {
-        "session_id": session_text,
-        "kind": "run",
-        "expected_revision": expected_revision,
-        "payload": {},
-    }
-    expected = hashlib.sha256(
-        json.dumps(intent, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-    return fingerprint == expected
+    return accepted.fingerprint == command.fingerprint
 
 
 def _run_key_conflict(session_text: str) -> ApiResponse:

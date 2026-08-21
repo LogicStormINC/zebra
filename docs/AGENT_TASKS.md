@@ -1231,11 +1231,17 @@ read-only Trench vertical slice.
   durable result verification, real-answer injection, storage-level
   concurrency, two-phase replay reconciliation.)
 - Owner: `lukeding`
-- Branch: `codex/compose-closeout-3` (from `cloud-agent@38004416`)
-- Owned paths:
+- Branch: `codex/compose-closeout-3` (from `cloud-agent@38004416`);
+  the 2026-08-20/21 audit follow-up rounds landed on
+  `codex/audit-default-chain-deep`, `codex/audit-wakeup-trust`,
+  `codex/audit-multiworker-wakeup`, `codex/audit-command-contract`,
+  `codex/audit-prefix-and-runkey` and
+  `codex/audit-core-contract-precheck` (PRs #248-#253) — ownership and
+  history tracked on COMPOSE-CLOSEOUT-AUDIT-FOLLOWUP-01 below.
+- Owned paths (original slice):
   `apps/worker/src/zebra_agent_worker/child_wakeup.py` (new),
   `tests/agent_storage/test_postgres_e2e_compose_closeout.py` (new),
-  this card.
+  this card; audit follow-up paths on the follow-up card.
 
 #### Acceptance
 
@@ -1258,6 +1264,59 @@ read-only Trench vertical slice.
   card wires the poll cadence)
 - no continuation storage beyond the direct-resume path (multi-child
   orchestration continuations ride with ORCH-PG-01 projections)
+
+### COMPOSE-CLOSEOUT-AUDIT-FOLLOWUP-01 - Delegation-Chain Audit Follow-Up
+
+- Status: `Done` (2026-08-21: five maintainer audit rounds on the
+  durable-delegation chain, each closing its findings with regressions
+  that reproduce the reported scenarios)
+- Owner: `lukeding`
+- Branches: `codex/audit-default-chain-deep`, `codex/audit-wakeup-trust`,
+  `codex/audit-multiworker-wakeup`, `codex/audit-command-contract`,
+  `codex/audit-prefix-and-runkey`, `codex/audit-core-contract-precheck`
+  (PRs #248-#253 on `cloud-agent`)
+- Owned paths:
+  `apps/api/src/zebra_agent_api/{app,session_binding,session_queue,
+  session_replay,api_command_mixin}.py`,
+  `apps/worker/src/zebra_agent_worker/{execution,execution_finalization,
+  execution_continuations,child_wakeup,child_wakeup_continuation,
+  continuation_dispatch,continuation_lifecycle,runtime_authority,
+  tool_gateway_runtime,bound_execution_authority}.py`,
+  `packages/agent-core/src/agent_core/{contracts, domain, harness,
+  application, ports}` (delegation/control contracts, tool profiles,
+  workspace projection, sequential loop, orchestrator),
+  `packages/agent-runtime/src/agent_runtime/{research,harness}.py`,
+  `packages/agent-storage/src/agent_storage/postgres/{task_admission,
+  subagent_delegation,migrations,research_profile_migration}.py`,
+  `tests/agent_storage/{conftest,test_postgres_default_chain_e2e,
+  test_postgres_default_chain_scenarios,
+  test_postgres_concurrent_idempotency,test_postgres_full_chain_e2e,
+  test_postgres_e2e_compose_closeout}.py`,
+  `tests/compose/cloud_effect_composition/run-postgres-tests.sh`,
+  this card.
+
+#### Rounds
+
+1. #248: real parent binding, suspension-before-terminal ordering,
+   unified idempotency hash, single-transaction child+link, default
+   -chain E2E (plus 4 latent bugs it exposed).
+2. #249: HARNESS-actor wakeup trust + durable result verification,
+   real answers, 16-thread admission/delegation idempotency,
+   multi-child epoch join, replay requeue.
+3. #250: parent-level FOR UPDATE serialization + deterministic
+   per-epoch-idempotent wakeup events (8-worker and cross-child
+   regressions), cancelled canonical summaries, API-level create
+   idempotency, byte budgeting.
+4. #251: contract-exact JSON-escaped budget, edge-whitespace-free
+   canonical forms, run-event pre-check with crash-window heal.
+5. #252 + #253: prefix-preserving CJK truncation, fully validated run
+   pre-check through the CORE contract (typed payload + core
+   fingerprint; malformed command_id fails closed).
+
+#### Explicit Non-Goals
+
+- Host manifest/credential freeze at admission, HTTP/auth-layer E2E,
+  and Trench real acceptance remain separate delivery gates.
 
 ### COMPOSE-CLOSEOUT-F2+F3 - Pinned Egress And Admission Binding Freeze
 
