@@ -1267,35 +1267,46 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-AUDIT-FOLLOWUP-01 - Delegation-Chain Audit Follow-Up
 
-- Status: `Done` (2026-08-21: five maintainer audit rounds on the
-  durable-delegation chain, each closing its findings with regressions
-  that reproduce the reported scenarios)
+- Status: `Review` (2026-08-21: seven maintainer audit rounds on the
+  durable-delegation chain, PRs #248-#254 on `cloud-agent`; each round
+  closed its findings with regressions reproducing the reported
+  scenarios — the card stays Review until the maintainer accepts the
+  line as a whole)
 - Owner: `lukeding`
 - Branches: `codex/audit-default-chain-deep`, `codex/audit-wakeup-trust`,
   `codex/audit-multiworker-wakeup`, `codex/audit-command-contract`,
-  `codex/audit-prefix-and-runkey`, `codex/audit-core-contract-precheck`
-  (PRs #248-#253 on `cloud-agent`)
-- Owned paths:
-  `apps/api/src/zebra_agent_api/{app,session_binding,session_queue,
-  session_replay,api_command_mixin}.py`,
-  `apps/worker/src/zebra_agent_worker/{execution,execution_finalization,
-  execution_continuations,child_wakeup,child_wakeup_continuation,
-  continuation_dispatch,continuation_lifecycle,runtime_authority,
-  tool_gateway_runtime,bound_execution_authority}.py`,
-  `packages/agent-core/src/agent_core/{contracts, domain, harness,
-  application, ports}` (delegation/control contracts, tool profiles,
-  workspace projection, sequential loop, orchestrator),
-  `packages/agent-runtime/src/agent_runtime/{research,harness}.py`,
-  `packages/agent-storage/src/agent_storage/postgres/{task_admission,
-  subagent_delegation,migrations,research_profile_migration}.py`,
-  `tests/agent_storage/{conftest,test_postgres_default_chain_e2e,
-  test_postgres_default_chain_scenarios,
-  test_postgres_concurrent_idempotency,test_postgres_full_chain_e2e,
-  test_postgres_e2e_compose_closeout}.py`,
-  `tests/compose/cloud_effect_composition/run-postgres-tests.sh`,
-  this card.
+  `codex/audit-prefix-and-runkey`, `codex/audit-core-contract-precheck`,
+  `codex/audit-strict-revision` (PRs #248-#254)
+- Owned paths (complete `git diff --name-only e2f76046^1..HEAD` set):
+  `PROGRESS.md`, `docs/AGENT_TASKS.md`,
+  `apps/api/src/zebra_agent_api/{api_command_mixin,app,session_binding,
+  session_queue,session_replay}.py`,
+  `apps/worker/src/zebra_agent_worker/{bound_execution_authority,
+  child_wakeup,child_wakeup_continuation,continuation_dispatch,
+  continuation_lifecycle,execution,execution_continuations,
+  execution_finalization,runtime_authority,tool_gateway_runtime}.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
+  `packages/agent-core/src/agent_core/contracts/{events,
+  session_control_events,session_commands,subagent_events}.py`,
+  `packages/agent-core/src/agent_core/domain/{events,tool_profiles}.py`,
+  `packages/agent-core/src/agent_core/harness/{delegation_suspension,
+  orchestrator,sequential_loop}.py`,
+  `packages/agent-core/src/agent_core/ports/task_admission_transaction.py`,
+  `packages/agent-runtime/src/agent_runtime/{harness,research}.py`,
+  `packages/agent-runtime/src/agent_runtime/research_binding.py`
+  (deleted — the fabricated binding),
+  `packages/agent-storage/src/agent_storage/postgres/{migrations,
+  research_profile_migration,subagent_delegation,task_admission}.py`,
+  `tests/agent_core/test_event_contracts.py`,
+  `tests/agent_core/test_session_command_contract.py`,
+  `tests/agent_storage/{conftest,test_postgres_concurrent_idempotency,
+  test_postgres_default_chain_e2e,test_postgres_default_chain_scenarios,
+  test_postgres_e2e_compose_closeout,test_postgres_full_chain_e2e,
+  test_postgres_memory_delivery,test_postgres_migrations,
+  test_postgres_native_memory,test_postgres_run_key_precheck}.py`,
+  `tests/compose/cloud_effect_composition/run-postgres-tests.sh`.
 
-#### Rounds
+#### Rounds (PR)
 
 1. #248: real parent binding, suspension-before-terminal ordering,
    unified idempotency hash, single-transaction child+link, default
@@ -1304,14 +1315,18 @@ read-only Trench vertical slice.
    real answers, 16-thread admission/delegation idempotency,
    multi-child epoch join, replay requeue.
 3. #250: parent-level FOR UPDATE serialization + deterministic
-   per-epoch-idempotent wakeup events (8-worker and cross-child
-   regressions), cancelled canonical summaries, API-level create
-   idempotency, byte budgeting.
+   per-epoch-idempotent wakeup events, cancelled canonical summaries,
+   API-level create idempotency, byte budgeting.
 4. #251: contract-exact JSON-escaped budget, edge-whitespace-free
    canonical forms, run-event pre-check with crash-window heal.
-5. #252 + #253: prefix-preserving CJK truncation, fully validated run
-   pre-check through the CORE contract (typed payload + core
-   fingerprint; malformed command_id fails closed).
+5. #252: prefix-preserving CJK truncation, fully validated run
+   pre-check (same-key cancel conflicts).
+6. #253: pre-check through the CORE contract (typed payload + core
+   fingerprint; non-UUID command_id fails closed).
+7. #254: strict-int expected_revision (bool/float/string rejected,
+   never coerced), adversarial regression derived from
+   event_payload() with command_id as the single fault variable,
+   ownership list completed from the actual diff.
 
 #### Explicit Non-Goals
 
