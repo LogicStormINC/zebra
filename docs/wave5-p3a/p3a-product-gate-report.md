@@ -16,8 +16,8 @@ Date: 2026-08-21
 | Exact Zebra full command | Base-matched — current 2333 passed / 9 failed / 9 skipped, exact `bbb6654` 2317 / 9 / 9, same failure IDs |
 | FinOS `c2f5f1a` compatibility | Base-matched except 8 registered Gate-0 red records; no candidate-only Milestone2 record |
 | Deployed staging / real DeepSeek and Qwen general lanes | PASS — two authenticated four-turn Stable Tasks each recorded `[0, 0, 1, 0]`, raw USER, and one signed `positions.list` read |
-| Goal-bound Journal / revision / compaction / recovery | BLOCKED — the real Journal root was policy-denied for `files.list` path escape after three `tool_calls` model responses and stopped nonretryably |
-| P3A Product Gate | NOT CLOSED — required Journal goal-bound proof is blocked by a policy-denied tool call; root authority classification remains under audit |
+| Goal-bound Journal / revision / compaction / recovery | BLOCKED — the real Journal root stopped on a shared generic `files.list` path-escape policy denial after three `tool_calls` model responses |
+| P3A Product Gate | NOT CLOSED — required Journal proof is absent after a classified existing shared-policy stop, not a P3A authority defect or registered response-recovery symptom |
 | Final-SHA Closure | NOT CLOSED |
 
 Zebra implementation is `532127cd5c532d00dab5b415d9d645b760eedbee`; compatible
@@ -61,7 +61,7 @@ non-leakage are included without credentials or raw tool arguments.
 
 FinOS owns the new staging capture
 `docs/wave5-p3a/real-model/p3a-staging-evidence-20260821.json`, SHA-256
-`856057da31a2604341b2296d26e7a029f1e6ebaea05e0ec68d1f88309817cfbc`.
+`4f4bc63abffcfc1d355415d4a0cdde10fd454f9e297cc5eab8aaf216a5677bb2`.
 It documents the immutable deployed pair (FinOS image
 `sha256:63d415399f7cd463d3a6478e213529b6467d4bba69d1bc49c29c278806e835d8`,
 Zebra image `sha256:d5ebdccbde3bd0bac9fe724f0d1f02ef2d897857d80ba49d6c9368e031f9465d`)
@@ -78,8 +78,14 @@ read-only FinOS calls. Policy denied the unexecuted `files.list` call for
 `files.list path argument path escapes workspace`; it failed nonretryably
 with summary `tool call blocked by policy`, null terminal reason, and no
 completion contract. The absent final/artifact is a consequence of that denial,
-not a registered response-recovery symptom. No retry, manual recovery loop,
-P3B change, save, confirmation, or browser smoke followed.
+not a registered response-recovery symptom. Root-path audit classifies the
+stop as existing shared generic policy behavior, not a P3A provider-grant or
+trusted-context defect: the durable Domain Contract/Journal Skill definition,
+typed digest, and signed `finos.journals.v2` grant are separate from the
+pre-P3A `general` read-only profile that exposes `files.list`. Current and
+exact-`bbb6654` shared-policy selections both pass 73/73. No retry, manual
+recovery loop, P3A production change, P3B change, save, confirmation, or
+browser smoke followed.
 
 ## Verification
 
@@ -106,6 +112,10 @@ uv run mypy <three changed Zebra source files>
 # both passed
 ```
 
+Shared policy/current-base probe used
+`.venv/bin/python -m pytest -q tests/agent_tools/test_workspace_list_tool.py tests/agent_security/test_policy_profiles.py tests/agent_core/test_policy_deny_recovery.py tests/agent_core/test_tool_call_batches.py::test_provider_batch_denial_stops_before_denied_member_and_tail`.
+Current and an exact `bbb6654` archive both passed 73/73.
+
 The exact full command `.venv/bin/python -m pytest -q` reports current
 `2333 passed, 9 failed, 9 skipped`; exact `bbb6654` reports `2317 passed,
 9 failed, 9 skipped`. The same nine failures are:
@@ -130,7 +140,8 @@ UI regressions.
 
 **Local deterministic compatibility gate: PASS. Product Gate: NOT CLOSED.
 Final-SHA Closure: NOT CLOSED.** Real provider/staging and remote candidate
-publication were authorized and completed, but the policy-denied Journal tool
-call blocks the required goal-bound proof. The absent final/artifact is not a
-registered response-recovery symptom. No PR, merge, production deploy,
-frontend/web change, Core write, or P3B/C/D/5.5 work occurred.
+publication were authorized and completed, but the classified existing shared
+policy Journal stop blocks the required goal-bound proof. The absent
+final/artifact is not a registered response-recovery symptom or P3A authority
+defect. No PR, merge, production deploy, frontend/web change, Core write, or
+P3B/C/D/5.5 work occurred.

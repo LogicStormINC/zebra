@@ -12,7 +12,7 @@ Date: 2026-08-21
 | Frozen local evidence owner | FinOS `docs/wave5-p3a/real-model/p3a-local-evidence.json` |
 | Evidence SHA-256 | `513c824684a9212f309ced569826a4eae078cf0562021c3214d69bf119eed518` |
 | Staging evidence owner | FinOS `docs/wave5-p3a/real-model/p3a-staging-evidence-20260821.json` |
-| Staging evidence SHA-256 | `856057da31a2604341b2296d26e7a029f1e6ebaea05e0ec68d1f88309817cfbc` |
+| Staging evidence SHA-256 | `4f4bc63abffcfc1d355415d4a0cdde10fd454f9e297cc5eab8aaf216a5677bb2` |
 
 ## Local closure evidence
 
@@ -52,9 +52,22 @@ calls, and executed 8 read-only FinOS calls. The unexecuted `files.list`
 call was policy-denied for `files.list path argument path escapes workspace`;
 the nonretryable session summary is `tool call blocked by policy`, its terminal
 reason is null, and no completion contract exists. The missing final/artifact
-is a consequence of that denial, not a response-recovery prerequisite. No P3B
-code, manual retry, or second loop was added. Browser smoke was not run after
-the blocker.
+is a consequence of that denial, not a response-recovery prerequisite.
+
+The root-path audit classifies the stop as **b: existing shared generic policy
+behavior**, not a P3A provider-grant or trusted-context defect. The durable
+AgentDefinition resolves the Domain Contract and frozen Journal Skill with
+typed-only context and a digest; its signed `finos.journals.v2` grant is
+separate from the pre-P3A `general` read-only profile that exposes
+`files.list`. Current and exact-`bbb6654` shared-policy selections both pass
+73/73. No P3A production change, P3B code, manual retry, or second loop was
+added. Browser smoke was not run after the blocker.
+
+FinOS evidence also records reproducible PostgreSQL before/after proof: the
+container identity/start time and canonical schema SHA-256 are equal, selected
+Core/Journal counts are unchanged, and runtime-only rows increase by 9 tasks
+and 8 artifacts. A compatible pre-deploy full-row fingerprint is absent, so
+that remains an explicit evidence gap rather than a false equality claim.
 
 ## Compatibility matrix
 
@@ -72,6 +85,7 @@ the blocker.
 | FinOS Milestone2 boundary assertions | 3 passed |
 | FinOS Journal/Data Confirmation successor | 136 passed |
 | FinOS UI shell | 136 passed |
+| Zebra generic policy current/base probe | 73/73 current and 73/73 exact `bbb6654` archive |
 | Zebra full vs exact `bbb6654` | `2333 passed, 9 failed, 9 skipped` vs `2317 passed, 9 failed, 9 skipped`; IDs identical |
 | FinOS full vs exact `c2f5f1a` | `Ran 952; failures=9, errors=7, skipped=16` vs `Ran 923; failures=1, errors=7, skipped=16`; eight candidate-only Gate-0 red outcomes |
 
@@ -82,7 +96,8 @@ JSON validation, and `git diff --check` pass; FinOS has no installed Ruff module
 
 **Local deterministic compatibility gate: PASS. Product Gate: NOT CLOSED.
 Final-SHA Closure: NOT CLOSED.** The new capture includes real providers and
-staging, but the required Journal final/artifact is absent. Candidate refs were
-pushed and staging-only deployment was performed; no PR, merge, production
-deployment, or P3B work occurred. This document does not claim its own commit
-SHA; the handoff reports the actual post-commit document HEAD.
+staging, but the required Journal final/artifact is absent after an existing
+shared generic policy stop. Candidate refs were pushed and staging-only
+deployment was performed; no PR, merge, production deployment, P3A production
+fix, or P3B work occurred. This document does not claim its own commit SHA;
+the handoff reports the actual post-commit document HEAD.
