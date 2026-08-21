@@ -1267,31 +1267,82 @@ read-only Trench vertical slice.
 
 ### COMPOSE-CLOSEOUT-AUDIT-FOLLOWUP-01 - Delegation-Chain Audit Follow-Up
 
-- Status: `Review` (2026-08-21: seven maintainer audit rounds on the
-  durable-delegation chain (PRs #248-#254) plus the accepted-baseline
-  delivery gates #255-#257; the card stays Review until the maintainer
-  accepts the line as a whole)
+- Status: `Done` (2026-08-21: seven maintainer audit rounds on the
+  durable-delegation chain (PRs #248-#254), delivery gates #255-#257 and
+  the independent gate-5 line acceptance all passed on
+  `cloud-agent@5bab4b57`)
 - Owner: `lukeding`
 - Branches: `codex/audit-default-chain-deep`, `codex/audit-wakeup-trust`,
   `codex/audit-multiworker-wakeup`, `codex/audit-command-contract`,
   `codex/audit-prefix-and-runkey`, `codex/audit-core-contract-precheck`,
   `codex/audit-strict-revision` (PRs #248-#254),
   `codex/fix-inherited-failures` (#255), `codex/host-admission-freeze`
-  (#256), `codex/http-auth-boundary-e2e` (#257).
-- Owned paths: the complete `git diff --name-only e2f76046^1..HEAD` set —
-  see the repository diff for the authoritative list; it spans
-  `apps/api/src/zebra_agent_api/*` (admission, replay, command mixin,
-  host manifest freeze, compat credentials, HTTP boundary),
-  `apps/worker/src/zebra_agent_worker/*` (execution, wakeups,
-  continuations, gateway runtime, loop),
-  `packages/agent-core` (contracts incl. strict revision, harness,
-  domain), `packages/agent-runtime`, `packages/agent-tools`
-  (effect guard), `packages/agent-storage` (migrations v29/v30,
-  delegation, admission, outbox, host manifest freeze),
-  `tests/agent_core`, `tests/agent_storage` (default chain, scenarios,
-  precheck, concurrency, manifest freeze, HTTP boundary, conftest),
-  `tests/spikes/mem0_reset_alt`, `tests/compose/.../run-postgres-tests.sh`,
-  `PROGRESS.md`, `docs/AGENT_TASKS.md`.
+  (#256), `codex/http-auth-boundary-e2e` (#257),
+  `codex/compose-closeout-line-acceptance` (#258).
+- Owned paths: frozen from
+  `git diff --name-only e2f76046^1..5bab4b57` (`59` paths):
+
+  ```text
+  PROGRESS.md
+  apps/api/src/zebra_agent_api/api_command_mixin.py
+  apps/api/src/zebra_agent_api/app.py
+  apps/api/src/zebra_agent_api/compat_host_credentials.py
+  apps/api/src/zebra_agent_api/host_manifest_freeze.py
+  apps/api/src/zebra_agent_api/session_binding.py
+  apps/api/src/zebra_agent_api/session_queue.py
+  apps/api/src/zebra_agent_api/session_replay.py
+  apps/worker/src/zebra_agent_worker/bound_execution_authority.py
+  apps/worker/src/zebra_agent_worker/child_wakeup.py
+  apps/worker/src/zebra_agent_worker/child_wakeup_continuation.py
+  apps/worker/src/zebra_agent_worker/continuation_dispatch.py
+  apps/worker/src/zebra_agent_worker/continuation_lifecycle.py
+  apps/worker/src/zebra_agent_worker/execution.py
+  apps/worker/src/zebra_agent_worker/execution_continuations.py
+  apps/worker/src/zebra_agent_worker/execution_finalization.py
+  apps/worker/src/zebra_agent_worker/loop.py
+  apps/worker/src/zebra_agent_worker/runtime_authority.py
+  apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py
+  docs/AGENT_TASKS.md
+  packages/agent-core/src/agent_core/application/workspace_projection.py
+  packages/agent-core/src/agent_core/contracts/events.py
+  packages/agent-core/src/agent_core/contracts/session_commands.py
+  packages/agent-core/src/agent_core/contracts/session_control_events.py
+  packages/agent-core/src/agent_core/contracts/subagent_events.py
+  packages/agent-core/src/agent_core/domain/events.py
+  packages/agent-core/src/agent_core/domain/tool_profiles.py
+  packages/agent-core/src/agent_core/harness/delegation_suspension.py
+  packages/agent-core/src/agent_core/harness/orchestrator.py
+  packages/agent-core/src/agent_core/harness/sequential_loop.py
+  packages/agent-core/src/agent_core/ports/task_admission_transaction.py
+  packages/agent-integrations/src/agent_integrations/host_tools/contracts.py
+  packages/agent-runtime/src/agent_runtime/harness.py
+  packages/agent-runtime/src/agent_runtime/research.py
+  packages/agent-runtime/src/agent_runtime/research_binding.py
+  packages/agent-storage/src/agent_storage/postgres/host_manifest_freeze.py
+  packages/agent-storage/src/agent_storage/postgres/host_manifest_freeze_migration.py
+  packages/agent-storage/src/agent_storage/postgres/migrations.py
+  packages/agent-storage/src/agent_storage/postgres/outbox.py
+  packages/agent-storage/src/agent_storage/postgres/research_profile_migration.py
+  packages/agent-storage/src/agent_storage/postgres/subagent_delegation.py
+  packages/agent-storage/src/agent_storage/postgres/task_admission.py
+  packages/agent-tools/src/agent_tools/effect_guard.py
+  tests/agent_core/test_event_contracts.py
+  tests/agent_core/test_session_command_contract.py
+  tests/agent_storage/conftest.py
+  tests/agent_storage/test_postgres_concurrent_idempotency.py
+  tests/agent_storage/test_postgres_default_chain_e2e.py
+  tests/agent_storage/test_postgres_default_chain_scenarios.py
+  tests/agent_storage/test_postgres_e2e_compose_closeout.py
+  tests/agent_storage/test_postgres_full_chain_e2e.py
+  tests/agent_storage/test_postgres_host_manifest_freeze.py
+  tests/agent_storage/test_postgres_http_auth_boundary_e2e.py
+  tests/agent_storage/test_postgres_memory_delivery.py
+  tests/agent_storage/test_postgres_migrations.py
+  tests/agent_storage/test_postgres_native_memory.py
+  tests/agent_storage/test_postgres_run_key_precheck.py
+  tests/compose/cloud_effect_composition/run-postgres-tests.sh
+  tests/spikes/mem0_reset_alt/test_logical_reset.py
+  ```
 
 #### Rounds (PR)
 
@@ -1332,7 +1383,22 @@ read-only Trench vertical slice.
 #### Explicit Non-Goals
 
 - Trench real acceptance (gate 3) awaits the 16 deployment inputs;
-  gate 5 is the maintainer's line acceptance.
+  gate 5 is closed by the maintainer line acceptance below.
+
+#### Gate 5 Maintainer Line Acceptance
+
+- Reviewed the complete 59-path delta from `e2f76046^1` through
+  `cloud-agent@5bab4b57`, including security boundaries, immutable Host
+  manifest consumption, effect replay, command idempotency, delegation
+  concurrency and recovery. No new P0/P1/P2 Cloud blocker was found.
+- Independent `make check` passed: file-size gate (`1441` files), Ruff,
+  Mypy (`713` source files) and Eval (`10/10`, pass rate `1.00`).
+- Independent no-filter full-repository run over real PostgreSQL + MinIO
+  passed `2938`, failed `0`, skipped `11`; the isolated Compose containers,
+  network and volume were removed after the run.
+- PR #257's Backend and Cloud real-service checks are green. The inherited
+  Packaged Tauri stop-stream failure remains outside this Cloud delivery
+  card and is not represented as a green whole-repository GitHub workflow.
 
 ### COMPOSE-CLOSEOUT-F2+F3 - Pinned Egress And Admission Binding Freeze
 
