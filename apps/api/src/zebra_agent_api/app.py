@@ -58,12 +58,12 @@ from zebra_agent_api.api_workspace_mixin import (
     WorkspaceControlStorePort,
 )
 from zebra_agent_api.factory import create_app as create_app
-from zebra_agent_api.idempotency import replay_idempotent_response, request_hash
+from zebra_agent_api.idempotency import replay_idempotent_response
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
 from zebra_agent_api.session_binding import (
-    _admission_kwargs,
+    _compose_admission,
     _post_admission_idempotency,
     freeze_binding_for_response,
 )
@@ -195,10 +195,10 @@ class ZebraAgentApi(
             return bad_request(str(error))
         parsed["attachments"] = (*parsed["attachments"], *resource_attachments, *prompt_attachments)
 
-        admission_kwargs = _admission_kwargs(
-            self.settings, self.stores, idempotency_key,
-            request_hash(payload) if idempotency_key is not None else None,
-        )
+        admission = _compose_admission(self, host_context, payload, idempotency_key)
+        if isinstance(admission, ApiResponse):
+            return admission
+        admission_kwargs: dict[str, str] = admission  # type: ignore[assignment]
         def _queued() -> ApiResponse:
             return create_queued_session(
                 self.stores, parsed, host_context=host_context,

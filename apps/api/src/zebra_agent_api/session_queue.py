@@ -29,6 +29,7 @@ def create_queued_session(
     admission_namespace: str | None = None,
     idempotency_key: str | None = None,
     idempotency_request_hash: str | None = None,
+    frozen_manifest_digest: str | None = None,
 ) -> ApiResponse:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
@@ -104,6 +105,7 @@ def create_queued_session(
             host_context=host_context,
             definition_snapshot=definition_snapshot,
             deployment_namespace=admission_namespace,
+            frozen_manifest_digest=frozen_manifest_digest,
         )
         idempotency_record = None
         if idempotency_key is not None and idempotency_request_hash is not None:
@@ -161,6 +163,7 @@ def _derive_binding(
     host_context: HostContextEnvelope | None,
     definition_snapshot: AgentDefinitionSnapshot | None,
     deployment_namespace: str = "zebra",
+    frozen_manifest_digest: str | None = None,
 ) -> object:
     """Derive the TaskBindingSnapshot for atomic admission (F3).
 
@@ -177,4 +180,5 @@ def _derive_binding(
             definition_snapshot.definition_digest if definition_snapshot else None
         ),
         deployment_namespace=deployment_namespace,
+        frozen_manifest_digest=frozen_manifest_digest,
     )

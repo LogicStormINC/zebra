@@ -9,7 +9,11 @@ from agent_core.domain.tools import ToolCall, ToolIdempotency, ToolResult, ToolR
 from agent_core.ports import ArtifactPayloadStorePort, ModelGatewayPort, SessionHistoryPort
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
-from agent_integrations.host_tools import HostToolGateway, HostToolManifest, HostWorkloadIdentity
+from agent_integrations.host_tools import (
+    HostToolGateway,
+    HostToolManifest,
+    HostWorkloadIdentity,
+)
 from agent_runtime import LocalToolGateway
 from agent_storage import SQLiteSkillsStateStore
 from agent_tools.skills_scope import build_scoped_skill_roots
@@ -130,6 +134,8 @@ def build_worker_tool_gateway(
     parent_task_id: object | None = None,
     parent_binding_digest: str | None = None,
     parent_binding: object | None = None,
+    manifest_digest: str | None = None,
+    frozen_manifest_loader: object = None,
 ) -> WorkerToolGateway:
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,
@@ -179,7 +185,12 @@ def build_worker_tool_gateway(
     pinned = _resolve_pinned_gateway(task.host_context, egress_registry)
     if pinned is not None:
         try:
-            manifest = pinned.discover(task.host_context)
+            manifest = _frozen_or_discovered_manifest(
+                pinned,
+                task.host_context,
+                manifest_digest,
+                frozen_manifest_loader,
+            )
             local_names = {tool.name for tool in local.model_tools}
             host_names = {tool.name for tool in manifest.tools}
             overlap = local_names & host_names
@@ -232,6 +243,40 @@ def build_worker_tool_gateway(
         runtime=runtime,
         runtime_handle=runtime_handle,
     )
+
+
+_NO_MANIFEST_DIGEST = "0" * 64
+
+
+def _frozen_or_discovered_manifest(
+    pinned: HostToolGateway,
+    host_context: HostContextEnvelope,
+    manifest_digest: str | None,
+    frozen_manifest_loader: object,
+) -> HostToolManifest:
+    """ADR-017 execution freeze: bindings frozen at admission consume the
+    STORED manifest — never a live discovery. Placeholder-digest sessions
+    (admitted before the freeze, or unbound) keep the legacy discovery.
+    Missing or drifted freezes fail closed.
+    """
+
+    if manifest_digest is None or manifest_digest == _NO_MANIFEST_DIGEST:
+        return pinned.discover(host_context)
+    if not callable(frozen_manifest_loader):
+        raise ValueError(
+            "binding carries a frozen manifest digest but no loader is wired; "
+            "failing closed"
+        )
+    frozen = frozen_manifest_loader(manifest_digest)
+    if not isinstance(frozen, dict):
+        raise ValueError("frozen Host manifest is missing; failing closed")
+    from agent_integrations.host_tools.contracts import HostToolManifest
+
+    manifest = HostToolManifest.from_payload(frozen)
+    if manifest.digest != manifest_digest:
+        raise ValueError("frozen Host manifest digest drifted; failing closed")
+    object.__setattr__(pinned, "manifest", manifest)
+    return manifest
 
 
 def _resolve_pinned_gateway(

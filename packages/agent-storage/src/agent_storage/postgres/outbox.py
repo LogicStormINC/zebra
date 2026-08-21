@@ -10,13 +10,13 @@ from agent_core.domain.effect_dispatch import (
     EffectDispatchStateError,
     EffectDispatchStatus,
     EffectEvidence,
-    EffectIdentity,
     EffectResolutionOutcome,
     EffectScheduleRequest,
 )
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseFence
+from agent_core.domain.session_handoff import EffectIdentity
 from agent_core.domain.tools import ToolCallStatus, ToolResult
 from agent_core.ports.effect_dispatch import EffectDispatchPort
 from agent_core.ports.effect_state import EffectStateReadPort

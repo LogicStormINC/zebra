@@ -8,6 +8,7 @@ from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.effect_dispatch import (
     EffectClaim,
     EffectDispatch,
+    EffectDispatchConflictError,
     EffectDispatchStateError,
     EffectEvidence,
     EffectScheduleRequest,
@@ -170,7 +171,9 @@ class FencedEffectToolGateway:
         identity = effect_identity(tool_call, self._authority_scope)
         find_existing = getattr(self._dispatch, "find_by_ledger_key", None)
         if callable(find_existing):
-            existing = find_existing(self._root_session_id, identity=identity)
+            existing: EffectDispatch | None = find_existing(
+                self._root_session_id, identity=identity
+            )
             if existing is not None:
                 if (
                     existing.identity != identity

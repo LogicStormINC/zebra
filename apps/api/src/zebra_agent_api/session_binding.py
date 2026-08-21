@@ -136,6 +136,7 @@ def _build_binding_snapshot(
     host_context: HostContextEnvelope | None,
     definition_snapshot_digest: str | None,
     deployment_namespace: str = "zebra",
+    frozen_manifest_digest: str | None = None,
 ) -> TaskBindingSnapshot:
     """Build the binding model without persisting (used by atomic admission).
 
@@ -172,7 +173,11 @@ def _build_binding_snapshot(
             connector_id=f"{host_context.host_app_id}-unbound",
             connector_profile_revision=1,
             connector_profile_digest=NO_CONNECTOR_DIGEST,
-            manifest_digest=NO_CONNECTOR_DIGEST,
+            manifest_digest=(
+                frozen_manifest_digest
+                if isinstance(frozen_manifest_digest, str)
+                else NO_CONNECTOR_DIGEST
+            ),
             capabilities=DEFAULT_CAPABILITIES,
             resource_binding_digest=NO_CONNECTOR_DIGEST,
             bound_at=datetime.now(UTC),
@@ -198,6 +203,7 @@ def _admission_kwargs(
     stores: object,
     idempotency_key: str | None = None,
     idempotency_request_hash: str | None = None,
+    frozen_manifest_digest: str | None = None,
 ) -> dict[str, str]:
     """Cloud admission uses the atomic v25 transaction when PG is active.
 
@@ -217,7 +223,67 @@ def _admission_kwargs(
         kwargs["idempotency_key"] = idempotency_key
     if idempotency_key and idempotency_request_hash:
         kwargs["idempotency_request_hash"] = idempotency_request_hash
+    if frozen_manifest_digest:
+        kwargs["frozen_manifest_digest"] = frozen_manifest_digest
     return kwargs
+
+
+def _frozen_manifest_digest(api: object, host_context: object) -> object:
+    """ADR-017 admission freeze: the pinned connector's manifest digest.
+
+    Returns None when unbound; a 503 ApiResponse when a pinned manifest
+    cannot be frozen — a Host-bound session is never admitted on
+    placeholders (fail closed).
+    """
+
+    if host_context is None:
+        return None
+    from zebra_agent_api.host_manifest_freeze import resolve_frozen_manifest
+    from zebra_agent_api.responses import service_unavailable
+
+    try:
+        frozen = resolve_frozen_manifest(
+            getattr(api, "settings", None),
+            getattr(api, "stores", None),
+            host_context,  # type: ignore[arg-type]
+        )
+    except ValueError as error:
+        return service_unavailable(
+            status="host_manifest_unavailable", reason=str(error)[:512]
+        )
+    if frozen is None:
+        return None
+    digest = frozen.get("manifestDigest")
+    if not isinstance(digest, str) or len(digest) != 64:
+        return service_unavailable(
+            status="host_manifest_unavailable",
+            reason="frozen manifest digest is malformed; failing closed",
+        )
+    return digest
+
+def _compose_admission(
+    api: object,
+    host_context: object,
+    payload: dict[str, object],
+    idempotency_key: str | None,
+) -> object:
+    """Admission kwargs incl. the frozen manifest digest (or the error)."""
+
+    from zebra_agent_api.idempotency import request_hash
+    from zebra_agent_api.responses import ApiResponse
+
+    frozen_digest = _frozen_manifest_digest(api, host_context)
+    if isinstance(frozen_digest, ApiResponse):
+        return frozen_digest
+    assert isinstance(frozen_digest, str) or frozen_digest is None
+    return _admission_kwargs(
+        getattr(api, "settings", None),
+        getattr(api, "stores", None),
+        idempotency_key,
+        request_hash(payload) if idempotency_key is not None else None,
+        frozen_manifest_digest=frozen_digest,
+    )
+
 
 def _post_admission_idempotency(
     settings: object, stores: object, idempotency_key: str | None,

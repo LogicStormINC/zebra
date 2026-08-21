@@ -363,6 +363,23 @@ def build_worker_loop_service(
                     task_id=TaskId(session_id),
                 )
 
+    frozen_manifest_loader = None
+    if cloud_memory_store is not None and settings.storage_authority == "postgresql":
+        from agent_storage.postgres.host_manifest_freeze import (
+            load_frozen_manifest_by_digest as _load_frozen_manifest,
+        )
+
+        manifest_dsn = cloud_bundle.dsn or ""
+        if manifest_dsn and active_namespace is not None:
+
+            def frozen_manifest_loader(digest: str) -> object:
+                assert active_namespace is not None
+                return _load_frozen_manifest(
+                    manifest_dsn,
+                    deployment_namespace=active_namespace,
+                    manifest_digest=digest,
+                )
+
     child_wakeup_service = None
     if cloud_memory_store is not None and settings.storage_authority == "postgresql":
         from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService as _Wakeup
@@ -400,6 +417,7 @@ def build_worker_loop_service(
         task_binding_loader=task_binding_loader,
         egress_registry=egress_registry,
         delegation_store=delegation_store,
+        frozen_manifest_loader=frozen_manifest_loader,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,
         workspace_resolver=(

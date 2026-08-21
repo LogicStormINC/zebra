@@ -144,6 +144,15 @@ class HostToolManifest:
     def get(self, name: str) -> ToolContract | None:
         return next((tool for tool in self.tools if tool.name == name), None)
 
+    def to_payload(self) -> dict[str, object]:
+        """Serialize for durable freezing; from_payload round-trips it."""
+
+        return {
+            "workloadIdentity": self.workload_identity,
+            "tools": [_tool_payload(tool) for tool in self.tools],
+            "manifestDigest": self.digest,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class HostToolTransportResponse:
