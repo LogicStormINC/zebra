@@ -168,6 +168,20 @@ class FencedEffectToolGateway:
 
     def _schedule(self, tool_call: ToolCall) -> EffectDispatch:
         identity = effect_identity(tool_call, self._authority_scope)
+        find_existing = getattr(self._dispatch, "find_by_ledger_key", None)
+        if callable(find_existing):
+            existing = find_existing(self._root_session_id, identity=identity)
+            if existing is not None:
+                if (
+                    existing.identity != identity
+                    or existing.request_hash != identity.canonical_effect_hash
+                ):
+                    raise EffectDispatchConflictError(
+                        "effect ledger identity has conflicting meaning"
+                    )
+                # Business-identical replay: the stored payload is
+                # authoritative — never mint a competing artifact for it.
+                return existing
         if self._effect_payloads is not None:
             payload_ref = self._effect_payloads.request_artifact_ref(
                 root_session_id=self._root_session_id,
