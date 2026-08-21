@@ -12,7 +12,7 @@ Date: 2026-08-21
 | Frozen local evidence owner | FinOS `docs/wave5-p3a/real-model/p3a-local-evidence.json` |
 | Evidence SHA-256 | `513c824684a9212f309ced569826a4eae078cf0562021c3214d69bf119eed518` |
 | Staging evidence owner | FinOS `docs/wave5-p3a/real-model/p3a-staging-evidence-20260821.json` |
-| Staging evidence SHA-256 | `c4f921f3e94f2ad946a15b81218070c8fd4a551b37d2e34522631edd882c8002` |
+| Staging evidence SHA-256 | `856057da31a2604341b2296d26e7a029f1e6ebaea05e0ec68d1f88309817cfbc` |
 
 ## Local closure evidence
 
@@ -47,11 +47,14 @@ arguments, or tool output.
 The required actual Journal goal-bound lane blocked before its revision and
 compaction/recovery checks. FinOS Task `70d67e32ba794353a3b990ccfa5f9187` /
 Zebra Task `c08c4bc4-81b8-4808-af08-9bbee6f67cb1` persisted `TASK_GOAL_SET`,
-then emitted three tool-loop model responses and eight read-only FinOS tools,
-but no final-stage response/output contract/Agent Artifact. The nonretryable
-terminal result reports `stop_reason=unknown`. This is recorded as the
-missing-final/artifact response-recovery prerequisite: no P3B code, manual
-retry, or second loop was added. Browser smoke was not run after the blocker.
+then emitted three `finish_reason=tool_calls` model responses, proposed 9
+calls, and executed 8 read-only FinOS calls. The unexecuted `files.list`
+call was policy-denied for `files.list path argument path escapes workspace`;
+the nonretryable session summary is `tool call blocked by policy`, its terminal
+reason is null, and no completion contract exists. The missing final/artifact
+is a consequence of that denial, not a response-recovery prerequisite. No P3B
+code, manual retry, or second loop was added. Browser smoke was not run after
+the blocker.
 
 ## Compatibility matrix
 
