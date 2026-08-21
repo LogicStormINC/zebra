@@ -1277,7 +1277,8 @@ read-only Trench vertical slice.
   `codex/audit-prefix-and-runkey`, `codex/audit-core-contract-precheck`,
   `codex/audit-strict-revision` (PRs #248-#254),
   `codex/fix-inherited-failures` (#255), `codex/host-admission-freeze`
-  (#256), `codex/http-auth-boundary-e2e` (#257).
+  (#256), `codex/http-auth-boundary-e2e` (#257),
+  `codex/compose-closeout-line-acceptance` (#258).
 - Owned paths: frozen from
   `git diff --name-only e2f76046^1..5bab4b57` (`59` paths):
 
