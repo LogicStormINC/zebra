@@ -209,9 +209,23 @@ def build_worker_tool_gateway(
             runtime=runtime,
             runtime_handle=runtime_handle,
         )
-    if not settings.host_tool_endpoint or not settings.host_tool_workload_identity:
+    if manifest_digest and manifest_digest != _NO_MANIFEST_DIGEST:
+        # The binding froze a real Host manifest, yet no pinned connector
+        # resolves for this namespace — inconsistent state fails closed.
         local.close()
-        raise ValueError("Host Tool endpoint and workload identity are required")
+        raise ValueError(
+            "binding references a frozen Host manifest but no pinned "
+            "connector resolves; failing closed"
+        )
+    if not settings.host_tool_endpoint or not settings.host_tool_workload_identity:
+        # No pinned connector and no legacy egress config: the admission
+        # binding froze NO Host manifest (placeholder digest), so the
+        # session's contract is a local-only tool surface.
+        return WorkerToolGateway(
+            local=local,
+            runtime=runtime,
+            runtime_handle=runtime_handle,
+        )
     if not settings.host_tool_shared_secret:
         local.close()
         raise ValueError("Host Tool shared secret is required")
