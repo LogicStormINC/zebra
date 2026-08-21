@@ -10,6 +10,7 @@ from agent_core.domain.effect_dispatch import (
     EffectDispatchStateError,
     EffectDispatchStatus,
     EffectEvidence,
+    EffectIdentity,
     EffectResolutionOutcome,
     EffectScheduleRequest,
 )
@@ -110,6 +111,29 @@ class PostgresEffectDispatchStore(
             if existing is None:
                 raise
             return same_schedule(existing, request)
+
+    def find_by_ledger_key(
+        self,
+        root_session_id: SessionId,
+        *,
+        identity: EffectIdentity,
+    ) -> EffectDispatch | None:
+        """Return the initial dispatch for one effect identity, if any.
+
+        Lets callers replay a business-identical effect (same identity
+        and request hash) without minting a fresh payload artifact for
+        it — the stored payload is authoritative.
+        """
+
+        from agent_storage.postgres.effects import find_initial_dispatch
+
+        with self._database.connect() as connection:
+            return find_initial_dispatch(
+                connection,
+                self._namespace,
+                root_session_id,
+                identity.ledger_key(),
+            )
 
     def claim_next(
         self,
