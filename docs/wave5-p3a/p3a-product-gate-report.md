@@ -15,15 +15,18 @@ Date: 2026-08-21
 | Zebra P3A + legacy stream + trusted-context set | PASS — 110 tests |
 | Exact Zebra full command | Base-matched — current 2333 passed / 9 failed / 9 skipped, exact `bbb6654` 2317 / 9 / 9, same failure IDs |
 | FinOS `c2f5f1a` compatibility | Base-matched except 8 registered Gate-0 red records; no candidate-only Milestone2 record |
-| Deployed staging / real provider | NOT RUN / BLOCKED |
-| P3A Product Gate | NOT CLOSED |
+| Deployed staging / real DeepSeek and Qwen general lanes | PASS — two authenticated four-turn Stable Tasks each recorded `[0, 0, 1, 0]`, raw USER, and one signed `positions.list` read |
+| Goal-bound Journal / revision / compaction / recovery | BLOCKED — the real Journal root stopped nonretryably without a final artifact after three tool-loop model responses |
+| P3A Product Gate | NOT CLOSED — required Journal goal-bound proof is blocked by the registered response-recovery prerequisite |
 | Final-SHA Closure | NOT CLOSED |
 
 Zebra implementation is `532127cd5c532d00dab5b415d9d645b760eedbee`; compatible
 FinOS implementation is `a86d89dc05d6b439d3e8b0a9119235383d80b4d4`. Required FinOS
 ancestors are `c2f5f1a455649fdf54dd0d0c23089978367c6b23` and
 `8dd2c25704190769e3f30d282318ed189a0e5695`; `aad409e` is not an ancestor.
-Fix-v3 audit refs remain unchanged. All v4 refs are local and unpushed.
+Fix-v3 audit refs remain unchanged. The v4 candidate refs were pushed without
+force and read back exactly at the stated candidate SHAs; no PR, merge, or
+production deployment occurred.
 
 ## Trust-boundary result
 
@@ -53,6 +56,26 @@ SYSTEM-only Domain Contract and frozen Skill, `custom_instructions_not_system`,
 one signed owner-scoped `positions.list` read, `[0, 0, 1, 0]` tool counts,
 and an unchanged Core fingerprint. Journal goal/recovery and public-projection
 non-leakage are included without credentials or raw tool arguments.
+
+## Authorized staging result
+
+FinOS owns the new staging capture
+`docs/wave5-p3a/real-model/p3a-staging-evidence-20260821.json`, SHA-256
+`c4f921f3e94f2ad946a15b81218070c8fd4a551b37d2e34522631edd882c8002`.
+It documents the immutable deployed pair (FinOS image
+`sha256:63d415399f7cd463d3a6478e213529b6467d4bba69d1bc49c29c278806e835d8`,
+Zebra image `sha256:d5ebdccbde3bd0bac9fe724f0d1f02ef2d897857d80ba49d6c9368e031f9465d`)
+and two real provider lanes: DeepSeek V4 Flash and live Qwen Max-thinking
+`qwen3.7-max-2026-05-17` / `qwen-max-dated-thinking-v1`.
+
+Both general lanes retain one Stable Task/four durable turns, exact raw USER
+events, frozen Domain Contract/Skill digest
+`42b447f2bab76f638d67eaa292c7e7b89f786474ef2cea9b1750d5933d57fa48`,
+pronoun continuity, `[0, 0, 1, 0]`, public privacy, and a verified signed
+owner/account-scoped grant. The Journal root instead failed nonretryably with
+three `tool_loop` responses, no final-stage contract or Agent Artifact, and
+eight read-only provider calls. No retry, manual recovery loop, P3B change,
+save, confirmation, or browser smoke followed.
 
 ## Verification
 
@@ -102,6 +125,7 @@ UI regressions.
 ## Disposition
 
 **Local deterministic compatibility gate: PASS. Product Gate: NOT CLOSED.
-Final-SHA Closure: NOT CLOSED.** Real-provider/staging and remote closure need
-separate authority. No push, PR, merge, deploy, frontend/web change, Core
-write, or P3B/C/D/5.5 work occurred.
+Final-SHA Closure: NOT CLOSED.** Real provider/staging and remote candidate
+publication were authorized and completed, but the Journal missing-final/artifact
+result blocks the required goal-bound proof. No PR, merge, production deploy,
+frontend/web change, Core write, or P3B/C/D/5.5 work occurred.
