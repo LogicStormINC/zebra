@@ -202,6 +202,7 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (27, "orchestration_projections", 64),
         (28, "agent_mailbox", 64),
         (29, "research_tool_profile", 64),
+        (30, "host_manifest_freezes", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [

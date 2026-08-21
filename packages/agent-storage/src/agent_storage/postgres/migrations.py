@@ -9,9 +9,7 @@ from agent_storage.postgres.agent_release_enforcement_migration import (
 )
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
 from agent_storage.postgres.control_plane_migration import CONTROL_PLANE_MIGRATION
-from agent_storage.postgres.delivery_transaction_migration import (
-    DELIVERY_TRANSACTION_MIGRATION,
-)
+from agent_storage.postgres.delivery_transaction_migration import DELIVERY_TRANSACTION_MIGRATION
 from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
 from agent_storage.postgres.governed_memory_scope_migration import (
     GOVERNED_MEMORY_SCOPE_MIGRATION,
@@ -19,6 +17,7 @@ from agent_storage.postgres.governed_memory_scope_migration import (
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
 from agent_storage.postgres.host_auth_migration import HOST_AUTH_MIGRATION
 from agent_storage.postgres.host_connector_migration import HOST_CONNECTOR_MIGRATION
+from agent_storage.postgres.host_manifest_freeze_migration import HOST_MANIFEST_FREEZE_MIGRATION
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.migration_types import Migration
@@ -496,4 +495,5 @@ MIGRATIONS = (
     ORCHESTRATION_MIGRATION,
     AGENT_MAILBOX_MIGRATION,
     RESEARCH_TOOL_PROFILE_MIGRATION,
+    HOST_MANIFEST_FREEZE_MIGRATION,
 )

@@ -94,6 +94,7 @@ class SessionExecutionService:
         task_binding_loader: Callable[[SessionId], object] | None = None,
         egress_registry: HostConnectorRegistryPort | None = None,
         delegation_store: object | None = None,
+        frozen_manifest_loader: Callable[[str], object] | None = None,
     ) -> None:
         validate_authority_wiring(
             execution_authority_resolver,
@@ -177,6 +178,7 @@ class SessionExecutionService:
         self._task_binding_loader = task_binding_loader
         self._egress_registry = egress_registry
         self._delegation_store = delegation_store
+        self._frozen_manifest_loader = frozen_manifest_loader
 
     def execute_session(
         self,
@@ -223,10 +225,8 @@ class SessionExecutionService:
         )
         claimed = restore_suspended_session_claim(
             claimed, cloud_deployment=self._settings.deployment == "cloud",
-            control_service=self._control_service,
-            recovery_service=self._recovery_service, started_at=started_at,
-            event_store=self._event_store,
-        )
+            control_service=self._control_service, recovery_service=self._recovery_service,
+            started_at=started_at, event_store=self._event_store)
         recovered_handoff = handoff.recover_worker_handoff(
             self._handoff_gate,
             session_id,
@@ -336,13 +336,13 @@ class SessionExecutionService:
                 local_artifacts=self._artifact_payload_store,
                 cloud_artifacts=cloud_artifacts, trusted_local=trusted_local,
                 egress_registry=self._egress_registry,
-                delegation_store=self._delegation_store,
-                parent_task_id=session_id,
-                parent_binding_digest=(
-                    task_binding.binding_digest if task_binding is not None else None
-                ),
-                parent_binding=task_binding,
+                delegation_store=self._delegation_store, parent_task_id=session_id,
                 durable_delegation=self._settings.deployment == "cloud",
+                parent_binding_digest=(task_binding.binding_digest if task_binding else None),
+                parent_binding=task_binding,
+                manifest_digest=(task_binding.host_capability.manifest_digest
+                                 if task_binding else None),
+                frozen_manifest_loader=self._frozen_manifest_loader,
             )
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,
