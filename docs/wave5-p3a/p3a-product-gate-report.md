@@ -9,11 +9,11 @@ Date: 2026-08-21
 | Stable Task / on-demand provider selection | Local deterministic PASS — `[0, 0, 1, 0]` |
 | Raw USER / SYSTEM / trusted context | Local deterministic PASS — raw USER; resolved Domain Contract/selected Skill in SYSTEM; typed context digest-bound |
 | Client SYSTEM-injection boundary | PASS — public parser rejects `trust_policy`; raw free text cannot enter the SYSTEM renderer |
-| Signed context binding | PASS — the claim is bounded, MAC-bound to agent/refs/context, bound before durable digest, and context-only creation is rejected |
+| Signed context binding | PASS — the claim is bounded and MAC-bound to agent/refs/context; only its server-side bound context/digest persists, while tampering, absent API auth, or context-only creation are rejected |
 | Frozen general read-capability boundary | Local deterministic PASS |
 | Public projection privacy | Local deterministic PASS — no SYSTEM/trusted private-body leakage |
-| Zebra P3A + legacy stream + trusted-context set | PASS — 107 tests |
-| Exact Zebra full command | Base-matched — current 2330 / 9 / 9, exact `bbb6654` 2317 / 9 / 9, same failure IDs |
+| Zebra P3A + legacy stream + trusted-context set | PASS — 110 tests |
+| Exact Zebra full command | Base-matched — current 2333 passed / 9 failed / 9 skipped, exact `bbb6654` 2317 / 9 / 9, same failure IDs |
 | FinOS `c2f5f1a` compatibility | Base-matched except 8 registered Gate-0 red records; no candidate-only Milestone2 record |
 | Deployed staging / real provider | NOT RUN / BLOCKED |
 | P3A Product Gate | NOT CLOSED |
@@ -71,7 +71,8 @@ non-leakage are included without credentials or raw tool arguments.
   tests/cli/test_cli_session_stream.py::test_cli_stream_lists_persisted_events \
   tests/agent_tools/test_agent_definition_context.py \
   tests/agent_core/test_agent_definition_digest.py
-# 107 passed: the former 103 plus four P1 parser/binder contracts.
+# 110 passed: the former 103 plus four P1 parser/binder contracts and three
+# P2 signed-claim persistence/negative contracts.
 
 uv run ruff check <changed Zebra source and API-contract paths>
 uv run mypy <three changed Zebra source files>
@@ -79,7 +80,7 @@ uv run mypy <three changed Zebra source files>
 ```
 
 The exact full command `.venv/bin/python -m pytest -q` reports current
-`2330 passed, 9 failed, 9 skipped`; exact `bbb6654` reports `2317 passed,
+`2333 passed, 9 failed, 9 skipped`; exact `bbb6654` reports `2317 passed,
 9 failed, 9 skipped`. The same nine failures are:
 
 1. `test_deepseek_thinking_tool_response_requires_valid_reasoning_content`
@@ -92,10 +93,11 @@ The exact full command `.venv/bin/python -m pytest -q` reports current
 8. `test_api_pull_request_proxy_transport_failure_records_audit`
 9. `test_repository_file_size_gate_passes`
 
-FinOS identical discovery is `952 / 13 failures / 7 errors / 16 skipped`
-versus exact `c2f5f1a` `923 / 5 / 7 / 16`; its only eight candidate-only
-failures are the registered Gate-0 red records, not P3A, Milestone2, Journal,
-or UI regressions.
+FinOS identical discovery is `Ran 952 tests; FAILED (failures=9, errors=7,
+skipped=16)` versus exact `c2f5f1a` `Ran 923 tests; FAILED (failures=1,
+errors=7, skipped=16)`. Its eight candidate-only Gate-0 **red outcomes** are
+separate from the runner categories and are not P3A, Milestone2, Journal, or
+UI regressions.
 
 ## Disposition
 

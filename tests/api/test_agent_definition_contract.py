@@ -177,14 +177,16 @@ def _trusted_context_signature(
     agent_id: str,
     version: str,
     context: dict[str, object],
+    system_prompt_ref: str | None = None,
+    skill_refs: tuple[str, ...] = (),
 ) -> str:
     payload = json.dumps(
         {
             "version": "1",
             "agent_id": agent_id,
             "agent_version": version,
-            "system_prompt_ref": None,
-            "skill_refs": [],
+            "system_prompt_ref": system_prompt_ref,
+            "skill_refs": list(skill_refs),
             "context": context,
         },
         ensure_ascii=True,
@@ -193,6 +195,173 @@ def _trusted_context_signature(
     ).encode("utf-8")
     key = hmac.new(token.encode("utf-8"), b"zebra-trusted-context-v1", sha256).digest()
     return hmac.new(key, payload, sha256).hexdigest()
+
+
+def test_api_binds_signed_trusted_context_and_persists_digest(tmp_path: Path) -> None:
+    token = "trusted-context-test-token"
+    context = {
+        "temporal": {"timezone": "Asia/Shanghai", "current_date": "2026-08-21"},
+        "preferences": {"agent_personality": "concise"},
+    }
+    skills = tmp_path / "system-skills"
+    skill = skills / "evidence"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text(
+        "---\nname: evidence\ndescription: evidence guidance\n---\n\nTrusted guidance.\n",
+        encoding="utf-8",
+    )
+    database = tmp_path / "tasks.sqlite"
+    settings = ZebraAgentSettings(
+        profile="test",
+        database_url=str(database),
+        api=ApiSettings(auth_token=token),
+        model=ModelSettings(
+            provider="test",
+            api_key_env="TEST_API_KEY",
+            base_url="https://example.test",
+            model="test-model",
+        ),
+        skill_roots_system=(str(skills),),
+        skills_state_path=str(tmp_path / "skills-state.sqlite"),
+    )
+    created = create_task(
+        create_app(database, settings=settings),
+        {
+            "prompt": "Use the trusted guidance.",
+            "workspace": str(tmp_path),
+            "agent_definition": {
+                "agent_id": "agent-neutral",
+                "version": "1.0.0",
+                "skill_refs": ["skill://evidence"],
+                "trusted_context_claim": {
+                    "version": "1",
+                    "context": context,
+                    "signature": _trusted_context_signature(
+                        token,
+                        agent_id="agent-neutral",
+                        version="1.0.0",
+                        skill_refs=("skill://evidence",),
+                        context=context,
+                    ),
+                },
+            },
+        },
+        idempotency_key=None,
+    )
+
+    assert created.status_code == 201
+    response_definition = created.body["agent_definition"]
+    assert isinstance(response_definition, dict)
+    assert "trusted_context_claim" not in response_definition
+    assert response_definition["trust_policy"] == {"trusted_context": context}
+    digest = response_definition["resolved_context_digest"]
+    assert isinstance(digest, str)
+    persisted = TaskReadApi(database).get(str(created.body["task_id"]))
+    assert persisted.status_code == 200
+    persisted_definition = persisted.body["workspace"]["agent_definition"]
+    assert isinstance(persisted_definition, dict)
+    assert "trusted_context_claim" not in persisted_definition
+    bound = AgentDefinition.model_validate(persisted_definition)
+    assert bound.trusted_context_claim is None
+    assert bound.trust_policy == {"trusted_context": context}
+    assert bound.resolved_context_digest == digest
+    resolved = resolve_agent_definition_context(
+        bound,
+        build_scoped_skill_roots(system=[skills]),
+        require_digest=True,
+    )
+    assert resolved is not None
+    assert resolved.resolved_context_digest == digest
+
+
+def test_api_rejects_tampered_signed_trusted_context_claim(tmp_path: Path) -> None:
+    token = "trusted-context-test-token"
+    signed_context = {
+        "temporal": {"timezone": "Asia/Shanghai", "current_date": "2026-08-21"}
+    }
+    tampered_context = {
+        "temporal": {"timezone": "Asia/Shanghai", "current_date": "2026-08-22"}
+    }
+    settings = ZebraAgentSettings(
+        profile="test",
+        database_url=str(tmp_path / "tasks.sqlite"),
+        api=ApiSettings(auth_token=token),
+        model=ModelSettings(
+            provider="test",
+            api_key_env="TEST_API_KEY",
+            base_url="https://example.test",
+            model="test-model",
+        ),
+    )
+    response = create_app(tmp_path / "tasks.sqlite", settings=settings).create_session(
+        {
+            "prompt": "Collect typed evidence.",
+            "workspace": str(tmp_path),
+            "agent_definition": {
+                "agent_id": "agent-neutral",
+                "version": "1.0.0",
+                "system_prompt_ref": "system://evidence",
+                "trusted_context_claim": {
+                    "version": "1",
+                    "context": tampered_context,
+                    "signature": _trusted_context_signature(
+                        token,
+                        agent_id="agent-neutral",
+                        version="1.0.0",
+                        system_prompt_ref="system://evidence",
+                        context=signed_context,
+                    ),
+                },
+            },
+        }
+    )
+
+    assert response.status_code == 400
+    assert "signature is invalid" in response.body["reason"]
+
+
+def test_api_rejects_signed_trusted_context_without_configured_authentication(
+    tmp_path: Path,
+) -> None:
+    context = {
+        "temporal": {"timezone": "Asia/Shanghai", "current_date": "2026-08-21"}
+    }
+    settings = ZebraAgentSettings(
+        profile="test",
+        database_url=str(tmp_path / "tasks.sqlite"),
+        api=ApiSettings(auth_token=None),
+        model=ModelSettings(
+            provider="test",
+            api_key_env="TEST_API_KEY",
+            base_url="https://example.test",
+            model="test-model",
+        ),
+    )
+    response = create_app(tmp_path / "tasks.sqlite", settings=settings).create_session(
+        {
+            "prompt": "Collect typed evidence.",
+            "workspace": str(tmp_path),
+            "agent_definition": {
+                "agent_id": "agent-neutral",
+                "version": "1.0.0",
+                "system_prompt_ref": "system://evidence",
+                "trusted_context_claim": {
+                    "version": "1",
+                    "context": context,
+                    "signature": _trusted_context_signature(
+                        "unconfigured-token",
+                        agent_id="agent-neutral",
+                        version="1.0.0",
+                        system_prompt_ref="system://evidence",
+                        context=context,
+                    ),
+                },
+            },
+        }
+    )
+
+    assert response.status_code == 400
+    assert "configured API authentication" in response.body["reason"]
 
 
 def test_api_binds_skill_digest_and_worker_resolution_fails_closed_after_change(

@@ -23,8 +23,11 @@ continuity.
 
 The P1 correction blocks direct client `trust_policy` and free SYSTEM text,
 requires a typed MAC-bound claim with a system/Skill ref, and fails context-only
-creation before Worker execution. It keeps Zebra provider-neutral; no business
-type, tool, second loop, or second state machine was introduced.
+creation before Worker execution. P2 regression coverage proves valid
+server-side context/digest persistence with raw-claim exclusion, and rejects
+tampering or absent API authentication.
+It keeps Zebra provider-neutral; no business type, tool, second loop, or second
+state machine was introduced.
 
 ## Compatibility matrix
 
@@ -37,13 +40,13 @@ type, tool, second loop, or second state machine was introduced.
 
 | Gate | Result |
 | --- | --- |
-| Zebra P3A + legacy stream + trusted-context focused command | 107 passed |
+| Zebra P3A + legacy stream + trusted-context focused command | 110 passed; includes three P2 signed-claim persistence/negative contracts |
 | FinOS combined P3A/root/acceptance/Slice6D command | 31 passed |
 | FinOS Milestone2 boundary assertions | 3 passed |
 | FinOS Journal/Data Confirmation successor | 136 passed |
 | FinOS UI shell | 136 passed |
-| Zebra full vs exact `bbb6654` | `2330 passed, 9 failed, 9 skipped` vs `2317 passed, 9 failed, 9 skipped`; IDs identical |
-| FinOS full vs exact `c2f5f1a` | `952 / 13 / 7 / 16` vs `923 / 5 / 7 / 16`; only 8 registered Gate-0 reds added |
+| Zebra full vs exact `bbb6654` | `2333 passed, 9 failed, 9 skipped` vs `2317 passed, 9 failed, 9 skipped`; IDs identical |
+| FinOS full vs exact `c2f5f1a` | `Ran 952; failures=9, errors=7, skipped=16` vs `Ran 923; failures=1, errors=7, skipped=16`; eight candidate-only Gate-0 red outcomes |
 
 Zebra changed-source Ruff/mypy and `git diff --check` pass. FinOS `compileall`,
 JSON validation, and `git diff --check` pass; FinOS has no installed Ruff module.
