@@ -1268,43 +1268,30 @@ read-only Trench vertical slice.
 ### COMPOSE-CLOSEOUT-AUDIT-FOLLOWUP-01 - Delegation-Chain Audit Follow-Up
 
 - Status: `Review` (2026-08-21: seven maintainer audit rounds on the
-  durable-delegation chain, PRs #248-#254 on `cloud-agent`; each round
-  closed its findings with regressions reproducing the reported
-  scenarios — the card stays Review until the maintainer accepts the
-  line as a whole)
+  durable-delegation chain (PRs #248-#254) plus the accepted-baseline
+  delivery gates #255-#257; the card stays Review until the maintainer
+  accepts the line as a whole)
 - Owner: `lukeding`
 - Branches: `codex/audit-default-chain-deep`, `codex/audit-wakeup-trust`,
   `codex/audit-multiworker-wakeup`, `codex/audit-command-contract`,
   `codex/audit-prefix-and-runkey`, `codex/audit-core-contract-precheck`,
-  `codex/audit-strict-revision` (PRs #248-#254)
-- Owned paths (complete `git diff --name-only e2f76046^1..HEAD` set):
-  `PROGRESS.md`, `docs/AGENT_TASKS.md`,
-  `apps/api/src/zebra_agent_api/{api_command_mixin,app,session_binding,
-  session_queue,session_replay}.py`,
-  `apps/worker/src/zebra_agent_worker/{bound_execution_authority,
-  child_wakeup,child_wakeup_continuation,continuation_dispatch,
-  continuation_lifecycle,execution,execution_continuations,
-  execution_finalization,runtime_authority,tool_gateway_runtime}.py`,
-  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
-  `packages/agent-core/src/agent_core/contracts/{events,
-  session_control_events,session_commands,subagent_events}.py`,
-  `packages/agent-core/src/agent_core/domain/{events,tool_profiles}.py`,
-  `packages/agent-core/src/agent_core/harness/{delegation_suspension,
-  orchestrator,sequential_loop}.py`,
-  `packages/agent-core/src/agent_core/ports/task_admission_transaction.py`,
-  `packages/agent-runtime/src/agent_runtime/{harness,research}.py`,
-  `packages/agent-runtime/src/agent_runtime/research_binding.py`
-  (deleted — the fabricated binding),
-  `packages/agent-storage/src/agent_storage/postgres/{migrations,
-  research_profile_migration,subagent_delegation,task_admission}.py`,
-  `tests/agent_core/test_event_contracts.py`,
-  `tests/agent_core/test_session_command_contract.py`,
-  `tests/agent_storage/{conftest,test_postgres_concurrent_idempotency,
-  test_postgres_default_chain_e2e,test_postgres_default_chain_scenarios,
-  test_postgres_e2e_compose_closeout,test_postgres_full_chain_e2e,
-  test_postgres_memory_delivery,test_postgres_migrations,
-  test_postgres_native_memory,test_postgres_run_key_precheck}.py`,
-  `tests/compose/cloud_effect_composition/run-postgres-tests.sh`.
+  `codex/audit-strict-revision` (PRs #248-#254),
+  `codex/fix-inherited-failures` (#255), `codex/host-admission-freeze`
+  (#256), `codex/http-auth-boundary-e2e` (#257).
+- Owned paths: the complete `git diff --name-only e2f76046^1..HEAD` set —
+  see the repository diff for the authoritative list; it spans
+  `apps/api/src/zebra_agent_api/*` (admission, replay, command mixin,
+  host manifest freeze, compat credentials, HTTP boundary),
+  `apps/worker/src/zebra_agent_worker/*` (execution, wakeups,
+  continuations, gateway runtime, loop),
+  `packages/agent-core` (contracts incl. strict revision, harness,
+  domain), `packages/agent-runtime`, `packages/agent-tools`
+  (effect guard), `packages/agent-storage` (migrations v29/v30,
+  delegation, admission, outbox, host manifest freeze),
+  `tests/agent_core`, `tests/agent_storage` (default chain, scenarios,
+  precheck, concurrency, manifest freeze, HTTP boundary, conftest),
+  `tests/spikes/mem0_reset_alt`, `tests/compose/.../run-postgres-tests.sh`,
+  `PROGRESS.md`, `docs/AGENT_TASKS.md`.
 
 #### Rounds (PR)
 
@@ -1323,15 +1310,29 @@ read-only Trench vertical slice.
    pre-check (same-key cancel conflicts).
 6. #253: pre-check through the CORE contract (typed payload + core
    fingerprint; non-UUID command_id fails closed).
-7. #254: strict-int expected_revision (bool/float/string rejected,
-   never coerced), adversarial regression derived from
-   event_payload() with command_id as the single fault variable,
-   ownership list completed from the actual diff.
+7. #254: strict-int expected_revision (bool/float/string rejected),
+   single-fault adversarial regression, ownership list completed.
+8. #255 (gate 4): both inherited repo failures closed — mem0 spike
+   schema drift (25-column insert) and the fenced effect-consumer
+   replay (lookup-by-ledger-key before minting a competing artifact).
+9. #256 (gate 1): Host admission contract freeze — v30
+   host_manifest_freezes, get-or-fetch at admission, REAL manifest
+   digest in the binding, Worker consumes the frozen manifest (no live
+   discovery; unbound host-context sessions build a local-only tool
+   surface per the frozen contract), pinned-but-unfreezable fails
+   closed. First fully green standard full-repo run.
+10. #257 (gate 2): real HTTP/auth-boundary E2E — actual FastAPI app on
+    a real uvicorn socket, RS256-signed Host Grants verified against a
+    PostgreSQL authority registry (401 anonymous, 403 garbage grant /
+    disallowed origin / missing scope / consumed jti, idempotent
+    201-replay, 409 conflict), and the HTTP-created session completes
+    through the default Worker with the verified grant backing its
+    frozen binding authority.
 
 #### Explicit Non-Goals
 
-- Host manifest/credential freeze at admission, HTTP/auth-layer E2E,
-  and Trench real acceptance remain separate delivery gates.
+- Trench real acceptance (gate 3) awaits the 16 deployment inputs;
+  gate 5 is the maintainer's line acceptance.
 
 ### COMPOSE-CLOSEOUT-F2+F3 - Pinned Egress And Admission Binding Freeze
 

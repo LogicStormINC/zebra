@@ -9,6 +9,30 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
+- Accepted-baseline delivery gates closed (2026-08-21, `cloud-agent`,
+  PRs #255-#257): gate 4 — both inherited repo failures root-caused and
+  fixed (mem0 spike insert lagged the 25-column governed-memory schema;
+  the fenced effect-consumer replay minted a competing payload artifact
+  before the schedule dedup — lookup-by-ledger-key now returns the
+  stored dispatch for business-identical replays). Gate 1 — Host
+  admission contract freeze (ADR-017): v30 host_manifest_freezes stores
+  one immutable manifest per connector profile revision; admission
+  get-or-fetches it BEFORE the atomic transaction and the binding
+  carries the REAL manifest digest; the Worker consumes the frozen
+  manifest (discovery disabled in the regression), unbound host-context
+  sessions build a local-only surface per their frozen contract, and
+  pinned-but-unfreezable admissions fail closed with 503. Gate 2 —
+  real HTTP/auth-boundary E2E: the actual FastAPI app on a real
+  uvicorn socket, RS256-signed Host Grants verified against a
+  PostgreSQL authority registry (only the JWKS resolver is a test
+  seam), covering 401/403 paths (anonymous, garbage grant, disallowed
+  origin, missing scope, consumed jti), full-body idempotent replay,
+  409 conflict, and worker completion of the HTTP-created session.
+  Validation: no-filter full-repo over real PG+MinIO 2938 passed /
+  0 failed / 11 skipped; make check green (mypy 713 files). Remaining
+  gates: Trench real acceptance (inputs pending) and the maintainer's
+  line acceptance.
+
 - Strict-revision closeout (2026-08-21, `cloud-agent`, PR #254):
   expected_revision is now a strict int in BOTH SessionCommand and
   SessionCommandAcceptedPayload — a corrupted JSON true/float/string is
