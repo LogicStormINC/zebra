@@ -9,6 +9,20 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
+- Strict-revision closeout (2026-08-21, `cloud-agent`, PR #254):
+  expected_revision is now a strict int in BOTH SessionCommand and
+  SessionCommandAcceptedPayload — a corrupted JSON true/float/string is
+  rejected instead of silently coerced to the integer a fingerprint was
+  computed over (bool/float/string rejection tests added). The
+  adversarial run-key regression now derives its payload from
+  SessionCommand.event_payload() and corrupts exactly one field
+  (command_id), so the core fingerprint stays correct by construction
+  and the test cannot go falsely green if the algorithm evolves. The
+  audit follow-up card's ownership list was regenerated from the actual
+  `e2f76046^1..HEAD` diff (46 paths incl. the deleted research_binding,
+  PROGRESS.md and every touched test) and records all seven rounds
+  (#248-#254); it stays `Review` until the maintainer accepts the line.
+
 - Review-round P2 closeout (2026-08-21, `cloud-agent`): the run-event
   pre-check now validates through the CORE contract instead of a local
   copy — the payload must parse as SessionCommandAcceptedPayload (UUID

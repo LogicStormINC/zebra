@@ -111,3 +111,27 @@ def test_revision_conflict_is_deterministic() -> None:
     assert decision.status is SessionCommandStatus.REVISION_CONFLICT
     assert decision.event_type is None
     assert decision.reason == "expected revision 2, current revision 3"
+
+
+@pytest.mark.parametrize("corrupted", [True, 1.0, "1"])
+def test_expected_revision_rejects_non_integer_coercion(corrupted: object) -> None:
+    """A corrupted revision (bool/float/string) must be REJECTED, never
+    silently coerced to the integer a fingerprint was computed over —
+    the run pre-check trusts these contracts to fail closed."""
+
+    from agent_core.contracts import SessionCommandAcceptedPayload
+
+    command = _command()
+    payload = command.event_payload()
+    payload["expected_revision"] = corrupted
+    with pytest.raises(ValidationError):
+        SessionCommandAcceptedPayload.model_validate(payload)
+    with pytest.raises(ValidationError):
+        SessionCommand(
+            command_id=command.command_id,
+            session_id=command.session_id,
+            kind=command.kind,
+            expected_revision=corrupted,  # type: ignore[arg-type]
+            idempotency_key=command.idempotency_key,
+            payload=dict(command.payload),
+        )

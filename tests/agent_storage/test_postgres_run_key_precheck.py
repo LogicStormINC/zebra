@@ -9,8 +9,6 @@ body.
 
 from __future__ import annotations
 
-import hashlib
-import json
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -88,17 +86,24 @@ def test_run_key_held_by_malformed_command_id_conflicts(
     session_id = str(row[0])
     stream_events = app.stores.events.list_for_session(SessionId(UUID(session_id)))
     expected_revision = stream_events[-1].sequence
-    # Self-consistent fingerprint — the core intent hash deliberately
-    # EXCLUDES command_id, which is exactly the hole this test pins.
-    intent = {
-        "session_id": session_id,
-        "kind": "run",
-        "expected_revision": expected_revision,
-        "payload": {},
-    }
-    fingerprint = hashlib.sha256(
-        json.dumps(intent, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    # Build a FULLY legitimate command payload through the core
+    # contract, then corrupt exactly ONE field — command_id — so it is
+    # the single fault variable. The core fingerprint deliberately
+    # excludes command_id, which is exactly the hole this test pins;
+    # deriving the payload from event_payload() keeps it correct even
+    # if the core algorithm evolves.
+    from agent_core.contracts import SessionCommand, SessionCommandKind
+
+    command = SessionCommand(
+        command_id=uuid4(),
+        session_id=SessionId(UUID(session_id)),
+        kind=SessionCommandKind.RUN,
+        expected_revision=expected_revision,
+        idempotency_key="e2e-malformed-1:run",
+        payload={},
+    )
+    event_payload = command.event_payload()
+    event_payload["command_id"] = "not-a-uuid"
     # Bypass the validating append path with a raw insert — the threat
     # model is direct store corruption, which the API layer never sees.
     with connect(postgres_dsn) as connection:
@@ -121,17 +126,7 @@ def test_run_key_held_by_malformed_command_id_conflicts(
                 str(uuid4()),
                 session_id,
                 expected_revision + 1,
-                psycopg.types.json.Json(
-                    {
-                        "command_id": "not-a-uuid",
-                        "session_id": session_id,
-                        "kind": "run",
-                        "expected_revision": expected_revision,
-                        "idempotency_key": "e2e-malformed-1:run",
-                        "payload": {},
-                        "fingerprint": fingerprint,
-                    }
-                ),
+                psycopg.types.json.Json(event_payload),
                 datetime.now(UTC),
                 "e2e-malformed-1:run",
             ),

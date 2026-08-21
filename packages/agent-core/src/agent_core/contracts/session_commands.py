@@ -38,7 +38,7 @@ class SessionCommand(BaseModel):
     command_id: UUID = Field(default_factory=uuid4)
     session_id: SessionId
     kind: SessionCommandKind
-    expected_revision: int = Field(ge=0)
+    expected_revision: int = Field(ge=0, strict=True)
     idempotency_key: str = Field(min_length=1, max_length=MAX_IDEMPOTENCY_KEY_LENGTH)
     payload: dict[str, object] = Field(default_factory=dict)
 
@@ -109,7 +109,7 @@ class SessionCommandAcceptedPayload(BaseModel):
     command_id: str
     session_id: str
     kind: SessionCommandKind
-    expected_revision: int = Field(ge=0)
+    expected_revision: int = Field(ge=0, strict=True)
     idempotency_key: str = Field(min_length=1, max_length=MAX_IDEMPOTENCY_KEY_LENGTH)
     payload: dict[str, object]
     fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
