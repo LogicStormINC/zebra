@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 from agent_core.domain.identifiers import TaskId
-from agent_core.domain.worktree_orchestration import (
+from agent_orchestration.domain.worktree_orchestration import (
     MergeGateInput,
     WorktreeDiffArtifact,
     WorktreeOwnership,

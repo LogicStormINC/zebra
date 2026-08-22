@@ -13,6 +13,7 @@ members = [
     "agent-core",
     "agent-integrations",
     "agent-observability",
+    "agent-orchestration",
     "agent-runtime",
     "agent-security",
     "agent-storage",
@@ -76,6 +77,7 @@ source = { editable = "packages/agent-integrations" }
 dependencies = [
     { name = "ag-ui-protocol" },
     { name = "agent-core" },
+    { name = "agent-orchestration" },
     { name = "agent-security" },
     { name = "agent-tools" },
     { name = "httpx" },
@@ -86,6 +88,7 @@ dependencies = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = "==0.1.19" },
     { name = "agent-core", editable = "packages/agent-core" },
+    { name = "agent-orchestration", editable = "packages/agent-orchestration" },
     { name = "agent-security", editable = "packages/agent-security" },
     { name = "agent-tools", editable = "packages/agent-tools" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
@@ -102,6 +105,23 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "agent-core", editable = "packages/agent-core" }]
+
+[[package]]
+name = "agent-orchestration"
+version = "0.1.0"
+source = { editable = "packages/agent-orchestration" }
+dependencies = [
+    { name = "agent-core" },
+    { name = "agent-tools" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agent-core", editable = "packages/agent-core" },
+    { name = "agent-tools", editable = "packages/agent-tools" },
+    { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
+]
 
 [[package]]
 name = "agent-runtime"
@@ -145,6 +165,7 @@ version = "0.1.0"
 source = { editable = "packages/agent-storage" }
 dependencies = [
     { name = "agent-core" },
+    { name = "agent-orchestration" },
     { name = "botocore" },
     { name = "psycopg", extra = ["binary"] },
 ]
@@ -152,6 +173,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "agent-core", editable = "packages/agent-core" },
+    { name = "agent-orchestration", editable = "packages/agent-orchestration" },
     { name = "botocore", specifier = ">=1.42.97,<1.43.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.10,<4.0.0" },
 ]

@@ -11,11 +11,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Self
 
-from agent_core.domain.orchestration import (
+from agent_core.domain.subagents import CompletionGateReceipt
+from agent_orchestration.domain.orchestration import (
     OrchestrationPlanSnapshot,
     OrchestrationRunStatus,
 )
-from agent_core.domain.subagents import CompletionGateReceipt
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 

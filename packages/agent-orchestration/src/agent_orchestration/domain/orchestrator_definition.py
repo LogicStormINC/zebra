@@ -12,9 +12,8 @@ from __future__ import annotations
 
 from typing import Final
 
-from agent_tools.contracts import ToolContract, ToolRisk
-
 from agent_core.domain.agent_capabilities import capability_set
+from agent_tools.contracts import ToolContract, ToolRisk
 
 ORCHESTRATOR_DEFINITION_REF: Final = "system/orchestrator@1"
 ORCHESTRATOR_CAPABILITY_PROFILE_REF: Final = "profile/orchestrator@1"

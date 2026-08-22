@@ -5,20 +5,20 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
-from agent_core.application.orchestration_validation import (
+from agent_core.domain.agent_capabilities import capability_set
+from agent_core.domain.host_authority import HostResourceRef
+from agent_core.domain.identifiers import TaskId
+from agent_orchestration.application.orchestration_validation import (
     PlanValidationContext,
     PlanValidationError,
     validate_plan,
 )
-from agent_core.domain.agent_capabilities import capability_set
-from agent_core.domain.host_authority import HostResourceRef
-from agent_core.domain.identifiers import TaskId
-from agent_core.domain.orchestration import (
+from agent_orchestration.domain.orchestration import (
     OrchestrationDependency,
     OrchestrationNodeProposal,
     OrchestrationPlanProposal,
 )
-from agent_core.domain.orchestration_budget import BudgetReservation
+from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
 PARENT_CAPS = capability_set(["agent.execute", "evidence.read", "timeline.read"])
 WRITE_CAPS = capability_set(["note.write"])

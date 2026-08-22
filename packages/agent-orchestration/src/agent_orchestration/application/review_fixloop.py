@@ -11,8 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from agent_core.application.completion_gate import ReviewerVerdict
-from agent_core.domain.worktree_orchestration import (
+from agent_orchestration.application.completion_gate import ReviewerVerdict
+from agent_orchestration.domain.worktree_orchestration import (
     MergeGateDecision,
     WorktreeDiffArtifact,
     WorktreeOwnership,

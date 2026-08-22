@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from agent_core.domain.orchestration_budget import (
+from agent_orchestration.domain.orchestration_budget import (
     BudgetExceededError,
     BudgetLedger,
     BudgetReservation,

@@ -5,15 +5,15 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
-from agent_core.domain.agent_team import (
+from agent_core.domain.identifiers import TaskId
+from agent_orchestration.domain.agent_team import (
     MAX_TEAM_AGENTS,
     AgentTeam,
     TeamContractError,
     TeamTaskAssignment,
     assert_write_depth_one,
 )
-from agent_core.domain.identifiers import TaskId
-from agent_core.domain.worktree_orchestration import WorktreeOwnership
+from agent_orchestration.domain.worktree_orchestration import WorktreeOwnership
 from pydantic import ValidationError
 
 
@@ -35,7 +35,7 @@ def _team(
     tasks: tuple[TeamTaskAssignment, ...] = (),
     ownerships: tuple[WorktreeOwnership, ...] = (),
 ) -> AgentTeam:
-    from agent_core.domain.agent_team import validate_team
+    from agent_orchestration.domain.agent_team import validate_team
 
     return validate_team(
         AgentTeam(

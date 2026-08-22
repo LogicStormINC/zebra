@@ -5,6 +5,27 @@
 
 ## Current Mainline Snapshot
 
+- Orchestration package boundary closed (2026-08-22, `cloud-agent`,
+  `AL-BOUNDARY-ORCH-01`, ADR-021): the deterministic orchestration domain
+  — plan/budget contracts, DAG validation and scheduling, five-layer
+  completion gate, worktree merge fix loop, Agent Team contracts and the
+  ordinary `system/orchestrator@1` definition — moved from `agent-core`
+  into the new `agent-orchestration` workspace package as pure renames +
+  import rewrites, with the nine focused test modules moved to
+  `tests/agent_orchestration/`. The undeclared `agent-core → agent-tools`
+  reverse dependency is closed and now guarded by a new core architecture
+  gate (core imports no other agent package, Worker, FastAPI or `apps/`).
+  The control-plane gate forbids `agent_orchestration` (allowed direction:
+  orchestration → control plane, never the reverse), and the new
+  orchestration gate forbids Worker/Runtime/storage/integrations/HTTP.
+  `subagents.py` stays in `agent-core` (Focused Subagent is the
+  parent-agent mode); the PostgreSQL orchestration adapter stays in
+  `agent-storage` and the AG-UI projection in `agent-integrations`, both
+  now declaring the workspace dependency. No microservice split and no
+  behavior change. Validation: `make sync`/`make check` green (file-size
+  1441, Ruff, Mypy 716, Eval 10/10); full suite `2611 passed / 0 failed /
+  342 skipped` (real-PG/MinIO suites skip locally as before).
+
 - Mainline branch is `cloud-agent` (it carries the cloud product line and
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).

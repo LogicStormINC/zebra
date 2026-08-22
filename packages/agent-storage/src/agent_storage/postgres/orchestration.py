@@ -12,7 +12,7 @@ from typing import Any
 from uuid import uuid4
 
 from agent_core.domain.identifiers import TaskId
-from agent_core.domain.orchestration import (
+from agent_orchestration.domain.orchestration import (
     OrchestrationPlanSnapshot,
     OrchestrationRunStatus,
     assert_run_transition,

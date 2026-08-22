@@ -5,15 +5,15 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
-from agent_core.application.completion_gate import ReviewerVerdict
-from agent_core.application.review_fixloop import (
+from agent_core.domain.identifiers import TaskId
+from agent_orchestration.application.completion_gate import ReviewerVerdict
+from agent_orchestration.application.review_fixloop import (
     DEFAULT_MAX_ITERATIONS,
     FixLoopMachine,
     FixLoopPhase,
     FixLoopTransitionError,
 )
-from agent_core.domain.identifiers import TaskId
-from agent_core.domain.worktree_orchestration import (
+from agent_orchestration.domain.worktree_orchestration import (
     MergeGateDecision,
     WorktreeDiffArtifact,
     WorktreeOwnership,
