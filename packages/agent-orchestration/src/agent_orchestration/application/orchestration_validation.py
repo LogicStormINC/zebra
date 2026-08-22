@@ -15,13 +15,14 @@ from agent_core.domain.agent_capabilities import (
 )
 from agent_core.domain.host_authority import HostResourceRef
 from agent_core.domain.identifiers import TaskId
-from agent_core.domain.orchestration import (
+from agent_core.domain.subagents import SubagentRole
+
+from agent_orchestration.domain.orchestration import (
     OrchestrationPlanProposal,
     OrchestrationPlanSnapshot,
     snapshot_from_proposal,
 )
-from agent_core.domain.orchestration_budget import BudgetReservation
-from agent_core.domain.subagents import SubagentRole
+from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
 DEFAULT_MAX_DEPTH = 4
 DEFAULT_MAX_PARALLELISM = 2

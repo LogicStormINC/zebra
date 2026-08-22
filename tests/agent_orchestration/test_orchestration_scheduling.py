@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import pytest
-from agent_core.application.orchestration_scheduling import (
+from agent_core.domain.agent_capabilities import capability_set
+from agent_orchestration.application.orchestration_scheduling import (
     NodeOutcome,
     ScheduledNode,
     SchedulingState,
@@ -11,8 +12,7 @@ from agent_core.application.orchestration_scheduling import (
     on_node_terminal,
     select_ready,
 )
-from agent_core.domain.agent_capabilities import capability_set
-from agent_core.domain.orchestration import (
+from agent_orchestration.domain.orchestration import (
     OrchestrationDependency,
     OrchestrationNodeProposal,
     OrchestrationNodeStatus,

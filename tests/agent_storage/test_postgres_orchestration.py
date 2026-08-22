@@ -8,14 +8,14 @@ from uuid import uuid4
 import pytest
 from agent_core.domain.agent_capabilities import capability_set
 from agent_core.domain.identifiers import TaskId
-from agent_core.domain.orchestration import (
+from agent_orchestration.domain.orchestration import (
     OrchestrationDependency,
     OrchestrationNodeProposal,
     OrchestrationPlanProposal,
     OrchestrationRunStatus,
     snapshot_from_proposal,
 )
-from agent_core.domain.orchestration_budget import BudgetReservation
+from agent_orchestration.domain.orchestration_budget import BudgetReservation
 from agent_storage import (
     apply_postgres_migrations,
     bootstrap_control_plane_epoch,

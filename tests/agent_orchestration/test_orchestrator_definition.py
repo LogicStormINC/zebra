@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from agent_core.domain.orchestrator_definition import (
+from agent_orchestration.domain.orchestrator_definition import (
     ORCHESTRATOR_ALLOWED_CAPABILITIES,
     ORCHESTRATOR_DEFINITION_REF,
     ORCHESTRATOR_FORBIDDEN_CAPABILITIES,
@@ -70,7 +70,7 @@ class TestToolSurface:
 
 class TestTamperDetection:
     def test_validation_rejects_a_leaked_tool(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from agent_core.domain import orchestrator_definition as module
+        from agent_orchestration.domain import orchestrator_definition as module
 
         tampered = module.ORCHESTRATOR_TOOLS + (
             module.ORCHESTRATOR_TOOLS[0].__class__(
@@ -84,7 +84,7 @@ class TestTamperDetection:
             module.validate_orchestrator_definition()
 
     def test_validation_rejects_uncapped_tool_scope(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from agent_core.domain import orchestrator_definition as module
+        from agent_orchestration.domain import orchestrator_definition as module
 
         tool = module.ORCHESTRATOR_TOOLS[0]
         tampered = (

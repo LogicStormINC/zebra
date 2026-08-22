@@ -12,9 +12,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
 from agent_core.domain.subagents import CompletionGateReceipt
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 MAX_NOTE = 512
 

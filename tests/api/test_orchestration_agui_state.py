@@ -9,20 +9,20 @@ from uuid import uuid4
 import pytest
 from agent_core.domain.agent_capabilities import capability_set
 from agent_core.domain.identifiers import TaskId
-from agent_core.domain.orchestration import (
-    OrchestrationDependency,
-    OrchestrationNodeProposal,
-    OrchestrationPlanProposal,
-    OrchestrationRunStatus,
-    snapshot_from_proposal,
-)
-from agent_core.domain.orchestration_budget import BudgetReservation
 from agent_core.domain.subagents import CompletionGateReceipt
 from agent_integrations.ag_ui.orchestration_state import (
     AgUiNodeFacts,
     OrchestrationStateInput,
     project_orchestration_state,
 )
+from agent_orchestration.domain.orchestration import (
+    OrchestrationDependency,
+    OrchestrationNodeProposal,
+    OrchestrationPlanProposal,
+    OrchestrationRunStatus,
+    snapshot_from_proposal,
+)
+from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
 
 def _node(key: str, role: str = "researcher") -> OrchestrationNodeProposal:

@@ -14,15 +14,15 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
 from agent_core.domain.agent_capabilities import (
     Capability,
     capability_set,
 )
 from agent_core.domain.host_authority import HostResourceRef
 from agent_core.domain.identifiers import TaskId
-from agent_core.domain.orchestration_budget import BudgetReservation
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from agent_orchestration.domain.orchestration_budget import BudgetReservation
 
 MAX_NODES = 32
 MAX_TEXT = 2048

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agent_core.application.completion_gate import (
+from agent_orchestration.application.completion_gate import (
     GateInput,
     HumanApproval,
     ReviewerVerdict,

@@ -12,10 +12,10 @@ import hashlib
 import json
 from typing import Self
 
+from agent_core.domain.identifiers import TaskId
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from agent_core.domain.identifiers import TaskId
-from agent_core.domain.worktree_orchestration import (
+from agent_orchestration.domain.worktree_orchestration import (
     WorktreeOwnership,
     assert_no_owned_path_conflicts,
 )

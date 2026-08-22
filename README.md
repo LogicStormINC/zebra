@@ -157,8 +157,8 @@ them in frontend storage, request payloads, tracked files, responses, or logs.
 ## Repository Shape
 
 - `apps/`: API, CLI, config, and worker composition roots
-- `packages/`: core, context, integrations, observability, runtime, security,
-  storage, and tools
+- `packages/`: control-plane, core, context, integrations, observability,
+  orchestration, runtime, security, storage, and tools
 - `UI/desktop/`: React, Ant Design X, Lobe UI, and Tauri desktop workspace
 - `tests/`: deterministic, contract, smoke, and integration coverage
 - `evals/`: release and provider evaluation cases

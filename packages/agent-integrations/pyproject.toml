@@ -6,6 +6,7 @@ requires-python = ">=3.12,<4.0"
 dependencies = [
     "ag-ui-protocol==0.1.19",
     "agent-core",
+    "agent-orchestration",
     "agent-security",
     "agent-tools",
     "httpx>=0.28.1,<0.29.0",
@@ -14,6 +15,7 @@ dependencies = [
 
 [tool.uv.sources]
 agent-core = { workspace = true }
+agent-orchestration = { workspace = true }
 agent-security = { workspace = true }
 agent-tools = { workspace = true }
 

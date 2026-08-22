@@ -7,7 +7,7 @@ from uuid import uuid4
 import pytest
 from agent_core.domain.agent_capabilities import capability_set
 from agent_core.domain.identifiers import TaskId
-from agent_core.domain.orchestration import (
+from agent_orchestration.domain.orchestration import (
     RUN_TERMINAL_STATUSES,
     OrchestrationDependency,
     OrchestrationNodeProposal,
@@ -17,7 +17,7 @@ from agent_core.domain.orchestration import (
     assert_run_transition,
     snapshot_from_proposal,
 )
-from agent_core.domain.orchestration_budget import BudgetReservation
+from agent_orchestration.domain.orchestration_budget import BudgetReservation
 from pydantic import ValidationError
 
 
@@ -167,7 +167,7 @@ class TestRunStateMachine:
             )
 
     def test_terminal_states_are_final(self) -> None:
-        from agent_core.domain.orchestration import RUN_TRANSITIONS
+        from agent_orchestration.domain.orchestration import RUN_TRANSITIONS
 
         for terminal in RUN_TERMINAL_STATUSES:
             assert RUN_TRANSITIONS[terminal] == frozenset()

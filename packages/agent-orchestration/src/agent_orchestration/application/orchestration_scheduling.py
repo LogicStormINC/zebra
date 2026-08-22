@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 
-from agent_core.domain.orchestration import (
+from agent_orchestration.domain.orchestration import (
     NODE_TERMINAL_STATUSES,
     OrchestrationDependency,
     OrchestrationNodeProposal,

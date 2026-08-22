@@ -11,9 +11,8 @@ import hashlib
 import json
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
 from agent_core.domain.identifiers import TaskId
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 MAX_OWNED_PATHS = 64
 MAX_PATH_LENGTH = 512
