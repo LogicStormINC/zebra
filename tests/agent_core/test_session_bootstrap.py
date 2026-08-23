@@ -1,12 +1,21 @@
+from datetime import UTC, datetime
 from pathlib import Path
+from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.domain.context_inheritance import (
+    REQUIRED_CONTEXT_OMISSIONS,
+    ContextInheritanceMode,
+    DelegatedContextItem,
+    DelegatedContextSnapshot,
+)
 from agent_core.domain.events import EventType
 from agent_core.domain.host_authority import (
     HostContextEnvelope,
     HostResourceRef,
     HostTechnicalLimits,
 )
+from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_profiles import ToolProfile
 
@@ -91,3 +100,34 @@ def test_session_bootstrap_persists_only_secret_free_host_context() -> None:
         {"resource_type": "trench.event", "resource_id": "evt-1"},
     ]
     assert "authorization" not in str(persisted).lower()
+
+
+def test_session_bootstrap_persists_validated_delegated_context() -> None:
+    delegated = DelegatedContextSnapshot.create(
+        mode=ContextInheritanceMode.FORK_TAIL,
+        source_session_id=SessionId(UUID("00000000-0000-0000-0000-000000000120")),
+        source_session_revision=8,
+        items=(
+            DelegatedContextItem(
+                kind="history",
+                locator=("session-event://00000000-0000-0000-0000-000000000120/7"),
+                content="user: keep the parent acceptance criteria",
+                source_sequence=7,
+            ),
+        ),
+        known_omissions=tuple(sorted(REQUIRED_CONTEXT_OMISSIONS)),
+        created_at=datetime(2026, 8, 23, 12, 0, tzinfo=UTC),
+    )
+
+    result = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Delegated child",
+            user_input="Inspect evidence.",
+            workspace_root=Path("/tmp/delegated-child"),
+            delegated_context=delegated,
+        )
+    )
+
+    persisted = result.events[2].payload["delegated_context"]
+    assert persisted["mode"] == "fork_tail"
+    assert persisted["checksum"] == delegated.checksum

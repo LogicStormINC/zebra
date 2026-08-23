@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from agent_core.application.mock_model import (
     ScriptedModelGateway,
     ScriptedModelResponse,
@@ -104,3 +105,25 @@ def test_gateway_durable_flag_reaches_the_tool(tmp_path: Path) -> None:
         assert research is not None  # still advertised; only the wait changes
     finally:
         gateway.close()
+
+
+def test_only_durable_research_contract_exposes_context_mode(tmp_path: Path) -> None:
+    coordinator = LocalResearchSubagentCoordinator(SlowRunner())
+    try:
+        local = ResearchSubagentTool(coordinator, tmp_path, wait_for_result=True)
+        durable = ResearchSubagentTool(coordinator, tmp_path, wait_for_result=False)
+
+        assert "context_mode" not in local.contract.argument_properties
+        assert durable.contract.argument_properties["context_mode"]["enum"] == [
+            "fresh",
+            "capsule",
+            "fork_tail",
+            "resume",
+        ]
+        invalid = _research_call().model_copy(
+            update={"arguments": {**_research_call().arguments, "context_mode": "all"}}
+        )
+        with pytest.raises(ValueError, match="context_mode"):
+            durable.handle(invalid)
+    finally:
+        coordinator.close()

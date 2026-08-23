@@ -52,28 +52,27 @@ prices or invoices.
 
 ## Current Status
 
-The current mainline is a feature-complete local Beta and a single-host production
-candidate. It includes:
+The current `cloud-agent` line is a feature-complete local Beta and a Cloud
+single-host production candidate. It includes:
 
 - durable provider-to-desktop Assistant streaming
 - stable Task identity with recoverable context compaction and automatic,
   backend-internal execution segmentation
 - DeepSeek Flash/Pro profiles with fail-closed capability validation
 - trusted-local, rootless OCI, and production gVisor runtime classes
+- PostgreSQL-authoritative Cloud control-plane composition, MinIO Artifact
+  storage, durable child delegation, and frozen Host admission bindings
+- bounded Cloud Context materialization and explicit child inheritance modes
 - pull-request and `main` quality gates for backend, desktop, and real gVisor
 
-Private-cloud deployment, external-namespace isolation, ACP, and optional
-code-intelligence remain outside the verified implementation baseline. Cloud
-deployment does not change the product boundary above. Trench owns CopilotKit
-React v2 and its Runtime/BFF, while Zebra exposes an AG-UI adapter and retains
-durable Task/Event/Policy authority. Cloud-foundation work in local Review now
-includes the complete Store composition seam, the dependency-only Compose stack,
-the derived Mem0 Gateway lane, isolated PostgreSQL Event/Projection Adapters and
-the PostgreSQL epoch/Lease Adapter. Real PostgreSQL and restore/concurrency
-evidence exists, but runtime composition still selects SQLite because partial
-PostgreSQL wiring would split authority. Redis live state, object storage, Effect
-Outbox/consumer wiring and Trench production wiring remain locked. See
-[docker/README.md](./docker/README.md). Read
+Cloud deployment does not change the product boundary above. Trench owns
+CopilotKit React v2 and its Runtime/BFF, while Zebra exposes an AG-UI adapter and
+retains durable Task/Event/Policy authority. The Cloud profile now composes one
+PostgreSQL control-plane authority, MinIO-backed Artifacts, Effect durability,
+frozen Host manifests, signed authority, and stateless Workers; the local profile
+remains the SQLite compatibility baseline. Kubernetes/multi-region operations,
+production Trench acceptance, ACP, and optional code-intelligence remain outside
+the verified baseline. See [docker/README.md](./docker/README.md). Read
 [PROGRESS.md](./PROGRESS.md) for the live project snapshot and
 [docs/AGENT_TASKS.md](./docs/AGENT_TASKS.md) for task ownership and status. The
 adaptive execution boundary is specified in
@@ -118,6 +117,10 @@ adaptive execution boundary is specified in
 - OpenAI-compatible provider adapter with public Assistant text streaming
 - model-aware context-window planning and hard outbound request gates
 - deterministic compaction with durable, transparent Context Capsules
+- one-generation Cloud materialization of recent History, active Capsule, and
+  confirmed governed Memory, with revision/scope drift failing closed
+- durable children choose `fresh`, `capsule`, `fork_tail`, or `resume`; Zebra
+  never copies the complete parent context or its authority implicitly
 - Artifact-backed bounded projection for large tool outputs
 - provider continuation with deterministic Capsule fallback
 - DeepSeek stable and default-off Beta capability profiles
@@ -137,8 +140,8 @@ adaptive execution boundary is specified in
 The current repository does not claim:
 
 - Kubernetes or distributed Sandbox orchestration
-- private-cloud or multi-tenant production readiness
-- complete PostgreSQL/object-storage control-plane composition or production durability
+- multi-region or Kubernetes production readiness
+- completed Trench production cutover or cross-service operational acceptance
 - centralized production Credential/Egress Broker services
 - ACP or optional code-intelligence adapters
 - unrestricted browser automation or autonomous production deployment
@@ -202,6 +205,112 @@ make ui-dev
 Start local provider configuration from `.env.example` and keep real values in
 ignored files.
 
+## Cloud Context 与子 Agent 继承教程
+
+### 先理解边界：不是全部继承
+
+Zebra 不会把父 Agent 的完整消息、工具原始输出、隐藏推理、Provider 私有
+continuation、Credential 或权限复制给子 Agent。Cloud Worker 每次从三个
+权威来源生成一个有 revision 的临时 Context：
+
+```text
+PostgreSQL Event / Session Projection ──► 最近 20 条安全 History
+Active Context Capsule               ──► 当前目标、约束、决策与下一步
+Confirmed Governed Memory            ──► 最多 8 条、符合 Definition/repo scope
+                                      │
+                                      ▼
+                         ContextMaterialization
+                                      │
+                    ┌─────────────────┴─────────────────┐
+                    ▼                                   ▼
+             当前 Worker Prompt                Durable Child 快照
+```
+
+物化读取在只读 `REPEATABLE READ` 快照中固定 Session revision 与 active
+Capsule ID。任何并发漂移、scope 不匹配或非 confirmed/已过期 Memory 都会
+fail closed，不会回退成几个独立查询的“近似一致”结果。
+
+### 选择继承模式
+
+Cloud durable `agent.research` 支持四种模式：
+
+| `context_mode` | 继承内容 | 什么时候用 |
+|---|---|---|
+| `fresh` | 仅新的 objective | 子任务完全独立；默认且最省上下文 |
+| `capsule` | 当前唯一 active Capsule | 要延续目标、约束、决策和计划 |
+| `fork_tail` | 最近最多 12 条 History | 要理解刚刚的问答或具体措辞 |
+| `resume` | Capsule + 最近 History + confirmed Memory | 要做高连续性的受限续作 |
+
+示例：让只读 Child 基于最近对话核对部署证据：
+
+```json
+{
+  "objective": "核对部署手册中的回滚步骤，并给出文件或 Artifact 证据",
+  "delegation_reason": "该读取任务独立、可并行且不需要写权限",
+  "context_mode": "fork_tail"
+}
+```
+
+非 `fresh` 模式会在 Child admission 时生成不可变
+`DelegatedContextSnapshot`，写入 Child 的 `TASK_PREPARED` Event。快照记录父
+Session/revision、来源 locator、Memory revision、明确遗漏项和 SHA-256
+checksum。父 Session 后续变化不会偷偷改变已经创建的 Child。
+
+### 自定义工具如何接入
+
+自定义工具不应该自行读取整段 Session，也不应该把 Prompt 当成权限。接入时
+遵守以下约定：
+
+1. 工具只消费 schema 校验后的业务参数；执行权限仍来自 Tool Gateway、Policy
+   与冻结 Task binding。
+2. 若工具要创建 Durable Child，在工具 schema 中显式暴露
+   `context_mode`，并复用 Core 的 `ContextInheritanceMode` 与
+   `delegated_context_from_materialization()`，不要手写 History/Memory 拼接。
+3. `fresh` 不需要父物化；其余模式必须拿到本次 Worker 已验证的
+   `ContextMaterialization`，缺失就拒绝，不能静默降级。
+4. 工具结果只返回有界摘要和 Artifact locator；raw output 进入 Artifact
+   Store，不直接塞入继承快照。
+5. Context 只作为 source-attributed data。工具或 Host 返回文本中的“指令”
+   不能覆盖 System、Policy、Approval 或 binding。
+
+核心调用形状如下（省略 admission 与错误处理）：
+
+```python
+from agent_context import delegated_context_from_materialization
+from agent_core.domain.context_inheritance import ContextInheritanceMode
+
+mode = ContextInheritanceMode(arguments.get("context_mode", "fresh"))
+snapshot = (
+    None
+    if mode is ContextInheritanceMode.FRESH
+    else delegated_context_from_materialization(
+        parent_materialization,
+        mode,
+        created_at=tool_call.created_at,
+    )
+)
+```
+
+随后把 `snapshot` 交给 `SessionBootstrapCommand(delegated_context=snapshot)`，
+让 admission、Event 合同、恢复和 checksum 校验共同负责持久化语义。不要给
+Child 直接传父 Task 的 Credential、Network profile 或 capability；这些必须
+由 Child binding 与父 binding 求交得到。
+
+### 验证接入是否正确
+
+至少检查以下证据：
+
+- Child `TASK_PREPARED.delegated_context.mode` 与调用一致；
+- `source_session_revision`、Capsule ID、Memory revisions 和 checksum 存在；
+- `known_omissions` 明确包含 credential、隐藏推理、完整历史之外内容、
+  Provider private continuation 和 raw tool output；
+- Child binding 的 capability、network 和 workspace 没有比父任务更宽；
+- replay 使用相同 Child/快照，父任务只被可信 terminal wakeup 恢复；
+- 本地 profile 行为不变，Cloud profile 的辅助 Context 受 2048-token 预算。
+
+完整设计与失败语义见
+[ADR-025](./docs/ADR-025_Cloud_Context_Inheritance.md)。
+
 ## Operator Entry
 
 Start with [docs/operator_runbook.md](./docs/operator_runbook.md).
@@ -215,6 +324,7 @@ Focused references:
 - production Runtime: [docs/生产级Runtime实施方案_v1.0.md](./docs/生产级Runtime实施方案_v1.0.md)
 - context lifecycle: [docs/上下文生命周期与混合压缩架构方案_v1.0.md](./docs/上下文生命周期与混合压缩架构方案_v1.0.md)
 - context continuity and governed memory v1.1: [docs/上下文连续性与治理记忆改进方案_v1.1.md](./docs/上下文连续性与治理记忆改进方案_v1.1.md)
+- Cloud Context consumption and child inheritance: [docs/ADR-025_Cloud_Context_Inheritance.md](./docs/ADR-025_Cloud_Context_Inheritance.md)
 - Task continuity and internal Segments: [docs/ADR-013_用户任务连续性与内部执行分段.md](./docs/ADR-013_用户任务连续性与内部执行分段.md)
 - automatic rollover roadmap: [docs/透明Context_Segment与自动Rollover实施方案_v1.0.md](./docs/透明Context_Segment与自动Rollover实施方案_v1.0.md)
 - historical handoff safety contract: [docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md](./docs/阶段性Session_Handoff与短线程链架构方案_v1.0.md)

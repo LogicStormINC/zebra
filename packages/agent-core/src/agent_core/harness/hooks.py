@@ -65,10 +65,10 @@ class NoopPlanner:
                 summary=retry_hint.summary,
                 metadata={
                     "attempt_number": context.attempt.number,
-                    "accepted_constraints": retry_hint.accepted_constraints,
-                    "prior_tool_outputs": retry_hint.prior_tool_outputs,
-                    "retry_blockers": retry_hint.blockers,
-                    "retry_focus": retry_hint.focus,
+                    "accepted_constraints": list(retry_hint.accepted_constraints),
+                    "prior_tool_outputs": list(retry_hint.prior_tool_outputs),
+                    "retry_blockers": list(retry_hint.blockers),
+                    "retry_focus": list(retry_hint.focus),
                 },
             )
         return PlannerResult(

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
+from agent_core.domain.context_inheritance import DelegatedContextSnapshot
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.mcp import normalize_mcp_allowlist
@@ -31,6 +32,7 @@ class SessionBootstrapCommand:
     max_tool_calls: int | None = None
     host_context: HostContextEnvelope | None = None
     definition_snapshot: AgentDefinitionSnapshot | None = None
+    delegated_context: DelegatedContextSnapshot | None = None
     created_at: datetime | None = None
 
 
@@ -105,6 +107,11 @@ class SessionBootstrapService:
                             )
                         }
                         if command.definition_snapshot is not None
+                        else {}
+                    ),
+                    **(
+                        {"delegated_context": command.delegated_context.model_dump(mode="json")}
+                        if command.delegated_context is not None
                         else {}
                     ),
                 },

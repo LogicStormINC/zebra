@@ -29,7 +29,9 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
 
     def materialize(self, request: ContextMaterializationRequest) -> ContextMaterialization:
         with self._database.connect() as connection:
-            connection.execute("SET TRANSACTION READ ONLY")
+            connection.execute(
+                "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
+            )
             session_revision = self._session_revision(connection, request)
             history = self._history(connection, request)
             capsule = self._active_capsule(connection, request)
@@ -73,11 +75,21 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
         rows = connection.execute(
             """
             SELECT sequence, event_type, payload, created_at
-            FROM session_events
-            WHERE deployment_namespace = %s AND session_id = %s
-              AND event_type IN (%s, %s)
+            FROM (
+                SELECT sequence, event_type, payload, created_at
+                FROM session_events
+                WHERE deployment_namespace = %s AND session_id = %s
+                  AND (
+                    (event_type = %s
+                     AND NULLIF(BTRIM(payload ->> 'content'), '') IS NOT NULL)
+                    OR
+                    (event_type = %s
+                     AND NULLIF(BTRIM(payload ->> 'assistant_message'), '') IS NOT NULL)
+                  )
+                ORDER BY sequence DESC
+                LIMIT %s
+            ) AS recent_history
             ORDER BY sequence ASC
-            LIMIT %s
             """,
             (
                 self._database.deployment_namespace,

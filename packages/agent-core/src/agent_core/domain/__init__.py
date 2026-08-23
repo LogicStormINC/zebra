@@ -91,6 +91,15 @@ from agent_core.domain.cloud_artifact_requests import (
     canonical_artifact_reserve_hash,
 )
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
+from agent_core.domain.context_inheritance import (
+    MAX_DELEGATED_CONTEXT_CHARS,
+    MAX_DELEGATED_CONTEXT_ITEM_CHARS,
+    MAX_DELEGATED_CONTEXT_ITEMS,
+    REQUIRED_CONTEXT_OMISSIONS,
+    ContextInheritanceMode,
+    DelegatedContextItem,
+    DelegatedContextSnapshot,
+)
 from agent_core.domain.context_materialization import (
     MAX_CONTEXT_HISTORY_MESSAGES,
     MAX_CONTEXT_MEMORY_ENTRIES,
@@ -319,6 +328,13 @@ __all__ = [
     "ContextMaterializationGeneration",
     "ContextMaterializationMode",
     "ContextMaterializationRequest",
+    "ContextInheritanceMode",
+    "DelegatedContextItem",
+    "DelegatedContextSnapshot",
+    "MAX_DELEGATED_CONTEXT_CHARS",
+    "MAX_DELEGATED_CONTEXT_ITEM_CHARS",
+    "MAX_DELEGATED_CONTEXT_ITEMS",
+    "REQUIRED_CONTEXT_OMISSIONS",
     "MAX_CONTEXT_HISTORY_MESSAGES",
     "MAX_CONTEXT_MEMORY_ENTRIES",
     "AgentTask",

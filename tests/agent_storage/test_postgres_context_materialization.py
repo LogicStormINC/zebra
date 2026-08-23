@@ -5,6 +5,7 @@ import os
 from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 from uuid import UUID, uuid4
 
 import psycopg
@@ -61,6 +62,22 @@ def deployment_namespace(postgres_dsn: str) -> Generator[str, None, None]:
     _delete_namespace(postgres_dsn, namespace)
 
 
+class _IsolationProbeStore(PostgresContextMaterializationStore):
+    transaction_settings: tuple[str, str] | None = None
+
+    def _session_revision(
+        self, connection: Any, request: ContextMaterializationRequest
+    ) -> int:
+        row = connection.execute(
+            """
+            SELECT current_setting('transaction_isolation') AS isolation,
+                   current_setting('transaction_read_only') AS read_only
+            """
+        ).fetchone()
+        self.transaction_settings = row["isolation"], row["read_only"]
+        return super()._session_revision(connection, request)
+
+
 def test_materializes_history_capsule_and_memory_in_one_generation(
     postgres_dsn: str,
     deployment_namespace: str,
@@ -81,6 +98,75 @@ def test_materializes_history_capsule_and_memory_in_one_generation(
     assert result.active_capsule == capsule
     assert [entry.record.memory_id for entry in result.memories] == [memory.record.memory_id]
     assert result.generation.memory_revisions == ((str(memory.record.memory_id), 1),)
+
+
+def test_materialization_uses_one_read_only_repeatable_read_snapshot(
+    postgres_dsn: str,
+    deployment_namespace: str,
+) -> None:
+    session_id, capsule, _ = _seed_sources(postgres_dsn, deployment_namespace)
+    store = _IsolationProbeStore(
+        postgres_dsn,
+        deployment_namespace=deployment_namespace,
+    )
+
+    store.materialize(_request(session_id, revision=5, capsule_id=capsule.capsule_id))
+
+    assert store.transaction_settings == ("repeatable read", "on")
+
+
+def test_materialization_history_limit_returns_the_recent_tail(
+    postgres_dsn: str,
+    deployment_namespace: str,
+) -> None:
+    session_id, capsule, _ = _seed_sources(postgres_dsn, deployment_namespace)
+    events = PostgresEventStore(postgres_dsn, deployment_namespace=deployment_namespace)
+    events.append(
+        SessionEvent.create(
+            session_id=SessionId(session_id),
+            sequence=6,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            payload={"tool_call_count": 1},
+            created_at=_at(4),
+        )
+    )
+    events.append(
+        SessionEvent.create(
+            session_id=SessionId(session_id),
+            sequence=7,
+            event_type=EventType.USER_MESSAGE_RECEIVED,
+            actor=EventActor.USER,
+            payload={"content": "Newest valid History message."},
+            created_at=_at(5),
+        )
+    )
+    projections = PostgresProjectionStore(
+        postgres_dsn,
+        deployment_namespace=deployment_namespace,
+    )
+    session = projections.get_session(SessionId(session_id))
+    assert session is not None
+    projections.save_session(
+        session.model_copy(update={"current_sequence": 7, "updated_at": _at(5)})
+    )
+
+    result = PostgresContextMaterializationStore(
+        postgres_dsn,
+        deployment_namespace=deployment_namespace,
+    ).materialize(
+        _request(
+            session_id,
+            revision=7,
+            capsule_id=capsule.capsule_id,
+            history_limit=2,
+        )
+    )
+
+    assert [(item.sequence, item.role) for item in result.history] == [
+        (3, "assistant"),
+        (7, "user"),
+    ]
 
 
 def test_materialization_fails_closed_on_stale_session_or_capsule(
@@ -144,7 +230,13 @@ def test_materialization_is_read_only(
     assert _counts(postgres_dsn, deployment_namespace) == before
 
 
-def _request(session_id: UUID, *, revision: int, capsule_id: str) -> ContextMaterializationRequest:
+def _request(
+    session_id: UUID,
+    *,
+    revision: int,
+    capsule_id: str,
+    history_limit: int = 20,
+) -> ContextMaterializationRequest:
     return ContextMaterializationRequest(
         scope=OpaqueAuthorityScope(
             authority_issuer="issuer",
@@ -154,6 +246,7 @@ def _request(session_id: UUID, *, revision: int, capsule_id: str) -> ContextMate
         session_id=SessionId(session_id),
         expected_session_revision=revision,
         expected_active_capsule_id=capsule_id,
+        history_limit=history_limit,
         as_of=_at(20),
         memory_query=MemoryQuery(
             repo_id="repo-1",

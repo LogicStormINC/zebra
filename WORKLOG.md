@@ -1,5 +1,24 @@
 # Progress Log
 
+## 2026-08-23 - CTX-INHERIT-CLOUD-01 review handoff
+
+- 基于权威 `origin/cloud-agent@7de09da1` 创建独立
+  `codex/cloud-context-inheritance-01` Worktree，并登记完整 Owned paths。
+- 实现 Cloud Worker PostgreSQL Context 物化消费、四种 Durable Child 受限
+  继承模式、Child bootstrap checksum 快照、Handoff 模型可见性与 2048-token
+  辅助预算；local/SQLite 兼容路径保持 200-token 默认。
+- 修复 materialization definition-scope 复核、PostgreSQL newest text History
+  tail 与只读 Repeatable Read 同代快照，
+  以及 planner metadata tuple 导致的 JSON canonical Event 投影冲突；保留
+  `execution.WorkerExecutionError` 公开导入兼容。
+- 验证通过：聚焦 `33 passed / 7 dependency-gated skipped`，Context
+  PostgreSQL `6/6`，Cloud PostgreSQL+MinIO
+  `33/33`，dependency-free 全仓 `2619 passed / 346 skipped`，无过滤真依赖
+  全仓 `2952 passed / 13 skipped`；`make check` 覆盖 size `1441`、Ruff、
+  Mypy `718` 和 Eval `10/10`。所有测试容器、网络与 volume 已清理。
+- 新增 ADR-025 与 README 中文接入教程。任务卡移到 `Review`；Trench 生产
+  输入/验收、Desktop 与 Provider-private continuation 仍在本任务之外。
+
 ## 2026-08-03 - CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 audit
 
 - Activated the sidebar-approved governance-only Context lifecycle conformance

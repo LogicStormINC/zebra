@@ -1,5 +1,31 @@
 # Task Plan
 
+## CTX-INHERIT-CLOUD-01 - Cloud Context 消费与子 Agent 继承（2026-08-23）
+
+1. `completed` - 从 `origin/cloud-agent@7de09da1` 创建独立分支/Worktree，登记
+   human owner、Owned paths、依赖、验收与非目标。
+2. `completed` - 冻结 `fresh`、`capsule`、`fork_tail`、`resume` 四种模式及
+   有界、可校验、来源可追溯的 Child Context snapshot。
+3. `completed` - 将 PostgreSQL `ContextMaterializationStore` 接进 Cloud Worker，
+   固定 authority scope、Session revision、active Capsule 与 confirmed Memory；
+   保持 local/SQLite 默认行为不变。
+4. `completed` - 让 Handoff 丰富字段进入模型 Context，提高连续性 evidence
+   预算，并明确 credential、隐藏推理、raw output 等遗漏项。
+5. `completed` - 修正 PostgreSQL read-only Repeatable Read、History
+   newest-text-tail 语义，以及物化 evidence 激活后暴露的 planner tuple/JSON
+   canonical Event 不一致根因。
+6. `completed` - 通过聚焦、真实 PostgreSQL、Cloud PostgreSQL+MinIO、无过滤
+   真依赖全仓和 `make check` 验证，清理全部临时资源。
+7. `completed` - 补充 ADR-025、中文 README 接入教程、进度/发现/工作日志，
+   将任务卡移到 `Review`，准备向 `cloud-agent` 提交一个聚焦 PR。
+
+### 决策
+
+- 上下文不是权限；Child authority 始终由冻结 binding 求交收窄。
+- Cloud Worker 读取一次同代物化，Durable Child admission 固化一次快照；
+  二者都不创建新的事实权威。
+- 不提供“全部继承”模式。需要完整事实时返回权威 locator，再走受控读取。
+
 ## 下一阶段：默认组合收口（Phase F，2026-08-19 定案）
 
 目标：把已落地的机制真正接进 Cloud API/Worker 默认组合，并留下

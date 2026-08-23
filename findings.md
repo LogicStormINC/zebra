@@ -1,5 +1,29 @@
 # Findings
 
+## CTX-INHERIT-CLOUD-01 - 2026-08-23
+
+- `SubagentDelegationRequest.context_mode` 原先只是持久合同字段，Durable Child
+  bootstrap 没有消费它；Child 实际仅收到 objective。现在非 fresh 模式从父
+  Worker 已验证的物化结果生成 checksum 快照并进入 `TASK_PREPARED`。
+- PostgreSQL Context Materialization Adapter 已存在，但 Cloud Worker 未调用；
+  Runtime 仍走独立本地 Memory/Capsule 拼装。现在 Attempt authority 固化后只
+  消费一个 scope/revision/Capsule 一致的 generation，漂移 fail closed。
+- History SQL 的 `ORDER BY sequence ASC LIMIT N` 返回最旧 N 条，不是恢复所需
+  的最近尾部。子查询改为 DESC 限定最新 N 条安全文本（无文本的工具调用响应
+  不占配额），外层再 ASC 恢复模型顺序；整个读取使用只读 Repeatable Read。
+- Handoff rich envelope 已持久化，但 adapter 只截取约 2000 字符且辅助预算
+  仅 200 tokens，验收、文件、验证、失败和 Artifact 等后段字段可能不可见。
+  现在结构化字段全部进入高优先级 evidence，Cloud 预算为 2048 tokens；若
+  编译器仍需截断，会写出 `continuity_evidence_truncated`，不再静默丢尾部。
+- 激活 runtime evidence 后，`NoopPlanner` 首次在真实 PostgreSQL 路径输出
+  tuple metadata；JSONB 回读成为 list，canonical Event 比较拒绝投影。
+  修复点在共享 producer：Event metadata 从一开始就是 JSON-native list，
+  并由 JSON 往返回归锁定。
+- 最终证据：真 PG Context `6/6`，真 PG+MinIO Cloud composition `33/33`，
+  dependency-free 全仓 `2619 passed / 346 skipped`，无过滤真依赖全仓
+  `2952 passed / 13 skipped`，`make check` 全绿；无 Trench
+  业务代码、Desktop、迁移或新依赖。
+
 ## CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - 2026-08-03
 
 - The Context Worker path is fenced at the PostgreSQL transaction boundary:

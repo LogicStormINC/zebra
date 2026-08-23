@@ -12,6 +12,7 @@ from agent_core.application.agent_definition_binding import (
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.context_capsule import ContextCapsule
+from agent_core.domain.context_inheritance import DelegatedContextSnapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.session_history import normalize_history_session_ids
@@ -41,6 +42,7 @@ class RecoveredTask:
     runtime_evidence: tuple[RuntimeEvidenceInput, ...]
     host_context: HostContextEnvelope | None
     definition_snapshot: AgentDefinitionSnapshot | None
+    delegated_context: DelegatedContextSnapshot | None = None
 
 
 def recover_task(
@@ -100,6 +102,7 @@ def recover_task(
         attachments=attachments,
         host_context=_host_context(task_payload.get("host_context")),
         definition_snapshot=definition_snapshot,
+        delegated_context=_delegated_context(task_payload.get("delegated_context")),
         runtime_evidence=(
             *_context_capsule_evidence(events, active_capsule=active_capsule),
             *((handoff_evidence,) if handoff_evidence is not None else ()),
@@ -118,6 +121,17 @@ def _definition_snapshot(value: object) -> AgentDefinitionSnapshot | None:
         return snapshot
     except (ValueError, DefinitionBindingError) as exc:
         raise ValueError(f"queued session Definition snapshot is invalid: {exc}") from exc
+
+
+def _delegated_context(value: object) -> DelegatedContextSnapshot | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("queued session delegated_context must be an object")
+    try:
+        return DelegatedContextSnapshot.model_validate(value)
+    except ValueError as exc:
+        raise ValueError(f"queued session delegated_context is invalid: {exc}") from exc
 
 
 def _history_session_ids(value: object) -> tuple[str, ...] | None:

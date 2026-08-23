@@ -76,10 +76,29 @@ def build_handoff_envelope(request: HandoffEnvelopeBuildInput) -> SessionHandoff
 
 def handoff_runtime_evidence(envelope: SessionHandoffEnvelope) -> RuntimeEvidenceInput:
     details = (
+        f"Reason: {envelope.reason.value}",
+        *((f"Focus: {envelope.focus}",) if envelope.focus else ()),
+        *(f"Acceptance: {item}" for item in envelope.acceptance_criteria),
         *(f"Constraint: {item}" for item in envelope.protected_user_constraints),
         *(f"Decision: {item}" for item in envelope.decisions_and_rationale),
         *(f"Completed: {item}" for item in envelope.completed_work),
         *(f"Pending: {item}" for item in envelope.pending_work),
+        *(f"Touched file: {item}" for item in envelope.touched_files),
+        *(f"Validation: {item}" for item in envelope.validation_results),
+        *(f"Known failure: {item}" for item in envelope.known_failures),
+        *(f"Open question: {item}" for item in envelope.open_questions),
+        *(f"Artifact: {item}" for item in envelope.artifact_refs),
+        *(
+            "Completed tool: "
+            f"{item.tool_name} ({item.tool_call_id}) status={item.terminal_status}"
+            + (
+                f" artifact={item.result_artifact_ref}"
+                if item.result_artifact_ref is not None
+                else ""
+            )
+            for item in envelope.completed_tool_evidence
+        ),
+        *(f"Known omission: {item}" for item in envelope.known_omissions),
         f"Immediate next: {envelope.immediate_next}",
     )
     return RuntimeEvidenceInput(

@@ -50,6 +50,7 @@ from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CONTEXT_CHARS,
     MAX_CLARIFICATION_QUESTION_CHARS,
 )
+from agent_core.domain.context_inheritance import DelegatedContextSnapshot
 from agent_core.domain.events import EventType
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.mcp import normalize_mcp_allowlist
@@ -118,6 +119,10 @@ class TaskPreparedPayload(BaseModel):
         exclude_if=lambda value: value is None,
     )
     definition_snapshot: AgentDefinitionSnapshot | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
+    delegated_context: DelegatedContextSnapshot | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )
