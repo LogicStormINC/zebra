@@ -162,52 +162,52 @@ them in frontend storage, request payloads, tracked files, responses, or logs.
 `agent-core` remains infrastructure-independent. Other packages may depend on
 core; packages must not import from applications.
 
-## Cloud Agent Integration Tutorial
+## Zebra Cloud Agent 接入教程
 
-This tutorial is for a business system (the **Host**) integrating with Zebra's
-Cloud API. It uses the native `/sessions` HTTP surface first, then adds custom
-business tools through the Host Tool protocol. CopilotKit clients should keep
-their browser connected to the Host BFF and let that BFF exchange authority with
-Zebra; the browser must not mint Zebra grants or hold Host signing keys.
+本教程面向需要接入 Zebra Cloud Agent 的业务系统（下文称为
+**Host**）。我们先使用原生 `/sessions` HTTP 接口创建 Agent Session，
+再通过 Host Tool 协议把业务系统中的自定义工具安全地开放给 Zebra Worker。
 
-### 1. Choose the integration surface
+如果前端使用 CopilotKit，浏览器应始终连接 Host 自己的 BFF，由 BFF 与 Zebra
+交换授权。浏览器不得签发 Zebra Grant，也不得持有 Host 签名私钥。
 
-| Need | Zebra surface | Recommended caller |
+### 1. 选择合适的接入面
+
+| 接入需求 | Zebra 接口 | 推荐调用方 |
 |---|---|---|
-| Create, inspect, stop or stream an Agent session | `/sessions` and `/tasks` | Host backend/BFF |
-| CopilotKit event projection | `/agui/commands` and `/agui/threads/.../stream` | CopilotKit Runtime/BFF |
-| Read or change Host business data | Host Tool manifest and invoke endpoints | Zebra Worker |
-| Generic external developer tooling | MCP configuration | Zebra operator |
+| 创建、查询、停止或订阅 Agent Session | `/sessions`、`/tasks` | Host 后端/BFF |
+| 向 CopilotKit 投影 Agent 事件 | `/agui/commands`、`/agui/threads/.../stream` | CopilotKit Runtime/BFF |
+| 读取或修改 Host 业务数据 | Host Tool manifest 与 invoke 接口 | Zebra Worker |
+| 接入通用开发者工具 | MCP 配置 | Zebra 运维方 |
 
-Use Host Tools for business data because their scope and resource bindings come
-from the signed Host Grant. MCP is useful for generic integrations, but it must
-not become a shortcut around the Host's business authorization.
+业务数据应通过 Host Tool 接入，因为工具的 scope 和资源绑定来自已签名的
+Host Grant。MCP 适合通用集成，但不能绕过 Host 的业务授权边界。
 
-The request path is:
+完整请求链路如下：
 
 ```text
-browser -> Host BFF -> signed one-request Host Grant -> Zebra API
-                                                   -> PostgreSQL admission
-                                                   -> stateless Worker
-                                                   -> frozen Host Tool contract
-                                                   -> Host Tool API
+浏览器 -> Host BFF -> 单请求签名 Host Grant -> Zebra API
+                                             -> PostgreSQL admission
+                                             -> 无状态 Worker
+                                             -> 已冻结的 Host Tool 合同
+                                             -> Host Tool API
 ```
 
-PostgreSQL is the execution authority. Redis is only live delivery/cache, and
-MinIO/S3 stores Artifact bytes whose metadata remains in PostgreSQL.
+PostgreSQL 是执行事实的权威来源；Redis 仅用于实时投递和缓存；MinIO/S3
+保存 Artifact 字节，Artifact 元数据仍保存在 PostgreSQL。
 
-### 2. Deploy the Cloud composition
+### 2. 部署 Cloud 组合
 
-For local infrastructure validation, start the dependency project and then the
-separate Zebra application project:
+本地验证时，先启动依赖 Compose 项目，再启动独立的 Zebra 应用 Compose
+项目：
 
 ```bash
 cp docker/.env.example docker/.env
 cp docker/.env.application.example docker/.env.application
 
-# Set these deployment-specific values in docker/.env.application.
+# 在 docker/.env.application 中设置这些部署相关值。
 # ZEBRA_RUNTIME_CLASS=gvisor
-# ZEBRA_RUNTIME_IMAGE=registry.example/zebra-runtime@sha256:<64-hex-digest>
+# ZEBRA_RUNTIME_IMAGE=registry.example/zebra-runtime@sha256:<64位十六进制摘要>
 # ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA=true
 
 docker compose --env-file docker/.env \
@@ -219,20 +219,21 @@ docker compose --env-file docker/.env.application \
 curl --fail http://127.0.0.1:18080/health
 ```
 
-The Cloud profile fails closed unless it receives a PostgreSQL DSN, deployment
-and authority namespaces, a memory-cursor signing key, S3 settings, `gvisor`, a
-digest-pinned Runtime image and storage-enforced workspace quota. A real task
-also needs the selected model provider configuration and its named credential in
-both API and Worker containers. Inject that credential through the deployment's
-secret manager; do not commit it to either example env file. The bundled Compose
-is a composition/health baseline, not a production Sandbox fleet or secret
-delivery system.
+Cloud profile 采用 fail-closed：必须显式提供 PostgreSQL DSN、部署 namespace、
+授权 namespace、memory cursor 签名密钥、S3 配置、`gvisor`、
+带 digest 的 Runtime 镜像，以及由存储层强制执行的 workspace quota，
+否则服务不会静默降级到 SQLite。
 
-### 3. Register the Host trust boundary
+真实任务还需要 API 和 Worker 同时配置选定的模型供应商及其命名凭证。
+凭证必须由部署环境的 Secret Manager 注入，不要写入示例 env 文件。仓库内
+Compose 只用于组合与健康检查基线，不等同于生产 Sandbox Fleet 或生产级
+密钥分发系统。
 
-Before Zebra accepts a request, an operator registers the Host issuer for each
-opaque business namespace. Migrations must already be complete. The example
-uses the host-mapped PostgreSQL port from the dependency Compose stack:
+### 3. 注册 Host 信任边界
+
+Zebra 接收请求前，运维方需要为每个不透明业务 namespace 注册 Host issuer。
+执行下面的代码前必须先完成数据库迁移。示例使用依赖 Compose 映射到宿主机的
+PostgreSQL 端口：
 
 ```bash
 export ZEBRA_DATABASE_URL='postgresql://zebra:local-only-change-me@127.0.0.1:15432/zebra'
@@ -259,17 +260,18 @@ store.upsert_registry(HostRegistryRecord(
 PY
 ```
 
-`issuer`, `jwks_uri` and browser origins must use exact HTTPS values; wildcard
-origins and symmetric JWT algorithms are rejected. Treat this registry as
-operator configuration, not a per-request API. Register it before starting the
-API, or restart the API after a registry change so its exact CORS origin set is
-rebuilt.
+`issuer`、`jwks_uri` 和浏览器 Origin 必须是精确的 HTTPS
+值；系统拒绝通配符 Origin 和对称 JWT 算法。Host Registry 属于运维配置，
+不是每次请求都调用的业务 API。
 
-### 4. Mint a single-use Host Grant
+应在 Zebra API 启动前完成注册；如果 Registry 已修改，需要重启 API，让
+服务重新构建精确的 CORS Origin 集合。
 
-The Host backend signs one short-lived JWT for **each Zebra HTTP request**. The
-JWT payload uses these exact claim names (the numeric timestamps below are only
-shape examples; calculate them at issuance time):
+### 4. 签发一次性 Host Grant
+
+Host 后端必须为**每一次 Zebra HTTP 请求**签发一个短期 JWT。JWT payload
+使用以下精确 claim 名称；示例时间戳只表示字段形状，生产环境必须在签发时
+动态计算：
 
 ```json
 {
@@ -295,17 +297,19 @@ shape examples; calculate them at issuance time):
 }
 ```
 
-Sign it with the private key matching the registered JWKS (`RS256` or `ES256`).
-Zebra verifies signature, issuer, audience, time window, exact origin, required
-`agent.run` scope and structural integer limits, then atomically consumes `jti`
-in PostgreSQL. Reusing the same JWT is therefore a `403`; use Zebra's
-`Idempotency-Key` for application retries and mint a fresh Grant for every retry,
-read, stream connection and stream reconnect.
+使用与已注册 JWKS 匹配的私钥进行签名（`RS256` 或
+`ES256`）。Zebra 会验证签名、issuer、audience、有效时间、
+精确 Origin、必需的 `agent.run` scope，以及整数类型的限制字段，
+随后在 PostgreSQL 中原子消费 `jti`。
 
-### 5. Create and stream a session
+因此重复使用同一个 JWT 会得到 `403`。业务重试应使用 Zebra 的
+`Idempotency-Key`，并为每次重试、查询、建立流连接和流重连签发
+新的 Grant。
 
-Assume the Host BFF has put a newly signed token into `HOST_GRANT`. Use a stable
-idempotency key for the logical create operation:
+### 5. 创建并订阅 Session
+
+假设 Host BFF 已将新签发的 token 放入 `HOST_GRANT`。同一次逻辑
+创建操作必须使用稳定的幂等键：
 
 ```bash
 export ZEBRA_URL='https://zebra.example.com'
@@ -318,8 +322,8 @@ CREATE_RESPONSE="$(curl --fail-with-body "$ZEBRA_URL/sessions" \
   -H "Idempotency-Key: $CREATE_KEY" \
   -H 'Content-Type: application/json' \
   --data '{
-    "title": "Summarize event evt-789",
-    "prompt": "Read the granted event and summarize the evidence.",
+    "title": "汇总事件 evt-789",
+    "prompt": "读取已授权事件并汇总其中的证据。",
     "workspace": "/workspaces/tenant-123/task-01JABC123",
     "execute": true,
     "tool_profile": "general",
@@ -331,12 +335,12 @@ CREATE_RESPONSE="$(curl --fail-with-body "$ZEBRA_URL/sessions" \
 SESSION_ID="$(printf '%s' "$CREATE_RESPONSE" | jq -r '.session_id')"
 ```
 
-A Cloud create returns `201`, a durable `session_id`, and an accepted `run`
-command; the Worker completes it asynchronously. Repeating the identical body
-and key with a fresh Grant returns the identical `201` body. Reusing the key with
-a different body returns `409 idempotency_conflict`.
+Cloud create 成功时返回 `201`、持久化的 `session_id`，
+以及已接受的 `run` command；Worker 在后台异步执行。使用新 Grant、
+相同请求体和相同幂等键重试，会得到完全相同的 `201` 响应体；
+相同幂等键配不同请求体则返回 `409 idempotency_conflict`。
 
-Read status or consume replay-plus-tail SSE with another fresh Grant:
+使用另一个新 Grant 查询状态，或者订阅 replay-plus-tail SSE：
 
 ```bash
 curl --fail-with-body "$ZEBRA_URL/sessions/$SESSION_ID" \
@@ -346,29 +350,32 @@ curl -N "$ZEBRA_URL/sessions/$SESSION_ID/stream?after_sequence=-1" \
   -H 'Accept: text/event-stream'
 ```
 
-Persist the last SSE `id` and reconnect with `after_sequence=<last-id>` and a
-fresh Grant. The durable PostgreSQL replay path remains lossless if Redis live
-fan-out is unavailable.
+Host 应持久化最后收到的 SSE `id`，重连时传入
+`after_sequence=<last-id>` 并使用新 Grant。即使 Redis 实时
+fan-out 不可用，PostgreSQL 的持久化 replay 路径仍是无损的。
 
-For CopilotKit, keep this authorization inside the Host BFF. Submit `run`,
-`resume` or `stop` to `/agui/commands` with `threadId`, `runId`, strict integer
-`expectedRevision`, optional official AG-UI `input`, and an `Idempotency-Key`.
-Consume `/agui/threads/{threadId}/runs/{runId}/stream` with a fresh Grant. AG-UI
-is a command/projection adapter; Zebra's Task/Event Store remains the durable
-authority.
+如果使用 CopilotKit，授权交换仍然放在 Host BFF 内。向
+`/agui/commands` 提交 `run`、`resume`
+或 `stop`，请求包含 `threadId`、`runId`、
+严格整数类型的 `expectedRevision`、可选的官方 AG-UI
+`input`，以及 `Idempotency-Key`。随后使用新 Grant
+订阅 `/agui/threads/{threadId}/runs/{runId}/stream`。
 
-### 6. Add a custom Host Tool
+AG-UI 只是 command/projection 适配层；Zebra Task/Event Store 仍然是持久化
+执行事实来源。
 
-A custom business tool is hosted by the business system, not installed inside
-`agent-core`. The Host exposes an HTTPS manifest and bounded invoke endpoint.
-This read-only example binds `event_id` to exactly one granted business resource:
+### 6. 接入自定义 Host Tool
+
+自定义业务工具应部署在业务系统内，而不是安装进 `agent-core`。
+Host 对外暴露 HTTPS manifest 和受约束的 invoke 接口。下面的只读示例将
+`event_id` 精确绑定到 Grant 中唯一获准访问的业务资源：
 
 ```json
 {
   "workloadIdentity": "workload/zebra-worker",
   "tools": [{
     "name": "events.get_event",
-    "description": "Read one granted event.",
+    "description": "读取一个已授权事件。",
     "requiredArguments": ["event_id"],
     "argumentProperties": {"event_id": {"type": "string"}},
     "parallelSafe": true,
@@ -390,35 +397,38 @@ This read-only example binds `event_id` to exactly one granted business resource
 }
 ```
 
-Implement the current v1 wire endpoints:
+Host 需要实现当前 v1 wire endpoints：
 
-- `GET /manifest` returns the JSON above.
-- `POST /tools/events.get_event/invoke` accepts `toolCallId`, `toolName`,
-  `arguments`, effective `scopes`, granted `resources`, `workloadIdentity` and
-  `idempotencyKey`.
-- A successful call returns `{"output":"<bounded string>","metadata":{...}}`.
-  Only safe metadata such as `trace_id`, `request_id` and `provider_operation_id`
-  is retained by Zebra.
-- For writes, require idempotency, persist the provider operation ID before the
-  business mutation, and implement the profile's reconcile endpoint. An unknown
-  timeout outcome must be reconciled to `succeeded`, `failed_no_effect` or remain
-  `uncertain`; never blindly repeat the write.
+- `GET /manifest`：返回上面的 manifest JSON。
+- `POST /tools/events.get_event/invoke`：接收
+  `toolCallId`、`toolName`、`arguments`、
+  生效后的 `scopes`、获准访问的 `resources`、
+  `workloadIdentity` 和 `idempotencyKey`。
+- 成功响应为
+  `{"output":"<受大小限制的字符串>","metadata":{...}}`。Zebra
+  只保留 `trace_id`、`request_id` 和
+  `provider_operation_id` 等安全元数据。
+- 写工具必须要求幂等，在业务写入前持久化 provider operation ID，并实现
+  profile 指定的 reconcile 接口。超时造成的未知结果必须被对账为
+  `succeeded`、`failed_no_effect`，或继续保持
+  `uncertain`；绝不能直接重复执行写操作。
 
-The Host must independently verify `X-Zebra-Workload-Identity`,
-`X-Zebra-Host-App`, `X-Zebra-Namespace`, `X-Zebra-Grant-Id` and
-`X-Zebra-Workspace-Ref`, then match the arguments against the `resources` array
-in the body. `X-Zebra-Host-Auth` is the lowercase hex HMAC-SHA256 of this exact
-UTF-8 input, using canonical JSON (sorted keys and no insignificant spaces):
+Host 还必须独立校验 `X-Zebra-Workload-Identity`、
+`X-Zebra-Host-App`、`X-Zebra-Namespace`、
+`X-Zebra-Grant-Id` 和 `X-Zebra-Workspace-Ref`，
+并将参数与请求体中的 `resources` 数组再次匹配。
+
+`X-Zebra-Host-Auth` 是下面精确 UTF-8 输入的 HMAC-SHA256
+小写十六进制结果。JSON 必须使用 canonical 形式：键排序，并移除无意义空格。
 
 ```text
 METHOD\nPATH\nGRANT_ID\nWORKSPACE_REF\nHOST_APP_ID\nNAMESPACE_ID\nCANONICAL_JSON_BODY
 ```
 
-Reject any argument outside the granted resources. Zebra also rejects
-private/IP-literal/redirecting connector targets and oversized responses.
+Host 必须拒绝任何超出 Grant 资源范围的参数。Zebra 侧也会拒绝私网地址、
+IP 字面量、发生重定向的 connector target 和超出约定大小的响应。
 
-Register an immutable connector profile, then bind the Host namespace to that
-exact revision:
+发布不可变 connector profile，然后把 Host namespace 绑定到该精确 revision：
 
 ```bash
 uv run python - <<'PY'
@@ -450,30 +460,30 @@ registry.bind(HostConnectorBinding(
 PY
 ```
 
-On the first admission for this profile revision, Zebra fetches and freezes the
-manifest before its atomic Task transaction. The binding stores the real digest;
-the Worker reads the frozen copy and performs no live discovery. To change tools,
-publish revision 2 and move the namespace binding. Existing Tasks retain their
-original revision and digest. Missing, revoked, unreachable or drifted pinned
-profiles fail closed.
+该 profile revision 第一次 admission 时，Zebra 会先获取并冻结 manifest，
+然后才进入原子的 Task 事务。binding 保存真实 digest；Worker 只读取冻结副本，
+执行阶段不会再次进行实时 discover。
 
-> **Current production gate:** the default outbound connector path still derives
-> a compatibility HMAC credential from `credential_ref`. It proves the protocol
-> and freeze/recovery contracts, but it is not a secret-management design. Keep
-> custom tools read-only in staging until the deployment supplies a real
-> `HostWorkloadCredentialResolverPort` backed by workload identity, OAuth or mTLS.
-> Isolated protocol tests reproduce the current HMAC with
-> `compat:<credential_ref>`; never use that deterministic value as a deployed
-> credential.
-> The current frozen `HostToolManifest.to_payload()` serializer also does not
-> preserve arbitrary declared `resourceBindings`; Trench's recognized vocabulary
-> retains its compatibility mapping, but a new Host vocabulary must not be
-> enabled until its binding survives a frozen-manifest round trip. Do not rely
-> only on the live manifest response or Host-side checks.
+需要变更工具时，发布 revision 2，再将 namespace binding 切换到新 revision。
+已经创建的 Task 继续保留原 revision 和 digest。缺失、已撤销、不可达或 digest
+漂移的 pinned profile 一律 fail-closed。
 
-### 7. Validate before enabling a Host
+> **当前生产门槛：**默认出站 connector 仍根据 `credential_ref`
+> 派生兼容 HMAC 凭证。这足以验证协议、冻结和恢复合同，但不是生产密钥管理
+> 方案。在部署环境提供由 workload identity、OAuth 或 mTLS 支撑的真实
+> `HostWorkloadCredentialResolverPort` 前，自定义工具应只在
+> staging 中保持只读。隔离协议测试会使用
+> `compat:<credential_ref>` 重现当前 HMAC；生产环境绝不能把这个
+> 确定性值当作真实凭证。
+>
+> 当前冻结序列化器 `HostToolManifest.to_payload()` 也不会保留任意
+> 自定义 `resourceBindings`。Trench 已识别词汇仍保留兼容映射，
+> 但新的 Host 资源词汇在通过 frozen-manifest 往返合同门之前不得启用。不能
+> 只依赖实时 manifest 响应或 Host 单侧校验。
 
-Run the Host-neutral contract suite and the Cloud HTTP boundary tests:
+### 7. 上线前验收
+
+先运行 Host 中立的合同套件和 Cloud HTTP 边界测试：
 
 ```bash
 uv run pytest -q tests/conformance/host_v1
@@ -481,28 +491,35 @@ uv run pytest -q tests/agent_storage/test_postgres_http_auth_boundary_e2e.py
 uv run pytest -q tests/agent_storage/test_postgres_host_manifest_freeze.py
 ```
 
-Then exercise the deployed Host with: anonymous/invalid Grant rejection, wrong
-origin, missing scope, ungranted resource, consumed-`jti` replay, identical
-idempotent replay, conflicting replay, Worker restart, stream cursor reconnect,
-Host timeout and zero unintended business writes. Trench has a fail-closed
-nine-scenario runner at `tests/compose/trench_read_e2e/run_acceptance.py`; it
-prints `ZEBRA_TRENCH_READ_E2E=BLOCKED` until all 16 real deployment inputs exist.
+随后使用真实部署 Host 验证以下场景：
 
-Common failures:
+- 匿名请求和无效 Grant 被拒绝；
+- Origin 不匹配、scope 缺失、资源未授权时 fail-closed；
+- 已消费 `jti` 的重放被拒绝；
+- 相同幂等请求成功重放，不同含义的重放产生冲突；
+- Worker 重启后继续执行，SSE cursor 能断点重连；
+- Host 超时不会造成未授权或重复的业务写入。
 
-| HTTP/result | Meaning | Check |
+Trench 已有一个九场景 fail-closed runner：
+`tests/compose/trench_read_e2e/run_acceptance.py`。在 16 项真实部署输入
+全部具备前，它会输出 `ZEBRA_TRENCH_READ_E2E=BLOCKED` 并以非零
+状态退出。
+
+常见故障：
+
+| HTTP/结果 | 含义 | 排查项 |
 |---|---|---|
-| `401 missing_or_invalid_host_grant` | no usable bearer Grant | BFF exchange and header |
-| `403 host_grant_rejected` | signature, claim, scope or consumed `jti` failed | registry, JWKS, clock and fresh Grant |
-| `403 host_origin_not_allowed` | browser origin is not exact | registry and `Origin` header |
-| `409 idempotency_conflict` | one key has two request meanings | stable key plus byte-equivalent JSON body |
-| `503 host_manifest_unavailable` | pinned Host cannot be frozen | profile, HTTPS reachability and manifest |
-| Tool `scope_denied` / `resource_denied` | Tool exceeds the Grant | manifest scope/binding and JWT resources |
-| Tool `output_too_large` | Host exceeded its contract | `maxOutputBytes` and bounded projection |
+| `401 missing_or_invalid_host_grant` | 没有可用的 bearer Grant | BFF 授权交换和请求头 |
+| `403 host_grant_rejected` | 签名、claim、scope 或已消费 `jti` 校验失败 | Registry、JWKS、时钟和新 Grant |
+| `403 host_origin_not_allowed` | 浏览器 Origin 不完全匹配 | Registry 和 `Origin` 请求头 |
+| `409 idempotency_conflict` | 同一幂等键对应两个不同请求含义 | 稳定键和语义完全一致的 JSON 请求体 |
+| `503 host_manifest_unavailable` | pinned Host manifest 无法冻结 | profile、HTTPS 连通性和 manifest |
+| Tool `scope_denied` / `resource_denied` | 工具超出 Grant 授权 | manifest scope/binding 和 JWT resources |
+| Tool `output_too_large` | Host 输出超出合同限制 | `maxOutputBytes` 和有界业务投影 |
 
-Never put Host signing keys, model credentials or outbound Host credentials in a
-browser, request body, manifest, connector profile, database row, Artifact or
-log. Persist only opaque references and secret-free audit digests.
+Host 签名私钥、模型凭证和出站 Host 凭证绝不能进入浏览器、请求体、manifest、
+connector profile、数据库业务行、Artifact 或日志。系统只能持久化不透明凭证
+引用和不含秘密的审计摘要。
 
 ## Local Development
 
