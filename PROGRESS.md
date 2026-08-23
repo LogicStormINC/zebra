@@ -3,28 +3,37 @@
 > This is the current project snapshot, not an append-only session log. Detailed
 > history lives in task cards, acceptance records, merge commits, and Git history.
 
-## Current Mainline Snapshot
+## Active Review
 
-- Orchestration package boundary closed (2026-08-22, `cloud-agent`,
-  `AL-BOUNDARY-ORCH-01`, ADR-021): the deterministic orchestration domain
-  — plan/budget contracts, DAG validation and scheduling, five-layer
+- Orchestration package boundary is awaiting maintainer acceptance
+  (2026-08-23, PR #260, `codex/al-boundary-orch-01`,
+  `AL-BOUNDARY-ORCH-01`, ADR-021; not yet on `cloud-agent`): the
+  deterministic orchestration domain — plan/budget contracts, DAG validation
+  and scheduling, five-layer
   completion gate, worktree merge fix loop, Agent Team contracts and the
   ordinary `system/orchestrator@1` definition — moved from `agent-core`
   into the new `agent-orchestration` workspace package as pure renames +
   import rewrites, with the nine focused test modules moved to
   `tests/agent_orchestration/`. The undeclared `agent-core → agent-tools`
   reverse dependency is closed and now guarded by a new core architecture
-  gate (core imports no other agent package, Worker, FastAPI or `apps/`).
-  The control-plane gate forbids `agent_orchestration` (allowed direction:
-  orchestration → control plane, never the reverse), and the new
-  orchestration gate forbids Worker/Runtime/storage/integrations/HTTP.
+  gate. Review closeout pins the internal wheel requirements to the Zebra
+  `0.1.0` distributions; a clean trusted-wheelhouse install no longer
+  resolves the unrelated public `agent-tools==1.0.1`. Core, control-plane
+  and orchestration boundaries now use AST import allowlists plus exact
+  TOML dependency sets, including adversarial future-agent/bare-apps/
+  security/HTTP imports. The control-plane gate forbids
+  `agent_orchestration` (allowed direction: orchestration → control plane,
+  never the reverse).
   `subagents.py` stays in `agent-core` (Focused Subagent is the
   parent-agent mode); the PostgreSQL orchestration adapter stays in
   `agent-storage` and the AG-UI projection in `agent-integrations`, both
   now declaring the workspace dependency. No microservice split and no
   behavior change. Validation: `make sync`/`make check` green (file-size
-  1441, Ruff, Mypy 716, Eval 10/10); full suite `2611 passed / 0 failed /
-  342 skipped` (real-PG/MinIO suites skip locally as before).
+  1446, Ruff, Mypy 716, Eval 10/10); focused boundary/orchestration matrix
+  `133 passed / 4 skipped`; full suite `2614 passed / 0 failed / 342 skipped`
+  (real-PG/MinIO suites skip locally as before).
+
+## Current Mainline Snapshot
 
 - Mainline branch is `cloud-agent` (it carries the cloud product line and
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs

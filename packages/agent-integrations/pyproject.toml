@@ -6,7 +6,7 @@ requires-python = ">=3.12,<4.0"
 dependencies = [
     "ag-ui-protocol==0.1.19",
     "agent-core",
-    "agent-orchestration",
+    "agent-orchestration==0.1.0",
     "agent-security",
     "agent-tools",
     "httpx>=0.28.1,<0.29.0",

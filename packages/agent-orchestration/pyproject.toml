@@ -4,8 +4,8 @@ version = "0.1.0"
 description = "Orchestration Control Plane package: plan/budget contracts, DAG validation and scheduling, completion gate, worktree merge loop, and the system/orchestrator@1 definition."
 requires-python = ">=3.12,<4.0"
 dependencies = [
-    "agent-core",
-    "agent-tools",
+    "agent-core==0.1.0",
+    "agent-tools==0.1.0",
     "pydantic>=2.11.7,<3.0.0",
 ]
 

@@ -12,19 +12,41 @@ direction is guarded in ``test_control_plane_boundaries.py``).
 
 from __future__ import annotations
 
+import ast
+import sys
 from pathlib import Path
+from tomllib import loads
 
 PACKAGE_ROOT = Path(__file__).parents[2] / "packages" / "agent-orchestration" / "src"
+PYPROJECT = PACKAGE_ROOT.parent / "pyproject.toml"
 
-FORBIDDEN_TOKENS = (
-    "zebra_agent_worker",
-    "agent_runtime",
-    "fastapi",
-    "uvicorn",
-    "agent_storage",
-    "agent_integrations",
-    "apps.",
-)
+ALLOWED_IMPORT_ROOTS = frozenset(sys.stdlib_module_names) | {
+    "__future__",
+    "agent_core",
+    "agent_orchestration",
+    "agent_tools",
+    "pydantic",
+}
+EXPECTED_DEPENDENCIES = {
+    "agent-core==0.1.0",
+    "agent-tools==0.1.0",
+    "pydantic>=2.11.7,<3.0.0",
+}
+EXPECTED_WORKSPACE_SOURCES = {
+    "agent-core": {"workspace": True},
+    "agent-tools": {"workspace": True},
+}
+
+
+def _import_roots(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    roots: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            roots.update(alias.name.partition(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            roots.add(node.module.partition(".")[0])
+    return roots
 
 
 def _python_sources() -> list[Path]:
@@ -36,26 +58,24 @@ def test_package_exists_with_sources() -> None:
     assert sources, "agent_orchestration package sources are missing"
 
 
-def test_orchestration_never_imports_forbidden_layers() -> None:
+def test_orchestration_imports_only_boundary_modules() -> None:
     violations: list[str] = []
     for source in _python_sources():
-        text = source.read_text(encoding="utf-8")
-        for token in FORBIDDEN_TOKENS:
-            if f"import {token}" in text or f"from {token}" in text:
-                violations.append(f"{source.relative_to(PACKAGE_ROOT)} -> {token}")
+        for root in sorted(_import_roots(source) - ALLOWED_IMPORT_ROOTS):
+            violations.append(f"{source.relative_to(PACKAGE_ROOT)} -> {root}")
     assert not violations, f"orchestration boundary violations: {violations}"
 
 
-def test_orchestration_declares_only_core_and_tools_dependencies() -> None:
-    pyproject = PACKAGE_ROOT.parent / "pyproject.toml"
-    text = pyproject.read_text(encoding="utf-8")
-    assert '"agent-core",' in text
-    assert '"agent-tools",' in text
-    for forbidden in (
-        "agent-runtime",
-        "agent-storage",
-        "agent-integrations",
-        "zebra-agent-worker",
-        "fastapi",
-    ):
-        assert forbidden not in text, f"unexpected dependency: {forbidden}"
+def test_orchestration_gate_catches_foreign_packages(tmp_path: Path) -> None:
+    source = tmp_path / "leak.py"
+    source.write_text(
+        "from agent_security import Policy\nimport httpx\n",
+        encoding="utf-8",
+    )
+    assert _import_roots(source) - ALLOWED_IMPORT_ROOTS == {"agent_security", "httpx"}
+
+
+def test_orchestration_declares_exact_dependencies() -> None:
+    project = loads(PYPROJECT.read_text(encoding="utf-8"))
+    assert set(project["project"]["dependencies"]) == EXPECTED_DEPENDENCIES
+    assert project["tool"]["uv"]["sources"] == EXPECTED_WORKSPACE_SOURCES

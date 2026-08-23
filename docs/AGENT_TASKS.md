@@ -713,7 +713,7 @@ read-only Trench vertical slice.
 
 ### AL-BOUNDARY-ORCH-01 - Orchestration Package Boundary
 
-- Status: `Done`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `ARCH`
 - Branch: `codex/al-boundary-orch-01` (from `cloud-agent@7de09da1`)
@@ -730,29 +730,33 @@ read-only Trench vertical slice.
 
 #### Acceptance
 
-- [x] `agent-orchestration` workspace package exists with its dependency
-  set pinned to `agent-core` + `agent-tools`; the workspace dependency
-  graph stays acyclic.
+- [x] `agent-orchestration` workspace package exists with internal wheel
+  dependencies pinned exactly to `agent-core==0.1.0` +
+  `agent-tools==0.1.0`; an isolated trusted-wheelhouse install resolves the
+  Zebra distributions rather than public `agent-tools==1.0.1`, imports the
+  full package, and the workspace dependency graph stays acyclic.
 - [x] Nine orchestration modules moved as pure `git mv` + import rewrites
   (plan and budget contracts, DAG validation, scheduling, five-layer
   completion gate, worktree merge loop, Agent Team contracts, review
   fixloop, `system/orchestrator@1` definition); zero stale `agent_core`
   references remain repo-wide.
 - [x] The undeclared `agent-core → agent-tools` reverse dependency is
-  closed; a new core architecture gate forbids agent-core from importing
-  any other agent package, the Worker, FastAPI or `apps/`.
-- [x] The control-plane gate now forbids `agent_orchestration` in code and
-  in its pyproject (allowed direction: orchestration → control plane,
-  never the reverse); the new orchestration gate forbids Worker, Runtime,
-  storage, integrations, HTTP frameworks and `apps/`.
+  closed; AST allowlist gates make unknown `agent_*`, bare `apps`, external
+  provider and undeclared framework imports fail closed instead of relying
+  on a partial package-name denylist.
+- [x] Core, control-plane and orchestration pyprojects are parsed through
+  `tomllib` and compared with their exact dependency/source sets; the
+  control-plane still cannot depend on orchestration (allowed direction:
+  orchestration → control plane, never the reverse).
 - [x] `subagents.py` stays in `agent-core` (Focused Subagent is the
   parent-agent mode, not Control Plane); orchestration consumes
   `SubagentRole`/`CompletionGateReceipt` as ordinary core contracts.
 - [x] PostgreSQL orchestration adapter stays in `agent-storage`, AG-UI
   projection stays in `agent-integrations`; both only declare the
   workspace dependency and rewrite imports.
-- [x] `make sync` and `make check` green (file-size 1441, Ruff, Mypy 716,
-  Eval 10/10); full suite `2611 passed / 0 failed / 342 skipped`
+- [x] `make sync` and `make check` green (file-size 1446, Ruff, Mypy 716,
+  Eval 10/10); focused boundary/orchestration matrix `133 passed / 4 skipped`;
+  full suite `2614 passed / 0 failed / 342 skipped`
   (real-PG/MinIO suites skip locally as before).
 
 #### Explicit Non-Goals

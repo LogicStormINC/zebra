@@ -8,19 +8,30 @@ direction is orchestration → control plane, never the reverse.
 
 from __future__ import annotations
 
+import ast
+import sys
 from pathlib import Path
+from tomllib import loads
 
 PACKAGE_ROOT = Path(__file__).parents[2] / "packages" / "agent-control-plane" / "src"
+PYPROJECT = PACKAGE_ROOT.parent / "pyproject.toml"
 
-FORBIDDEN_TOKENS = (
-    "zebra_agent_worker",
-    "agent_runtime",
-    "fastapi",
-    "uvicorn",
-    "agent_storage",
-    "agent_orchestration",
-    "apps.",
-)
+ALLOWED_IMPORT_ROOTS = frozenset(sys.stdlib_module_names) | {
+    "__future__",
+    "agent_control_plane",
+    "agent_core",
+}
+
+
+def _import_roots(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    roots: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            roots.update(alias.name.partition(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            roots.add(node.module.partition(".")[0])
+    return roots
 
 
 def _python_sources() -> list[Path]:
@@ -32,25 +43,15 @@ def test_package_exists_with_sources() -> None:
     assert sources, "agent_control_plane package sources are missing"
 
 
-def test_control_plane_never_imports_forbidden_layers() -> None:
+def test_control_plane_imports_only_stdlib_core_and_itself() -> None:
     violations: list[str] = []
     for source in _python_sources():
-        text = source.read_text(encoding="utf-8")
-        for token in FORBIDDEN_TOKENS:
-            if f"import {token}" in text or f"from {token}" in text:
-                violations.append(f"{source.relative_to(PACKAGE_ROOT)} -> {token}")
+        for root in sorted(_import_roots(source) - ALLOWED_IMPORT_ROOTS):
+            violations.append(f"{source.relative_to(PACKAGE_ROOT)} -> {root}")
     assert not violations, f"control-plane boundary violations: {violations}"
 
 
 def test_control_plane_declares_only_core_dependency() -> None:
-    pyproject = PACKAGE_ROOT.parent / "pyproject.toml"
-    text = pyproject.read_text(encoding="utf-8")
-    assert '"agent-core",' in text
-    for forbidden in (
-        "agent-runtime",
-        "agent-storage",
-        "zebra-agent-worker",
-        "fastapi",
-        "agent-orchestration",
-    ):
-        assert forbidden not in text, f"unexpected dependency: {forbidden}"
+    project = loads(PYPROJECT.read_text(encoding="utf-8"))
+    assert project["project"]["dependencies"] == ["agent-core"]
+    assert project["tool"]["uv"]["sources"] == {"agent-core": {"workspace": True}}

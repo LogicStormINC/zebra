@@ -35,9 +35,12 @@ AL-BOUNDARY-CON-01）已建立并受架构门保护。若再引入一个笼统�
 ## 决策
 
 1. **新增 workspace 包 `agent-orchestration`**，作为 Orchestration
-   Control Plane 的代码载体。依赖集冻结为 `agent-core` +
-   `agent-tools`（`ToolContract`/`ToolRisk` 留在 `agent-tools`，由
-   orchestration 正向依赖，无环）。允许未来单向调用
+   Control Plane 的代码载体。内部发行依赖精确锁定为
+   `agent-core==0.1.0` + `agent-tools==0.1.0`（`ToolContract`/`ToolRisk`
+   留在 `agent-tools`，由 orchestration 正向依赖，无环），避免独立 wheel
+   安装把同名公共发行版解析为 Zebra 内部包。`tool.uv.sources` 只负责
+   workspace 开发，发布或部署必须使用可信私有索引或本地 wheelhouse；
+   它不被视为 wheel 依赖来源证明。允许未来单向调用
    `agent-control-plane` 应用服务（Child Task 物化经 admission）；
    当前无实际导入，故不声明，方向由架构门固化：orchestration →
    control plane，永不反向。
@@ -71,13 +74,12 @@ AL-BOUNDARY-CON-01）已建立并受架构门保护。若再引入一个笼统�
    状态机。
 
 5. **三道架构门**（`tests/architecture/`）：
-   - 新增 core 门：`agent-core` 禁止导入任何其他 `agent_*` 包、
-     `zebra_agent_worker`、FastAPI 或 `apps.`——正是能拦住原泄漏的门；
-   - control-plane 门增加禁止 `agent_orchestration`（含 pyproject
-     依赖声明）；
-   - 新增 orchestration 门：禁止导入 Worker、Runtime、storage、
-     integrations、HTTP 框架与 `apps.`，pyproject 钉死 core+tools
-     依赖集。
+   - core、control-plane 与 orchestration 都通过 AST 解析顶层导入，按
+     各自允许表判定；新 `agent_*` 包、`from apps import ...` 和未声明的
+     第三方依赖默认失败，不依赖已知包名黑名单；
+   - 三个包的 `pyproject.toml` 通过 `tomllib` 解析并比较精确依赖集合；
+   - 对抗性回归证明 future-agent、bare apps、security 与 HTTP client
+     导入均会触发边界门。
 
 6. **不拆独立微服务**：Orchestration 仍由 `apps/api` 与 `apps/worker`
    组合部署，共享现有 Runtime 与 durable store（与 ADR-017"逻辑边界
@@ -102,6 +104,9 @@ AL-BOUNDARY-CON-01）已建立并受架构门保护。若再引入一个笼统�
 
 - `agent-core → agent-tools` 反向依赖关闭且受门保护；workspace 依赖图
   保持无环（`test_package_dependencies.py`）。
+- `agent-orchestration`、`agent-core` 与 `agent-tools` wheel 在空虚拟环境
+  从可信 wheelhouse 解析为同一 `0.1.0` 版本并完成全模块导入；公共
+  `agent-tools==1.0.1` 不再因版本优先级被误选。
 - orchestration 域可在不动 core 的情况下独立演化（Replan、Agent Team
   等后续卡落在 `agent-orchestration`）。
 - 进行中分支若触及被移文件，rebase 成本为导入路径调整，无语义冲突。
