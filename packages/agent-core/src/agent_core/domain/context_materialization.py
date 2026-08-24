@@ -92,6 +92,7 @@ class ContextMaterialization:
     request: ContextMaterializationRequest
     session_revision: int
     history: tuple[SessionHistoryMessage, ...] = ()
+    history_truncated: bool = False
     active_capsule: ContextCapsule | None = None
     memories: tuple[GovernedMemoryEntry, ...] = ()
 

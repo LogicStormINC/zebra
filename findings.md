@@ -23,6 +23,19 @@
   dependency-free 全仓 `2619 passed / 346 skipped`，无过滤真依赖全仓
   `2952 passed / 13 skipped`，`make check` 全绿；无 Trench
   业务代码、Desktop、迁移或新依赖。
+- Review 修正（2026-08-24）：`source=session_handoff` /
+  `actor_kind=automation` 的 seed prompt 会同时污染 History 尾部（占用
+  `history_limit` 配额）与 `_mode` 的 INITIAL/CONTINUE 判定。两处均已
+  排除 automation 消息；Child 任务输入仍可使用 seed 文本，但它不再
+  出现在人类对话历史统计中。
+- Review 修正（2026-08-24）：SQL `LIMIT history_limit` 的截断此前对
+  快照不可见，仅靠 blanket `history_outside_bounded_tail` 覆盖。现在
+  读取方用 limit+1 探测溢出，`ContextMaterialization.history_truncated`
+  显式携带该事实；快照据此写出 `history_tail_truncated`，无 Capsule
+  覆盖的被截断前缀额外写出 `history_prefix_uncovered`，截断永不静默。
+- 范围声明：本卡不解决普通多轮 Task 连续性。Session 终态语义
+  （每个最终回答写 `SESSION_COMPLETED`）与 Turn 生命周期属于
+  ADR-026 / `CTX-TURN-*` 卡片的范围；本卡的物化读取是它们的输入基础。
 
 ## CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - 2026-08-03
 

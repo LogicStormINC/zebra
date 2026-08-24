@@ -72,8 +72,12 @@ def delegated_context_from_materialization(
                     source_sequence=message.sequence,
                 )
             )
-        if len(materialization.history) > len(history):
+        if len(materialization.history) > len(history) or materialization.history_truncated:
             omissions.add("history_tail_truncated")
+        if materialization.history_truncated and capsule is None:
+            # Older conversation exists but no Capsule covers it: the prefix is
+            # uncovered. Record it explicitly; it must never vanish silently.
+            omissions.add("history_prefix_uncovered")
         if any(message.text_truncated for message in history):
             omissions.add("source_history_text_truncated")
     if mode is ContextInheritanceMode.RESUME:

@@ -167,6 +167,52 @@ def test_materialization_history_limit_returns_the_recent_tail(
         (3, "assistant"),
         (7, "user"),
     ]
+    assert result.history_truncated is True
+
+
+def test_materialization_excludes_automation_handoff_seed_from_history(
+    postgres_dsn: str,
+    deployment_namespace: str,
+) -> None:
+    session_id, capsule, _ = _seed_sources(postgres_dsn, deployment_namespace)
+    events = PostgresEventStore(postgres_dsn, deployment_namespace=deployment_namespace)
+    events.append(
+        SessionEvent.create(
+            session_id=SessionId(session_id),
+            sequence=6,
+            event_type=EventType.USER_MESSAGE_RECEIVED,
+            actor=EventActor.USER,
+            payload={
+                "content": "Continue from the verified Task checkpoint.",
+                "source": "session_handoff",
+                "handoff_id": str(uuid4()),
+                "principal_identity_hash": "0f" * 32,
+                "actor_kind": "automation",
+                "trust": "automation",
+            },
+            created_at=_at(4),
+        )
+    )
+    projections = PostgresProjectionStore(
+        postgres_dsn,
+        deployment_namespace=deployment_namespace,
+    )
+    session = projections.get_session(SessionId(session_id))
+    assert session is not None
+    projections.save_session(
+        session.model_copy(update={"current_sequence": 6, "updated_at": _at(4)})
+    )
+
+    result = PostgresContextMaterializationStore(
+        postgres_dsn,
+        deployment_namespace=deployment_namespace,
+    ).materialize(_request(session_id, revision=6, capsule_id=capsule.capsule_id))
+
+    assert [(item.sequence, item.role) for item in result.history] == [
+        (1, "user"),
+        (3, "assistant"),
+    ]
+    assert result.history_truncated is False
 
 
 def test_materialization_fails_closed_on_stale_session_or_capsule(

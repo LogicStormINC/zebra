@@ -9,6 +9,7 @@ from agent_core.domain.context_materialization import (
     ContextMaterializationMode,
     ContextMaterializationRequest,
 )
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.memories import MemoryQuery, MemoryRecord, MemoryVisibility
 from agent_core.domain.session_history import SessionHistoryMessage
 from agent_core.domain.tool_profiles import ToolProfile
@@ -175,3 +176,51 @@ def test_cloud_harness_uses_materialized_inputs_and_keeps_local_baseline(
     }
     assert local_task.context_token_budget == 200
     assert len(memory_store.queries) == 2
+
+
+def test_automation_handoff_seed_does_not_count_as_conversation_history(
+    tmp_path: Path,
+) -> None:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Cloud Context",
+            user_input="Continue from authoritative state.",
+            workspace_root=tmp_path.resolve(),
+            created_at=NOW,
+        )
+    )
+    seed = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=bootstrap.session.current_sequence,
+        event_type=EventType.USER_MESSAGE_RECEIVED,
+        actor=EventActor.USER,
+        payload={
+            "content": "Continue from the verified Task checkpoint.",
+            "source": "session_handoff",
+            "handoff_id": "0b944a26-7b9e-4d43-8d1f-9db2b0bd0ba5",
+            "principal_identity_hash": "0f" * 32,
+            "actor_kind": "automation",
+            "trust": "automation",
+        },
+        created_at=NOW,
+    )
+    store = _RecordingContextStore()
+
+    materialization = materialize_worker_context(
+        store,
+        scope=OpaqueAuthorityScope(
+            authority_issuer="https://host.example.test",
+            namespace_id="tenant-a",
+            allowed_session_ids=(str(bootstrap.session.session_id),),
+        ),
+        session=bootstrap.session,
+        task=_task(tmp_path),
+        source_workspace_ref="workspace://tenant-a/repo-7",
+        active_capsule_id=None,
+        events=[*bootstrap.events, seed],
+        as_of=NOW,
+    )
+
+    assert materialization is not None
+    assert store.request is not None
+    assert store.request.mode is ContextMaterializationMode.INITIAL

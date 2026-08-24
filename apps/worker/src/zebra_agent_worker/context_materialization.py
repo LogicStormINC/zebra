@@ -157,7 +157,10 @@ def _mode(events: list[SessionEvent]) -> ContextMaterializationMode:
     ):
         return ContextMaterializationMode.RECOVERY
     user_messages = sum(
-        event.event_type is EventType.USER_MESSAGE_RECEIVED for event in events
+        event.event_type is EventType.USER_MESSAGE_RECEIVED
+        and event.payload.get("actor_kind") != "automation"
+        and event.payload.get("source") != "session_handoff"
+        for event in events
     )
     return (
         ContextMaterializationMode.CONTINUE

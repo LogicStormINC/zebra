@@ -33,7 +33,9 @@ NOW = datetime(2026, 8, 23, 12, 0, tzinfo=UTC)
 SESSION_ID = SessionId(UUID("00000000-0000-0000-0000-000000000102"))
 
 
-def _materialization(*, capsule: bool = True) -> ContextMaterialization:
+def _materialization(
+    *, capsule: bool = True, history_truncated: bool = False
+) -> ContextMaterialization:
     active = (
         ContextCapsule(
             capsule_id="capsule-7",
@@ -88,6 +90,7 @@ def _materialization(*, capsule: bool = True) -> ContextMaterialization:
             SessionHistoryMessage(1, "user", "old objective", NOW, False),
             SessionHistoryMessage(6, "assistant", "latest verified answer", NOW, False),
         ),
+        history_truncated=history_truncated,
         active_capsule=active,
         memories=(
             GovernedMemoryEntry(
@@ -158,3 +161,27 @@ def test_materialized_and_delegated_inputs_preserve_provenance() -> None:
     rendered = "\n".join(delegated_inputs.runtime_evidence[0].details)
     assert "context-capsule://capsule-7" in rendered
     assert f"session-event://{SESSION_ID}/6" in rendered
+
+
+def test_truncated_history_without_capsule_records_uncovered_prefix() -> None:
+    snapshot = delegated_context_from_materialization(
+        _materialization(capsule=False, history_truncated=True),
+        ContextInheritanceMode.RESUME,
+        created_at=NOW,
+    )
+    assert snapshot is not None
+
+    assert "history_tail_truncated" in snapshot.known_omissions
+    assert "history_prefix_uncovered" in snapshot.known_omissions
+
+
+def test_truncated_history_with_capsule_keeps_prefix_covered() -> None:
+    snapshot = delegated_context_from_materialization(
+        _materialization(capsule=True, history_truncated=True),
+        ContextInheritanceMode.RESUME,
+        created_at=NOW,
+    )
+    assert snapshot is not None
+
+    assert "history_tail_truncated" in snapshot.known_omissions
+    assert "history_prefix_uncovered" not in snapshot.known_omissions
