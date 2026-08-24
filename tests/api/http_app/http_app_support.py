@@ -107,4 +107,3 @@ def _fake_resume_gateway(_settings: ZebraAgentSettings) -> ScriptedModelGateway:
             ),
         )
     )
-

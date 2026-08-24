@@ -139,7 +139,14 @@ def _next_status_for_event(
         EventType.CLARIFICATION_RESPONDED: SessionStatus.READY,
         EventType.SESSION_SUSPENDED: SessionStatus.SUSPENDED,
         EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED: SessionStatus.SUSPENDED,
-        EventType.SESSION_RESUMED: SessionStatus.READY,
+        # The no-op resume marker (ADR-026): a conversation Segment with no
+        # open Turn resumes straight back into awaiting_turn so the ready
+        # queue does not reclaim an empty execution forever.
+        EventType.SESSION_RESUMED: (
+            SessionStatus.AWAITING_TURN
+            if event.payload.get("reason") == "awaiting_turn_rearm"
+            else SessionStatus.READY
+        ),
         EventType.SESSION_COMPLETED: SessionStatus.COMPLETED,
         EventType.SESSION_FAILED: SessionStatus.FAILED,
         EventType.SESSION_CANCELLED: SessionStatus.CANCELLED,

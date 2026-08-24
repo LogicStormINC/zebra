@@ -452,9 +452,12 @@ def test_awaiting_turn_task_can_be_cancelled_and_suspended(
     assert suspended.status_code == 200
     resumed = client.post(f"/tasks/{task_id}/resume", json={})
     assert resumed.status_code == 200
-    # Resuming a suspended awaiting-turn Segment re-arms it (READY) for the
-    # next message without re-invoking the model.
-    assert resumed.json()["status"] == "ready"
+    # The no-op resume parks the Segment back in awaiting_turn (not READY),
+    # without re-invoking the model; repeated resumes are idempotent.
+    assert resumed.json()["status"] == "awaiting_turn"
+    assert counter["calls"] == 1
+    again = client.post(f"/tasks/{task_id}/resume", json={})
+    assert again.status_code == 409
     assert counter["calls"] == 1
 
     cancelled = client.post(f"/tasks/{task_id}/cancel", json={})
@@ -473,3 +476,130 @@ def test_awaiting_turn_task_can_be_cancelled_and_suspended(
     # completed), so the Segment terminal stands alone.
     tail_types = [event.event_type.value for event in events]
     assert tail_types[-1] == "session_cancelled"
+
+
+def test_pending_turn_close_reconciles_before_capability_checks(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def failing_gateway(_settings: ZebraAgentSettings):
+        raise AssertionError("reconciliation must precede any new attempt")
+
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", failing_gateway)
+
+    from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.turns import derive_turn_id
+    from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+
+    database_path = tmp_path / "heal-capability.sqlite"
+    # setup-only would fail preflight; the durable success must win first.
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Healed before capability",
+            user_input="Do the work.",
+            workspace_root=tmp_path,
+            network_profile="setup-only",
+        )
+    )
+    event_store = SQLiteEventStore(database_path)
+    for event in bootstrap.events:
+        event_store.append(event)
+    session = bootstrap.session
+    event_store.append(
+        SessionEvent.create(
+            session_id=session.session_id,
+            sequence=session.current_sequence + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+        )
+    )
+    event_store.append(
+        SessionEvent.create(
+            session_id=session.session_id,
+            sequence=session.current_sequence + 2,
+            event_type=EventType.TURN_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={
+                "turn_id": str(derive_turn_id(session.session_id, 0)),
+                "turn_index": 0,
+                "summary": "Already done.",
+                "closes_segment": True,
+            },
+        )
+    )
+    healed = rebuild_session(event_store.list_for_session(session.session_id))
+    SQLiteProjectionStore(database_path).save_session(healed)
+
+    client = TestClient(create_http_app(database_path, settings=_settings(None)))
+    response = client.post(f"/sessions/{session.session_id}/resume", json={})
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "completed"
+    events = event_store.list_for_session(session.session_id)
+    event_types = [event.event_type.value for event in events]
+    assert "session_failed" not in event_types
+    assert event_types[-1] == "session_completed"
+
+
+def test_crashed_turn_cancelled_window_is_healed(tmp_path: Path, monkeypatch) -> None:
+    def failing_gateway(_settings: ZebraAgentSettings):
+        raise AssertionError("cancelled-window reconciliation must not call the model")
+
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", failing_gateway)
+
+    from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.turns import derive_turn_id
+    from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+
+    database_path = tmp_path / "heal-cancelled.sqlite"
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Crashed cancel",
+            user_input="Do the work.",
+            workspace_root=tmp_path,
+        )
+    )
+    event_store = SQLiteEventStore(database_path)
+    for event in bootstrap.events:
+        event_store.append(event)
+    session = bootstrap.session
+    event_store.append(
+        SessionEvent.create(
+            session_id=session.session_id,
+            sequence=session.current_sequence + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+        )
+    )
+    # Control plane crashed after TURN_CANCELLED, before SESSION_CANCELLED.
+    event_store.append(
+        SessionEvent.create(
+            session_id=session.session_id,
+            sequence=session.current_sequence + 2,
+            event_type=EventType.TURN_CANCELLED,
+            actor=EventActor.SYSTEM,
+            payload={
+                "turn_id": str(derive_turn_id(session.session_id, 0)),
+                "turn_index": 0,
+                "reason": "session_cancelled",
+            },
+        )
+    )
+    healed = rebuild_session(event_store.list_for_session(session.session_id))
+    SQLiteProjectionStore(database_path).save_session(healed)
+
+    client = TestClient(create_http_app(database_path, settings=_settings(None)))
+    response = client.post(f"/sessions/{session.session_id}/resume", json={})
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "cancelled"
+    events = event_store.list_for_session(session.session_id)
+    assert [event.event_type for event in events[-2:]] == [
+        EventType.TURN_CANCELLED,
+        EventType.SESSION_CANCELLED,
+    ]

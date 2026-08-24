@@ -187,6 +187,7 @@ def test_automation_seed_never_opens_a_turn() -> None:
             {
                 "content": "Continue from the verified Task checkpoint.",
                 "source": "session_handoff",
+                "origin": "session_handoff",
                 "handoff_id": "00000000-0000-0000-0000-000000000bb2",
                 "principal_identity_hash": "0f" * 32,
                 "actor_kind": "automation",

@@ -185,6 +185,7 @@ def test_materialization_excludes_automation_handoff_seed_from_history(
             payload={
                 "content": "Continue from the verified Task checkpoint.",
                 "source": "session_handoff",
+                "origin": "session_handoff",
                 "handoff_id": str(uuid4()),
                 "principal_identity_hash": "0f" * 32,
                 "actor_kind": "automation",

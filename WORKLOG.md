@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 2 (3xP1, 1xP2)
+
+- 修复复审发现:no-op resume 用 awaiting_turn_rearm 标记事件回到
+  awaiting_turn(不再滞留 ready 队列)、和解先于能力检查且只认匹配
+  终态、TURN_CANCELLED 固有为 pending close、origin 与 handoff
+  provenance 双向绑定。
+- 新增回归:重臂后重复 resume 409、setup-only 流和解为 completed、
+  TURN_CANCELLED 崩溃窗口补写;更新 handoff 种子。
+- 验证:全仓 `2649 passed / 348 skipped`;真 PG `8/8`;`make check`
+  全绿;`git diff --check` 干净。
+
+
 ## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes (5×P1, 3×P2)
 
 - 按 `c3b44bfc..056293c8` 单提交审查结论修复:awaiting_turn 不可无消息

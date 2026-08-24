@@ -74,6 +74,9 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     SessionStatus.CREATED: {SessionStatus.READY, SessionStatus.CANCELLED},
     SessionStatus.READY: {
         SessionStatus.RUNNING,
+        # A no-op resume of a conversation Segment re-parks it in
+        # awaiting_turn instead of re-queueing an empty execution.
+        SessionStatus.AWAITING_TURN,
         SessionStatus.SUSPENDED,
         SessionStatus.CANCELLED,
     },

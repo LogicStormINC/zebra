@@ -1,5 +1,28 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE review closeout round 2 - 2026-08-24
+
+复审(`859ef487`)3 个 P1、1 个 P2,全部修复:
+
+- P1 no-op resume 滞留 READY:新增 `SESSION_RESUMED(reason=
+  awaiting_turn_rearm)` 标记事件(幂等键 `turn-rearm:no-open-turn`),
+  投影按 reason 进入 `awaiting_turn`(状态机补 `READY →
+  AWAITING_TURN`);会话离开 ready 队列,重复 resume 409,模型零调用。
+- P1 能力检查先于和解:`prepare_execution_preflight` 重排为
+  pending close 和解 → conversation 无 open Turn 重臂 → setup-only
+  能力检查;已持久的成功 Turn 不再被新 attempt 的失败反转。
+  `pending_turn_close` 只被匹配的 `SESSION_*` 清除。
+- P1 TURN_CANCELLED 永不可达:取消视为固有 Segment close
+  (`TurnCancelledPayload` 无 closes_segment 字段),控制面两阶段
+  取消中间崩溃可被补写 `SESSION_CANCELLED`。
+- P2 provenance 伪装:任何 handoff provenance(含 direct_user/
+  operator)必须绑定 `origin=session_handoff`;`origin=human` 禁止
+  全部 handoff 字段;handoff seed 构建器与全部测试种子补写 origin。
+
+验证:全仓 `2649 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿,`git diff --check` 干净。
+
+
 ## CTX-TURN-LIFECYCLE review closeout - 2026-08-24
 
 单提交审查(`c3b44bfc..056293c8`)发现 5 个 P1、3 个 P2,全部修复并有

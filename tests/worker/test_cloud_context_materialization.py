@@ -197,6 +197,7 @@ def test_automation_handoff_seed_does_not_count_as_conversation_history(
         payload={
             "content": "Continue from the verified Task checkpoint.",
             "source": "session_handoff",
+                "origin": "session_handoff",
             "handoff_id": "0b944a26-7b9e-4d43-8d1f-9db2b0bd0ba5",
             "principal_identity_hash": "0f" * 32,
             "actor_kind": "automation",

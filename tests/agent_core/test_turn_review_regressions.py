@@ -281,7 +281,8 @@ def test_origin_session_handoff_requires_complete_provenance() -> None:
         )
 
 
-def test_origin_human_rejects_automation_provenance() -> None:
+def test_origin_human_rejects_any_handoff_provenance() -> None:
+    # automation provenance is rejected...
     with pytest.raises(ValueError):
         validate_event_payload(
             EventType.USER_MESSAGE_RECEIVED,
@@ -293,6 +294,33 @@ def test_origin_human_rejects_automation_provenance() -> None:
                 "principal_identity_hash": "0f" * 32,
                 "actor_kind": "automation",
                 "trust": "automation",
+            },
+        )
+    # ...and so is a spoofed operator/direct_user seed (review P2).
+    with pytest.raises(ValueError):
+        validate_event_payload(
+            EventType.USER_MESSAGE_RECEIVED,
+            {
+                "content": "seed",
+                "origin": "human",
+                "source": "session_handoff",
+                "handoff_id": "00000000-0000-0000-0000-0000000000d4",
+                "principal_identity_hash": "0f" * 32,
+                "actor_kind": "operator",
+                "trust": "operator",
+            },
+        )
+    with pytest.raises(ValueError):
+        validate_event_payload(
+            EventType.USER_MESSAGE_RECEIVED,
+            {
+                "content": "seed",
+                "origin": "human",
+                "source": "session_handoff",
+                "handoff_id": "00000000-0000-0000-0000-0000000000d5",
+                "principal_identity_hash": "0f" * 32,
+                "actor_kind": "direct_user",
+                "trust": "direct_user",
             },
         )
 

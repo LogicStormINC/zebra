@@ -57,17 +57,25 @@ def pending_turn_close(events: list[SessionEvent]) -> SessionEvent | None:
     """
 
     last_close: SessionEvent | None = None
+    expected_terminal: EventType | None = None
     for event in events:
         if event.event_type in _TURN_TO_SESSION_TERMINAL:
             last_close = event
+            expected_terminal = _TURN_TO_SESSION_TERMINAL[event.event_type]
         elif event.event_type in {
             EventType.SESSION_COMPLETED,
             EventType.SESSION_FAILED,
             EventType.SESSION_CANCELLED,
-        }:
+        } and event.event_type is expected_terminal:
+            # Only the matching Session terminal clears the pending close.
             last_close = None
+            expected_terminal = None
     if last_close is None:
         return None
+    if last_close.event_type is EventType.TURN_CANCELLED:
+        # Control-plane cancellation is inherently a Segment close: the
+        # TurnCancelledPayload contract has no closes_segment field.
+        return last_close
     if last_close.payload.get("closes_segment") is not True:
         return None
     return last_close

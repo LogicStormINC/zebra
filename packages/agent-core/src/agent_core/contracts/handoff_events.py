@@ -78,14 +78,29 @@ class UserMessageReceivedPayload(BaseModel):
 
     @model_validator(mode="after")
     def validate_origin_provenance(self) -> "UserMessageReceivedPayload":
-        # origin is the validated human/automation marker: it must agree
-        # with the handoff provenance instead of bypassing it (ADR-026 §4.1).
-        if self.origin == "session_handoff" and self.source != "session_handoff":
+        # origin is the validated human/automation marker: handoff
+        # provenance of ANY actor kind binds to origin=session_handoff,
+        # and origin=human rejects every handoff field (ADR-026 §4.1).
+        has_provenance = any(
+            value is not None
+            for value in (
+                self.source,
+                self.handoff_id,
+                self.principal_identity_hash,
+                self.actor_kind,
+                self.trust,
+            )
+        )
+        if has_provenance and self.origin != "session_handoff":
+            raise ValueError(
+                "handoff provenance requires origin=session_handoff"
+            )
+        if self.origin == "human" and has_provenance:
+            raise ValueError("origin=human cannot carry handoff provenance")
+        if self.origin == "session_handoff" and not has_provenance:
             raise ValueError(
                 "origin=session_handoff requires complete handoff provenance"
             )
-        if self.origin == "human" and self.actor_kind is HandoffActorKind.AUTOMATION:
-            raise ValueError("origin=human cannot carry automation provenance")
         return self
 
 
