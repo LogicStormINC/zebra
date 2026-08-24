@@ -4,13 +4,12 @@ import sys
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
 from agent_core.application import SessionTitleService
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.leases import LeaseLostError
 from agent_core.ports import (
     EffectDispatchPort,
     GovernedMemoryStorePort,
@@ -31,11 +30,16 @@ from zebra_agent_config import ZebraAgentSettings
 from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
-from zebra_agent_worker.cloud_memory_recovery import CloudMemoryFinalizationRecovery
+from zebra_agent_worker.cloud_memory_recovery import (
+    CloudMemoryFinalizationRecovery,
+    recover_completed_cloud_memory,
+)
 from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
+from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
+from zebra_agent_worker.lease_heartbeat import LeaseHeartbeatError
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_commit import (
@@ -45,6 +49,19 @@ from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoverySer
 from zebra_agent_worker.resume import SessionResumeError, SessionResumeService
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
+
+# Errors the memory-recovery scan tolerates: sequence races, concurrent
+# control events and transient lease-heartbeat failures skip the
+# session instead of aborting the poll cycle.
+_POLL_SKIP_ERRORS = (
+    LeaseConflictError,
+    SessionRecoveryError,
+    WorkerExecutionError,
+    ValueError,
+    ExecutionInterrupted,
+    LeaseHeartbeatError,
+    LeaseLostError,
+)
 
 
 @dataclass(frozen=True)
@@ -96,10 +113,12 @@ class WorkerLoopService:
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
     ) -> WorkerLoopCycleResult:
-        self._recover_completed_cloud_memory(
+        recover_completed_cloud_memory(
             worker_id=worker_id,
             batch_size=batch_size,
             lease_ttl_seconds=lease_ttl_seconds,
+            recovery=self._cloud_memory_recovery,
+            projection_store=self._projection_store,
         )
         self._process_child_wakeups()
         command_result = (
@@ -157,35 +176,6 @@ class WorkerLoopService:
             skipped_session_ids=tuple(skipped_ids),
         )
 
-    def _recover_completed_cloud_memory(
-        self,
-        *,
-        worker_id: str,
-        batch_size: int,
-        lease_ttl_seconds: int,
-    ) -> None:
-        if self._cloud_memory_recovery is None:
-            return
-        # ponytail: retain a bounded recent window until an explicit durable
-        # finalization queue is introduced for high-throughput deployments.
-        for session in self._projection_store.list_recent_sessions(limit=max(batch_size, 32)):
-            # COMPLETED: legacy/one-shot finalization; AWAITING_TURN: a
-            # conversation Turn closed but its fenced Memory/title side
-            # chain may still be missing after a Worker crash (ADR-026 §6).
-            if session.status not in {
-                SessionStatus.COMPLETED,
-                SessionStatus.AWAITING_TURN,
-            }:
-                continue
-            try:
-                self._cloud_memory_recovery.recover(
-                    session.session_id,
-                    worker_id=worker_id,
-                    recovered_at=datetime.now(UTC),
-                    lease_ttl_seconds=lease_ttl_seconds,
-                )
-            except (LeaseConflictError, SessionRecoveryError, WorkerExecutionError, ValueError):
-                continue
 
     def _process_child_wakeups(self) -> None:
         """Poll terminal children and emit parent resume commands."""
@@ -392,9 +382,7 @@ def build_worker_loop_service(
 
         wakeup_dsn = cloud_bundle.dsn or ""
         if wakeup_dsn and active_namespace is not None:
-            child_wakeup_service = _Wakeup(
-                wakeup_dsn, deployment_namespace=active_namespace
-            )
+            child_wakeup_service = _Wakeup(wakeup_dsn, deployment_namespace=active_namespace)
             from agent_storage.postgres.host_connectors import (
                 PostgresHostConnectorRegistry,
             )
@@ -409,7 +397,6 @@ def build_worker_loop_service(
             delegation_store = PostgresSubagentDelegationStore(
                 wakeup_dsn, deployment_namespace=active_namespace
             )
-
 
     execution_service = SessionExecutionService(
         database_path=database_path,

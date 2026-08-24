@@ -138,7 +138,7 @@ def test_refresh_targets_share_the_turn_window_and_zero_candidate_turns_advance(
 
     # The window advances past the turn-1 extraction even though turn 2
     # produced zero candidates; turn 1's refresh instruction stays out.
-    assert memory_extraction_window(events) == 4
+    assert memory_extraction_window(events) == 3
 
     session = Session.create(title="window").model_copy(
         update={"status": SessionStatus.AWAITING_TURN}
@@ -158,7 +158,7 @@ def test_refresh_targets_share_the_turn_window_and_zero_candidate_turns_advance(
     assert plan.stale_records == ()
 
 
-def test_memory_window_anchors_on_previous_turn_close_without_extraction() -> None:
+def test_memory_window_without_checkpoint_rescans_everything() -> None:
     session_id = _session_id()
     events = [
         _event(
@@ -208,9 +208,64 @@ def test_memory_window_anchors_on_previous_turn_close_without_extraction() -> No
         ),
     ]
 
-    # the just-closed turn 2 extracts events strictly after turn 1's
-    # close; zero-candidate turn 1 still advanced the boundary from -1.
-    assert memory_extraction_window(events) == 1
+    # Without any durable extraction checkpoint, a zero-candidate Turn
+    # and a lost extraction are indistinguishable: re-scan everything
+    # rather than risk silently skipping a Turn (ADR-026 §6).
+    assert memory_extraction_window(events) == -1
+
+
+def test_lost_extraction_turn_stays_inside_the_next_window() -> None:
+    session_id = _session_id()
+    events = [
+        _event(
+            session_id,
+            0,
+            EventType.USER_MESSAGE_RECEIVED,
+            {
+                "content": "one",
+                "turn_id": "00000000-0000-0000-0000-0000000000a1",
+                "turn_index": 0,
+                "origin": "human",
+            },
+            actor=EventActor.USER,
+        ),
+        _event(
+            session_id,
+            1,
+            EventType.TURN_COMPLETED,
+            {
+                "turn_id": "00000000-0000-0000-0000-0000000000a1",
+                "turn_index": 0,
+                "closes_segment": False,
+            },
+        ),
+        # turn 1 extraction was LOST (crash / sequence race): no events.
+        _event(
+            session_id,
+            2,
+            EventType.USER_MESSAGE_RECEIVED,
+            {
+                "content": "two",
+                "turn_id": "00000000-0000-0000-0000-0000000000a2",
+                "turn_index": 1,
+                "origin": "human",
+            },
+            actor=EventActor.USER,
+        ),
+        _event(
+            session_id,
+            3,
+            EventType.TURN_COMPLETED,
+            {
+                "turn_id": "00000000-0000-0000-0000-0000000000a2",
+                "turn_index": 1,
+                "closes_segment": False,
+            },
+        ),
+    ]
+
+    # turn 2's window must still include turn 1 (closes[-2] would skip it).
+    assert memory_extraction_window(events) == -1
 
 
 # ---------------------------------------------------------------- P2-6

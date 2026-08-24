@@ -59,7 +59,8 @@ def recover_child_wakeup_continuation(
     verifier: ChildResultVerifier | None = None,
 ) -> ChildWakeupContinuation | None:
     delegated_indexes = [
-        index for index, event in enumerate(events)
+        index
+        for index, event in enumerate(events)
         if event.event_type is EventType.SUBAGENT_DELEGATED
     ]
     if not delegated_indexes:
@@ -101,9 +102,7 @@ def recover_child_wakeup_continuation(
             "child wakeup continuation has uncertain prior model-call state"
         )
     child_results = _child_results(wakeup.payload.get("payload"))
-    epoch_children = {
-        _required_string(event.payload, "child_task_id") for event in epoch
-    }
+    epoch_children = {_required_string(event.payload, "child_task_id") for event in epoch}
     delivered_children = {result.child_task_id for result in child_results}
     if delivered_children != epoch_children:
         raise ChildWakeupContinuationError(
@@ -115,8 +114,7 @@ def recover_child_wakeup_continuation(
     tool_calls = tuple(_tool_call_of(event) for event in epoch)
     results_by_child = {result.child_task_id: result for result in child_results}
     aligned_results = tuple(
-        results_by_child[_required_string(event.payload, "child_task_id")]
-        for event in epoch
+        results_by_child[_required_string(event.payload, "child_task_id")] for event in epoch
     )
     conversation = _conversation_without_stubs(
         epoch[-1].payload.get("conversation"),
@@ -127,9 +125,7 @@ def recover_child_wakeup_continuation(
         child_results=aligned_results,
         conversation=conversation,
         model_calls_used=_non_negative_int(epoch[-1].payload.get("model_calls_used"), 1),
-        tool_calls_executed=_non_negative_int(
-            epoch[-1].payload.get("tool_calls_executed"), 0
-        ),
+        tool_calls_executed=_non_negative_int(epoch[-1].payload.get("tool_calls_executed"), 0),
         assistant_message=_required_string(epoch[-1].payload, "assistant_message"),
     )
 
@@ -202,9 +198,7 @@ def _conversation_without_stubs(
     return tuple(
         message
         for message in messages
-        if not (
-            message.role is MessageRole.TOOL and message.tool_call_id in tool_call_ids
-        )
+        if not (message.role is MessageRole.TOOL and message.tool_call_id in tool_call_ids)
     )
 
 

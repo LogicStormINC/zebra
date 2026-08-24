@@ -123,9 +123,7 @@ def finalize_cloud_memory(
     if not allow_commit:
         return False
     try:
-        operation_receipt = memory_store.commit_worker_candidates(
-            plan, authority=authority
-        ).receipt
+        operation_receipt = memory_store.commit_worker_candidates(plan, authority=authority).receipt
     except Exception:
         reconciled = memory_store.get_worker_commit_receipt(
             operation_id,

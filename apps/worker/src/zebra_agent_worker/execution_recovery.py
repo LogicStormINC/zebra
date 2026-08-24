@@ -15,6 +15,7 @@ from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
 from zebra_agent_worker.execution_finalization import ExecutedSession, WorkerExecutionError
 from zebra_agent_worker.execution_preflight import run_with_stale_retry
+from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.provider_continuation_execution import (
     resolve_provider_continuation,
 )
@@ -137,3 +138,40 @@ def recover_execution_inputs(
         active_capsule=active_context.capsule if active_context else None,
         recovered_handoff=recovered_handoff,
     )
+
+
+def execute_session_with_lease(
+    service: Any,
+    session_id: Any,
+    *,
+    worker_id: str,
+    executed_at: Any = None,
+    lease_ttl_seconds: int = 30,
+) -> Any:
+    """Claim under a lease heartbeat, admit, then execute the Session."""
+    from datetime import UTC as _UTC  # noqa: PLC0415
+    from datetime import datetime as _dt
+
+    started_at = executed_at or _dt.now(_UTC)
+    claimed = service._claim_service.claim_session(
+        session_id,
+        worker_id=worker_id,
+        claimed_at=started_at,
+        lease_ttl_seconds=lease_ttl_seconds,
+    )
+    with LeaseHeartbeat(
+        service._claim_service,
+        claimed.lease,
+        lease_ttl_seconds=lease_ttl_seconds,
+    ) as heartbeat:
+        resumed = service._resume_service.require_resumable(
+            claimed,
+            release_on_failure=False,
+        )
+        heartbeat.require_owned()
+        return execute_claimed_with_stale_retry(
+            service,
+            resumed.claimed,
+            started_at=started_at,
+            ownership_check=heartbeat.require_owned,
+        )

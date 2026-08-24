@@ -174,12 +174,8 @@ class ChildCompletionWakeupService:
             # sorted children, an epoch-derived command id, and an
             # expected_revision anchored to the epoch's own last
             # delegation (not the evolving stream head).
-            epoch_children = sorted(
-                str(record.child_task_id) for record in relevant
-            )
-            epoch_digest = hashlib.sha256(
-                ":".join(epoch_children).encode()
-            ).hexdigest()
+            epoch_children = sorted(str(record.child_task_id) for record in relevant)
+            epoch_digest = hashlib.sha256(":".join(epoch_children).encode()).hexdigest()
             epoch_anchor = connection.execute(
                 """
                 SELECT COALESCE(MAX(sequence), 0) AS anchored_revision
@@ -196,17 +192,13 @@ class ChildCompletionWakeupService:
                 event_type=EventType.SESSION_COMMAND_ACCEPTED,
                 actor=EventActor.HARNESS,
                 payload={
-                    "command_id": str(
-                        uuid5(_WAKEUP_NAMESPACE, f"wakeup:{parent}:{epoch_digest}")
-                    ),
+                    "command_id": str(uuid5(_WAKEUP_NAMESPACE, f"wakeup:{parent}:{epoch_digest}")),
                     "session_id": str(parent_session),
                     "kind": "resume",
                     "expected_revision": int(epoch_anchor["anchored_revision"]),
                     "idempotency_key": f"child-wakeup:{parent}",
                     "payload": {"child_results": child_results},
-                    "fingerprint": _command_fingerprint(
-                        f"{parent}:{epoch_digest}", "resume"
-                    ),
+                    "fingerprint": _command_fingerprint(f"{parent}:{epoch_digest}", "resume"),
                 },
                 created_at=datetime.now(UTC),
                 idempotency_key=f"wakeup:{parent}:{epoch_digest}",
@@ -223,9 +215,7 @@ class ChildCompletionWakeupService:
             ),
         }
 
-    def load_parent_continuation(
-        self, parent_task_id: TaskId
-    ) -> ParentContinuation | None:
+    def load_parent_continuation(self, parent_task_id: TaskId) -> ParentContinuation | None:
         """Rebuild the durable continuation for the CURRENT delegation epoch.
 
         The epoch is every ``SUBAGENT_DELEGATED`` event after the last
@@ -234,15 +224,13 @@ class ChildCompletionWakeupService:
         """
 
         with self._database.connect() as connection:
-            return self._load_continuation_in(
-                connection, self.deployment_namespace, parent_task_id
-            )
+            return self._load_continuation_in(connection, self.deployment_namespace, parent_task_id)
 
     def _load_continuation_in(
         self, connection: Any, namespace: str, parent_task_id: TaskId
     ) -> ParentContinuation | None:
         rows = connection.execute(
-                """
+            """
                 SELECT event_type, payload, created_at FROM session_events
                 WHERE deployment_namespace = %s AND session_id = %s
                     AND event_type IN (
@@ -251,12 +239,10 @@ class ChildCompletionWakeupService:
                     )
                 ORDER BY sequence
                 """,
-                (namespace, str(parent_task_id)),
-            ).fetchall()
+            (namespace, str(parent_task_id)),
+        ).fetchall()
         delegated_indexes = [
-            index
-            for index, row in enumerate(rows)
-            if row["event_type"] == "subagent_delegated"
+            index for index, row in enumerate(rows) if row["event_type"] == "subagent_delegated"
         ]
         if not delegated_indexes:
             return None
@@ -312,9 +298,7 @@ class ChildCompletionWakeupService:
             if mapped is None or row["terminal_at"] is None:
                 continue
             child_id = TaskId(UUID(str(row["child_task_id"])))
-            summary = child_terminal_summary_in_transaction(
-                connection, namespace, child_id
-            )
+            summary = child_terminal_summary_in_transaction(connection, namespace, child_id)
             records.append(
                 ChildTerminalRecord(
                     child_task_id=child_id,

@@ -55,9 +55,11 @@ Task：用户和 Host 感知的稳定会话
 - 老事件缺失该字段：读侧统一解释为 `legacy_one_shot`，行为与现状
   完全一致（每个最终回答 → `SESSION_COMPLETED`），历史重放不变。
 
-模式由 Agent Definition / admission 请求决定，不根据 prompt 猜测，
-不允许模型自行修改。默认值在灰度推进中逐层从 `one_shot` 切换为
-`conversation`（见 §8）。
+模式由 admission 请求（经 `parse_create_session_payload` 校验）决定，
+不根据 prompt 猜测，不允许模型自行修改。Agent Definition 侧的
+模式声明是后续增量（`AgentDefinitionSnapshot` 尚无该字段，当前
+definition 不能设置 conversation）。默认值在灰度推进中逐层从
+`one_shot` 切换为 `conversation`（见 §8）。
 
 ## 4. 事件合同
 
@@ -65,8 +67,9 @@ Task：用户和 Host 感知的稳定会话
 
 人类 `USER_MESSAGE_RECEIVED` 开启一个 Turn，payload 新增：
 
-- `turn_id`：确定性 TurnId（Cloud 命令路径由发起该 Turn 的
-  `command_id` 派生；幂等键路径由幂等键派生）
+- `turn_id`：确定性 TurnId，由 `uuid5(NAMESPACE_URL,
+  "zebra:turn:{session_id}:{turn_index}")` 派生——同一 Segment 内
+  每个人类消息对应唯一递增 `turn_index`，重放/重试收敛到同一 id
 - `turn_index`：Segment 内从 0 递增
 - `origin`：`human`；handoff seed 写 `session_handoff`；老事件缺省
 
@@ -138,7 +141,9 @@ Workspace 同步：`TURN_COMPLETED` 将 Workspace 从 `running` 投影回
 | AG-UI `RUN_FINISHED` | `TURN_COMPLETED` |
 | 每轮 usage/trace | `TURN_COMPLETED` |
 | 标题生成 | 第一个成功 `TURN_COMPLETED`，幂等 |
-| Memory candidate 抽取 | 每个成功 Turn 一次，以 `turn_id` 防重 |
+| Memory candidate 抽取 | 每个成功 Turn 一次，以 durable 抽取窗口
+  （`memory_extraction_window`，按 Turn close 与最新提取事件锚定）
+  防重与补扫 |
 | Provider continuation 持久化 | 沿用 `CONTEXT_CONTINUATION_SELECTED`（每模型调用） |
 | Provider continuation 删除 | Segment/Task 真终态（TTL 兜底） |
 | Workspace 释放执行态 | `TURN_COMPLETED` |

@@ -403,3 +403,102 @@ def test_crashed_one_shot_turn_close_is_healed_without_model_call(
         EventType.TURN_COMPLETED,
         EventType.SESSION_COMPLETED,
     ]
+
+
+def test_next_message_during_finalization_tail_defers_instead_of_crashing(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The review-reproduced P1: the next human message races the
+    memory/title tail (an LLM round-trip wide) and wins the sequence.
+
+    The Turn outcome is already durable; losing the tail race must defer
+    the auxiliary side chain (recovery re-drives it) instead of crashing
+    the worker run.
+    """
+    gateways: list = []
+    counter: dict[str, int] = {"calls": 0}
+    _counting_gateway(
+        monkeypatch,
+        counter,
+        "Turn one done.",
+        "Turn two done.",
+        gateways=gateways,
+    )
+    client = TestClient(create_http_app(tmp_path / "tail.sqlite", settings=_settings(None)))
+    task_id = _create_conversation_task(client)
+
+    import zebra_agent_worker.execution as execution_module
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.identifiers import SessionId
+    from agent_core.domain.turns import derive_turn_id
+    from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+
+    database_path = tmp_path / "tail.sqlite"
+    session_id = SessionId(
+        UUID(client.get(f"/tasks/{task_id}").json()["active_segment_id"])
+    )
+    event_store = SQLiteEventStore(database_path)
+    original_title_service = execution_module.SessionTitleService
+
+    class _RacingTitleService(original_title_service):
+        def generate(self, *args, **kwargs):
+            # The next message lands while the title LLM call is in
+            # flight — exactly the review's reproduction.
+            events = event_store.list_for_session(session_id)
+            event_store.append(
+                SessionEvent.create(
+                    session_id=session_id,
+                    sequence=events[-1].sequence + 1,
+                    event_type=EventType.USER_MESSAGE_RECEIVED,
+                    actor=EventActor.USER,
+                    payload={
+                        "content": "NEXT WHILE FINALIZING",
+                        "turn_id": str(derive_turn_id(session_id, 1)),
+                        "turn_index": 1,
+                        "origin": "human",
+                    },
+                )
+            )
+            SQLiteProjectionStore(database_path).save_session(
+                rebuild_session(event_store.list_for_session(session_id))
+            )
+            return super().generate(*args, **kwargs)
+
+    monkeypatch.setattr(
+        execution_module, "SessionTitleService", _RacingTitleService
+    )
+
+    first = client.post(f"/tasks/{task_id}/resume", json={})
+
+    assert first.status_code == 200, first.text
+    # The racing message already re-armed the Segment, so the reported
+    # status comes from the durable projection (ready), not the stale
+    # in-recorder awaiting_turn — either is correct here.
+    assert first.json()["status"] in {"awaiting_turn", "ready"}
+    events = event_store.list_for_session(session_id)
+    closes = [e for e in events if e.event_type.value == "turn_completed"]
+    assert len(closes) == 1  # turn 1 closed, no duplicate close
+    human = [
+        e.payload["content"]
+        for e in events
+        if e.event_type.value == "user_message_received"
+        and e.payload.get("origin") == "human"
+    ]
+    assert human[-1] == "NEXT WHILE FINALIZING"
+    sequences = [e.sequence for e in events]
+    assert sequences == list(range(len(sequences)))
+    rebuild_session(events)
+
+    # The racing turn executes normally on the next resume.
+    monkeypatch.setattr(execution_module, "SessionTitleService", original_title_service)
+    second = client.post(f"/tasks/{task_id}/resume", json={})
+    assert second.status_code == 200
+    assert second.json()["status"] == "awaiting_turn"
+    events = event_store.list_for_session(session_id)
+    closes = [e for e in events if e.event_type.value == "turn_completed"]
+    assert len(closes) == 2
+    assert closes[-1].payload["turn_id"] == str(derive_turn_id(session_id, 1))
+    sequences = [e.sequence for e in events]
+    assert sequences == list(range(len(sequences)))
+    rebuild_session(events)

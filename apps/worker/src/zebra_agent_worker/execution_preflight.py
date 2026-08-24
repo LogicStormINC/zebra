@@ -10,6 +10,7 @@ from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResul
 from agent_core.ports import EventStorePort
 
 from zebra_agent_worker.claims import ClaimedSession
+from zebra_agent_worker.execution_errors import is_sequence_race
 from zebra_agent_worker.execution_events import (
     DurableHarnessEventRecorder,
     ExecutionInterrupted,
@@ -97,6 +98,9 @@ def prepare_execution_preflight(
             except ValueError as exc:
                 # A concurrent event (e.g. cancellation) took the terminal's
                 # sequence: the snapshot is stale, re-recover and retry.
+                # Genuine validation failures keep their original error.
+                if not is_sequence_race(exc):
+                    raise
                 raise StaleExecutionSnapshot(
                     "terminal reconciliation lost a sequence race"
                 ) from exc
@@ -178,14 +182,15 @@ def _rearm_awaiting_turn(
             raise StaleExecutionSnapshot(
                 "a Turn appeared while re-arming; re-recover before executing"
             )
-        marker = marker.model_copy(
-            update={"idempotency_key": f"turn-rearm:{fresh[-1].event_id}"}
-        )
+        marker = marker.model_copy(update={"idempotency_key": f"turn-rearm:{fresh[-1].event_id}"})
         try:
             recorder.append_event(marker)
-        except ValueError:
+        except ValueError as exc:
             # Sequence CAS conflict: a concurrent event took the slot and
             # the refresh accepted it — re-evaluate on the newer stream.
+            # A same-key/different-payload conflict is NOT contention.
+            if not is_sequence_race(exc):
+                raise
             continue
         return ExecutedSession(
             session=recorder.session,
@@ -196,9 +201,7 @@ def _rearm_awaiting_turn(
                 metadata={"stop_reason": "awaiting_turn_noop"},
             ),
         )
-    raise StaleExecutionSnapshot(
-        "re-arm could not win sequence contention within its retry budget"
-    )
+    raise StaleExecutionSnapshot("re-arm could not win sequence contention within its retry budget")
 
 
 def reject_unsupported_setup_only(

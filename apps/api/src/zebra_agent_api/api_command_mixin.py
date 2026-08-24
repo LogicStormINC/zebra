@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from hashlib import sha256
 from typing import Protocol
 from uuid import UUID
 
@@ -41,7 +42,7 @@ class ApiCommandMixin:
         events = self.stores.events.list_for_session(SessionId(session_id))
         if not events:
             return response
-        command_key = f"{idempotency_key}:run" if idempotency_key else f"run:{session_text}"
+        command_key = _bounded_run_key(idempotency_key, session_text)
         # A run event committed by a concurrent create or by a request
         # that crashed before the receipt body synced must NOT be
         # re-submitted: the stream head has advanced past its
@@ -175,3 +176,20 @@ def _accepted_from_event(event: object, session_text: str) -> ApiResponse:
             "expected_revision": payload.get("expected_revision"),
         },
     )
+
+
+def _bounded_run_key(idempotency_key: str | None, session_text: str) -> str:
+    """Keep the derived run key inside the 256-char command contract.
+
+    Appending ":run" to a legal 253-256-char Idempotency-Key would push
+    the derived command key past the SessionCommand limit AFTER the
+    create already committed; long keys switch to a fixed-length digest
+    form that stays deterministic per key.
+    """
+
+    if not idempotency_key:
+        return f"run:{session_text}"
+    if len(idempotency_key) + len(":run") <= 256:
+        return f"{idempotency_key}:run"
+    digest = sha256(idempotency_key.encode()).hexdigest()
+    return f"zebra-run:{digest}"

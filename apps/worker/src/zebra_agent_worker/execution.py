@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -34,18 +34,25 @@ from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
 from zebra_agent_worker.execution_context import harness_task_for_recovered
-from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
-from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+from zebra_agent_worker.execution_errors import (
+    error_metadata,
+    exception_attempt_result,
+    sequence_race_guard,
+)
+from zebra_agent_worker.execution_events import (
+    DurableHarnessEventRecorder,
+    ExecutionInterrupted,
+)
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.execution_preflight import (
+    _superseded_by_control_event,
     prepare_execution_preflight,
 )
 from zebra_agent_worker.execution_recovery import (
-    execute_claimed_with_stale_retry,
+    execute_session_with_lease,
     recover_execution_inputs,
 )
 from zebra_agent_worker.execution_storage import resolve_execution_storage
-from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
@@ -176,39 +183,15 @@ class SessionExecutionService:
         executed_at: datetime | None = None,
         lease_ttl_seconds: int = 30,
     ) -> execution_finalization.ExecutedSession:
-        started_at = executed_at or datetime.now(UTC)
-        claimed = self._claim_service.claim_session(
+        result = execute_session_with_lease(
+            self,
             session_id,
             worker_id=worker_id,
-            claimed_at=started_at,
+            executed_at=executed_at,
             lease_ttl_seconds=lease_ttl_seconds,
         )
-        with LeaseHeartbeat(
-            self._claim_service,
-            claimed.lease,
-            lease_ttl_seconds=lease_ttl_seconds,
-        ) as heartbeat:
-            resumed = self._resume_service.require_resumable(
-                claimed,
-                release_on_failure=False,
-            )
-            heartbeat.require_owned()
-            return self._execute_claimed_session(
-                resumed.claimed,
-                started_at=started_at,
-                ownership_check=heartbeat.require_owned,
-            )
-
-    def _execute_claimed_session(
-        self,
-        claimed: ClaimedSession,
-        *,
-        started_at: datetime,
-        ownership_check: Callable[[], None],
-    ) -> execution_finalization.ExecutedSession:
-        return execute_claimed_with_stale_retry(
-            self, claimed, started_at=started_at, ownership_check=ownership_check
-        )
+        assert isinstance(result, execution_finalization.ExecutedSession)
+        return result
 
     def _execute_claimed_session_once(
         self,
@@ -219,21 +202,22 @@ class SessionExecutionService:
     ) -> execution_finalization.ExecutedSession:
         session_id = claimed.lease.session_id
         cloud_artifacts = provider_runtime.artifact_for(self._cloud_artifact_factory, session_id)
-        inputs = recover_execution_inputs(
-            claimed=claimed,
-            session_id=session_id,
-            started_at=started_at,
-            cloud_deployment=self._settings.deployment == "cloud",
-            cloud_provider_continuation_factory=self._cloud_provider_continuation_factory,
-            provider_continuation_store=self._provider_continuation_store,
-            control_service=self._control_service,
-            recovery_service=self._recovery_service,
-            event_store=self._event_store,
-            context_lifecycle_store=self._context_lifecycle_store,
-            handoff_gate=self._handoff_gate,
-            artifact_payload_reader=self._artifact_payload_reader,
-            workspace_resolver=self._workspace_resolver,
-        )
+        with sequence_race_guard("execution inputs lost a sequence race"):
+            inputs = recover_execution_inputs(
+                claimed=claimed,
+                session_id=session_id,
+                started_at=started_at,
+                cloud_deployment=self._settings.deployment == "cloud",
+                cloud_provider_continuation_factory=(self._cloud_provider_continuation_factory),
+                provider_continuation_store=self._provider_continuation_store,
+                control_service=self._control_service,
+                recovery_service=self._recovery_service,
+                event_store=self._event_store,
+                context_lifecycle_store=self._context_lifecycle_store,
+                handoff_gate=self._handoff_gate,
+                artifact_payload_reader=self._artifact_payload_reader,
+                workspace_resolver=self._workspace_resolver,
+            )
         claimed = inputs.claimed
         session_events = inputs.session_events
         provider_continuation = inputs.provider_continuation
@@ -280,6 +264,8 @@ class SessionExecutionService:
             claimed, session_events = prepared_context.claimed, prepared_context.events
             task_binding = prepared_context.binding
             materialized_context = prepared_context.materialization
+        except ExecutionInterrupted:
+            return _superseded_by_control_event(authority_recorder)
         except (RuntimeError, ValueError) as exc:
             raise WorkerExecutionError(str(exc)) from exc
         try:
@@ -354,6 +340,15 @@ class SessionExecutionService:
                 ownership_check=ownership_check,
                 cloud_artifacts=cloud_artifacts,
             )
+        except ExecutionInterrupted:
+            # Best-effort teardown mirrors the sibling setup branch; the
+            # concurrently chosen control outcome is the durable truth.
+            if runtime_handle is not None:
+                try:
+                    runtime.destroy(runtime_handle)
+                except Exception:  # noqa: BLE001
+                    pass
+            return _superseded_by_control_event(authority_recorder)
         except Exception as exc:
             cleanup_error = None
             if runtime_handle is not None:
@@ -378,18 +373,19 @@ class SessionExecutionService:
             session=claimed.recovery.session,
             attempt=core_harness.HarnessAttempt(number=1, started_at=started_at),
         )
-        claimed, continuations = execution_continuations.recover_and_start_continuations(
-            claimed,
-            session_events=session_events,
-            event_store=self._event_store,
-            recovery_service=self._recovery_service,
-            started_at=started_at,
-            recorder=authority_recorder,
-            cleanup=lambda: runtime_authority.close_tool_gateway(tool_gateway),
-            child_result_verifier=execution_continuations.build_child_result_verifier(
-                self._delegation_store, self._projection_store
-            ),
-        )
+        with sequence_race_guard("continuation start lost a sequence race"):
+            claimed, continuations = execution_continuations.recover_and_start_continuations(
+                claimed,
+                session_events=session_events,
+                event_store=self._event_store,
+                recovery_service=self._recovery_service,
+                started_at=started_at,
+                recorder=authority_recorder,
+                cleanup=lambda: runtime_authority.close_tool_gateway(tool_gateway),
+                child_result_verifier=execution_continuations.build_child_result_verifier(
+                    self._delegation_store, self._projection_store
+                ),
+            )
         continuation = continuations.approved
         clarification = continuations.clarification
         child_wakeup = continuations.child_wakeup

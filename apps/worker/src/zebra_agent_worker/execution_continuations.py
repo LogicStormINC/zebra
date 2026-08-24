@@ -60,14 +60,11 @@ def build_child_result_verifier(
         link = get_link(child)
         if link is None or link.terminal_at is None:
             raise ValueError(
-                f"child wakeup result rejected: {child_task_id} has no "
-                "terminal delegation link"
+                f"child wakeup result rejected: {child_task_id} has no terminal delegation link"
             )
         child_session = projection_store.get_session(SessionId(UUID(str(child_task_id))))
         if child_session is None or child_session.status.value != status:
-            raise ValueError(
-                f"child wakeup result rejected: {child_task_id} status drift"
-            )
+            raise ValueError(f"child wakeup result rejected: {child_task_id} status drift")
         trusted = summary_of(child)
         if (trusted or "") != summary:
             raise ValueError(
@@ -96,9 +93,7 @@ def recover_active_continuations(
 ) -> ActiveContinuations:
     approved = recover_approved_continuation(session_events)
     clarification = recover_clarification_continuation(session_events)
-    child_wakeup = recover_child_wakeup_continuation(
-        session_events, verifier=child_result_verifier
-    )
+    child_wakeup = recover_child_wakeup_continuation(session_events, verifier=child_result_verifier)
     active = [
         continuation
         for continuation in (approved, clarification, child_wakeup)

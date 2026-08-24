@@ -358,6 +358,7 @@ def runtime_cleanup_failure_result(
         },
     )
 
+
 @dataclass(frozen=True)
 class TenantScopedAuthorityResolver:
     """Deployment-issuer authority; the tenant namespace comes per request scope.
@@ -397,8 +398,7 @@ class TenantScopedAuthorityResolver:
     def _require_issuer(self, scope: OpaqueAuthorityScope) -> None:
         if scope.authority_issuer != self.authority_issuer:
             raise ExecutionAuthorityResolutionError(
-                "execution authority issuer does not match the deployment"
-                " issuer; failing closed"
+                "execution authority issuer does not match the deployment issuer; failing closed"
             )
 
     def resolve_for_attempt(

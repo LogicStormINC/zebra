@@ -93,9 +93,7 @@ class MemoryCandidateExtractionPlanner:
         confirmed_records: tuple[MemoryRecord, ...] = (),
     ) -> MemoryCandidateExtractionPlan:
         if session.status not in {SessionStatus.COMPLETED, SessionStatus.AWAITING_TURN}:
-            raise ValueError(
-                "memory candidates can only be extracted after a completed turn"
-            )
+            raise ValueError("memory candidates can only be extracted after a completed turn")
 
         records, refresh_targets = _candidate_records_and_refresh_targets(
             events=events,
@@ -175,25 +173,39 @@ class MemoryCandidateExtractionService:
 def memory_extraction_window(events: list[SessionEvent]) -> int:
     """Per-turn extraction window boundary (ADR-026 §6).
 
-    The window starts strictly after the previous Turn close, so a
-    zero-candidate Turn still advances the boundary. A successful
-    extraction's MEMORY_CANDIDATE_EXTRACTED events sit after that close
-    and push the boundary further, preventing any re-derivation of the
-    same candidates after a crash.
+    Two durable facts bound the window, and the SMALLER wins so a lost
+    extraction is re-scanned instead of skipped forever:
+
+    - the previous Turn close (``closes[-2]``): the close of the Turn
+      before the one being finalized — advancing even for zero-candidate
+      Turns;
+    - the last extraction checkpoint: MEMORY_CANDIDATE_EXTRACTED events
+      are appended AFTER the close they cover, so "the close immediately
+      preceding the last extraction" marks what is provably covered. A
+      Turn whose extraction was lost (crash or a lost sequence race)
+      leaves this checkpoint behind and stays inside the next window.
     """
 
     turn_closes = [
         event.sequence for event in events if event.event_type is EventType.TURN_COMPLETED
     ]
-    boundary = turn_closes[-2] if len(turn_closes) >= 2 else -1
-    extraction_events = [
-        event.sequence
-        for event in events
-        if event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
-    ]
-    if extraction_events:
-        boundary = max(boundary, extraction_events[-1])
-    return boundary
+    previous_close = turn_closes[-2] if len(turn_closes) >= 2 else -1
+    last_extraction = max(
+        (
+            event.sequence
+            for event in events
+            if event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
+        ),
+        default=None,
+    )
+    if last_extraction is None:
+        # No durable extraction checkpoint exists: a zero-candidate Turn
+        # and a lost extraction are indistinguishable here, and ADR-026
+        # §6 prefers re-scanning over silently skipping a Turn's content.
+        return -1
+    closes_before_extraction = [sequence for sequence in turn_closes if sequence < last_extraction]
+    checkpoint = closes_before_extraction[-1] if closes_before_extraction else -1
+    return min(previous_close, checkpoint)
 
 
 def _candidate_records_and_refresh_targets(
@@ -232,11 +244,7 @@ def _candidate_records_and_refresh_targets(
             record_key = candidate_key(candidate, event)
             if record_key not in seen_keys:
                 seen_keys.add(record_key)
-                record = (
-                    candidate.model_copy(update=scope_updates)
-                    if scope_updates
-                    else candidate
-                )
+                record = candidate.model_copy(update=scope_updates) if scope_updates else candidate
                 records.append(record)
     return tuple(records), _refresh_targets(window)
 

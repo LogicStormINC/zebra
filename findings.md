@@ -1,5 +1,51 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE proactive audit round 7 - 2026-08-25
+
+三个独立视角的敌意审查(并发时序/投影消费者/合同存储)+ 多轮验证,
+修复 2 个 P1、3 个 P2、4 个 P3:
+
+- P1 finalization 尾部竞争(审查实际复现):turn 关闭后 memory/title
+  收尾跨越 LLM/DB 往返,恰是 awaiting_turn 期间下一条人类消息被准入
+  的窗口——尾部 append 撞序列曾以裸 ValueError 逃出所有边界、崩掉
+  Worker。现在 memory/title 仅在**序列竞争**(`is_sequence_race`)时
+  defer(其余照常抛出),由恢复扫描补做;回归以"标题 LLM 调用期间
+  注入下一条消息"端到端复现并断言两轮正常。
+- P1 提取丢失永久跳过:`memory_extraction_window` 改为
+  `min(上一 Turn close, 最后一次提取之前的 close)`,无任何 durable
+  提取检查点时全量重扫(宁可重扫不可跳过);cloud recovery 扫描
+  `allow_commit=True`(持有 lease 与 fenced recorder,补提交缺失的
+  memory/title 链)。
+- P2 poll 异常面:ready-session 循环现容忍与其兄弟路径相同的错误面
+  (`_POLL_SKIP_ERRORS`:序列竞争、并发控制事件、瞬时心跳失败跳过
+  会话而非中断整个 poll 周期)。
+- P2 AG-UI `TURN_CANCELLED` 无终态:映射为
+  `RunFinished(interrupt)`(合成 interrupt),客户端不再挂起;新增
+  `test_ag_ui_turn_projection.py` 直接覆盖 per-turn RUN_STARTED/
+  RUN_FINISHED、取消终态与重连游标尾部。
+- P2 幂等键 `:run` 后缀溢出:253-256 字符键在 create 已提交后必然
+  400;超限时改用固定长度 `zebra-run:{sha256}` 派生键。
+- P3 收窄竞争转换:reconcile/rearm/continuation/inputs 的
+  ValueError→Stale 仅限 `is_sequence_race`,确定性失败保留原始错误;
+  `SessionEventIdempotencyConflictError` 不再被当作争用重试。
+- P3 setup 区间 interrupted:两个大 try 中的并发 cancel/suspend 转
+  superseded 结果(与 preflight 一致)而非 WorkerExecutionError。
+- P3 遗留 fallback turn id:无 open Turn 的段关闭改用
+  `derive_turn_id(session, 0)`(回放稳定),不再暴露
+  `legacy-turn:{head}`。
+- API append 序列竞争:并发双 append 的败者返回 409
+  `sequence_conflict` 而非 500。
+- 架构合规:`map_execution_error` 落在 `local_execution` seam(且
+  函数级导入),API 边界测试全绿;execution/loop 通过抽离
+  (execution_recovery、cloud_memory_recovery、execution_errors)
+  回到 500 行内。
+
+验证:全仓 `2666 passed / 348 skipped`(两轮零抖动),真 PG Context
+`8/8`,Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
+`git diff --check` 干净。附带排查:`effect_default_e2e: worker_fail_closed`
+在 base `c3b44bfc` 上同样失败(本机 Docker 无 gVisor),非本分支回归。
+
+
 ## CTX-TURN-LIFECYCLE review closeout round 6 - 2026-08-25
 
 第六轮复审 3 个 P1、1 个 P2,按"fresh retry 操作边界"统一收口,

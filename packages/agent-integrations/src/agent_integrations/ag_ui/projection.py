@@ -37,7 +37,10 @@ from agent_integrations.ag_ui.contracts import (
     AgUiProjectionError,
     AgUiRunIdentity,
 )
-from agent_integrations.ag_ui.interrupts import project_interrupt_event
+from agent_integrations.ag_ui.interrupts import (
+    RunFinishedInterruptOutcome,
+    project_interrupt_event,
+)
 
 
 @dataclass(slots=True)
@@ -251,6 +254,30 @@ class AgUiProjector:
                     thread_id=identity.thread_id,
                     run_id=identity.run_id,
                     outcome=RunFinishedSuccessOutcome(),
+                ),
+            )
+        if event.event_type is EventType.TURN_CANCELLED:
+            # Control-plane cancellation closes the AG-UI run like an
+            # interrupt: without a terminal the client would hang on an
+            # unfinished run (ADR-026 §6).
+            state.turn_finished = True
+            turn_id = _optional_payload_text(payload, "turn_id") or str(event.event_id)
+            return (
+                RunFinishedEvent(
+                    timestamp=timestamp,
+                    thread_id=identity.thread_id,
+                    run_id=identity.run_id,
+                    outcome=RunFinishedInterruptOutcome(
+                        interrupts=[
+                            Interrupt(
+                                id=f"turn-cancelled:{turn_id}",
+                                reason=(
+                                    _optional_payload_text(payload, "reason")
+                                    or "session_cancelled"
+                                ),
+                            )
+                        ]
+                    ),
                 ),
             )
         if event.event_type is EventType.TURN_FAILED:

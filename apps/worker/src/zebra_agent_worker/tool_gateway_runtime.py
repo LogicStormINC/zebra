@@ -281,8 +281,7 @@ def _frozen_or_discovered_manifest(
         return pinned.discover(host_context)
     if not callable(frozen_manifest_loader):
         raise ValueError(
-            "binding carries a frozen manifest digest but no loader is wired; "
-            "failing closed"
+            "binding carries a frozen manifest digest but no loader is wired; failing closed"
         )
     frozen = frozen_manifest_loader(manifest_digest)
     if not isinstance(frozen, dict):

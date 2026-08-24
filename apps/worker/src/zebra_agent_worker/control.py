@@ -208,9 +208,7 @@ class SessionControlService:
             recovery = self._recover(session_id)
             if recovery.session.status not in _CANCELLABLE_STATUSES:
                 raise SessionControlError("session cannot be cancelled from its current state")
-            open_turn = current_turn(
-                self._event_store.list_for_session(session_id)
-            )
+            open_turn = current_turn(self._event_store.list_for_session(session_id))
             next_sequence = recovery.session.current_sequence
             turn_cancel_event: SessionEvent | None = None
             try:

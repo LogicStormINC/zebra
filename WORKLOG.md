@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-08-25 - CTX-TURN-LIFECYCLE proactive audit round 7
+
+- 三个敌意审查代理 + 多轮验证;修复 finalization 尾部竞争、提取
+  窗口永久跳过、poll 异常面、AG-UI 取消终态、幂等键溢出、竞争转换
+  收窄、setup interrupted superseded、稳定 fallback id、append 409。
+- 结构:错误映射入 seam、poll 常量、执行助手分散到
+  execution_errors/execution_recovery/cloud_memory_recovery。
+- 验证:全仓 `2666 passed / 348 skipped`;PG `8/8`;composition
+  `33/33 PASS`;`make check` 全绿;`git diff --check` 干净。
+
+
 ## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 6 (3xP1, 1xP2)
 
 - fresh retry 统一操作边界:同一 lease/fence 传递、控制事件

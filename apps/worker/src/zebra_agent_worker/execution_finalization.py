@@ -1,6 +1,8 @@
+import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from uuid import UUID
 
 from agent_core.application import (
     MemoryCandidateExtractionCommand,
@@ -12,7 +14,7 @@ from agent_core.application import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
-from agent_core.domain.turns import InteractionMode
+from agent_core.domain.turns import InteractionMode, derive_turn_id
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports import (
     EventStorePort,
@@ -22,6 +24,7 @@ from agent_core.ports import (
 )
 
 from zebra_agent_worker.cloud_memory_finalization import finalize_cloud_memory
+from zebra_agent_worker.execution_errors import is_sequence_race
 from zebra_agent_worker.execution_events import (
     DurableHarnessEventRecorder,
     ExecutionInterrupted,
@@ -62,11 +65,15 @@ def pending_turn_close(events: list[SessionEvent]) -> SessionEvent | None:
         if event.event_type in _TURN_TO_SESSION_TERMINAL:
             last_close = event
             expected_terminal = _TURN_TO_SESSION_TERMINAL[event.event_type]
-        elif event.event_type in {
-            EventType.SESSION_COMPLETED,
-            EventType.SESSION_FAILED,
-            EventType.SESSION_CANCELLED,
-        } and event.event_type is expected_terminal:
+        elif (
+            event.event_type
+            in {
+                EventType.SESSION_COMPLETED,
+                EventType.SESSION_FAILED,
+                EventType.SESSION_CANCELLED,
+            }
+            and event.event_type is expected_terminal
+        ):
             # Only the matching Session terminal clears the pending close.
             last_close = None
             expected_terminal = None
@@ -232,41 +239,57 @@ def _finalize_execution(
         return recorder.events
     if attempt_result.outcome is not HarnessAttemptOutcome.COMPLETED:
         return recorder.events
-    if cloud_memory_store is not None:
-        if (
-            deployment_namespace is None
-            or projection_store is None
-            or workspace_store is None
-        ):
-            raise ValueError(
-                "cloud Memory finalization requires its complete projection context"
+    try:
+        if cloud_memory_store is not None:
+            if deployment_namespace is None or projection_store is None or workspace_store is None:
+                raise ValueError(
+                    "cloud Memory finalization requires its complete projection context"
+                )
+            finalize_cloud_memory(
+                recorder=recorder,
+                memory_store=cloud_memory_store,
+                deployment_namespace=deployment_namespace,
+                event_store=event_store,
+                projection_store=projection_store,
+                workspace_store=workspace_store,
+                started_at=started_at,
             )
-        finalize_cloud_memory(
-            recorder=recorder,
-            memory_store=cloud_memory_store,
-            deployment_namespace=deployment_namespace,
-            event_store=event_store,
-            projection_store=projection_store,
-            workspace_store=workspace_store,
-            started_at=started_at,
+        else:
+            if memory_extraction_service is None or memory_promotion_service is None:
+                raise ValueError("local Memory finalization requires writable Memory services")
+            _finalize_local_memory(
+                recorder=recorder,
+                memory_extraction_service=memory_extraction_service,
+                memory_promotion_service=memory_promotion_service,
+                event_store=event_store,
+                started_at=started_at,
+            )
+    except ValueError as exc:
+        # The memory tail spans provider/DB round-trips while the Segment
+        # sits in awaiting_turn — exactly when the next human message is
+        # admitted. Losing the sequence race is normal: the Turn outcome
+        # is already durable and the recovery scan re-drives memory;
+        # anything else is a real failure and still raises.
+        if not is_sequence_race(exc):
+            raise
+        print(
+            f"memory finalization deferred after sequence race: {exc}",
+            file=sys.stderr,
         )
-    else:
-        if memory_extraction_service is None or memory_promotion_service is None:
-            raise ValueError("local Memory finalization requires writable Memory services")
-        _finalize_local_memory(
-            recorder=recorder,
-            memory_extraction_service=memory_extraction_service,
-            memory_promotion_service=memory_promotion_service,
-            event_store=event_store,
-            started_at=started_at,
+    try:
+        title_event = title_service.generate(
+            session=recorder.session,
+            events=event_store.list_for_session(recorder.session.session_id),
+            next_sequence=recorder.next_sequence,
         )
-    title_event = title_service.generate(
-        session=recorder.session,
-        events=event_store.list_for_session(recorder.session.session_id),
-        next_sequence=recorder.next_sequence,
-    )
-    if title_event is not None:
-        recorder.append_event(title_event)
+        if title_event is not None:
+            recorder.append_event(title_event)
+    except ValueError as exc:
+        # Titles are best-effort; the cloud recovery scan regenerates a
+        # missing title after the race window.
+        if not is_sequence_race(exc):
+            raise
+        print(f"title generation deferred after sequence race: {exc}", file=sys.stderr)
     return recorder.events
 
 
@@ -286,13 +309,15 @@ def _append_turn_close(
     """
 
     events = (
-        event_store.list_for_session(recorder.session.session_id)
-        if event_store is not None
-        else []
+        event_store.list_for_session(recorder.session.session_id) if event_store is not None else []
     )
     open_turn = current_turn(events) if events else None
-    fallback_sequence = getattr(recorder.session, "current_sequence", 0)
-    turn_id = open_turn.turn_id if open_turn else f"legacy-turn:{fallback_sequence}"
+    fallback: UUID = (
+        events[0].session_id
+        if events
+        else getattr(recorder.session, "session_id", None) or UUID(int=0)
+    )
+    turn_id = open_turn.turn_id if open_turn else str(derive_turn_id(fallback, 0))
     turn_index = open_turn.turn_index if open_turn else 0
     if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
         closes_segment = interaction_mode is not InteractionMode.CONVERSATION
