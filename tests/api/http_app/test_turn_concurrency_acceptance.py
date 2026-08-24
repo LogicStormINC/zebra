@@ -30,7 +30,14 @@ def test_concurrent_follow_up_arriving_after_claim_executes_the_new_turn(
     NEW Turn.
     """
     counter: dict[str, int] = {"calls": 0}
-    _counting_gateway(monkeypatch, counter, "Turn one done.", "NEW TURN ANSWER")
+    gateways: list = []
+    _counting_gateway(
+        monkeypatch,
+        counter,
+        "Turn one done.",
+        "NEW TURN ANSWER",
+        gateways=gateways,
+    )
     client = TestClient(create_http_app(tmp_path / "race.sqlite", settings=_settings(None)))
     task_id = _create_conversation_task(client)
     assert _run_turn(client, task_id)["status"] == "awaiting_turn"
@@ -108,6 +115,22 @@ def test_concurrent_follow_up_arriving_after_claim_executes_the_new_turn(
     assert response.status_code == 200, response.text
     # The stale "no open turn" snapshot was NOT executed; the new Turn ran.
     assert counter["calls"] == 2
+
+    # Prove the MODEL actually received the new message: the fresh-run
+    # gateway's execution requests contain the follow-up as the last USER
+    # message, and never carry the stale first-turn prompt.
+    from agent_core.domain.messages import MessageRole
+
+    fresh_requests = gateways[-1].requests
+    assert fresh_requests, "the fresh gateway saw no model request"
+    user_messages = [
+        message.content
+        for request in fresh_requests
+        for message in request
+        if message.role is MessageRole.USER
+    ]
+    assert "NEW CONCURRENT FOLLOW-UP" in user_messages
+    assert not any("codeword" in content for content in user_messages)
     events_after = event_store.list_for_session(session_id)
     closes = [event for event in events_after if event.event_type.value == "turn_completed"]
     assert len(closes) == 2

@@ -1,5 +1,33 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE review closeout round 6 - 2026-08-25
+
+第六轮复审 3 个 P1、1 个 P2,按"fresh retry 操作边界"统一收口,
+并完成三轮自查:
+
+- P1 Cloud lease:fresh recovery 现在传
+  `recover_session(session_id, worker_lease=claimed.lease)`,Cloud
+  Worker 在同一 fence 下完成重建重试;回归断言 recovery 收到的
+  lease 与 claim 完全同一对象。
+- P1 控制事件逃逸:rearm、terminal reconcile、capability 检查三个
+  preflight 分支统一捕获 `ExecutionInterrupted` 并转换为
+  superseded 结果(SUSPENDED outcome +
+  `stop_reason=superseded_by_control_event` +
+  `external_status`),HTTP 返回外部状态而非 500,Worker poll 不再
+  中断;cancel 与 suspend 两类抢占各有回归。
+- P1 重试预算:第二次 StaleExecutionSnapshot 转换为类型化的
+  `WorkerExecutionError`("stayed stale"),不再以裸 RuntimeError
+  冒泡;回归断言。
+- P2 模型输入:完整 Worker 测试保留 gateway 实例并断言
+  `ScriptedModelGateway.requests`——fresh 执行请求的最后 USER 消息
+  是 `NEW CONCURRENT FOLLOW-UP`,且不含旧 prompt。
+- 自查追加:reconcile 的序列竞争同样转 Stale(交由外壳统一重试);
+  `execution_recovery.py` 尾部空行修复。
+
+验证:全仓 `2661 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿(Mypy 723),`git diff --check` 干净。
+
+
 ## CTX-TURN-LIFECYCLE review closeout round 5 - 2026-08-24
 
 第五轮复审 2 个 P1、1 个 P2 测试缺口,修复:

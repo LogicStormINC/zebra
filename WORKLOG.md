@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 6 (3xP1, 1xP2)
+
+- fresh retry 统一操作边界:同一 lease/fence 传递、控制事件
+  superseded 转换(rearm/reconcile/capability 三分支)、一次恢复
+  预算耗尽转 WorkerExecutionError、reconcile 序列竞争转 Stale。
+- 模型输入断言改用 gateway.requests 实测;cancel/suspend 抢占与
+  lease 传递各有确定性回归。
+- 验证:全仓 `2661 passed / 348 skipped`;真 PG `8/8`;`make check`
+  全绿;`git diff --check` 干净。
+
+
 ## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 5 (2xP1, 1xP2 gap)
 
 - `StaleExecutionSnapshot` + execution 外壳重试(重新恢复全量输入,

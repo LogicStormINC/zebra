@@ -10,9 +10,13 @@ from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResul
 from agent_core.ports import EventStorePort
 
 from zebra_agent_worker.claims import ClaimedSession
-from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+from zebra_agent_worker.execution_events import (
+    DurableHarnessEventRecorder,
+    ExecutionInterrupted,
+)
 from zebra_agent_worker.execution_finalization import (
     ExecutedSession,
+    WorkerExecutionError,
     pending_turn_close,
     reconcile_pending_turn_close,
 )
@@ -38,12 +42,22 @@ def run_with_stale_retry[T](
     recover: Callable[[], object],
     ownership_check: Callable[[], None],
 ) -> T:
-    """Run once; on StaleExecutionSnapshot re-recover and run again."""
+    """Run once; on StaleExecutionSnapshot re-recover and run again.
+
+    The recovery budget is exactly one: a second stale snapshot under
+    continuous contention becomes a typed WorkerExecutionError instead
+    of escaping as a bare RuntimeError.
+    """
     try:
         return execute_once(None)
     except StaleExecutionSnapshot:
         ownership_check()
-        return execute_once(recover())
+        try:
+            return execute_once(recover())
+        except StaleExecutionSnapshot as exc:
+            raise WorkerExecutionError(
+                "execution snapshot stayed stale after one fresh recovery"
+            ) from exc
 
 
 def prepare_execution_preflight(
@@ -74,25 +88,63 @@ def prepare_execution_preflight(
     if events:
         pending = pending_turn_close(events)
         if pending is not None:
-            return recorder, reconcile_pending_turn_close(
-                recorder=recorder, events=events, started_at=started_at
-            )
+            try:
+                return recorder, reconcile_pending_turn_close(
+                    recorder=recorder, events=events, started_at=started_at
+                )
+            except ExecutionInterrupted:
+                return recorder, _superseded_by_control_event(recorder)
+            except ValueError as exc:
+                # A concurrent event (e.g. cancellation) took the terminal's
+                # sequence: the snapshot is stale, re-recover and retry.
+                raise StaleExecutionSnapshot(
+                    "terminal reconciliation lost a sequence race"
+                ) from exc
         if (
             interaction_mode_of(events) is InteractionMode.CONVERSATION
             and current_turn(events) is None
             and event_store is not None
         ):
-            return recorder, _rearm_awaiting_turn(
-                recorder=recorder,
-                started_at=started_at,
-                event_store=event_store,
-            )
-    return recorder, reject_unsupported_setup_only(
-        recorder=recorder,
-        network_profile=network_profile,
-        has_local_artifact_store=has_local_artifact_store,
-        attempt_number=attempt_number,
-        started_at=started_at,
+            try:
+                return recorder, _rearm_awaiting_turn(
+                    recorder=recorder,
+                    started_at=started_at,
+                    event_store=event_store,
+                )
+            except ExecutionInterrupted:
+                return recorder, _superseded_by_control_event(recorder)
+    try:
+        return recorder, reject_unsupported_setup_only(
+            recorder=recorder,
+            network_profile=network_profile,
+            has_local_artifact_store=has_local_artifact_store,
+            attempt_number=attempt_number,
+            started_at=started_at,
+        )
+    except ExecutionInterrupted:
+        return recorder, _superseded_by_control_event(recorder)
+
+
+def _superseded_by_control_event(
+    recorder: DurableHarnessEventRecorder,
+) -> ExecutedSession:
+    """A concurrent cancel/suspend took the sequence: report, don't crash.
+
+    The recorder refreshed to the externally chosen status; the current
+    execution is superseded and returns that status instead of letting
+    ``ExecutionInterrupted`` escape the Worker boundary.
+    """
+    return ExecutedSession(
+        session=recorder.session,
+        events=recorder.events,
+        attempt_result=HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="Superseded by a concurrent control event.",
+            metadata={
+                "stop_reason": "superseded_by_control_event",
+                "external_status": recorder.session.status.value,
+            },
+        ),
     )
 
 

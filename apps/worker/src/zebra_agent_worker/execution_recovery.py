@@ -62,7 +62,11 @@ def execute_claimed_with_stale_retry(
         return result
 
     def recover() -> RecoveredSession:
-        result: RecoveredSession = service._recovery_service.recover_session(session_id)
+        # Cloud recovery requires the CURRENT lease: the fresh retry stays
+        # under the same fence that won the original claim.
+        result: RecoveredSession = service._recovery_service.recover_session(
+            session_id, worker_lease=claimed.lease
+        )
         return result
 
     return run_with_stale_retry(once, recover=recover, ownership_check=ownership_check)
@@ -133,5 +137,3 @@ def recover_execution_inputs(
         active_capsule=active_context.capsule if active_context else None,
         recovered_handoff=recovered_handoff,
     )
-
-

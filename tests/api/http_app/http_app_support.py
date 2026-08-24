@@ -110,10 +110,10 @@ def _fake_resume_gateway(_settings: ZebraAgentSettings) -> ScriptedModelGateway:
         )
     )
 
-def _counting_gateway(monkeypatch, counter: dict[str, int], *replies: str):
+def _counting_gateway(monkeypatch, counter: dict[str, int], *replies: str, gateways=None):
     def factory(_settings: ZebraAgentSettings) -> ScriptedModelGateway:
         counter["calls"] += 1
-        return ScriptedModelGateway(
+        gateway = ScriptedModelGateway(
             responses=tuple(
                 ScriptedModelResponse(
                     completion=ModelCompletion(
@@ -128,6 +128,9 @@ def _counting_gateway(monkeypatch, counter: dict[str, int], *replies: str):
                 for reply in replies
             )
         )
+        if gateways is not None:
+            gateways.append(gateway)
+        return gateway
 
     monkeypatch.setattr(worker_execution_module, "build_model_gateway", factory)
 
