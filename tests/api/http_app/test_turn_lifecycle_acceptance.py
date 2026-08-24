@@ -11,7 +11,12 @@ from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from fastapi.testclient import TestClient
-from http_app_support import _settings
+from http_app_support import (
+    _counting_gateway,
+    _create_conversation_task,
+    _run_turn,
+    _settings,
+)
 from zebra_agent_api import create_http_app
 from zebra_agent_config import ZebraAgentSettings
 
@@ -36,24 +41,6 @@ def _gateway_for(*replies: str):
 
     return factory
 
-
-def _create_conversation_task(client: TestClient) -> str:
-    response = client.post(
-        "/tasks",
-        json={
-            "prompt": "Remember the codeword is granite.",
-            "title": "Conversation acceptance",
-            "interaction_mode": "conversation",
-        },
-    )
-    assert response.status_code == 201
-    return str(response.json()["task_id"])
-
-
-def _run_turn(client: TestClient, task_id: str) -> dict[str, object]:
-    response = client.post(f"/tasks/{task_id}/resume", json={})
-    assert response.status_code == 200, response.text
-    return response.json()
 
 
 def test_conversation_task_keeps_one_segment_across_turns(tmp_path: Path, monkeypatch) -> None:
@@ -101,7 +88,6 @@ def test_conversation_task_keeps_one_segment_across_turns(tmp_path: Path, monkey
     assert not any(event.event_type.value == "session_completed" for event in events)
     assert len({event.payload["turn_id"] for event in turn_closes}) == 2
 
-
 def test_one_shot_task_still_writes_session_completed_for_legacy_consumers(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -125,7 +111,6 @@ def test_one_shot_task_still_writes_session_completed_for_legacy_consumers(
     assert detail["task_status"] == "completed"
     assert detail["interaction_mode"] == "one_shot"
 
-
 def test_second_message_during_running_turn_is_rejected(tmp_path: Path, monkeypatch) -> None:
     from agent_core.application import (
         SessionMessageAppendCommand,
@@ -140,7 +125,6 @@ def test_second_message_during_running_turn_is_rejected(tmp_path: Path, monkeypa
             next_sequence=1,
             command=SessionMessageAppendCommand(content="second while running"),
         )
-
 
 def test_task_message_idempotency_replays_same_turn_and_conflicts_on_drift(
     tmp_path: Path, monkeypatch
@@ -177,71 +161,6 @@ def test_task_message_idempotency_replays_same_turn_and_conflicts_on_drift(
     )
     assert drifted.status_code == 409
     assert drifted.json()["status"] == "idempotency_conflict"
-
-
-def test_crashed_one_shot_turn_close_is_healed_without_model_call(
-    tmp_path: Path, monkeypatch
-) -> None:
-    def failing_gateway(_settings: ZebraAgentSettings):
-        raise AssertionError("reconciliation must not call the model")
-
-    monkeypatch.setattr(worker_execution_module, "build_model_gateway", failing_gateway)
-
-    from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-    from agent_core.domain.events import EventActor, EventType, SessionEvent
-    from agent_core.domain.turns import derive_turn_id
-    from agent_storage import SQLiteEventStore, SQLiteProjectionStore
-
-    database_path = tmp_path / "heal.sqlite"
-    bootstrap = SessionBootstrapService().build(
-        SessionBootstrapCommand(
-            title="Crashed close",
-            user_input="Do the work.",
-            workspace_root=tmp_path,
-        )
-    )
-    event_store = SQLiteEventStore(database_path)
-    for event in bootstrap.events:
-        event_store.append(event)
-    session = bootstrap.session
-    attempt = SessionEvent.create(
-        session_id=session.session_id,
-        sequence=session.current_sequence + 1,
-        event_type=EventType.HARNESS_ATTEMPT_STARTED,
-        actor=EventActor.HARNESS,
-        payload={"attempt_number": 1},
-    )
-    event_store.append(attempt)
-    turn = SessionEvent.create(
-        session_id=session.session_id,
-        sequence=attempt.sequence + 1,
-        event_type=EventType.TURN_COMPLETED,
-        actor=EventActor.HARNESS,
-        payload={
-            "turn_id": str(derive_turn_id(session.session_id, 0)),
-            "turn_index": 0,
-            "summary": "Model finished; worker crashed before the terminal.",
-            "closes_segment": True,
-        },
-    )
-    event_store.append(turn)
-    from agent_core.application.session_projection import rebuild_session
-
-    healed_session = rebuild_session(event_store.list_for_session(session.session_id))
-    SQLiteProjectionStore(database_path).save_session(healed_session)
-    assert healed_session.status.value == "running"
-
-    client = TestClient(create_http_app(database_path, settings=_settings(None)))
-    response = client.post(f"/sessions/{session.session_id}/resume", json={})
-
-    assert response.status_code == 200
-    assert response.json()["status"] == "completed"
-    events = event_store.list_for_session(session.session_id)
-    assert [event.event_type for event in events[-2:]] == [
-        EventType.TURN_COMPLETED,
-        EventType.SESSION_COMPLETED,
-    ]
-
 
 def test_ag_ui_run_finishes_per_turn_and_restarts_on_the_next_message() -> None:
     from ag_ui.core import RunErrorEvent, RunFinishedEvent, RunStartedEvent
@@ -325,29 +244,6 @@ def test_ag_ui_run_finishes_per_turn_and_restarts_on_the_next_message() -> None:
     assert kinds.count(RunFinishedEvent) == 1  # first turn success
     assert kinds.count(RunErrorEvent) == 1  # second turn failure, no duplicate
 
-
-def _counting_gateway(monkeypatch, counter: dict[str, int], *replies: str):
-    def factory(_settings: ZebraAgentSettings) -> ScriptedModelGateway:
-        counter["calls"] += 1
-        return ScriptedModelGateway(
-            responses=tuple(
-                ScriptedModelResponse(
-                    completion=ModelCompletion(
-                        assistant_message=SessionMessage(
-                            message_id=new_message_id(),
-                            role=MessageRole.ASSISTANT,
-                            content=reply,
-                            created_at=datetime(2026, 8, 24, 12, 0, tzinfo=UTC),
-                        )
-                    )
-                )
-                for reply in replies
-            )
-        )
-
-    monkeypatch.setattr(worker_execution_module, "build_model_gateway", factory)
-
-
 def test_awaiting_turn_resume_is_rejected_without_a_new_message(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -363,7 +259,6 @@ def test_awaiting_turn_resume_is_rejected_without_a_new_message(
     assert response.json()["reason"] == "awaiting_next_turn_message"
     assert counter["calls"] == 1  # no second model invocation
 
-
 def test_message_on_ready_bootstrap_with_open_turn_is_rejected(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -375,69 +270,6 @@ def test_message_on_ready_bootstrap_with_open_turn_is_rejected(
 
     assert early.status_code == 409
     assert early.json()["reason"] == "turn_in_progress"
-
-
-def test_crashed_failed_turn_close_is_healed_without_model_call(
-    tmp_path: Path, monkeypatch
-) -> None:
-    def failing_gateway(_settings: ZebraAgentSettings):
-        raise AssertionError("failed-turn reconciliation must not call the model")
-
-    monkeypatch.setattr(worker_execution_module, "build_model_gateway", failing_gateway)
-
-    from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-    from agent_core.application.session_projection import rebuild_session
-    from agent_core.domain.events import EventActor, EventType, SessionEvent
-    from agent_core.domain.turns import derive_turn_id
-    from agent_storage import SQLiteEventStore, SQLiteProjectionStore
-
-    database_path = tmp_path / "heal-failed.sqlite"
-    bootstrap = SessionBootstrapService().build(
-        SessionBootstrapCommand(
-            title="Crashed failure",
-            user_input="Do the work.",
-            workspace_root=tmp_path,
-        )
-    )
-    event_store = SQLiteEventStore(database_path)
-    for event in bootstrap.events:
-        event_store.append(event)
-    session = bootstrap.session
-    attempt = SessionEvent.create(
-        session_id=session.session_id,
-        sequence=session.current_sequence + 1,
-        event_type=EventType.HARNESS_ATTEMPT_STARTED,
-        actor=EventActor.HARNESS,
-        payload={"attempt_number": 1},
-    )
-    event_store.append(attempt)
-    turn = SessionEvent.create(
-        session_id=session.session_id,
-        sequence=attempt.sequence + 1,
-        event_type=EventType.TURN_FAILED,
-        actor=EventActor.HARNESS,
-        payload={
-            "turn_id": str(derive_turn_id(session.session_id, 0)),
-            "turn_index": 0,
-            "reason": "provider failed; worker crashed before the terminal.",
-            "closes_segment": True,
-        },
-    )
-    event_store.append(turn)
-    healed = rebuild_session(event_store.list_for_session(session.session_id))
-    SQLiteProjectionStore(database_path).save_session(healed)
-
-    client = TestClient(create_http_app(database_path, settings=_settings(None)))
-    response = client.post(f"/sessions/{session.session_id}/resume", json={})
-
-    assert response.status_code == 200, response.text
-    assert response.json()["status"] == "failed"
-    events = event_store.list_for_session(session.session_id)
-    assert [event.event_type for event in events[-2:]] == [
-        EventType.TURN_FAILED,
-        EventType.SESSION_FAILED,
-    ]
-
 
 def test_awaiting_turn_task_can_be_cancelled_and_suspended(
     tmp_path: Path, monkeypatch
@@ -497,142 +329,6 @@ def test_awaiting_turn_task_can_be_cancelled_and_suspended(
     tail_types = [event.event_type.value for event in events_after_cancel]
     assert tail_types[-1] == "session_cancelled"
     assert "turn_cancelled" not in tail_types
-
-
-def test_pending_turn_close_reconciles_end_to_end_on_setup_only_stream(
-    tmp_path: Path, monkeypatch
-) -> None:
-    """End-to-end healing on a setup-only stream.
-
-    The SQLite API composition always has a local Artifact store, so the
-    capability rejection itself cannot fire here; the reconcile-before-
-    capability ordering is proven by
-    tests/worker/test_execution_preflight_order.py.
-    """
-
-    def failing_gateway(_settings: ZebraAgentSettings):
-        raise AssertionError("reconciliation must precede any new attempt")
-
-    monkeypatch.setattr(worker_execution_module, "build_model_gateway", failing_gateway)
-
-    from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-    from agent_core.application.session_projection import rebuild_session
-    from agent_core.domain.events import EventActor, EventType, SessionEvent
-    from agent_core.domain.turns import derive_turn_id
-    from agent_storage import SQLiteEventStore, SQLiteProjectionStore
-
-    database_path = tmp_path / "heal-capability.sqlite"
-    # setup-only would fail preflight; the durable success must win first.
-    bootstrap = SessionBootstrapService().build(
-        SessionBootstrapCommand(
-            title="Healed before capability",
-            user_input="Do the work.",
-            workspace_root=tmp_path,
-            network_profile="setup-only",
-        )
-    )
-    event_store = SQLiteEventStore(database_path)
-    for event in bootstrap.events:
-        event_store.append(event)
-    session = bootstrap.session
-    event_store.append(
-        SessionEvent.create(
-            session_id=session.session_id,
-            sequence=session.current_sequence + 1,
-            event_type=EventType.HARNESS_ATTEMPT_STARTED,
-            actor=EventActor.HARNESS,
-            payload={"attempt_number": 1},
-        )
-    )
-    event_store.append(
-        SessionEvent.create(
-            session_id=session.session_id,
-            sequence=session.current_sequence + 2,
-            event_type=EventType.TURN_COMPLETED,
-            actor=EventActor.HARNESS,
-            payload={
-                "turn_id": str(derive_turn_id(session.session_id, 0)),
-                "turn_index": 0,
-                "summary": "Already done.",
-                "closes_segment": True,
-            },
-        )
-    )
-    healed = rebuild_session(event_store.list_for_session(session.session_id))
-    SQLiteProjectionStore(database_path).save_session(healed)
-
-    client = TestClient(create_http_app(database_path, settings=_settings(None)))
-    response = client.post(f"/sessions/{session.session_id}/resume", json={})
-
-    assert response.status_code == 200
-    assert response.json()["status"] == "completed"
-    events = event_store.list_for_session(session.session_id)
-    event_types = [event.event_type.value for event in events]
-    assert "session_failed" not in event_types
-    assert event_types[-1] == "session_completed"
-
-
-def test_crashed_turn_cancelled_window_is_healed(tmp_path: Path, monkeypatch) -> None:
-    def failing_gateway(_settings: ZebraAgentSettings):
-        raise AssertionError("cancelled-window reconciliation must not call the model")
-
-    monkeypatch.setattr(worker_execution_module, "build_model_gateway", failing_gateway)
-
-    from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-    from agent_core.application.session_projection import rebuild_session
-    from agent_core.domain.events import EventActor, EventType, SessionEvent
-    from agent_core.domain.turns import derive_turn_id
-    from agent_storage import SQLiteEventStore, SQLiteProjectionStore
-
-    database_path = tmp_path / "heal-cancelled.sqlite"
-    bootstrap = SessionBootstrapService().build(
-        SessionBootstrapCommand(
-            title="Crashed cancel",
-            user_input="Do the work.",
-            workspace_root=tmp_path,
-        )
-    )
-    event_store = SQLiteEventStore(database_path)
-    for event in bootstrap.events:
-        event_store.append(event)
-    session = bootstrap.session
-    event_store.append(
-        SessionEvent.create(
-            session_id=session.session_id,
-            sequence=session.current_sequence + 1,
-            event_type=EventType.HARNESS_ATTEMPT_STARTED,
-            actor=EventActor.HARNESS,
-            payload={"attempt_number": 1},
-        )
-    )
-    # Control plane crashed after TURN_CANCELLED, before SESSION_CANCELLED.
-    event_store.append(
-        SessionEvent.create(
-            session_id=session.session_id,
-            sequence=session.current_sequence + 2,
-            event_type=EventType.TURN_CANCELLED,
-            actor=EventActor.SYSTEM,
-            payload={
-                "turn_id": str(derive_turn_id(session.session_id, 0)),
-                "turn_index": 0,
-                "reason": "session_cancelled",
-            },
-        )
-    )
-    healed = rebuild_session(event_store.list_for_session(session.session_id))
-    SQLiteProjectionStore(database_path).save_session(healed)
-
-    client = TestClient(create_http_app(database_path, settings=_settings(None)))
-    response = client.post(f"/sessions/{session.session_id}/resume", json={})
-
-    assert response.status_code == 200
-    assert response.json()["status"] == "cancelled"
-    events = event_store.list_for_session(session.session_id)
-    assert [event.event_type for event in events[-2:]] == [
-        EventType.TURN_CANCELLED,
-        EventType.SESSION_CANCELLED,
-    ]
-
 
 def test_cancel_after_follow_up_message_writes_turn_cancelled(
     tmp_path: Path, monkeypatch

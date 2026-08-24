@@ -31,14 +31,19 @@ if TYPE_CHECKING:
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.context_materialization import prepare_worker_context
 from zebra_agent_worker.continuation_dispatch import run_continuation
-from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
 from zebra_agent_worker.execution_context import harness_task_for_recovered
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
-from zebra_agent_worker.execution_preflight import prepare_execution_preflight
+from zebra_agent_worker.execution_preflight import (
+    prepare_execution_preflight,
+)
+from zebra_agent_worker.execution_recovery import (
+    execute_claimed_with_stale_retry,
+    recover_execution_inputs,
+)
 from zebra_agent_worker.execution_storage import resolve_execution_storage
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.model_call_index import ModelCallIndexer
@@ -46,11 +51,9 @@ from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
-from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_gateway_runtime import build_worker_tool_gateway
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
-from zebra_agent_worker.workspace_resolution import apply_workspace_resolver
 
 
 class SessionExecutionService:
@@ -203,48 +206,40 @@ class SessionExecutionService:
         started_at: datetime,
         ownership_check: Callable[[], None],
     ) -> execution_finalization.ExecutedSession:
+        return execute_claimed_with_stale_retry(
+            self, claimed, started_at=started_at, ownership_check=ownership_check
+        )
+
+    def _execute_claimed_session_once(
+        self,
+        claimed: ClaimedSession,
+        *,
+        started_at: datetime,
+        ownership_check: Callable[[], None],
+    ) -> execution_finalization.ExecutedSession:
         session_id = claimed.lease.session_id
         cloud_artifacts = provider_runtime.artifact_for(self._cloud_artifact_factory, session_id)
-        cloud_continuation = provider_runtime.cloud_for_session(
-            self._cloud_provider_continuation_factory, session_id
-        )
-        claimed = restore_suspended_session_claim(
-            claimed,
+        inputs = recover_execution_inputs(
+            claimed=claimed,
+            session_id=session_id,
+            started_at=started_at,
             cloud_deployment=self._settings.deployment == "cloud",
+            cloud_provider_continuation_factory=self._cloud_provider_continuation_factory,
+            provider_continuation_store=self._provider_continuation_store,
             control_service=self._control_service,
             recovery_service=self._recovery_service,
-            started_at=started_at,
             event_store=self._event_store,
+            context_lifecycle_store=self._context_lifecycle_store,
+            handoff_gate=self._handoff_gate,
+            artifact_payload_reader=self._artifact_payload_reader,
+            workspace_resolver=self._workspace_resolver,
         )
-        recovered_handoff = handoff.recover_worker_handoff(
-            self._handoff_gate,
-            session_id,
-            fence=claimed.lease.fence,
-            recovered_at=started_at,
-            release=lambda: None,
-        )
-        session_events = self._event_store.list_for_session(session_id)
-        active_context = self._context_lifecycle_store.get_active_capsule(session_id)
-        provider_continuation = provider_runtime.resolve_provider_continuation(
-            cloud_continuation,
-            session_events,
-            self._provider_continuation_store,
-        )
-        try:
-            task = recover_task(
-                session_events,
-                workspace=claimed.recovery.workspace,
-                fallback_title=claimed.recovery.session.title,
-                attachment_reader=self._artifact_payload_reader,
-                active_capsule=active_context.capsule if active_context else None,
-                handoff_evidence=(
-                    None if recovered_handoff is None else recovered_handoff.runtime_evidence
-                ),
-            )
-        except (FileNotFoundError, ValueError) as exc:
-            raise WorkerExecutionError(str(exc)) from exc
-        if self._workspace_resolver is not None:
-            task = apply_workspace_resolver(task, self._workspace_resolver, session_id)
+        claimed = inputs.claimed
+        session_events = inputs.session_events
+        provider_continuation = inputs.provider_continuation
+        cloud_continuation = inputs.cloud_continuation
+        task, recovered_handoff = inputs.task, inputs.recovered_handoff
+        active_capsule = inputs.active_capsule
         trusted_local = trusted_local_mode_enabled(self._settings)
         effective_network_profile = resolve_effective_network_profile(
             task.network_profile,
@@ -279,7 +274,7 @@ class SessionExecutionService:
                 claimed=claimed,
                 events=session_events,
                 task=task,
-                active_capsule_id=(active_context.capsule.capsule_id if active_context else None),
+                active_capsule_id=(active_capsule.capsule_id if active_capsule else None),
                 as_of=started_at,
             )
             claimed, session_events = prepared_context.claimed, prepared_context.events

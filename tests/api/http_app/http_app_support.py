@@ -1,12 +1,14 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+import zebra_agent_worker.execution as worker_execution_module
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from fastapi.testclient import TestClient
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
@@ -107,3 +109,43 @@ def _fake_resume_gateway(_settings: ZebraAgentSettings) -> ScriptedModelGateway:
             ),
         )
     )
+
+def _counting_gateway(monkeypatch, counter: dict[str, int], *replies: str):
+    def factory(_settings: ZebraAgentSettings) -> ScriptedModelGateway:
+        counter["calls"] += 1
+        return ScriptedModelGateway(
+            responses=tuple(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content=reply,
+                            created_at=datetime(2026, 8, 24, 12, 0, tzinfo=UTC),
+                        )
+                    )
+                )
+                for reply in replies
+            )
+        )
+
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", factory)
+
+
+def _create_conversation_task(client: TestClient) -> str:
+    response = client.post(
+        "/tasks",
+        json={
+            "prompt": "Remember the codeword is granite.",
+            "title": "Conversation acceptance",
+            "interaction_mode": "conversation",
+        },
+    )
+    assert response.status_code == 201
+    return str(response.json()["task_id"])
+
+
+def _run_turn(client: TestClient, task_id: str) -> dict[str, object]:
+    response = client.post(f"/tasks/{task_id}/resume", json={})
+    assert response.status_code == 200, response.text
+    return response.json()

@@ -18,6 +18,33 @@ from zebra_agent_worker.execution_finalization import (
 )
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 
+_REARM_CAS_RETRIES = 3
+
+
+class StaleExecutionSnapshot(RuntimeError):
+    """The claimed snapshot fell behind the durable stream.
+
+    Raised when a concurrently persisted event (typically a human message
+    opening the next Turn) invalidated the decision inputs between the
+    claim and the preflight. The caller must re-recover the Session and
+    retry once with the refreshed stream instead of executing the stale
+    request (ADR-026 §5).
+    """
+
+
+def run_with_stale_retry[T](
+    execute_once: Callable[..., T],
+    *,
+    recover: Callable[[], object],
+    ownership_check: Callable[[], None],
+) -> T:
+    """Run once; on StaleExecutionSnapshot re-recover and run again."""
+    try:
+        return execute_once(None)
+    except StaleExecutionSnapshot:
+        ownership_check()
+        return execute_once(recover())
+
 
 def prepare_execution_preflight(
     *,
@@ -55,15 +82,11 @@ def prepare_execution_preflight(
             and current_turn(events) is None
             and event_store is not None
         ):
-            rearm = _rearm_awaiting_turn(
+            return recorder, _rearm_awaiting_turn(
                 recorder=recorder,
                 started_at=started_at,
                 event_store=event_store,
             )
-            if rearm is not None:
-                return recorder, rearm
-            # A Turn appeared on the refreshed stream: fall through and
-            # execute it normally.
     return recorder, reject_unsupported_setup_only(
         recorder=recorder,
         network_profile=network_profile,
@@ -78,37 +101,51 @@ def _rearm_awaiting_turn(
     recorder: DurableHarnessEventRecorder,
     started_at: datetime,
     event_store: EventStorePort,
-) -> ExecutedSession | None:
+) -> ExecutedSession:
     """Park a Turn-less conversation Segment back in awaiting_turn.
 
     ``recorder.prepare`` refreshes the recorder from the durable stream;
-    the no-open-Turn decision is then re-evaluated on that refreshed
-    canonical stream, so a human message that arrived concurrently (and
-    opened a Turn) is executed instead of being parked. The idempotency
-    key binds to the refreshed stream head, keeping every resume window
-    distinct.
+    the no-open-Turn decision is re-evaluated on that refreshed canonical
+    stream on every iteration. A concurrently arrived human message (or
+    any other event taking the next sequence between the fresh read and
+    the marker append) either raises ``StaleExecutionSnapshot`` — the
+    caller re-covers and executes the new Turn — or, for Turn-neutral
+    events, rebuilds the marker against the new head within a bounded
+    retry; the idempotency key always binds to the refreshed head.
     """
-    marker = recorder.prepare(
-        EventType.SESSION_RESUMED,
-        EventActor.HARNESS,
-        {"reason": "awaiting_turn_rearm"},
-        created_at=started_at,
-    )
-    fresh = event_store.list_for_session(recorder.session.session_id)
-    if current_turn(fresh) is not None or pending_turn_close(fresh) is not None:
-        return None
-    marker = marker.model_copy(
-        update={"idempotency_key": f"turn-rearm:{fresh[-1].event_id}"}
-    )
-    recorder.append_event(marker)
-    return ExecutedSession(
-        session=recorder.session,
-        events=recorder.events,
-        attempt_result=HarnessAttemptResult(
-            outcome=HarnessAttemptOutcome.COMPLETED,
-            summary="No open Turn to execute.",
-            metadata={"stop_reason": "awaiting_turn_noop"},
-        ),
+    session_id = recorder.session.session_id
+    for _ in range(_REARM_CAS_RETRIES):
+        marker = recorder.prepare(
+            EventType.SESSION_RESUMED,
+            EventActor.HARNESS,
+            {"reason": "awaiting_turn_rearm"},
+            created_at=started_at,
+        )
+        fresh = event_store.list_for_session(session_id)
+        if current_turn(fresh) is not None or pending_turn_close(fresh) is not None:
+            raise StaleExecutionSnapshot(
+                "a Turn appeared while re-arming; re-recover before executing"
+            )
+        marker = marker.model_copy(
+            update={"idempotency_key": f"turn-rearm:{fresh[-1].event_id}"}
+        )
+        try:
+            recorder.append_event(marker)
+        except ValueError:
+            # Sequence CAS conflict: a concurrent event took the slot and
+            # the refresh accepted it — re-evaluate on the newer stream.
+            continue
+        return ExecutedSession(
+            session=recorder.session,
+            events=recorder.events,
+            attempt_result=HarnessAttemptResult(
+                outcome=HarnessAttemptOutcome.COMPLETED,
+                summary="No open Turn to execute.",
+                metadata={"stop_reason": "awaiting_turn_noop"},
+            ),
+        )
+    raise StaleExecutionSnapshot(
+        "re-arm could not win sequence contention within its retry budget"
     )
 
 

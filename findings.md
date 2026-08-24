@@ -1,5 +1,29 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE review closeout round 5 - 2026-08-24
+
+第五轮复审 2 个 P1、1 个 P2 测试缺口,修复:
+
+- P1 旧 task 执行:新增 `StaleExecutionSnapshot` 信号——rearm 在刷新
+  后的 canonical stream 上发现 open Turn/pending close 即抛出;
+  `_execute_claimed_session` 外壳(`execution_recovery.execute_claimed_
+  with_stale_retry`)捕获后从 Event Store 重新恢复 Session/Workspace/
+  Task/上下文并重执行一次,绝不携带旧快照调用模型。
+- P1 CAS 窗口:rearm 的 fresh read 与 marker append 之间被并发事件
+  抢占 sequence 时,捕获 store 冲突并在刷新后的流上重新判断——
+  出现 Turn 则 `StaleExecutionSnapshot`,Turn 中性事件则按新流头
+  重建 marker,有界重试(3 次),无裸异常冒泡。
+- P2 测试缺口:重写为真实快照组合(claimed/task/events 均旧、仅
+  持久流含并发消息),断言 `StaleExecutionSnapshot` 与 recorder 真实
+  状态;新增完整 Worker 测试——首次恢复输入注入旧快照,断言模型
+  执行的是新 follow-up(第二次调用、新 turn_id 关闭、流连续可重放);
+  并发/崩溃类验收测试拆分至
+  `tests/api/http_app/test_turn_concurrency_acceptance.py`。
+
+验证:全仓 `2657 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿(Mypy 723),`git diff --check` 干净。
+
+
 ## CTX-TURN-LIFECYCLE review closeout round 4 - 2026-08-24
 
 第四轮复审 2 个 P1、1 个 P2 测试缺口,修复:

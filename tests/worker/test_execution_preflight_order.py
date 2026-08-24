@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from agent_core.application import (
     SessionBootstrapCommand,
     SessionBootstrapService,
@@ -164,16 +165,16 @@ def test_setup_only_capability_rejection_still_fires_without_pending_close(
     assert "session_failed" in types
 
 
-def test_rearm_aborts_when_a_turn_arrived_after_the_decision_snapshot(
+def test_rearm_raises_stale_when_a_turn_arrived_after_the_decision_snapshot(
     tmp_path: Path,
 ) -> None:
-    """A concurrent human message opens a Turn; the re-arm must abort.
+    """The claimed snapshot predates a concurrent follow-up message.
 
-    preflight receives the DECISION snapshot (no open Turn), but the
-    durable stream already contains a follow-up USER_MESSAGE_RECEIVED by
-    the time the marker would be written: the refreshed-stream re-check
-    abandons the re-arm and falls through to normal execution instead of
-    parking an executable Turn in awaiting_turn.
+    The claimed Session/Workspace, the events argument AND the recorder's
+    starting state all come from the pre-message snapshot (as in the real
+    call chain); only the durable stream already contains the follow-up.
+    The re-arm must raise StaleExecutionSnapshot so the caller re-recovers
+    — never park or execute the stale request.
     """
     stores, session, workspace, session_id = _seed_pending_close(
         tmp_path, closes=False, interaction_mode="conversation"
@@ -195,10 +196,15 @@ def test_rearm_aborts_when_a_turn_arrived_after_the_decision_snapshot(
         )
     )
     fresh_events = stores.events.list_for_session(session_id)
-    refreshed_session = rebuild_session(fresh_events)
-    refreshed_workspace = rebuild_workspace(fresh_events)
-    stores.sessions.save_session(refreshed_session)
-    stores.workspaces.save_workspace(refreshed_workspace)
+    # The claimed state is built from the PRE-message snapshot.
+    decision_snapshot = [
+        event for event in fresh_events if event.sequence < fresh_events[-1].sequence
+    ]
+    stale_session = rebuild_session(decision_snapshot)
+    stale_workspace = rebuild_workspace(decision_snapshot)
+    stores.sessions.save_session(stale_session)
+    stores.workspaces.save_workspace(stale_workspace)
+    assert current_turn(decision_snapshot) is None
 
     class _Factory:
         @staticmethod
@@ -206,16 +212,70 @@ def test_rearm_aborts_when_a_turn_arrived_after_the_decision_snapshot(
             return _recorder(stores, session, workspace)
 
     claimed = SimpleNamespace(
-        recovery=SimpleNamespace(
-            session=refreshed_session, workspace=refreshed_workspace
-        ),
+        recovery=SimpleNamespace(session=stale_session, workspace=stale_workspace),
         lease=SimpleNamespace(fence=None),
     )
-    # Decision snapshot excludes the concurrent message (stale list).
-    decision_snapshot = [
-        event for event in fresh_events if event.sequence < fresh_events[-1].sequence
-    ]
-    assert current_turn(decision_snapshot) is None
+
+    from zebra_agent_worker.execution_preflight import StaleExecutionSnapshot
+
+    with pytest.raises(StaleExecutionSnapshot):
+        prepare_execution_preflight(
+            recorder_factory=_Factory(),
+            claimed=claimed,
+            ownership_check=lambda: None,
+            network_profile="none",
+            has_local_artifact_store=True,
+            attempt_number=1,
+            started_at=NOW,
+            events=decision_snapshot,
+            event_store=stores.events,
+        )
+
+    stored = stores.events.list_for_session(session_id)
+    assert all(
+        event.payload.get("reason") != "awaiting_turn_rearm" for event in stored
+    )
+
+
+def test_rearm_marker_retries_when_a_turn_neutral_event_wins_the_sequence(
+    tmp_path: Path,
+) -> None:
+    """CAS conflict from a Turn-neutral event retries, no bare ValueError."""
+    stores, session, workspace, session_id = _seed_pending_close(
+        tmp_path, closes=False, interaction_mode="conversation"
+    )
+
+    class _Factory:
+        @staticmethod
+        def build(*, session, workspace, lease, ownership_check):
+            recorder = _recorder(stores, session, workspace)
+            original_append = recorder.append_event
+
+            def append_with_race(event):
+                if event.payload.get("reason") == "awaiting_turn_rearm" and not getattr(
+                    append_with_race, "raced", False
+                ):
+                    append_with_race.raced = True
+                    # A Turn-neutral event takes the marker's sequence first.
+                    stores.events.append(
+                        SessionEvent.create(
+                            session_id=session_id,
+                            sequence=event.sequence,
+                            event_type=EventType.SESSION_TITLE_UPDATED,
+                            actor=EventActor.HARNESS,
+                            payload={"title": "Concurrent title"},
+                        )
+                    )
+                return original_append(event)
+
+            recorder.append_event = append_with_race  # type: ignore[method-assign]
+            return recorder
+
+    claimed = SimpleNamespace(
+        recovery=SimpleNamespace(session=session, workspace=workspace),
+        lease=SimpleNamespace(fence=None),
+    )
+    events = stores.events.list_for_session(session_id)
 
     recorder, outcome = prepare_execution_preflight(
         recorder_factory=_Factory(),
@@ -225,14 +285,18 @@ def test_rearm_aborts_when_a_turn_arrived_after_the_decision_snapshot(
         has_local_artifact_store=True,
         attempt_number=1,
         started_at=NOW,
-        events=decision_snapshot,
+        events=events,
         event_store=stores.events,
     )
 
-    # The re-arm was abandoned: no marker, execution continues normally.
-    assert outcome is None
+    # The bounded retry appended the marker after the neutral event.
+    assert outcome is not None
+    assert outcome.attempt_result.metadata["stop_reason"] == "awaiting_turn_noop"
     stored = stores.events.list_for_session(session_id)
-    assert all(
-        event.payload.get("reason") != "awaiting_turn_rearm" for event in stored
-    )
-    assert refreshed_session.status.value == "ready"
+    reasons = [
+        event.payload.get("reason") for event in stored if event.payload.get("reason")
+    ]
+    assert reasons == ["awaiting_turn_rearm"]
+    sequences = [event.sequence for event in stored]
+    assert sequences == list(range(len(sequences)))
+    assert recorder.session.status.value == "awaiting_turn"

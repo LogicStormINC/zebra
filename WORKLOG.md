@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 5 (2xP1, 1xP2 gap)
+
+- `StaleExecutionSnapshot` + execution 外壳重试(重新恢复全量输入,
+  旧快照不执行);rearm CAS 冲突有界重试,无裸 ValueError。
+- 测试改为真实旧快照组合;新增完整 Worker stale→重试→新 Turn 执行
+  断言;执行输入恢复抽至 `execution_recovery.py`(文件尺寸回归)。
+- 验证:全仓 `2657 passed / 348 skipped`;真 PG `8/8`;`make check`
+  全绿;`git diff --check` 干净。
+
+
 ## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 4 (2xP1, 1xP2 gap)
 
 - recorder 本地分支预校验 + canonical 序列分支(防污染、防回退);
