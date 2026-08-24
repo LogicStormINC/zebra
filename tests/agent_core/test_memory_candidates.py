@@ -446,7 +446,7 @@ def test_memory_candidate_extraction_skips_sensitive_or_failed_commands() -> Non
     assert result.events == ()
 
 
-def test_memory_candidate_extraction_requires_completed_session() -> None:
+def test_memory_candidate_extraction_requires_closed_turn() -> None:
     session = Session.create(title="Memory candidate session", created_at=_now()).model_copy(
         update={"status": SessionStatus.RUNNING}
     )
@@ -454,7 +454,7 @@ def test_memory_candidate_extraction_requires_completed_session() -> None:
 
     with pytest.raises(
         ValueError,
-        match="memory candidates can only be extracted from completed sessions",
+        match="memory candidates can only be extracted after a completed turn",
     ):
         service.extract(
             session=session,

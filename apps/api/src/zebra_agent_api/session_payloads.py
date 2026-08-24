@@ -11,6 +11,7 @@ from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.domain.turns import InteractionMode
 from agent_core.domain.workspace_control import WorkspaceSource
 from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
@@ -39,6 +40,7 @@ class CreateSessionPayload(TypedDict):
     attachments: tuple[TextAttachmentInput, ...]
     definition_id: AgentDefinitionId | None
     definition_environment: str | None
+    interaction_mode: InteractionMode | None
 
 
 CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
@@ -241,6 +243,16 @@ def parse_create_session_payload(
     if not isinstance(definition_environment, str) or not definition_environment.strip():
         return bad_request("definition_environment must be a non-blank string")
 
+    raw_interaction_mode = payload.get("interaction_mode")
+    interaction_mode: InteractionMode | None = None
+    if raw_interaction_mode is not None:
+        if not isinstance(raw_interaction_mode, str):
+            return bad_request("interaction_mode must be a string when provided")
+        try:
+            interaction_mode = InteractionMode(raw_interaction_mode)
+        except ValueError:
+            return bad_request("interaction_mode must be conversation or one_shot")
+
     return {
         "prompt": prompt.strip(),
         "title": title.strip(),
@@ -261,6 +273,7 @@ def parse_create_session_payload(
         "attachments": attachments,
         "definition_id": definition_id,
         "definition_environment": definition_environment,
+        "interaction_mode": interaction_mode,
     }
 
 

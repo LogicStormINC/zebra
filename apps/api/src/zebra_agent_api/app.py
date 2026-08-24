@@ -7,6 +7,7 @@ from agent_core.application import (
     SessionMessageAppendCommand,
     SessionMessageAppendService,
     attach_refs_to_user_event,
+    project_turns,
 )
 from agent_core.application.agent_definitions import PublisherGrantPort
 from agent_core.application.session_projection import apply_event
@@ -337,6 +338,9 @@ class ZebraAgentApi(
                 command=SessionMessageAppendCommand(
                     content=parsed["content"],
                     clarification_id=parsed["clarification_id"],
+                    prior_human_turns=len(
+                        project_turns(self.stores.events.list_for_session(session_key))
+                    ),
                 ),
             )
         except ValueError as exc:

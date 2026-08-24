@@ -41,6 +41,9 @@ class MemoryCandidateExtractionCommand:
     namespace_id: str | None = None
     definition_id: AgentDefinitionId | None = None
     extracted_at: datetime | None = None
+    # Per-turn extraction window (ADR-026): only derive candidates from
+    # events strictly after this sequence. -1 keeps the legacy full scan.
+    since_sequence: int = -1
 
 
 @dataclass(frozen=True)
@@ -89,8 +92,10 @@ class MemoryCandidateExtractionPlanner:
         command: MemoryCandidateExtractionCommand,
         confirmed_records: tuple[MemoryRecord, ...] = (),
     ) -> MemoryCandidateExtractionPlan:
-        if session.status is not SessionStatus.COMPLETED:
-            raise ValueError("memory candidates can only be extracted from completed sessions")
+        if session.status not in {SessionStatus.COMPLETED, SessionStatus.AWAITING_TURN}:
+            raise ValueError(
+                "memory candidates can only be extracted after a completed turn"
+            )
 
         records, refresh_targets = _candidate_records_and_refresh_targets(
             events=events,
@@ -189,6 +194,8 @@ def _candidate_records_and_refresh_targets(
             "repo_id": None,
         }
     for event in events:
+        if event.sequence <= command.since_sequence:
+            continue
         for candidate in candidates_from_session_event(
             event,
             repo_id=command.repo_id,

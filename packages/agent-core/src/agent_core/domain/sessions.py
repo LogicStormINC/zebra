@@ -14,6 +14,7 @@ class SessionStatus(StrEnum):
     RUNNING = "running"
     WAITING_APPROVAL = "waiting_approval"
     WAITING_INPUT = "waiting_input"
+    AWAITING_TURN = "awaiting_turn"
     SUSPENDED = "suspended"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -79,6 +80,7 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     SessionStatus.RUNNING: {
         SessionStatus.WAITING_APPROVAL,
         SessionStatus.WAITING_INPUT,
+        SessionStatus.AWAITING_TURN,
         SessionStatus.SUSPENDED,
         SessionStatus.COMPLETED,
         SessionStatus.FAILED,
@@ -91,6 +93,16 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     },
     SessionStatus.WAITING_INPUT: {
         SessionStatus.READY,
+        SessionStatus.FAILED,
+        SessionStatus.CANCELLED,
+    },
+    SessionStatus.AWAITING_TURN: {
+        # A finished conversation turn re-arms the Segment for pickup once
+        # the next human message arrives, and remains closable/suspendable.
+        SessionStatus.RUNNING,
+        SessionStatus.READY,
+        SessionStatus.SUSPENDED,
+        SessionStatus.COMPLETED,
         SessionStatus.FAILED,
         SessionStatus.CANCELLED,
     },

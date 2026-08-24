@@ -30,6 +30,18 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CTX-TURN-LIFECYCLE` (ADR-026 cards `CTX-TURN-ADR-01` through
+  `CTX-TURN-API-01`) is `Review` on `codex/ctx-turn-lifecycle-01`, stacked
+  on the `CTX-INHERIT-CLOUD-01` closeout: a final model answer closes a
+  Turn instead of always closing the Segment. `conversation` Tasks keep one
+  Segment across turns in the new `awaiting_turn` status; `one_shot` and
+  every legacy admission keep writing the compatible `SESSION_COMPLETED`.
+  Admission, per-turn Memory/title/AG-UI consumers, crash reconciliation,
+  context coverage fail-closed and the public `task_status`/turn fields are
+  included; validation is full repository `2632 passed / 348 skipped`,
+  Context PostgreSQL `8/8`, `make check` green and the ADR-026 acceptance
+  matrix `6/6`. Remaining follow-ups: legacy explicit upgrade path (last in
+  the rollout order), Cloud PG+MinIO multi-worker E2E, Trench acceptance.
 - `CTX-INHERIT-CLOUD-01` is `Review` on
   `codex/cloud-context-inheritance-01`. It closes the existing Cloud runtime
   consumption gap without changing the local default: trusted PostgreSQL
@@ -7204,6 +7216,62 @@ external membership.
 - Closing this card records PostgreSQL Context materialization only. Runtime,
   Worker/API composition, Provider HTTP, Desktop, SQLite, Redis, Mem0 and
   `ControlPlaneStores` selection remain separate gates.
+
+### CTX-TURN-LIFECYCLE - Task Turn Segment Lifecycle (ADR-026)
+
+- Status: `Review`
+- Human owner: `lukeding`
+- Implementation: `Codex`
+- Branch: `codex/ctx-turn-lifecycle-01` (stacked on
+  `codex/cloud-context-inheritance-01` closeout `c3b44bfc`)
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-ctx-turn`
+- Depends on: `CTX-INHERIT-CLOUD-01`
+- Covers cards: `CTX-TURN-ADR-01`, `CTX-TURN-CON-01`, `CTX-TURN-PROJ-01`,
+  `CTX-TURN-CMD-01`, `CTX-TURN-WORKER-01`, `CTX-TURN-FINALIZE-01`,
+  `CTX-TURN-CONTEXT-01`, `CTX-TURN-API-01`
+- Owned paths:
+  `docs/ADR-026_Turn_Lifecycle.md` (new),
+  `packages/agent-core/src/agent_core/domain/identifiers.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/domain/sessions.py`,
+  `packages/agent-core/src/agent_core/domain/turns.py` (new),
+  `packages/agent-core/src/agent_core/domain/context_materialization.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/handoff_events.py`,
+  `packages/agent-core/src/agent_core/contracts/turn_events.py` (new),
+  `packages/agent-core/src/agent_core/application/session_projection.py`,
+  `packages/agent-core/src/agent_core/application/workspace_projection.py`,
+  `packages/agent-core/src/agent_core/application/turn_projection.py` (new),
+  `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/application/session_messages.py`,
+  `packages/agent-core/src/agent_core/application/memory_candidates.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/projection.py`,
+  `packages/agent-storage/src/agent_storage/postgres/context_materialization.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
+  `apps/worker/src/zebra_agent_worker/execution_preflight.py`,
+  `apps/worker/src/zebra_agent_worker/cloud_memory_finalization.py`,
+  `apps/worker/src/zebra_agent_worker/cloud_memory_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `apps/worker/src/zebra_agent_worker/command_consumer.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/api/src/zebra_agent_api/task_api.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/api/src/zebra_agent_api/session_payloads.py`,
+  `apps/api/src/zebra_agent_api/session_queue.py`,
+  `apps/api/src/zebra_agent_api/session_streaming.py`,
+  `apps/cli/src/zebra_agent_cli/session_message_append_write.py`,
+  focused tests under `tests/agent_core/`, `tests/api/`,
+  `tests/agent_storage/`, `tests/worker/`
+- Acceptance: ADR-026 matrix (multi-turn single Segment, one-shot legacy
+  compatibility, `turn_in_progress` admission rejection, idempotent replay
+  versus drift conflict, crashed turn-close healing without model calls,
+  per-turn AG-UI run boundaries), full repository `2632 passed /
+  348 skipped`, Context PostgreSQL `8/8`, `make check` green.
+- Follow-ups: `CTX-TURN-LEGACY-01` explicit upgrade path (reader-side
+  legacy interpretation already shipped), `CTX-TURN-CLOUD-E2E-01`
+  (real PG+MinIO multi-worker crash drills) and
+  `EMB-TRN-TURN-E2E-01` (Trench 16-input acceptance).
 
 ### CTX-INHERIT-CLOUD-01 - Cloud Context Materialization And Child Inheritance
 

@@ -46,6 +46,10 @@ class _ProjectionState:
     text_ended: set[str] = field(default_factory=set)
     tool_calls: set[str] = field(default_factory=set)
     open_interrupts: dict[str, Interrupt] = field(default_factory=dict)
+    # ADR-026: once a Turn finished the AG-UI run, the next human message
+    # starts a fresh run and the trailing Segment terminal must not emit a
+    # second RUN_FINISHED.
+    turn_finished: bool = False
 
 
 class AgUiProjector:
@@ -227,7 +231,41 @@ class AgUiProjector:
             )
         if event.event_type in {EventType.APPROVAL_REQUESTED, EventType.CLARIFICATION_REQUESTED}:
             return project_interrupt_event(event, identity, state.open_interrupts, timestamp)
+        if event.event_type is EventType.USER_MESSAGE_RECEIVED:
+            if state.turn_finished and _optional_payload_text(payload, "turn_id") is not None:
+                state.turn_finished = False
+                return (
+                    RunStartedEvent(
+                        thread_id=identity.thread_id,
+                        run_id=identity.run_id,
+                        parent_run_id=identity.parent_run_id,
+                        timestamp=timestamp,
+                    ),
+                )
+            return ()
+        if event.event_type is EventType.TURN_COMPLETED:
+            state.turn_finished = True
+            return (
+                RunFinishedEvent(
+                    timestamp=timestamp,
+                    thread_id=identity.thread_id,
+                    run_id=identity.run_id,
+                    outcome=RunFinishedSuccessOutcome(),
+                ),
+            )
+        if event.event_type is EventType.TURN_FAILED:
+            state.turn_finished = True
+            message = (
+                _optional_payload_text(payload, "reason")
+                or _optional_payload_text(payload, "summary")
+                or "Zebra turn failed"
+            )
+            return (
+                RunErrorEvent(timestamp=timestamp, message=message, code="zebra_turn_failed"),
+            )
         if event.event_type is EventType.SESSION_FAILED:
+            if state.turn_finished:
+                return ()
             message = (
                 _optional_payload_text(payload, "summary")
                 or _optional_payload_text(payload, "reason")
@@ -237,6 +275,8 @@ class AgUiProjector:
                 RunErrorEvent(timestamp=timestamp, message=message, code="zebra_session_failed"),
             )
         if event.event_type is EventType.SESSION_COMPLETED:
+            if state.turn_finished:
+                return ()
             return (
                 RunFinishedEvent(
                     timestamp=timestamp,

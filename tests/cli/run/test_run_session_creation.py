@@ -59,7 +59,9 @@ def test_cli_run_command_creates_local_session(
     assert events[0].event_type is EventType.SESSION_CREATED
     assert events[0].payload == {"title": "Fix failing tests"}
     assert events[1].event_type is EventType.USER_MESSAGE_RECEIVED
-    assert events[1].payload == {"content": "Fix tests"}
+    assert events[1].payload["content"] == "Fix tests"
+    assert events[1].payload["origin"] == "human"
+    assert events[1].payload["turn_index"] == 0
     assert events[2].event_type is EventType.TASK_PREPARED
     assert events[2].payload["workspace_root"] == str(Path(".").resolve())
     assert events[2].payload["tool_profile"] == "general"

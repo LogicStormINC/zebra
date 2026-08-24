@@ -13,6 +13,7 @@ from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.sessions import Session
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.domain.turns import InteractionMode, derive_turn_id
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class SessionBootstrapCommand:
     host_context: HostContextEnvelope | None = None
     definition_snapshot: AgentDefinitionSnapshot | None = None
     delegated_context: DelegatedContextSnapshot | None = None
+    interaction_mode: InteractionMode | None = None
     created_at: datetime | None = None
 
 
@@ -51,6 +53,7 @@ class SessionBootstrapService:
             else normalize_history_session_ids(command.history_session_ids)
         )
         session = Session.create(title=command.title, created_at=command.created_at)
+        turn_id = derive_turn_id(session.session_id, 0)
         events = (
             SessionEvent.create(
                 session_id=session.session_id,
@@ -65,7 +68,12 @@ class SessionBootstrapService:
                 sequence=1,
                 event_type=EventType.USER_MESSAGE_RECEIVED,
                 actor=EventActor.USER,
-                payload={"content": command.user_input},
+                payload={
+                    "content": command.user_input,
+                    "turn_id": str(turn_id),
+                    "turn_index": 0,
+                    "origin": "human",
+                },
                 created_at=session.created_at,
             ),
             SessionEvent.create(
@@ -112,6 +120,11 @@ class SessionBootstrapService:
                     **(
                         {"delegated_context": command.delegated_context.model_dump(mode="json")}
                         if command.delegated_context is not None
+                        else {}
+                    ),
+                    **(
+                        {"interaction_mode": command.interaction_mode.value}
+                        if command.interaction_mode is not None
                         else {}
                     ),
                 },

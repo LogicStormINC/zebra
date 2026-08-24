@@ -17,6 +17,11 @@ class UserMessageReceivedPayload(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     trust: HandoffActorKind | None = Field(default=None, exclude_if=lambda value: value is None)
+    turn_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    turn_index: int | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None
+    )
+    origin: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @field_validator("content")
     @classmethod
@@ -24,6 +29,15 @@ class UserMessageReceivedPayload(BaseModel):
         value = value.strip()
         if not value:
             raise ValueError("content must not be blank")
+        return value
+
+    @field_validator("origin")
+    @classmethod
+    def constrain_origin(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if value not in ("human", "session_handoff"):
+            raise ValueError("user-message origin must be human or session_handoff")
         return value
 
     @model_validator(mode="after")
@@ -43,6 +57,16 @@ class UserMessageReceivedPayload(BaseModel):
             raise ValueError("handoff user-message source must be session_handoff")
         if self.actor_kind is not self.trust:
             raise ValueError("handoff actor kind and trust must agree")
+        return self
+
+    @model_validator(mode="after")
+    def validate_turn_provenance(self) -> "UserMessageReceivedPayload":
+        if self.turn_id is None and self.turn_index is None:
+            return self
+        if self.turn_id is None or self.turn_index is None:
+            raise ValueError("turn identity must carry both turn_id and turn_index")
+        if not self.turn_id.strip():
+            raise ValueError("turn_id must not be blank")
         return self
 
 

@@ -33,7 +33,9 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
                 "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
             )
             session_revision = self._session_revision(connection, request)
-            history, history_truncated = self._history(connection, request)
+            history, history_truncated, truncated_before = self._history(
+                connection, request
+            )
             capsule = self._active_capsule(connection, request)
             memories = (
                 []
@@ -45,14 +47,21 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
                     as_of=request.as_of,
                 )
             )
-        return ContextMaterialization(
-            request=request,
-            session_revision=session_revision,
-            history=history,
-            history_truncated=history_truncated,
-            active_capsule=capsule,
-            memories=tuple(memories),
-        )
+        try:
+            return ContextMaterialization(
+                request=request,
+                session_revision=session_revision,
+                history=history,
+                history_truncated=history_truncated,
+                truncated_before_sequence=truncated_before,
+                active_capsule=capsule,
+                memories=tuple(memories),
+            )
+        except ValueError as exc:
+            # e.g. an uncovered gap between the active Capsule and the kept
+            # History window: fail closed instead of calling the model with
+            # a hole in its context (ADR-026 §7).
+            raise PostgresContextMaterializationConflictError(str(exc)) from exc
 
     def _session_revision(self, connection: Any, request: ContextMaterializationRequest) -> int:
         row = connection.execute(
@@ -72,7 +81,7 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
 
     def _history(
         self, connection: Any, request: ContextMaterializationRequest
-    ) -> tuple[tuple[SessionHistoryMessage, ...], bool]:
+    ) -> tuple[tuple[SessionHistoryMessage, ...], bool, int | None]:
         # Human conversation only: handoff/automation seed prompts reuse the
         # user_message_received wire shape but are not conversational history.
         rows = connection.execute(
@@ -106,13 +115,17 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
         # Fetch one row past the limit so a truncated prefix is detected here
         # instead of silently disappearing from every downstream snapshot.
         history_truncated = len(rows) > request.history_limit
+        truncated_before: int | None = None
         if history_truncated:
-            # rows are ascending; keep the newest window, drop the oldest.
+            # rows are ascending; the first row is the newest dropped
+            # message — the coverage boundary the Capsule must reach.
+            truncated_before = int(rows[0]["sequence"])
+            # keep the newest window, drop the oldest.
             rows = rows[-request.history_limit :]
         messages = tuple(
             message for row in rows if (message := message_from_row(row)) is not None
         )
-        return messages, history_truncated
+        return messages, history_truncated, truncated_before
 
     def _active_capsule(
         self, connection: Any, request: ContextMaterializationRequest

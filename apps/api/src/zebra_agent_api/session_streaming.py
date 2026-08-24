@@ -17,7 +17,10 @@ from zebra_agent_api.task_api import is_user_task_event, serialize_task_event
 
 _POLL_SECONDS = 0.05
 _KEEPALIVE_SECONDS = 15.0
-_ACTIVE_STATUSES = frozenset({SessionStatus.READY, SessionStatus.RUNNING})
+# awaiting_turn keeps a conversation Task stream open between Turns (ADR-026).
+_ACTIVE_STATUSES = frozenset(
+    {SessionStatus.READY, SessionStatus.RUNNING, SessionStatus.AWAITING_TURN}
+)
 
 
 async def tail_session_events(

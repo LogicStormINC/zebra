@@ -7,9 +7,11 @@ from agent_core.application import (
     MemoryCandidateExtractionService,
     MemoryCandidatePromotionService,
     SessionTitleService,
+    current_turn,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports import (
     EventStorePort,
@@ -35,6 +37,74 @@ class ExecutedSession:
     attempt_result: HarnessAttemptResult
 
 
+def pending_turn_close(events: list[SessionEvent]) -> SessionEvent | None:
+    """Detect a crashed one-shot Turn close missing its Segment terminal.
+
+    ADR-026 §4.2: when a Worker crashes between ``TURN_COMPLETED(
+    closes_segment=true)`` and the compatible ``SESSION_COMPLETED``, the
+    recovery path must append the same idempotent terminal instead of
+    calling the model again.
+    """
+
+    last_close: SessionEvent | None = None
+    for event in events:
+        if event.event_type is EventType.TURN_COMPLETED:
+            last_close = event
+        elif event.event_type in {
+            EventType.SESSION_COMPLETED,
+            EventType.SESSION_FAILED,
+            EventType.SESSION_CANCELLED,
+        }:
+            last_close = None
+    if last_close is None:
+        return None
+    if last_close.payload.get("closes_segment") is not True:
+        return None
+    return last_close
+
+
+def reconcile_pending_turn_close(
+    *,
+    recorder: DurableHarnessEventRecorder,
+    events: list[SessionEvent],
+    started_at: datetime,
+) -> ExecutedSession | None:
+    """Heal a crashed one-shot Turn close; never re-invokes the model."""
+
+    turn_event = pending_turn_close(events)
+    if turn_event is None:
+        return None
+    turn_id = turn_event.payload.get("turn_id")
+    summary = turn_event.payload.get("summary")
+    metadata = turn_event.payload.get("metadata")
+    terminal = recorder.prepare(
+        EventType.SESSION_COMPLETED,
+        EventActor.HARNESS,
+        {
+            "attempt_number": 1,
+            "summary": summary if isinstance(summary, str) else "",
+            "metadata": metadata if isinstance(metadata, dict) else {},
+        },
+        created_at=started_at,
+    ).model_copy(
+        update={
+            "idempotency_key": (
+                f"turn-close:{turn_id}" if isinstance(turn_id, str) and turn_id else None
+            )
+        }
+    )
+    recorder.append_event(terminal)
+    return ExecutedSession(
+        session=recorder.session,
+        events=recorder.events,
+        attempt_result=HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.COMPLETED,
+            summary=summary if isinstance(summary, str) and summary.strip() else "Turn closed.",
+            metadata=metadata if isinstance(metadata, dict) else {},
+        ),
+    )
+
+
 def finalize_execution(
     *,
     recorder: DurableHarnessEventRecorder,
@@ -48,6 +118,7 @@ def finalize_execution(
     projection_store: ProjectionStorePort | None = None,
     workspace_store: WorkspaceProjectionStorePort | None = None,
     started_at: datetime,
+    interaction_mode: InteractionMode = InteractionMode.ONE_SHOT,
 ) -> tuple[SessionEvent, ...]:
     try:
         return _finalize_execution(
@@ -62,6 +133,7 @@ def finalize_execution(
             projection_store=projection_store,
             workspace_store=workspace_store,
             started_at=started_at,
+            interaction_mode=interaction_mode,
         )
     except ExecutionInterrupted:
         return recorder.events
@@ -80,6 +152,7 @@ def _finalize_execution(
     projection_store: ProjectionStorePort | None,
     workspace_store: WorkspaceProjectionStorePort | None,
     started_at: datetime,
+    interaction_mode: InteractionMode,
 ) -> tuple[SessionEvent, ...]:
     if recorder.session.status in {
         SessionStatus.CANCELLED,
@@ -115,16 +188,11 @@ def _finalize_execution(
         HarnessAttemptOutcome.WAITING_APPROVAL,
         HarnessAttemptOutcome.WAITING_INPUT,
     }:
-        recorder.append(
-            EventType.SESSION_COMPLETED
-            if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
-            else EventType.SESSION_FAILED,
-            EventActor.HARNESS,
-            {
-                "attempt_number": 1,
-                "summary": attempt_result.summary,
-                "metadata": attempt_result.metadata,
-            },
+        _append_turn_close(
+            recorder=recorder,
+            attempt_result=attempt_result,
+            event_store=event_store,
+            interaction_mode=interaction_mode,
         )
     elif attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
         recorder.append(
@@ -178,6 +246,78 @@ def _finalize_execution(
     return recorder.events
 
 
+def _append_turn_close(
+    *,
+    recorder: DurableHarnessEventRecorder,
+    attempt_result: HarnessAttemptResult,
+    event_store: EventStorePort,
+    interaction_mode: InteractionMode,
+) -> None:
+    """Close the executing Turn, then the Segment only on hard boundaries.
+
+    ADR-026: a conversation Task writes ``TURN_COMPLETED(closes_segment=
+    false)`` and stays in ``awaiting_turn``; a one-shot (and every legacy
+    admission) additionally writes ``SESSION_COMPLETED`` so existing
+    terminal consumers keep working. Failures always close the Segment.
+    """
+
+    events = (
+        event_store.list_for_session(recorder.session.session_id)
+        if event_store is not None
+        else []
+    )
+    open_turn = current_turn(events) if events else None
+    fallback_sequence = getattr(recorder.session, "current_sequence", 0)
+    turn_id = open_turn.turn_id if open_turn else f"legacy-turn:{fallback_sequence}"
+    turn_index = open_turn.turn_index if open_turn else 0
+    if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
+        closes_segment = interaction_mode is not InteractionMode.CONVERSATION
+        recorder.append(
+            EventType.TURN_COMPLETED,
+            EventActor.HARNESS,
+            {
+                "turn_id": turn_id,
+                "turn_index": turn_index,
+                "summary": attempt_result.summary,
+                "closes_segment": closes_segment,
+                "attempt_number": 1,
+                "metadata": attempt_result.metadata,
+            },
+        )
+        if closes_segment:
+            recorder.append(
+                EventType.SESSION_COMPLETED,
+                EventActor.HARNESS,
+                {
+                    "attempt_number": 1,
+                    "summary": attempt_result.summary,
+                    "metadata": attempt_result.metadata,
+                },
+            )
+        return
+    recorder.append(
+        EventType.TURN_FAILED,
+        EventActor.HARNESS,
+        {
+            "turn_id": turn_id,
+            "turn_index": turn_index,
+            "reason": attempt_result.summary,
+            "closes_segment": True,
+            "attempt_number": 1,
+            "metadata": attempt_result.metadata,
+        },
+    )
+    recorder.append(
+        EventType.SESSION_FAILED,
+        EventActor.HARNESS,
+        {
+            "attempt_number": 1,
+            "summary": attempt_result.summary,
+            "metadata": attempt_result.metadata,
+        },
+    )
+
+
 def _child_task_ids(metadata: dict[str, object]) -> list[str] | None:
     """Extract validated waiting-children ids from attempt metadata."""
 
@@ -198,13 +338,25 @@ def _finalize_local_memory(
     event_store: EventStorePort,
     started_at: datetime,
 ) -> None:
+    events = event_store.list_for_session(recorder.session.session_id)
+    # Per-turn extraction window: never re-derive candidates from events a
+    # previous turn already extracted (ADR-026 §6).
+    since_sequence = max(
+        (
+            event.sequence
+            for event in events
+            if event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
+        ),
+        default=-1,
+    )
     extraction = memory_extraction_service.extract(
         session=recorder.session,
-        events=event_store.list_for_session(recorder.session.session_id),
+        events=events,
         next_sequence=recorder.next_sequence,
         command=MemoryCandidateExtractionCommand(
             repo_id=str(Path(recorder.workspace.workspace_root).expanduser().resolve()),
             extracted_at=started_at,
+            since_sequence=since_sequence,
         ),
     )
     for event in extraction.events:

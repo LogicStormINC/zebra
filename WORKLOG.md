@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-08-24 - CTX-TURN-LIFECYCLE implementation (ADR-026)
+
+- 收口 `CTX-INHERIT-CLOUD-01`(automation seed 排除 + 截断显式化 +
+  声明收窄)在 `codex/cloud-context-inheritance-01`(commit
+  `c3b44bfc`)。
+- 从该收口点创建 `codex/ctx-turn-lifecycle-01` worktree,按 ADR-026
+  实现 Turn 合同、投影、准入、Worker 终态化与崩溃和解、消费者迁移
+  (Memory/标题/Workspace/AG-UI/SSE)、上下文覆盖不变量、API 新字段
+  与验收矩阵。
+- 验证:全仓 `2632 passed / 348 skipped`;Context PostgreSQL `8/8`;
+  `make check` 全绿(size `1449`、Mypy `721`、Eval `10/10`);
+  ADR-026 验收 6/6。
+- 后续:合并 PR #261 后本分支 rebase 到 `origin/cloud-agent`;
+  Cloud E2E(真 PG+MinIO 多 Worker 崩溃演练)与 Trench 16 输入
+  验收待维护者环境。
+
+
 ## 2026-08-23 - CTX-INHERIT-CLOUD-01 review handoff
 
 - 基于权威 `origin/cloud-agent@7de09da1` 创建独立

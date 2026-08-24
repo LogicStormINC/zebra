@@ -34,7 +34,9 @@ def test_cli_message_append_appends_user_message(tmp_path: Path) -> None:
         "current_sequence": 3,
     }
     assert events[-1].event_type is EventType.USER_MESSAGE_RECEIVED
-    assert events[-1].payload == {"content": "Please continue from the last checkpoint."}
+    assert events[-1].payload["content"] == "Please continue from the last checkpoint."
+    assert events[-1].payload["origin"] == "human"
+    assert events[-1].payload["turn_id"]
 
 
 def test_cli_message_append_rejects_invalid_payload(tmp_path: Path) -> None:

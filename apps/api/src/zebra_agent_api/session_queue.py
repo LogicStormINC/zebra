@@ -46,6 +46,7 @@ def create_queued_session(
             max_tool_calls=parsed["max_tool_calls"],
             host_context=host_context,
             definition_snapshot=definition_snapshot,
+            interaction_mode=parsed["interaction_mode"],
         )
     )
     events, attachment_refs = persist_initial_attachments(

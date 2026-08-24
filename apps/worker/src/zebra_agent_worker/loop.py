@@ -169,7 +169,13 @@ class WorkerLoopService:
         # ponytail: retain a bounded recent window until an explicit durable
         # finalization queue is introduced for high-throughput deployments.
         for session in self._projection_store.list_recent_sessions(limit=max(batch_size, 32)):
-            if session.status is not SessionStatus.COMPLETED:
+            # COMPLETED: legacy/one-shot finalization; AWAITING_TURN: a
+            # conversation Turn closed but its fenced Memory/title side
+            # chain may still be missing after a Worker crash (ADR-026 §6).
+            if session.status not in {
+                SessionStatus.COMPLETED,
+                SessionStatus.AWAITING_TURN,
+            }:
                 continue
             try:
                 self._cloud_memory_recovery.recover(

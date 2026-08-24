@@ -44,6 +44,14 @@ from agent_core.application.session_messages import (
     SessionMessageAppendService,
 )
 from agent_core.application.session_title import SessionTitleService
+from agent_core.application.turn_projection import (
+    TurnRecord,
+    current_turn,
+    interaction_mode_of,
+    is_human_message,
+    latest_completed_turn,
+    project_turns,
+)
 
 __all__ = [
     "ApprovalDecisionAction",
@@ -74,4 +82,10 @@ __all__ = [
     "SessionMessageAppendCommand",
     "SessionMessageAppendService",
     "SessionTitleService",
+    "TurnRecord",
+    "current_turn",
+    "interaction_mode_of",
+    "is_human_message",
+    "latest_completed_turn",
+    "project_turns",
 ]

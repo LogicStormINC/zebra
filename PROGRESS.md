@@ -9,6 +9,53 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
+- Task/Turn/Segment lifecycle implemented (2026-08-24, ADR-026,
+  `CTX-TURN-*` cards 1-9, `codex/ctx-turn-lifecycle-01`, stacked on the
+  `CTX-INHERIT-CLOUD-01` review closeout): a final model answer now closes
+  a Turn (`TURN_COMPLETED/FAILED/CANCELLED` with `turn_id/turn_index`)
+  instead of always closing the Segment. `conversation` Tasks stay in the
+  new `SessionStatus.AWAITING_TURN` and keep one Segment across turns —
+  the next human message re-arms the Segment to `ready` with a new
+  deterministic Turn; `one_shot` (and every legacy admission, which reads
+  as `one_shot`) additionally writes the compatible `SESSION_COMPLETED`,
+  so all existing terminal consumers keep working unchanged. MESSAGE
+  admission rejects a second normal message while a turn is
+  `running/waiting_approval` (`turn_in_progress`), clarifications keep
+  continuing their own turn, and API idempotency replays the same turn /
+  conflicts on drift. Per-turn consumers are migrated: Memory extraction
+  and title generation run after every successful Turn with a per-turn
+  window and receipt anchoring, the workspace returns to `prepared` on
+  `TURN_COMPLETED`, AG-UI emits one `RUN_FINISHED` per Turn (plus
+  `RUN_STARTED` for the next turn) and the task stream stays open in
+  `awaiting_turn`. Crash reconciliation heals a crashed one-shot
+  `TURN_COMPLETED(closes_segment=true)` -> `SESSION_COMPLETED` window
+  idempotently without re-invoking the model. Context coverage now fails
+  closed on an uncovered gap between the active Capsule and the truncated
+  History window and records explicit truncation omissions. The public
+  task API adds `task_status`, `current_turn_status`, `turn_id`,
+  `active_segment_id`, `interaction_mode` while keeping `status`.
+  Validation: full repository `2632 passed / 348 skipped`, Context
+  PostgreSQL `8/8` (including the coverage-gap fail-closed case),
+  `make check` green (size `1449`, Mypy `721`, Eval `10/10`), and an
+  ADR-026 acceptance matrix covering multi-turn single-Segment continuity,
+  one-shot legacy compatibility, admission conflicts, idempotency replay,
+  crash healing and per-turn AG-UI boundaries. Not yet done: the optional
+  explicit legacy Task upgrade path (last in the ADR-026 rollout order),
+  full Cloud PostgreSQL+MinIO E2E with multi-worker crash drills, and the
+  Trench 16-input cross-service acceptance.
+
+- Cloud Context inheritance review closeout landed (2026-08-24,
+  `CTX-INHERIT-CLOUD-01` closeout on
+  `codex/cloud-context-inheritance-01`): automation handoff seeds
+  (`source=session_handoff` / `actor_kind=automation`) no longer pollute
+  the materialized History tail or the INITIAL/CONTINUE mode tally; SQL
+  truncation is detected via limit+1 and surfaces as
+  `history_tail_truncated` / `history_prefix_uncovered` omissions instead
+  of silently dropping the prefix; the card's claims were narrowed to
+  "Cloud Worker consumes authoritative materialization + bounded Child
+  inheritance" — ordinary multi-turn Task continuity is owned by ADR-026.
+  Validation: focused `15 passed`, Context PostgreSQL `7/7`.
+
 - Cloud Context inheritance is ready for review (2026-08-23,
   `CTX-INHERIT-CLOUD-01`, `codex/cloud-context-inheritance-01`): Cloud Worker
   now consumes one PostgreSQL-authoritative materialization generation for

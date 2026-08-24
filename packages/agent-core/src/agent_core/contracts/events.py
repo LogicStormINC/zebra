@@ -41,6 +41,11 @@ from agent_core.contracts.subagent_events import (
     SubagentDelegatedPayload,
     SubagentLifecyclePayload,
 )
+from agent_core.contracts.turn_events import (
+    TurnCancelledPayload,
+    TurnCompletedPayload,
+    TurnFailedPayload,
+)
 from agent_core.domain.agent_definition_snapshots import (
     AgentDefinitionSnapshot,
 )
@@ -59,6 +64,7 @@ from agent_core.domain.plans import MAX_PLAN_STEPS, PlanStep, SessionPlan
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.skills import normalize_skill_components
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.domain.turns import InteractionMode
 
 
 class SessionCreatedPayload(BaseModel):
@@ -123,6 +129,10 @@ class TaskPreparedPayload(BaseModel):
         exclude_if=lambda value: value is None,
     )
     delegated_context: DelegatedContextSnapshot | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
+    interaction_mode: InteractionMode | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )
@@ -423,6 +433,9 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.EXECUTION_AUTHORITY_REVALIDATED: ExecutionAuthorityRevalidatedPayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
     EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
+    EventType.TURN_COMPLETED: TurnCompletedPayload,
+    EventType.TURN_FAILED: TurnFailedPayload,
+    EventType.TURN_CANCELLED: TurnCancelledPayload,
 }
 
 

@@ -63,7 +63,10 @@ class CloudMemoryFinalizationRecovery:
             claimed.lease,
             lease_ttl_seconds=lease_ttl_seconds,
         ) as heartbeat:
-            if claimed.recovery.session.status is not SessionStatus.COMPLETED:
+            if claimed.recovery.session.status not in {
+                SessionStatus.COMPLETED,
+                SessionStatus.AWAITING_TURN,
+            }:
                 return False
             recorder = self._recorder_factory.build(
                 session=claimed.recovery.session,

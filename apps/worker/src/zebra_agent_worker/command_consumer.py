@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
-from agent_core.application import SessionMessageAppendCommand, SessionMessageAppendService
+from agent_core.application import (
+    SessionMessageAppendCommand,
+    SessionMessageAppendService,
+    project_turns,
+)
 from agent_core.contracts import SessionCommand, SessionCommandAcceptedPayload, SessionCommandKind
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -126,6 +130,7 @@ class SessionCommandConsumer:
         clarification_id = command.payload.get("clarification_id")
         if clarification_id is not None and not isinstance(clarification_id, str):
             raise ValueError("message clarification_id is invalid")
+        events = self._stores.events.list_for_session(command.session_id)
         event = (
             SessionMessageAppendService()
             .build_event(
@@ -134,6 +139,7 @@ class SessionCommandConsumer:
                 command=SessionMessageAppendCommand(
                     content=content,
                     clarification_id=clarification_id,
+                    prior_human_turns=len(project_turns(events)),
                 ),
             )
             .model_copy(update={"idempotency_key": f"{command.idempotency_key}:message"})

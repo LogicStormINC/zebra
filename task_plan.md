@@ -1,5 +1,41 @@
 # Task Plan
 
+## CTX-TURN-LIFECYCLE（ADR-026 整合分支，2026-08-24）
+
+按维护者指令将 `CTX-TURN-ADR-01`..`CTX-TURN-API-01` 各卡在
+`codex/ctx-turn-lifecycle-01`（基于 `CTX-INHERIT-CLOUD-01` 收口分支）
+一次实施完成：
+
+1. `completed` - ADR-026：Task/Turn/Segment 模型、事件矩阵、
+   `conversation/one_shot/legacy_one_shot` 兼容策略、灰度与回滚。
+2. `completed` - 合同：`TurnId`、`TASK_PREPARED.interaction_mode`、
+   `USER_MESSAGE_RECEIVED.turn_id/turn_index/origin`、
+   `TURN_COMPLETED/FAILED/CANCELLED` payload 注册、
+   `SessionStatus.AWAITING_TURN` 状态机。
+3. `completed` - 投影：Turn 从 Event Store 投影（无第二事实源）、
+   legacy 流重放为 one-shot Turn、`TURN_COMPLETED(closes=false)` 进入
+   `awaiting_turn`、新人类消息重臂 `ready`、Workspace 回 `prepared`。
+4. `completed` - 准入：RUNNING/WAITING_APPROVAL 拒绝普通消息
+   （`turn_in_progress`）、澄清回复继续原 Turn、幂等键回放/冲突。
+5. `completed` - Worker：按 interaction_mode 终态化、
+   `reconcile_pending_turn_close` 幂等补写崩溃窗口、恢复扫描纳入
+   `awaiting_turn`。
+6. `completed` - 消费者：Memory 每 Turn 窗口抽取 + 锚点/收据按 Turn、
+   标题首轮幂等、AG-UI 每 Turn `RUN_FINISHED`/下一轮 `RUN_STARTED`、
+   任务 SSE 跨 Turn 不断流。
+7. `completed` - 上下文：Capsule 与截断窗口之间的覆盖缺口 fail closed
+   （`truncated_before_sequence`）、截断 omission 显式化。
+8. `completed` - API：`task_status/current_turn_status/turn_id/
+   active_segment_id/interaction_mode` 新字段、`status` 兼容保留、
+   创建路径接受 `interaction_mode`。
+9. `completed` - 验收矩阵：多轮单 Segment、one_shot 兼容、并发拒绝、
+   幂等回放、崩溃和解、AG-UI Turn 边界（6 项验收测试）。
+
+未完成（按 ADR-026 灰度顺序刻意后置）：legacy Task 显式一次性升级
+（读取侧兼容已就绪）、全链 Cloud PG+MinIO 多 Worker 崩溃演练、
+Trench 16 输入跨服务验收。
+
+## CTX-INHERIT-CLOUD-01
 ## CTX-INHERIT-CLOUD-01 - Cloud Context 消费与子 Agent 继承（2026-08-23）
 
 1. `completed` - 从 `origin/cloud-agent@7de09da1` 创建独立分支/Worktree，登记

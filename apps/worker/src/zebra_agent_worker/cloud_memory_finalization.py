@@ -84,7 +84,7 @@ def finalize_cloud_memory(
         session=session,
         events=events,
         next_sequence=recorder.next_sequence,
-        command=_extraction_command(recorder, started_at, definition_scope),
+        command=_extraction_command(recorder, started_at, definition_scope, events),
         confirmed_records=tuple(entry.record for entry in confirmed),
     )
     if not extraction.records and not extraction.stale_records:
@@ -174,12 +174,24 @@ def _accept_receipt(
 
 
 def _completion_revision(events: list[SessionEvent], session: Session) -> int:
-    completions = [
-        event.sequence for event in events if event.event_type is EventType.SESSION_COMPLETED
+    """The stream revision the Memory commit must anchor on.
+
+    ADR-026: v2 streams anchor on the latest Turn close (the Segment
+    terminal for one-shot, the latest ``TURN_COMPLETED`` for conversation
+    Tasks, which sit in ``awaiting_turn``). Legacy streams keep requiring
+    exactly one ``SESSION_COMPLETED``.
+    """
+
+    if session.status not in {SessionStatus.COMPLETED, SessionStatus.AWAITING_TURN}:
+        raise ValueError("cloud Memory finalization requires a closed Turn")
+    closes = [
+        event
+        for event in events
+        if event.event_type in {EventType.TURN_COMPLETED, EventType.SESSION_COMPLETED}
     ]
-    if session.status is not SessionStatus.COMPLETED or len(completions) != 1:
-        raise ValueError("cloud Memory finalization requires one completed Session Event")
-    return completions[0]
+    if closes:
+        return closes[-1].sequence
+    raise ValueError("cloud Memory finalization requires one completed Session Event")
 
 
 def _operation_id(session: Session, completion_revision: int) -> str:
@@ -256,11 +268,23 @@ def _extraction_command(
     recorder: DurableHarnessEventRecorder,
     started_at: datetime,
     definition_scope: tuple[str, str, AgentDefinitionId] | None,
+    events: list[SessionEvent],
 ) -> MemoryCandidateExtractionCommand:
+    # Per-turn extraction window (ADR-026 §6): never re-derive candidates
+    # a previous turn already extracted.
+    since_sequence = max(
+        (
+            event.sequence
+            for event in events
+            if event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
+        ),
+        default=-1,
+    )
     if definition_scope is None:
         return MemoryCandidateExtractionCommand(
             repo_id=str(recorder.workspace.workspace_root),
             extracted_at=started_at,
+            since_sequence=since_sequence,
         )
     authority_issuer, namespace_id, definition_id = definition_scope
     return MemoryCandidateExtractionCommand(
@@ -269,4 +293,5 @@ def _extraction_command(
         authority_issuer=authority_issuer,
         namespace_id=namespace_id,
         definition_id=definition_id,
+        since_sequence=since_sequence,
     )

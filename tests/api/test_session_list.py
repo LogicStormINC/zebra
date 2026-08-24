@@ -33,6 +33,7 @@ def test_route_lists_recent_sessions_with_durable_workspace(tmp_path: Path) -> N
             "session_id": str(newest.session_id),
             "title": "Newest",
             "status": "completed",
+            "task_status": "completed",
             "current_sequence": 0,
             "created_at": newest.created_at.isoformat(),
             "updated_at": newest.updated_at.isoformat(),

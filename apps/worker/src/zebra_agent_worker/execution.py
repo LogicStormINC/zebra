@@ -258,6 +258,7 @@ class SessionExecutionService:
             has_local_artifact_store=self._artifact_payload_store is not None,
             attempt_number=1,
             started_at=started_at,
+            events=session_events,
         )
         if preflight_failure is not None:
             return preflight_failure
@@ -485,6 +486,7 @@ class SessionExecutionService:
             projection_store=self._projection_store,
             workspace_store=self._workspace_store,
             started_at=started_at,
+            interaction_mode=task.interaction_mode,
         )
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:

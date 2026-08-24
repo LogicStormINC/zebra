@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from datetime import datetime
 
-from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 
 from zebra_agent_worker.claims import ClaimedSession
@@ -21,21 +21,38 @@ def prepare_execution_preflight(
     has_local_artifact_store: bool,
     attempt_number: int,
     started_at: datetime,
+    events: list[SessionEvent] | None = None,
 ) -> tuple[DurableHarnessEventRecorder, ExecutedSession | None]:
-    """Build a fenced recorder and persist a terminal configuration failure if needed."""
+    """Build a fenced recorder, persist a terminal failure, heal a crashed close.
+
+    ADR-026: after the capability checks, a crashed one-shot Turn close
+    missing its ``SESSION_COMPLETED`` is healed idempotently here — the
+    model is never re-invoked for reconciliation.
+    """
     recorder = recorder_factory.build(
         session=claimed.recovery.session,
         workspace=claimed.recovery.workspace,
         lease=claimed.lease,
         ownership_check=ownership_check,
     )
-    return recorder, reject_unsupported_setup_only(
+    failure = reject_unsupported_setup_only(
         recorder=recorder,
         network_profile=network_profile,
         has_local_artifact_store=has_local_artifact_store,
         attempt_number=attempt_number,
         started_at=started_at,
     )
+    if failure is not None:
+        return recorder, failure
+    if events:
+        from zebra_agent_worker.execution_finalization import (  # noqa: PLC0415
+            reconcile_pending_turn_close,
+        )
+
+        return recorder, reconcile_pending_turn_close(
+            recorder=recorder, events=events, started_at=started_at
+        )
+    return recorder, None
 
 
 def reject_unsupported_setup_only(

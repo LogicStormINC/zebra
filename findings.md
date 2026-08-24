@@ -1,5 +1,32 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE - 2026-08-24
+
+- 终态映射根因确认：`execution_finalization` 是唯一的
+  "最终回答 → SESSION_COMPLETED" 决策点；把它改成 Turn 关闭 +
+  条件 Segment 关闭后，所有既有终端消费者（cloud memory、标题、
+  workspace、AG-UI）无需感知 `interaction_mode` 即可继续工作。
+- one_shot 的 `TURN_COMPLETED(closes_segment=true)` 与
+  `SESSION_COMPLETED` 之间的崩溃窗口用幂等键
+  `turn-close:{turn_id}` 在 claim 时补写;该恢复在 preflight 之后、
+  模型调用之前执行,绝不会为和解重新调用模型。
+- cloud Memory 收据锚点从"唯一 SESSION_COMPLETED 序列"推广为
+  "最新 Turn 关闭事件序列";conversation 模式锚在最新
+  `TURN_COMPLETED`,receipt 天然按 Turn 去重。
+- 每 Turn Memory 抽取必须带窗口(`since_sequence` = 上次
+  MEMORY_CANDIDATE_EXTRACTED 序列),否则 turn 2 会重复抽取 turn 1
+  的候选。
+- AG-UI 双 finish 风险:one_shot 流中 `TURN_COMPLETED` 与
+  `SESSION_COMPLETED` 都会映射 `RUN_FINISHED`;投影器用
+  `turn_finished` 状态位抑制第二个 finish,并用它在新人类消息时
+  重新发出 `RUN_STARTED`。
+- 物化覆盖缺口可精确判定:limit+1 溢出行的 sequence 即"最新被丢弃
+  消息";当 active Capsule 的 source range 盖不住它时 fail closed
+  (先 compaction 再重新物化),否则记录显式 omission。
+- 本地 HTTP 执行路径的会话流因终态化多写一个 `TURN_COMPLETED`
+  而整体 +1 序列;`http_app` 的 current_sequence 期望已同步更新。
+
+
 ## CTX-INHERIT-CLOUD-01 - 2026-08-23
 
 - `SubagentDelegationRequest.context_mode` 原先只是持久合同字段，Durable Child

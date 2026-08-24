@@ -3,7 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import UUID
 
-from agent_core.application import SessionMessageAppendCommand, SessionMessageAppendService
+from agent_core.application import (
+    SessionMessageAppendCommand,
+    SessionMessageAppendService,
+    project_turns,
+)
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.identifiers import SessionId
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
@@ -37,6 +41,9 @@ def append_session_message(
             command=SessionMessageAppendCommand(
                 content=content.strip(),
                 clarification_id=clarification_id,
+                prior_human_turns=len(
+                    project_turns(SQLiteEventStore(database_path).list_for_session(session.session_id))
+                ),
             ),
         )
     except ValueError as exc:
