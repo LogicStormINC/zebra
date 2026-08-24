@@ -140,10 +140,13 @@ class DurableHarnessEventRecorder:
             raise ValueError("execution event session_id does not match recorder")
         if event.sequence != self.next_sequence:
             raise ValueError("execution event sequence does not match recorder")
-        next_session = apply_event(self._session, event)
-        next_workspace = apply_workspace_event(self._workspace, event)
         if self._worker_projection_transaction is None:
-            self._event_store.append(event)
+            # The store returns the canonical event: an idempotent retry
+            # that matches an earlier committed event replays that event,
+            # and the projections advance on the canonical sequence.
+            event = self._event_store.append(event)
+            next_session = apply_event(self._session, event)
+            next_workspace = apply_workspace_event(self._workspace, event)
             self._model_call_indexer.index_event(event)
             self._tool_run_indexer.index_event(event)
             self._session = next_session
@@ -151,6 +154,8 @@ class DurableHarnessEventRecorder:
             self._projection_store.save_session(self._session)
             self._workspace_store.save_workspace(self._workspace)
         else:
+            next_session = apply_event(self._session, event)
+            next_workspace = apply_workspace_event(self._workspace, event)
             authority = self._worker_mutation_authority
             assert authority is not None
             committed = self._worker_projection_transaction.commit_worker_event(

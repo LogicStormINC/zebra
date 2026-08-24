@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 3 (1xP1, 1xP2 gap)
+
+- rearm 幂等键绑定恢复窗口流头事件 ID;本地 recorder append 先取
+  canonical event 再投影;两轮 suspend/resume 回归。
+- preflight 顺序单元测试(artifact_store=False 真正触发 setup-only
+  拒绝分支);端到端 setup-only 和解测试改名并注明边界。
+- 验证:全仓 `2651 passed / 348 skipped`;真 PG `8/8`;`make check`
+  全绿;`git diff --check` 干净。
+
+
 ## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 2 (3xP1, 1xP2)
 
 - 修复复审发现:no-op resume 用 awaiting_turn_rearm 标记事件回到

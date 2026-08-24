@@ -460,6 +460,37 @@ def test_awaiting_turn_task_can_be_cancelled_and_suspended(
     assert again.status_code == 409
     assert counter["calls"] == 1
 
+    # A SECOND legitimate suspend/resume cycle must not collide with the
+    # first marker's idempotency key: the stream stays contiguous and the
+    # projection never runs past the Event Store.
+    suspended2 = client.post(f"/tasks/{task_id}/suspend", json={})
+    assert suspended2.status_code == 200
+    resumed2 = client.post(f"/tasks/{task_id}/resume", json={})
+    assert resumed2.status_code == 200
+    assert resumed2.json()["status"] == "awaiting_turn"
+    assert counter["calls"] == 1
+
+    from agent_core.application.session_projection import rebuild_session
+    from agent_storage import SQLiteEventStore
+
+    events2 = SQLiteEventStore(tmp_path / "control.sqlite").list_for_session(
+        SessionId(UUID(client.get(f"/tasks/{task_id}").json()["active_segment_id"]))
+    )
+    sequences = [event.sequence for event in events2]
+    assert sequences == list(range(len(sequences)))
+    projection = rebuild_session(events2)
+    assert projection.current_sequence == sequences[-1]
+    assert projection.status.value == "awaiting_turn"
+
+    follow_up = client.post(f"/tasks/{task_id}/messages", json={"content": "After two cycles."})
+    assert follow_up.status_code == 201
+    events3 = SQLiteEventStore(tmp_path / "control.sqlite").list_for_session(
+        SessionId(UUID(client.get(f"/tasks/{task_id}").json()["active_segment_id"]))
+    )
+    sequences3 = [event.sequence for event in events3]
+    assert sequences3 == list(range(len(sequences3)))
+    rebuild_session(events3)  # contiguous stream replays cleanly
+
     cancelled = client.post(f"/tasks/{task_id}/cancel", json={})
 
     assert cancelled.status_code == 200
@@ -478,9 +509,17 @@ def test_awaiting_turn_task_can_be_cancelled_and_suspended(
     assert tail_types[-1] == "session_cancelled"
 
 
-def test_pending_turn_close_reconciles_before_capability_checks(
+def test_pending_turn_close_reconciles_end_to_end_on_setup_only_stream(
     tmp_path: Path, monkeypatch
 ) -> None:
+    """End-to-end healing on a setup-only stream.
+
+    The SQLite API composition always has a local Artifact store, so the
+    capability rejection itself cannot fire here; the reconcile-before-
+    capability ordering is proven by
+    tests/worker/test_execution_preflight_order.py.
+    """
+
     def failing_gateway(_settings: ZebraAgentSettings):
         raise AssertionError("reconciliation must precede any new attempt")
 

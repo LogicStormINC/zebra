@@ -1,5 +1,27 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE review closeout round 3 - 2026-08-24
+
+第三轮复审 1 个 P1、1 个 P2 测试缺口,修复:
+
+- P1 固定 rearm 幂等键破坏 Event Store:键改为
+  `turn-rearm:{本次恢复窗口流头事件 ID}`(每轮 suspend 后流头不同,
+  键必然不同);本地 recorder 的 `append_event` 重排为先
+  `event_store.append()` 取回 canonical event,再基于 canonical
+  sequence 计算并保存投影——幂等重试不再造成投影超前与序列缺口。
+  回归:两轮 suspend/resume 后流序列连续、`rebuild_session` 一致、
+  后续消息追加正常。
+- P2 能力检查回归缺口:新增
+  `tests/worker/test_execution_preflight_order.py` 直接驱动
+  `prepare_execution_preflight` 且 `has_local_artifact_store=False`:
+  pending 完成轮和解为 `SESSION_COMPLETED`(不写第二个 attempt/
+  SESSION_FAILED),无 pending 的 RUNNING 流正常触发 setup-only 拒绝。
+  原 API 级测试保留为端到端和解验证并改名、注明边界。
+
+验证:全仓 `2651 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿,`git diff --check` 干净。
+
+
 ## CTX-TURN-LIFECYCLE review closeout round 2 - 2026-08-24
 
 复审(`859ef487`)3 个 P1、1 个 P2,全部修复:
