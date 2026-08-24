@@ -4,6 +4,7 @@ from agent_core.domain.sessions import Session, SessionStatus
 from agent_storage import SQLiteProjectionStore
 from fastapi.testclient import TestClient
 from http_app_support import (
+    _finish_first_turn,
     _seed_ready_session,
     _settings,
 )
@@ -13,6 +14,7 @@ from zebra_agent_api import create_http_app
 def test_http_app_appends_session_message(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id = _seed_ready_session(database_path, workspace_root=tmp_path)
+    _finish_first_turn(database_path, session_id)
     client = TestClient(create_http_app(database_path))
 
     response = client.post(
@@ -25,9 +27,9 @@ def test_http_app_appends_session_message(tmp_path: Path) -> None:
         "session_id": session_id,
         "appended": True,
         "content": "Please continue from the last checkpoint.",
-        "sequence": 3,
+        "sequence": 5,
         "status": "ready",
-        "current_sequence": 3,
+        "current_sequence": 5,
     }
 
 def test_http_app_message_append_requires_bearer_token_when_configured(tmp_path: Path) -> None:

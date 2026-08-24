@@ -1,5 +1,18 @@
 # Progress Log
 
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes (5×P1, 3×P2)
+
+- 按 `c3b44bfc..056293c8` 单提交审查结论修复:awaiting_turn 不可无消息
+  执行(resume 拒绝 + noop 守卫)、恰好一个 open Turn 的准入不变量、
+  memory 窗口与 refresh target 同源、失败/取消崩溃窗口和解、控制面
+  awaiting_turn 接入与 TURN_CANCELLED 生产者、覆盖校验 fail-closed、
+  origin/provenance 绑定、strict Turn 合同。
+- 新增回归:`tests/agent_core/test_turn_review_regressions.py`(9)、
+  acceptance 文件 +4、`tests/worker/test_control.py` +2;既有
+  follow-up 语义测试改为先关闭 Turn 0 再追加。
+- 验证:全仓 `2647 passed / 348 skipped`;真 PG `8/8`;`make check` 全绿。
+
+
 ## 2026-08-24 - CTX-TURN-LIFECYCLE implementation (ADR-026)
 
 - 收口 `CTX-INHERIT-CLOUD-01`(automation seed 排除 + 截断显式化 +

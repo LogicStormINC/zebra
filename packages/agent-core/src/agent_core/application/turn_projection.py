@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.turns import InteractionMode, TurnStatus, resolve_interaction_mode
 
 _TURN_TERMINAL_EVENTS = (
@@ -33,9 +33,21 @@ class TurnRecord:
 
 
 def is_human_message(event: SessionEvent) -> bool:
-    """A real human message, never a handoff/automation seed."""
+    """A real human message, never a handoff/automation seed.
+
+    New events decide via the payload-validated ``origin`` plus the USER
+    actor; legacy events without ``origin`` fall back to the handoff
+    provenance markers (ADR-026 §4.1).
+    """
 
     if event.event_type is not EventType.USER_MESSAGE_RECEIVED:
+        return False
+    if event.actor is not EventActor.USER:
+        return False
+    origin = event.payload.get("origin")
+    if origin == "human":
+        return event.payload.get("actor_kind") != "automation"
+    if origin == "session_handoff":
         return False
     return (
         event.payload.get("actor_kind") != "automation"

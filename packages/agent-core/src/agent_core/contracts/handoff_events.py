@@ -1,5 +1,13 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictInt,
+    field_validator,
+    model_validator,
+)
 
+from agent_core.contracts.turn_events import validate_turn_identity
 from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.session_handoff import HandoffActorKind, HandoffReason
 
@@ -18,7 +26,7 @@ class UserMessageReceivedPayload(BaseModel):
     )
     trust: HandoffActorKind | None = Field(default=None, exclude_if=lambda value: value is None)
     turn_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
-    turn_index: int | None = Field(
+    turn_index: StrictInt | None = Field(
         default=None, ge=0, exclude_if=lambda value: value is None
     )
     origin: str | None = Field(default=None, exclude_if=lambda value: value is None)
@@ -65,8 +73,19 @@ class UserMessageReceivedPayload(BaseModel):
             return self
         if self.turn_id is None or self.turn_index is None:
             raise ValueError("turn identity must carry both turn_id and turn_index")
-        if not self.turn_id.strip():
-            raise ValueError("turn_id must not be blank")
+        validate_turn_identity(self.turn_id)
+        return self
+
+    @model_validator(mode="after")
+    def validate_origin_provenance(self) -> "UserMessageReceivedPayload":
+        # origin is the validated human/automation marker: it must agree
+        # with the handoff provenance instead of bypassing it (ADR-026 §4.1).
+        if self.origin == "session_handoff" and self.source != "session_handoff":
+            raise ValueError(
+                "origin=session_handoff requires complete handoff provenance"
+            )
+        if self.origin == "human" and self.actor_kind is HandoffActorKind.AUTOMATION:
+            raise ValueError("origin=human cannot carry automation provenance")
         return self
 
 

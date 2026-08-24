@@ -16,6 +16,56 @@ from zebra_agent_api.session_attachment_inputs import XLSX_MEDIA_TYPE, parse_att
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
+def _finish_first_turn(database_path: Path, session_id: str) -> None:
+    """Close bootstrap Turn 0 so a follow-up message can be admitted."""
+    from uuid import UUID
+
+    from agent_core.application import current_turn
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.identifiers import SessionId
+    from agent_core.domain.turns import derive_turn_id
+    from agent_storage import SQLiteEventStore as _Store
+    from agent_storage import SQLiteProjectionStore as _Proj
+
+    key = SessionId(UUID(str(session_id)))
+    event_store = _Store(database_path)
+    events = event_store.list_for_session(key)
+    session = events[0].session_id
+    open_turn = current_turn(events)
+    turn_id = (
+        open_turn.turn_id if open_turn else str(derive_turn_id(session, 0))
+    )
+    turn_index = open_turn.turn_index if open_turn else 0
+    base = events[-1].sequence
+    event_store.append(
+        SessionEvent.create(
+            session_id=session,
+            sequence=base + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+        )
+    )
+    event_store.append(
+        SessionEvent.create(
+            session_id=session,
+            sequence=base + 2,
+            event_type=EventType.TURN_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={
+                "turn_id": turn_id,
+                "turn_index": turn_index,
+                "closes_segment": False,
+            },
+        )
+    )
+    _Proj(database_path).save_session(
+        rebuild_session(event_store.list_for_session(key))
+    )
+
+
+
 def test_xlsx_parser_extracts_typed_cells_with_safe_provenance() -> None:
     xlsx = _xlsx_bytes(
         cells=(
@@ -85,6 +135,7 @@ def test_later_xlsx_message_recovers_from_extracted_bytes_only(
     )
     app = create_app(database_path, settings=_settings(database_path))
     created = app.create_session({"prompt": "Wait.", "workspace": str(tmp_path)})
+    _finish_first_turn(database_path, created.body["session_id"])
     appended = app.append_session_message(
         created.body["session_id"],
         {"content": "Read the workbook.", "attachments": [_attachment(xlsx)]},

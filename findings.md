@@ -1,5 +1,39 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE review closeout - 2026-08-24
+
+单提交审查(`c3b44bfc..056293c8`)发现 5 个 P1、3 个 P2,全部修复并有
+最小反例回归:
+
+- P1 无消息 resume:`AWAITING_TURN → RUNNING` 直连转换移除;
+  `require_resumable` 拒绝 awaiting_turn(409 `awaiting_next_turn_message`),
+  preflight 增加"conversation 无 open Turn 即不执行"的 noop 守卫,
+  覆盖 suspend→resume 重入路径。
+- P1 双 open Turn:准入命令携带 `open_turn_exists`(由事件流 Turn 投影
+  计算),存在 open Turn 时普通消息一律 `turn_in_progress`,不再只依赖
+  Session 状态。
+- P1 refresh target 误过期:候选与 refresh target 使用同一个
+  `since_sequence` 有界切片;窗口锚点改为"倒数第二个 TURN_COMPLETED 与
+  最新 MEMORY_CANDIDATE_EXTRACTED 的较大者",零候选 Turn 也会推进窗口。
+- P1 失败窗口无恢复:`pending_turn_close` 识别任意未配对的
+  TURN_COMPLETED/FAILED/CANCELLED,按映射补写对应 SESSION_* 终态,
+  幂等键同为 `turn-close:{turn_id}`,不重新调用模型。
+- P1 控制面:`AWAITING_TURN` 纳入 cancel/suspend 白名单;cancel 在存在
+  open Turn 时先写 `TURN_CANCELLED`(幂等键 `turn-cancel:{turn_id}`)再写
+  `SESSION_CANCELLED`。
+- P2 覆盖校验:截断必须携带 `truncated_before_sequence`;声明 Capsule
+  覆盖截断前缀时必须有能盖住边界的 source range,否则 fail closed。
+- P2 origin:`origin=session_handoff` 强制完整 provenance,
+  `origin=human` 禁止 automation provenance;`is_human_message` 按
+  "actor USER 且 origin human"判定,旧事件走兼容分支;handoff seed
+  构建器补写 origin。
+- P2 类型强转:Turn payload 与 USER_MESSAGE_RECEIVED 的 turn 字段使用
+  StrictInt/StrictBool;`turn_id` 限 UUID 或 `legacy-turn:<sequence>`。
+
+验证:全仓 `2647 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿(size `1454`、Mypy `722`、Eval `10/10`)。
+
+
 ## CTX-TURN-LIFECYCLE - 2026-08-24
 
 - 终态映射根因确认：`execution_finalization` 是唯一的

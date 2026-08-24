@@ -98,8 +98,9 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     },
     SessionStatus.AWAITING_TURN: {
         # A finished conversation turn re-arms the Segment for pickup once
-        # the next human message arrives, and remains closable/suspendable.
-        SessionStatus.RUNNING,
+        # the next human message arrives (-> READY -> RUNNING), and remains
+        # closable/suspendable. Direct execution without a new message is
+        # forbidden: there is no open Turn to execute.
         SessionStatus.READY,
         SessionStatus.SUSPENDED,
         SessionStatus.COMPLETED,

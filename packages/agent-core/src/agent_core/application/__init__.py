@@ -18,6 +18,7 @@ from agent_core.application.memory_candidates import (
     MemoryCandidateExtractionPlanner,
     MemoryCandidateExtractionResult,
     MemoryCandidateExtractionService,
+    memory_extraction_window,
 )
 from agent_core.application.memory_inventory import (
     serialize_memory_inventory,
@@ -61,6 +62,7 @@ __all__ = [
     "attachment_refs_from_event",
     "build_mcp_prompt_attachment",
     "BootstrappedSession",
+    "memory_extraction_window",
     "MemoryCandidateExtractionCommand",
     "MemoryCandidateExtractionPlan",
     "MemoryCandidateExtractionPlanner",

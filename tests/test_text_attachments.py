@@ -18,6 +18,56 @@ from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
+def _finish_first_turn(database_path: Path, session_id: str) -> None:
+    """Close bootstrap Turn 0 so a follow-up message can be admitted."""
+    from uuid import UUID
+
+    from agent_core.application import current_turn
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.identifiers import SessionId
+    from agent_core.domain.turns import derive_turn_id
+    from agent_storage import SQLiteEventStore as _Store
+    from agent_storage import SQLiteProjectionStore as _Proj
+
+    key = SessionId(UUID(str(session_id)))
+    event_store = _Store(database_path)
+    events = event_store.list_for_session(key)
+    session = events[0].session_id
+    open_turn = current_turn(events)
+    turn_id = (
+        open_turn.turn_id if open_turn else str(derive_turn_id(session, 0))
+    )
+    turn_index = open_turn.turn_index if open_turn else 0
+    base = events[-1].sequence
+    event_store.append(
+        SessionEvent.create(
+            session_id=session,
+            sequence=base + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+        )
+    )
+    event_store.append(
+        SessionEvent.create(
+            session_id=session,
+            sequence=base + 2,
+            event_type=EventType.TURN_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={
+                "turn_id": turn_id,
+                "turn_index": turn_index,
+                "closes_segment": False,
+            },
+        )
+    )
+    _Proj(database_path).save_session(
+        rebuild_session(event_store.list_for_session(key))
+    )
+
+
+
 def test_attachment_parser_accepts_bounded_utf8_text() -> None:
     parsed = parse_attachment_inputs(
         [
@@ -181,6 +231,7 @@ def test_later_message_attachment_survives_worker_recovery(
         }
     )
     session_id = created.body["session_id"]
+    _finish_first_turn(database_path, session_id)
     appended = app.append_session_message(
         session_id,
         {

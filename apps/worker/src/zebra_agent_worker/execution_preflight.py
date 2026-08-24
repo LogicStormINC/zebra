@@ -44,15 +44,37 @@ def prepare_execution_preflight(
     )
     if failure is not None:
         return recorder, failure
-    if events:
-        from zebra_agent_worker.execution_finalization import (  # noqa: PLC0415
-            reconcile_pending_turn_close,
-        )
+    if not events:
+        return recorder, None
+    from agent_core.application import current_turn, interaction_mode_of
+    from agent_core.domain.turns import InteractionMode
+    from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 
-        return recorder, reconcile_pending_turn_close(
-            recorder=recorder, events=events, started_at=started_at
+    from zebra_agent_worker.execution_finalization import (  # noqa: PLC0415
+        pending_turn_close,
+        reconcile_pending_turn_close,
+    )
+
+    if (
+        interaction_mode_of(events) is InteractionMode.CONVERSATION
+        and pending_turn_close(events) is None
+        and current_turn(events) is None
+    ):
+        # A resumed/re-armed conversation Segment with no open Turn has
+        # nothing to execute (e.g. suspended while awaiting_turn): return
+        # without invoking the model (ADR-026 §5).
+        return recorder, ExecutedSession(
+            session=recorder.session,
+            events=(),
+            attempt_result=HarnessAttemptResult(
+                outcome=HarnessAttemptOutcome.COMPLETED,
+                summary="No open Turn to execute.",
+                metadata={"stop_reason": "awaiting_turn_noop"},
+            ),
         )
-    return recorder, None
+    return recorder, reconcile_pending_turn_close(
+        recorder=recorder, events=events, started_at=started_at
+    )
 
 
 def reject_unsupported_setup_only(

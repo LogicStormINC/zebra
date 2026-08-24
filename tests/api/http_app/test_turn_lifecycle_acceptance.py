@@ -324,3 +324,152 @@ def test_ag_ui_run_finishes_per_turn_and_restarts_on_the_next_message() -> None:
     assert kinds.count(RunStartedEvent) == 2  # segment start + second turn
     assert kinds.count(RunFinishedEvent) == 1  # first turn success
     assert kinds.count(RunErrorEvent) == 1  # second turn failure, no duplicate
+
+
+def _counting_gateway(monkeypatch, counter: dict[str, int], *replies: str):
+    def factory(_settings: ZebraAgentSettings) -> ScriptedModelGateway:
+        counter["calls"] += 1
+        return ScriptedModelGateway(
+            responses=tuple(
+                ScriptedModelResponse(
+                    completion=ModelCompletion(
+                        assistant_message=SessionMessage(
+                            message_id=new_message_id(),
+                            role=MessageRole.ASSISTANT,
+                            content=reply,
+                            created_at=datetime(2026, 8, 24, 12, 0, tzinfo=UTC),
+                        )
+                    )
+                )
+                for reply in replies
+            )
+        )
+
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", factory)
+
+
+def test_awaiting_turn_resume_is_rejected_without_a_new_message(
+    tmp_path: Path, monkeypatch
+) -> None:
+    counter: dict[str, int] = {"calls": 0}
+    _counting_gateway(monkeypatch, counter, "Turn one done.")
+    client = TestClient(create_http_app(tmp_path / "noresume.sqlite", settings=_settings(None)))
+    task_id = _create_conversation_task(client)
+    assert _run_turn(client, task_id)["status"] == "awaiting_turn"
+
+    response = client.post(f"/tasks/{task_id}/resume", json={})
+
+    assert response.status_code == 409
+    assert response.json()["reason"] == "awaiting_next_turn_message"
+    assert counter["calls"] == 1  # no second model invocation
+
+
+def test_message_on_ready_bootstrap_with_open_turn_is_rejected(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _counting_gateway(monkeypatch, {"calls": 0}, "unused")
+    client = TestClient(create_http_app(tmp_path / "open.sqlite", settings=_settings(None)))
+    task_id = _create_conversation_task(client)
+
+    early = client.post(f"/tasks/{task_id}/messages", json={"content": "Before first run."})
+
+    assert early.status_code == 409
+    assert early.json()["reason"] == "turn_in_progress"
+
+
+def test_crashed_failed_turn_close_is_healed_without_model_call(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def failing_gateway(_settings: ZebraAgentSettings):
+        raise AssertionError("failed-turn reconciliation must not call the model")
+
+    monkeypatch.setattr(worker_execution_module, "build_model_gateway", failing_gateway)
+
+    from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.turns import derive_turn_id
+    from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+
+    database_path = tmp_path / "heal-failed.sqlite"
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Crashed failure",
+            user_input="Do the work.",
+            workspace_root=tmp_path,
+        )
+    )
+    event_store = SQLiteEventStore(database_path)
+    for event in bootstrap.events:
+        event_store.append(event)
+    session = bootstrap.session
+    attempt = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=session.current_sequence + 1,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 1},
+    )
+    event_store.append(attempt)
+    turn = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=attempt.sequence + 1,
+        event_type=EventType.TURN_FAILED,
+        actor=EventActor.HARNESS,
+        payload={
+            "turn_id": str(derive_turn_id(session.session_id, 0)),
+            "turn_index": 0,
+            "reason": "provider failed; worker crashed before the terminal.",
+            "closes_segment": True,
+        },
+    )
+    event_store.append(turn)
+    healed = rebuild_session(event_store.list_for_session(session.session_id))
+    SQLiteProjectionStore(database_path).save_session(healed)
+
+    client = TestClient(create_http_app(database_path, settings=_settings(None)))
+    response = client.post(f"/sessions/{session.session_id}/resume", json={})
+
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == "failed"
+    events = event_store.list_for_session(session.session_id)
+    assert [event.event_type for event in events[-2:]] == [
+        EventType.TURN_FAILED,
+        EventType.SESSION_FAILED,
+    ]
+
+
+def test_awaiting_turn_task_can_be_cancelled_and_suspended(
+    tmp_path: Path, monkeypatch
+) -> None:
+    counter: dict[str, int] = {"calls": 0}
+    _counting_gateway(monkeypatch, counter, "Turn one done.")
+    client = TestClient(create_http_app(tmp_path / "control.sqlite", settings=_settings(None)))
+    task_id = _create_conversation_task(client)
+    assert _run_turn(client, task_id)["status"] == "awaiting_turn"
+
+    suspended = client.post(f"/tasks/{task_id}/suspend", json={})
+    assert suspended.status_code == 200
+    resumed = client.post(f"/tasks/{task_id}/resume", json={})
+    assert resumed.status_code == 200
+    # Resuming a suspended awaiting-turn Segment re-arms it (READY) for the
+    # next message without re-invoking the model.
+    assert resumed.json()["status"] == "ready"
+    assert counter["calls"] == 1
+
+    cancelled = client.post(f"/tasks/{task_id}/cancel", json={})
+
+    assert cancelled.status_code == 200
+    detail = client.get(f"/tasks/{task_id}").json()
+    assert detail["status"] == "cancelled"
+    assert detail["task_status"] == "cancelled"
+
+    from agent_storage import SQLiteEventStore
+
+    events = SQLiteEventStore(tmp_path / "control.sqlite").list_for_session(
+        SessionId(UUID(detail["active_segment_id"]))
+    )
+    # No Turn was open at cancellation time (the previous Turn already
+    # completed), so the Segment terminal stands alone.
+    tail_types = [event.event_type.value for event in events]
+    assert tail_types[-1] == "session_cancelled"

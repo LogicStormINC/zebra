@@ -15,6 +15,9 @@ class SessionMessageAppendCommand:
     appended_at: datetime | None = None
     prior_human_turns: int = 0
     turn_id: str | None = None
+    # Exactly-one-open-Turn invariant (ADR-026 §5): callers that can read
+    # the event stream must report whether a Turn is still open.
+    open_turn_exists: bool = False
 
 
 class SessionMessageAppendService:
@@ -57,6 +60,11 @@ class SessionMessageAppendService:
         if session.status in {SessionStatus.RUNNING, SessionStatus.WAITING_APPROVAL}:
             # A turn is still executing: a second normal message must not
             # silently run concurrently inside the same turn (ADR-026 §5).
+            raise ValueError("turn_in_progress")
+        if command.open_turn_exists:
+            # READY/SUSPENDED sessions can still hold an unexecuted Turn
+            # (bootstrap Turn 0, a re-armed follow-up, a suspended turn);
+            # a second normal message would create two open Turns.
             raise ValueError("turn_in_progress")
         turn_id = command.turn_id or str(
             derive_turn_id(session.session_id, command.prior_human_turns)

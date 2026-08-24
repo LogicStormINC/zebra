@@ -8,6 +8,7 @@ from agent_core.application import (
     MemoryCandidatePromotionService,
     SessionTitleService,
     current_turn,
+    memory_extraction_window,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
@@ -37,18 +38,27 @@ class ExecutedSession:
     attempt_result: HarnessAttemptResult
 
 
-def pending_turn_close(events: list[SessionEvent]) -> SessionEvent | None:
-    """Detect a crashed one-shot Turn close missing its Segment terminal.
+_TURN_TO_SESSION_TERMINAL: dict[EventType, EventType] = {
+    EventType.TURN_COMPLETED: EventType.SESSION_COMPLETED,
+    EventType.TURN_FAILED: EventType.SESSION_FAILED,
+    EventType.TURN_CANCELLED: EventType.SESSION_CANCELLED,
+}
 
-    ADR-026 §4.2: when a Worker crashes between ``TURN_COMPLETED(
-    closes_segment=true)`` and the compatible ``SESSION_COMPLETED``, the
-    recovery path must append the same idempotent terminal instead of
-    calling the model again.
+
+def pending_turn_close(events: list[SessionEvent]) -> SessionEvent | None:
+    """Detect a crashed two-phase Turn close missing its Segment terminal.
+
+    ADR-026 §4.2: every Segment-closing Turn event is followed by its
+    compatible ``SESSION_*`` terminal. When a Worker crashes between the
+    two, the recovery path must append the matching terminal instead of
+    calling the model again. Applies to completed, failed and cancelled
+    closes alike; conversation closes (``closes_segment=false``) wait for
+    the next human message and are never reconciled into execution.
     """
 
     last_close: SessionEvent | None = None
     for event in events:
-        if event.event_type is EventType.TURN_COMPLETED:
+        if event.event_type in _TURN_TO_SESSION_TERMINAL:
             last_close = event
         elif event.event_type in {
             EventType.SESSION_COMPLETED,
@@ -69,16 +79,22 @@ def reconcile_pending_turn_close(
     events: list[SessionEvent],
     started_at: datetime,
 ) -> ExecutedSession | None:
-    """Heal a crashed one-shot Turn close; never re-invokes the model."""
+    """Heal a crashed Turn close; never re-invokes the model."""
 
     turn_event = pending_turn_close(events)
     if turn_event is None:
         return None
     turn_id = turn_event.payload.get("turn_id")
-    summary = turn_event.payload.get("summary")
+    summary = turn_event.payload.get("summary") or turn_event.payload.get("reason")
     metadata = turn_event.payload.get("metadata")
+    terminal_type = _TURN_TO_SESSION_TERMINAL[turn_event.event_type]
+    outcome = (
+        HarnessAttemptOutcome.COMPLETED
+        if terminal_type is EventType.SESSION_COMPLETED
+        else HarnessAttemptOutcome.FAILED
+    )
     terminal = recorder.prepare(
-        EventType.SESSION_COMPLETED,
+        terminal_type,
         EventActor.HARNESS,
         {
             "attempt_number": 1,
@@ -98,7 +114,7 @@ def reconcile_pending_turn_close(
         session=recorder.session,
         events=recorder.events,
         attempt_result=HarnessAttemptResult(
-            outcome=HarnessAttemptOutcome.COMPLETED,
+            outcome=outcome,
             summary=summary if isinstance(summary, str) and summary.strip() else "Turn closed.",
             metadata=metadata if isinstance(metadata, dict) else {},
         ),
@@ -339,16 +355,10 @@ def _finalize_local_memory(
     started_at: datetime,
 ) -> None:
     events = event_store.list_for_session(recorder.session.session_id)
-    # Per-turn extraction window: never re-derive candidates from events a
-    # previous turn already extracted (ADR-026 §6).
-    since_sequence = max(
-        (
-            event.sequence
-            for event in events
-            if event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
-        ),
-        default=-1,
-    )
+    # Per-turn extraction window anchored on the previous Turn close: never
+    # re-derive candidates a previous turn already extracted, and advance
+    # even when a Turn produced zero candidates (ADR-026 §6).
+    since_sequence = memory_extraction_window(events)
     extraction = memory_extraction_service.extract(
         session=recorder.session,
         events=events,

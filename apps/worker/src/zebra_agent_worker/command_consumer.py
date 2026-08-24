@@ -7,6 +7,7 @@ from uuid import UUID
 from agent_core.application import (
     SessionMessageAppendCommand,
     SessionMessageAppendService,
+    current_turn,
     project_turns,
 )
 from agent_core.contracts import SessionCommand, SessionCommandAcceptedPayload, SessionCommandKind
@@ -140,6 +141,7 @@ class SessionCommandConsumer:
                     content=content,
                     clarification_id=clarification_id,
                     prior_human_turns=len(project_turns(events)),
+                    open_turn_exists=current_turn(events) is not None,
                 ),
             )
             .model_copy(update={"idempotency_key": f"{command.idempotency_key}:message"})

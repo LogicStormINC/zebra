@@ -4,10 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from agent_core.application import (
-    SessionMessageAppendCommand,
-    SessionMessageAppendService,
     attach_refs_to_user_event,
-    project_turns,
 )
 from agent_core.application.agent_definitions import PublisherGrantPort
 from agent_core.application.session_projection import apply_event
@@ -70,6 +67,7 @@ from zebra_agent_api.session_binding import (
 )
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_identity_read import _parse_session_id as parse_session_id
+from zebra_agent_api.session_message_submission import build_session_message_event
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
     parse_append_session_message_payload,
@@ -263,11 +261,15 @@ class ZebraAgentApi(
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        except SessionResumeError:
+        except SessionResumeError as error:
             return conflict(
                 session_id=session_id,
                 status="not_resumable",
-                reason="cannot_resume_terminal_session",
+                reason=(
+                    "awaiting_next_turn_message"
+                    if "awaiting the next turn" in str(error)
+                    else "cannot_resume_terminal_session"
+                ),
             )
         except LeaseConflictError:
             return conflict(
@@ -332,16 +334,11 @@ class ZebraAgentApi(
                 body={"session_id": session_id, "status": "not_found"},
             )
         try:
-            event = SessionMessageAppendService().build_event(
+            event = build_session_message_event(
+                event_store=self.stores.events,
                 session=session,
-                next_sequence=session.current_sequence + 1,
-                command=SessionMessageAppendCommand(
-                    content=parsed["content"],
-                    clarification_id=parsed["clarification_id"],
-                    prior_human_turns=len(
-                        project_turns(self.stores.events.list_for_session(session_key))
-                    ),
-                ),
+                content=parsed["content"],
+                clarification_id=parsed["clarification_id"],
             )
         except ValueError as exc:
             return conflict(

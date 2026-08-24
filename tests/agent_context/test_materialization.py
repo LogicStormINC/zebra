@@ -8,7 +8,7 @@ from agent_context import (
     delegated_context_from_materialization,
 )
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
-from agent_core.domain.context_capsule import ContextCapsule
+from agent_core.domain.context_capsule import ContextCapsule, ContextSourceEventRange
 from agent_core.domain.context_inheritance import ContextInheritanceMode
 from agent_core.domain.context_materialization import (
     ContextMaterialization,
@@ -34,11 +34,17 @@ SESSION_ID = SessionId(UUID("00000000-0000-0000-0000-000000000102"))
 
 
 def _materialization(
-    *, capsule: bool = True, history_truncated: bool = False
+    *,
+    capsule: bool = True,
+    history_truncated: bool = False,
+    truncated_before: int | None = None,
 ) -> ContextMaterialization:
     active = (
         ContextCapsule(
             capsule_id="capsule-7",
+            source_event_range=ContextSourceEventRange(
+                start_sequence=0, end_sequence=1
+            ),
             objective="Preserve the verified parent objective.",
             acceptance_criteria=("child cites evidence",),
             constraints=("read only",),
@@ -83,6 +89,9 @@ def _materialization(
             statuses=(MemoryStatus.CONFIRMED,),
         ),
     )
+    boundary = truncated_before if history_truncated else None
+    if boundary is None and history_truncated:
+        boundary = 0
     return ContextMaterialization(
         request=request,
         session_revision=7,
@@ -91,6 +100,7 @@ def _materialization(
             SessionHistoryMessage(6, "assistant", "latest verified answer", NOW, False),
         ),
         history_truncated=history_truncated,
+        truncated_before_sequence=boundary,
         active_capsule=active,
         memories=(
             GovernedMemoryEntry(

@@ -148,10 +148,9 @@ def _next_status_for_event(
 
 
 def _is_automation_message(event: SessionEvent) -> bool:
-    return (
-        event.payload.get("actor_kind") == "automation"
-        or event.payload.get("source") == "session_handoff"
-    )
+    from agent_core.application.turn_projection import is_human_message
+
+    return not is_human_message(event)
 
 
 def _approval_context_from_event(event: SessionEvent) -> ApprovalContext | None:

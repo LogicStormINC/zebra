@@ -172,6 +172,30 @@ class MemoryCandidateExtractionService:
         )
 
 
+def memory_extraction_window(events: list[SessionEvent]) -> int:
+    """Per-turn extraction window boundary (ADR-026 §6).
+
+    The window starts strictly after the previous Turn close, so a
+    zero-candidate Turn still advances the boundary. A successful
+    extraction's MEMORY_CANDIDATE_EXTRACTED events sit after that close
+    and push the boundary further, preventing any re-derivation of the
+    same candidates after a crash.
+    """
+
+    turn_closes = [
+        event.sequence for event in events if event.event_type is EventType.TURN_COMPLETED
+    ]
+    boundary = turn_closes[-2] if len(turn_closes) >= 2 else -1
+    extraction_events = [
+        event.sequence
+        for event in events
+        if event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
+    ]
+    if extraction_events:
+        boundary = max(boundary, extraction_events[-1])
+    return boundary
+
+
 def _candidate_records_and_refresh_targets(
     *,
     events: list[SessionEvent],
@@ -193,9 +217,11 @@ def _candidate_records_and_refresh_targets(
             "user_id": None,
             "repo_id": None,
         }
-    for event in events:
-        if event.sequence <= command.since_sequence:
-            continue
+    # Candidates and refresh targets must come from the same bounded
+    # slice: an old Turn's refresh instruction replayed against a new
+    # Turn's empty candidate set falsely expires confirmed Memory.
+    window = [event for event in events if event.sequence > command.since_sequence]
+    for event in window:
         for candidate in candidates_from_session_event(
             event,
             repo_id=command.repo_id,
@@ -212,7 +238,7 @@ def _candidate_records_and_refresh_targets(
                     else candidate
                 )
                 records.append(record)
-    return tuple(records), _refresh_targets(events)
+    return tuple(records), _refresh_targets(window)
 
 
 def _refresh_targets(

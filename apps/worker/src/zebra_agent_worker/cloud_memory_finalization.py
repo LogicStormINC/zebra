@@ -8,6 +8,7 @@ from agent_core.application import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionPlanner,
     MemoryCandidatePromotionPlanner,
+    memory_extraction_window,
 )
 from agent_core.application.memory_reviews import memory_review_scope_query
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
@@ -270,16 +271,10 @@ def _extraction_command(
     definition_scope: tuple[str, str, AgentDefinitionId] | None,
     events: list[SessionEvent],
 ) -> MemoryCandidateExtractionCommand:
-    # Per-turn extraction window (ADR-026 §6): never re-derive candidates
-    # a previous turn already extracted.
-    since_sequence = max(
-        (
-            event.sequence
-            for event in events
-            if event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
-        ),
-        default=-1,
-    )
+    # Per-turn extraction window anchored on the previous Turn close
+    # (ADR-026 §6): advances even for zero-candidate Turns, and a
+    # successful extraction's events push it past re-derivation.
+    since_sequence = memory_extraction_window(events)
     if definition_scope is None:
         return MemoryCandidateExtractionCommand(
             repo_id=str(recorder.workspace.workspace_root),
