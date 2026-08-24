@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 4 (2xP1, 1xP2 gap)
+
+- recorder 本地分支预校验 + canonical 序列分支(防污染、防回退);
+  rearm 在刷新后的 canonical stream 重新判断并在并发 Turn 到达时
+  放弃;取消测试拆分为 awaiting/no-open 与 ready/open-turn 两场景。
+- 新增 `tests/worker/test_recorder_append_guards.py`(2)与并发
+  Turn 放弃回归;验证全仓 `2655 passed / 348 skipped`、真 PG `8/8`、
+  `make check` 全绿。
+
+
 ## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 3 (1xP1, 1xP2 gap)
 
 - rearm 幂等键绑定恢复窗口流头事件 ID;本地 recorder append 先取

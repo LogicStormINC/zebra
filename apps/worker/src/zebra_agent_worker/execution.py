@@ -259,6 +259,7 @@ class SessionExecutionService:
             attempt_number=1,
             started_at=started_at,
             events=session_events,
+            event_store=self._event_store,
         )
         if preflight_failure is not None:
             return preflight_failure

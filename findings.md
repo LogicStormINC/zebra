@@ -1,5 +1,28 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE review closeout round 4 - 2026-08-24
+
+第四轮复审 2 个 P1、1 个 P2 测试缺口,修复:
+
+- P1 recorder 先落库后验证:本地 `append_event` 分支改为先用
+  requested event 预校验状态转换(不保存),再 `event_store.append()`
+  取 canonical;canonical 序列不大于当前投影序列时视为已处理
+  (直接返回、不重放投影、不重建索引、不回退 `current_sequence`)。
+  回归:非法 READY→COMPLETED 事件不再污染 Event Store;迟到幂等
+  重试返回旧 canonical 时投影保持在 sequence 4 不回退。
+- P1 rearm 旧快照错停并发新 Turn:`_rearm_awaiting_turn` 在
+  `recorder.prepare()` 刷新后于 canonical stream 上重新判断,存在
+  open Turn 或 pending close 即放弃 rearm 并落回正常执行;幂等键
+  绑定刷新后的流头事件。回归:决策快照无 Turn、持久流已有并发
+  follow-up 时,preflight 返回 None(继续执行)、无 marker 写入。
+- P2 取消测试拆分:场景 A(awaiting_turn、无 open Turn)只写
+  `SESSION_CANCELLED`;场景 B(READY、有 open Turn,新增测试)写
+  `TURN_CANCELLED → SESSION_CANCELLED` 且流连续可重放。
+
+验证:全仓 `2655 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿,`git diff --check` 干净。
+
+
 ## CTX-TURN-LIFECYCLE review closeout round 3 - 2026-08-24
 
 第三轮复审 1 个 P1、1 个 P2 测试缺口,修复:

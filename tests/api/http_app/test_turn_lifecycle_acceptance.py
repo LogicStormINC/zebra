@@ -482,15 +482,6 @@ def test_awaiting_turn_task_can_be_cancelled_and_suspended(
     assert projection.current_sequence == sequences[-1]
     assert projection.status.value == "awaiting_turn"
 
-    follow_up = client.post(f"/tasks/{task_id}/messages", json={"content": "After two cycles."})
-    assert follow_up.status_code == 201
-    events3 = SQLiteEventStore(tmp_path / "control.sqlite").list_for_session(
-        SessionId(UUID(client.get(f"/tasks/{task_id}").json()["active_segment_id"]))
-    )
-    sequences3 = [event.sequence for event in events3]
-    assert sequences3 == list(range(len(sequences3)))
-    rebuild_session(events3)  # contiguous stream replays cleanly
-
     cancelled = client.post(f"/tasks/{task_id}/cancel", json={})
 
     assert cancelled.status_code == 200
@@ -498,15 +489,14 @@ def test_awaiting_turn_task_can_be_cancelled_and_suspended(
     assert detail["status"] == "cancelled"
     assert detail["task_status"] == "cancelled"
 
-    from agent_storage import SQLiteEventStore
-
-    events = SQLiteEventStore(tmp_path / "control.sqlite").list_for_session(
+    # Scenario A: cancelled while awaiting_turn with NO open Turn —
+    # the Segment terminal stands alone.
+    events_after_cancel = SQLiteEventStore(tmp_path / "control.sqlite").list_for_session(
         SessionId(UUID(detail["active_segment_id"]))
     )
-    # No Turn was open at cancellation time (the previous Turn already
-    # completed), so the Segment terminal stands alone.
-    tail_types = [event.event_type.value for event in events]
+    tail_types = [event.event_type.value for event in events_after_cancel]
     assert tail_types[-1] == "session_cancelled"
+    assert "turn_cancelled" not in tail_types
 
 
 def test_pending_turn_close_reconciles_end_to_end_on_setup_only_stream(
@@ -642,3 +632,37 @@ def test_crashed_turn_cancelled_window_is_healed(tmp_path: Path, monkeypatch) ->
         EventType.TURN_CANCELLED,
         EventType.SESSION_CANCELLED,
     ]
+
+
+def test_cancel_after_follow_up_message_writes_turn_cancelled(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Scenario B: READY with an open follow-up Turn cancels both levels."""
+    counter: dict[str, int] = {"calls": 0}
+    _counting_gateway(monkeypatch, counter, "Turn one done.")
+    client = TestClient(create_http_app(tmp_path / "cancel-open.sqlite", settings=_settings(None)))
+    task_id = _create_conversation_task(client)
+    assert _run_turn(client, task_id)["status"] == "awaiting_turn"
+
+    follow_up = client.post(f"/tasks/{task_id}/messages", json={"content": "Next round."})
+    assert follow_up.status_code == 201
+
+    cancelled = client.post(f"/tasks/{task_id}/cancel", json={})
+
+    assert cancelled.status_code == 200
+    detail = client.get(f"/tasks/{task_id}").json()
+    assert detail["status"] == "cancelled"
+    assert detail["current_turn_status"] == "cancelled"
+
+    from agent_core.application.session_projection import rebuild_session
+    from agent_storage import SQLiteEventStore
+
+    events = SQLiteEventStore(tmp_path / "cancel-open.sqlite").list_for_session(
+        SessionId(UUID(detail["active_segment_id"]))
+    )
+    tail_types = [event.event_type.value for event in events]
+    assert tail_types[-2:] == ["turn_cancelled", "session_cancelled"]
+    # the stream stays contiguous for replay
+    sequences = [event.sequence for event in events]
+    assert sequences == list(range(len(sequences)))
+    rebuild_session(events)

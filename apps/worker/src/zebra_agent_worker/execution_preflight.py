@@ -5,9 +5,9 @@ from datetime import datetime
 
 from agent_core.application import current_turn, interaction_mode_of
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import EventId
 from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
+from agent_core.ports import EventStorePort
 
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
@@ -29,6 +29,7 @@ def prepare_execution_preflight(
     attempt_number: int,
     started_at: datetime,
     events: list[SessionEvent] | None = None,
+    event_store: EventStorePort | None = None,
 ) -> tuple[DurableHarnessEventRecorder, ExecutedSession | None]:
     """Build a fenced recorder, heal durable closes, then capability checks.
 
@@ -52,12 +53,17 @@ def prepare_execution_preflight(
         if (
             interaction_mode_of(events) is InteractionMode.CONVERSATION
             and current_turn(events) is None
+            and event_store is not None
         ):
-            return recorder, _rearm_awaiting_turn(
+            rearm = _rearm_awaiting_turn(
                 recorder=recorder,
                 started_at=started_at,
-                stream_head_event_id=events[-1].event_id,
+                event_store=event_store,
             )
+            if rearm is not None:
+                return recorder, rearm
+            # A Turn appeared on the refreshed stream: fall through and
+            # execute it normally.
     return recorder, reject_unsupported_setup_only(
         recorder=recorder,
         network_profile=network_profile,
@@ -71,24 +77,30 @@ def _rearm_awaiting_turn(
     *,
     recorder: DurableHarnessEventRecorder,
     started_at: datetime,
-    stream_head_event_id: EventId,
-) -> ExecutedSession:
+    event_store: EventStorePort,
+) -> ExecutedSession | None:
     """Park a Turn-less conversation Segment back in awaiting_turn.
 
-    The marker event leaves the ready queue and the resume surface; the
-    next human message re-arms the Segment as usual. The idempotency key
-    binds to the stream head of THIS resume window, so a later
-    suspend/resume cycle never collides with an earlier marker.
+    ``recorder.prepare`` refreshes the recorder from the durable stream;
+    the no-open-Turn decision is then re-evaluated on that refreshed
+    canonical stream, so a human message that arrived concurrently (and
+    opened a Turn) is executed instead of being parked. The idempotency
+    key binds to the refreshed stream head, keeping every resume window
+    distinct.
     """
-    rearm = recorder.prepare(
+    marker = recorder.prepare(
         EventType.SESSION_RESUMED,
         EventActor.HARNESS,
         {"reason": "awaiting_turn_rearm"},
         created_at=started_at,
-    ).model_copy(
-        update={"idempotency_key": f"turn-rearm:{stream_head_event_id}"}
     )
-    recorder.append_event(rearm)
+    fresh = event_store.list_for_session(recorder.session.session_id)
+    if current_turn(fresh) is not None or pending_turn_close(fresh) is not None:
+        return None
+    marker = marker.model_copy(
+        update={"idempotency_key": f"turn-rearm:{fresh[-1].event_id}"}
+    )
+    recorder.append_event(marker)
     return ExecutedSession(
         session=recorder.session,
         events=recorder.events,
