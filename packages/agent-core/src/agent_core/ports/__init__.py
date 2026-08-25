@@ -108,6 +108,7 @@ from agent_core.ports.memory_store import MemoryReadPort, MemoryStorePort
 from agent_core.ports.model_call_store import ModelCallStorePort
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.model_tool_projection import ModelToolProjectionPort
+from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_core.ports.provider_continuation import ProviderContinuationPort
@@ -311,4 +312,5 @@ __all__ = [
     "ClientEffectReceiptPort",
     "ClientReceiptAcceptance",
     "ClientSessionRegistryPort",
+    "AgentPlatformControlPlane",
 ]

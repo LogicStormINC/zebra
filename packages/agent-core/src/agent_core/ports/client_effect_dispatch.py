@@ -7,7 +7,11 @@ from agent_core.domain.client_effects import (
     ClientEffectContinuation,
     ClientEffectRequest,
 )
-from agent_core.domain.identifiers import ClientEffectId, ClientSessionId
+from agent_core.domain.identifiers import (
+    ClientEffectId,
+    ClientSessionId,
+    SessionId,
+)
 
 
 @dataclass(frozen=True)
@@ -22,6 +26,7 @@ class ClientEffectDispatchPort(Protocol):
         request: ClientEffectRequest,
         *,
         continuation: ClientEffectContinuation,
+        session_id: SessionId,
     ) -> ClientEffectScheduleOutcome:
         """Persist request + continuation + scheduled event in one transaction."""
 
