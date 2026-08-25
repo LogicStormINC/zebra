@@ -70,6 +70,34 @@ from agent_core.domain.attachments import (
     TextAttachmentInput,
 )
 from agent_core.domain.clarifications import ClarificationContext
+from agent_core.domain.client_capabilities import (
+    ClientActionContract,
+    ClientActionRisk,
+    ClientCapabilityError,
+    ClientComponentContract,
+    ClientReadableContract,
+    FrontendCapabilityProfileVersion,
+    MountedCapabilitySnapshot,
+    ProfileLifecycle,
+)
+from agent_core.domain.client_effects import (
+    CLIENT_EFFECT_TERMINAL_STATUSES,
+    ClientEffectContinuation,
+    ClientEffectReceipt,
+    ClientEffectRequest,
+    ClientEffectStatus,
+)
+from agent_core.domain.client_run_bindings import (
+    ClientRunBinding,
+    client_run_binding_key,
+)
+from agent_core.domain.client_sessions import (
+    ClientControlFence,
+    ClientControlLease,
+    ClientSession,
+    ClientSessionGrant,
+    ClientSessionStatus,
+)
 from agent_core.domain.cloud_artifact_payloads import (
     CloudArtifactPayloadConflictError,
     CloudArtifactPayloadLifecycleStatus,
@@ -447,5 +475,25 @@ __all__ = [
     "WorkspaceProjection",
     "WorkspaceBindingRevision",
     "WorkspaceStatus",
+    "ClientActionContract",
+    "ClientActionRisk",
+    "ClientCapabilityError",
+    "ClientComponentContract",
+    "ClientReadableContract",
+    "FrontendCapabilityProfileVersion",
+    "MountedCapabilitySnapshot",
+    "ProfileLifecycle",
+    "CLIENT_EFFECT_TERMINAL_STATUSES",
+    "ClientEffectContinuation",
+    "ClientEffectReceipt",
+    "ClientEffectRequest",
+    "ClientEffectStatus",
+    "ClientRunBinding",
+    "client_run_binding_key",
+    "ClientControlFence",
+    "ClientControlLease",
+    "ClientSession",
+    "ClientSessionGrant",
+    "ClientSessionStatus",
     "validate_session_handoff",
 ]

@@ -36,13 +36,33 @@ def execute_tool_call(
             )
         )
     tool_result = tool_gateway.execute(tool_call)
+    deferred = tool_result.metadata.get("client_effect_deferred") is True
+    if deferred:
+        emitted_events.append(
+            HarnessEventDraft(
+                event_type=EventType.CLIENT_EFFECT_SCHEDULED,
+                actor=EventActor.TOOL,
+                payload={
+                    "attempt_number": context.attempt.number,
+                    "tool_name": tool_call.name,
+                    "tool_call_id": str(tool_call.tool_call_id),
+                    "client_effect_id": str(
+                        tool_result.metadata.get("client_effect_id", "")
+                    ),
+                    "action_name": str(tool_result.metadata.get("action_name", tool_call.name)),
+                    "idempotency_key": str(
+                        tool_result.metadata.get("client_effect_idempotency_key", "")
+                    ),
+                },
+            )
+        )
     return record_tool_result(
         context,
         tool_call,
         tool_result,
         verifier=verifier,
         emitted_events=emitted_events,
-        emit_tool_terminal=not manages_effect,
+        emit_tool_terminal=not manages_effect and not deferred,
     )
 
 

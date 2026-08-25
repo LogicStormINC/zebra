@@ -316,6 +316,11 @@ class ToolBatchExecutor:
             if execution.result.status is not ToolCallStatus.EXECUTED:
                 metadata = _accumulate_failure(metadata, tool_call.name)
                 continue
+            if execution.result.metadata.get("client_effect_deferred") is True:
+                # The durable client effect owns the terminal result; the
+                # loop's suspension check freezes resume state instead of
+                # ending the turn here.
+                return ToolBatchResult(None, tool_calls_executed, metadata)
             if not execute_all:
                 return self._terminal(
                     outcome=HarnessAttemptOutcome.COMPLETED,
