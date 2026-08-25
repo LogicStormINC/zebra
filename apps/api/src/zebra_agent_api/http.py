@@ -30,7 +30,14 @@ from zebra_agent_api.session_streaming import tail_session_events, tail_task_eve
 from zebra_agent_api.task_api import parse_task_id
 
 HTTP_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
-HTTP_ALLOWED_HEADERS = ["Accept", "Authorization", "Content-Type", "Last-Event-ID"]
+HTTP_ALLOWED_HEADERS = [
+    "Accept",
+    "Authorization",
+    "Content-Type",
+    "Last-Event-ID",
+    "X-Zebra-Client-Fence",
+    "X-Zebra-Client-Session",
+]
 
 
 @dataclass(frozen=True)

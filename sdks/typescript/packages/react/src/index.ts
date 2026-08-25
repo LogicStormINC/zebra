@@ -8,6 +8,7 @@
  */
 
 import {
+  createElement,
   createContext,
   useContext,
   useEffect,
@@ -16,6 +17,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { ZodType } from "zod";
 
 import {
   ClientRuntimeError,
@@ -27,6 +29,7 @@ import type { RuntimeClientConfig } from "../../contracts/src/index.ts";
 export interface ZebraAgentProviderProps {
   config: RuntimeClientConfig;
   frontendAppId: string;
+  profileRevision: number;
   profileDigest: string;
   children: ReactNode;
 }
@@ -34,6 +37,7 @@ export interface ZebraAgentProviderProps {
 interface ZebraAgentContextValue {
   runtime: ZebraClientRuntime;
   frontendAppId: string;
+  profileRevision: number;
   profileDigest: string;
   status: "connecting" | "ready" | "stopped";
   mountedActions: string[];
@@ -53,17 +57,27 @@ export function ZebraAgentProvider(props: ZebraAgentProviderProps) {
   );
   const [mountedActions, setMountedActions] = useState<string[]>([]);
   const [agentState, setAgentState] = useState<Record<string, unknown>>({});
+  const lifecycleGeneration = useRef(0);
   useEffect(() => {
-    setStatus("ready");
+    lifecycleGeneration.current += 1;
+    let active = true;
+    void runtime.start().then(() => {
+      if (active) setStatus("ready");
+    });
     return () => {
-      // Provider unmount releases the client lease and stops execution.
-      runtime.stop();
-      setStatus("stopped");
+      active = false;
+      const cleanupGeneration = ++lifecycleGeneration.current;
+      // React Strict Mode immediately re-runs effects; only a real unmount
+      // survives this microtask and releases the controller lease.
+      queueMicrotask(() => {
+        if (lifecycleGeneration.current === cleanupGeneration) runtime.stop();
+      });
     };
   }, [runtime]);
   const value: ZebraAgentContextValue = {
     runtime,
     frontendAppId: props.frontendAppId,
+    profileRevision: props.profileRevision,
     profileDigest: props.profileDigest,
     status,
     mountedActions,
@@ -88,35 +102,91 @@ function useZebra(): ZebraAgentContextValue {
   return context;
 }
 
+function synchronizeMount(
+  runtime: ZebraClientRuntime,
+  frontendAppId: string,
+  profileRevision: number,
+  profileDigest: string,
+): Promise<void> {
+  return runtime.scheduleMount({
+    frontendAppId,
+    profileRevision,
+    profileDigest,
+    mountedActions: runtime.registry.names(),
+    mountedReadables: [...runtime.readableNames],
+  });
+}
+
+function failClosedOnMount(runtime: ZebraClientRuntime, mount: Promise<void>): void {
+  void mount.catch(() => runtime.stop());
+}
+
 /** Register a semantic readable; updates produce a state revision. */
 export function useZebraReadable(
   name: string,
   value: Record<string, unknown>,
 ): { revision: number } {
-  const { runtime } = useZebra();
+  const { runtime, frontendAppId, profileRevision, profileDigest } = useZebra();
   const [revision, setRevision] = useState(runtime.uiRevision.current);
   const serialized = JSON.stringify(value);
   const reported = useRef(serialized);
   useEffect(() => {
     if (reported.current === serialized) return;
     reported.current = serialized;
-    setRevision(runtime.uiRevision.bump());
-  }, [serialized, runtime]);
+    const mount = synchronizeMount(
+      runtime,
+      frontendAppId,
+      profileRevision,
+      profileDigest,
+    );
+    void mount
+      .then(() => setRevision(runtime.uiRevision.current))
+      .catch(() => runtime.stop());
+  }, [serialized, runtime, frontendAppId, profileRevision, profileDigest]);
+  useEffect(() => {
+    runtime.mountReadable(name);
+    const mount = synchronizeMount(runtime, frontendAppId, profileRevision, profileDigest);
+    void mount
+      .then(() => setRevision(runtime.uiRevision.current))
+      .catch(() => runtime.stop());
+    return () => {
+      runtime.unmountReadable(name);
+      failClosedOnMount(
+        runtime,
+        synchronizeMount(runtime, frontendAppId, profileRevision, profileDigest),
+      );
+    };
+  }, [name, runtime, frontendAppId, profileRevision, profileDigest]);
   return { revision };
 }
 
 /** Register a typed action handler; unmount unregisters it. */
-export function useZebraAction(
+export interface ZebraActionOptions<
+  TArgs extends Record<string, unknown>,
+  TResult extends Record<string, unknown>,
+> {
+  parameters: ZodType<TArgs>;
+  result: ZodType<TResult>;
+  handler: (args: TArgs) => Promise<TResult> | TResult;
+}
+
+export function useZebraAction<
+  TArgs extends Record<string, unknown>,
+  TResult extends Record<string, unknown>,
+>(
   name: string,
-  handler: ClientActionHandler,
+  options: ZebraActionOptions<TArgs, TResult>,
 ): { mounted: boolean } {
-  const { runtime, frontendAppId, profileDigest } = useZebra();
-  const handlerRef = useRef(handler);
-  handlerRef.current = handler;
+  const { runtime, frontendAppId, profileRevision, profileDigest } = useZebra();
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    const registered: ClientActionHandler = (args) =>
-      handlerRef.current(args);
+    const registered: ClientActionHandler = async (args) => {
+      const parsed = await optionsRef.current.parameters.parseAsync(args);
+      const result = await optionsRef.current.handler(parsed);
+      return optionsRef.current.result.parseAsync(result);
+    };
     try {
       runtime.registry.mount(name, registered);
     } catch (error) {
@@ -132,21 +202,19 @@ export function useZebraAction(
       throw error;
     }
     setMounted(true);
-    void runtime.mount({
-      frontendAppId,
-      profileDigest,
-      mountedActions: runtime.registry.names(),
-    });
+    failClosedOnMount(
+      runtime,
+      synchronizeMount(runtime, frontendAppId, profileRevision, profileDigest),
+    );
     return () => {
       runtime.registry.unmount(name);
       setMounted(false);
-      void runtime.mount({
-        frontendAppId,
-        profileDigest,
-        mountedActions: runtime.registry.names(),
-      });
+      failClosedOnMount(
+        runtime,
+        synchronizeMount(runtime, frontendAppId, profileRevision, profileDigest),
+      );
     };
-  }, [name, runtime, frontendAppId, profileDigest]);
+  }, [name, runtime, frontendAppId, profileRevision, profileDigest]);
   return { mounted };
 }
 

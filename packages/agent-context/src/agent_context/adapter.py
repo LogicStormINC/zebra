@@ -214,14 +214,23 @@ def _compact_runtime_evidence(
 
             from agent_context.client_state import client_state_context_item
 
+            metadata = evidence.metadata or {}
+            frontend_app_id = metadata.get("frontend_app_id")
+            profile_digest = metadata.get("profile_digest")
+            ui_revision = metadata.get("ui_revision", 0)
+            state = metadata.get("state")
+            redacted_keys = metadata.get("redacted_keys")
             snapshot = ClientStateSnapshot(
-                client_session_id=str(
-                    (evidence.metadata or {}).get("client_session_id", "unknown")
+                client_session_id=str(metadata.get("client_session_id", "unknown")),
+                frontend_app_id=(frontend_app_id if isinstance(frontend_app_id, str) else None),
+                profile_digest=(profile_digest if isinstance(profile_digest, str) else None),
+                ui_revision=ui_revision if isinstance(ui_revision, int) else 0,
+                state=state if isinstance(state, dict) else {},
+                redacted_keys=(
+                    tuple(item for item in redacted_keys if isinstance(item, str))
+                    if isinstance(redacted_keys, list | tuple)
+                    else ()
                 ),
-                frontend_app_id=(evidence.metadata or {}).get("frontend_app_id"),
-                profile_digest=(evidence.metadata or {}).get("profile_digest"),
-                ui_revision=int((evidence.metadata or {}).get("ui_revision", 0)),
-                state=dict(evidence.metadata or {}).get("state") or {},
             )
             items.append(client_state_context_item(snapshot))
     return tuple(items)

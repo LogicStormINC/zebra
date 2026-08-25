@@ -39,9 +39,9 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
-- Client Integration Plane architecture is frozen and registered
-  (2026-08-25, `CLIENT-ADR-01` on `codex/client-adr-01`,
-  ADR-CLIENT-01): V1 browser integration lands as a durable client plane —
+- Client Integration Plane architecture is proposed and under review
+  (`CLIENT-ADR-01` on unmerged `codex/client-adr-01`, ADR-CLIENT-01): V1
+  browser integration is designed as a durable client plane —
   published Frontend Capability Profiles as the configuration source of
   truth, Client Sessions with one-controller fencing (Observers are
   read-only), and PostgreSQL-durable Client Effects with receipts,
@@ -52,26 +52,32 @@
   CLIENT board (contract → PostgreSQL → admission/API → client context →
   durable client action → suspend/resume → TS/React SDK → conformance →
   Trench pilot → production gate) is registered in `docs/AGENT_TASKS.md`;
-  every successor remains `Locked` behind the gate order and this card
-  changes documentation and governance only.
+  the original docs-only card was expanded by explicit maintainer batch
+  activation, so the implementation and governance delta now require review
+  together before this ADR can be accepted.
 
-- Client Integration Plane V1 is implemented end-to-end (2026-08-25,
-  maintainer batch activation on `codex/client-adr-01`): the full
-  backend chain — capability/session/effect contracts (migrations
-  v31-v33, real-PostgreSQL compose suites all PASS), platform bundle
+- Client Integration Plane V1 backend and browser-runtime candidate is
+  partially implemented on the unmerged review branch (reviewed 2026-08-26): the
+  backend chain — capability/session/effect contracts (append-only migrations
+  v31-v34; real-PostgreSQL capability/session/effect suites PASS 7/6/6), platform bundle
   composition behind the default-off `ZEBRA_CLIENT_INTEGRATION_ENABLED`
-  flag, management + runtime client APIs, AG-UI client admission,
-  client-state context injection, the schedule-only worker client
+  flag, the Runtime Client API, the schedule-only Worker client
   channel with `waiting_client_effect` suspension and atomic
   receipt-driven resume restoring the original tool call — plus the
-  zero-dependency TypeScript client-core and React hook surface.
-  Validation: full targeted matrix green (agent_core 523, agent_storage
-  non-PG 146, api 388, worker 171, context 50, architecture 50,
-  conformance parametrized over two frontends, SDK node tests 8);
-  file-size gate 0 violations. Remaining follow-ups: dedicated AG-UI
-  SSE client-effect projection with reconnect replay, jsdom/vitest
-  DOM-level React tests, the Trench pilot (external repo) and the
-  production gate.
+  typed TypeScript client-core and initial React hook surface. Review fixes
+  separate session credentials from controller fences, renew/release the
+  controller lease, require every lease to reference the exact persisted Run
+  Binding, bind Worker lookup through Task-to-active-Segment,
+  harden legacy migration and exact digest/UI-revision checks, and add the
+  dedicated Client Effect AG-UI SSE projection. Cloud HTTP uses independent
+  HostGrant and Client Session headers and binds all runtime requests to the
+  verified HostContext. Validation: `make check`; full Python suite
+  2694 passed / 364 skipped; TypeScript `tsc --noEmit` and 15 Node/React tests;
+  real PostgreSQL capability/session/effect suites pass 7/6/6; file-size gate
+  0 violations. This is not end-to-end product acceptance: Management audit
+  and complete CAS, durable AG-UI Binding/State admission, Worker client-state
+  recovery, Client State projection, React HITL runtime evidence, real-process
+  reconnect/restart drills, Trench pilot and production gate remain open.
 
 - Maintainer line acceptance closed (2026-08-21, gate 5, reviewed at
   `cloud-agent@5bab4b57`): the complete 59-path delta from

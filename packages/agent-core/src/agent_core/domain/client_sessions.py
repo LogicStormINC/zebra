@@ -111,10 +111,15 @@ class ClientSessionGrant(BaseModel):
             raise ValueError("grant scopes must be unique")
         for scope in normalized:
             if not CLIENT_SCOPE_PATTERN.fullmatch(scope):
-                raise ClientGrantError(
-                    f"scope {scope!r} is not a client capability scope"
-                )
+                raise ClientGrantError(f"scope {scope!r} is not a client capability scope")
         return normalized
+
+    @field_validator("expires_at")
+    @classmethod
+    def _check_expiry_time(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ClientGrantError("grant expiry must be timezone-aware")
+        return value.astimezone(UTC)
 
     @property
     def grant_digest(self) -> str:
@@ -171,17 +176,51 @@ class ClientControlFence(BaseModel):
         return self.fence_hash == expected_hash
 
 
+class ClientSessionCredential(BaseModel):
+    """One-time session bearer; only its hash is persisted."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    token: str = Field(min_length=MIN_FENCE_TOKEN_LENGTH)
+
+    @field_validator("token")
+    @classmethod
+    def _check_token(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < MIN_FENCE_TOKEN_LENGTH or any(ch.isspace() for ch in normalized):
+            raise ValueError("session credential must be a compact opaque string")
+        return normalized
+
+    @classmethod
+    def issue(cls) -> ClientSessionCredential:
+        return cls(token=uuid4().hex + uuid4().hex)
+
+    @property
+    def credential_hash(self) -> str:
+        return hashlib.sha256(self.token.encode()).hexdigest()
+
+
 class ClientSession(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     session_id: ClientSessionId = Field(default_factory=new_client_session_id)
     grant: ClientSessionGrant
+    credential_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     status: ClientSessionStatus = ClientSessionStatus.ACTIVE
     created_at: datetime
     heartbeat_at: datetime | None = None
     expires_at: datetime
     mounted_snapshot_digest: str | None = None
     ui_revision: int = Field(default=0)
+
+    @field_validator("created_at", "heartbeat_at", "expires_at")
+    @classmethod
+    def _check_session_time(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            raise ClientSessionError("session timestamps must be timezone-aware")
+        return value.astimezone(UTC)
 
     @model_validator(mode="after")
     def _check_expiry(self) -> ClientSession:
@@ -191,7 +230,13 @@ class ClientSession(BaseModel):
 
     def is_expired(self, *, now: datetime | None = None) -> bool:
         moment = now or datetime.now(UTC)
-        return moment >= self.expires_at or self.status is ClientSessionStatus.EXPIRED
+        return (
+            moment >= min(self.expires_at, self.grant.expires_at)
+            or self.status is ClientSessionStatus.EXPIRED
+        )
+
+    def matches_credential(self, credential: ClientSessionCredential) -> bool:
+        return credential.credential_hash == self.credential_hash
 
     def ensure_active(self, *, now: datetime | None = None) -> None:
         if self.is_expired(now=now):
@@ -231,9 +276,7 @@ class ClientControlLease(BaseModel):
 
     def require_controller(self) -> None:
         if self.role is not ClientControllerRole.CONTROLLER:
-            raise ClientObserverActionError(
-                "observers cannot execute actions or submit receipts"
-            )
+            raise ClientObserverActionError("observers cannot execute actions or submit receipts")
 
 
 def ensure_controller_handoff(
@@ -246,6 +289,4 @@ def ensure_controller_handoff(
     if current is None or current.is_expired():
         return
     if current.client_session_id != claimant_session_id:
-        raise ClientControlLeaseError(
-            "another tab holds the active controller lease"
-        )
+        raise ClientControlLeaseError("another tab holds the active controller lease")

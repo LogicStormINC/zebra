@@ -7,18 +7,21 @@ key; fence checks compare hashes only — token values never persist
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from agent_core.domain.client_capabilities import MountedCapabilitySnapshot
-from agent_core.domain.client_run_bindings import ClientRunBinding
+from agent_core.domain.client_capabilities import (
+    MountedCapabilityNarrowingError,
+    MountedCapabilitySnapshot,
+)
+from agent_core.domain.client_run_bindings import (
+    ClientBindingNarrowingError,
+    ClientRunBinding,
+)
 from agent_core.domain.client_sessions import (
-    ClientControlFence,
-    ClientControlLease,
-    ClientControlLeaseError,
-    ClientFenceError,
     ClientSession,
+    ClientSessionError,
     ClientSessionExpiredError,
     ClientSessionGrant,
     ClientSessionStatus,
@@ -26,12 +29,15 @@ from agent_core.domain.client_sessions import (
 from agent_core.domain.identifiers import (
     ClientRunBindingId,
     ClientSessionId,
+    SessionId,
     TaskId,
 )
-from agent_core.ports.client_control_lease import ClientControlLeasePort
 from agent_core.ports.client_session_registry import ClientSessionRegistryPort
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.client_control_leases import (
+    PostgresClientControlLeaseStore as PostgresClientControlLeaseStore,
+)
 from agent_storage.postgres.database import PostgresDatabase
 
 
@@ -42,17 +48,18 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
 
     def create_session(self, session: ClientSession) -> None:
         with self._database.connect() as connection:
-            connection.execute(
+            inserted = connection.execute(
                 """
                 INSERT INTO client_sessions (
                     deployment_namespace, client_session_id, host_app_id,
                     namespace_id, frontend_app_id, origin, user_ref,
-                    profile_digest, grant_json, status, ui_revision,
+                    profile_digest, credential_hash, grant_json, status, ui_revision,
                     mounted_snapshot_digest, created_at, heartbeat_at, expires_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 ON CONFLICT (deployment_namespace, client_session_id) DO NOTHING
+                RETURNING client_session_id
                 """,
                 (
                     self._namespace,
@@ -63,6 +70,7 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
                     session.grant.origin,
                     session.grant.user_ref,
                     session.grant.profile_digest,
+                    session.credential_hash,
                     Jsonb(session.grant.model_dump(mode="json")),
                     session.status.value,
                     session.ui_revision,
@@ -71,7 +79,13 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
                     session.heartbeat_at,
                     session.expires_at,
                 ),
-            )
+            ).fetchone()
+            if inserted is None:
+                existing = self._select_session(connection, session.session_id)
+                if existing is None or _session_from_row(existing) != session:
+                    raise ClientSessionError(
+                        "client session identity already has different content"
+                    )
 
     def get_session(self, session_id: ClientSessionId) -> ClientSession | None:
         with self._database.connect() as connection:
@@ -81,24 +95,36 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
     def heartbeat_session(
         self, session_id: ClientSessionId, *, heartbeat_at: datetime
     ) -> ClientSession:
+        expired = False
         with self._database.connect() as connection:
             row = self._select_session(connection, session_id)
             if row is None:
                 raise ClientSessionExpiredError("client session not found")
             session = _session_from_row(row)
-            session.ensure_renewable(now=heartbeat_at)
-            connection.execute(
-                """
-                UPDATE client_sessions
-                SET heartbeat_at = %s,
-                    status = CASE
-                        WHEN %s >= expires_at THEN 'expired' ELSE status
-                    END
-                WHERE deployment_namespace = %s AND client_session_id = %s
-                """,
-                (heartbeat_at, heartbeat_at, self._namespace, session_id),
+            expired = (
+                session.status is not ClientSessionStatus.ACTIVE
+                or heartbeat_at >= session.expires_at
             )
-        return session
+            if expired:
+                connection.execute(
+                    """
+                    UPDATE client_sessions SET status = 'expired'
+                    WHERE deployment_namespace = %s AND client_session_id = %s
+                        AND status = 'active' AND expires_at <= %s
+                    """,
+                    (self._namespace, session_id, heartbeat_at),
+                )
+            else:
+                connection.execute(
+                    """
+                    UPDATE client_sessions SET heartbeat_at = %s
+                    WHERE deployment_namespace = %s AND client_session_id = %s
+                    """,
+                    (heartbeat_at, self._namespace, session_id),
+                )
+        if expired:
+            raise ClientSessionExpiredError("client session cannot heartbeat")
+        return session.model_copy(update={"heartbeat_at": heartbeat_at})
 
     def close_session(self, session_id: ClientSessionId) -> None:
         with self._database.connect() as connection:
@@ -113,7 +139,7 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
 
     def save_mounted_snapshot(self, snapshot: MountedCapabilitySnapshot) -> None:
         with self._database.connect() as connection:
-            connection.execute(
+            saved = connection.execute(
                 """
                 INSERT INTO client_mounted_capability_snapshots (
                     deployment_namespace, client_session_id, snapshot_digest,
@@ -125,6 +151,11 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
                     snapshot_json = EXCLUDED.snapshot_json,
                     ui_revision = EXCLUDED.ui_revision,
                     mounted_at = EXCLUDED.mounted_at
+                WHERE client_mounted_capability_snapshots.ui_revision
+                          < EXCLUDED.ui_revision
+                   OR client_mounted_capability_snapshots.snapshot_digest
+                          = EXCLUDED.snapshot_digest
+                RETURNING client_session_id
                 """,
                 (
                     self._namespace,
@@ -134,20 +165,31 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
                     snapshot.ui_revision,
                     snapshot.mounted_at,
                 ),
-            )
-            connection.execute(
+            ).fetchone()
+            if saved is None:
+                raise MountedCapabilityNarrowingError(
+                    "stale or conflicting mount revision rejected"
+                )
+            updated = connection.execute(
                 """
                 UPDATE client_sessions
                 SET mounted_snapshot_digest = %s, ui_revision = %s
                 WHERE deployment_namespace = %s AND client_session_id = %s
+                    AND ui_revision <= %s
+                RETURNING client_session_id
                 """,
                 (
                     snapshot.snapshot_digest,
                     snapshot.ui_revision,
                     self._namespace,
                     snapshot.client_session_id,
+                    snapshot.ui_revision,
                 ),
-            )
+            ).fetchone()
+            if updated is None:
+                raise MountedCapabilityNarrowingError(
+                    "client session is absent or ahead of the mount revision"
+                )
 
     def get_mounted_snapshot(
         self, client_session_id: ClientSessionId
@@ -168,9 +210,10 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
         with self._database.connect() as connection:
             existing = connection.execute(
                 """
-                SELECT binding_revision FROM client_run_bindings
+                SELECT * FROM client_run_bindings
                 WHERE deployment_namespace = %s AND task_id = %s
                     AND run_id = %s AND client_session_id = %s
+                FOR UPDATE
                 """,
                 (
                     self._namespace,
@@ -181,13 +224,24 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
             ).fetchone()
             if existing is not None:
                 current = int(existing["binding_revision"])
-                if binding.binding_revision < current:
-                    raise ClientControlLeaseError(
-                        "binding revisions may only increase"
-                    )
                 if binding.binding_revision == current:
-                    return  # idempotent replay
-            connection.execute(
+                    if _binding_from_row(existing) == binding:
+                        return
+                    raise ClientBindingNarrowingError(
+                        "the same binding revision has different content"
+                    )
+                if binding.binding_revision != current + 1:
+                    raise ClientBindingNarrowingError("binding revisions must advance exactly once")
+                prior = _binding_from_row(existing)
+                if (
+                    prior.profile_digest != binding.profile_digest
+                    or prior.task_capability_scope != binding.task_capability_scope
+                    or set(binding.allowed_actions) - set(prior.allowed_actions)
+                ):
+                    raise ClientBindingNarrowingError(
+                        "binding updates may only narrow existing actions"
+                    )
+            saved = connection.execute(
                 """
                 INSERT INTO client_run_bindings (
                     deployment_namespace, binding_id, task_id, run_id,
@@ -200,6 +254,9 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
                     allowed_actions = EXCLUDED.allowed_actions,
                     mounted_snapshot_digest = EXCLUDED.mounted_snapshot_digest,
                     binding_revision = EXCLUDED.binding_revision
+                WHERE client_run_bindings.binding_revision
+                      = EXCLUDED.binding_revision - 1
+                RETURNING binding_id
                 """,
                 (
                     self._namespace,
@@ -214,7 +271,9 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
                     binding.binding_revision,
                     binding.created_at,
                 ),
-            )
+            ).fetchone()
+            if saved is None:
+                raise ClientBindingNarrowingError("concurrent binding revision update rejected")
 
     def get_run_binding(
         self, task_id: TaskId, run_id: str, client_session_id: ClientSessionId
@@ -232,6 +291,29 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
             return None
         return _binding_from_row(row)
 
+    def get_active_run_binding(self, execution_session_id: SessionId) -> ClientRunBinding | None:
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT binding.* FROM client_run_bindings AS binding
+                JOIN agent_tasks AS task
+                  ON task.deployment_namespace = binding.deployment_namespace
+                 AND task.task_id = binding.task_id
+                JOIN client_control_leases AS lease
+                  ON lease.deployment_namespace = binding.deployment_namespace
+                 AND lease.task_id = binding.task_id
+                 AND lease.run_id = binding.run_id
+                 AND lease.client_session_id = binding.client_session_id
+                WHERE binding.deployment_namespace = %s
+                  AND task.active_segment_id = %s
+                  AND lease.released_at IS NULL AND lease.expires_at > %s
+                ORDER BY lease.acquired_at DESC
+                LIMIT 2
+                """,
+                (self._namespace, execution_session_id, datetime.now(UTC)),
+            ).fetchall()
+        return _binding_from_row(rows[0]) if len(rows) == 1 else None
+
     def _select_session(self, connection: Any, session_id: ClientSessionId) -> Any:
         return connection.execute(
             """
@@ -242,171 +324,11 @@ class PostgresClientSessionRegistry(ClientSessionRegistryPort):
         ).fetchone()
 
 
-class PostgresClientControlLeaseStore(ClientControlLeasePort):
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
-        self._namespace = self._database.deployment_namespace
-
-    def claim_controller(
-        self,
-        run_binding_id: UUID,
-        *,
-        task_id: TaskId,
-        run_id: str,
-        client_session_id: ClientSessionId,
-        fence: ClientControlFence,
-        ttl: timedelta,
-    ) -> ClientControlLease:
-        now = datetime.now(UTC)
-        expires_at = now + ttl
-        with self._database.connect() as connection:
-            row = connection.execute(
-                """
-                INSERT INTO client_control_leases (
-                    deployment_namespace, task_id, run_id, run_binding_id,
-                    client_session_id, role, fence_hash,
-                    acquired_at, heartbeat_at, expires_at
-                ) VALUES (%s, %s, %s, %s, %s, 'controller', %s, %s, %s, %s)
-                ON CONFLICT (deployment_namespace, task_id, run_id) DO UPDATE SET
-                    run_binding_id = EXCLUDED.run_binding_id,
-                    client_session_id = EXCLUDED.client_session_id,
-                    fence_hash = EXCLUDED.fence_hash,
-                    acquired_at = EXCLUDED.acquired_at,
-                    heartbeat_at = EXCLUDED.heartbeat_at,
-                    expires_at = EXCLUDED.expires_at,
-                    released_at = NULL
-                WHERE client_control_leases.released_at IS NOT NULL
-                   OR client_control_leases.expires_at <= %s
-                   OR client_control_leases.client_session_id = EXCLUDED.client_session_id
-                RETURNING client_session_id, fence_hash, acquired_at,
-                          heartbeat_at, expires_at
-                """,
-                (
-                    self._namespace,
-                    task_id,
-                    run_id,
-                    run_binding_id,
-                    client_session_id,
-                    fence.fence_hash,
-                    now,
-                    now,
-                    expires_at,
-                    now,
-                ),
-            ).fetchone()
-            if row is None:
-                holder = connection.execute(
-                    """
-                    SELECT client_session_id FROM client_control_leases
-                    WHERE deployment_namespace = %s AND task_id = %s AND run_id = %s
-                    """,
-                    (self._namespace, task_id, run_id),
-                ).fetchone()
-                raise ClientControlLeaseError(
-                    "another tab holds the active controller lease"
-                    if holder is not None
-                    else "controller lease claim failed"
-                )
-        return ClientControlLease(
-            run_binding_id=run_binding_id,
-            client_session_id=ClientSessionId(UUID(str(row["client_session_id"]))),
-            fence_hash=row["fence_hash"],
-            acquired_at=row["acquired_at"],
-            heartbeat_at=row["heartbeat_at"],
-            expires_at=row["expires_at"],
-        )
-
-    def renew(
-        self,
-        run_binding_id: UUID,
-        *,
-        task_id: TaskId,
-        run_id: str,
-        fence: ClientControlFence,
-        ttl: timedelta,
-    ) -> ClientControlLease:
-        now = datetime.now(UTC)
-        expires_at = now + ttl
-        with self._database.connect() as connection:
-            row = connection.execute(
-                """
-                UPDATE client_control_leases
-                SET heartbeat_at = %s, expires_at = %s
-                WHERE deployment_namespace = %s AND task_id = %s AND run_id = %s
-                    AND fence_hash = %s AND released_at IS NULL
-                RETURNING client_session_id, fence_hash, acquired_at,
-                          heartbeat_at, expires_at
-                """,
-                (
-                    now,
-                    expires_at,
-                    self._namespace,
-                    task_id,
-                    run_id,
-                    fence.fence_hash,
-                ),
-            ).fetchone()
-            if row is None:
-                raise ClientFenceError("stale client fence rejected on renew")
-        return ClientControlLease(
-            run_binding_id=run_binding_id,
-            client_session_id=ClientSessionId(UUID(str(row["client_session_id"]))),
-            fence_hash=row["fence_hash"],
-            acquired_at=row["acquired_at"],
-            heartbeat_at=row["heartbeat_at"],
-            expires_at=row["expires_at"],
-        )
-
-    def release(
-        self,
-        run_binding_id: UUID,
-        *,
-        task_id: TaskId,
-        run_id: str,
-        fence: ClientControlFence,
-    ) -> None:
-        with self._database.connect() as connection:
-            row = connection.execute(
-                """
-                UPDATE client_control_leases
-                SET released_at = NOW()
-                WHERE deployment_namespace = %s AND task_id = %s AND run_id = %s
-                    AND fence_hash = %s AND released_at IS NULL
-                RETURNING task_id
-                """,
-                (self._namespace, task_id, run_id, fence.fence_hash),
-            ).fetchone()
-            if row is None:
-                raise ClientFenceError("stale client fence rejected on release")
-
-    def get_active(self, run_binding_id: UUID) -> ClientControlLease | None:
-        with self._database.connect() as connection:
-            row = connection.execute(
-                """
-                SELECT run_binding_id, client_session_id, fence_hash,
-                       acquired_at, heartbeat_at, expires_at
-                FROM client_control_leases
-                WHERE deployment_namespace = %s AND run_binding_id = %s
-                    AND released_at IS NULL
-                """,
-                (self._namespace, run_binding_id),
-            ).fetchone()
-        if row is None:
-            return None
-        return ClientControlLease(
-            run_binding_id=row["run_binding_id"],
-            client_session_id=ClientSessionId(UUID(str(row["client_session_id"]))),
-            fence_hash=row["fence_hash"],
-            acquired_at=row["acquired_at"],
-            heartbeat_at=row["heartbeat_at"],
-            expires_at=row["expires_at"],
-        )
-
-
 def _session_from_row(row: Any) -> ClientSession:
     return ClientSession(
         session_id=ClientSessionId(UUID(str(row["client_session_id"]))),
         grant=ClientSessionGrant.model_validate(row["grant_json"]),
+        credential_hash=row["credential_hash"],
         status=ClientSessionStatus(row["status"]),
         created_at=row["created_at"],
         heartbeat_at=row["heartbeat_at"],

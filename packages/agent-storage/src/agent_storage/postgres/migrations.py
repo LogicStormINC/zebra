@@ -1,5 +1,4 @@
 """Immutable PostgreSQL migration catalog."""
-
 from agent_storage.postgres.agent_mailbox_migration import AGENT_MAILBOX_MIGRATION
 from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
 from agent_storage.postgres.agent_release_enforcement_migration import (
@@ -8,6 +7,7 @@ from agent_storage.postgres.agent_release_enforcement_migration import (
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
 from agent_storage.postgres.client_capability_migration import CLIENT_CAPABILITY_MIGRATION
 from agent_storage.postgres.client_effect_migration import CLIENT_EFFECT_MIGRATION
+from agent_storage.postgres.client_security_migration import CLIENT_SECURITY_MIGRATION
 from agent_storage.postgres.client_session_migration import CLIENT_SESSION_MIGRATION
 from agent_storage.postgres.control_plane_migration import CONTROL_PLANE_MIGRATION
 from agent_storage.postgres.delivery_transaction_migration import DELIVERY_TRANSACTION_MIGRATION
@@ -496,4 +496,5 @@ MIGRATIONS = (
     CLIENT_CAPABILITY_MIGRATION,
     CLIENT_SESSION_MIGRATION,
     CLIENT_EFFECT_MIGRATION,
+    CLIENT_SECURITY_MIGRATION,
 )

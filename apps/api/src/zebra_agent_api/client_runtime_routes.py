@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from uuid import UUID
+
+from agent_core.domain.identifiers import ClientSessionId
 
 if TYPE_CHECKING:
     from zebra_agent_api.routes import RouteRequest
@@ -10,6 +13,7 @@ if TYPE_CHECKING:
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.client_effect_receipts import (
     get_client_effect,
+    list_pending_client_effects,
     submit_client_effect_receipt,
 )
 from zebra_agent_api.client_grant_auth import (
@@ -21,6 +25,7 @@ from zebra_agent_api.client_sessions import (
     heartbeat_client_session,
     mount_client_session,
     open_client_session,
+    release_client_controller,
 )
 from zebra_agent_api.responses import ApiResponse, bad_request
 
@@ -35,7 +40,7 @@ def handle_client_runtime_route(
     path = request.path
     method = request.method.upper()
     if path == _SESSION_PREFIX and method == "POST":
-        return open_client_session(app, request.body or {})
+        return open_client_session(app, request.body or {}, request.host_context)
     if not (
         path.startswith(_SESSION_PREFIX)
         or path.startswith(_EFFECT_PREFIX)
@@ -44,14 +49,20 @@ def handle_client_runtime_route(
         return None
     platform = app.client_platform
     if platform is None or platform.client_sessions is None:
-        return ApiResponse(
-            503, {"status": "unavailable", "reason": "client_integration_disabled"}
-        )
+        return ApiResponse(503, {"status": "unavailable", "reason": "client_integration_disabled"})
     auth = SessionBackedClientGrantAuthorizer(platform.client_sessions).authorize(
-        request.headers
+        request.headers,
+        host_context=request.host_context,
+        require_host_context=app.settings.deployment == "cloud",
     )
     if auth is None:
-        return bad_request("client_session_authorization_required")
+        return ApiResponse(
+            401,
+            {
+                "status": "unauthorized",
+                "reason": "client_session_authorization_required",
+            },
+        )
     if path.startswith(_SESSION_PREFIX):
         return _session_route(app, request, method, path, auth)
     if path.startswith(_EFFECT_PREFIX):
@@ -70,13 +81,44 @@ def _session_route(
     if not session_id:
         return bad_request("client_session_id_required")
     tail = path.removeprefix(f"{_SESSION_PREFIX}/{session_id}")
+    try:
+        parsed_session_id = _client_session_id(session_id)
+    except ValueError:
+        return bad_request("invalid_client_session_id")
+    if auth.client_session_id != parsed_session_id:
+        return ApiResponse(403, {"status": "forbidden", "reason": "session_authority_mismatch"})
+    if method == "GET" and tail == "/effects":
+        return list_pending_client_effects(app, auth=auth)
     if method == "POST" and tail == "/heartbeat":
-        return heartbeat_client_session(app, session_id)
-    if method == "POST" and tail == "/mount":
-        return mount_client_session(
-            app, session_id, request.body or {}, auth
+        return heartbeat_client_session(
+            app,
+            session_id,
+            auth,
+            request.body or {},
+            _header(request.headers, "X-Zebra-Client-Fence"),
         )
+    if method == "POST" and tail == "/release":
+        return release_client_controller(
+            app,
+            auth,
+            request.body or {},
+            _header(request.headers, "X-Zebra-Client-Fence"),
+        )
+    if method == "POST" and tail == "/mount":
+        return mount_client_session(app, session_id, request.body or {}, auth)
     return bad_request("unsupported client session operation")
+
+
+def _client_session_id(value: str) -> ClientSessionId:
+    return ClientSessionId(UUID(value))
+
+
+def _header(headers: dict[str, str] | None, name: str) -> str:
+    expected = name.lower()
+    return next(
+        (value for key, value in (headers or {}).items() if key.lower() == expected),
+        "",
+    )
 
 
 def _effect_route(
@@ -89,17 +131,18 @@ def _effect_route(
     tail = path.removeprefix(_EFFECT_PREFIX)
     parts = [part for part in tail.split("/") if part]
     if len(parts) == 1 and method == "GET":
-        return get_client_effect(app, parts[0])
+        return get_client_effect(app, parts[0], auth=auth)
     if len(parts) == 2 and parts[1] == "receipts" and method == "POST":
-        idempotency_key = (request.headers or {}).get("Idempotency-Key") or ""
+        idempotency_key = _header(request.headers, "Idempotency-Key")
         if not idempotency_key.strip():
             return bad_request("missing_idempotency_key")
         return submit_client_effect_receipt(
             app,
             parts[0],
             request.body or {},
-            fence_token=auth.fence_token,
-            controller=auth.controller,
+            client_session_id=auth.client_session_id,
+            fence_token=_header(request.headers, "X-Zebra-Client-Fence"),
+            controller=True,
             idempotency_key=idempotency_key.strip(),
         )
     return bad_request("unsupported client effect operation")
@@ -121,5 +164,10 @@ def _binding_route(
     except (ValueError, IndexError):
         return bad_request("malformed client binding path")
     return bind_client_run(
-        app, task_id, run_id, request.body or {}, auth
+        app,
+        task_id,
+        run_id,
+        request.body or {},
+        auth,
+        request.host_context,
     )

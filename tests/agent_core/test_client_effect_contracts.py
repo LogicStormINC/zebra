@@ -4,6 +4,7 @@ from uuid import uuid4
 import pytest
 from agent_core.domain.client_effects import (
     CLIENT_EFFECT_TERMINAL_STATUSES,
+    ClientEffectContinuation,
     ClientEffectError,
     ClientEffectExpiredError,
     ClientEffectIdempotencyConflict,
@@ -19,6 +20,7 @@ from agent_core.domain.client_effects import (
 from agent_core.domain.identifiers import (
     new_client_effect_id,
     new_client_session_id,
+    new_session_id,
     new_task_id,
     new_tool_call_id,
 )
@@ -32,6 +34,7 @@ def _request(**overrides) -> ClientEffectRequest:
     payload = {
         "effect_id": new_client_effect_id(),
         "task_id": new_task_id(),
+        "parent_session_id": new_session_id(),
         "run_id": "run-1",
         "client_session_id": new_client_session_id(),
         "tool_call_id": new_tool_call_id(),
@@ -73,28 +76,31 @@ def test_request_pins_all_digests_revision_and_idempotency() -> None:
         _request(expected_ui_revision=-1)
 
 
+def test_continuation_timestamp_must_be_timezone_aware() -> None:
+    request = _request()
+    with pytest.raises(ValidationError):
+        ClientEffectContinuation(
+            effect_id=request.effect_id,
+            task_id=request.task_id,
+            run_id=request.run_id,
+            tool_call_id=request.tool_call_id,
+            action_name=request.action_name,
+            created_at=datetime(2026, 8, 25, 12, 0),
+        )
+
+
 def test_expired_or_stale_effects_fail_closed() -> None:
     expired = _request(status=ClientEffectStatus.PENDING)
-    expired = expired.model_copy(
-        update={"expires_at": NOW - timedelta(seconds=1)}
-    )
+    expired = expired.model_copy(update={"expires_at": NOW - timedelta(seconds=1)})
     with pytest.raises(ClientEffectExpiredError):
-        expired.ensure_receiptable(
-            current_ui_revision=expired.expected_ui_revision, now=NOW
-        )
+        expired.ensure_receiptable(current_ui_revision=expired.expected_ui_revision, now=NOW)
     pending = _request()
     with pytest.raises(ClientEffectRevisionError):
-        pending.ensure_receiptable(
-            current_ui_revision=pending.expected_ui_revision + 3, now=NOW
-        )
+        pending.ensure_receiptable(current_ui_revision=pending.expected_ui_revision + 3, now=NOW)
     resolved = _request(status=ClientEffectStatus.SUCCEEDED)
     with pytest.raises(ClientEffectReceiptConflict):
-        resolved.ensure_receiptable(
-            current_ui_revision=resolved.expected_ui_revision, now=NOW
-        )
-    pending.ensure_receiptable(
-        current_ui_revision=pending.expected_ui_revision, now=NOW
-    )
+        resolved.ensure_receiptable(current_ui_revision=resolved.expected_ui_revision, now=NOW)
+    pending.ensure_receiptable(current_ui_revision=pending.expected_ui_revision, now=NOW)
 
 
 def test_receipt_rejects_observer_and_secret_results() -> None:
@@ -103,12 +109,12 @@ def test_receipt_rejects_observer_and_secret_results() -> None:
         {"controller": False},
         {"result": {"sessionToken": "abc"}},
         {"result": {"cookie": "sid=1"}},
+        {"result": {"rows": [{"nestedSecret": "hidden"}]}},
+        {"result": {"not_json": {"set-value"}}},
     ):
         with pytest.raises(ValidationError) as info:
             _receipt(request, **override)
-        causes = [
-            error.get("ctx", {}).get("error") for error in info.value.errors()
-        ]
+        causes = [error.get("ctx", {}).get("error") for error in info.value.errors()]
         assert any(isinstance(cause, ClientEffectError) for cause in causes)
 
 
@@ -117,12 +123,8 @@ def test_receipt_only_accepts_terminal_semantic_statuses() -> None:
     for status in (ClientEffectStatus.PENDING, ClientEffectStatus.UNCERTAIN):
         with pytest.raises(ValidationError) as info:
             _receipt(request, status=status)
-        causes = [
-            error.get("ctx", {}).get("error") for error in info.value.errors()
-        ]
-        assert any(
-            isinstance(cause, ClientEffectReceiptConflict) for cause in causes
-        )
+        causes = [error.get("ctx", {}).get("error") for error in info.value.errors()]
+        assert any(isinstance(cause, ClientEffectReceiptConflict) for cause in causes)
     assert ClientEffectStatus.UNCERTAIN not in CLIENT_EFFECT_TERMINAL_STATUSES
 
 
@@ -133,20 +135,32 @@ def test_one_effect_accepts_one_semantically_consistent_receipt() -> None:
     assert decide_receipt_admission(request, first, first) == "replay"
     conflicting = _receipt(request, status=ClientEffectStatus.FAILED)
     assert decide_receipt_admission(request, first, conflicting) == "conflict"
+    changed_result = _receipt(request, result={"opened": False})
+    assert decide_receipt_admission(request, first, changed_result) == "conflict"
+    retried_later = first.model_copy(
+        update={"received_at": first.received_at + timedelta(seconds=1)}
+    )
+    assert decide_receipt_admission(request, first, retried_later) == "replay"
 
 
 def test_idempotency_replay_and_conflict() -> None:
     request = _request()
-    assert resolve_effect_idempotency(
-        idempotency_key=request.idempotency_key,
-        request_digest=request.request_digest,
-        existing=None,
-    ) == "schedule"
-    assert resolve_effect_idempotency(
-        idempotency_key=request.idempotency_key,
-        request_digest=request.request_digest,
-        existing=request,
-    ) == "replay"
+    assert (
+        resolve_effect_idempotency(
+            idempotency_key=request.idempotency_key,
+            request_digest=request.request_digest,
+            existing=None,
+        )
+        == "schedule"
+    )
+    assert (
+        resolve_effect_idempotency(
+            idempotency_key=request.idempotency_key,
+            request_digest=request.request_digest,
+            existing=request,
+        )
+        == "replay"
+    )
     with pytest.raises(ClientEffectIdempotencyConflict):
         resolve_effect_idempotency(
             idempotency_key=request.idempotency_key,
@@ -158,18 +172,17 @@ def test_idempotency_replay_and_conflict() -> None:
 def test_idempotency_key_is_derived_from_the_tool_identity() -> None:
     task_id = new_task_id()
     tool_call_id = new_tool_call_id()
-    assert client_effect_idempotency_key(
-        task_id=task_id, run_id="run-1", tool_call_id=tool_call_id
-    ) == f"client-effect:{task_id}:run-1:{tool_call_id}"
+    assert (
+        client_effect_idempotency_key(task_id=task_id, run_id="run-1", tool_call_id=tool_call_id)
+        == f"client-effect:{task_id}:run-1:{tool_call_id}"
+    )
 
 
 def test_session_supports_the_waiting_client_effect_lifecycle() -> None:
     from agent_core.domain.sessions import Session
 
     session = Session.create(title="client effect lifecycle", created_at=NOW)
-    running = session.transition_to(SessionStatus.READY).transition_to(
-        SessionStatus.RUNNING
-    )
+    running = session.transition_to(SessionStatus.READY).transition_to(SessionStatus.RUNNING)
     waiting = running.transition_to(SessionStatus.WAITING_CLIENT_EFFECT)
     resumed = waiting.transition_to(SessionStatus.READY)
     assert resumed.status is SessionStatus.READY

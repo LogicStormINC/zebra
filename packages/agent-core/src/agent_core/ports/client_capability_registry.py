@@ -22,6 +22,10 @@ class ClientCapabilityRegistryPort(Protocol):
         self, frontend_app_id: str
     ) -> FrontendCapabilityProfileVersion | None: ...
 
+    def get_profile_by_digest(
+        self, frontend_app_id: str, profile_digest: str
+    ) -> FrontendCapabilityProfileVersion | None: ...
+
     def set_lifecycle(
         self,
         frontend_app_id: str,
@@ -36,3 +40,7 @@ class ClientCapabilityRegistryPort(Protocol):
         """CAS on binding_revision; zero rows written on stale expectations."""
 
     def get_binding(self, binding_id: UUID) -> FrontendCapabilityBinding | None: ...
+
+    def get_binding_for_host(
+        self, host_app_id: str, namespace_id: str, frontend_app_id: str
+    ) -> FrontendCapabilityBinding | None: ...

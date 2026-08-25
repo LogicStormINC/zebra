@@ -205,7 +205,6 @@ class SessionExecutionService:
                 started_at=started_at,
                 ownership_check=heartbeat.require_owned,
             )
-
     def _execute_claimed_session(
         self,
         claimed: ClaimedSession,
@@ -275,6 +274,7 @@ class SessionExecutionService:
                 load_bound_binding,
                 select_attempt_authority,
             )
+
             # Load the frozen binding ONCE: it drives both this Attempt's
             # authority and the durable-delegation digest the tool gateway
             # checks against binding drift.
@@ -339,7 +339,7 @@ class SessionExecutionService:
                     task_binding.host_capability.manifest_digest if task_binding else None
                 ),
                 frozen_manifest_loader=self._frozen_manifest_loader,
-                client_gateway=(self._client_runtime(session_id)
+                client_gateway=(self._client_runtime(session_id)  # type: ignore[arg-type]
                                 if self._client_runtime else None),
             )
             tool_gateway = guard_worker_effects(

@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from agent_core.domain.identifiers import (
     ClientEffectId,
     ClientSessionId,
+    SessionId,
     TaskId,
     ToolCallId,
 )
@@ -94,11 +95,34 @@ def _canonical_hash(payload: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _json_bytes(value: object, *, label: str) -> bytes:
+    try:
+        return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    except (TypeError, ValueError) as exc:
+        raise ClientEffectError(f"{label} must be JSON-compatible") from exc
+
+
+def _check_receipt_keys(value: object, *, depth: int = 0) -> None:
+    if depth > 16:
+        raise ClientEffectError("receipt result nesting exceeds the depth budget")
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            lowered = str(key).lower()
+            for token in RECEIPT_FORBIDDEN_KEYS:
+                if token in lowered:
+                    raise ClientEffectError(f"receipt results must not carry '{token}' fields")
+            _check_receipt_keys(nested, depth=depth + 1)
+    elif isinstance(value, list):
+        for nested in value:
+            _check_receipt_keys(nested, depth=depth + 1)
+
+
 class ClientEffectRequest(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     effect_id: ClientEffectId
     task_id: TaskId
+    parent_session_id: SessionId
     run_id: str = Field(min_length=1, max_length=128)
     client_session_id: ClientSessionId
     tool_call_id: ToolCallId
@@ -116,10 +140,16 @@ class ClientEffectRequest(BaseModel):
     @field_validator("arguments")
     @classmethod
     def _check_arguments(cls, value: dict[str, object]) -> dict[str, object]:
-        encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
-        if len(encoded.encode()) > MAX_EFFECT_ARGUMENTS_BYTES:
+        if len(_json_bytes(value, label="effect arguments")) > MAX_EFFECT_ARGUMENTS_BYTES:
             raise ClientEffectError("effect arguments exceed the byte budget")
         return value
+
+    @field_validator("requested_at", "expires_at")
+    @classmethod
+    def _check_time(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ClientEffectError("effect timestamps must be timezone-aware")
+        return value.astimezone(UTC)
 
     @model_validator(mode="after")
     def _check_expiry(self) -> ClientEffectRequest:
@@ -148,9 +178,7 @@ class ClientEffectRequest(BaseModel):
         if self.is_expired(now=now):
             raise ClientEffectExpiredError("expired effects reject receipts")
         if self.status in CLIENT_EFFECT_TERMINAL_STATUSES:
-            raise ClientEffectReceiptConflict(
-                "effect already resolved by a terminal receipt"
-            )
+            raise ClientEffectReceiptConflict("effect already resolved by a terminal receipt")
         if current_ui_revision != self.expected_ui_revision:
             raise ClientEffectRevisionError(
                 "stale UI revision; the action was scheduled against an older page state"
@@ -181,16 +209,17 @@ class ClientEffectReceipt(BaseModel):
     @field_validator("result")
     @classmethod
     def _check_result(cls, value: dict[str, object]) -> dict[str, object]:
-        encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
-        if len(encoded.encode()) > MAX_RECEIPT_RESULT_BYTES:
+        if len(_json_bytes(value, label="receipt result")) > MAX_RECEIPT_RESULT_BYTES:
             raise ClientEffectError("receipt result exceeds the byte budget")
-        lowered = {str(key).lower() for key in value}
-        for token in RECEIPT_FORBIDDEN_KEYS:
-            if any(token in key for key in lowered):
-                raise ClientEffectError(
-                    f"receipt results must not carry '{token}' fields"
-                )
+        _check_receipt_keys(value)
         return value
+
+    @field_validator("received_at")
+    @classmethod
+    def _check_received_at(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ClientEffectError("receipt timestamp must be timezone-aware")
+        return value.astimezone(UTC)
 
     @model_validator(mode="after")
     def _check_controller(self) -> ClientEffectReceipt:
@@ -226,7 +255,6 @@ def decide_receipt_admission(
         existing.idempotency_key == incoming.idempotency_key
         and existing.status is incoming.status
         and existing.result == incoming.result
-        and existing.received_at == incoming.received_at
     ):
         return "replay"
     return "conflict"
@@ -266,6 +294,13 @@ class ClientEffectContinuation(BaseModel):
     model_calls_used: int = Field(default=0, ge=0)
     tool_calls_executed: int = Field(default=0, ge=0)
     created_at: datetime
+
+    @field_validator("created_at")
+    @classmethod
+    def _check_created_at(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ClientEffectError("continuation timestamp must be timezone-aware")
+        return value.astimezone(UTC)
 
 
 def client_effect_idempotency_key(

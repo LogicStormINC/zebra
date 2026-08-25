@@ -11,6 +11,7 @@ injected through the completed-tool continuation.
 from agent_core.domain.events import EventType
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
+from agent_core.domain.tools import ToolCall
 from agent_core.harness.attempt_result import build_attempt_result
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
@@ -55,10 +56,7 @@ def client_effect_suspension_result(
         draft.payload.setdefault("tool_calls_executed", tool_calls_executed)
     return build_attempt_result(
         outcome=HarnessAttemptOutcome.WAITING_EXTERNAL_TOOL,
-        summary=(
-            "client effect scheduled; attempt waits for the durable"
-            " browser receipt"
-        ),
+        summary=("client effect scheduled; attempt waits for the durable browser receipt"),
         assistant_message=completion.assistant_message.content,
         model_calls_used=model_calls_used,
         tool_calls_executed=tool_calls_executed,
@@ -73,12 +71,12 @@ def client_effect_suspension_result(
 
 def _deferred_effects(
     emitted_events: list[HarnessEventDraft],
-    tool_calls: tuple,
-) -> list[tuple[object, str]]:
+    tool_calls: tuple[ToolCall, ...],
+) -> list[tuple[ToolCall, str]]:
     """Pair scheduled client effects with their live ToolCall objects."""
 
     by_id = {str(call.tool_call_id): call for call in tool_calls}
-    deferred: list[tuple[object, str]] = []
+    deferred: list[tuple[ToolCall, str]] = []
     seen: set[str] = set()
     for draft in emitted_events:
         if draft.event_type is not EventType.CLIENT_EFFECT_SCHEDULED:

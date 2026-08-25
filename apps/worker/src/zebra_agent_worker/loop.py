@@ -30,6 +30,7 @@ from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 from zebra_agent_worker.claims import SessionClaimService
+from zebra_agent_worker.client_effect_runtime import compose_client_runtime
 from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
 from zebra_agent_worker.cloud_memory_recovery import CloudMemoryFinalizationRecovery
 from zebra_agent_worker.command_consumer import SessionCommandConsumer
@@ -270,6 +271,7 @@ def build_worker_loop_service(
     cloud_provider_continuation_factory: Callable[[SessionId], CloudProviderContinuationCoordinator]
     | None = None,
 ) -> WorkerLoopService:
+    client_runtime = None
     if settings.storage_authority == "postgresql":
         if stores is not None:
             raise ValueError("cloud Worker requires CloudWorkerComposition, not ControlPlaneStores")
@@ -300,6 +302,9 @@ def build_worker_loop_service(
         ) = cloud_bundle.provider_continuation_factory
         active_authority_resolver = cloud_bundle.authority_resolver
         active_authority_scope_provider = cloud_bundle.authority_scope_provider
+        client_runtime = compose_client_runtime(
+            cloud_bundle.dsn, deployment_namespace=active_namespace or "",
+            enabled=settings.client_integration_enabled)
     else:
         from agent_storage import sqlite_control_plane_stores
 
@@ -418,6 +423,7 @@ def build_worker_loop_service(
         egress_registry=egress_registry,
         delegation_store=delegation_store,
         frozen_manifest_loader=frozen_manifest_loader,
+        client_runtime=client_runtime,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,
         workspace_resolver=(

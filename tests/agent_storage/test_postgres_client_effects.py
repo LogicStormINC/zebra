@@ -6,6 +6,7 @@ import os
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+import psycopg
 import pytest
 from agent_core.domain.client_effects import (
     ClientEffectContinuation,
@@ -19,12 +20,15 @@ from agent_core.domain.client_effects import (
     ClientEffectStatus,
     client_effect_idempotency_key,
 )
+from agent_core.domain.client_run_bindings import ClientRunBinding
 from agent_core.domain.client_sessions import (
+    ClientControlFence,
     ClientSession,
     ClientSessionGrant,
 )
 from agent_core.domain.identifiers import (
     new_client_effect_id,
+    new_client_run_binding_id,
     new_client_session_id,
     new_session_id,
     new_task_id,
@@ -34,7 +38,10 @@ from agent_storage.postgres.client_effects import (
     PostgresClientEffectDispatch,
     PostgresClientEffectReceipts,
 )
-from agent_storage.postgres.client_sessions import PostgresClientSessionRegistry
+from agent_storage.postgres.client_sessions import (
+    PostgresClientControlLeaseStore,
+    PostgresClientSessionRegistry,
+)
 from agent_storage.postgres.events import PostgresEventStore
 from agent_storage.postgres.migration_runner import apply_postgres_migrations
 
@@ -63,6 +70,7 @@ def _request(**overrides) -> ClientEffectRequest:
     payload = {
         "effect_id": new_client_effect_id(),
         "task_id": new_task_id(),
+        "parent_session_id": new_session_id(),
         "run_id": "run-1",
         "client_session_id": new_client_session_id(),
         "tool_call_id": new_tool_call_id(),
@@ -108,22 +116,43 @@ def _receipt(request: ClientEffectRequest, **overrides) -> ClientEffectReceipt:
     return ClientEffectReceipt.model_validate(payload)
 
 
+def _with_active_lease(stores, request: ClientEffectRequest) -> ClientEffectRequest:
+    fence = ClientControlFence.issue()
+    _, _, sessions, _, dsn, namespace = stores
+    binding = ClientRunBinding(
+        binding_id=new_client_run_binding_id(),
+        task_id=request.task_id,
+        run_id=request.run_id,
+        client_session_id=request.client_session_id,
+        profile_digest="a" * 64,
+        mounted_snapshot_digest="b" * 64,
+        task_capability_scope=(request.action_name,),
+        allowed_actions=(request.action_name,),
+        binding_revision=1,
+        created_at=datetime.now(UTC),
+    )
+    sessions.save_run_binding(binding)
+    PostgresClientControlLeaseStore(dsn, deployment_namespace=namespace).claim_controller(
+        binding.binding_id,
+        task_id=request.task_id,
+        run_id=request.run_id,
+        client_session_id=request.client_session_id,
+        fence=fence,
+        ttl=timedelta(minutes=5),
+    )
+    return request.model_copy(update={"fence_hash": fence.fence_hash})
+
+
 def test_schedule_is_atomic_and_idempotent(stores) -> None:
     dispatch, _, _, events, _, _ = stores
     session_id = new_session_id()
-    request = _request()
-    outcome = dispatch.schedule(
-        request, continuation=_continuation(request), session_id=session_id
-    )
+    request = _with_active_lease(stores, _request(parent_session_id=session_id))
+    outcome = dispatch.schedule(request, continuation=_continuation(request), session_id=session_id)
     assert outcome.created is True
-    replay = dispatch.schedule(
-        request, continuation=_continuation(request), session_id=session_id
-    )
+    replay = dispatch.schedule(request, continuation=_continuation(request), session_id=session_id)
     assert replay.created is False
-    conflicting = _request(arguments={"itemId": "other"})
-    conflicting = conflicting.model_copy(
-        update={"idempotency_key": request.idempotency_key}
-    )
+    conflicting = _request(parent_session_id=session_id, arguments={"itemId": "other"})
+    conflicting = conflicting.model_copy(update={"idempotency_key": request.idempotency_key})
     with pytest.raises(ClientEffectIdempotencyConflict):
         dispatch.schedule(
             conflicting, continuation=_continuation(conflicting), session_id=session_id
@@ -136,12 +165,10 @@ def test_schedule_is_atomic_and_idempotent(stores) -> None:
 
 
 def test_receipt_terminal_and_resume_commit_atomically(stores) -> None:
-    dispatch, receipts, sessions, events, _, _ = stores
+    dispatch, receipts, sessions, events, dsn, namespace = stores
     session_id = new_session_id()
-    request = _request()
-    dispatch.schedule(
-        request, continuation=_continuation(request), session_id=session_id
-    )
+    request = _with_active_lease(stores, _request(parent_session_id=session_id))
+    dispatch.schedule(request, continuation=_continuation(request), session_id=session_id)
     sessions.create_session(
         ClientSession(
             session_id=request.client_session_id,
@@ -156,6 +183,7 @@ def test_receipt_terminal_and_resume_commit_atomically(stores) -> None:
                 scopes=("client.action",),
                 expires_at=datetime.now(UTC) + timedelta(hours=1),
             ),
+            credential_hash="d" * 64,
             created_at=datetime.now(UTC),
             expires_at=datetime.now(UTC) + timedelta(hours=1),
             ui_revision=request.expected_ui_revision,
@@ -166,7 +194,15 @@ def test_receipt_terminal_and_resume_commit_atomically(stores) -> None:
     )
     assert acceptance.replayed is False
     assert acceptance.resume_command_id is not None
-    # replaying the identical receipt does not duplicate commands
+    with psycopg.connect(dsn) as connection:
+        connection.execute(
+            """
+            UPDATE client_control_leases SET released_at = NOW()
+            WHERE deployment_namespace = %s AND task_id = %s AND run_id = %s
+            """,
+            (namespace, request.task_id, request.run_id),
+        )
+    # A lost HTTP response remains replayable after the lease is gone.
     replay = receipts.accept_receipt(
         _receipt(request), request_fence_hash=request.fence_hash, session_id=session_id
     )
@@ -178,6 +214,12 @@ def test_receipt_terminal_and_resume_commit_atomically(stores) -> None:
     assert kinds.count("session_command_accepted") == 1
     with pytest.raises(ClientEffectReceiptConflict):
         receipts.accept_receipt(
+            _receipt(request, result={"opened": False}),
+            request_fence_hash=request.fence_hash,
+            session_id=session_id,
+        )
+    with pytest.raises(ClientEffectReceiptConflict):
+        receipts.accept_receipt(
             _receipt(request, status=ClientEffectStatus.FAILED),
             request_fence_hash=request.fence_hash,
             session_id=session_id,
@@ -187,10 +229,8 @@ def test_receipt_terminal_and_resume_commit_atomically(stores) -> None:
 def test_stale_fence_and_revision_fail_closed_with_zero_writes(stores) -> None:
     dispatch, receipts, _, events, _, _ = stores
     session_id = new_session_id()
-    request = _request()
-    dispatch.schedule(
-        request, continuation=_continuation(request), session_id=session_id
-    )
+    request = _with_active_lease(stores, _request(parent_session_id=session_id))
+    dispatch.schedule(request, continuation=_continuation(request), session_id=session_id)
     with pytest.raises(ClientEffectFenceError):
         receipts.accept_receipt(
             _receipt(request),
@@ -204,22 +244,22 @@ def test_stale_fence_and_revision_fail_closed_with_zero_writes(stores) -> None:
             request_fence_hash=request.fence_hash,
             session_id=session_id,
         )
-    kinds_after_failures = [
-        event.event_type.value for event in events.list_for_session(session_id)
-    ]
+    kinds_after_failures = [event.event_type.value for event in events.list_for_session(session_id)]
     assert set(kinds_after_failures) == {"client_effect_scheduled"}
 
 
 def test_expired_effect_rejects_receipts(stores) -> None:
     dispatch, receipts, _, _, _, _ = stores
     session_id = new_session_id()
-    request = _request(
-        requested_at=datetime.now(UTC) - timedelta(hours=2),
-        expires_at=datetime.now(UTC) - timedelta(hours=1),
+    request = _with_active_lease(
+        stores,
+        _request(
+            parent_session_id=session_id,
+            requested_at=datetime.now(UTC) - timedelta(hours=2),
+            expires_at=datetime.now(UTC) - timedelta(hours=1),
+        ),
     )
-    dispatch.schedule(
-        request, continuation=_continuation(request), session_id=session_id
-    )
+    dispatch.schedule(request, continuation=_continuation(request), session_id=session_id)
     with pytest.raises(ClientEffectExpiredError):
         receipts.accept_receipt(
             _receipt(request),
@@ -231,27 +271,21 @@ def test_expired_effect_rejects_receipts(stores) -> None:
 def test_pending_query_is_bounded_and_delivered_marks(stores) -> None:
     dispatch, _, _, _, _, _ = stores
     session_id = new_client_session_id()
-    first = _request(client_session_id=session_id)
-    second = _request(client_session_id=session_id)
     host_session = new_session_id()
+    first = _request(client_session_id=session_id, parent_session_id=host_session)
+    second = _request(client_session_id=session_id, parent_session_id=host_session)
     for request in (first, second):
-        dispatch.schedule(
-            request, continuation=_continuation(request), session_id=host_session
-        )
+        dispatch.schedule(request, continuation=_continuation(request), session_id=host_session)
     pending = dispatch.list_pending(session_id, limit=1)
     assert len(pending) == 1
     assert all(effect.status is ClientEffectStatus.PENDING for effect in pending)
     dispatch.mark_delivered(first.effect_id)
     assert dispatch.get_effect(first.effect_id) is not None
-    assert (
-        dispatch.get_effect(first.effect_id).status is ClientEffectStatus.DELIVERED
-    )
+    assert dispatch.get_effect(first.effect_id).status is ClientEffectStatus.DELIVERED
 
 
 def test_idempotency_key_is_derived_from_tool_identity() -> None:
     task_id = new_task_id()
     tool_call_id = new_tool_call_id()
-    key = client_effect_idempotency_key(
-        task_id=task_id, run_id="run-1", tool_call_id=tool_call_id
-    )
+    key = client_effect_idempotency_key(task_id=task_id, run_id="run-1", tool_call_id=tool_call_id)
     assert key == f"client-effect:{task_id}:run-1:{tool_call_id}"

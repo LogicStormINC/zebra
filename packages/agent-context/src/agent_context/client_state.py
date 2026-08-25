@@ -37,17 +37,16 @@ def client_state_context_item(snapshot: ClientStateSnapshot) -> ContextItem:
         rendered = rendered[: MAX_CLIENT_STATE_ITEM_CHARS - 1] + "…"
     return ContextItem(
         kind=ContextItemKind.CLIENT_STATE,
-        title=(
-            "Mounted client state"
-            f" (revision {snapshot.ui_revision})"
-        ),
+        title=(f"Mounted client state (revision {snapshot.ui_revision})"),
         content=rendered,
         provenance=ContextProvenance(
             source_type="client_state",
             locator=snapshot.client_session_id,
         ),
         trust_level=TrustLevel.USER,
-        priority=20,
+        # Runtime UI state is the immediate interaction surface. Keep it ahead
+        # of workspace snippets so a bounded prompt cannot silently drop it.
+        priority=97,
         token_count=max(1, len(rendered) // 4),
         metadata={
             "frontend_app_id": snapshot.frontend_app_id,
@@ -61,17 +60,12 @@ def client_state_context_item(snapshot: ClientStateSnapshot) -> ContextItem:
 def _render(snapshot: ClientStateSnapshot) -> str:
     import json
 
-    header = (
-        f"client_session={snapshot.client_session_id}"
-        f" ui_revision={snapshot.ui_revision}"
-    )
+    header = f"client_session={snapshot.client_session_id} ui_revision={snapshot.ui_revision}"
     if snapshot.frontend_app_id:
         header += f" frontend_app={snapshot.frontend_app_id}"
     if snapshot.profile_digest:
         header += f" profile_digest={snapshot.profile_digest[:12]}"
-    body = json.dumps(
-        snapshot.state, sort_keys=True, separators=(",", ":"), default=str
-    )
+    body = json.dumps(snapshot.state, sort_keys=True, separators=(",", ":"), default=str)
     if snapshot.redacted_keys:
         header += f" redacted={list(snapshot.redacted_keys)}"
     return f"{header}\n{body}"
@@ -99,5 +93,6 @@ def client_state_evidence(snapshot: ClientStateSnapshot) -> RuntimeEvidenceInput
             "ui_revision": snapshot.ui_revision,
             "state": snapshot.state,
             "state_digest": snapshot.state_digest,
+            "redacted_keys": snapshot.redacted_keys,
         },
     )

@@ -39,6 +39,7 @@ def _session(**overrides) -> ClientSession:
     grant = overrides.pop("grant", None) or _grant()
     payload = {
         "grant": grant,
+        "credential_hash": "d" * 64,
         "created_at": NOW,
         "expires_at": NOW + timedelta(hours=1),
     }
@@ -71,9 +72,7 @@ def test_grant_origin_must_be_bare_https() -> None:
 def test_grant_scopes_are_client_only() -> None:
     with pytest.raises(ValidationError) as info:
         _grant(scopes=("agent.run",))
-    causes = [
-        error.get("ctx", {}).get("error") for error in info.value.errors()
-    ]
+    causes = [error.get("ctx", {}).get("error") for error in info.value.errors()]
     assert any(isinstance(cause, ClientGrantError) for cause in causes)
 
 

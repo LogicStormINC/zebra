@@ -16,7 +16,14 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 MAX_CAPABILITY_NAME_LENGTH = 64
 MAX_CAPABILITY_DESCRIPTION_LENGTH = 512
@@ -190,9 +197,7 @@ def _validate_restricted_json_schema(
             )
     items = schema.get("items")
     if items is not None:
-        _validate_restricted_json_schema(
-            items, field_name=f"{field_name}[]", depth=depth + 1
-        )
+        _validate_restricted_json_schema(items, field_name=f"{field_name}[]", depth=depth + 1)
     required = schema.get("required")
     if required is not None:
         if not isinstance(required, list) or not required:
@@ -258,7 +263,7 @@ class ClientActionContract(BaseModel):
 
     @field_validator("parameters", "result_schema")
     @classmethod
-    def _check_schema(cls, value: dict[str, Any], info) -> dict[str, Any]:
+    def _check_schema(cls, value: dict[str, Any], info: ValidationInfo) -> dict[str, Any]:
         if value:
             _validate_restricted_json_schema(value, field_name=str(info.field_name))
         return value
@@ -423,9 +428,7 @@ class MountedCapabilitySnapshot(BaseModel):
             raise MountedCapabilityNarrowingError("snapshot digest does not match")
         unknown = set(self.mounted_readables) - profile.readable_names()
         if unknown:
-            raise MountedCapabilityNarrowingError(
-                f"readables not published: {sorted(unknown)}"
-            )
+            raise MountedCapabilityNarrowingError(f"readables not published: {sorted(unknown)}")
         unknown_actions = set(self.mounted_actions) - profile.action_names()
         if unknown_actions:
             raise MountedCapabilityNarrowingError(

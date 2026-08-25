@@ -6,88 +6,27 @@
  * most once; failed receipts retry; fence expiry stops execution; a
  * profile digest mismatch stops mounting.
  */
-
-import { createHash } from "node:crypto";
 import {
   CLIENT_SDK_ERRORS,
   type ClientEffectWire,
   type ReceiptSubmission,
   type RuntimeClientConfig,
 } from "../../contracts/src/index.ts";
-
-export type ClientActionHandler = (
-  args: Record<string, unknown>,
-) => Promise<Record<string, unknown>> | Record<string, unknown>;
-
+import { ClientRuntimeStateStore } from "./runtime_state.ts";
+import { consumeClientEffectStream } from "./sse_stream.ts";
+import { normalizeReceipt, submitClientReceipt } from "./receipt_transport.ts";
+import { MountedActionRegistry } from "./action_registry.ts";
+import { ClientRuntimeError } from "./errors.ts";
+export { scrubResult } from "./result_security.ts";
+export { canonicalDigest } from "./canonical_digest.ts";
+export { MountedActionRegistry, type ClientActionHandler } from "./action_registry.ts";
+export { ClientRuntimeError } from "./errors.ts";
 export interface MountOptions {
   frontendAppId: string;
+  profileRevision: number;
   profileDigest: string;
   mountedActions: readonly string[];
   mountedReadables?: readonly string[];
-}
-
-export function canonicalDigest(payload: unknown): string {
-  const json = JSON.stringify(payload, (_key, value) =>
-    value !== null && typeof value === "object" && !Array.isArray(value)
-      ? Object.keys(value as Record<string, unknown>)
-          .sort()
-          .reduce<Record<string, unknown>>((acc, key) => {
-            acc[key] = (value as Record<string, unknown>)[key];
-            return acc;
-          }, {})
-      : value,
-  );
-  return createHash("sha256").update(json).digest("hex");
-}
-
-export class ClientRuntimeError extends Error {
-  readonly code: string;
-
-  constructor(code: string, message: string) {
-    super(message);
-    this.code = code;
-  }
-}
-
-/** Registry of mounted action handlers; duplicates conflict. */
-export class MountedActionRegistry {
-  private handlers = new Map<string, ClientActionHandler>();
-
-  mount(name: string, handler: ClientActionHandler): void {
-    if (this.handlers.has(name)) {
-      throw new ClientRuntimeError(
-        "action_already_mounted",
-        `action ${name} is already mounted`,
-      );
-    }
-    this.handlers.set(name, handler);
-  }
-
-  unmount(name: string): void {
-    this.handlers.delete(name);
-  }
-
-  names(): string[] {
-    return [...this.handlers.keys()];
-  }
-
-  has(name: string): boolean {
-    return this.handlers.has(name);
-  }
-
-  async dispatch(
-    name: string,
-    args: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
-    const handler = this.handlers.get(name);
-    if (handler === undefined) {
-      throw new ClientRuntimeError(
-        CLIENT_SDK_ERRORS.ACTION_NOT_MOUNTED,
-        `action ${name} is not mounted on this page`,
-      );
-    }
-    return handler(args);
-  }
 }
 
 /** Tracks the mounted UI revision; effects pin the expected revision. */
@@ -109,26 +48,88 @@ export interface ClientRuntimeDependencies {
   baseUrl: string;
   clientSessionId: string;
   sessionCredential: string;
+  controllerFenceToken?: string | undefined;
+  taskId?: string | undefined;
+  runId?: string | undefined;
+  runBindingId?: string | undefined;
+  clientBindingDigest?: string | undefined;
+  actionContractDigests?: Readonly<Record<string, string>> | undefined;
+  streamUrl?: string | undefined;
+  storage?: Storage | undefined;
 }
 
 export class ZebraClientRuntime {
   readonly registry = new MountedActionRegistry();
+  readonly readableNames = new Set<string>();
   readonly uiRevision = new UiRevisionClock();
-  private executedEffects = new Set<string>();
-  private inflightEffects = new Set<string>();
+  private executedEffects: Set<string>;
+  private inflightEffects: Set<string>;
+  private pendingReceipts: Map<string, ReceiptSubmission>;
+  private stateStore: ClientRuntimeStateStore;
   private mountedProfileDigest: string | null = null;
+  private abortController: AbortController | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private queuedMount: MountOptions | null = null;
+  private mountFlush: Promise<void> | null = null;
   private deps: ClientRuntimeDependencies;
   private stopped = false;
 
   constructor(deps: ClientRuntimeDependencies) {
     this.deps = deps;
+    this.stateStore = new ClientRuntimeStateStore(deps.storage, deps.clientSessionId);
+    const restored = this.stateStore.load();
+    this.executedEffects = restored.executedEffects;
+    this.inflightEffects = restored.inflightEffects;
+    this.pendingReceipts = restored.pendingReceipts;
   }
 
   static fromConfig(config: RuntimeClientConfig): ZebraClientRuntime {
-    if (config.sessionCredential.includes(" ")) {
+    const sessionSecret = config.sessionCredential.slice(config.clientSessionId.length + 1);
+    if (
+      !config.sessionCredential.startsWith(`${config.clientSessionId}:`) ||
+      sessionSecret.length < 16 ||
+      /\s/.test(sessionSecret)
+    ) {
       throw new ClientRuntimeError(
         "invalid_credential",
-        "session credential must be '<session-id>:<fence-token>'",
+        "session credential must be '<session-id>:<session-secret>'",
+      );
+    }
+    const controllerCoordinates = [
+      config.taskId,
+      config.runId,
+      config.runBindingId,
+      config.clientBindingDigest,
+      config.actionContractDigests,
+    ];
+    if (
+      config.controllerFenceToken !== undefined &&
+      (
+        config.controllerFenceToken.length < 16 ||
+        /\s/.test(config.controllerFenceToken) ||
+        controllerCoordinates.some(
+          (value) =>
+            value === undefined ||
+            (typeof value === "string" && value.trim() === ""),
+        ) ||
+        !/^[0-9a-f]{64}$/.test(config.clientBindingDigest ?? "") ||
+        Object.values(config.actionContractDigests ?? {}).some(
+          (digest) => !/^[0-9a-f]{64}$/.test(digest),
+        )
+      )
+    ) {
+      throw new ClientRuntimeError(
+        "invalid_controller_binding",
+        "controller fence requires binding coordinates and action digests",
+      );
+    }
+    if (
+      config.streamUrl !== undefined &&
+      new URL(config.streamUrl, config.baseUrl).origin !== new URL(config.baseUrl).origin
+    ) {
+      throw new ClientRuntimeError(
+        "cross_origin_stream",
+        "the AG-UI stream must share the Host BFF origin",
       );
     }
     return new ZebraClientRuntime({
@@ -136,6 +137,14 @@ export class ZebraClientRuntime {
       baseUrl: config.baseUrl,
       clientSessionId: config.clientSessionId,
       sessionCredential: config.sessionCredential,
+      controllerFenceToken: config.controllerFenceToken,
+      taskId: config.taskId,
+      runId: config.runId,
+      runBindingId: config.runBindingId,
+      clientBindingDigest: config.clientBindingDigest,
+      actionContractDigests: config.actionContractDigests,
+      streamUrl: config.streamUrl,
+      storage: config.storage ?? browserSessionStorage(),
     });
   }
 
@@ -159,7 +168,7 @@ export class ZebraClientRuntime {
     const body = {
       client_session_id: this.deps.clientSessionId,
       frontend_app_id: options.frontendAppId,
-      profile_revision: 1,
+      profile_revision: options.profileRevision,
       profile_digest: options.profileDigest,
       mounted_readables: options.mountedReadables ?? [],
       mounted_actions: options.mountedActions,
@@ -182,51 +191,171 @@ export class ZebraClientRuntime {
     }
   }
 
+  /** Coalesce one React commit into one initial/narrowing mount snapshot. */
+  scheduleMount(options: MountOptions): Promise<void> {
+    if (this.stopped) return Promise.resolve();
+    this.queuedMount = options;
+    this.mountFlush ??= Promise.resolve().then(async () => {
+      try {
+        while (this.queuedMount !== null) {
+          if (this.stopped) {
+            this.queuedMount = null;
+            return;
+          }
+          const next = this.queuedMount;
+          this.queuedMount = null;
+          await this.mount(next);
+        }
+      } finally {
+        this.mountFlush = null;
+      }
+    });
+    return this.mountFlush;
+  }
+
+  mountReadable(name: string): void {
+    this.readableNames.add(name);
+  }
+
+  unmountReadable(name: string): void {
+    this.readableNames.delete(name);
+  }
+
   /** Reconnect replay of pending effects; each executes at most once. */
   async listPendingEffects(): Promise<ClientEffectWire[]> {
-    const response = await this.deps.fetchImpl(
-      `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/effects`,
-      { headers: this.headers() },
-    );
-    if (!response.ok) {
+    try {
+      const response = await this.deps.fetchImpl(
+        `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/effects`,
+        { headers: this.headers() },
+      );
+      if (!response.ok) return [];
+      const payload = (await response.json()) as { effects?: ClientEffectWire[] };
+      return payload.effects ?? [];
+    } catch {
       return [];
     }
-    const payload = (await response.json()) as { effects?: ClientEffectWire[] };
-    return payload.effects ?? [];
+  }
+
+  /** Start durable replay, heartbeat, and optional AG-UI SSE live tail. */
+  async start(): Promise<void> {
+    if (this.stopped) return;
+    for (const [effectId, receipt] of this.pendingReceipts) {
+      if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
+      if (this.stopped) return;
+    }
+    for (const effect of await this.listPendingEffects()) {
+      await this.runEffect(effect);
+    }
+    this.heartbeatTimer ??= setInterval(() => void this.heartbeat(), 30_000);
+    if (this.deps.streamUrl !== undefined && this.abortController === null) {
+      this.abortController = new AbortController();
+      void consumeClientEffectStream({
+        fetchImpl: this.deps.fetchImpl,
+        streamUrl: this.deps.streamUrl,
+        headers: () => this.headers(),
+        stopped: () => this.stopped,
+        signal: this.abortController.signal,
+        onEffect: (effect) => this.runEffect(effect),
+      });
+    }
+  }
+
+  async heartbeat(): Promise<boolean> {
+    if (this.stopped) return false;
+    for (const [effectId, receipt] of this.pendingReceipts) {
+      if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
+    }
+    try {
+      const response = await this.deps.fetchImpl(
+        `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/heartbeat`,
+        {
+          method: "POST",
+          headers: this.controllerHeaders(),
+          body: JSON.stringify(this.controllerCoordinates()),
+        },
+      );
+      if ([400, 401, 403, 409, 410].includes(response.status)) this.stop();
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 
   async runEffect(effect: ClientEffectWire): Promise<void> {
-    if (this.stopped) return;
+    if (this.stopped || this.deps.controllerFenceToken === undefined) return;
+    if (
+      effect.client_binding_digest !== this.deps.clientBindingDigest ||
+      this.deps.actionContractDigests?.[effect.action_name] !==
+        effect.action_contract_digest
+    ) {
+      this.stop();
+      return;
+    }
     const effectId = effect.effect_id;
     if (this.executedEffects.has(effectId) || this.inflightEffects.has(effectId)) {
       return; // idempotent local dedup
     }
     this.inflightEffects.add(effectId);
+    this.persistState();
+    const executionRevision = this.uiRevision.current;
     try {
+      if (effect.expected_ui_revision !== this.uiRevision.current) {
+        this.rememberExecuted(effectId);
+        const receipt: ReceiptSubmission = {
+          effect_id: effectId,
+          request_digest: effect.request_digest,
+          status: "stale_ui_state",
+          result: { expected: effect.expected_ui_revision, actual: this.uiRevision.current },
+        };
+        this.rememberReceipt(receipt);
+        if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
+        return;
+      }
       const result = await this.registry.dispatch(
         effect.action_name,
         effect.arguments,
       );
-      this.executedEffects.add(effectId);
-      await this.submitReceipt({
+      if (this.uiRevision.current !== executionRevision) {
+        this.rememberExecuted(effectId);
+        const receipt: ReceiptSubmission = {
+          effect_id: effectId,
+          request_digest: effect.request_digest,
+          status: "stale_ui_state",
+          result: { expected: executionRevision, actual: this.uiRevision.current },
+        };
+        this.rememberReceipt(receipt);
+        if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
+        return;
+      }
+      this.rememberExecuted(effectId);
+      const receipt: ReceiptSubmission = {
         effect_id: effectId,
+        request_digest: effect.request_digest,
         status: "succeeded",
         result,
-      });
+      };
+      this.rememberReceipt(receipt);
+      if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
     } catch (error) {
-      this.executedEffects.add(effectId);
+      this.rememberExecuted(effectId);
       const failure =
         error instanceof ClientRuntimeError &&
         error.code === CLIENT_SDK_ERRORS.ACTION_NOT_MOUNTED
           ? "unavailable"
           : "failed";
-      await this.submitReceipt({
+      const receipt: ReceiptSubmission = {
         effect_id: effectId,
+        request_digest: effect.request_digest,
         status: failure as "unavailable" | "failed",
         result: {
-          error: error instanceof Error ? error.message : String(error),
+          error:
+            error instanceof ClientRuntimeError
+              ? error.code
+              : "client_action_failed",
         },
-      });
+      };
+      this.rememberReceipt(receipt);
+      if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
     } finally {
       this.inflightEffects.delete(effectId);
     }
@@ -234,78 +363,103 @@ export class ZebraClientRuntime {
 
   /** Receipt submission retries until the server accepts it. */
   async submitReceipt(submission: ReceiptSubmission): Promise<boolean> {
-    const body = JSON.stringify({
-      receipt_id: crypto.randomUUID(),
-      effect_id: submission.effect_id,
-      idempotency_key: `sdk-receipt:${submission.effect_id}`,
-      request_digest: "",
-      status: submission.status,
-      result: scrubResult(submission.result),
-      controller: true,
-      received_at: new Date().toISOString(),
-    });
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      if (this.stopped) return false;
-      try {
-        const response = await this.deps.fetchImpl(
-          `${this.deps.baseUrl}/v1/client-effects/${submission.effect_id}/receipts`,
-          {
-            method: "POST",
-            headers: {
-              ...this.headers(),
-              "Idempotency-Key": `sdk-receipt:${submission.effect_id}`,
-            },
-            body,
-          },
-        );
-        if (response.ok) return true;
-        if (response.status === 409 || response.status === 410) {
-          this.stop(); // stale fence / expired effect: stop executing
-          return false;
-        }
-      } catch {
-        // network failure: retry with backoff
-      }
-      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
-    }
-    return false;
+    const outcome = await submitClientReceipt(
+      this.deps,
+      submission,
+      () => this.stopped,
+    );
+    if (outcome === "rejected" && !this.stopped) this.stop();
+    return outcome === "accepted";
   }
 
   stop(): void {
+    if (!this.stopped) void this.releaseController();
     this.stopped = true;
+    this.queuedMount = null;
+    this.abortController?.abort();
+    this.abortController = null;
+    if (this.heartbeatTimer !== null) clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = null;
   }
 
   get isStopped(): boolean {
     return this.stopped;
   }
 
+  private rememberExecuted(effectId: string): void {
+    this.inflightEffects.delete(effectId);
+    this.executedEffects.add(effectId);
+    this.persistState();
+  }
+
+  private rememberReceipt(receipt: ReceiptSubmission): void {
+    this.pendingReceipts.set(receipt.effect_id, normalizeReceipt(receipt));
+    this.persistState();
+  }
+
+  private forgetReceipt(effectId: string): void {
+    this.pendingReceipts.delete(effectId);
+    this.persistState();
+  }
+
+  private persistState(): void {
+    this.stateStore.save({
+      executedEffects: this.executedEffects,
+      inflightEffects: this.inflightEffects,
+      pendingReceipts: this.pendingReceipts,
+    });
+  }
+
   private headers(): Record<string, string> {
     return {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${this.deps.clientSessionId}:${fenceOf(this.deps.sessionCredential)}`,
+      "X-Zebra-Client-Session": this.deps.sessionCredential,
     };
   }
-}
 
-function fenceOf(credential: string): string {
-  const parts = credential.split(":");
-  return parts.length === 2 ? parts[1] : "";
-}
+  private controllerHeaders(): Record<string, string> {
+    return {
+      ...this.headers(),
+      "X-Zebra-Client-Fence": this.deps.controllerFenceToken ?? "",
+    };
+  }
 
-/** Receipt results must never carry token/cookie/secret fields. */
-export function scrubResult(
-  result: Record<string, unknown>,
-): Record<string, unknown> {
-  const forbidden = ["token", "cookie", "secret", "password", "authorization"];
-  const scrubbed: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(result)) {
-    if (forbidden.some((token) => key.toLowerCase().includes(token))) {
-      scrubbed[key] = "__redacted__";
-    } else if (value !== null && typeof value === "object") {
-      scrubbed[key] = scrubResult(value as Record<string, unknown>);
-    } else {
-      scrubbed[key] = value;
+  private controllerCoordinates(): Record<string, string> {
+    if (
+      this.deps.taskId === undefined ||
+      this.deps.runId === undefined ||
+      this.deps.runBindingId === undefined
+    ) return {};
+    return {
+      task_id: this.deps.taskId,
+      run_id: this.deps.runId,
+      run_binding_id: this.deps.runBindingId,
+    };
+  }
+
+  private async releaseController(): Promise<void> {
+    if (this.deps.controllerFenceToken === undefined) return;
+    try {
+      await this.deps.fetchImpl(
+        `${this.deps.baseUrl}/v1/client-sessions/${this.deps.clientSessionId}/release`,
+        {
+          method: "POST",
+          headers: this.controllerHeaders(),
+          body: JSON.stringify(this.controllerCoordinates()),
+          keepalive: true,
+        },
+      );
+    } catch {
+      // The bounded lease remains the crash-safe fallback.
     }
   }
-  return scrubbed;
+
+}
+
+function browserSessionStorage(): Storage | undefined {
+  try {
+    return typeof sessionStorage === "undefined" ? undefined : sessionStorage;
+  } catch {
+    return undefined;
+  }
 }

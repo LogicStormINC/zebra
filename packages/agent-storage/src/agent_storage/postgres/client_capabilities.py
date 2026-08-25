@@ -68,7 +68,7 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
                         " the same revision fails closed"
                     )
                 return  # same revision + same digest replays
-            connection.execute(
+            inserted = connection.execute(
                 """
                 INSERT INTO frontend_capability_profiles (
                     deployment_namespace, frontend_app_id, revision,
@@ -76,6 +76,7 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (deployment_namespace, frontend_app_id, revision)
                     DO NOTHING
+                RETURNING revision
                 """,
                 (
                     self._namespace,
@@ -86,7 +87,13 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
                     Jsonb(stored.model_dump(mode="json")),
                     stored.published_at,
                 ),
-            )
+            ).fetchone()
+            if inserted is None:
+                raced = self._row_for(connection, profile.frontend_app_id, profile.revision)
+                if raced is None or raced["profile_digest"] != profile.profile_digest:
+                    raise ClientCapabilityConflictError(
+                        "profile revision raced with different immutable content"
+                    )
 
     def get_profile(
         self, frontend_app_id: str, revision: int
@@ -95,18 +102,30 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
             row = self._row_for(connection, frontend_app_id, revision)
         return None if row is None else _profile_from_row(row)
 
-    def get_latest_profile(
-        self, frontend_app_id: str
-    ) -> FrontendCapabilityProfileVersion | None:
+    def get_latest_profile(self, frontend_app_id: str) -> FrontendCapabilityProfileVersion | None:
         with self._database.connect() as connection:
             row = connection.execute(
                 """
-                SELECT profile_json FROM frontend_capability_profiles
+                SELECT profile_json, lifecycle FROM frontend_capability_profiles
                 WHERE deployment_namespace = %s AND frontend_app_id = %s
                 ORDER BY revision DESC
                 LIMIT 1
                 """,
                 (self._namespace, frontend_app_id),
+            ).fetchone()
+        return None if row is None else _profile_from_row(row)
+
+    def get_profile_by_digest(
+        self, frontend_app_id: str, profile_digest: str
+    ) -> FrontendCapabilityProfileVersion | None:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT profile_json, lifecycle FROM frontend_capability_profiles
+                WHERE deployment_namespace = %s AND frontend_app_id = %s
+                    AND profile_digest = %s
+                """,
+                (self._namespace, frontend_app_id, profile_digest),
             ).fetchone()
         return None if row is None else _profile_from_row(row)
 
@@ -125,8 +144,7 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
                 return
             if _LIFECYCLE_ORDER[lifecycle] <= _LIFECYCLE_ORDER[current]:
                 raise ClientCapabilityConflictError(
-                    "lifecycle may only move forward: published -> deprecated"
-                    " -> revoked"
+                    "lifecycle may only move forward: published -> deprecated -> revoked"
                 )
             updated = connection.execute(
                 """
@@ -171,24 +189,25 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
                     "binding references an unpublished profile revision"
                 )
             if profile["lifecycle"] == ProfileLifecycle.REVOKED.value:
-                raise ClientCapabilityConflictError(
-                    "revoked profiles do not accept new bindings"
-                )
+                raise ClientCapabilityConflictError("revoked profiles do not accept new bindings")
             existing = connection.execute(
                 """
-                SELECT binding_revision FROM frontend_capability_bindings
+                SELECT * FROM frontend_capability_bindings
                 WHERE deployment_namespace = %s AND binding_id = %s
+                FOR UPDATE
                 """,
                 (self._namespace, binding.binding_id),
             ).fetchone()
             if existing is None:
-                connection.execute(
+                inserted = connection.execute(
                     """
                     INSERT INTO frontend_capability_bindings (
                         deployment_namespace, binding_id, host_app_id,
                         namespace_id, frontend_app_id, revision,
                         profile_digest, binding_revision, bound_at
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT DO NOTHING
+                    RETURNING binding_id
                     """,
                     (
                         self._namespace,
@@ -201,37 +220,47 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
                         binding.binding_revision,
                         binding.bound_at,
                     ),
+                ).fetchone()
+                if inserted is not None:
+                    return binding
+                raise ClientCapabilityCasError("binding creation raced with another Host binding")
+            if (
+                existing["host_app_id"] != binding.host_app_id
+                or existing["namespace_id"] != binding.namespace_id
+                or existing["frontend_app_id"] != binding.frontend_app_id
+            ):
+                raise ClientCapabilityConflictError(
+                    "binding identity cannot change across revisions"
                 )
-                return binding
             current_revision = int(existing["binding_revision"])
             if current_revision != expected_binding_revision:
-                raise ClientCapabilityCasError(
-                    "binding update raced; expected revision is stale"
-                )
+                raise ClientCapabilityCasError("binding update raced; expected revision is stale")
             if binding.binding_revision != current_revision + 1:
-                raise ClientCapabilityCasError(
-                    "binding revisions may only increase by one"
-                )
-            connection.execute(
+                raise ClientCapabilityCasError("binding revisions may only increase by one")
+            updated = connection.execute(
                 """
                 UPDATE frontend_capability_bindings
-                SET profile_digest = %s, binding_revision = %s
+                SET revision = %s, profile_digest = %s, binding_revision = %s,
+                    bound_at = %s
                 WHERE deployment_namespace = %s AND binding_id = %s
                     AND binding_revision = %s
+                RETURNING binding_id
                 """,
                 (
+                    binding.revision,
                     binding.profile_digest,
                     binding.binding_revision,
+                    binding.bound_at,
                     self._namespace,
                     binding.binding_id,
                     current_revision,
                 ),
-            )
+            ).fetchone()
+            if updated is None:
+                raise ClientCapabilityCasError("binding update raced; expected revision is stale")
             return binding
 
-    def get_binding(
-        self, binding_id: Any
-    ) -> FrontendCapabilityBinding | None:
+    def get_binding(self, binding_id: Any) -> FrontendCapabilityBinding | None:
         with self._database.connect() as connection:
             row = connection.execute(
                 """
@@ -254,12 +283,39 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
             bound_at=row["bound_at"],
         )
 
-    def _row_for(
-        self, connection: Any, frontend_app_id: str, revision: int
-    ) -> Any:
+    def get_binding_for_host(
+        self, host_app_id: str, namespace_id: str, frontend_app_id: str
+    ) -> FrontendCapabilityBinding | None:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM frontend_capability_bindings
+                WHERE deployment_namespace = %s AND host_app_id = %s
+                    AND namespace_id = %s AND frontend_app_id = %s
+                ORDER BY binding_revision DESC
+                LIMIT 1
+                """,
+                (self._namespace, host_app_id, namespace_id, frontend_app_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return FrontendCapabilityBinding(
+            binding_id=row["binding_id"],
+            deployment_namespace=row["deployment_namespace"],
+            host_app_id=row["host_app_id"],
+            namespace_id=row["namespace_id"],
+            frontend_app_id=row["frontend_app_id"],
+            revision=int(row["revision"]),
+            profile_digest=row["profile_digest"],
+            binding_revision=int(row["binding_revision"]),
+            bound_at=row["bound_at"],
+        )
+
+    def _row_for(self, connection: Any, frontend_app_id: str, revision: int) -> Any:
         return connection.execute(
             """
-            SELECT profile_json, lifecycle FROM frontend_capability_profiles
+            SELECT profile_json, profile_digest, lifecycle
+            FROM frontend_capability_profiles
             WHERE deployment_namespace = %s AND frontend_app_id = %s
                 AND revision = %s
             """,
@@ -268,4 +324,6 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
 
 
 def _profile_from_row(row: Any) -> FrontendCapabilityProfileVersion:
-    return FrontendCapabilityProfileVersion.model_validate(row["profile_json"])
+    return FrontendCapabilityProfileVersion.model_validate(
+        {**row["profile_json"], "lifecycle": row["lifecycle"]}
+    )

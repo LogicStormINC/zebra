@@ -17,10 +17,7 @@ from agent_core.domain.client_effects import (
     client_effect_idempotency_key,
 )
 from agent_core.domain.client_run_bindings import ClientRunBinding
-from agent_core.domain.client_sessions import (
-    ClientControlFence,
-    ClientObserverActionError,
-)
+from agent_core.domain.client_sessions import ClientObserverActionError
 from agent_core.domain.identifiers import SessionId, ToolCallId, new_client_effect_id
 from agent_core.ports.client_effect_receipts import (
     ClientEffectReceiptPort,
@@ -41,7 +38,7 @@ def build_client_effect_request(
     action_name: str,
     arguments: dict[str, object],
     action_contract_digest: str,
-    fence: ClientControlFence,
+    fence_hash: str,
     expected_ui_revision: int,
     session_id: SessionId,
     effect_ttl: timedelta = DEFAULT_EFFECT_TTL,
@@ -53,6 +50,7 @@ def build_client_effect_request(
     return ClientEffectRequest(
         effect_id=new_client_effect_id(),
         task_id=binding.task_id,
+        parent_session_id=session_id,
         run_id=binding.run_id,
         client_session_id=binding.client_session_id,
         tool_call_id=tool_call_id,
@@ -60,7 +58,7 @@ def build_client_effect_request(
         arguments=dict(arguments),
         action_contract_digest=action_contract_digest,
         client_binding_digest=binding.binding_digest,
-        fence_hash=fence.fence_hash,
+        fence_hash=fence_hash,
         expected_ui_revision=expected_ui_revision,
         idempotency_key=client_effect_idempotency_key(
             task_id=binding.task_id,

@@ -106,6 +106,10 @@ Readable、Action、Component 契约与受限 JSON Schema。不变式：
 - Client Grant 必须绑定 `host_app_id`、`namespace_id`、`frontend_app_id`
   与 Origin，并映射当前用户身份；
 - Client Grant 只能包含 Client 能力，不能替代 HostGrant；
+- Session Open 只返回一次独立 Session Secret，服务端只保存其 SHA-256；
+- Cloud HTTP 的 `Authorization` 专用于 HostGrant；Session Secret 通过独立的
+  `X-Zebra-Client-Session` 头传递，两个凭据不得复用或互相替代；
+- Session Secret 只负责会话认证，不能复用为 Controller Fence；
 - Session 有心跳与过期；过期 Session 不能续租。
 
 ### 3.5 Client Run Binding
@@ -126,6 +130,8 @@ Observer。不变式：
 
 - 两个 Tab 同时 Claim 时只有一个成功（CAS）；
 - Lease 续期与动作执行需要当前 Fence；
+- Client 心跳同时续 Controller Lease；Provider 卸载显式释放 Lease，崩溃时
+  仍以有界 TTL 作为兜底；
 - 旧 Fence 更新产生零写入；
 - Fence Token 不能进入 Event 或日志，只持久化 Hash；
 - Observer 无法执行 Action 或提交 Receipt。
@@ -136,6 +142,8 @@ Cloud Agent 调用浏览器 Hook 的持久化执行请求。不变式：
 
 - 必须带 Action Contract Digest、Client Binding Digest、Fence Hash、
   Expected UI Revision 和 Idempotency Key；
+- 必须分别绑定业务 Task 和实际等待 Continuation 的 Parent Session；Task
+  rollover 后不得把 Task ID 当成 Segment/Session ID；
 - Effect Request、Continuation 和 Scheduled Event 在同一事务提交；
 - 建议状态机：`pending` / `delivered` / `succeeded` / `failed` /
   `declined` / `unavailable` / `stale_ui_state` / `expired` / `uncertain` /
@@ -168,6 +176,8 @@ Cloud Agent 调用浏览器 Hook 的持久化执行请求。不变式：
 - Client Grant 由 Host BFF 签发，绑定 `host_app_id`、`namespace_id`、
   `frontend_app_id`、Origin 和当前用户；它不能替代 HostGrant，也不能越出
   Client 能力范围。
+- Host BFF 用 Client Grant 建立 Session 后，只把一次性 Session Credential
+  交给该 Tab；Run Binding 返回的 Controller Fence 是另一条独立密钥。
 - Namespace 漂移（Grant 的 namespace 与目标 Task 不一致）产生零写入。
 - Worker 永不直接连接浏览器、永不执行 React Handler；Worker 只负责
   Schedule Effect 与消费 Receipt 后的 Continuation。
@@ -291,6 +301,8 @@ Agent Capability
 ```
 
 - 无 Active Client Controller 时不暴露 Client Action；
+- 浏览器 SDK 没有 Controller Fence 时不得执行 Handler；执行前必须同时
+  校验 Action Contract Digest、Client Binding Digest 和 UI Revision；
 - Root Agent 或后续 Presenter Agent 才能获得 UI Control；Researcher、
   Tester、Reviewer 默认无 UI Control；
 - Subagent 默认没有 UI 权限；Orchestrator 只能提出 UI Intent、只能调用

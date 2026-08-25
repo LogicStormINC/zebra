@@ -88,6 +88,8 @@ def test_lifecycle_moves_forward_and_revoked_rejects_new_bindings(
     registry.publish_profile(profile)
     registry.set_lifecycle("fixture-web", 1, ProfileLifecycle.DEPRECATED)
     registry.set_lifecycle("fixture-web", 1, ProfileLifecycle.REVOKED)
+    revoked = registry.get_profile_by_digest("fixture-web", profile.profile_digest)
+    assert revoked is not None and revoked.lifecycle is ProfileLifecycle.REVOKED
     with pytest.raises(ClientCapabilityConflictError):
         registry.set_lifecycle("fixture-web", 1, ProfileLifecycle.PUBLISHED)
     binding = FrontendCapabilityBinding(
@@ -130,6 +132,25 @@ def test_binding_uses_expected_revision_cas(
         registry.save_binding(bumped, expected_binding_revision=1)
     loaded = registry.get_binding(binding.binding_id)
     assert loaded is not None and loaded.binding_revision == 2
+    next_profile = _profile(revision=2, action="app.ui.item.preview")
+    registry.publish_profile(next_profile)
+    updated = binding.model_copy(
+        update={
+            "revision": 2,
+            "profile_digest": next_profile.profile_digest,
+            "binding_revision": 3,
+        }
+    )
+    registry.save_binding(updated, expected_binding_revision=2)
+    active = registry.get_binding_for_host(
+        binding.host_app_id, binding.namespace_id, binding.frontend_app_id
+    )
+    assert active is not None
+    assert (active.revision, active.profile_digest, active.binding_revision) == (
+        2,
+        next_profile.profile_digest,
+        3,
+    )
 
 
 def test_namespaces_are_isolated(namespace_dsn: tuple[str, str]) -> None:

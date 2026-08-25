@@ -6,7 +6,7 @@ from typing import Protocol
 from agent_core.domain.client_capabilities import MountedCapabilitySnapshot
 from agent_core.domain.client_run_bindings import ClientRunBinding
 from agent_core.domain.client_sessions import ClientSession
-from agent_core.domain.identifiers import ClientSessionId, TaskId
+from agent_core.domain.identifiers import ClientSessionId, SessionId, TaskId
 
 
 class ClientSessionRegistryPort(Protocol):
@@ -33,3 +33,6 @@ class ClientSessionRegistryPort(Protocol):
     def get_run_binding(
         self, task_id: TaskId, run_id: str, client_session_id: ClientSessionId
     ) -> ClientRunBinding | None: ...
+
+    def get_active_run_binding(self, execution_session_id: SessionId) -> ClientRunBinding | None:
+        """Return the sole actively controlled binding; ambiguity fails closed."""

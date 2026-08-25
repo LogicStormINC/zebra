@@ -5,8 +5,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
+from agent_core.domain.client_capabilities import ClientActionContract, ClientActionRisk
 from agent_core.domain.client_run_bindings import ClientRunBinding
-from agent_core.domain.client_sessions import ClientControlFence
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import (
     new_client_run_binding_id,
@@ -37,9 +37,7 @@ CREATED_AT = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
 
 class AllowAll:
     def evaluate_tool_call(self, _call):
-        return PolicyDecision(
-            decision=PolicyDecisionType.ALLOW, reason="t", policy_profile="t"
-        )
+        return PolicyDecision(decision=PolicyDecisionType.ALLOW, reason="t", policy_profile="t")
 
 
 class InMemoryDispatch:
@@ -68,7 +66,11 @@ def _completion(tool_call) -> ModelCompletion:
         ),
         tool_calls=(tool_call,),
         call_metadata=ModelCallMetadata(
-            provider="p", model_name="m", latency_ms=1, cache_hit=False, cost_usd=0.0,
+            provider="p",
+            model_name="m",
+            latency_ms=1,
+            cache_hit=False,
+            cost_usd=0.0,
             usage=ModelUsage(input_tokens=1, output_tokens=1, total_tokens=2),
         ),
     )
@@ -84,7 +86,11 @@ def _final() -> ModelCompletion:
         ),
         tool_calls=(),
         call_metadata=ModelCallMetadata(
-            provider="p", model_name="m", latency_ms=1, cache_hit=False, cost_usd=0.0,
+            provider="p",
+            model_name="m",
+            latency_ms=1,
+            cache_hit=False,
+            cost_usd=0.0,
             usage=ModelUsage(input_tokens=1, output_tokens=1, total_tokens=2),
         ),
     )
@@ -116,17 +122,20 @@ def test_client_tool_call_suspends_and_receipt_resumes() -> None:
     gateway = ClientToolGateway(
         context=ClientGatewayContext(
             binding=binding,
-            fence=ClientControlFence.issue(),
+            fence_hash="d" * 64,
             session_id=new_session_id(),
             ui_revision=2,
-            action_contract_digests={"app.ui.item.open": "c" * 64},
+            action_contracts={
+                "app.ui.item.open": ClientActionContract(
+                    name="app.ui.item.open",
+                    risk=ClientActionRisk.PRESENTATION,
+                )
+            },
         ),
         dispatch=dispatch,
     )
     orchestrator = SingleAttemptOrchestrator(
-        ScriptedModelGateway(
-            responses=(ScriptedModelResponse(completion=_completion(call)),)
-        ),
+        ScriptedModelGateway(responses=(ScriptedModelResponse(completion=_completion(call)),)),
         AllowAll(),
         gateway,
     )
@@ -148,9 +157,7 @@ def test_client_tool_call_suspends_and_receipt_resumes() -> None:
     # The browser receipt lands as a durable HARNESS resume command.
     effect = dispatch.effects[0]
     scheduled_event = next(
-        event
-        for event in suspended.events
-        if event.event_type is EventType.CLIENT_EFFECT_SCHEDULED
+        event for event in suspended.events if event.event_type is EventType.CLIENT_EFFECT_SCHEDULED
     )
     stream = list(suspended.events) + [
         scheduled_event.model_copy(

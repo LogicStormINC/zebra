@@ -108,8 +108,9 @@ does not authorize production code, migrations or activation of its successor.
   browser access lands through Host BFF with published Frontend Capability
   Profiles, one-controller fenced Client Sessions and PostgreSQL-durable
   Client Effects with receipts, while formal business writes stay on Host
-  Backend Tools. Every successor stays `Locked`; this card carries
-  documentation and governance only.
+  Backend Tools. Explicit maintainer batch activation produced an unmerged
+  implementation candidate; successor cards are `Review` or honestly
+  `In Progress`, never `Done` before merge.
 
 - `EMB-PLAN-01` is `Done` on `zebra-cloud-trench`; it consolidates the Zebra
   Embedded target architecture and registers the dependency-ordered
@@ -3752,6 +3753,8 @@ work must not land before the backend binding, fence, effect receipt and
 recovery chain exists. All successors stay `Locked` until their gate's
 dependencies merge; migration versions must be re-confirmed before each
 PostgreSQL card activates（三张迁移卡不能共用同一 migration version）。
+`Done` 仍表示已经合入交付线；同一评审分支上已实现且验证的卡保持
+`Review`。
 
 ### CLIENT-ADR-01 - Client Integration Plane Architecture Freeze
 
@@ -3798,8 +3801,9 @@ the dependency-ordered CLIENT task board before any contract or SDK work.
 
 ### CLIENT-CAP-CON-01 - Frontend Capability Contracts
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done on codex/client-adr-01: contracts + 12 tests; restricted schemas, selector/secret rejection, publish gate, subset-only mounts.
+- Status: `Review`
+- Review evidence: contracts and focused tests are implemented on
+  `codex/client-adr-01`; the branch is not merged.
 - Suggested role: `CORE`
 - Depends on: `CLIENT-ADR-01`
 - Owned paths:
@@ -3835,8 +3839,9 @@ Binding / Mounted Snapshot 领域模型）。
 
 ### CLIENT-SESSION-CON-01 - Client Session And Control Lease Contracts
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done on codex/client-adr-01: grants/fences/leases + 9 tests; fence tokens hash-only, one controller, expired sessions fail closed.
+- Status: `Review`
+- Review evidence: session secrets and controller fences are separated; lease
+  renewal/release and fail-closed expiry are implemented; not merged.
 - Suggested role: `CORE`
 - Depends on: `CLIENT-ADR-01`
 - Owned paths:
@@ -3873,8 +3878,9 @@ Binding / Mounted Snapshot 领域模型）。
 
 ### CLIENT-EFFECT-CON-01 - Client Effect Contracts
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done on codex/client-adr-01: effect/receipt/idempotency + ToolExecutionLocation.CLIENT + scope requirement; 10 tests.
+- Status: `Review`
+- Review evidence: effect/receipt/idempotency and
+  `ToolExecutionLocation.CLIENT` contracts are implemented; not merged.
 - Suggested role: `CORE`
 - Depends on: `CLIENT-CAP-CON-01`, `CLIENT-SESSION-CON-01`
 - Owned paths:
@@ -3916,8 +3922,9 @@ Receipt / Continuation / Idempotency 与状态机）。
 
 ### CLIENT-CAP-PG-01 - Frontend Capability PostgreSQL Persistence
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: v31 + adapter; compose ZEBRA_CLIENT_CAPABILITIES_POSTGRES_TEST_RESULT=PASS (7).
+- Status: `Review`
+- Review evidence: v31 adapter plus v34 natural-binding hardening pass 7 real
+  PostgreSQL tests; not merged.
 - Suggested role: `STORAGE`
 - Depends on: `CLIENT-CAP-CON-01`
 - Owned paths:
@@ -3949,13 +3956,17 @@ Receipt / Continuation / Idempotency 与状态机）。
 
 ### CLIENT-SESSION-PG-01 - Client Session PostgreSQL Persistence
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: v32 + adapters; ZEBRA_CLIENT_SESSIONS_POSTGRES_TEST_RESULT=PASS (4).
+- Status: `Review`
+- Review evidence: v32 adapter plus v34 credential/backfill, orphan-lease
+  cleanup/foreign key, exact Binding/Fence mutations, active-Segment lookup and
+  upgrade coverage pass 6 real PostgreSQL tests; not merged.
 - Suggested role: `STORAGE`
 - Depends on: `CLIENT-SESSION-CON-01`
 - Owned paths:
   `packages/agent-storage/src/agent_storage/postgres/client_sessions.py`,
+  `packages/agent-storage/src/agent_storage/postgres/client_control_leases.py`,
   `packages/agent-storage/src/agent_storage/postgres/client_session_migration.py`,
+  `packages/agent-storage/src/agent_storage/postgres/client_security_migration.py`,
   `packages/agent-storage/src/agent_storage/postgres/migrations.py`,
   `tests/agent_storage/test_postgres_client_sessions.py`,
   `tests/compose/client_sessions/**`
@@ -3984,8 +3995,9 @@ Receipt / Continuation / Idempotency 与状态机）。
 
 ### CLIENT-EFFECT-PG-01 - Client Effect PostgreSQL Persistence
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: v33 + atomic schedule/receipt adapters; ZEBRA_CLIENT_EFFECTS_POSTGRES_TEST_RESULT=PASS (6).
+- Status: `Review`
+- Review evidence: v33 atomic schedule/receipt plus v34 parent-Session backfill
+  pass 6 real PostgreSQL tests; not merged.
 - Suggested role: `STORAGE`
 - Depends on: `CLIENT-EFFECT-CON-01`
 - Owned paths:
@@ -4019,8 +4031,9 @@ Receipt / Continuation / Idempotency 与状态机）。
 
 ### CLIENT-PLATFORM-COMP-01 - Platform Control Plane Store Bundle
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: AgentPlatformControlPlane port + shared composition; boundary tests 4 passed; flag default-off.
+- Status: `Review`
+- Review evidence: shared platform composition and default-off flag are
+  implemented and covered; not merged.
 - Suggested role: `ARCH / STORAGE`
 - Depends on: `CLIENT-CAP-PG-01`, `CLIENT-SESSION-PG-01`,
   `CLIENT-EFFECT-PG-01`
@@ -4057,8 +4070,12 @@ Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store�
 
 ### CLIENT-MGMT-API-01 - Frontend Profile Management API
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: /platform/v1/frontend-profiles* behind operator bearer; problem details; 4 API tests.
+- Status: `In Progress`
+- Implemented evidence: operator authentication, profile validation/lifecycle,
+  stable Problem Details and natural Host binding CAS are present.
+- Remaining acceptance: durable audit records for Bind/Deprecate/Revoke,
+  expected-revision enforcement for every mutation, and the dedicated
+  management API acceptance suite.
 - Suggested role: `CONTROL-PLANE / API`
 - Depends on: `CLIENT-PLATFORM-COMP-01`
 - Owned paths:
@@ -4093,8 +4110,12 @@ Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store�
 
 ### CLIENT-RUNTIME-API-01 - Client Session And Receipt Runtime API
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: /v1/client-sessions, client-bindings, client-effects receipts; controller-only; fake-store tests.
+- Status: `Review`
+- Review evidence: one-time session secret, controller fence, lease lifecycle,
+  pending effects and guarded receipts are implemented; Cloud HTTP now keeps
+  HostGrant in `Authorization`, carries the session credential separately in
+  `X-Zebra-Client-Session`, and binds every runtime request to the verified
+  HostContext; not merged.
 - Suggested role: `CONTROL-PLANE / API`
 - Depends on: `CLIENT-PLATFORM-COMP-01`
 - Owned paths:
@@ -4136,8 +4157,13 @@ Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store�
 
 ### CLIENT-AGUI-ADMISSION-01 - AG-UI Command Client Admission
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: AG-UI tools/state admission with published-profile source of truth, redaction, byte caps, no handler code.
+- Status: `In Progress`
+- Implemented evidence: published-profile name admission, handler rejection,
+  deep redaction and state byte bounds are attached to the durable Command.
+- Remaining acceptance: validate declared Tool contract digests and Readable
+  schemas, persist State Snapshot and Client Run Binding records, store only
+  their references on the Command, prove idempotent duplicate Runs, and add
+  `tests/api/test_agui_client_admission.py`.
 - Suggested role: `API / CONTROL-PLANE`
 - Depends on: `CLIENT-RUNTIME-API-01`
 - Owned paths:
@@ -4170,8 +4196,14 @@ State Snapshot（当前这些字段只是 Command Payload）。
 
 ### CLIENT-CONTEXT-01 - Client State Context Injection
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: ClientStateSnapshot + client_state context kind + worker recovery hook; 5 context tests.
+- Status: `In Progress`
+- Implemented evidence: bounded/redacted ClientState domain and context
+  rendering are covered, and runtime Client State is now budget-prioritized so
+  it cannot be silently displaced by workspace snippets.
+- Remaining acceptance: persist the snapshot produced at AG-UI admission,
+  load it from the Worker recovery composition, pass it into
+  `recover_task_execution`, and add restart coverage in
+  `tests/worker/test_client_state_recovery.py`.
 - Suggested role: `CONTEXT / RUNTIME`
 - Depends on: `CLIENT-AGUI-ADMISSION-01`
 - Owned paths:
@@ -4203,8 +4235,9 @@ State Snapshot（当前这些字段只是 Command Payload）。
 
 ### CLIENT-DEFERRED-TOOL-CON-01 - Deferred Tool Execution Contracts
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done on codex/client-adr-01: waiting_external_tool disposition, frozen CLIENT_EFFECT_SCHEDULED state, no fake tool results; 3 tests.
+- Status: `Review`
+- Review evidence: deferred disposition and durable scheduled state are
+  implemented without fake tool results; not merged.
 - Suggested role: `CORE / HARNESS`
 - Depends on: `CLIENT-EFFECT-CON-01`
 - Owned paths:
@@ -4234,8 +4267,9 @@ State Snapshot（当前这些字段只是 Command Payload）。
 
 ### CLIENT-WORKER-GW-01 - Worker Client Tool Gateway
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: ClientToolGateway schedule-only third channel; exposure via binding+active lease; 3 tests.
+- Status: `Review`
+- Review evidence: Worker client routing uses published contracts, an active
+  lease and Task-to-Segment authority; not merged.
 - Suggested role: `RUNTIME`
 - Depends on: `CLIENT-CONTEXT-01`, `CLIENT-DEFERRED-TOOL-CON-01`,
   `CLIENT-EFFECT-PG-01`
@@ -4273,8 +4307,9 @@ ClientToolGateway）。
 
 ### CLIENT-EFFECT-RESUME-01 - Client Effect Receipt Resume
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: atomic receipt+resume (v33), original tool-call identity restore, trusted HARNESS resume gate; 6 tests.
+- Status: `Review`
+- Review evidence: atomic receipt/resume restores the original parent Session
+  and tool-call identity; not merged.
 - Suggested role: `RUNTIME / STORAGE`
 - Depends on: `CLIENT-WORKER-GW-01`
 - Owned paths:
@@ -4307,7 +4342,11 @@ Receipt 到达后恢复 Agent，并将真实 Client Result 注入原 Tool Call�
 
 ### CLIENT-AGUI-PROJECTION-01 - AG-UI Client Effect And State Projection
 
-- Status: `In Progress` — session projection maps the new client events; the dedicated SSE client-effect projection module (pending-effect replay on reconnect) remains
+- Status: `In Progress` — pure Client Effect projection, pending replay and
+  exact-cursor HTTP SSE coverage are implemented on the unmerged review branch.
+- Remaining acceptance: add the declared Client State projection module and
+  cover State Snapshot/Delta replay; Effect evidence alone does not complete
+  this combined card.
 - Suggested role: `INTEGRATIONS`
 - Depends on: `CLIENT-EFFECT-RESUME-01`
 - Owned paths:
@@ -4343,8 +4382,10 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-SDK-CORE-01 - TypeScript Client Core SDK
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: zero-dep client-core, node --test 7 passed; dedup-once, receipt retry, fence stop, digest guard.
+- Status: `Review`
+- Review evidence: typed browser runtime, replay/retry, lease lifecycle and
+  digest/UI guards and per-tab refresh recovery pass 15 Node/React tests and
+  `tsc --noEmit`; not merged.
 - Suggested role: `SDK`
 - Depends on: `CLIENT-CAP-CON-01`, `CLIENT-SESSION-CON-01`,
   `CLIENT-EFFECT-CON-01`
@@ -4378,8 +4419,9 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-REACT-HOOKS-01 - React Standard Hooks
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done (surface + provider + mount/unmount semantics); DOM Strict-Mode tests need jsdom+vitest follow-up.
+- Status: `Review`
+- Review evidence: Zod parameter/result validation, coalesced mount declarations,
+  Strict-Mode lifecycle and controller release are implemented; not merged.
 - Suggested role: `SDK`
 - Depends on: `CLIENT-SDK-CORE-01`, `CLIENT-AGUI-PROJECTION-01`
 - Owned paths: `sdks/typescript/packages/react/**`,
@@ -4410,8 +4452,10 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-REACT-HITL-01 - React HITL Hooks
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: approval/clarification hooks with idempotency keys; runtime DOM evidence rides the same follow-up.
+- Status: `In Progress` — controlled hooks exist; durable interrupt subscription,
+  observer/fence enforcement and refresh replay remain unproven in React.
+- Remaining evidence: AG-UI interrupt subscription, refresh replay and
+  controller enforcement in a React runtime.
 - Suggested role: `SDK`
 - Depends on: `CLIENT-REACT-HOOKS-01`
 - Owned paths: `sdks/typescript/packages/react/src/hitl/**`,
@@ -4438,8 +4482,10 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-CONFORMANCE-01 - Multi-Frontend Conformance Suite
 
-- Status: `Done`
-- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done (core): shared suite over fake-frontend-a/b + zero-host-branch gate (50 passed); remaining crash/reconnect drills stay with AGUI-PROJECTION follow-up.
+- Status: `In Progress` — the shared fake-frontend suite exists; real-process
+  API/Worker restart, Redis-loss and browser reconnect drills remain.
+- Remaining evidence: real-process restart, Redis-loss and browser reconnect
+  drills; focused fake-frontend coverage is not that proof.
 - Suggested role: `QA / ARCH`
 - Depends on: `CLIENT-REACT-HITL-01`, `CLIENT-EFFECT-RESUME-01`,
   `CLIENT-MGMT-API-01`

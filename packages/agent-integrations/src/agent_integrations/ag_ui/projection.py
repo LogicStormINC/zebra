@@ -31,6 +31,7 @@ from ag_ui.core import (
 )
 from agent_core.domain.events import EventType, SessionEvent
 
+from agent_integrations.ag_ui.client_effect_projection import project_client_effect
 from agent_integrations.ag_ui.contracts import (
     AgUiCursor,
     AgUiProjection,
@@ -131,6 +132,9 @@ class AgUiProjector:
     ) -> tuple[Event, ...]:
         timestamp = int(event.created_at.timestamp() * 1000)
         payload = event.payload
+        client_effect = project_client_effect(event, timestamp=timestamp)
+        if client_effect is not None:
+            return client_effect
         if event.event_type is EventType.MODEL_RESPONSE_DELTA:
             model_call_id = _required_payload_text(payload, "model_call_id")
             delta = _required_payload_text(payload, "content_delta", allow_empty=True)

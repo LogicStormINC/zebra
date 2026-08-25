@@ -5,8 +5,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
+from agent_core.domain.client_capabilities import (
+    ClientActionContract,
+    ClientActionRisk,
+    canonical_client_capability_digest,
+)
 from agent_core.domain.client_run_bindings import ClientRunBinding
-from agent_core.domain.client_sessions import ClientControlFence
 from agent_core.domain.identifiers import (
     new_client_run_binding_id,
     new_client_session_id,
@@ -64,10 +68,22 @@ def _gateway(
     gateway = ClientToolGateway(
         context=ClientGatewayContext(
             binding=_binding(actions),
-            fence=ClientControlFence.issue(),
+            fence_hash="d" * 64,
             session_id=new_session_id(),
             ui_revision=4,
-            action_contract_digests={"app.ui.item.open": "c" * 64},
+            action_contracts={
+                "app.ui.item.open": ClientActionContract(
+                    name="app.ui.item.open",
+                    description="Open one item",
+                    parameters={
+                        "type": "object",
+                        "properties": {"itemId": {"type": "string"}},
+                        "required": ["itemId"],
+                        "additionalProperties": False,
+                    },
+                    risk=ClientActionRisk.PRESENTATION,
+                )
+            },
         ),
         dispatch=dispatch,
     )
@@ -92,8 +108,12 @@ def test_execute_only_schedules_a_durable_effect() -> None:
     assert len(dispatch.scheduled) == 1
     request = dispatch.scheduled[0]
     assert request.expected_ui_revision == 4
-    assert request.action_contract_digest == "c" * 64
-    assert len(request.fence_hash) == 64
+    contract = gateway.context.action_contracts["app.ui.item.open"]
+    assert request.action_contract_digest == canonical_client_capability_digest(
+        contract.model_dump(mode="json")
+    )
+    assert request.fence_hash == "d" * 64
+    assert request.parent_session_id == gateway.context.session_id
 
 
 def test_actions_outside_the_binding_fail_closed() -> None:
@@ -108,4 +128,5 @@ def test_actions_outside_the_binding_fail_closed() -> None:
 def test_model_tools_mirror_the_allowed_actions() -> None:
     gateway, _ = _gateway()
     assert [tool.name for tool in gateway.model_tools] == ["app.ui.item.open"]
-    assert gateway.parallel_safe_tools == frozenset({"app.ui.item.open"})
+    assert gateway.model_tools[0].parameters["required"] == ["itemId"]
+    assert gateway.parallel_safe_tools == frozenset()

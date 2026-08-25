@@ -45,9 +45,7 @@ class FrontendProfileService:
         validate_profile_for_publish(profile)
         return profile
 
-    def publish(
-        self, profile: FrontendCapabilityProfileVersion
-    ) -> ProfilePublication:
+    def publish(self, profile: FrontendCapabilityProfileVersion) -> ProfilePublication:
         self.validate(profile)
         self._registry.publish_profile(profile)
         return ProfilePublication(
@@ -83,12 +81,15 @@ class FrontendProfileService:
         if profile is None:
             raise FrontendProfileServiceError("profile revision is not published")
         if profile.profile_digest != profile_digest:
-            raise ClientCapabilityError(
-                "profile digest drift; binding fails closed"
-            )
+            raise ClientCapabilityError("profile digest drift; binding fails closed")
+        existing = self._registry.get_binding_for_host(host_app_id, namespace_id, frontend_app_id)
+        if existing is None and expected_binding_revision != 0:
+            raise FrontendProfileServiceError("binding does not exist at expected revision")
+        if existing is not None and existing.binding_revision != expected_binding_revision:
+            raise FrontendProfileServiceError("binding expected revision is stale")
         binding_revision = expected_binding_revision + 1
         binding = FrontendCapabilityBinding(
-            binding_id=uuid4(),
+            binding_id=existing.binding_id if existing is not None else uuid4(),
             deployment_namespace=self._namespace_of(registry=self._registry),
             host_app_id=host_app_id,
             namespace_id=namespace_id,
@@ -103,14 +104,10 @@ class FrontendProfileService:
         )
 
     def deprecate(self, frontend_app_id: str, revision: int) -> None:
-        self._registry.set_lifecycle(
-            frontend_app_id, revision, ProfileLifecycle.DEPRECATED
-        )
+        self._registry.set_lifecycle(frontend_app_id, revision, ProfileLifecycle.DEPRECATED)
 
     def revoke(self, frontend_app_id: str, revision: int) -> None:
-        self._registry.set_lifecycle(
-            frontend_app_id, revision, ProfileLifecycle.REVOKED
-        )
+        self._registry.set_lifecycle(frontend_app_id, revision, ProfileLifecycle.REVOKED)
 
     def get(self, frontend_app_id: str, revision: int | None = None) -> ProfilePublication:
         profile = (

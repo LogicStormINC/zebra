@@ -16,8 +16,11 @@ from agent_control_plane.client_effects import (
     build_client_effect_continuation,
     build_client_effect_request,
 )
+from agent_core.domain.client_capabilities import (
+    ClientActionContract,
+    canonical_client_capability_digest,
+)
 from agent_core.domain.client_run_bindings import ClientRunBinding
-from agent_core.domain.client_sessions import ClientControlFence
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
@@ -33,10 +36,10 @@ class ClientGatewayContext:
     """Everything the schedule-only channel needs for one run."""
 
     binding: ClientRunBinding
-    fence: ClientControlFence
+    fence_hash: str
     session_id: SessionId
     ui_revision: int
-    action_contract_digests: dict[str, str]
+    action_contracts: dict[str, ClientActionContract]
 
 
 class ClientToolGateway:
@@ -57,31 +60,39 @@ class ClientToolGateway:
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
-        return tuple(
-            ModelToolDefinition(
-                name=action,
-                description=f"Client action {action} executed by the browser",
-                parameters={"type": "object", "properties": {}},
+        tools: list[ModelToolDefinition] = []
+        for name in self._context.binding.allowed_actions:
+            contract = self._context.action_contracts.get(name)
+            if contract is None:
+                raise ClientToolGatewayError(f"published action contract missing for {name}")
+            tools.append(
+                ModelToolDefinition(
+                    name=name,
+                    description=contract.description,
+                    parameters=contract.parameters,
+                )
             )
-            for action in self._context.binding.allowed_actions
-        )
+        return tuple(tools)
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:
-        return frozenset(self._context.binding.allowed_actions)
+        return frozenset()
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         binding = self._context.binding
         binding.ensure_allows(tool_call.name)
+        contract = self._context.action_contracts.get(tool_call.name)
+        if contract is None:
+            raise ClientToolGatewayError(f"published action contract missing for {tool_call.name}")
         request = build_client_effect_request(
             binding=binding,
             tool_call_id=tool_call.tool_call_id,
             action_name=tool_call.name,
             arguments=dict(tool_call.arguments),
-            action_contract_digest=self._context.action_contract_digests.get(
-                tool_call.name, "0" * 64
+            action_contract_digest=canonical_client_capability_digest(
+                contract.model_dump(mode="json")
             ),
-            fence=self._context.fence,
+            fence_hash=self._context.fence_hash,
             expected_ui_revision=self._context.ui_revision,
             session_id=self._context.session_id,
         )
@@ -112,10 +123,10 @@ def compose_client_tool_gateway(
     *,
     platform: Any,
     binding: ClientRunBinding,
-    fence: ClientControlFence,
+    fence_hash: str,
     session_id: SessionId,
     ui_revision: int,
-    action_contract_digests: dict[str, str] | None = None,
+    action_contracts: dict[str, ClientActionContract] | None = None,
 ) -> ClientToolGateway | None:
     """Expose client actions only when the platform stores are composed."""
 
@@ -125,10 +136,10 @@ def compose_client_tool_gateway(
     return ClientToolGateway(
         context=ClientGatewayContext(
             binding=binding,
-            fence=fence,
+            fence_hash=fence_hash,
             session_id=session_id,
             ui_revision=ui_revision,
-            action_contract_digests=dict(action_contract_digests or {}),
+            action_contracts=dict(action_contracts or {}),
         ),
         dispatch=dispatch,
     )

@@ -28,10 +28,13 @@ export interface ClientEffectWire {
   expected_ui_revision: number;
   expires_at: string;
   request_digest: string;
+  action_contract_digest: string;
+  client_binding_digest: string;
 }
 
 export interface ReceiptSubmission {
   effect_id: string;
+  request_digest: string;
   status: ReceiptTerminalStatus;
   result: Record<string, unknown>;
 }
@@ -44,8 +47,20 @@ export interface RuntimeClientConfig {
   /** Zebra base URL reached through the Host BFF proxy. */
   baseUrl: string;
   clientSessionId: string;
-  /** Bearer value `"<session-id>:<fence-token>"`; never a HostGrant. */
+  /** Bearer value `"<session-id>:<session-secret>"`; never a HostGrant. */
   sessionCredential: string;
+  /** Raw controller fence returned once by the run-binding endpoint. */
+  controllerFenceToken?: string;
+  /** Controller coordinates returned by the run-binding endpoint. */
+  taskId?: string;
+  runId?: string;
+  runBindingId?: string;
+  clientBindingDigest?: string;
+  actionContractDigests?: Readonly<Record<string, string>>;
+  /** Authenticated AG-UI stream URL for cursor replay. */
+  streamUrl?: string;
+  /** Defaults to per-tab sessionStorage when the browser permits it. */
+  storage?: Storage;
   fetchImpl?: typeof fetch;
 }
 

@@ -59,36 +59,47 @@ class PostgresClientEffectDispatch(ClientEffectDispatchPort):
         continuation: ClientEffectContinuation,
         session_id: SessionId,
     ) -> ClientEffectScheduleOutcome:
+        if request.parent_session_id != session_id:
+            raise ClientEffectError("effect parent session does not match event stream")
+        if (
+            continuation.effect_id != request.effect_id
+            or continuation.task_id != request.task_id
+            or continuation.run_id != request.run_id
+            or continuation.tool_call_id != request.tool_call_id
+            or continuation.action_name != request.action_name
+        ):
+            raise ClientEffectError("effect continuation does not match the request")
         with self._database.connect() as connection:
-            existing = self._by_idempotency_key(
-                connection, request.idempotency_key
-            )
+            existing = self._by_idempotency_key(connection, request.idempotency_key)
             if existing is not None:
                 if existing["request_digest"] != request.request_digest:
                     raise ClientEffectIdempotencyConflict(
                         "idempotency key reused with a different request digest"
                     )
                 return ClientEffectScheduleOutcome(
-                    effect=request, created=False
+                    effect=_request_from_row(existing), created=False
                 )
-            connection.execute(
+            inserted = connection.execute(
                 """
                 INSERT INTO client_effects (
-                    deployment_namespace, effect_id, task_id, run_id,
+                    deployment_namespace, effect_id, task_id, parent_session_id, run_id,
                     client_session_id, tool_call_id, action_name,
                     arguments_json, action_contract_digest,
                     client_binding_digest, fence_hash, expected_ui_revision,
                     idempotency_key, request_digest, status,
                     requested_at, expires_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     'pending', %s, %s
                 )
+                ON CONFLICT DO NOTHING
+                RETURNING effect_id
                 """,
                 (
                     self._namespace,
                     request.effect_id,
                     request.task_id,
+                    request.parent_session_id,
                     request.run_id,
                     request.client_session_id,
                     request.tool_call_id,
@@ -103,7 +114,14 @@ class PostgresClientEffectDispatch(ClientEffectDispatchPort):
                     request.requested_at,
                     request.expires_at,
                 ),
-            )
+            ).fetchone()
+            if inserted is None:
+                raced = self._by_idempotency_key(connection, request.idempotency_key)
+                if raced is None or raced["request_digest"] != request.request_digest:
+                    raise ClientEffectIdempotencyConflict(
+                        "effect identity raced with different content"
+                    )
+                return ClientEffectScheduleOutcome(effect=_request_from_row(raced), created=False)
             connection.execute(
                 """
                 INSERT INTO client_effect_continuations (
@@ -137,6 +155,9 @@ class PostgresClientEffectDispatch(ClientEffectDispatchPort):
                     "tool_call_id": str(request.tool_call_id),
                     "client_effect_id": str(request.effect_id),
                     "action_name": request.action_name,
+                    "arguments": request.arguments,
+                    "action_contract_digest": request.action_contract_digest,
+                    "client_binding_digest": request.client_binding_digest,
                     "expected_ui_revision": request.expected_ui_revision,
                     "idempotency_key": request.idempotency_key,
                     "request_digest": request.request_digest,
@@ -178,9 +199,7 @@ class PostgresClientEffectDispatch(ClientEffectDispatchPort):
                 (self._namespace, effect_id),
             )
 
-    def load_continuation(
-        self, effect_id: ClientEffectId
-    ) -> ClientEffectContinuation | None:
+    def load_continuation(self, effect_id: ClientEffectId) -> ClientEffectContinuation | None:
         with self._database.connect() as connection:
             row = connection.execute(
                 """
@@ -246,6 +265,8 @@ class PostgresClientEffectReceipts(ClientEffectReceiptPort):
             ).fetchone()
             if row is None:
                 raise ClientEffectError("client effect not found")
+            if UUID(str(row["parent_session_id"])) != session_id:
+                raise ClientEffectError("effect parent session does not match resume stream")
             if row["fence_hash"] != request_fence_hash:
                 raise ClientEffectFenceError("stale client fence rejected")
             existing_receipt = connection.execute(
@@ -257,8 +278,7 @@ class PostgresClientEffectReceipts(ClientEffectReceiptPort):
             ).fetchone()
             if existing_receipt is not None:
                 if (
-                    existing_receipt["idempotency_key"]
-                    != receipt.idempotency_key
+                    existing_receipt["idempotency_key"] != receipt.idempotency_key
                     or existing_receipt["request_digest"] != receipt.request_digest
                 ):
                     raise ClientEffectReceiptConflict(
@@ -268,15 +288,35 @@ class PostgresClientEffectReceipts(ClientEffectReceiptPort):
                     raise ClientEffectReceiptConflict(
                         "effect terminal receipt is semantically inconsistent"
                     )
+                if dict(existing_receipt["result_json"]) != receipt.result:
+                    raise ClientEffectReceiptConflict(
+                        "effect terminal receipt result is semantically inconsistent"
+                    )
                 stored = _receipt_from_row(existing_receipt)
                 return ClientReceiptAcceptance(
                     receipt=stored,
                     effect=_request_from_row(row),
-                    resume_command_id=self._resume_command_id(
-                        receipt.effect_id
-                    ),
+                    resume_command_id=self._resume_command_id(receipt.effect_id),
                     replayed=True,
                 )
+            active_lease = connection.execute(
+                """
+                SELECT fence_hash FROM client_control_leases
+                WHERE deployment_namespace = %s AND task_id = %s AND run_id = %s
+                    AND client_session_id = %s AND released_at IS NULL
+                    AND expires_at > %s
+                FOR SHARE
+                """,
+                (
+                    self._namespace,
+                    row["task_id"],
+                    row["run_id"],
+                    row["client_session_id"],
+                    now,
+                ),
+            ).fetchone()
+            if active_lease is None or active_lease["fence_hash"] != row["fence_hash"]:
+                raise ClientEffectFenceError("client controller lease is no longer active")
             request = _request_from_row(row)
             session_row = connection.execute(
                 """
@@ -285,9 +325,7 @@ class PostgresClientEffectReceipts(ClientEffectReceiptPort):
                 """,
                 (self._namespace, request.client_session_id),
             ).fetchone()
-            current_ui_revision = (
-                int(session_row["ui_revision"]) if session_row is not None else -1
-            )
+            current_ui_revision = int(session_row["ui_revision"]) if session_row is not None else -1
             request.ensure_receiptable(current_ui_revision=current_ui_revision, now=now)
             connection.execute(
                 """
@@ -360,17 +398,13 @@ class PostgresClientEffectReceipts(ClientEffectReceiptPort):
                             "result": receipt.result,
                         }
                     },
-                    "fingerprint": _resume_fingerprint(
-                        session_id, receipt.effect_id
-                    ),
+                    "fingerprint": _resume_fingerprint(session_id, receipt.effect_id),
                 },
                 idempotency_key=f"client-effect-resume:{receipt.effect_id}",
             )
         return ClientReceiptAcceptance(
             receipt=receipt,
-            effect=request.model_copy(
-                update={"status": ClientEffectStatus(receipt.status.value)}
-            ),
+            effect=request.model_copy(update={"status": ClientEffectStatus(receipt.status.value)}),
             resume_command_id=resume_command_id,
             replayed=False,
         )
@@ -433,6 +467,7 @@ def _request_from_row(row: Any) -> ClientEffectRequest:
     return ClientEffectRequest(
         effect_id=ClientEffectId(UUID(str(row["effect_id"]))),
         task_id=TaskId(UUID(str(row["task_id"]))),
+        parent_session_id=SessionId(UUID(str(row["parent_session_id"]))),
         run_id=row["run_id"],
         client_session_id=ClientSessionId(UUID(str(row["client_session_id"]))),
         tool_call_id=ToolCallId(UUID(str(row["tool_call_id"]))),

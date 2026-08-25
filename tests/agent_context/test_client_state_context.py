@@ -45,9 +45,7 @@ def test_sensitive_keys_are_redacted_and_rejected() -> None:
     assert sanitized["nested"]["cookie"] == "__redacted__"
     assert set(redacted) == {"authToken", "nested.cookie"}
     with pytest.raises(ClientStateError):
-        validate_client_state_snapshot(
-            _snapshot(state={"sessionToken": "raw"})
-        )
+        validate_client_state_snapshot(_snapshot(state={"sessionToken": "raw"}))
 
 
 def test_context_item_is_bounded_and_untrusted() -> None:
@@ -63,7 +61,7 @@ def test_context_item_is_bounded_and_untrusted() -> None:
 
 
 def test_evidence_round_trips_through_the_compiler() -> None:
-    evidence = client_state_evidence(_snapshot())
+    evidence = client_state_evidence(_snapshot(redacted_keys=("authToken",)))
     assert evidence.kind == "client_state"
     compiler = LocalContextCompiler()
     prompt = compiler.build_system_prompt(
@@ -73,6 +71,7 @@ def test_evidence_round_trips_through_the_compiler() -> None:
         runtime_evidence=(evidence,),
     )
     assert "evt-9" in prompt
+    assert "authToken" in prompt
 
 
 def test_task_runs_without_client_state() -> None:
