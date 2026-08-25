@@ -4,7 +4,7 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | 方案设计与供应商只读实测完成；任务已登记为 `DS-VIS-*`，尚未开始实现 |
+| 状态 | 方案设计与供应商只读实测完成并进入 `cloud-agent`；`DS-VIS-CON-01` 已解锁，生产实现尚未开始 |
 | 调研基线 | 2026-08-25（现有 DeepSeek 凭证只读实测 + 官方文档核对） |
 | 评审校准 | 2026-08-25 多轮闭环评审已校准：事件/摄取/预算/重放、统一出境、Files 耐久副作用、authority-scope 身份、非 system 证据、模态 fail-closed、派生 retention、净化图/资源背压、request/attempt 单飞计费、模型失败/unknown 终态与 Artifact-backed 视觉工具结果均已固化 |
 | 适用范围 | Cloud Agent 与 Local Runtime 的图片输入、视觉分析与多模态证据链 |
@@ -503,11 +503,11 @@ JSON/base64 解析前施加不可被 chunked 请求绕过的体积上限。
 ## 12. 实施顺序与任务登记
 
 ```text
-DS-VIS-PLAN-01（文档校准，Locked 至 PR #260 合入 cloud-agent）
+DS-VIS-PLAN-01（文档校准，Done）
   └─ DS-VIS-CON-01
        ├─ DS-VIS-ING-01 ─→ DS-VIS-ART-01 ─→ DS-VIS-WIRE-01 ─→ DS-VIS-EGR-01 ─→ DS-VIS-DUR-01
-       └─ DS-VIS-ADP-01 ← 需 DS-RESP-01 进入 cloud-agent
-            └─ DS-VIS-ORCH-01 ← 需 DS-VIS-DUR-01 + PR #260 / AL-BOUNDARY-ORCH-01
+       └─ DS-VIS-ADP-01 ← DS-RESP-01 已进入 cloud-agent
+            └─ DS-VIS-ORCH-01 ← 需 DS-VIS-DUR-01；AL-BOUNDARY-ORCH-01 已完成
                  ├─ DS-VIS-EVAL-01（P0 base64 路径，不含 Files 场景）
                  └─ DS-VIS-FILES-01 ─→ DS-VIS-FILES-EVAL-01（同时需 P0 EVAL）
 ```
@@ -517,15 +517,15 @@ P0 评测只覆盖 base64 路径，保证其可独立上线；`file_id` 过期�
 
 | 任务 | 内容 | 前置 |
 |---|---|---|
-| `DS-VIS-PLAN-01` | 本方案文档与任务图校准（docs-only） | `AL-BOUNDARY-ORCH-01`（PR #260）合入 `cloud-agent` 后切 `codex/ds-vis-plan-01` |
+| `DS-VIS-PLAN-01` | 本方案文档与任务图校准（docs-only，Done） | 已满足：`AL-BOUNDARY-ORCH-01` 已进入 `cloud-agent` |
 | `DS-VIS-CON-01` | 图片附件、视觉请求和结构化证据合同；不接运行时 | `DS-VIS-PLAN-01` |
 | `DS-VIS-ING-01` | HTTP/base64 边界、图片真实格式/像素验证与解码背压 | `DS-VIS-CON-01` |
 | `DS-VIS-ART-01` | 控制面 Artifact staging/promote 交易与前向迁移 | `DS-VIS-ING-01` |
 | `DS-VIS-WIRE-01` | 初始图与 Cloud 后续消息两阶段 refs，Cloud/Local queue/recovery | `DS-VIS-ART-01` |
 | `DS-VIS-EGR-01` | Provider 出境图净化、lineage/retention、出境分类与 Worker image-byte 背压 | `DS-VIS-WIRE-01` |
 | `DS-VIS-DUR-01` | Vision request ledger/single-flight、ModelCall 终态/projection 与 result Artifact/事件可恢复提交 | `DS-VIS-EGR-01` |
-| `DS-VIS-ADP-01` | 基于现有 Responses adapter 实现 vision-exp、`input_image`、JSON Schema、thinking 与 usage | `DS-VIS-CON-01` + `DS-RESP-01` 进入 `cloud-agent` |
-| `DS-VIS-ORCH-01` | 初始视觉分析、Flash/Pro 主 Agent、工具截图与 `vision.inspect` | `DS-VIS-DUR-01` + `DS-VIS-ADP-01` + PR #260 进入 `cloud-agent` |
+| `DS-VIS-ADP-01` | 基于现有 Responses adapter 实现 vision-exp、`input_image`、JSON Schema、thinking 与 usage | `DS-VIS-CON-01`；`DS-RESP-01` 已满足 |
+| `DS-VIS-ORCH-01` | 初始视觉分析、Flash/Pro 主 Agent、工具截图与 `vision.inspect` | `DS-VIS-DUR-01` + `DS-VIS-ADP-01`；orchestration 包已满足 |
 | `DS-VIS-EVAL-01` | P0 真实模型评测（base64 路径）、指标、canary 与发布开关 | `DS-VIS-ORCH-01` |
 | `DS-VIS-FILES-01` | Files binding、TTL/retention、并发、重传、清理（Provider-file effect） | `DS-VIS-ORCH-01` |
 | `DS-VIS-FILES-EVAL-01` | Files 后置评测与发布门（过期重传、并发去重、远端清理、cache 命中） | `DS-VIS-FILES-01` + `DS-VIS-EVAL-01` |

@@ -713,10 +713,11 @@ read-only Trench vertical slice.
 
 ### AL-BOUNDARY-ORCH-01 - Orchestration Package Boundary
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCH`
 - Branch: `codex/al-boundary-orch-01` (from `cloud-agent@7de09da1`)
+- Delivery: commits `da1029ea` and `769ca50e` integrated into `cloud-agent`
 - Owned paths: `packages/agent-orchestration/**` (new), the nine moved
   modules under `packages/agent-core/src/agent_core/{domain,application}/`,
   `tests/agent_orchestration/**` (moved from `tests/agent_core/`),
@@ -23791,9 +23792,11 @@ the current published Version as a projection.
 
 ### DS-RESP-01 - DeepSeek Responses And Reasoning Protocol Refresh
 
-- Status: `Review`
+- Status: `Done`
 - Owner: `Codex`
 - Branch: `codex/ds-resp-01-deepseek-responses`
+- Delivery: source commit `90906267`, integrated into `cloud-agent` as
+  `97f121a3`
 - Depends on: merged `DS-OPT-01`, `QA-148-MDL-01`, and explicit maintainer request
 - Owned paths: `packages/agent-core/src/agent_core/domain/modeling.py`,
   `packages/agent-core/src/agent_core/domain/messages.py`,
@@ -23879,15 +23882,13 @@ them to exact files before they may become `Ready`.
 
 ### DS-VIS-PLAN-01 - Vision Architecture Docs Calibration
 
-- Status: `Locked`
+- Status: `Done`
 - Owner: `lukeding`
 - Suggested role: `ARCH / DOCS`
-- Depends on: `AL-BOUNDARY-ORCH-01` (PR #260) merged into `cloud-agent`.
-  Until then the edits stay parked in the working tree — no branch exists and
-  the card is not `In Progress`. Once PR #260 merges, cut
-  `codex/ds-vis-plan-01` from latest `cloud-agent` in a dedicated worktree
-  and flip this card to `In Progress`.
-- Branch: `codex/ds-vis-plan-01` (from latest `cloud-agent` after PR #260)
+- Depends on: satisfied — `AL-BOUNDARY-ORCH-01` is integrated into
+  `cloud-agent`
+- Branch: `codex/cloud-agent-deepseek-integration` (maintainer-authorized
+  integration into `cloud-agent`)
 - Owned paths: `docs/DeepSeek_视觉双通道多模态架构方案_v1.0.md`, the
   DeepSeek Vision Multimodal Board in `docs/AGENT_TASKS.md`, the DeepSeek
   vision entry in `PROGRESS.md` Known Follow-Ups
@@ -23900,7 +23901,7 @@ one independent docs slice; stage exactly these files and never the unrelated
 
 #### Acceptance
 
-- [ ] the design doc closes every recorded review round: event-contract owned
+- [x] the design doc closes every recorded review round: event-contract owned
   paths (EventType in `domain/events.py` + payload registry in
   `contracts/events.py`), the end-to-end ingestion chain, model-budget
   accounting for vision calls, replayable observation identity
@@ -23916,23 +23917,22 @@ one independent docs slice; stage exactly these files and never the unrelated
   request/attempt single-flight, failed/unknown terminal state, distributed
   tenant/account admission, control-plane Artifact admission/reference-only
   recovery and Artifact-backed vision tool recovery
-- [ ] DSH wording states the model-input modality declaration with text-only
+- [x] DSH wording states the model-input modality declaration with text-only
   DeepSeek routing accurately; `region?` is removed from the P0 tool
   signature with the derived-crop rule recorded
-- [ ] dependency wording targets the explicit `cloud-agent` delivery line for
-  `DS-RESP-01` and PR #260, including that the Responses commit `90906267`
-  is based on older `origin/main`, has no PR and does not contain
-  `cloud-agent`
-- [ ] file-size gate and `git diff --check` pass; no full test suite for a
-  docs-only change
+- [x] dependency wording targets the explicit `cloud-agent` delivery line;
+  source commit `90906267` and the PR #260 commits are integrated there
+- [x] file-size gate and `git diff --check` pass; the combined integration also
+  passes the repository validation gates recorded in the delivery commit
 
 #### Explicit Non-Goals
 
-- no production code and no branch stacked on the unmerged PR #260 base
+- no DS-VIS production implementation; this card delivers architecture and task
+  sequencing only
 
 ### DS-VIS-CON-01 - Vision Contracts Foundation
 
-- Status: `Locked`
+- Status: `Ready`
 - Owner: 未认领
 - Suggested role: `CORE / ARCH`
 - Depends on: `DS-VIS-PLAN-01` accepted
@@ -24420,9 +24420,7 @@ vision output in Session events or projections.
 - Owner: 未认领
 - Suggested role: `INTEGRATIONS / QA`
 - Depends on: `DS-VIS-CON-01` merged into the `cloud-agent` delivery line,
-  plus `DS-RESP-01` (Responses adapter, commit `90906267`, based on older
-  `origin/main`, currently no PR) entering the same `cloud-agent` delivery
-  line
+  plus completed `DS-RESP-01` already present on that delivery line
 - Owned paths: `packages/agent-integrations/src/agent_integrations/deepseek_profiles.py`,
   the merged `deepseek_responses.py`/payload modules from `DS-RESP-01`, a new
   `deepseek_vision.py` module if separation is required, Provider credential/
@@ -24494,9 +24492,8 @@ Responses `text.format` JSON Schema output, reasoning effort and usage — behin
 - Owner: 未认领
 - Suggested role: `CORE / ORCHESTRATION / TOOLS`
 - Depends on: `DS-VIS-DUR-01` and `DS-VIS-ADP-01` in the `cloud-agent`
-  delivery line, plus `AL-BOUNDARY-ORCH-01` (PR #260 — the
-  `agent-orchestration` package) reaching the same `cloud-agent` line, since
-  this card's orchestration paths only exist after that merge
+  delivery line; completed `AL-BOUNDARY-ORCH-01` already provides the
+  `agent-orchestration` package and its owned paths
 - Owned paths: `packages/agent-core/src/agent_core/harness/orchestration_events.py`,
   `packages/agent-core/src/agent_core/harness/tool_execution.py`,
   `packages/agent-core/src/agent_core/harness/model_step.py`, harness

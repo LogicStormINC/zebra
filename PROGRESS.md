@@ -5,9 +5,9 @@
 
 ## Active Review
 
-- Orchestration package boundary is awaiting maintainer acceptance
-  (2026-08-23, PR #260, `codex/al-boundary-orch-01`,
-  `AL-BOUNDARY-ORCH-01`, ADR-021; not yet on `cloud-agent`): the
+- Orchestration package boundary is integrated into `cloud-agent`
+  (`AL-BOUNDARY-ORCH-01`, source PR #260 / `codex/al-boundary-orch-01`,
+  ADR-021): the
   deterministic orchestration domain — plan/budget contracts, DAG validation
   and scheduling, five-layer
   completion gate, worktree merge fix loop, Agent Team contracts and the
@@ -1498,8 +1498,8 @@ Redis composition.
     do not activate Web Intelligence contracts, Provider, security, tools,
     orchestration or Watch cards out of dependency order.
 11. The DeepSeek vision dual-channel plan is registered as the docs card
-    `DS-VIS-PLAN-01` (owner `lukeding`, `Locked` until PR #260 merges —
-    the edits stay parked in the working tree, no branch exists yet)
+    `DS-VIS-PLAN-01` (owner `lukeding`, `Done` on `cloud-agent`), which unlocks
+    `DS-VIS-CON-01` as the sole `Ready` implementation card,
     followed by `DS-VIS-CON-01` → `DS-VIS-ING-01` → `DS-VIS-ART-01`
     (control-plane Artifact transaction/migration) → `DS-VIS-WIRE-01`
     (initial/follow-up reference-only Local/Cloud recovery) → `DS-VIS-EGR-01`
@@ -1549,13 +1549,11 @@ Redis composition.
     remote TTL capped by source retention (under 1h falls back to base64),
     and its eval/launch gate waits on both `DS-VIS-FILES-01` and the P0
     `DS-VIS-EVAL-01`. All dependency
-    wording targets the `cloud-agent` delivery line: `DS-VIS-ADP-01` waits on
-    `DS-RESP-01` (Responses
-    adapter, commit `90906267`, based on older `origin/main`, no PR yet)
-    and `DS-VIS-ORCH-01` additionally on `AL-BOUNDARY-ORCH-01` (PR #260)
-    reaching the same `cloud-agent` line. The docs PR itself is cut from
-    latest `cloud-agent` only after PR #260 merges, staging exactly the
-    three plan files.
+    wording targets the `cloud-agent` delivery line: `DS-RESP-01` source commit
+    `90906267` and `AL-BOUNDARY-ORCH-01` are now integrated there, so
+    `DS-VIS-ADP-01` waits only on `DS-VIS-CON-01` and `DS-VIS-ORCH-01` waits
+    on its DS-VIS contract/durability/adapter predecessors. No DS-VIS production
+    implementation has started.
 
 ## Runtime Blueprint
 
