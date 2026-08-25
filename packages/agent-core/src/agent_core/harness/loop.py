@@ -112,6 +112,7 @@ class HarnessLoop:
             if attempt_result.outcome in {
                 HarnessAttemptOutcome.WAITING_APPROVAL,
                 HarnessAttemptOutcome.WAITING_INPUT,
+                HarnessAttemptOutcome.WAITING_EXTERNAL_TOOL,
             }:
                 return HarnessLoopResult(
                     session=recorder.session,

@@ -1,0 +1,13 @@
+{
+  "name": "@zebra-agent/typescript-sdk",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test packages/client-core/tests/client-core.test.ts packages/react/tests/provider.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "^5.9.3"
+  }
+}

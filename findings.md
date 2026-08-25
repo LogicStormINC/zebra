@@ -1,5 +1,56 @@
 # Findings
 
+## CLIENT-PLANE-V1 - 2026-08-25
+
+- The child-wakeup pattern (freeze state in an event, deterministic
+  uuid5 resume command, HARNESS-actor-only trust gate, stub-message
+  stripping) mapped 1:1 onto client effects; the new
+  CLIENT_EFFECT_SCHEDULED event carries the frozen conversation just
+  like SUBAGENT_DELEGATED.
+- ToolBatchExecutor ends a sequential turn COMPLETED after one tool;
+  deferred client effects needed an explicit branch so the loop reaches
+  the suspension check instead (tool_batch.py).
+- routes.py sat at the 500-line limit; the /users//tenants/ memory
+  families moved to memory_routes.py (behavior-identical) to admit the
+  client dispatchers. execution.py held at exactly 500 via
+  line-neutral compressions.
+- pydantic wraps domain ValueErrors raised inside validators into
+  ValidationError; client tests unwrap `error.ctx.error` to keep
+  asserting the domain error types.
+- Node 22 runs the SDK tests directly via --experimental-strip-types,
+  but rejects .tsx and parameter properties; the SDK therefore uses
+  createElement + plain constructors with zero npm runtime deps.
+
+## CLIENT-ADR-01 - 2026-08-25
+
+- AG-UI `RunAgentInput` already parses `state` / `tools` / `context` /
+  `forwardedProps` (`apps/api/src/zebra_agent_api/ag_ui_command.py`), but
+  they remain command payload only: no durable client binding exists and
+  the worker-recovered task never sees them. `CLIENT-AGUI-ADMISSION-01`
+  and `CLIENT-CONTEXT-01` own the conversion into persisted client run
+  bindings and state snapshots.
+- `ToolExecutionLocation`
+  (`packages/agent-core/src/agent_core/domain/tools.py`) currently
+  enumerates only `ZEBRA` / `HOST` / `SANDBOX`. Adding `CLIENT` is owned
+  by `CLIENT-EFFECT-CON-01`, which also requires `ToolContract` scope for
+  both `HOST` and `CLIENT`.
+- The worker loop still constructs the Host Connector Registry, Subagent
+  Delegation Store and Wakeup Service directly from the DSN; new client
+  stores must not copy this composition pattern —
+  `CLIENT-PLATFORM-COMP-01` introduces the shared
+  `AgentPlatformControlPlane` bundle for API and Worker instead.
+- Existing boundaries the client plane must preserve: the
+  `agent-control-plane` architecture gate (no Worker / Runtime / FastAPI /
+  storage adapter imports), the AG-UI Projector's pure-projection seam
+  (State Snapshot / State Delta / Tool Call / Interrupt already
+  projected), the Orchestrator `system/orchestrator@1`
+  `orchestration.*`-only capability set, and the Host Effect
+  outbox / reconciliation as the backend business-write authority.
+- Baseline note: the planning document pins `main@efd4e293` as the sync
+  point, but the working mainline is `cloud-agent` (PRs land there per
+  `PROGRESS.md`); this card branches from `cloud-agent@2319da7f`, which
+  contains `main@efd4e293` as an ancestor.
+
 ## CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - 2026-08-03
 
 - The Context Worker path is fenced at the PostgreSQL transaction boundary:

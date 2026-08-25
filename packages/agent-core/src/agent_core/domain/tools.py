@@ -20,6 +20,7 @@ class ToolExecutionLocation(StrEnum):
     ZEBRA = "zebra"
     HOST = "host"
     SANDBOX = "sandbox"
+    CLIENT = "client"
 
 
 class ToolRisk(StrEnum):

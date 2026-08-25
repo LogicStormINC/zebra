@@ -102,6 +102,15 @@ does not authorize production code, migrations or activation of its successor.
   lifecycle and scoped management rules. `CLOUD-PROVIDER-CONT-PG-01` is
   `In Progress` on `codex/cloud-provider-cont-pg-01`; only its registered Owned
   paths and migration v13 are authorized.
+- `CLIENT-ADR-01` is `Review` on `codex/client-adr-01`. It freezes the Client
+  Integration Plane V1 architecture (`docs/ADR-CLIENT-01_Client_Integration_
+  Plane.md`) and registers the 22-card Client Integration Plane Board below:
+  browser access lands through Host BFF with published Frontend Capability
+  Profiles, one-controller fenced Client Sessions and PostgreSQL-durable
+  Client Effects with receipts, while formal business writes stay on Host
+  Backend Tools. Explicit maintainer batch activation produced an unmerged
+  implementation candidate; successor cards are `Review` or honestly
+  `In Progress`, never `Done` before merge.
 
 - `EMB-PLAN-01` is `Done` on `zebra-cloud-trench`; it consolidates the Zebra
   Embedded target architecture and registers the dependency-ordered
@@ -3733,6 +3742,849 @@ storage. Explicit cloud composition remains fail closed at application startup.
   baseline defects. A local Desktop streaming attempt reached the API but the
   Playwright-managed provider uniformly failed as `transport_error`; it did not
   reproduce `LeaseCheckpointRegressionError` and is not counted as passing E2E.
+
+## Client Integration Plane Board
+
+Architecture authority: `docs/ADR-CLIENT-01_Client_Integration_Plane.md`
+(`CLIENT-ADR-01`). Gate order: 领域契约 → PostgreSQL 持久化 → Client
+Admission → 前端状态注入 → Durable Client Effect → Worker
+suspend/resume → React SDK → 多前端一致性测试 → Trench 试点. React Hook
+work must not land before the backend binding, fence, effect receipt and
+recovery chain exists. All successors stay `Locked` until their gate's
+dependencies merge; migration versions must be re-confirmed before each
+PostgreSQL card activates（三张迁移卡不能共用同一 migration version）。
+`Done` 仍表示已经合入交付线；同一评审分支上已实现且验证的卡保持
+`Review`。
+
+### CLIENT-ADR-01 - Client Integration Plane Architecture Freeze
+
+- Status: `Review`
+- Owner: `lukeding`
+- Suggested role: `ARCH / PM`
+- Depends on: maintainer activation; baseline pinned at the
+  `main@efd4e293` sync point, working mainline `cloud-agent`
+- Branch: `codex/client-adr-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/client-adr-01/zebra-agent`
+- Owned paths: `docs/ADR-CLIENT-01_Client_Integration_Plane.md` (new),
+  `docs/AGENT_TASKS.md` (this board plus the Current Board entry),
+  `task_plan.md`, `PROGRESS.md`, `findings.md`
+- Docs-only: no production code, migration, Docker Compose, environment
+  variable or SDK change is authorized.
+
+#### Goal
+
+Freeze the V1 client integration architecture (ADR-CLIENT-01) and register
+the dependency-ordered CLIENT task board before any contract or SDK work.
+
+#### Acceptance
+
+- [x] ADR-CLIENT-01 defines the eight core concepts (Client Integration
+  Plane, Frontend Capability Profile, Mounted Capability Snapshot, Client
+  Session, Client Run Binding, Client Control Lease, Client Effect, Client
+  Effect Receipt) and answers all twelve mandated questions (browser via
+  Host BFF; profile/runtime-mount separation; one controller per run;
+  business writes stay on Host Tools; persisted effects and receipts; no
+  arbitrary JavaScript/DOM; subagents without UI; orchestrator UI-intent
+  only; TaskBinding vs ClientRunBinding split; AG-UI Event Store replay as
+  recovery basis; client state vs host business facts; digests on profile,
+  binding and receipt).
+- [x] All successor cards are registered with owned paths, forbidden paths,
+  acceptance boundaries and dependency order; every successor is `Locked`.
+- [x] No production code, migration, compose, environment or SDK file
+  changed (`git diff` touches documentation and governance files only).
+
+#### Explicit Non-Goals
+
+- no `ToolExecutionLocation.CLIENT` implementation（`CLIENT-EFFECT-CON-01`）
+- no PostgreSQL migration version allocation（阶段 2 各卡）
+- no React/TypeScript SDK scaffolding（阶段 5 各卡）
+
+### CLIENT-CAP-CON-01 - Frontend Capability Contracts
+
+- Status: `Review`
+- Review evidence: contracts and focused tests are implemented on
+  `codex/client-adr-01`; the branch is not merged.
+- Suggested role: `CORE`
+- Depends on: `CLIENT-ADR-01`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/client_capabilities.py`（新）,
+  `packages/agent-core/src/agent_core/ports/client_capability_registry.py`（新）,
+  对应 `domain/__init__.py` 与 `ports/__init__.py` 导出,
+  `tests/agent_core/test_client_capability_contracts.py`
+- 新增模型: `ClientReadableContract`, `ClientActionContract`,
+  `ClientComponentContract`, `FrontendCapabilityProfileVersion`,
+  `FrontendCapabilityBinding`, `MountedCapabilitySnapshot`,
+  `ClientActionRisk`（V1: `presentation` / `navigation` / `local_state` /
+  `user_interaction` / `business_write_forbidden`）
+- 禁止修改: `apps/api`, `apps/worker`, `agent-storage`, `agent-runtime`,
+  AG-UI, Host Capability Manifest
+
+#### Goal
+
+定义前端能力注册协议（Readable / Action / Component 契约与 Profile /
+Binding / Mounted Snapshot 领域模型）。
+
+#### 验收边界
+
+1. Profile Revision 不可变。
+2. 相同内容生成相同 Digest。
+3. Action、Readable 和 Component 名称唯一。
+4. 参数必须为受限 JSON Schema。
+5. 禁止可执行字符串 Selector。
+6. 禁止字段名中出现 Secret、Token、Password。
+7. Mounted Snapshot 必须是 Published Profile 的子集。
+8. Runtime Hook 不能增加 Profile 中未发布的能力。
+9. `business_write_forbidden` 无法发布。
+10. 所有字符串、数组、Schema 和 Profile 大小有上限。
+
+### CLIENT-SESSION-CON-01 - Client Session And Control Lease Contracts
+
+- Status: `Review`
+- Review evidence: session secrets and controller fences are separated; lease
+  renewal/release and fail-closed expiry are implemented; not merged.
+- Suggested role: `CORE`
+- Depends on: `CLIENT-ADR-01`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/client_sessions.py`（新）,
+  `packages/agent-core/src/agent_core/domain/client_run_bindings.py`（新）,
+  `packages/agent-core/src/agent_core/ports/client_session_registry.py`（新）,
+  `packages/agent-core/src/agent_core/ports/client_control_lease.py`（新）,
+  `tests/agent_core/test_client_session_contracts.py`,
+  `tests/agent_core/test_client_run_binding_contracts.py`
+- 新增模型: `ClientSessionGrant`, `ClientSession`,
+  `ClientRunBindingSnapshot`, `ClientControlLease`, `ClientControlFence`,
+  `ClientSessionStatus`
+- 禁止修改: HostSessionGrant, Worker Lease, TaskBindingSnapshot, API,
+  Storage, React SDK
+
+#### Goal
+
+定义浏览器实例、Run Binding 和控制权（一个 Active Controller + Observer）
+的领域契约。
+
+#### 验收边界
+
+1. Client Grant 必须绑定 `host_app_id`、`namespace_id`、`frontend_app_id`
+   和 Origin。
+2. Client Grant 只能包含 Client 能力。
+3. ClientRunBinding 必须绑定 `task_id + run_id + client_session_id`。
+4. 一个 Binding 必须固定 Profile Digest 和 Mounted Snapshot Digest。
+5. Client 能力只能从 Task Capability 继续收窄。
+6. 一个 Run 只能有一个 Active Controller。
+7. Observer 无法执行 Action 或提交 Receipt。
+8. Fence Token 不能进入 Event 或日志，只持久化 Hash。
+9. 过期 Client Session 不能续租。
+10. Binding Revision 单调递增。
+
+### CLIENT-EFFECT-CON-01 - Client Effect Contracts
+
+- Status: `Review`
+- Review evidence: effect/receipt/idempotency and
+  `ToolExecutionLocation.CLIENT` contracts are implemented; not merged.
+- Suggested role: `CORE`
+- Depends on: `CLIENT-CAP-CON-01`, `CLIENT-SESSION-CON-01`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/client_effects.py`（新）,
+  `packages/agent-core/src/agent_core/ports/client_effect_dispatch.py`（新）,
+  `packages/agent-core/src/agent_core/ports/client_effect_receipts.py`（新）,
+  `packages/agent-core/src/agent_core/domain/tools.py`,
+  `packages/agent-tools/src/agent_tools/contracts.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `tests/agent_core/test_client_effect_contracts.py`
+- 新增模型: `ClientEffectRequest`, `ClientEffectReceipt`,
+  `ClientEffectStatus`, `ClientEffectTerminalStatus`,
+  `ClientEffectContinuation`, `ClientEffectIdempotency`
+- 允许修改现有内容: `ToolExecutionLocation.CLIENT`;
+  `ToolContract` 对 `HOST` 和 `CLIENT` 都要求 Scope
+- 禁止修改: Host Effect 状态机, PostgreSQL Effect Outbox, Worker Effect
+  Dispatch, Approval 和 Clarification 语义
+
+#### Goal
+
+定义 Cloud Agent 调用浏览器 Hook 的持久化执行契约（Effect Request /
+Receipt / Continuation / Idempotency 与状态机）。
+
+#### 验收边界
+
+1. Client Effect 必须带 Action Contract Digest。
+2. 必须带 Client Binding Digest。
+3. 必须带 Fence Hash。
+4. 必须带 Expected UI Revision。
+5. 必须带 Idempotency Key。
+6. Receipt 必须关联准确 Effect ID。
+7. 一个 Effect 只能接受一个语义一致的终态 Receipt。
+8. 相同 Idempotency Key 和相同 Request Digest 返回原 Effect。
+9. 相同 Key 和不同 Request Digest 冲突。
+10. Stale Fence、Stale Revision、过期 Effect 全部 fail closed。
+11. Receipt 不得包含 Token、Cookie、DOM、完整页面数据。
+12. Client Effect 终态不能直接代表业务写入成功。
+
+### CLIENT-CAP-PG-01 - Frontend Capability PostgreSQL Persistence
+
+- Status: `Review`
+- Review evidence: v31 adapter plus v34 natural-binding hardening pass 7 real
+  PostgreSQL tests; not merged.
+- Suggested role: `STORAGE`
+- Depends on: `CLIENT-CAP-CON-01`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/client_capabilities.py`,
+  `packages/agent-storage/src/agent_storage/postgres/client_capability_migration.py`,
+  `packages/agent-storage/src/agent_storage/postgres/migrations.py`,
+  `tests/agent_storage/test_postgres_client_capabilities.py`,
+  `tests/compose/client_capabilities/**`
+- 建议表: `frontend_capability_profiles`, `frontend_capability_bindings`
+- 禁止修改: Host Connector 表, Agent Registry 表, Task Binding 表, API 和
+  Worker
+
+#### Goal
+
+持久化 Published Frontend Profile 和 Namespace Binding。
+
+#### 验收边界
+
+1. Profile Revision 只插入不更新。
+2. 相同 revision、相同 digest 可重放。
+3. 相同 revision、不同 digest 冲突。
+4. Binding 使用 expected revision CAS。
+5. deployment namespace 隔离。
+6. Host namespace 隔离。
+7. revoked Profile 不接受新 Binding。
+8. deprecated Profile 可以服务已绑定 Run。
+9. Adapter 构造不运行 DDL。
+10. 真实 PostgreSQL Compose 测试通过。
+
+### CLIENT-SESSION-PG-01 - Client Session PostgreSQL Persistence
+
+- Status: `Review`
+- Review evidence: v32 adapter plus v34 credential/backfill, orphan-lease
+  cleanup/foreign key, exact Binding/Fence mutations, active-Segment lookup and
+  upgrade coverage pass 6 real PostgreSQL tests; not merged.
+- Suggested role: `STORAGE`
+- Depends on: `CLIENT-SESSION-CON-01`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/client_sessions.py`,
+  `packages/agent-storage/src/agent_storage/postgres/client_control_leases.py`,
+  `packages/agent-storage/src/agent_storage/postgres/client_session_migration.py`,
+  `packages/agent-storage/src/agent_storage/postgres/client_security_migration.py`,
+  `packages/agent-storage/src/agent_storage/postgres/migrations.py`,
+  `tests/agent_storage/test_postgres_client_sessions.py`,
+  `tests/compose/client_sessions/**`
+- 建议表: `client_sessions`, `client_run_bindings`,
+  `client_control_leases`, `client_mounted_capability_snapshots`
+- 禁止修改: worker_leases, TaskBinding, Host Authority Registry, API 和
+  SDK
+
+#### Goal
+
+持久化 Client Session、Run Binding 和 Control Lease（含 CAS 与 Fence
+语义）。
+
+#### 验收边界
+
+1. 同一 Run 最多一个 Active Controller Lease。
+2. 两个 Tab 同时 Claim 时只有一个成功。
+3. Lease 续期需要当前 Fence。
+4. 旧 Fence 更新零行。
+5. Session 过期后 Lease 自动失效。
+6. Observer 不能升级为 Controller，除非通过显式 CAS。
+7. Mounted Snapshot 只能收窄。
+8. Profile Digest 漂移拒绝绑定。
+9. Origin 和 Host namespace 必须匹配。
+10. 备份恢复后 Fence 语义不失效。
+
+### CLIENT-EFFECT-PG-01 - Client Effect PostgreSQL Persistence
+
+- Status: `Review`
+- Review evidence: v33 atomic schedule/receipt plus v34 parent-Session backfill
+  pass 6 real PostgreSQL tests; not merged.
+- Suggested role: `STORAGE`
+- Depends on: `CLIENT-EFFECT-CON-01`
+- Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/client_effects.py`,
+  `packages/agent-storage/src/agent_storage/postgres/client_effect_migration.py`,
+  `packages/agent-storage/src/agent_storage/postgres/migrations.py`,
+  `tests/agent_storage/test_postgres_client_effects.py`,
+  `tests/compose/client_effects/**`
+- 建议表: `client_effects`, `client_effect_receipts`,
+  `client_effect_continuations`
+- 禁止修改: `effect_outbox`, `delivery_transactions`, Host Effect
+  Receipt, Worker 执行代码
+
+#### Goal
+
+持久化 Client Effect、Receipt 和 Continuation，保证崩溃窗口内的原子性
+与可恢复性。
+
+#### 验收边界
+
+1. Effect Request、Continuation 和 Scheduled Event 在同一事务提交。
+2. Receipt、Effect Terminal 和 Parent Resume Command 在同一事务提交。
+3. API 在 Receipt 提交前崩溃，重试不会生成第二个 Receipt。
+4. API 在 Resume Command 提交后崩溃，重试只返回重放结果。
+5. Stale Client Fence 产生零写入。
+6. Stale UI Revision 不执行 Action。
+7. Effect 过期后 Receipt 被拒绝。
+8. Uncertain 状态不能自动重试高风险动作。
+9. Pending 查询有有界索引。
+10. Event 与 Effect 状态可以相互审计。
+
+### CLIENT-PLATFORM-COMP-01 - Platform Control Plane Store Bundle
+
+- Status: `Review`
+- Review evidence: shared platform composition and default-off flag are
+  implemented and covered; not merged.
+- Suggested role: `ARCH / STORAGE`
+- Depends on: `CLIENT-CAP-PG-01`, `CLIENT-SESSION-PG-01`,
+  `CLIENT-EFFECT-PG-01`
+- Owned paths:
+  `packages/agent-core/src/agent_core/ports/platform_control_plane.py`,
+  `packages/agent-storage/src/agent_storage/postgres_platform_composition.py`,
+  `apps/api/src/zebra_agent_api/platform_composition.py`,
+  `apps/worker/src/zebra_agent_worker/platform_composition.py`,
+  `tests/architecture/test_platform_control_plane_boundaries.py`,
+  `tests/agent_storage/test_postgres_platform_composition.py`
+- 新增 Bundle: `AgentPlatformControlPlane(host_authorities,
+  host_connectors, frontend_capabilities, client_sessions,
+  client_control_leases, client_effects, client_effect_receipts,
+  agent_registry, orchestration, delegation, mailbox)`
+- 禁止修改: 现有 CloudControlPlane 字段语义, SQLite 默认行为, Runtime
+  Provider, Sandbox, 模型 Provider
+
+#### Goal
+
+建立统一平台级 Store Bundle，避免 API 和 Worker 根据 DSN 手工构造
+Adapter（当前 Worker Loop 直接创建 Host Connector Registry、Subagent
+Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store）。
+
+#### 验收边界
+
+1. API 和 Worker 使用同一个 Platform Bundle Contract。
+2. Store 缺失时 Cloud 启动失败。
+3. Local profile 不创建 Client PostgreSQL Store。
+4. Client Integration Feature Flag 默认关闭。
+5. 关闭时现有 AG-UI、Host Tool 和 Subagent 行为完全保持。
+6. Composition 中不出现业务 Host 名称。
+7. 所有 Store 使用同一个 deployment namespace。
+8. 不允许 Store 级 dual write。
+
+### CLIENT-MGMT-API-01 - Frontend Profile Management API
+
+- Status: `In Progress`
+- Implemented evidence: operator authentication, profile validation/lifecycle,
+  stable Problem Details and natural Host binding CAS are present.
+- Remaining acceptance: durable audit records for Bind/Deprecate/Revoke,
+  expected-revision enforcement for every mutation, and the dedicated
+  management API acceptance suite.
+- Suggested role: `CONTROL-PLANE / API`
+- Depends on: `CLIENT-PLATFORM-COMP-01`
+- Owned paths:
+  `packages/agent-control-plane/src/agent_control_plane/frontend_profiles.py`,
+  `apps/api/src/zebra_agent_api/platform_client_routes.py`,
+  `apps/api/src/zebra_agent_api/platform_operator_auth.py`,
+  `tests/api/test_frontend_profile_management_api.py`
+- 接口:
+  `POST /platform/v1/frontend-profiles/validate`,
+  `POST /platform/v1/frontend-profiles`,
+  `POST /platform/v1/frontend-profiles/{id}/versions`,
+  `POST /platform/v1/frontend-profile-bindings`,
+  `POST /platform/v1/frontend-profiles/{id}/deprecate`,
+  `POST /platform/v1/frontend-profiles/{id}/revoke`,
+  `GET /platform/v1/frontend-profiles/{id}`
+- 禁止修改: Runtime `/v1/tasks`, Worker, React SDK, HostGrant Authorizer
+
+#### Goal
+
+提供前端 Profile 的平台管理接口（发布、版本、绑定、废弃、吊销）。
+
+#### 验收边界
+
+1. Management API 使用 Platform Operator Identity。
+2. 普通 HostGrant 无权发布或绑定 Profile。
+3. 发布前必须通过 Schema、安全和 Conformance Validation。
+4. Profile Revision 发布后不可修改。
+5. Bind、Deprecate、Revoke 产生审计记录。
+6. Secret 和 Handler Code 无法进入 Profile。
+7. API 返回稳定 Problem Details。
+8. 所有变更支持 expected revision。
+
+### CLIENT-RUNTIME-API-01 - Client Session And Receipt Runtime API
+
+- Status: `Review`
+- Review evidence: one-time session secret, controller fence, lease lifecycle,
+  pending effects and guarded receipts are implemented; Cloud HTTP now keeps
+  HostGrant in `Authorization`, carries the session credential separately in
+  `X-Zebra-Client-Session`, and binds every runtime request to the verified
+  HostContext; not merged.
+- Suggested role: `CONTROL-PLANE / API`
+- Depends on: `CLIENT-PLATFORM-COMP-01`
+- Owned paths:
+  `packages/agent-control-plane/src/agent_control_plane/client_admission.py`,
+  `packages/agent-control-plane/src/agent_control_plane/client_binding.py`,
+  `packages/agent-control-plane/src/agent_control_plane/client_effects.py`,
+  `apps/api/src/zebra_agent_api/client_sessions.py`,
+  `apps/api/src/zebra_agent_api/client_effect_receipts.py`,
+  `apps/api/src/zebra_agent_api/client_runtime_routes.py`,
+  `apps/api/src/zebra_agent_api/client_grant_auth.py`,
+  `tests/api/test_client_runtime_api.py`
+- 接口:
+  `POST /v1/client-sessions`,
+  `POST /v1/client-sessions/{id}/heartbeat`,
+  `POST /v1/client-sessions/{id}/mount`,
+  `POST /v1/tasks/{task_id}/runs/{run_id}/client-bindings`,
+  `POST /v1/client-effects/{effect_id}/receipts`,
+  `GET /v1/client-effects/{effect_id}`
+- 禁止修改: Worker 执行, React Handler, Host Tool Gateway,
+  AgentDefinition, Orchestrator
+
+#### Goal
+
+提供 Client Session 和 Effect Receipt 的运行时接口。
+
+#### 验收边界
+
+1. 浏览器通过 Host BFF 访问。
+2. Client Grant 不能替代 HostGrant。
+3. Client Grant 必须绑定当前用户、Origin、Frontend Profile 和 Client
+   Session。
+4. Direct Browser 模式默认关闭。
+5. Receipt 需要 Idempotency Key。
+6. Observer Receipt 被拒绝。
+7. Stale Fence Receipt 被拒绝。
+8. Namespace 漂移产生零写入。
+9. Action Result 经过 Schema 和大小限制。
+10. API 不接收 JavaScript 函数和序列化 Handler。
+
+### CLIENT-AGUI-ADMISSION-01 - AG-UI Command Client Admission
+
+- Status: `In Progress`
+- Implemented evidence: published-profile name admission, handler rejection,
+  deep redaction and state byte bounds are attached to the durable Command.
+- Remaining acceptance: validate declared Tool contract digests and Readable
+  schemas, persist State Snapshot and Client Run Binding records, store only
+  their references on the Command, prove idempotent duplicate Runs, and add
+  `tests/api/test_agui_client_admission.py`.
+- Suggested role: `API / CONTROL-PLANE`
+- Depends on: `CLIENT-RUNTIME-API-01`
+- Owned paths:
+  `apps/api/src/zebra_agent_api/ag_ui_command.py`,
+  `packages/agent-control-plane/src/agent_control_plane/agui_client_admission.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/contracts.py`,
+  `tests/api/test_agui_client_admission.py`
+- 关键规则: `RunAgentInput.tools` 仅作为 Mounted Capability 声明；
+  Published Frontend Profile 作为配置事实源；Client Run Binding 固定最终
+  有效能力
+- 禁止修改: Worker, Harness, AG-UI Projector, Host Tool Manifest
+
+#### Goal
+
+将 AG-UI `state`、`tools`、`context` 转换为受控的 Client Run Binding 和
+State Snapshot（当前这些字段只是 Command Payload）。
+
+#### 验收边界
+
+1. 未发布 Tool 被拒绝。
+2. Tool Contract Digest 不匹配被拒绝。
+3. `tools` 为空时表示当前页面无 Action。
+4. Hook unmount 后新 Snapshot 能收窄能力。
+5. 原始 `state` 有最大字节限制。
+6. Readable 必须经过对应 Contract Schema。
+7. Sensitive 字段必须经过 Redaction。
+8. Command 只保存 Client Binding Ref 和 State Snapshot Ref。
+9. Handler Function 不能进入 Payload。
+10. 重复 Run Command 不创建第二个 Binding。
+
+### CLIENT-CONTEXT-01 - Client State Context Injection
+
+- Status: `In Progress`
+- Implemented evidence: bounded/redacted ClientState domain and context
+  rendering are covered, and runtime Client State is now budget-prioritized so
+  it cannot be silently displaced by workspace snippets.
+- Remaining acceptance: persist the snapshot produced at AG-UI admission,
+  load it from the Worker recovery composition, pass it into
+  `recover_task_execution`, and add restart coverage in
+  `tests/worker/test_client_state_recovery.py`.
+- Suggested role: `CONTEXT / RUNTIME`
+- Depends on: `CLIENT-AGUI-ADMISSION-01`
+- Owned paths:
+  `packages/agent-core/src/agent_core/domain/client_context.py`,
+  `packages/agent-context/src/agent_context/client_state.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`,
+  `tests/agent_context/test_client_state_context.py`,
+  `tests/worker/test_client_state_recovery.py`
+- 禁止修改: Model Provider, Tool Gateway, Client Effect, React SDK,
+  Memory Store
+
+#### Goal
+
+将受控前端 Readable 状态加入 Agent Context。完成该卡后形成第一个可交付
+垂直切片：前端 Hook 注入 Readable → Zebra 持久化 → Worker 恢复 → Agent
+读取页面状态。
+
+#### 验收边界
+
+1. Worker 只读取已持久化的 State Snapshot。
+2. Raw AG-UI Command Payload 不直接进入 Prompt。
+3. Context 中包含 Profile Digest、UI Revision 和 State Digest。
+4. Secret、Cookie、Token 和未声明字段不可进入 Context。
+5. Context 大小超限时按 Contract 截断或拒绝。
+6. Worker 重启后恢复相同 State Snapshot。
+7. Client 更新状态后只能影响后续安全边界。
+8. Task 仍可在没有 Client Binding 时运行。
+
+### CLIENT-DEFERRED-TOOL-CON-01 - Deferred Tool Execution Contracts
+
+- Status: `Review`
+- Review evidence: deferred disposition and durable scheduled state are
+  implemented without fake tool results; not merged.
+- Suggested role: `CORE / HARNESS`
+- Depends on: `CLIENT-EFFECT-CON-01`
+- Owned paths:
+  `packages/agent-core/src/agent_core/ports/tool_gateway.py`,
+  `packages/agent-core/src/agent_core/harness/tool_execution.py`,
+  `packages/agent-core/src/agent_core/harness/orchestrator.py`,
+  `packages/agent-core/src/agent_core/harness/models.py`,
+  `tests/agent_core/test_deferred_tool_execution.py`
+- 新增抽象: `ImmediateToolExecution`, `DeferredToolExecution`,
+  `DeferredToolContinuation`
+- 禁止修改: Worker, PostgreSQL, API, Client Domain Contract, Host Effect
+
+#### Goal
+
+让 Harness 支持“工具已调度、结果稍后返回”的执行语义。
+
+#### 验收边界
+
+1. Deferred Tool 不产生 `TOOL_EXECUTION_COMPLETED`。
+2. Deferred Tool 不向模型注入临时假结果。
+3. Harness 返回明确 `waiting_external_tool` disposition。
+4. Tool Call ID、Model Call ID 和参数 Digest 被固定。
+5. Immediate Tool 行为完全保持。
+6. Approval 和 Clarification 行为完全保持。
+7. Deferred Tool 不能在一次 Attempt 中重复调度。
+8. 恢复时只能接受匹配的 Tool Receipt。
+
+### CLIENT-WORKER-GW-01 - Worker Client Tool Gateway
+
+- Status: `Review`
+- Review evidence: Worker client routing uses published contracts, an active
+  lease and Task-to-Segment authority; not merged.
+- Suggested role: `RUNTIME`
+- Depends on: `CLIENT-CONTEXT-01`, `CLIENT-DEFERRED-TOOL-CON-01`,
+  `CLIENT-EFFECT-PG-01`
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/client_tool_gateway.py`,
+  `apps/worker/src/zebra_agent_worker/client_effect_runtime.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `tests/worker/test_client_tool_gateway.py`,
+  `tests/worker/test_client_effect_schedule.py`
+- 执行规则: Client Tool 暴露给模型前必须满足 Agent Capability ∩ Task
+  Binding ∩ Client Run Binding ∩ Published Profile ∩ Mounted Snapshot ∩
+  Client Grant ∩ Zebra Client Policy
+- 禁止修改: HostToolGateway 内部行为, Local Tool Handler, React SDK,
+  API, Orchestrator Scheduler（现有 Orchestrator
+  `system/orchestrator@1` 的 `orchestration.*` 限制继续保留）
+
+#### Goal
+
+在 Worker 中增加第三个执行通道（LocalToolGateway / HostToolGateway /
+ClientToolGateway）。
+
+#### 验收边界
+
+1. 无 Active Client Controller 时，不暴露 Client Action。
+2. Root Agent 或 Presenter Agent 才能获得 UI Control。
+3. Researcher、Tester、Reviewer 默认无 UI Control。
+4. Orchestrator 只能调用 orchestration 工具。
+5. Worker 不直接连接浏览器。
+6. Worker 不执行 React Handler。
+7. Client Tool 调用只负责 Schedule Effect。
+8. Schedule 成功后 Session 进入 `waiting_client_effect`。
+9. Worker Lease 被释放。
+10. Client Effect Request 固定 Fence、Binding 和 UI Revision。
+
+### CLIENT-EFFECT-RESUME-01 - Client Effect Receipt Resume
+
+- Status: `Review`
+- Review evidence: atomic receipt/resume restores the original parent Session
+  and tool-call identity; not merged.
+- Suggested role: `RUNTIME / STORAGE`
+- Depends on: `CLIENT-WORKER-GW-01`
+- Owned paths:
+  `apps/worker/src/zebra_agent_worker/client_effect_continuation.py`,
+  `apps/worker/src/zebra_agent_worker/client_effect_resume.py`,
+  `apps/worker/src/zebra_agent_worker/command_consumer.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `packages/agent-storage/src/agent_storage/postgres/client_effects.py`,
+  `tests/worker/test_client_effect_resume.py`,
+  `tests/integration/test_client_effect_suspend_resume.py`
+- 禁止修改: Client SDK, Host Effect Reconciliation, Subagent Wakeup,
+  Task Admission, AG-UI 投影
+
+#### Goal
+
+Receipt 到达后恢复 Agent，并将真实 Client Result 注入原 Tool Call。
+
+#### 验收边界
+
+1. Receipt 终态和 Resume Command 原子提交。
+2. Parent Worker 等待期间不持有 Lease。
+3. Resume 后恢复原 Tool Call ID。
+4. Success Receipt 产生一次 Tool Completed。
+5. Failure Receipt 产生一次 Tool Failed。
+6. Stale、Unavailable、Declined 结果可返回模型继续规划。
+7. Receipt 重放不重复调用模型。
+8. Worker 崩溃后新 Worker 可以恢复。
+9. Redis 丢失后仍能从 PostgreSQL 恢复。
+10. Unknown 或 Uncertain 结果不自动重复执行 Action。
+
+### CLIENT-AGUI-PROJECTION-01 - AG-UI Client Effect And State Projection
+
+- Status: `In Progress` — pure Client Effect projection, pending replay and
+  exact-cursor HTTP SSE coverage are implemented on the unmerged review branch.
+- Remaining acceptance: add the declared Client State projection module and
+  cover State Snapshot/Delta replay; Effect evidence alone does not complete
+  this combined card.
+- Suggested role: `INTEGRATIONS`
+- Depends on: `CLIENT-EFFECT-RESUME-01`
+- Owned paths:
+  `packages/agent-integrations/src/agent_integrations/ag_ui/client_effect_projection.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/client_state_projection.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/projection.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/task_stream.py`,
+  `apps/api/src/zebra_agent_api/ag_ui_stream.py`,
+  `tests/agent_integrations/test_client_effect_projection.py`,
+  `tests/api/test_client_effect_agui_stream.py`
+- 禁止修改: Effect 调度, Receipt 决策, 权限, Hook Handler, Host UI 业务
+  状态
+
+#### Goal
+
+把 Client Effect 和 Client 状态投影到前端（现有 AG-UI Projector 已支持
+State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影边界
+内扩展）。
+
+#### 验收边界
+
+1. Projector 仍保持纯函数。
+2. Client Effect Request 包含 Effect ID、Action、参数、Digest 和
+   Revision。
+3. 不向前端发送 Fence 原值。
+4. 不向前端发送 HostGrant。
+5. `/zebra/clientEffects` 可以重放。
+6. AG-UI Cursor 精确绑定 Event。
+7. Client SDK 只执行 `execution_location=client` 的请求。
+8. 普通 Host Tool 和 Local Tool 只作为 UI 展示，不触发 Handler。
+9. 断线重连后 Pending Effect 能重新出现。
+10. Terminal Effect 不会再次执行。
+
+### CLIENT-SDK-CORE-01 - TypeScript Client Core SDK
+
+- Status: `Review`
+- Review evidence: typed browser runtime, replay/retry, lease lifecycle and
+  digest/UI guards and per-tab refresh recovery pass 15 Node/React tests and
+  `tsc --noEmit`; not merged.
+- Suggested role: `SDK`
+- Depends on: `CLIENT-CAP-CON-01`, `CLIENT-SESSION-CON-01`,
+  `CLIENT-EFFECT-CON-01`
+- Owned paths: `sdks/typescript/package.json`,
+  `sdks/typescript/pnpm-workspace.yaml`,
+  `sdks/typescript/packages/client-core/**`,
+  `sdks/typescript/packages/contracts/**`,
+  `sdks/typescript/packages/client-core/tests/**`（该目录不加入 Python
+  `uv` workspace）
+- 核心能力: Profile Digest, Mounted Registry, Client Session,
+  Controller Lease, SSE Replay, Pending Effect Queue, Handler Dispatch,
+  Receipt Submission, Idempotency Cache, UI Revision, Heartbeat
+- 禁止修改: Python Production Code, Host 业务前端, CopilotKit, React
+
+#### Goal
+
+建立与 React 无关的 TypeScript Client Runtime。
+
+#### 验收边界
+
+1. SDK 不存储 HostGrant。
+2. SDK 不接触 Zebra 数据库。
+3. Handler 只通过注册表查找。
+4. 未注册 Action 返回 `action_not_mounted`。
+5. Effect ID 本地去重。
+6. 同一 Effect 最多执行一次 Handler。
+7. Receipt 发送失败后可恢复重传。
+8. SSE 重连支持 Last Event ID。
+9. Fence 过期时停止执行。
+10. Profile Digest 不匹配时停止 Mount。
+
+### CLIENT-REACT-HOOKS-01 - React Standard Hooks
+
+- Status: `Review`
+- Review evidence: Zod parameter/result validation, coalesced mount declarations,
+  Strict-Mode lifecycle and controller release are implemented; not merged.
+- Suggested role: `SDK`
+- Depends on: `CLIENT-SDK-CORE-01`, `CLIENT-AGUI-PROJECTION-01`
+- Owned paths: `sdks/typescript/packages/react/**`,
+  `sdks/typescript/packages/react/tests/**`,
+  `sdks/typescript/examples/basic-react/**`
+- API: `<ZebraAgentProvider />`, `useZebraReadable()`,
+  `useZebraAction()`, `useZebraClientStatus()`, `useZebraTask()`,
+  `useZebraAgentState()`
+- 禁止修改: Python 代码, Host Backend API, 业务数据库, CopilotKit
+  Adapter, Generative UI Component Registry
+
+#### Goal
+
+实现业务前端使用的标准 Hook。
+
+#### 验收边界
+
+1. Hook mount 后注册能力。
+2. Hook unmount 后取消能力。
+3. React Strict Mode 下不会重复注册。
+4. 多组件注册同名 Action 时冲突。
+5. Readable 更新产生受控 State Revision。
+6. Action 参数经过 Zod 校验。
+7. Action Result 经过 Zod 校验。
+8. Handler 异常形成安全 Receipt。
+9. Route 切换后的 Mounted Snapshot 正确收窄。
+10. Provider 卸载时释放 Client Lease。
+
+### CLIENT-REACT-HITL-01 - React HITL Hooks
+
+- Status: `In Progress` — controlled hooks exist; durable interrupt subscription,
+  observer/fence enforcement and refresh replay remain unproven in React.
+- Remaining evidence: AG-UI interrupt subscription, refresh replay and
+  controller enforcement in a React runtime.
+- Suggested role: `SDK`
+- Depends on: `CLIENT-REACT-HOOKS-01`
+- Owned paths: `sdks/typescript/packages/react/src/hitl/**`,
+  `sdks/typescript/packages/react/tests/hitl/**`,
+  `tests/integration/test_react_hitl_resume.py`
+- API: `useZebraApproval()`, `useZebraClarification()`
+- 禁止修改: Approval Domain, Clarification Domain, Worker Approval
+  Semantics, Host Business Approval
+
+#### Goal
+
+把 Zebra 现有 Approval 和 Clarification Interrupt 映射为 React UI。
+
+#### 验收边界
+
+1. Approval Request 可以自定义渲染。
+2. Approve、Reject 和 Clarification Response 都带 Idempotency Key。
+3. Observer 无法回复。
+4. 旧 Fence 无法回复。
+5. 重复点击只产生一个决定。
+6. 页面刷新后 Interrupt 可以重放。
+7. 回复后原 Task 恢复。
+8. 用户拒绝不会被模型覆盖。
+
+### CLIENT-CONFORMANCE-01 - Multi-Frontend Conformance Suite
+
+- Status: `In Progress` — the shared fake-frontend suite exists; real-process
+  API/Worker restart, Redis-loss and browser reconnect drills remain.
+- Remaining evidence: real-process restart, Redis-loss and browser reconnect
+  drills; focused fake-frontend coverage is not that proof.
+- Suggested role: `QA / ARCH`
+- Depends on: `CLIENT-REACT-HITL-01`, `CLIENT-EFFECT-RESUME-01`,
+  `CLIENT-MGMT-API-01`
+- Owned paths: `tests/conformance/client_v1/**`,
+  `sdks/typescript/conformance/**`,
+  `tests/architecture/test_client_zero_host_branches.py`,
+  `tests/integration/test_client_full_chain.py`
+- 需要两个业务词汇完全不同的测试前端（`fake-frontend-a` /
+  `fake-frontend-b`，例如 `catalog.ui.item.open` 与
+  `workflow.ui.note.edit`）
+- 禁止修改: agent-core 生产代码中的 Host 特例, Worker 中的业务名称分支,
+  测试之外的 fake frontend 名称
+
+#### Goal
+
+建立前端接入一致性测试套件，证明 Core 与 Worker 无业务名称分支。
+
+#### 验收边界
+
+1. 两个 Frontend 使用同一套 Conformance Suite。
+2. 新前端只增加 Profile、Hook 和 Fixture。
+3. `agent-core` 不增加 Host 名称判断。
+4. Worker 不增加 Host 名称判断。
+5. Profile Growth 不影响旧 Run。
+6. Hook Unmount 返回 unavailable。
+7. Stale UI Revision 返回 stale。
+8. 两个 Tab 只有一个 Controller。
+9. Offline 后 Task 进入等待态。
+10. Reconnect 后 Effect 只执行一次。
+11. API 重启后 Receipt 可恢复。
+12. Worker 重启后 Continuation 可恢复。
+13. Redis 清空后 PostgreSQL Replay 正常。
+14. Client Action 无法产生正式业务数据库写入。
+15. Subagent 无法控制 UI。
+
+### CLIENT-TRENCH-PILOT-01 - Trench Client Pilot
+
+- Status: `Blocked` — Zebra-side profile fixture delivered (tests/fixtures/trench_frontend_profile.json); the pilot itself needs the Trench repository and BFF
+- Suggested role: `PM / QA / TRENCH`
+- Depends on: `CLIENT-CONFORMANCE-01`
+- V1 Readables: `trench.ui.route`, `trench.ui.selected-event`,
+  `trench.ui.selected-entity`, `trench.ui.timeline-range`,
+  `trench.ui.active-filters`, `trench.ui.open-panels`
+- V1 Actions: `trench.ui.event.open`, `trench.ui.entity.select`,
+  `trench.ui.timeline.open`, `trench.ui.timeline.range.set`,
+  `trench.ui.evidence-panel.open`, `trench.ui.filter.apply`,
+  `trench.ui.report-draft.fill`, `trench.ui.report-preview.open`
+- 禁止接入: 正式报告发布, 删除事件, 业务审批, 权限修改, 数据库更新,
+  外部通知
+- 修改范围: Trench 前端 Hook, Trench BFF Client Grant 和 Zebra Proxy,
+  Zebra Frontend Profile Fixture, Trench E2E Tests
+- 禁止修改: Zebra agent-core 业务逻辑, Zebra Worker Host 分支, Trench
+  数据库访问方式, 现有 Host Backend Tool 语义
+
+#### Goal
+
+在 Trench 完成第一个真实业务全链路试点。完整验收场景：用户打开某个事件
+并输入“分析当前事件的影响，并打开相关实体的时间线”，必须形成 Readable
+提供当前 eventId → Agent 读取 Client State Snapshot → Agent 调用 Trench
+Host Backend Tool 获取事件 → Research Child 分析证据 → Root Agent 选择
+entityId → Root Agent 调用 `trench.ui.timeline.open` → Client Effect 写入
+PostgreSQL → Parent Session 进入 `waiting_client_effect` → 浏览器 Hook
+执行动作 → 浏览器提交 succeeded Receipt → Parent Session 恢复 → Agent
+输出最终分析。浏览器离线时：Effect 保持 Pending、Task 保持
+`waiting_client_effect`、Worker Lease 已释放；恢复后 Replay 且 Hook
+Handler 只执行一次。
+
+### CLIENT-PROD-GATE-01 - Client Production Gate
+
+- Status: `Locked` — evidence collection requires production infrastructure (drills, alerts, backup-restore)
+- Suggested role: `SRE / SECURITY / QA`
+- Depends on: `CLIENT-TRENCH-PILOT-01`
+- 只允许: 测试, 运行手册, 告警, Dashboard, Feature Flag, 发布记录；
+  发现实现缺口时另建最小修复卡
+
+#### Goal
+
+完成生产开关前的最终验证。
+
+#### 验收边界
+
+1. 跨 namespace 调用零写入。
+2. Profile Revoked 后新 Action fail closed。
+3. Client Grant 过期后停止执行。
+4. Stale Tab Receipt 被拒绝。
+5. 重复 Receipt 不重复 Resume。
+6. Worker 崩溃后能够恢复。
+7. API 崩溃后能够恢复。
+8. Redis 故障不影响 durable execution。
+9. PostgreSQL Backup Restore 后 Pending Effect 可恢复。
+10. Action Result 无 Secret 泄漏。
+11. Readable State 无 Cookie 和 Token。
+12. 浏览器无法注册任意 JavaScript。
+13. Agent 无法通过 StateDelta 绕过 Action Handler。
+14. 正式业务写入仍经过 Host Effect。
+15. Subagent 和 Orchestrator 无越权 UI Control。
+16. Audit 能关联 Task、Run、Client、Action、Effect 和 Receipt。
+17. 单 Host 灰度关闭不会影响其他 Host。
+18. Feature Flag 关闭后原有 AG-UI 行为保持。
 
 ## Zebra Embedded And Trench Architecture Board
 

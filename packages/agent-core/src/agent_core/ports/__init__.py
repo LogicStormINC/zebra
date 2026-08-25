@@ -35,6 +35,17 @@ from agent_core.ports.artifact_payload_read import (
 )
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.artifact_store import ArtifactStorePort
+from agent_core.ports.client_capability_registry import ClientCapabilityRegistryPort
+from agent_core.ports.client_control_lease import ClientControlLeasePort
+from agent_core.ports.client_effect_dispatch import (
+    ClientEffectDispatchPort,
+    ClientEffectScheduleOutcome,
+)
+from agent_core.ports.client_effect_receipts import (
+    ClientEffectReceiptPort,
+    ClientReceiptAcceptance,
+)
+from agent_core.ports.client_session_registry import ClientSessionRegistryPort
 from agent_core.ports.clock import ClockPort
 from agent_core.ports.cloud_artifact_payload_store import CloudArtifactPayloadStorePort
 from agent_core.ports.cloud_control_plane import CloudControlPlane
@@ -97,6 +108,7 @@ from agent_core.ports.memory_store import MemoryReadPort, MemoryStorePort
 from agent_core.ports.model_call_store import ModelCallStorePort
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.model_tool_projection import ModelToolProjectionPort
+from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_core.ports.provider_continuation import ProviderContinuationPort
@@ -293,4 +305,12 @@ __all__ = [
     "WorkerMutationAuthority",
     "WorkerProjectionCommitResult",
     "WorkerProjectionTransactionPort",
+    "ClientCapabilityRegistryPort",
+    "ClientControlLeasePort",
+    "ClientEffectDispatchPort",
+    "ClientEffectScheduleOutcome",
+    "ClientEffectReceiptPort",
+    "ClientReceiptAcceptance",
+    "ClientSessionRegistryPort",
+    "AgentPlatformControlPlane",
 ]

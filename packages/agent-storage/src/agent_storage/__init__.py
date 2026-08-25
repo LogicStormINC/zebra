@@ -142,6 +142,9 @@ from agent_storage.postgres_model_tool_compat import (
     PostgresModelCallProjectionAdapter,
     PostgresToolRunProjectionAdapter,
 )
+from agent_storage.postgres_platform_composition import (
+    postgres_agent_platform_control_plane,
+)
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.provider_continuations import SQLiteProviderContinuationStore
 from agent_storage.runtime_composition import (
@@ -301,4 +304,5 @@ __all__ = [
     "store_text_attachments",
     "store_initial_text_attachments",
     "new_idempotency_record",
+    "postgres_agent_platform_control_plane",
 ]

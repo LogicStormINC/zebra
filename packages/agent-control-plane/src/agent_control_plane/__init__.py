@@ -13,5 +13,48 @@ guard from day one.
 """
 
 from agent_control_plane.admission import AgentAction, route_action
+from agent_control_plane.agui_client_admission import (
+    AgUiClientAdmission,
+    AgUiClientAdmissionError,
+    admit_agui_client_payload,
+    mounted_snapshot_from_admission,
+    redact_client_state,
+)
+from agent_control_plane.client_admission import (
+    ClientAdmission,
+    ClientAdmissionError,
+    ClientAdmissionService,
+    ClientBindingService,
+)
+from agent_control_plane.client_effects import (
+    ClientEffectReceiptService,
+    ClientEffectServiceError,
+    build_client_effect_continuation,
+    build_client_effect_request,
+)
+from agent_control_plane.frontend_profiles import (
+    FrontendProfileService,
+    FrontendProfileServiceError,
+    ProfilePublication,
+)
 
-__all__ = ["AgentAction", "route_action"]
+__all__ = [
+    "AgentAction",
+    "route_action",
+    "AgUiClientAdmission",
+    "AgUiClientAdmissionError",
+    "admit_agui_client_payload",
+    "mounted_snapshot_from_admission",
+    "redact_client_state",
+    "ClientAdmission",
+    "ClientAdmissionError",
+    "ClientAdmissionService",
+    "ClientBindingService",
+    "ClientEffectReceiptService",
+    "ClientEffectServiceError",
+    "build_client_effect_continuation",
+    "build_client_effect_request",
+    "FrontendProfileService",
+    "FrontendProfileServiceError",
+    "ProfilePublication",
+]

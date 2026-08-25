@@ -35,6 +35,7 @@ import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
 if TYPE_CHECKING:
     from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
+from zebra_agent_worker.client_effect_resume import recover_client_effect_wakeup
 from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
 from zebra_agent_worker.control import SessionControlService
@@ -95,6 +96,7 @@ class SessionExecutionService:
         egress_registry: HostConnectorRegistryPort | None = None,
         delegation_store: object | None = None,
         frozen_manifest_loader: Callable[[str], object] | None = None,
+        client_runtime: Callable[[SessionId], object] | None = None,
     ) -> None:
         validate_authority_wiring(
             execution_authority_resolver,
@@ -114,6 +116,7 @@ class SessionExecutionService:
             stores,
         )
         self._database_path = database_path
+        self._client_runtime = client_runtime
         self._claim_service = claim_service
         self._resume_service = resume_service
         self._settings = settings or load_settings()
@@ -137,22 +140,14 @@ class SessionExecutionService:
             active_stores.tool_runs, self._artifact_payload_store
         )
         self._recovery_service = SessionRecoveryService(
-            self._event_store,
-            self._projection_store,
-            self._workspace_store,
+            self._event_store, self._projection_store, self._workspace_store,
             worker_projection_transaction=worker_projection_transaction,
             deployment_namespace=deployment_namespace,
-            model_call_indexer=(
-                self._model_call_indexer if worker_projection_transaction is not None else None
-            ),
-            tool_run_indexer=(
-                self._tool_run_indexer if worker_projection_transaction is not None else None
-            ),
+            model_call_indexer=self._model_call_indexer if worker_projection_transaction else None,
+            tool_run_indexer=self._tool_run_indexer if worker_projection_transaction else None,
         )
         self._control_service = SessionControlService(
-            database_path,
-            settings=self._settings,
-            stores=active_stores,
+            database_path, settings=self._settings, stores=active_stores,
         )
         self._projection_recorder_factory = WorkerProjectionRecorderFactory(
             stores=active_stores,
@@ -210,7 +205,6 @@ class SessionExecutionService:
                 started_at=started_at,
                 ownership_check=heartbeat.require_owned,
             )
-
     def _execute_claimed_session(
         self,
         claimed: ClaimedSession,
@@ -280,6 +274,7 @@ class SessionExecutionService:
                 load_bound_binding,
                 select_attempt_authority,
             )
+
             # Load the frozen binding ONCE: it drives both this Attempt's
             # authority and the durable-delegation digest the tool gateway
             # checks against binding drift.
@@ -340,9 +335,12 @@ class SessionExecutionService:
                 durable_delegation=self._settings.deployment == "cloud",
                 parent_binding_digest=(task_binding.binding_digest if task_binding else None),
                 parent_binding=task_binding,
-                manifest_digest=(task_binding.host_capability.manifest_digest
-                                 if task_binding else None),
+                manifest_digest=(
+                    task_binding.host_capability.manifest_digest if task_binding else None
+                ),
                 frozen_manifest_loader=self._frozen_manifest_loader,
+                client_gateway=(self._client_runtime(session_id)  # type: ignore[arg-type]
+                                if self._client_runtime else None),
             )
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,
@@ -461,6 +459,7 @@ class SessionExecutionService:
             tool_call_resolver=tool_gateway.resolve_model_tool_calls,
             event_sink=persist_event,
         )
+        client_wakeup = recover_client_effect_wakeup(session_events)
         try:
             attempt_result = run_continuation(
                 orchestrator,
@@ -468,6 +467,7 @@ class SessionExecutionService:
                 continuation=continuation,
                 clarification=clarification,
                 child_wakeup=child_wakeup,
+                client_effect=client_wakeup,
             )
         except Exception as exc:
             attempt_result = exception_attempt_result(

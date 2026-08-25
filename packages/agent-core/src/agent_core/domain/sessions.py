@@ -14,6 +14,7 @@ class SessionStatus(StrEnum):
     RUNNING = "running"
     WAITING_APPROVAL = "waiting_approval"
     WAITING_INPUT = "waiting_input"
+    WAITING_CLIENT_EFFECT = "waiting_client_effect"
     SUSPENDED = "suspended"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -79,6 +80,7 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     SessionStatus.RUNNING: {
         SessionStatus.WAITING_APPROVAL,
         SessionStatus.WAITING_INPUT,
+        SessionStatus.WAITING_CLIENT_EFFECT,
         SessionStatus.SUSPENDED,
         SessionStatus.COMPLETED,
         SessionStatus.FAILED,
@@ -90,6 +92,11 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
         SessionStatus.CANCELLED,
     },
     SessionStatus.WAITING_INPUT: {
+        SessionStatus.READY,
+        SessionStatus.FAILED,
+        SessionStatus.CANCELLED,
+    },
+    SessionStatus.WAITING_CLIENT_EFFECT: {
         SessionStatus.READY,
         SessionStatus.FAILED,
         SessionStatus.CANCELLED,

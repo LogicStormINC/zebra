@@ -110,6 +110,28 @@ def _finalize_execution(
             },
         )
         return recorder.events
+    if (
+        attempt_result.outcome is HarnessAttemptOutcome.WAITING_EXTERNAL_TOOL
+        and attempt_result.metadata.get("stop_reason") == "waiting_client_effect"
+    ):
+        effect_ids = attempt_result.metadata.get("client_effect_ids")
+        recorder.append(
+            EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
+            EventActor.HARNESS,
+            {
+                "reason": "waiting_client_effect",
+                "client_effect_ids": (
+                    effect_ids if isinstance(effect_ids, list) else []
+                ),
+                "metadata": {
+                    "stop_reason": "waiting_client_effect",
+                    "assistant_message": attempt_result.metadata.get(
+                        "assistant_message"
+                    ),
+                },
+            },
+        )
+        return recorder.events
     if attempt_result.outcome not in {
         HarnessAttemptOutcome.SUSPENDED,
         HarnessAttemptOutcome.WAITING_APPROVAL,

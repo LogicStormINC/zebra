@@ -1,0 +1,28 @@
+{
+  "frontend_app_id": "catalog-web",
+  "revision": 1,
+  "readables": [
+    {
+      "name": "catalog.ui.route"
+    }
+  ],
+  "actions": [
+    {
+      "name": "catalog.ui.item.open",
+      "risk": "presentation",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "itemId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "published_at": "2026-08-25T00:00:00Z"
+}

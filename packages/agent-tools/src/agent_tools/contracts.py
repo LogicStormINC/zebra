@@ -62,8 +62,12 @@ class ToolContract:
             raise ValueError(f"tool contract scopes must contain at most {MAX_TOOL_SCOPES} values")
         if len(set(normalized_scopes)) != len(normalized_scopes):
             raise ValueError("tool contract scopes must not contain duplicates")
-        if self.execution_location is ToolExecutionLocation.HOST and not normalized_scopes:
-            raise ValueError("Host tool contracts require at least one scope")
+        if (
+            self.execution_location
+            in {ToolExecutionLocation.HOST, ToolExecutionLocation.CLIENT}
+            and not normalized_scopes
+        ):
+            raise ValueError("Host and client tool contracts require at least one scope")
         object.__setattr__(self, "scopes", normalized_scopes)
         if isinstance(self.timeout_seconds, bool) or not (
             0 < self.timeout_seconds <= MAX_TOOL_TIMEOUT_SECONDS

@@ -122,6 +122,7 @@ def _next_status_for_event(event: SessionEvent) -> SessionStatus | None:
         EventType.CLARIFICATION_REQUESTED: SessionStatus.WAITING_INPUT,
         EventType.CLARIFICATION_RESPONDED: SessionStatus.READY,
         EventType.SESSION_SUSPENDED: SessionStatus.SUSPENDED,
+        EventType.SESSION_WAITING_FOR_CLIENT_EFFECT: SessionStatus.WAITING_CLIENT_EFFECT,
         EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED: SessionStatus.SUSPENDED,
         EventType.SESSION_RESUMED: SessionStatus.READY,
         EventType.SESSION_COMPLETED: SessionStatus.COMPLETED,

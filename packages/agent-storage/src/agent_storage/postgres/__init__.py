@@ -15,6 +15,19 @@ from agent_storage.postgres.agent_tasks import (
 )
 from agent_storage.postgres.artifact_payloads import PostgresCloudArtifactPayloadStore
 from agent_storage.postgres.artifact_reads import PostgresSessionArtifactReadStore
+from agent_storage.postgres.client_capabilities import (
+    ClientCapabilityCasError,
+    ClientCapabilityConflictError,
+    PostgresClientCapabilityRegistry,
+)
+from agent_storage.postgres.client_effects import (
+    PostgresClientEffectDispatch,
+    PostgresClientEffectReceipts,
+)
+from agent_storage.postgres.client_sessions import (
+    PostgresClientControlLeaseStore,
+    PostgresClientSessionRegistry,
+)
 from agent_storage.postgres.context_authority import PostgresContextLifecycleConflictError
 from agent_storage.postgres.context_lifecycle import (
     PostgresContextLifecycleStore,
@@ -207,6 +220,13 @@ __all__ = [
     "attach_segment_in_transaction",
     "attach_segment_for_worker_in_transaction",
     "bootstrap_control_plane_epoch",
+    "ClientCapabilityCasError",
+    "ClientCapabilityConflictError",
+    "PostgresClientCapabilityRegistry",
+    "PostgresClientEffectDispatch",
+    "PostgresClientEffectReceipts",
+    "PostgresClientControlLeaseStore",
+    "PostgresClientSessionRegistry",
     "read_control_plane_epoch",
     "rebuild_task_in_transaction",
     "rotate_control_plane_epoch",

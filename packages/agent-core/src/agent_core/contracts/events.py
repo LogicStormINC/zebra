@@ -9,6 +9,11 @@ from pydantic import (
     model_validator,
 )
 
+from agent_core.contracts.client_events import (
+    ClientEffectReceiptAcceptedPayload,
+    ClientEffectScheduledPayload,
+    SessionWaitingForClientEffectPayload,
+)
 from agent_core.contracts.context_events import (
     ContextCapsuleCreatedPayload as ContextCapsuleCreatedPayload,
 )
@@ -418,6 +423,9 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.EXECUTION_AUTHORITY_REVALIDATED: ExecutionAuthorityRevalidatedPayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
     EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
+    EventType.CLIENT_EFFECT_SCHEDULED: ClientEffectScheduledPayload,
+    EventType.CLIENT_EFFECT_RECEIPT_ACCEPTED: ClientEffectReceiptAcceptedPayload,
+    EventType.SESSION_WAITING_FOR_CLIENT_EFFECT: SessionWaitingForClientEffectPayload,
 }
 
 

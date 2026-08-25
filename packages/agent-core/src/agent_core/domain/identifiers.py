@@ -15,6 +15,9 @@ AgentDefinitionId = NewType("AgentDefinitionId", UUID)
 AgentDefinitionVersionId = NewType("AgentDefinitionVersionId", UUID)
 AgentVersionId = AgentDefinitionVersionId
 AgentReleaseId = NewType("AgentReleaseId", UUID)
+ClientSessionId = NewType("ClientSessionId", UUID)
+ClientRunBindingId = NewType("ClientRunBindingId", UUID)
+ClientEffectId = NewType("ClientEffectId", UUID)
 
 
 def new_session_id() -> SessionId:
@@ -67,3 +70,15 @@ def new_agent_definition_version_id() -> AgentDefinitionVersionId:
 
 def new_agent_release_id() -> AgentReleaseId:
     return AgentReleaseId(uuid4())
+
+
+def new_client_session_id() -> ClientSessionId:
+    return ClientSessionId(uuid4())
+
+
+def new_client_run_binding_id() -> ClientRunBindingId:
+    return ClientRunBindingId(uuid4())
+
+
+def new_client_effect_id() -> ClientEffectId:
+    return ClientEffectId(uuid4())

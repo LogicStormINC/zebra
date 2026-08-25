@@ -65,6 +65,7 @@ class HarnessStoppingPolicy:
             HarnessAttemptOutcome.SUSPENDED,
             HarnessAttemptOutcome.WAITING_APPROVAL,
             HarnessAttemptOutcome.WAITING_INPUT,
+            HarnessAttemptOutcome.WAITING_EXTERNAL_TOOL,
         }:
             return False
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
@@ -91,6 +92,8 @@ class HarnessStoppingPolicy:
             return HarnessStopReason.APPROVAL_REQUIRED
         if attempt_result.outcome is HarnessAttemptOutcome.WAITING_INPUT:
             return HarnessStopReason.CLARIFICATION_REQUIRED
+        if attempt_result.outcome is HarnessAttemptOutcome.WAITING_EXTERNAL_TOOL:
+            return HarnessStopReason.CLIENT_EFFECT_REQUIRED
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return HarnessStopReason.COMPLETED
         if attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:

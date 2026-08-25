@@ -12,11 +12,12 @@ from agent_core.domain.session_handoff import HandoffActorKind
 from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
+from zebra_agent_api.client_runtime_routes import handle_client_runtime_route
+from zebra_agent_api.memory_routes import handle_memory_route
+from zebra_agent_api.platform_client_routes import handle_platform_client_route
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.task_routes import handle_task_route
 from zebra_agent_api.tenant_guard import (
-    tenant_forbidden_response,
-    tenant_memory_denied,
     tenant_scope_response,
 )
 
@@ -51,7 +52,7 @@ class RouteAdapter:
             return agui_response
         if method == "GET" and request.path == "/sessions":
             return self.app.list_sessions(
-                request.query or {}, host_context=request.host_context
+                request.query or {}, host_context=request.host_context,
             )
         if method == "POST" and request.path == "/workspaces":
             return self.app.create_workspace(request.body or {})
@@ -61,8 +62,7 @@ class RouteAdapter:
             return self.app.get_workspace(request.path.removeprefix("/workspaces/"))
         if method == "POST" and request.path == "/sessions":
             return self.app.create_session(
-                request.body or {},
-                idempotency_key=_idempotency_key(request),
+                request.body or {}, idempotency_key=_idempotency_key(request),
                 host_context=request.host_context,
             )
         task_response = handle_task_route(self.app, request)
@@ -71,6 +71,10 @@ class RouteAdapter:
         agent_definition_response = handle_agent_definition_route(self.app, request)
         if agent_definition_response is not None:
             return agent_definition_response
+        for dispatcher in (handle_platform_client_route, handle_client_runtime_route):
+            client_response = dispatcher(self.app, request)
+            if client_response is not None:
+                return client_response
         if request.path.startswith("/sessions/") and _is_hidden_internal_segment(
             self.app, request.path
         ):
@@ -87,54 +91,9 @@ class RouteAdapter:
             parts = _approval_path_parts(request.path)
             if len(parts) == 1:
                 return self.app.get_approval(parts[0])
-        if method == "GET" and request.path.startswith("/users/"):
-            parts = _users_path_parts(request.path)
-            if parts and tenant_memory_denied(request.host_context, parts[0]):
-                return tenant_forbidden_response(parts[0])
-            if len(parts) == 2 and parts[1] == "memory":
-                return self.app.get_user_memory(parts[0])
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
-                return self.app.get_user_memory_queue(parts[0])
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue-summary":
-                return self.app.get_user_memory_queue_summary(parts[0])
-        if method == "POST" and request.path.startswith("/users/"):
-            parts = _users_path_parts(request.path)
-            if parts and tenant_memory_denied(request.host_context, parts[0]):
-                return tenant_forbidden_response(parts[0])
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
-                return self.app.preview_user_memory_queue(parts[0], request.body or {})
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":
-                return self.app.review_user_memory_queue(parts[0], request.body or {})
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "bulk-review":
-                return self.app.bulk_review_user_memory(parts[0], request.body or {})
-            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "confirm":
-                return self.app.confirm_user_memory(parts[0], parts[2], request.body or {})
-            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "expire":
-                return self.app.expire_user_memory(parts[0], parts[2], request.body or {})
-        if method == "GET" and request.path.startswith("/tenants/"):
-            parts = _tenants_path_parts(request.path)
-            if parts and tenant_memory_denied(request.host_context, parts[0]):
-                return tenant_forbidden_response(parts[0])
-            if len(parts) == 2 and parts[1] == "memory":
-                return self.app.get_tenant_memory(parts[0])
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
-                return self.app.get_tenant_memory_queue(parts[0])
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue-summary":
-                return self.app.get_tenant_memory_queue_summary(parts[0])
-        if method == "POST" and request.path.startswith("/tenants/"):
-            parts = _tenants_path_parts(request.path)
-            if parts and tenant_memory_denied(request.host_context, parts[0]):
-                return tenant_forbidden_response(parts[0])
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
-                return self.app.preview_tenant_memory_queue(parts[0], request.body or {})
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue":
-                return self.app.review_tenant_memory_queue(parts[0], request.body or {})
-            if len(parts) == 3 and parts[1] == "memory" and parts[2] == "bulk-review":
-                return self.app.bulk_review_tenant_memory(parts[0], request.body or {})
-            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "confirm":
-                return self.app.confirm_tenant_memory(parts[0], parts[2], request.body or {})
-            if len(parts) == 4 and parts[1] == "memory" and parts[3] == "expire":
-                return self.app.expire_tenant_memory(parts[0], parts[2], request.body or {})
+        memory_response = handle_memory_route(self.app, request)
+        if memory_response is not None:
+            return memory_response
         if method == "POST" and request.path.startswith("/sessions/"):
             parts = _session_path_parts(request.path)
             if len(parts) == 2 and parts[1] == "handoff":
@@ -412,25 +371,15 @@ def _approval_path_parts(path: str) -> tuple[str, ...]:
     return tuple(part for part in suffix.split("/") if part)
 
 
-def _users_path_parts(path: str) -> tuple[str, ...]:
-    suffix = path.removeprefix("/users/")
-    if not suffix:
-        return ()
-    return tuple(part for part in suffix.split("/") if part)
-
-
-def _tenants_path_parts(path: str) -> tuple[str, ...]:
-    suffix = path.removeprefix("/tenants/")
-    if not suffix:
-        return ()
-    return tuple(part for part in suffix.split("/") if part)
-
-
 def _admin_skills_path_parts(path: str) -> tuple[str, ...]:
     suffix = path.removeprefix("/admin/skills/")
     if not suffix:
         return ()
     return tuple(part for part in suffix.split("/") if part)
+
+
+def _is(parts: list[str], length: int, second: str, third: str) -> bool:
+    return len(parts) == length and parts[1] == second and parts[2] == third
 
 
 def _idempotency_key(request: RouteRequest) -> str | None:

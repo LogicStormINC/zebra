@@ -1,19 +1,18 @@
 """Immutable PostgreSQL migration catalog."""
-
 from agent_storage.postgres.agent_mailbox_migration import AGENT_MAILBOX_MIGRATION
-from agent_storage.postgres.agent_registry_migration import (
-    AGENT_REGISTRY_MIGRATION,
-)
+from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
 from agent_storage.postgres.agent_release_enforcement_migration import (
     AGENT_RELEASE_ENFORCEMENT_MIGRATION,
 )
 from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
+from agent_storage.postgres.client_capability_migration import CLIENT_CAPABILITY_MIGRATION
+from agent_storage.postgres.client_effect_migration import CLIENT_EFFECT_MIGRATION
+from agent_storage.postgres.client_security_migration import CLIENT_SECURITY_MIGRATION
+from agent_storage.postgres.client_session_migration import CLIENT_SESSION_MIGRATION
 from agent_storage.postgres.control_plane_migration import CONTROL_PLANE_MIGRATION
 from agent_storage.postgres.delivery_transaction_migration import DELIVERY_TRANSACTION_MIGRATION
 from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
-from agent_storage.postgres.governed_memory_scope_migration import (
-    GOVERNED_MEMORY_SCOPE_MIGRATION,
-)
+from agent_storage.postgres.governed_memory_scope_migration import GOVERNED_MEMORY_SCOPE_MIGRATION
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
 from agent_storage.postgres.host_auth_migration import HOST_AUTH_MIGRATION
 from agent_storage.postgres.host_connector_migration import HOST_CONNECTOR_MIGRATION
@@ -23,9 +22,7 @@ from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVE
 from agent_storage.postgres.migration_types import Migration
 from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATION
 from agent_storage.postgres.orchestration_migration import ORCHESTRATION_MIGRATION
-from agent_storage.postgres.provider_continuation_migration import (
-    PROVIDER_CONTINUATION_MIGRATION,
-)
+from agent_storage.postgres.provider_continuation_migration import PROVIDER_CONTINUATION_MIGRATION
 from agent_storage.postgres.research_profile_migration import RESEARCH_TOOL_PROFILE_MIGRATION
 from agent_storage.postgres.session_tenant_migration import (
     SESSION_TENANT_NAMESPACE_MIGRATION,
@@ -496,4 +493,8 @@ MIGRATIONS = (
     AGENT_MAILBOX_MIGRATION,
     RESEARCH_TOOL_PROFILE_MIGRATION,
     HOST_MANIFEST_FREEZE_MIGRATION,
+    CLIENT_CAPABILITY_MIGRATION,
+    CLIENT_SESSION_MIGRATION,
+    CLIENT_EFFECT_MIGRATION,
+    CLIENT_SECURITY_MIGRATION,
 )
