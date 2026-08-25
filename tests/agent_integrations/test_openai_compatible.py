@@ -399,9 +399,9 @@ def test_openai_compatible_gateway_serializes_tool_result_conversation() -> None
     )
 
     assert requests[1]["messages"][-2:] == [
-        {
-            "role": "assistant",
-            "content": "Tool calls proposed.",
+            {
+                "role": "assistant",
+                "content": "",
             "tool_calls": [
                 {
                     "id": "call_1",

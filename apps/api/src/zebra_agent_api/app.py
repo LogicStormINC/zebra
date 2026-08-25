@@ -483,6 +483,7 @@ def _model_provider_settings(settings: ZebraAgentSettings) -> ModelProviderSetti
         api_key_env=model.api_key_env,
         base_url=model.base_url,
         model=model.model,
+        wire_api=model.wire_api,
         executor_profile=model.executor_profile,
         planner_profile=model.planner_profile,
         reviewer_profile=model.reviewer_profile,

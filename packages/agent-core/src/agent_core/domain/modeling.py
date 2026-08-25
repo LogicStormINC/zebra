@@ -74,6 +74,7 @@ class ModelThinkingMode(StrEnum):
 
 
 class ModelReasoningEffort(StrEnum):
+    LOW = "low"
     HIGH = "high"
     MAX = "max"
 

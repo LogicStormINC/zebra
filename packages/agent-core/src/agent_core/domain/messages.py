@@ -66,10 +66,6 @@ class SessionMessage(BaseModel):
             raise ValueError("tool_call_id is only valid for tool messages")
         if self.tool_calls and self.role is not MessageRole.ASSISTANT:
             raise ValueError("tool_calls are only valid for assistant messages")
-        if self.provider_reasoning_content is not None and (
-            self.role is not MessageRole.ASSISTANT or not self.tool_calls
-        ):
-            raise ValueError(
-                "provider_reasoning_content is only valid for assistant tool-call messages"
-            )
+        if self.provider_reasoning_content is not None and self.role is not MessageRole.ASSISTANT:
+            raise ValueError("provider_reasoning_content is only valid for assistant messages")
         return self

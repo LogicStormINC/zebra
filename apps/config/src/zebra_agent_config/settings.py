@@ -21,6 +21,7 @@ class ModelSettings:
     api_key_env: str
     base_url: str
     model: str
+    wire_api: str = "chat_completions"
     executor_profile: str | None = None
     planner_profile: str | None = None
     reviewer_profile: str | None = None
@@ -127,6 +128,15 @@ def trusted_local_mode_enabled(settings: ZebraAgentSettings) -> bool:
     return settings.profile == "local" and settings.runtime.runtime_class == "trusted-local"
 
 
+def _read_model_wire_api(values: Mapping[str, str], *, provider: str) -> str:
+    wire_api = _read(values, "ZEBRA_DEEPSEEK_WIRE_API", default="chat_completions")
+    if wire_api not in {"chat_completions", "responses"}:
+        raise ValueError("ZEBRA_DEEPSEEK_WIRE_API must be chat_completions or responses")
+    if provider != "deepseek" and wire_api != "chat_completions":
+        raise ValueError("ZEBRA_DEEPSEEK_WIRE_API=responses requires provider=deepseek")
+    return wire_api
+
+
 def load_settings(
     env: Mapping[str, str] | None = None,
     *,
@@ -171,6 +181,7 @@ def load_settings(
             ),
             base_url=_read(values, "ZEBRA_MODEL_BASE_URL", default="https://api.deepseek.com"),
             model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-v4-flash"),
+            wire_api=_read_model_wire_api(values, provider=provider),
             executor_profile=_read_optional(values, "ZEBRA_DEEPSEEK_EXECUTOR_PROFILE"),
             planner_profile=_read_optional(values, "ZEBRA_DEEPSEEK_PLANNER_PROFILE"),
             reviewer_profile=_read_optional(values, "ZEBRA_DEEPSEEK_REVIEWER_PROFILE"),

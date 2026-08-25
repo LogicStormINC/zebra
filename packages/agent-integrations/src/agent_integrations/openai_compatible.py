@@ -24,6 +24,7 @@ from agent_integrations.deepseek_profiles import (
     DeepSeekProfileRouter,
     ResolvedDeepSeekInvocation,
 )
+from agent_integrations.deepseek_responses import DeepSeekResponsesModelGateway
 from agent_integrations.deepseek_schema import validate_strict_tools
 from agent_integrations.model_errors import ModelProviderError, normalize_provider_error
 from agent_integrations.openai_payloads import (
@@ -111,6 +112,7 @@ class OpenAICompatibleModelGateway:
                     resolved=resolved,
                     request_metadata=request_metadata,
                     internal_names=internal_tool_names(tools, tool_names),
+                    tools_advertised=bool(tools),
                 )
             except Exception as exc:
                 if isinstance(exc, ModelResponseRejectedError):
@@ -181,6 +183,7 @@ class OpenAICompatibleModelGateway:
                         resolved=resolved,
                         request_metadata=request_metadata,
                         internal_names=internal_tool_names(tools, tool_names),
+                        tools_advertised=bool(tools),
                     )
                 except Exception as exc:
                     if isinstance(exc, ModelResponseRejectedError):
@@ -229,7 +232,13 @@ class OpenAICompatibleModelGateway:
     ) -> tuple[dict[str, Any], ModelRequestMetadata | None]:
         body: dict[str, Any] = {
             "model": resolved.profile.model if resolved else self._model_name,
-            "messages": [serialize_message(message) for message in messages],
+            "messages": [
+                serialize_message(
+                    message,
+                    include_provider_reasoning=resolved is not None,
+                )
+                for message in messages
+            ],
             "stream": stream,
         }
         if tools:
@@ -339,7 +348,7 @@ def build_model_gateway(
     *,
     env: Mapping[str, str] | None = None,
     client: httpx.Client | None = None,
-) -> OpenAICompatibleModelGateway:
+) -> OpenAICompatibleModelGateway | DeepSeekResponsesModelGateway:
     values = dict(env or {})
     if env is None:
         values.update(_read_defaults(Path(".env")))
@@ -370,6 +379,19 @@ def build_model_gateway(
             role_profiles=configured_profiles,
             legacy_executor_model=settings.model,
         )
+    if settings.wire_api == "responses":
+        if settings.provider.lower() != "deepseek":
+            raise ValueError("Responses wire API is only supported for DeepSeek")
+        return DeepSeekResponsesModelGateway(
+            base_url=settings.base_url,
+            api_key=normalized_key,
+            model_name=settings.model,
+            max_retries=settings.max_retries,
+            deepseek_router=router,
+            client=client,
+        )
+    if settings.wire_api != "chat_completions":
+        raise ValueError(f"unsupported model wire API: {settings.wire_api}")
     return OpenAICompatibleModelGateway(
         provider_name=settings.provider,
         base_url=settings.base_url,

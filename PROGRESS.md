@@ -1262,6 +1262,15 @@
 - Explicit in-process DeepSeek thinking tool loops preserve and replay private
   `reasoning_content`; default executor profiles remain non-thinking, and missing
   continuation state fails before HTTP.
+- `DS-RESP-01` adds an explicit Flash/Pro DeepSeek Responses wire adapter with
+  semantic SSE terminal validation, required-tool support, stateless reasoning
+  replay, provider-side tool rejection, and legacy Chat Completions compatibility.
+  Responses remains opt-in; plaintext private reasoning does not become durable
+  Session state, and vision/web-search/custom-tool combinations fail closed.
+  Focused contracts pass `55/55`; a credentialed semantic-SSE smoke passed both
+  the Flash thinking tool round trip and Pro high-thinking reviewer route. Full
+  validation passes `2610` tests with `326` explicit skips, the 1425-file size
+  gate, Ruff, strict Mypy across 707 source files, and the `10/10` release eval.
 
 ### Product surfaces
 

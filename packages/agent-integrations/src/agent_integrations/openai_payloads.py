@@ -23,7 +23,11 @@ from agent_integrations.model_errors import ModelProviderError, finish_reason_er
 from agent_integrations.request_metadata import ModelRequestMetadata
 
 
-def serialize_message(message: SessionMessage) -> dict[str, object]:
+def serialize_message(
+    message: SessionMessage,
+    *,
+    include_provider_reasoning: bool = False,
+) -> dict[str, object]:
     payload: dict[str, object] = {
         "role": message.role.value,
         "content": message.content,
@@ -46,6 +50,9 @@ def serialize_message(message: SessionMessage) -> dict[str, object]:
             }
             for tool_call in message.tool_calls
         ]
+        if message.content == "Tool calls proposed.":
+            payload["content"] = ""
+    if include_provider_reasoning:
         reasoning = message.provider_reasoning_content
         if message.metadata.get("provider_reasoning_required") is True and reasoning is None:
             raise ValueError("DeepSeek reasoning continuation is unavailable")
@@ -113,6 +120,7 @@ def parse_completion(
     resolved: ResolvedDeepSeekInvocation | None = None,
     request_metadata: ModelRequestMetadata | None = None,
     internal_names: Mapping[str, str] | None = None,
+    tools_advertised: bool = False,
 ) -> ModelCompletion:
     try:
         return _parse_completion(
@@ -124,6 +132,7 @@ def parse_completion(
             resolved=resolved,
             request_metadata=request_metadata,
             internal_names=internal_names,
+            tools_advertised=tools_advertised,
         )
     except ModelResponseRejectedError:
         raise
@@ -161,6 +170,7 @@ def _parse_completion(
     resolved: ResolvedDeepSeekInvocation | None = None,
     request_metadata: ModelRequestMetadata | None = None,
     internal_names: Mapping[str, str] | None = None,
+    tools_advertised: bool = False,
 ) -> ModelCompletion:
     choices = payload.get("choices")
     if not isinstance(choices, list) or not choices:
@@ -180,8 +190,8 @@ def _parse_completion(
         message.get("tool_calls"),
         internal_tool_names=internal_names,
     )
-    requires_reasoning = bool(
-        tool_calls
+    thinking_with_tools = bool(
+        tools_advertised
         and resolved is not None
         and resolved.thinking_mode is ModelThinkingMode.ENABLED
     )
@@ -189,11 +199,12 @@ def _parse_completion(
         _provider_reasoning_content(
             message.get("reasoning_content"),
             provider_name=provider_name,
-            required=requires_reasoning,
+            required=thinking_with_tools and bool(tool_calls),
         )
-        if tool_calls
+        if resolved is not None
         else None
     )
+    requires_reasoning = thinking_with_tools and reasoning_content is not None
     content = _assistant_content(message.get("content"), has_tool_calls=bool(tool_calls))
     usage = parse_usage(payload.get("usage"))
     resolved_model = optional_str(payload.get("model")) or (

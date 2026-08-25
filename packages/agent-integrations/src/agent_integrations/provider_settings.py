@@ -11,6 +11,7 @@ class ModelProviderSettings:
     api_key_env: str
     base_url: str
     model: str
+    wire_api: str = "chat_completions"
     executor_profile: str | None = None
     planner_profile: str | None = None
     reviewer_profile: str | None = None

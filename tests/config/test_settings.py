@@ -21,6 +21,7 @@ def test_load_settings_reads_default_profile() -> None:
     assert settings.model.api_key_env == "DEEPSEEK_API_KEY"
     assert settings.model.base_url == "https://api.deepseek.com"
     assert settings.model.model == "deepseek-v4-flash"
+    assert settings.model.wire_api == "chat_completions"
     assert settings.model.executor_profile == "deepseek-v4-flash-executor-v1"
     assert settings.model.planner_profile == "deepseek-v4-pro-planner-v1"
     assert settings.model.reviewer_profile == "deepseek-v4-pro-reviewer-v1"
@@ -107,6 +108,22 @@ def test_load_settings_rejects_missing_or_duplicate_skill_roots(tmp_path: Path) 
 def test_load_settings_rejects_negative_model_retries() -> None:
     with pytest.raises(ValueError, match="ZEBRA_MODEL_MAX_RETRIES"):
         load_settings({"ZEBRA_MODEL_MAX_RETRIES": "-1"})
+
+
+def test_load_settings_accepts_explicit_deepseek_responses_wire() -> None:
+    settings = load_settings({"ZEBRA_DEEPSEEK_WIRE_API": "responses"})
+
+    assert settings.model.wire_api == "responses"
+
+
+def test_load_settings_rejects_responses_for_other_providers() -> None:
+    with pytest.raises(ValueError, match="requires provider=deepseek"):
+        load_settings(
+            {
+                "ZEBRA_MODEL_PROVIDER": "custom",
+                "ZEBRA_DEEPSEEK_WIRE_API": "responses",
+            }
+        )
 
 
 def test_load_settings_parses_bounded_stdio_mcp_servers(tmp_path: Path) -> None:

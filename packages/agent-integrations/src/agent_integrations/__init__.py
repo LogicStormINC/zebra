@@ -17,6 +17,7 @@ from agent_integrations.deepseek_profiles import (
     ResolvedDeepSeekInvocation,
     deepseek_profile,
 )
+from agent_integrations.deepseek_responses import DeepSeekResponsesModelGateway
 from agent_integrations.github import GitHubHttpPullRequestTransport
 from agent_integrations.github_app import (
     GitHubAppCredentialBinding,
@@ -70,6 +71,7 @@ __all__ = [
     "DeepSeekBetaProfile",
     "DeepSeekBetaTextResult",
     "DeepSeekProfileRouter",
+    "DeepSeekResponsesModelGateway",
     "DeepSeekStrictToolResult",
     "LocalOnlyPullRequestGateway",
     "PullRequestGateway",

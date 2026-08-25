@@ -23789,6 +23789,51 @@ the current published Version as a projection.
   previously immutable Version through the same gate, never mutating history
 - no Desktop UI, public marketplace or autonomous publication is added
 
+### DS-RESP-01 - DeepSeek Responses And Reasoning Protocol Refresh
+
+- Status: `Review`
+- Owner: `Codex`
+- Branch: `codex/ds-resp-01-deepseek-responses`
+- Depends on: merged `DS-OPT-01`, `QA-148-MDL-01`, and explicit maintainer request
+- Owned paths: `packages/agent-core/src/agent_core/domain/modeling.py`,
+  `packages/agent-core/src/agent_core/domain/messages.py`,
+  `packages/agent-integrations/src/agent_integrations/deepseek_profiles.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_compatible.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_payloads.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_streaming.py`,
+  `packages/agent-integrations/src/agent_integrations/deepseek_responses.py`,
+  `packages/agent-integrations/src/agent_integrations/deepseek_responses_payloads.py`,
+  `packages/agent-integrations/src/agent_integrations/deepseek_responses_streaming.py`,
+  `packages/agent-integrations/src/agent_integrations/provider_settings.py`,
+  `apps/config/`, `apps/worker/src/zebra_agent_worker/provider_configuration.py`,
+  `apps/api/src/zebra_agent_api/app.py`, `configs/default.env`, `.env.example`,
+  `tests/agent_integrations/`, `tests/config/`, `evals/providers/`,
+  `docs/DeepSeek_V4_模型适配与专项优化方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `PROGRESS.md`
+
+#### Goal
+
+Refresh Zebra's DeepSeek integration against the current official Responses API,
+thinking-mode rules, and the current DSH reference adapter without weakening the
+Event Store, Policy/Tool Gateway, or private-reasoning boundaries.
+
+#### Acceptance
+
+- DeepSeek tool-bearing thinking history replays every required private reasoning
+  segment, including assistant turns without a function call, and fails closed
+  before HTTP when required continuation bytes are unavailable.
+- `off`/`low`/`high`/`max` reasoning intent maps correctly to the selected wire
+  protocol; legacy Chat Completions behavior remains compatible.
+- Responses is an explicit Flash/Pro text-profile opt-in with semantic SSE terminal
+  handling and typed function-call projection; unsupported or silently ignored
+  provider features fail locally instead of weakening policy.
+- Provider-side web search/custom tools are not enabled unless they cross the
+  existing Tool Gateway and Policy boundary.
+- Real-provider behavior wins over ambiguous compatibility tables: thinking tool
+  loops use `auto`, while a requested `required` choice fails before HTTP.
+- Usage/cache/reasoning counts are normalized without double counting, focused
+  contracts pass, and a credentialed provider smoke is recorded when available.
+
 ## DeepSeek Vision Multimodal Board
 
 Design source: `docs/DeepSeek_视觉双通道多模态架构方案_v1.0.md`

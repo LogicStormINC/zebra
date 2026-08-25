@@ -11,7 +11,7 @@ from agent_core.domain.modeling import (
     ModelToolChoice,
 )
 
-PROFILE_VERSION_OBSERVED_AT = "2026-07-17"
+PROFILE_VERSION_OBSERVED_AT = "2026-08-25"
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class DeepSeekModelProfile:
     reasoning_effort: ModelReasoningEffort | None
     supports_tools: bool
     context_window: ModelContextWindow
-    prompt_version: str = "zebra-deepseek-chat-v1"
+    prompt_version: str = "zebra-deepseek-chat-v2"
     timeout_profile: str = "deepseek-interactive-v1"
     version_observed_at: str = PROFILE_VERSION_OBSERVED_AT
 

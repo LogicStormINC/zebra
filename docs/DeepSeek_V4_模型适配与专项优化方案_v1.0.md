@@ -4,8 +4,8 @@
 
 | 字段 | 值 |
 |---|---|
-| 状态 | DS-P0 至 DS-P4 全部实现，PR `#146` |
-| 调研基线 | 2026-07-17 |
+| 状态 | DS-P0 至 DS-P4 已实现；DS-RESP-01 Responses 刷新进入 Review |
+| 调研基线 | 2026-08-25 |
 | 适用范围 | DeepSeek API 上的 `deepseek-v4-flash` 与 `deepseek-v4-pro` |
 | 目标读者 | Model Gateway、Harness、Context、Observability、Eval 维护者 |
 | 上位约束 | 最终架构、实施基线、RACI、任务登记、PROGRESS |
@@ -85,8 +85,8 @@ DeepSeek V4 的 OpenAI 格式通过以下参数控制思考：
 - V4 默认开启思考模式；
 - effort 支持 `high` 和 `max`；
 - 思考模式下 temperature、top_p 和 penalty 参数不会生效；
-- 无工具的历史推理内容不必进入下一轮；
-- 如果一次思考响应包含工具调用，完整 `reasoning_content` 必须在后续请求中回传；
+- 只要请求携带 `tools`，所有 assistant 历史中的完整 `reasoning_content` 都必须在
+  后续请求中回传，包括该 assistant turn 没有工具调用的情况；
 - thinking 模式请求不发送 `tool_choice`；DeepSeek V4 会拒绝该参数；
 - 未正确回传时，API 会返回 HTTP 400。
 
@@ -105,7 +105,7 @@ DeepSeek V4 的 OpenAI 格式通过以下参数控制思考：
 
 边界：
 
-1. `reasoning_content` 是 assistant tool-call message 的 provider-private 字段，
+1. `reasoning_content` 是 assistant message 的 provider-private 字段，
    不与公开 `content` 或 `ModelTextDelta` 混合。
 2. 普通 model dump、事件、日志、Artifact 和 Context Capsule 不包含私有正文。
 3. 同一进程中的后续工具子请求原样回传该字段，满足 DeepSeek 协议。
@@ -113,10 +113,27 @@ DeepSeek V4 的 OpenAI 格式通过以下参数控制思考：
    在 HTTP 前 fail closed，不发送已知非法请求。
 5. 默认 executor Profile 保持 non-thinking；新路径只能由显式 invocation policy
    开启，不改变现有任务行为。
-6. thinking 请求省略 `tool_choice`；调用方要求 `required` 时在 HTTP 前失败，避免
-   静默弱化“必须调用工具”的策略约束。
+6. Chat Completions thinking 请求省略 `tool_choice`；调用方要求 `required` 时在
+   HTTP 前失败，避免静默弱化“必须调用工具”的策略约束。
 
-### 4.3 复杂 Agent 任务的替代流程
+### 4.3 Responses API 采用边界
+
+DeepSeek Responses 当前是无服务端会话状态的独立协议，不支持
+`previous_response_id`、`conversation` 或 `store`；不支持的参数可能被静默忽略，
+所以 Zebra 使用独立、显式 opt-in adapter，而不把 Chat payload 直接改路径复用。
+
+| 边界 | Zebra 决策 |
+|---|---|
+| 模型 | 接受 Zebra 已建模的 Flash/Pro text Profile；vision-exp 留在独立多模态任务 |
+| 工具 | 只投递 Zebra Tool Gateway 注册的 function；拒绝 provider web search/custom tool 输出 |
+| 推理 | plaintext reasoning item 仅用于同进程协议续传，不进入公开事件或耐久存储 |
+| 流 | 按语义 SSE `sequence_number` 校验，只以 completed/incomplete/failed 为终态，不依赖 `[DONE]` |
+| 选择 | 实测 thinking + `required` 返回 400；thinking 工具轮用 `auto` 并在本地拒绝 required |
+
+来源：[DeepSeek Responses API](https://api-docs.deepseek.com/zh-cn/guides/responses_api/)、
+[Create Response](https://api-docs.deepseek.com/zh-cn/api/create-response/)。
+
+### 4.4 复杂 Agent 任务的替代流程
 
 ```mermaid
 flowchart LR
@@ -129,7 +146,7 @@ flowchart LR
 
 显式计划是可以展示、审核和持久化的产品内容；私有推理内容不是项目状态。
 
-### 4.4 跨进程续传重新评估条件
+### 4.5 跨进程续传重新评估条件
 
 只有满足以下任一条件，才重新评估跨进程持久化私有续传正文：
 
@@ -589,6 +606,15 @@ cost_usd
 
 ## 15. 外部经验与采用边界
 
+- DeepSeek 官方 DSH adapter 采用流式语义块、五分钟空闲超时、显式 reasoning effort，
+  并在每个 assistant turn 重放推理正文。Zebra采用其 wire-level 规则，但不采用把
+  私有 reasoning 作为可展示、耐久 Session block 的产品策略。
+  来源：[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)、
+  [DSH Architecture](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md)。
+- Grok Build 的公开资料主要证明 TUI/headless/ACP 和自定义模型入口，未提供可核验的
+  DeepSeek wire adapter 实现；它适合作为产品交互对照，不能替代 DSH 和 DeepSeek
+  官方协议作为实现来源。
+  来源：[Grok Build Overview](https://docs.x.ai/build/overview)。
 - Continue 按 chat、autocomplete、edit、apply、embed、rerank 等角色配置模型，
   支持“按角色选择模型”而非单全局模型。Zebra 采用角色概念，但保留自己的
   Harness、Policy 和耐久事件边界。
@@ -609,15 +635,21 @@ cost_usd
 - Real provider smoke：稳定多轮工具与 Beta strict-tools、FIM、Chat Prefix 均通过；
 - 工程门禁：868 文件上限、Ruff、403 个源文件严格 Mypy、8 个 release eval 通过。
 
+`DS-RESP-01` 刷新证据：55 个 DeepSeek/配置聚焦合同通过；真实 Responses
+semantic SSE 完成 Flash thinking 工具往返、reasoning 回放和 Pro high-thinking
+复核；全量 2610 passed、326 个外部依赖/平台 smoke skipped；1425 文件上限、
+全仓 Ruff、707 源文件严格 Mypy 和 10/10 release eval 通过。
+
 ## 17. 来源与时效说明
 
-本方案优先使用 DeepSeek 官方 API 文档，并以 2026-07-17 可见内容为基线。
+本方案优先使用 DeepSeek 官方 API 文档，并以 2026-08-25 可见内容为基线。
 模型名称、价格、并发、上下文、Beta 功能和参数语义都可能变化。每次实施和发布前
 必须重新核对：
 
 - [Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing/)
 - [Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode/)
 - [Chat Completion API](https://api-docs.deepseek.com/api/create-chat-completion/)
+- [Responses API](https://api-docs.deepseek.com/zh-cn/guides/responses_api/)
 - [Context Caching](https://api-docs.deepseek.com/guides/kv_cache/)
 - [Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)
 - [FIM Completion](https://api-docs.deepseek.com/guides/fim_completion/)

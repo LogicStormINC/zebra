@@ -35,7 +35,7 @@ def test_deepseek_routes_no_tool_planner_to_pro_reasoning_profile() -> None:
     assert captured["reasoning_effort"] == "max"
     assert "tool_choice" not in captured
     assert completion.call_metadata.profile_id == "deepseek-v4-pro-planner-v1"
-    assert completion.call_metadata.profile_version_observed_at == "2026-07-17"
+    assert completion.call_metadata.profile_version_observed_at == "2026-08-25"
 
 
 def test_deepseek_tool_request_explicitly_disables_thinking() -> None:
@@ -97,7 +97,39 @@ def test_deepseek_thinking_tool_loop_replays_private_reasoning() -> None:
                     ],
                 },
             )
-        return _completion("proof received")
+        if len(requests) == 2:
+            return httpx.Response(
+                200,
+                json={
+                    "model": "deepseek-v4-flash",
+                    "choices": [
+                        {
+                            "message": {
+                                "role": "assistant",
+                                "content": "proof received",
+                                "reasoning_content": "private final reasoning",
+                            },
+                            "finish_reason": "stop",
+                        }
+                    ],
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "model": "deepseek-v4-flash",
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": "next turn complete",
+                            "reasoning_content": "private next reasoning",
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+            },
+        )
 
     gateway = _gateway(handle)
     tool = _tool()
@@ -136,6 +168,16 @@ def test_deepseek_thinking_tool_loop_replays_private_reasoning() -> None:
     assert "provider_reasoning_content" not in first.assistant_message.model_dump(mode="json")
     assert "private reasoning" not in repr(first.assistant_message)
     assert final.assistant_message.content == "proof received"
+    assert final.assistant_message.provider_reasoning_content == "private final reasoning"
+    assert final.assistant_message.tool_calls == ()
+    gateway.complete(
+        [user, first.assistant_message, final.assistant_message, _message("next turn")],
+        tools=(tool,),
+        invocation_policy=policy,
+    )
+    final_replay = requests[2]["messages"][-2]
+    assert final_replay["reasoning_content"] == "private final reasoning"
+    assert "tool_calls" not in final_replay
 
 
 def test_deepseek_thinking_tool_loop_fails_closed_without_private_continuation() -> None:
@@ -169,6 +211,30 @@ def test_deepseek_thinking_tool_loop_fails_closed_without_private_continuation()
 
     with pytest.raises(ValueError, match="reasoning continuation is unavailable"):
         _gateway(handle).complete([tool_call_message])
+
+    assert called is False
+
+
+def test_deepseek_final_reasoning_marker_fails_closed_without_private_bytes() -> None:
+    called = False
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        nonlocal called
+        called = True
+        return _completion("unexpected")
+
+    reconstructed = SessionMessage.model_validate(
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.ASSISTANT,
+            content="public final",
+            created_at=datetime(2026, 8, 25, tzinfo=UTC),
+            metadata={"provider_reasoning_required": True},
+            provider_reasoning_content="private",
+        ).model_dump(mode="json")
+    )
+    with pytest.raises(ValueError, match="reasoning continuation is unavailable"):
+        _gateway(handle).complete([reconstructed], tools=(_tool(),))
 
     assert called is False
 
@@ -219,7 +285,7 @@ def test_deepseek_stream_discards_reasoning_and_records_usage_and_finish() -> No
     assert metadata.usage.reasoning_tokens == 3
     assert metadata.usage.prompt_cache_hit_tokens == 8
     assert metadata.usage.prompt_cache_miss_tokens == 4
-    assert metadata.prompt_version == "zebra-deepseek-chat-v1"
+    assert metadata.prompt_version == "zebra-deepseek-chat-v2"
     assert metadata.stable_prefix_hash is not None
 
 
@@ -303,8 +369,8 @@ def test_deepseek_thinking_tool_response_requires_valid_reasoning_content() -> N
     assert caught.value.retryable is True
 
 
-def test_provider_reasoning_is_rejected_outside_assistant_tool_call_message() -> None:
-    with pytest.raises(ValueError, match="only valid for assistant tool-call messages"):
+def test_provider_reasoning_is_rejected_outside_assistant_message() -> None:
+    with pytest.raises(ValueError, match="only valid for assistant messages"):
         SessionMessage(
             message_id=new_message_id(),
             role=MessageRole.USER,
