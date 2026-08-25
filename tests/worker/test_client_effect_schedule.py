@@ -5,8 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import new_event_id, new_session_id
-from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.sessions import Session
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
     HarnessAttemptResult,

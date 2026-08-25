@@ -1,0 +1,92 @@
+{
+  "frontend_app_id": "trench-web",
+  "revision": 1,
+  "readables": [
+    { "name": "trench.ui.route" },
+    { "name": "trench.ui.selected-event" },
+    { "name": "trench.ui.selected-entity" },
+    { "name": "trench.ui.timeline-range" },
+    { "name": "trench.ui.active-filters" },
+    { "name": "trench.ui.open-panels" }
+  ],
+  "actions": [
+    {
+      "name": "trench.ui.event.open",
+      "risk": "presentation",
+      "parameters": {
+        "type": "object",
+        "properties": { "eventId": { "type": "string" } },
+        "required": ["eventId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "trench.ui.entity.select",
+      "risk": "presentation",
+      "parameters": {
+        "type": "object",
+        "properties": { "entityId": { "type": "string" } },
+        "required": ["entityId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "trench.ui.timeline.open",
+      "risk": "navigation",
+      "parameters": {
+        "type": "object",
+        "properties": { "entityId": { "type": "string" } },
+        "required": ["entityId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "trench.ui.timeline.range.set",
+      "risk": "local_state",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" }
+        },
+        "required": ["from", "to"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "trench.ui.evidence-panel.open",
+      "risk": "presentation",
+      "parameters": {
+        "type": "object",
+        "properties": { "evidenceId": { "type": "string" } },
+        "required": ["evidenceId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "trench.ui.filter.apply",
+      "risk": "local_state",
+      "parameters": {
+        "type": "object",
+        "properties": { "filters": { "type": "object" } },
+        "required": ["filters"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "trench.ui.report-draft.fill",
+      "risk": "local_state",
+      "parameters": {
+        "type": "object",
+        "properties": { "draft": { "type": "object" } },
+        "required": ["draft"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "trench.ui.report-preview.open",
+      "risk": "presentation",
+      "parameters": { "type": "object" }
+    }
+  ]
+}

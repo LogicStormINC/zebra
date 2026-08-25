@@ -119,7 +119,7 @@ def _validate_name(value: str) -> str:
     if not CAPABILITY_NAME_PATTERN.fullmatch(normalized):
         raise ValueError(
             "capability names must be dot-namespaced lowercase identifiers"
-            " such as 'trench.ui.event.open'"
+            " such as 'app.ui.event.open'"
         )
     if len(normalized) > MAX_CAPABILITY_NAME_LENGTH:
         raise ValueError("capability name exceeds the maximum length")

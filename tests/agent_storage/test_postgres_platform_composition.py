@@ -6,7 +6,6 @@ import os
 from uuid import uuid4
 
 import pytest
-
 from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
 from agent_storage.postgres.migration_runner import apply_postgres_migrations
 from agent_storage.postgres_platform_composition import (

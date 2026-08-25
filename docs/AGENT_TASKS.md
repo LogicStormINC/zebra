@@ -3798,7 +3798,8 @@ the dependency-ordered CLIENT task board before any contract or SDK work.
 
 ### CLIENT-CAP-CON-01 - Frontend Capability Contracts
 
-- Status: `Locked`（Gate 0 → Gate 1）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done on codex/client-adr-01: contracts + 12 tests; restricted schemas, selector/secret rejection, publish gate, subset-only mounts.
 - Suggested role: `CORE`
 - Depends on: `CLIENT-ADR-01`
 - Owned paths:
@@ -3834,7 +3835,8 @@ Binding / Mounted Snapshot 领域模型）。
 
 ### CLIENT-SESSION-CON-01 - Client Session And Control Lease Contracts
 
-- Status: `Locked`（Gate 0 → Gate 1）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done on codex/client-adr-01: grants/fences/leases + 9 tests; fence tokens hash-only, one controller, expired sessions fail closed.
 - Suggested role: `CORE`
 - Depends on: `CLIENT-ADR-01`
 - Owned paths:
@@ -3871,7 +3873,8 @@ Binding / Mounted Snapshot 领域模型）。
 
 ### CLIENT-EFFECT-CON-01 - Client Effect Contracts
 
-- Status: `Locked`（Gate 1，依赖 CAP-CON 与 SESSION-CON）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done on codex/client-adr-01: effect/receipt/idempotency + ToolExecutionLocation.CLIENT + scope requirement; 10 tests.
 - Suggested role: `CORE`
 - Depends on: `CLIENT-CAP-CON-01`, `CLIENT-SESSION-CON-01`
 - Owned paths:
@@ -3913,7 +3916,8 @@ Receipt / Continuation / Idempotency 与状态机）。
 
 ### CLIENT-CAP-PG-01 - Frontend Capability PostgreSQL Persistence
 
-- Status: `Locked`（Gate 2）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: v31 + adapter; compose ZEBRA_CLIENT_CAPABILITIES_POSTGRES_TEST_RESULT=PASS (7).
 - Suggested role: `STORAGE`
 - Depends on: `CLIENT-CAP-CON-01`
 - Owned paths:
@@ -3945,7 +3949,8 @@ Receipt / Continuation / Idempotency 与状态机）。
 
 ### CLIENT-SESSION-PG-01 - Client Session PostgreSQL Persistence
 
-- Status: `Locked`（Gate 2）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: v32 + adapters; ZEBRA_CLIENT_SESSIONS_POSTGRES_TEST_RESULT=PASS (4).
 - Suggested role: `STORAGE`
 - Depends on: `CLIENT-SESSION-CON-01`
 - Owned paths:
@@ -3979,7 +3984,8 @@ Receipt / Continuation / Idempotency 与状态机）。
 
 ### CLIENT-EFFECT-PG-01 - Client Effect PostgreSQL Persistence
 
-- Status: `Locked`（Gate 2）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: v33 + atomic schedule/receipt adapters; ZEBRA_CLIENT_EFFECTS_POSTGRES_TEST_RESULT=PASS (6).
 - Suggested role: `STORAGE`
 - Depends on: `CLIENT-EFFECT-CON-01`
 - Owned paths:
@@ -4013,7 +4019,8 @@ Receipt / Continuation / Idempotency 与状态机）。
 
 ### CLIENT-PLATFORM-COMP-01 - Platform Control Plane Store Bundle
 
-- Status: `Locked`（Gate 2）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: AgentPlatformControlPlane port + shared composition; boundary tests 4 passed; flag default-off.
 - Suggested role: `ARCH / STORAGE`
 - Depends on: `CLIENT-CAP-PG-01`, `CLIENT-SESSION-PG-01`,
   `CLIENT-EFFECT-PG-01`
@@ -4050,7 +4057,8 @@ Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store�
 
 ### CLIENT-MGMT-API-01 - Frontend Profile Management API
 
-- Status: `Locked`（Gate 2 → Gate 3）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: /platform/v1/frontend-profiles* behind operator bearer; problem details; 4 API tests.
 - Suggested role: `CONTROL-PLANE / API`
 - Depends on: `CLIENT-PLATFORM-COMP-01`
 - Owned paths:
@@ -4085,7 +4093,8 @@ Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store�
 
 ### CLIENT-RUNTIME-API-01 - Client Session And Receipt Runtime API
 
-- Status: `Locked`（Gate 2 → Gate 3）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: /v1/client-sessions, client-bindings, client-effects receipts; controller-only; fake-store tests.
 - Suggested role: `CONTROL-PLANE / API`
 - Depends on: `CLIENT-PLATFORM-COMP-01`
 - Owned paths:
@@ -4127,7 +4136,8 @@ Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store�
 
 ### CLIENT-AGUI-ADMISSION-01 - AG-UI Command Client Admission
 
-- Status: `Locked`（Gate 3）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: AG-UI tools/state admission with published-profile source of truth, redaction, byte caps, no handler code.
 - Suggested role: `API / CONTROL-PLANE`
 - Depends on: `CLIENT-RUNTIME-API-01`
 - Owned paths:
@@ -4160,7 +4170,8 @@ State Snapshot（当前这些字段只是 Command Payload）。
 
 ### CLIENT-CONTEXT-01 - Client State Context Injection
 
-- Status: `Locked`（Gate 3）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: ClientStateSnapshot + client_state context kind + worker recovery hook; 5 context tests.
 - Suggested role: `CONTEXT / RUNTIME`
 - Depends on: `CLIENT-AGUI-ADMISSION-01`
 - Owned paths:
@@ -4192,7 +4203,8 @@ State Snapshot（当前这些字段只是 Command Payload）。
 
 ### CLIENT-DEFERRED-TOOL-CON-01 - Deferred Tool Execution Contracts
 
-- Status: `Locked`（Gate 1 契约，可与阶段 3 并行）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done on codex/client-adr-01: waiting_external_tool disposition, frozen CLIENT_EFFECT_SCHEDULED state, no fake tool results; 3 tests.
 - Suggested role: `CORE / HARNESS`
 - Depends on: `CLIENT-EFFECT-CON-01`
 - Owned paths:
@@ -4222,7 +4234,8 @@ State Snapshot（当前这些字段只是 Command Payload）。
 
 ### CLIENT-WORKER-GW-01 - Worker Client Tool Gateway
 
-- Status: `Locked`（Gate 4）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: ClientToolGateway schedule-only third channel; exposure via binding+active lease; 3 tests.
 - Suggested role: `RUNTIME`
 - Depends on: `CLIENT-CONTEXT-01`, `CLIENT-DEFERRED-TOOL-CON-01`,
   `CLIENT-EFFECT-PG-01`
@@ -4260,7 +4273,8 @@ ClientToolGateway）。
 
 ### CLIENT-EFFECT-RESUME-01 - Client Effect Receipt Resume
 
-- Status: `Locked`（Gate 4）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: atomic receipt+resume (v33), original tool-call identity restore, trusted HARNESS resume gate; 6 tests.
 - Suggested role: `RUNTIME / STORAGE`
 - Depends on: `CLIENT-WORKER-GW-01`
 - Owned paths:
@@ -4293,7 +4307,7 @@ Receipt 到达后恢复 Agent，并将真实 Client Result 注入原 Tool Call�
 
 ### CLIENT-AGUI-PROJECTION-01 - AG-UI Client Effect And State Projection
 
-- Status: `Locked`（Gate 4）
+- Status: `In Progress` — session projection maps the new client events; the dedicated SSE client-effect projection module (pending-effect replay on reconnect) remains
 - Suggested role: `INTEGRATIONS`
 - Depends on: `CLIENT-EFFECT-RESUME-01`
 - Owned paths:
@@ -4329,7 +4343,8 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-SDK-CORE-01 - TypeScript Client Core SDK
 
-- Status: `Locked`（Gate 5；依赖契约卡）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: zero-dep client-core, node --test 7 passed; dedup-once, receipt retry, fence stop, digest guard.
 - Suggested role: `SDK`
 - Depends on: `CLIENT-CAP-CON-01`, `CLIENT-SESSION-CON-01`,
   `CLIENT-EFFECT-CON-01`
@@ -4363,7 +4378,8 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-REACT-HOOKS-01 - React Standard Hooks
 
-- Status: `Locked`（Gate 5）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done (surface + provider + mount/unmount semantics); DOM Strict-Mode tests need jsdom+vitest follow-up.
 - Suggested role: `SDK`
 - Depends on: `CLIENT-SDK-CORE-01`, `CLIENT-AGUI-PROJECTION-01`
 - Owned paths: `sdks/typescript/packages/react/**`,
@@ -4394,7 +4410,8 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-REACT-HITL-01 - React HITL Hooks
 
-- Status: `Locked`（Gate 5）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done: approval/clarification hooks with idempotency keys; runtime DOM evidence rides the same follow-up.
 - Suggested role: `SDK`
 - Depends on: `CLIENT-REACT-HOOKS-01`
 - Owned paths: `sdks/typescript/packages/react/src/hitl/**`,
@@ -4421,7 +4438,8 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-CONFORMANCE-01 - Multi-Frontend Conformance Suite
 
-- Status: `Locked`（Gate 6）
+- Status: `Done`
+- Closed 2026-08-25 on `codex/client-adr-01` (maintainer batch activation): Done (core): shared suite over fake-frontend-a/b + zero-host-branch gate (50 passed); remaining crash/reconnect drills stay with AGUI-PROJECTION follow-up.
 - Suggested role: `QA / ARCH`
 - Depends on: `CLIENT-REACT-HITL-01`, `CLIENT-EFFECT-RESUME-01`,
   `CLIENT-MGMT-API-01`
@@ -4459,7 +4477,7 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-TRENCH-PILOT-01 - Trench Client Pilot
 
-- Status: `Locked`（Gate 7）
+- Status: `Blocked` — Zebra-side profile fixture delivered (tests/fixtures/trench_frontend_profile.json); the pilot itself needs the Trench repository and BFF
 - Suggested role: `PM / QA / TRENCH`
 - Depends on: `CLIENT-CONFORMANCE-01`
 - V1 Readables: `trench.ui.route`, `trench.ui.selected-event`,
@@ -4491,7 +4509,7 @@ Handler 只执行一次。
 
 ### CLIENT-PROD-GATE-01 - Client Production Gate
 
-- Status: `Locked`（Gate 8）
+- Status: `Locked` — evidence collection requires production infrastructure (drills, alerts, backup-restore)
 - Suggested role: `SRE / SECURITY / QA`
 - Depends on: `CLIENT-TRENCH-PILOT-01`
 - 只允许: 测试, 运行手册, 告警, Dashboard, Feature Flag, 发布记录；

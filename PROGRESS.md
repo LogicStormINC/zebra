@@ -55,6 +55,24 @@
   every successor remains `Locked` behind the gate order and this card
   changes documentation and governance only.
 
+- Client Integration Plane V1 is implemented end-to-end (2026-08-25,
+  maintainer batch activation on `codex/client-adr-01`): the full
+  backend chain — capability/session/effect contracts (migrations
+  v31-v33, real-PostgreSQL compose suites all PASS), platform bundle
+  composition behind the default-off `ZEBRA_CLIENT_INTEGRATION_ENABLED`
+  flag, management + runtime client APIs, AG-UI client admission,
+  client-state context injection, the schedule-only worker client
+  channel with `waiting_client_effect` suspension and atomic
+  receipt-driven resume restoring the original tool call — plus the
+  zero-dependency TypeScript client-core and React hook surface.
+  Validation: full targeted matrix green (agent_core 523, agent_storage
+  non-PG 146, api 388, worker 171, context 50, architecture 50,
+  conformance parametrized over two frontends, SDK node tests 8);
+  file-size gate 0 violations. Remaining follow-ups: dedicated AG-UI
+  SSE client-effect projection with reconnect replay, jsdom/vitest
+  DOM-level React tests, the Trench pilot (external repo) and the
+  production gate.
+
 - Maintainer line acceptance closed (2026-08-21, gate 5, reviewed at
   `cloud-agent@5bab4b57`): the complete 59-path delta from
   `e2f76046^1..5bab4b57` was reviewed across Host admission/freeze,

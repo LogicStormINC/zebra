@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from agent_context.adapter import LocalContextCompiler
 from agent_context.client_state import (
     client_state_context_item,

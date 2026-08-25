@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from datetime import UTC, datetime
 
 import pytest
-
 from agent_core.domain.client_run_bindings import ClientRunBinding
 from agent_core.domain.client_sessions import ClientControlFence
 from agent_core.domain.identifiers import (
-    new_client_effect_id,
     new_client_run_binding_id,
     new_client_session_id,
     new_session_id,
@@ -60,7 +57,9 @@ def _binding(actions: tuple[str, ...]) -> ClientRunBinding:
     )
 
 
-def _gateway(actions: tuple[str, ...] = ("app.ui.item.open",)) -> tuple[ClientToolGateway, RecordingDispatch]:
+def _gateway(
+    actions: tuple[str, ...] = ("app.ui.item.open",),
+) -> tuple[ClientToolGateway, RecordingDispatch]:
     dispatch = RecordingDispatch()
     gateway = ClientToolGateway(
         context=ClientGatewayContext(
@@ -98,8 +97,10 @@ def test_execute_only_schedules_a_durable_effect() -> None:
 
 
 def test_actions_outside_the_binding_fail_closed() -> None:
+    from agent_core.domain.client_run_bindings import ClientBindingNarrowingError
+
     gateway, dispatch = _gateway()
-    with pytest.raises(Exception):
+    with pytest.raises(ClientBindingNarrowingError):
         gateway.execute(_call("app.ui.absent.open"))
     assert dispatch.scheduled == []
 

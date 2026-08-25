@@ -1,5 +1,26 @@
 # Findings
 
+## CLIENT-PLANE-V1 - 2026-08-25
+
+- The child-wakeup pattern (freeze state in an event, deterministic
+  uuid5 resume command, HARNESS-actor-only trust gate, stub-message
+  stripping) mapped 1:1 onto client effects; the new
+  CLIENT_EFFECT_SCHEDULED event carries the frozen conversation just
+  like SUBAGENT_DELEGATED.
+- ToolBatchExecutor ends a sequential turn COMPLETED after one tool;
+  deferred client effects needed an explicit branch so the loop reaches
+  the suspension check instead (tool_batch.py).
+- routes.py sat at the 500-line limit; the /users//tenants/ memory
+  families moved to memory_routes.py (behavior-identical) to admit the
+  client dispatchers. execution.py held at exactly 500 via
+  line-neutral compressions.
+- pydantic wraps domain ValueErrors raised inside validators into
+  ValidationError; client tests unwrap `error.ctx.error` to keep
+  asserting the domain error types.
+- Node 22 runs the SDK tests directly via --experimental-strip-types,
+  but rejects .tsx and parameter properties; the SDK therefore uses
+  createElement + plain constructors with zero npm runtime deps.
+
 ## CLIENT-ADR-01 - 2026-08-25
 
 - AG-UI `RunAgentInput` already parses `state` / `tools` / `context` /

@@ -1,5 +1,15 @@
 # Task Plan
 
+## Client Integration Plane 执行状态（2026-08-25 刷新）
+
+`codex/client-adr-01` 上 19/22 张卡关闭（详见 AGENT_TASKS Client 板）：
+契约 → v31-v33 持久化（三个真实 PG compose 套件 PASS）→ 平台组合 →
+管理/运行面 API → AG-UI admission → client context → schedule-only
+Worker 通道 → waiting_client_effect 挂起 → 原子 Receipt 恢复 →
+TS client-core + React hooks → 双前端一致性套件 + 零业务分支门禁。
+剩余：AG-UI SSE client-effect 投影（重连重放）、jsdom/vitest DOM 级
+React 测试、Trench 试点（外部仓库）、生产门（生产设施）。
+
 ## Client Integration Plane 激活（2026-08-25，`CLIENT-ADR-01`）
 
 权威文档：`docs/ADR-CLIENT-01_Client_Integration_Plane.md`；任务注册：

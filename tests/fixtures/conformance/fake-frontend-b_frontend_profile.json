@@ -1,0 +1,28 @@
+{
+  "frontend_app_id": "workflow-web",
+  "revision": 1,
+  "readables": [
+    {
+      "name": "workflow.ui.route"
+    }
+  ],
+  "actions": [
+    {
+      "name": "workflow.ui.note.edit",
+      "risk": "local_state",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "noteId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "published_at": "2026-08-25T00:00:00Z"
+}
