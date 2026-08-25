@@ -1,5 +1,42 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE review closeout round 9 - 2026-08-25
+
+第九轮复审 4 个 P1、1 个 P2、1 个 P3,按根因(而非表面补丁)修复:
+
+- P1 receipt 锚点错误:旧实现以 `authority.expected_stream_revision`
+  (提交前)重建投影,真实 recorder 连普通提交都会 mismatch。现以
+  `receipt.session_revision` 重建并在该修订号上接受;其后的 tail 通过
+  新公开的 `recorder.refresh_tail()` 只更新内存(不重投影已提交
+  事件,terminal 状态不触发执行门)。回归改用真实 SQLite stores +
+  真实 DurableHarnessEventRecorder + memory 事件真实占用序列:
+  普通提交与超前投影两个场景均通过。
+- P1 runtime 清理失败被吞:删除第二所有权
+  `runtime.destroy`(OCI 语义下失败重试是 no-op,会孤儿容器);
+  gateway close 成为唯一释放路径,ownership finally 以
+  `gateway_released` 标志保证只关一次,返回的 cleanup error 写入
+  stderr 留痕(不再静默丢弃)。
+- P1 title 冷却仅单进程有效:改为共享 durable 幂等存储上的
+  **时间桶 key**(`worker-title-retry:{session_id}:{bucket}`,
+  bucket=floor(t/15min))——同桶内任意 worker/任意 poll 幂等跳过,
+  跨桶自然允许一次重试;first-write-wins 的 save 语义天然适配,
+  无需更新或删除。进程内字典保留为无 store 回退。回归覆盖两个
+  worker 实例共享 durable store 仍只调一次模型。
+- P1 幂等冲突 poison-session:`SessionEventIdempotencyConflictError`
+  从 ready 循环的 skip 面移除——确定性冲突 fail loud 冒出,不再以
+  瞬态名义热循环饿死批内其他会话。
+- P2 文本匹配不够:两个存储适配器在序列被占时抛出新的类型化
+  `SessionEventSequenceConflictError`(SQLite 事后探测
+  (session,sequence) 占用;PostgreSQL 以流 CAS 失败即定义);
+  `is_sequence_race` 改为纯 isinstance 判定,文本匹配删除。
+- P3 死代码:`_POLL_SKIP_ERRORS`(含宽泛 ValueError、无调用方)
+  已删除。
+
+验证:全仓 `2671 passed / 348 skipped`,真 PG Context `8/8`,
+Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
+`git diff --check` 干净。
+
+
 ## CTX-TURN-LIFECYCLE review closeout round 8 - 2026-08-25
 
 第八轮复审 3 个 P1、2 个 P2,全部修复并有确定性回归:

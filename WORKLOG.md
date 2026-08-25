@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 9 (4xP1, 1xP2, 1xP3)
+
+- 根因修复:receipt 以自身 revision 接受+refresh_tail 仅内存追平;
+  runtime 单一 gateway close 所有权(cleanup error 留痕);title 重试
+  改共享 durable 幂等存储时间桶;幂等冲突 fail loud;存储层新增
+  SessionEventSequenceConflictError 类型化竞争;删除死代码。
+- 回归升级为真实 recorder/真实序列;双 worker durable 限流覆盖。
+- 验证:全仓 `2671 passed / 348 skipped`;PG `8/8`;composition
+  `33/33 PASS`;`make check` 全绿;`git diff --check` 干净。
+
+
 ## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 8 (3xP1, 2xP2)
 
 - receipt 按 receipt revision 接受+尾部重放;runtime 所有权

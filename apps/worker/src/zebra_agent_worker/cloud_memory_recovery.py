@@ -12,6 +12,8 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import (
     EventStorePort,
     GovernedMemoryStorePort,
+    IdempotencyRecord,
+    IdempotencyStorePort,
     ProjectionStorePort,
     WorkspaceProjectionStorePort,
 )
@@ -35,6 +37,7 @@ class CloudMemoryFinalizationRecovery:
         claim_service: SessionClaimService,
         recorder_factory: WorkerProjectionRecorderFactory,
         memory_store: GovernedMemoryStorePort,
+        idempotency_store: IdempotencyStorePort | None = None,
         deployment_namespace: str,
         event_store: EventStorePort,
         projection_store: ProjectionStorePort,
@@ -44,6 +47,7 @@ class CloudMemoryFinalizationRecovery:
         self._claim_service = claim_service
         self._recorder_factory = recorder_factory
         self._memory_store = memory_store
+        self._idempotency_store = idempotency_store
         self._deployment_namespace = deployment_namespace
         self._event_store = event_store
         self._title_attempts: dict[SessionId, datetime] = {}
@@ -100,13 +104,43 @@ class CloudMemoryFinalizationRecovery:
             if any(event.event_type is EventType.SESSION_TITLE_UPDATED for event in events):
                 return True
             now = recovered_at
+            bucket = int(now.timestamp() // TITLE_RETRY_COOLDOWN.total_seconds())
+            retry_key = f"worker-title-retry:{session_id}:{bucket}"
+            if self._idempotency_store is not None and (
+                self._idempotency_store.get(
+                    action="worker-title-retry", idempotency_key=retry_key
+                )
+                is not None
+            ):
+                # Another worker (or an earlier poll in this cooldown
+                # bucket) already attempted the title: the durable record
+                # bounds retries across every stateless Worker.
+                return True
             last_attempt = self._title_attempts.get(session_id)
             if last_attempt is not None and now - last_attempt < TITLE_RETRY_COOLDOWN:
-                # generate() returning None (provider failure, blank or
-                # unchanged title) leaves no durable marker: without a
-                # cooldown the scan would re-bill the title model on
-                # every poll for every recent session.
                 return True
+            self._title_attempts[session_id] = now
+            title_event = self._title_service_factory().generate(
+                session=recorder.session,
+                events=events,
+                next_sequence=recorder.next_sequence,
+            )
+            if title_event is not None:
+                recorder.append_event(title_event)
+                self._title_attempts.pop(session_id, None)
+                return True
+            if self._idempotency_store is not None:
+                self._idempotency_store.save(
+                    IdempotencyRecord(
+                        action="worker-title-retry",
+                        idempotency_key=retry_key,
+                        request_hash="title-retry",
+                        status_code=204,
+                        response_body={"attempted_at": now.isoformat()},
+                        created_at=now,
+                    )
+                )
+            return True
             self._title_attempts[session_id] = now
             title_event = self._title_service_factory().generate(
                 session=recorder.session,

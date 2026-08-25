@@ -266,6 +266,18 @@ class DurableHarnessEventRecorder:
         if self._session != session or self._workspace != workspace:
             raise ValueError("committed Context projections do not match Event replay")
 
+    def refresh_tail(self) -> None:
+        """Adopt externally committed events into recorder memory only.
+
+        Used after accepting a fenced receipt when later events (e.g. the
+        next human message) were already committed and projected by
+        another writer: the recorder catches up WITHOUT writing primary
+        projections again. Terminal control states are legitimate here —
+        this is recovery bookkeeping, not an execution gate.
+        """
+        self._ownership_check()
+        self._refresh_external_events()
+
     def _refresh_external_events(self) -> None:
         for event in self._event_store.read_since(
             self._session.session_id,

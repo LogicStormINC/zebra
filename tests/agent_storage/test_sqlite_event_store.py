@@ -61,7 +61,9 @@ def test_sqlite_event_store_rejects_duplicate_sequence_for_same_session(
 
     store.append(first_event)
 
-    with pytest.raises(ValueError, match="duplicate or conflicting session event"):
+    from agent_storage import SessionEventSequenceConflictError
+
+    with pytest.raises(SessionEventSequenceConflictError):
         store.append(conflicting_event)
 
 

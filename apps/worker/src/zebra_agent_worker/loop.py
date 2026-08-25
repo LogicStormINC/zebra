@@ -22,7 +22,6 @@ from agent_storage import (
     ControlPlaneStores,
     LeaseConflictError,
     PostgresControlPlaneStores,
-    SessionEventIdempotencyConflictError,
     cloud_composition_from_environment,
     with_committed_event_publisher,
 )
@@ -50,19 +49,6 @@ from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoverySer
 from zebra_agent_worker.resume import SessionResumeError, SessionResumeService
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
-
-# Errors the memory-recovery scan tolerates: sequence races, concurrent
-# control events and transient lease-heartbeat failures skip the
-# session instead of aborting the poll cycle.
-_POLL_SKIP_ERRORS = (
-    LeaseConflictError,
-    SessionRecoveryError,
-    WorkerExecutionError,
-    ValueError,
-    ExecutionInterrupted,
-    LeaseHeartbeatError,
-    LeaseLostError,
-)
 
 
 @dataclass(frozen=True)
@@ -164,7 +150,6 @@ class WorkerLoopService:
                 ExecutionInterrupted,
                 LeaseHeartbeatError,
                 LeaseLostError,
-                SessionEventIdempotencyConflictError,
             ) as skip_error:
                 skipped_ids.append(session_id)
                 print(
@@ -449,6 +434,7 @@ def build_worker_loop_service(
                 deployment_namespace=active_namespace,
             ),
             memory_store=cloud_memory_store,
+            idempotency_store=execution_stores.idempotency,
             deployment_namespace=active_namespace,
             event_store=execution_stores.events,
             projection_store=execution_stores.sessions,

@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
-from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_storage import sqlite_control_plane_stores
 from zebra_agent_worker.execution_errors import is_sequence_race
 from zebra_agent_worker.execution_events import ExecutionInterrupted
@@ -13,12 +13,17 @@ from zebra_agent_worker.execution_events import ExecutionInterrupted
 NOW = datetime(2026, 8, 25, 14, 0, tzinfo=UTC)
 
 
-def test_idempotency_conflict_is_not_a_sequence_race() -> None:
-    from agent_storage import SessionEventIdempotencyConflictError
+def test_only_the_typed_sequence_conflict_is_a_race() -> None:
+    from agent_storage import (
+        SessionEventIdempotencyConflictError,
+        SessionEventSequenceConflictError,
+    )
 
+    assert is_sequence_race(SessionEventSequenceConflictError("lost the cas"))
     conflict = SessionEventIdempotencyConflictError("same key, different content")
     assert not is_sequence_race(conflict)
-    assert is_sequence_race(ValueError("duplicate or conflicting session event"))
+    # The legacy text and every other integrity failure fail closed.
+    assert not is_sequence_race(ValueError("duplicate or conflicting session event"))
     assert not is_sequence_race(ValueError("illegal transition"))
     assert not is_sequence_race(RuntimeError("boom"))
 
@@ -144,6 +149,19 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
         claim_service=_Claims(),
         recorder_factory=_Factory(),
         memory_store=_NoMemoryStore(),
+        idempotency_store=stores.idempotency,
+        deployment_namespace="cooldown-test",
+        event_store=stores.events,
+        projection_store=stores.sessions,
+        workspace_store=stores.workspaces,
+        title_service_factory=lambda: _TitleService(),
+    )
+    # A second Worker process shares ONLY the durable store.
+    other_worker = CloudMemoryFinalizationRecovery(
+        claim_service=_Claims(),
+        recorder_factory=_Factory(),
+        memory_store=_NoMemoryStore(),
+        idempotency_store=stores.idempotency,
         deployment_namespace="cooldown-test",
         event_store=stores.events,
         projection_store=stores.sessions,
@@ -157,9 +175,9 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
         recovered_at=NOW,
         lease_ttl_seconds=30,
     )
-    second = service.recover(
+    second = other_worker.recover(
         bootstrap.session.session_id,
-        worker_id="w",
+        worker_id="w2",
         recovered_at=NOW + timedelta(seconds=1),
         lease_ttl_seconds=30,
     )
@@ -167,14 +185,14 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
     assert first is True and second is True
     assert calls["count"] == 1  # the cooldown suppressed the second poll
     # after the cooldown expires a retry is allowed again
-    third = service.recover(
+    third = other_worker.recover(
         bootstrap.session.session_id,
         worker_id="w",
         recovered_at=NOW + TITLE_RETRY_COOLDOWN + timedelta(seconds=1),
         lease_ttl_seconds=30,
     )
     assert third is True
-    assert calls["count"] == 2
+    assert calls["count"] == 2  # a NEW bucket allows exactly one retry
 
 
 def test_gateway_failure_after_setup_closes_the_gateway(tmp_path: Path) -> None:
@@ -253,3 +271,163 @@ def test_gateway_failure_after_setup_closes_the_gateway(tmp_path: Path) -> None:
     # assertion is that the boundary RELEASED the gateway instead of
     # leaking it past the interrupted continuation start.
     assert closed["count"] >= 1
+
+
+def _build_receipt_session(tmp_path: Path, *, with_follow_up: bool):
+    """Real SQLite stores + real recorder; memory events REALLY occupy
+    sequences 5-6 so the receipt carries session_revision=6."""
+    from uuid import uuid4
+
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.application.workspace_projection import rebuild_workspace
+    from agent_core.domain.identifiers import MemoryId
+    from agent_core.domain.leases import LeaseFence
+    from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
+    from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+    from zebra_agent_worker.model_call_index import ModelCallIndexer
+    from zebra_agent_worker.tool_run_index import ToolRunIndexer
+
+    stores = sqlite_control_plane_stores(tmp_path / "receipt.sqlite")
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Receipt anchor",
+            user_input="anchor the acceptance on the receipt revision",
+            workspace_root=tmp_path,
+        )
+    )
+    sid = bootstrap.session.session_id
+    for event in bootstrap.events:
+        stores.events.append(event)
+
+    def append(event_type, payload, actor=EventActor.HARNESS, key=None):
+        events = stores.events.list_for_session(sid)
+        stores.events.append(
+            SessionEvent.create(
+                session_id=sid,
+                sequence=events[-1].sequence + 1,
+                event_type=event_type,
+                actor=actor,
+                payload=payload,
+                idempotency_key=key,
+            )
+        )
+
+    append(EventType.HARNESS_ATTEMPT_STARTED, {"attempt_number": 1})
+    append(
+        EventType.SESSION_COMPLETED,
+        {"attempt_number": 1, "summary": "done"},
+    )
+    memory_ids = []
+    for index in range(2):
+        memory_ids.append(str(MemoryId(uuid4())))
+        append(
+            EventType.MEMORY_CANDIDATE_EXTRACTED,
+            {
+                "memory_id": memory_ids[-1],
+                "memory_type": "project_rule",
+                "status": "candidate",
+                "visibility": "repo",
+                "text": f"rule {index}",
+                "confidence": 1.0,
+                "source_event_start": 0,
+                "source_event_end": 4,
+            },
+        )
+    follow_up_seq = None
+    if with_follow_up:
+        events = stores.events.list_for_session(sid)
+        follow_up_seq = events[-1].sequence + 1
+        stores.events.append(
+            SessionEvent.create(
+                session_id=sid,
+                sequence=follow_up_seq,
+                event_type=EventType.USER_MESSAGE_RECEIVED,
+                actor=EventActor.USER,
+                payload={"content": "the concurrent follow-up"},
+            )
+        )
+    events = stores.events.list_for_session(sid)
+    head = rebuild_session(events)
+    head_workspace = rebuild_workspace(events)
+    stores.sessions.save_session(head)
+    stores.workspaces.save_workspace(head_workspace)
+
+    receipt_revision = events[-1].sequence if not with_follow_up else follow_up_seq - 1
+    receipt_event_ids = tuple(
+        event.event_id
+        for event in events
+        if event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
+    )
+    receipt = SimpleNamespace(
+        session_revision=receipt_revision, event_ids=receipt_event_ids
+    )
+
+    at_anchor = [e for e in events if e.sequence <= 4]
+    recorder = DurableHarnessEventRecorder(
+        session=rebuild_session(at_anchor),
+        workspace=rebuild_workspace(at_anchor),
+        event_store=stores.events,
+        projection_store=stores.sessions,
+        workspace_store=stores.workspaces,
+        model_call_indexer=ModelCallIndexer(stores.model_calls),
+        tool_run_indexer=ToolRunIndexer(stores.tool_runs),
+        worker_projection_transaction=SimpleNamespace(),
+        worker_mutation_authority=WorkerMutationAuthority(
+            deployment_namespace="receipt-test",
+            session_id=sid,
+            lease_fence=LeaseFence(
+                control_plane_epoch=uuid4(), fencing_token=1, owner_instance_id="w"
+            ),
+            expected_stream_revision=4,
+        ),
+    )
+    return stores, recorder, receipt, sid
+
+
+def test_receipt_acceptance_works_for_a_plain_commit() -> None:
+    """No concurrency at all: authority=4, receipt=6, stored=6."""
+    import tempfile
+
+    from zebra_agent_worker.cloud_memory_finalization import _accept_receipt
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stores, recorder, receipt, sid = _build_receipt_session(
+            Path(tmp), with_follow_up=False
+        )
+        _accept_receipt(
+            recorder=recorder,
+            receipt=receipt,
+            event_store=stores.events,
+            projection_store=stores.sessions,
+            workspace_store=stores.workspaces,
+        )
+        events = stores.events.list_for_session(sid)
+        assert recorder.session.current_sequence == events[-1].sequence
+        assert recorder.workspace.current_sequence == events[-1].sequence
+
+
+def test_receipt_acceptance_survives_an_ahead_projection() -> None:
+    """A follow-up message at 7 advanced the stored projection to 7."""
+    import tempfile
+
+    from zebra_agent_worker.cloud_memory_finalization import _accept_receipt
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stores, recorder, receipt, sid = _build_receipt_session(
+            Path(tmp), with_follow_up=True
+        )
+        assert receipt.session_revision == 6
+        _accept_receipt(
+            recorder=recorder,
+            receipt=receipt,
+            event_store=stores.events,
+            projection_store=stores.sessions,
+            workspace_store=stores.workspaces,
+        )
+        events = stores.events.list_for_session(sid)
+        # The recorder adopted the whole tail INCLUDING the follow-up and
+        # agrees with the durable projection at the head (this one-shot
+        # segment stays completed: a post-terminal message does not
+        # re-arm it).
+        assert recorder.session.current_sequence == events[-1].sequence
+        assert recorder.session == stores.sessions.get_session(sid)

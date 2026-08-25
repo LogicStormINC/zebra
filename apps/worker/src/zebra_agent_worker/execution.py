@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import sys
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -342,13 +343,9 @@ class SessionExecutionService:
                 cloud_artifacts=cloud_artifacts,
             )
         except ExecutionInterrupted:
-            # Best-effort teardown mirrors the sibling setup branch; the
-            # concurrently chosen control outcome is the durable truth.
-            if runtime_handle is not None:
-                try:
+            with contextlib.suppress(Exception):
+                if runtime_handle is not None:
                     runtime.destroy(runtime_handle)
-                except Exception:  # noqa: BLE001
-                    pass
             return _superseded_by_control_event(authority_recorder)
         except Exception as exc:
             cleanup_error = None
@@ -362,7 +359,8 @@ class SessionExecutionService:
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
                 ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
-        try:  # runtime ownership from gateway creation onward
+        try:
+            gateway_released = False
             context_compiler = LocalContextCompiler()
             context = core_harness.HarnessContext(
                 task=harness_task_for_recovered(
@@ -492,9 +490,8 @@ class SessionExecutionService:
             )
         except ExecutionInterrupted:
             return _superseded_by_control_event(authority_recorder)
-        finally:  # idempotent release; model phase closes on normal path
-            with contextlib.suppress(Exception):
-                runtime_authority.close_tool_gateway(tool_gateway)
-            if runtime_handle is not None:
-                with contextlib.suppress(Exception):
-                    runtime.destroy(runtime_handle)
+        finally:  # gateway owns the runtime: single release, errors surfaced
+            if not gateway_released:
+                cleanup_error = runtime_authority.close_tool_gateway(tool_gateway)
+                if cleanup_error is not None:
+                    print(f"gateway cleanup failed: {cleanup_error}", file=sys.stderr)

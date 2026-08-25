@@ -103,19 +103,19 @@ def error_metadata(
     return metadata
 
 
-_SEQUENCE_RACE_MESSAGE = "duplicate or conflicting session event"
-
-
 def is_sequence_race(exc: BaseException) -> bool:
-    """True only for a LOST SEQUENCE CAS.
+    """True only for the typed LOST SEQUENCE CAS.
 
-    Both stores report that with the same ValueError text. A
-    same-key/different-payload retry (SessionEventIdempotencyConflictError)
-    is a deterministic semantic conflict and must fail closed — it is
-    deliberately NOT classified as a race.
+    Both storage adapters raise SessionEventSequenceConflictError when
+    another event already took this (session, sequence) — the single
+    retriable race. Event-id reuse, same-key/different-payload retries and
+    every other integrity violation keep their own errors and fail
+    closed; text matching is deliberately gone.
     """
 
-    return isinstance(exc, ValueError) and _SEQUENCE_RACE_MESSAGE in str(exc)
+    from agent_storage import SessionEventSequenceConflictError  # noqa: PLC0415
+
+    return isinstance(exc, SessionEventSequenceConflictError)
 
 
 @contextmanager
