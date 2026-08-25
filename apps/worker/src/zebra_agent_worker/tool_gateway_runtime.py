@@ -34,10 +34,15 @@ class WorkerToolGateway:
     host_manifest: HostToolManifest | None = None
     runtime: RuntimePort | None = None
     runtime_handle: RuntimeHandle | None = None
+    client: object | None = None
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
-        return self.local.model_tools + _host_model_tools(self.host_manifest)
+        tools = self.local.model_tools + _host_model_tools(self.host_manifest)
+        client_gateway = self.client
+        if client_gateway is not None:
+            tools = tools + tuple(client_gateway.model_tools)
+        return tools
 
     @property
     def effective_mcp_tools(self) -> tuple[ModelToolDefinition, ...]:
@@ -54,7 +59,12 @@ class WorkerToolGateway:
             if self.host_manifest is not None
             else frozenset()
         )
-        return self.local.parallel_safe_tools | host_safe
+        client_safe = (
+            frozenset(self.client.parallel_safe_tools)
+            if self.client is not None
+            else frozenset()
+        )
+        return self.local.parallel_safe_tools | host_safe | client_safe
 
     @property
     def parallel_batch_limits(self) -> dict[str, int]:
@@ -74,7 +84,12 @@ class WorkerToolGateway:
     def resolve_model_tool_calls(self, tool_calls: tuple[ToolCall, ...]) -> tuple[ToolCall, ...]:
         return self.local.resolve_model_tool_calls(tool_calls)
 
-    def execute(self, tool_call: ToolCall) -> ToolResult:
+    def execute(self, toolCall: ToolCall) -> ToolResult:
+        return self._execute(toolCall)
+
+    def _execute(self, tool_call: ToolCall) -> ToolResult:
+        if self.client is not None and tool_call.name in self.client.parallel_safe_tools:
+            return self.client.execute(tool_call)
         host_manifest = self.host_manifest
         host_names = (
             {tool.name for tool in host_manifest.tools} if host_manifest is not None else set()
@@ -136,6 +151,7 @@ def build_worker_tool_gateway(
     parent_binding: object | None = None,
     manifest_digest: str | None = None,
     frozen_manifest_loader: object = None,
+    client_gateway: object | None = None,
 ) -> WorkerToolGateway:
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,
@@ -256,6 +272,7 @@ def build_worker_tool_gateway(
         host_manifest=manifest,
         runtime=runtime,
         runtime_handle=runtime_handle,
+        client=client_gateway,
     )
 
 

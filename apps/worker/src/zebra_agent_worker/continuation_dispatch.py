@@ -14,6 +14,11 @@ from agent_core.harness.models import HarnessAttemptResult, HarnessContext
 from zebra_agent_worker.approved_continuation import ApprovedContinuation
 from zebra_agent_worker.child_wakeup_continuation import ChildWakeupContinuation
 from zebra_agent_worker.clarification_continuation import ClarificationContinuation
+from zebra_agent_worker.client_effect_resume import (
+    ClientEffectWakeup,
+    client_effect_wakeup_completion,
+    client_effect_wakeup_tool_result,
+)
 
 if TYPE_CHECKING:
     from agent_core.harness.orchestrator import SingleAttemptOrchestrator
@@ -26,7 +31,19 @@ def run_continuation(
     continuation: ApprovedContinuation | None,
     clarification: ClarificationContinuation | None,
     child_wakeup: ChildWakeupContinuation | None = None,
+    client_effect: ClientEffectWakeup | None = None,
 ) -> HarnessAttemptResult:
+    if client_effect is not None:
+        return orchestrator.continue_completed_tool(
+            context,
+            completion=client_effect_wakeup_completion(client_effect),
+            tool_call=client_effect.tool_call,
+            tool_result=client_effect_wakeup_tool_result(client_effect),
+            conversation=client_effect.conversation,
+            model_calls_used=client_effect.model_calls_used,
+            tool_calls_executed=client_effect.tool_calls_executed,
+            assistant_message=client_effect.assistant_message,
+        )
     if child_wakeup is not None:
         return orchestrator.continue_completed_tools(
             context,
