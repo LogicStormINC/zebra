@@ -1299,7 +1299,46 @@
   an explicit caller ceiling remains strict. A batch that cannot fit starts no
   tools and suspends recoverably instead of becoming a generic Task failure.
 
+### Platform Console (apps/platform-web)
+
+- The management console frontend exists at `apps/platform-web`, built on the
+  `next-shadcn-dashboard-starter` template (Next.js 16 App Router, React 19,
+  Tailwind 4, base-ui shadcn) with the template's Clerk auth removed — the
+  console intentionally ships without a user system for this phase and the
+  operator identity is a local placeholder.
+- The full PRD v1.1 information architecture is implemented: 8 top-level
+  navigation modules and 47 route groups (overview, integrations with the
+  7-step onboarding wizard and three-pane Manifest editor, Agent assets with
+  Effective Policy Simulator, runtime center with the 12-tab Task detail and a
+  dependency-free SVG Orchestration DAG, frontend capability center with the
+  profile-driven Hook code generator, quality/release gates, governance and
+  audit with real CSV export, and system settings).
+- Data access is centralized behind `src/lib/platform/repository.ts`; it reads
+  a local mock dataset shaped on the Trench/Jazz pilot so the console runs
+  standalone before the Management API exists. Swapping the repository for an
+  OpenAPI-generated client is the single integration point.
+- PRD safety rules are enforced in the UI layer: digests and IDs render as
+  copyable monospace with full-value tooltips, high-risk operations require a
+  reason-bearing confirm dialog, published revisions render immutable, and no
+  page displays plaintext credentials or raw Fence tokens (references and
+  hash digests only).
+
 ## Latest Validation Baseline
+
+Validated on `codex/platform-web-bootstrap-01` on 2026-08-26 (Platform
+Console, `apps/platform-web`):
+
+- `pnpm typecheck` (`tsc --noEmit`): 0 errors across 299 source files
+- `pnpm lint` (oxlint): 0 errors, 92 accepted warnings (73 are the standard
+  TanStack Table inline-cell pattern; the rest are template-legacy)
+- `pnpm build`: production build compiled successfully, 48 routes generated
+- production server route smoke: `54/54` console routes returned 200 with
+  SSR content markers verified (overview KPIs/charts, Task detail timeline
+  and binding digests, the 6-node Orchestration DAG, wizard step gating and
+  transition, the three-pane Manifest editor, Hook code generation with real
+  profile contract names)
+- code review pass closed on hydration safety, dead links, PRD secret/fence
+  display rules, and immutability affordances
 
 Validated on `codex/ctx-seg-02-followup-recovery` on 2026-07-20:
 

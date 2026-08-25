@@ -1,0 +1,506 @@
+import type {
+  BackendManifest,
+  Connector,
+  Host,
+  InboundTrust,
+  NamespaceBinding
+} from '@/lib/platform/types';
+
+/**
+ * 接入中心 mock 数据。
+ * 场景基线：Trench 已完成接入（PRD 首个试点），Jazz 接入进行中（PRD 5.1），
+ * fake-host-a / fake-host-b 用于验收 35.8 多业务接入。
+ */
+
+export const mockHosts: Host[] = [
+  {
+    id: 'host_01H9TRENCH',
+    appId: 'trench',
+    name: 'Trench 交易平台',
+    owner: 'platform-team',
+    environment: 'production',
+    description: '首个试点业务：交易风险分析与工程助手',
+    contact: 'trench-owners@zebra.local',
+    tags: ['pilot', 'trading'],
+    inboundTrustHealth: 'healthy',
+    connectorId: 'conn_trench_01',
+    connectorRevision: 3,
+    manifestId: 'bm_trench_v5',
+    manifestRevision: 5,
+    frontendProfileId: 'fp_trench_web',
+    frontendProfileRevision: 4,
+    agentReleaseCount: 2,
+    lastConformance: 'passed',
+    status: 'active',
+    onboardingStep: 7,
+    updatedAt: '2026-08-25T16:40:00+08:00'
+  },
+  {
+    id: 'host_01H9JAZZ00',
+    appId: 'jazz',
+    name: 'Jazz 内容平台',
+    owner: 'content-team',
+    environment: 'staging',
+    description: '第二个接入业务：内容审核与选题助手',
+    contact: 'jazz-dev@zebra.local',
+    tags: ['onboarding'],
+    inboundTrustHealth: 'warning',
+    connectorId: 'conn_jazz_01',
+    connectorRevision: 1,
+    agentReleaseCount: 0,
+    lastConformance: 'pending',
+    status: 'draft',
+    onboardingStep: 4,
+    updatedAt: '2026-08-25T11:20:00+08:00'
+  },
+  {
+    id: 'host_01HFAKEA00',
+    appId: 'fake-host-a',
+    name: 'Fake Host A（验收）',
+    owner: 'platform-team',
+    environment: 'development',
+    description: 'Conformance 验收用 Host，同一页面同一流程（PRD 35.8）',
+    contact: 'qa@zebra.local',
+    tags: ['conformance'],
+    inboundTrustHealth: 'healthy',
+    connectorId: 'conn_fake_a_01',
+    connectorRevision: 2,
+    manifestId: 'bm_fake_a_v2',
+    manifestRevision: 2,
+    agentReleaseCount: 1,
+    lastConformance: 'passed',
+    status: 'active',
+    onboardingStep: 7,
+    updatedAt: '2026-08-24T09:10:00+08:00'
+  },
+  {
+    id: 'host_01HFAKEB00',
+    appId: 'fake-host-b',
+    name: 'Fake Host B（验收）',
+    owner: 'platform-team',
+    environment: 'development',
+    description: 'Effect 对账验收用 Host，当前暂停接入',
+    contact: 'qa@zebra.local',
+    tags: ['conformance', 'paused'],
+    inboundTrustHealth: 'invalid',
+    connectorId: 'conn_fake_b_01',
+    connectorRevision: 1,
+    manifestId: 'bm_fake_b_v1',
+    manifestRevision: 1,
+    agentReleaseCount: 1,
+    lastConformance: 'failed',
+    status: 'suspended',
+    onboardingStep: 7,
+    updatedAt: '2026-08-23T14:05:00+08:00'
+  }
+];
+
+export const mockTrusts: InboundTrust[] = [
+  {
+    id: 'trust_trench_01',
+    hostAppId: 'trench',
+    issuer: 'https://auth.trench.example/realms/trench',
+    audience: 'zebra-cloud-agent',
+    jwksUri: 'https://auth.trench.example/realms/trench/protocol/openid-connect/certs',
+    allowedOrigins: ['https://app.trench.example', 'https://console.trench.example'],
+    algorithms: ['RS256', 'ES256'],
+    policyVersion: 'trust-policy/v3',
+    namespaceStrategy: 'claim-mapped',
+    clockSkewSeconds: 30,
+    health: 'healthy',
+    lastVerifiedAt: '2026-08-25T15:00:00+08:00',
+    revision: 3,
+    digest: 'a1f7c93e21b84d0fa6c93e21b84d0fa6c93e21b8',
+    status: 'published'
+  },
+  {
+    id: 'trust_jazz_01',
+    hostAppId: 'jazz',
+    issuer: 'https://auth.jazz.example',
+    audience: 'zebra-cloud-agent',
+    jwksUri: 'https://auth.jazz.example/.well-known/jwks.json',
+    allowedOrigins: ['https://jazz.example'],
+    algorithms: ['RS256'],
+    policyVersion: 'trust-policy/v1',
+    namespaceStrategy: 'fixed',
+    clockSkewSeconds: 60,
+    health: 'warning',
+    lastVerifiedAt: '2026-08-25T10:30:00+08:00',
+    revision: 1,
+    digest: 'c44d10ab7e52f93081ba7e52f93081ba7e52f930',
+    status: 'draft'
+  },
+  {
+    id: 'trust_fake_a_01',
+    hostAppId: 'fake-host-a',
+    issuer: 'https://auth.fake-a.zebra.local',
+    audience: 'zebra-cloud-agent',
+    jwksUri: 'https://auth.fake-a.zebra.local/jwks',
+    allowedOrigins: ['https://fake-a.zebra.local'],
+    algorithms: ['RS256'],
+    policyVersion: 'trust-policy/v2',
+    namespaceStrategy: 'fixed',
+    clockSkewSeconds: 30,
+    health: 'healthy',
+    lastVerifiedAt: '2026-08-24T08:00:00+08:00',
+    revision: 2,
+    digest: 'ef90bb3d118c4477aa22118c4477aa22118c4477',
+    status: 'published'
+  },
+  {
+    id: 'trust_fake_b_01',
+    hostAppId: 'fake-host-b',
+    issuer: 'https://auth.fake-b.zebra.local',
+    audience: 'zebra-cloud-agent',
+    jwksUri: 'https://auth.fake-b.zebra.local/jwks',
+    allowedOrigins: ['https://fake-b.zebra.local'],
+    algorithms: ['RS256'],
+    policyVersion: 'trust-policy/v2',
+    namespaceStrategy: 'fixed',
+    clockSkewSeconds: 30,
+    health: 'invalid',
+    lastVerifiedAt: '2026-08-22T18:00:00+08:00',
+    revision: 2,
+    digest: '0b77cc2e9f4a118d55309f4a118d55309f4a118d',
+    status: 'published'
+  }
+];
+
+export const mockConnectors: Connector[] = [
+  {
+    id: 'conn_trench_01',
+    hostAppId: 'trench',
+    baseUri: 'https://connector.trench.example',
+    manifestPath: '/zebra/manifest',
+    invokePath: '/zebra/tools/invoke',
+    reconcilePath: '/zebra/effects/reconcile',
+    protocolVersions: ['zebra-connector/1.2', 'zebra-connector/1.1'],
+    credentialRef: 'vault://trench/connector-workload',
+    workloadIdentityRef: 'workload:trench-connector@prod',
+    networkPolicyRef: 'netpol/egress-trench-connector',
+    timeoutPolicy: { connectSeconds: 5, readSeconds: 30 },
+    retryPolicy: { maxRetries: 3, backoff: 'exponential' },
+    latestRevision: 3,
+    boundRevision: 3,
+    health: 'healthy',
+    status: 'published',
+    digest: '7d21e9fa30cc41b8e97030cc41b8e97030cc41b8',
+    updatedAt: '2026-08-21T10:00:00+08:00'
+  },
+  {
+    id: 'conn_jazz_01',
+    hostAppId: 'jazz',
+    baseUri: 'https://connector.jazz.example',
+    manifestPath: '/api/zebra/manifest',
+    invokePath: '/api/zebra/invoke',
+    reconcilePath: '/api/zebra/reconcile',
+    protocolVersions: ['zebra-connector/1.2'],
+    credentialRef: 'vault://jazz/connector-workload',
+    workloadIdentityRef: 'workload:jazz-connector@staging',
+    networkPolicyRef: 'netpol/egress-jazz-connector',
+    timeoutPolicy: { connectSeconds: 5, readSeconds: 20 },
+    retryPolicy: { maxRetries: 2, backoff: 'fixed' },
+    latestRevision: 1,
+    boundRevision: 1,
+    health: 'degraded',
+    status: 'draft',
+    digest: '31cc08db957e4402ab77957e4402ab77957e4402',
+    updatedAt: '2026-08-25T09:45:00+08:00'
+  },
+  {
+    id: 'conn_fake_a_01',
+    hostAppId: 'fake-host-a',
+    baseUri: 'https://fake-a.zebra.local/connector',
+    manifestPath: '/manifest',
+    invokePath: '/invoke',
+    reconcilePath: '/reconcile',
+    protocolVersions: ['zebra-connector/1.2'],
+    credentialRef: 'vault://fake-a/connector-workload',
+    workloadIdentityRef: 'workload:fake-a-connector@dev',
+    networkPolicyRef: 'netpol/egress-fake-a',
+    timeoutPolicy: { connectSeconds: 3, readSeconds: 10 },
+    retryPolicy: { maxRetries: 2, backoff: 'exponential' },
+    latestRevision: 2,
+    boundRevision: 2,
+    health: 'healthy',
+    status: 'published',
+    digest: '99a2f7c4e33140bb8855e33140bb8855e33140bb',
+    updatedAt: '2026-08-24T08:30:00+08:00'
+  },
+  {
+    id: 'conn_fake_b_01',
+    hostAppId: 'fake-host-b',
+    baseUri: 'https://fake-b.zebra.local/connector',
+    manifestPath: '/manifest',
+    invokePath: '/invoke',
+    reconcilePath: '/reconcile',
+    protocolVersions: ['zebra-connector/1.1'],
+    credentialRef: 'vault://fake-b/connector-workload',
+    workloadIdentityRef: 'workload:fake-b-connector@dev',
+    networkPolicyRef: 'netpol/egress-fake-b',
+    timeoutPolicy: { connectSeconds: 3, readSeconds: 10 },
+    retryPolicy: { maxRetries: 1, backoff: 'fixed' },
+    latestRevision: 1,
+    boundRevision: 1,
+    health: 'unreachable',
+    status: 'published',
+    digest: '4c88ee10cc2b47f0aa99cc2b47f0aa99cc2b47f0',
+    updatedAt: '2026-08-22T16:00:00+08:00'
+  }
+];
+
+export const mockManifests: BackendManifest[] = [
+  {
+    id: 'bm_trench_v5',
+    hostAppId: 'trench',
+    protocolVersion: 'zebra-manifest/1.2',
+    revision: 5,
+    readTools: 4,
+    writeTools: 2,
+    reconcileTools: 2,
+    digest: 'be55cc3a118d40ee9922118d40ee9922118d40ee',
+    status: 'published',
+    conformance: 'passed',
+    createdBy: 'lukeding',
+    createdAt: '2026-08-20T14:00:00+08:00',
+    tools: [
+      {
+        name: 'trench.get_position',
+        description: '读取指定账户的当前持仓与风险敞口',
+        capability: 'position:read',
+        grantScopes: ['trench.positions:read'],
+        risk: 'read',
+        idempotency: 'none',
+        timeoutSeconds: 10,
+        maxOutputBytes: 65536,
+        reconcileCapable: false,
+        argumentSchema: {
+          type: 'object',
+          properties: { account_id: { type: 'string' } },
+          required: ['account_id']
+        }
+      },
+      {
+        name: 'trench.get_risk_report',
+        description: '读取当日风险报告摘要',
+        capability: 'risk:read',
+        grantScopes: ['trench.risk:read'],
+        risk: 'read',
+        idempotency: 'none',
+        timeoutSeconds: 15,
+        maxOutputBytes: 131072,
+        reconcileCapable: false,
+        argumentSchema: { type: 'object', properties: { date: { type: 'string' } } }
+      },
+      {
+        name: 'trench.create_ticket',
+        description: '在 Trench 内创建风控工单',
+        capability: 'ticket:write',
+        grantScopes: ['trench.tickets:write'],
+        risk: 'medium',
+        idempotency: 'idempotency_key',
+        timeoutSeconds: 20,
+        maxOutputBytes: 16384,
+        reconcileCapable: true,
+        argumentSchema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            severity: { enum: ['low', 'medium', 'high'] }
+          },
+          required: ['title']
+        }
+      },
+      {
+        name: 'trench.update_ticket_status',
+        description: '更新工单状态（写操作，支持对账）',
+        capability: 'ticket:write',
+        grantScopes: ['trench.tickets:write'],
+        risk: 'high',
+        idempotency: 'idempotency_key',
+        timeoutSeconds: 20,
+        maxOutputBytes: 16384,
+        reconcileCapable: true,
+        argumentSchema: {
+          type: 'object',
+          properties: {
+            ticket_id: { type: 'string' },
+            status: { enum: ['open', 'resolved', 'escalated'] }
+          },
+          required: ['ticket_id', 'status']
+        }
+      }
+    ]
+  },
+  {
+    id: 'bm_jazz_v1',
+    hostAppId: 'jazz',
+    protocolVersion: 'zebra-manifest/1.2',
+    revision: 1,
+    readTools: 2,
+    writeTools: 0,
+    reconcileTools: 0,
+    digest: '0f11aa8c99e2470bbb3399e2470bbb3399e2470b',
+    status: 'draft',
+    conformance: 'pending',
+    createdBy: 'jazz-integrator',
+    createdAt: '2026-08-25T11:00:00+08:00',
+    tools: [
+      {
+        name: 'jazz.list_drafts',
+        description: '列出待审核内容草稿',
+        capability: 'content:read',
+        grantScopes: ['jazz.content:read'],
+        risk: 'read',
+        idempotency: 'none',
+        timeoutSeconds: 10,
+        maxOutputBytes: 65536,
+        reconcileCapable: false,
+        argumentSchema: { type: 'object', properties: { page: { type: 'number' } } }
+      },
+      {
+        name: 'jazz.get_content_policy',
+        description: '读取内容政策文本',
+        capability: 'policy:read',
+        grantScopes: ['jazz.policy:read'],
+        risk: 'read',
+        idempotency: 'none',
+        timeoutSeconds: 10,
+        maxOutputBytes: 32768,
+        reconcileCapable: false,
+        argumentSchema: { type: 'object' }
+      }
+    ]
+  },
+  {
+    id: 'bm_fake_a_v2',
+    hostAppId: 'fake-host-a',
+    protocolVersion: 'zebra-manifest/1.1',
+    revision: 2,
+    readTools: 1,
+    writeTools: 1,
+    reconcileTools: 1,
+    digest: '77dd33aa22bb4c88f10022bb4c88f10022bb4c88',
+    status: 'published',
+    conformance: 'passed',
+    createdBy: 'qa',
+    createdAt: '2026-08-24T08:20:00+08:00',
+    tools: [
+      {
+        name: 'fake_a.echo',
+        description: '回显输入（Conformance 用）',
+        capability: 'test:read',
+        grantScopes: ['fake-a.test:read'],
+        risk: 'read',
+        idempotency: 'none',
+        timeoutSeconds: 5,
+        maxOutputBytes: 4096,
+        reconcileCapable: false,
+        argumentSchema: { type: 'object', properties: { message: { type: 'string' } } }
+      },
+      {
+        name: 'fake_a.write_marker',
+        description: '写入测试标记（写操作验收）',
+        capability: 'test:write',
+        grantScopes: ['fake-a.test:write'],
+        risk: 'medium',
+        idempotency: 'idempotency_key',
+        timeoutSeconds: 5,
+        maxOutputBytes: 4096,
+        reconcileCapable: true,
+        argumentSchema: { type: 'object', properties: { marker: { type: 'string' } } }
+      }
+    ]
+  },
+  {
+    id: 'bm_fake_b_v1',
+    hostAppId: 'fake-host-b',
+    protocolVersion: 'zebra-manifest/1.1',
+    revision: 1,
+    readTools: 1,
+    writeTools: 1,
+    reconcileTools: 1,
+    digest: '11ffbb7733cc4d99ee2233cc4d99ee2233cc4d99',
+    status: 'published',
+    conformance: 'failed',
+    createdBy: 'qa',
+    createdAt: '2026-08-22T15:00:00+08:00',
+    tools: [
+      {
+        name: 'fake_b.echo',
+        description: '回显输入（Conformance 用）',
+        capability: 'test:read',
+        grantScopes: ['fake-b.test:read'],
+        risk: 'read',
+        idempotency: 'none',
+        timeoutSeconds: 5,
+        maxOutputBytes: 4096,
+        reconcileCapable: false,
+        argumentSchema: { type: 'object', properties: { message: { type: 'string' } } }
+      },
+      {
+        name: 'fake_b.write_marker',
+        description: '写入测试标记（对账失败场景验收）',
+        capability: 'test:write',
+        grantScopes: ['fake-b.test:write'],
+        risk: 'high',
+        idempotency: 'idempotency_key',
+        timeoutSeconds: 5,
+        maxOutputBytes: 4096,
+        reconcileCapable: true,
+        argumentSchema: { type: 'object', properties: { marker: { type: 'string' } } }
+      }
+    ]
+  }
+];
+
+export const mockBindings: NamespaceBinding[] = [
+  {
+    id: 'nb_trench_prod',
+    hostAppId: 'trench',
+    namespace: 'trench/prod',
+    environment: 'production',
+    connectorRevision: 3,
+    manifestRevision: 5,
+    agentReleaseId: 'rel_tr_cr_3',
+    expectedRevision: 3,
+    status: 'active',
+    updatedAt: '2026-08-25T16:30:00+08:00'
+  },
+  {
+    id: 'nb_trench_canary',
+    hostAppId: 'trench',
+    namespace: 'trench/canary',
+    environment: 'production',
+    connectorRevision: 3,
+    manifestRevision: 5,
+    agentReleaseId: 'rel_tr_cr_4',
+    expectedRevision: 4,
+    status: 'canary',
+    updatedAt: '2026-08-25T16:30:00+08:00'
+  },
+  {
+    id: 'nb_fake_a_dev',
+    hostAppId: 'fake-host-a',
+    namespace: 'fake-a/dev',
+    environment: 'development',
+    connectorRevision: 2,
+    manifestRevision: 2,
+    agentReleaseId: 'rel_gen_exec_2',
+    expectedRevision: 2,
+    status: 'active',
+    updatedAt: '2026-08-24T09:00:00+08:00'
+  },
+  {
+    id: 'nb_fake_b_dev',
+    hostAppId: 'fake-host-b',
+    namespace: 'fake-b/dev',
+    environment: 'development',
+    connectorRevision: 1,
+    manifestRevision: 1,
+    agentReleaseId: 'rel_gen_exec_1',
+    expectedRevision: 1,
+    status: 'rolled-back',
+    updatedAt: '2026-08-23T10:00:00+08:00'
+  }
+];

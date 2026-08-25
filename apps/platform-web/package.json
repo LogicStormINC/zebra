@@ -1,0 +1,63 @@
+{
+  "name": "zebra-platform-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zebra Agent Platform Console - 智能体接入与治理中台前端",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt --write . '!**/*.md' '!**/*.mdc' '!**/*.mdx' '!**/*.yml' '!**/*.yaml'",
+    "format:check": "oxfmt --check . '!**/*.md' '!**/*.mdc' '!**/*.mdx' '!**/*.yml' '!**/*.yaml'"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "@shadcn/helpers": "^0.1.0",
+    "@shadcn/react": "^0.2.1",
+    "@tabler/icons-react": "^3.40.0",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@tanstack/react-form": "^1.28.5",
+    "@tanstack/react-query": "^5.95.2",
+    "@tanstack/react-query-devtools": "^5.95.2",
+    "@tanstack/react-table": "^8.21.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "date-fns": "^4.1.0",
+    "kbar": "^0.1.0-beta.48",
+    "motion": "^11.18.2",
+    "next": "16.2.12",
+    "next-themes": "^0.4.6",
+    "nextjs-toploader": "^3.9.17",
+    "nuqs": "^2.8.9",
+    "postcss": "8.5.25",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "recharts": "3.8.0",
+    "sonner": "^1.7.4",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.2",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "5.7.2",
+    "uuid": "^11.1.0",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/uuid": "^10.0.0",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "overrides": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "postcss": "8.5.25"
+  }
+}
