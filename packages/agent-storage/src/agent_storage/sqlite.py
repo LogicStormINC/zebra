@@ -60,17 +60,23 @@ class SQLiteEventStore(EventStorePort):
                     return ensure_idempotent_event_retry(existing_event, event)
                 taken = connection.execute(
                     """
-                    SELECT 1 FROM session_events
+                    SELECT event_id FROM session_events
                     WHERE session_id = ? AND sequence = ?
                     """,
                     (str(event.session_id), event.sequence),
                 ).fetchone()
-                if taken is not None:
-                    # The sequence is genuinely taken: the lost CAS race.
-                    raise SessionEventSequenceConflictError(
-                        "session event sequence already taken"
+                if taken is None:
+                    raise ValueError("duplicate or conflicting session event") from exc
+                if str(taken["event_id"]) == str(event.event_id):
+                    # Same event id replayed (same or different content):
+                    # an identity conflict, NEVER a retriable sequence race.
+                    raise ValueError(
+                        "session event id replayed with a conflicting payload"
                     ) from exc
-                raise ValueError("duplicate or conflicting session event") from exc
+                # A DIFFERENT event already took the sequence: the lost CAS.
+                raise SessionEventSequenceConflictError(
+                    "session event sequence already taken"
+                ) from exc
         return event
 
     def list_for_session(self, session_id: SessionId) -> list[SessionEvent]:

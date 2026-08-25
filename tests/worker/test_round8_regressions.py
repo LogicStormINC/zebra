@@ -36,9 +36,23 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
     )
 
     calls = {"count": 0}
+    first_at = NOW + TITLE_RETRY_COOLDOWN - timedelta(seconds=1)
+    expected_bucket = {
+        "value": int(first_at.timestamp() // TITLE_RETRY_COOLDOWN.total_seconds())
+    }
 
     class _TitleService:
         def generate(self, **kwargs):
+            assert (
+                stores.idempotency.get(
+                    action="worker-title-retry",
+                    idempotency_key=(
+                        "worker-title-retry:"
+                        f"{bootstrap.session.session_id}:{expected_bucket['value']}"
+                    ),
+                )
+                is not None
+            )
             calls["count"] += 1
             return None
 
@@ -172,27 +186,57 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
     first = service.recover(
         bootstrap.session.session_id,
         worker_id="w",
-        recovered_at=NOW,
+        recovered_at=first_at,
         lease_ttl_seconds=30,
     )
     second = other_worker.recover(
         bootstrap.session.session_id,
         worker_id="w2",
-        recovered_at=NOW + timedelta(seconds=1),
+        recovered_at=first_at + timedelta(seconds=1),
         lease_ttl_seconds=30,
     )
 
     assert first is True and second is True
-    assert calls["count"] == 1  # the cooldown suppressed the second poll
-    # after the cooldown expires a retry is allowed again
+    # One second across a bucket boundary is still inside the rolling cooldown.
+    assert calls["count"] == 1
+    # After the rolling cooldown expires a retry is allowed again.
+    third_at = first_at + TITLE_RETRY_COOLDOWN + timedelta(seconds=1)
+    expected_bucket["value"] = int(
+        third_at.timestamp() // TITLE_RETRY_COOLDOWN.total_seconds()
+    )
     third = other_worker.recover(
         bootstrap.session.session_id,
         worker_id="w",
-        recovered_at=NOW + TITLE_RETRY_COOLDOWN + timedelta(seconds=1),
+        recovered_at=third_at,
         lease_ttl_seconds=30,
     )
     assert third is True
-    assert calls["count"] == 2  # a NEW bucket allows exactly one retry
+    assert calls["count"] == 2
+
+
+def test_title_reservation_loser_does_not_own_the_paid_attempt() -> None:
+    from agent_core.domain.identifiers import new_session_id
+    from agent_core.ports import IdempotencyRecord
+    from zebra_agent_worker.cloud_memory_recovery import _reserve_title_attempt
+
+    class _LostRaceStore:
+        def get(self, **kwargs):
+            return None
+
+        def save(self, record):
+            return IdempotencyRecord(
+                action=record.action,
+                idempotency_key=record.idempotency_key,
+                request_hash=record.request_hash,
+                status_code=record.status_code,
+                response_body={
+                    "attempted_at": record.created_at.isoformat(),
+                    "reservation_id": "other-worker",
+                },
+                created_at=record.created_at,
+            )
+
+    assert not _reserve_title_attempt(_LostRaceStore(), new_session_id(), NOW)
 
 
 def test_gateway_failure_after_setup_closes_the_gateway(tmp_path: Path) -> None:
@@ -204,7 +248,8 @@ def test_gateway_failure_after_setup_closes_the_gateway(tmp_path: Path) -> None:
 
     def counting_close(gateway):
         closed["count"] += 1
-        return original_close(gateway)
+        original_close(gateway)
+        return RuntimeError("simulated cleanup failure")
 
     import sys
 
@@ -270,7 +315,47 @@ def test_gateway_failure_after_setup_closes_the_gateway(tmp_path: Path) -> None:
     # reports the durable projection status (ready) — the load-bearing
     # assertion is that the boundary RELEASED the gateway instead of
     # leaking it past the interrupted continuation start.
-    assert closed["count"] >= 1
+    assert closed["count"] == 1
+    from uuid import UUID
+
+    from agent_core.domain.identifiers import SessionId
+    from agent_storage import SQLiteEventStore
+
+    events = SQLiteEventStore(database_path).list_for_session(SessionId(UUID(task_id)))
+    cleanup_events = [
+        event for event in events if event.event_type is EventType.RUNTIME_CLEANUP_FAILED
+    ]
+    assert len(cleanup_events) == 1
+    assert cleanup_events[0].payload == {
+        "target": "tool_gateway",
+        "error_type": "RuntimeError",
+        "attempt_number": 1,
+    }
+
+
+def test_cloud_memory_scan_does_not_hide_deterministic_value_errors() -> None:
+    import pytest
+    from agent_core.domain.identifiers import new_session_id
+    from agent_core.domain.sessions import SessionStatus
+    from zebra_agent_worker.cloud_memory_recovery import recover_completed_cloud_memory
+
+    class _Recovery:
+        def recover(self, *args, **kwargs):
+            raise ValueError("cloud Memory projection is misconfigured")
+
+    projection = SimpleNamespace(
+        list_recent_sessions=lambda **kwargs: [
+            SimpleNamespace(session_id=new_session_id(), status=SessionStatus.COMPLETED)
+        ]
+    )
+    with pytest.raises(ValueError, match="misconfigured"):
+        recover_completed_cloud_memory(
+            worker_id="worker-a",
+            batch_size=1,
+            lease_ttl_seconds=30,
+            recovery=_Recovery(),
+            projection_store=projection,
+        )
 
 
 def _build_receipt_session(tmp_path: Path, *, with_follow_up: bool):
@@ -358,9 +443,7 @@ def _build_receipt_session(tmp_path: Path, *, with_follow_up: bool):
         for event in events
         if event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
     )
-    receipt = SimpleNamespace(
-        session_revision=receipt_revision, event_ids=receipt_event_ids
-    )
+    receipt = SimpleNamespace(session_revision=receipt_revision, event_ids=receipt_event_ids)
 
     at_anchor = [e for e in events if e.sequence <= 4]
     recorder = DurableHarnessEventRecorder(
@@ -391,9 +474,7 @@ def test_receipt_acceptance_works_for_a_plain_commit() -> None:
     from zebra_agent_worker.cloud_memory_finalization import _accept_receipt
 
     with tempfile.TemporaryDirectory() as tmp:
-        stores, recorder, receipt, sid = _build_receipt_session(
-            Path(tmp), with_follow_up=False
-        )
+        stores, recorder, receipt, sid = _build_receipt_session(Path(tmp), with_follow_up=False)
         _accept_receipt(
             recorder=recorder,
             receipt=receipt,
@@ -413,9 +494,7 @@ def test_receipt_acceptance_survives_an_ahead_projection() -> None:
     from zebra_agent_worker.cloud_memory_finalization import _accept_receipt
 
     with tempfile.TemporaryDirectory() as tmp:
-        stores, recorder, receipt, sid = _build_receipt_session(
-            Path(tmp), with_follow_up=True
-        )
+        stores, recorder, receipt, sid = _build_receipt_session(Path(tmp), with_follow_up=True)
         assert receipt.session_revision == 6
         _accept_receipt(
             recorder=recorder,

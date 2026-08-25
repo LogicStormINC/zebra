@@ -5,14 +5,15 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from agent_core.domain.events import SessionEvent
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
+from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import ExecutedSession, WorkerExecutionError
 from zebra_agent_worker.execution_preflight import run_with_stale_retry
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
@@ -142,12 +143,12 @@ def recover_execution_inputs(
 
 def execute_session_with_lease(
     service: Any,
-    session_id: Any,
+    session_id: SessionId,
     *,
     worker_id: str,
-    executed_at: Any = None,
+    executed_at: datetime | None = None,
     lease_ttl_seconds: int = 30,
-) -> Any:
+) -> ExecutedSession:
     """Claim under a lease heartbeat, admit, then execute the Session."""
     from datetime import UTC as _UTC  # noqa: PLC0415
     from datetime import datetime as _dt
@@ -175,3 +176,29 @@ def execute_session_with_lease(
             started_at=started_at,
             ownership_check=heartbeat.require_owned,
         )
+
+
+def persist_runtime_cleanup_failure(
+    *,
+    recorder: DurableHarnessEventRecorder,
+    error: Exception,
+    target: Literal["runtime", "tool_gateway"],
+    created_at: datetime,
+) -> SessionEvent:
+    """Persist cleanup failure evidence without changing Session status."""
+
+    recorder.refresh_tail()
+    event = SessionEvent.create(
+        session_id=recorder.session.session_id,
+        sequence=recorder.next_sequence,
+        event_type=EventType.RUNTIME_CLEANUP_FAILED,
+        actor=EventActor.SYSTEM,
+        payload={
+            "target": target,
+            "error_type": type(error).__name__,
+            "attempt_number": 1,
+        },
+        idempotency_key=(f"runtime-cleanup-failed:{target}:{recorder.session.current_sequence}"),
+        created_at=created_at,
+    )
+    return recorder.append_event(event)

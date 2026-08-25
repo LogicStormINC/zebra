@@ -38,8 +38,9 @@ does not authorize production code, migrations or activation of its successor.
   every legacy admission keep writing the compatible `SESSION_COMPLETED`.
   Admission, per-turn Memory/title/AG-UI consumers, crash reconciliation,
   context coverage fail-closed and the public `task_status`/turn fields are
-  included; validation is full repository `2632 passed / 348 skipped`,
-  Context PostgreSQL `8/8`, `make check` green and the ADR-026 acceptance
+  included; validation is full repository `2677 passed / 349 skipped`,
+  Context PostgreSQL `8/8`, Event PostgreSQL `15/15`, Cloud PG+MinIO
+  composition `33/33 PASS`, `make check` green and the ADR-026 acceptance
   matrix `6/6`. Remaining follow-ups: legacy explicit upgrade path (last in
   the rollout order), Cloud PG+MinIO multi-worker E2E, Trench acceptance.
 - `CTX-INHERIT-CLOUD-01` is `Review` on
@@ -2475,6 +2476,7 @@ CI and test keep lazy SQLite compatibility.
 - Worktree: `/Users/lukeding/.codex/worktrees/cloud-command-api-con-01/zebra-agent`
 - Owned paths: `packages/agent-core/src/agent_core/contracts/session_commands.py`,
   `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/contracts/runtime_events.py`,
   `packages/agent-core/src/agent_core/contracts/__init__.py`,
   `packages/agent-core/src/agent_core/domain/events.py`,
   `tests/agent_core/test_session_command_contract.py`,
@@ -7247,7 +7249,12 @@ external membership.
   `packages/agent-core/src/agent_core/application/memory_candidates.py`,
   `packages/agent-integrations/src/agent_integrations/ag_ui/projection.py`,
   `packages/agent-storage/src/agent_storage/postgres/context_materialization.py`,
+  `packages/agent-storage/src/agent_storage/postgres/events.py`,
+  `packages/agent-storage/src/agent_storage/sqlite.py`,
   `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`,
+  `apps/worker/src/zebra_agent_worker/execution_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/runtime_setup.py`,
   `apps/worker/src/zebra_agent_worker/execution_finalization.py`,
   `apps/worker/src/zebra_agent_worker/execution_preflight.py`,
   `apps/worker/src/zebra_agent_worker/cloud_memory_finalization.py`,
@@ -7259,15 +7266,18 @@ external membership.
   `apps/api/src/zebra_agent_api/app.py`,
   `apps/api/src/zebra_agent_api/session_payloads.py`,
   `apps/api/src/zebra_agent_api/session_queue.py`,
+  `apps/api/src/zebra_agent_api/session_message_submission.py`,
   `apps/api/src/zebra_agent_api/session_streaming.py`,
   `apps/cli/src/zebra_agent_cli/session_message_append_write.py`,
   focused tests under `tests/agent_core/`, `tests/api/`,
-  `tests/agent_storage/`, `tests/worker/`
+  `tests/agent_storage/`, `tests/worker/`, `PROGRESS.md`, `findings.md`,
+  `WORKLOG.md`
 - Acceptance: ADR-026 matrix (multi-turn single Segment, one-shot legacy
   compatibility, `turn_in_progress` admission rejection, idempotent replay
   versus drift conflict, crashed turn-close healing without model calls,
-  per-turn AG-UI run boundaries), full repository `2632 passed /
-  348 skipped`, Context PostgreSQL `8/8`, `make check` green.
+  per-turn AG-UI run boundaries), full repository `2677 passed /
+  349 skipped`, Context PostgreSQL `8/8`, Event PostgreSQL `15/15`, Cloud
+  PG+MinIO composition `33/33 PASS`, `make check` green.
 - Follow-ups: `CTX-TURN-LEGACY-01` explicit upgrade path (reader-side
   legacy interpretation already shipped), `CTX-TURN-CLOUD-E2E-01`
   (real PG+MinIO multi-worker crash drills) and

@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from uuid import uuid4
 
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventType
@@ -26,6 +27,52 @@ from zebra_agent_worker.recovery import SessionRecoveryError
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 
 TITLE_RETRY_COOLDOWN = timedelta(minutes=15)
+_TITLE_RETRY_ACTION = "worker-title-retry"
+
+
+def _title_retry_key(session_id: SessionId, bucket: int) -> str:
+    return f"worker-title-retry:{session_id}:{bucket}"
+
+
+def _reserve_title_attempt(
+    store: IdempotencyStorePort,
+    session_id: SessionId,
+    attempted_at: datetime,
+) -> bool:
+    """Claim one paid title attempt across Workers for a rolling window."""
+
+    bucket_seconds = TITLE_RETRY_COOLDOWN.total_seconds()
+    bucket = int(attempted_at.timestamp() // bucket_seconds)
+    for probe in (bucket, bucket - 1):
+        record = store.get(
+            action=_TITLE_RETRY_ACTION,
+            idempotency_key=_title_retry_key(session_id, probe),
+        )
+        if record is None:
+            continue
+        raw_attempted_at = record.response_body.get("attempted_at")
+        if not isinstance(raw_attempted_at, str):
+            raise ValueError("durable title retry record has no attempted_at")
+        previous_attempt = datetime.fromisoformat(raw_attempted_at)
+        if previous_attempt.tzinfo is None:
+            raise ValueError("durable title retry timestamp must be timezone-aware")
+        if attempted_at - previous_attempt < TITLE_RETRY_COOLDOWN:
+            return False
+
+    reservation_id = str(uuid4())
+    proposed = IdempotencyRecord(
+        action=_TITLE_RETRY_ACTION,
+        idempotency_key=_title_retry_key(session_id, bucket),
+        request_hash="title-retry-v1",
+        status_code=204,
+        response_body={
+            "attempted_at": attempted_at.isoformat(),
+            "reservation_id": reservation_id,
+        },
+        created_at=attempted_at,
+    )
+    stored = store.save(proposed)
+    return stored.response_body.get("reservation_id") == reservation_id
 
 
 class CloudMemoryFinalizationRecovery:
@@ -104,43 +151,13 @@ class CloudMemoryFinalizationRecovery:
             if any(event.event_type is EventType.SESSION_TITLE_UPDATED for event in events):
                 return True
             now = recovered_at
-            bucket = int(now.timestamp() // TITLE_RETRY_COOLDOWN.total_seconds())
-            retry_key = f"worker-title-retry:{session_id}:{bucket}"
-            if self._idempotency_store is not None and (
-                self._idempotency_store.get(
-                    action="worker-title-retry", idempotency_key=retry_key
-                )
-                is not None
-            ):
-                # Another worker (or an earlier poll in this cooldown
-                # bucket) already attempted the title: the durable record
-                # bounds retries across every stateless Worker.
-                return True
-            last_attempt = self._title_attempts.get(session_id)
-            if last_attempt is not None and now - last_attempt < TITLE_RETRY_COOLDOWN:
-                return True
-            self._title_attempts[session_id] = now
-            title_event = self._title_service_factory().generate(
-                session=recorder.session,
-                events=events,
-                next_sequence=recorder.next_sequence,
-            )
-            if title_event is not None:
-                recorder.append_event(title_event)
-                self._title_attempts.pop(session_id, None)
-                return True
             if self._idempotency_store is not None:
-                self._idempotency_store.save(
-                    IdempotencyRecord(
-                        action="worker-title-retry",
-                        idempotency_key=retry_key,
-                        request_hash="title-retry",
-                        status_code=204,
-                        response_body={"attempted_at": now.isoformat()},
-                        created_at=now,
-                    )
-                )
-            return True
+                if not _reserve_title_attempt(self._idempotency_store, session_id, now):
+                    return True
+            elif (
+                last_attempt := self._title_attempts.get(session_id)
+            ) is not None and now - last_attempt < TITLE_RETRY_COOLDOWN:
+                return True
             self._title_attempts[session_id] = now
             title_event = self._title_service_factory().generate(
                 session=recorder.session,
@@ -181,10 +198,8 @@ def recover_completed_cloud_memory(
                 recovered_at=datetime.now(UTC),
                 lease_ttl_seconds=lease_ttl_seconds,
             )
-        except (
-            LeaseConflictError,
-            SessionRecoveryError,
-            WorkerExecutionError,
-            ValueError,
-        ):
+        except (LeaseConflictError, SessionRecoveryError, WorkerExecutionError):
+            # Deterministic configuration/projection/contract errors are
+            # deliberately NOT swallowed: they must surface instead of
+            # forming an invisible hot loop over corrupted sessions.
             continue

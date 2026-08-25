@@ -34,9 +34,10 @@
   History window and records explicit truncation omissions. The public
   task API adds `task_status`, `current_turn_status`, `turn_id`,
   `active_segment_id`, `interaction_mode` while keeping `status`.
-  Validation: full repository `2632 passed / 348 skipped`, Context
-  PostgreSQL `8/8` (including the coverage-gap fail-closed case),
-  `make check` green (size `1449`, Mypy `721`, Eval `10/10`), and an
+  Latest validation: full repository `2677 passed / 349 skipped`, Context
+  PostgreSQL `8/8`, Event PostgreSQL `15/15`, Cloud PG+MinIO composition
+  `33/33 PASS`, and `make check` green (size `1462`, Mypy `723`, Eval
+  `10/10`). The
   ADR-026 acceptance matrix covering multi-turn single-Segment continuity,
   one-shot legacy compatibility, admission conflicts, idempotency replay,
   crash healing and per-turn AG-UI boundaries. Not yet done: the optional

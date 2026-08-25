@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import contextlib
-import sys
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -35,7 +33,10 @@ from zebra_agent_worker.context_materialization import prepare_worker_context
 from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
-from zebra_agent_worker.execution_context import harness_task_for_recovered
+from zebra_agent_worker.execution_context import (
+    build_worker_orchestrator,
+    harness_task_for_recovered,
+)
 from zebra_agent_worker.execution_errors import (
     error_metadata,
     exception_attempt_result,
@@ -45,13 +46,14 @@ from zebra_agent_worker.execution_events import (
     DurableHarnessEventRecorder,
     ExecutionInterrupted,
 )
-from zebra_agent_worker.execution_finalization import WorkerExecutionError
+from zebra_agent_worker.execution_finalization import ExecutedSession, WorkerExecutionError
 from zebra_agent_worker.execution_preflight import (
     _superseded_by_control_event,
     prepare_execution_preflight,
 )
 from zebra_agent_worker.execution_recovery import (
     execute_session_with_lease,
+    persist_runtime_cleanup_failure,
     recover_execution_inputs,
 )
 from zebra_agent_worker.execution_storage import resolve_execution_storage
@@ -185,15 +187,13 @@ class SessionExecutionService:
         executed_at: datetime | None = None,
         lease_ttl_seconds: int = 30,
     ) -> execution_finalization.ExecutedSession:
-        result = execute_session_with_lease(
+        return execute_session_with_lease(
             self,
             session_id,
             worker_id=worker_id,
             executed_at=executed_at,
             lease_ttl_seconds=lease_ttl_seconds,
         )
-        assert isinstance(result, execution_finalization.ExecutedSession)
-        return result
 
     def _execute_claimed_session_once(
         self,
@@ -343,24 +343,46 @@ class SessionExecutionService:
                 cloud_artifacts=cloud_artifacts,
             )
         except ExecutionInterrupted:
-            with contextlib.suppress(Exception):
-                if runtime_handle is not None:
-                    runtime.destroy(runtime_handle)
+            cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
+            if cleanup_error is not None:
+                persist_runtime_cleanup_failure(
+                    recorder=authority_recorder,
+                    error=cleanup_error,
+                    target="runtime",
+                    created_at=started_at,
+                )
             return _superseded_by_control_event(authority_recorder)
         except Exception as exc:
-            cleanup_error = None
-            if runtime_handle is not None:
-                try:
-                    runtime.destroy(runtime_handle)
-                except Exception as error:
-                    cleanup_error = error
+            cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
             if cleanup_error is not None:
+                persist_runtime_cleanup_failure(
+                    recorder=authority_recorder,
+                    error=cleanup_error,
+                    target="runtime",
+                    created_at=started_at,
+                )
                 raise WorkerExecutionError(
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
                 ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
+        gateway_released = False
+        cleanup_recorder = authority_recorder
+        def release_gateway() -> Exception | None:
+            nonlocal gateway_released
+            if gateway_released:
+                return None
+            gateway_released = True
+            cleanup_error = runtime_authority.close_tool_gateway(tool_gateway)
+            if cleanup_error is not None:
+                persist_runtime_cleanup_failure(
+                    recorder=cleanup_recorder,
+                    error=cleanup_error,
+                    target="tool_gateway",
+                    created_at=started_at,
+                )
+            return cleanup_error
+
         try:
-            gateway_released = False
             context_compiler = LocalContextCompiler()
             context = core_harness.HarnessContext(
                 task=harness_task_for_recovered(
@@ -381,7 +403,7 @@ class SessionExecutionService:
                     recovery_service=self._recovery_service,
                     started_at=started_at,
                     recorder=authority_recorder,
-                    cleanup=lambda: runtime_authority.close_tool_gateway(tool_gateway),
+                    cleanup=release_gateway,
                     child_result_verifier=execution_continuations.build_child_result_verifier(
                         self._delegation_store, self._projection_store
                     ),
@@ -400,6 +422,7 @@ class SessionExecutionService:
                 lease=claimed.lease,
                 ownership_check=ownership_check,
             )
+            cleanup_recorder = recorder
             effect_recorder.append(recorder)
             if continuation is None and clarification is None and child_wakeup is None:
                 recorder.append(
@@ -413,40 +436,24 @@ class SessionExecutionService:
                 session=recorder.session,
                 attempt=context.attempt,
             )
-            persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
-                cloud_continuation,
-                recorder=recorder,
-                event_store=self._event_store,
-                lifecycle_store=self._context_lifecycle_store,
-                cloud_artifacts=cloud_artifacts,
-                local_store=self._provider_continuation_store,
-                session_id=session_id,
-            )
-            model_step = core_harness.HarnessModelStep(
-                context_compiler=context_compiler,
-                available_tools=tool_gateway.model_tools,
-                conversation_compactor=context_compiler,
-                event_sink=persist_event,
-                continuation_sink=prepare_continuation,
-                provider_continuation=provider_continuation,
-                attempt_number=1,
-            )
-            orchestrator = core_harness.SingleAttemptOrchestrator(
-                model_gateway,
-                LocalPolicyEngine(
+            orchestrator = build_worker_orchestrator(
+                model_gateway=model_gateway,
+                tool_gateway=tool_gateway,
+                policy_engine=LocalPolicyEngine(
                     profile=PolicyProfile(task.policy_profile),
                     network_profile=effective_network_profile,
                     web_search_endpoint=self._settings.web_search_endpoint,
                     trusted_local=trusted_local,
                 ),
-                tool_gateway,
-                model_step=model_step,
-                synthesize_tool_results=True,
-                parallel_safe_tools=tool_gateway.parallel_safe_tools,
-                parallel_batch_limits=tool_gateway.parallel_batch_limits,
-                max_parallel_tool_calls=3,
-                tool_call_resolver=tool_gateway.resolve_model_tool_calls,
-                event_sink=persist_event,
+                context_compiler=context_compiler,
+                cloud_continuation=cloud_continuation,
+                recorder=recorder,
+                event_store=self._event_store,
+                lifecycle_store=self._context_lifecycle_store,
+                cloud_artifacts=cloud_artifacts,
+                local_continuation_store=self._provider_continuation_store,
+                session_id=session_id,
+                provider_continuation=provider_continuation,
             )
             try:
                 attempt_result = run_continuation(
@@ -461,7 +468,7 @@ class SessionExecutionService:
                     exc, error_metadata(exc, clarification, continuation)
                 )
             finally:
-                cleanup_error = runtime_authority.close_tool_gateway(tool_gateway)
+                cleanup_error = release_gateway()
             if cleanup_error is not None:
                 attempt_result = runtime_authority.runtime_cleanup_failure_result(
                     cleanup_error, attempt_result
@@ -483,15 +490,11 @@ class SessionExecutionService:
             final_session = self._projection_store.get_session(session_id)
             if final_session is None:
                 raise WorkerExecutionError("session projection missing after worker execution")
-            return execution_finalization.ExecutedSession(
-                session=final_session,
-                events=emitted_events,
-                attempt_result=attempt_result,
-            )
+            return ExecutedSession(final_session, emitted_events, attempt_result)
         except ExecutionInterrupted:
-            return _superseded_by_control_event(authority_recorder)
-        finally:  # gateway owns the runtime: single release, errors surfaced
-            if not gateway_released:
-                cleanup_error = runtime_authority.close_tool_gateway(tool_gateway)
-                if cleanup_error is not None:
-                    print(f"gateway cleanup failed: {cleanup_error}", file=sys.stderr)
+            release_gateway()
+            return _superseded_by_control_event(cleanup_recorder)
+        except BaseException as exc:
+            if (cleanup_error := release_gateway()) is not None:
+                exc.add_note(f"tool gateway cleanup failed: {type(cleanup_error).__name__}")
+            raise

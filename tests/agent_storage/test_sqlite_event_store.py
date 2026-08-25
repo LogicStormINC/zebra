@@ -67,6 +67,33 @@ def test_sqlite_event_store_rejects_duplicate_sequence_for_same_session(
         store.append(conflicting_event)
 
 
+def test_sqlite_event_store_fails_closed_on_event_id_reuse(tmp_path: Path) -> None:
+    store = SQLiteEventStore(tmp_path / "event-id-reuse.db")
+    session_id = new_session_id()
+    first = SessionEvent.create(
+        session_id=session_id,
+        sequence=0,
+        event_type=EventType.SESSION_CREATED,
+        actor=EventActor.SYSTEM,
+        payload={"title": "Original"},
+    )
+    store.append(first)
+    conflicting = first.model_copy(
+        update={
+            "event_type": EventType.USER_MESSAGE_RECEIVED,
+            "actor": EventActor.USER,
+            "payload": {"content": "different meaning"},
+        }
+    )
+
+    with pytest.raises(ValueError, match="event id replayed") as raised:
+        store.append(conflicting)
+
+    from agent_storage import SessionEventSequenceConflictError
+
+    assert not isinstance(raised.value, SessionEventSequenceConflictError)
+
+
 def test_sqlite_event_store_supports_projection_rebuild(tmp_path: Path) -> None:
     store = SQLiteEventStore(tmp_path / "events.db")
     session_id = new_session_id()

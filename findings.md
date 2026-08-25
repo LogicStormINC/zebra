@@ -1,5 +1,32 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE review closeout round 10 - 2026-08-25
+
+- 新的 sequence 专类型此前漏接 API sibling caller,导致并发消息败者
+  重新变成 500;现 API 仅捕获 `SessionEventSequenceConflictError`,幂等
+  内容冲突和 event-id 复用继续 fail closed。
+- SQLite/PG 的双重唯一冲突此前会优先报 sequence race;现先查
+  canonical event identity,同 event-id 不同内容永不进入可重试面。
+- `gateway_released` 此前从未置真且 continuation cleanup 绕过 owner;
+  现所有路径共用一次性 release closure。cleanup 失败先写
+  `RUNTIME_CLEANUP_FAILED` Event(`target/error_type/attempt_number`严格合同),
+  再映射 attempt 或 superseded 结果;Event Store 保留恢复证据。
+- title 限流此前在付费调用后保存且是固定时间桶。现 current/previous
+  bucket 形成滚动窗口,模型调用前 first-write-wins 保存带随机 winner
+  token 的 reservation;save 返回其他 token 的 Worker 不调用模型。
+- recovery scan 移除宽泛 `ValueError` 后,真实 Cloud composition 暴露
+  closed Turn 后已有 title side chain、但零 Memory candidate/receipt 的合法
+  状态。finalization 现允许 closed-state tail,而丢失响应按 receipt 首事件
+  前一 revision 校验,不再依赖 Turn close 必须等于当前 stream head。
+- 删除 title 不可达重复逻辑;回归覆盖 API 类型映射、SQLite/PG event-id、
+  单次 gateway close+durable failure、reservation 顺序/并发败者/桶边界、
+  ValueError fail loud 和 closed-Turn side chain。
+
+验证:全仓 `2677 passed / 349 skipped`,真 PostgreSQL Event `15/15`,
+Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿(尺寸 1462,
+Mypy 723,Eval 10/10),`git diff --check` 干净。
+
+
 ## CTX-TURN-LIFECYCLE review closeout round 9 - 2026-08-25
 
 第九轮复审 4 个 P1、1 个 P2、1 个 P3,按根因(而非表面补丁)修复:

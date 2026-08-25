@@ -251,6 +251,22 @@ def test_postgres_event_insert_failure_rolls_back_stream_version(
     assert store.append(valid) == valid
 
 
+def test_postgres_event_id_reuse_on_same_sequence_fails_closed(
+    postgres_dsn: str,
+    deployment_namespace: str,
+) -> None:
+    from agent_storage import SessionEventSequenceConflictError
+
+    store = append_store(postgres_dsn, deployment_namespace)
+    first = _event(sequence=0)
+    store.append(first)
+
+    with pytest.raises(ValueError, match="event id replayed") as raised:
+        store.append(first.model_copy(update={"payload": {"content": "different"}}))
+
+    assert not isinstance(raised.value, SessionEventSequenceConflictError)
+
+
 def test_postgres_projection_store_round_trips_lists_and_isolates(
     postgres_dsn: str,
     deployment_namespace: str,

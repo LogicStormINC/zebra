@@ -122,3 +122,13 @@ def require_matching_runtime_authority(
     authority = handle.authority
     if authority is not None and persisted_digest not in {None, authority.spec_digest}:
         raise RuntimeSetupError("configured runtime authority differs from session authority")
+
+
+def destroy_runtime(runtime: RuntimePort, handle: RuntimeHandle | None) -> Exception | None:
+    if handle is None:
+        return None
+    try:
+        runtime.destroy(handle)
+    except Exception as error:
+        return error
+    return None

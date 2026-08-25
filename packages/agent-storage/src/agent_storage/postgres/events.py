@@ -108,11 +108,13 @@ def append_event_in_transaction(
         existing = _find_idempotent_event(connection, deployment_namespace, event)
         if existing is not None:
             return ensure_idempotent_event_retry(existing, event)
-        # The stream CAS is the definition of a lost sequence race; every
-        # other unique violation surfaces with its own database error.
-        raise SessionEventSequenceConflictError(
-            "session event sequence already taken"
-        )
+        # A replayed event id fails the stream CAS exactly like a lost
+        # race; classify by identity first: only a DIFFERENT event taking
+        # the sequence is the retriable CAS loss, an id replay fails
+        # closed.
+        if read_event_in_transaction(connection, deployment_namespace, event.event_id) is not None:
+            raise ValueError("session event id replayed with a conflicting payload")
+        raise SessionEventSequenceConflictError("session event sequence already taken")
     connection.execute(
         """
         INSERT INTO session_events (

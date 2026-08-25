@@ -19,6 +19,7 @@ class EventType(StrEnum):
     USER_MESSAGE_RECEIVED = "user_message_received"
     TASK_PREPARED = "task_prepared"
     RUNTIME_PROVISIONED = "runtime_provisioned"
+    RUNTIME_CLEANUP_FAILED = "runtime_cleanup_failed"
     PLAN_PROPOSED = "plan_proposed"
     PLAN_APPROVED = "plan_approved"
     PLAN_UPDATED = "plan_updated"

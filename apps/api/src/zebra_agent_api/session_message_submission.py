@@ -22,7 +22,6 @@ def build_session_message_event(
 ) -> SessionEvent:
     """Build the next durable message Event with ADR-026 Turn identity."""
 
-
     events = event_store.list_for_session(session.session_id)
     return SessionMessageAppendService().build_event(
         session=session,
@@ -45,20 +44,15 @@ def append_session_message_event(
     reports a typed 409 sequence_conflict instead of a raw 500.
     """
 
-    from agent_storage.event_rows import (  # noqa: PLC0415
-        SessionEventIdempotencyConflictError,
+    from agent_storage import (  # noqa: PLC0415
+        SessionEventSequenceConflictError,
     )
 
     try:
         return event_store.append(event)
-    except (
-        SessionEventIdempotencyConflictError,
-        ValueError,
-    ) as exc:
-        if isinstance(exc, ValueError) and (
-            "duplicate or conflicting session event" not in str(exc)
-        ):
-            raise
+    except SessionEventSequenceConflictError:
+        # Only a genuinely taken sequence maps to 409; event-id reuse and
+        # idempotency-content conflicts fail closed with their own errors.
         return None
 
 

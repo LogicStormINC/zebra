@@ -1,5 +1,20 @@
 # Progress Log
 
+## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 10 (3xP1, 2xP2, 1xP3)
+
+- API 只把 `SessionEventSequenceConflictError` 映射为 409;SQLite/PG
+  在 sequence 竞争前先判定 event-id 复用,确定性身份冲突 fail closed。
+- gateway 释放收敛为单一 owner;cleanup 失败新增严格合同的
+  `RUNTIME_CLEANUP_FAILED` durable 事件,控制竞争不再只写 stderr。
+- title 恢复在模型调用前抢占共享幂等 reservation,以 winner token
+  处理并发败者并跨时间桶执行滚动 15 分钟冷却;删除不可达旧分支。
+- Cloud recovery 不再吞宽泛 `ValueError`;真实 composition 暴露并修复
+  closed-Turn side chain 无 receipt 的合法恢复状态,receipt 按首事件前一
+  revision 校验。
+- 验证:全仓 `2677 passed / 349 skipped`;真 PG Event `15/15`;
+  Cloud PG+MinIO composition `33/33 PASS`;`make check` 全绿。
+
+
 ## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 9 (4xP1, 1xP2, 1xP3)
 
 - 根因修复:receipt 以自身 revision 接受+refresh_tail 仅内存追平;

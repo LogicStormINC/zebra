@@ -63,7 +63,7 @@ def finalize_cloud_memory(
     if committed is not None:
         if recorder.session.current_sequence >= committed.receipt.session_revision:
             return True
-        if authority.expected_stream_revision != completion_revision:
+        if authority.expected_stream_revision != committed.receipt.event_sequences[0] - 1:
             raise ValueError("cloud Memory receipt cannot be accepted from a stale authority")
         _accept_receipt(
             recorder=recorder,
@@ -73,8 +73,8 @@ def finalize_cloud_memory(
             workspace_store=workspace_store,
         )
         return True
-    if authority.expected_stream_revision != completion_revision:
-        raise ValueError("cloud Memory finalization has unreceipted terminal Events")
+    if authority.expected_stream_revision < completion_revision:
+        raise ValueError("cloud Memory finalization authority precedes the closed Turn")
     definition_scope = _definition_scope_from_events(events)
     confirmed = memory_store.list_for_worker(
         _confirmed_memory_query(
