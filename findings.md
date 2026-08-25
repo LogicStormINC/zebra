@@ -1,5 +1,35 @@
 # Findings
 
+## CLIENT-ADR-01 - 2026-08-25
+
+- AG-UI `RunAgentInput` already parses `state` / `tools` / `context` /
+  `forwardedProps` (`apps/api/src/zebra_agent_api/ag_ui_command.py`), but
+  they remain command payload only: no durable client binding exists and
+  the worker-recovered task never sees them. `CLIENT-AGUI-ADMISSION-01`
+  and `CLIENT-CONTEXT-01` own the conversion into persisted client run
+  bindings and state snapshots.
+- `ToolExecutionLocation`
+  (`packages/agent-core/src/agent_core/domain/tools.py`) currently
+  enumerates only `ZEBRA` / `HOST` / `SANDBOX`. Adding `CLIENT` is owned
+  by `CLIENT-EFFECT-CON-01`, which also requires `ToolContract` scope for
+  both `HOST` and `CLIENT`.
+- The worker loop still constructs the Host Connector Registry, Subagent
+  Delegation Store and Wakeup Service directly from the DSN; new client
+  stores must not copy this composition pattern —
+  `CLIENT-PLATFORM-COMP-01` introduces the shared
+  `AgentPlatformControlPlane` bundle for API and Worker instead.
+- Existing boundaries the client plane must preserve: the
+  `agent-control-plane` architecture gate (no Worker / Runtime / FastAPI /
+  storage adapter imports), the AG-UI Projector's pure-projection seam
+  (State Snapshot / State Delta / Tool Call / Interrupt already
+  projected), the Orchestrator `system/orchestrator@1`
+  `orchestration.*`-only capability set, and the Host Effect
+  outbox / reconciliation as the backend business-write authority.
+- Baseline note: the planning document pins `main@efd4e293` as the sync
+  point, but the working mainline is `cloud-agent` (PRs land there per
+  `PROGRESS.md`); this card branches from `cloud-agent@2319da7f`, which
+  contains `main@efd4e293` as an ancestor.
+
 ## CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - 2026-08-03
 
 - The Context Worker path is fenced at the PostgreSQL transaction boundary:

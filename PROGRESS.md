@@ -39,6 +39,22 @@
   sits ahead of `origin/main`; PRs land on `cloud-agent` and main syncs
   on cut points).
 
+- Client Integration Plane architecture is frozen and registered
+  (2026-08-25, `CLIENT-ADR-01` on `codex/client-adr-01`,
+  ADR-CLIENT-01): V1 browser integration lands as a durable client plane —
+  published Frontend Capability Profiles as the configuration source of
+  truth, Client Sessions with one-controller fencing (Observers are
+  read-only), and PostgreSQL-durable Client Effects with receipts,
+  idempotency and expected-UI-revision checks — while formal business
+  writes stay on Host Backend Tools and the agent keeps no arbitrary
+  JavaScript/DOM authority. Browser access goes through the Host BFF
+  (Direct Browser-to-Zebra stays off). The dependency-ordered 22-card
+  CLIENT board (contract → PostgreSQL → admission/API → client context →
+  durable client action → suspend/resume → TS/React SDK → conformance →
+  Trench pilot → production gate) is registered in `docs/AGENT_TASKS.md`;
+  every successor remains `Locked` behind the gate order and this card
+  changes documentation and governance only.
+
 - Maintainer line acceptance closed (2026-08-21, gate 5, reviewed at
   `cloud-agent@5bab4b57`): the complete 59-path delta from
   `e2f76046^1..5bab4b57` was reviewed across Host admission/freeze,

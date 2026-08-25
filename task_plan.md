@@ -1,5 +1,40 @@
 # Task Plan
 
+## Client Integration Plane 激活（2026-08-25，`CLIENT-ADR-01`）
+
+权威文档：`docs/ADR-CLIENT-01_Client_Integration_Plane.md`；任务注册：
+`docs/AGENT_TASKS.md` 的 Client Integration Plane Board（22 卡，除
+`CLIENT-ADR-01` 外全部 `Locked`）。
+
+固定实施顺序（不得跳跃）：
+
+```text
+领域契约
+→ PostgreSQL 持久化
+→ Client Admission
+→ 前端状态注入
+→ Durable Client Effect
+→ Worker suspend/resume
+→ React SDK
+→ 多前端一致性测试
+→ Trench 试点
+```
+
+关键门槛：Gate 0 架构（ADR）→ Gate 1 契约 → Gate 2 持久化 → Gate 3
+Readable 垂直切片 → Gate 4 Client Action 垂直切片 → Gate 5 SDK →
+Gate 6 多业务一致性 → Gate 7 Trench Pilot → Gate 8 生产。
+
+首批激活顺序：先只关 `CLIENT-ADR-01`；关闭后并行激活互不重叠的
+`CLIENT-CAP-CON-01` 与 `CLIENT-SESSION-CON-01`；再激活
+`CLIENT-EFFECT-CON-01`；随后依次 `CLIENT-CAP-PG-01`、
+`CLIENT-SESSION-PG-01`、`CLIENT-EFFECT-PG-01`、
+`CLIENT-PLATFORM-COMP-01`（三张迁移卡激活前重新确认 migration version）。
+
+约束：React Hook 不得先于后端 Binding、Fence、Effect Receipt 和恢复链路
+落地。V1 锁定：React Component Generative UI、CopilotKit Adapter、
+Flutter SDK、小程序 SDK、Agent Team UI Control、Subagent UI Control、
+Direct Browser-to-Zebra、任意 DOM Automation。
+
 ## 下一阶段：默认组合收口（Phase F，2026-08-19 定案）
 
 目标：把已落地的机制真正接进 Cloud API/Worker 默认组合，并留下
