@@ -95,6 +95,10 @@ def handle_agui_command(app: _AgUiCommandApp, request: object) -> ApiResponse | 
     except (TypeError, ValueError, ValidationError) as exc:
         return _problem(400, "invalid_request", _safe_validation_detail(exc), path)
 
+    admission_error = _admit_client_mounts(app, command_payload, path)
+    if admission_error is not None:
+        return admission_error
+
     idempotency_key = _idempotency_key(request)
     if idempotency_key is None:
         return _problem(400, "missing_idempotency_key", "Idempotency-Key header is required", path)
@@ -173,6 +177,53 @@ def _command_kind(action: str) -> SessionCommandKind:
         "resume": SessionCommandKind.RESUME,
         "stop": SessionCommandKind.STOP,
     }[action]
+
+
+def _admit_client_mounts(
+    app: _AgUiCommandApp, command_payload: dict[str, object], path: str
+) -> ApiResponse | None:
+    """Convert AG-UI tools/state into bounded client mount references.
+
+    Disabled flag or absent platform: commands pass through unchanged.
+    Enabled: the published frontend profile is the source of truth;
+    undeclared tools, digest drift or handler code fail closed.
+    """
+
+    platform = getattr(app, "client_platform", None)
+    capabilities = getattr(platform, "frontend_capabilities", None)
+    run_input = command_payload.get("input")
+    if capabilities is None or not isinstance(run_input, dict):
+        return None
+    forwarded = run_input.get("forwardedProps")
+    forwarded = forwarded if isinstance(forwarded, dict) else {}
+    frontend_app_id = forwarded.get("frontendAppId")
+    profile = None
+    if isinstance(frontend_app_id, str) and frontend_app_id.strip():
+        profile = capabilities.get_latest_profile(frontend_app_id.strip())
+    try:
+        from agent_control_plane.agui_client_admission import (
+            AgUiClientAdmissionError,
+            admit_agui_client_payload,
+        )
+
+        admission = admit_agui_client_payload(
+            tools=run_input.get("tools"),
+            state=run_input.get("state"),
+            profile=profile,
+        )
+    except AgUiClientAdmissionError as exc:
+        return _problem(422, "client_admission_rejected", str(exc), path)
+    except (TypeError, ValueError) as exc:
+        return _problem(400, "invalid_request", _safe_validation_detail(exc), path)
+    command_payload["client"] = {
+        "mounted_tools": list(admission.mounted_tools),
+        "state_digest": admission.state_digest,
+        "state_bytes": admission.state_bytes,
+        "redacted_keys": list(admission.redacted_keys),
+        "frontend_app_id": frontend_app_id if isinstance(frontend_app_id, str) else None,
+        "profile_digest": profile.profile_digest if profile is not None else None,
+    }
+    return None
 
 
 def _idempotency_key(request: object) -> str | None:

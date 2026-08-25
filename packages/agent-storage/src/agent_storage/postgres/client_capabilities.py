@@ -43,6 +43,10 @@ class PostgresClientCapabilityRegistry(ClientCapabilityRegistryPort):
         self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
         self._namespace = self._database.deployment_namespace
 
+    @property
+    def deployment_namespace(self) -> str:
+        return self._namespace
+
     def publish_profile(self, profile: FrontendCapabilityProfileVersion) -> None:
         validate_profile_for_publish(profile)
         stored = profile.model_copy(

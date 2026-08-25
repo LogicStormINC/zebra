@@ -208,6 +208,22 @@ def _compact_runtime_evidence(
                     )
                 )
             )
+            continue
+        if evidence.kind == "client_state":
+            from agent_core.domain.client_context import ClientStateSnapshot
+
+            from agent_context.client_state import client_state_context_item
+
+            snapshot = ClientStateSnapshot(
+                client_session_id=str(
+                    (evidence.metadata or {}).get("client_session_id", "unknown")
+                ),
+                frontend_app_id=(evidence.metadata or {}).get("frontend_app_id"),
+                profile_digest=(evidence.metadata or {}).get("profile_digest"),
+                ui_revision=int((evidence.metadata or {}).get("ui_revision", 0)),
+                state=dict(evidence.metadata or {}).get("state") or {},
+            )
+            items.append(client_state_context_item(snapshot))
     return tuple(items)
 
 

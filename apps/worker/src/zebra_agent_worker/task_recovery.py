@@ -41,6 +41,7 @@ class RecoveredTask:
     runtime_evidence: tuple[RuntimeEvidenceInput, ...]
     host_context: HostContextEnvelope | None
     definition_snapshot: AgentDefinitionSnapshot | None
+    client_state: RuntimeEvidenceInput | None = None
 
 
 def recover_task(
@@ -51,6 +52,7 @@ def recover_task(
     attachment_reader: ArtifactPayloadReadPort,
     active_capsule: ContextCapsule | None = None,
     handoff_evidence: RuntimeEvidenceInput | None = None,
+    client_state_evidence: RuntimeEvidenceInput | None = None,
 ) -> RecoveredTask:
     user_input: str | None = None
     task_payload: dict[str, object] | None = None
@@ -103,7 +105,9 @@ def recover_task(
         runtime_evidence=(
             *_context_capsule_evidence(events, active_capsule=active_capsule),
             *((handoff_evidence,) if handoff_evidence is not None else ()),
+            *((client_state_evidence,) if client_state_evidence is not None else ()),
         ),
+        client_state=client_state_evidence,
     )
 
 

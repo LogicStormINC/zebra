@@ -103,6 +103,31 @@ def create_app(
                 deployment_namespace=namespace,
             )
             publisher_grants = publisher_grants or StaticPublisherGrantResolver({})
+    client_platform = None
+    if (
+        active_settings.client_integration_enabled
+        and active_settings.storage_authority == "postgresql"
+    ):
+        from zebra_agent_api.platform_composition import (
+            compose_api_platform_control_plane,
+        )
+
+        namespace = getattr(composed_stores, "deployment_namespace", None)
+        if not isinstance(namespace, str) or not namespace.strip():
+            raise ValueError("client integration requires deployment_namespace")
+        client_platform = compose_api_platform_control_plane(
+            active_settings.database_url,
+            deployment_namespace=namespace,
+            client_integration_enabled=True,
+        )
+    from zebra_agent_api.platform_operator_auth import (
+        StaticTokenPlatformOperatorAuthorizer,
+    )
+
+    operator_authorizer = StaticTokenPlatformOperatorAuthorizer(
+        active_settings.platform_operator_token,
+        strict=active_settings.deployment != "local",
+    )
     return ZebraAgentApi(
         database_path=active_database_path,
         settings=active_settings,
@@ -118,4 +143,6 @@ def create_app(
         agent_registry=agent_registry,
         publisher_grants=publisher_grants,
         publication_security_revocation_actors=publication_security_revocation_actors,
+        client_platform=client_platform,
+        platform_operator_authorizer=operator_authorizer,
     )

@@ -16,6 +16,7 @@ from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
 from agent_core.ports.agent_registry import AgentRegistryPort
+from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
 from agent_integrations import (
     GitHubPullRequestTransport,
     ModelProviderSettings,
@@ -59,6 +60,7 @@ from zebra_agent_api.api_workspace_mixin import (
 )
 from zebra_agent_api.factory import create_app as create_app
 from zebra_agent_api.idempotency import replay_idempotent_response
+from zebra_agent_api.platform_operator_auth import PlatformOperatorAuthorizer
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
@@ -115,6 +117,8 @@ class ZebraAgentApi(
     agent_registry: AgentRegistryPort | None = None
     publisher_grants: PublisherGrantPort | None = None
     publication_security_revocation_actors: frozenset[str] = frozenset()
+    client_platform: AgentPlatformControlPlane | None = None
+    platform_operator_authorizer: PlatformOperatorAuthorizer | None = None
     _parse_session_id = staticmethod(parse_session_id)
 
     def create_session(

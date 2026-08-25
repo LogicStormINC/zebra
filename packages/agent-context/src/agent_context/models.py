@@ -13,17 +13,22 @@ class ContextItemKind(StrEnum):
     USER_ATTACHMENT = "user_attachment"
     MCP_RESOURCE = "mcp_resource"
     MCP_PROMPT = "mcp_prompt"
+    CLIENT_STATE = "client_state"
 
 
 RUNTIME_EVIDENCE_KINDS = frozenset(
     {
         ContextItemKind.CONVERSATION_SUMMARY,
         ContextItemKind.TOOL_OUTPUT_SUMMARY,
+        ContextItemKind.CLIENT_STATE,
     }
 )
-RUNTIME_EVIDENCE_SOURCE_TYPES = frozenset({"session_projection", "tool_trace"})
+RUNTIME_EVIDENCE_SOURCE_TYPES = frozenset(
+    {"session_projection", "tool_trace", "client_state"}
+)
 MEMORY_SOURCE_TYPES = frozenset({"confirmed_memory"})
 ATTACHMENT_SOURCE_TYPES = frozenset({"user_attachment", "mcp_resource", "mcp_prompt"})
+CLIENT_STATE_SOURCE_TYPES = frozenset({"client_state"})
 
 
 class TrustLevel(StrEnum):
@@ -97,7 +102,8 @@ class ContextCompileRequest:
         for item in self.runtime_evidence_items:
             if item.kind not in RUNTIME_EVIDENCE_KINDS:
                 raise ValueError(
-                    "runtime_evidence_items must use conversation or tool-output summary kinds"
+                    "runtime_evidence_items must use conversation, tool-output"
+                    " summary or client_state kinds"
                 )
             if item.provenance.source_type not in RUNTIME_EVIDENCE_SOURCE_TYPES:
                 raise ValueError(
