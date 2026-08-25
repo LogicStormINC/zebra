@@ -103,24 +103,19 @@ def error_metadata(
     return metadata
 
 
-from agent_storage.event_rows import (  # noqa: E402
-    SessionEventIdempotencyConflictError,
-)
-
 _SEQUENCE_RACE_MESSAGE = "duplicate or conflicting session event"
 
 
 def is_sequence_race(exc: BaseException) -> bool:
-    """True when the error is a durable-stream sequence/idempotency race.
+    """True only for a LOST SEQUENCE CAS.
 
-    Both stores report a lost sequence CAS with the same ValueError text
-    and a same-key/different-payload retry with the typed conflict error;
-    everything else is a genuine failure that must not be retried away.
+    Both stores report that with the same ValueError text. A
+    same-key/different-payload retry (SessionEventIdempotencyConflictError)
+    is a deterministic semantic conflict and must fail closed — it is
+    deliberately NOT classified as a race.
     """
 
-    return isinstance(exc, SessionEventIdempotencyConflictError) or (
-        isinstance(exc, ValueError) and _SEQUENCE_RACE_MESSAGE in str(exc)
-    )
+    return isinstance(exc, ValueError) and _SEQUENCE_RACE_MESSAGE in str(exc)
 
 
 @contextmanager

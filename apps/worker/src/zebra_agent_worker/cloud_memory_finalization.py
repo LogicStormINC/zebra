@@ -11,6 +11,8 @@ from agent_core.application import (
     memory_extraction_window,
 )
 from agent_core.application.memory_reviews import memory_review_scope_query
+from agent_core.application.session_projection import rebuild_session
+from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.governed_memories import GovernedMemoryEntry
@@ -161,15 +163,33 @@ def _accept_receipt(
     )
     if tuple(event.event_id for event in committed) != receipt.event_ids:
         raise ValueError("cloud Memory receipt Events are unavailable after commit")
+    revision = authority.expected_stream_revision
     stored_session = projection_store.get_session(recorder.session.session_id)
     stored_workspace = workspace_store.get_workspace(recorder.session.session_id)
     if stored_session is None or stored_workspace is None:
         raise ValueError("cloud Memory commit did not preserve Session projections")
+    if stored_session.current_sequence > revision:
+        # A concurrently admitted event (e.g. the next human message)
+        # advanced the durable projection PAST the receipt revision.
+        # Comparing the receipt replay against that ahead projection is
+        # deterministic failure: rebuild the projections at the receipt
+        # revision instead, and replay the later tail afterwards.
+        all_events = event_store.list_for_session(recorder.session.session_id)
+        at_revision = [
+            event for event in all_events if event.sequence <= revision
+        ]
+        stored_session = rebuild_session(at_revision)
+        stored_workspace = rebuild_workspace(at_revision)
     recorder.accept_committed_events(
         committed,
         session=stored_session,
         workspace=stored_workspace,
     )
+    if hasattr(recorder, "accept_persisted_event"):
+        for tail_event in event_store.read_since(
+            recorder.session.session_id, revision
+        ):
+            recorder.accept_persisted_event(tail_event)
 
 
 def _completion_revision(events: list[SessionEvent], session: Session) -> int:

@@ -22,6 +22,7 @@ from agent_storage import (
     ControlPlaneStores,
     LeaseConflictError,
     PostgresControlPlaneStores,
+    SessionEventIdempotencyConflictError,
     cloud_composition_from_environment,
     with_committed_event_publisher,
 )
@@ -160,6 +161,10 @@ class WorkerLoopService:
                 SessionRecoveryError,
                 SessionResumeError,
                 WorkerExecutionError,
+                ExecutionInterrupted,
+                LeaseHeartbeatError,
+                LeaseLostError,
+                SessionEventIdempotencyConflictError,
             ) as skip_error:
                 skipped_ids.append(session_id)
                 print(

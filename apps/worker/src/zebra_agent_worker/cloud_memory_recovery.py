@@ -1,7 +1,7 @@
 """Bounded recovery of Cloud Memory finalization after a lost Worker response."""
 
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from agent_core.application import SessionTitleService
@@ -22,6 +22,8 @@ from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.recovery import SessionRecoveryError
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
+
+TITLE_RETRY_COOLDOWN = timedelta(minutes=15)
 
 
 class CloudMemoryFinalizationRecovery:
@@ -44,6 +46,7 @@ class CloudMemoryFinalizationRecovery:
         self._memory_store = memory_store
         self._deployment_namespace = deployment_namespace
         self._event_store = event_store
+        self._title_attempts: dict[SessionId, datetime] = {}
         self._projection_store = projection_store
         self._workspace_store = workspace_store
         self._title_service_factory = title_service_factory
@@ -96,6 +99,15 @@ class CloudMemoryFinalizationRecovery:
             events = self._event_store.list_for_session(session_id)
             if any(event.event_type is EventType.SESSION_TITLE_UPDATED for event in events):
                 return True
+            now = recovered_at
+            last_attempt = self._title_attempts.get(session_id)
+            if last_attempt is not None and now - last_attempt < TITLE_RETRY_COOLDOWN:
+                # generate() returning None (provider failure, blank or
+                # unchanged title) leaves no durable marker: without a
+                # cooldown the scan would re-bill the title model on
+                # every poll for every recent session.
+                return True
+            self._title_attempts[session_id] = now
             title_event = self._title_service_factory().generate(
                 session=recorder.session,
                 events=events,
@@ -103,6 +115,7 @@ class CloudMemoryFinalizationRecovery:
             )
             if title_event is not None:
                 recorder.append_event(title_event)
+                self._title_attempts.pop(session_id, None)
             return True
 
 

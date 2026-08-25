@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -361,130 +362,139 @@ class SessionExecutionService:
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
                 ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
-        context_compiler = LocalContextCompiler()
-        context = core_harness.HarnessContext(
-            task=harness_task_for_recovered(
-                task,
-                network_profile=effective_network_profile,
-                tool_gateway=tool_gateway,
-                memory_store=self._memory_store,
-                materialization=materialized_context,
-            ),
-            session=claimed.recovery.session,
-            attempt=core_harness.HarnessAttempt(number=1, started_at=started_at),
-        )
-        with sequence_race_guard("continuation start lost a sequence race"):
-            claimed, continuations = execution_continuations.recover_and_start_continuations(
-                claimed,
-                session_events=session_events,
-                event_store=self._event_store,
-                recovery_service=self._recovery_service,
-                started_at=started_at,
-                recorder=authority_recorder,
-                cleanup=lambda: runtime_authority.close_tool_gateway(tool_gateway),
-                child_result_verifier=execution_continuations.build_child_result_verifier(
-                    self._delegation_store, self._projection_store
+        try:  # runtime ownership from gateway creation onward
+            context_compiler = LocalContextCompiler()
+            context = core_harness.HarnessContext(
+                task=harness_task_for_recovered(
+                    task,
+                    network_profile=effective_network_profile,
+                    tool_gateway=tool_gateway,
+                    memory_store=self._memory_store,
+                    materialization=materialized_context,
                 ),
+                session=claimed.recovery.session,
+                attempt=core_harness.HarnessAttempt(number=1, started_at=started_at),
             )
-        continuation = continuations.approved
-        clarification = continuations.clarification
-        child_wakeup = continuations.child_wakeup
-        context = core_harness.HarnessContext(
-            task=context.task,
-            session=claimed.recovery.session,
-            attempt=context.attempt,
-        )
-        recorder = self._projection_recorder_factory.build(
-            session=claimed.recovery.session,
-            workspace=claimed.recovery.workspace,
-            lease=claimed.lease,
-            ownership_check=ownership_check,
-        )
-        effect_recorder.append(recorder)
-        if continuation is None and clarification is None and child_wakeup is None:
-            recorder.append(
-                EventType.HARNESS_ATTEMPT_STARTED,
-                EventActor.HARNESS,
-                {"attempt_number": 1},
-                created_at=started_at,
+            with sequence_race_guard("continuation start lost a sequence race"):
+                claimed, continuations = execution_continuations.recover_and_start_continuations(
+                    claimed,
+                    session_events=session_events,
+                    event_store=self._event_store,
+                    recovery_service=self._recovery_service,
+                    started_at=started_at,
+                    recorder=authority_recorder,
+                    cleanup=lambda: runtime_authority.close_tool_gateway(tool_gateway),
+                    child_result_verifier=execution_continuations.build_child_result_verifier(
+                        self._delegation_store, self._projection_store
+                    ),
+                )
+            continuation = continuations.approved
+            clarification = continuations.clarification
+            child_wakeup = continuations.child_wakeup
+            context = core_harness.HarnessContext(
+                task=context.task,
+                session=claimed.recovery.session,
+                attempt=context.attempt,
             )
-        context = core_harness.HarnessContext(
-            task=context.task,
-            session=recorder.session,
-            attempt=context.attempt,
-        )
-        persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
-            cloud_continuation,
-            recorder=recorder,
-            event_store=self._event_store,
-            lifecycle_store=self._context_lifecycle_store,
-            cloud_artifacts=cloud_artifacts,
-            local_store=self._provider_continuation_store,
-            session_id=session_id,
-        )
-        model_step = core_harness.HarnessModelStep(
-            context_compiler=context_compiler,
-            available_tools=tool_gateway.model_tools,
-            conversation_compactor=context_compiler,
-            event_sink=persist_event,
-            continuation_sink=prepare_continuation,
-            provider_continuation=provider_continuation,
-            attempt_number=1,
-        )
-        orchestrator = core_harness.SingleAttemptOrchestrator(
-            model_gateway,
-            LocalPolicyEngine(
-                profile=PolicyProfile(task.policy_profile),
-                network_profile=effective_network_profile,
-                web_search_endpoint=self._settings.web_search_endpoint,
-                trusted_local=trusted_local,
-            ),
-            tool_gateway,
-            model_step=model_step,
-            synthesize_tool_results=True,
-            parallel_safe_tools=tool_gateway.parallel_safe_tools,
-            parallel_batch_limits=tool_gateway.parallel_batch_limits,
-            max_parallel_tool_calls=3,
-            tool_call_resolver=tool_gateway.resolve_model_tool_calls,
-            event_sink=persist_event,
-        )
-        try:
-            attempt_result = run_continuation(
-                orchestrator,
-                context,
-                continuation=continuation,
-                clarification=clarification,
-                child_wakeup=child_wakeup,
+            recorder = self._projection_recorder_factory.build(
+                session=claimed.recovery.session,
+                workspace=claimed.recovery.workspace,
+                lease=claimed.lease,
+                ownership_check=ownership_check,
             )
-        except Exception as exc:
-            attempt_result = exception_attempt_result(
-                exc, error_metadata(exc, clarification, continuation)
+            effect_recorder.append(recorder)
+            if continuation is None and clarification is None and child_wakeup is None:
+                recorder.append(
+                    EventType.HARNESS_ATTEMPT_STARTED,
+                    EventActor.HARNESS,
+                    {"attempt_number": 1},
+                    created_at=started_at,
+                )
+            context = core_harness.HarnessContext(
+                task=context.task,
+                session=recorder.session,
+                attempt=context.attempt,
             )
-        finally:
-            cleanup_error = runtime_authority.close_tool_gateway(tool_gateway)
-        if cleanup_error is not None:
-            attempt_result = runtime_authority.runtime_cleanup_failure_result(
-                cleanup_error, attempt_result
+            persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
+                cloud_continuation,
+                recorder=recorder,
+                event_store=self._event_store,
+                lifecycle_store=self._context_lifecycle_store,
+                cloud_artifacts=cloud_artifacts,
+                local_store=self._provider_continuation_store,
+                session_id=session_id,
             )
-        emitted_events = execution_finalization.finalize_execution(
-            recorder=recorder,
-            attempt_result=attempt_result,
-            memory_extraction_service=self._memory_extraction_service,
-            memory_promotion_service=self._memory_promotion_service,
-            title_service=SessionTitleService(model_gateway),
-            event_store=self._event_store,
-            cloud_memory_store=self._cloud_memory_store,
-            deployment_namespace=self._deployment_namespace,
-            projection_store=self._projection_store,
-            workspace_store=self._workspace_store,
-            started_at=started_at,
-            interaction_mode=task.interaction_mode,
-        )
-        final_session = self._projection_store.get_session(session_id)
-        if final_session is None:
-            raise WorkerExecutionError("session projection missing after worker execution")
-        return execution_finalization.ExecutedSession(
-            session=final_session,
-            events=emitted_events,
-            attempt_result=attempt_result,
-        )
+            model_step = core_harness.HarnessModelStep(
+                context_compiler=context_compiler,
+                available_tools=tool_gateway.model_tools,
+                conversation_compactor=context_compiler,
+                event_sink=persist_event,
+                continuation_sink=prepare_continuation,
+                provider_continuation=provider_continuation,
+                attempt_number=1,
+            )
+            orchestrator = core_harness.SingleAttemptOrchestrator(
+                model_gateway,
+                LocalPolicyEngine(
+                    profile=PolicyProfile(task.policy_profile),
+                    network_profile=effective_network_profile,
+                    web_search_endpoint=self._settings.web_search_endpoint,
+                    trusted_local=trusted_local,
+                ),
+                tool_gateway,
+                model_step=model_step,
+                synthesize_tool_results=True,
+                parallel_safe_tools=tool_gateway.parallel_safe_tools,
+                parallel_batch_limits=tool_gateway.parallel_batch_limits,
+                max_parallel_tool_calls=3,
+                tool_call_resolver=tool_gateway.resolve_model_tool_calls,
+                event_sink=persist_event,
+            )
+            try:
+                attempt_result = run_continuation(
+                    orchestrator,
+                    context,
+                    continuation=continuation,
+                    clarification=clarification,
+                    child_wakeup=child_wakeup,
+                )
+            except Exception as exc:
+                attempt_result = exception_attempt_result(
+                    exc, error_metadata(exc, clarification, continuation)
+                )
+            finally:
+                cleanup_error = runtime_authority.close_tool_gateway(tool_gateway)
+            if cleanup_error is not None:
+                attempt_result = runtime_authority.runtime_cleanup_failure_result(
+                    cleanup_error, attempt_result
+                )
+            emitted_events = execution_finalization.finalize_execution(
+                recorder=recorder,
+                attempt_result=attempt_result,
+                memory_extraction_service=self._memory_extraction_service,
+                memory_promotion_service=self._memory_promotion_service,
+                title_service=SessionTitleService(model_gateway),
+                event_store=self._event_store,
+                cloud_memory_store=self._cloud_memory_store,
+                deployment_namespace=self._deployment_namespace,
+                projection_store=self._projection_store,
+                workspace_store=self._workspace_store,
+                started_at=started_at,
+                interaction_mode=task.interaction_mode,
+            )
+            final_session = self._projection_store.get_session(session_id)
+            if final_session is None:
+                raise WorkerExecutionError("session projection missing after worker execution")
+            return execution_finalization.ExecutedSession(
+                session=final_session,
+                events=emitted_events,
+                attempt_result=attempt_result,
+            )
+        except ExecutionInterrupted:
+            return _superseded_by_control_event(authority_recorder)
+        finally:  # idempotent release; model phase closes on normal path
+            with contextlib.suppress(Exception):
+                runtime_authority.close_tool_gateway(tool_gateway)
+            if runtime_handle is not None:
+                with contextlib.suppress(Exception):
+                    runtime.destroy(runtime_handle)

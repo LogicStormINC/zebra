@@ -1,5 +1,34 @@
 # Findings
 
+## CTX-TURN-LIFECYCLE review closeout round 8 - 2026-08-25
+
+第八轮复审 3 个 P1、2 个 P2,全部修复并有确定性回归:
+
+- P1 receipt 接受竞态:投影已被并发消息推进时,`_accept_receipt`
+  改为按 `receipt.session_revision` 重建投影再接受,随后逐事件
+  重放尾部;不再以超前投影做全量比较(`committed Context
+  projections do not match` 复现已闭合)。
+- P1 runtime 所有权:从 tool gateway 创建起建立单一
+  try/except/finally 边界,覆盖 stale retry、continuation start、
+  recorder append 与模型调用;`ExecutionInterrupted` 映射 superseded,
+  finally 幂等释放 gateway 与 runtime handle(回归:gateway 后注入
+  中断,close 计数 ≥1)。
+- P1 title 费用风暴:generate() 返回 None(失败/空/未变)无 durable
+  标记导致每 poll 重试;恢复扫描加 15 分钟每会话冷却(以
+  recovered_at 为时钟),成功写标题后清除(回归:两次 poll 只调
+  一次模型,冷却过期后允许重试)。
+- P2 `_POLL_SKIP_ERRORS` 未接入 ready 循环:显式加入
+  ExecutionInterrupted/LeaseHeartbeatError/LeaseLostError 与
+  SessionEventIdempotencyConflictError(不含宽泛 ValueError)。
+- P2 幂等冲突误判为竞争:`is_sequence_race` 移除
+  SessionEventIdempotencyConflictError(同 key 不同内容=确定性
+  冲突,fail closed);纯序列 CAS 消息才是竞争。
+
+验证:全仓 `2670 passed / 348 skipped`,真 PG Context `8/8`,
+Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
+`git diff --check` 干净。
+
+
 ## CTX-TURN-LIFECYCLE proactive audit round 7 - 2026-08-25
 
 三个独立视角的敌意审查(并发时序/投影消费者/合同存储)+ 多轮验证,

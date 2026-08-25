@@ -1,5 +1,15 @@
 # Progress Log
 
+## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 8 (3xP1, 2xP2)
+
+- receipt 按 receipt revision 接受+尾部重放;runtime 所有权
+  try/except/finally(gateway 创建起,中断→superseded);title 恢复
+  15 分钟冷却;ready 循环接入类型化跳过面;幂等冲突不再算竞争。
+- 回归:receipt 超前投影、gateway 后中断释放、冷却限流、分类器。
+- 验证:全仓 `2670 passed / 348 skipped`;PG `8/8`;composition
+  `33/33 PASS`;`make check` 全绿;`git diff --check` 干净。
+
+
 ## 2026-08-25 - CTX-TURN-LIFECYCLE proactive audit round 7
 
 - 三个敌意审查代理 + 多轮验证;修复 finalization 尾部竞争、提取
