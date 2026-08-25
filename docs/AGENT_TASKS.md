@@ -2512,6 +2512,7 @@ CI and test keep lazy SQLite compatibility.
 - Branch: `codex/cloud-command-api-con-01`
 - Worktree: `/Users/lukeding/.codex/worktrees/cloud-command-api-con-01/zebra-agent`
 - Owned paths: `packages/agent-core/src/agent_core/contracts/session_commands.py`,
+  `packages/agent-core/src/agent_core/domain/attachments.py`,
   `packages/agent-core/src/agent_core/contracts/events.py`,
   `packages/agent-core/src/agent_core/contracts/__init__.py`,
   `packages/agent-core/src/agent_core/domain/events.py`,
@@ -23787,3 +23788,1014 @@ the current published Version as a projection.
 - every mutation is namespace-bound and idempotent; rollback means publishing a
   previously immutable Version through the same gate, never mutating history
 - no Desktop UI, public marketplace or autonomous publication is added
+
+## DeepSeek Vision Multimodal Board
+
+Design source: `docs/DeepSeek_视觉双通道多模态架构方案_v1.0.md`
+(2026-08-25, read-only provider verification + official-docs research;
+DeepSeek-only dual-channel vision architecture; recalibrated after the
+2026-08-25 design review). Board invariants: raw images are
+artifact-authoritative; vision output is derived evidence persisted as a
+permission-controlled artifact whose event carries only source/result
+references, versions and hashes; the main Flash/Pro loop never re-sends raw
+images; OCR text never reaches instruction channels; every vision model call
+— including inside `vision.inspect` — consumes `max_model_calls`, emits the
+existing model lifecycle events, enters the ModelCall projection and obeys the
+shared retry/repair caps; `vision.inspect` sends artifact content to the
+external provider and is therefore a policy-gated data-egress and billing
+action, not a merely read-only tool; the egress gate — tenant model-egress
+authorization, artifact permission and sensitive-data classification — runs
+at the common boundary of EVERY vision provider dispatch (Q&A, automatic
+overview, tool-screenshot analysis, `vision.inspect`) and rejects before any
+image byte leaves Zebra; no cross-provider or silent text-model fallback
+exists (`vision_model_unavailable` fails closed). Observation cache identity
+includes opaque authority scope plus source Artifact/Session identity and every
+cache hit is re-authorized; initial visual evidence is an untrusted non-system
+data message, never materialized through `build_system_prompt`; Responses
+`user` is a versioned, domain-separated non-PII HMAC of the authority scope;
+the transient USER-role evidence is excluded from protected-instruction,
+compaction and memory paths, and only a destination/policy-bound evidence
+projection—not the full observation—is sent to Flash/Pro. Files upload and
+re-upload pass the egress gate both before enqueue and before execution, while
+namespace-level cleanup consumers remain able to delete after authority
+revocation or Session removal. Image-bearing dispatch additionally requires an
+explicit `input_modalities=[text,image]` profile and exact vision model, sends a
+metadata-scrubbed derived Provider image rather than original bytes, and is
+bounded by token/timeout/Worker in-flight byte budgets. Visual lifecycle events
+contain only a fixed/public-answer marker plus telemetry, close every started
+attempt with received or typed `MODEL_REQUEST_FAILED`, and correlate to the derived
+observation Artifact through `model_call_id`; derived evidence never outlives
+its earliest-expiring source. `vision.inspect` persists only an Artifact-backed
+tombstone in terminal events/projections and rehydrates the paired tool result
+under current authority after recovery. The delivery line for every
+dependency on this board is `cloud-agent` — never a vague "mainline" phrase.
+Cards whose Owned paths are still package-level (EGR/DUR/ORCH/FILES) must narrow
+them to exact files before they may become `Ready`.
+
+### DS-VIS-PLAN-01 - Vision Architecture Docs Calibration
+
+- Status: `Locked`
+- Owner: `lukeding`
+- Suggested role: `ARCH / DOCS`
+- Depends on: `AL-BOUNDARY-ORCH-01` (PR #260) merged into `cloud-agent`.
+  Until then the edits stay parked in the working tree — no branch exists and
+  the card is not `In Progress`. Once PR #260 merges, cut
+  `codex/ds-vis-plan-01` from latest `cloud-agent` in a dedicated worktree
+  and flip this card to `In Progress`.
+- Branch: `codex/ds-vis-plan-01` (from latest `cloud-agent` after PR #260)
+- Owned paths: `docs/DeepSeek_视觉双通道多模态架构方案_v1.0.md`, the
+  DeepSeek Vision Multimodal Board in `docs/AGENT_TASKS.md`, the DeepSeek
+  vision entry in `PROGRESS.md` Known Follow-Ups
+
+#### Goal
+
+Persist and calibrate the vision architecture baseline and its task graph as
+one independent docs slice; stage exactly these files and never the unrelated
+`AGENTS.md` working-tree noise.
+
+#### Acceptance
+
+- [ ] the design doc closes every recorded review round: event-contract owned
+  paths (EventType in `domain/events.py` + payload registry in
+  `contracts/events.py`), the end-to-end ingestion chain, model-budget
+  accounting for vision calls, replayable observation identity
+  (`VisionAnalysisResult` with request/question hash, detail, model/profile/
+  prompt/schema versions, bounded fields, result-artifact reference),
+  all-dispatch data-egress framing, durable Files side effects via
+  effect/outbox with the Files/Eval card split, authority-scoped cache identity,
+  non-system observation messages, Files double authorization/namespace cleanup,
+  explicit P0 HTTP/pixel constants, deterministic answer-only routing,
+  modality fail-closed, response-event redaction/correlation, derived retention,
+  USER-role evidence wire envelope, Provider-image metadata scrubbing,
+  resource backpressure, Files quota/credential-rotation outcomes, durable
+  request/attempt single-flight, failed/unknown terminal state, distributed
+  tenant/account admission, control-plane Artifact admission/reference-only
+  recovery and Artifact-backed vision tool recovery
+- [ ] DSH wording states the model-input modality declaration with text-only
+  DeepSeek routing accurately; `region?` is removed from the P0 tool
+  signature with the derived-crop rule recorded
+- [ ] dependency wording targets the explicit `cloud-agent` delivery line for
+  `DS-RESP-01` and PR #260, including that the Responses commit `90906267`
+  is based on older `origin/main`, has no PR and does not contain
+  `cloud-agent`
+- [ ] file-size gate and `git diff --check` pass; no full test suite for a
+  docs-only change
+
+#### Explicit Non-Goals
+
+- no production code and no branch stacked on the unmerged PR #260 base
+
+### DS-VIS-CON-01 - Vision Contracts Foundation
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `CORE / ARCH`
+- Depends on: `DS-VIS-PLAN-01` accepted
+- Owned paths: `packages/agent-core/src/agent_core/domain/attachments.py`
+  (extend), `packages/agent-core/src/agent_core/domain/vision.py` (new:
+  `VisionAnalysisRequest`, `VisionAnalysisResult`, `VisualObservationV1`,
+  `VisionEvidenceMessageV1`, `VisionEvidenceProjectionV1`, `VisionToolResultV1`,
+  authority-scoped identity metadata and
+  bounded-field contracts),
+  `packages/agent-core/src/agent_core/domain/provider_images.py` (new:
+  `ProviderImageArtifactV1` lineage/retention contract),
+  `packages/agent-core/src/agent_core/ports/vision_analysis.py`
+  (new), `packages/agent-core/src/agent_core/domain/events.py`
+  (`VISUAL_OBSERVATION_RECORDED` EventType),
+  `packages/agent-core/src/agent_core/contracts/vision_events.py` (new
+  payload definitions — `contracts/events.py` is at 451 of the 500-line
+  hard limit and only imports/registers), the public export registrations
+  in `domain/__init__.py`, `ports/__init__.py` and the contracts exports,
+  focused tests under `tests/agent_core/`, this card, `PROGRESS.md`
+
+#### Goal
+
+Land the image-attachment input, vision-analysis Port, `VisionAnalysisResult`
+structured evidence (observation + replay identity) and its recorded event as
+pure `agent-core` contracts with no runtime wiring.
+
+#### Acceptance
+
+- [ ] `ImageAttachmentInput`/`ImageAttachmentContext` are validated frozen
+  domain types carrying media-type allowlist, byte/edge limits as contract
+  constants and source metadata; no image decode dependency is introduced.
+- [ ] `VisionAnalysisRequest.purpose` is a typed
+  `answer_only|observation` enum defaulting to `observation`; only an explicit
+  `answer_only` selects the one-call Q&A path, never a prompt heuristic or
+  classifier call. It requires 1–4 ordered image references, bounded nonblank
+  question text and `detail=low|original`; the HMAC covers the exact normalized
+  UTF-8 question bytes sent on wire.
+- [ ] `VisionAnalysisResult` wraps optional `answer`, the full
+  `VisualObservationV1` and metadata pinning `request_hash`,
+  `question_hash`, `detail`, model, profile, prompt version, schema version,
+  deployment namespace, `authority_scope_digest` and Provider-user key version;
+  optional Provider response id/system fingerprint are bounded provenance only
+  and never part of request identity;
+  observation fields (visible text, findings, candidates, uncertainties,
+  followups) enforce explicit count/length caps. `answer_only` requires a
+  bounded nonblank answer; `observation` forbids a public answer.
+- [ ] `VisualObservationV1` binds `source_artifacts` (id + sha256 + source
+  session id); regions/confidence are finite numbers, confidence and x/y/w/h
+  stay in [0,1], rectangles stay inside the image, and NaN/Infinity fail.
+- [ ] canonical request identity preserves the ordered source/provider-image
+  sequence without sorting or deduplication and covers source Artifact/session identity,
+  actual Provider-image Artifact id/sha256/transform version/representation,
+  complete opaque authority-scope digest, question/detail, resolved model/
+  profile, prompt/schema versions, Provider-user key version and deployment
+  namespace; original-image sha256 alone can never authorize reuse.
+- [ ] `canonical_scope` uses UTF-8 canonical JSON with sorted keys, stable
+  separators, explicit null/empty-list distinction and a deduplicated/sorted
+  session allowlist. Provider-user, authority-scope and question HMACs use
+  explicit domain prefixes. Provider-user wire identity is exactly
+  `v1_<base64url-no-padding(HMAC-SHA256(canonical_scope))>` and question hashes
+  use a keyed deployment HMAC; validators pin Provider charset/length and
+  key-version behavior without retaining raw identity or key material.
+- [ ] `ProviderImageArtifactV1` binds source/output id+sha256, dimensions,
+  transformation version and `retained_until`; derived retention cannot exceed
+  the earliest source retention.
+- [ ] `VisionEvidenceMessageV1` defines the canonical USER-role wire envelope
+  (`ZEBRA_VISUAL_EVIDENCE_V1`, untrusted marker, schema/version, byte length,
+  digest and canonical JSON) without putting evidence in a system prompt. Its
+  UTF-8 bytes are exactly `json.dumps(..., ensure_ascii=False, sort_keys=True,
+  separators=(",", ":"), allow_nan=False)` after contract normalization.
+- [ ] `VisionToolResultV1` defines the corresponding canonical untrusted TOOL-role
+  envelope with schema/version, byte length/digest, call id and bounded JSON;
+  neither envelope is itself a durable Session message contract.
+- [ ] `VisionEvidenceProjectionV1` binds observation Artifact/digest, destination
+  model profile and secret-free Provider-account scope, policy/redaction
+  versions, bounded projected fields and retention no later than observation;
+  it cannot represent the unrestricted observation as provider-ready evidence.
+- [ ] `VisionAnalysisPort` is a neutral core Port; `agent-core` gains no
+  provider imports.
+- [ ] `VISUAL_OBSERVATION_RECORDED` adds the EventType in
+  `domain/events.py` and defines the payload in the new
+  `contracts/vision_events.py` with `contracts/events.py` only importing and
+  registering it; the event holds source/result artifact references plus
+  `model_call_id`, request identity, versions and hashes, never the observation
+  body inline.
+- [ ] Focused contract tests plus `make check` green.
+
+#### Explicit Non-Goals
+
+- no gateway/adapter implementation, API wiring or storage changes
+- no Pillow dependency and no image decoding in this card
+- no `SessionMessage` rewrite — images ride attachments, not message content
+
+### DS-VIS-ING-01 - Image HTTP And Decode Trust Boundary
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `API / SECURITY`
+- Depends on: `DS-VIS-CON-01` merged into the `cloud-agent` delivery line
+- Owned paths:
+  `apps/api/src/zebra_agent_api/session_attachment_inputs.py`,
+  `apps/api/src/zebra_agent_api/session_payloads.py`,
+  `apps/api/src/zebra_agent_api/http.py` (request-body trust boundary),
+  `packages/agent-security/src/agent_security/image_safety.py` (new shared
+  bounded decoder/validator used by both API and later Worker preparation),
+  `packages/agent-security/pyproject.toml` plus the lockfile for the
+  pinned isolated Pillow dependency (declared in the shared package that
+  imports it, not root or API-only local extras), focused tests under
+  `tests/api/` and `tests/agent_security/`, this card, `PROGRESS.md`
+
+#### Goal
+
+Turn an untrusted bounded HTTP/base64 image body into validated
+`ImageAttachmentInput` values without blocking or exhausting the API process;
+this card does not make the input durable.
+
+#### Acceptance
+
+- [ ] API accepts image attachments within the P0 product limits: max 4 per
+  message, 16 MiB single / 32 MiB total, 8192 px max edge, 36,000,000 decoded
+  pixels per image and 72,000,000 decoded pixels per message; animated GIF is
+  rejected. Every limit is independently enforced and no Pillow default is
+  treated as the product contract.
+- [ ] The HTTP layer enforces a streaming/ASGI request-body cap BEFORE any
+  JSON or base64 parsing (`http.py` currently buffers the full body before
+  attachment checks): the P0 hard cap is 48 MiB, oversized bodies get 413,
+  the cap cannot be bypassed by chunked requests, and `Content-Length` alone
+  is never trusted. Non-identity request `Content-Encoding` is rejected so a
+  proxy/middleware decompression path cannot bypass the decoded-body budget.
+- [ ] The ASGI reader acquires an instance-wide weighted byte budget before
+  retaining each chunk; P0 keeps at most 48 MiB of aggregate request bodies,
+  so small text requests may coexist but lying/chunked clients cannot aggregate
+  OOM. Once parsing proves images exist, one image decode/admission slot is
+  acquired and passed to ART-01; body-byte and image tickets remain held through
+  decode/object admission and final buffer release on all paths. Saturation
+  closes without retaining the next chunk and returns typed `503`/`Retry-After`
+  when a response remains possible.
+- [ ] The bounded `Idempotency-Key` header is accepted by the production CORS
+  allowlist for the later cloud image-admission contract; origins remain exact
+  and no wildcard credential policy is introduced.
+- [ ] A pinned, isolated Pillow dependency in `agent-security`'s shared
+  `image_safety` module verifies real format, dimensions, frame count,
+  pixel count and decompression-bomb ceilings; forged MIME, corrupt and
+  oversized images are rejected with typed errors. Full decode/load must finish
+  before acceptance; SVG/HEIC and animated GIF are explicit P0 rejects, and no
+  mutable Pillow process-global limit becomes the sole product guard.
+- [ ] Base64 preflight derives the decoded upper bound from encoded length,
+  then performs bounded strict-alphabet/padding decoding. Malformed data URLs
+  and declared media types that disagree with decoded content fail before
+  Artifact persistence; no path allocates unbounded decoded bytes first. The
+  request JSON loader also rejects duplicate keys, NaN/Infinity and trailing
+  data so validation/idempotency never hash a different meaning than execution.
+- [ ] Image verify/decode runs off the ASGI event loop behind bounded concurrency;
+  images are processed sequentially per message, timeout/cancellation keeps the
+  permit until the decoder actually exits, and saturation fails with typed
+  backpressure rather than spawning unbounded threads or memory copies. A stuck
+  native decoder is killable in an isolated process or marks the decoder worker
+  unhealthy for supervised recycle; timeout never pretends the work stopped.
+- [ ] Focused tests plus `make check` green.
+
+#### Explicit Non-Goals
+
+- no Artifact persistence, task admission/recovery, model calls or Files API
+- no change to text/document attachment behavior
+
+### DS-VIS-ART-01 - Control-Plane Image Artifact Transaction
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `CORE / STORAGE`
+- Depends on: `DS-VIS-ING-01` merged into the `cloud-agent` delivery line
+- Owned paths: new `packages/agent-core/src/agent_core/domain/artifact_ingest.py`
+  and `packages/agent-core/src/agent_core/ports/artifact_ingest.py`, public core
+  exports in `domain/__init__.py` and `ports/__init__.py`,
+  `packages/agent-core/src/agent_core/ports/task_admission_transaction.py`,
+  new `packages/agent-storage/src/agent_storage/artifact_ingest.py` (SQLite),
+  new `packages/agent-storage/src/agent_storage/postgres/artifact_ingest.py`,
+  new `packages/agent-storage/src/agent_storage/postgres/image_artifact_ingest_migration.py`,
+  migration registration in `packages/agent-storage/src/agent_storage/postgres/migrations.py`
+  plus new `packages/agent-storage/src/agent_storage/postgres/base_migrations.py`
+  extracting the embedded v1–v7 definitions to keep that 499-line hotspot below limit,
+  `packages/agent-storage/src/agent_storage/postgres/task_admission.py`,
+  `packages/agent-storage/src/agent_storage/postgres_composition.py`,
+  `packages/agent-storage/src/agent_storage/composition.py` and storage public
+  exports in `packages/agent-storage/src/agent_storage/__init__.py`,
+  `tests/agent_core/test_image_artifact_ingest_contract.py`,
+  `tests/agent_storage/test_postgres_image_artifact_admission.py`,
+  `tests/agent_storage/test_image_artifact_ingest_migration.py`, this card,
+  `PROGRESS.md`
+
+#### Goal
+
+Provide the control-plane staging/promote transaction that can atomically bind
+verified image objects to a canonical Session Event/task or message command,
+without borrowing Worker mutation authority or exposing staged bytes.
+
+#### Acceptance
+
+- [ ] Before behavior is added, embedded v1–v7 definitions move from the current
+  499-line `migrations.py` to `base_migrations.py` with byte-equivalent catalog/
+  checksum behavior and characterization tests; touched source stays below 500.
+- [ ] A typed control-plane `ImageArtifactAdmissionPort` is separate from the
+  existing Worker-only Artifact mutation Port. It binds Host/tenant authority,
+  namespace/session, intended user event, media facts, hashes, retention and
+  idempotency; API code cannot construct or impersonate `WorkerMutationAuthority`.
+- [ ] Cloud composition requires an `ArtifactObjectStorePort` writer only when
+  image admission is enabled; the current read-only object composition remains
+  valid while vision is off. Enabled-without-writer fails startup, never stores
+  bytes in PostgreSQL or silently falls back to the local payload store.
+- [ ] The Port idempotently reserves short-TTL unreadable staging rows, records
+  verified object receipts, and promotes an ordered set only in the caller's
+  PostgreSQL session/task or message-command admission transaction. Promotion
+  atomically finalizes metadata with canonical Event bindings; partial sets,
+  visible staged reads and dangling Event references are impossible.
+- [ ] Staging reservation atomically debits the existing Host/tenant Artifact
+  byte/count quota before object I/O (including concurrent uploads) and releases
+  it on promotion/compensation/expiry. Per-message 4-image/32 MiB limits do not
+  become an unlimited unattached-object quota.
+- [ ] A forward migration addresses the verified schema gap without rewriting
+  v9 history: a short-TTL control-plane upload-staging table has no premature
+  `session_streams` FK, and Artifact metadata records explicit
+  `reservation_authority_kind=worker|control_plane`. Worker epoch/fence/owner
+  remain mandatory only for Worker rows; control-plane rows carry bounded Host/
+  tenant authority digest and can become finalized only inside session/task or
+  message-command admission. Readers/pruners handle both kinds identically after
+  finalization; no parallel authoritative Artifact store is created.
+- [ ] Crash windows leave only reconcilable staged reservations/objects. Failed
+  admission schedules compensating cleanup; replay can finish the same receipt,
+  but never binds different bytes. Exact replay returns the same Artifact/task
+  identities; same key with different canonical hashes/metadata conflicts.
+- [ ] Multi-image promote/crash/idempotency and forward-migration fresh/upgrade/
+  idempotency/constraint tests plus `make check` green.
+
+#### Explicit Non-Goals
+
+- no API routes, Worker recovery, Provider transformation, model calls or Files
+
+### DS-VIS-WIRE-01 - Image Session And Message Wiring
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `API / RUNTIME / RECOVERY`
+- Depends on: `DS-VIS-ART-01` merged into the `cloud-agent` delivery line
+- Owned paths: `packages/agent-core/src/agent_core/contracts/session_commands.py`,
+  `packages/agent-core/src/agent_core/application/session_attachments.py`,
+  `packages/agent-core/src/agent_core/harness/models.py`,
+  `packages/agent-storage/src/agent_storage/session_attachments.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `apps/api/src/zebra_agent_api/session_attachment_persistence.py`, new
+  `apps/api/src/zebra_agent_api/image_artifact_admission.py`, new
+  `apps/api/src/zebra_agent_api/image_routes.py`,
+  `apps/api/src/zebra_agent_api/command_submission.py`,
+  `apps/api/src/zebra_agent_api/api_command_mixin.py`,
+  `apps/api/src/zebra_agent_api/session_queue.py`,
+  `apps/api/src/zebra_agent_api/http.py`, `apps/api/src/zebra_agent_api/routes.py`,
+  `apps/api/src/zebra_agent_api/app.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, `configs/default.env`,
+  `.env.example`,
+  `apps/worker/src/zebra_agent_worker/command_consumer.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`, new tests
+  `tests/api/test_image_artifact_admission.py`,
+  `tests/agent_runtime/test_image_attachment_context.py`,
+  `tests/worker/test_image_attachment_recovery.py` and
+  `tests/worker/test_image_message_command_recovery.py`, this card, `PROGRESS.md`
+
+#### Goal
+
+Wire validated images through initial and follow-up Local/Cloud messages using
+ART-01 transactions and reference-only queue/recovery contracts.
+
+#### Acceptance
+
+- [ ] `ZEBRA_DEEPSEEK_VISION_ENABLED=false` lands before any image route; when
+  false, dedicated upload routes reject before body read and inline initial
+  attachments reject after bounded JSON detection but before image decode/object
+  I/O; no vision tool/model wiring is composed. Invalid configuration fails
+  startup. The flag remains off and is reused, not redefined, by ORCH/EVAL.
+- [ ] Before behavior is added, current 500-line `routes.py` and 495-line
+  `app.py` perform a characterized no-behavior-change extraction into the image
+  route/admission modules; every touched source remains below 500 lines.
+- [ ] Cloud image-bearing session creation requires `Idempotency-Key`; canonical
+  request identity preserves ordered hashes/media facts. Missing keys fail before
+  object I/O; non-image legacy creation stays compatible.
+- [ ] Cloud follow-up uses idempotent `/sessions/{id}/image-artifacts` to create
+  15-minute unreadable staged refs, then `/messages` atomically promotes the
+  ordered set with `SESSION_COMMAND_ACCEPTED`, expected revision and idempotency.
+  Inline bytes/base64, cross-scope, expired/pruned/consumed or mismatched refs fail.
+- [ ] Types keep lifecycle stages distinct: upload returns an opaque
+  `ImageUploadRef`; atomic command promotion records bounded
+  `ImageArtifactCommandRef` values and binds Artifact finalization to the
+  `SESSION_COMMAND_ACCEPTED` event; Worker converts them to
+  `SessionAttachmentRef` values bound to the later canonical USER event. No
+  contract invents a message event id before that event exists.
+- [ ] Revision conflict leaves refs retryable; exact replay resolves the same
+  final refs, different commands cannot consume them, and staged expiry is
+  reconciled/deleted. Worker recovery revalidates refs and appends the USER event
+  exactly once without Rabbit/Event bytes.
+- [ ] Before constructing a command-derived USER event, Worker recovery looks up
+  the canonical event by deterministic command causation/idempotency and validates
+  its payload/attachment bindings. Replay returns the existing event; it never
+  generates a new random event id whose refs conflict with the persisted one.
+- [ ] Initial Cloud task admission promotes every image with Events/projections/
+  task/binding/idempotency atomically. Local initial/follow-up flows persist all
+  image Artifacts before harness/event execution and compensate all on failure;
+  text/document semantics stay byte-compatible.
+- [ ] Queue/Event/HarnessTask carry only bounded `ImageAttachmentContext` refs/
+  session binding/hashes. Scoped recovery checks current tenant/session,
+  finalized/readable state, byte length and digest; missing/pruned input fails.
+- [ ] ING body-byte/image tickets are released exactly once only after object/
+  admission completion and encoded/decoded buffers drop, including disconnect,
+  conflict, local failure and cancellation paths.
+- [ ] Initial/follow-up, multi-image, Local/Cloud, replay, authority and permit-
+  leak tests plus `make check` green.
+
+#### Explicit Non-Goals
+
+- no Provider image transformation, model calls, Files or screenshot capture
+
+### DS-VIS-EGR-01 - Provider Image Preparation And Capacity Guard
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `RUNTIME / SECURITY / STORAGE`
+- Depends on: `DS-VIS-WIRE-01` merged into the `cloud-agent` delivery line
+- Owned paths: new Provider-image preparation modules under
+  `packages/agent-runtime/src/agent_runtime/`, Artifact lineage/retention and
+  derived-payload persistence under `packages/agent-storage/src/agent_storage/`,
+  extension of the shared
+  `packages/agent-security/src/agent_security/image_safety.py` codec plus exact
+  egress classification/policy files under `packages/agent-security/`, Worker capacity wiring under
+  `apps/worker/src/zebra_agent_worker/`, focused tests under
+  `tests/agent_runtime/`, `tests/agent_storage/`, `tests/agent_security/` and
+  `tests/worker/`, this card, `PROGRESS.md`.
+  Package-level paths must be narrowed to exact files before this card may
+  become `Ready`.
+
+#### Goal
+
+Prepare a deterministic, metadata-scrubbed Provider image without mutating the
+original Artifact, propagate source retention/authority to the derivative, and
+bound Worker memory before any base64 or Files dispatch can allocate bytes.
+
+#### Acceptance
+
+- [ ] JPEG/PNG/GIF/WebP inputs produce a deterministic
+  `ProviderImageArtifactV1` that removes EXIF/GPS, device identifiers, comments,
+  embedded thumbnails and other non-visual metadata while preserving normalized
+  pixel semantics; EXIF orientation is applied and color is converted to fixed
+  sRGB before metadata removal. Locked codec parameters and decoded-pixel digest
+  tests make the transformation reproducible; original bytes remain authority.
+- [ ] Prepared output is independently capped at 16 MiB/image and 32 MiB for the
+  ordered image set; the final serialized base64 JSON request is capped at
+  48 MiB including prompt/schema overhead. Expansion/codec failure returns typed
+  `provider_image_preparation_failed` and never falls back to original bytes.
+- [ ] Provider-image lineage binds source/output Artifact id+sha256, dimensions,
+  transform version and `retained_until`; output expiry is the earlier of source
+  expiry and existing derived-Artifact retention policy, and source prune/
+  revocation/Session cleanup immediately denies reads
+  before durable derived prune completes.
+- [ ] Prepared derivatives debit the existing tenant/authority Artifact byte/
+  count quota through a durable reservation before allocation; failure blocks
+  preparation, and reuse/compensation/prune cannot double-debit or leak quota.
+- [ ] A durable preparation binding is unique on namespace + ordered source
+  Artifact revision/hash + transform version, with lease/fencing and recoverable
+  Artifact finalization. Concurrent Workers publish/reuse one authoritative
+  prepared Artifact id; random duplicate derivative ids cannot split the later
+  vision `request_hash` and bypass Provider-call single-flight.
+- [ ] User uploads, tool screenshots and future local crops all use the same
+  preparation boundary. P0 has no raw-image profile or policy escape hatch;
+  original bytes never leave Zebra.
+- [ ] The common egress gate runs before derivative bytes are handed to any
+  Provider adapter or Files effect. P0 classification uses authoritative
+  Artifact labels, source/tenant policy and locally inspectable metadata; it
+  does not claim Pillow performs semantic pixel DLP. A tenant requiring visual
+  semantic DLP fails closed unless an approved local classifier is configured.
+- [ ] Synchronous order is metadata-only tenant/permission preauthorization →
+  capacity lease → session-scoped Artifact read → local prepare/classify →
+  current-authority revalidation immediately before HTTP write. No unscoped
+  Artifact read or check-after-read path exists; bytes are rehashed against the
+  bound source digest before transformation, and every failure releases lease.
+- [ ] P0 defaults admit one active vision Provider request and at most 32 MiB of
+  source image bytes per Worker; queued jobs hold only Artifact references and
+  do not preload bytes. Cancellation and failure always release permits.
+- [ ] Load tests measure actual peak RSS across original bytes, normalized bytes,
+  base64, JSON serialization and HTTP client buffering; raising defaults requires
+  recorded evidence rather than configuration guesswork.
+- [ ] Focused deterministic tests plus `make check` green.
+
+#### Explicit Non-Goals
+
+- no Provider HTTP calls, model routing or orchestration
+- no image-editing product feature; transformation exists only for safe egress
+- no new local OCR/DLP engine; tenants that require one remain denied
+- no raw-image Provider profile in P0
+
+### DS-VIS-DUR-01 - Vision Analysis Ledger And Model Lifecycle
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `CORE / STORAGE / RECOVERY`
+- Depends on: `DS-VIS-EGR-01` merged into the `cloud-agent` delivery line
+- Owned paths: `packages/agent-core/src/agent_core/domain/model_calls.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/contracts/model_events.py`, model-event
+  registration in `packages/agent-core/src/agent_core/contracts/events.py`,
+  new vision-analysis ledger Port/domain modules, exact ModelCall projection/
+  migration/index files and new vision-analysis ledger/Artifact-delivery files
+  under `packages/agent-storage/` (including destination/policy-bound evidence
+  projection persistence), Worker indexing/recovery touchpoints under
+  `apps/worker/`, focused tests under `tests/agent_core/`,
+  `tests/agent_storage/` and `tests/worker/`, this card, `PROGRESS.md`.
+  Package-level paths must be narrowed to exact files before this card may
+  become `Ready`.
+
+#### Goal
+
+Provide the durable single-flight, terminal model lifecycle and recoverable
+result-Artifact/event commit that orchestration can use without persisting raw
+vision output in Session events or projections.
+
+#### Acceptance
+
+- [ ] `VisionAnalysisRecord` is unique on deployment namespace/request hash and
+  is the stable cache/result ledger; append-only `VisionAnalysisAttempt` rows are
+  unique by model call id and retain every real HTTP attempt's pending/succeeded/
+  failed/unknown state, usage/cost, lease owner/expiry and fencing token.
+- [ ] Exactly one attempt per request may be active. Concurrent misses wait or
+  fail retryably; an explicit retry after unknown creates a new call id/fence,
+  preserves the old attempt and possible charge, and fences late completion.
+  Only the current attempt may publish success; expired leases reclaim safely.
+- [ ] Attempt phase distinguishes reserved/pre-send from `dispatch_started` and
+  response-staged. Recovery may reclaim a pre-send lease without assuming a
+  charge, but any expired attempt that could have written request bytes or lost
+  an unstaged response becomes unknown. It is never silently retried or labeled
+  failed merely because the Worker crashed.
+- [ ] Distributed admission uses the same durable ledger to enforce configurable
+  namespace, tenant and secret-free Provider-account concurrency/call/token
+  limits in addition to the per-Worker cap. Monetary limits activate only with
+  official vision pricing; no unpublished price/concurrency limit is assumed,
+  and 429 causes bounded jittered backpressure, not hot-loop retries.
+- [ ] Provider-neutral `MODEL_REQUEST_FAILED` closes a started attempt without a
+  response using call id, attempt/stage, `failed|unknown`, sanitized normalized
+  error, retryable, latency and available usage only; no Provider body/image/OCR
+  is durable. ModelCall projection supports succeeded/failed/unknown.
+- [ ] Metrics use only bounded dimensions (profile/stage/outcome/error class),
+  never artifact/file/request/question hashes, Provider `user`, response ids or
+  model call ids. Sanitized logs may retain `model_call_id` for correlation but
+  none of the other identifiers or evidence payloads.
+- [ ] Engineering `MODEL_RESPONSE_RECEIVED` stores a fixed marker and stage;
+  answer-only stores only the bounded output-checked public answer. ModelCall
+  projection adds call id, outcome, stage, profile and usage/reasoning/retry
+  data. Cost carries its immutable pricing-snapshot id only when official
+  vision pricing exists; otherwise it is explicitly unknown and never borrows
+  Flash/Pro rates;
+  it never stores observation JSON or raw Provider output.
+- [ ] Successful result Artifact finalization, ledger success and
+  `VISUAL_OBSERVATION_RECORDED` commit through the existing recoverable Artifact
+  delivery/transaction boundary. Recovery cannot expose a permanent dangling
+  result reference; unknown Provider outcomes never masquerade as success.
+- [ ] Before Provider dispatch, DUR reserves bounded quota for the maximum result
+  observation and downstream evidence projection Artifacts. Success finalizes
+  actual bytes and releases excess; failure/unknown/revocation compensates
+  safely. Derived evidence cannot bypass Host/tenant Artifact quotas.
+- [ ] Evidence-projection persistence is CAS/lease keyed by observation digest,
+  destination profile/account and policy/redaction versions, commits its
+  Artifact/digest provenance recoverably and cannot outlive or remain readable
+  after the source observation is revoked. Superseded/revoked policy versions
+  immediately make older projections ineligible for read or dispatch before
+  asynchronous prune.
+- [ ] Observation lineage uses earliest source retention. Source prune,
+  existing derived-Artifact policy may shorten it further; source prune,
+  permission revocation or Session cleanup immediately denies derived read/cache
+  before durable prune, including multi-source results.
+- [ ] Focused replay, fencing, crash-window and projection migration tests plus
+  `make check` green.
+
+#### Explicit Non-Goals
+
+- no Provider adapter, prompt/message construction, tool or routing changes
+
+### DS-VIS-ADP-01 - DeepSeek Vision Responses Adapter
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `INTEGRATIONS / QA`
+- Depends on: `DS-VIS-CON-01` merged into the `cloud-agent` delivery line,
+  plus `DS-RESP-01` (Responses adapter, commit `90906267`, based on older
+  `origin/main`, currently no PR) entering the same `cloud-agent` delivery
+  line
+- Owned paths: `packages/agent-integrations/src/agent_integrations/deepseek_profiles.py`,
+  the merged `deepseek_responses.py`/payload modules from `DS-RESP-01`, a new
+  `deepseek_vision.py` module if separation is required, Provider credential/
+  HMAC composition touchpoints, `evals/providers/`, focused tests under
+  `tests/agent_integrations/`, this card, `PROGRESS.md`.
+  Package-level paths must be narrowed to exact files before this card may
+  become `Ready`.
+
+#### Goal
+
+Implement `vision-exp` on the existing Responses adapter — `input_image`,
+Responses `text.format` JSON Schema output, reasoning effort and usage — behind
+`VisionAnalysisPort`.
+
+#### Acceptance
+
+- [ ] `DeepSeekVisionGateway` implements `VisionAnalysisPort` using base64
+  data URLs built from Artifact bytes, with selectable `low`/`original`
+  detail and no `region` parameter (Provider also accepts `high`/`auto`, but
+  Zebra P0 intentionally does not expose them).
+- [ ] `deepseek-vision-overview-v1` (thinking none, detail low) and
+  `deepseek-vision-inspect-v1` (thinking high, detail original) register in
+  the existing versioned profile system with explicit
+  `input_modalities=[text,image]`; overview pins 2,048 output tokens/60s and
+  inspect pins 8,192 output tokens/120s instead of inheriting text-profile
+  limits.
+- [ ] Any image-bearing request whose profile lacks image modality or whose
+  resolved model is not exactly `deepseek-v4-flash-vision-exp` fails before
+  network I/O. Tests cover text profiles, legacy overrides and misconfiguration;
+  Provider placeholder-text behavior can never become a silent downgrade.
+- [ ] The request uses `text.format={type:json_schema,name,schema}` with the
+  versioned bounded schema (no undocumented wire fields), then strictly parses
+  into `VisionAnalysisResult`; the loader rejects duplicate object keys,
+  NaN/Infinity, trailing data and unknown fields before Pydantic validation.
+  Malformed output is a typed retryable rejection.
+- [ ] Usage and reasoning-token counts are recorded; raw reasoning content is
+  never persisted or exposed.
+- [ ] Every Responses request sets top-level `user` to a versioned HMAC of the
+  complete opaque authority scope using the exact
+  `v1_<base64url-no-padding(HMAC-SHA256(canonical_scope))>` wire contract,
+  injected through the existing credential/composition boundary; charset,
+  length and key-rotation tests pass, and the HMAC key and raw tenant/user/
+  resource identities are never persisted or logged.
+- [ ] The adapter accepts only authorized `ProviderImageArtifactV1` bytes, not
+  arbitrary original Artifact bytes or public URLs. Capacity leases remain a
+  Worker/orchestration concern and do not leak into the Integration Port.
+- [ ] Vision adapter pins `max_retries=0` and exposes no hidden response-repair
+  HTTP call. Transport/schema failures return typed retryable errors; only
+  orchestration may schedule a fresh call with a new identity. Profile timeout
+  and budget errors are typed and no Integration-layer retry is hidden.
+- [ ] Vision requests force `stream=false`; Provider JSON/reasoning deltas never
+  reach public callbacks or SSE. Success and error bodies are incrementally
+  bounded to 2 MiB, connections close on overflow, and only a fully parsed,
+  schema-valid, output-checked answer-only answer may be projected publicly.
+- [ ] Vision-model unavailability returns typed `vision_model_unavailable`;
+  no silent text-model hand-off and no cross-provider fallback.
+- [ ] Provider contract tests pass; a real-credential smoke is recorded when
+  an explicit eval credential/opt-in exists, using synthetic images only;
+  ordinary `make check` never spends tokens or reads production credentials.
+
+#### Explicit Non-Goals
+
+- no orchestration or tool-loop changes (DS-VIS-ORCH-01)
+- no Files API / `file_id` path (DS-VIS-FILES-01)
+
+### DS-VIS-ORCH-01 - Vision Orchestration And vision.inspect Tool
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `CORE / ORCHESTRATION / TOOLS`
+- Depends on: `DS-VIS-DUR-01` and `DS-VIS-ADP-01` in the `cloud-agent`
+  delivery line, plus `AL-BOUNDARY-ORCH-01` (PR #260 — the
+  `agent-orchestration` package) reaching the same `cloud-agent` line, since
+  this card's orchestration paths only exist after that merge
+- Owned paths: `packages/agent-core/src/agent_core/harness/orchestration_events.py`,
+  `packages/agent-core/src/agent_core/harness/tool_execution.py`,
+  `packages/agent-core/src/agent_core/harness/model_step.py`, harness
+  vision-analysis wiring under `packages/agent-core/`, orchestration
+  wiring under `packages/agent-orchestration/`, and the exact
+  `packages/agent-context/` projection/rehydration files used for evidence
+  serialization, existing `packages/agent-tools/src/agent_tools/output_projection.py`,
+  the `vision.inspect` builtin tool under `packages/agent-tools/`, worker/API
+  composition touchpoints under `apps/worker/` and `apps/api/`, focused tests,
+  this card, `PROGRESS.md`.
+  Package-level paths must be narrowed to exact files before this card may
+  become `Ready`.
+
+#### Goal
+
+Wire initial visual analysis into the agent loop — explicitly selected
+answer-only Q&A and
+evidence-driven engineering tasks — plus the policy-gated
+`vision.inspect` tool, with every vision call inside the shared model
+budget.
+
+#### Acceptance
+
+- [ ] Simple image Q&A path exists only for a typed
+  `VisionAnalysisRequest(purpose=answer_only)`; one `vision-exp` call produces
+  the user-facing answer plus a persisted `VisionAnalysisResult`. Missing
+  purpose uses the engineering observation path; no regex/keyword/model router.
+- [ ] Engineering path: initial visual evidence reaches Flash/Pro as derived
+  observation data; the main loop never re-sends raw image bytes. Image budget
+  admission reserves the documented worst-case 384 tokens per image before
+  dispatch and reconciles against returned usage.
+- [ ] Before either initial evidence or `vision.inspect` output reaches the main
+  model, orchestration rechecks current authority/model-egress permission and
+  materializes a bounded `VisionEvidenceProjectionV1` for the exact destination
+  profile/account and policy/redaction versions. Full observation JSON is never
+  a Flash/Pro request body; projection Artifact/digest/version enter ModelCall
+  provenance and inherit the observation retention/revocation boundary.
+- [ ] Evidence projection has a destination-profile token/byte budget and is
+  included in normal context-window planning. Deterministic reduction preserves
+  trust/schema/source/digest, injection candidates and uncertainties before
+  optional detail; if the mandatory envelope cannot fit, dispatch fails typed
+  instead of truncating JSON or dropping security markers.
+- [ ] Initial observation is serialized exactly as a `MessageRole.USER`
+  `VisionEvidenceMessageV1` immediately after the user goal, with the stable
+  header, untrusted marker, schema/version, byte length/digest and canonical
+  JSON. It never passes through `build_system_prompt`; final Provider-wire tests
+  prove visible text/injection candidates are absent from SYSTEM/DEVELOPER.
+  The envelope is materialized just-in-time from a currently authorized,
+  digest-verified Artifact; it is not a durable Session USER message and never
+  enters the protected-instruction ledger, compaction or memory extraction.
+  `vision.inspect` remains a genuinely paired `VisionToolResultV1` exchange with
+  a stable untrusted marker.
+- [ ] Main-model turns that consumed visual evidence carry its Artifact/digest
+  provenance. P0 automatic governed-memory extraction is disabled for those
+  turns so a visual inference cannot silently outlive/reclassify its source;
+  any future human-confirmed promotion requires a separate reviewed contract.
+- [ ] `vision.inspect` reuses the existing tool-output Artifact/tombstone path:
+  its terminal event, ToolRun projection and trace contain only a fixed bounded
+  marker, artifact URI, digest/schema and call id. The active in-memory result
+  may feed the bounded observation to the next model call; after a crash it is
+  rehydrated from the Artifact only after current authority/policy checks,
+  digest verification and context-token enforcement, preserving the same call
+  id. Verifier input, attempt metadata, capsules, memory extraction and traces
+  receive only the tombstone. No recovery path falls back to inline OCR/
+  observation in an Event or other durable/telemetry channel.
+- [ ] `vision.inspect(artifact_id, question, detail)` is restricted to
+  tenant/session-authorized Artifacts; arbitrary public URLs are rejected;
+  no `region` parameter in P0 (local crops, if ever supported, mint a new
+  derived artifact).
+- [ ] The builtin is disclosed only when the default-off vision capability is
+  enabled and the Session has at least one eligible image Artifact; otherwise
+  its schema consumes no main-model context. A proposal/execution consumes the
+  normal `max_tool_calls` budget in addition to its internal Provider call
+  consuming `max_model_calls`.
+- [ ] Every vision call — automatic overview and `vision.inspect` —
+  consumes `max_model_calls`, emits the existing
+  `MODEL_REQUEST_STARTED`/`MODEL_RESPONSE_RECEIVED` events, enters the
+  ModelCall projection with usage/latency/retry stats, and obeys the shared
+  repair/retry caps. Vision disables hidden adapter retry/response repair;
+  policy-allowed retry is a fresh call with a new `model_call_id`, lifecycle
+  events and call/token debit, respecting authority/profile limits.
+- [ ] Worker capacity lease is acquired before any Artifact bytes are loaded
+  and held through adapter request serialization and response teardown; all
+  success, cancellation, timeout and exception paths release it exactly once.
+- [ ] Orchestration uses the DUR lifecycle exactly: engineering response marker,
+  checked answer-only output, terminal failure event, ModelCall correlation and
+  no observation/raw Provider payload in durable events or projections.
+- [ ] The egress gate — Policy checks, tenant model-egress authorization,
+  Artifact permission and sensitive-data classification — runs at the common
+  boundary of every vision provider dispatch (Q&A, automatic overview,
+  tool-screenshot analysis, `vision.inspect`) and rejects before any image
+  byte leaves Zebra; base64, raw image bytes, internal observation/OCR and
+  `file_id` never appear in logs or telemetry SSE. Explicit answer-only OCR may
+  use the normal assistant channel only after output redaction/policy checks.
+- [ ] OCR/visible text stays in observation channels only and can never be
+  promoted to system/developer instructions; injection candidates are labeled.
+- [ ] `VISUAL_OBSERVATION_RECORDED` events fire with artifact/profile/schema
+  binding (no inline observation body) and replay correctly after worker
+  restart, with `request_hash` deciding result reuse.
+- [ ] `request_hash` hits are only reuse candidates: current authority must
+  re-authorize every source and result Artifact before return. Identical image/
+  question pairs in different authority scopes never share cached evidence.
+- [ ] Orchestration acquires the durable request lease before dispatch, handles
+  waiter/reclaim/unknown outcomes without duplicate hidden calls, and completes
+  result Artifact/event state only through the DUR transaction boundary.
+
+#### Explicit Non-Goals
+
+- no automatic multi-provider fallback or vision-model retries beyond the
+  shared policy
+- no Desktop UI work in this card
+- no browser/screenshot-capture tool; P0 accepts uploaded image Artifacts and
+  fixture/existing tool-produced image Artifacts through the same contract
+
+### DS-VIS-FILES-01 - Durable DeepSeek Files Binding And Lifecycle
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `CORE / STORAGE / INTEGRATIONS`
+- Depends on: `DS-VIS-ORCH-01` merged into the `cloud-agent` delivery line
+- Owned paths: `packages/agent-core/src/agent_core/domain/provider_files.py`
+  (new: typed Provider-file upload/delete intent and outcome — the existing
+  `EffectScheduleRequest` mandates `TOOL_EXECUTION_STARTED` with a
+  `ToolResult` and cannot carry these), the matching core Port/Event and
+  contract registration (new modules, not appended to the 451-line
+  `contracts/events.py`), durable vision-files binding and migrations under
+  `packages/agent-storage/src/agent_storage/` (including its Postgres
+  adapter and the transactional outbox mechanics), the Files upload/delete
+  client under `packages/agent-integrations/src/agent_integrations/`, the
+  Worker consumer/composition wiring under
+  `apps/worker/src/zebra_agent_worker/`, focused tests under
+  `tests/agent_core/`, `tests/agent_storage/`,
+  `tests/agent_integrations/` and `tests/worker/`,
+  `apps/config/src/zebra_agent_config/settings.py`, `configs/default.env`,
+  `.env.example`, this card, `PROGRESS.md`.
+  Package-level paths must be narrowed to exact files before this card may
+  become `Ready`.
+
+#### Goal
+
+Make the derived DeepSeek Files cache correct under cloud multi-worker
+concurrency: persistent binding, deduplicated upload, retention-bounded TTL,
+expiry re-upload and reliable cleanup — all as durable side effects of a
+dedicated Provider-file effect contract.
+
+#### Acceptance
+
+- [ ] `ZEBRA_DEEPSEEK_VISION_FILES_ENABLED=false` lands with this implementation,
+  is invalid unless core vision is enabled, and gates upload/re-upload only;
+  remote delete/reconciliation remains active when it is turned off.
+- [ ] Typed Provider-file upload/delete intents and outcomes reuse the
+  transactional outbox mechanics as a SEPARATE contract from
+  `EffectScheduleRequest`; automatic upload or cleanup is never masqueraded
+  as a model-initiated tool call.
+- [ ] A Worker consumer executes provider-file effects idempotently with
+  restart compensation. Claims are namespace-scoped and do not require an
+  active `execution_session_id`; expired leases are reclaimable by another
+  Worker.
+- [ ] Upload/re-upload enqueue stores only secret-free authority/policy/
+  classification evidence after the common egress gate passes; execution
+  revalidates current authority before reading/sending bytes. Expired, revoked
+  or narrowed authority blocks upload/re-upload, while delete remains allowed.
+- [ ] Persistent binding records `file_id` ↔ artifact keyed by namespace /
+  base_url / stable Provider-account fingerprint / credential key version;
+  fingerprints are secret-free and never derived from API-key bytes. Rotation
+  prevents old bindings from serving new dispatch while preserving cleanup;
+  CAS or lease prevents concurrent duplicate uploads across workers.
+- [ ] Binding targets the actual prepared Provider-image sha256/transform
+  version and stores the Provider-returned expiry; a changed transform or raw/
+  normalized representation can never reuse an older `file_id`.
+- [ ] Every upload passes an explicit `expires_after` (provider range 1h to
+  30d; omitting it means permanent storage), with `purpose=user_data` and
+  `anchor=created_at`. Using database transaction time, seconds are floored from
+  `min(24h, prepared-Artifact remaining retention - 60s safety margin)`; derived
+  policy still caps indefinite sources, and a result below 3600s skips Files. Binding
+  stores the Provider-returned actual expiry and never outlives source authority.
+- [ ] Artifact prune, permission revocation and Session cleanup atomically
+  tombstone the binding and enqueue durable deletes. Delete intents retain
+  `file_id`, secret-free credential reference and idempotency identity so a
+  namespace maintenance consumer can finish after source deletion; delete 404
+  is idempotent success. Expiry/re-upload re-runs authority checks; no permanent
+  remote files; migrations are forward-only.
+- [ ] Upload/delete effects have explicit pending/claimed/succeeded/
+  retryable_failed/unknown/terminal_failed states, bounded exponential backoff,
+  dead-letter visibility and operator alerts. Quota exceeded, temporarily
+  unavailable credentials and destroyed accounts are distinct typed outcomes;
+  tombstones survive until cleanup reaches a terminal audited disposition.
+- [ ] Upload uses a deterministic secret-free filename/request identity that
+  reveals no tenant, source filename or raw hash. A crash after remote success
+  but before binding becomes unknown; bounded Files-list reconciliation adopts
+  only one matching account/purpose/size/expiry candidate, records/deletes
+  duplicates when safe, and alerts on ambiguity instead of blindly re-uploading.
+- [ ] Periodic account reconciliation includes out-of-band files in quota
+  watermarks but never deletes an unbound file without Zebra ownership evidence.
+  List traversal is cursor-paginated with bounded page/body/work-per-sweep limits;
+  upload/delete/list responses cannot allocate an unbounded Provider body.
+- [ ] Namespace/account quota watermarks track remote bytes and file count.
+  Upload failure falls back to base64 only when the prepared image still meets
+  P0 byte/in-flight budgets; otherwise it fails typed without retry storms.
+- [ ] `file_id` stays a derived cache (never storage authority). Because the
+  Provider ignores `detail` on this path, P1 Files is restricted to the
+  `original` inspect profile; `low` overview remains base64 and no telemetry or
+  cache identity falsely claims low-detail semantics.
+
+#### Explicit Non-Goals
+
+- no eval or launch-gate decisions (DS-VIS-FILES-EVAL-01)
+- no multi-provider file storage abstraction
+
+### DS-VIS-EVAL-01 - P0 Vision Real-Model Eval And Launch Gate (base64 Path)
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `EVAL / OPS`
+- Depends on: `DS-VIS-ORCH-01` merged into the `cloud-agent` delivery line
+- Owned paths: new vision suites under `evals/providers/`, focused launch-gate/
+  eval tests and canary manifests, this card, `PROGRESS.md`
+
+#### Goal
+
+Prove the P0 base64 vision path with real-model evaluation and gate its
+launch behind explicit evidence, independently of the Files API work.
+
+#### Acceptance
+
+- [ ] Real calls use a dedicated eval namespace/credential account and only
+  approved synthetic/non-sensitive Artifacts; no production tenant image,
+  binding, file or credential is read, uploaded, listed or deleted.
+- [ ] Real-model eval covers screenshot OCR, charts, code screenshots,
+  multi-image comparison, image prompt injection, forged MIME, corrupt and
+  oversized images, EXIF/GPS metadata stripping, text-profile/legacy-model
+  misrouting, worker-restart recovery and cross-tenant denial — all on the
+  inline base64 path. Tool-origin cases use an already-authoritative fixture or
+  existing image Artifact; they do not imply a screenshot-capture tool exists.
+- [ ] Egress-policy eval proves classified/visual-DLP-required tenants fail
+  before byte dispatch when no approved local DLP exists; no test substitutes
+  Provider self-classification for the pre-egress gate.
+- [ ] Eval proves identical image/question input cannot reuse evidence across
+  authority scopes, cache hits re-authorize source/result Artifacts, the
+  Responses `user` value is pseudonymous and scope-stable, and visual evidence
+  never appears in SYSTEM/DEVELOPER messages. Final Provider-wire assertions
+  verify the canonical USER evidence envelope and exact HMAC format.
+- [ ] Eval proves engineering ModelCall events/projections contain no OCR or
+  observation JSON, answer-only replay preserves only the checked public answer,
+  and `model_call_id` correlates lifecycle telemetry to the observation Artifact.
+- [ ] `vision.inspect` crash-window eval proves terminal Event/ToolRun/trace hold
+  only the tombstone, while authorized recovery reconstructs the exact paired
+  tool result from its Artifact; revocation, digest mismatch and token overflow
+  fail closed without leaking observation text or duplicating the Provider call.
+- [ ] Changing destination credential/account, profile or policy/redaction
+  version invalidates evidence projection reuse; eval proves full observation
+  and newly denied fields never enter Flash/Pro request capture or telemetry.
+- [ ] Timeout after possible send produces unknown; pre-send rejection/malformed
+  schema produce failed. Each has exactly one started and one terminal event;
+  retry creates a new attempt/call/fence, retains the old possible charge and
+  never leaves a dangling started attempt or accepts a late fenced response.
+- [ ] Tests prove no Provider response delta is public, 2 MiB success/error caps
+  fail closed without logging bytes, and only validated answer-only text reaches
+  assistant history/SSE after the complete response is accepted.
+- [ ] Source prune/revocation immediately denies observation/provider-image
+  derivatives and cache reuse; multi-source evidence uses the earliest expiry.
+- [ ] Concurrent 32 MiB cases prove capacity permits release on success,
+  cancellation, timeout and retry, and peak Worker RSS remains within the
+  recorded canary budget. Every transport/repair attempt consumes call/tokens.
+- [ ] Mixed small-text/large/chunked ingress proves weighted backpressure reserves
+  bytes before retaining each chunk, remains held through image Artifact commit
+  and bounds peak API RSS without starving small requests or leaking capacity
+  after disconnect/cancellation.
+- [ ] Multi-worker same-request eval proves one active Provider call, waiter/
+  lease takeover behavior, fencing against stale completion, unknown-outcome
+  accounting and recoverable Artifact/event commit without dangling references.
+- [ ] Noisy-neighbor eval proves tenant/account distributed admission and local
+  decoder/Provider concurrency backpressure; 429 does not create a retry storm.
+- [ ] Metrics cover quality, cost (including `vision.inspect` spend inside
+  the model budget) and latency; calculated cost pins an immutable pricing
+  snapshot when official vision pricing exists, otherwise reports unknown
+  rather than applying Flash/Pro rates. A canary plan exists.
+- [ ] A versioned gate manifest pre-registers dataset digest, sample count,
+  model/profile/prompt/schema/policy versions and thresholds before execution.
+  Tenant isolation, byte-egress, modality, injection-channel and event-leakage
+  invariants require 100% pass; quality/latency/token/unknown-rate thresholds
+  cannot be relaxed after seeing results without a new reviewed manifest.
+- [ ] Canary starts with an explicit small tenant/call/time cap and has automatic
+  rollback on any security invariant failure, budget breach or sustained profile
+  timeout/unknown-rate breach; rollback leaves durable attempts/results readable
+  for audit while stopping new dispatch.
+- [ ] The P0 vision capability ships behind a default-off launch flag until
+  this eval gate passes: `ZEBRA_DEEPSEEK_VISION_ENABLED=false` by default,
+  checked both at admission and immediately before dispatch. Disabling blocks
+  new sends without erasing audit/recovery state; already-sent cancellations
+  follow unknown-outcome rules.
+- [ ] The gate verifies the pre-existing WIRE flag and records the reviewed
+  enable decision; it does not introduce the safety switch after ORCH merges.
+
+#### Explicit Non-Goals
+
+- no Files binding or lifecycle implementation (DS-VIS-FILES-01)
+- no Files scenarios — expired `file_id` re-upload, concurrent dedup,
+  remote cleanup and Files cache hit rate belong to DS-VIS-FILES-EVAL-01
+- no new eval framework — reuse the existing provider eval harness
+
+### DS-VIS-FILES-EVAL-01 - Files Post-Merge Eval And Launch Gate
+
+- Status: `Locked`
+- Owner: 未认领
+- Suggested role: `EVAL / OPS`
+- Depends on: both `DS-VIS-FILES-01` and `DS-VIS-EVAL-01` merged into the
+  `cloud-agent` delivery line; Files cannot launch before the base64 fallback
+  and core vision path pass their own gate
+- Owned paths: new Files-scenario suites under `evals/providers/`, focused
+  launch-gate/eval tests and canary manifests, this card, `PROGRESS.md`
+
+#### Goal
+
+Gate the Files API path behind post-merge evidence: expiry semantics,
+concurrency dedup, reliable cleanup and cache economics.
+
+#### Acceptance
+
+- [ ] Files drills run in a dedicated eval Provider account/namespace and delete
+  only file ids proven owned by that run; production account listing/cleanup is
+  outside this gate.
+- [ ] Eval covers expired `file_id` re-upload, 404 handling, concurrent
+  upload dedup, remote cleanup after session/artifact prune and worker
+  restart, and the TTL ≤ source-artifact-remaining-retention rule.
+- [ ] Eval proves Files is used only for the `original` inspect profile and
+  `low` overview stays base64 while Provider ignores `file_id` detail.
+- [ ] Eval covers quota exhaustion, credential rotation/account mismatch,
+  unavailable cleanup credentials, dead-letter/operator alerting and bounded
+  base64 fallback without duplicate remote files or infinite retries.
+- [ ] Eval revokes authority between enqueue and execution to prove upload/
+  re-upload fails before bytes leave Zebra while delete still completes, and
+  proves namespace cleanup succeeds with no active Session Worker.
+- [ ] Metrics include Files cache hit rate and upload/delete spend against
+  the base64 baseline; a canary plan for the Files path exists.
+- [ ] A versioned pre-registered gate requires zero orphan/duplicate/unauthorized
+  remote files in failure drills and demonstrates a measurable repeated-analysis
+  byte/latency benefit over base64; otherwise Files stays off even if functional.
+- [ ] The Files path ships behind its own default-off launch flag until
+  this gate passes: `ZEBRA_DEEPSEEK_VISION_FILES_ENABLED=false` by default and
+  invalid when core vision is disabled. Turning it off blocks upload/re-upload
+  but never blocks queued remote deletes; base64 remains the bounded fallback.
+
+#### Explicit Non-Goals
+
+- no Files binding or lifecycle code (DS-VIS-FILES-01)
+- no new eval framework — reuse the existing provider eval harness

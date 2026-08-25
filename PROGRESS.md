@@ -1488,6 +1488,65 @@ Redis composition.
 10. Keep `WEB-INT-PLAN-01` in review until its document evidence is accepted;
     do not activate Web Intelligence contracts, Provider, security, tools,
     orchestration or Watch cards out of dependency order.
+11. The DeepSeek vision dual-channel plan is registered as the docs card
+    `DS-VIS-PLAN-01` (owner `lukeding`, `Locked` until PR #260 merges —
+    the edits stay parked in the working tree, no branch exists yet)
+    followed by `DS-VIS-CON-01` → `DS-VIS-ING-01` → `DS-VIS-ART-01`
+    (control-plane Artifact transaction/migration) → `DS-VIS-WIRE-01`
+    (initial/follow-up reference-only Local/Cloud recovery) → `DS-VIS-EGR-01`
+    (metadata-scrubbed Provider image and Worker capacity) → `DS-VIS-DUR-01`
+    (request/attempt single-flight, distributed tenant/account admission,
+    failed/unknown ModelCall lifecycle and recoverable result commit), in
+    parallel with `DS-VIS-ADP-01`, then `DS-VIS-ORCH-01` →
+    `DS-VIS-EVAL-01` (P0 base64 path) and
+    `DS-VIS-FILES-01` → `DS-VIS-FILES-EVAL-01` (see
+    `docs/DeepSeek_视觉双通道多模态架构方案_v1.0.md`): raw images stay
+    artifact-authoritative, vision output stays derived evidence with
+    authority-scoped replay identity (source Artifact/session + request/
+    question hash + profile/prompt/schema/deployment versions); cache hits
+    re-authorize both source and result Artifacts, and Responses `user` is a
+    versioned non-PII HMAC of the complete opaque authority scope. Initial
+    observation reaches the main model only through the canonical USER-role
+    `VisionEvidenceMessageV1`, never through SYSTEM/DEVELOPER messages or
+    `build_system_prompt`; it is authorized Artifact materialization at dispatch,
+    not a durable USER message or protected-instruction/compaction/memory input;
+    the one-call
+    Q&A path requires typed `purpose=answer_only`. Every vision model call
+    counts toward the harness model budget, and the egress gate (tenant
+    authorization, artifact permission, sensitive-data classification) runs
+    at every vision dispatch and before both enqueue and delayed execution of
+    Files upload/re-upload. Image dispatch also requires an explicit
+    `input_modalities=[text,image]` profile plus the exact vision model and
+    fails before network I/O on text/legacy routes. Provider-bound bytes use a
+    deterministic metadata-scrubbed derivative whose retention cannot exceed
+    its source; cache identity includes the actual prepared-image digest/
+    transform version, and observation derivatives use the earliest multi-source
+    expiry. Engineering model events retain only a marker/telemetry, answer-only
+    retains only its checked public answer, and both correlate through
+    `model_call_id` without persisting observation JSON; every started call ends
+    in received or `MODEL_REQUEST_FAILED`; cost pins an official vision-pricing
+    snapshot or remains explicitly unknown. `vision.inspect` terminal events/
+    projections persist only an
+    Artifact tombstone; authorized crash recovery verifies its digest/budget and
+    rehydrates the same paired tool result instead of inlining OCR.
+    P0 independently enforces a 48 MiB streaming HTTP cap, 16 MiB/image,
+    32 MiB/message, 4 images, 8192 px edge, 36,000,000 pixels/image and
+    72,000,000 pixels/message, plus one active vision request/32 MiB source
+    image bytes per Worker by default. The Files path requires a dedicated typed
+    Provider-file effect contract (the existing `EffectScheduleRequest` is
+    tool-only), namespace-scoped cleanup independent of an active Session,
+    atomic binding tombstone + delete outbox, quota/dead-letter/operator
+    outcomes, credential/account rotation isolation, explicit `expires_after` with
+    remote TTL capped by source retention (under 1h falls back to base64),
+    and its eval/launch gate waits on both `DS-VIS-FILES-01` and the P0
+    `DS-VIS-EVAL-01`. All dependency
+    wording targets the `cloud-agent` delivery line: `DS-VIS-ADP-01` waits on
+    `DS-RESP-01` (Responses
+    adapter, commit `90906267`, based on older `origin/main`, no PR yet)
+    and `DS-VIS-ORCH-01` additionally on `AL-BOUNDARY-ORCH-01` (PR #260)
+    reaching the same `cloud-agent` line. The docs PR itself is cut from
+    latest `cloud-agent` only after PR #260 merges, staging exactly the
+    three plan files.
 
 ## Runtime Blueprint
 
