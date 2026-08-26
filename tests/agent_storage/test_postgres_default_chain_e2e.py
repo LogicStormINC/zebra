@@ -95,7 +95,11 @@ def _multi_tool_completion(
             "function": {
                 "name": name,
                 "arguments": json.dumps(
-                    {"objective": objective, "delegation_reason": reason}
+                    {
+                        "objective": objective,
+                        "delegation_reason": reason,
+                        "context_mode": "fork_tail",
+                    }
                 ),
             },
         }
@@ -200,9 +204,13 @@ def _scripted_response(body: dict[str, object]) -> dict[str, object]:
             {
                 "objective": CHILD_OBJECTIVE,
                 "delegation_reason": "bounded read-only evidence needs isolation",
+                "context_mode": "fork_tail",
             },
         )
     if CHILD_OBJECTIVE_2 in joined or CHILD_OBJECTIVE in joined:
+        assert "Delegated Parent Context" in joined and PARENT_PROMPT in joined, (
+            "child model request must contain the validated parent Context snapshot"
+        )
         return _completion(CHILD_ANSWER)
     return _completion("ok")
 
@@ -365,6 +373,17 @@ def test_default_chain_delegates_suspends_and_resumes(
     assert child_binding is not None, "child must carry a frozen binding"
     assert set(child_binding.effective_capabilities) == {"agent.execute", "evidence.read"}
     assert child_binding.task_id == child_task_id
+
+    child_events = stores.events.list_for_session(SessionId(UUID(child_task_id)))
+    child_prepared = next(
+        event for event in child_events if event.event_type is EventType.TASK_PREPARED
+    )
+    inherited = child_prepared.payload["delegated_context"]
+    assert inherited["mode"] == "fork_tail"
+    assert inherited["source_session_id"] == session_id
+    assert any(
+        PARENT_PROMPT in item["content"] for item in inherited["items"] if item["kind"] == "history"
+    ), "child must receive the trusted recent parent tail"
 
     completed_event = events[completed_index]
     assistant = completed_event.payload.get("metadata", {}).get("assistant_message", "")

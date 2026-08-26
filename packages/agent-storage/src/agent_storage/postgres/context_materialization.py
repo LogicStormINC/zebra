@@ -29,9 +29,11 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
 
     def materialize(self, request: ContextMaterializationRequest) -> ContextMaterialization:
         with self._database.connect() as connection:
-            connection.execute("SET TRANSACTION READ ONLY")
+            connection.execute(
+                "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
+            )
             session_revision = self._session_revision(connection, request)
-            history = self._history(connection, request)
+            history, history_truncated = self._history(connection, request)
             capsule = self._active_capsule(connection, request)
             memories = (
                 []
@@ -47,6 +49,7 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
             request=request,
             session_revision=session_revision,
             history=history,
+            history_truncated=history_truncated,
             active_capsule=capsule,
             memories=tuple(memories),
         )
@@ -69,24 +72,47 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
 
     def _history(
         self, connection: Any, request: ContextMaterializationRequest
-    ) -> tuple[SessionHistoryMessage, ...]:
+    ) -> tuple[tuple[SessionHistoryMessage, ...], bool]:
+        # Human conversation only: handoff/automation seed prompts reuse the
+        # user_message_received wire shape but are not conversational history.
         rows = connection.execute(
             """
             SELECT sequence, event_type, payload, created_at
-            FROM session_events
-            WHERE deployment_namespace = %s AND session_id = %s
-              AND event_type IN (%s, %s)
+            FROM (
+                SELECT sequence, event_type, payload, created_at
+                FROM session_events
+                WHERE deployment_namespace = %s AND session_id = %s
+                  AND (
+                    (event_type = %s
+                     AND NULLIF(BTRIM(payload ->> 'content'), '') IS NOT NULL
+                     AND payload ->> 'source' IS DISTINCT FROM 'session_handoff'
+                     AND payload ->> 'actor_kind' IS DISTINCT FROM 'automation')
+                    OR
+                    (event_type = %s
+                     AND NULLIF(BTRIM(payload ->> 'assistant_message'), '') IS NOT NULL)
+                  )
+                ORDER BY sequence DESC
+                LIMIT %s
+            ) AS recent_history
             ORDER BY sequence ASC
-            LIMIT %s
             """,
             (
                 self._database.deployment_namespace,
                 request.session_id,
                 *_SAFE_EVENT_TYPES,
-                request.history_limit,
+                request.history_limit + 1,
             ),
         ).fetchall()
-        return tuple(message for row in rows if (message := message_from_row(row)) is not None)
+        # Fetch one row past the limit so a truncated prefix is detected here
+        # instead of silently disappearing from every downstream snapshot.
+        history_truncated = len(rows) > request.history_limit
+        if history_truncated:
+            # rows are ascending; keep the newest window, drop the oldest.
+            rows = rows[-request.history_limit :]
+        messages = tuple(
+            message for row in rows if (message := message_from_row(row)) is not None
+        )
+        return messages, history_truncated
 
     def _active_capsule(
         self, connection: Any, request: ContextMaterializationRequest

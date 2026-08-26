@@ -14,7 +14,7 @@ from agent_core.domain.governed_memories import (
     canonical_governed_memory_content_hash,
     canonical_governed_memory_creation_key,
 )
-from agent_core.domain.identifiers import MemoryId, SessionId
+from agent_core.domain.identifiers import AgentDefinitionId, MemoryId, SessionId
 from agent_core.domain.memories import (
     MemoryQuery,
     MemoryRecord,
@@ -130,6 +130,53 @@ def test_materialization_rejects_stale_capsule_duplicate_and_expired_memory() ->
             session_revision=4,
             active_capsule=_capsule("capsule-4"),
             memories=(expired,),
+        )
+
+
+def test_materialization_rejects_memory_from_another_definition_scope() -> None:
+    definition_id = AgentDefinitionId(UUID(int=201))
+    request = ContextMaterializationRequest(
+        scope=OpaqueAuthorityScope(
+            authority_issuer="issuer",
+            namespace_id="namespace",
+            allowed_session_ids=(str(SESSION_ID),),
+        ),
+        session_id=SESSION_ID,
+        expected_session_revision=4,
+        as_of=NOW,
+        memory_query=MemoryQuery(
+            authority_issuer="issuer",
+            namespace_id="namespace",
+            definition_id=definition_id,
+            limit=4,
+        ),
+    )
+    record = MemoryRecord(
+        memory_id=MemoryId(UUID(int=202)),
+        memory_type=MemoryType.PROJECT_RULE,
+        text="This belongs to another Definition.",
+        confidence=1.0,
+        status=MemoryStatus.CONFIRMED,
+        visibility=MemoryVisibility.REPO,
+        authority_issuer="issuer",
+        namespace_id="namespace",
+        definition_id=AgentDefinitionId(UUID(int=203)),
+        created_at=NOW - timedelta(minutes=2),
+        updated_at=NOW - timedelta(minutes=1),
+    )
+    memory = GovernedMemoryEntry(
+        deployment_namespace="deployment",
+        record=record,
+        revision=1,
+        creation_key=canonical_governed_memory_creation_key(record),
+        content_digest=canonical_governed_memory_content_hash(record),
+    )
+
+    with pytest.raises(ValueError, match="visibility scope"):
+        ContextMaterialization(
+            request=request,
+            session_revision=4,
+            memories=(memory,),
         )
 
 

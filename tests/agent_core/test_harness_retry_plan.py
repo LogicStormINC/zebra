@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 from agent_core.domain.identifiers import new_session_id
@@ -85,5 +86,6 @@ def test_noop_planner_uses_retry_plan_hint_on_retry_attempt() -> None:
         "retry should address verifier or tool failures before repeating prior steps"
     )
     assert result.metadata["attempt_number"] == 2
-    assert result.metadata["retry_focus"] == ("Check the failing branch.",)
-    assert result.metadata["retry_blockers"] == ("Regression test failed.",)
+    assert result.metadata["retry_focus"] == ["Check the failing branch."]
+    assert result.metadata["retry_blockers"] == ["Regression test failed."]
+    assert json.loads(json.dumps(result.metadata)) == result.metadata

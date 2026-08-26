@@ -30,6 +30,12 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CTX-INHERIT-CLOUD-01` is `Review` on
+  `codex/cloud-context-inheritance-01`. It closes the existing Cloud runtime
+  consumption gap without changing the local default: trusted PostgreSQL
+  materialization becomes the Worker input, durable child Sessions receive an
+  explicit bounded inheritance mode, and Handoff continuity fields become
+  model-visible under one deterministic budget.
 - `CLOUD-EFFECT-COMP-CLOSE-01` is `Done`, verified end-to-end on 2026-08-18:
   after the rebased first implementation (`bbd6108d`) and the merged-back
   corrective scope (receipt-based recovery of lost commit responses,
@@ -8108,6 +8114,86 @@ external membership.
 - Closing this card records PostgreSQL Context materialization only. Runtime,
   Worker/API composition, Provider HTTP, Desktop, SQLite, Redis, Mem0 and
   `ControlPlaneStores` selection remain separate gates.
+
+### CTX-INHERIT-CLOUD-01 - Cloud Context Materialization And Child Inheritance
+
+- Status: `Review`
+- Human owner: `lukeding`
+- Implementation: `Codex`
+- Branch: `codex/cloud-context-inheritance-01`
+- Worktree:
+  `/Users/lukeding/Desktop/playground/2026/product/zebra-agent-cloud-context-inheritance`
+- Depends on: `CLOUD-CONTEXT-CON-01`, `CLOUD-CONTEXT-PG-01`,
+  `CTX-MEM-01`, `CTX-HO-01C` and `SUBAGENT-CLOUD-CUTOVER-01`
+- Owned paths:
+  `docs/AGENT_TASKS.md`,
+  `docs/ADR-025_Cloud_Context_Inheritance.md` (new),
+  `packages/agent-core/src/agent_core/domain/context_materialization.py`,
+  `packages/agent-core/src/agent_core/domain/context_inheritance.py` (new),
+  `packages/agent-core/src/agent_core/domain/subagent_delegation.py`,
+  `packages/agent-core/src/agent_core/domain/__init__.py`,
+  `packages/agent-core/src/agent_core/application/session_bootstrap.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `packages/agent-core/src/agent_core/harness/hooks.py`,
+  `packages/agent-context/src/agent_context/materialization.py` (new),
+  `packages/agent-context/src/agent_context/adapter.py`,
+  `packages/agent-context/src/agent_context/session_handoff.py`,
+  `packages/agent-context/src/agent_context/__init__.py`,
+  `packages/agent-storage/src/agent_storage/postgres/context_materialization.py`,
+  `packages/agent-runtime/src/agent_runtime/research.py`,
+  `packages/agent-runtime/src/agent_runtime/research_context.py` (new),
+  `packages/agent-runtime/src/agent_runtime/tool_output_projection.py` (new),
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`,
+  `apps/worker/src/zebra_agent_worker/context_materialization.py` (new),
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  focused tests under `tests/agent_core`, `tests/agent_context`,
+  `tests/agent_storage`, `tests/agent_runtime` and `tests/worker`, plus
+  `README.md`, `PROGRESS.md`, `task_plan.md`, `findings.md` and `WORKLOG.md`
+- Goal: make Cloud context continuity consume the already-authoritative
+  materialization boundary end to end, while keeping every inherited input
+  bounded, source-attributed and impossible for a child to widen.
+- Acceptance:
+  1. Cloud Worker reads Session History, active Capsule and confirmed governed
+     Memory through one `ContextMaterializationStore` generation and fails
+     closed on revision or Capsule drift.
+  2. Durable child Sessions implement `fresh`, `capsule`, `fork_tail` and
+     `resume` as distinct validated modes over trusted parent materialization;
+     child permission, network, workspace and credential scope remain narrowed.
+  3. Handoff acceptance, files, validation, failures, open questions and
+     Artifact references are model-visible, with provenance and explicit
+     omissions preserved.
+  4. Auxiliary context uses one explicit bounded budget large enough for
+     continuity evidence; no full-history or hidden-reasoning inheritance is
+     introduced.
+  5. Contract, runtime, Worker and real-PostgreSQL regressions plus repository
+     checks pass, or an inherited unrelated baseline is recorded exactly.
+- Non-goals: no Provider private continuation transfer to child Sessions, no
+  chain-of-thought persistence, no raw credential/tool-output inheritance, no
+  Trench business write path, no Desktop feature work and no new storage
+  authority.
+
+#### Validation And Review Handoff
+
+- Focused changed-path regressions pass `33 passed / 7 dependency-gated
+  skipped`; the skipped PostgreSQL cases pass in the real-dependency runners
+  below.
+- Real PostgreSQL Context materialization passes `6/6`, including one read-only
+  Repeatable Read generation and newest-text-tail selection. The real PostgreSQL
+  + MinIO Cloud composition passes `33/33`,
+  including one/two Child delegation, forged USER wakeup rejection, concurrency
+  and replay.
+- The no-filter repository run over real PostgreSQL + MinIO passes
+  `2952 passed / 0 failed / 13 skipped`; the dependency-free baseline passes
+  `2619 passed / 0 failed / 346 skipped`.
+- `make check` is green: file-size gate `1441`, Ruff, Mypy `718` source files and
+  Eval `10/10`. All isolated PostgreSQL/MinIO containers, networks and volumes
+  were removed.
+- The card is ready for maintainer review. Trench production input/acceptance,
+  Desktop, Provider-private continuation transfer and any wider inheritance
+  policy remain outside this PR.
 
 ### CLOUD-ART-READ-COMP-01 - PostgreSQL Artifact Read Composition
 

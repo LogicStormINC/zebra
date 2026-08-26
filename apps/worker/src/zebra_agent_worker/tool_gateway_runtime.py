@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
@@ -150,6 +151,7 @@ def build_worker_tool_gateway(
     parent_task_id: object | None = None,
     parent_binding_digest: str | None = None,
     parent_binding: object | None = None,
+    parent_context: ContextMaterialization | None = None,
     manifest_digest: str | None = None,
     frozen_manifest_loader: object = None,
     client_gateway: ClientToolGateway | None = None,
@@ -192,6 +194,7 @@ def build_worker_tool_gateway(
         parent_task_id=parent_task_id,
         parent_binding_digest=parent_binding_digest,
         parent_binding=parent_binding,
+        parent_context=parent_context,
     )
     if task.host_context is None:
         return WorkerToolGateway(

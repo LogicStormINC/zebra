@@ -51,6 +51,43 @@
   `PROGRESS.md`); this card branches from `cloud-agent@2319da7f`, which
   contains `main@efd4e293` as an ancestor.
 
+## CTX-INHERIT-CLOUD-01 - 2026-08-23
+
+- `SubagentDelegationRequest.context_mode` 原先只是持久合同字段，Durable Child
+  bootstrap 没有消费它；Child 实际仅收到 objective。现在非 fresh 模式从父
+  Worker 已验证的物化结果生成 checksum 快照并进入 `TASK_PREPARED`。
+- PostgreSQL Context Materialization Adapter 已存在，但 Cloud Worker 未调用；
+  Runtime 仍走独立本地 Memory/Capsule 拼装。现在 Attempt authority 固化后只
+  消费一个 scope/revision/Capsule 一致的 generation，漂移 fail closed。
+- History SQL 的 `ORDER BY sequence ASC LIMIT N` 返回最旧 N 条，不是恢复所需
+  的最近尾部。子查询改为 DESC 限定最新 N 条安全文本（无文本的工具调用响应
+  不占配额），外层再 ASC 恢复模型顺序；整个读取使用只读 Repeatable Read。
+- Handoff rich envelope 已持久化，但 adapter 只截取约 2000 字符且辅助预算
+  仅 200 tokens，验收、文件、验证、失败和 Artifact 等后段字段可能不可见。
+  现在结构化字段全部进入高优先级 evidence，Cloud 预算为 2048 tokens；若
+  编译器仍需截断，会写出 `continuity_evidence_truncated`，不再静默丢尾部。
+- 激活 runtime evidence 后，`NoopPlanner` 首次在真实 PostgreSQL 路径输出
+  tuple metadata；JSONB 回读成为 list，canonical Event 比较拒绝投影。
+  修复点在共享 producer：Event metadata 从一开始就是 JSON-native list，
+  并由 JSON 往返回归锁定。
+- 最终证据：真 PG Context `6/6`，真 PG+MinIO Cloud composition `33/33`，
+  dependency-free 全仓 `2619 passed / 346 skipped`，无过滤真依赖全仓
+  `2952 passed / 13 skipped`，`make check` 全绿；无 Trench
+  业务代码、Desktop、迁移或新依赖。
+- Review 修正（2026-08-24）：`source=session_handoff` /
+  `actor_kind=automation` 的 seed prompt 会同时污染 History 尾部（占用
+  `history_limit` 配额）与 `_mode` 的 INITIAL/CONTINUE 判定。两处均已
+  排除 automation 消息；Child 任务输入仍可使用 seed 文本，但它不再
+  出现在人类对话历史统计中。
+- Review 修正（2026-08-24）：SQL `LIMIT history_limit` 的截断此前对
+  快照不可见，仅靠 blanket `history_outside_bounded_tail` 覆盖。现在
+  读取方用 limit+1 探测溢出，`ContextMaterialization.history_truncated`
+  显式携带该事实；快照据此写出 `history_tail_truncated`，无 Capsule
+  覆盖的被截断前缀额外写出 `history_prefix_uncovered`，截断永不静默。
+- 范围声明：本卡不解决普通多轮 Task 连续性。Session 终态语义
+  （每个最终回答写 `SESSION_COMPLETED`）与 Turn 生命周期属于
+  ADR-026 / `CTX-TURN-*` 卡片的范围；本卡的物化读取是它们的输入基础。
+
 ## CLOUD-AGG-FENCE-CTX-LIFECYCLE-CON-01 - 2026-08-03
 
 - The Context Worker path is fenced at the PostgreSQL transaction boundary:

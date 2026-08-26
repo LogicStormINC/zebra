@@ -21,6 +21,7 @@ from agent_core.domain.agent_capabilities import (
     capability_set,
     intersect_capabilities,
 )
+from agent_core.domain.context_inheritance import ContextInheritanceMode
 from agent_core.domain.host_authority import HostResourceRef
 from agent_core.domain.identifiers import TaskId
 from agent_core.domain.subagents import SubagentRole
@@ -59,7 +60,7 @@ class SubagentDelegationRequest(BaseModel):
     delegation_index: int = Field(ge=0)
     role: SubagentRole
     objective: str = Field(min_length=1, max_length=MAX_OBJECTIVE_LENGTH)
-    context_mode: Literal["fresh", "capsule", "fork_tail", "resume"] = "fresh"
+    context_mode: ContextInheritanceMode = ContextInheritanceMode.FRESH
     isolation_mode: Literal["shared_readonly", "worktree", "snapshot", "none"] = (
         "shared_readonly"
     )
@@ -187,4 +188,3 @@ def derive_child_binding(
     if not binding.effective_capabilities:
         raise ValueError("child delegation narrows to an empty capability set")
     return binding
-

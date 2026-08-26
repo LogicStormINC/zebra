@@ -92,6 +92,7 @@ class ContextMaterialization:
     request: ContextMaterializationRequest
     session_revision: int
     history: tuple[SessionHistoryMessage, ...] = ()
+    history_truncated: bool = False
     active_capsule: ContextCapsule | None = None
     memories: tuple[GovernedMemoryEntry, ...] = ()
 
@@ -152,6 +153,9 @@ def _matches_memory_query(entry: GovernedMemoryEntry, query: MemoryQuery) -> boo
                 ("tenant_id", query.tenant_id),
                 ("user_id", query.user_id),
                 ("repo_id", query.repo_id),
+                ("authority_issuer", query.authority_issuer),
+                ("namespace_id", query.namespace_id),
+                ("definition_id", query.definition_id),
                 ("source_session_id", query.source_session_id),
             )
         )

@@ -15,6 +15,12 @@ from agent_context.conversation import (
     compact_message_history,
     estimate_message_tokens,
 )
+from agent_context.materialization import (
+    MaterializedContextInputs,
+    context_inputs_from_delegated_snapshot,
+    context_inputs_from_materialization,
+    delegated_context_from_materialization,
+)
 from agent_context.models import (
     CompiledContext,
     ContextBudget,
@@ -64,6 +70,7 @@ __all__ = [
     "build_prompt_cache_key",
     "build_prompt_layout",
     "LocalContextCompiler",
+    "MaterializedContextInputs",
     "compact_conversation",
     "compact_tool_outputs",
     "compact_message_history",
@@ -89,6 +96,9 @@ __all__ = [
     "build_repo_map_item",
     "build_handoff_envelope",
     "compile_context",
+    "context_inputs_from_delegated_snapshot",
+    "context_inputs_from_materialization",
+    "delegated_context_from_materialization",
     "rank_files",
     "recall_related_files",
     "scan_workspace_files",

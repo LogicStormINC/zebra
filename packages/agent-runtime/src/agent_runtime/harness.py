@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
-from datetime import UTC, datetime
 from pathlib import Path
-from uuid import UUID
 
 from agent_context import LocalContextCompiler
-from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.attachments import AttachmentContextInput
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.subagents import DelegationMode
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
@@ -57,6 +54,7 @@ from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
+from agent_runtime.tool_output_projection import build_output_projector
 from agent_runtime.web_gateway import LocalWebGatewayTransport
 from agent_runtime.web_search import LocalWebSearchTransport
 from agent_runtime.web_tools import register_native_web_tools
@@ -169,6 +167,7 @@ class LocalToolGateway(ToolGatewayPort):
         parent_task_id: object | None = None,
         parent_binding_digest: str | None = None,
         parent_binding: object | None = None,
+        parent_context: ContextMaterialization | None = None,
         tool_profile: ToolProfile = ToolProfile.GENERAL,
         web_gateway_transport: WebGatewayTransport | None = None,
         web_search_endpoint: str | None = None,
@@ -200,7 +199,7 @@ class LocalToolGateway(ToolGatewayPort):
         self._runtime_handle = runtime_handle
         if artifact_payload_store is not None and output_projector is not None:
             raise ValueError("configure one Tool output persistence strategy")
-        output_projector = output_projector or _output_projector(
+        output_projector = output_projector or build_output_projector(
             artifact_payload_store, current_session_id=current_session_id
         )
         self._output_projector = output_projector
@@ -280,12 +279,17 @@ class LocalToolGateway(ToolGatewayPort):
             self._subagents = LocalResearchSubagentCoordinator(
                 LocalResearchSubagentRunner(model_gateway, runtime=runtime),
                 max_children=research_child_limit,
-                max_concurrency=research_child_limit)
+                max_concurrency=research_child_limit,
+            )
             research = ResearchSubagentTool(
-                self._subagents, workspace_root,
+                self._subagents,
+                workspace_root,
                 wait_for_result=not durable_delegation,
-                delegation_store=delegation_store, parent_task_id=parent_task_id,
-                parent_binding=parent_binding)
+                delegation_store=delegation_store,
+                parent_task_id=parent_task_id,
+                parent_binding=parent_binding,
+                parent_context=parent_context,
+            )
             registry.register(research.contract, research.handle)
         self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools
         self._parallel_safe_tools = registry.parallel_safe_names()
@@ -468,32 +472,3 @@ def _optional_web_search_endpoint(
                 f"web_search_endpoint is not a valid web target for web_pipeline_v2: {exc}"
             ) from exc
         return None
-
-def _output_projector(
-    store: ArtifactPayloadStorePort | None,
-    *,
-    current_session_id: str | None,
-) -> ToolOutputProjector | None:
-    if store is None:
-        return None
-    if current_session_id is None:
-        raise ValueError("artifact output projection requires current_session_id")
-    try:
-        session_id = SessionId(UUID(current_session_id))
-    except ValueError as exc:
-        raise ValueError("current_session_id must be a UUID") from exc
-
-    def persist(content: str, file_name: str) -> str:
-        stored = store.store_payload(
-            ArtifactPayloadWrite(
-                session_id=session_id,
-                kind="tool_output",
-                mime_type="text/plain",
-                payload=content.encode("utf-8"),
-                file_name=file_name,
-                created_at=datetime.now(UTC),
-            )
-        )
-        return stored.uri
-
-    return ToolOutputProjector(persist)

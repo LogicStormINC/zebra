@@ -5,29 +5,23 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import agent_core.harness as core_harness
 from agent_context import LocalContextCompiler
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
-from agent_core.harness import (
-    HarnessAttempt,
-    HarnessContext,
-    HarnessModelStep,
-    SingleAttemptOrchestrator,
-)
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_integrations import build_model_gateway
 from agent_runtime.workspace_runtime_resolver import WorkspaceRuntimeResolver
-from agent_security import (
-    LocalPolicyEngine,
-    PolicyProfile,
-    resolve_effective_network_profile,
-)
+from agent_security import LocalPolicyEngine, PolicyProfile, resolve_effective_network_profile
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 from zebra_agent_config import ZebraAgentSettings, load_settings, trusted_local_mode_enabled
 
 import zebra_agent_worker.authority_types as authority_types
+import zebra_agent_worker.execution_continuations as execution_continuations
+import zebra_agent_worker.execution_finalization as execution_finalization
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
+import zebra_agent_worker.runtime_authority as runtime_authority
 import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
 import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
@@ -36,22 +30,15 @@ if TYPE_CHECKING:
     from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.client_effect_resume import recover_client_effect_wakeup
+from zebra_agent_worker.context_materialization import prepare_worker_context
 from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
 from zebra_agent_worker.execution_context import harness_task_for_recovered
-from zebra_agent_worker.execution_continuations import (
-    build_child_result_verifier,
-    recover_and_start_continuations,
-)
 from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
-from zebra_agent_worker.execution_finalization import (
-    ExecutedSession,
-    WorkerExecutionError,
-    finalize_execution,
-)
+from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.execution_preflight import prepare_execution_preflight
 from zebra_agent_worker.execution_storage import resolve_execution_storage
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
@@ -60,13 +47,6 @@ from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
-from zebra_agent_worker.runtime_authority import (
-    AttemptAuthorityEvidence,
-    close_tool_gateway,
-    persist_runtime_authority,
-    runtime_cleanup_failure_result,
-    validate_authority_wiring,
-)
 from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_gateway_runtime import build_worker_tool_gateway
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
@@ -98,7 +78,7 @@ class SessionExecutionService:
         frozen_manifest_loader: Callable[[str], object] | None = None,
         client_runtime: Callable[[SessionId], object] | None = None,
     ) -> None:
-        validate_authority_wiring(
+        runtime_authority.validate_authority_wiring(
             execution_authority_resolver,
             execution_authority_scope,
             execution_authority_scope_provider,
@@ -135,6 +115,11 @@ class SessionExecutionService:
         self._effect_ledger = storage.effect_ledger
         self._deployment_namespace = storage.deployment_namespace
         self._context_lifecycle_store = active_stores.context_lifecycle
+        self._context_materialization_store = (
+            active_stores.context_materialization
+            if isinstance(active_stores, PostgresControlPlaneStores)
+            else None
+        )
         self._model_call_indexer = ModelCallIndexer(active_stores.model_calls)
         self._tool_run_indexer = ToolRunIndexer(
             active_stores.tool_runs, self._artifact_payload_store
@@ -182,7 +167,7 @@ class SessionExecutionService:
         worker_id: str,
         executed_at: datetime | None = None,
         lease_ttl_seconds: int = 30,
-    ) -> ExecutedSession:
+    ) -> execution_finalization.ExecutedSession:
         started_at = executed_at or datetime.now(UTC)
         claimed = self._claim_service.claim_session(
             session_id,
@@ -211,16 +196,20 @@ class SessionExecutionService:
         *,
         started_at: datetime,
         ownership_check: Callable[[], None],
-    ) -> ExecutedSession:
+    ) -> execution_finalization.ExecutedSession:
         session_id = claimed.lease.session_id
         cloud_artifacts = provider_runtime.artifact_for(self._cloud_artifact_factory, session_id)
         cloud_continuation = provider_runtime.cloud_for_session(
             self._cloud_provider_continuation_factory, session_id
         )
         claimed = restore_suspended_session_claim(
-            claimed, cloud_deployment=self._settings.deployment == "cloud",
-            control_service=self._control_service, recovery_service=self._recovery_service,
-            started_at=started_at, event_store=self._event_store)
+            claimed,
+            cloud_deployment=self._settings.deployment == "cloud",
+            control_service=self._control_service,
+            recovery_service=self._recovery_service,
+            started_at=started_at,
+            event_store=self._event_store,
+        )
         recovered_handoff = handoff.recover_worker_handoff(
             self._handoff_gate,
             session_id,
@@ -270,28 +259,25 @@ class SessionExecutionService:
         runtime_handle = None
         effect_recorder: list[DurableHarnessEventRecorder] = []
         try:
-            from zebra_agent_worker.bound_execution_authority import (
-                load_bound_binding,
-                select_attempt_authority,
+            prepared_context = prepare_worker_context(
+                store=self._context_materialization_store,
+                task_binding_loader=self._task_binding_loader,
+                resolver=self._execution_authority_resolver,
+                static_scope=self._execution_authority_scope,
+                scope_provider=self._execution_authority_scope_provider,
+                recovery_service=self._recovery_service,
+                event_store=self._event_store,
+                recorder=authority_recorder,
+                claimed=claimed,
+                events=session_events,
+                task=task,
+                active_capsule_id=(active_context.capsule.capsule_id if active_context else None),
+                as_of=started_at,
             )
-
-            # Load the frozen binding ONCE: it drives both this Attempt's
-            # authority and the durable-delegation digest the tool gateway
-            # checks against binding drift.
-            task_binding = load_bound_binding(self._task_binding_loader, session_id)
-            evidence_args = select_attempt_authority(
-                self._execution_authority_resolver, self._execution_authority_scope,
-                self._execution_authority_scope_provider, self._task_binding_loader,
-                session_id, binding=task_binding)
-            claimed, session_events = AttemptAuthorityEvidence(
-                *evidence_args, self._recovery_service, self._event_store).persist(
-                authority_recorder,
-                claimed,
-                session_events,
-                session_id=session_id,
-                started_at=started_at,
-            )
-        except ValueError as exc:
+            claimed, session_events = prepared_context.claimed, prepared_context.events
+            task_binding = prepared_context.binding
+            materialized_context = prepared_context.materialization
+        except (RuntimeError, ValueError) as exc:
             raise WorkerExecutionError(str(exc)) from exc
         try:
             runtime, prepared_runtime = runtime_setup.build_prepared_runtime(
@@ -316,7 +302,9 @@ class SessionExecutionService:
                 lease=claimed.lease,
                 ownership_check=ownership_check,
             )
-            if persist_runtime_authority(authority_recorder, authority, created_at=started_at):
+            if runtime_authority.persist_runtime_authority(
+                authority_recorder, authority, created_at=started_at
+            ):
                 claimed = ClaimedSession(
                     recovery=self._recovery_service.recover_session(
                         session_id,
@@ -325,16 +313,23 @@ class SessionExecutionService:
                     lease=claimed.lease,
                 )
             local_tool_gateway = build_worker_tool_gateway(
-                task, settings=self._settings, model_gateway=model_gateway,
-                session_history=self._session_history, session_id=session_id,
-                runtime=runtime, runtime_handle=runtime_handle,
+                task,
+                settings=self._settings,
+                model_gateway=model_gateway,
+                session_history=self._session_history,
+                session_id=session_id,
+                runtime=runtime,
+                runtime_handle=runtime_handle,
                 local_artifacts=self._artifact_payload_store,
-                cloud_artifacts=cloud_artifacts, trusted_local=trusted_local,
+                cloud_artifacts=cloud_artifacts,
+                trusted_local=trusted_local,
                 egress_registry=self._egress_registry,
-                delegation_store=self._delegation_store, parent_task_id=session_id,
+                delegation_store=self._delegation_store,
+                parent_task_id=session_id,
                 durable_delegation=self._settings.deployment == "cloud",
                 parent_binding_digest=(task_binding.binding_digest if task_binding else None),
                 parent_binding=task_binding,
+                parent_context=materialized_context,
                 manifest_digest=(
                     task_binding.host_capability.manifest_digest if task_binding else None
                 ),
@@ -371,32 +366,33 @@ class SessionExecutionService:
                 ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
         context_compiler = LocalContextCompiler()
-        context = HarnessContext(
+        context = core_harness.HarnessContext(
             task=harness_task_for_recovered(
                 task,
                 network_profile=effective_network_profile,
                 tool_gateway=tool_gateway,
                 memory_store=self._memory_store,
+                materialization=materialized_context,
             ),
             session=claimed.recovery.session,
-            attempt=HarnessAttempt(number=1, started_at=started_at),
+            attempt=core_harness.HarnessAttempt(number=1, started_at=started_at),
         )
-        claimed, continuations = recover_and_start_continuations(
+        claimed, continuations = execution_continuations.recover_and_start_continuations(
             claimed,
             session_events=session_events,
             event_store=self._event_store,
             recovery_service=self._recovery_service,
             started_at=started_at,
             recorder=authority_recorder,
-            cleanup=lambda: close_tool_gateway(tool_gateway),
-            child_result_verifier=build_child_result_verifier(
+            cleanup=lambda: runtime_authority.close_tool_gateway(tool_gateway),
+            child_result_verifier=execution_continuations.build_child_result_verifier(
                 self._delegation_store, self._projection_store
             ),
         )
         continuation = continuations.approved
         clarification = continuations.clarification
         child_wakeup = continuations.child_wakeup
-        context = HarnessContext(
+        context = core_harness.HarnessContext(
             task=context.task,
             session=claimed.recovery.session,
             attempt=context.attempt,
@@ -408,18 +404,14 @@ class SessionExecutionService:
             ownership_check=ownership_check,
         )
         effect_recorder.append(recorder)
-        if (
-            continuation is None
-            and clarification is None
-            and child_wakeup is None
-        ):
+        if continuation is None and clarification is None and child_wakeup is None:
             recorder.append(
                 EventType.HARNESS_ATTEMPT_STARTED,
                 EventActor.HARNESS,
                 {"attempt_number": 1},
                 created_at=started_at,
             )
-        context = HarnessContext(
+        context = core_harness.HarnessContext(
             task=context.task,
             session=recorder.session,
             attempt=context.attempt,
@@ -433,7 +425,7 @@ class SessionExecutionService:
             local_store=self._provider_continuation_store,
             session_id=session_id,
         )
-        model_step = HarnessModelStep(
+        model_step = core_harness.HarnessModelStep(
             context_compiler=context_compiler,
             available_tools=tool_gateway.model_tools,
             conversation_compactor=context_compiler,
@@ -442,7 +434,7 @@ class SessionExecutionService:
             provider_continuation=provider_continuation,
             attempt_number=1,
         )
-        orchestrator = SingleAttemptOrchestrator(
+        orchestrator = core_harness.SingleAttemptOrchestrator(
             model_gateway,
             LocalPolicyEngine(
                 profile=PolicyProfile(task.policy_profile),
@@ -474,10 +466,12 @@ class SessionExecutionService:
                 exc, error_metadata(exc, clarification, continuation)
             )
         finally:
-            cleanup_error = close_tool_gateway(tool_gateway)
+            cleanup_error = runtime_authority.close_tool_gateway(tool_gateway)
         if cleanup_error is not None:
-            attempt_result = runtime_cleanup_failure_result(cleanup_error, attempt_result)
-        emitted_events = finalize_execution(
+            attempt_result = runtime_authority.runtime_cleanup_failure_result(
+                cleanup_error, attempt_result
+            )
+        emitted_events = execution_finalization.finalize_execution(
             recorder=recorder,
             attempt_result=attempt_result,
             memory_extraction_service=self._memory_extraction_service,
@@ -493,7 +487,7 @@ class SessionExecutionService:
         final_session = self._projection_store.get_session(session_id)
         if final_session is None:
             raise WorkerExecutionError("session projection missing after worker execution")
-        return ExecutedSession(
+        return execution_finalization.ExecutedSession(
             session=final_session,
             events=emitted_events,
             attempt_result=attempt_result,

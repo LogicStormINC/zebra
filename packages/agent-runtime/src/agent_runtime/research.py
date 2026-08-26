@@ -5,8 +5,10 @@ from pathlib import Path
 from threading import Event
 
 from agent_context import LocalContextCompiler
+from agent_core.domain.context_inheritance import ContextInheritanceMode
+from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.events import EventType, SessionEvent
-from agent_core.domain.identifiers import SubagentId, TaskId
+from agent_core.domain.identifiers import SubagentId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.subagents import (
     ResearchSource,
@@ -33,6 +35,11 @@ from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError, ToolRegistryError
 
 from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.research_context import (
+    delegate_durable_research,
+    durable_research_contract,
+    parse_context_mode,
+)
 from agent_runtime.subagents import (
     SubagentLimitError,
     cancelled_result,
@@ -211,6 +218,7 @@ class ResearchSubagentTool:
         delegation_store: object | None = None,
         parent_task_id: object | None = None,
         parent_binding: object | None = None,
+        parent_context: ContextMaterialization | None = None,
     ) -> None:
         self._coordinator = coordinator
         self._workspace_root = workspace_root
@@ -225,146 +233,21 @@ class ResearchSubagentTool:
         self._delegation_store = delegation_store
         self._parent_task_id = parent_task_id
         self._parent_binding = parent_binding
-
-    def _delegate_durable(
-        self, tool_call: ToolCall, objective: str, delegation_reason: str
-    ) -> ToolResult:
-        """Materialize a durable child Task via the PostgreSQL delegation store."""
-        import json as _json
-        from uuid import UUID as _UUID
-
-        from agent_core.application.session_bootstrap import (
-            SessionBootstrapCommand as _SBC,
-        )
-        from agent_core.application.session_bootstrap import (
-            SessionBootstrapService as _SBS,
-        )
-        from agent_core.application.workspace_projection import (
-            rebuild_workspace as _rw,
-        )
-        from agent_core.domain.agent_capabilities import capability_set as _caps
-        from agent_core.domain.subagent_delegation import (
-            SubagentDelegationRequest as _SDR,
-        )
-        from agent_core.domain.subagent_delegation import derive_child_binding
-        from agent_core.domain.subagents import SubagentRole as _Role
-        from agent_core.domain.task_bindings import TaskBindingSnapshot
-        from agent_core.domain.tool_profiles import ToolProfile
-        from agent_core.ports.task_admission_transaction import (
-            TaskAdmissionRequest as _TAR,
-        )
-
-        # The child narrows to the read-only research surface PLUS the
-        # agent.execute right every running session needs — a subset of
-        # the parent's capabilities with no write surface.
-        child_capabilities = frozenset(_caps(["agent.execute", "evidence.read"]))
-
-        parent_binding = self._parent_binding
-        if not isinstance(parent_binding, TaskBindingSnapshot):
-            return _delegation_refused(
-                tool_call,
-                reason="durable_delegation_requires_parent_binding",
-                detail="no admission-frozen Task binding is available for this parent",
-            )
-        parent_uuid = (
-            self._parent_task_id
-            if isinstance(self._parent_task_id, _UUID)
-            else _UUID(str(self._parent_task_id))
-            if self._parent_task_id
-            else None
-        )
-        if parent_uuid is None:
-            return _delegation_refused(
-                tool_call,
-                reason="durable_delegation_requires_parent_task_id",
-                detail="the parent Task identity is unavailable",
-            )
-        get_link = getattr(self._delegation_store, "get_link", None)
-        if callable(get_link) and get_link(TaskId(parent_uuid)) is not None:
-            # Durable depth guard: a delegated child never delegates again.
-            return _delegation_refused(
-                tool_call,
-                reason="durable_delegation_depth_limit",
-                detail="durable children cannot delegate (depth limit 1)",
-            )
-        request = _SDR(
-            parent_task_id=TaskId(parent_uuid),
-            parent_attempt_number=1,
-            parent_tool_call_id=str(tool_call.tool_call_id),
-            delegation_index=0,
-            role=_Role.RESEARCHER,
-            objective=objective,
-            requested_capabilities=child_capabilities,
-            child_definition_snapshot_digest="0" * 64,
-            child_capability_profile_ref="profile/researcher@1",
-            expected_parent_binding_digest=parent_binding.binding_digest,
-        )
-        try:
-            # Child runs READ_ONLY with the RESEARCH tool surface — no
-            # agent.research (no recursion), no write tools, no network.
-            bootstrap = _SBS().build(
-                _SBC(
-                    title=f"Research: {objective[:120]}",
-                    user_input=objective,
-                    workspace_root=Path(str(self._workspace_root)),
-                    policy_profile="read_only",
-                    tool_profile=ToolProfile.RESEARCH,
-                    network_profile="none",
-                )
-            )
-            child_binding = derive_child_binding(
-                parent_binding,
-                request,
-                child_task_id=TaskId(bootstrap.session.session_id),
-                child_definition_ceiling=child_capabilities,
-                zebra_child_policy_capabilities=child_capabilities,
-            )
-            child_admission = _TAR(
-                events=tuple(bootstrap.events),
-                session=bootstrap.session,
-                workspace=_rw(list(bootstrap.events)),
-                binding=child_binding,
-            )
-        except ValueError as exc:
-            return _delegation_refused(
-                tool_call,
-                reason="delegation_derivation_failed",
-                detail=str(exc)[:1000],
-            )
-        from agent_storage.postgres.subagent_delegation import (
-            PostgresSubagentDelegationStore,
-        )
-
-        assert isinstance(self._delegation_store, PostgresSubagentDelegationStore)
-        receipt = self._delegation_store.delegate(request, child_admission)
-        return ToolResult(
-            tool_call_id=tool_call.tool_call_id,
-            status=ToolCallStatus.EXECUTED,
-            output=_json.dumps(
-                {
-                    "delegation_reason": delegation_reason.strip(),
-                    "child_task_id": str(receipt.child_task_id),
-                    "status": "materialized",
-                    "resume": "durable_wakeup",
-                    "replayed": receipt.status == "replayed",
-                },
-                separators=(",", ":"),
-                sort_keys=True,
-            ),
-            metadata={
-                "child_task_id": str(receipt.child_task_id),
-                "subagent_status": "materialized",
-                "durable_delegation": True,
-                "delegation_reason": delegation_reason.strip(),
-                "suspend_after_turn": True,
-            },
-        )
+        self._parent_context = parent_context
 
     @property
     def contract(self) -> ToolContract:
-        return research_contract
+        return (
+            durable_research_contract(research_contract)
+            if not self._wait_for_result
+            else research_contract
+        )
 
     def handle(self, tool_call: ToolCall) -> ToolResult:
+        context_mode = parse_context_mode(
+            tool_call,
+            durable=not self._wait_for_result,
+        )
         objective = tool_call.arguments["objective"]
         if not isinstance(objective, str) or not objective.strip():
             raise ToolArgumentError("agent.research requires a non-blank objective")
@@ -382,7 +265,19 @@ class ResearchSubagentTool:
         )
         try:
             if self._delegation_store is not None and not self._wait_for_result:
-                return self._delegate_durable(tool_call, objective, delegation_reason)
+                return delegate_durable_research(
+                    tool_call,
+                    objective=objective.strip(),
+                    delegation_reason=delegation_reason.strip(),
+                    context_mode=context_mode,
+                    context_source=self._parent_context,
+                    workspace_root=self._workspace_root,
+                    delegation_store=self._delegation_store,
+                    parent_task_id=self._parent_task_id,
+                    parent_binding=self._parent_binding,
+                )
+            if context_mode is not ContextInheritanceMode.FRESH:
+                raise ToolArgumentError("non-fresh context_mode requires durable Cloud delegation")
             subagent_id = self._coordinator.spawn(task)
             if not self._wait_for_result:
                 # SUBAGENT-CLOUD-CUTOVER-01: cloud parents never block on a
@@ -458,23 +353,6 @@ class ResearchSubagentTool:
                 "delegation_reason": delegation_reason.strip(),
             },
         )
-
-
-def _delegation_refused(
-    tool_call: ToolCall, *, reason: str, detail: str
-) -> ToolResult:
-    import json as _json
-
-    return ToolResult(
-        tool_call_id=tool_call.tool_call_id,
-        status=ToolCallStatus.FAILED,
-        output=_json.dumps(
-            {"reason": reason, "detail": detail[:1000], "status": "failed"},
-            separators=(",", ":"),
-            sort_keys=True,
-        ),
-        metadata={"reason": reason, "detail": detail[:1000]},
-    )
 
 
 def _research_sources(events: tuple[SessionEvent, ...]) -> tuple[ResearchSource, ...]:

@@ -78,6 +78,25 @@
   and complete CAS, durable AG-UI Binding/State admission, Worker client-state
   recovery, Client State projection, React HITL runtime evidence, real-process
   reconnect/restart drills, Trench pilot and production gate remain open.
+- Cloud Context inheritance is ready for review (2026-08-23,
+  `CTX-INHERIT-CLOUD-01`, `codex/cloud-context-inheritance-01`): Cloud Worker
+  now consumes one PostgreSQL-authoritative materialization generation for
+  recent History, active Capsule and confirmed scoped Memory. Durable children
+  explicitly choose `fresh`, `capsule`, `fork_tail` or `resume`; non-fresh
+  inputs are bounded, source-attributed, checksum-protected and frozen into the
+  Child `TASK_PREPARED` Event. Handoff acceptance/files/validation/failures/
+  questions/Artifacts are model-visible under a 2048-token auxiliary budget;
+  any compiler-side truncation is explicitly marked,
+  while credentials, hidden reasoning, raw tool output and Provider-private
+  continuation remain omitted. The activated path also fixed PostgreSQL History
+  to return the newest bounded text tail from one read-only Repeatable Read
+  snapshot and made planner metadata JSON-native so
+  canonical Event replay remains exact. Validation: focused `33 passed / 7
+  dependency-gated skipped`, Context
+  PostgreSQL `6/6`, Cloud PostgreSQL+MinIO composition `33/33`, no-filter full
+  repository over real PostgreSQL+MinIO `2952 passed / 0 failed / 13 skipped`,
+  and `make check` green (size `1441`, Mypy `718`, Eval `10/10`). Containers,
+  networks and volumes were cleaned. Trench production acceptance is unchanged.
 
 - Maintainer line acceptance closed (2026-08-21, gate 5, reviewed at
   `cloud-agent@5bab4b57`): the complete 59-path delta from

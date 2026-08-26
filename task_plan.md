@@ -45,6 +45,41 @@ Gate 6 多业务一致性 → Gate 7 Trench Pilot → Gate 8 生产。
 Flutter SDK、小程序 SDK、Agent Team UI Control、Subagent UI Control、
 Direct Browser-to-Zebra、任意 DOM Automation。
 
+## CTX-INHERIT-CLOUD-01 - Cloud Context 消费与子 Agent 继承（2026-08-23）
+
+1. `completed` - 从 `origin/cloud-agent@7de09da1` 创建独立分支/Worktree，登记
+   human owner、Owned paths、依赖、验收与非目标。
+2. `completed` - 冻结 `fresh`、`capsule`、`fork_tail`、`resume` 四种模式及
+   有界、可校验、来源可追溯的 Child Context snapshot。
+3. `completed` - 将 PostgreSQL `ContextMaterializationStore` 接进 Cloud Worker，
+   固定 authority scope、Session revision、active Capsule 与 confirmed Memory；
+   保持 local/SQLite 默认行为不变。
+4. `completed` - 让 Handoff 丰富字段进入模型 Context，提高连续性 evidence
+   预算，并明确 credential、隐藏推理、raw output 等遗漏项。
+5. `completed` - 修正 PostgreSQL read-only Repeatable Read、History
+   newest-text-tail 语义，以及物化 evidence 激活后暴露的 planner tuple/JSON
+   canonical Event 不一致根因。
+6. `completed` - 通过聚焦、真实 PostgreSQL、Cloud PostgreSQL+MinIO、无过滤
+   真依赖全仓和 `make check` 验证，清理全部临时资源。
+7. `completed` - 补充 ADR-025、中文 README 接入教程、进度/发现/工作日志，
+   将任务卡移到 `Review`，准备向 `cloud-agent` 提交一个聚焦 PR。
+8. `completed` - Review 收口（2026-08-24）：排除 handoff/automation seed 对
+   History 与 `_mode` 统计的污染；SQL 侧用 limit+1 显式探测截断并在快照上
+   写出 `history_tail_truncated` / `history_prefix_uncovered` omission；
+   收窄验收声明——本卡只解决 Cloud Worker 消费权威物化与 Child 受限继承，
+   不声明已解决普通多轮 Task 连续性（Turn 生命周期见 ADR-026）。
+
+### 决策
+
+- 上下文不是权限；Child authority 始终由冻结 binding 求交收窄。
+- Cloud Worker 读取一次同代物化，Durable Child admission 固化一次快照；
+  二者都不创建新的事实权威。
+- 不提供“全部继承”模式。需要完整事实时返回权威 locator，再走受控读取。
+- 自动 Handoff seed（`source=session_handoff` / `actor_kind=automation`）
+  不是人类对话历史：Context History 选择与 CONTINUE/INITIAL 判定均排除它。
+- History 截断永不静默：SQL 读取超出 `history_limit` 时必须带显式 omission；
+  无 Capsule 覆盖的被截断前缀记为 `history_prefix_uncovered`。
+
 ## 下一阶段：默认组合收口（Phase F，2026-08-19 定案）
 
 目标：把已落地的机制真正接进 Cloud API/Worker 默认组合，并留下
