@@ -39,8 +39,9 @@ ENTRYPOINT ["zebra-agent-worker"]
 FROM runtime AS broker
 ENTRYPOINT ["python", "-m", "zebra_host_grant_broker"]
 
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/docker:27-cli AS docker-cli
+
 FROM runtime AS worker-engine
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends docker-cli \
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
 USER zebra
