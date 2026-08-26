@@ -4,13 +4,12 @@ import sys
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
 from agent_core.application import SessionTitleService
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.leases import LeaseLostError
 from agent_core.ports import (
     EffectDispatchPort,
     GovernedMemoryStorePort,
@@ -32,11 +31,16 @@ from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.client_effect_runtime import compose_client_runtime
 from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
-from zebra_agent_worker.cloud_memory_recovery import CloudMemoryFinalizationRecovery
+from zebra_agent_worker.cloud_memory_recovery import (
+    CloudMemoryFinalizationRecovery,
+    recover_completed_cloud_memory,
+)
 from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
+from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
+from zebra_agent_worker.lease_heartbeat import LeaseHeartbeatError
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_commit import (
@@ -97,10 +101,12 @@ class WorkerLoopService:
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
     ) -> WorkerLoopCycleResult:
-        self._recover_completed_cloud_memory(
+        recover_completed_cloud_memory(
             worker_id=worker_id,
             batch_size=batch_size,
             lease_ttl_seconds=lease_ttl_seconds,
+            recovery=self._cloud_memory_recovery,
+            projection_store=self._projection_store,
         )
         self._process_child_wakeups()
         command_result = (
@@ -142,6 +148,9 @@ class WorkerLoopService:
                 SessionRecoveryError,
                 SessionResumeError,
                 WorkerExecutionError,
+                ExecutionInterrupted,
+                LeaseHeartbeatError,
+                LeaseLostError,
             ) as skip_error:
                 skipped_ids.append(session_id)
                 print(
@@ -158,29 +167,6 @@ class WorkerLoopService:
             skipped_session_ids=tuple(skipped_ids),
         )
 
-    def _recover_completed_cloud_memory(
-        self,
-        *,
-        worker_id: str,
-        batch_size: int,
-        lease_ttl_seconds: int,
-    ) -> None:
-        if self._cloud_memory_recovery is None:
-            return
-        # ponytail: retain a bounded recent window until an explicit durable
-        # finalization queue is introduced for high-throughput deployments.
-        for session in self._projection_store.list_recent_sessions(limit=max(batch_size, 32)):
-            if session.status is not SessionStatus.COMPLETED:
-                continue
-            try:
-                self._cloud_memory_recovery.recover(
-                    session.session_id,
-                    worker_id=worker_id,
-                    recovered_at=datetime.now(UTC),
-                    lease_ttl_seconds=lease_ttl_seconds,
-                )
-            except (LeaseConflictError, SessionRecoveryError, WorkerExecutionError, ValueError):
-                continue
 
     def _process_child_wakeups(self) -> None:
         """Poll terminal children and emit parent resume commands."""
@@ -391,9 +377,7 @@ def build_worker_loop_service(
 
         wakeup_dsn = cloud_bundle.dsn or ""
         if wakeup_dsn and active_namespace is not None:
-            child_wakeup_service = _Wakeup(
-                wakeup_dsn, deployment_namespace=active_namespace
-            )
+            child_wakeup_service = _Wakeup(wakeup_dsn, deployment_namespace=active_namespace)
             from agent_storage.postgres.host_connectors import (
                 PostgresHostConnectorRegistry,
             )
@@ -408,7 +392,6 @@ def build_worker_loop_service(
             delegation_store = PostgresSubagentDelegationStore(
                 wakeup_dsn, deployment_namespace=active_namespace
             )
-
 
     execution_service = SessionExecutionService(
         database_path=database_path,
@@ -457,6 +440,7 @@ def build_worker_loop_service(
                 deployment_namespace=active_namespace,
             ),
             memory_store=cloud_memory_store,
+            idempotency_store=execution_stores.idempotency,
             deployment_namespace=active_namespace,
             event_store=execution_stores.events,
             projection_store=execution_stores.sessions,

@@ -46,7 +46,7 @@ def apply_event(session: Session, event: SessionEvent) -> Session:
         raise SessionProjectionError("event session_id does not match projection session_id")
 
     projected = session
-    next_status = _next_status_for_event(event)
+    next_status = _next_status_for_event(event, projected.status)
     if next_status is not None and next_status is not projected.status:
         projected = projected.transition_to(next_status, updated_at=event.created_at)
 
@@ -106,7 +106,23 @@ def _session_title_from_event(event: SessionEvent) -> str:
     return title
 
 
-def _next_status_for_event(event: SessionEvent) -> SessionStatus | None:
+def _next_status_for_event(
+    event: SessionEvent, current_status: SessionStatus
+) -> SessionStatus | None:
+    if event.event_type is EventType.TURN_COMPLETED:
+        if event.payload.get("closes_segment") is False:
+            return SessionStatus.AWAITING_TURN
+        # closes_segment=True keeps the RUNNING status; the one-shot
+        # SESSION_COMPLETED event immediately follows and finalizes it.
+        return None
+    if event.event_type is EventType.USER_MESSAGE_RECEIVED:
+        if current_status is SessionStatus.AWAITING_TURN and not _is_automation_message(
+            event
+        ):
+            # A finished conversation turn re-arms the Segment so the
+            # worker ready-queue can pick the new turn up.
+            return SessionStatus.READY
+        return None
     status_map: dict[EventType, SessionStatus] = {
         EventType.TASK_PREPARED: SessionStatus.READY,
         EventType.HARNESS_ATTEMPT_STARTED: SessionStatus.RUNNING,
@@ -124,12 +140,25 @@ def _next_status_for_event(event: SessionEvent) -> SessionStatus | None:
         EventType.SESSION_SUSPENDED: SessionStatus.SUSPENDED,
         EventType.SESSION_WAITING_FOR_CLIENT_EFFECT: SessionStatus.WAITING_CLIENT_EFFECT,
         EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED: SessionStatus.SUSPENDED,
-        EventType.SESSION_RESUMED: SessionStatus.READY,
+        # The no-op resume marker (ADR-026): a conversation Segment with no
+        # open Turn resumes straight back into awaiting_turn so the ready
+        # queue does not reclaim an empty execution forever.
+        EventType.SESSION_RESUMED: (
+            SessionStatus.AWAITING_TURN
+            if event.payload.get("reason") == "awaiting_turn_rearm"
+            else SessionStatus.READY
+        ),
         EventType.SESSION_COMPLETED: SessionStatus.COMPLETED,
         EventType.SESSION_FAILED: SessionStatus.FAILED,
         EventType.SESSION_CANCELLED: SessionStatus.CANCELLED,
     }
     return status_map.get(event.event_type)
+
+
+def _is_automation_message(event: SessionEvent) -> bool:
+    from agent_core.application.turn_projection import is_human_message
+
+    return not is_human_message(event)
 
 
 def _approval_context_from_event(event: SessionEvent) -> ApprovalContext | None:

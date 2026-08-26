@@ -63,6 +63,7 @@ def test_consumer_wakes_worker_and_does_not_replay_projected_command(tmp_path: P
 
 def test_message_command_appends_user_event_before_waking_worker(tmp_path: Path) -> None:
     stores, session_id, revision = _seed_session(tmp_path)
+    session_id, revision = _finish_first_turn(stores, session_id, revision)
     command = SessionCommand(
         command_id=uuid4(),
         session_id=session_id,
@@ -134,6 +135,40 @@ def _seed_session(tmp_path: Path):
     stores.sessions.save_session(bootstrap.session)
     stores.workspaces.save_workspace(rebuild_workspace(list(bootstrap.events)))
     return stores, bootstrap.session.session_id, bootstrap.session.current_sequence
+
+
+def _finish_first_turn(stores, session_id, revision: int):
+    """Close bootstrap Turn 0 so a MESSAGE command can be admitted."""
+    from agent_core.application import current_turn
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.domain.turns import derive_turn_id
+
+    events = stores.events.list_for_session(session_id)
+    open_turn = current_turn(events)
+    turn_id = open_turn.turn_id if open_turn else str(derive_turn_id(session_id, 0))
+    turn_index = open_turn.turn_index if open_turn else 0
+    stores.events.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=revision + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+        )
+    )
+    stores.events.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=revision + 2,
+            event_type=EventType.TURN_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={"turn_id": turn_id, "turn_index": turn_index, "closes_segment": False},
+        )
+    )
+    stores.sessions.save_session(
+        rebuild_session(stores.events.list_for_session(session_id))
+    )
+    return session_id, revision + 2
 
 
 def _command_event(command: SessionCommand, sequence: int) -> SessionEvent:

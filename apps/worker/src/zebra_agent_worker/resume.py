@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import SessionStatus
 
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 
@@ -41,6 +42,13 @@ class SessionResumeService:
         *,
         release_on_failure: bool = True,
     ) -> ResumedSession:
+        status = claimed.recovery.session.status
+        if status is SessionStatus.AWAITING_TURN:
+            # ADR-026: no open Turn exists to execute. Resume must wait for
+            # the next human message to re-arm the Segment to READY.
+            if release_on_failure:
+                self._claim_service.release_claim(claimed)
+            raise SessionResumeError("session is awaiting the next turn message")
         if not claimed.recovery.is_terminal:
             return ResumedSession(claimed=claimed)
         if release_on_failure:

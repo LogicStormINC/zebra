@@ -170,6 +170,7 @@ def test_handoff_events_preserve_legacy_messages_and_require_real_provenance() -
         {
             "content": "Start verification",
             "source": "session_handoff",
+            "origin": "session_handoff",
             "handoff_id": str(HANDOFF_ID),
             "principal_identity_hash": "principal-sha256",
             "actor_kind": "operator",

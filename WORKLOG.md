@@ -1,5 +1,135 @@
 # Progress Log
 
+## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 10 (3xP1, 2xP2, 1xP3)
+
+- API 只把 `SessionEventSequenceConflictError` 映射为 409;SQLite/PG
+  在 sequence 竞争前先判定 event-id 复用,确定性身份冲突 fail closed。
+- gateway 释放收敛为单一 owner;cleanup 失败新增严格合同的
+  `RUNTIME_CLEANUP_FAILED` durable 事件,控制竞争不再只写 stderr。
+- title 恢复在模型调用前抢占共享幂等 reservation,以 winner token
+  处理并发败者并跨时间桶执行滚动 15 分钟冷却;删除不可达旧分支。
+- Cloud recovery 不再吞宽泛 `ValueError`;真实 composition 暴露并修复
+  closed-Turn side chain 无 receipt 的合法恢复状态,receipt 按首事件前一
+  revision 校验。
+- 验证:全仓 `2677 passed / 349 skipped`;真 PG Event `15/15`;
+  Cloud PG+MinIO composition `33/33 PASS`;`make check` 全绿。
+
+
+## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 9 (4xP1, 1xP2, 1xP3)
+
+- 根因修复:receipt 以自身 revision 接受+refresh_tail 仅内存追平;
+  runtime 单一 gateway close 所有权(cleanup error 留痕);title 重试
+  改共享 durable 幂等存储时间桶;幂等冲突 fail loud;存储层新增
+  SessionEventSequenceConflictError 类型化竞争;删除死代码。
+- 回归升级为真实 recorder/真实序列;双 worker durable 限流覆盖。
+- 验证:全仓 `2671 passed / 348 skipped`;PG `8/8`;composition
+  `33/33 PASS`;`make check` 全绿;`git diff --check` 干净。
+
+
+## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 8 (3xP1, 2xP2)
+
+- receipt 按 receipt revision 接受+尾部重放;runtime 所有权
+  try/except/finally(gateway 创建起,中断→superseded);title 恢复
+  15 分钟冷却;ready 循环接入类型化跳过面;幂等冲突不再算竞争。
+- 回归:receipt 超前投影、gateway 后中断释放、冷却限流、分类器。
+- 验证:全仓 `2670 passed / 348 skipped`;PG `8/8`;composition
+  `33/33 PASS`;`make check` 全绿;`git diff --check` 干净。
+
+
+## 2026-08-25 - CTX-TURN-LIFECYCLE proactive audit round 7
+
+- 三个敌意审查代理 + 多轮验证;修复 finalization 尾部竞争、提取
+  窗口永久跳过、poll 异常面、AG-UI 取消终态、幂等键溢出、竞争转换
+  收窄、setup interrupted superseded、稳定 fallback id、append 409。
+- 结构:错误映射入 seam、poll 常量、执行助手分散到
+  execution_errors/execution_recovery/cloud_memory_recovery。
+- 验证:全仓 `2666 passed / 348 skipped`;PG `8/8`;composition
+  `33/33 PASS`;`make check` 全绿;`git diff --check` 干净。
+
+
+## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 6 (3xP1, 1xP2)
+
+- fresh retry 统一操作边界:同一 lease/fence 传递、控制事件
+  superseded 转换(rearm/reconcile/capability 三分支)、一次恢复
+  预算耗尽转 WorkerExecutionError、reconcile 序列竞争转 Stale。
+- 模型输入断言改用 gateway.requests 实测;cancel/suspend 抢占与
+  lease 传递各有确定性回归。
+- 验证:全仓 `2661 passed / 348 skipped`;真 PG `8/8`;`make check`
+  全绿;`git diff --check` 干净。
+
+
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 5 (2xP1, 1xP2 gap)
+
+- `StaleExecutionSnapshot` + execution 外壳重试(重新恢复全量输入,
+  旧快照不执行);rearm CAS 冲突有界重试,无裸 ValueError。
+- 测试改为真实旧快照组合;新增完整 Worker stale→重试→新 Turn 执行
+  断言;执行输入恢复抽至 `execution_recovery.py`(文件尺寸回归)。
+- 验证:全仓 `2657 passed / 348 skipped`;真 PG `8/8`;`make check`
+  全绿;`git diff --check` 干净。
+
+
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 4 (2xP1, 1xP2 gap)
+
+- recorder 本地分支预校验 + canonical 序列分支(防污染、防回退);
+  rearm 在刷新后的 canonical stream 重新判断并在并发 Turn 到达时
+  放弃;取消测试拆分为 awaiting/no-open 与 ready/open-turn 两场景。
+- 新增 `tests/worker/test_recorder_append_guards.py`(2)与并发
+  Turn 放弃回归;验证全仓 `2655 passed / 348 skipped`、真 PG `8/8`、
+  `make check` 全绿。
+
+
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 3 (1xP1, 1xP2 gap)
+
+- rearm 幂等键绑定恢复窗口流头事件 ID;本地 recorder append 先取
+  canonical event 再投影;两轮 suspend/resume 回归。
+- preflight 顺序单元测试(artifact_store=False 真正触发 setup-only
+  拒绝分支);端到端 setup-only 和解测试改名并注明边界。
+- 验证:全仓 `2651 passed / 348 skipped`;真 PG `8/8`;`make check`
+  全绿;`git diff --check` 干净。
+
+
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes round 2 (3xP1, 1xP2)
+
+- 修复复审发现:no-op resume 用 awaiting_turn_rearm 标记事件回到
+  awaiting_turn(不再滞留 ready 队列)、和解先于能力检查且只认匹配
+  终态、TURN_CANCELLED 固有为 pending close、origin 与 handoff
+  provenance 双向绑定。
+- 新增回归:重臂后重复 resume 409、setup-only 流和解为 completed、
+  TURN_CANCELLED 崩溃窗口补写;更新 handoff 种子。
+- 验证:全仓 `2649 passed / 348 skipped`;真 PG `8/8`;`make check`
+  全绿;`git diff --check` 干净。
+
+
+## 2026-08-24 - CTX-TURN-LIFECYCLE review fixes (5×P1, 3×P2)
+
+- 按 `c3b44bfc..056293c8` 单提交审查结论修复:awaiting_turn 不可无消息
+  执行(resume 拒绝 + noop 守卫)、恰好一个 open Turn 的准入不变量、
+  memory 窗口与 refresh target 同源、失败/取消崩溃窗口和解、控制面
+  awaiting_turn 接入与 TURN_CANCELLED 生产者、覆盖校验 fail-closed、
+  origin/provenance 绑定、strict Turn 合同。
+- 新增回归:`tests/agent_core/test_turn_review_regressions.py`(9)、
+  acceptance 文件 +4、`tests/worker/test_control.py` +2;既有
+  follow-up 语义测试改为先关闭 Turn 0 再追加。
+- 验证:全仓 `2647 passed / 348 skipped`;真 PG `8/8`;`make check` 全绿。
+
+
+## 2026-08-24 - CTX-TURN-LIFECYCLE implementation (ADR-026)
+
+- 收口 `CTX-INHERIT-CLOUD-01`(automation seed 排除 + 截断显式化 +
+  声明收窄)在 `codex/cloud-context-inheritance-01`(commit
+  `c3b44bfc`)。
+- 从该收口点创建 `codex/ctx-turn-lifecycle-01` worktree,按 ADR-026
+  实现 Turn 合同、投影、准入、Worker 终态化与崩溃和解、消费者迁移
+  (Memory/标题/Workspace/AG-UI/SSE)、上下文覆盖不变量、API 新字段
+  与验收矩阵。
+- 验证:全仓 `2632 passed / 348 skipped`;Context PostgreSQL `8/8`;
+  `make check` 全绿(size `1449`、Mypy `721`、Eval `10/10`);
+  ADR-026 验收 6/6。
+- 后续:合并 PR #261 后本分支 rebase 到 `origin/cloud-agent`;
+  Cloud E2E(真 PG+MinIO 多 Worker 崩溃演练)与 Trench 16 输入
+  验收待维护者环境。
+
+
 ## 2026-08-23 - CTX-INHERIT-CLOUD-01 review handoff
 
 - 基于权威 `origin/cloud-agent@7de09da1` 创建独立

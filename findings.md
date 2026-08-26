@@ -51,6 +51,326 @@
   `PROGRESS.md`); this card branches from `cloud-agent@2319da7f`, which
   contains `main@efd4e293` as an ancestor.
 
+## CTX-TURN-LIFECYCLE review closeout round 10 - 2026-08-25
+
+- 新的 sequence 专类型此前漏接 API sibling caller,导致并发消息败者
+  重新变成 500;现 API 仅捕获 `SessionEventSequenceConflictError`,幂等
+  内容冲突和 event-id 复用继续 fail closed。
+- SQLite/PG 的双重唯一冲突此前会优先报 sequence race;现先查
+  canonical event identity,同 event-id 不同内容永不进入可重试面。
+- `gateway_released` 此前从未置真且 continuation cleanup 绕过 owner;
+  现所有路径共用一次性 release closure。cleanup 失败先写
+  `RUNTIME_CLEANUP_FAILED` Event(`target/error_type/attempt_number`严格合同),
+  再映射 attempt 或 superseded 结果;Event Store 保留恢复证据。
+- title 限流此前在付费调用后保存且是固定时间桶。现 current/previous
+  bucket 形成滚动窗口,模型调用前 first-write-wins 保存带随机 winner
+  token 的 reservation;save 返回其他 token 的 Worker 不调用模型。
+- recovery scan 移除宽泛 `ValueError` 后,真实 Cloud composition 暴露
+  closed Turn 后已有 title side chain、但零 Memory candidate/receipt 的合法
+  状态。finalization 现允许 closed-state tail,而丢失响应按 receipt 首事件
+  前一 revision 校验,不再依赖 Turn close 必须等于当前 stream head。
+- 删除 title 不可达重复逻辑;回归覆盖 API 类型映射、SQLite/PG event-id、
+  单次 gateway close+durable failure、reservation 顺序/并发败者/桶边界、
+  ValueError fail loud 和 closed-Turn side chain。
+
+验证:全仓 `2677 passed / 349 skipped`,真 PostgreSQL Event `15/15`,
+Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿(尺寸 1462,
+Mypy 723,Eval 10/10),`git diff --check` 干净。
+
+
+## CTX-TURN-LIFECYCLE review closeout round 9 - 2026-08-25
+
+第九轮复审 4 个 P1、1 个 P2、1 个 P3,按根因(而非表面补丁)修复:
+
+- P1 receipt 锚点错误:旧实现以 `authority.expected_stream_revision`
+  (提交前)重建投影,真实 recorder 连普通提交都会 mismatch。现以
+  `receipt.session_revision` 重建并在该修订号上接受;其后的 tail 通过
+  新公开的 `recorder.refresh_tail()` 只更新内存(不重投影已提交
+  事件,terminal 状态不触发执行门)。回归改用真实 SQLite stores +
+  真实 DurableHarnessEventRecorder + memory 事件真实占用序列:
+  普通提交与超前投影两个场景均通过。
+- P1 runtime 清理失败被吞:删除第二所有权
+  `runtime.destroy`(OCI 语义下失败重试是 no-op,会孤儿容器);
+  gateway close 成为唯一释放路径,ownership finally 以
+  `gateway_released` 标志保证只关一次,返回的 cleanup error 写入
+  stderr 留痕(不再静默丢弃)。
+- P1 title 冷却仅单进程有效:改为共享 durable 幂等存储上的
+  **时间桶 key**(`worker-title-retry:{session_id}:{bucket}`,
+  bucket=floor(t/15min))——同桶内任意 worker/任意 poll 幂等跳过,
+  跨桶自然允许一次重试;first-write-wins 的 save 语义天然适配,
+  无需更新或删除。进程内字典保留为无 store 回退。回归覆盖两个
+  worker 实例共享 durable store 仍只调一次模型。
+- P1 幂等冲突 poison-session:`SessionEventIdempotencyConflictError`
+  从 ready 循环的 skip 面移除——确定性冲突 fail loud 冒出,不再以
+  瞬态名义热循环饿死批内其他会话。
+- P2 文本匹配不够:两个存储适配器在序列被占时抛出新的类型化
+  `SessionEventSequenceConflictError`(SQLite 事后探测
+  (session,sequence) 占用;PostgreSQL 以流 CAS 失败即定义);
+  `is_sequence_race` 改为纯 isinstance 判定,文本匹配删除。
+- P3 死代码:`_POLL_SKIP_ERRORS`(含宽泛 ValueError、无调用方)
+  已删除。
+
+验证:全仓 `2671 passed / 348 skipped`,真 PG Context `8/8`,
+Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
+`git diff --check` 干净。
+
+
+## CTX-TURN-LIFECYCLE review closeout round 8 - 2026-08-25
+
+第八轮复审 3 个 P1、2 个 P2,全部修复并有确定性回归:
+
+- P1 receipt 接受竞态:投影已被并发消息推进时,`_accept_receipt`
+  改为按 `receipt.session_revision` 重建投影再接受,随后逐事件
+  重放尾部;不再以超前投影做全量比较(`committed Context
+  projections do not match` 复现已闭合)。
+- P1 runtime 所有权:从 tool gateway 创建起建立单一
+  try/except/finally 边界,覆盖 stale retry、continuation start、
+  recorder append 与模型调用;`ExecutionInterrupted` 映射 superseded,
+  finally 幂等释放 gateway 与 runtime handle(回归:gateway 后注入
+  中断,close 计数 ≥1)。
+- P1 title 费用风暴:generate() 返回 None(失败/空/未变)无 durable
+  标记导致每 poll 重试;恢复扫描加 15 分钟每会话冷却(以
+  recovered_at 为时钟),成功写标题后清除(回归:两次 poll 只调
+  一次模型,冷却过期后允许重试)。
+- P2 `_POLL_SKIP_ERRORS` 未接入 ready 循环:显式加入
+  ExecutionInterrupted/LeaseHeartbeatError/LeaseLostError 与
+  SessionEventIdempotencyConflictError(不含宽泛 ValueError)。
+- P2 幂等冲突误判为竞争:`is_sequence_race` 移除
+  SessionEventIdempotencyConflictError(同 key 不同内容=确定性
+  冲突,fail closed);纯序列 CAS 消息才是竞争。
+
+验证:全仓 `2670 passed / 348 skipped`,真 PG Context `8/8`,
+Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
+`git diff --check` 干净。
+
+
+## CTX-TURN-LIFECYCLE proactive audit round 7 - 2026-08-25
+
+三个独立视角的敌意审查(并发时序/投影消费者/合同存储)+ 多轮验证,
+修复 2 个 P1、3 个 P2、4 个 P3:
+
+- P1 finalization 尾部竞争(审查实际复现):turn 关闭后 memory/title
+  收尾跨越 LLM/DB 往返,恰是 awaiting_turn 期间下一条人类消息被准入
+  的窗口——尾部 append 撞序列曾以裸 ValueError 逃出所有边界、崩掉
+  Worker。现在 memory/title 仅在**序列竞争**(`is_sequence_race`)时
+  defer(其余照常抛出),由恢复扫描补做;回归以"标题 LLM 调用期间
+  注入下一条消息"端到端复现并断言两轮正常。
+- P1 提取丢失永久跳过:`memory_extraction_window` 改为
+  `min(上一 Turn close, 最后一次提取之前的 close)`,无任何 durable
+  提取检查点时全量重扫(宁可重扫不可跳过);cloud recovery 扫描
+  `allow_commit=True`(持有 lease 与 fenced recorder,补提交缺失的
+  memory/title 链)。
+- P2 poll 异常面:ready-session 循环现容忍与其兄弟路径相同的错误面
+  (`_POLL_SKIP_ERRORS`:序列竞争、并发控制事件、瞬时心跳失败跳过
+  会话而非中断整个 poll 周期)。
+- P2 AG-UI `TURN_CANCELLED` 无终态:映射为
+  `RunFinished(interrupt)`(合成 interrupt),客户端不再挂起;新增
+  `test_ag_ui_turn_projection.py` 直接覆盖 per-turn RUN_STARTED/
+  RUN_FINISHED、取消终态与重连游标尾部。
+- P2 幂等键 `:run` 后缀溢出:253-256 字符键在 create 已提交后必然
+  400;超限时改用固定长度 `zebra-run:{sha256}` 派生键。
+- P3 收窄竞争转换:reconcile/rearm/continuation/inputs 的
+  ValueError→Stale 仅限 `is_sequence_race`,确定性失败保留原始错误;
+  `SessionEventIdempotencyConflictError` 不再被当作争用重试。
+- P3 setup 区间 interrupted:两个大 try 中的并发 cancel/suspend 转
+  superseded 结果(与 preflight 一致)而非 WorkerExecutionError。
+- P3 遗留 fallback turn id:无 open Turn 的段关闭改用
+  `derive_turn_id(session, 0)`(回放稳定),不再暴露
+  `legacy-turn:{head}`。
+- API append 序列竞争:并发双 append 的败者返回 409
+  `sequence_conflict` 而非 500。
+- 架构合规:`map_execution_error` 落在 `local_execution` seam(且
+  函数级导入),API 边界测试全绿;execution/loop 通过抽离
+  (execution_recovery、cloud_memory_recovery、execution_errors)
+  回到 500 行内。
+
+验证:全仓 `2666 passed / 348 skipped`(两轮零抖动),真 PG Context
+`8/8`,Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
+`git diff --check` 干净。附带排查:`effect_default_e2e: worker_fail_closed`
+在 base `c3b44bfc` 上同样失败(本机 Docker 无 gVisor),非本分支回归。
+
+
+## CTX-TURN-LIFECYCLE review closeout round 6 - 2026-08-25
+
+第六轮复审 3 个 P1、1 个 P2,按"fresh retry 操作边界"统一收口,
+并完成三轮自查:
+
+- P1 Cloud lease:fresh recovery 现在传
+  `recover_session(session_id, worker_lease=claimed.lease)`,Cloud
+  Worker 在同一 fence 下完成重建重试;回归断言 recovery 收到的
+  lease 与 claim 完全同一对象。
+- P1 控制事件逃逸:rearm、terminal reconcile、capability 检查三个
+  preflight 分支统一捕获 `ExecutionInterrupted` 并转换为
+  superseded 结果(SUSPENDED outcome +
+  `stop_reason=superseded_by_control_event` +
+  `external_status`),HTTP 返回外部状态而非 500,Worker poll 不再
+  中断;cancel 与 suspend 两类抢占各有回归。
+- P1 重试预算:第二次 StaleExecutionSnapshot 转换为类型化的
+  `WorkerExecutionError`("stayed stale"),不再以裸 RuntimeError
+  冒泡;回归断言。
+- P2 模型输入:完整 Worker 测试保留 gateway 实例并断言
+  `ScriptedModelGateway.requests`——fresh 执行请求的最后 USER 消息
+  是 `NEW CONCURRENT FOLLOW-UP`,且不含旧 prompt。
+- 自查追加:reconcile 的序列竞争同样转 Stale(交由外壳统一重试);
+  `execution_recovery.py` 尾部空行修复。
+
+验证:全仓 `2661 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿(Mypy 723),`git diff --check` 干净。
+
+
+## CTX-TURN-LIFECYCLE review closeout round 5 - 2026-08-24
+
+第五轮复审 2 个 P1、1 个 P2 测试缺口,修复:
+
+- P1 旧 task 执行:新增 `StaleExecutionSnapshot` 信号——rearm 在刷新
+  后的 canonical stream 上发现 open Turn/pending close 即抛出;
+  `_execute_claimed_session` 外壳(`execution_recovery.execute_claimed_
+  with_stale_retry`)捕获后从 Event Store 重新恢复 Session/Workspace/
+  Task/上下文并重执行一次,绝不携带旧快照调用模型。
+- P1 CAS 窗口:rearm 的 fresh read 与 marker append 之间被并发事件
+  抢占 sequence 时,捕获 store 冲突并在刷新后的流上重新判断——
+  出现 Turn 则 `StaleExecutionSnapshot`,Turn 中性事件则按新流头
+  重建 marker,有界重试(3 次),无裸异常冒泡。
+- P2 测试缺口:重写为真实快照组合(claimed/task/events 均旧、仅
+  持久流含并发消息),断言 `StaleExecutionSnapshot` 与 recorder 真实
+  状态;新增完整 Worker 测试——首次恢复输入注入旧快照,断言模型
+  执行的是新 follow-up(第二次调用、新 turn_id 关闭、流连续可重放);
+  并发/崩溃类验收测试拆分至
+  `tests/api/http_app/test_turn_concurrency_acceptance.py`。
+
+验证:全仓 `2657 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿(Mypy 723),`git diff --check` 干净。
+
+
+## CTX-TURN-LIFECYCLE review closeout round 4 - 2026-08-24
+
+第四轮复审 2 个 P1、1 个 P2 测试缺口,修复:
+
+- P1 recorder 先落库后验证:本地 `append_event` 分支改为先用
+  requested event 预校验状态转换(不保存),再 `event_store.append()`
+  取 canonical;canonical 序列不大于当前投影序列时视为已处理
+  (直接返回、不重放投影、不重建索引、不回退 `current_sequence`)。
+  回归:非法 READY→COMPLETED 事件不再污染 Event Store;迟到幂等
+  重试返回旧 canonical 时投影保持在 sequence 4 不回退。
+- P1 rearm 旧快照错停并发新 Turn:`_rearm_awaiting_turn` 在
+  `recorder.prepare()` 刷新后于 canonical stream 上重新判断,存在
+  open Turn 或 pending close 即放弃 rearm 并落回正常执行;幂等键
+  绑定刷新后的流头事件。回归:决策快照无 Turn、持久流已有并发
+  follow-up 时,preflight 返回 None(继续执行)、无 marker 写入。
+- P2 取消测试拆分:场景 A(awaiting_turn、无 open Turn)只写
+  `SESSION_CANCELLED`;场景 B(READY、有 open Turn,新增测试)写
+  `TURN_CANCELLED → SESSION_CANCELLED` 且流连续可重放。
+
+验证:全仓 `2655 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿,`git diff --check` 干净。
+
+
+## CTX-TURN-LIFECYCLE review closeout round 3 - 2026-08-24
+
+第三轮复审 1 个 P1、1 个 P2 测试缺口,修复:
+
+- P1 固定 rearm 幂等键破坏 Event Store:键改为
+  `turn-rearm:{本次恢复窗口流头事件 ID}`(每轮 suspend 后流头不同,
+  键必然不同);本地 recorder 的 `append_event` 重排为先
+  `event_store.append()` 取回 canonical event,再基于 canonical
+  sequence 计算并保存投影——幂等重试不再造成投影超前与序列缺口。
+  回归:两轮 suspend/resume 后流序列连续、`rebuild_session` 一致、
+  后续消息追加正常。
+- P2 能力检查回归缺口:新增
+  `tests/worker/test_execution_preflight_order.py` 直接驱动
+  `prepare_execution_preflight` 且 `has_local_artifact_store=False`:
+  pending 完成轮和解为 `SESSION_COMPLETED`(不写第二个 attempt/
+  SESSION_FAILED),无 pending 的 RUNNING 流正常触发 setup-only 拒绝。
+  原 API 级测试保留为端到端和解验证并改名、注明边界。
+
+验证:全仓 `2651 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿,`git diff --check` 干净。
+
+
+## CTX-TURN-LIFECYCLE review closeout round 2 - 2026-08-24
+
+复审(`859ef487`)3 个 P1、1 个 P2,全部修复:
+
+- P1 no-op resume 滞留 READY:新增 `SESSION_RESUMED(reason=
+  awaiting_turn_rearm)` 标记事件(幂等键 `turn-rearm:no-open-turn`),
+  投影按 reason 进入 `awaiting_turn`(状态机补 `READY →
+  AWAITING_TURN`);会话离开 ready 队列,重复 resume 409,模型零调用。
+- P1 能力检查先于和解:`prepare_execution_preflight` 重排为
+  pending close 和解 → conversation 无 open Turn 重臂 → setup-only
+  能力检查;已持久的成功 Turn 不再被新 attempt 的失败反转。
+  `pending_turn_close` 只被匹配的 `SESSION_*` 清除。
+- P1 TURN_CANCELLED 永不可达:取消视为固有 Segment close
+  (`TurnCancelledPayload` 无 closes_segment 字段),控制面两阶段
+  取消中间崩溃可被补写 `SESSION_CANCELLED`。
+- P2 provenance 伪装:任何 handoff provenance(含 direct_user/
+  operator)必须绑定 `origin=session_handoff`;`origin=human` 禁止
+  全部 handoff 字段;handoff seed 构建器与全部测试种子补写 origin。
+
+验证:全仓 `2649 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿,`git diff --check` 干净。
+
+
+## CTX-TURN-LIFECYCLE review closeout - 2026-08-24
+
+单提交审查(`c3b44bfc..056293c8`)发现 5 个 P1、3 个 P2,全部修复并有
+最小反例回归:
+
+- P1 无消息 resume:`AWAITING_TURN → RUNNING` 直连转换移除;
+  `require_resumable` 拒绝 awaiting_turn(409 `awaiting_next_turn_message`),
+  preflight 增加"conversation 无 open Turn 即不执行"的 noop 守卫,
+  覆盖 suspend→resume 重入路径。
+- P1 双 open Turn:准入命令携带 `open_turn_exists`(由事件流 Turn 投影
+  计算),存在 open Turn 时普通消息一律 `turn_in_progress`,不再只依赖
+  Session 状态。
+- P1 refresh target 误过期:候选与 refresh target 使用同一个
+  `since_sequence` 有界切片;窗口锚点改为"倒数第二个 TURN_COMPLETED 与
+  最新 MEMORY_CANDIDATE_EXTRACTED 的较大者",零候选 Turn 也会推进窗口。
+- P1 失败窗口无恢复:`pending_turn_close` 识别任意未配对的
+  TURN_COMPLETED/FAILED/CANCELLED,按映射补写对应 SESSION_* 终态,
+  幂等键同为 `turn-close:{turn_id}`,不重新调用模型。
+- P1 控制面:`AWAITING_TURN` 纳入 cancel/suspend 白名单;cancel 在存在
+  open Turn 时先写 `TURN_CANCELLED`(幂等键 `turn-cancel:{turn_id}`)再写
+  `SESSION_CANCELLED`。
+- P2 覆盖校验:截断必须携带 `truncated_before_sequence`;声明 Capsule
+  覆盖截断前缀时必须有能盖住边界的 source range,否则 fail closed。
+- P2 origin:`origin=session_handoff` 强制完整 provenance,
+  `origin=human` 禁止 automation provenance;`is_human_message` 按
+  "actor USER 且 origin human"判定,旧事件走兼容分支;handoff seed
+  构建器补写 origin。
+- P2 类型强转:Turn payload 与 USER_MESSAGE_RECEIVED 的 turn 字段使用
+  StrictInt/StrictBool;`turn_id` 限 UUID 或 `legacy-turn:<sequence>`。
+
+验证:全仓 `2647 passed / 348 skipped`,真 PG Context `8/8`,
+`make check` 全绿(size `1454`、Mypy `722`、Eval `10/10`)。
+
+
+## CTX-TURN-LIFECYCLE - 2026-08-24
+
+- 终态映射根因确认：`execution_finalization` 是唯一的
+  "最终回答 → SESSION_COMPLETED" 决策点；把它改成 Turn 关闭 +
+  条件 Segment 关闭后，所有既有终端消费者（cloud memory、标题、
+  workspace、AG-UI）无需感知 `interaction_mode` 即可继续工作。
+- one_shot 的 `TURN_COMPLETED(closes_segment=true)` 与
+  `SESSION_COMPLETED` 之间的崩溃窗口用幂等键
+  `turn-close:{turn_id}` 在 claim 时补写;该恢复在 preflight 之后、
+  模型调用之前执行,绝不会为和解重新调用模型。
+- cloud Memory 收据锚点从"唯一 SESSION_COMPLETED 序列"推广为
+  "最新 Turn 关闭事件序列";conversation 模式锚在最新
+  `TURN_COMPLETED`,receipt 天然按 Turn 去重。
+- 每 Turn Memory 抽取必须带窗口(`since_sequence` = 上次
+  MEMORY_CANDIDATE_EXTRACTED 序列),否则 turn 2 会重复抽取 turn 1
+  的候选。
+- AG-UI 双 finish 风险:one_shot 流中 `TURN_COMPLETED` 与
+  `SESSION_COMPLETED` 都会映射 `RUN_FINISHED`;投影器用
+  `turn_finished` 状态位抑制第二个 finish,并用它在新人类消息时
+  重新发出 `RUN_STARTED`。
+- 物化覆盖缺口可精确判定:limit+1 溢出行的 sequence 即"最新被丢弃
+  消息";当 active Capsule 的 source range 盖不住它时 fail closed
+  (先 compaction 再重新物化),否则记录显式 omission。
+- 本地 HTTP 执行路径的会话流因终态化多写一个 `TURN_COMPLETED`
+  而整体 +1 序列;`http_app` 的 current_sequence 期望已同步更新。
+
+
 ## CTX-INHERIT-CLOUD-01 - 2026-08-23
 
 - `SubagentDelegationRequest.context_mode` 原先只是持久合同字段，Durable Child

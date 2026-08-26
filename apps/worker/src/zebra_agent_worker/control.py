@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from agent_core.application import current_turn
 from agent_core.application.session_projection import apply_event as apply_session_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -28,6 +29,28 @@ from zebra_agent_worker.recovery import (
     SessionRecoveryService,
 )
 from zebra_agent_worker.runtime_factory import build_runtime
+
+# Control-plane admission includes AWAITING_TURN: a finished conversation
+# Turn must still be cancellable/suspendable to establish hard boundaries
+# (ADR-026 §2).
+_CANCELLABLE_STATUSES = frozenset(
+    {
+        SessionStatus.READY,
+        SessionStatus.RUNNING,
+        SessionStatus.WAITING_APPROVAL,
+        SessionStatus.WAITING_INPUT,
+        SessionStatus.AWAITING_TURN,
+        SessionStatus.SUSPENDED,
+    }
+)
+_SUSPENDABLE_STATUSES = frozenset(
+    {
+        SessionStatus.READY,
+        SessionStatus.RUNNING,
+        SessionStatus.WAITING_APPROVAL,
+        SessionStatus.AWAITING_TURN,
+    }
+)
 
 
 class SessionControlError(ValueError):
@@ -79,11 +102,7 @@ class SessionControlService:
         suspended_at: datetime | None = None,
     ) -> SuspendedSession:
         recovery = self._recover(session_id)
-        if recovery.session.status not in {
-            SessionStatus.READY,
-            SessionStatus.RUNNING,
-            SessionStatus.WAITING_APPROVAL,
-        }:
+        if recovery.session.status not in _SUSPENDABLE_STATUSES:
             raise SessionControlError("session cannot be suspended from its current state")
         if recovery.workspace.status is WorkspaceStatus.SUSPENDED:
             raise SessionControlError("workspace is already suspended")
@@ -170,13 +189,7 @@ class SessionControlService:
         cancelled_at: datetime | None = None,
     ) -> CancelledSession:
         recovery = self._recover(session_id)
-        if recovery.session.status not in {
-            SessionStatus.READY,
-            SessionStatus.RUNNING,
-            SessionStatus.WAITING_APPROVAL,
-            SessionStatus.WAITING_INPUT,
-            SessionStatus.SUSPENDED,
-        }:
+        if recovery.session.status not in _CANCELLABLE_STATUSES:
             raise SessionControlError("session cannot be cancelled from its current state")
 
         try:
@@ -193,22 +206,37 @@ class SessionControlService:
 
         for _ in range(64):
             recovery = self._recover(session_id)
-            if recovery.session.status not in {
-                SessionStatus.READY,
-                SessionStatus.RUNNING,
-                SessionStatus.WAITING_APPROVAL,
-                SessionStatus.WAITING_INPUT,
-                SessionStatus.SUSPENDED,
-            }:
+            if recovery.session.status not in _CANCELLABLE_STATUSES:
                 raise SessionControlError("session cannot be cancelled from its current state")
-            event = SessionEvent.create(
-                session_id=session_id,
-                sequence=recovery.session.current_sequence + 1,
-                event_type=EventType.SESSION_CANCELLED,
-                actor=EventActor.SYSTEM,
-                created_at=cancelled_at or datetime.now(UTC),
-            )
+            open_turn = current_turn(self._event_store.list_for_session(session_id))
+            next_sequence = recovery.session.current_sequence
+            turn_cancel_event: SessionEvent | None = None
             try:
+                if open_turn is not None:
+                    # Close the executing Turn first so the durable stream
+                    # records which interaction round was cancelled.
+                    turn_cancel_event = SessionEvent.create(
+                        session_id=session_id,
+                        sequence=next_sequence + 1,
+                        event_type=EventType.TURN_CANCELLED,
+                        actor=EventActor.SYSTEM,
+                        payload={
+                            "turn_id": open_turn.turn_id,
+                            "turn_index": open_turn.turn_index,
+                            "reason": "session_cancelled",
+                        },
+                        idempotency_key=f"turn-cancel:{open_turn.turn_id}",
+                        created_at=cancelled_at or datetime.now(UTC),
+                    )
+                    self._event_store.append(turn_cancel_event)
+                    next_sequence += 1
+                event = SessionEvent.create(
+                    session_id=session_id,
+                    sequence=next_sequence + 1,
+                    event_type=EventType.SESSION_CANCELLED,
+                    actor=EventActor.SYSTEM,
+                    created_at=cancelled_at or datetime.now(UTC),
+                )
                 self._event_store.append(event)
                 break
             except ValueError:
@@ -218,8 +246,13 @@ class SessionControlService:
             raise SessionControlError(
                 "session cancellation could not win event sequence contention"
             )
-        updated_session = apply_session_event(recovery.session, event)
-        updated_workspace = apply_workspace_event(recovery.workspace, event)
+        base_session = recovery.session
+        base_workspace = recovery.workspace
+        if turn_cancel_event is not None:
+            base_session = apply_session_event(base_session, turn_cancel_event)
+            base_workspace = apply_workspace_event(base_workspace, turn_cancel_event)
+        updated_session = apply_session_event(base_session, event)
+        updated_workspace = apply_workspace_event(base_workspace, event)
         self._projection_store.save_session(updated_session)
         self._workspace_store.save_workspace(updated_workspace)
         return CancelledSession(event=event, workspace=updated_workspace)

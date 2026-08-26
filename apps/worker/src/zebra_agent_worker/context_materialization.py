@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 
+from agent_core.application.turn_projection import is_human_message
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.context_materialization import (
     ContextMaterialization,
@@ -156,12 +157,7 @@ def _mode(events: list[SessionEvent]) -> ContextMaterializationMode:
         for event in events
     ):
         return ContextMaterializationMode.RECOVERY
-    user_messages = sum(
-        event.event_type is EventType.USER_MESSAGE_RECEIVED
-        and event.payload.get("actor_kind") != "automation"
-        and event.payload.get("source") != "session_handoff"
-        for event in events
-    )
+    user_messages = sum(is_human_message(event) for event in events)
     return (
         ContextMaterializationMode.CONTINUE
         if user_messages > 1

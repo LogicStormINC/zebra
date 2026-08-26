@@ -17,6 +17,7 @@ from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.domain.turns import InteractionMode
 from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.ports import ArtifactPayloadReadPort
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
@@ -44,6 +45,7 @@ class RecoveredTask:
     definition_snapshot: AgentDefinitionSnapshot | None
     client_state: RuntimeEvidenceInput | None = None
     delegated_context: DelegatedContextSnapshot | None = None
+    interaction_mode: InteractionMode = InteractionMode.ONE_SHOT
 
 
 def recover_task(
@@ -105,6 +107,7 @@ def recover_task(
         host_context=_host_context(task_payload.get("host_context")),
         definition_snapshot=definition_snapshot,
         delegated_context=_delegated_context(task_payload.get("delegated_context")),
+        interaction_mode=_interaction_mode(task_payload.get("interaction_mode")),
         runtime_evidence=(
             *_context_capsule_evidence(events, active_capsule=active_capsule),
             *((handoff_evidence,) if handoff_evidence is not None else ()),
@@ -112,6 +115,17 @@ def recover_task(
         ),
         client_state=client_state_evidence,
     )
+
+
+def _interaction_mode(value: object) -> InteractionMode:
+    if value is None:
+        return InteractionMode.ONE_SHOT
+    if not isinstance(value, str):
+        raise ValueError("queued session interaction_mode must be a string")
+    try:
+        return InteractionMode(value)
+    except ValueError as exc:
+        raise ValueError(f"queued session interaction_mode is invalid: {exc}") from exc
 
 
 def _definition_snapshot(value: object) -> AgentDefinitionSnapshot | None:

@@ -7,6 +7,7 @@ from agent_core.ports.event_store import EventStorePort
 
 from agent_storage.database import SQLiteDatabase
 from agent_storage.event_rows import (
+    SessionEventSequenceConflictError,
     deserialize_event_row,
     ensure_idempotent_event_retry,
     serialize_event_payload,
@@ -57,7 +58,25 @@ class SQLiteEventStore(EventStorePort):
                 existing_event = self._find_existing_idempotent_event(connection, event)
                 if existing_event is not None:
                     return ensure_idempotent_event_retry(existing_event, event)
-                raise ValueError("duplicate or conflicting session event") from exc
+                taken = connection.execute(
+                    """
+                    SELECT event_id FROM session_events
+                    WHERE session_id = ? AND sequence = ?
+                    """,
+                    (str(event.session_id), event.sequence),
+                ).fetchone()
+                if taken is None:
+                    raise ValueError("duplicate or conflicting session event") from exc
+                if str(taken["event_id"]) == str(event.event_id):
+                    # Same event id replayed (same or different content):
+                    # an identity conflict, NEVER a retriable sequence race.
+                    raise ValueError(
+                        "session event id replayed with a conflicting payload"
+                    ) from exc
+                # A DIFFERENT event already took the sequence: the lost CAS.
+                raise SessionEventSequenceConflictError(
+                    "session event sequence already taken"
+                ) from exc
         return event
 
     def list_for_session(self, session_id: SessionId) -> list[SessionEvent]:

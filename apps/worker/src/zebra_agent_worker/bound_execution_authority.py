@@ -79,9 +79,7 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
                     "agent_definition_snapshot_digest": (
                         self.binding.agent_capability_ceiling.definition_snapshot_digest
                     ),
-                    "capability_ceiling": tuple(
-                        sorted(self.binding.effective_capabilities)
-                    ),
+                    "capability_ceiling": tuple(sorted(self.binding.effective_capabilities)),
                 }
             ),
             policy_ref=self.policy_ref,
@@ -140,9 +138,7 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
             expires_at=replacement.expires_at,
         )
 
-    def _grant(
-        self, *, issued_at: datetime, expires_at: datetime
-    ) -> ExternalAuthorityGrant:
+    def _grant(self, *, issued_at: datetime, expires_at: datetime) -> ExternalAuthorityGrant:
         return ExternalAuthorityGrant(
             scope=self.scope,
             subject=self.subject,
@@ -174,9 +170,7 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
             )
         expiry = host.grant_expires_at
         if expiry is not None and validated_at >= expiry:
-            raise ExecutionAuthorityResolutionError(
-                "bound Host grant has expired; failing closed"
-            )
+            raise ExecutionAuthorityResolutionError("bound Host grant has expired; failing closed")
 
 
 def load_bound_binding(

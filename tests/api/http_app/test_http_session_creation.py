@@ -156,7 +156,9 @@ def test_http_app_executes_session_resume(tmp_path: Path, monkeypatch) -> None:
         "executed": True,
         "worker_id": "api-worker",
         "status": "completed",
-        "current_sequence": 7,
+        # ADR-026: finalization now writes TURN_COMPLETED before the
+        # compatible SESSION_COMPLETED, so the stream grew by one event.
+        "current_sequence": 8,
         "assistant_message": "HTTP resume complete.",
         "trace": [
             {

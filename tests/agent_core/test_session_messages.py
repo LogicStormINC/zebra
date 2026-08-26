@@ -28,7 +28,10 @@ def test_session_message_append_service_builds_user_message_event() -> None:
     assert event.sequence == 3
     assert event.event_type is EventType.USER_MESSAGE_RECEIVED
     assert event.actor is EventActor.USER
-    assert event.payload == {"content": "Please continue from the latest state."}
+    assert event.payload["content"] == "Please continue from the latest state."
+    assert event.payload["origin"] == "human"
+    assert event.payload["turn_index"] == 0
+    assert event.payload["turn_id"]
 
 
 def test_session_message_append_service_rejects_terminal_session() -> None:

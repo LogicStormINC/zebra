@@ -8,8 +8,10 @@ from ag_ui.core import (
     Interrupt,
     MessagesSnapshotEvent,
     RunFinishedEvent,
-    RunFinishedInterruptOutcome,
     StateSnapshotEvent,
+)
+from ag_ui.core import (
+    RunFinishedInterruptOutcome as RunFinishedInterruptOutcome,
 )
 from agent_core.domain.events import EventType, SessionEvent
 

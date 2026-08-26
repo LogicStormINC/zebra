@@ -7,7 +7,12 @@ from pathlib import Path
 from typing import Protocol
 from uuid import UUID
 
-from agent_core.application import attachment_refs_from_event
+from agent_core.application import (
+    attachment_refs_from_event,
+    current_turn,
+    interaction_mode_of,
+    project_turns,
+)
 from agent_core.domain.agent_tasks import (
     ContextLifecycleController,
     ContextLifecycleDecision,
@@ -18,7 +23,8 @@ from agent_core.domain.events import EventType
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.session_handoff import HandoffActorKind
-from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.ports import EventStorePort
 from agent_core.ports.agent_tasks import TaskEvent
 from agent_storage import ControlPlaneStores
 
@@ -79,6 +85,7 @@ class TaskReadApi:
             current_sequence=task.current_sequence,
             status=task.status.value,
         )
+        _update_turn_fields(body, session, events_store=self.stores.events)
         events = [item.event for item in self.stores.tasks.read_events(parsed, -1)]
         attachments = [
             ref.to_mapping() for event in events for ref in attachment_refs_from_event(event)
@@ -109,6 +116,16 @@ class TaskReadApi:
                 session_id=str(task.task_id),
                 current_sequence=task.current_sequence,
                 status=task.status.value,
+                task_status=(
+                    task.status.value
+                    if task.status
+                    in {
+                        SessionStatus.COMPLETED,
+                        SessionStatus.FAILED,
+                        SessionStatus.CANCELLED,
+                    }
+                    else "open"
+                ),
             )
             items.append(body)
         return ApiResponse(
@@ -159,6 +176,31 @@ class TaskReadApi:
                 "segments": [item.model_dump(mode="json") for item in store.segments(parsed)],
             },
         )
+
+
+def _update_turn_fields(
+    body: dict[str, object],
+    session: Session,
+    *,
+    events_store: EventStorePort,
+) -> None:
+    """Project the ADR-026 Task/Turn/Segment read fields onto a summary."""
+
+    events = list(events_store.list_for_session(session.session_id))
+    terminal = session.status in {
+        SessionStatus.COMPLETED,
+        SessionStatus.FAILED,
+        SessionStatus.CANCELLED,
+    }
+    body["task_status"] = session.status.value if terminal else "open"
+    body["active_segment_id"] = str(session.session_id)
+    body["interaction_mode"] = interaction_mode_of(events).value
+    records = project_turns(events)
+    latest = records[-1] if records else None
+    active = current_turn(events)
+    visible = active if active is not None else latest
+    body["turn_id"] = visible.turn_id if visible is not None else None
+    body["current_turn_status"] = visible.status.value if visible is not None else None
 
 
 def parse_task_id(value: str) -> TaskId | ApiResponse:

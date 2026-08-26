@@ -51,6 +51,7 @@ def build_handoff_events(
             {
                 "content": request.create_request.stage_prompt,
                 "source": "session_handoff",
+                "origin": "session_handoff",
                 "handoff_id": str(operation.handoff_id),
                 "principal_identity_hash": request.create_request.principal_identity_hash,
                 "actor_kind": request.create_request.actor_kind.value,

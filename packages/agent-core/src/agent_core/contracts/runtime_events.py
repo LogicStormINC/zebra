@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator, model_validator
 
 
 class RuntimeProvisionedPayload(BaseModel):
@@ -59,3 +59,19 @@ class RuntimeProvisionedPayload(BaseModel):
         except ValueError as exc:
             raise ValueError("hard runtime image digest must be hexadecimal") from exc
         return self
+
+
+class RuntimeCleanupFailedPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    target: Literal["runtime", "tool_gateway"]
+    error_type: str
+    attempt_number: StrictInt = Field(ge=1)
+
+    @field_validator("error_type")
+    @classmethod
+    def ensure_error_type(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("runtime cleanup error_type must not be blank")
+        return normalized

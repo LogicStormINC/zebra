@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from agent_core.application import (
-    SessionMessageAppendCommand,
-    SessionMessageAppendService,
     attach_refs_to_user_event,
 )
 from agent_core.application.agent_definitions import PublisherGrantPort
@@ -71,6 +69,11 @@ from zebra_agent_api.session_binding import (
 )
 from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
 from zebra_agent_api.session_identity_read import _parse_session_id as parse_session_id
+from zebra_agent_api.session_message_submission import (
+    append_session_message_event,
+    build_session_message_event,
+    message_sequence_conflict,
+)
 from zebra_agent_api.session_payloads import (
     CreateSessionPayload,
     parse_append_session_message_payload,
@@ -150,18 +153,14 @@ class ZebraAgentApi(
             from agent_core.domain.workspace_control import WorkspaceId as _WorkspaceId
 
             if self.workspace_control_store is None:
-                return bad_request(
-                    "workspace_source requires the cloud workspace control plane"
-                )
+                return bad_request("workspace_source requires the cloud workspace control plane")
             workspace_id = _WorkspaceId(_uuid4())
             self.workspace_control_store.create_pending(
                 workspace_source,
                 workspace_id=workspace_id,
                 quota_bytes=256 * 1024 * 1024,
                 owner_session_id=None,
-                idempotency_key=(
-                    f"session-workspace:{idempotency_key or workspace_id}"
-                ),
+                idempotency_key=(f"session-workspace:{idempotency_key or workspace_id}"),
             )
             parsed["workspace"] = f"workspace://{workspace_id}"
         if trusted_local_mode_enabled(self.settings):
@@ -203,10 +202,14 @@ class ZebraAgentApi(
         if isinstance(admission, ApiResponse):
             return admission
         admission_kwargs: dict[str, str] = admission  # type: ignore[assignment]
+
         def _queued() -> ApiResponse:
             return create_queued_session(
-                self.stores, parsed, host_context=host_context,
-                definition_snapshot=definition_snapshot, **admission_kwargs,
+                self.stores,
+                parsed,
+                host_context=host_context,
+                definition_snapshot=definition_snapshot,
+                **admission_kwargs,
             )
 
         response = (
@@ -217,10 +220,15 @@ class ZebraAgentApi(
             else _queued()
         )
         if response.status_code == 201 and host_context is not None:
-            freeze_binding_for_response(response, host_context,
-                definition_snapshot, deployment=self.settings.deployment,
+            freeze_binding_for_response(
+                response,
+                host_context,
+                definition_snapshot,
+                deployment=self.settings.deployment,
                 storage_authority=self.settings.storage_authority,
-                database_url=self.settings.database_url, stores=self.stores)
+                database_url=self.settings.database_url,
+                stores=self.stores,
+            )
         result = _post_admission_idempotency(
             self.settings, self.stores, idempotency_key, response, payload
         )
@@ -261,34 +269,21 @@ class ZebraAgentApi(
                 worker_id=parsed["worker_id"],
                 lease_ttl_seconds=parsed["lease_ttl_seconds"],
             )
-        except SessionRecoveryError:
-            return ApiResponse(
-                status_code=404,
-                body={"session_id": session_id, "status": "not_found"},
+        except (
+            SessionRecoveryError,
+            SessionResumeError,
+            LeaseConflictError,
+            WorkerExecutionError,
+            ValueError,
+        ) as error:
+            from zebra_agent_api.local_execution import (  # noqa: PLC0415
+                map_execution_error,
             )
-        except SessionResumeError:
-            return conflict(
-                session_id=session_id,
-                status="not_resumable",
-                reason="cannot_resume_terminal_session",
-            )
-        except LeaseConflictError:
-            return conflict(
-                session_id=session_id,
-                status="lease_conflict",
-                reason="session_already_leased",
-            )
-        except WorkerExecutionError as error:
-            return conflict(
-                session_id=session_id,
-                status="execution_error",
-                reason=str(error),
-            )
-        except ValueError as error:
-            return service_unavailable(
-                status="model_gateway_unavailable",
-                reason=str(error),
-            )
+
+            mapped = map_execution_error(session_id, error)
+            if mapped is not None:
+                return mapped
+            raise
         return ApiResponse(
             status_code=200,
             body={
@@ -335,13 +330,11 @@ class ZebraAgentApi(
                 body={"session_id": session_id, "status": "not_found"},
             )
         try:
-            event = SessionMessageAppendService().build_event(
+            event = build_session_message_event(
+                event_store=self.stores.events,
                 session=session,
-                next_sequence=session.current_sequence + 1,
-                command=SessionMessageAppendCommand(
-                    content=parsed["content"],
-                    clarification_id=parsed["clarification_id"],
-                ),
+                content=parsed["content"],
+                clarification_id=parsed["clarification_id"],
             )
         except ValueError as exc:
             return conflict(
@@ -361,7 +354,10 @@ class ZebraAgentApi(
             created_at=event.created_at,
         )
         event = attach_refs_to_user_event(event, attachment_refs)
-        self.stores.events.append(event)
+        stored = append_session_message_event(self.stores.events, event)
+        if stored is None:
+            return message_sequence_conflict(session_id)
+        event = stored
         updated_session = projection_store.save_session(apply_event(session, event))
         body: dict[str, object] = {
             "session_id": session_id,
@@ -479,6 +475,7 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
+
 
 def _model_provider_settings(settings: ZebraAgentSettings) -> ModelProviderSettings:
     model = settings.model

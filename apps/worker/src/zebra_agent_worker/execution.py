@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -32,26 +32,40 @@ from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.client_effect_resume import recover_client_effect_wakeup
 from zebra_agent_worker.context_materialization import prepare_worker_context
 from zebra_agent_worker.continuation_dispatch import run_continuation
-from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
-from zebra_agent_worker.execution_context import harness_task_for_recovered
-from zebra_agent_worker.execution_errors import error_metadata, exception_attempt_result
-from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
-from zebra_agent_worker.execution_finalization import WorkerExecutionError
-from zebra_agent_worker.execution_preflight import prepare_execution_preflight
+from zebra_agent_worker.execution_context import (
+    build_worker_orchestrator,
+    harness_task_for_recovered,
+)
+from zebra_agent_worker.execution_errors import (
+    error_metadata,
+    exception_attempt_result,
+    sequence_race_guard,
+)
+from zebra_agent_worker.execution_events import (
+    DurableHarnessEventRecorder,
+    ExecutionInterrupted,
+)
+from zebra_agent_worker.execution_finalization import ExecutedSession, WorkerExecutionError
+from zebra_agent_worker.execution_preflight import (
+    _superseded_by_control_event,
+    prepare_execution_preflight,
+)
+from zebra_agent_worker.execution_recovery import (
+    execute_session_with_lease,
+    persist_runtime_cleanup_failure,
+    recover_execution_inputs,
+)
 from zebra_agent_worker.execution_storage import resolve_execution_storage
-from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
-from zebra_agent_worker.task_recovery import recover_task
 from zebra_agent_worker.tool_gateway_runtime import build_worker_tool_gateway
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
-from zebra_agent_worker.workspace_resolution import apply_workspace_resolver
 
 
 class SessionExecutionService:
@@ -168,29 +182,15 @@ class SessionExecutionService:
         executed_at: datetime | None = None,
         lease_ttl_seconds: int = 30,
     ) -> execution_finalization.ExecutedSession:
-        started_at = executed_at or datetime.now(UTC)
-        claimed = self._claim_service.claim_session(
+        return execute_session_with_lease(
+            self,
             session_id,
             worker_id=worker_id,
-            claimed_at=started_at,
+            executed_at=executed_at,
             lease_ttl_seconds=lease_ttl_seconds,
         )
-        with LeaseHeartbeat(
-            self._claim_service,
-            claimed.lease,
-            lease_ttl_seconds=lease_ttl_seconds,
-        ) as heartbeat:
-            resumed = self._resume_service.require_resumable(
-                claimed,
-                release_on_failure=False,
-            )
-            heartbeat.require_owned()
-            return self._execute_claimed_session(
-                resumed.claimed,
-                started_at=started_at,
-                ownership_check=heartbeat.require_owned,
-            )
-    def _execute_claimed_session(
+
+    def _execute_claimed_session_once(
         self,
         claimed: ClaimedSession,
         *,
@@ -199,46 +199,28 @@ class SessionExecutionService:
     ) -> execution_finalization.ExecutedSession:
         session_id = claimed.lease.session_id
         cloud_artifacts = provider_runtime.artifact_for(self._cloud_artifact_factory, session_id)
-        cloud_continuation = provider_runtime.cloud_for_session(
-            self._cloud_provider_continuation_factory, session_id
-        )
-        claimed = restore_suspended_session_claim(
-            claimed,
-            cloud_deployment=self._settings.deployment == "cloud",
-            control_service=self._control_service,
-            recovery_service=self._recovery_service,
-            started_at=started_at,
-            event_store=self._event_store,
-        )
-        recovered_handoff = handoff.recover_worker_handoff(
-            self._handoff_gate,
-            session_id,
-            fence=claimed.lease.fence,
-            recovered_at=started_at,
-            release=lambda: None,
-        )
-        session_events = self._event_store.list_for_session(session_id)
-        active_context = self._context_lifecycle_store.get_active_capsule(session_id)
-        provider_continuation = provider_runtime.resolve_provider_continuation(
-            cloud_continuation,
-            session_events,
-            self._provider_continuation_store,
-        )
-        try:
-            task = recover_task(
-                session_events,
-                workspace=claimed.recovery.workspace,
-                fallback_title=claimed.recovery.session.title,
-                attachment_reader=self._artifact_payload_reader,
-                active_capsule=active_context.capsule if active_context else None,
-                handoff_evidence=(
-                    None if recovered_handoff is None else recovered_handoff.runtime_evidence
-                ),
+        with sequence_race_guard("execution inputs lost a sequence race"):
+            inputs = recover_execution_inputs(
+                claimed=claimed,
+                session_id=session_id,
+                started_at=started_at,
+                cloud_deployment=self._settings.deployment == "cloud",
+                cloud_provider_continuation_factory=(self._cloud_provider_continuation_factory),
+                provider_continuation_store=self._provider_continuation_store,
+                control_service=self._control_service,
+                recovery_service=self._recovery_service,
+                event_store=self._event_store,
+                context_lifecycle_store=self._context_lifecycle_store,
+                handoff_gate=self._handoff_gate,
+                artifact_payload_reader=self._artifact_payload_reader,
+                workspace_resolver=self._workspace_resolver,
             )
-        except (FileNotFoundError, ValueError) as exc:
-            raise WorkerExecutionError(str(exc)) from exc
-        if self._workspace_resolver is not None:
-            task = apply_workspace_resolver(task, self._workspace_resolver, session_id)
+        claimed = inputs.claimed
+        session_events = inputs.session_events
+        provider_continuation = inputs.provider_continuation
+        cloud_continuation = inputs.cloud_continuation
+        task, recovered_handoff = inputs.task, inputs.recovered_handoff
+        active_capsule = inputs.active_capsule
         trusted_local = trusted_local_mode_enabled(self._settings)
         effective_network_profile = resolve_effective_network_profile(
             task.network_profile,
@@ -252,6 +234,8 @@ class SessionExecutionService:
             has_local_artifact_store=self._artifact_payload_store is not None,
             attempt_number=1,
             started_at=started_at,
+            events=session_events,
+            event_store=self._event_store,
         )
         if preflight_failure is not None:
             return preflight_failure
@@ -271,12 +255,14 @@ class SessionExecutionService:
                 claimed=claimed,
                 events=session_events,
                 task=task,
-                active_capsule_id=(active_context.capsule.capsule_id if active_context else None),
+                active_capsule_id=(active_capsule.capsule_id if active_capsule else None),
                 as_of=started_at,
             )
             claimed, session_events = prepared_context.claimed, prepared_context.events
             task_binding = prepared_context.binding
             materialized_context = prepared_context.materialization
+        except ExecutionInterrupted:
+            return _superseded_by_control_event(authority_recorder)
         except (RuntimeError, ValueError) as exc:
             raise WorkerExecutionError(str(exc)) from exc
         try:
@@ -353,142 +339,161 @@ class SessionExecutionService:
                 ownership_check=ownership_check,
                 cloud_artifacts=cloud_artifacts,
             )
-        except Exception as exc:
-            cleanup_error = None
-            if runtime_handle is not None:
-                try:
-                    runtime.destroy(runtime_handle)
-                except Exception as error:
-                    cleanup_error = error
+        except ExecutionInterrupted:
+            cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
             if cleanup_error is not None:
+                persist_runtime_cleanup_failure(
+                    recorder=authority_recorder,
+                    error=cleanup_error,
+                    target="runtime",
+                    created_at=started_at,
+                )
+            return _superseded_by_control_event(authority_recorder)
+        except Exception as exc:
+            cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
+            if cleanup_error is not None:
+                persist_runtime_cleanup_failure(
+                    recorder=authority_recorder,
+                    error=cleanup_error,
+                    target="runtime",
+                    created_at=started_at,
+                )
                 raise WorkerExecutionError(
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
                 ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
-        context_compiler = LocalContextCompiler()
-        context = core_harness.HarnessContext(
-            task=harness_task_for_recovered(
-                task,
-                network_profile=effective_network_profile,
-                tool_gateway=tool_gateway,
-                memory_store=self._memory_store,
-                materialization=materialized_context,
-            ),
-            session=claimed.recovery.session,
-            attempt=core_harness.HarnessAttempt(number=1, started_at=started_at),
-        )
-        claimed, continuations = execution_continuations.recover_and_start_continuations(
-            claimed,
-            session_events=session_events,
-            event_store=self._event_store,
-            recovery_service=self._recovery_service,
-            started_at=started_at,
-            recorder=authority_recorder,
-            cleanup=lambda: runtime_authority.close_tool_gateway(tool_gateway),
-            child_result_verifier=execution_continuations.build_child_result_verifier(
-                self._delegation_store, self._projection_store
-            ),
-        )
-        continuation = continuations.approved
-        clarification = continuations.clarification
-        child_wakeup = continuations.child_wakeup
-        context = core_harness.HarnessContext(
-            task=context.task,
-            session=claimed.recovery.session,
-            attempt=context.attempt,
-        )
-        recorder = self._projection_recorder_factory.build(
-            session=claimed.recovery.session,
-            workspace=claimed.recovery.workspace,
-            lease=claimed.lease,
-            ownership_check=ownership_check,
-        )
-        effect_recorder.append(recorder)
-        if continuation is None and clarification is None and child_wakeup is None:
-            recorder.append(
-                EventType.HARNESS_ATTEMPT_STARTED,
-                EventActor.HARNESS,
-                {"attempt_number": 1},
-                created_at=started_at,
-            )
-        context = core_harness.HarnessContext(
-            task=context.task,
-            session=recorder.session,
-            attempt=context.attempt,
-        )
-        persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
-            cloud_continuation,
-            recorder=recorder,
-            event_store=self._event_store,
-            lifecycle_store=self._context_lifecycle_store,
-            cloud_artifacts=cloud_artifacts,
-            local_store=self._provider_continuation_store,
-            session_id=session_id,
-        )
-        model_step = core_harness.HarnessModelStep(
-            context_compiler=context_compiler,
-            available_tools=tool_gateway.model_tools,
-            conversation_compactor=context_compiler,
-            event_sink=persist_event,
-            continuation_sink=prepare_continuation,
-            provider_continuation=provider_continuation,
-            attempt_number=1,
-        )
-        orchestrator = core_harness.SingleAttemptOrchestrator(
-            model_gateway,
-            LocalPolicyEngine(
-                profile=PolicyProfile(task.policy_profile),
-                network_profile=effective_network_profile,
-                web_search_endpoint=self._settings.web_search_endpoint,
-                trusted_local=trusted_local,
-            ),
-            tool_gateway,
-            model_step=model_step,
-            synthesize_tool_results=True,
-            parallel_safe_tools=tool_gateway.parallel_safe_tools,
-            parallel_batch_limits=tool_gateway.parallel_batch_limits,
-            max_parallel_tool_calls=3,
-            tool_call_resolver=tool_gateway.resolve_model_tool_calls,
-            event_sink=persist_event,
-        )
-        client_wakeup = recover_client_effect_wakeup(session_events)
-        try:
-            attempt_result = run_continuation(
-                orchestrator,
-                context,
-                continuation=continuation,
-                clarification=clarification,
-                child_wakeup=child_wakeup,
-                client_effect=client_wakeup,
-            )
-        except Exception as exc:
-            attempt_result = exception_attempt_result(
-                exc, error_metadata(exc, clarification, continuation)
-            )
-        finally:
+        gateway_released = False
+        cleanup_recorder = authority_recorder
+        def release_gateway() -> Exception | None:
+            nonlocal gateway_released
+            if gateway_released:
+                return None
+            gateway_released = True
             cleanup_error = runtime_authority.close_tool_gateway(tool_gateway)
-        if cleanup_error is not None:
-            attempt_result = runtime_authority.runtime_cleanup_failure_result(
-                cleanup_error, attempt_result
+            if cleanup_error is not None:
+                persist_runtime_cleanup_failure(
+                    recorder=cleanup_recorder,
+                    error=cleanup_error,
+                    target="tool_gateway",
+                    created_at=started_at,
+                )
+            return cleanup_error
+
+        try:
+            context_compiler = LocalContextCompiler()
+            context = core_harness.HarnessContext(
+                task=harness_task_for_recovered(
+                    task,
+                    network_profile=effective_network_profile,
+                    tool_gateway=tool_gateway,
+                    memory_store=self._memory_store,
+                    materialization=materialized_context,
+                ),
+                session=claimed.recovery.session,
+                attempt=core_harness.HarnessAttempt(number=1, started_at=started_at),
             )
-        emitted_events = execution_finalization.finalize_execution(
-            recorder=recorder,
-            attempt_result=attempt_result,
-            memory_extraction_service=self._memory_extraction_service,
-            memory_promotion_service=self._memory_promotion_service,
-            title_service=SessionTitleService(model_gateway),
-            event_store=self._event_store,
-            cloud_memory_store=self._cloud_memory_store,
-            deployment_namespace=self._deployment_namespace,
-            projection_store=self._projection_store,
-            workspace_store=self._workspace_store,
-            started_at=started_at,
-        )
-        final_session = self._projection_store.get_session(session_id)
-        if final_session is None:
-            raise WorkerExecutionError("session projection missing after worker execution")
-        return execution_finalization.ExecutedSession(
-            session=final_session,
-            events=emitted_events,
-            attempt_result=attempt_result,
-        )
+            with sequence_race_guard("continuation start lost a sequence race"):
+                claimed, continuations = execution_continuations.recover_and_start_continuations(
+                    claimed,
+                    session_events=session_events,
+                    event_store=self._event_store,
+                    recovery_service=self._recovery_service,
+                    started_at=started_at,
+                    recorder=authority_recorder,
+                    cleanup=release_gateway,
+                    child_result_verifier=execution_continuations.build_child_result_verifier(
+                        self._delegation_store, self._projection_store
+                    ),
+                )
+            continuation = continuations.approved
+            clarification = continuations.clarification
+            child_wakeup = continuations.child_wakeup
+            context = core_harness.HarnessContext(
+                task=context.task,
+                session=claimed.recovery.session,
+                attempt=context.attempt,
+            )
+            recorder = self._projection_recorder_factory.build(
+                session=claimed.recovery.session,
+                workspace=claimed.recovery.workspace,
+                lease=claimed.lease,
+                ownership_check=ownership_check,
+            )
+            cleanup_recorder = recorder
+            effect_recorder.append(recorder)
+            if continuation is None and clarification is None and child_wakeup is None:
+                recorder.append(
+                    EventType.HARNESS_ATTEMPT_STARTED,
+                    EventActor.HARNESS,
+                    {"attempt_number": 1},
+                    created_at=started_at,
+                )
+            context = core_harness.HarnessContext(
+                task=context.task,
+                session=recorder.session,
+                attempt=context.attempt,
+            )
+            orchestrator = build_worker_orchestrator(
+                model_gateway=model_gateway,
+                tool_gateway=tool_gateway,
+                policy_engine=LocalPolicyEngine(
+                    profile=PolicyProfile(task.policy_profile),
+                    network_profile=effective_network_profile,
+                    web_search_endpoint=self._settings.web_search_endpoint,
+                    trusted_local=trusted_local,
+                ),
+                context_compiler=context_compiler,
+                cloud_continuation=cloud_continuation,
+                recorder=recorder,
+                event_store=self._event_store,
+                lifecycle_store=self._context_lifecycle_store,
+                cloud_artifacts=cloud_artifacts,
+                local_continuation_store=self._provider_continuation_store,
+                session_id=session_id,
+                provider_continuation=provider_continuation,
+            )
+            client_wakeup = recover_client_effect_wakeup(session_events)
+            try:
+                attempt_result = run_continuation(
+                    orchestrator,
+                    context,
+                    continuation=continuation,
+                    clarification=clarification,
+                    child_wakeup=child_wakeup,
+                    client_effect=client_wakeup,
+                )
+            except Exception as exc:
+                attempt_result = exception_attempt_result(
+                    exc, error_metadata(exc, clarification, continuation)
+                )
+            finally:
+                cleanup_error = release_gateway()
+            if cleanup_error is not None:
+                attempt_result = runtime_authority.runtime_cleanup_failure_result(
+                    cleanup_error, attempt_result
+                )
+            emitted_events = execution_finalization.finalize_execution(
+                recorder=recorder,
+                attempt_result=attempt_result,
+                memory_extraction_service=self._memory_extraction_service,
+                memory_promotion_service=self._memory_promotion_service,
+                title_service=SessionTitleService(model_gateway),
+                event_store=self._event_store,
+                cloud_memory_store=self._cloud_memory_store,
+                deployment_namespace=self._deployment_namespace,
+                projection_store=self._projection_store,
+                workspace_store=self._workspace_store,
+                started_at=started_at,
+                interaction_mode=task.interaction_mode,
+            )
+            final_session = self._projection_store.get_session(session_id)
+            if final_session is None:
+                raise WorkerExecutionError("session projection missing after worker execution")
+            return ExecutedSession(final_session, emitted_events, attempt_result)
+        except ExecutionInterrupted:
+            release_gateway()
+            return _superseded_by_control_event(cleanup_recorder)
+        except BaseException as exc:
+            if (cleanup_error := release_gateway()) is not None:
+                exc.add_note(f"tool gateway cleanup failed: {type(cleanup_error).__name__}")
+            raise

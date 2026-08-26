@@ -140,10 +140,21 @@ class DurableHarnessEventRecorder:
             raise ValueError("execution event session_id does not match recorder")
         if event.sequence != self.next_sequence:
             raise ValueError("execution event sequence does not match recorder")
-        next_session = apply_event(self._session, event)
-        next_workspace = apply_workspace_event(self._workspace, event)
         if self._worker_projection_transaction is None:
-            self._event_store.append(event)
+            # Pre-validate the requested event BEFORE anything persists, so
+            # an illegal transition never pollutes the Event Store.
+            apply_event(self._session, event)
+            apply_workspace_event(self._workspace, event)
+            canonical = self._event_store.append(event)
+            if canonical.sequence <= self._session.current_sequence:
+                # An idempotent retry returned an event the projection
+                # already covers: treat it as processed — no replay, no
+                # index rebuild, no projection rollback.
+                self._events.append(canonical)
+                return canonical
+            event = canonical
+            next_session = apply_event(self._session, event)
+            next_workspace = apply_workspace_event(self._workspace, event)
             self._model_call_indexer.index_event(event)
             self._tool_run_indexer.index_event(event)
             self._session = next_session
@@ -151,6 +162,8 @@ class DurableHarnessEventRecorder:
             self._projection_store.save_session(self._session)
             self._workspace_store.save_workspace(self._workspace)
         else:
+            next_session = apply_event(self._session, event)
+            next_workspace = apply_workspace_event(self._workspace, event)
             authority = self._worker_mutation_authority
             assert authority is not None
             committed = self._worker_projection_transaction.commit_worker_event(
@@ -252,6 +265,18 @@ class DurableHarnessEventRecorder:
             self._workspace = apply_workspace_event(self._workspace, event)
         if self._session != session or self._workspace != workspace:
             raise ValueError("committed Context projections do not match Event replay")
+
+    def refresh_tail(self) -> None:
+        """Adopt externally committed events into recorder memory only.
+
+        Used after accepting a fenced receipt when later events (e.g. the
+        next human message) were already committed and projected by
+        another writer: the recorder catches up WITHOUT writing primary
+        projections again. Terminal control states are legitimate here —
+        this is recovery bookkeeping, not an execution gate.
+        """
+        self._ownership_check()
+        self._refresh_external_events()
 
     def _refresh_external_events(self) -> None:
         for event in self._event_store.read_since(

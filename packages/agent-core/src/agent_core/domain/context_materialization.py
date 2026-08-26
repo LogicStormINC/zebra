@@ -93,6 +93,10 @@ class ContextMaterialization:
     session_revision: int
     history: tuple[SessionHistoryMessage, ...] = ()
     history_truncated: bool = False
+    # When truncation dropped text messages, the newest dropped sequence:
+    # everything at or older than this boundary is uncovered unless the
+    # active Capsule's source range reaches it (ADR-026 §7).
+    truncated_before_sequence: int | None = None
     active_capsule: ContextCapsule | None = None
     memories: tuple[GovernedMemoryEntry, ...] = ()
 
@@ -101,6 +105,32 @@ class ContextMaterialization:
             raise ValueError("Context materialization Session revision is stale")
         if len(self.history) > self.request.history_limit:
             raise ValueError("Context materialization history exceeds its limit")
+        if self.truncated_before_sequence is not None and not self.history_truncated:
+            raise ValueError("truncated_before_sequence requires history_truncated")
+        if self.history_truncated and self.truncated_before_sequence is None:
+            # Truncation always has a newest-dropped message; without the
+            # boundary the prefix coverage cannot be verified (ADR-026 §7).
+            raise ValueError("history_truncated requires truncated_before_sequence")
+        if (
+            self.truncated_before_sequence is not None
+            and self.history
+            and self.truncated_before_sequence >= self.history[0].sequence
+        ):
+            raise ValueError("truncated_before_sequence must precede the kept window")
+        if self.active_capsule is not None and self.truncated_before_sequence is not None:
+            source_range = self.active_capsule.source_event_range
+            if source_range is None:
+                # A Capsule without a source range cannot prove that it
+                # covers the truncated prefix: fail closed.
+                raise ValueError(
+                    "Context materialization has an active Capsule without a "
+                    "source range covering the truncated History prefix"
+                )
+            if self.truncated_before_sequence > source_range.end_sequence:
+                raise ValueError(
+                    "Context materialization has an uncovered gap between the "
+                    "active Capsule and the kept History window"
+                )
         if any(
             previous.sequence >= current.sequence
             for previous, current in zip(self.history, self.history[1:], strict=False)

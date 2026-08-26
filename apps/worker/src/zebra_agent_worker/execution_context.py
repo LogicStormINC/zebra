@@ -7,14 +7,63 @@ from agent_context import (
     context_inputs_from_materialization,
 )
 from agent_core.domain.context_materialization import ContextMaterialization
-from agent_core.harness import HarnessTask
+from agent_core.domain.identifiers import SessionId
+from agent_core.harness import HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.ports import MemoryReadPort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 from agent_storage import list_confirmed_repo_memories
 
+import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.task_recovery import RecoveredTask
 
 CLOUD_CONTEXT_TOKEN_BUDGET = 2_048
+
+
+def build_worker_orchestrator(
+    *,
+    model_gateway: Any,
+    policy_engine: Any,
+    tool_gateway: Any,
+    context_compiler: Any,
+    cloud_continuation: Any,
+    recorder: Any,
+    event_store: Any,
+    lifecycle_store: Any,
+    cloud_artifacts: Any,
+    local_continuation_store: Any,
+    session_id: SessionId,
+    provider_continuation: Any,
+) -> SingleAttemptOrchestrator:
+    persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
+        cloud_continuation,
+        recorder=recorder,
+        event_store=event_store,
+        lifecycle_store=lifecycle_store,
+        cloud_artifacts=cloud_artifacts,
+        local_store=local_continuation_store,
+        session_id=session_id,
+    )
+    model_step = HarnessModelStep(
+        context_compiler=context_compiler,
+        available_tools=tool_gateway.model_tools,
+        conversation_compactor=context_compiler,
+        event_sink=persist_event,
+        continuation_sink=prepare_continuation,
+        provider_continuation=provider_continuation,
+        attempt_number=1,
+    )
+    return SingleAttemptOrchestrator(
+        model_gateway,
+        policy_engine,
+        tool_gateway,
+        model_step=model_step,
+        synthesize_tool_results=True,
+        parallel_safe_tools=tool_gateway.parallel_safe_tools,
+        parallel_batch_limits=tool_gateway.parallel_batch_limits,
+        max_parallel_tool_calls=3,
+        tool_call_resolver=tool_gateway.resolve_model_tool_calls,
+        event_sink=persist_event,
+    )
 
 
 def harness_task_for_recovered(

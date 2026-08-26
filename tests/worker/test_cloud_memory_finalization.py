@@ -65,6 +65,7 @@ class _MemoryStore:
         self.receipt = SimpleNamespace(
             receipt=SimpleNamespace(
                 event_ids=tuple(event.event_id for event in events),
+                event_sequences=tuple(event.sequence for event in events),
                 session_revision=events[-1].sequence,
             )
         )
@@ -289,3 +290,64 @@ def test_cloud_memory_finalization_recovers_receipt_without_retrying_commit() ->
 
     assert memory_store.committed is committed
     assert recovering.accepted == committed.events
+
+
+def test_cloud_memory_finalization_allows_a_closed_turn_side_chain() -> None:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="No memory candidate",
+            user_input="hello",
+            workspace_root="/tmp/cloud-memory-side-chain",
+        )
+    )
+    started = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=bootstrap.session.current_sequence + 1,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 1},
+    )
+    completed = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=started.sequence + 1,
+        event_type=EventType.SESSION_COMPLETED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 1, "summary": "done", "metadata": {}},
+    )
+    title = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=completed.sequence + 1,
+        event_type=EventType.SESSION_TITLE_UPDATED,
+        actor=EventActor.HARNESS,
+        payload={"title": "Already finalized"},
+    )
+    events = [*bootstrap.events, started, completed, title]
+    session = bootstrap.session
+    workspace = rebuild_workspace(list(bootstrap.events))
+    for event in (started, completed, title):
+        session = apply_session_event(session, event)
+        workspace = apply_workspace_event(workspace, event)
+    authority = WorkerMutationAuthority(
+        deployment_namespace="cloud-memory-test",
+        session_id=session.session_id,
+        lease_fence=LeaseFence(
+            control_plane_epoch=uuid4(),
+            fencing_token=1,
+            owner_instance_id="worker-a",
+        ),
+        expected_stream_revision=title.sequence,
+    )
+    recorder = _Recorder(session, workspace, authority)
+    event_store = _EventStore(events, session, workspace)
+    memory_store = _MemoryStore(event_store, recorder)
+
+    assert finalize_cloud_memory(
+        recorder=recorder,  # type: ignore[arg-type]
+        memory_store=memory_store,  # type: ignore[arg-type]
+        deployment_namespace="cloud-memory-test",
+        event_store=event_store,  # type: ignore[arg-type]
+        projection_store=_ProjectionStore(event_store),  # type: ignore[arg-type]
+        workspace_store=_WorkspaceStore(event_store),  # type: ignore[arg-type]
+        started_at=title.created_at,
+    )
+    assert memory_store.committed is None

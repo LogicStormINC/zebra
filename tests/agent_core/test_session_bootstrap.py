@@ -35,7 +35,10 @@ def test_session_bootstrap_service_builds_ready_session_events() -> None:
         EventType.USER_MESSAGE_RECEIVED,
         EventType.TASK_PREPARED,
     ]
-    assert result.events[1].payload == {"content": "Inspect the repository."}
+    assert result.events[1].payload["content"] == "Inspect the repository."
+    assert result.events[1].payload["turn_index"] == 0
+    assert result.events[1].payload["origin"] == "human"
+    assert result.events[1].payload["turn_id"]
     assert result.events[2].payload == {
         "title": "Bootstrap task",
         "user_input": "Inspect the repository.",

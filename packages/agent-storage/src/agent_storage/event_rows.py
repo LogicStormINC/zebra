@@ -10,6 +10,16 @@ class SessionEventIdempotencyConflictError(ValueError):
     """Raised when one idempotency key is reused for a different operation."""
 
 
+class SessionEventSequenceConflictError(ValueError):
+    """Raised when another event already took this (session, sequence).
+
+    This is the LOST SEQUENCE CAS — the only storage outcome callers may
+    treat as a retriable race. Every other unique/integrity violation
+    (event id reuse, cross-stream drift) keeps its generic error and must
+    fail closed.
+    """
+
+
 def serialize_event_payload(payload: dict[str, object]) -> str:
     return json.dumps(payload, sort_keys=True)
 

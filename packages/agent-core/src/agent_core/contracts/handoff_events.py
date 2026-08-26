@@ -1,5 +1,13 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictInt,
+    field_validator,
+    model_validator,
+)
 
+from agent_core.contracts.turn_events import validate_turn_identity
 from agent_core.domain.context_capsule import ContextSourceEventRange
 from agent_core.domain.session_handoff import HandoffActorKind, HandoffReason
 
@@ -17,6 +25,11 @@ class UserMessageReceivedPayload(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     trust: HandoffActorKind | None = Field(default=None, exclude_if=lambda value: value is None)
+    turn_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    turn_index: StrictInt | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None
+    )
+    origin: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @field_validator("content")
     @classmethod
@@ -24,6 +37,15 @@ class UserMessageReceivedPayload(BaseModel):
         value = value.strip()
         if not value:
             raise ValueError("content must not be blank")
+        return value
+
+    @field_validator("origin")
+    @classmethod
+    def constrain_origin(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if value not in ("human", "session_handoff"):
+            raise ValueError("user-message origin must be human or session_handoff")
         return value
 
     @model_validator(mode="after")
@@ -43,6 +65,42 @@ class UserMessageReceivedPayload(BaseModel):
             raise ValueError("handoff user-message source must be session_handoff")
         if self.actor_kind is not self.trust:
             raise ValueError("handoff actor kind and trust must agree")
+        return self
+
+    @model_validator(mode="after")
+    def validate_turn_provenance(self) -> "UserMessageReceivedPayload":
+        if self.turn_id is None and self.turn_index is None:
+            return self
+        if self.turn_id is None or self.turn_index is None:
+            raise ValueError("turn identity must carry both turn_id and turn_index")
+        validate_turn_identity(self.turn_id)
+        return self
+
+    @model_validator(mode="after")
+    def validate_origin_provenance(self) -> "UserMessageReceivedPayload":
+        # origin is the validated human/automation marker: handoff
+        # provenance of ANY actor kind binds to origin=session_handoff,
+        # and origin=human rejects every handoff field (ADR-026 §4.1).
+        has_provenance = any(
+            value is not None
+            for value in (
+                self.source,
+                self.handoff_id,
+                self.principal_identity_hash,
+                self.actor_kind,
+                self.trust,
+            )
+        )
+        if has_provenance and self.origin != "session_handoff":
+            raise ValueError(
+                "handoff provenance requires origin=session_handoff"
+            )
+        if self.origin == "human" and has_provenance:
+            raise ValueError("origin=human cannot carry handoff provenance")
+        if self.origin == "session_handoff" and not has_provenance:
+            raise ValueError(
+                "origin=session_handoff requires complete handoff provenance"
+            )
         return self
 
 

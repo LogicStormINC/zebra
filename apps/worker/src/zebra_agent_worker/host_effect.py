@@ -89,9 +89,9 @@ class HostEffectReconciler:
             business_revision=str(revision) if revision is not None else None,
             effect_status=settled,
             evidence_digest=uncertain.evidence_digest,
-            reconciliation_note=str(
-                body.get("note", "reconciled through the pinned profile path")
-            )[:512],
+            reconciliation_note=str(body.get("note", "reconciled through the pinned profile path"))[
+                :512
+            ],
             received_at=uncertain.received_at,
         )
 

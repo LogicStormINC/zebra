@@ -49,7 +49,10 @@ from agent_storage.effect_ledger import (
     EffectReplayRejectedError,
     SQLiteEffectLedger,
 )
-from agent_storage.event_rows import SessionEventIdempotencyConflictError
+from agent_storage.event_rows import (
+    SessionEventIdempotencyConflictError,
+    SessionEventSequenceConflictError,
+)
 from agent_storage.idempotency import (
     IdempotencyConflictError,
     SQLiteIdempotencyStore,
@@ -195,6 +198,7 @@ __all__ = [
     "LeaseLostError",
     "SessionArtifact",
     "SessionEventIdempotencyConflictError",
+    "SessionEventSequenceConflictError",
     "LoadedProviderContinuation",
     "list_confirmed_repo_memories",
     "artifact_id_from_uri",

@@ -6,6 +6,9 @@ size limit (AGENTS.md hard limit: 500 lines for source files).
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
+
 from agent_core.domain.context_capsule import ContextCapsuleValidationError
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
@@ -98,3 +101,37 @@ def error_metadata(
             }
         )
     return metadata
+
+
+def is_sequence_race(exc: BaseException) -> bool:
+    """True only for the typed LOST SEQUENCE CAS.
+
+    Both storage adapters raise SessionEventSequenceConflictError when
+    another event already took this (session, sequence) — the single
+    retriable race. Event-id reuse, same-key/different-payload retries and
+    every other integrity violation keep their own errors and fail
+    closed; text matching is deliberately gone.
+    """
+
+    from agent_storage import SessionEventSequenceConflictError  # noqa: PLC0415
+
+    return isinstance(exc, SessionEventSequenceConflictError)
+
+
+@contextmanager
+def sequence_race_guard(context: str) -> Iterator[None]:
+    """A lost durable sequence race means the snapshot is stale.
+
+    The caller re-recovers once instead of raising past the Worker
+    boundary (ADR-026 §5).
+    """
+    from zebra_agent_worker.execution_preflight import (  # noqa: PLC0415
+        StaleExecutionSnapshot,
+    )
+
+    try:
+        yield
+    except ValueError as exc:
+        if is_sequence_race(exc):
+            raise StaleExecutionSnapshot(context) from exc
+        raise

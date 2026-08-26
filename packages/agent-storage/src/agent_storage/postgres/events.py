@@ -8,7 +8,10 @@ from agent_core.ports.event_store import EventStorePort
 from psycopg import errors
 from psycopg.types.json import Jsonb
 
-from agent_storage.event_rows import ensure_idempotent_event_retry
+from agent_storage.event_rows import (
+    SessionEventSequenceConflictError,
+    ensure_idempotent_event_retry,
+)
 from agent_storage.postgres.database import PostgresDatabase
 
 
@@ -105,7 +108,13 @@ def append_event_in_transaction(
         existing = _find_idempotent_event(connection, deployment_namespace, event)
         if existing is not None:
             return ensure_idempotent_event_retry(existing, event)
-        raise ValueError("duplicate or conflicting session event")
+        # A replayed event id fails the stream CAS exactly like a lost
+        # race; classify by identity first: only a DIFFERENT event taking
+        # the sequence is the retriable CAS loss, an id replay fails
+        # closed.
+        if read_event_in_transaction(connection, deployment_namespace, event.event_id) is not None:
+            raise ValueError("session event id replayed with a conflicting payload")
+        raise SessionEventSequenceConflictError("session event sequence already taken")
     connection.execute(
         """
         INSERT INTO session_events (

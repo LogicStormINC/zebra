@@ -11,6 +11,7 @@ CorrelationId = NewType("CorrelationId", UUID)
 MemoryId = NewType("MemoryId", UUID)
 SubagentId = NewType("SubagentId", UUID)
 HandoffId = NewType("HandoffId", UUID)
+TurnId = NewType("TurnId", UUID)
 AgentDefinitionId = NewType("AgentDefinitionId", UUID)
 AgentDefinitionVersionId = NewType("AgentDefinitionVersionId", UUID)
 AgentVersionId = AgentDefinitionVersionId
@@ -58,6 +59,10 @@ def new_subagent_id() -> SubagentId:
 
 def new_handoff_id() -> HandoffId:
     return HandoffId(uuid4())
+
+
+def new_turn_id() -> TurnId:
+    return TurnId(uuid4())
 
 
 def new_agent_definition_id() -> AgentDefinitionId:

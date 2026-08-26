@@ -107,6 +107,12 @@ def apply_event(
 
 
 def _next_status_for_event(event: SessionEvent) -> WorkspaceStatus | None:
+    if event.event_type is EventType.TURN_COMPLETED:
+        if event.payload.get("closes_segment") is False:
+            # A finished turn releases the execution hold on the workspace;
+            # final close/recycle stays bound to the SESSION_* terminal.
+            return WorkspaceStatus.PREPARED
+        return None
     status_map: dict[EventType, WorkspaceStatus] = {
         EventType.TASK_PREPARED: WorkspaceStatus.PREPARED,
         EventType.HARNESS_ATTEMPT_STARTED: WorkspaceStatus.RUNNING,

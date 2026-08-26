@@ -8,8 +8,11 @@ from agent_core.application import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionPlanner,
     MemoryCandidatePromotionPlanner,
+    memory_extraction_window,
 )
 from agent_core.application.memory_reviews import memory_review_scope_query
+from agent_core.application.session_projection import rebuild_session
+from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.governed_memories import GovernedMemoryEntry
@@ -60,7 +63,7 @@ def finalize_cloud_memory(
     if committed is not None:
         if recorder.session.current_sequence >= committed.receipt.session_revision:
             return True
-        if authority.expected_stream_revision != completion_revision:
+        if authority.expected_stream_revision != committed.receipt.event_sequences[0] - 1:
             raise ValueError("cloud Memory receipt cannot be accepted from a stale authority")
         _accept_receipt(
             recorder=recorder,
@@ -70,8 +73,8 @@ def finalize_cloud_memory(
             workspace_store=workspace_store,
         )
         return True
-    if authority.expected_stream_revision != completion_revision:
-        raise ValueError("cloud Memory finalization has unreceipted terminal Events")
+    if authority.expected_stream_revision < completion_revision:
+        raise ValueError("cloud Memory finalization authority precedes the closed Turn")
     definition_scope = _definition_scope_from_events(events)
     confirmed = memory_store.list_for_worker(
         _confirmed_memory_query(
@@ -84,7 +87,7 @@ def finalize_cloud_memory(
         session=session,
         events=events,
         next_sequence=recorder.next_sequence,
-        command=_extraction_command(recorder, started_at, definition_scope),
+        command=_extraction_command(recorder, started_at, definition_scope, events),
         confirmed_records=tuple(entry.record for entry in confirmed),
     )
     if not extraction.records and not extraction.stale_records:
@@ -122,9 +125,7 @@ def finalize_cloud_memory(
     if not allow_commit:
         return False
     try:
-        operation_receipt = memory_store.commit_worker_candidates(
-            plan, authority=authority
-        ).receipt
+        operation_receipt = memory_store.commit_worker_candidates(plan, authority=authority).receipt
     except Exception:
         reconciled = memory_store.get_worker_commit_receipt(
             operation_id,
@@ -162,24 +163,52 @@ def _accept_receipt(
     )
     if tuple(event.event_id for event in committed) != receipt.event_ids:
         raise ValueError("cloud Memory receipt Events are unavailable after commit")
+    receipt_revision = receipt.session_revision
     stored_session = projection_store.get_session(recorder.session.session_id)
     stored_workspace = workspace_store.get_workspace(recorder.session.session_id)
     if stored_session is None or stored_workspace is None:
         raise ValueError("cloud Memory commit did not preserve Session projections")
+    if stored_session.current_sequence > receipt_revision:
+        # Events committed after the receipt (e.g. the next human message)
+        # advanced the durable projection past it. The receipt replay is
+        # compared against the projection AT THE RECEIPT REVISION — never
+        # against the pre-commit authority revision nor the ahead head.
+        all_events = event_store.list_for_session(recorder.session.session_id)
+        at_receipt = [
+            event for event in all_events if event.sequence <= receipt_revision
+        ]
+        stored_session = rebuild_session(at_receipt)
+        stored_workspace = rebuild_workspace(at_receipt)
     recorder.accept_committed_events(
         committed,
         session=stored_session,
         workspace=stored_workspace,
     )
+    if hasattr(recorder, "refresh_tail"):
+        # Adopt any already-committed later tail into recorder memory
+        # only; their primary projections were written by their committer.
+        recorder.refresh_tail()
 
 
 def _completion_revision(events: list[SessionEvent], session: Session) -> int:
-    completions = [
-        event.sequence for event in events if event.event_type is EventType.SESSION_COMPLETED
+    """The stream revision the Memory commit must anchor on.
+
+    ADR-026: v2 streams anchor on the latest Turn close (the Segment
+    terminal for one-shot, the latest ``TURN_COMPLETED`` for conversation
+    Tasks, which sit in ``awaiting_turn``). Legacy streams keep requiring
+    exactly one ``SESSION_COMPLETED``.
+    """
+
+    if session.status not in {SessionStatus.COMPLETED, SessionStatus.AWAITING_TURN}:
+        raise ValueError("cloud Memory finalization requires a closed Turn")
+    closes = [
+        event
+        for event in events
+        if event.event_type in {EventType.TURN_COMPLETED, EventType.SESSION_COMPLETED}
     ]
-    if session.status is not SessionStatus.COMPLETED or len(completions) != 1:
-        raise ValueError("cloud Memory finalization requires one completed Session Event")
-    return completions[0]
+    if closes:
+        return closes[-1].sequence
+    raise ValueError("cloud Memory finalization requires one completed Session Event")
 
 
 def _operation_id(session: Session, completion_revision: int) -> str:
@@ -256,11 +285,17 @@ def _extraction_command(
     recorder: DurableHarnessEventRecorder,
     started_at: datetime,
     definition_scope: tuple[str, str, AgentDefinitionId] | None,
+    events: list[SessionEvent],
 ) -> MemoryCandidateExtractionCommand:
+    # Per-turn extraction window anchored on the previous Turn close
+    # (ADR-026 §6): advances even for zero-candidate Turns, and a
+    # successful extraction's events push it past re-derivation.
+    since_sequence = memory_extraction_window(events)
     if definition_scope is None:
         return MemoryCandidateExtractionCommand(
             repo_id=str(recorder.workspace.workspace_root),
             extracted_at=started_at,
+            since_sequence=since_sequence,
         )
     authority_issuer, namespace_id, definition_id = definition_scope
     return MemoryCandidateExtractionCommand(
@@ -269,4 +304,5 @@ def _extraction_command(
         authority_issuer=authority_issuer,
         namespace_id=namespace_id,
         definition_id=definition_id,
+        since_sequence=since_sequence,
     )

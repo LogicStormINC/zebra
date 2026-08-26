@@ -15,6 +15,7 @@ class SessionStatus(StrEnum):
     WAITING_APPROVAL = "waiting_approval"
     WAITING_INPUT = "waiting_input"
     WAITING_CLIENT_EFFECT = "waiting_client_effect"
+    AWAITING_TURN = "awaiting_turn"
     SUSPENDED = "suspended"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -74,6 +75,9 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     SessionStatus.CREATED: {SessionStatus.READY, SessionStatus.CANCELLED},
     SessionStatus.READY: {
         SessionStatus.RUNNING,
+        # A no-op resume of a conversation Segment re-parks it in
+        # awaiting_turn instead of re-queueing an empty execution.
+        SessionStatus.AWAITING_TURN,
         SessionStatus.SUSPENDED,
         SessionStatus.CANCELLED,
     },
@@ -81,6 +85,7 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
         SessionStatus.WAITING_APPROVAL,
         SessionStatus.WAITING_INPUT,
         SessionStatus.WAITING_CLIENT_EFFECT,
+        SessionStatus.AWAITING_TURN,
         SessionStatus.SUSPENDED,
         SessionStatus.COMPLETED,
         SessionStatus.FAILED,
@@ -98,6 +103,17 @@ _ALLOWED_TRANSITIONS: dict[SessionStatus, set[SessionStatus]] = {
     },
     SessionStatus.WAITING_CLIENT_EFFECT: {
         SessionStatus.READY,
+        SessionStatus.FAILED,
+        SessionStatus.CANCELLED,
+    },
+    SessionStatus.AWAITING_TURN: {
+        # A finished conversation turn re-arms the Segment for pickup once
+        # the next human message arrives (-> READY -> RUNNING), and remains
+        # closable/suspendable. Direct execution without a new message is
+        # forbidden: there is no open Turn to execute.
+        SessionStatus.READY,
+        SessionStatus.SUSPENDED,
+        SessionStatus.COMPLETED,
         SessionStatus.FAILED,
         SessionStatus.CANCELLED,
     },

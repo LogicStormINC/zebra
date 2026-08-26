@@ -151,6 +151,22 @@ def test_validate_os_sandbox_authority_has_no_container_image() -> None:
         )
 
 
+def test_validate_runtime_cleanup_failure_payload_is_strict() -> None:
+    payload = {
+        "target": "tool_gateway",
+        "error_type": "RuntimeCapabilityError",
+        "attempt_number": 1,
+    }
+    assert validate_event_payload(EventType.RUNTIME_CLEANUP_FAILED, payload) == payload
+
+    for contaminated in (True, 1.0, "1"):
+        with pytest.raises(EventPayloadValidationError, match="invalid payload"):
+            validate_event_payload(
+                EventType.RUNTIME_CLEANUP_FAILED,
+                {**payload, "attempt_number": contaminated},
+            )
+
+
 def test_validate_plan_updated_payload_rejects_duplicate_step_ids() -> None:
     with pytest.raises(EventPayloadValidationError, match="invalid payload for plan_updated"):
         validate_event_payload(

@@ -21,6 +21,56 @@ from zebra_agent_api.session_attachment_inputs import (
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
+def _finish_first_turn(database_path: Path, session_id: str) -> None:
+    """Close bootstrap Turn 0 so a follow-up message can be admitted."""
+    from uuid import UUID
+
+    from agent_core.application import current_turn
+    from agent_core.application.session_projection import rebuild_session
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
+    from agent_core.domain.identifiers import SessionId
+    from agent_core.domain.turns import derive_turn_id
+    from agent_storage import SQLiteEventStore as _Store
+    from agent_storage import SQLiteProjectionStore as _Proj
+
+    key = SessionId(UUID(str(session_id)))
+    event_store = _Store(database_path)
+    events = event_store.list_for_session(key)
+    session = events[0].session_id
+    open_turn = current_turn(events)
+    turn_id = (
+        open_turn.turn_id if open_turn else str(derive_turn_id(session, 0))
+    )
+    turn_index = open_turn.turn_index if open_turn else 0
+    base = events[-1].sequence
+    event_store.append(
+        SessionEvent.create(
+            session_id=session,
+            sequence=base + 1,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1},
+        )
+    )
+    event_store.append(
+        SessionEvent.create(
+            session_id=session,
+            sequence=base + 2,
+            event_type=EventType.TURN_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={
+                "turn_id": turn_id,
+                "turn_index": turn_index,
+                "closes_segment": False,
+            },
+        )
+    )
+    _Proj(database_path).save_session(
+        rebuild_session(event_store.list_for_session(key))
+    )
+
+
+
 def test_docx_parser_extracts_body_and_table_text_with_safe_provenance() -> None:
     docx = _docx_bytes(
         "<w:p><w:r><w:t>DOCX_ATTACHMENT_MARKER_141</w:t></w:r></w:p>"
@@ -132,6 +182,7 @@ def test_queued_docx_persists_only_extracted_text_and_recovers_without_reparse(
     )
 
     assert created.status_code == 201
+    _finish_first_turn(database_path, created.body["session_id"])
     appended = app.append_session_message(
         created.body["session_id"],
         {
