@@ -51,6 +51,7 @@ services:
     read_only: true
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+      - zebra-workspaces:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -90,6 +91,7 @@ services:
     read_only: true
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+      - zebra-workspaces:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
