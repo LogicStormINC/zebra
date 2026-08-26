@@ -53,9 +53,10 @@ services:
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
       - /var/run/docker.sock:/var/run/docker.sock
-    tmpfs:
-      - /tmp
-      - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:rw,size=8g,nosuid,nodev
+      - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
+    group_add:
+      - ${ZEBRA_DOCKER_SOCKET_GID:-984}
+    tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     depends_on:
@@ -95,9 +96,10 @@ services:
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
       - /var/run/docker.sock:/var/run/docker.sock
-    tmpfs:
-      - /tmp
-      - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:rw,size=8g,nosuid,nodev
+      - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
+    group_add:
+      - ${ZEBRA_DOCKER_SOCKET_GID:-984}
+    tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     depends_on:
