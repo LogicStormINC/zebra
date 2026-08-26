@@ -11,3 +11,8 @@ https://broker.zebra.local:8443 {
 	tls /certs/tls.crt /certs/tls.key
 	reverse_proxy trench-grant-broker:8090
 }
+
+https://trench.zebra.local:8443 {
+	tls /certs/tls.crt /certs/tls.key
+	reverse_proxy {$TRENCH_UPSTREAM:host.docker.internal:8000}
+}

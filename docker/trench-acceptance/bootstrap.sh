@@ -25,7 +25,7 @@ if [[ ! -f "$secrets/tls.crt" ]]; then
   openssl x509 -req -in "$secrets/tls.csr" -days 30 \
     -CA "$secrets/ca.crt" -CAkey "$secrets/ca.key" -CAcreateserial \
     -out "$secrets/tls.crt" \
-    -extfile <(printf "subjectAltName=DNS:zebra.zebra.local,DNS:broker.zebra.local") >/dev/null 2>&1
+    -extfile <(printf "subjectAltName=DNS:zebra.zebra.local,DNS:broker.zebra.local,DNS:trench.zebra.local") >/dev/null 2>&1
   rm -f "$secrets/tls.csr"
   echo "generated local CA and wildcard certificate in $secrets"
 fi

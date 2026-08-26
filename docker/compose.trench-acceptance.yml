@@ -30,6 +30,7 @@ services:
       ZEBRA_GRANT_BROKER_POLICY_VERSION: ${TRENCH_ACCEPTANCE_POLICY_VERSION:-trench-read-v1}
       ZEBRA_GRANT_BROKER_TRENCH_ME_URL: ${TRENCH_ACCEPTANCE_TRENCH_ME_URL:?set TRENCH_ACCEPTANCE_TRENCH_ME_URL}
       ZEBRA_GRANT_BROKER_PRIVATE_KEY_FILE: /secrets/trench-host-grant-v1.pem
+      SSL_CERT_FILE: /secrets/ca.crt
     restart: unless-stopped
     read_only: true
     volumes:
@@ -42,7 +43,7 @@ services:
       target: broker
     entrypoint:
       ["uvicorn", "operator_sidecar:create_sidecar", "--factory", "--host", "0.0.0.0", "--port", "8091"]
-    working_dir: /app/tests/compose/trench_read_e2e
+    working_dir: /app
     environment:
       TRENCH_SNAPSHOT_DATABASE_DSN: ${TRENCH_ACCEPTANCE_TRENCH_DATABASE_DSN:-}
       TRENCH_SNAPSHOT_TABLES: ${TRENCH_ACCEPTANCE_TRENCH_SNAPSHOT_TABLES:-events,event_threads,states}
@@ -53,18 +54,26 @@ services:
     read_only: true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./../tests/compose/trench_read_e2e/operator_sidecar.py:/app/operator_sidecar.py:ro
     networks: [dependencies]
 
   trench-acceptance-tls:
-    image: caddy:2.10-alpine
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/caddy:2-alpine
     restart: unless-stopped
     ports:
       - "127.0.0.1:${TRENCH_ACCEPTANCE_TLS_PORT:-8443}:8443"
     volumes:
       - ./trench-acceptance/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./trench-acceptance/secrets:/certs:ro
+    environment:
+      TRENCH_UPSTREAM: ${TRENCH_ACCEPTANCE_TRENCH_UPSTREAM:-host.docker.internal:8000}
     depends_on: [trench-grant-broker]
-    networks: [dependencies]
+    networks:
+      dependencies:
+        aliases:
+          - zebra.zebra.local
+          - broker.zebra.local
+          - trench.zebra.local
 
 networks:
   dependencies:

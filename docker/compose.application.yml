@@ -21,6 +21,7 @@ x-zebra-cloud-environment: &zebra-cloud-environment
   ZEBRA_LIVE_REDIS_URL: ${ZEBRA_LIVE_REDIS_URL:-redis://redis-live:6379/0}
   ZEBRA_LIVE_STREAM_MAX_LENGTH: ${ZEBRA_LIVE_STREAM_MAX_LENGTH:-1000}
   ZEBRA_LIVE_STREAM_KEY_PREFIX: ${ZEBRA_LIVE_STREAM_KEY_PREFIX:-zebra:live:v1}
+  DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
 
 x-zebra-application-build: &zebra-application-build
   context: ..
@@ -47,6 +48,8 @@ services:
     restart: unless-stopped
     init: true
     read_only: true
+    volumes:
+      - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -84,6 +87,8 @@ services:
       - "${ZEBRA_WORKER_IDLE_SLEEP_SECONDS:-1.0}"
     init: true
     read_only: true
+    volumes:
+      - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]

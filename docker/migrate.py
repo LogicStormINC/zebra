@@ -20,9 +20,14 @@ def main() -> None:
     import psycopg
     from agent_storage.postgres.migration_runner import apply_postgres_migrations
 
+    from agent_storage.postgres.epoch import bootstrap_control_plane_epoch
+
     for attempt in range(1, _MAX_ATTEMPTS + 1):
         try:
             apply_postgres_migrations(dsn)
+            bootstrap_control_plane_epoch(
+                dsn, deployment_namespace=settings.deployment_namespace
+            )
             return
         except psycopg.OperationalError:
             if attempt == _MAX_ATTEMPTS:

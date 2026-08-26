@@ -18,3 +18,4 @@ node_modules/
 UI/**/node_modules/
 UI/**/dist/
 UI/**/src-tauri/target/
+docker/trench-acceptance.env
