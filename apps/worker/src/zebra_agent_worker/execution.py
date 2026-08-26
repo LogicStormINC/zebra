@@ -241,6 +241,7 @@ class SessionExecutionService:
             return preflight_failure
         model_gateway = build_model_gateway(model_provider_settings(self._settings))
         runtime_handle = None
+        runtime = None
         effect_recorder: list[DurableHarnessEventRecorder] = []
         try:
             prepared_context = prepare_worker_context(
@@ -343,20 +344,19 @@ class SessionExecutionService:
             cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
             if cleanup_error is not None:
                 persist_runtime_cleanup_failure(
-                    recorder=authority_recorder,
-                    error=cleanup_error,
-                    target="runtime",
-                    created_at=started_at,
+                    recorder=authority_recorder, error=cleanup_error,
+                    target="runtime", created_at=started_at,
                 )
             return _superseded_by_control_event(authority_recorder)
         except Exception as exc:
-            cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
+            if runtime is None:
+                cleanup_error = None
+            else:
+                cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
             if cleanup_error is not None:
                 persist_runtime_cleanup_failure(
-                    recorder=authority_recorder,
-                    error=cleanup_error,
-                    target="runtime",
-                    created_at=started_at,
+                    recorder=authority_recorder, error=cleanup_error,
+                    target="runtime", created_at=started_at,
                 )
                 raise WorkerExecutionError(
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
