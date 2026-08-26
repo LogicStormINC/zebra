@@ -52,8 +52,9 @@ services:
     read_only: true
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
-      - zebra-workspaces:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
-    tmpfs: [/tmp]
+    tmpfs:
+      - /tmp
+      - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:rw,size=8g,nosuid,nodev
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     depends_on:
@@ -92,8 +93,9 @@ services:
     read_only: true
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
-      - zebra-workspaces:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
-    tmpfs: [/tmp]
+    tmpfs:
+      - /tmp
+      - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:rw,size=8g,nosuid,nodev
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     depends_on:
@@ -111,5 +113,3 @@ networks:
     name: ${ZEBRA_APPLICATION_NETWORK:-zebra-dependencies}
     external: true
 
-volumes:
-  zebra-workspaces:
