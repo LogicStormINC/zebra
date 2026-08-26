@@ -58,6 +58,22 @@ Cookie 头 + `{audience:"zebra", runId, scopes:[agent.run+5 读 scope], threadId
 | G4 Worker 重启 hook | 已实现 | 同 sidecar `POST /worker-restart`（operator token + Docker Engine API over unix socket，仅接受 taskId/runId） |
 | G5 本地 TLS | 已实现 | `docker/trench-acceptance/bootstrap.sh`（本地 CA + `*.zebra.local` 通配证书 + broker 密钥对）+ `docker/compose.trench-acceptance.yml`（broker/sidecar/caddy，已通过 `docker compose config` 校验） |
 
-剩余环境依赖项（非代码缺口）：应用镜像构建与完整栈拉起、Trench 侧
-`.env` 填值与 Trench 清场提交、`EMB-TRN-READ-E2E-01` 的 16 项真实输入。
+本地全链冒烟补充发现（2026-08-26 晚，已推送 0967fa94）：
+
+- **冒烟通过**：Trench Cookie → Broker（TLS）→ Grant 签发 → Zebra Grant
+  验证（JWKS+注册表+scope+jti 单次消费）→ 任务创建 → revision 读取 →
+  AG-UI command accepted → SSE（RUN_STARTED / STATE_SNAPSHOT / 断线重放）；
+  Grant 重放被拒；过期冻结授权正确 fail-closed。
+- G6（新）：Trench `workspace:"."` 载荷与 cloud 专用工作区根硬契约冲突
+  （`require_workspace_quota` 要求专用挂载点）——需产品层面对齐（Trench
+  发专用路径，或 Host admission 做 "." → 专用沙箱路径映射）。
+- G7（新，已修复）：control-plane epoch 无任何运维接线，Worker 无法
+  claim；已接入 `docker/migrate.py` 迁移后引导。
+- G8（新，观察）：过期授权的任务会持续阻塞 Worker 重试循环（无死信观
+  察，cancel 路径存在但受 G6 影响）——运维面需关注。
+- 完整模型执行仍需真实 gVisor 运行时镜像（仓库不含其定义，属外部基础
+  设施）。
+
+剩余环境依赖项（非代码缺口）：真实运行时镜像、Trench 侧 `.env` 填值与
+清场提交、`EMB-TRN-READ-E2E-01` 的 16 项真实输入。
 
