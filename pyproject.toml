@@ -23,6 +23,7 @@ package = false
 [tool.uv.workspace]
 members = [
     "apps/cli",
+    "apps/host_grant_broker",
     "apps/api",
     "apps/config",
     "apps/worker",

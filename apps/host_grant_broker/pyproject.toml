@@ -1,0 +1,15 @@
+[project]
+name = "zebra-host-grant-broker"
+version = "0.1.0"
+description = "Host Grant exchange broker: validates a Host session and mints single-use Zebra Host Grants."
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "fastapi>=0.115,<1.0.0",
+    "httpx>=0.27,<1.0.0",
+    "PyJWT[crypto]>=2.10.1,<3.0.0",
+    "uvicorn>=0.30,<1.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
