@@ -33,6 +33,7 @@ import {
  */
 export function HookCodePanel({ profile }: { profile: FrontendProfile }) {
   const [language, setLanguage] = useState<HookLanguage>('typescript');
+  const [framework, setFramework] = useState<HookFramework>('react');
   const [copied, setCopied] = useState(false);
 
   const frameworks = useMemo<HookFramework[]>(
@@ -76,7 +77,7 @@ export function HookCodePanel({ profile }: { profile: FrontendProfile }) {
         </ButtonGroup>
       </div>
 
-      <Tabs defaultValue='react'>
+      <Tabs value={framework} onValueChange={(value) => setFramework(value as HookFramework)}>
         <TabsList className='flex-wrap'>
           {frameworks.map((framework) => (
             <TabsTrigger key={framework} value={framework}>
@@ -135,6 +136,11 @@ export function HookCodePanel({ profile }: { profile: FrontendProfile }) {
               <Badge variant='secondary' className='font-mono text-xs'>
                 @zebra-agent/next
               </Badge>
+              {framework === 'copilotkit' && (
+                <Badge variant='secondary' className='font-mono text-xs'>
+                  @copilotkit/react-core
+                </Badge>
+              )}
             </div>
           </div>
           <div className='space-y-1.5'>

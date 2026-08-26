@@ -22,7 +22,10 @@ export const mockFrontendProfiles: FrontendProfile[] = [
         sensitivity: 'public',
         maxBytes: 256,
         updateStrategy: 'on_change',
-        contextPriority: 10
+        contextPriority: 10,
+        jsonSchema: '{"type":"string","pattern":"^/"}',
+        redactionRules: [],
+        resourceBinding: 'client-state:route'
       },
       {
         name: 'risk.report_id',
@@ -30,7 +33,10 @@ export const mockFrontendProfiles: FrontendProfile[] = [
         sensitivity: 'internal',
         maxBytes: 128,
         updateStrategy: 'on_change',
-        contextPriority: 20
+        contextPriority: 20,
+        jsonSchema: '{"type":"string","pattern":"^RPT-[0-9]{4}-[0-9]{2}-[0-9]{2}$"}',
+        redactionRules: ['mask/report_id'],
+        resourceBinding: 'trench.risk:read'
       },
       {
         name: 'positions.selected_account',
@@ -38,7 +44,10 @@ export const mockFrontendProfiles: FrontendProfile[] = [
         sensitivity: 'confidential',
         maxBytes: 128,
         updateStrategy: 'manual',
-        contextPriority: 30
+        contextPriority: 30,
+        jsonSchema: '{"type":"string","maxLength":24}',
+        redactionRules: ['mask/account', 'drop/holder_name'],
+        resourceBinding: 'trench.positions:read'
       }
     ],
     actions: [
@@ -50,7 +59,12 @@ export const mockFrontendProfiles: FrontendProfile[] = [
         executionMode: 'receipt_required',
         timeoutMs: 8000,
         requiresController: true,
-        requiresUserConfirmation: false
+        requiresUserConfirmation: false,
+        parametersSchema: '{"type":"object","properties":{"ticketId":{"type":"string","pattern":"^TR-[0-9]+$"}},"required":["ticketId"],"additionalProperties":false}',
+        resultSchema: '{"type":"object","properties":{"highlighted":{"type":"boolean"}},"required":["highlighted"]}',
+        maxResultBytes: 512,
+        allowedRoutes: ['/risk', '/tickets'],
+        resourceBindings: ['client-action:ui']
       },
       {
         name: 'ui.navigate_ticket',
@@ -60,7 +74,12 @@ export const mockFrontendProfiles: FrontendProfile[] = [
         executionMode: 'fire_and_receipt',
         timeoutMs: 5000,
         requiresController: true,
-        requiresUserConfirmation: false
+        requiresUserConfirmation: false,
+        parametersSchema: '{"type":"object","properties":{"ticketId":{"type":"string","pattern":"^TR-[0-9]+$"}},"required":["ticketId"],"additionalProperties":false}',
+        resultSchema: '{"type":"object","properties":{"navigated":{"type":"boolean"}},"required":["navigated"]}',
+        maxResultBytes: 256,
+        allowedRoutes: ['/risk/reports', '/tickets'],
+        resourceBindings: ['client-action:ui']
       },
       {
         name: 'ui.confirm_escalate',
@@ -70,7 +89,12 @@ export const mockFrontendProfiles: FrontendProfile[] = [
         executionMode: 'human_confirmed',
         timeoutMs: 120000,
         requiresController: true,
-        requiresUserConfirmation: true
+        requiresUserConfirmation: true,
+        parametersSchema: '{"type":"object","properties":{"ticketId":{"type":"string"},"reason":{"type":"string","maxLength":200}},"required":["ticketId","reason"],"additionalProperties":false}',
+        resultSchema: '{"type":"object","properties":{"confirmed":{"type":"boolean"},"reason":{"type":"string"}},"required":["confirmed"]}',
+        maxResultBytes: 1024,
+        allowedRoutes: ['/tickets'],
+        resourceBindings: ['client-action:ui', 'trench.tickets:write']
       }
     ],
     components: ['TicketCard', 'RiskSummaryPanel'],
@@ -295,6 +319,7 @@ export const mockMountedSnapshots: MountedCapabilitySnapshot[] = [
     heartbeatAt: '2026-08-26T09:43:50+08:00',
     mountedReadables: ['page.route', 'risk.report_id'],
     mountedActions: ['ui.highlight_ticket', 'ui.navigate_ticket'],
+    mountedComponents: ['TicketCard', 'RiskSummaryPanel'],
     driftStatus: 'aligned'
   },
   {
@@ -310,6 +335,7 @@ export const mockMountedSnapshots: MountedCapabilitySnapshot[] = [
     heartbeatAt: '2026-08-26T09:43:20+08:00',
     mountedReadables: ['page.route'],
     mountedActions: ['ui.navigate_ticket'],
+    mountedComponents: ['RiskSummaryPanel'],
     driftStatus: 'stale_ui_revision'
   },
   {
@@ -323,6 +349,7 @@ export const mockMountedSnapshots: MountedCapabilitySnapshot[] = [
     heartbeatAt: '2026-08-25T19:12:00+08:00',
     mountedReadables: ['page.route'],
     mountedActions: [],
+    mountedComponents: ['TicketCard'],
     driftStatus: 'build_mismatch'
   }
 ];

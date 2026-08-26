@@ -88,7 +88,8 @@ import {
   ZebraAgentProvider,
   useZebraReadable,
   useZebraAction,
-  useZebraApproval
+  useZebraApproval,
+  useZebraClarification
 } from '@zebra-agent/react';
 
 // 1. 根组件挂载 Provider：浏览器只连接同源 BFF，禁止 Direct Browser 模式${ts ? '' : '（JavaScript 版）'}
@@ -120,9 +121,18 @@ function TicketBoard() {
   // 4. human_confirmed Action 必须配置确认 UI：useZebraApproval 弹出确认对话框
   const [${approvalAction ? camel(approvalAction.name) : 'humanConfirm'}, confirmation] = useZebraApproval('${approvalAction?.name ?? 'ui.human_confirm'}');
 
+  // 5. useZebraClarification（与 useZebraApproval 并列）：渲染 Agent 发起的澄清问题，
+  //    用户答复经平台写回事件流，Agent 侧继续执行
+  const [clarification, respondClarification] = useZebraClarification();
+
   function onAgentSuggest(ticketId${ts ? ': string' : ''}) {
     // Handler 实现由业务方编写：此处仅展示 Contract 调用方式
     ${action ? camel(action.name) : 'clientAction'}({ ticketId });
+  }
+
+  function onClarificationAnswer(answer${ts ? ': string' : ''}) {
+    // Handler 实现由业务方编写：confirmation / clarification 的 UI 由 Host App 自行实现
+    respondClarification({ questionId: clarification?.id, answer });
   }
 
   return null; // 业务渲染逻辑由 Host App 自行实现
@@ -132,6 +142,7 @@ function TicketBoard() {
 function nextjsCode(profile: FrontendProfile, language: HookLanguage): string {
   const readable = firstReadable(profile);
   const action = firstAction(profile);
+  const approvalAction = humanConfirmedAction(profile);
   const ts = language === 'typescript';
 
   return `${headerComment(profile, 'Next.js App Router')}
@@ -176,12 +187,23 @@ export default function RootLayout(${ts ? '{ children }: { children: React.React
 // app/${readable ? 'risk' : 'page'}/page.tsx：页面内使用 Hooks
 // ------------------------------------------------------------
 'use client';
-import { useZebraReadable, useZebraAction } from '@zebra-agent/react';
+import { useZebraReadable, useZebraAction, useZebraApproval, useZebraClarification } from '@zebra-agent/react';
 
 export default function Page() {
   const route = useZebraReadable('${readable?.name ?? 'page.route'}');${readableComment(profile, readable?.name ?? 'page.route')}
 
   const ${action ? camel(action.name) : 'clientAction'} = useZebraAction('${action?.name ?? 'ui.none'}');${actionComment(profile, action?.name ?? 'ui.none')}
+
+  // human_confirmed Action 必须配置确认 UI：useZebraApproval 弹出确认对话框
+  const [${approvalAction ? camel(approvalAction.name) : 'humanConfirm'}, confirmation] = useZebraApproval('${approvalAction?.name ?? 'ui.human_confirm'}');
+
+  // useZebraClarification（与 useZebraApproval 并列）：渲染 Agent 发起的澄清问题，
+  // 用户答复经平台写回事件流，Agent 侧继续执行
+  const [clarification, respondClarification] = useZebraClarification();
+  function onClarificationAnswer(answer${ts ? ': string' : ''}) {
+    // Handler 实现由业务方编写：confirmation / clarification 的 UI 由 Host App 自行实现
+    respondClarification({ questionId: clarification?.id, answer });
+  }
 
   // Handler 实现由业务方编写：此处仅展示 Contract 调用方式
   return null;
@@ -191,6 +213,7 @@ export default function Page() {
 function copilotKitCode(profile: FrontendProfile, language: HookLanguage): string {
   const readable = firstReadable(profile);
   const action = firstAction(profile);
+  const approvalAction = humanConfirmedAction(profile);
   const ts = language === 'typescript';
 
   return `${headerComment(profile, 'CopilotKit Adapter')}
@@ -198,7 +221,13 @@ function copilotKitCode(profile: FrontendProfile, language: HookLanguage): strin
 // CopilotKit Adapter：把 Zebra Readable / Action 映射到 CopilotKit 体系。
 // Adapter 只做 Contract 映射，不生成业务 Handler 实现。
 import { CopilotKit, useCopilotReadable, useCopilotAction } from '@copilotkit/react-core';
-import { ZebraAgentProvider, useZebraReadable, useZebraAction } from '@zebra-agent/react';
+import {
+  ZebraAgentProvider,
+  useZebraReadable,
+  useZebraAction,
+  useZebraApproval,
+  useZebraClarification
+} from '@zebra-agent/react';
 
 export function AppRoot(${ts ? '{ children }: { children: React.ReactNode }' : '{ children }'}) {
   return (
@@ -234,6 +263,17 @@ export function AgentPanel() {
     handler: (args${ts ? ': { ticketId: string }' : ''}) =>
       ${action ? camel(action.name) : 'clientAction'}(args) // Receipt 由 Zebra SDK 回传
   });
+
+  // 3. human_confirmed Action 必须配置确认 UI：useZebraApproval 弹出确认对话框
+  const [${approvalAction ? camel(approvalAction.name) : 'humanConfirm'}, confirmation] = useZebraApproval('${approvalAction?.name ?? 'ui.human_confirm'}');
+
+  // 4. useZebraClarification（与 useZebraApproval 并列）：渲染 Agent 发起的澄清问题，
+  //    用户答复经平台写回事件流，再转发回 CopilotKit 对话
+  const [clarification, respondClarification] = useZebraClarification();
+  function onClarificationAnswer(answer${ts ? ': string' : ''}) {
+    // Handler 实现由业务方编写：confirmation / clarification 的 UI 由 Host App 自行实现
+    respondClarification({ questionId: clarification?.id, answer });
+  }
 
   return null; // 业务渲染逻辑由 Host App 自行实现
 }`;

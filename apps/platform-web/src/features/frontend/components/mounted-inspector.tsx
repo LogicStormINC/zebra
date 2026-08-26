@@ -194,6 +194,20 @@ export function MountedInspector({
                       )}
                     </div>
                   </div>
+                  <div className='space-y-1'>
+                    <p className='text-muted-foreground text-xs'>Mounted Components</p>
+                    <div className='flex flex-wrap gap-1'>
+                      {snapshot.mountedComponents.length === 0 ? (
+                        <span className='text-muted-foreground text-xs'>—</span>
+                      ) : (
+                        snapshot.mountedComponents.map((name) => (
+                          <Badge key={name} variant='secondary' className='font-mono text-[10px]'>
+                            {name}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+                  </div>
 
                   <div className='flex flex-wrap gap-2 border-t pt-3'>
                     <Button size='xs' variant='outline' onClick={() => setJsonSnapshot(snapshot)}>

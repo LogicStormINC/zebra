@@ -184,6 +184,20 @@ export type Approval = {
   requestedAt: string;
   deadline: string;
   status: 'pending' | 'approved' | 'rejected' | 'responded' | 'expired' | 'escalated';
+  /** 工具调用入参摘要（Digest）。 */
+  argumentsDigest?: string;
+  /** 审批涉及到的宿主资源引用。 */
+  resourceRefs?: string[];
+  /** 批准后将产生的影响预览说明。 */
+  effectPreview?: string;
+  /** 命中的策略（含 revision）。 */
+  policyId?: string;
+  /** Clarification 期望的回复 JSON Schema（紧凑字符串）。 */
+  responseSchema?: string;
+  /** 澄清上下文说明。 */
+  context?: string;
+  /** Clarification 关联的工具。 */
+  relatedTool?: string;
 };
 
 export type WorkerNode = {

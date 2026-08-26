@@ -128,6 +128,15 @@ export function SnapshotDiffDialog({
                     profile.actions.every((item) => snapshot.mountedActions.includes(item.name))
                   }
                 />
+                <DiffRow
+                  label='Components'
+                  expected={profile.components.join(', ') || '—'}
+                  actual={snapshot.mountedComponents.join(', ') || '—'}
+                  matched={
+                    profile.components.length === snapshot.mountedComponents.length &&
+                    profile.components.every((item) => snapshot.mountedComponents.includes(item))
+                  }
+                />
                 <div className='flex items-center justify-between px-3 py-2 text-xs'>
                   <span className='text-muted-foreground'>Drift 判定</span>
                   <StatusBadge tone={driftTone(snapshot.driftStatus)}>

@@ -6,7 +6,7 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import { MonoId } from '@/components/platform/mono-id';
 import { StatusBadge } from '@/components/platform/status-badge';
 import { TASK_STATUS_LABELS, taskStatusTone } from '@/lib/platform/status';
-import { formatDateTime, formatNumber, formatUsd } from '@/lib/platform/format';
+import { formatDateTime, formatNumber, formatUsd, relativeTime } from '@/lib/platform/format';
 import type { Task } from '@/lib/platform/types';
 
 /** 多选等值过滤：filter value 为选中值数组，行值命中其一即保留。 */
@@ -25,10 +25,14 @@ function uniqueOptions(values: string[], labelOf?: (value: string) => string) {
 
 const ALL_STATUSES = Object.keys(TASK_STATUS_LABELS) as (keyof typeof TASK_STATUS_LABELS)[];
 
+/** 无 waitReason 的行统一用 none 参与 multiSelect 过滤。 */
+const WAIT_REASON_NONE = 'none';
+
 export function createTaskColumns(input: {
   hosts: string[];
   namespaces: string[];
   agents: string[];
+  waitReasons: string[];
 }): ColumnDef<Task>[] {
   return [
     {
@@ -148,14 +152,43 @@ export function createTaskColumns(input: {
       enableSorting: false
     },
     {
-      accessorKey: 'waitReason',
+      id: 'hasSubagent',
+      accessorFn: (row) => (row.subagentCount > 0 ? 'true' : 'false'),
+      header: 'Has Subagent',
+      cell: ({ row }) => (
+        <span className='text-sm'>{row.original.subagentCount > 0 ? '是' : '否'}</span>
+      ),
+      filterFn: includesValue,
+      enableColumnFilter: true,
+      enableSorting: false,
+      meta: {
+        label: 'Has Subagent',
+        variant: 'multiSelect',
+        options: [
+          { value: 'true', label: '有子代理' },
+          { value: 'false', label: '无子代理' }
+        ]
+      }
+    },
+    {
+      id: 'waitReason',
+      accessorFn: (row) => row.waitReason ?? WAIT_REASON_NONE,
       header: 'Current Wait Reason',
       cell: ({ row }) => (
         <span className='text-muted-foreground max-w-[220px] truncate text-xs'>
           {row.original.waitReason ?? '—'}
         </span>
       ),
-      enableSorting: false
+      filterFn: includesValue,
+      enableColumnFilter: true,
+      enableSorting: false,
+      meta: {
+        label: 'Wait Reason',
+        variant: 'multiSelect',
+        options: uniqueOptions([...input.waitReasons, WAIT_REASON_NONE], (value) =>
+          value === WAIT_REASON_NONE ? '无等待原因' : value
+        )
+      }
     },
     {
       accessorKey: 'hasClient',
@@ -207,6 +240,11 @@ export function createTaskColumns(input: {
       accessorKey: 'createdAt',
       header: ({ column }) => <DataTableColumnHeader column={column} title='Created At' />,
       cell: ({ row }) => <span className='text-sm whitespace-nowrap'>{formatDateTime(row.original.createdAt)}</span>
+    },
+    {
+      accessorKey: 'updatedAt',
+      header: ({ column }) => <DataTableColumnHeader column={column} title='Updated At' />,
+      cell: ({ row }) => <span className='text-sm whitespace-nowrap'>{relativeTime(row.original.updatedAt)}</span>
     }
   ];
 }

@@ -25,6 +25,7 @@ import { DigestTag, MonoId } from '@/components/platform/mono-id';
 import { JsonBlock } from '@/components/platform/json-block';
 import { StatusBadge } from '@/components/platform/status-badge';
 import { Icons } from '@/components/icons';
+import { Input } from '@/components/ui/input';
 import { formatDateTime } from '@/lib/platform/format';
 import type { AuditEntry } from '@/lib/platform/types';
 import {
@@ -43,13 +44,19 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { downloadCsv } from '../export-csv';
 
-const ACTOR_TYPE_META: Record<AuditEntry['actorType'], { label: string; tone: 'running' | 'draft' | 'waiting' }> = {
+const ACTOR_TYPE_META: Record<
+  AuditEntry['actorType'],
+  { label: string; tone: 'running' | 'draft' | 'waiting' }
+> = {
   operator: { label: 'Operator', tone: 'running' },
   system: { label: 'System', tone: 'draft' },
   agent: { label: 'Agent', tone: 'waiting' }
 };
 
-const RESULT_META: Record<AuditEntry['result'], { label: string; tone: 'success' | 'failure' | 'uncertain' }> = {
+const RESULT_META: Record<
+  AuditEntry['result'],
+  { label: string; tone: 'success' | 'failure' | 'uncertain' }
+> = {
   succeeded: { label: '成功', tone: 'success' },
   failed: { label: '失败', tone: 'failure' },
   denied: { label: '拒绝', tone: 'uncertain' }
@@ -64,6 +71,35 @@ const ENVIRONMENT_LABELS: Record<string, string> = {
 export function AuditTable({ entries }: { entries: AuditEntry[] }) {
   const [detail, setDetail] = useState<AuditEntry | null>(null);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'timestamp', desc: true }]);
+  // 附加筛选（PRD 23.3 / 35.7.2）：Namespace / Actor 文本包含匹配 + 时间范围
+  const [namespaceQuery, setNamespaceQuery] = useState('');
+  const [actorQuery, setActorQuery] = useState('');
+  const [rangeStart, setRangeStart] = useState('');
+  const [rangeEnd, setRangeEnd] = useState('');
+
+  const scopedEntries = useMemo(() => {
+    const namespace = namespaceQuery.trim().toLowerCase();
+    const actor = actorQuery.trim().toLowerCase();
+    return entries.filter((entry) => {
+      if (namespace && !(entry.namespace ?? '').toLowerCase().includes(namespace)) return false;
+      if (actor && !entry.actor.toLowerCase().includes(actor)) return false;
+      const date = entry.timestamp.slice(0, 10);
+      if (rangeStart && date < rangeStart) return false;
+      if (rangeEnd && date > rangeEnd) return false;
+      return true;
+    });
+  }, [entries, namespaceQuery, actorQuery, rangeStart, rangeEnd]);
+
+  /** 当前附加筛选的描述（用于导出 toast 说明范围）。 */
+  const scopeDescription = useMemo(() => {
+    const parts: string[] = [];
+    if (namespaceQuery.trim()) parts.push(`Namespace 含 "${namespaceQuery.trim()}"`);
+    if (actorQuery.trim()) parts.push(`Actor 含 "${actorQuery.trim()}"`);
+    if (rangeStart || rangeEnd) {
+      parts.push(`时间 ${rangeStart || '最早'} ~ ${rangeEnd || '最新'}`);
+    }
+    return parts.length > 0 ? parts.join(' · ') : '全部时间与命名空间';
+  }, [namespaceQuery, actorQuery, rangeStart, rangeEnd]);
 
   const columns = useMemo<ColumnDef<AuditEntry>[]>(
     () => [
@@ -146,7 +182,7 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
 
   // oxlint-disable-next-line react/incompatible-library -- TanStack Table's useReactTable is incompatible with React Compiler memoization by design; the compiler already skips optimizing this component
   const table = useReactTable({
-    data: entries,
+    data: scopedEntries,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -171,7 +207,9 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
 
   const uniqueOptions = (key: 'actorType' | 'environment' | 'hostAppId' | 'result') => {
     const values = [
-      ...new Set(entries.map((entry) => entry[key]).filter((value): value is string => Boolean(value)))
+      ...new Set(
+        entries.map((entry) => entry[key]).filter((value): value is string => Boolean(value))
+      )
     ].toSorted();
     return values.map((value) => ({
       value,
@@ -220,7 +258,7 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
     const exportDate = rows[0]?.timestamp.slice(0, 10).replaceAll('-', '') ?? 'unknown';
     downloadCsv(`audit-export-${exportDate}.csv`, csv, true);
     toast.success('Audit Log 导出已生成', {
-      description: `audit-export-${exportDate}.csv · ${rows.length} 条 · 导出范围受当前 Operator 权限限制，文件包含校验摘要`
+      description: `audit-export-${exportDate}.csv · ${rows.length} 条 · 导出当前筛选后数据（${scopeDescription}）· 范围受当前 Operator 权限限制，文件包含校验摘要`
     });
   };
 
@@ -230,27 +268,74 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
         <Icons.audit />
         <AlertTitle>审计与导出边界</AlertTitle>
         <AlertDescription>
-          Audit Log 追加不可篡改；导出范围受当前 Operator 权限限制，导出文件附带校验摘要（checksum）用于完整性验证，导出动作本身也会被审计（PRD
+          Audit Log 追加不可篡改；导出范围受当前 Operator
+          权限限制，导出文件附带校验摘要（checksum）用于完整性验证，导出动作本身也会被审计（PRD
           23.3）。
         </AlertDescription>
       </Alert>
 
       <div className='flex flex-wrap items-center gap-2'>
+        <Input
+          value={namespaceQuery}
+          placeholder='筛选 Namespace…'
+          aria-label='筛选 Namespace'
+          onChange={(event) => setNamespaceQuery(event.target.value)}
+          className='h-8 w-44'
+        />
+        <Input
+          value={actorQuery}
+          placeholder='筛选 Actor…'
+          aria-label='筛选 Actor'
+          onChange={(event) => setActorQuery(event.target.value)}
+          className='h-8 w-40'
+        />
+        <div className='flex items-center gap-1.5'>
+          <Input
+            type='date'
+            value={rangeStart}
+            aria-label='开始日期'
+            onChange={(event) => setRangeStart(event.target.value)}
+            className='h-8 w-[150px]'
+          />
+          <span className='text-muted-foreground text-xs'>至</span>
+          <Input
+            type='date'
+            value={rangeEnd}
+            aria-label='结束日期'
+            onChange={(event) => setRangeEnd(event.target.value)}
+            className='h-8 w-[150px]'
+          />
+        </div>
         <DataTableFacetedFilter
           column={table.getColumn('actorType')}
           title='Actor Type'
           options={uniqueOptions('actorType')}
           multiple
         />
-        <DataTableFacetedFilter column={table.getColumn('action')} title='Action' options={actionOptions} multiple />
+        <DataTableFacetedFilter
+          column={table.getColumn('action')}
+          title='Action'
+          options={actionOptions}
+          multiple
+        />
         <DataTableFacetedFilter
           column={table.getColumn('environment')}
           title='Environment'
           options={uniqueOptions('environment')}
           multiple
         />
-        <DataTableFacetedFilter column={table.getColumn('hostAppId')} title='Host' options={uniqueOptions('hostAppId')} multiple />
-        <DataTableFacetedFilter column={table.getColumn('result')} title='Result' options={uniqueOptions('result')} multiple />
+        <DataTableFacetedFilter
+          column={table.getColumn('hostAppId')}
+          title='Host'
+          options={uniqueOptions('hostAppId')}
+          multiple
+        />
+        <DataTableFacetedFilter
+          column={table.getColumn('result')}
+          title='Result'
+          options={uniqueOptions('result')}
+          multiple
+        />
         <div className='ml-auto'>
           <Button size='sm' variant='outline' onClick={onExport}>
             <Icons.externalLink />
@@ -277,7 +362,11 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className='cursor-pointer' onClick={() => setDetail(row.original)}>
+                <TableRow
+                  key={row.id}
+                  className='cursor-pointer'
+                  onClick={() => setDetail(row.original)}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -287,7 +376,10 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={table.getAllColumns().length} className='text-muted-foreground h-24 text-center'>
+                <TableCell
+                  colSpan={table.getAllColumns().length}
+                  className='text-muted-foreground h-24 text-center'
+                >
                   没有匹配的审计记录
                 </TableCell>
               </TableRow>
@@ -315,16 +407,31 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
               <DataList
                 columns={2}
                 items={[
-                  { label: 'Actor', value: <span className='font-mono text-xs'>{detail.actor}</span> },
+                  {
+                    label: 'Actor',
+                    value: <span className='font-mono text-xs'>{detail.actor}</span>
+                  },
                   { label: 'Actor Type', value: ACTOR_TYPE_META[detail.actorType].label },
-                  { label: 'Action', value: <span className='font-mono text-xs'>{detail.action}</span> },
+                  {
+                    label: 'Action',
+                    value: <span className='font-mono text-xs'>{detail.action}</span>
+                  },
                   { label: 'Resource', value: `${detail.resourceType} · ${detail.resourceId}` },
-                  { label: 'Environment', value: ENVIRONMENT_LABELS[detail.environment] ?? detail.environment },
+                  {
+                    label: 'Environment',
+                    value: ENVIRONMENT_LABELS[detail.environment] ?? detail.environment
+                  },
                   { label: 'Host', value: detail.hostAppId ?? '—' },
                   { label: 'Namespace', value: detail.namespace ?? '—' },
                   { label: 'Correlation ID', value: <MonoId value={detail.correlationId} /> },
-                  { label: 'Before Digest', value: detail.beforeDigest ? <DigestTag value={detail.beforeDigest} /> : '—' },
-                  { label: 'After Digest', value: detail.afterDigest ? <DigestTag value={detail.afterDigest} /> : '—' },
+                  {
+                    label: 'Before Digest',
+                    value: detail.beforeDigest ? <DigestTag value={detail.beforeDigest} /> : '—'
+                  },
+                  {
+                    label: 'After Digest',
+                    value: detail.afterDigest ? <DigestTag value={detail.afterDigest} /> : '—'
+                  },
                   { label: 'Reason', value: detail.reason ?? '—' },
                   { label: 'Timestamp', value: formatDateTime(detail.timestamp) }
                 ]}

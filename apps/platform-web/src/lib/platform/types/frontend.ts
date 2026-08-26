@@ -7,6 +7,12 @@ export type ReadableContract = {
   maxBytes: number;
   updateStrategy: 'on_mount' | 'on_change' | 'manual' | 'debounced';
   contextPriority: number;
+  /** 示例值 / 结构校验用的紧凑 JSON Schema 字符串。 */
+  jsonSchema?: string;
+  /** 注入上下文前按规则脱敏（如 mask/account、drop/email）。 */
+  redactionRules?: string[];
+  /** 绑定的宿主资源标识（如 trench.risk:read）。 */
+  resourceBinding?: string;
 };
 
 export type ActionContract = {
@@ -18,6 +24,16 @@ export type ActionContract = {
   timeoutMs: number;
   requiresController: boolean;
   requiresUserConfirmation: boolean;
+  /** 入参 JSON Schema 字符串（紧凑格式）。 */
+  parametersSchema?: string;
+  /** 回执结果 JSON Schema 字符串（紧凑格式）。 */
+  resultSchema?: string;
+  /** 回执结果大小上限（字节）。 */
+  maxResultBytes?: number;
+  /** 允许触发该 Action 的路由前缀白名单。 */
+  allowedRoutes?: string[];
+  /** 绑定的宿主资源标识列表。 */
+  resourceBindings?: string[];
 };
 
 export type FrontendProfile = {
@@ -111,6 +127,8 @@ export type MountedCapabilitySnapshot = {
   heartbeatAt: string;
   mountedReadables: string[];
   mountedActions: string[];
+  /** 当前实际挂载的注册式组件 ID（PRD 13.6）。 */
+  mountedComponents: string[];
   driftStatus:
     | 'aligned'
     | 'profile_digest_mismatch'

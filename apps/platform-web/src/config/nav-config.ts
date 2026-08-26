@@ -129,6 +129,9 @@ export const navGroups: NavGroup[] = [
         url: '/runtime/tasks',
         icon: 'task',
         isActive: false,
+        // 运行异常角标（PRD 8.3-5）：等待审批 2 条；
+        // 静态占位，接入 Management API 后由运行中心计数动态渲染
+        badge: '2',
         items: []
       },
       {
@@ -157,6 +160,9 @@ export const navGroups: NavGroup[] = [
         url: '/runtime/host-effects',
         icon: 'effect',
         isActive: false,
+        // 运行异常角标（PRD 8.3-5）：uncertain Effect 1 条；
+        // 静态占位，接入 Management API 后由对账队列计数动态渲染
+        badge: '1',
         items: []
       },
       {

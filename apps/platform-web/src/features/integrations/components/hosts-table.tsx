@@ -1,20 +1,32 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
 
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { Icons } from '@/components/icons';
 import { MonoId } from '@/components/platform/mono-id';
+import { RiskConfirmDialog } from '@/components/platform/risk-confirm-dialog';
 import { StatusBadge } from '@/components/platform/status-badge';
 import { lifecycleTone } from '@/lib/platform/status';
 import { relativeTime } from '@/lib/platform/format';
+import { repository } from '@/lib/platform/repository';
 import type { Host } from '@/lib/platform/types';
 import {
   CONFORMANCE_LABELS,
+  CONNECTOR_HEALTH_LABELS,
   ENVIRONMENT_LABELS,
   HOST_STATUS_LABELS,
   TRUST_HEALTH_LABELS,
@@ -22,6 +34,97 @@ import {
   labelOptions
 } from '../lib/labels';
 import { useMockDataTable } from '../lib/use-mock-data-table';
+
+/** Connector 健康状态查找表（静态 mock，模块级构建一次）。 */
+const CONNECTOR_HEALTH_BY_ID = new Map(
+  repository.connectors().map((connector) => [connector.id, connector.health])
+);
+
+const connectorHealthOf = (host: Host) =>
+  (host.connectorId ? CONNECTOR_HEALTH_BY_ID.get(host.connectorId) : undefined) ?? '';
+
+/** Owner 去重筛选项（PRD 10.1：筛选按 Owner 团队）。 */
+const OWNER_OPTIONS = [...new Set(repository.hosts().map((host) => host.owner))]
+  .toSorted()
+  .map((owner) => ({ value: owner, label: owner }));
+
+const FRONTEND_PROFILE_OPTIONS = [
+  { value: 'yes', label: '有 Frontend Profile' },
+  { value: 'no', label: '无 Frontend Profile' }
+];
+
+/** Host 行操作（PRD 10.1）：详情 / 继续接入 / Conformance / 暂停 / 审计。 */
+function HostRowActions({ host }: { host: Host }) {
+  const [suspendOpen, setSuspendOpen] = useState(false);
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant='ghost' size='icon-sm' aria-label={`打开 ${host.name} 的操作菜单`} />
+          }
+        >
+          <Icons.moreHorizontal className='size-4' />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='end' sideOffset={4} className='w-44'>
+          <DropdownMenuItem
+            render={
+              <Link href={`/integrations/hosts/${host.id}`} aria-label={`查看 ${host.name} 详情`} />
+            }
+          >
+            <Icons.chevronRight className='size-4' />
+            查看详情
+          </DropdownMenuItem>
+          {host.onboardingStep < 7 && (
+            <DropdownMenuItem
+              render={<Link href='/integrations/onboarding' aria-label={`继续接入 ${host.name}`} />}
+            >
+              <Icons.forms className='size-4' />
+              继续接入（{host.onboardingStep}/7）
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem
+            onClick={() =>
+              toast.info('Conformance Run 已触发（演示）', {
+                description: `将对 ${host.name} 的 Connector 与 Manifest 执行一致性检查`
+              })
+            }
+          >
+            <Icons.conformance className='size-4' />
+            运行 Conformance
+          </DropdownMenuItem>
+          {host.status === 'active' && (
+            <DropdownMenuItem variant='destructive' onClick={() => setSuspendOpen(true)}>
+              <Icons.warning className='size-4' />
+              暂停接入
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            render={<Link href='/governance/audit' aria-label={`查看 ${host.name} 相关审计`} />}
+          >
+            <Icons.audit className='size-4' />
+            查看审计
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <RiskConfirmDialog
+        open={suspendOpen}
+        onOpenChange={setSuspendOpen}
+        title={`暂停 ${host.name} 接入`}
+        impact='暂停后该 Host 的新 Task 将被拒绝，已运行 Task 继续完成；入站信任保持不变。'
+        irreversibility='可通过同样的高风险操作恢复接入。'
+        currentRevision={`status ${host.status}`}
+        actionLabel='确认暂停'
+        onConfirm={() => {
+          toast.warning('暂停请求已提交（演示）', { description: `${host.name} · ${host.appId}` });
+        }}
+      />
+    </>
+  );
+}
 
 const columns: ColumnDef<Host, unknown>[] = [
   {
@@ -54,7 +157,13 @@ const columns: ColumnDef<Host, unknown>[] = [
     id: 'owner',
     accessorKey: 'owner',
     header: 'Owner',
-    cell: ({ row }) => <span className='text-sm'>{row.original.owner}</span>
+    cell: ({ row }) => <span className='text-sm'>{row.original.owner}</span>,
+    enableColumnFilter: true,
+    meta: {
+      label: 'Owner',
+      variant: 'multiSelect',
+      options: OWNER_OPTIONS
+    }
   },
   {
     id: 'environment',
@@ -62,7 +171,10 @@ const columns: ColumnDef<Host, unknown>[] = [
     enableSorting: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title='Environment' />,
     cell: ({ row }) => (
-      <StatusBadge tone={row.original.environment === 'production' ? 'running' : 'draft'} withDot={false}>
+      <StatusBadge
+        tone={row.original.environment === 'production' ? 'running' : 'draft'}
+        withDot={false}
+      >
         {ENVIRONMENT_LABELS[row.original.environment]}
       </StatusBadge>
     ),
@@ -102,6 +214,28 @@ const columns: ColumnDef<Host, unknown>[] = [
       )
   },
   {
+    id: 'connectorStatus',
+    accessorFn: (row) => connectorHealthOf(row),
+    enableSorting: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Connector 状态' />,
+    cell: ({ row }) => {
+      const health = connectorHealthOf(row.original);
+      return health ? (
+        <StatusBadge tone={lifecycleTone(health)} withDot={false}>
+          {CONNECTOR_HEALTH_LABELS[health]}
+        </StatusBadge>
+      ) : (
+        <span className='text-muted-foreground'>—</span>
+      );
+    },
+    enableColumnFilter: true,
+    meta: {
+      label: 'Connector 状态',
+      variant: 'multiSelect',
+      options: labelOptions(CONNECTOR_HEALTH_LABELS)
+    }
+  },
+  {
     id: 'manifestRevision',
     accessorKey: 'manifestRevision',
     header: 'Manifest 版本',
@@ -121,7 +255,13 @@ const columns: ColumnDef<Host, unknown>[] = [
         <span className='font-mono text-xs'>rev {row.original.frontendProfileRevision}</span>
       ) : (
         <span className='text-muted-foreground'>—</span>
-      )
+      ),
+    enableColumnFilter: true,
+    meta: {
+      label: 'Frontend Profile',
+      variant: 'multiSelect',
+      options: FRONTEND_PROFILE_OPTIONS
+    }
   },
   {
     id: 'agentReleaseCount',
@@ -175,20 +315,7 @@ const columns: ColumnDef<Host, unknown>[] = [
     id: 'actions',
     enableSorting: false,
     header: () => <span className='sr-only'>操作</span>,
-    cell: ({ row }) => (
-      <Button
-        variant='ghost'
-        size='icon-sm'
-        render={
-          <Link
-            href={`/integrations/hosts/${row.original.id}`}
-            aria-label={`查看 ${row.original.name} 详情`}
-          />
-        }
-      >
-        <Icons.chevronRight className='size-4' />
-      </Button>
-    )
+    cell: ({ row }) => <HostRowActions host={row.original} />
   }
 ];
 
@@ -200,7 +327,10 @@ const SPEC = {
     status: (row: Host) => row.status,
     environment: (row: Host) => row.environment,
     inboundTrustHealth: (row: Host) => row.inboundTrustHealth,
-    lastConformance: (row: Host) => row.lastConformance
+    lastConformance: (row: Host) => row.lastConformance,
+    owner: (row: Host) => row.owner,
+    connectorStatus: (row: Host) => connectorHealthOf(row),
+    frontendProfileRevision: (row: Host) => (row.frontendProfileId ? 'yes' : 'no')
   } satisfies Record<string, (row: Host) => string>,
   sortAccessors: {
     name: (row: Host) => row.name,

@@ -20,6 +20,7 @@ import { useFilteredNavGroups } from '@/hooks/use-nav';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
+import { cn } from '@/lib/utils';
 import { Icons } from '../icons';
 import { ZebraLogo } from '@/components/zebra-logo';
 import { UserNav } from './user-nav';
@@ -79,7 +80,17 @@ export default function AppSidebar() {
                     >
                       {item.icon && <Icon />}
                       <span>{item.title}</span>
-                      <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-panel-open/collapsible:rotate-90' />
+                      {item.badge && (
+                        <span className='bg-destructive text-destructive-foreground ml-auto min-w-4 rounded-full px-1 text-center text-[10px] leading-4 font-semibold tabular-nums group-data-[collapsible=icon]:hidden'>
+                          {item.badge}
+                        </span>
+                      )}
+                      <Icons.chevronRight
+                        className={cn(
+                          'transition-transform duration-200 group-data-panel-open/collapsible:rotate-90',
+                          item.badge ? '' : 'ml-auto'
+                        )}
+                      />
                     </CollapsibleTrigger>
                     <CollapsibleContent className='CollapsibleContent'>
                       <SidebarMenuSub>
@@ -105,6 +116,11 @@ export default function AppSidebar() {
                     >
                       {item.icon && <Icon />}
                       <span>{item.title}</span>
+                      {item.badge && (
+                        <span className='bg-destructive text-destructive-foreground ml-auto min-w-4 rounded-full px-1 text-center text-[10px] leading-4 font-semibold tabular-nums group-data-[collapsible=icon]:hidden'>
+                          {item.badge}
+                        </span>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

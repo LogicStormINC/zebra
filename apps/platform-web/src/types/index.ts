@@ -17,6 +17,8 @@ export interface NavItem {
   icon?: keyof typeof Icons;
   label?: string;
   description?: string;
+  /** 右侧异常/待处理角标（PRD 8.3-5）：静态占位，接入 API 后动态化 */
+  badge?: string;
   isActive?: boolean;
   items?: NavItem[];
   access?: PermissionCheck;

@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { DataList } from '@/components/platform/data-list';
 import { EmptyState } from '@/components/platform/empty-state';
 import { MonoId } from '@/components/platform/mono-id';
 import { StatusBadge } from '@/components/platform/status-badge';
@@ -50,9 +51,37 @@ const ACTION_META: Record<ApprovalAction, { title: string; submitLabel: string; 
   escalate: { title: '升级处理', submitLabel: '确认升级', toast: '已升级给值班负责人' }
 };
 
-/** Approvals 列表（PRD 21.1）：审批 / 澄清双类型 + Approve / Reject / Respond / Escalate。 */
+/** FNV-1a 32 位哈希（确定性，无随机）：用于幂等键生成。 */
+function fnv1a(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+}
+
+/** 决定幂等键：同一 approval + 同一动作重放得到相同键（PRD 21.1）。 */
+function idempotencyKeyFor(approvalId: string, action: ApprovalAction): string {
+  return `idem_${fnv1a(`${approvalId}:${action}`)}`;
+}
+
+function prettySchema(schema: string): string {
+  try {
+    return JSON.stringify(JSON.parse(schema), null, 2);
+  } catch {
+    return schema;
+  }
+}
+
+/** Approvals 列表（PRD 21.1）：审批 / 澄清双类型 + 详情 / Approve / Reject / Respond / Escalate。 */
 export function ApprovalsTable({ approvals }: { approvals: Approval[] }) {
-  const [dialogState, setDialogState] = useState<{ approval: Approval; action: ApprovalAction } | null>(null);
+  const [dialogState, setDialogState] = useState<{
+    approval: Approval;
+    action: ApprovalAction;
+    decidedAt: number;
+  } | null>(null);
+  const [detailApproval, setDetailApproval] = useState<Approval | null>(null);
   // 挂载时固定一次当前时间，避免渲染期调用 Date.now() 造成不确定渲染
   const [nowMs] = useState(() => Date.now());
 
@@ -129,29 +158,32 @@ export function ApprovalsTable({ approvals }: { approvals: Approval[] }) {
                     <StatusBadge tone={lifecycleTone(approval.status)}>{STATUS_LABELS[approval.status]}</StatusBadge>
                   </TableCell>
                   <TableCell className='text-right'>
-                    {approval.status === 'pending' ? (
-                      <span className='inline-flex flex-wrap items-center justify-end gap-1.5'>
-                        {approval.type === 'approval' ? (
-                          <>
-                            <Button variant='outline' size='sm' onClick={() => setDialogState({ approval, action: 'approve' })}>
-                              Approve
+                    <span className='inline-flex flex-wrap items-center justify-end gap-1.5'>
+                      <Button variant='ghost' size='sm' onClick={() => setDetailApproval(approval)}>
+                        详情
+                      </Button>
+                      {approval.status === 'pending' ? (
+                        <>
+                          {approval.type === 'approval' ? (
+                            <>
+                              <Button variant='outline' size='sm' onClick={() => setDialogState({ approval, action: 'approve', decidedAt: Date.now() })}>
+                                Approve
+                              </Button>
+                              <Button variant='destructive' size='sm' onClick={() => setDialogState({ approval, action: 'reject', decidedAt: Date.now() })}>
+                                Reject
+                              </Button>
+                            </>
+                          ) : (
+                            <Button variant='outline' size='sm' onClick={() => setDialogState({ approval, action: 'respond', decidedAt: Date.now() })}>
+                              Respond
                             </Button>
-                            <Button variant='destructive' size='sm' onClick={() => setDialogState({ approval, action: 'reject' })}>
-                              Reject
-                            </Button>
-                          </>
-                        ) : (
-                          <Button variant='outline' size='sm' onClick={() => setDialogState({ approval, action: 'respond' })}>
-                            Respond
+                          )}
+                          <Button variant='ghost' size='sm' onClick={() => setDialogState({ approval, action: 'escalate', decidedAt: Date.now() })}>
+                            Escalate
                           </Button>
-                        )}
-                        <Button variant='ghost' size='sm' onClick={() => setDialogState({ approval, action: 'escalate' })}>
-                          Escalate
-                        </Button>
-                      </span>
-                    ) : (
-                      <span className='text-muted-foreground text-xs'>已处理</span>
-                    )}
+                        </>
+                      ) : null}
+                    </span>
                   </TableCell>
                 </TableRow>
               );
@@ -160,7 +192,119 @@ export function ApprovalsTable({ approvals }: { approvals: Approval[] }) {
         </Table>
       </div>
       <ApprovalActionDialog state={dialogState} onClose={() => setDialogState(null)} />
+      <ApprovalDetailDialog approval={detailApproval} onClose={() => setDetailApproval(null)} />
     </div>
+  );
+}
+
+/** 详情 Dialog：approval 型展示工具 / 风险 / 摘要；clarification 型展示问题 / Schema / 上下文。 */
+function ApprovalDetailDialog({
+  approval,
+  onClose
+}: {
+  approval: Approval | null;
+  onClose: () => void;
+}) {
+  if (!approval) return null;
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className='max-h-[85vh] max-w-xl overflow-y-auto'>
+        <DialogHeader>
+          <DialogTitle>
+            {approval.type === 'approval' ? '审批详情' : '澄清详情'}：{approval.id}
+          </DialogTitle>
+          <DialogDescription>
+            {approval.reason}
+            {approval.status !== 'pending' ? `（当前状态：${STATUS_LABELS[approval.status]}）` : ''}
+          </DialogDescription>
+        </DialogHeader>
+
+        {approval.type === 'approval' ? (
+          <DataList
+            columns={1}
+            items={[
+              { label: 'Tool', value: <span className='font-mono text-xs'>{approval.tool ?? '—'}</span> },
+              { label: 'Risk', value: approval.risk ? <RiskBadge risk={approval.risk} /> : <span className='text-muted-foreground text-sm'>—</span> },
+              ...(approval.argumentsDigest
+                ? [{ label: 'Arguments 摘要', value: <MonoId key='args' value={approval.argumentsDigest} /> }]
+                : []),
+              {
+                label: 'Resource Refs',
+                value: approval.resourceRefs?.length ? (
+                  <span className='flex flex-wrap gap-1'>
+                    {approval.resourceRefs.map((ref) => (
+                      <Badge key={ref} variant='secondary' className='font-mono text-[10px]'>
+                        {ref}
+                      </Badge>
+                    ))}
+                  </span>
+                ) : (
+                  <span className='text-muted-foreground text-sm'>—</span>
+                )
+              },
+              {
+                label: 'Effect Preview',
+                value: <span className='text-sm'>{approval.effectPreview ?? '—'}</span>
+              },
+              {
+                label: 'Policy',
+                value: approval.policyId ? (
+                  <span className='font-mono text-xs'>{approval.policyId}</span>
+                ) : (
+                  <span className='text-muted-foreground text-sm'>—</span>
+                )
+              },
+              { label: 'Requester', value: <span className='font-mono text-xs'>{approval.requestedBy}</span> },
+              { label: 'Requested At', value: formatDateTime(approval.requestedAt) },
+              { label: 'Deadline', value: formatDateTime(approval.deadline) }
+            ]}
+          />
+        ) : (
+          <div className='space-y-4'>
+            <DataList
+              columns={1}
+              items={[
+                {
+                  label: 'Question',
+                  value: <span className='text-sm'>{approval.question ?? approval.reason}</span>
+                },
+                {
+                  label: 'Related Tool',
+                  value: approval.relatedTool ? (
+                    <span className='font-mono text-xs'>{approval.relatedTool}</span>
+                  ) : (
+                    <span className='text-muted-foreground text-sm'>—</span>
+                  )
+                },
+                { label: 'Requester', value: <span className='font-mono text-xs'>{approval.requestedBy}</span> },
+                { label: 'Deadline', value: formatDateTime(approval.deadline) }
+              ]}
+            />
+            {approval.responseSchema && (
+              <div className='space-y-1.5'>
+                <p className='text-muted-foreground text-xs'>Response Schema</p>
+                <pre className='bg-muted/40 overflow-auto rounded-lg border p-3 font-mono text-xs leading-relaxed'>
+                  {prettySchema(approval.responseSchema)}
+                </pre>
+              </div>
+            )}
+            {approval.context && (
+              <div className='space-y-1.5'>
+                <p className='text-muted-foreground text-xs'>Context</p>
+                <p className='text-sm'>{approval.context}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant='outline' onClick={onClose}>
+            关闭
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -168,18 +312,19 @@ function ApprovalActionDialog({
   state,
   onClose
 }: {
-  state: { approval: Approval; action: ApprovalAction } | null;
+  state: { approval: Approval; action: ApprovalAction; decidedAt: number } | null;
   onClose: () => void;
 }) {
   const [reason, setReason] = useState('');
 
   if (!state) return null;
-  const { approval, action } = state;
+  const { approval, action, decidedAt } = state;
   const meta = ACTION_META[action];
+  const idempotencyKey = idempotencyKeyFor(approval.id, action);
 
   const submit = () => {
     toast.success(`${meta.toast}（演示）`, {
-      description: `${approval.id} · 原因：${reason.trim() || '（未填写）'}`
+      description: `${approval.id} · 幂等键 ${idempotencyKey.slice(0, 13)}… · 原因：${reason.trim() || '（未填写）'}`
     });
     setReason('');
     onClose();
@@ -195,6 +340,24 @@ function ApprovalActionDialog({
             {approval.tool ? `（工具：${approval.tool}）` : ''}
           </DialogDescription>
         </DialogHeader>
+
+        <div className='space-y-2 rounded-lg border px-3 py-2.5'>
+          <p className='text-muted-foreground text-xs'>决定四要素（PRD 21.1）</p>
+          <div className='grid grid-cols-[7rem_1fr] items-center gap-x-3 gap-y-1.5 text-sm'>
+            <span className='text-muted-foreground text-xs'>Actor</span>
+            <span className='flex items-center gap-1.5'>
+              <Icons.security className='size-3.5' />
+              Local Operator（本地操作员）
+            </span>
+            <span className='text-muted-foreground text-xs'>Timestamp</span>
+            <span className='whitespace-nowrap'>{formatDateTime(new Date(decidedAt).toISOString())}</span>
+            <span className='text-muted-foreground text-xs'>Idempotency Key</span>
+            <span className='font-mono text-xs break-all'>{idempotencyKey}</span>
+            <span className='text-muted-foreground text-xs'>Reason</span>
+            <span className='text-xs'>见下方必填输入（审计写入 Audit Log）</span>
+          </div>
+        </div>
+
         <div className='space-y-1.5'>
           <Label htmlFor='approval-reason'>
             处理说明<span className='text-destructive'>（必填）</span>

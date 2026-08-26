@@ -22,10 +22,18 @@ export default function OnboardingPage() {
     id: profile.id,
     label: `${profile.name} · rev ${profile.revision}`
   }));
-  const policies = repository.policies().map((policy) => ({
+  const policyOptions = repository.policies().map((policy) => ({
     id: policy.id,
-    label: `${policy.name} · ${policy.kind}`
+    label: `${policy.name} · rev ${policy.revision}`
   }));
+  const policiesByKind = (kind: 'model' | 'runtime' | 'approval') =>
+    repository
+      .policies()
+      .filter((policy) => policy.kind === kind)
+      .map((policy) => ({
+        id: policy.id,
+        label: `${policy.name} · rev ${policy.revision}`
+      }));
   const quotas = repository.quotas().map((quota) => ({
     id: quota.id,
     label: `${quota.dimension} · ${quota.scope}`
@@ -47,7 +55,10 @@ export default function OnboardingPage() {
         <OnboardingWizard
           agentReleases={agentReleases}
           capabilityProfiles={capabilityProfiles}
-          policies={policies}
+          policies={policyOptions}
+          modelPolicies={policiesByKind('model')}
+          runtimePolicies={policiesByKind('runtime')}
+          approvalPolicies={policiesByKind('approval')}
           quotas={quotas}
           capabilityCeilings={capabilityCeilings}
         />

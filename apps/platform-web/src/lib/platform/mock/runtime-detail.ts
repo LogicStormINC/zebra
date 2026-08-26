@@ -545,7 +545,11 @@ export const mockApprovals: Approval[] = [
     requestedBy: 'agent:trench-code-reviewer',
     requestedAt: '2026-08-26T08:52:00+08:00',
     deadline: '2026-08-26T20:52:00+08:00',
-    status: 'pending'
+    status: 'pending',
+    argumentsDigest: 'aa11bb22cc33dd44ee55',
+    resourceRefs: ['trench/tickets/TR-2291', 'trench/tickets:write'],
+    effectPreview: '工单 TR-2291 状态由 open 变更为 escalated，并通知值班负责人',
+    policyId: 'pol_approval_high_risk/rev3'
   },
   {
     id: 'clr_0181',
@@ -558,7 +562,10 @@ export const mockApprovals: Approval[] = [
     requestedBy: 'agent:trench-market-research',
     requestedAt: '2026-08-26T07:45:00+08:00',
     deadline: '2026-08-27T07:45:00+08:00',
-    status: 'pending'
+    status: 'pending',
+    responseSchema: '{"type":"object","properties":{"includeDerivatives":{"type":"boolean"},"scopes":{"type":"array","items":{"type":"string"}}},"required":["includeDerivatives"]}',
+    context: '关联子任务「衍生品持仓覆盖」处于 waiting_clarification，回复后自动解除阻塞',
+    relatedTool: 'trench.get_risk_report'
   },
   {
     id: 'apr_0194',
@@ -572,7 +579,11 @@ export const mockApprovals: Approval[] = [
     requestedBy: 'agent:trench-code-reviewer',
     requestedAt: '2026-08-25T10:05:00+08:00',
     deadline: '2026-08-25T22:05:00+08:00',
-    status: 'approved'
+    status: 'approved',
+    argumentsDigest: '0a1b2c3d4e5f60718293',
+    resourceRefs: ['trench/positions/account-44', 'trench.positions:read'],
+    effectPreview: '只读导出 position-snapshot.csv，不产生业务写入',
+    policyId: 'pol_cross_namespace_read/rev2'
   }
 ];
 

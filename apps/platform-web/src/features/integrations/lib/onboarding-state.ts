@@ -52,6 +52,9 @@ export type OnboardingAgents = {
   agentReleaseId: string;
   capabilityProfileId: string;
   policyId: string;
+  modelPolicyId: string;
+  runtimePolicyId: string;
+  approvalPolicyId: string;
   quotaId: string;
 };
 
@@ -122,15 +125,29 @@ export const EMPTY_DRAFT: OnboardingDraft = {
     agentReleaseId: '',
     capabilityProfileId: '',
     policyId: '',
+    modelPolicyId: '',
+    runtimePolicyId: '',
+    approvalPolicyId: '',
     quotaId: ''
   }
 };
 
-/** 各步骤必填校验（Step1：Name / App ID 非空，PRD 10.3）。 */
+/**
+ * 各步骤必填校验（Step1：Name / App ID 非空，PRD 10.3）；
+ * Production 环境下 Owner Team 与 Contact 升级为必填（PRD 10.3 / 6.4 运维兜底）。
+ */
 export function isStepComplete(draft: OnboardingDraft, step: number): boolean {
   switch (step) {
-    case 1:
-      return draft.basic.name.trim().length > 0 && draft.basic.appId.trim().length > 0;
+    case 1: {
+      const productionRequired =
+        draft.basic.environment !== 'production' ||
+        (draft.basic.ownerTeam.trim().length > 0 && draft.basic.contact.trim().length > 0);
+      return (
+        draft.basic.name.trim().length > 0 &&
+        draft.basic.appId.trim().length > 0 &&
+        productionRequired
+      );
+    }
     case 2:
       return (
         draft.trust.issuer.trim().length > 0 &&
@@ -138,7 +155,9 @@ export function isStepComplete(draft: OnboardingDraft, step: number): boolean {
         draft.trust.jwksUri.trim().length > 0
       );
     case 3:
-      return draft.connector.baseUri.trim().length > 0 && draft.connector.connectorId.trim().length > 0;
+      return (
+        draft.connector.baseUri.trim().length > 0 && draft.connector.connectorId.trim().length > 0
+      );
     case 4:
       return draft.manifestJson.trim().length > 0;
     case 5:
@@ -189,5 +208,17 @@ export function clearDraft(): void {
     window.localStorage.removeItem(DRAFT_STORAGE_KEY);
   } catch {
     // 静默降级
+  }
+}
+
+/** 从草稿 Manifest JSON 中提取工具名列表（解析失败返回空数组，用于发布前 Diff 展示）。 */
+export function manifestToolNames(manifestJson: string): string[] {
+  try {
+    const parsed = JSON.parse(manifestJson) as { tools?: { name?: unknown }[] };
+    return (parsed.tools ?? [])
+      .map((tool) => (typeof tool?.name === 'string' ? tool.name : ''))
+      .filter((name) => name.length > 0);
+  } catch {
+    return [];
   }
 }

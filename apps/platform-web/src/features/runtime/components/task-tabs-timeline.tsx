@@ -34,8 +34,30 @@ import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
 import type { TaskEvent, TaskEventType } from '@/lib/platform/types';
 
-/** Timeline Tab（PRD 18.6）：事件流表 + type 筛选 + JSON 查看。 */
-export function TaskTimelineTab({ events }: { events: TaskEvent[] }) {
+/** tool_call / host_effect_dispatched / client_effect_dispatched 的行内跳转目标。 */
+const JUMP_TARGETS: Partial<Record<TaskEventType, { tab: string; label: string }>> = {
+  tool_call: { tab: 'tools', label: 'Tools' },
+  host_effect_dispatched: { tab: 'host-effects', label: 'Host Effects' },
+  client_effect_dispatched: { tab: 'client', label: 'Client' }
+};
+
+async function copyEventId(eventId: string) {
+  try {
+    await navigator.clipboard.writeText(eventId);
+    toast.success('Event ID 已复制', { description: eventId });
+  } catch {
+    toast.error('复制失败', { description: '剪贴板不可用' });
+  }
+}
+
+/** Timeline Tab（PRD 18.6）：事件流表 + type 筛选 + JSON 查看 + 关联 Tab 跳转。 */
+export function TaskTimelineTab({
+  events,
+  onNavigateTab
+}: {
+  events: TaskEvent[];
+  onNavigateTab?: (tab: string) => void;
+}) {
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
   const sorted = useMemo(() => events.toSorted((a, b) => a.sequence - b.sequence), [events]);
@@ -56,15 +78,6 @@ export function TaskTimelineTab({ events }: { events: TaskEvent[] }) {
   }
 
   const selectItems: Record<string, string> = { all: '全部类型', ...Object.fromEntries(availableTypes.map((type) => [type, type])) };
-
-  const copyEventId = async (eventId: string) => {
-    try {
-      await navigator.clipboard.writeText(eventId);
-      toast.success('Event ID 已复制', { description: eventId });
-    } catch {
-      toast.error('复制失败', { description: '剪贴板不可用' });
-    }
-  };
 
   return (
     <div className='flex flex-col gap-3'>
@@ -103,6 +116,8 @@ export function TaskTimelineTab({ events }: { events: TaskEvent[] }) {
               <TableHead>Actor</TableHead>
               <TableHead>Timestamp</TableHead>
               <TableHead>Summary</TableHead>
+              <TableHead>Policy Version</TableHead>
+              <TableHead>Model Profile</TableHead>
               <TableHead>Causation</TableHead>
               <TableHead>Correlation</TableHead>
               <TableHead className='text-right'>操作</TableHead>
@@ -124,6 +139,20 @@ export function TaskTimelineTab({ events }: { events: TaskEvent[] }) {
                 <TableCell className='text-sm whitespace-nowrap'>{formatDateTime(event.timestamp)}</TableCell>
                 <TableCell className='max-w-[280px] text-sm'>{event.summary}</TableCell>
                 <TableCell>
+                  {event.policyVersion ? (
+                    <span className='font-mono text-xs'>{event.policyVersion}</span>
+                  ) : (
+                    <span className='text-muted-foreground text-xs'>—</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {event.modelProfile ? (
+                    <span className='font-mono text-xs'>{event.modelProfile}</span>
+                  ) : (
+                    <span className='text-muted-foreground text-xs'>—</span>
+                  )}
+                </TableCell>
+                <TableCell>
                   {event.causationId ? <MonoId value={event.causationId} copyable={false} /> : '—'}
                 </TableCell>
                 <TableCell>
@@ -131,6 +160,17 @@ export function TaskTimelineTab({ events }: { events: TaskEvent[] }) {
                 </TableCell>
                 <TableCell className='text-right'>
                   <span className='inline-flex items-center gap-1'>
+                    {onNavigateTab && JUMP_TARGETS[event.type] && (
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        className='text-primary'
+                        onClick={() => onNavigateTab(JUMP_TARGETS[event.type]!.tab)}
+                      >
+                        跳转 {JUMP_TARGETS[event.type]!.label}
+                        <Icons.arrowRight className='size-3.5' />
+                      </Button>
+                    )}
                     <EventJsonDialog event={event} />
                     <Button
                       variant='ghost'

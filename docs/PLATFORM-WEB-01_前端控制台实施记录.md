@@ -42,7 +42,8 @@
 ## 2. 信息架构实现
 
 PRD 7.2/7.3 的导航树与推荐路由 1:1 落地于 `src/config/nav-config.ts` 与
-`src/app/(console)/` 路由组；8 个一级模块、47 组路由：
+`src/app/(console)/` 路由组；8 个一级模块、52 条路由（PRD §7.3 推荐路由 50 条
+全覆盖，另补齐 §7.2 导航树中有而 §7.3 未列的 Notification 与 Platform Health）：
 
 - **概览** — 平台总览（KPI 8 卡 / 双趋势图 / 告警 / 最近发布与接入 / 待审批）
 - **接入中心** — Host 列表+详情（10 Tab）、7 步接入向导（必填门控、localStorage

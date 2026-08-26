@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +10,14 @@ import {
   DialogTitle,
   DialogTrigger
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -200,8 +209,24 @@ const TOOL_STATUS_LABELS: Record<ToolCall['status'], string> = {
   awaiting_approval: '待审批'
 };
 
-/** Tools Tab（PRD 18.9）：执行位置 / 风险 / Scope / Arguments Digest / Receipt。 */
+const RISK_LABELS: Record<ToolCall['risk'], string> = {
+  read: 'Read',
+  low: '低风险',
+  medium: '中风险',
+  high: '高风险',
+  presentation: '展示',
+  navigation: '导航',
+  local_state: '本地状态',
+  user_interaction: '用户交互'
+};
+
+const FILTER_ALL = 'all';
+
+/** Tools Tab（PRD 18.9）：执行位置 / 风险筛选 + Scope / Arguments Digest / Receipt。 */
 export function TaskToolsTab({ toolCalls }: { toolCalls: ToolCall[] }) {
+  const [locationFilter, setLocationFilter] = useState<string>(FILTER_ALL);
+  const [riskFilter, setRiskFilter] = useState<string>(FILTER_ALL);
+
   if (toolCalls.length === 0) {
     return (
       <EmptyState
@@ -212,72 +237,138 @@ export function TaskToolsTab({ toolCalls }: { toolCalls: ToolCall[] }) {
     );
   }
 
+  const locationItems: Record<string, string> = {
+    [FILTER_ALL]: '全部位置',
+    ...LOCATION_LABELS
+  };
+  const riskItems: Record<string, string> = { [FILTER_ALL]: '全部风险', ...RISK_LABELS };
+
+  const filtered = toolCalls.filter(
+    (call) =>
+      (locationFilter === FILTER_ALL || call.executionLocation === locationFilter) &&
+      (riskFilter === FILTER_ALL || call.risk === riskFilter)
+  );
+
   return (
-    <div className='overflow-hidden rounded-lg border'>
-      <Table>
-        <TableHeader className='bg-muted'>
-          <TableRow>
-            <TableHead>Tool Call ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Execution Location</TableHead>
-            <TableHead>Risk</TableHead>
-            <TableHead>Scope</TableHead>
-            <TableHead>Arguments Digest</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Duration</TableHead>
-            <TableHead>Receipt</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {toolCalls.map((call) => (
-            <TableRow key={call.id}>
-              <TableCell>
-                <MonoId value={call.id} copyable={false} />
-              </TableCell>
-              <TableCell className='font-mono text-xs font-medium'>{call.toolName}</TableCell>
-              <TableCell>
-                <StatusBadge tone={LOCATION_TONES[call.executionLocation]} withDot={false}>
-                  {LOCATION_LABELS[call.executionLocation]}
-                </StatusBadge>
-              </TableCell>
-              <TableCell>
-                <RiskBadge risk={call.risk} />
-              </TableCell>
-              <TableCell className='font-mono text-xs'>{call.scope}</TableCell>
-              <TableCell>
-                <MonoId value={call.argumentsDigest} />
-              </TableCell>
-              <TableCell>
-                <StatusBadge
-                  tone={
-                    call.status === 'succeeded'
-                      ? 'success'
-                      : call.status === 'failed'
-                        ? 'failure'
-                        : call.status === 'running'
-                          ? 'running'
-                          : 'waiting'
-                  }
-                >
-                  {TOOL_STATUS_LABELS[call.status]}
-                </StatusBadge>
-              </TableCell>
-              <TableCell className='tabular-nums'>
-                {call.status === 'awaiting_approval' ? '—' : formatDuration(call.durationMs)}
-              </TableCell>
-              <TableCell>
-                {call.receiptDigest ? (
-                  <MonoId value={call.receiptDigest} />
-                ) : (
-                  <span className='text-muted-foreground text-xs'>
-                    <StatusBadge tone={lifecycleTone('missing_receipt')}>无 Receipt</StatusBadge>
-                  </span>
-                )}
-              </TableCell>
+    <div className='flex flex-col gap-3'>
+      <div className='flex items-center gap-2'>
+        <Select
+          items={locationItems}
+          value={locationFilter}
+          onValueChange={(value) => setLocationFilter(String(value ?? FILTER_ALL))}
+        >
+          <SelectTrigger className='w-44' aria-label='按执行位置筛选'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value={FILTER_ALL}>全部位置</SelectItem>
+              {(Object.keys(LOCATION_LABELS) as ToolCall['executionLocation'][]).map((location) => (
+                <SelectItem key={location} value={location}>
+                  {LOCATION_LABELS[location]}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <Select
+          items={riskItems}
+          value={riskFilter}
+          onValueChange={(value) => setRiskFilter(String(value ?? FILTER_ALL))}
+        >
+          <SelectTrigger className='w-44' aria-label='按风险等级筛选'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value={FILTER_ALL}>全部风险</SelectItem>
+              {(Object.keys(RISK_LABELS) as ToolCall['risk'][]).map((risk) => (
+                <SelectItem key={risk} value={risk}>
+                  {RISK_LABELS[risk]}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <span className='text-muted-foreground text-xs'>
+          {filtered.length} / {toolCalls.length} 条工具调用
+        </span>
+      </div>
+
+      <div className='overflow-hidden rounded-lg border'>
+        <Table>
+          <TableHeader className='bg-muted'>
+            <TableRow>
+              <TableHead>Tool Call ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Execution Location</TableHead>
+              <TableHead>Risk</TableHead>
+              <TableHead>Scope</TableHead>
+              <TableHead>Arguments Digest</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead>Receipt</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className='text-muted-foreground h-24 text-center text-sm'>
+                  无符合条件的工具调用
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((call) => (
+                <TableRow key={call.id}>
+                  <TableCell>
+                    <MonoId value={call.id} copyable={false} />
+                  </TableCell>
+                  <TableCell className='font-mono text-xs font-medium'>{call.toolName}</TableCell>
+                  <TableCell>
+                    <StatusBadge tone={LOCATION_TONES[call.executionLocation]} withDot={false}>
+                      {LOCATION_LABELS[call.executionLocation]}
+                    </StatusBadge>
+                  </TableCell>
+                  <TableCell>
+                    <RiskBadge risk={call.risk} />
+                  </TableCell>
+                  <TableCell className='font-mono text-xs'>{call.scope}</TableCell>
+                  <TableCell>
+                    <MonoId value={call.argumentsDigest} />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge
+                      tone={
+                        call.status === 'succeeded'
+                          ? 'success'
+                          : call.status === 'failed'
+                            ? 'failure'
+                            : call.status === 'running'
+                              ? 'running'
+                              : 'waiting'
+                      }
+                    >
+                      {TOOL_STATUS_LABELS[call.status]}
+                    </StatusBadge>
+                  </TableCell>
+                  <TableCell className='tabular-nums'>
+                    {call.status === 'awaiting_approval' ? '—' : formatDuration(call.durationMs)}
+                  </TableCell>
+                  <TableCell>
+                    {call.receiptDigest ? (
+                      <MonoId value={call.receiptDigest} />
+                    ) : (
+                      <span className='text-muted-foreground text-xs'>
+                        <StatusBadge tone={lifecycleTone('missing_receipt')}>无 Receipt</StatusBadge>
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

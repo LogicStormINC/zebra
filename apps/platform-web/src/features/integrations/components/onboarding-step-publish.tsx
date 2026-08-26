@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { JsonBlock } from '@/components/platform/json-block';
 import { StatusBadge } from '@/components/platform/status-badge';
 import { RiskConfirmDialog } from '@/components/platform/risk-confirm-dialog';
 import { Icons } from '@/components/icons';
@@ -19,12 +21,15 @@ const CHECKLIST = [
   { name: 'Canary Plan', priority: 'P1', status: 'pending' }
 ] as const;
 
-/** Step 7 验证与发布（PRD 10.3）：发布前检查清单 + Production 发布（高风险确认）。 */
+/** Step 7 验证与发布（PRD 10.3）：发布前检查清单 + 发布配置 Diff + Production 发布（高风险确认）。 */
 export function OnboardingStepPublish({
   hostName,
+  publishSummary,
   onPublished
 }: {
   hostName: string;
+  /** 当前草稿关键配置摘要（发布前 Diff，PRD 10.3 通用交互第 6 条 / 35.2.5） */
+  publishSummary: Record<string, unknown>;
   onPublished: () => void;
 }) {
   const p0AllPassed = CHECKLIST.filter((item) => item.priority === 'P0').every(
@@ -69,6 +74,38 @@ export function OnboardingStepPublish({
           </AlertDescription>
         </Alert>
       )}
+
+      <Collapsible render={<Card className='py-0' />}>
+        <CardHeader className='border-b px-4 py-3'>
+          <CollapsibleTrigger
+            render={
+              <button
+                type='button'
+                aria-label='展开或收起发布配置 Diff'
+                className='group/collapsible flex w-full items-center justify-between gap-2 text-left text-sm font-medium'
+              />
+            }
+          >
+            <CardTitle className='flex flex-col gap-0.5 text-sm'>
+              发布配置 Diff
+              <span className='text-muted-foreground text-xs font-normal'>
+                最终发布前完整 Diff：当前草稿的关键配置（Host 基本信息 / Connector / Manifest 工具 /
+                Frontend Profile / 所选 Release）
+              </span>
+            </CardTitle>
+            <Icons.chevronRight className='text-muted-foreground size-4 shrink-0 transition-transform duration-200 group-data-panel-open/collapsible:rotate-90' />
+          </CollapsibleTrigger>
+        </CardHeader>
+        <CollapsibleContent className='CollapsibleContent'>
+          <CardContent className='p-4'>
+            <JsonBlock
+              title='onboarding-publish-diff.json'
+              value={publishSummary}
+              maxHeight={280}
+            />
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
 
       <div className='flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4'>
         <div>

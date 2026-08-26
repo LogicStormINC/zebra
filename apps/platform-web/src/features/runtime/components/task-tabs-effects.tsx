@@ -19,6 +19,7 @@ import { Icons } from '@/components/icons';
 import type { HostEffect } from '@/lib/platform/types';
 import type { TaskDetailData } from './task-detail-data';
 import { HostEffectRowActions } from './host-effect-row-actions';
+import { ClientEffectRowActions } from './client-effect-row-actions';
 
 const EFFECT_STATUS_LABELS: Record<string, string> = {
   pending: '待调度',
@@ -98,7 +99,7 @@ export function TaskHostEffectsTab({ effects }: { effects: HostEffect[] }) {
               </TableCell>
               <TableCell className='text-right'>
                 {effect.status === 'uncertain' ? (
-                  <HostEffectRowActions effect={effect} />
+                  <HostEffectRowActions effect={effect} showEscalate />
                 ) : (
                   <span className='text-muted-foreground text-xs'>—</span>
                 )}
@@ -320,6 +321,7 @@ export function TaskClientTab({ data }: { data: TaskDetailData }) {
                   <TableHead>Delivered</TableHead>
                   <TableHead>Receipt</TableHead>
                   <TableHead>Result Digest</TableHead>
+                  <TableHead className='text-right'>操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -358,6 +360,13 @@ export function TaskClientTab({ data }: { data: TaskDetailData }) {
                       ) : (
                         <span className='text-muted-foreground text-xs'>—</span>
                       )}
+                    </TableCell>
+                    <TableCell className='text-right'>
+                      <ClientEffectRowActions
+                        effect={effect}
+                        clientSessions={clientSessions}
+                        frontendProfile={data.frontendProfile}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

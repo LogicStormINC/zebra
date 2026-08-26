@@ -13,7 +13,8 @@ const CHECK_ACTIONS = [
   'Endpoint Health Check',
   'TLS Check',
   'Manifest Fetch',
-  'Credential Ref Check'
+  'Credential Ref Check',
+  'Network Policy Check'
 ] as const;
 
 const numberField = (raw: string, fallback: number) => {

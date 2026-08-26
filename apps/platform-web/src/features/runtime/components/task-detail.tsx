@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,10 +21,30 @@ import { TaskBindingTab } from './task-tabs-binding';
 import { OrchestrationDag } from './orchestration-dag';
 import { EmptyState } from '@/components/platform/empty-state';
 
+/** 计算 createdAt → updatedAt 的耗时（基于两个静态时间戳，不依赖 Date.now）。 */
+function formatSpan(startIso: string, endIso: string): string {
+  const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+  if (Number.isNaN(ms) || ms < 0) return '—';
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
+
 /** Task 详情（PRD 18）：Header + 12 个内容 Tab 的旗舰页面。 */
 export function TaskDetail({ data }: { data: TaskDetailData }) {
   const { task } = data;
   const hasWaitingApproval = task.status === 'waiting_approval';
+  const [activeTab, setActiveTab] = useState('overview');
+  const currentAttempt =
+    data.attempts.length > 0
+      ? Math.max(...data.attempts.map((attempt) => attempt.attemptNumber))
+      : 1;
 
   return (
     <div className='flex flex-col gap-4 p-4 md:px-6'>
@@ -50,6 +71,16 @@ export function TaskDetail({ data }: { data: TaskDetailData }) {
           </span>
           <span className='text-muted-foreground text-xs'>
             Updated <span className='text-foreground font-medium'>{relativeTime(task.updatedAt)}</span>
+          </span>
+          <span className='text-muted-foreground text-xs'>
+            Current Attempt{' '}
+            <span className='text-foreground font-medium tabular-nums'>#{currentAttempt}</span>
+          </span>
+          <span className='text-muted-foreground text-xs'>
+            Elapsed{' '}
+            <span className='text-foreground font-medium tabular-nums'>
+              {formatSpan(task.createdAt, task.updatedAt)}
+            </span>
           </span>
           <span className='text-muted-foreground text-xs'>
             Cost <span className='text-foreground font-medium tabular-nums'>{formatUsd(task.costUsd)}</span>
@@ -122,7 +153,7 @@ export function TaskDetail({ data }: { data: TaskDetailData }) {
         </AlertDescription>
       </Alert>
 
-      <Tabs defaultValue='overview'>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(String(value))}>
         <div className='overflow-x-auto pb-1'>
           <TabsList className='h-auto flex-nowrap'>
             <TabsTrigger value='overview'>Overview</TabsTrigger>
@@ -145,7 +176,7 @@ export function TaskDetail({ data }: { data: TaskDetailData }) {
           <TaskOverviewTab data={data} />
         </TabsContent>
         <TabsContent value='timeline' className='mt-4'>
-          <TaskTimelineTab events={data.events} />
+          <TaskTimelineTab events={data.events} onNavigateTab={setActiveTab} />
         </TabsContent>
         <TabsContent value='orchestration' className='mt-4'>
           {data.orchestration ? (

@@ -1,6 +1,6 @@
 'use client';
 
-import { toast } from 'sonner';
+import { useState } from 'react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,17 @@ import { RiskBadge } from '@/components/platform/risk-badge';
 import { StatusBadge } from '@/components/platform/status-badge';
 import { Icons } from '@/components/icons';
 import { formatBytes, formatDuration } from '@/lib/platform/format';
-import type { FrontendProfile } from '@/lib/platform/types';
+import type {
+  ActionContract,
+  FrontendProfile,
+  ReadableContract
+} from '@/lib/platform/types';
+import { ActionFormDialog } from './action-form-dialog';
+import { ReadableFormDialog } from './readable-form-dialog';
+import {
+  RedactionPreviewDialog,
+  SampleValidationDialog
+} from './contract-preview-dialogs';
 import { SensitivityBadge } from './sensitivity-badge';
 import {
   EXECUTION_MODE_LABELS,
@@ -26,10 +36,40 @@ import {
   UPDATE_STRATEGY_LABELS
 } from './labels';
 
-/** Readables Tab（PRD 13.4）：契约表 + 禁止接入项说明。 */
+/** Readables Tab（PRD 13.4 / 35.4.1）：契约表 + 新建 / 编辑 + 禁止接入项说明。 */
 export function ProfileReadablesTab({ profile }: { profile: FrontendProfile }) {
+  const [readables, setReadables] = useState<ReadableContract[]>(profile.readables);
+  const [formInitial, setFormInitial] = useState<ReadableContract | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [previewTarget, setPreviewTarget] = useState<ReadableContract | null>(null);
+  const [sampleTarget, setSampleTarget] = useState<ReadableContract | null>(null);
+
+  const submitReadable = (contract: ReadableContract) => {
+    setReadables((prev) =>
+      prev.some((item) => item.name === contract.name)
+        ? prev.map((item) => (item.name === contract.name ? contract : item))
+        : [...prev, contract]
+    );
+  };
+
   return (
     <div className='flex flex-col gap-4'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <p className='text-muted-foreground text-sm'>
+          契约编辑保存到 Draft，新 Contract 将随 Profile 新 Revision 发布（历史 Revision 不可变）。
+        </p>
+        <Button
+          size='sm'
+          onClick={() => {
+            setFormInitial(null);
+            setFormOpen(true);
+          }}
+        >
+          <Icons.plusCircle className='size-4' />
+          新建 Readable
+        </Button>
+      </div>
+
       <div className='overflow-x-auto rounded-lg border'>
         <Table>
           <TableHeader className='bg-muted'>
@@ -37,21 +77,22 @@ export function ProfileReadablesTab({ profile }: { profile: FrontendProfile }) {
               <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Sensitivity</TableHead>
+              <TableHead>Redaction Rules</TableHead>
               <TableHead>Max Bytes</TableHead>
               <TableHead>Update Strategy</TableHead>
               <TableHead className='text-center'>Context Priority</TableHead>
-              <TableHead className='text-right'>校验</TableHead>
+              <TableHead className='text-right'>操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {profile.readables.length === 0 ? (
+            {readables.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className='text-muted-foreground h-20 text-center'>
+                <TableCell colSpan={8} className='text-muted-foreground h-20 text-center'>
                   该 Profile 未声明 Readables
                 </TableCell>
               </TableRow>
             ) : (
-              profile.readables.map((readable) => (
+              readables.map((readable) => (
                 <TableRow key={readable.name}>
                   <TableCell className='font-mono text-xs'>{readable.name}</TableCell>
                   <TableCell className='max-w-64 truncate text-sm'>
@@ -59,6 +100,19 @@ export function ProfileReadablesTab({ profile }: { profile: FrontendProfile }) {
                   </TableCell>
                   <TableCell>
                     <SensitivityBadge sensitivity={readable.sensitivity} />
+                  </TableCell>
+                  <TableCell>
+                    {readable.redactionRules?.length ? (
+                      <span className='flex flex-wrap gap-1'>
+                        {readable.redactionRules.map((rule) => (
+                          <Badge key={rule} variant='secondary' className='font-mono text-[10px]'>
+                            {rule}
+                          </Badge>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className='text-muted-foreground text-xs'>—</span>
+                    )}
                   </TableCell>
                   <TableCell className='tabular-nums'>{formatBytes(readable.maxBytes)}</TableCell>
                   <TableCell className='text-sm'>
@@ -72,27 +126,28 @@ export function ProfileReadablesTab({ profile }: { profile: FrontendProfile }) {
                       size='xs'
                       variant='outline'
                       className='mr-1.5'
-                      onClick={() =>
-                        toast.info(`脱敏预览：${readable.name}`, {
-                          description:
-                            readable.sensitivity === 'public'
-                              ? '公开数据：按原文注入上下文'
-                              : '按敏感度执行脱敏后注入上下文，平台仅保留脱敏摘要'
-                        })
-                      }
+                      onClick={() => setPreviewTarget(readable)}
                     >
                       脱敏预览
                     </Button>
                     <Button
                       size='xs'
                       variant='outline'
-                      onClick={() =>
-                        toast.success(`示例值校验通过：${readable.name}`, {
-                          description: `示例值大小与 Schema 校验未超过 ${formatBytes(readable.maxBytes)} 上限`
-                        })
-                      }
+                      className='mr-1.5'
+                      onClick={() => setSampleTarget(readable)}
                     >
                       示例值校验
+                    </Button>
+                    <Button
+                      size='xs'
+                      variant='ghost'
+                      onClick={() => {
+                        setFormInitial(readable);
+                        setFormOpen(true);
+                      }}
+                    >
+                      <Icons.edit className='size-3.5' />
+                      编辑
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -116,14 +171,61 @@ export function ProfileReadablesTab({ profile }: { profile: FrontendProfile }) {
           </span>
         </AlertDescription>
       </Alert>
+
+      {formOpen && (
+        <ReadableFormDialog
+          initial={formInitial}
+          profileRevision={profile.revision}
+          onCancel={() => setFormOpen(false)}
+          onSubmit={submitReadable}
+        />
+      )}
+      <RedactionPreviewDialog
+        readable={previewTarget}
+        open={previewTarget !== null}
+        onOpenChange={(open) => !open && setPreviewTarget(null)}
+      />
+      <SampleValidationDialog
+        readable={sampleTarget}
+        open={sampleTarget !== null}
+        onOpenChange={(open) => !open && setSampleTarget(null)}
+      />
     </div>
   );
 }
 
-/** Actions Tab（PRD 13.5）：契约表 + 校验规则说明。 */
+/** Actions Tab（PRD 13.5 / 35.4.1）：契约表 + 新建 / 编辑 + 校验规则说明。 */
 export function ProfileActionsTab({ profile }: { profile: FrontendProfile }) {
+  const [actions, setActions] = useState<ActionContract[]>(profile.actions);
+  const [formInitial, setFormInitial] = useState<ActionContract | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+
+  const submitAction = (contract: ActionContract) => {
+    setActions((prev) =>
+      prev.some((item) => item.name === contract.name)
+        ? prev.map((item) => (item.name === contract.name ? contract : item))
+        : [...prev, contract]
+    );
+  };
+
   return (
     <div className='flex flex-col gap-4'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <p className='text-muted-foreground text-sm'>
+          契约编辑保存到 Draft，新 Contract 将随 Profile 新 Revision 发布（历史 Revision 不可变）。
+        </p>
+        <Button
+          size='sm'
+          onClick={() => {
+            setFormInitial(null);
+            setFormOpen(true);
+          }}
+        >
+          <Icons.plusCircle className='size-4' />
+          新建 Action
+        </Button>
+      </div>
+
       <div className='overflow-x-auto rounded-lg border'>
         <Table>
           <TableHeader className='bg-muted'>
@@ -133,19 +235,21 @@ export function ProfileActionsTab({ profile }: { profile: FrontendProfile }) {
               <TableHead>Risk</TableHead>
               <TableHead>Execution Mode</TableHead>
               <TableHead>Timeout</TableHead>
+              <TableHead>Max Result Bytes</TableHead>
               <TableHead className='text-center'>Requires Controller</TableHead>
               <TableHead className='text-center'>Requires User Confirmation</TableHead>
+              <TableHead className='text-right'>操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {profile.actions.length === 0 ? (
+            {actions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className='text-muted-foreground h-20 text-center'>
+                <TableCell colSpan={9} className='text-muted-foreground h-20 text-center'>
                   该 Profile 未声明 Actions
                 </TableCell>
               </TableRow>
             ) : (
-              profile.actions.map((action) => (
+              actions.map((action) => (
                 <TableRow key={action.name}>
                   <TableCell>
                     <p className='font-mono text-xs'>{action.name}</p>
@@ -163,6 +267,9 @@ export function ProfileActionsTab({ profile }: { profile: FrontendProfile }) {
                     </StatusBadge>
                   </TableCell>
                   <TableCell className='tabular-nums'>{formatDuration(action.timeoutMs)}</TableCell>
+                  <TableCell className='tabular-nums'>
+                    {action.maxResultBytes !== undefined ? formatBytes(action.maxResultBytes) : '—'}
+                  </TableCell>
                   <TableCell className='text-center'>
                     {action.requiresController ? (
                       <Icons.check className='text-emerald-600 mx-auto size-4' />
@@ -176,6 +283,19 @@ export function ProfileActionsTab({ profile }: { profile: FrontendProfile }) {
                     ) : (
                       <span className='text-muted-foreground'>—</span>
                     )}
+                  </TableCell>
+                  <TableCell className='text-right'>
+                    <Button
+                      size='xs'
+                      variant='ghost'
+                      onClick={() => {
+                        setFormInitial(action);
+                        setFormOpen(true);
+                      }}
+                    >
+                      <Icons.edit className='size-3.5' />
+                      编辑
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
@@ -193,8 +313,21 @@ export function ProfileActionsTab({ profile }: { profile: FrontendProfile }) {
             2. <span className='font-mono text-xs'>human_confirmed</span>{' '}
             执行模式必须配置确认 UI：缺少确认 UI 的 Action 无法通过 Frontend Conformance。
           </p>
+          <p>
+            3. <span className='font-mono text-xs'>risk=user_interaction</span>{' '}
+            的 Action 必须要求 Controller 会话触发。
+          </p>
         </AlertDescription>
       </Alert>
+
+      {formOpen && (
+        <ActionFormDialog
+          initial={formInitial}
+          profileRevision={profile.revision}
+          onCancel={() => setFormOpen(false)}
+          onSubmit={submitAction}
+        />
+      )}
     </div>
   );
 }

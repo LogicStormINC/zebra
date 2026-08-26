@@ -16,6 +16,7 @@ import {
   completedSteps,
   isStepComplete,
   loadDraft,
+  manifestToolNames,
   saveDraft
 } from '../lib/onboarding-state';
 import type { AgentOption } from './onboarding-step-agents';
@@ -32,12 +33,18 @@ export function OnboardingWizard({
   agentReleases,
   capabilityProfiles,
   policies,
+  modelPolicies,
+  runtimePolicies,
+  approvalPolicies,
   quotas,
   capabilityCeilings
 }: {
   agentReleases: AgentOption[];
   capabilityProfiles: AgentOption[];
   policies: AgentOption[];
+  modelPolicies: AgentOption[];
+  runtimePolicies: AgentOption[];
+  approvalPolicies: AgentOption[];
   quotas: AgentOption[];
   capabilityCeilings: Record<string, string[]>;
 }) {
@@ -51,7 +58,9 @@ export function OnboardingWizard({
       const restored = loadDraft();
       if (restored) {
         setDraft(restored);
-        toast.info('已恢复未完成的接入草稿', { description: '草稿保存在本地浏览器（zebra-onboarding-draft）' });
+        toast.info('已恢复未完成的接入草稿', {
+          description: '草稿保存在本地浏览器（zebra-onboarding-draft）'
+        });
       }
       setHydrated(true);
     };
@@ -66,6 +75,48 @@ export function OnboardingWizard({
   const done = completedSteps(draft);
   const currentComplete = isStepComplete(draft, step);
   const canGoNext = step < 7 && currentComplete;
+
+  /** 发布前 Diff 摘要：当前草稿关键配置（纯派生，无随机/时间依赖）。 */
+  const publishSummary = {
+    host: {
+      name: draft.basic.name,
+      appId: draft.basic.appId,
+      ownerTeam: draft.basic.ownerTeam,
+      environment: draft.basic.environment,
+      description: draft.basic.description,
+      contact: draft.basic.contact,
+      tags: draft.basic.tags
+    },
+    connector: {
+      connectorId: draft.connector.connectorId,
+      baseUri: draft.connector.baseUri,
+      manifestPath: draft.connector.manifestPath,
+      invokePath: draft.connector.invokePath,
+      reconcilePath: draft.connector.reconcilePath,
+      protocolVersions: draft.connector.protocolVersions,
+      networkPolicyRef: draft.connector.networkPolicyRef
+    },
+    manifest: {
+      toolNames: manifestToolNames(draft.manifestJson)
+    },
+    frontendProfile: {
+      frontendAppId: draft.frontend.frontendAppId,
+      buildId: draft.frontend.buildId,
+      allowedOrigins: draft.frontend.allowedOrigins,
+      readableCount: draft.frontend.readableCount,
+      actionCount: draft.frontend.actionCount
+    },
+    agents: {
+      release:
+        agentReleases.find((release) => release.id === draft.agents.agentReleaseId)?.label ?? null,
+      capabilityProfileId: draft.agents.capabilityProfileId,
+      policyId: draft.agents.policyId,
+      modelPolicyId: draft.agents.modelPolicyId || 'platform-default',
+      runtimePolicyId: draft.agents.runtimePolicyId || 'platform-default',
+      approvalPolicyId: draft.agents.approvalPolicyId || 'platform-default',
+      quotaId: draft.agents.quotaId
+    }
+  };
 
   const goToStep = (next: number) => setDraft((prev) => ({ ...prev, step: next }));
 
@@ -189,10 +240,17 @@ export function OnboardingWizard({
                 policies={policies}
                 quotas={quotas}
                 capabilityCeilings={capabilityCeilings}
+                modelPolicies={modelPolicies}
+                runtimePolicies={runtimePolicies}
+                approvalPolicies={approvalPolicies}
               />
             )}
             {step === 7 && (
-              <OnboardingStepPublish hostName={draft.basic.name} onPublished={onPublished} />
+              <OnboardingStepPublish
+                hostName={draft.basic.name}
+                publishSummary={publishSummary}
+                onPublished={onPublished}
+              />
             )}
           </CardContent>
         </Card>
@@ -228,7 +286,9 @@ export function OnboardingWizard({
         <CardContent className='divide-y p-0'>
           {ONBOARDING_STEPS.map((title, index) => (
             <div key={title} className='flex items-center justify-between gap-2 px-4 py-2.5'>
-              <span className={cn('text-sm', done[index] ? 'font-medium' : 'text-muted-foreground')}>
+              <span
+                className={cn('text-sm', done[index] ? 'font-medium' : 'text-muted-foreground')}
+              >
                 {index + 1}. {title}
               </span>
               {done[index] ? (

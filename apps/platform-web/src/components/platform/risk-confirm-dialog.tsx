@@ -14,11 +14,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { environmentLabel, useEnvironmentStore } from '@/lib/platform/environment-store';
 
 /**
  * 高风险操作确认弹窗（PRD 6.4）：
  * 必须显示影响范围、不可逆性、当前/目标 revision，并要求填写审计原因。
- * 触发按钮通过 children 传入。
+ * 触发按钮通过 children 传入；也可通过 open/onOpenChange 受控打开
+ * （例如从表格行操作菜单中触发）。
+ * 弹窗信息区固定展示当前环境上下文（PRD 8.2），
+ * Production 环境下红色加粗并要求二次确认影响范围。
  */
 export function RiskConfirmDialog({
   trigger,
@@ -29,9 +33,11 @@ export function RiskConfirmDialog({
   targetRevision,
   actionLabel = '确认执行',
   requireReason = true,
+  open: controlledOpen,
+  onOpenChange,
   onConfirm
 }: {
-  trigger: React.ReactElement;
+  trigger?: React.ReactElement;
   title: string;
   impact: string;
   irreversibility?: string;
@@ -39,10 +45,19 @@ export function RiskConfirmDialog({
   targetRevision?: string;
   actionLabel?: string;
   requireReason?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onConfirm: (reason: string) => void;
 }) {
   const [reason, setReason] = useState('');
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const environment = useEnvironmentStore((state) => state.environment);
+  const isProduction = environment === 'production';
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next);
+    setInternalOpen(next);
+  };
   const reasonValid = !requireReason || reason.trim().length >= 4;
 
   const handleConfirm = () => {
@@ -56,15 +71,17 @@ export function RiskConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={trigger} />
+      {trigger && <AlertDialogTrigger render={trigger} />}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>高风险操作：{title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            请确认影响范围与审计原因后继续。
-          </AlertDialogDescription>
+          <AlertDialogDescription>请确认影响范围与审计原因后继续。</AlertDialogDescription>
         </AlertDialogHeader>
         <div className='text-muted-foreground space-y-2 text-sm'>
+          <p className={isProduction ? 'text-destructive font-bold' : undefined}>
+            当前环境：{environmentLabel(environment)}
+            {isProduction && ' —— Production 环境写操作，请二次确认影响范围'}
+          </p>
           <p>
             <span className='text-destructive font-medium'>影响范围：</span>
             {impact}
@@ -83,9 +100,7 @@ export function RiskConfirmDialog({
           )}
         </div>
         <div className='space-y-1.5'>
-          <Label htmlFor='risk-reason'>
-            审计原因{requireReason ? '（必填）' : '（选填）'}
-          </Label>
+          <Label htmlFor='risk-reason'>审计原因{requireReason ? '（必填）' : '（选填）'}</Label>
           <Textarea
             id='risk-reason'
             value={reason}

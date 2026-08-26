@@ -17,6 +17,13 @@ import { FormRow } from './onboarding-fields';
 
 export type AgentOption = { id: string; label: string; channel?: string };
 
+/** 「跟随平台默认」选项值：草稿中映射回空字符串（不绑定具体 Policy）。 */
+const FOLLOW_PLATFORM_DEFAULT = 'follow-platform-default';
+
+const toSelectValue = (policyId: string) => policyId || FOLLOW_PLATFORM_DEFAULT;
+
+const fromSelectValue = (next: string) => (next === FOLLOW_PLATFORM_DEFAULT ? '' : next);
+
 /** Step 6 Agent 与策略（PRD 10.3）：选择 Release / Capability / Policy / Quota 并预览有效能力。 */
 export function OnboardingStepAgents({
   value,
@@ -25,7 +32,10 @@ export function OnboardingStepAgents({
   capabilityProfiles,
   policies,
   quotas,
-  capabilityCeilings
+  capabilityCeilings,
+  modelPolicies,
+  runtimePolicies,
+  approvalPolicies
 }: {
   value: OnboardingAgents;
   onChange: (next: OnboardingAgents) => void;
@@ -35,9 +45,12 @@ export function OnboardingStepAgents({
   quotas: AgentOption[];
   /** definitionId → capabilityCeiling */
   capabilityCeilings: Record<string, string[]>;
+  modelPolicies: AgentOption[];
+  runtimePolicies: AgentOption[];
+  approvalPolicies: AgentOption[];
 }) {
   const selectedRelease = agentReleases.find((release) => release.id === value.agentReleaseId);
-  const ceiling = selectedRelease ? capabilityCeilings[selectedRelease.id] ?? [] : [];
+  const ceiling = selectedRelease ? (capabilityCeilings[selectedRelease.id] ?? []) : [];
 
   if (agentReleases.length === 0) {
     return (
@@ -109,6 +122,72 @@ export function OnboardingStepAgents({
             </SelectContent>
           </Select>
         </FormRow>
+        <FormRow label='Model Policy' hint='模型路由与 Token 上限；不选则跟随平台默认'>
+          <Select
+            value={toSelectValue(value.modelPolicyId)}
+            onValueChange={(next) =>
+              onChange({ ...value, modelPolicyId: fromSelectValue(next ?? '') })
+            }
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder='跟随平台默认' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value={FOLLOW_PLATFORM_DEFAULT}>跟随平台默认</SelectItem>
+                {modelPolicies.map((policy) => (
+                  <SelectItem key={policy.id} value={policy.id}>
+                    {policy.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </FormRow>
+        <FormRow label='Runtime Policy' hint='沙箱与运行时约束；不选则跟随平台默认'>
+          <Select
+            value={toSelectValue(value.runtimePolicyId)}
+            onValueChange={(next) =>
+              onChange({ ...value, runtimePolicyId: fromSelectValue(next ?? '') })
+            }
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder='跟随平台默认' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value={FOLLOW_PLATFORM_DEFAULT}>跟随平台默认</SelectItem>
+                {runtimePolicies.map((policy) => (
+                  <SelectItem key={policy.id} value={policy.id}>
+                    {policy.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </FormRow>
+        <FormRow label='Approval Policy' hint='高风险操作的审批要求；不选则跟随平台默认'>
+          <Select
+            value={toSelectValue(value.approvalPolicyId)}
+            onValueChange={(next) =>
+              onChange({ ...value, approvalPolicyId: fromSelectValue(next ?? '') })
+            }
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder='跟随平台默认' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value={FOLLOW_PLATFORM_DEFAULT}>跟随平台默认</SelectItem>
+                {approvalPolicies.map((policy) => (
+                  <SelectItem key={policy.id} value={policy.id}>
+                    {policy.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </FormRow>
         <FormRow label='Quota' hint='该 Host 的并发 / Token / 成本配额'>
           <Select
             value={value.quotaId}
@@ -139,7 +218,9 @@ export function OnboardingStepAgents({
         </CardHeader>
         <CardContent className='p-4'>
           {!selectedRelease ? (
-            <p className='text-muted-foreground text-sm'>选择 Agent Release 后展示其 capabilityCeiling。</p>
+            <p className='text-muted-foreground text-sm'>
+              选择 Agent Release 后展示其 capabilityCeiling。
+            </p>
           ) : ceiling.length === 0 ? (
             <p className='text-muted-foreground text-sm'>
               {selectedRelease.label} 未声明 capabilityCeiling。
@@ -147,8 +228,8 @@ export function OnboardingStepAgents({
           ) : (
             <div className='space-y-2'>
               <p className='text-muted-foreground text-xs'>
-                {selectedRelease.label} 的 capabilityCeiling（Agent 可请求的能力上限，实际可用集合还需与
-                Capability Profile / Policy 求交集）：
+                {selectedRelease.label} 的 capabilityCeiling（Agent
+                可请求的能力上限，实际可用集合还需与 Capability Profile / Policy 求交集）：
               </p>
               <div className='flex flex-wrap gap-1.5'>
                 {ceiling.map((capability) => (

@@ -7,12 +7,13 @@ import { useMemo } from 'react';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
+import { SEARCH_KIND_LABELS, searchEntities } from '@/lib/platform/search-index';
 
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const filteredGroups = useFilteredNavGroups(navGroups);
 
-  // These action are for the navigation
+  // These action are for the navigation + entity location (PRD 8.4)
   const actions = useMemo(() => {
     // Define navigateTo inside the useMemo callback to avoid dependency array issues
     const navigateTo = (url: string) => {
@@ -21,7 +22,7 @@ export default function KBar({ children }: { children: React.ReactNode }) {
 
     const allItems = filteredGroups.flatMap((group) => group.items);
 
-    return allItems.flatMap((navItem) => {
+    const navActions = allItems.flatMap((navItem) => {
       // Only include base action if the navItem has a real URL and is not just a container
       const baseAction =
         navItem.url !== '#'
@@ -51,6 +52,19 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       // Return only valid actions (ignoring null base actions for containers)
       return baseAction ? [baseAction, ...childActions] : childActions;
     });
+
+    // 实体定位 actions：按实体类型分 section（PRD 8.4），
+    // name 显示实体 label，subtitle 显示类型中文 + 标识
+    const entityActions = searchEntities.map((entity) => ({
+      id: `entity-${entity.kind}-${entity.id}`,
+      name: entity.label,
+      keywords: [entity.id, ...entity.keywords].join(' ').toLowerCase(),
+      section: `实体 · ${SEARCH_KIND_LABELS[entity.kind]}`,
+      subtitle: `${SEARCH_KIND_LABELS[entity.kind]} · ${entity.id}`,
+      perform: () => navigateTo(entity.href)
+    }));
+
+    return [...navActions, ...entityActions];
   }, [router, filteredGroups]);
 
   return (

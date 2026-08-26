@@ -1307,7 +1307,9 @@
   console intentionally ships without a user system for this phase and the
   operator identity is a local placeholder.
 - The full PRD v1.1 information architecture is implemented: 8 top-level
-  navigation modules and 47 route groups (overview, integrations with the
+  navigation modules and 52 routes — the PRD §7.3 recommended route list is
+  fully covered, plus Notification and Platform Health which appear in the
+  §7.2 nav tree (overview, integrations with the
   7-step onboarding wizard and three-pane Manifest editor, Agent assets with
   Effective Policy Simulator, runtime center with the 12-tab Task detail and a
   dependency-free SVG Orchestration DAG, frontend capability center with the
