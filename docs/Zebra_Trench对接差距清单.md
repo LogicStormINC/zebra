@@ -47,3 +47,17 @@ Cookie 头 + `{audience:"zebra", runId, scopes:[agent.run+5 读 scope], threadId
 五项差距全部属于**部署与验收基础设施**，不涉及两侧产品契约修改；
 按 §二 处置列在本分支（`cloud-agent-trench`）建设后，P1 冒烟与 P3 E2E
 即可执行。差距处置实现随阶段提交并回链本清单。
+
+## 五、处置进展（2026-08-26，TRN-LINK-DEPLOY-01）
+
+| 差距 | 状态 | 实现 |
+|------|------|------|
+| G1 Grant Broker | 已实现 | `apps/host_grant_broker`（exchange/JWKS/密钥生成）；测试用真实 `agent_security` 验证器闭环验证；本地进程冒烟三端点通过（含 fail-closed） |
+| G2 注册入口 | 已实现 | `scripts/register_trench_host.py`；已对带 host authority 表的真实 PostgreSQL 冒烟成功 |
+| G3 业务快照视图 | 已实现 | `tests/compose/trench_read_e2e/operator_sidecar.py` `GET /business-snapshot`（count+digest，`trench.business-snapshot.v1`） |
+| G4 Worker 重启 hook | 已实现 | 同 sidecar `POST /worker-restart`（operator token + Docker Engine API over unix socket，仅接受 taskId/runId） |
+| G5 本地 TLS | 已实现 | `docker/trench-acceptance/bootstrap.sh`（本地 CA + `*.zebra.local` 通配证书 + broker 密钥对）+ `docker/compose.trench-acceptance.yml`（broker/sidecar/caddy，已通过 `docker compose config` 校验） |
+
+剩余环境依赖项（非代码缺口）：应用镜像构建与完整栈拉起、Trench 侧
+`.env` 填值与 Trench 清场提交、`EMB-TRN-READ-E2E-01` 的 16 项真实输入。
+

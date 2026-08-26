@@ -3574,6 +3574,70 @@ metadata.
   parent remains `Review` until the branch is merged and the release gates are
   repeated on the resulting mainline.
 
+### TRN-LINK-CONTRACT-01 - Trench Link Contract Audit
+
+- Status: `Done`
+- Owner: `lukeding`
+- Depends on: merged `cloud-agent` line (client plane + CTX-INHERIT + ADR-026)
+- Branch: `cloud-agent-trench`
+- Owned paths: `docs/Zebra_Trench对接实施方案_v1.0.md`,
+  `docs/Zebra_Trench对接差距清单.md` (new), this task card
+
+#### Goal
+
+Freeze the Trench client ↔ Zebra API contract comparison before deployment
+work starts (tasks/agui/grant endpoints, SSE event set, host registry,
+operator capability existence).
+
+#### Review Evidence
+
+- 7 contract items verified as aligned (C1-C7) and 5 gaps identified (G1-G5)
+  in `docs/Zebra_Trench对接差距清单.md`; all gaps are deployment/acceptance
+  infrastructure, no product-contract change required.
+
+### TRN-LINK-DEPLOY-01 - Trench Link Deployment Infrastructure
+
+- Status: `Review`
+- Owner: `lukeding`
+- Depends on: `TRN-LINK-CONTRACT-01`
+- Branch: `cloud-agent-trench`
+- Owned paths: `apps/host_grant_broker/` (new), `scripts/register_trench_host.py`
+  (new), `docker/compose.trench-acceptance.yml` (new),
+  `docker/trench-acceptance/` (new), `docker/Dockerfile` broker target,
+  root `pyproject.toml` workspace member, focused tests
+
+#### Goal
+
+Close contract-audit gaps G1-G5: Host Grant broker (mint + JWKS + Trench
+session validation), host registry registration entry, acceptance operator
+sidecar (business snapshot + worker restart), and TLS-terminated acceptance
+compose.
+
+#### Acceptance
+
+- Broker tests verify minted grants against the real `agent_security`
+  decoder + verifier including the `extra="forbid"` claim boundary.
+- Registration script upserts idempotently (validated against a live
+  PostgreSQL host-authority schema).
+- Acceptance compose passes `docker compose config` validation; bootstrap
+  generates broker keypair and local CA wildcard certificate.
+
+### TRN-LINK-BFF-01 - Trench BFF Wiring Joint Debug
+
+- Status: `Locked`
+- Owner: `lukeding`
+- Depends on: `TRN-LINK-DEPLOY-01`, a committed Trench cleanup baseline
+  (Trench worktree currently holds 517 uncommitted deletions)
+- Branch: `cloud-agent-trench` (Zebra side) + Trench `.env` values only
+- Owned paths: none in Trench product code; Zebra side evidence under
+  `docs/` only
+
+#### Goal
+
+Fill Trench `ZEBRA_*` configuration against the acceptance deployment and
+verify the strategy workspace chat path end to end (BFF → broker → Zebra),
+read-only tool callbacks, and fail-closed behavior.
+
 ### EMB-TRN-READ-E2E-01 - Trench Read-Only Cross-Service Acceptance
 
 - Status: `In Progress`

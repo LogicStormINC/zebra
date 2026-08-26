@@ -35,3 +35,6 @@ ENTRYPOINT ["uvicorn", "zebra_agent_api.http:create_http_app", "--factory", "--h
 
 FROM runtime AS worker
 ENTRYPOINT ["zebra-agent-worker"]
+
+FROM runtime AS broker
+ENTRYPOINT ["python", "-m", "zebra_host_grant_broker"]

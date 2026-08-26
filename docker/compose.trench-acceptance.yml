@@ -1,0 +1,72 @@
+# Trench acceptance overlay: grant broker, TLS termination, operator sidecar.
+#
+# Bring up order (see docs/Zebra_Trench对接实施方案_v1.0.md P1/P3):
+#   1. docker/trench-acceptance/bootstrap.sh
+#   2. docker compose -f docker/compose.dependencies.yml up -d
+#   3. docker compose -f docker/compose.application.yml --env-file <env> up -d --build
+#   4. docker compose -f docker/compose.trench-acceptance.yml --env-file <env> up -d --build
+#
+# The overlay attaches to the shared `zebra-dependencies` network created by
+# the dependencies project.
+
+name: zebra-trench-acceptance
+
+x-acceptance-build: &acceptance-build
+  context: ..
+  dockerfile: docker/Dockerfile
+  args:
+    ZEBRA_PYTHON_BASE_IMAGE: ${ZEBRA_APPLICATION_PYTHON_BASE_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.12-slim-bookworm}
+
+services:
+  trench-grant-broker:
+    build:
+      <<: *acceptance-build
+      target: broker
+    environment:
+      ZEBRA_GRANT_BROKER_ISSUER: https://broker.zebra.local:8443
+      ZEBRA_GRANT_BROKER_ORIGIN: ${TRENCH_ACCEPTANCE_BFF_ORIGIN:?set TRENCH_ACCEPTANCE_BFF_ORIGIN}
+      ZEBRA_GRANT_BROKER_HOST_APP_ID: ${TRENCH_ACCEPTANCE_HOST_APP_ID:-trench}
+      ZEBRA_GRANT_BROKER_NAMESPACE_ID: ${TRENCH_ACCEPTANCE_NAMESPACE_ID:-trench-prod}
+      ZEBRA_GRANT_BROKER_POLICY_VERSION: ${TRENCH_ACCEPTANCE_POLICY_VERSION:-trench-read-v1}
+      ZEBRA_GRANT_BROKER_TRENCH_ME_URL: ${TRENCH_ACCEPTANCE_TRENCH_ME_URL:?set TRENCH_ACCEPTANCE_TRENCH_ME_URL}
+      ZEBRA_GRANT_BROKER_PRIVATE_KEY_FILE: /secrets/trench-host-grant-v1.pem
+    restart: unless-stopped
+    read_only: true
+    volumes:
+      - ./trench-acceptance/secrets:/secrets:ro
+    networks: [dependencies]
+
+  trench-operator-sidecar:
+    build:
+      <<: *acceptance-build
+      target: broker
+    entrypoint:
+      ["uvicorn", "operator_sidecar:create_sidecar", "--factory", "--host", "0.0.0.0", "--port", "8091"]
+    working_dir: /app/tests/compose/trench_read_e2e
+    environment:
+      TRENCH_SNAPSHOT_DATABASE_DSN: ${TRENCH_ACCEPTANCE_TRENCH_DATABASE_DSN:-}
+      TRENCH_SNAPSHOT_TABLES: ${TRENCH_ACCEPTANCE_TRENCH_SNAPSHOT_TABLES:-events,event_threads,states}
+      E2E_OPERATOR_TOKEN: ${TRENCH_ACCEPTANCE_OPERATOR_TOKEN:?set TRENCH_ACCEPTANCE_OPERATOR_TOKEN}
+      E2E_WORKER_CONTAINER: ${TRENCH_ACCEPTANCE_WORKER_CONTAINER:-zebra-application-zebra-worker-1}
+      E2E_DOCKER_SOCKET: /var/run/docker.sock
+    restart: unless-stopped
+    read_only: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [dependencies]
+
+  trench-acceptance-tls:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${TRENCH_ACCEPTANCE_TLS_PORT:-8443}:8443"
+    volumes:
+      - ./trench-acceptance/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./trench-acceptance/secrets:/certs:ro
+    depends_on: [trench-grant-broker]
+    networks: [dependencies]
+
+networks:
+  dependencies:
+    name: zebra-dependencies
+    external: true
