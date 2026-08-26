@@ -38,3 +38,9 @@ ENTRYPOINT ["zebra-agent-worker"]
 
 FROM runtime AS broker
 ENTRYPOINT ["python", "-m", "zebra_host_grant_broker"]
+
+FROM runtime AS worker-engine
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends docker-cli \
+    && rm -rf /var/lib/apt/lists/*
+USER zebra

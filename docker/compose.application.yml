@@ -55,6 +55,8 @@ services:
     tmpfs:
       - /tmp
       - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:rw,size=8g,nosuid,nodev
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     depends_on:
@@ -79,7 +81,7 @@ services:
   zebra-worker:
     build:
       <<: *zebra-application-build
-      target: worker
+      target: worker-engine
     environment:
       <<: *zebra-cloud-environment
       ZEBRA_WORKER_ID: ${ZEBRA_WORKER_ID:-zebra-cloud-worker}
@@ -96,6 +98,8 @@ services:
     tmpfs:
       - /tmp
       - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:rw,size=8g,nosuid,nodev
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     depends_on:
