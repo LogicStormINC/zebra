@@ -234,6 +234,15 @@ class PostgresWorkspaceProvisioner(WorkspaceProvisionerPort):
                     "digest_mismatch", "materialized tree differs from the source digest"
                 )
             return source.locator, digest
+        if source.kind is WorkspaceSourceKind.HOST_REFERENCE:
+            # A Host-referenced workspace starts as an empty, Host-named root;
+            # the Host's read tools provide data at runtime, not at provision time.
+            target.mkdir(parents=True, exist_ok=True)
+            (target / ".zebra-host-reference").write_text(
+                f"{source.locator}\n", encoding="utf-8"
+            )
+            digest = workspace_tree_digest(target)
+            return f"host_reference:{source.locator}", digest
         raise WorkspaceMaterializationError(
             "unsupported_source_kind", f"materialization is not defined for {source.kind}"
         )
