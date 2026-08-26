@@ -22,6 +22,7 @@ x-zebra-cloud-environment: &zebra-cloud-environment
   ZEBRA_LIVE_STREAM_MAX_LENGTH: ${ZEBRA_LIVE_STREAM_MAX_LENGTH:-1000}
   ZEBRA_LIVE_STREAM_KEY_PREFIX: ${ZEBRA_LIVE_STREAM_KEY_PREFIX:-zebra:live:v1}
   DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+  ZEBRA_WORKSPACE_VOLUME_ROOT: ${ZEBRA_WORKSPACE_VOLUME_ROOT:-}
 
 x-zebra-application-build: &zebra-application-build
   context: ..
@@ -106,3 +107,6 @@ networks:
   dependencies:
     name: ${ZEBRA_APPLICATION_NETWORK:-zebra-dependencies}
     external: true
+
+volumes:
+  zebra-workspaces:
