@@ -434,3 +434,14 @@ def _finalize_local_memory(
     )
     for event in promotion.events:
         recorder.append_event(event)
+
+
+def rebuild_task_index(task_store: object, session_id: object) -> None:
+    """Rebuild the explicitly-maintained AG-UI task event index.
+
+    The index is never written by reads; without this rebuild after a
+    turn, the Host AG-UI stream stays blind to appended events.
+    """
+    ensure = getattr(task_store, "ensure_for_session", None)
+    if ensure is not None:
+        ensure(session_id)  # type: ignore[call-arg]

@@ -44,7 +44,6 @@ from zebra_agent_worker.execution_errors import (
     sequence_race_guard,
 )
 from zebra_agent_worker.execution_events import (
-    DurableHarnessEventRecorder,
     ExecutionInterrupted,
 )
 from zebra_agent_worker.execution_finalization import ExecutedSession, WorkerExecutionError
@@ -116,6 +115,7 @@ class SessionExecutionService:
         self._settings = settings or load_settings()
         storage = resolve_execution_storage(database_path, stores)
         active_stores = storage.stores
+        self._task_index_store = getattr(active_stores, "tasks", None)
         self._event_store = active_stores.events
         self._projection_store = active_stores.sessions
         self._workspace_store = active_stores.workspaces
@@ -242,7 +242,7 @@ class SessionExecutionService:
         model_gateway = build_model_gateway(model_provider_settings(self._settings))
         runtime_handle = None
         runtime = None
-        effect_recorder: list[DurableHarnessEventRecorder] = []
+        effect_recorder = []
         try:
             prepared_context = prepare_worker_context(
                 store=self._context_materialization_store,
@@ -321,8 +321,8 @@ class SessionExecutionService:
                     task_binding.host_capability.manifest_digest if task_binding else None
                 ),
                 frozen_manifest_loader=self._frozen_manifest_loader,
-                client_gateway=(self._client_runtime(session_id)  # type: ignore[arg-type]
-                                if self._client_runtime else None),
+                client_gateway=self._client_runtime(session_id) if self._client_runtime
+                                else None,  # type: ignore[arg-type]
             )
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,
@@ -489,6 +489,7 @@ class SessionExecutionService:
             final_session = self._projection_store.get_session(session_id)
             if final_session is None:
                 raise WorkerExecutionError("session projection missing after worker execution")
+            execution_finalization.rebuild_task_index(self._task_index_store, session_id)
             return ExecutedSession(final_session, emitted_events, attempt_result)
         except ExecutionInterrupted:
             release_gateway()
