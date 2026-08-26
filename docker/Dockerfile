@@ -41,7 +41,7 @@ ENTRYPOINT ["python", "-m", "zebra_host_grant_broker"]
 
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/docker:27-cli AS docker-cli
 
-FROM runtime AS worker-engine
+FROM worker AS worker-engine
 USER root
 COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
 USER zebra
