@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import sys
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from time import monotonic
@@ -102,53 +103,82 @@ def prepare_agui_stream(
 
 async def tail_agui_events(
     context: AgUiStreamContext,
-    request: _DisconnectableRequest,  # noqa: ARG001 - retained for callers
+    request: _DisconnectableRequest,
 ) -> AsyncIterator[str]:
-    """Replay durable Events, then poll the same authority for a lossless tail."""
+    """Replay durable Events, then poll the same authority for a lossless tail.
+
+    The loop never trusts a single signal for liveness: client disconnects
+    surface as errors on ``yield``; store hiccups are retried; and the whole
+    tail is bounded by a wall-clock deadline.
+    """
 
     cursor = context.cursor
     last_delivery = monotonic()
     deadline = monotonic() + _MAX_STREAM_SECONDS
+    iterations = 0
     failures = 0
+    del request  # disconnects are detected at yield time
     while monotonic() < deadline:
-      try:
-          events = await asyncio.to_thread(
-              context.stores.tasks.read_events,
-              context.task_id,
-              -1,
-          )
-          emitted = False
-          for next_cursor, projected in _project_new_task_events(
-              events,
-              context.identity,
-              cursor,
-          ):
-              cursor = next_cursor
-              emitted = True
-              last_delivery = monotonic()
-              yield projected
-          task = await asyncio.to_thread(
-              context.stores.tasks.get_task,
-              context.task_id,
-          )
-          if task is None:
-              return
-          if events and events[-1].event.event_type in _TERMINAL_EVENTS:
-              return
-          if task.status in _TERMINAL_STATUSES:
-              return
-          if emitted:
-              continue
-          if monotonic() - last_delivery >= _KEEPALIVE_SECONDS:
-              last_delivery = monotonic()
-              yield ": keepalive\n\n"
-          await asyncio.sleep(_POLL_SECONDS)
-      except Exception:  # transient store failures must not kill the tail
-        failures += 1
-        logger.warning("agui stream iteration failed (%s)", failures, exc_info=True)
-        if failures > 50:
+        iterations += 1
+        if iterations % 40 == 0:
+            print(f"AGUI-BEAT iter={iterations}", file=sys.stderr, flush=True)
+        try:
+            events = await asyncio.to_thread(
+                context.stores.tasks.read_events,
+                context.task_id,
+                -1,
+            )
+        except Exception:
+            failures += 1
+            print(f"AGUI-EXIT read failure #{failures}", file=sys.stderr, flush=True)
+            if failures > 20:
+                return
+            await asyncio.sleep(_POLL_SECONDS)
+            continue
+        emitted = False
+        try:
+            for next_cursor, projected in _project_new_task_events(
+                events,
+                context.identity,
+                cursor,
+            ):
+                cursor = next_cursor
+                emitted = True
+                last_delivery = monotonic()
+                yield projected
+        except Exception:
+            failures += 1
+            print(f"AGUI-EXIT projection failure #{failures}", file=sys.stderr, flush=True)
+            if failures > 20:
+                return
+            await asyncio.sleep(_POLL_SECONDS)
+            continue
+        try:
+            task = await asyncio.to_thread(
+                context.stores.tasks.get_task,
+                context.task_id,
+            )
+        except Exception:
+            failures += 1
+            print(f"AGUI-EXIT task-read failure #{failures}", file=sys.stderr, flush=True)
+            if failures > 20:
+                return
+            await asyncio.sleep(_POLL_SECONDS)
+            continue
+        if task is None:
+            print("AGUI-EXIT task_missing", file=sys.stderr, flush=True)
             return
+        if events and events[-1].event.event_type in _TERMINAL_EVENTS:
+            print(f"AGUI-EXIT terminal_event {events[-1].event.event_type}", file=sys.stderr, flush=True)
+            return
+        if task.status in _TERMINAL_STATUSES:
+            print(f"AGUI-EXIT terminal_status {task.status}", file=sys.stderr, flush=True)
+            return
+        if not emitted and monotonic() - last_delivery >= _KEEPALIVE_SECONDS:
+            last_delivery = monotonic()
+            yield ": keepalive\n\n"
         await asyncio.sleep(_POLL_SECONDS)
+    print("AGUI-EXIT deadline", file=sys.stderr, flush=True)
 
 
 def _project_new_task_events(
