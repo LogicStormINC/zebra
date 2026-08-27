@@ -20,7 +20,10 @@ from agent_core.ports import (
 )
 
 from zebra_agent_worker.claims import SessionClaimService
-from zebra_agent_worker.cloud_memory_finalization import finalize_cloud_memory
+from zebra_agent_worker.cloud_memory_finalization import (
+    finalize_cloud_memory,
+    memory_completion_revision,
+)
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.recovery import SessionRecoveryError
@@ -28,6 +31,8 @@ from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 
 TITLE_RETRY_COOLDOWN = timedelta(minutes=15)
 _TITLE_RETRY_ACTION = "worker-title-retry"
+MEMORY_RECOVERY_ACTION = "worker-memory-finalization-recovery"
+_MEMORY_RECOVERY_HASH = "worker-memory-finalization-recovery-v1"
 
 
 def _title_retry_key(session_id: SessionId, bucket: int) -> str:
@@ -73,6 +78,33 @@ def _reserve_title_attempt(
     )
     stored = store.save(proposed)
     return stored.response_body.get("reservation_id") == reservation_id
+
+
+def memory_recovery_key(session_id: SessionId, completion_revision: int) -> str:
+    return f"{session_id}:{completion_revision}"
+
+
+def _mark_memory_recovered(
+    store: IdempotencyStorePort | None,
+    session_id: SessionId,
+    completion_revision: int,
+    recovered_at: datetime,
+) -> None:
+    if store is None:
+        return
+    store.save(
+        IdempotencyRecord(
+            action=MEMORY_RECOVERY_ACTION,
+            idempotency_key=memory_recovery_key(session_id, completion_revision),
+            request_hash=_MEMORY_RECOVERY_HASH,
+            status_code=204,
+            response_body={
+                "session_id": str(session_id),
+                "completion_revision": completion_revision,
+            },
+            created_at=recovered_at,
+        )
+    )
 
 
 class CloudMemoryFinalizationRecovery:
@@ -148,6 +180,12 @@ class CloudMemoryFinalizationRecovery:
             if not finalized:
                 return False
             events = self._event_store.list_for_session(session_id)
+            _mark_memory_recovered(
+                self._idempotency_store,
+                session_id,
+                memory_completion_revision(events, recorder.session),
+                recovered_at,
+            )
             if any(event.event_type is EventType.SESSION_TITLE_UPDATED for event in events):
                 return True
             now = recovered_at
@@ -180,9 +218,18 @@ def recover_completed_cloud_memory(
 ) -> None:
     if recovery is None:
         return
-    # ponytail: retain a bounded recent window until an explicit durable
-    # finalization queue is introduced for high-throughput deployments.
-    for session in projection_store.list_recent_sessions(limit=max(batch_size, 32)):
+    pending_reader = getattr(projection_store, "list_memory_recovery_sessions", None)
+    pending = (
+        pending_reader(limit=max(batch_size, 1), recovery_action=MEMORY_RECOVERY_ACTION)
+        if callable(pending_reader)
+        else []
+    )
+    # Recent Sessions retain the existing best-effort title retry behavior. The
+    # PostgreSQL pending reader is durable and oldest-first, so Memory recovery
+    # itself no longer depends on a moving recent-Session window.
+    recent = projection_store.list_recent_sessions(limit=max(batch_size, 32))
+    sessions = {session.session_id: session for session in (*pending, *recent)}
+    for session in sessions.values():
         # COMPLETED: legacy/one-shot finalization; AWAITING_TURN: a
         # conversation Turn closed but its fenced Memory/title side
         # chain may still be missing after a Worker crash (ADR-026 §6).

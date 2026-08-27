@@ -6,6 +6,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+import httpx
 from agent_core.domain.sessions import SessionStatus
 from zebra_agent_config import load_settings
 
@@ -23,18 +24,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     namespace = _build_parser().parse_args(list(argv) if argv is not None else None)
     settings = load_settings()
     database_path = Path(namespace.database or settings.database_url)
-    loop_service = build_worker_loop_service(
-        database_path=database_path,
-        settings=settings,
-    )
-    result = loop_service.run(
-        worker_id=namespace.worker_id,
-        batch_size=namespace.batch_size,
-        lease_ttl_seconds=namespace.lease_ttl_seconds,
-        max_cycles=namespace.max_cycles,
-        stop_when_idle=namespace.stop_when_idle,
-        idle_sleep_seconds=namespace.idle_sleep_seconds,
-    )
+    with httpx.Client(timeout=httpx.Timeout(300.0, connect=10.0)) as model_http_client:
+        loop_service = build_worker_loop_service(
+            database_path=database_path,
+            settings=settings,
+            model_http_client=model_http_client,
+        )
+        result = loop_service.run(
+            worker_id=namespace.worker_id,
+            batch_size=namespace.batch_size,
+            lease_ttl_seconds=namespace.lease_ttl_seconds,
+            max_cycles=namespace.max_cycles,
+            stop_when_idle=namespace.stop_when_idle,
+            idle_sleep_seconds=namespace.idle_sleep_seconds,
+        )
     print(
         json.dumps(
             {

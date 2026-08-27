@@ -9,7 +9,23 @@ https://zebra.zebra.local:8443 {
 	}
 }
 
+# Host-side Trench uses the IP SAN directly so macOS never invokes mDNS for
+# the reserved .local suffix.
+https://zebra.localhost:8443 {
+	tls /certs/tls.crt /certs/tls.key
+	reverse_proxy zebra-api:8000 {
+		flush_interval -1
+	}
+}
+
 https://broker.zebra.local:8443 {
+	tls /certs/tls.crt /certs/tls.key
+	reverse_proxy trench-grant-broker:8090 {
+		flush_interval -1
+	}
+}
+
+https://broker.localhost:8444 {
 	tls /certs/tls.crt /certs/tls.key
 	reverse_proxy trench-grant-broker:8090 {
 		flush_interval -1

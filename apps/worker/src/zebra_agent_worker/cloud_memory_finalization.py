@@ -54,7 +54,7 @@ def finalize_cloud_memory(
         raise ValueError("cloud Memory finalization requires Worker mutation authority")
     session = recorder.session
     events = event_store.list_for_session(session.session_id)
-    completion_revision = _completion_revision(events, session)
+    completion_revision = memory_completion_revision(events, session)
     operation_id = _operation_id(session, completion_revision)
     committed = memory_store.get_worker_commit_receipt(
         operation_id,
@@ -190,7 +190,7 @@ def _accept_receipt(
         recorder.refresh_tail()
 
 
-def _completion_revision(events: list[SessionEvent], session: Session) -> int:
+def memory_completion_revision(events: list[SessionEvent], session: Session) -> int:
     """The stream revision the Memory commit must anchor on.
 
     ADR-026: v2 streams anchor on the latest Turn close (the Segment

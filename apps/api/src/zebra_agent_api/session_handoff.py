@@ -123,10 +123,14 @@ class SessionHandoffApi:
             principal_identity_hash=principal_identity_hash,
             actor_kind=actor_kind,
         )
+        events = self._events.list_for_session(source_id)
+        completed_work = parsed["completed_work"]
+        if actor_kind is HandoffActorKind.AUTOMATION and not completed_work:
+            completed_work = _conversation_checkpoint(events)
         request_hash = canonical_handoff_request_hash(
             request,
             objective=parsed["objective"],
-            completed_work=parsed["completed_work"],
+            completed_work=completed_work,
             pending_work=parsed["pending_work"],
         )
         if not preview:
@@ -161,11 +165,7 @@ class SessionHandoffApi:
                 body = _serialize_envelope(envelope, status=committed.child_status)
                 body["idempotent_replay"] = True
                 return ApiResponse(200, body)
-        events = self._events.list_for_session(source_id)
         capsule = self._context_lifecycle.get_active_capsule(source_id)
-        completed_work = parsed["completed_work"]
-        if actor_kind is HandoffActorKind.AUTOMATION and not completed_work:
-            completed_work = _conversation_checkpoint(events)
         envelope = build_handoff_envelope(
             HandoffEnvelopeBuildInput(
                 handoff_id=handoff_id,

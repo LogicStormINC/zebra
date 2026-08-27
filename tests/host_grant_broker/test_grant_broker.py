@@ -53,6 +53,7 @@ def _settings(key) -> BrokerSettings:
         key_id="test-key-1",
         ttl_seconds=300,
         trench_me_url="https://trench.local/api/trench-ai/me",
+        trench_sources_url="https://trench.local/api/trench-ai/sources",
         trench_timeout_seconds=5,
         max_runtime_seconds=1800,
         max_model_tokens=1_000_000,
@@ -167,6 +168,19 @@ def test_fetch_viewer_extracts_identity():
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers["Cookie"] == "trench_ai_product_session=abc"
+        if request.url.path.endswith("/sources"):
+            return httpx.Response(
+                200,
+                json={
+                    "success": True,
+                    "data": {
+                        "items": [
+                            {"source_id": "src-active", "subscription_status": "active"},
+                            {"source_id": "src-paused", "subscription_status": "paused"},
+                        ]
+                    },
+                },
+            )
         return httpx.Response(
             200,
             json={"success": True, "data": {"viewer": {"user_id": "u9", "workspace_id": "w1"}}},
@@ -174,11 +188,16 @@ def test_fetch_viewer_extracts_identity():
 
     viewer = fetch_viewer(
         "https://trench.local/api/trench-ai/me",
+        "https://trench.local/api/trench-ai/sources",
         "trench_ai_product_session=abc",
         timeout_seconds=5,
         transport=httpx.MockTransport(handler),
     )
-    assert viewer == TrenchViewer(user_id="u9", workspace_id="w1")
+    assert viewer == TrenchViewer(
+        user_id="u9",
+        workspace_id="w1",
+        active_source_ids=frozenset({"src-active"}),
+    )
 
 
 def test_fetch_viewer_rejects_inactive_session():
@@ -186,7 +205,13 @@ def test_fetch_viewer_rejects_inactive_session():
 
     transport = httpx.MockTransport(lambda request: httpx.Response(401))
     with pytest.raises(TrenchSessionError) as excinfo:
-        fetch_viewer("https://x.local/me", "c=1", timeout_seconds=5, transport=transport)
+        fetch_viewer(
+            "https://x.local/me",
+            "https://x.local/sources",
+            "c=1",
+            timeout_seconds=5,
+            transport=transport,
+        )
     assert str(excinfo.value) == "session_inactive"
 
 
@@ -220,6 +245,65 @@ def test_exchange_endpoint_mints_grant():
     assert response.status_code == 200
     token = response.json()["grant"]
     _verify_with_zebra(token, settings, key)
+
+
+def test_exchange_mints_only_viewer_authorized_read_resources():
+    key = _key()
+    settings = _settings(key)
+    client = _client(
+        settings,
+        TrenchViewer("user-42", "ws-7", frozenset({"src-1"})),
+    )
+    response = client.post(
+        "/exchange",
+        json={
+            "audience": "zebra",
+            "runId": "run-1",
+            "scopes": ["agent.run", "event.read", "topic.read"],
+            "threadId": "thread-1",
+            "resourceRefs": [
+                {"type": "trench.source", "id": "src-1"},
+                {"type": "trench.topic", "id": "robotics"},
+            ],
+        },
+        headers={"Cookie": "trench_ai_product_session=abc"},
+    )
+
+    assert response.status_code == 200
+    verified = _verify_with_zebra(response.json()["grant"], settings, key)
+    assert {ref.key for ref in verified.context.resource_refs} >= {
+        ("trench.source", "src-1"),
+        ("trench.topic", "robotics"),
+    }
+
+
+def test_exchange_rejects_unsubscribed_source_and_unbound_business_resource():
+    settings = _settings(_key())
+    client = _client(
+        settings,
+        TrenchViewer("user-42", "ws-7", frozenset({"src-1"})),
+    )
+    base = {
+        "audience": "zebra",
+        "runId": "run-1",
+        "scopes": ["agent.run", "event.read", "topic.read"],
+        "threadId": "thread-1",
+    }
+    headers = {"Cookie": "trench_ai_product_session=abc"}
+
+    unsubscribed = client.post(
+        "/exchange",
+        json={**base, "resourceRefs": [{"type": "trench.source", "id": "src-2"}]},
+        headers=headers,
+    )
+    no_source = client.post(
+        "/exchange",
+        json={**base, "resourceRefs": [{"type": "trench.topic", "id": "robotics"}]},
+        headers=headers,
+    )
+
+    assert unsubscribed.json() == {"status": "rejected", "reason": "source_not_allowed"}
+    assert no_source.json() == {"status": "rejected", "reason": "source_binding_required"}
 
 
 def test_exchange_endpoint_rejections():

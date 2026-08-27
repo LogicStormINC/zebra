@@ -8,7 +8,12 @@ from agent_core.application import (
 )
 from agent_core.application.agent_definitions import PublisherGrantPort
 from agent_core.application.session_projection import apply_event
-from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.application.workspace_projection import (
+    apply_event as apply_workspace_event,
+)
+from agent_core.application.workspace_projection import (
+    rebuild_workspace,
+)
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.tool_profiles import ToolProfile
@@ -359,6 +364,9 @@ class ZebraAgentApi(
             return message_sequence_conflict(session_id)
         event = stored
         updated_session = projection_store.save_session(apply_event(session, event))
+        workspace = self.stores.workspaces.get_workspace(session_key)
+        if workspace is not None:
+            self.stores.workspaces.save_workspace(apply_workspace_event(workspace, event))
         body: dict[str, object] = {
             "session_id": session_id,
             "appended": True,

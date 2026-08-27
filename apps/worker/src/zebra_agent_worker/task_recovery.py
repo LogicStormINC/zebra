@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from agent_core.application import attachment_refs_from_event
@@ -16,6 +16,7 @@ from agent_core.domain.context_inheritance import DelegatedContextSnapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.session_history import normalize_history_session_ids
+from agent_core.domain.task_bindings import TaskBindingSnapshot, host_context_digest
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.turns import InteractionMode
 from agent_core.domain.workspaces import WorkspaceProjection
@@ -46,6 +47,27 @@ class RecoveredTask:
     client_state: RuntimeEvidenceInput | None = None
     delegated_context: DelegatedContextSnapshot | None = None
     interaction_mode: InteractionMode = InteractionMode.ONE_SHOT
+
+
+def apply_bound_host_context(
+    task: RecoveredTask,
+    binding: TaskBindingSnapshot | None,
+) -> RecoveredTask:
+    """Use only the exact Host context frozen into the latest binding revision."""
+
+    if binding is None or binding.host_capability.host_context is None:
+        return task
+    context = binding.host_capability.host_context
+    host = binding.host_capability
+    if host_context_digest(context) != host.grant_digest:
+        raise ValueError("bound Host context digest does not match the Task binding")
+    if (
+        context.host_app_id != host.host_app_id
+        or context.namespace_id != host.namespace_id
+        or context.origin != host.authority_issuer
+    ):
+        raise ValueError("bound Host context authority does not match the Task binding")
+    return replace(task, host_context=context)
 
 
 def recover_task(

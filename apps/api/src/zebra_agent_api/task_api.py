@@ -83,6 +83,7 @@ class TaskReadApi:
             task_id=task_id,
             session_id=task_id,
             current_sequence=task.current_sequence,
+            active_segment_sequence=session.current_sequence,
             status=task.status.value,
         )
         _update_turn_fields(body, session, events_store=self.stores.events)
@@ -235,8 +236,16 @@ def create_task(
     if not isinstance(session_id, str):
         return ApiResponse(409, {"status": "projection_incomplete"})
     task = app.stores.tasks.ensure_for_session(SessionId(UUID(session_id)))
+    active = app.stores.sessions.get_session(task.active_segment_id)
+    if active is None:
+        return ApiResponse(409, {"task_id": str(task.task_id), "status": "projection_incomplete"})
     body = dict(response.body)
-    body.update(task_id=str(task.task_id), session_id=str(task.task_id))
+    body.update(
+        task_id=str(task.task_id),
+        session_id=str(task.task_id),
+        current_sequence=task.current_sequence,
+        active_segment_sequence=active.current_sequence,
+    )
     return ApiResponse(response.status_code, body)
 
 

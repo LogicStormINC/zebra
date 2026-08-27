@@ -197,6 +197,22 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
     )
 
     assert first is True and second is True
+    from zebra_agent_worker.cloud_memory_recovery import (
+        MEMORY_RECOVERY_ACTION,
+        memory_recovery_key,
+    )
+
+    completion_revision = events[-1].sequence
+    assert (
+        stores.idempotency.get(
+            action=MEMORY_RECOVERY_ACTION,
+            idempotency_key=memory_recovery_key(
+                bootstrap.session.session_id,
+                completion_revision,
+            ),
+        )
+        is not None
+    )
     # One second across a bucket boundary is still inside the rolling cooldown.
     assert calls["count"] == 1
     # After the rolling cooldown expires a retry is allowed again.
@@ -356,6 +372,42 @@ def test_cloud_memory_scan_does_not_hide_deterministic_value_errors() -> None:
             recovery=_Recovery(),
             projection_store=projection,
         )
+
+
+def test_cloud_memory_scan_includes_old_durable_pending_sessions() -> None:
+    from agent_core.domain.identifiers import new_session_id
+    from agent_core.domain.sessions import SessionStatus
+    from zebra_agent_worker.cloud_memory_recovery import recover_completed_cloud_memory
+
+    old_session = SimpleNamespace(
+        session_id=new_session_id(),
+        status=SessionStatus.COMPLETED,
+    )
+    recent_session = SimpleNamespace(
+        session_id=new_session_id(),
+        status=SessionStatus.AWAITING_TURN,
+    )
+    recovered: list[object] = []
+
+    class _Recovery:
+        def recover(self, session_id, **kwargs):
+            recovered.append(session_id)
+            return True
+
+    projection = SimpleNamespace(
+        list_memory_recovery_sessions=lambda **kwargs: [old_session],
+        list_recent_sessions=lambda **kwargs: [recent_session],
+    )
+
+    recover_completed_cloud_memory(
+        worker_id="worker-a",
+        batch_size=1,
+        lease_ttl_seconds=30,
+        recovery=_Recovery(),
+        projection_store=projection,
+    )
+
+    assert recovered == [old_session.session_id, recent_session.session_id]
 
 
 def _build_receipt_session(tmp_path: Path, *, with_follow_up: bool):

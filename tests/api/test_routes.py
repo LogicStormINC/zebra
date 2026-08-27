@@ -1,11 +1,12 @@
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import UUID
 
 import zebra_agent_worker.execution as worker_execution_module
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.identifiers import SessionId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
@@ -17,12 +18,10 @@ from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
 def _finish_first_turn(database_path: Path, session_id: str) -> None:
     """Close bootstrap Turn 0 so a follow-up message can be admitted."""
-    from uuid import UUID
-
     from agent_core.application import current_turn
     from agent_core.application.session_projection import rebuild_session
+    from agent_core.application.workspace_projection import rebuild_workspace
     from agent_core.domain.events import EventActor, EventType, SessionEvent
-    from agent_core.domain.identifiers import SessionId
     from agent_core.domain.turns import derive_turn_id
     from agent_storage import SQLiteEventStore as _Store
     from agent_storage import SQLiteProjectionStore as _Proj
@@ -61,6 +60,9 @@ def _finish_first_turn(database_path: Path, session_id: str) -> None:
     )
     _Proj(database_path).save_session(
         rebuild_session(event_store.list_for_session(key))
+    )
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        rebuild_workspace(event_store.list_for_session(key))
     )
 
 
@@ -321,6 +323,11 @@ def test_route_adapter_handles_session_message_append(tmp_path: Path) -> None:
     assert response.body["content"] == "Please continue from the latest checkpoint."
     assert response.body["status"] == "ready"
     assert response.body["current_sequence"] == 5
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
+        SessionId(UUID(session_id))
+    )
+    assert workspace is not None
+    assert workspace.current_sequence == 5
 
 
 def test_route_adapter_rejects_terminal_session_message_append(tmp_path: Path) -> None:

@@ -389,6 +389,37 @@ def _append_turn_close(
     )
 
 
+def finalize_worker_setup_failure(
+    *,
+    recorder: DurableHarnessEventRecorder,
+    event_store: EventStorePort,
+    error: WorkerExecutionError,
+) -> ExecutedSession:
+    """Durably close a command whose Worker setup failed before model execution."""
+
+    result = HarnessAttemptResult(
+        outcome=HarnessAttemptOutcome.FAILED,
+        summary="Worker execution could not start.",
+        metadata={
+            "stop_reason": "worker_setup_failed",
+            "error_type": type(error).__name__,
+        },
+    )
+    if recorder.session.status is SessionStatus.READY:
+        recorder.append(
+            EventType.HARNESS_ATTEMPT_STARTED,
+            EventActor.HARNESS,
+            {"attempt_number": 1},
+        )
+    _append_turn_close(
+        recorder=recorder,
+        attempt_result=result,
+        event_store=event_store,
+        interaction_mode=InteractionMode.CONVERSATION,
+    )
+    return ExecutedSession(recorder.session, recorder.events, result)
+
+
 def _child_task_ids(metadata: dict[str, object]) -> list[str] | None:
     """Extract validated waiting-children ids from attempt metadata."""
 

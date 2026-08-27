@@ -42,9 +42,7 @@ class PostgresTaskAdmissionTransaction:
     def admit(self, request: TaskAdmissionRequest) -> TaskAdmissionReceipt:
         request.validate()
         with self._database.connect() as connection:
-            return self.admit_in_transaction(
-                connection, self.deployment_namespace, request
-            )
+            return self.admit_in_transaction(connection, self.deployment_namespace, request)
 
     def admit_in_transaction(
         self,
@@ -80,8 +78,7 @@ class PostgresTaskAdmissionTransaction:
                     replayed_record=replayed,
                 )
         persisted_events = tuple(
-            append_event_in_transaction(connection, namespace, event)
-            for event in request.events
+            append_event_in_transaction(connection, namespace, event) for event in request.events
         )
         save_session_in_transaction(connection, namespace, request.session)
         save_workspace_in_transaction(connection, namespace, request.workspace)
@@ -100,7 +97,6 @@ class PostgresTaskAdmissionTransaction:
             event_count=len(persisted_events),
             binding_digest=binding_digest,
         )
-
 
 
 def update_idempotency_response(
@@ -138,6 +134,7 @@ def save_task_binding(
     *,
     deployment_namespace: str,
     binding: TaskBindingSnapshot,
+    expected_previous_revision: int | None = None,
 ) -> str:
     """Persist one immutable binding snapshot outside a full admission.
 
@@ -148,6 +145,24 @@ def save_task_binding(
 
     database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
     with database.connect() as connection:
+        if expected_previous_revision is not None:
+            latest = connection.execute(
+                """
+                SELECT binding_revision FROM task_binding_snapshots
+                WHERE deployment_namespace = %s AND task_id = %s
+                ORDER BY binding_revision DESC
+                LIMIT 1
+                FOR UPDATE
+                """,
+                (deployment_namespace, str(binding.task_id)),
+            ).fetchone()
+            actual = latest["binding_revision"] if latest is not None else 0
+            if actual != expected_previous_revision:
+                raise ValueError(
+                    "task binding revision advanced concurrently; retry from the latest snapshot"
+                )
+            if binding.binding_revision != actual + 1:
+                raise ValueError("task binding renewal must append exactly one revision")
         existing = connection.execute(
             """
             SELECT binding_digest FROM task_binding_snapshots
@@ -163,12 +178,12 @@ def save_task_binding(
         if existing is not None:
             if existing["binding_digest"] != binding.binding_digest:
                 raise ValueError(
-                    "task binding revision is immutable and already exists "
-                    "with a different digest"
+                    "task binding revision is immutable and already exists with a different digest"
                 )
             return binding.binding_digest
         _insert_binding_snapshot(connection, deployment_namespace, binding)
     return binding.binding_digest
+
 
 def _insert_or_load_idempotency(
     connection: Any,
@@ -259,6 +274,7 @@ def _binding_json(binding: TaskBindingSnapshot) -> dict[str, object]:
     """Full model dump — the snapshot must round-trip through validate()."""
 
     return binding.model_dump(mode="json")
+
 
 def load_task_binding(
     dsn: str,

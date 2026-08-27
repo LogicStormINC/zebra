@@ -5,8 +5,10 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from threading import Thread
 from uuid import UUID
 
+import httpx
 from agent_core.application import SessionTitleService
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseLostError
@@ -86,6 +88,7 @@ class WorkerLoopService:
         child_wakeup_service: ChildCompletionWakeupService | None = None,
         sleep: Callable[[float], None] = time.sleep,
         command_consumer: SessionCommandConsumer | None = None,
+        scan_ready_sessions: bool = True,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
@@ -93,6 +96,8 @@ class WorkerLoopService:
         self._child_wakeup_service = child_wakeup_service
         self._sleep = sleep
         self._command_consumer = command_consumer
+        self._scan_ready_sessions = scan_ready_sessions
+        self._cloud_memory_recovery_thread: Thread | None = None
 
     def poll_once(
         self,
@@ -101,13 +106,6 @@ class WorkerLoopService:
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
     ) -> WorkerLoopCycleResult:
-        recover_completed_cloud_memory(
-            worker_id=worker_id,
-            batch_size=batch_size,
-            lease_ttl_seconds=lease_ttl_seconds,
-            recovery=self._cloud_memory_recovery,
-            projection_store=self._projection_store,
-        )
         self._process_child_wakeups()
         command_result = (
             self._command_consumer.consume_once(
@@ -131,7 +129,11 @@ class WorkerLoopService:
                     file=sys.stderr,
                     flush=True,
                 )
-        ready_sessions = self._projection_store.list_ready_sessions(limit=batch_size)
+        ready_sessions = (
+            self._projection_store.list_ready_sessions(limit=batch_size)
+            if self._scan_ready_sessions
+            else []
+        )
         ready_ids = tuple(str(session.session_id) for session in ready_sessions)
         for session in ready_sessions:
             session_id = str(session.session_id)
@@ -161,12 +163,46 @@ class WorkerLoopService:
                 )
                 continue
             executed_ids.append(session_id)
+        if command_result is None or command_result.status == "idle":
+            self._start_cloud_memory_recovery(
+                worker_id=worker_id,
+                batch_size=batch_size,
+                lease_ttl_seconds=lease_ttl_seconds,
+            )
         return WorkerLoopCycleResult(
             ready_session_ids=ready_ids,
             executed_session_ids=tuple(executed_ids),
             skipped_session_ids=tuple(skipped_ids),
         )
 
+    def _start_cloud_memory_recovery(
+        self,
+        *,
+        worker_id: str,
+        batch_size: int,
+        lease_ttl_seconds: int,
+    ) -> None:
+        if self._cloud_memory_recovery is None:
+            return
+        active = self._cloud_memory_recovery_thread
+        if active is not None and active.is_alive():
+            return
+        # ponytail: finalization recovery is best-effort background work until
+        # it has its own durable queue; it must never block RUN command polling.
+        recovery_thread = Thread(
+            target=recover_completed_cloud_memory,
+            kwargs={
+                "worker_id": worker_id,
+                "batch_size": batch_size,
+                "lease_ttl_seconds": lease_ttl_seconds,
+                "recovery": self._cloud_memory_recovery,
+                "projection_store": self._projection_store,
+            },
+            name=f"{worker_id}-cloud-memory-recovery",
+            daemon=True,
+        )
+        self._cloud_memory_recovery_thread = recovery_thread
+        recovery_thread.start()
 
     def _process_child_wakeups(self) -> None:
         """Poll terminal children and emit parent resume commands."""
@@ -256,6 +292,7 @@ def build_worker_loop_service(
     deployment_namespace: str | None = None,
     cloud_provider_continuation_factory: Callable[[SessionId], CloudProviderContinuationCoordinator]
     | None = None,
+    model_http_client: httpx.Client | None = None,
 ) -> WorkerLoopService:
     client_runtime = None
     if settings.storage_authority == "postgresql":
@@ -289,8 +326,10 @@ def build_worker_loop_service(
         active_authority_resolver = cloud_bundle.authority_resolver
         active_authority_scope_provider = cloud_bundle.authority_scope_provider
         client_runtime = compose_client_runtime(
-            cloud_bundle.dsn, deployment_namespace=active_namespace or "",
-            enabled=settings.client_integration_enabled)
+            cloud_bundle.dsn,
+            deployment_namespace=active_namespace or "",
+            enabled=settings.client_integration_enabled,
+        )
     else:
         from agent_storage import sqlite_control_plane_stores
 
@@ -407,6 +446,7 @@ def build_worker_loop_service(
         delegation_store=delegation_store,
         frozen_manifest_loader=frozen_manifest_loader,
         client_runtime=client_runtime,
+        model_http_client=model_http_client,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,
         workspace_resolver=(
@@ -446,7 +486,10 @@ def build_worker_loop_service(
             projection_store=execution_stores.sessions,
             workspace_store=execution_stores.workspaces,
             title_service_factory=lambda: SessionTitleService(
-                build_model_gateway(model_provider_settings(settings))
+                build_model_gateway(
+                    model_provider_settings(settings),
+                    **({"client": model_http_client} if model_http_client is not None else {}),
+                )
             ),
         )
     return WorkerLoopService(
@@ -456,6 +499,7 @@ def build_worker_loop_service(
         child_wakeup_service=child_wakeup_service,
         sleep=sleep,
         command_consumer=command_consumer,
+        scan_ready_sessions=settings.deployment != "cloud",
     )
 
 

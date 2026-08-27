@@ -43,6 +43,37 @@ def test_read_only_profile_allows_read_tools_and_denies_write_tools() -> None:
     )
 
 
+@pytest.mark.parametrize("profile", list(PolicyProfile))
+def test_manifest_declared_read_tool_is_allowed_by_all_profiles(
+    profile: PolicyProfile,
+) -> None:
+    engine = LocalPolicyEngine(
+        profile=profile,
+        additional_read_only_tools=frozenset({"events.get_topic"}),
+    )
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("events.get_topic", {"topic": "cn-a-share"})
+    )
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+    assert "manifest-declared read-only tool" in decision.reason
+    assert engine.evaluate_tool_call(_tool_call("events.write_topic")).decision is (
+        PolicyDecisionType.DENY
+    )
+
+
+@pytest.mark.parametrize(
+    "declared",
+    ({"events.get_topic"}, frozenset({""})),
+)
+def test_manifest_declared_read_tools_reject_mutable_or_blank_input(
+    declared: object,
+) -> None:
+    with pytest.raises(ValueError, match="additional read-only tools"):
+        LocalPolicyEngine(additional_read_only_tools=declared)  # type: ignore[arg-type]
+
+
 def test_workspace_write_profile_allows_patch_and_requires_command_approval() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.WORKSPACE_WRITE)
     safe_patch = """--- a/README.md

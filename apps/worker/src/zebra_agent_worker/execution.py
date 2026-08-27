@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import agent_core.harness as core_harness
+import httpx
 from agent_context import LocalContextCompiler
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
@@ -62,6 +63,7 @@ from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeService
+from zebra_agent_worker.task_recovery import apply_bound_host_context
 from zebra_agent_worker.tool_gateway_runtime import build_worker_tool_gateway
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
@@ -90,6 +92,7 @@ class SessionExecutionService:
         delegation_store: object | None = None,
         frozen_manifest_loader: Callable[[str], object] | None = None,
         client_runtime: Callable[[SessionId], object] | None = None,
+        model_http_client: httpx.Client | None = None,
     ) -> None:
         runtime_authority.validate_authority_wiring(
             execution_authority_resolver,
@@ -110,6 +113,7 @@ class SessionExecutionService:
         )
         self._database_path = database_path
         self._client_runtime = client_runtime
+        self._model_http_client = model_http_client
         self._claim_service = claim_service
         self._resume_service = resume_service
         self._settings = settings or load_settings()
@@ -139,14 +143,18 @@ class SessionExecutionService:
             active_stores.tool_runs, self._artifact_payload_store
         )
         self._recovery_service = SessionRecoveryService(
-            self._event_store, self._projection_store, self._workspace_store,
+            self._event_store,
+            self._projection_store,
+            self._workspace_store,
             worker_projection_transaction=worker_projection_transaction,
             deployment_namespace=deployment_namespace,
             model_call_indexer=self._model_call_indexer if worker_projection_transaction else None,
             tool_run_indexer=self._tool_run_indexer if worker_projection_transaction else None,
         )
         self._control_service = SessionControlService(
-            database_path, settings=self._settings, stores=active_stores,
+            database_path,
+            settings=self._settings,
+            stores=active_stores,
         )
         self._projection_recorder_factory = WorkerProjectionRecorderFactory(
             stores=active_stores,
@@ -239,7 +247,12 @@ class SessionExecutionService:
         )
         if preflight_failure is not None:
             return preflight_failure
-        model_gateway = build_model_gateway(model_provider_settings(self._settings))
+        provider_settings = model_provider_settings(self._settings)
+        model_gateway = (
+            build_model_gateway(provider_settings, client=self._model_http_client)
+            if self._model_http_client is not None
+            else build_model_gateway(provider_settings)
+        )
         runtime_handle = None
         runtime = None
         effect_recorder = []
@@ -261,6 +274,7 @@ class SessionExecutionService:
             )
             claimed, session_events = prepared_context.claimed, prepared_context.events
             task_binding = prepared_context.binding
+            task = apply_bound_host_context(task, task_binding)
             materialized_context = prepared_context.materialization
         except ExecutionInterrupted:
             return _superseded_by_control_event(authority_recorder)
@@ -321,8 +335,7 @@ class SessionExecutionService:
                     task_binding.host_capability.manifest_digest if task_binding else None
                 ),
                 frozen_manifest_loader=self._frozen_manifest_loader,
-                client_gateway=self._client_runtime(session_id) if self._client_runtime
-                                else None,  # type: ignore[arg-type]
+                client_gateway=self._client_runtime(session_id) if self._client_runtime else None,  # type: ignore[arg-type]
             )
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,
@@ -344,8 +357,10 @@ class SessionExecutionService:
             cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
             if cleanup_error is not None:
                 persist_runtime_cleanup_failure(
-                    recorder=authority_recorder, error=cleanup_error,
-                    target="runtime", created_at=started_at,
+                    recorder=authority_recorder,
+                    error=cleanup_error,
+                    target="runtime",
+                    created_at=started_at,
                 )
             return _superseded_by_control_event(authority_recorder)
         except Exception as exc:
@@ -355,8 +370,10 @@ class SessionExecutionService:
                 cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
             if cleanup_error is not None:
                 persist_runtime_cleanup_failure(
-                    recorder=authority_recorder, error=cleanup_error,
-                    target="runtime", created_at=started_at,
+                    recorder=authority_recorder,
+                    error=cleanup_error,
+                    target="runtime",
+                    created_at=started_at,
                 )
                 raise WorkerExecutionError(
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
@@ -364,6 +381,7 @@ class SessionExecutionService:
             raise WorkerExecutionError(str(exc)) from exc
         gateway_released = False
         cleanup_recorder = authority_recorder
+
         def release_gateway() -> Exception | None:
             nonlocal gateway_released
             if gateway_released:
@@ -441,6 +459,7 @@ class SessionExecutionService:
                     network_profile=effective_network_profile,
                     web_search_endpoint=self._settings.web_search_endpoint,
                     trusted_local=trusted_local,
+                    additional_read_only_tools=tool_gateway.read_only_tools,
                 ),
                 context_compiler=context_compiler,
                 cloud_continuation=cloud_continuation,

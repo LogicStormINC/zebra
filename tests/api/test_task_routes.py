@@ -1,5 +1,7 @@
 import base64
+import sqlite3
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
 
@@ -13,7 +15,12 @@ from agent_core.domain.host_authority import (
     HostTechnicalLimits,
 )
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.session_handoff import HandoffActorKind, HandoffReason
 from agent_core.domain.sessions import SessionStatus
+from agent_core.ports.session_handoff import (
+    SessionHandoffCreateRequest,
+    canonical_handoff_request_hash,
+)
 from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
@@ -40,6 +47,8 @@ def test_task_create_list_and_control_route_to_active_segment(tmp_path: Path) ->
 
     assert created.status_code == 201
     assert created.body["session_id"] == task_id
+    assert created.body["active_segment_sequence"] >= 0
+    assert created.body["current_sequence"] >= created.body["active_segment_sequence"]
     assert cancelled.body["session_id"] == task_id
     assert cancelled.body["status"] == "cancelled"
     assert read.body["status"] == "cancelled"
@@ -143,6 +152,7 @@ def test_task_routes_keep_one_identity_across_automatic_follow_up_rollover(
     assert after.body["session_id"] == task_id
     assert after.body["task_id"] == task_id
     assert after.body["status"] == "ready"
+    assert after.body["active_segment_sequence"] == appended.body["current_sequence"]
     assert listing.body["count"] == 1
     assert len(internal.body["segments"]) == 2
     assert internal.body["segments"][1]["rollover_reason"] == "terminal_follow_up"
@@ -155,6 +165,26 @@ def test_task_routes_keep_one_identity_across_automatic_follow_up_rollover(
     assert envelope.completed_work == (
         "Prior user request: Start",
         "Prior assistant response: 长江电力今日上涨。需要继续分析资金流向吗？",
+    )
+    with sqlite3.connect(database) as connection:
+        reserved_hash = connection.execute(
+            "SELECT request_hash FROM handoff_operations WHERE handoff_id = ?",
+            (str(handoff_id),),
+        ).fetchone()[0]
+    create_request = SessionHandoffCreateRequest(
+        source_session_id=SessionId(UUID(task_id)),
+        idempotency_key="follow-up-1",
+        title="Stable task",
+        reason=HandoffReason.INTERNAL_TERMINAL_FOLLOW_UP,
+        stage_prompt="Continue from the verified Task checkpoint.",
+        principal_identity_hash=sha256(f"task:{task_id}".encode()).hexdigest(),
+        actor_kind=HandoffActorKind.AUTOMATION,
+    )
+    assert reserved_hash == canonical_handoff_request_hash(
+        create_request,
+        objective="Continue without showing an internal thread",
+        completed_work=envelope.completed_work,
+        pending_work=(),
     )
     assert "handoff_id" not in str(stream.body)
     assert (

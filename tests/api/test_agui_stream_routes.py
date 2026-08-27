@@ -7,8 +7,9 @@ from pathlib import Path
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId, new_event_id
-from agent_integrations.ag_ui import AgUiCursor
+from agent_core.domain.identifiers import SessionId, TaskId, new_event_id
+from agent_core.domain.sessions import SessionStatus
+from agent_integrations.ag_ui import AgUiCursor, AgUiRunIdentity
 from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
@@ -16,7 +17,13 @@ from agent_storage import (
     sqlite_control_plane_stores,
 )
 from fastapi.testclient import TestClient
-from zebra_agent_api.ag_ui_stream import AgUiStreamContext, prepare_agui_stream, tail_agui_events
+from zebra_agent_api.ag_ui_stream import (
+    AgUiStreamContext,
+    _cursor_before_run,
+    _run_command_is_not_indexed,
+    prepare_agui_stream,
+    tail_agui_events,
+)
 from zebra_agent_api.http import create_http_app
 
 NOW = datetime(2026, 8, 11, 8, 0, tzinfo=UTC)
@@ -97,6 +104,122 @@ def test_agui_stream_rejects_malformed_or_cross_run_cursor(tmp_path: Path) -> No
     assert cross_run.json()["code"] == "invalid_cursor"
 
 
+def test_agui_stream_closes_conversation_run_after_turn_completion(tmp_path: Path) -> None:
+    database_path, session_id, next_sequence = _seed_ready_session(tmp_path)
+    event_store = SQLiteEventStore(database_path)
+    _append(
+        event_store,
+        session_id,
+        next_sequence,
+        EventType.TURN_COMPLETED,
+        {
+            "turn_id": "turn-1",
+            "turn_index": 0,
+            "closes_segment": False,
+            "attempt_number": 1,
+        },
+    )
+    _append(
+        event_store,
+        session_id,
+        next_sequence + 1,
+        EventType.SESSION_TITLE_UPDATED,
+        {"title": "Generated title"},
+    )
+    client = TestClient(
+        create_http_app(database_path, stores=sqlite_control_plane_stores(database_path))
+    )
+
+    response = client.get(_stream_path(session_id, "run-conversation"))
+
+    assert response.status_code == 200
+    assert "RUN_FINISHED" in response.text
+
+
+def test_agui_stream_starts_at_the_current_run_command(tmp_path: Path) -> None:
+    database_path, session_id, next_sequence = _seed_ready_session(tmp_path)
+    event_store = SQLiteEventStore(database_path)
+    _append(
+        event_store,
+        session_id,
+        next_sequence,
+        EventType.SESSION_COMMAND_ACCEPTED,
+        {"payload": {"run_id": "old-run"}},
+    )
+    previous = _append(
+        event_store,
+        session_id,
+        next_sequence + 1,
+        EventType.USER_MESSAGE_RECEIVED,
+        {"content": "next"},
+    )
+    _append(
+        event_store,
+        session_id,
+        next_sequence + 2,
+        EventType.SESSION_COMMAND_ACCEPTED,
+        {"payload": {"run_id": "new-run"}},
+    )
+    events = sqlite_control_plane_stores(database_path).tasks.read_events(
+        TaskId(session_id), -1
+    )
+    assert _run_command_is_not_indexed(events[:-1], "new-run")
+
+    cursor = _cursor_before_run(
+        events,
+        AgUiRunIdentity(
+            session_id=session_id,
+            thread_id=str(session_id),
+            run_id="new-run",
+        ),
+    )
+
+    assert cursor is not None
+    assert cursor.sequence == next_sequence + 1
+    assert cursor.event_id == str(previous.event_id)
+
+
+def test_agui_stream_does_not_replay_a_previous_run_in_the_same_segment(
+    tmp_path: Path,
+) -> None:
+    database_path, session_id, next_sequence = _seed_ready_session(tmp_path)
+    event_store = SQLiteEventStore(database_path)
+    sequence = next_sequence
+    cases: tuple[tuple[EventType, dict[str, object]], ...] = (
+        (EventType.SESSION_COMMAND_ACCEPTED, {"payload": {"run_id": "old-run"}}),
+        (
+            EventType.MODEL_RESPONSE_RECEIVED,
+            {"model_call_id": "old-model", "assistant_message": "old-answer"},
+        ),
+        (
+            EventType.TURN_COMPLETED,
+            {"turn_id": "turn-1", "turn_index": 0, "closes_segment": False},
+        ),
+        (EventType.USER_MESSAGE_RECEIVED, {"content": "next"}),
+        (EventType.SESSION_COMMAND_ACCEPTED, {"payload": {"run_id": "new-run"}}),
+        (
+            EventType.MODEL_RESPONSE_RECEIVED,
+            {"model_call_id": "new-model", "assistant_message": "new-answer"},
+        ),
+        (
+            EventType.TURN_COMPLETED,
+            {"turn_id": "turn-2", "turn_index": 1, "closes_segment": False},
+        ),
+    )
+    for event_type, payload in cases:
+        _append(event_store, session_id, sequence, event_type, payload)
+        sequence += 1
+    client = TestClient(
+        create_http_app(database_path, stores=sqlite_control_plane_stores(database_path))
+    )
+
+    response = client.get(_stream_path(session_id, "new-run"))
+
+    assert response.status_code == 200
+    assert "new-answer" in response.text
+    assert "old-answer" not in response.text
+
+
 def test_agui_stream_live_tail_reads_new_durable_event_without_command_retry(
     tmp_path: Path,
 ) -> None:
@@ -134,6 +257,39 @@ def test_agui_stream_live_tail_reads_new_durable_event_without_command_retry(
     assert "TEXT_MESSAGE_START" in live_start
     assert "TEXT_MESSAGE_CONTENT" in live_content
     assert "TEXT_MESSAGE_END" in live_end
+
+
+def test_agui_stream_flushes_terminal_event_after_projection_status_race(
+    tmp_path: Path,
+) -> None:
+    database_path, session_id, next_sequence = _seed_ready_session(tmp_path)
+    stores = sqlite_control_plane_stores(database_path)
+    session = stores.sessions.get_session(session_id)
+    assert session is not None
+    stores.sessions.save_session(session.model_copy(update={"status": SessionStatus.COMPLETED}))
+    context = prepare_agui_stream(stores, _stream_path(session_id, "run-race"), {})
+    assert isinstance(context, AgUiStreamContext)
+    stream = tail_agui_events(context, _FakeRequest())
+
+    async def consume() -> str:
+        async def append_terminal() -> None:
+            await asyncio.sleep(0.75)
+            _append(
+                SQLiteEventStore(database_path),
+                session_id,
+                next_sequence,
+                EventType.SESSION_COMPLETED,
+                {},
+            )
+
+        delayed = asyncio.create_task(append_terminal())
+        chunks = [chunk async for chunk in stream]
+        await delayed
+        return "".join(chunks)
+
+    output = asyncio.run(consume())
+
+    assert "RUN_FINISHED" in output
 
 
 class _FakeRequest:

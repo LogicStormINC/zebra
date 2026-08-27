@@ -13,6 +13,7 @@ from agent_core.application.session_bootstrap import (
 )
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.agent_capabilities import capability_set
+from agent_core.domain.identifiers import TaskId
 from agent_core.domain.task_bindings import (
     AgentCapabilityCeilingSnapshot,
     HostCapabilitySnapshot,
@@ -24,7 +25,11 @@ from agent_storage import (
     apply_postgres_migrations,
     bootstrap_control_plane_epoch,
 )
-from agent_storage.postgres.task_admission import PostgresTaskAdmissionTransaction
+from agent_storage.postgres.task_admission import (
+    PostgresTaskAdmissionTransaction,
+    load_task_binding,
+    save_task_binding,
+)
 from psycopg import connect
 
 
@@ -111,19 +116,14 @@ def _receipt(dsn: str, namespace: str, key: str) -> IdempotencyRecord:
 def _count(dsn: str, namespace: str, table: str, column: str, value: str) -> int:
     with connect(dsn) as connection:
         row = connection.execute(
-            f"SELECT count(*) FROM {table} "
-            f"WHERE deployment_namespace = %s AND {column} = %s",
+            f"SELECT count(*) FROM {table} WHERE deployment_namespace = %s AND {column} = %s",
             (namespace, value),
         ).fetchone()
     return int(row[0])
 
 
-def test_admission_persists_every_object_atomically(
-    namespace: str, postgres_dsn: str
-) -> None:
-    transaction = PostgresTaskAdmissionTransaction(
-        postgres_dsn, deployment_namespace=namespace
-    )
+def test_admission_persists_every_object_atomically(namespace: str, postgres_dsn: str) -> None:
+    transaction = PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace)
     request = _request()
     receipt = transaction.admit(request)
     session_id = str(receipt.session_id)
@@ -135,12 +135,8 @@ def test_admission_persists_every_object_atomically(
     assert _count(postgres_dsn, namespace, "agent_tasks", "task_id", str(receipt.task_id)) == 1
 
 
-def test_admission_with_binding_persists_snapshot(
-    namespace: str, postgres_dsn: str
-) -> None:
-    transaction = PostgresTaskAdmissionTransaction(
-        postgres_dsn, deployment_namespace=namespace
-    )
+def test_admission_with_binding_persists_snapshot(namespace: str, postgres_dsn: str) -> None:
+    transaction = PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace)
     request = _request()
     binding = _binding(str(request.events[0].session_id))
     receipt = transaction.admit(
@@ -164,10 +160,59 @@ def test_admission_with_binding_persists_snapshot(
     )
 
 
-def test_idempotent_replay_short_circuits(namespace: str, postgres_dsn: str) -> None:
-    transaction = PostgresTaskAdmissionTransaction(
-        postgres_dsn, deployment_namespace=namespace
+def test_task_binding_renewal_appends_one_locked_revision(
+    namespace: str, postgres_dsn: str
+) -> None:
+    request = _request()
+    task_id = TaskId(request.events[0].session_id)
+    binding = _binding(str(task_id))
+    PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace).admit(
+        TaskAdmissionRequest(
+            events=request.events,
+            session=request.session,
+            workspace=request.workspace,
+            binding=binding,
+        )
     )
+    current = load_task_binding(
+        postgres_dsn,
+        deployment_namespace=namespace,
+        task_id=task_id,
+    )
+    assert current is not None
+    renewed = current.model_copy(
+        update={
+            "host_capability": current.host_capability.model_copy(
+                update={"grant_digest": "9" * 64}
+            ),
+            "binding_revision": 2,
+        }
+    )
+
+    save_task_binding(
+        postgres_dsn,
+        deployment_namespace=namespace,
+        binding=renewed,
+        expected_previous_revision=1,
+    )
+
+    latest = load_task_binding(
+        postgres_dsn,
+        deployment_namespace=namespace,
+        task_id=task_id,
+    )
+    assert latest is not None and latest.binding_revision == 2
+    with pytest.raises(ValueError, match="advanced concurrently"):
+        save_task_binding(
+            postgres_dsn,
+            deployment_namespace=namespace,
+            binding=renewed.model_copy(update={"binding_revision": 3}),
+            expected_previous_revision=1,
+        )
+
+
+def test_idempotent_replay_short_circuits(namespace: str, postgres_dsn: str) -> None:
+    transaction = PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace)
     key = f"key-{uuid4()}"
     receipt_record = _receipt(postgres_dsn, namespace, str(key))
     base = _request()
@@ -186,15 +231,13 @@ def test_idempotent_replay_short_circuits(namespace: str, postgres_dsn: str) -> 
     assert _count(
         postgres_dsn, namespace, "session_events", "session_id", str(first.session_id)
     ) == len(base.events)
-    assert _count(
-        postgres_dsn, namespace, "session_events", "session_id", str(replay.session_id)
-    ) == 0
+    assert (
+        _count(postgres_dsn, namespace, "session_events", "session_id", str(replay.session_id)) == 0
+    )
 
 
 def test_injected_failure_leaves_no_partial_task(namespace: str, postgres_dsn: str) -> None:
-    transaction = PostgresTaskAdmissionTransaction(
-        postgres_dsn, deployment_namespace=namespace
-    )
+    transaction = PostgresTaskAdmissionTransaction(postgres_dsn, deployment_namespace=namespace)
     # first, one fully admitted Task with a binding at revision 1
     established = _request()
     established_task = str(established.events[0].session_id)
@@ -228,12 +271,10 @@ def test_injected_failure_leaves_no_partial_task(namespace: str, postgres_dsn: s
     assert _count(postgres_dsn, namespace, "session_events", "session_id", fresh_session) == 0
     assert _count(postgres_dsn, namespace, "session_projections", "session_id", fresh_session) == 0
     assert (
-        _count(postgres_dsn, namespace, "task_binding_snapshots", "task_id", established_task)
-        == 1
+        _count(postgres_dsn, namespace, "task_binding_snapshots", "task_id", established_task) == 1
     )
-    assert (
-        _count(postgres_dsn, namespace, "session_events", "session_id", established_task)
-        == len(established.events)
+    assert _count(postgres_dsn, namespace, "session_events", "session_id", established_task) == len(
+        established.events
     )
 
 

@@ -28,7 +28,9 @@ services:
       ZEBRA_GRANT_BROKER_HOST_APP_ID: ${TRENCH_ACCEPTANCE_HOST_APP_ID:-trench}
       ZEBRA_GRANT_BROKER_NAMESPACE_ID: ${TRENCH_ACCEPTANCE_NAMESPACE_ID:-trench-prod}
       ZEBRA_GRANT_BROKER_POLICY_VERSION: ${TRENCH_ACCEPTANCE_POLICY_VERSION:-trench-read-v1}
+      ZEBRA_GRANT_BROKER_TTL_SECONDS: ${TRENCH_ACCEPTANCE_GRANT_TTL_SECONDS:-300}
       ZEBRA_GRANT_BROKER_TRENCH_ME_URL: ${TRENCH_ACCEPTANCE_TRENCH_ME_URL:?set TRENCH_ACCEPTANCE_TRENCH_ME_URL}
+      ZEBRA_GRANT_BROKER_TRENCH_SOURCES_URL: ${TRENCH_ACCEPTANCE_TRENCH_SOURCES_URL:?set TRENCH_ACCEPTANCE_TRENCH_SOURCES_URL}
       ZEBRA_GRANT_BROKER_PRIVATE_KEY_FILE: /secrets/trench-host-grant-v1.pem
       SSL_CERT_FILE: /secrets/ca.crt
     restart: unless-stopped
@@ -62,6 +64,7 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:${TRENCH_ACCEPTANCE_TLS_PORT:-8443}:8443"
+      - "127.0.0.1:${TRENCH_ACCEPTANCE_BROKER_TLS_PORT:-8444}:8444"
     volumes:
       - ./trench-acceptance/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./trench-acceptance/secrets:/certs:ro

@@ -29,7 +29,7 @@ from zebra_agent_api.responses import ApiResponse
 
 _POLL_SECONDS = float(os.environ.get("ZEBRA_AGUI_POLL_SECONDS", "0.25"))
 _KEEPALIVE_SECONDS = float(os.environ.get("ZEBRA_AGUI_KEEPALIVE_SECONDS", "3"))
-_TERMINAL_FLUSH_SECONDS = float(os.environ.get("ZEBRA_AGUI_TERMINAL_FLUSH_SECONDS", "0.5"))
+_TERMINAL_FLUSH_SECONDS = float(os.environ.get("ZEBRA_AGUI_TERMINAL_FLUSH_SECONDS", "2"))
 _MAX_STREAM_SECONDS = float(os.environ.get("ZEBRA_AGUI_MAX_STREAM_SECONDS", "1800"))
 _MAX_IDENTITY_TEXT = 256
 logger = logging.getLogger(__name__)
@@ -41,6 +41,7 @@ _TERMINAL_EVENTS = frozenset(
         EventType.SESSION_CANCELLED,
         EventType.APPROVAL_REQUESTED,
         EventType.CLARIFICATION_REQUESTED,
+        EventType.TURN_COMPLETED,
     }
 )
 _TERMINAL_STATUSES = frozenset(
@@ -117,6 +118,7 @@ async def tail_agui_events(
     deadline = monotonic() + _MAX_STREAM_SECONDS
     iterations = 0
     failures = 0
+    terminal_status_since: float | None = None
     del request  # disconnects are detected at yield time
     while monotonic() < deadline:
         iterations += 1
@@ -132,6 +134,11 @@ async def tail_agui_events(
                 return
             await asyncio.sleep(_POLL_SECONDS)
             continue
+        if cursor is None:
+            cursor = _cursor_before_run(events, context.identity)
+            if cursor is None and _run_command_is_not_indexed(events, context.identity.run_id):
+                await asyncio.sleep(_POLL_SECONDS)
+                continue
         emitted = False
         try:
             for next_cursor, projected in _project_new_task_events(
@@ -162,14 +169,84 @@ async def tail_agui_events(
             continue
         if task is None:
             return
-        if events and events[-1].event.event_type in _TERMINAL_EVENTS:
+        if _has_run_terminal_event(events, context.identity.run_id):
             return
         if task.status in _TERMINAL_STATUSES:
-            return
+            now = monotonic()
+            terminal_status_since = terminal_status_since or now
+            if now - terminal_status_since >= _TERMINAL_FLUSH_SECONDS:
+                return
+        else:
+            terminal_status_since = None
         if not emitted and monotonic() - last_delivery >= _KEEPALIVE_SECONDS:
             last_delivery = monotonic()
             yield ": keepalive\n\n"
         await asyncio.sleep(_POLL_SECONDS)
+
+
+def _has_run_terminal_event(
+    events: list[TaskEvent] | tuple[TaskEvent, ...],
+    run_id: str,
+) -> bool:
+    run_start: int | None = None
+    command_seen = False
+    for entry in events:
+        if entry.event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
+            continue
+        command_seen = True
+        if _command_run_id(entry) == run_id:
+            run_start = entry.task_sequence
+    if run_start is None:
+        # A stream opened before its command must not close on another run's
+        # terminal event. Command-less fixtures retain legacy replay behavior.
+        if command_seen:
+            return False
+        run_start = -1
+    return any(
+        entry.task_sequence > run_start and entry.event.event_type in _TERMINAL_EVENTS
+        for entry in events
+    )
+
+
+def _cursor_before_run(
+    events: list[TaskEvent] | tuple[TaskEvent, ...],
+    identity: AgUiRunIdentity,
+) -> AgUiCursor | None:
+    for index, entry in enumerate(events):
+        if entry.event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
+            continue
+        if _command_run_id(entry) != identity.run_id or index == 0:
+            continue
+        previous = events[index - 1]
+        return AgUiCursor(
+            thread_id=identity.thread_id,
+            run_id=identity.run_id,
+            sequence=previous.task_sequence,
+            event_id=str(previous.event.event_id),
+        )
+    return None
+
+
+def _run_command_is_not_indexed(
+    events: list[TaskEvent] | tuple[TaskEvent, ...],
+    run_id: str,
+) -> bool:
+    command_run_ids = {
+        candidate
+        for entry in events
+        if entry.event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+        if (candidate := _command_run_id(entry)) is not None
+    }
+    return bool(command_run_ids) and run_id not in command_run_ids
+
+
+def _command_run_id(entry: TaskEvent) -> str | None:
+    payload = entry.event.payload
+    command_payload = payload.get("payload")
+    candidate = payload.get("run_id")
+    if isinstance(command_payload, Mapping):
+        candidate = command_payload.get("run_id", candidate)
+    return candidate if isinstance(candidate, str) else None
 
 
 def _project_new_task_events(

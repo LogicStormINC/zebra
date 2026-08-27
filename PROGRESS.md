@@ -5,6 +5,16 @@
 
 ## Active Review
 
+- Trench cloud governed Memory closeout (`TRN-MEM-E2E-01`) now routes API
+  confirm/expire through the PostgreSQL aggregate CAS instead of the SQLite-only
+  `upsert` path. Worker recovery persists a receipt for each closed Turn and
+  selects oldest unreceipted closes, removing the moving recent-Session blind
+  spot. Real PostgreSQL acceptance proves Lease-safe candidate review, atomic
+  Memory/Event/Session/Workspace advancement, next-task confirmed recall and
+  durable recovery selection (`6 passed`); the focused Memory matrix is
+  `85 passed`. Local SQLite behavior is unchanged. Mem0 delivery/runtime remains
+  separately locked and is not implied by this closeout.
+
 - Orchestration package boundary is integrated into `cloud-agent`
   (`AL-BOUNDARY-ORCH-01`, source PR #260 / `codex/al-boundary-orch-01`,
   ADR-021): the

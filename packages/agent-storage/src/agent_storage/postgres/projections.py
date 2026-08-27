@@ -45,6 +45,55 @@ class PostgresProjectionStore(ProjectionStorePort):
             (limit,),
         )
 
+    def list_memory_recovery_sessions(
+        self,
+        *,
+        limit: int,
+        recovery_action: str,
+    ) -> list[Session]:
+        """Return oldest closed Turns without a durable recovery receipt."""
+        if limit <= 0:
+            return []
+        if not recovery_action or recovery_action != recovery_action.strip():
+            raise ValueError("Memory recovery action must be non-blank and trimmed")
+        with self._database.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT p.session_id, p.title, p.status, p.created_at, p.updated_at,
+                       p.current_sequence, p.namespace_id, p.approval_context_json,
+                       p.clarification_context_json, p.task_plan_json
+                FROM session_projections AS p
+                JOIN LATERAL (
+                    SELECT max(e.sequence) AS completion_revision
+                    FROM session_events AS e
+                    WHERE e.deployment_namespace = p.deployment_namespace
+                      AND e.session_id = p.session_id
+                      AND e.event_type IN ('turn_completed', 'session_completed')
+                ) AS closed ON closed.completion_revision IS NOT NULL
+                WHERE p.deployment_namespace = %s
+                  AND p.status IN (%s, %s)
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM control_plane_idempotency_records AS receipt
+                      WHERE receipt.deployment_namespace = p.deployment_namespace
+                        AND receipt.action = %s
+                        AND receipt.idempotency_key = (
+                            p.session_id::text || ':' || closed.completion_revision::text
+                        )
+                  )
+                ORDER BY p.updated_at ASC, p.created_at ASC, p.session_id ASC
+                LIMIT %s
+                """,
+                (
+                    self._database.deployment_namespace,
+                    SessionStatus.COMPLETED.value,
+                    SessionStatus.AWAITING_TURN.value,
+                    recovery_action,
+                    limit,
+                ),
+            ).fetchall()
+        return [_session_from_row(row) for row in rows]
+
     def list_ready_sessions(self, *, limit: int) -> list[Session]:
         if limit <= 0:
             return []

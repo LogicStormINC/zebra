@@ -43,6 +43,7 @@ def test_worker_execution_service_updates_workspace_projection_lifecycle(
     assert workspace.status is WorkspaceStatus.COMPLETED
     assert workspace.last_attempt_number == 1
 
+
 def test_worker_execution_service_restores_suspended_workspace_before_running(
     tmp_path: Path,
     monkeypatch,
@@ -78,6 +79,7 @@ def test_worker_execution_service_restores_suspended_workspace_before_running(
     assert workspace.snapshot_path is None
     assert suspended.workspace.snapshot_path is not None
     assert Path(suspended.workspace.snapshot_path).exists() is False
+
 
 def test_worker_execution_service_rejects_incompatible_suspended_snapshot(
     tmp_path: Path,

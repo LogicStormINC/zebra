@@ -61,6 +61,13 @@ MODEL_REQUIRED_DELEGATION_DIRECTIVE = (
     "delegation_reason."
 )
 
+ZEBRA_AGENT_IDENTITY_DIRECTIVE = (
+    "You are Zebra Agent, a provider-neutral engineering agent runtime. "
+    "When asked who you are, identify yourself as Zebra Agent. Do not claim to be "
+    "Claude, ChatGPT, DeepSeek, or the underlying model provider. Describe capabilities "
+    "only from the tools and runtime evidence actually available in this session."
+)
+
 
 def _tool_result_content(tool_result: ToolResult) -> str:
     if tool_result.output:
@@ -485,6 +492,19 @@ class HarnessModelStep:
                             for step in active_steps
                         ]
                     ),
+                    created_at=created_at,
+                )
+            )
+        if messages:
+            messages[0] = messages[0].model_copy(
+                update={"content": f"{ZEBRA_AGENT_IDENTITY_DIRECTIVE}\n\n{messages[0].content}"}
+            )
+        else:
+            messages.append(
+                SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.SYSTEM,
+                    content=ZEBRA_AGENT_IDENTITY_DIRECTIVE,
                     created_at=created_at,
                 )
             )

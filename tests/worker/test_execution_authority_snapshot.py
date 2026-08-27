@@ -174,6 +174,59 @@ def test_revalidation_replay_uses_latest_effective_snapshot_and_fails_closed_on_
         )
 
 
+def test_new_turn_resolves_fresh_authority_instead_of_extending_prior_turn() -> None:
+    session_id = new_session_id()
+    scope = OpaqueAuthorityScope(
+        authority_issuer="local://trusted",
+        namespace_id="local-scope",
+    )
+    recorder = _Recorder()
+    recorder_like = cast(DurableHarnessEventRecorder, recorder)
+    resolver = _resolver()
+    persist_attempt_authority(
+        recorder_like,
+        resolver,
+        scope,
+        session_id=session_id,
+        existing_events=[],
+        attempt_number=1,
+        created_at=NOW,
+    )
+    resolved = SessionEvent.create(
+        session_id=session_id,
+        sequence=1,
+        event_type=EventType.EXECUTION_AUTHORITY_RESOLVED,
+        actor=EventActor.SYSTEM,
+        payload=recorder.calls[0][1],
+        created_at=NOW,
+    )
+    closed = SessionEvent.create(
+        session_id=session_id,
+        sequence=2,
+        event_type=EventType.TURN_COMPLETED,
+        actor=EventActor.HARNESS,
+        payload={
+            "turn_id": str(new_session_id()),
+            "turn_index": 0,
+            "closes_segment": False,
+            "attempt_number": 1,
+        },
+        created_at=NOW + timedelta(minutes=1),
+    )
+
+    persist_attempt_authority(
+        recorder_like,
+        resolver,
+        scope,
+        session_id=session_id,
+        existing_events=[resolved, closed],
+        attempt_number=1,
+        created_at=NOW + timedelta(hours=1),
+    )
+
+    assert recorder.calls[1][0] is EventType.EXECUTION_AUTHORITY_RESOLVED
+
+
 def test_external_authority_fails_closed_without_verifier() -> None:
     resolver: ExecutionAuthorityResolverPort = FailClosedExternalAuthorityResolver()
     request = ExecutionAuthorityResolutionRequest(

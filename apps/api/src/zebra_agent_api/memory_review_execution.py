@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 from uuid import UUID
 
 from agent_core.application import (
@@ -10,8 +12,18 @@ from agent_core.application import (
     memory_review_scope_query,
 )
 from agent_core.application.session_projection import apply_event
+from agent_core.domain.governed_memories import (
+    GovernedMemoryConflictError,
+    GovernedMemoryEntry,
+    GovernedMemoryManagementContext,
+)
+from agent_core.domain.governed_memory_operations import (
+    AdministrativeMemoryReviewRequest,
+    GovernedMemoryReviewAction,
+)
 from agent_core.domain.identifiers import MemoryId, SessionId
 from agent_core.domain.memories import MemoryQuery, MemoryRecord, MemoryStatus, MemoryVisibility
+from agent_core.ports import AdministrativeMutationCAS, GovernedMemoryStorePort
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.memory_review_serialization import (
@@ -67,6 +79,32 @@ def _review_memory(
             visibility=expected_visibility,
             scope_id=expected_scope_id,
         )
+    reviewed_at = datetime.now(UTC)
+    namespace = getattr(stores, "deployment_namespace", None)
+    governed_store: GovernedMemoryStorePort | None = None
+    expected_revision: int | None = None
+    if isinstance(namespace, str):
+        governed_store = cast(GovernedMemoryStorePort, memory_store)
+        authority_record = governed_store.get_authority(
+            record.memory_id,
+            management=GovernedMemoryManagementContext(
+                operation_id=f"memory-review-read:{record.memory_id}",
+                operator=parsed["operator"],
+                reason=parsed["reason"],
+            ),
+        )
+        if not isinstance(authority_record, GovernedMemoryEntry) or not _scope_matches(
+            authority_record.record,
+            expected_visibility,
+            expected_scope_id,
+        ):
+            return _not_found_response(
+                memory_id=memory_id,
+                visibility=expected_visibility,
+                scope_id=expected_scope_id,
+            )
+        record = authority_record.record
+        expected_revision = authority_record.revision
     try:
         existing_records = tuple(memory_store.list(memory_review_scope_query(record)))
         result = MemoryReviewService().review(
@@ -77,6 +115,7 @@ def _review_memory(
                 action=action,
                 operator=parsed["operator"],
                 reason=parsed["reason"],
+                created_at=reviewed_at,
             ),
             existing_records=existing_records,
         )
@@ -90,11 +129,54 @@ def _review_memory(
             status="invalid_state",
             reason=str(error),
         )
-    memory_store.upsert(result.record)
-    for superseded in result.superseded_records:
-        memory_store.upsert(superseded)
-    stores.events.append(result.event)
-    updated_session = projection_store.save_session(apply_event(session, result.event))
+    if governed_store is not None:
+        assert isinstance(namespace, str)
+        assert expected_revision is not None
+        try:
+            committed = governed_store.commit_administrative_review(
+                AdministrativeMemoryReviewRequest.create(
+                    deployment_namespace=namespace,
+                    operation_id=(
+                        f"memory-review:{session.session_id}:"
+                        f"{session.current_sequence + 1}:{record.memory_id}:{action.value}"
+                    ),
+                    session_id=session.session_id,
+                    expected_stream_revision=session.current_sequence,
+                    memory_id=record.memory_id,
+                    expected_revision=expected_revision,
+                    action=GovernedMemoryReviewAction(action.value),
+                    operator=parsed["operator"],
+                    reason=parsed["reason"],
+                    created_at=reviewed_at,
+                ),
+                authority=AdministrativeMutationCAS(
+                    deployment_namespace=namespace,
+                    session_id=session.session_id,
+                    expected_stream_revision=session.current_sequence,
+                ),
+            )
+        except (GovernedMemoryConflictError, ValueError) as error:
+            return conflict(
+                session_id=(
+                    expected_scope_id
+                    if expected_visibility is MemoryVisibility.REPO
+                    else str(session.session_id)
+                ),
+                status="memory_review_conflict",
+                reason=str(error),
+            )
+        updated_session = projection_store.get_session(session.session_id)
+        if (
+            updated_session is None
+            or committed.receipt.projection_revision != updated_session.current_sequence
+        ):
+            raise RuntimeError("cloud Memory review did not advance its Session projection")
+    else:
+        memory_store.upsert(result.record)
+        for superseded in result.superseded_records:
+            memory_store.upsert(superseded)
+        stores.events.append(result.event)
+        updated_session = projection_store.save_session(apply_event(session, result.event))
     return ApiResponse(
         status_code=200,
         body=_review_response_body(

@@ -9,12 +9,18 @@ from typing import Any, Literal
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import SessionStatus
 
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
-from zebra_agent_worker.execution_finalization import ExecutedSession, WorkerExecutionError
+from zebra_agent_worker.execution_finalization import (
+    ExecutedSession,
+    WorkerExecutionError,
+    finalize_worker_setup_failure,
+    rebuild_task_index,
+)
 from zebra_agent_worker.execution_preflight import run_with_stale_retry
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
 from zebra_agent_worker.provider_continuation_execution import (
@@ -126,10 +132,10 @@ def recover_execution_inputs(
                 None if recovered_handoff is None else recovered_handoff.runtime_evidence
             ),
         )
+        if workspace_resolver is not None:
+            task = apply_workspace_resolver(task, workspace_resolver, session_id)
     except (FileNotFoundError, ValueError) as exc:
         raise WorkerExecutionError(str(exc)) from exc
-    if workspace_resolver is not None:
-        task = apply_workspace_resolver(task, workspace_resolver, session_id)
     return RecoveredExecutionInputs(
         claimed=claimed,
         session_events=session_events,
@@ -170,12 +176,34 @@ def execute_session_with_lease(
             release_on_failure=False,
         )
         heartbeat.require_owned()
-        return execute_claimed_with_stale_retry(
-            service,
-            resumed.claimed,
-            started_at=started_at,
-            ownership_check=heartbeat.require_owned,
-        )
+        try:
+            return execute_claimed_with_stale_retry(
+                service,
+                resumed.claimed,
+                started_at=started_at,
+                ownership_check=heartbeat.require_owned,
+            )
+        except WorkerExecutionError as error:
+            heartbeat.require_owned()
+            recovery = service._recovery_service.recover_session(
+                session_id,
+                worker_lease=resumed.claimed.lease,
+            )
+            if recovery.session.status not in {SessionStatus.READY, SessionStatus.RUNNING}:
+                raise
+            recorder = service._projection_recorder_factory.build(
+                session=recovery.session,
+                workspace=recovery.workspace,
+                lease=resumed.claimed.lease,
+                ownership_check=heartbeat.require_owned,
+            )
+            failed = finalize_worker_setup_failure(
+                recorder=recorder,
+                event_store=service._event_store,
+                error=error,
+            )
+            rebuild_task_index(service._task_index_store, session_id)
+            return failed
 
 
 def persist_runtime_cleanup_failure(

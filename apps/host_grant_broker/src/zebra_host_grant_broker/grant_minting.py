@@ -29,6 +29,7 @@ class ExchangeRequest:
     thread_id: str
     run_id: str
     scopes: tuple[str, ...]
+    resource_refs: tuple[tuple[str, str], ...] = ()
 
     @classmethod
     def parse(cls, body: dict[str, object]) -> ExchangeRequest:
@@ -43,7 +44,14 @@ class ExchangeRequest:
         scopes = tuple(_text(item, "scope") for item in raw_scopes)
         if len(set(scopes)) != len(scopes):
             raise GrantMintError("scopes_duplicated")
-        return cls(audience=audience, thread_id=thread_id, run_id=run_id, scopes=scopes)
+        resource_refs = _resource_refs(body.get("resourceRefs", []))
+        return cls(
+            audience=audience,
+            thread_id=thread_id,
+            run_id=run_id,
+            scopes=scopes,
+            resource_refs=resource_refs,
+        )
 
     def enforce(self, settings: BrokerSettings) -> None:
         if self.audience != settings.audience:
@@ -51,6 +59,26 @@ class ExchangeRequest:
         unknown = [scope for scope in self.scopes if scope not in settings.allowed_scopes]
         if unknown:
             raise GrantMintError("scope_not_allowed")
+
+    def authorize(self, viewer: TrenchViewer) -> None:
+        requested_sources = {
+            resource_id
+            for resource_type, resource_id in self.resource_refs
+            if resource_type == "trench.source"
+        }
+        if requested_sources - viewer.active_source_ids:
+            raise GrantMintError("source_not_allowed")
+        if self.resource_refs and not requested_sources:
+            raise GrantMintError("source_binding_required")
+        required_scopes = {
+            "trench.event": "event.read",
+            "trench.entity": "entity.read",
+            "trench.topic": "topic.read",
+        }
+        for resource_type, _resource_id in self.resource_refs:
+            required_scope = required_scopes.get(resource_type)
+            if required_scope is not None and required_scope not in self.scopes:
+                raise GrantMintError("resource_scope_missing")
 
 
 def mint_grant(
@@ -78,6 +106,10 @@ def mint_grant(
         "resource_refs": [
             {"type": "thread", "id": request.thread_id},
             {"type": "run", "id": request.run_id},
+            *(
+                {"type": resource_type, "id": resource_id}
+                for resource_type, resource_id in request.resource_refs
+            ),
         ],
         "scopes": sorted(request.scopes),
         "limits": {
@@ -98,3 +130,20 @@ def _text(value: object, name: str) -> str:
     if not normalized or len(normalized) > 512:
         raise GrantMintError(f"{name}_invalid")
     return normalized
+
+
+def _resource_refs(value: object) -> tuple[tuple[str, str], ...]:
+    if not isinstance(value, list) or len(value) > 128:
+        raise GrantMintError("resource_refs_invalid")
+    allowed_types = {"trench.source", "trench.event", "trench.entity", "trench.topic"}
+    refs: list[tuple[str, str]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise GrantMintError("resource_refs_invalid")
+        resource_type = _text(item.get("type"), "resource_type")
+        resource_id = _text(item.get("id"), "resource_id")
+        ref = (resource_type, resource_id)
+        if resource_type not in allowed_types or ref in refs:
+            raise GrantMintError("resource_refs_invalid")
+        refs.append(ref)
+    return tuple(refs)

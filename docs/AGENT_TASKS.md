@@ -3640,7 +3640,7 @@ read-only tool callbacks, and fail-closed behavior.
 
 ### EMB-TRN-READ-E2E-01 - Trench Read-Only Cross-Service Acceptance
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Suggested role: `QA / SRE / PLATFORM`
 - Depends on: `TRN-READ-01`, `TRN-CPK-BFF-01`, `TRN-PANEL-01`,
@@ -3697,6 +3697,174 @@ run.
   card stays `In Progress` and fail-closed until a maintainer provisions the
   real Trench/Zebra deployment inputs (the Trench session cookie in
   particular cannot be supplied by the repository).
+
+### TRN-HOST-POLICY-01 - Manifest-Declared Read Tool Policy Wiring
+
+- Status: `Review`
+- Owner: `lukeding`
+- Depends on: `EMB-HOST-RUNTIME-01` and the reviewed Host Tool contract
+- Branch: `cloud-agent-trench`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
+- Owned paths: `packages/agent-security/src/agent_security/policy.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `tests/agent_security/test_policy_profiles.py`,
+  `tests/worker/execution/test_core_execution.py`, this task card
+
+#### Goal
+
+Allow only manifest-declared `risk=read` Host tools through every local policy
+profile while preserving path, egress, scope and Host resource enforcement.
+
+#### Acceptance
+
+- Dynamic read declarations are explicit composition input; unknown dynamic
+  tools remain denied and malformed declarations fail closed.
+- Worker composition passes the frozen gateway's read-only tool set to the
+  policy engine; no Host vocabulary enters `agent-security`.
+- Focused Security and Worker regression tests pass.
+
+### TRN-HOST-GRANT-RENEW-01 - Per-Turn Host Grant Binding Renewal
+
+- Status: `Review`
+- Owner: `lukeding`
+- Depends on: `TRN-LINK-DEPLOY-01`, `EMB-HOST-RUNTIME-01`
+- Branch: `cloud-agent-trench`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
+- Owned paths: `packages/agent-core/src/agent_core/domain/task_bindings.py`,
+  `packages/agent-storage/src/agent_storage/postgres/task_admission.py`,
+  `apps/api/src/zebra_agent_api/session_binding.py`,
+  `apps/api/src/zebra_agent_api/ag_ui_command.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/runtime_authority.py`, focused tests,
+  this task card
+
+#### Goal
+
+Renew a Host-bound conversation's immutable Task binding from each verified
+AG-UI command Grant so a long-lived Trench conversation does not retain the
+expired admission Grant.
+
+#### Acceptance
+
+- Renewal creates the next binding revision and preserves the frozen Definition,
+  manifest, connector and Zebra policy anchors.
+- Host app, namespace, issuer and workspace drift fail closed; the Worker uses
+  only the exact non-secret Host context carried by the latest binding revision.
+- A short-TTL real Trench follow-up succeeds after the admission Grant expires;
+  stale or unverified contexts cannot widen the Task authority.
+
+### TRN-WORKER-TERMINAL-01 - Pre-Model Worker Failure Terminalization
+
+- Status: `Review`
+- Owner: `lukeding`
+- Depends on: `EMB-AGUI-API-01`, ADR-026 Turn lifecycle
+- Branch: `cloud-agent-trench`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
+- Owned paths: `apps/worker/src/zebra_agent_worker/execution_recovery.py`,
+  `apps/worker/src/zebra_agent_worker/execution_finalization.py`, focused tests,
+  this task card
+
+#### Goal
+
+Convert deterministic Worker setup failures after command acceptance into a
+durable `TURN_FAILED` + `SESSION_FAILED` close so AG-UI emits `RUN_ERROR`
+instead of leaving Trench's SSE stream open indefinitely.
+
+#### Acceptance
+
+- Failure terminalization stays under the active Worker lease/fence.
+- The durable Turn and Segment close is projected before the lease is released.
+- A focused fault injection observes `RUN_ERROR`; lease loss and concurrent
+  control events remain fail closed and are not overwritten.
+
+### TRN-PERF-01 - Local Trench/Zebra Response Latency
+
+- Status: `Review`
+- Owner: `lukeding`
+- Depends on: `TRN-HOST-GRANT-RENEW-01`, `TRN-WORKER-TERMINAL-01`
+- Branch: `cloud-agent-trench`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
+- Owned paths: `docker/trench-acceptance/`,
+  `docker/compose.trench-acceptance.yml`, `apps/api/src/zebra_agent_api/task_api.py`,
+  focused Zebra API tests, Trench Zebra BFF/suggestions/frontend suggestion paths,
+  this task card
+
+#### Goal
+
+Remove macOS `.local` lookup latency from the host-facing acceptance path,
+reuse bounded HTTP connections, eliminate the redundant Task revision read,
+and prevent unavailable suggestion generation from adding repeated upstream
+work without weakening Host Grant replay or resource enforcement.
+
+#### Acceptance
+
+- Host-facing Zebra and Broker probes resolve without mDNS and complete below
+  100 ms on the local acceptance stack.
+- Trench reuses one scoped Zebra HTTP client, obtains the command revision from
+  Task create/message responses, and records per-stage latency.
+- Suggestion calls are abortable/deduplicated and an upstream authorization
+  failure opens a bounded server-side circuit.
+- A real browser conversation completes two scoped Host Tool turns and all
+  focused backend/frontend checks remain green.
+
+### TRN-MEM-E2E-01 - Trench Cloud Governed Memory Closeout
+
+- Status: `In Progress`
+- Owner: `lukeding`
+- Depends on: `CLOUD-MEMORY-PG-01`, `CTX-MEM-01`, `TRN-PERF-01`
+- Branch: `cloud-agent-trench`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
+- Owned paths: `apps/api/src/zebra_agent_api/memory_review_execution.py`,
+  `apps/api/src/zebra_agent_api/memory_review_serialization.py`,
+  `apps/worker/src/zebra_agent_worker/cloud_memory_finalization.py`,
+  `apps/worker/src/zebra_agent_worker/cloud_memory_recovery.py`, focused API/
+  Worker/PostgreSQL memory tests,
+  `packages/agent-storage/src/agent_storage/postgres/projections.py`, this task
+  card and focused `PROGRESS.md`
+
+#### Goal
+
+Close the cloud-only gaps in governed Memory review and recovery without
+changing local SQLite behavior: route administrative review through the
+PostgreSQL aggregate commit contract, eliminate bounded recent-Session recovery
+blind spots, and prove write, review, recall and recovery against real
+PostgreSQL storage.
+
+#### Acceptance
+
+- Session, user and tenant single/bulk/queue review use one shared cloud-safe
+  path and preserve the existing API response contract.
+- PostgreSQL review atomically commits Memory revisions, Event and Session/
+  Workspace projections under one administrative CAS; conflicts do not split
+  the aggregate.
+- Recovery eventually enumerates every unfinished cloud Memory side chain and
+  does not permanently skip an older Session after a high-throughput outage.
+- A real PostgreSQL acceptance proves candidate write, administrative review,
+  cross-task confirmed recall and post-close recovery; local memory tests remain
+  green.
+
+#### Review Evidence
+
+- Cloud review no longer calls the local-only `upsert` API. The shared single,
+  bulk and queue path reads the governed revision and commits the Memory/Event/
+  Session/Workspace aggregate through `commit_administrative_review` under one
+  administrative CAS; an active Worker Lease returns `409` without writes.
+- Recovery writes one durable receipt per closed Turn and PostgreSQL selects
+  oldest unreceipted closes, while the bounded recent scan remains only for the
+  pre-existing title retry behavior.
+- Focused Memory matrix: `85 passed`; real PostgreSQL API/store acceptance:
+  `6 passed`, including candidate write, Lease conflict, confirm, projection
+  alignment, next-task recall and durable recovery selection.
+- Ruff and release Eval (`10/10`) pass. Repository-wide Mypy and file-size gates
+  remain blocked only by pre-existing Trench integration changes outside this
+  card; the interrupted full suite reached `1664 passed / 329 skipped` with the
+  same two pre-existing Harness message-order failures and no Memory failure.
+- Local `zebra-application` API/Worker images were rebuilt from this worktree;
+  both containers are healthy, the direct and TLS health routes return `200`,
+  and in-container inspection confirms the administrative commit and durable
+  recovery selector are present. Trench readiness and the strategy page remain
+  `200` after the rolling restart.
 
 ### EMB-HOST-RUNTIME-01 - Worker Host Tool runtime composition
 

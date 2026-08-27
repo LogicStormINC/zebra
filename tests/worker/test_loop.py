@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from threading import Event
+from types import SimpleNamespace
+from typing import Any
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
@@ -14,6 +17,7 @@ from agent_storage import SQLiteEventStore, SQLiteLeaseStore, SQLiteProjectionSt
 from pytest import CaptureFixture, MonkeyPatch
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker import build_worker_loop_service
+from zebra_agent_worker.loop import WorkerLoopService
 from zebra_agent_worker.main import main
 
 
@@ -81,6 +85,145 @@ def test_worker_loop_executes_ready_session(
     assert result.executed_session_ids == (str(session_id),)
     assert session is not None
     assert session.status is SessionStatus.COMPLETED
+
+
+def test_command_driven_worker_does_not_execute_ready_session_without_command(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    class _ExecutionSpy:
+        calls: list[SessionId] = []
+
+        def execute_session(self, candidate: SessionId, **_kwargs: Any) -> None:
+            self.calls.append(candidate)
+
+    class _IdleCommands:
+        def consume_once(self, **_kwargs: Any) -> None:
+            return None
+
+    execution = _ExecutionSpy()
+    result = WorkerLoopService(
+        projection_store=SQLiteProjectionStore(database_path),
+        execution_service=execution,  # type: ignore[arg-type]
+        sleep=lambda _: None,
+        command_consumer=_IdleCommands(),  # type: ignore[arg-type]
+        scan_ready_sessions=False,
+    ).poll_once(worker_id="cloud-worker")
+
+    assert execution.calls == []
+    assert result.ready_session_ids == ()
+    assert result.executed_session_ids == ()
+    assert SQLiteProjectionStore(database_path).get_session(session_id) is not None
+
+
+def test_worker_checks_durable_command_before_cloud_memory_recovery(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    order: list[str] = []
+
+    class _IdleCommands:
+        def consume_once(self, **_kwargs: Any) -> None:
+            order.append("command")
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.loop.recover_completed_cloud_memory",
+        lambda **_kwargs: order.append("recovery"),
+    )
+    service = WorkerLoopService(
+        projection_store=SQLiteProjectionStore(tmp_path / "worker.db"),
+        execution_service=object(),  # type: ignore[arg-type]
+        cloud_memory_recovery=object(),  # type: ignore[arg-type]
+        command_consumer=_IdleCommands(),  # type: ignore[arg-type]
+        scan_ready_sessions=False,
+        sleep=lambda _: None,
+    )
+    service.poll_once(worker_id="cloud-worker")
+    assert service._cloud_memory_recovery_thread is not None
+    service._cloud_memory_recovery_thread.join(timeout=1)
+
+    assert order == ["command", "recovery"]
+
+
+def test_worker_defers_cloud_memory_recovery_while_commands_are_pending(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    recovery_calls: list[str] = []
+
+    class _PendingCommand:
+        def consume_once(self, **_kwargs: Any) -> SimpleNamespace:
+            return SimpleNamespace(
+                session_id="session-1",
+                command_kind="run",
+                status="executed",
+                reason=None,
+            )
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.loop.recover_completed_cloud_memory",
+        lambda **_kwargs: recovery_calls.append("recovery"),
+    )
+    WorkerLoopService(
+        projection_store=SQLiteProjectionStore(tmp_path / "worker.db"),
+        execution_service=object(),  # type: ignore[arg-type]
+        cloud_memory_recovery=object(),  # type: ignore[arg-type]
+        command_consumer=_PendingCommand(),  # type: ignore[arg-type]
+        scan_ready_sessions=False,
+        sleep=lambda _: None,
+    ).poll_once(worker_id="cloud-worker")
+
+    assert recovery_calls == []
+
+
+def test_cloud_memory_recovery_does_not_block_a_later_command(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    recovery_started = Event()
+    release_recovery = Event()
+
+    class _Commands:
+        calls = 0
+
+        def consume_once(self, **_kwargs: Any) -> SimpleNamespace | None:
+            self.calls += 1
+            if self.calls == 1:
+                return None
+            return SimpleNamespace(
+                session_id="session-1",
+                command_kind="run",
+                status="executed",
+                reason=None,
+            )
+
+    def blocking_recovery(**_kwargs: Any) -> None:
+        recovery_started.set()
+        assert release_recovery.wait(timeout=1)
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.loop.recover_completed_cloud_memory",
+        blocking_recovery,
+    )
+    service = WorkerLoopService(
+        projection_store=SQLiteProjectionStore(tmp_path / "worker.db"),
+        execution_service=object(),  # type: ignore[arg-type]
+        cloud_memory_recovery=object(),  # type: ignore[arg-type]
+        command_consumer=_Commands(),  # type: ignore[arg-type]
+        scan_ready_sessions=False,
+        sleep=lambda _: None,
+    )
+
+    service.poll_once(worker_id="cloud-worker")
+    assert recovery_started.wait(timeout=1)
+    result = service.poll_once(worker_id="cloud-worker")
+    release_recovery.set()
+    assert service._cloud_memory_recovery_thread is not None
+    service._cloud_memory_recovery_thread.join(timeout=1)
+
+    assert result.executed_session_ids == ("session-1",)
 
 
 def test_worker_loop_processes_multiple_ready_sessions_until_idle(
@@ -156,7 +299,7 @@ def test_worker_main_emits_loop_summary(
     session_id = _seed_ready_session(database_path, tmp_path)
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
-        lambda settings: _assistant_only_gateway(settings=settings),
+        lambda settings, **_: _assistant_only_gateway(settings=settings),
     )
     monkeypatch.setattr(
         "zebra_agent_worker.main.load_settings",

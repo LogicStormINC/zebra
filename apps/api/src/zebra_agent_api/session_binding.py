@@ -1,4 +1,3 @@
-
 """Freeze the Task binding at cloud admission (Phase F3).
 
 The cloud create path derives an `AgentCapabilityCeilingSnapshot` from the
@@ -12,17 +11,19 @@ envelope content — no secret material ever enters the snapshot.
 from __future__ import annotations
 
 import hashlib
-import json
 from datetime import UTC, datetime
+from uuid import UUID
 
 from agent_core.domain.agent_capabilities import capability_set
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.identifiers import TaskId
 from agent_core.domain.task_bindings import (
     AgentCapabilityCeilingSnapshot,
     HostCapabilitySnapshot,
     TaskBindingSnapshot,
+    host_context_digest,
 )
-from agent_storage.postgres.task_admission import save_task_binding
+from agent_storage.postgres.task_admission import load_task_binding, save_task_binding
 
 from zebra_agent_api.responses import ApiResponse
 
@@ -34,19 +35,103 @@ NO_CONNECTOR_DIGEST = "0" * 64
 
 
 def envelope_grant_digest(envelope: HostContextEnvelope) -> str:
-    canonical = {
-        "hostAppId": envelope.host_app_id,
-        "namespaceId": envelope.namespace_id,
-        "scopes": sorted(envelope.scopes),
-        "resources": [
-            {"type": ref.resource_type, "id": ref.resource_id}
-            for ref in envelope.resource_refs
-        ],
-        "policyVersion": envelope.policy_version,
-        "origin": envelope.origin,
-    }
-    encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode()
-    return hashlib.sha256(encoded).hexdigest()
+    return host_context_digest(envelope)
+
+
+def renew_task_binding_snapshot(
+    binding: TaskBindingSnapshot,
+    host_context: HostContextEnvelope,
+    *,
+    bound_at: datetime | None = None,
+) -> TaskBindingSnapshot:
+    """Create the next immutable revision from one freshly verified Grant."""
+
+    host = binding.host_capability
+    previous = host.host_context
+    if previous is None:
+        raise ValueError("Task binding has no renewable Host context")
+    stable_identity = (
+        "host_app_id",
+        "namespace_id",
+        "origin",
+        "workspace_ref",
+    )
+    if any(getattr(previous, name) != getattr(host_context, name) for name in stable_identity):
+        raise ValueError("Host Grant identity or workspace drifted from the Task binding")
+    if (
+        host.host_app_id != host_context.host_app_id
+        or host.namespace_id != host_context.namespace_id
+        or host.authority_issuer != host_context.origin
+    ):
+        raise ValueError("Host Grant authority drifted from the Task binding")
+    renewed_at = bound_at or datetime.now(UTC)
+    renewed_host = host.model_copy(
+        update={
+            "grant_digest": host_context_digest(host_context),
+            "grant_expires_at": host_context.expires_at,
+            "bound_at": renewed_at,
+            "host_context": host_context,
+        }
+    )
+    return binding.model_copy(
+        update={
+            "host_capability": renewed_host,
+            "binding_revision": binding.binding_revision + 1,
+            "bound_at": renewed_at,
+        }
+    )
+
+
+def renew_host_binding_for_command(
+    app: object,
+    session_id: str,
+    host_context: HostContextEnvelope | None,
+) -> ApiResponse | None:
+    """Renew a cloud Task binding before accepting a Host command."""
+
+    if host_context is None:
+        return None
+    settings = getattr(app, "settings", None)
+    if (
+        getattr(settings, "deployment", None) != "cloud"
+        or getattr(settings, "storage_authority", None) != "postgresql"
+    ):
+        return None
+    stores = getattr(app, "stores", None)
+    namespace = getattr(stores, "deployment_namespace", None)
+    dsn = getattr(settings, "database_url", None)
+    if not isinstance(namespace, str) or not namespace or not isinstance(dsn, str) or not dsn:
+        return ApiResponse(503, {"status": "host_binding_renewal_unavailable"})
+    try:
+        task_id = TaskId(UUID(session_id))
+        current = load_task_binding(
+            dsn,
+            deployment_namespace=namespace,
+            task_id=task_id,
+        )
+    except Exception:
+        return ApiResponse(503, {"status": "host_binding_load_failed"})
+    if current is None:
+        return ApiResponse(409, {"status": "host_binding_missing"})
+    try:
+        renewed = renew_task_binding_snapshot(current, host_context)
+    except ValueError as exc:
+        return ApiResponse(
+            403,
+            {"status": "host_binding_renewal_rejected", "reason": str(exc)},
+        )
+    try:
+        save_task_binding(
+            dsn,
+            deployment_namespace=namespace,
+            binding=renewed,
+            expected_previous_revision=current.binding_revision,
+        )
+    except ValueError:
+        return ApiResponse(409, {"status": "host_binding_revision_conflict"})
+    except Exception:
+        return ApiResponse(503, {"status": "host_binding_renewal_unavailable"})
+    return None
 
 
 def freeze_task_binding(
@@ -82,6 +167,7 @@ def freeze_task_binding(
         capabilities=DEFAULT_CAPABILITIES,
         resource_binding_digest=NO_CONNECTOR_DIGEST,
         bound_at=datetime.now(UTC),
+        host_context=host_context,
     )
     binding = TaskBindingSnapshot(
         task_id=str(session_id),
@@ -101,6 +187,7 @@ def freeze_task_binding(
     except Exception:
         return None
 
+
 def freeze_binding_for_response(
     response: object,
     host_context: HostContextEnvelope,
@@ -116,8 +203,6 @@ def freeze_binding_for_response(
     Cloud + PostgreSQL only; refusal keeps today's behavior silently.
     """
 
-
-
     assert isinstance(response, ApiResponse)
     if deployment != "cloud" or storage_authority != "postgresql":
         return
@@ -129,6 +214,7 @@ def freeze_binding_for_response(
         deployment_namespace=str(getattr(stores, "deployment_namespace", "zebra")),
         dsn=database_url,
     )
+
 
 def _build_binding_snapshot(
     session_id: object,
@@ -181,6 +267,7 @@ def _build_binding_snapshot(
             capabilities=DEFAULT_CAPABILITIES,
             resource_binding_digest=NO_CONNECTOR_DIGEST,
             bound_at=datetime.now(UTC),
+            host_context=host_context,
         )
     ceiling = AgentCapabilityCeilingSnapshot(
         definition_snapshot_digest=definition_snapshot_digest or NO_CONNECTOR_DIGEST,
@@ -197,6 +284,7 @@ def _build_binding_snapshot(
         binding_revision=1,
         bound_at=datetime.now(UTC),
     )
+
 
 def _admission_kwargs(
     settings: object,
@@ -248,9 +336,7 @@ def _frozen_manifest_digest(api: object, host_context: object) -> object:
             host_context,  # type: ignore[arg-type]
         )
     except ValueError as error:
-        return service_unavailable(
-            status="host_manifest_unavailable", reason=str(error)[:512]
-        )
+        return service_unavailable(status="host_manifest_unavailable", reason=str(error)[:512])
     if frozen is None:
         return None
     digest = frozen.get("manifestDigest")
@@ -260,6 +346,7 @@ def _frozen_manifest_digest(api: object, host_context: object) -> object:
             reason="frozen manifest digest is malformed; failing closed",
         )
     return digest
+
 
 def _compose_admission(
     api: object,
@@ -286,8 +373,11 @@ def _compose_admission(
 
 
 def _post_admission_idempotency(
-    settings: object, stores: object, idempotency_key: str | None,
-    response: ApiResponse, payload: dict[str, object],
+    settings: object,
+    stores: object,
+    idempotency_key: str | None,
+    response: ApiResponse,
+    payload: dict[str, object],
 ) -> ApiResponse:
     """Sync the stored receipt with the final response body.
 
@@ -295,9 +385,9 @@ def _post_admission_idempotency(
     it atomically inside admission, so only the response body needs the
     post-composition sync (run-command queueing extends the 201 body).
     """
-    if idempotency_key is None or getattr(response, 'status_code', 0) != 201:
+    if idempotency_key is None or getattr(response, "status_code", 0) != 201:
         return response
-    if getattr(settings, 'storage_authority', '') == 'postgresql':
+    if getattr(settings, "storage_authority", "") == "postgresql":
         from agent_storage.postgres.task_admission import (
             update_idempotency_response,
         )
@@ -316,6 +406,9 @@ def _post_admission_idempotency(
     from zebra_agent_api.idempotency import save_idempotent_response
 
     return save_idempotent_response(
-        store=store, action='session.create',
-        idempotency_key=idempotency_key, payload=payload, response=response,
+        store=store,
+        action="session.create",
+        idempotency_key=idempotency_key,
+        payload=payload,
+        response=response,
     )

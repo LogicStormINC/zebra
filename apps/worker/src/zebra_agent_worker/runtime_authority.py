@@ -262,7 +262,8 @@ def _latest_authority_snapshot(
     events: tuple[SessionEvent, ...] | list[SessionEvent],
 ) -> ExecutionAuthoritySnapshot | None:
     latest: ExecutionAuthoritySnapshot | None = None
-    for event in events:
+    turn_events = events[_current_turn_authority_start(events) :]
+    for event in turn_events:
         if event.event_type is EventType.EXECUTION_AUTHORITY_RESOLVED:
             try:
                 latest = ExecutionAuthoritySnapshot.model_validate(event.payload)
@@ -297,6 +298,25 @@ def _latest_authority_snapshot(
         latest.ensure_not_expanded(revalidation.effective_snapshot)
         latest = revalidation.effective_snapshot
     return latest
+
+
+def _current_turn_authority_start(
+    events: tuple[SessionEvent, ...] | list[SessionEvent],
+) -> int:
+    """Authority may only narrow within one Turn; a closed Turn starts a new chain."""
+
+    terminal = {
+        EventType.TURN_COMPLETED,
+        EventType.TURN_FAILED,
+        EventType.TURN_CANCELLED,
+        EventType.SESSION_COMPLETED,
+        EventType.SESSION_FAILED,
+        EventType.SESSION_CANCELLED,
+    }
+    return max(
+        (index + 1 for index, event in enumerate(events) if event.event_type in terminal),
+        default=0,
+    )
 
 
 def _validate_snapshot(

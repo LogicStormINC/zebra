@@ -28,6 +28,7 @@ x-zebra-cloud-environment: &zebra-cloud-environment
   ZEBRA_HOST_TOOL_SHARED_SECRET: ${ZEBRA_HOST_TOOL_SHARED_SECRET:-}
   ZEBRA_HOST_TOOL_SSRF_ALLOW_HOSTNAMES: ${ZEBRA_HOST_TOOL_SSRF_ALLOW_HOSTNAMES:-}
   ZEBRA_WORKSPACE_VOLUME_LAYOUT: ${ZEBRA_WORKSPACE_VOLUME_LAYOUT:-}
+  DOCKER_HOST: ${DOCKER_HOST:-}
 
 x-zebra-application-build: &zebra-application-build
   context: ..
@@ -120,4 +121,3 @@ networks:
   dependencies:
     name: ${ZEBRA_APPLICATION_NETWORK:-zebra-dependencies}
     external: true
-

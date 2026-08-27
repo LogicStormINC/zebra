@@ -7,6 +7,7 @@ from uuid import UUID
 
 from ag_ui.core import RunAgentInput
 from agent_core.contracts import SessionCommandKind
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import TaskId
 from agent_storage import ControlPlaneStores
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, ValidationError, field_validator
@@ -19,6 +20,7 @@ _AGUI_COMMAND_PATH = "/agui/commands"
 
 class _AgUiCommandApp(Protocol):
     stores: ControlPlaneStores
+    settings: object
 
     def submit_command(
         self,
@@ -102,6 +104,18 @@ def handle_agui_command(app: _AgUiCommandApp, request: object) -> ApiResponse | 
     idempotency_key = _idempotency_key(request)
     if idempotency_key is None:
         return _problem(400, "missing_idempotency_key", "Idempotency-Key header is required", path)
+    from zebra_agent_api.session_binding import renew_host_binding_for_command
+
+    host_context = getattr(request, "host_context", None)
+    if host_context is not None and not isinstance(host_context, HostContextEnvelope):
+        return _problem(403, "host_binding_renewal_rejected", "Host context is invalid", path)
+    renewal_error = renew_host_binding_for_command(
+        app,
+        str(task.active_segment_id),
+        host_context,
+    )
+    if renewal_error is not None:
+        return _problem_from_response(renewal_error, path)
     response = app.submit_command(
         str(task.active_segment_id),
         {

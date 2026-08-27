@@ -1,0 +1,26 @@
+{
+  "schema_version": "zebra.trench-read-e2e.result.v1",
+  "runner": "EMB-TRN-READ-E2E-01",
+  "scenarios": {},
+  "passed": false,
+  "status": "blocked",
+  "missing_environment": [
+    "TRENCH_E2E_BFF_URL",
+    "TRENCH_E2E_READ_TOOLS_URL",
+    "TRENCH_E2E_SESSION_COOKIE",
+    "TRENCH_E2E_EVENT_ID",
+    "TRENCH_E2E_HEALTH_URL",
+    "TRENCH_E2E_DATABASE_DSN",
+    "TRENCH_E2E_REDIS_URL",
+    "TRENCH_E2E_OBJECT_STORE_HEALTH_URL",
+    "TRENCH_E2E_BUSINESS_SNAPSHOT_URL",
+    "ZEBRA_E2E_BASE_URL",
+    "ZEBRA_E2E_HEALTH_URL",
+    "ZEBRA_E2E_DATABASE_DSN",
+    "ZEBRA_E2E_REDIS_URL",
+    "ZEBRA_E2E_OBJECT_STORE_HEALTH_URL",
+    "ZEBRA_E2E_GRANT_EXCHANGE_URL",
+    "ZEBRA_E2E_WORKER_RESTART_URL"
+  ],
+  "invalid_environment": []
+}

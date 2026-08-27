@@ -57,7 +57,12 @@ def test_delegation_guidance_follows_effective_tool_manifest() -> None:
     assert parent_messages[0].role is MessageRole.SYSTEM
     assert "Answer directly" in parent_messages[0].content
     assert "delegation_reason" in parent_messages[0].content
-    assert [message.role for message in direct_messages] == [MessageRole.USER]
+    assert "identify yourself as Zebra Agent" in parent_messages[0].content
+    assert [message.role for message in direct_messages] == [
+        MessageRole.SYSTEM,
+        MessageRole.USER,
+    ]
+    assert "identify yourself as Zebra Agent" in direct_messages[0].content
 
 
 def test_harness_model_step_injects_compiled_context_as_system_message(

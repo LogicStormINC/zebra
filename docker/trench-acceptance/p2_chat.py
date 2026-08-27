@@ -5,12 +5,13 @@ Drives the real product API on the acceptance server the same way the
 toc-frontend strategy workspace does.
 """
 import json
+import os
 import ssl
 import sys
 import time
 import urllib.request
 
-BASE = "http://127.0.0.1:18000"
+BASE = os.getenv("TRENCH_BASE_URL", "http://127.0.0.1:18000").rstrip("/")
 CTX = ssl.create_default_context()
 
 
@@ -85,7 +86,9 @@ def main():
                 events.append(kind)
                 if kind in ("delta", "agent_step", "done", "error", "meta"):
                     if kind == "delta":
-                        deltas.append(ev.get("delta") or ev.get("content") or "")
+                        deltas.append(
+                            ev.get("answer") or ev.get("delta") or ev.get("content") or ""
+                        )
                     elif kind == "error":
                         print("error event:", json.dumps(ev, ensure_ascii=False)[:300])
     except Exception as exc:

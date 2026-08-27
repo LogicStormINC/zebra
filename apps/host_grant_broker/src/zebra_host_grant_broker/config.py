@@ -33,6 +33,7 @@ class BrokerSettings:
     key_id: str
     ttl_seconds: int
     trench_me_url: str
+    trench_sources_url: str
     trench_timeout_seconds: float
     max_runtime_seconds: int
     max_model_tokens: int
@@ -68,6 +69,10 @@ class BrokerSettings:
                 source.get(f"{prefix}TTL_SECONDS", "300"), "TTL_SECONDS", 1, 3600
             ),
             trench_me_url=_https_url(_require(source, f"{prefix}TRENCH_ME_URL"), "TRENCH_ME_URL"),
+            trench_sources_url=_https_url(
+                _require(source, f"{prefix}TRENCH_SOURCES_URL"),
+                "TRENCH_SOURCES_URL",
+            ),
             trench_timeout_seconds=float(
                 _bounded_int(
                     source.get(f"{prefix}TRENCH_TIMEOUT_SECONDS", "5"),

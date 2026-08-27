@@ -37,7 +37,6 @@ from zebra_agent_worker import (
     SessionRecoveryService,
     SessionResumeError,
     SessionResumeService,
-    WorkerExecutionError,
 )
 from zebra_agent_worker.approved_continuation import (
     ApprovedContinuationError,
@@ -376,12 +375,16 @@ def test_mcp_recovery_fails_closed_when_selected_server_was_removed(
         mcp_allowlist=("mcp.fixture.echo",),
     )
 
-    with pytest.raises(WorkerExecutionError, match="unavailable"):
-        _execution_service(
-            database_path,
-            settings=_settings(database_path),
-        ).execute_session(session_id, worker_id="worker-mcp-removed")
+    result = _execution_service(
+        database_path,
+        settings=_settings(database_path),
+    ).execute_session(session_id, worker_id="worker-mcp-removed")
     events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert result.session.status is SessionStatus.FAILED
+    assert [event.event_type for event in events[-2:]] == [
+        EventType.TURN_FAILED,
+        EventType.SESSION_FAILED,
+    ]
     assert (
         sum(
             event.event_type is EventType.TOOL_EXECUTION_STARTED

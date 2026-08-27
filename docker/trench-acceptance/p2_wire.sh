@@ -37,6 +37,8 @@ values = {
     "ZEBRA_HOST_GRANT_EXCHANGE_URL": "https://broker.zebra.local:8443/exchange",
     "ZEBRA_BFF_TIMEOUT_MS": "15000",
     "ZEBRA_BFF_REQUIRE_HTTPS": "true",
+    "TRENCH_AI_HOST_TOOL_WORKLOAD_IDENTITIES": "trench-read-only",
+    "TRENCH_AI_HOST_TOOL_SHARED_SECRET": "compat:trench-read-v1",
 }
 lines = open(path).read().splitlines()
 seen = set()

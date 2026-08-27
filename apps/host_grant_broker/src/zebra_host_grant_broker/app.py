@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import FastAPI, Header, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zebra_host_grant_broker.config import BrokerSettings
 from zebra_host_grant_broker.grant_minting import ExchangeRequest, GrantMintError, mint_grant
@@ -18,6 +18,7 @@ class ExchangeBody(BaseModel):
     runId: str
     scopes: list[str]
     threadId: str
+    resourceRefs: list[dict[str, str]] = Field(default_factory=list)
 
 
 def create_app(settings: BrokerSettings) -> FastAPI:
@@ -46,9 +47,11 @@ def create_app(settings: BrokerSettings) -> FastAPI:
             request.enforce(settings)
             viewer = fetch_viewer(
                 settings.trench_me_url,
+                settings.trench_sources_url,
                 cookie.strip(),
                 timeout_seconds=settings.trench_timeout_seconds,
             )
+            request.authorize(viewer)
             grant = mint_grant(settings, signing_key, request, viewer)
         except GrantMintError as exc:
             response.status_code = 400

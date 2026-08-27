@@ -20,6 +20,7 @@ from agent_core.domain.agent_capabilities import (
     capability_set,
     intersect_capabilities,
 )
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.host_capability_manifests import HostCapabilityManifestV1
 
 MAX_DIGEST_LENGTH = 64
@@ -61,6 +62,7 @@ class HostCapabilitySnapshot(BaseModel):
     capabilities: frozenset[Capability]
     resource_binding_digest: str = Field(min_length=64, max_length=MAX_DIGEST_LENGTH)
     bound_at: datetime
+    host_context: HostContextEnvelope | None = None
 
     @model_validator(mode="after")
     def _validate(self) -> Self:
@@ -81,14 +83,13 @@ class HostCapabilitySnapshot(BaseModel):
         grant_expires_at: datetime | None,
         connector_id: str,
         connector_profile_digest: str,
+        host_context: HostContextEnvelope | None = None,
         bound_at: datetime | None = None,
     ) -> HostCapabilitySnapshot:
         """Freeze a manifest (plus its grant anchors) into a snapshot."""
 
         manifest_capabilities = {
-            capability
-            for tool in manifest.tools
-            for capability in tool.capabilities
+            capability for tool in manifest.tools for capability in tool.capabilities
         }
         binding_digest_source = hashlib.sha256(
             json.dumps(
@@ -123,7 +124,19 @@ class HostCapabilitySnapshot(BaseModel):
             capabilities=frozenset(manifest_capabilities),
             resource_binding_digest=binding_digest_source,
             bound_at=bound_at or datetime.now(UTC),
+            host_context=host_context,
         )
+
+
+def host_context_digest(context: HostContextEnvelope) -> str:
+    """Digest the complete, validated and secret-free Host authority context."""
+
+    encoded = json.dumps(
+        context.model_dump(mode="json", by_alias=True),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 class TaskBindingSnapshot(BaseModel):
