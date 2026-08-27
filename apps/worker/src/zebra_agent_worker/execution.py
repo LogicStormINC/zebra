@@ -472,6 +472,10 @@ class SessionExecutionService:
                 attempt_result = runtime_authority.runtime_cleanup_failure_result(
                     cleanup_error, attempt_result
                 )
+            # Rebuild the AG-UI task index BEFORE finalization flips the
+            # session terminal: readers tail the index and would otherwise
+            # observe the terminal status without the turn's events.
+            execution_finalization.rebuild_task_index(self._task_index_store, session_id)
             emitted_events = execution_finalization.finalize_execution(
                 recorder=recorder,
                 attempt_result=attempt_result,
