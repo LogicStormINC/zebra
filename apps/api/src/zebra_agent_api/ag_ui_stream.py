@@ -26,7 +26,7 @@ from agent_storage import ControlPlaneStores
 from zebra_agent_api.responses import ApiResponse
 
 _POLL_SECONDS = 0.05
-_KEEPALIVE_SECONDS = 15.0
+_KEEPALIVE_SECONDS = float(__import__("os").environ.get("ZEBRA_AGUI_KEEPALIVE_SECONDS", "3"))
 _MAX_IDENTITY_TEXT = 256
 _STREAM_PATH_PREFIX = "/agui/threads/"
 _TERMINAL_EVENTS = frozenset(
