@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import sys
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from time import monotonic
@@ -120,8 +119,6 @@ async def tail_agui_events(
     del request  # disconnects are detected at yield time
     while monotonic() < deadline:
         iterations += 1
-        if iterations % 40 == 0:
-            print(f"AGUI-BEAT iter={iterations}", file=sys.stderr, flush=True)
         try:
             events = await asyncio.to_thread(
                 context.stores.tasks.read_events,
@@ -130,7 +127,6 @@ async def tail_agui_events(
             )
         except Exception:
             failures += 1
-            print(f"AGUI-EXIT read failure #{failures}", file=sys.stderr, flush=True)
             if failures > 20:
                 return
             await asyncio.sleep(_POLL_SECONDS)
@@ -148,7 +144,6 @@ async def tail_agui_events(
                 yield projected
         except Exception:
             failures += 1
-            print(f"AGUI-EXIT projection failure #{failures}", file=sys.stderr, flush=True)
             if failures > 20:
                 return
             await asyncio.sleep(_POLL_SECONDS)
@@ -160,25 +155,20 @@ async def tail_agui_events(
             )
         except Exception:
             failures += 1
-            print(f"AGUI-EXIT task-read failure #{failures}", file=sys.stderr, flush=True)
             if failures > 20:
                 return
             await asyncio.sleep(_POLL_SECONDS)
             continue
         if task is None:
-            print("AGUI-EXIT task_missing", file=sys.stderr, flush=True)
             return
         if events and events[-1].event.event_type in _TERMINAL_EVENTS:
-            print(f"AGUI-EXIT terminal_event {events[-1].event.event_type}", file=sys.stderr, flush=True)
             return
         if task.status in _TERMINAL_STATUSES:
-            print(f"AGUI-EXIT terminal_status {task.status}", file=sys.stderr, flush=True)
             return
         if not emitted and monotonic() - last_delivery >= _KEEPALIVE_SECONDS:
             last_delivery = monotonic()
             yield ": keepalive\n\n"
         await asyncio.sleep(_POLL_SECONDS)
-    print("AGUI-EXIT deadline", file=sys.stderr, flush=True)
 
 
 def _project_new_task_events(
