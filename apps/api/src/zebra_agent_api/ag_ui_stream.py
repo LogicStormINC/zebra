@@ -29,6 +29,7 @@ from zebra_agent_api.responses import ApiResponse
 
 _POLL_SECONDS = float(os.environ.get("ZEBRA_AGUI_POLL_SECONDS", "0.25"))
 _KEEPALIVE_SECONDS = float(os.environ.get("ZEBRA_AGUI_KEEPALIVE_SECONDS", "3"))
+_TERMINAL_FLUSH_SECONDS = float(os.environ.get("ZEBRA_AGUI_TERMINAL_FLUSH_SECONDS", "0.5"))
 _MAX_STREAM_SECONDS = float(os.environ.get("ZEBRA_AGUI_MAX_STREAM_SECONDS", "1800"))
 _MAX_IDENTITY_TEXT = 256
 logger = logging.getLogger(__name__)
