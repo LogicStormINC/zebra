@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ipaddress
 import os
+import ssl
 from collections.abc import Mapping
 from dataclasses import dataclass
 from urllib.parse import urlsplit
@@ -30,6 +31,14 @@ class HttpHostToolTransport:
 
     resolver: HostNameResolver | None = None
     client: httpx.Client | None = None
+
+    @staticmethod
+    def _ssl_verify() -> ssl.SSLContext | bool:
+        """Prefer the system trust store so deployment CAs work."""
+        try:
+            return ssl.create_default_context()
+        except Exception:
+            return True
     max_response_bytes: int = MAX_HOST_TOOL_RESPONSE_BYTES
 
     def __post_init__(self) -> None:
@@ -57,6 +66,7 @@ class HttpHostToolTransport:
                     json=dict(body) if body is not None else None,
                     timeout=timeout_seconds,
                     follow_redirects=False,
+                    verify=self._ssl_verify(),
                 )
             else:
                 response = self.client.request(
