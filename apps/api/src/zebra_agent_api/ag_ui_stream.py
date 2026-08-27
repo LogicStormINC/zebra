@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
@@ -30,6 +31,7 @@ _POLL_SECONDS = float(os.environ.get("ZEBRA_AGUI_POLL_SECONDS", "0.25"))
 _KEEPALIVE_SECONDS = float(os.environ.get("ZEBRA_AGUI_KEEPALIVE_SECONDS", "3"))
 _MAX_STREAM_SECONDS = float(os.environ.get("ZEBRA_AGUI_MAX_STREAM_SECONDS", "1800"))
 _MAX_IDENTITY_TEXT = 256
+logger = logging.getLogger(__name__)
 _STREAM_PATH_PREFIX = "/agui/threads/"
 _TERMINAL_EVENTS = frozenset(
     {
@@ -107,37 +109,45 @@ async def tail_agui_events(
     cursor = context.cursor
     last_delivery = monotonic()
     deadline = monotonic() + _MAX_STREAM_SECONDS
+    failures = 0
     while monotonic() < deadline:
-        events = await asyncio.to_thread(
-            context.stores.tasks.read_events,
-            context.task_id,
-            -1,
-        )
-        emitted = False
-        for next_cursor, projected in _project_new_task_events(
-            events,
-            context.identity,
-            cursor,
-        ):
-            cursor = next_cursor
-            emitted = True
-            last_delivery = monotonic()
-            yield projected
-        task = await asyncio.to_thread(
-            context.stores.tasks.get_task,
-            context.task_id,
-        )
-        if task is None:
+      try:
+          events = await asyncio.to_thread(
+              context.stores.tasks.read_events,
+              context.task_id,
+              -1,
+          )
+          emitted = False
+          for next_cursor, projected in _project_new_task_events(
+              events,
+              context.identity,
+              cursor,
+          ):
+              cursor = next_cursor
+              emitted = True
+              last_delivery = monotonic()
+              yield projected
+          task = await asyncio.to_thread(
+              context.stores.tasks.get_task,
+              context.task_id,
+          )
+          if task is None:
+              return
+          if events and events[-1].event.event_type in _TERMINAL_EVENTS:
+              return
+          if task.status in _TERMINAL_STATUSES:
+              return
+          if emitted:
+              continue
+          if monotonic() - last_delivery >= _KEEPALIVE_SECONDS:
+              last_delivery = monotonic()
+              yield ": keepalive\n\n"
+          await asyncio.sleep(_POLL_SECONDS)
+      except Exception:  # transient store failures must not kill the tail
+        failures += 1
+        logger.warning("agui stream iteration failed (%s)", failures, exc_info=True)
+        if failures > 50:
             return
-        if events and events[-1].event.event_type in _TERMINAL_EVENTS:
-            return
-        if task.status in _TERMINAL_STATUSES:
-            return
-        if emitted:
-            continue
-        if monotonic() - last_delivery >= _KEEPALIVE_SECONDS:
-            last_delivery = monotonic()
-            yield ": keepalive\n\n"
         await asyncio.sleep(_POLL_SECONDS)
 
 
