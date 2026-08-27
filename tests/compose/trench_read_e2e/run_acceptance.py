@@ -69,6 +69,12 @@ READ_TOOL_NAMES = {
     "events.get_related_events",
     "events.get_entity_timeline",
     "events.get_topic",
+    "sources.list",
+    "sources.get_status",
+    "subscriptions.list_history",
+    "events.search_history",
+    "events.get_historical_event",
+    "events.trace_historical_event",
 }
 TERMINAL_EVENT_TYPES = {
     "RUN_FINISHED",

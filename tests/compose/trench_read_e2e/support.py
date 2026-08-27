@@ -273,7 +273,7 @@ def read_manifest_and_event(config: Config, expected_tools: set[str]) -> None:
     if not isinstance(tools, list):
         raise E2EError("read_manifest_mismatch")
     names = {item.get("name") for item in tools if isinstance(item, dict)}
-    if names != expected_tools or manifest.get("manifestVersion") != "trench-read-v1":
+    if names != expected_tools or manifest.get("manifestVersion") != "trench-native-v2":
         raise E2EError("read_manifest_mismatch")
     invoke = request(
         "POST",

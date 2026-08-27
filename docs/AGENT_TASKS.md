@@ -3824,7 +3824,7 @@ work without weakening Host Grant replay or resource enforcement.
 
 ### TRN-MEM-E2E-01 - Trench Cloud Governed Memory Closeout
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Depends on: `CLOUD-MEMORY-PG-01`, `CTX-MEM-01`, `TRN-PERF-01`
 - Branch: `cloud-agent-trench`
@@ -26056,6 +26056,54 @@ launch behind explicit evidence, independently of the Files API work.
 - no Files scenarios — expired `file_id` re-upload, concurrent dedup,
   remote cleanup and Files cache hit rate belong to DS-VIS-FILES-EVAL-01
 - no new eval framework — reuse the existing provider eval harness
+
+### EMB-TRN-NATIVE-HISTORY-V2-01 - Trench Native History Host Acceptance
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `QA / HOST INTEGRATION`
+- Branch: `codex/trn-native-history-v2`
+- Worktree: `/Users/lukeding/.codex/worktrees/trn-native-history-v2/zebra-agent`
+- Depends on: Trench `TRN-NATIVE-HISTORY-V2-01`; generic Host manifest, resource
+  binding and bounded effect contracts already on the delivery line
+- Owned paths: `apps/host_grant_broker/`, `tests/host_grant_broker/`,
+  `tests/compose/trench_read_e2e/`, `docker/compose.trench-acceptance.yml`,
+  `docs/trench_agent_profile_v1.md`, this card and focused `PROGRESS.md`
+
+#### Goal
+
+Extend the real Trench Host acceptance from the original five read tools to the
+versioned native source/history surface without adding Trench vocabulary to
+Zebra core or Worker production code.
+
+#### Acceptance
+
+- [x] V2 manifest remains backward compatible with the five V1 event tools and
+  explicitly declares source/history scopes and resource bindings.
+- [x] A real user can search only events whose `visible_at` falls inside one of
+  that user's historical subscription periods; another user and paused gaps are denied.
+- [x] Event detail and provenance trace use the same historical entitlement as
+  search, with bounded output and no raw storage URI leakage.
+- [x] Frozen V1 sessions stay V1; newly admitted V2 sessions receive the native tools.
+- [x] Real local fail-closed Grant/Host Tool calls and the existing business-snapshot
+  runner contract prove the native reads leave Trench business state unchanged.
+
+#### Explicit Non-Goals
+
+- no Trench-specific branch in `agent-core` or Worker production code
+- no credential CRUD, arbitrary SQL, raw queue control or destructive source write
+
+#### Review Evidence
+
+- Focused Host/Broker/manifest/resource-binding suite: `25 passed`; ruff and eval
+  release gate `10/10` passed.
+- Manifest freeze focused suite: `2 passed, 7 skipped` (PostgreSQL-only cases remain
+  environment-gated); generic full suite reached `2796 passed, 372 skipped` with seven
+  unrelated inherited failures in untouched prompt, attachment and file-size baselines.
+- Real local HTTP acceptance minted a `trench.history` grant for the authenticated
+  viewer, rejected another viewer with HTTP 400, and invoked signed
+  `subscriptions.list_history` plus `events.search_history` against the migrated Trench
+  database without changing Event business rows.
 
 ### DS-VIS-FILES-EVAL-01 - Files Post-Merge Eval And Launch Gate
 

@@ -48,6 +48,8 @@ def _settings(key) -> BrokerSettings:
             "evidence.read",
             "entity.read",
             "topic.read",
+            "source.read",
+            "history.read",
         ),
         private_key_pem=pem,
         key_id="test-key-1",
@@ -177,8 +179,14 @@ def test_fetch_viewer_extracts_identity():
                     "success": True,
                     "data": {
                         "items": [
-                            {"source_id": "src-active", "subscription_status": "active"},
-                            {"source_id": "src-paused", "subscription_status": "paused"},
+                            {
+                                "source_id": "src-active",
+                                "subscription_status": "active",
+                            },
+                            {
+                                "source_id": "src-paused",
+                                "subscription_status": "paused",
+                            },
                         ]
                     },
                 },
@@ -261,11 +269,18 @@ def test_exchange_mints_only_viewer_authorized_read_resources():
         json={
             "audience": "zebra",
             "runId": "run-1",
-            "scopes": ["agent.run", "event.read", "topic.read"],
+            "scopes": [
+                "agent.run",
+                "event.read",
+                "topic.read",
+                "source.read",
+                "history.read",
+            ],
             "threadId": "thread-1",
             "resourceRefs": [
                 {"type": "trench.source", "id": "src-1"},
                 {"type": "trench.topic", "id": "robotics"},
+                {"type": "trench.history", "id": "user-42"},
             ],
         },
         headers={"Cookie": "trench_ai_product_session=abc"},
@@ -276,6 +291,7 @@ def test_exchange_mints_only_viewer_authorized_read_resources():
     assert {ref.key for ref in verified.context.resource_refs} >= {
         ("trench.source", "src-1"),
         ("trench.topic", "robotics"),
+        ("trench.history", "user-42"),
     }
 
 
@@ -306,6 +322,32 @@ def test_exchange_rejects_unsubscribed_source_and_unbound_business_resource():
 
     assert unsubscribed.json() == {"status": "rejected", "reason": "source_not_allowed"}
     assert no_source.json() == {"status": "rejected", "reason": "source_binding_required"}
+
+
+def test_exchange_rejects_another_users_history_ledger():
+    settings = _settings(_key())
+    client = _client(
+        settings,
+        TrenchViewer("user-42", "ws-7"),
+    )
+    response = client.post(
+        "/exchange",
+        json={
+            "audience": "zebra",
+            "runId": "run-1",
+            "scopes": ["agent.run", "history.read"],
+            "threadId": "thread-1",
+            "resourceRefs": [
+                {"type": "trench.history", "id": "user-other"}
+            ],
+        },
+        headers={"Cookie": "trench_ai_product_session=abc"},
+    )
+
+    assert response.json() == {
+        "status": "rejected",
+        "reason": "history_not_allowed",
+    }
 
 
 def test_exchange_endpoint_rejections():

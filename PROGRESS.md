@@ -1797,3 +1797,13 @@ business domains. The durable decision is `ADR-012`.
 
 Before architecture changes, also read the source-of-truth documents in the
 precedence order defined by `AGENTS.md`.
+# 2026-08-28: Trench Native History Host Grant V2
+
+- Trench Host Grant broker 现在会以 `include_removed=true` 回查用户来源投影，同时校验
+  active `trench.source` 与恒定大小的 `trench.history` 账本资源；他人账本在 mint 前
+  fail closed，具体 period 的用户/工作区归属继续由 Trench 权威账本校验。
+- 默认允许 scope 增加 `source.read` 与 `history.read`，`trench.history`
+  必须携带 `history.read`。通用 Host manifest/resource-binding/Worker 路径保持不含
+  Trench 词汇，业务可见性仍由 Trench 执行。
+- Trench real-service acceptance 的精确 manifest 期望升级为 `trench-native-v2`，保留
+  原五项事件工具并加入六项来源/历史工具；acceptance compose policy 同步版本化。
