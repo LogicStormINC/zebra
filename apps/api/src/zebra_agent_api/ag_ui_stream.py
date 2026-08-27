@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from time import monotonic
@@ -25,8 +26,9 @@ from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.responses import ApiResponse
 
-_POLL_SECONDS = 0.05
-_KEEPALIVE_SECONDS = float(__import__("os").environ.get("ZEBRA_AGUI_KEEPALIVE_SECONDS", "3"))
+_POLL_SECONDS = float(os.environ.get("ZEBRA_AGUI_POLL_SECONDS", "0.25"))
+_KEEPALIVE_SECONDS = float(os.environ.get("ZEBRA_AGUI_KEEPALIVE_SECONDS", "3"))
+_MAX_STREAM_SECONDS = float(os.environ.get("ZEBRA_AGUI_MAX_STREAM_SECONDS", "1800"))
 _MAX_IDENTITY_TEXT = 256
 _STREAM_PATH_PREFIX = "/agui/threads/"
 _TERMINAL_EVENTS = frozenset(
@@ -98,13 +100,14 @@ def prepare_agui_stream(
 
 async def tail_agui_events(
     context: AgUiStreamContext,
-    request: _DisconnectableRequest,
+    request: _DisconnectableRequest,  # noqa: ARG001 - retained for callers
 ) -> AsyncIterator[str]:
     """Replay durable Events, then poll the same authority for a lossless tail."""
 
     cursor = context.cursor
     last_delivery = monotonic()
-    while not await request.is_disconnected():
+    deadline = monotonic() + _MAX_STREAM_SECONDS
+    while monotonic() < deadline:
         events = await asyncio.to_thread(
             context.stores.tasks.read_events,
             context.task_id,
