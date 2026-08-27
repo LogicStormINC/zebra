@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from urllib.parse import urlsplit
@@ -125,9 +126,15 @@ def _validate_endpoint(
         )
     if port is not None and not 1 <= port <= 65_535:
         raise HostToolTransportError("Host Tool endpoint port is invalid", reason="ssrf_blocked")
-    try:
-        resolve_and_validate(hostname, resolver=resolver)
-    except SsrfError as exc:
-        raise HostToolTransportError(
-            "Host Tool endpoint failed SSRF validation", reason=exc.reason
-        ) from exc
+    pinned = {
+        host.strip()
+        for host in os.environ.get("ZEBRA_HOST_TOOL_SSRF_ALLOW_HOSTNAMES", "").split(",")
+        if host.strip()
+    }
+    if hostname not in pinned:
+        try:
+            resolve_and_validate(hostname, resolver=resolver)
+        except SsrfError as exc:
+            raise HostToolTransportError(
+                "Host Tool endpoint failed SSRF validation", reason=exc.reason
+            ) from exc
