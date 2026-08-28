@@ -37,9 +37,10 @@ from agent_storage import (
 )
 from botocore.config import Config  # type: ignore[import-untyped]
 from botocore.session import Session as BotocoreSession  # type: ignore[import-untyped]
+from fastapi.testclient import TestClient
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
-from zebra_agent_api import create_app
+from zebra_agent_api import create_app, create_http_app
 
 NOW = datetime(2026, 7, 29, 12, 0, tzinfo=UTC)
 PAYLOAD = b"cloud postgres artifact\n"
@@ -99,7 +100,7 @@ def test_api_composes_rebuildable_postgres_indexes_with_verified_object(
         artifact_id=new_artifact_id(),
         session_id=session.session_id,
         intended_event_sequence=2,
-        kind="tool-output",
+        kind="user_file",
         mime_type="text/plain",
         sha256=sha256(PAYLOAD).hexdigest(),
         size_bytes=len(PAYLOAD),
@@ -196,6 +197,11 @@ def test_api_composes_rebuildable_postgres_indexes_with_verified_object(
 
     listed = api.get_session_artifacts(str(session.session_id))
     content = api.get_session_artifact_content(str(session.session_id), "tool-run:2")
+    download = TestClient(
+        create_http_app(tmp_path / "api.db", stores=stores)
+    ).get(
+        f"/tasks/{session.session_id}/artifacts/{reservation.artifact_id}/download"
+    )
 
     assert listed.status_code == 200
     assert [item["artifact_id"] for item in listed.body["artifacts"]] == [
@@ -210,6 +216,9 @@ def test_api_composes_rebuildable_postgres_indexes_with_verified_object(
     assert listed.body["artifacts"][1]["lifecycle"]["status"] == "active"
     assert content.status_code == 200
     assert content.body["size_bytes"] == len(PAYLOAD)
+    assert download.status_code == 200
+    assert download.content == PAYLOAD
+    assert download.headers["cache-control"] == "private, no-store"
 
     before_rebuild = listed.body["artifacts"]
     with psycopg.connect(dsn) as connection:

@@ -30,7 +30,7 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
-- `CLOUD-USER-FILES-01` is `In Progress` on `codex/cloud-user-files-01`.
+- `CLOUD-USER-FILES-01` is `Review` on `codex/cloud-user-files-01`.
   It adds an opt-in, user-bound deliverable publication and download path on
   top of the existing fenced Artifact authority. Owned paths:
   `packages/agent-core/src/agent_core/domain/host_authority.py`, focused
@@ -43,6 +43,13 @@ does not authorize production code, migrations or activation of its successor.
   architecture/runbook document. Existing Tool-output Artifact capture and
   ordinary chat execution must remain unchanged when the capability is unused.
   Depends on the completed Cloud Artifact payload/object/read slices.
+  Focused publication/download/isolation matrices pass; Ruff and focused Mypy pass. Real
+  PostgreSQL + MinIO publication and raw HTTP download pass `2/2`. Full suite:
+  the pre-fix run was `2804 passed / 369 skipped / 8 failures`; its one
+  introduced API/CLI projection mismatch was then fixed and its contract matrix
+  passes `14/14`. The other seven failures are inherited. `make check` remains blocked by six
+  inherited file-size violations and five inherited Mypy errors; Ruff and Eval
+  `10/10` pass.
 
 - `CTX-TURN-LIFECYCLE` (ADR-026 cards `CTX-TURN-ADR-01` through
   `CTX-TURN-API-01`) is `Review` on `codex/ctx-turn-lifecycle-01`, stacked

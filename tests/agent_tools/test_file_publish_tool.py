@@ -35,6 +35,22 @@ def test_publish_file_returns_governed_artifact_metadata(tmp_path: Path) -> None
     assert captured == [(b"symbol,score\nAAPL,1\n", "research.csv", "text/csv")]
 
 
+def test_publish_generated_content_without_workspace_write(tmp_path: Path) -> None:
+    captured: list[tuple[bytes, str, str]] = []
+    tool = FilePublishTool(
+        LocalWorkspace(tmp_path),
+        lambda payload, name, mime: (
+            captured.append((payload, name, mime)) or "artifact://00000000-0000-0000-0000-000000000001"
+        ),
+        max_bytes=1024,
+    )
+
+    result = tool.handle(_call(content="symbol,score\nAAPL,1\n", display_name="research.csv"))
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert captured == [(b"symbol,score\nAAPL,1\n", "research.csv", "text/csv")]
+
+
 def test_publish_file_rejects_symlink_and_size_limit(tmp_path: Path) -> None:
     outside = tmp_path.parent / f"outside-{uuid4().hex}.txt"
     outside.write_bytes(b"secret")

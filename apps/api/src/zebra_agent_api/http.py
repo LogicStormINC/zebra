@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 from collections.abc import Mapping
 from dataclasses import dataclass
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Protocol
-from urllib.parse import quote, urlsplit
+from urllib.parse import urlsplit
 
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_integrations import GitHubPullRequestTransport
@@ -24,6 +23,7 @@ from zebra_agent_api.ag_ui_stream import (
     tail_agui_events,
 )
 from zebra_agent_api.app import create_app
+from zebra_agent_api.artifact_download import artifact_download_response
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 from zebra_agent_api.session_identity_read import _parse_session_id
@@ -123,62 +123,9 @@ def create_http_app(
         )
         if auth_error is not None:
             return auth_error
-        download = _artifact_download_request(request)
-        if download is not None:
-            task_id, artifact_id = download
-            common = {
-                "method": "GET",
-                "headers": dict(request.headers),
-                "query": {},
-                "host_context": getattr(request.state, "host_context", None),
-            }
-            content = await asyncio.to_thread(
-                adapter.handle,
-                RouteRequest(
-                    path=f"/tasks/{task_id}/artifacts/{artifact_id}/content",
-                    body=None,
-                    **common,
-                ),
-            )
-            if content.status_code != 200:
-                return JSONResponse(status_code=content.status_code, content=content.body)
-            detail = await asyncio.to_thread(
-                adapter.handle,
-                RouteRequest(
-                    path=f"/tasks/{task_id}/artifacts/{artifact_id}",
-                    body=None,
-                    **common,
-                ),
-            )
-            if detail.status_code != 200:
-                return JSONResponse(status_code=detail.status_code, content=detail.body)
-            artifact = detail.body.get("artifact")
-            delivery = artifact.get("delivery") if isinstance(artifact, dict) else None
-            file_name = (
-                delivery.get("file_name")
-                if isinstance(delivery, dict) and isinstance(delivery.get("file_name"), str)
-                else f"artifact-{artifact_id}.bin"
-            )
-            mime_type = (
-                delivery.get("mime_type")
-                if isinstance(delivery, dict) and isinstance(delivery.get("mime_type"), str)
-                else "application/octet-stream"
-            )
-            encoded = content.body.get("content_base64")
-            if not isinstance(encoded, str):
-                return JSONResponse(
-                    status_code=503,
-                    content={"status": "artifact_download_unavailable"},
-                )
-            return Response(
-                content=base64.b64decode(encoded, validate=True),
-                media_type=mime_type,
-                headers={
-                    "Cache-Control": "private, no-store",
-                    "Content-Disposition": f"attachment; filename*=UTF-8''{quote(file_name)}",
-                    "X-Content-Type-Options": "nosniff",
-                },
-            )
+        download_response = await artifact_download_response(request, adapter)
+        if download_response is not None:
+            return download_response
         body, body_error = await _read_request_body(request)
         if body_error is not None:
             return body_error
@@ -290,19 +237,6 @@ def _compose_production_host_grant_authorizer(
 
 def _is_stream_request(request: Request) -> bool:
     return request.method.upper() == "GET" and request.url.path.endswith("/stream")
-
-
-def _artifact_download_request(request: Request) -> tuple[str, str] | None:
-    parts = tuple(part for part in request.url.path.split("/") if part)
-    if (
-        request.method.upper() == "GET"
-        and len(parts) == 5
-        and parts[0] == "tasks"
-        and parts[2] == "artifacts"
-        and parts[4] == "download"
-    ):
-        return parts[1], parts[3]
-    return None
 
 
 def _is_agui_stream_request(request: Request) -> bool:

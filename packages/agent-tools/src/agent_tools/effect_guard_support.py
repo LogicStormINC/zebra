@@ -99,6 +99,7 @@ READ_ONLY_TOOLS = frozenset(
         "files.read",
         "files.search",
         "files.list",
+        "files.publish",
         "git.status",
         "sessions.search",
         "skills.list",

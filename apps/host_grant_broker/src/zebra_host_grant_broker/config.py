@@ -14,6 +14,8 @@ DEFAULT_ALLOWED_SCOPES = (
     "topic.read",
     "source.read",
     "history.read",
+    "artifact.read",
+    "artifact.publish",
 )
 
 

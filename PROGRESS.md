@@ -5,6 +5,19 @@
 
 ## Active Review
 
+- Cloud user file delivery (`CLOUD-USER-FILES-01`) is implemented on
+  `codex/cloud-user-files-01`. A Grant-gated `files.publish` Tool accepts
+  generated UTF-8 content or a safe workspace file, commits `kind=user_file`
+  through the existing PostgreSQL Event/Artifact authority and private
+  versioned MinIO store, and exposes raw private downloads behind
+  `artifact.read`. The broker binds an opaque authenticated `principal`; Task
+  binding renewal and task reads reject principal drift, so users sharing a
+  namespace/workspace cannot cross-read files. Trench owns the stable BFF URL;
+  neither MinIO credentials nor presigned URLs reach the browser. Real
+  PostgreSQL + MinIO publication and HTTP download pass `2/2`; focused
+  regression is green. Full-gate inherited failures remain separately recorded
+  on the task card.
+
 - Trench cloud governed Memory closeout (`TRN-MEM-E2E-01`) now routes API
   confirm/expire through the PostgreSQL aggregate CAS instead of the SQLite-only
   `upsert` path. Worker recovery persists a receipt for each closed Turn and

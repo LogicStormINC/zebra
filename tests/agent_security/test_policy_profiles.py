@@ -38,6 +38,9 @@ def test_read_only_profile_allows_read_tools_and_denies_write_tools() -> None:
     assert engine.evaluate_tool_call(_tool_call("git.status")).decision is (
         PolicyDecisionType.ALLOW
     )
+    assert engine.evaluate_tool_call(_tool_call("files.publish")).decision is (
+        PolicyDecisionType.ALLOW
+    )
     assert engine.evaluate_tool_call(_tool_call("patch.apply")).decision is (
         PolicyDecisionType.DENY
     )

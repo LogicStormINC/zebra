@@ -312,7 +312,7 @@ class SessionArtifactReadMixin:
             lifecycle=lifecycle,
             retrieval=serialize_read_retrieval(artifact.uri, inspection),
         )
-        if inspection is not None:
+        if inspection is not None and inspection.file_name is not None:
             projection["delivery"] = {
                 "file_name": inspection.file_name,
                 "mime_type": inspection.mime_type,

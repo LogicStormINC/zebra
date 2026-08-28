@@ -64,6 +64,7 @@ READ_ONLY_TOOLS = frozenset(
         "agent.tools.describe",
         "agent.tools.search",
         "files.list",
+        "files.publish",
         "files.read",
         "files.search",
         "git.status",

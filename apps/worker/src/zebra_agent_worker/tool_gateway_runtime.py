@@ -156,6 +156,11 @@ def build_worker_tool_gateway(
     frozen_manifest_loader: object = None,
     client_gateway: ClientToolGateway | None = None,
 ) -> WorkerToolGateway:
+    can_publish = (
+        cloud_artifacts is not None
+        and task.host_context is not None
+        and "artifact.publish" in task.host_context.scopes
+    )
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,
         admin=settings.skill_roots_admin,
@@ -187,10 +192,14 @@ def build_worker_tool_gateway(
         runtime_handle=None,
         artifact_payload_store=local_artifacts if cloud_artifacts is None else None,
         output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
-        file_publisher=cloud_artifacts.capture_file if cloud_artifacts else None,
+        file_publisher=(
+            cloud_artifacts.capture_file
+            if can_publish and cloud_artifacts is not None
+            else None
+        ),
         max_publish_bytes=(
             task.host_context.limits.max_artifact_bytes
-            if cloud_artifacts is not None and task.host_context is not None
+            if can_publish and task.host_context is not None
             else 0
         ),
         trusted_local=trusted_local,

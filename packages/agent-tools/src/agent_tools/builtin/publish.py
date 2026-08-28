@@ -15,13 +15,20 @@ FilePublisher = Callable[[bytes, str, str], str]
 
 file_publish_contract = ToolContract(
     name="files.publish",
-    required_arguments=("path",),
-    description="Publish a generated workspace file as a downloadable user artifact.",
+    required_arguments=(),
+    description="Publish generated text or a workspace file as a downloadable user artifact.",
     argument_properties={
-        "path": {"type": "string", "description": "Workspace-relative file path."},
+        "path": {
+            "type": "string",
+            "description": "Workspace-relative file path (exclusive with content).",
+        },
+        "content": {
+            "type": "string",
+            "description": "Generated UTF-8 content (exclusive with path).",
+        },
         "display_name": {"type": "string", "description": "Optional download file name."},
     },
-    risk=ToolRisk.WRITE,
+    risk=ToolRisk.READ,
 )
 
 
@@ -44,7 +51,15 @@ class FilePublishTool:
         return file_publish_contract
 
     def handle(self, tool_call: ToolCall) -> ToolResult:
-        relative_path = _required_text(tool_call.arguments.get("path"), "path")
+        path_value = tool_call.arguments.get("path")
+        content_value = tool_call.arguments.get("content")
+        if (path_value is None) == (content_value is None):
+            raise ToolArgumentError("files.publish requires exactly one of 'path' or 'content'")
+        if content_value is not None:
+            content = _required_content(content_value)
+            file_name = _safe_file_name(tool_call.arguments.get("display_name"), None)
+            return self._publish_result(tool_call, content.encode("utf-8"), file_name)
+        relative_path = _required_text(path_value, "path")
         if _contains_symlink(self._workspace.root_path, relative_path):
             return _failure(tool_call, "symlink_not_allowed", relative_path)
         try:
@@ -61,7 +76,16 @@ class FilePublishTool:
         if size > self._max_bytes:
             return _failure(tool_call, "file_too_large", f"{size}>{self._max_bytes}")
         file_name = _safe_file_name(tool_call.arguments.get("display_name"), target.name)
-        payload = target.read_bytes()
+        return self._publish_result(tool_call, target.read_bytes(), file_name)
+
+    def _publish_result(
+        self,
+        tool_call: ToolCall,
+        payload: bytes,
+        file_name: str,
+    ) -> ToolResult:
+        if len(payload) > self._max_bytes:
+            return _failure(tool_call, "file_too_large", f"{len(payload)}>{self._max_bytes}")
         mime_type = mimetypes.guess_type(file_name)[0] or "application/octet-stream"
         uri = self._publish(payload, file_name, mime_type)
         return ToolResult(
@@ -85,8 +109,17 @@ def _required_text(value: object, field_name: str) -> str:
     return value.strip()
 
 
-def _safe_file_name(value: object, fallback: str) -> str:
+def _required_content(value: object) -> str:
+    if not isinstance(value, str) or not value:
+        raise ToolArgumentError("files.publish requires 'content' to be a non-empty string")
+    return value
+
+
+def _safe_file_name(value: object, fallback: str | None) -> str:
+    if value is None and fallback is None:
+        raise ToolArgumentError("files.publish content requires 'display_name'")
     name = fallback if value is None else _required_text(value, "display_name")
+    assert name is not None
     if Path(name).name != name or name in {".", ".."} or any(char in name for char in "\r\n\0"):
         raise ToolArgumentError("files.publish display_name must be a safe basename")
     if len(name) > 255:
