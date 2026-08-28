@@ -187,6 +187,12 @@ def build_worker_tool_gateway(
         runtime_handle=None,
         artifact_payload_store=local_artifacts if cloud_artifacts is None else None,
         output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
+        file_publisher=cloud_artifacts.capture_file if cloud_artifacts else None,
+        max_publish_bytes=(
+            task.host_context.limits.max_artifact_bytes
+            if cloud_artifacts is not None and task.host_context is not None
+            else 0
+        ),
         trusted_local=trusted_local,
         web_pipeline_v2=settings.web_pipeline_v2,
         durable_delegation=durable_delegation,

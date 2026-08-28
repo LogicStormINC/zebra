@@ -108,6 +108,7 @@ def test_minted_grant_passes_real_zebra_verifier():
     resources = {ref.key for ref in verified.context.resource_refs}
     assert ("thread", "0f0e8b74-8d64-4d55-9f8e-2a1b3c4d5e6f") in resources
     assert ("run", "run-123") in resources
+    assert ("principal", "user-42") in resources
 
 
 def test_grant_carries_exactly_the_model_claim_set():
@@ -148,6 +149,7 @@ def test_grant_carries_exactly_the_model_claim_set():
     assert claims["resource_refs"] == [
         {"type": "thread", "id": "t-1"},
         {"type": "run", "id": "r-1"},
+        {"type": "principal", "id": "u"},
     ]
 
 

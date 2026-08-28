@@ -13,7 +13,8 @@ from typing import Any
 from uuid import UUID
 
 from agent_core.domain.host_authority import HostContextEnvelope
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import SessionId, TaskId
+from agent_storage.postgres.task_admission import load_task_binding
 
 from zebra_agent_api.responses import ApiResponse
 
@@ -125,7 +126,54 @@ def tenant_scope_response(
             target = path.removeprefix(prefix).split("/")[0]
             if target and session_tenant_denied(sessions, target, host_context):
                 return tenant_forbidden_response(target)
+            if prefix == "/tasks/" and target:
+                principal_response = _task_principal_response(app, target, host_context)
+                if principal_response is not None:
+                    return principal_response
     return None
+
+
+def _task_principal_response(
+    app: Any,
+    task_id: str,
+    host_context: HostContextEnvelope | None,
+) -> ApiResponse | None:
+    current = _principal_ref(host_context)
+    if current is None:
+        return None
+    namespace = getattr(app.stores, "deployment_namespace", None)
+    database_url = getattr(app.settings, "database_url", None)
+    if not isinstance(namespace, str) or not isinstance(database_url, str):
+        return ApiResponse(503, {"status": "principal_binding_unavailable"})
+    try:
+        binding = load_task_binding(
+            database_url,
+            deployment_namespace=namespace,
+            task_id=TaskId(UUID(task_id)),
+        )
+    except (ValueError, TypeError):
+        return tenant_forbidden_response(task_id)
+    except Exception:
+        return ApiResponse(503, {"status": "principal_binding_unavailable"})
+    bound = (
+        _principal_ref(binding.host_capability.host_context)
+        if binding is not None
+        else None
+    )
+    if bound != current:
+        return tenant_forbidden_response(task_id)
+    return None
+
+
+def _principal_ref(context: HostContextEnvelope | None) -> str | None:
+    if context is None:
+        return None
+    refs = [
+        resource.resource_id
+        for resource in context.resource_refs
+        if resource.resource_type == "principal"
+    ]
+    return refs[0] if len(refs) == 1 else None
 
 def tenant_memory_denied(
     host_context: HostContextEnvelope | None,

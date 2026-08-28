@@ -15,6 +15,7 @@ GENERAL_TOOL_NAMES = frozenset(
         "command.run",
         "files.list",
         "files.read",
+        "files.publish",
         "files.search",
         "patch.apply",
         "sessions.search",

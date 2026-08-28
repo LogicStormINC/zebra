@@ -30,6 +30,20 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLOUD-USER-FILES-01` is `In Progress` on `codex/cloud-user-files-01`.
+  It adds an opt-in, user-bound deliverable publication and download path on
+  top of the existing fenced Artifact authority. Owned paths:
+  `packages/agent-core/src/agent_core/domain/host_authority.py`, focused
+  Artifact delivery contracts under `packages/agent-core/src/agent_core/`,
+  `packages/agent-storage/src/agent_storage/`, `packages/agent-tools/src/agent_tools/`,
+  `packages/agent-security/src/agent_security/`, `apps/api/src/zebra_agent_api/`,
+  `apps/worker/src/zebra_agent_worker/`,
+  `apps/host_grant_broker/src/zebra_host_grant_broker/`, focused tests,
+  MinIO compose configuration, this registry, `PROGRESS.md`, and the focused
+  architecture/runbook document. Existing Tool-output Artifact capture and
+  ordinary chat execution must remain unchanged when the capability is unused.
+  Depends on the completed Cloud Artifact payload/object/read slices.
+
 - `CTX-TURN-LIFECYCLE` (ADR-026 cards `CTX-TURN-ADR-01` through
   `CTX-TURN-API-01`) is `Review` on `codex/ctx-turn-lifecycle-01`, stacked
   on the `CTX-INHERIT-CLOUD-01` closeout: a final model answer closes a

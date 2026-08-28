@@ -58,6 +58,8 @@ def renew_task_binding_snapshot(
     )
     if any(getattr(previous, name) != getattr(host_context, name) for name in stable_identity):
         raise ValueError("Host Grant identity or workspace drifted from the Task binding")
+    if _principal_ref(previous) != _principal_ref(host_context):
+        raise ValueError("Host Grant principal drifted from the Task binding")
     if (
         host.host_app_id != host_context.host_app_id
         or host.namespace_id != host_context.namespace_id
@@ -132,6 +134,14 @@ def renew_host_binding_for_command(
     except Exception:
         return ApiResponse(503, {"status": "host_binding_renewal_unavailable"})
     return None
+
+
+def _principal_ref(context: HostContextEnvelope) -> tuple[str, ...]:
+    return tuple(
+        resource.resource_id
+        for resource in context.resource_refs
+        if resource.resource_type == "principal"
+    )
 
 
 def freeze_task_binding(

@@ -262,3 +262,20 @@ def test_route_adapter_handles_session_artifact_content(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert response.body["artifact_id"] == "tool-run:5"
+
+
+def test_http_download_returns_raw_private_attachment(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    _seed_payload_backed_tool_artifact(database_path, session.session_id)
+    client = TestClient(create_http_app(database_path))
+
+    response = client.get(
+        f"/tasks/{session.session_id}/artifacts/tool-run:5/download"
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"pytest passed"
+    assert response.headers["cache-control"] == "private, no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["content-disposition"].startswith("attachment;")

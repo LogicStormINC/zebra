@@ -47,6 +47,8 @@ class _PendingToolOutput:
     artifact_id: ArtifactId
     payload: bytes
     file_name: str
+    kind: str
+    mime_type: str
     created_at: datetime
 
     @property
@@ -113,8 +115,8 @@ class CloudToolOutputArtifactCoordinator:
         prepared = self.stage_bytes(
             artifact_id=pending.artifact_id,
             payload=pending.payload,
-            kind="tool_output",
-            mime_type="text/plain",
+            kind=pending.kind,
+            mime_type=pending.mime_type,
             file_name=pending.file_name,
             created_at=pending.created_at,
             intended_event_sequence=recorder.next_sequence,
@@ -318,6 +320,21 @@ class CloudToolOutputArtifactCoordinator:
             artifact_id=new_artifact_id(),
             payload=content.encode("utf-8"),
             file_name=file_name,
+            kind="tool_output",
+            mime_type="text/plain",
+            created_at=datetime.now(UTC),
+        )
+        with self._lock:
+            self._pending[pending.uri] = pending
+        return pending.uri
+
+    def capture_file(self, payload: bytes, file_name: str, mime_type: str) -> str:
+        pending = _PendingToolOutput(
+            artifact_id=new_artifact_id(),
+            payload=payload,
+            file_name=file_name,
+            kind="user_file",
+            mime_type=mime_type,
             created_at=datetime.now(UTC),
         )
         with self._lock:

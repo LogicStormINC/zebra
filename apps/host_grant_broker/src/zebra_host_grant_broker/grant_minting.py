@@ -106,6 +106,7 @@ def mint_grant(
         "resource_refs": [
             {"type": "thread", "id": request.thread_id},
             {"type": "run", "id": request.run_id},
+            {"type": "principal", "id": viewer.user_id},
             *(
                 {"type": resource_type, "id": resource_id}
                 for resource_type, resource_id in request.resource_refs

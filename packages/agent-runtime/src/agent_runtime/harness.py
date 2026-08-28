@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
@@ -46,6 +46,7 @@ from agent_tools import (
     WorkspaceListTool,
     WorkspaceSearchTool,
 )
+from agent_tools.builtin.publish import FilePublishTool
 from agent_tools.errors import ToolRegistryError
 from agent_tools.skills_catalog import LocalSkillCatalog, ScopedSkillRoot, SkillEnablementState
 
@@ -182,6 +183,8 @@ class LocalToolGateway(ToolGatewayPort):
         runtime_handle: RuntimeHandle | None = None,
         artifact_payload_store: ArtifactPayloadStorePort | None = None,
         output_projector: ToolOutputProjector | None = None,
+        file_publisher: Callable[[bytes, str, str], str] | None = None,
+        max_publish_bytes: int = 0,
         trusted_local: bool = False,
         web_pipeline_v2: bool = False,
     ) -> None:
@@ -214,6 +217,11 @@ class LocalToolGateway(ToolGatewayPort):
             FileReadTool(
                 self._workspace,
                 max_bytes=None if output_projector is not None else 16_384,
+            ),
+            *(
+                (FilePublishTool(self._workspace, file_publisher, max_bytes=max_publish_bytes),)
+                if file_publisher is not None
+                else ()
             ),
             WorkspaceSearchTool(
                 self._workspace,
