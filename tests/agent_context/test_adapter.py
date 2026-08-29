@@ -173,3 +173,29 @@ def test_local_context_compiler_renders_confirmed_memory_in_stable_section(
     assert "Procedure 2" in prompt
     assert "This repo uses uv instead of Poetry." in prompt
     assert "Run make check before push." in prompt
+
+
+def test_host_bound_context_skips_workspace_content(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "AGENTS.md").write_text(
+        "WORKSPACE_SCAN_MUST_NOT_REACH_HOST_PROMPT\n",
+        encoding="utf-8",
+    )
+
+    prompt = LocalContextCompiler(include_workspace=False).build_system_prompt(
+        task_input="search my subscribed events",
+        workspace_root=workspace.resolve(),
+        max_tokens=160,
+        confirmed_memories=(
+            ConfirmedMemoryInput(
+                memory_type=MemoryType.PROJECT_RULE,
+                text="Use the frozen Host tools for Trench data.",
+            ),
+        ),
+    )
+
+    assert prompt is not None
+    assert "Use the frozen Host tools for Trench data." in prompt
+    assert "WORKSPACE_SCAN_MUST_NOT_REACH_HOST_PROMPT" not in prompt
+    assert "Repo Map" not in prompt

@@ -17,6 +17,7 @@ import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.task_recovery import RecoveredTask
 
 CLOUD_CONTEXT_TOKEN_BUDGET = 2_048
+CLOUD_CONVERSATION_TOKEN_BUDGET = 8_192
 
 
 def build_worker_orchestrator(
@@ -47,10 +48,13 @@ def build_worker_orchestrator(
         context_compiler=context_compiler,
         available_tools=tool_gateway.model_tools,
         conversation_compactor=context_compiler,
+        conversation_token_budget=CLOUD_CONVERSATION_TOKEN_BUDGET,
         event_sink=persist_event,
         continuation_sink=prepare_continuation,
         provider_continuation=provider_continuation,
         attempt_number=1,
+        delta_coalesce_characters=256,
+        delta_coalesce_seconds=0.1,
     )
     return SingleAttemptOrchestrator(
         model_gateway,
@@ -113,6 +117,7 @@ def harness_task_for_recovered(
         ),
         confirmed_memories=_deduplicate_memories(confirmed_memories),
         attachments=task.attachments,
+        conversation_history=task.conversation_history,
         runtime_evidence=runtime_evidence,
     )
 

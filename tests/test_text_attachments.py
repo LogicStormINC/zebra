@@ -287,9 +287,9 @@ def test_worker_fails_closed_when_attachment_payload_is_unavailable(tmp_path: Pa
     SQLiteArtifactPayloadStore(database_path).prune_payload(ArtifactId(UUID(attachment_id)))
     response = app.resume_session(created.body["session_id"], {})
 
-    assert response.status_code == 409
-    assert response.body["status"] == "execution_error"
-    assert "attachment recovery failed" in response.body["reason"]
+    assert response.status_code == 200
+    assert response.body["status"] == "failed"
+    assert response.body["assistant_message"] is None
 
 
 def test_worker_fails_closed_when_attachment_payload_digest_changes(tmp_path: Path) -> None:
@@ -313,9 +313,9 @@ def test_worker_fails_closed_when_attachment_payload_digest_changes(tmp_path: Pa
 
     response = app.resume_session(created.body["session_id"], {})
 
-    assert response.status_code == 409
-    assert response.body["status"] == "execution_error"
-    assert "digest does not match" in response.body["reason"]
+    assert response.status_code == 200
+    assert response.body["status"] == "failed"
+    assert response.body["assistant_message"] is None
 
 
 def test_clarification_response_rejects_attachments(tmp_path: Path) -> None:

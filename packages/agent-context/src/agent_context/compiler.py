@@ -28,9 +28,13 @@ def compile_context(
         budget=ContextBudget(max_tokens=200),
     )
     workspace_root = compile_request.workspace_root
-    scanned_files = scan_workspace_files(workspace_root)
+    scanned_files = (
+        scan_workspace_files(workspace_root) if compile_request.include_workspace else []
+    )
     ranked_files = rank_files(scanned_files, compile_request.task_input)
-    ranked_items = [build_repo_map_item(workspace_root)]
+    ranked_items = (
+        [build_repo_map_item(workspace_root)] if compile_request.include_workspace else []
+    )
     ranked_items.extend(compile_request.memory_items)
     ranked_items.extend(compile_request.attachment_items)
     ranked_items.extend(compile_request.runtime_evidence_items)

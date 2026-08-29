@@ -3804,12 +3804,20 @@ instead of leaving Trench's SSE stream open indefinitely.
 - Status: `Review`
 - Owner: `lukeding`
 - Depends on: `TRN-HOST-GRANT-RENEW-01`, `TRN-WORKER-TERMINAL-01`
-- Branch: `cloud-agent-trench`
+- Branch: `codex/fix-agui-live-tail`
 - Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
-- Owned paths: `docker/trench-acceptance/`,
-  `docker/compose.trench-acceptance.yml`, `apps/api/src/zebra_agent_api/task_api.py`,
-  focused Zebra API tests, Trench Zebra BFF/suggestions/frontend suggestion paths,
-  this task card
+- Owned paths: `docker/compose.application.yml`,
+  `apps/api/src/zebra_agent_api/{ag_ui_command.py,app.py,model_configuration.py,task_api.py,task_responses.py}`,
+  `apps/worker/src/zebra_agent_worker/{context_materialization.py,execution.py,execution_completion.py,execution_context.py,execution_finalization.py,execution_recovery.py,gateway_release.py,live_event_runtime.py,loop.py,main.py,runtime_authority.py,runtime_setup.py,task_recovery.py,worker_polling.py}`,
+  `packages/agent-context/`,
+  `packages/agent-core/src/agent_core/domain/messages.py`,
+  `packages/agent-core/src/agent_core/harness/{model_step.py,models.py}`,
+  `packages/agent-core/src/agent_core/harness/stream_deltas.py`,
+  `packages/agent-core/src/agent_core/harness/model_step_support.py`,
+  `packages/agent-integrations/src/agent_integrations/{openai_payloads.py,ag_ui/projection.py}`,
+  `packages/agent-storage/src/agent_storage/{__init__.py,live_event_store.py}`, focused Zebra
+  API/Worker/Context/Storage tests, Trench Zebra BFF/suggestions/frontend suggestion
+  paths, Compose Worker polling configuration, this task card and focused `PROGRESS.md`
 
 #### Goal
 
@@ -3826,8 +3834,36 @@ work without weakening Host Grant replay or resource enforcement.
   Task create/message responses, and records per-stage latency.
 - Suggestion calls are abortable/deduplicated and an upstream authorization
   failure opens a bounded server-side circuit.
-- A real browser conversation completes two scoped Host Tool turns and all
-  focused backend/frontend checks remain green.
+- Host-bound Tasks do not scan their disposable workspace while local coding
+  Tasks retain workspace context unchanged.
+- The first model delta is committed immediately; later tiny provider chunks are
+  coalesced before durable append, and aggregate Worker commits publish only
+  after PostgreSQL accepts them.
+- AG-UI replays durable history once and tails incrementally; Redis loss falls
+  back to durable reads without duplicate assistant content.
+- The acceptance Worker notices durable work within 100 ms in the polling
+  fallback, with an explicit event-driven wakeup follow-up before multi-worker scale.
+- A real browser conversation streams and survives reload; scoped Host Tool and
+  multi-turn Memory acceptance complete through the same Trench BFF path, and
+  all focused backend/frontend checks remain green.
+
+#### Validation Evidence
+
+- `make check`: green (Ruff, mypy across 788 source files, file-size policy and
+  eval `10/10`).
+- `uv run pytest -q`: `2826 passed, 369 skipped in 699.99s`.
+- Current Compose images rebuilt from this worktree; Zebra API and Worker,
+  PostgreSQL, Redis Live and MinIO are healthy. Trench API readiness reports
+  both Redis and PostgreSQL ready.
+- Real Trench TLS/Broker/Worker sequence: first visible event
+  `36 ms / 8 ms / 7 ms`; two-turn recall returns `灯塔`; `sources.list`
+  completes with one structured Tool result and a clean final answer in
+  `6.65 s` without exposing `Tool calls proposed.`.
+- Real logged-in Chrome acceptance streams `正在规划证据路径...`, returns
+  `浏览器流式闭环正常`, survives a reload, and records no localhost console
+  error or warning.
+- Trench companion change is committed as `0b1732b`; its full `make check`,
+  startup-script syntax check and local health probes are green.
 
 ### TRN-MEM-E2E-01 - Trench Cloud Governed Memory Closeout
 

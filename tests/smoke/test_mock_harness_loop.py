@@ -83,4 +83,4 @@ def test_mock_harness_loop_runs_end_to_end() -> None:
     assert result.run_result.model_calls_used == 1
     assert result.run_result.tool_calls_used == 1
     assert result.attempt_result.metadata["tool_name"] == "files.read"
-    assert gateway.requests[0][0].content == "Read the README first."
+    assert gateway.requests[0][-1].content == "Read the README first."

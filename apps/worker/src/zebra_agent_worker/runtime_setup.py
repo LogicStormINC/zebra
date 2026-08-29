@@ -124,8 +124,8 @@ def require_matching_runtime_authority(
         raise RuntimeSetupError("configured runtime authority differs from session authority")
 
 
-def destroy_runtime(runtime: RuntimePort, handle: RuntimeHandle | None) -> Exception | None:
-    if handle is None:
+def destroy_runtime(runtime: RuntimePort | None, handle: RuntimeHandle | None) -> Exception | None:
+    if runtime is None or handle is None:
         return None
     try:
         runtime.destroy(handle)

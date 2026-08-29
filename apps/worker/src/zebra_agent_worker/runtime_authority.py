@@ -3,7 +3,7 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Protocol
+from typing import Protocol
 
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventActor, EventType, SessionEvent
@@ -23,7 +23,6 @@ from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResul
 from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_core.ports.runtime import EffectiveRuntimeAuthority
 
-from zebra_agent_worker.authority_types import AuthorityScopeProvider
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 
 
@@ -458,50 +457,3 @@ def validate_authority_wiring(
             "execution_authority_scope (or a per-session provider) is required"
             " for an authority resolver"
         )
-
-
-@dataclass(frozen=True)
-class AttemptAuthorityEvidence:
-    """Persist attempt authority evidence before execution starts."""
-
-    resolver: ExecutionAuthorityResolverPort | None
-    static_scope: OpaqueAuthorityScope | None
-    scope_provider: AuthorityScopeProvider | None
-    recovery_service: Any
-    event_store: Any
-
-    def persist(
-        self,
-        recorder: DurableHarnessEventRecorder,
-        claimed: Any,
-        session_events: Any,
-        *,
-        session_id: SessionId,
-        started_at: datetime,
-    ) -> tuple[Any, Any]:
-        if persist_attempt_authority(
-            recorder,
-            self.resolver,
-            attempt_authority_scope(
-                self.static_scope,
-                self.scope_provider,
-                claimed.recovery.session,
-            ),
-            session_id=session_id,
-            existing_events=session_events,
-            attempt_number=1,
-            created_at=started_at,
-        ):
-            from zebra_agent_worker.claims import ClaimedSession
-
-            return (
-                ClaimedSession(
-                    recovery=self.recovery_service.recover_session(
-                        session_id,
-                        worker_lease=claimed.lease,
-                    ),
-                    lease=claimed.lease,
-                ),
-                self.event_store.list_for_session(session_id),
-            )
-        return claimed, session_events

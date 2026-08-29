@@ -22,7 +22,6 @@ from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
 from agent_integrations import (
     GitHubPullRequestTransport,
-    ModelProviderSettings,
     build_model_gateway,
 )
 from agent_runtime import (
@@ -63,6 +62,7 @@ from zebra_agent_api.api_workspace_mixin import (
 )
 from zebra_agent_api.factory import create_app as create_app
 from zebra_agent_api.idempotency import replay_idempotent_response
+from zebra_agent_api.model_configuration import model_provider_settings
 from zebra_agent_api.platform_operator_auth import PlatformOperatorAuthorizer
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
@@ -397,7 +397,7 @@ class ZebraAgentApi(
             repo_id=str(workspace_root),
         )
         try:
-            model_gateway = build_model_gateway(_model_provider_settings(self.settings))
+            model_gateway = build_model_gateway(model_provider_settings(self.settings))
         except ValueError as error:
             return service_unavailable(
                 status="model_gateway_unavailable",
@@ -483,23 +483,3 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
-
-
-def _model_provider_settings(settings: ZebraAgentSettings) -> ModelProviderSettings:
-    model = settings.model
-    return ModelProviderSettings(
-        provider=model.provider,
-        api_key_env=model.api_key_env,
-        base_url=model.base_url,
-        model=model.model,
-        wire_api=model.wire_api,
-        executor_profile=model.executor_profile,
-        planner_profile=model.planner_profile,
-        reviewer_profile=model.reviewer_profile,
-        summarizer_profile=model.summarizer_profile,
-        analyst_profile=model.analyst_profile,
-        classifier_profile=model.classifier_profile,
-        max_retries=model.max_retries,
-        deepseek_beta_enabled=model.deepseek_beta_enabled,
-        deepseek_beta_base_url=model.deepseek_beta_base_url,
-    )

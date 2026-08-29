@@ -51,13 +51,6 @@ class SessionMessage(BaseModel):
             raise ValueError("tool_call_id must not be blank when set")
         return stripped
 
-    @field_validator("provider_reasoning_content")
-    @classmethod
-    def ensure_provider_reasoning_not_blank(cls, value: str | None) -> str | None:
-        if value is not None and not value.strip():
-            raise ValueError("provider_reasoning_content must not be blank when set")
-        return value
-
     @model_validator(mode="after")
     def validate_tool_message_shape(self) -> "SessionMessage":
         if self.role is MessageRole.TOOL and self.tool_call_id is None:

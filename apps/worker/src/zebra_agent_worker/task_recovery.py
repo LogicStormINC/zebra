@@ -15,6 +15,8 @@ from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.context_inheritance import DelegatedContextSnapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.task_bindings import TaskBindingSnapshot, host_context_digest
 from agent_core.domain.tool_profiles import ToolProfile
@@ -44,6 +46,7 @@ class RecoveredTask:
     runtime_evidence: tuple[RuntimeEvidenceInput, ...]
     host_context: HostContextEnvelope | None
     definition_snapshot: AgentDefinitionSnapshot | None
+    conversation_history: tuple[SessionMessage, ...] = ()
     client_state: RuntimeEvidenceInput | None = None
     delegated_context: DelegatedContextSnapshot | None = None
     interaction_mode: InteractionMode = InteractionMode.ONE_SHOT
@@ -128,6 +131,7 @@ def recover_task(
         attachments=attachments,
         host_context=_host_context(task_payload.get("host_context")),
         definition_snapshot=definition_snapshot,
+        conversation_history=_conversation_history(events, before_sequence=user_event.sequence),
         delegated_context=_delegated_context(task_payload.get("delegated_context")),
         interaction_mode=_interaction_mode(task_payload.get("interaction_mode")),
         runtime_evidence=(
@@ -137,6 +141,46 @@ def recover_task(
         ),
         client_state=client_state_evidence,
     )
+
+
+def _conversation_history(
+    events: list[SessionEvent],
+    *,
+    before_sequence: int,
+) -> tuple[SessionMessage, ...]:
+    messages: list[SessionMessage] = []
+    for event in events:
+        if event.sequence >= before_sequence:
+            break
+        role: MessageRole | None = None
+        content: object = None
+        if event.event_type is EventType.USER_MESSAGE_RECEIVED:
+            role = MessageRole.USER
+            content = event.payload.get("content")
+        elif event.event_type is EventType.TURN_COMPLETED:
+            role = MessageRole.ASSISTANT
+            metadata = event.payload.get("metadata")
+            content = metadata.get("assistant_message") if isinstance(metadata, dict) else None
+        if role is None or not isinstance(content, str) or not content.strip():
+            continue
+        messages.append(
+            SessionMessage(
+                message_id=new_message_id(),
+                role=role,
+                content=content.strip(),
+                created_at=event.created_at,
+            )
+        )
+    # ponytail: keep a bounded exact tail; the existing conversation compactor
+    # owns the upgrade path when product conversations outgrow this window.
+    selected: list[SessionMessage] = []
+    characters = 0
+    for message in reversed(messages[-24:]):
+        if selected and characters + len(message.content) > 65_536:
+            break
+        selected.append(message)
+        characters += len(message.content)
+    return tuple(reversed(selected))
 
 
 def _interaction_mode(value: object) -> InteractionMode:

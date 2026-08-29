@@ -277,7 +277,9 @@ def _provider_reasoning_content(
         raise ValueError("DeepSeek reasoning_content must be a string")
     if not value.strip():
         if required:
-            raise ValueError("DeepSeek thinking tool call requires reasoning_content")
+            # DeepSeek requires the exact returned field to be replayed. Its API
+            # can return an empty string for a valid thinking-mode tool call.
+            return value
         return None
     return value
 

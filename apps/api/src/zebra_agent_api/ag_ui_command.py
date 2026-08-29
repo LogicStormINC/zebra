@@ -20,7 +20,9 @@ _AGUI_COMMAND_PATH = "/agui/commands"
 
 class _AgUiCommandApp(Protocol):
     stores: ControlPlaneStores
-    settings: object
+
+    @property
+    def settings(self) -> object: ...
 
     def submit_command(
         self,

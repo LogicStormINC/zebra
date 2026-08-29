@@ -161,6 +161,8 @@ class AgUiProjector:
             message_id = state.text_messages.get(model_call_id)
             had_message = message_id is not None
             assistant_message = _optional_payload_text(payload, "assistant_message")
+            if assistant_message == "Tool calls proposed." and not had_message:
+                return ()
             output: list[Event] = []
             if message_id is None:
                 message_id = f"message:{model_call_id}"

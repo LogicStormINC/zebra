@@ -5,6 +5,24 @@
 
 ## Active Review
 
+- Trench/Zebra response-latency and availability closeout (`TRN-PERF-01`) is
+  implemented on `codex/fix-agui-live-tail`. Host-bound Tasks skip disposable
+  workspace scanning; the first provider delta is committed immediately and
+  later tiny chunks are bounded; PostgreSQL commits publish Redis live hints
+  only after commit; the Worker fallback poll is 100ms; Memory/title side
+  effects recover off the reply path. Conversation recovery now supplies the
+  bounded completed-turn history, and AG-UI suppresses the internal tool-only
+  assistant sentinel. DeepSeek Chat and Responses adapters preserve a present
+  but empty provider reasoning field exactly, so a valid thinking-mode tool
+  call no longer becomes a generic unavailable error while a genuinely missing
+  continuation still fails closed. Current Compose images were rebuilt from
+  this worktree. Real Trench TLS/Broker/Worker acceptance after rebuild passes
+  three consecutive Turns: first visible events `36ms / 8ms / 7ms`, ordinary
+  first text `4.04s / 4.15s`, exact recall of `灯塔`, and `sources.list` callback
+  plus clean final answer in `6.65s`. A logged-in Chrome turn streams, completes,
+  survives reload and leaves no localhost console errors. `make check` is green;
+  the final repository-wide suite is `2826 passed, 369 skipped`.
+
 - Cloud user file delivery (`CLOUD-USER-FILES-01`) is implemented on
   `codex/cloud-user-files-01`. A Grant-gated `files.publish` Tool accepts
   generated UTF-8 content or a safe workspace file, commits `kind=user_file`

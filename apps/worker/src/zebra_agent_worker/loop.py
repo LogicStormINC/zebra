@@ -18,14 +18,13 @@ from agent_core.ports import (
     WorkerProjectionTransactionPort,
 )
 from agent_core.ports.projection_store import ProjectionStorePort
-from agent_integrations import RedisCommittedEventPublisher, build_model_gateway
+from agent_integrations import build_model_gateway
 from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
     LeaseConflictError,
     PostgresControlPlaneStores,
     cloud_composition_from_environment,
-    with_committed_event_publisher,
 )
 from zebra_agent_config import ZebraAgentSettings
 
@@ -43,6 +42,7 @@ from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeatError
+from zebra_agent_worker.live_event_runtime import configure_live_event_delivery
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_commit import (
@@ -51,6 +51,7 @@ from zebra_agent_worker.provider_continuation_commit import (
 from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeError, SessionResumeService
 from zebra_agent_worker.tool_run_index import ToolRunIndexer
+from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 
 
@@ -233,9 +234,9 @@ class WorkerLoopService:
         lease_ttl_seconds: int = 30,
         max_cycles: int | None = None,
         stop_when_idle: bool = False,
-        idle_sleep_seconds: float = 1.0,
+        idle_sleep_seconds: float = 0.1,
     ) -> WorkerLoopRunResult:
-        _validate_loop_inputs(
+        validate_loop_inputs(
             batch_size=batch_size,
             lease_ttl_seconds=lease_ttl_seconds,
             max_cycles=max_cycles,
@@ -257,7 +258,7 @@ class WorkerLoopService:
                 if stop_when_idle:
                     stop_reason = "idle"
                     break
-                if not _has_remaining_cycles(accumulator, max_cycles):
+                if not has_remaining_cycles(accumulator, max_cycles):
                     break
                 self._sleep(idle_sleep_seconds)
                 continue
@@ -268,7 +269,7 @@ class WorkerLoopService:
             ):
                 stop_reason = "blocked"
                 break
-            if not _has_remaining_cycles(accumulator, max_cycles):
+            if not has_remaining_cycles(accumulator, max_cycles):
                 break
         return WorkerLoopRunResult(
             cycles_completed=accumulator.cycles_completed,
@@ -343,21 +344,11 @@ def build_worker_loop_service(
         active_provider_factory = cloud_provider_continuation_factory
         active_authority_resolver = None
         active_authority_scope_provider = None
-    if settings.live_events.redis_url is not None:
-        namespace = getattr(active_stores, "deployment_namespace", None)
-        if namespace is None and settings.deployment == "local":
-            namespace = "local"
-        if not isinstance(namespace, str) or not namespace.strip():
-            raise ValueError("live Redis publishing requires deployment_namespace")
-        active_stores = with_committed_event_publisher(
-            active_stores,
-            RedisCommittedEventPublisher.from_url(
-                settings.live_events.redis_url,
-                deployment_namespace=namespace,
-                max_stream_length=settings.live_events.stream_max_length,
-                key_prefix=settings.live_events.key_prefix,
-            ),
-        )
+    active_stores, active_transaction = configure_live_event_delivery(
+        active_stores,
+        active_transaction,
+        settings,
+    )
     execution_stores = active_stores
     model_call_indexer = ModelCallIndexer(execution_stores.model_calls)
     tool_run_indexer = ToolRunIndexer(execution_stores.tool_runs)
@@ -487,9 +478,10 @@ def build_worker_loop_service(
             workspace_store=execution_stores.workspaces,
             title_service_factory=lambda: SessionTitleService(
                 build_model_gateway(
-                    model_provider_settings(settings),
-                    **({"client": model_http_client} if model_http_client is not None else {}),
+                    model_provider_settings(settings), client=model_http_client
                 )
+                if model_http_client is not None
+                else build_model_gateway(model_provider_settings(settings))
             ),
         )
     return WorkerLoopService(
@@ -501,24 +493,3 @@ def build_worker_loop_service(
         command_consumer=command_consumer,
         scan_ready_sessions=settings.deployment != "cloud",
     )
-
-
-def _has_remaining_cycles(accumulator: _LoopAccumulator, max_cycles: int | None) -> bool:
-    return max_cycles is None or accumulator.cycles_completed < max_cycles
-
-
-def _validate_loop_inputs(
-    *,
-    batch_size: int,
-    lease_ttl_seconds: int,
-    max_cycles: int | None,
-    idle_sleep_seconds: float,
-) -> None:
-    if batch_size <= 0:
-        raise ValueError("batch_size must be greater than zero")
-    if lease_ttl_seconds <= 0:
-        raise ValueError("lease_ttl_seconds must be greater than zero")
-    if max_cycles is not None and max_cycles <= 0:
-        raise ValueError("max_cycles must be greater than zero when provided")
-    if idle_sleep_seconds < 0:
-        raise ValueError("idle_sleep_seconds must not be negative")

@@ -65,7 +65,8 @@ def test_deepseek_thinking_rejects_required_tool_choice_locally() -> None:
         )
 
 
-def test_deepseek_thinking_tool_loop_replays_private_reasoning() -> None:
+@pytest.mark.parametrize("first_reasoning", ["  private reasoning must stay exact  ", ""])
+def test_deepseek_thinking_tool_loop_replays_private_reasoning(first_reasoning: str) -> None:
     requests: list[dict[str, object]] = []
 
     def handle(request: httpx.Request) -> httpx.Response:
@@ -80,7 +81,7 @@ def test_deepseek_thinking_tool_loop_replays_private_reasoning() -> None:
                             "message": {
                                 "role": "assistant",
                                 "content": None,
-                                "reasoning_content": "  private reasoning must stay exact  ",
+                                "reasoning_content": first_reasoning,
                                 "tool_calls": [
                                     {
                                         "id": "call-1",
@@ -162,7 +163,7 @@ def test_deepseek_thinking_tool_loop_replays_private_reasoning() -> None:
     assistant_request = requests[1]["messages"][-2]
     assert "tool_choice" not in requests[0]
     assert "tool_choice" not in requests[1]
-    assert assistant_request["reasoning_content"] == "  private reasoning must stay exact  "
+    assert assistant_request["reasoning_content"] == first_reasoning
     assert assistant_request["tool_calls"][0]["id"] == "call-1"
     assert first.assistant_message.provider_reasoning_content is not None
     assert "provider_reasoning_content" not in first.assistant_message.model_dump(mode="json")
@@ -328,7 +329,7 @@ def test_deepseek_stream_assembles_reasoning_for_tool_replay_without_public_delt
     )
 
 
-def test_deepseek_thinking_tool_response_requires_valid_reasoning_content() -> None:
+def test_deepseek_thinking_tool_response_requires_reasoning_content_field() -> None:
     response = httpx.Response(
         200,
         json={

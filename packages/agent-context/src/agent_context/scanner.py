@@ -47,15 +47,18 @@ def scan_workspace_files(workspace_root: Path) -> list[ScannedFile]:
             continue
         discovered.append(path)
         seen.add(path)
-    return [
-        ScannedFile(
-            absolute_path=path,
-            relative_path=path.relative_to(workspace_root),
-            content=_read_text(path),
-            snippet=_normalize_snippet(_read_text(path)),
+    scanned: list[ScannedFile] = []
+    for path in discovered:
+        content = _read_text(path)
+        scanned.append(
+            ScannedFile(
+                absolute_path=path,
+                relative_path=path.relative_to(workspace_root),
+                content=content,
+                snippet=_normalize_snippet(content),
+            )
         )
-        for path in discovered
-    ]
+    return scanned
 
 
 def build_repo_map_item(workspace_root: Path) -> ContextItem:

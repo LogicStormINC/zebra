@@ -35,8 +35,12 @@ def test_scripted_model_gateway_returns_deterministic_completion() -> None:
 
     assert completion.assistant_message.content == "I will inspect the repository."
     assert len(gateway.requests) == 1
-    assert gateway.requests[0][0].role is MessageRole.USER
-    assert gateway.requests[0][0].content == "Please inspect the repository."
+    assert [message.role for message in gateway.requests[0]] == [
+        MessageRole.SYSTEM,
+        MessageRole.USER,
+    ]
+    assert "Zebra Agent" in gateway.requests[0][0].content
+    assert gateway.requests[0][1].content == "Please inspect the repository."
 
 
 def test_scripted_model_gateway_supports_tool_call_planning_path() -> None:

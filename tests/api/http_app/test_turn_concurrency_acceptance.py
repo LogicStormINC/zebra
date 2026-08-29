@@ -118,7 +118,7 @@ def test_concurrent_follow_up_arriving_after_claim_executes_the_new_turn(
 
     # Prove the MODEL actually received the new message: the fresh-run
     # gateway's execution requests contain the follow-up as the last USER
-    # message, and never carry the stale first-turn prompt.
+    # message and the completed first Turn as valid conversation history.
     from agent_core.domain.messages import MessageRole
 
     fresh_requests = gateways[-1].requests
@@ -130,7 +130,7 @@ def test_concurrent_follow_up_arriving_after_claim_executes_the_new_turn(
         if message.role is MessageRole.USER
     ]
     assert "NEW CONCURRENT FOLLOW-UP" in user_messages
-    assert not any("codeword" in content for content in user_messages)
+    assert any("codeword" in content for content in user_messages)
     events_after = event_store.list_for_session(session_id)
     closes = [event for event in events_after if event.event_type.value == "turn_completed"]
     assert len(closes) == 2

@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import agent_core.harness as core_harness
 import httpx
@@ -12,6 +11,7 @@ from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
+from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_integrations import build_model_gateway
 from agent_runtime.workspace_runtime_resolver import WorkspaceRuntimeResolver
 from agent_security import LocalPolicyEngine, PolicyProfile, resolve_effective_network_profile
@@ -26,15 +26,13 @@ import zebra_agent_worker.runtime_authority as runtime_authority
 import zebra_agent_worker.runtime_setup as runtime_setup
 import zebra_agent_worker.session_handoff as handoff
 import zebra_agent_worker.tool_output_artifact_runtime as artifact_runtime
-
-if TYPE_CHECKING:
-    from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from zebra_agent_worker.claims import ClaimedSession, SessionClaimService
 from zebra_agent_worker.client_effect_resume import recover_client_effect_wakeup
 from zebra_agent_worker.context_materialization import prepare_worker_context
 from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
+from zebra_agent_worker.execution_completion import finish_execution
 from zebra_agent_worker.execution_context import (
     build_worker_orchestrator,
     harness_task_for_recovered,
@@ -44,10 +42,8 @@ from zebra_agent_worker.execution_errors import (
     exception_attempt_result,
     sequence_race_guard,
 )
-from zebra_agent_worker.execution_events import (
-    ExecutionInterrupted,
-)
-from zebra_agent_worker.execution_finalization import ExecutedSession, WorkerExecutionError
+from zebra_agent_worker.execution_events import DurableHarnessEventRecorder, ExecutionInterrupted
+from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.execution_preflight import (
     _superseded_by_control_event,
     prepare_execution_preflight,
@@ -58,6 +54,7 @@ from zebra_agent_worker.execution_recovery import (
     recover_execution_inputs,
 )
 from zebra_agent_worker.execution_storage import resolve_execution_storage
+from zebra_agent_worker.gateway_release import GatewayRelease
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
@@ -255,7 +252,7 @@ class SessionExecutionService:
         )
         runtime_handle = None
         runtime = None
-        effect_recorder = []
+        effect_recorder: list[DurableHarnessEventRecorder] = []
         try:
             prepared_context = prepare_worker_context(
                 store=self._context_materialization_store,
@@ -379,26 +376,10 @@ class SessionExecutionService:
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
                 ) from cleanup_error
             raise WorkerExecutionError(str(exc)) from exc
-        gateway_released = False
-        cleanup_recorder = authority_recorder
-
-        def release_gateway() -> Exception | None:
-            nonlocal gateway_released
-            if gateway_released:
-                return None
-            gateway_released = True
-            cleanup_error = runtime_authority.close_tool_gateway(tool_gateway)
-            if cleanup_error is not None:
-                persist_runtime_cleanup_failure(
-                    recorder=cleanup_recorder,
-                    error=cleanup_error,
-                    target="tool_gateway",
-                    created_at=started_at,
-                )
-            return cleanup_error
+        release_gateway = GatewayRelease(tool_gateway, authority_recorder, started_at=started_at)
 
         try:
-            context_compiler = LocalContextCompiler()
+            context_compiler = LocalContextCompiler(include_workspace=task_binding is None)
             context = core_harness.HarnessContext(
                 task=harness_task_for_recovered(
                     task,
@@ -437,7 +418,7 @@ class SessionExecutionService:
                 lease=claimed.lease,
                 ownership_check=ownership_check,
             )
-            cleanup_recorder = recorder
+            release_gateway.recorder = recorder
             effect_recorder.append(recorder)
             if continuation is None and clarification is None and child_wakeup is None:
                 recorder.append(
@@ -491,11 +472,7 @@ class SessionExecutionService:
                 attempt_result = runtime_authority.runtime_cleanup_failure_result(
                     cleanup_error, attempt_result
                 )
-            # Rebuild the AG-UI task index BEFORE finalization flips the
-            # session terminal: readers tail the index and would otherwise
-            # observe the terminal status without the turn's events.
-            execution_finalization.rebuild_task_index(self._task_index_store, session_id)
-            emitted_events = execution_finalization.finalize_execution(
+            return finish_execution(
                 recorder=recorder,
                 attempt_result=attempt_result,
                 memory_extraction_service=self._memory_extraction_service,
@@ -506,17 +483,14 @@ class SessionExecutionService:
                 deployment_namespace=self._deployment_namespace,
                 projection_store=self._projection_store,
                 workspace_store=self._workspace_store,
+                task_index_store=self._task_index_store,
+                session_id=session_id,
                 started_at=started_at,
                 interaction_mode=task.interaction_mode,
             )
-            final_session = self._projection_store.get_session(session_id)
-            if final_session is None:
-                raise WorkerExecutionError("session projection missing after worker execution")
-            execution_finalization.rebuild_task_index(self._task_index_store, session_id)
-            return ExecutedSession(final_session, emitted_events, attempt_result)
         except ExecutionInterrupted:
             release_gateway()
-            return _superseded_by_control_event(cleanup_recorder)
+            return _superseded_by_control_event(release_gateway.recorder)
         except BaseException as exc:
             if (cleanup_error := release_gateway()) is not None:
                 exc.add_note(f"tool gateway cleanup failed: {type(cleanup_error).__name__}")

@@ -32,9 +32,7 @@ from zebra_agent_api.idempotency import replay_idempotent_response, save_idempot
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_handoff import SessionHandoffApi
 from zebra_agent_api.session_summary import serialize_session_summary
-
-DEFAULT_TASK_LIMIT = 50
-MAX_TASK_LIMIT = 100
+from zebra_agent_api.task_responses import parse_task_limit, task_not_found
 
 
 class TaskSessionApi(Protocol):
@@ -73,7 +71,7 @@ class TaskReadApi:
             return parsed
         task = self.stores.tasks.get_task(parsed)
         if task is None:
-            return _not_found(task_id)
+            return task_not_found(task_id)
         session = self.stores.sessions.get_session(task.active_segment_id)
         if session is None:
             return ApiResponse(409, {"task_id": task_id, "status": "projection_incomplete"})
@@ -96,7 +94,7 @@ class TaskReadApi:
         return ApiResponse(200, body)
 
     def list(self, query: Mapping[str, str]) -> ApiResponse:
-        limit = _parse_limit(query.get("limit"))
+        limit = parse_task_limit(query.get("limit"))
         if isinstance(limit, ApiResponse):
             return limit
         store = self.stores.tasks
@@ -140,7 +138,7 @@ class TaskReadApi:
             return parsed
         store = self.stores.tasks
         if store.get_task(parsed) is None:
-            return _not_found(task_id)
+            return task_not_found(task_id)
         return ApiResponse(
             200,
             {
@@ -159,7 +157,7 @@ class TaskReadApi:
         if isinstance(parsed, ApiResponse):
             return parsed
         active = self.stores.tasks.active_segment(parsed)
-        return _not_found(task_id) if active is None else active
+        return task_not_found(task_id) if active is None else active
 
     def internal_segments(self, task_id: str) -> ApiResponse:
         parsed = parse_task_id(task_id)
@@ -168,7 +166,7 @@ class TaskReadApi:
         store = self.stores.tasks
         task = store.get_task(parsed)
         if task is None:
-            return _not_found(task_id)
+            return task_not_found(task_id)
         return ApiResponse(
             200,
             {
@@ -485,20 +483,3 @@ def _rewrite_task_identity(response: ApiResponse, task_id: str) -> ApiResponse:
 
 def _follow_up_key(task_id: str, sequence: int, content: str) -> str:
     return "task-follow-up:" + sha256(f"{task_id}:{sequence}:{content}".encode()).hexdigest()
-
-
-def _parse_limit(raw: str | None) -> int | ApiResponse:
-    try:
-        limit = DEFAULT_TASK_LIMIT if raw is None else int(raw)
-    except ValueError:
-        limit = 0
-    if 1 <= limit <= MAX_TASK_LIMIT:
-        return limit
-    return ApiResponse(
-        400,
-        {"status": "invalid_request", "reason": "limit must be an integer between 1 and 100"},
-    )
-
-
-def _not_found(task_id: str) -> ApiResponse:
-    return ApiResponse(404, {"task_id": task_id, "status": "not_found"})
