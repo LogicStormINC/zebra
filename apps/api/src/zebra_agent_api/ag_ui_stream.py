@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass
 from time import monotonic
 from typing import Protocol
@@ -13,9 +13,10 @@ from uuid import UUID
 
 from ag_ui.core import Event
 from ag_ui.encoder import EventEncoder
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import TaskId
 from agent_core.domain.sessions import SessionStatus
+from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
 from agent_core.ports.agent_tasks import TaskEvent
 from agent_integrations.ag_ui import (
     AgUiCursor,
@@ -59,12 +60,17 @@ class AgUiStreamContext:
     task_id: TaskId
     identity: AgUiRunIdentity
     cursor: AgUiCursor | None
+    live_event_fanout: LiveEventFanoutPort | None = None
+    deployment_namespace: str | None = None
 
 
 def prepare_agui_stream(
     stores: ControlPlaneStores,
     path: str,
     query: Mapping[str, str],
+    *,
+    live_event_fanout: LiveEventFanoutPort | None = None,
+    deployment_namespace: str | None = None,
 ) -> AgUiStreamContext | ApiResponse | None:
     """Resolve and validate a stream before HTTP sends response headers."""
 
@@ -99,7 +105,14 @@ def prepare_agui_stream(
         )
     except AgUiProjectionError:
         return _problem(400, "invalid_cursor", "cursor is not valid for this Task/run", path)
-    return AgUiStreamContext(stores, thread_id, identity, cursor)
+    return AgUiStreamContext(
+        stores,
+        thread_id,
+        identity,
+        cursor,
+        live_event_fanout,
+        deployment_namespace,
+    )
 
 
 async def tail_agui_events(
@@ -119,17 +132,63 @@ async def tail_agui_events(
     iterations = 0
     failures = 0
     terminal_status_since: float | None = None
+    events: list[TaskEvent] = []
+    task_index_ready = False
+    live_cursor: LiveEventCursor | None = None
+    if context.live_event_fanout is not None and context.deployment_namespace is not None:
+        try:
+            live_cursor = await asyncio.to_thread(
+                context.live_event_fanout.capture_barrier,
+                deployment_namespace=context.deployment_namespace,
+                session_id=context.identity.session_id,
+            )
+        except Exception:
+            # ponytail: PostgreSQL polling remains the lossless fallback.
+            live_cursor = None
     del request  # disconnects are detected at yield time
     while monotonic() < deadline:
         iterations += 1
+        waited_for_live = False
         try:
-            events = await asyncio.to_thread(
-                context.stores.tasks.read_events,
-                context.task_id,
-                -1,
-            )
+            if task_index_ready:
+                events = await asyncio.to_thread(
+                    _extend_with_live_segment_events,
+                    context,
+                    events,
+                )
+            else:
+                events = list(
+                    await asyncio.to_thread(
+                        context.stores.tasks.read_events,
+                        context.task_id,
+                        -1,
+                    )
+                )
+            if (
+                task_index_ready
+                and live_cursor is not None
+                and context.live_event_fanout is not None
+                and context.deployment_namespace is not None
+            ):
+                live_batch = await asyncio.to_thread(
+                    context.live_event_fanout.read_after,
+                    deployment_namespace=context.deployment_namespace,
+                    session_id=context.identity.session_id,
+                    barrier=live_cursor,
+                    durable_sequence=_latest_segment_sequence(context, events),
+                    count=100,
+                    block_ms=max(1, int(_POLL_SECONDS * 1_000)),
+                )
+                waited_for_live = True
+                live_cursor = live_batch.next_cursor
+                events = _extend_with_session_events(
+                    context,
+                    events,
+                    [envelope.event for envelope in live_batch.events],
+                )
         except Exception:
             failures += 1
+            live_cursor = None
             if failures > 20:
                 return
             await asyncio.sleep(_POLL_SECONDS)
@@ -139,6 +198,7 @@ async def tail_agui_events(
             if cursor is None and _run_command_is_not_indexed(events, context.identity.run_id):
                 await asyncio.sleep(_POLL_SECONDS)
                 continue
+        task_index_ready = True
         emitted = False
         try:
             for next_cursor, projected in _project_new_task_events(
@@ -181,7 +241,64 @@ async def tail_agui_events(
         if not emitted and monotonic() - last_delivery >= _KEEPALIVE_SECONDS:
             last_delivery = monotonic()
             yield ": keepalive\n\n"
-        await asyncio.sleep(_POLL_SECONDS)
+        if not waited_for_live:
+            await asyncio.sleep(_POLL_SECONDS)
+
+
+def _extend_with_live_segment_events(
+    context: AgUiStreamContext,
+    task_events: list[TaskEvent],
+) -> list[TaskEvent]:
+    """Overlay the active Segment's durable tail while its Task index is stale."""
+
+    return _extend_with_session_events(
+        context,
+        task_events,
+        context.stores.events.read_since(
+            context.identity.session_id,
+            _latest_segment_sequence(context, task_events),
+        ),
+    )
+
+
+def _extend_with_session_events(
+    context: AgUiStreamContext,
+    task_events: list[TaskEvent],
+    session_events: Sequence[SessionEvent],
+) -> list[TaskEvent]:
+    events = list(task_events)
+    known_event_ids = {str(entry.event.event_id) for entry in events}
+    task_sequence = max((entry.task_sequence for entry in events), default=-1)
+    for event in session_events:
+        event_id = str(event.event_id)
+        if event_id in known_event_ids:
+            continue
+        task_sequence += 1
+        events.append(
+            TaskEvent(
+                task_id=context.task_id,
+                task_sequence=task_sequence,
+                segment_id=context.identity.session_id,
+                segment_sequence=event.sequence,
+                event=event,
+            )
+        )
+        known_event_ids.add(event_id)
+    return events
+
+
+def _latest_segment_sequence(
+    context: AgUiStreamContext,
+    task_events: list[TaskEvent],
+) -> int:
+    return max(
+        (
+            entry.segment_sequence
+            for entry in task_events
+            if entry.segment_id == context.identity.session_id
+        ),
+        default=-1,
+    )
 
 
 def _has_run_terminal_event(

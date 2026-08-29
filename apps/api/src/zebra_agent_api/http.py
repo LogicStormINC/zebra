@@ -147,6 +147,8 @@ def create_http_app(
                 api.stores,
                 request.url.path,
                 request.query_params,
+                live_event_fanout=api.live_event_fanout,
+                deployment_namespace=_deployment_namespace(api),
             )
             if isinstance(agui_stream, ApiResponse):
                 return JSONResponse(status_code=agui_stream.status_code, content=agui_stream.body)

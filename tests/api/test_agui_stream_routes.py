@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.domain.agent_tasks import AgentTask
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId, new_event_id
 from agent_core.domain.sessions import SessionStatus
+from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent
 from agent_integrations.ag_ui import AgUiCursor, AgUiRunIdentity
 from agent_storage import (
     SQLiteEventStore,
@@ -220,11 +224,13 @@ def test_agui_stream_does_not_replay_a_previous_run_in_the_same_segment(
     assert "old-answer" not in response.text
 
 
-def test_agui_stream_live_tail_reads_new_durable_event_without_command_retry(
+def test_agui_stream_live_tail_reads_event_store_when_task_index_is_stale(
     tmp_path: Path,
 ) -> None:
     database_path, session_id, next_sequence = _seed_ready_session(tmp_path)
     stores = sqlite_control_plane_stores(database_path)
+    frozen_tasks = _FrozenTaskStore(stores.tasks, TaskId(session_id))
+    stores = replace(stores, tasks=cast(AgentTaskPort, frozen_tasks))
     context = prepare_agui_stream(
         stores,
         _stream_path(session_id, "run-live"),
@@ -257,6 +263,7 @@ def test_agui_stream_live_tail_reads_new_durable_event_without_command_retry(
     assert "TEXT_MESSAGE_START" in live_start
     assert "TEXT_MESSAGE_CONTENT" in live_content
     assert "TEXT_MESSAGE_END" in live_end
+    assert all(entry.event.sequence < next_sequence for entry in frozen_tasks.events)
 
 
 def test_agui_stream_flushes_terminal_event_after_projection_status_race(
@@ -297,6 +304,24 @@ class _FakeRequest:
 
     async def is_disconnected(self) -> bool:
         return self.disconnected
+
+
+class _FrozenTaskStore:
+    """Model PostgreSQL's explicitly rebuilt Task index during an active Turn."""
+
+    def __init__(self, delegate: AgentTaskPort, task_id: TaskId) -> None:
+        self._delegate = delegate
+        self.events = delegate.read_events(task_id, -1)
+
+    def get_task(self, task_id: TaskId) -> AgentTask | None:
+        return self._delegate.get_task(task_id)
+
+    def read_events(self, task_id: TaskId, after_sequence: int) -> tuple[TaskEvent, ...]:
+        return tuple(
+            entry
+            for entry in self.events
+            if entry.task_id == task_id and entry.task_sequence > after_sequence
+        )
 
 
 def _stream_path(session_id: SessionId, run_id: str) -> str:
