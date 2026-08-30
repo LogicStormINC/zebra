@@ -441,6 +441,7 @@ class SessionExecutionService:
                     web_search_endpoint=self._settings.web_search_endpoint,
                     trusted_local=trusted_local,
                     additional_read_only_tools=tool_gateway.read_only_tools,
+                    additional_approval_tools=local_tool_gateway.approval_tools,
                 ),
                 context_compiler=context_compiler,
                 cloud_continuation=cloud_continuation,

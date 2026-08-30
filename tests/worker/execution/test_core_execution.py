@@ -306,7 +306,9 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
         web_search_endpoint,
         trusted_local,
         additional_read_only_tools,
+        additional_approval_tools,
     ):
+        assert additional_approval_tools == frozenset()
         captured.append((network_profile, additional_read_only_tools))
         assert web_search_endpoint is None
         assert trusted_local is False

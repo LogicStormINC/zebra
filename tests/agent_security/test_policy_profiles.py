@@ -77,6 +77,43 @@ def test_manifest_declared_read_tools_reject_mutable_or_blank_input(
         LocalPolicyEngine(additional_read_only_tools=declared)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("profile", [PolicyProfile.WORKSPACE_WRITE, PolicyProfile.FULL_ACCESS])
+def test_manifest_declared_write_tool_requires_approval(profile: PolicyProfile) -> None:
+    engine = LocalPolicyEngine(
+        profile=profile,
+        additional_approval_tools=frozenset({"sources.add"}),
+    )
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("sources.add", {"url": "https://x.com/aleabitoreddit"})
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert "manifest-declared write tool" in decision.reason
+
+
+def test_read_only_profile_denies_manifest_declared_write_tool() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.READ_ONLY,
+        additional_approval_tools=frozenset({"sources.add"}),
+    )
+
+    decision = engine.evaluate_tool_call(_tool_call("sources.add"))
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert "read-only policy" in decision.reason
+
+
+def test_manifest_tool_policy_sets_must_be_valid_and_disjoint() -> None:
+    with pytest.raises(ValueError, match="additional approval tools"):
+        LocalPolicyEngine(additional_approval_tools={"sources.add"})  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="disjoint"):
+        LocalPolicyEngine(
+            additional_read_only_tools=frozenset({"sources.add"}),
+            additional_approval_tools=frozenset({"sources.add"}),
+        )
+
+
 def test_workspace_write_profile_allows_patch_and_requires_command_approval() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.WORKSPACE_WRITE)
     safe_patch = """--- a/README.md

@@ -153,6 +153,30 @@ def test_manifest_host_tool_never_falls_back_to_local() -> None:
     assert local.calls == 0
 
 
+def test_worker_gateway_classifies_manifest_write_tools_for_approval() -> None:
+    manifest = HostToolManifest.from_payload(
+        {
+            "workloadIdentity": "zebra-worker",
+            "tools": [
+                {
+                    "name": "sources.add",
+                    "description": "Add one subscription",
+                    "executionLocation": "host",
+                    "scopes": ["subscription.write"],
+                    "risk": "write",
+                    "idempotency": "required",
+                    "argumentProperties": {"url": {"type": "string"}},
+                }
+            ],
+        }
+    )
+
+    gateway = WorkerToolGateway(local=_Local(), host_manifest=manifest)
+
+    assert gateway.read_only_tools.isdisjoint({"sources.add"})
+    assert gateway.approval_tools == frozenset({"sources.add"})
+
+
 def test_worker_gateway_destroys_owned_runtime_handle_once() -> None:
     runtime = _Runtime()
     handle = RuntimeHandle.create(runtime_name="local")

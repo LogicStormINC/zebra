@@ -3868,6 +3868,47 @@ work without weakening Host Grant replay or resource enforcement.
   full `make check` and closeout 31-test frontend suite, lint, production build,
   startup-script syntax check and local health probes are green.
 
+### HOST-WRITE-POLICY-01 - Manifest-Declared Host Write Approval
+
+- Status: `Review`
+- Owner: `Codex`
+- Depends on: `EMB-HOST-RUNTIME-01`, Trench native V3 manifest
+- Branch: `codex/host-write-policy-01`
+- Worktree: `/Users/lukeding/.codex/worktrees/host-write-policy-01/zebra-agent`
+- Owned paths: `packages/agent-security/src/agent_security/policy.py`,
+  `apps/worker/src/zebra_agent_worker/{execution.py,recovery.py,tool_gateway_runtime.py}`,
+  `apps/api/src/zebra_agent_api/api_approval_control_mixin.py`, focused Agent
+  Security/API/Worker tests, this task card and focused `PROGRESS.md`
+
+#### Goal
+
+Map manifest-declared Host write tools to Zebra's durable approval boundary
+without adding Host-specific tool names to the core policy allowlists.
+
+#### Acceptance
+
+- [x] A `read_only` Task still denies every manifest-declared Host write tool.
+- [x] A `workspace_write` or `full_access` Task requires approval for a
+  manifest-declared Host write tool before Host invocation.
+- [x] Manifest read tools remain automatically allowed and local tool policy is unchanged.
+- [x] Trench `sources.add` reaches the approval boundary and executes only after
+  an explicit approval with its existing Grant, resource and idempotency checks.
+- [x] Granting an approval durably enqueues one idempotent resume command so a
+  cloud Worker can continue without READY-session scanning.
+
+#### Evidence
+
+- Focused policy/API/Worker regression set: `97 passed`.
+- Repository gates: `make check` passed; full suite: `2830 passed, 372 skipped`.
+- Real Trench/Zebra flow: exact X URL proposed `sources.add`, explicit approval
+  reached `awaiting_turn`, stored `rsshub://twitter/user/aleabitoreddit`, and a
+  second approved request kept the subscription count at one.
+
+#### Explicit Non-Goals
+
+- no Trench-specific tool names in Zebra policy or Worker code
+- no automatic approval and no weakening of Host Grant or resource binding
+
 ### TRN-MEM-E2E-01 - Trench Cloud Governed Memory Closeout
 
 - Status: `Review`
