@@ -4,7 +4,11 @@ import sys
 from pathlib import Path
 
 import pytest
-from zebra_agent_config import load_settings, trusted_local_mode_enabled
+from zebra_agent_config import (
+    load_settings,
+    trusted_local_mode_enabled,
+    unrestricted_policy_mode_enabled,
+)
 
 
 def test_load_settings_reads_default_profile() -> None:
@@ -95,6 +99,37 @@ def test_load_settings_allows_env_override(tmp_path: Path) -> None:
         str(tmp_path.resolve()),
         str((tmp_path / "skills").resolve()),
     )
+
+
+def test_cloud_development_unrestricted_does_not_change_runtime_mode() -> None:
+    settings = load_settings(
+        {
+            "ZEBRA_PROFILE": "cloud",
+            "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
+            "ZEBRA_RUNTIME_CLASS": "gvisor",
+            "ZEBRA_RUNTIME_IMAGE": f"python@sha256:{'a' * 64}",
+            "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA": "true",
+            "ZEBRA_DEVELOPMENT_UNRESTRICTED": "true",
+        }
+    )
+
+    assert settings.development_unrestricted is True
+    assert trusted_local_mode_enabled(settings) is False
+    assert unrestricted_policy_mode_enabled(settings) is True
+
+
+def test_production_rejects_development_unrestricted() -> None:
+    with pytest.raises(ValueError, match="allowed only for ZEBRA_PROFILE=cloud"):
+        load_settings(
+            {
+                "ZEBRA_PROFILE": "production",
+                "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
+                "ZEBRA_RUNTIME_CLASS": "gvisor",
+                "ZEBRA_RUNTIME_IMAGE": f"python@sha256:{'a' * 64}",
+                "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA": "true",
+                "ZEBRA_DEVELOPMENT_UNRESTRICTED": "true",
+            }
+        )
 
 
 def test_load_settings_rejects_missing_or_duplicate_skill_roots(tmp_path: Path) -> None:

@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
+from uuid import uuid4
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventType
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.sessions import SessionStatus
 from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
     sqlite_control_plane_stores,
 )
+from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.app import create_app
+from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
 
@@ -165,6 +171,55 @@ def test_agui_command_module_has_no_worker_execution_import() -> None:
     assert "SessionExecutionService" not in source
     assert "run_local_harness" not in source
     assert "SessionClaimService" not in source
+
+
+def test_rollover_command_renews_stable_task_binding(monkeypatch) -> None:
+    task_id = TaskId(uuid4())
+    segment_id = SessionId(uuid4())
+    task = SimpleNamespace(
+        task_id=task_id,
+        active_segment_id=segment_id,
+        status=SessionStatus.READY,
+    )
+    renewed: list[str] = []
+
+    def renew(_app, binding_id: str, _host_context):
+        renewed.append(binding_id)
+        return None
+
+    monkeypatch.setattr(
+        "zebra_agent_api.session_binding.renew_host_binding_for_command",
+        renew,
+    )
+    app = SimpleNamespace(
+        stores=SimpleNamespace(
+            tasks=SimpleNamespace(get_task=lambda _task_id: task),
+            sessions=SimpleNamespace(get_session=lambda _session_id: object()),
+        ),
+        submit_command=lambda _session_id, _payload, idempotency_key: ApiResponse(
+            202, {"status": "accepted"}
+        ),
+    )
+
+    response = handle_agui_command(
+        app,
+        RouteRequest(
+            method="POST",
+            path="/agui/commands",
+            headers={"Idempotency-Key": "rollover-run"},
+            body={
+                "action": "run",
+                "threadId": str(task_id),
+                "runId": "rollover-1",
+                "expectedRevision": 4,
+                "input": _run_input(task_id, "rollover-1"),
+            },
+            host_context=HostContextEnvelope.model_construct(),
+        ),
+    )
+
+    assert response is not None and response.status_code == 202
+    assert renewed == [str(task_id)]
 
 
 def _adapter(database_path: Path) -> RouteAdapter:

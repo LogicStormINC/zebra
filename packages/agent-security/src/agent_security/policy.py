@@ -154,6 +154,11 @@ class LocalPolicyEngine:
                     self.profile,
                     f"{tool_name} is a manifest-declared write tool denied by read-only policy",
                 )
+            if self.trusted_local:
+                return _allow(
+                    self.profile,
+                    f"{tool_name} is allowed by trusted local operator mode",
+                )
             return _approval(
                 self.profile,
                 f"{tool_name} requires approval as a manifest-declared write tool",

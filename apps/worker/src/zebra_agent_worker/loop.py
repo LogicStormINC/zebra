@@ -10,13 +10,14 @@ from uuid import UUID
 
 import httpx
 from agent_core.application import SessionTitleService
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.leases import LeaseLostError
 from agent_core.ports import (
     EffectDispatchPort,
     GovernedMemoryStorePort,
     WorkerProjectionTransactionPort,
 )
+from agent_core.ports.agent_tasks import AgentTaskPort
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_integrations import build_model_gateway
 from agent_storage import (
@@ -77,6 +78,12 @@ class _LoopAccumulator:
     idle_cycles: int = 0
     executed_session_ids: list[str] = field(default_factory=list)
     skipped_session_ids: list[str] = field(default_factory=list)
+
+
+def _task_binding_id(tasks: AgentTaskPort, session_id: SessionId) -> TaskId:
+    """Keep one frozen Host binding across internal Task Segments."""
+
+    return tasks.ensure_for_session(session_id).task_id
 
 
 class WorkerLoopService:
@@ -375,13 +382,11 @@ def build_worker_loop_service(
         if binding_dsn:
 
             def task_binding_loader(session_id: SessionId) -> object:
-                from agent_core.domain.identifiers import TaskId
-
                 assert active_namespace is not None
                 return _load_binding(
                     binding_dsn,
                     deployment_namespace=active_namespace,
-                    task_id=TaskId(session_id),
+                    task_id=_task_binding_id(execution_stores.tasks, session_id),
                 )
 
     frozen_manifest_loader = None

@@ -6,15 +6,22 @@
 ## Active Review
 
 - Manifest-declared Host write approval (`HOST-WRITE-POLICY-01`) is in review on
-  `codex/host-write-policy-01`. The slice maps Host manifest write risk into
+  `codex/fix-agui-live-tail` after integrating `codex/host-write-policy-01`.
+  The slice maps Host manifest write risk into
   Zebra's existing durable approval flow while keeping read-only Tasks closed;
   approval now enqueues one idempotent resume command, and cloud recovery repairs
   a one-sided Session/Workspace projection write from canonical Events before
   continuing. Real Trench acceptance subscribed an X profile through
   `sources.add`, resumed after explicit approval, and kept one subscription on
   an idempotent repeat. `make check` and the full suite (`2830 passed, 372
-  skipped`) are green. Trench remains responsible for business authorization
-  and idempotent writes.
+  skipped`) are green. The local Trench Cloud stack now has an explicit
+  `ZEBRA_DEVELOPMENT_UNRESTRICTED` operator switch; it auto-allows approval-bound
+  tools only in the `cloud` development profile and is rejected by production.
+  The switch changes policy decisions only: the cloud gVisor/network profile,
+  Host Grant, principal/resource binding, SSRF and path checks remain enforced.
+  A logged-in browser acceptance directly subscribed the public ITJuzi feed and
+  persisted exactly one user/workspace-scoped row. Trench remains responsible
+  for business authorization and idempotent writes.
 
 - Trench/Zebra response-latency and availability closeout (`TRN-PERF-01`) is
   implemented on `codex/fix-agui-live-tail`. Host-bound Tasks skip disposable

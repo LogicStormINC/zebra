@@ -3873,12 +3873,15 @@ work without weakening Host Grant replay or resource enforcement.
 - Status: `Review`
 - Owner: `Codex`
 - Depends on: `EMB-HOST-RUNTIME-01`, Trench native V3 manifest
-- Branch: `codex/host-write-policy-01`
-- Worktree: `/Users/lukeding/.codex/worktrees/host-write-policy-01/zebra-agent`
+- Integrated branch: `codex/fix-agui-live-tail`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
 - Owned paths: `packages/agent-security/src/agent_security/policy.py`,
   `apps/worker/src/zebra_agent_worker/{execution.py,recovery.py,tool_gateway_runtime.py}`,
-  `apps/api/src/zebra_agent_api/api_approval_control_mixin.py`, focused Agent
-  Security/API/Worker tests, this task card and focused `PROGRESS.md`
+  `apps/api/src/zebra_agent_api/{ag_ui_command.py,api_approval_control_mixin.py}`,
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, `docker/compose.application.yml`,
+  `docker/trench-acceptance.env`, focused Config/Agent Security/API/Worker tests,
+  this task card and focused `PROGRESS.md`
 
 #### Goal
 
@@ -3895,6 +3898,10 @@ without adding Host-specific tool names to the core policy allowlists.
   an explicit approval with its existing Grant, resource and idempotency checks.
 - [x] Granting an approval durably enqueues one idempotent resume command so a
   cloud Worker can continue without READY-session scanning.
+- [x] The explicit Cloud development switch auto-allows approval-bound tools,
+  while production rejects the switch and Host Grant/user isolation stay enforced.
+- [x] A terminal follow-up Segment renews and loads the stable root Task binding,
+  so the internal rollover cannot reject its own Run or lose its frozen Host manifest.
 
 #### Evidence
 
@@ -3903,11 +3910,21 @@ without adding Host-specific tool names to the core policy allowlists.
 - Real Trench/Zebra flow: exact X URL proposed `sources.add`, explicit approval
   reached `awaiting_turn`, stored `rsshub://twitter/user/aleabitoreddit`, and a
   second approved request kept the subscription count at one.
+- Development-unrestricted closeout: the final focused policy/API/Worker set is
+  `118 passed`; `make check` is green. The application API and Worker were rebuilt
+  with `ZEBRA_DEVELOPMENT_UNRESTRICTED=true`, while the runtime stayed on the
+  cloud gVisor network profile rather than inheriting local trusted-runtime behavior.
+- Real logged-in Chrome acceptance directly invoked `sources.add` for
+  `https://www.itjuzi.com/api/telegraph.xml`. Zebra durably recorded an `allow`
+  policy decision and a completed tool sequence; Trench stored source
+  `src_f6e1b778` and active subscription `tais_53287013bf0841d5a5d17267`, with
+  exactly one matching row for the authenticated user and workspace.
 
-#### Explicit Non-Goals
+#### Production Boundary
 
 - no Trench-specific tool names in Zebra policy or Worker code
-- no automatic approval and no weakening of Host Grant or resource binding
+- no production automatic approval and no weakening of Host Grant, principal,
+  resource, SSRF or path binding
 
 ### TRN-MEM-E2E-01 - Trench Cloud Governed Memory Closeout
 

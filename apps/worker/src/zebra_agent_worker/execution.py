@@ -6,6 +6,7 @@ from pathlib import Path
 
 import agent_core.harness as core_harness
 import httpx
+import zebra_agent_config
 from agent_context import LocalContextCompiler
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
@@ -16,7 +17,6 @@ from agent_integrations import build_model_gateway
 from agent_runtime.workspace_runtime_resolver import WorkspaceRuntimeResolver
 from agent_security import LocalPolicyEngine, PolicyProfile, resolve_effective_network_profile
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
-from zebra_agent_config import ZebraAgentSettings, load_settings, trusted_local_mode_enabled
 
 import zebra_agent_worker.authority_types as authority_types
 import zebra_agent_worker.execution_continuations as execution_continuations
@@ -73,7 +73,7 @@ class SessionExecutionService:
         database_path: Path,
         claim_service: SessionClaimService,
         resume_service: SessionResumeService,
-        settings: ZebraAgentSettings | None = None,
+        settings: zebra_agent_config.ZebraAgentSettings | None = None,
         stores: ControlPlaneStores | PostgresControlPlaneStores | None = None,
         effect_dispatch: EffectDispatchPort | None = None,
         workspace_resolver: WorkspaceRuntimeResolver | None = None,
@@ -113,7 +113,7 @@ class SessionExecutionService:
         self._model_http_client = model_http_client
         self._claim_service = claim_service
         self._resume_service = resume_service
-        self._settings = settings or load_settings()
+        self._settings = settings or zebra_agent_config.load_settings()
         storage = resolve_execution_storage(database_path, stores)
         active_stores = storage.stores
         self._task_index_store = getattr(active_stores, "tasks", None)
@@ -226,7 +226,8 @@ class SessionExecutionService:
         cloud_continuation = inputs.cloud_continuation
         task, recovered_handoff = inputs.task, inputs.recovered_handoff
         active_capsule = inputs.active_capsule
-        trusted_local = trusted_local_mode_enabled(self._settings)
+        trusted_local = zebra_agent_config.trusted_local_mode_enabled(self._settings)
+        policy_trusted = zebra_agent_config.unrestricted_policy_mode_enabled(self._settings)
         effective_network_profile = resolve_effective_network_profile(
             task.network_profile,
             trusted_local=trusted_local,
@@ -439,7 +440,7 @@ class SessionExecutionService:
                     profile=PolicyProfile(task.policy_profile),
                     network_profile=effective_network_profile,
                     web_search_endpoint=self._settings.web_search_endpoint,
-                    trusted_local=trusted_local,
+                    trusted_local=policy_trusted,
                     additional_read_only_tools=tool_gateway.read_only_tools,
                     additional_approval_tools=local_tool_gateway.approval_tools,
                 ),

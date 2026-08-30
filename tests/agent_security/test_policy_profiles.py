@@ -337,6 +337,19 @@ def test_trusted_local_mode_auto_allows_mcp_and_command_approval_boundaries() ->
     assert "trusted local" in command_decision.reason
 
 
+def test_trusted_local_mode_auto_allows_manifest_declared_host_write() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.WORKSPACE_WRITE,
+        trusted_local=True,
+        additional_approval_tools=frozenset({"sources.add"}),
+    )
+
+    decision = engine.evaluate_tool_call(_tool_call("sources.add"))
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+    assert "trusted local" in decision.reason
+
+
 def test_web_fetch_uses_durable_allowlist_as_prior_authority() -> None:
     engine = LocalPolicyEngine(
         profile=PolicyProfile.READ_ONLY,
