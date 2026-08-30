@@ -165,7 +165,6 @@ def test_harness_model_step_repairs_rejected_model_response_once() -> None:
         def complete_stream(self, messages, *, tools=(), on_text_delta):
             self.requests.append(list(messages))
             if len(self.requests) == 1:
-                on_text_delta(ModelTextDelta(index=0, content="Preparing report."))
                 raise ModelResponseRejectedError(
                     "invalid_tool_arguments_json",
                     phase="tool_arguments",
@@ -219,6 +218,107 @@ def test_harness_model_step_repairs_rejected_model_response_once() -> None:
         for event in events
         if event.event_type is EventType.MODEL_RESPONSE_DELTA
     ] == ["Report ready."]
+
+
+def test_harness_model_step_streams_deltas_while_tools_are_available() -> None:
+    created_at = datetime(2026, 8, 30, 20, 30, tzinfo=UTC)
+    events = []
+
+    class ToolCapableGateway:
+        def complete(self, messages, *, tools=()):
+            raise AssertionError("streaming path expected")
+
+        def complete_stream(self, messages, *, tools=(), on_text_delta):
+            assert tools == (RESEARCH_TOOL,)
+            on_text_delta(ModelTextDelta(index=0, content="Visible "))
+            assert [
+                event.payload["content_delta"]
+                for event in events
+                if event.event_type is EventType.MODEL_RESPONSE_DELTA
+            ] == ["Visible "]
+            on_text_delta(ModelTextDelta(index=1, content="now."))
+            return ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Visible now.",
+                    created_at=created_at,
+                )
+            )
+
+    HarnessModelStep(
+        available_tools=(RESEARCH_TOOL,),
+        event_sink=events.append,
+    ).request_completion(
+        [
+            SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.USER,
+                content="Stream while tools remain available.",
+                created_at=created_at,
+            )
+        ],
+        ToolCapableGateway(),
+        allow_tools=True,
+    )
+
+    assert [
+        event.payload["content_delta"]
+        for event in events
+        if event.event_type is EventType.MODEL_RESPONSE_DELTA
+    ] == ["Visible ", "now."]
+
+
+def test_harness_model_step_does_not_retry_after_streaming_public_text() -> None:
+    created_at = datetime(2026, 8, 30, 20, 31, tzinfo=UTC)
+    events = []
+
+    class RejectedAfterTextGateway:
+        calls = 0
+
+        def complete(self, messages, *, tools=()):
+            raise AssertionError("streaming path expected")
+
+        def complete_stream(self, messages, *, tools=(), on_text_delta):
+            self.calls += 1
+            on_text_delta(ModelTextDelta(index=0, content="Partial answer."))
+            raise ModelResponseRejectedError(
+                "invalid_tool_arguments_json",
+                phase="tool_arguments",
+                retryable=True,
+                provider_tool_name="agent.research",
+            )
+
+    gateway = RejectedAfterTextGateway()
+    step = HarnessModelStep(
+        available_tools=(RESEARCH_TOOL,),
+        event_sink=events.append,
+    )
+
+    try:
+        step.request_completion(
+            [
+                SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.USER,
+                    content="Do not duplicate streamed text.",
+                    created_at=created_at,
+                )
+            ],
+            gateway,
+            allow_tools=True,
+        )
+    except ModelResponseRejectedError:
+        pass
+    else:
+        raise AssertionError("rejected streamed response must fail without replay")
+
+    assert gateway.calls == 1
+    assert [
+        event.payload["content_delta"]
+        for event in events
+        if event.event_type is EventType.MODEL_RESPONSE_DELTA
+    ] == ["Partial answer."]
 
 
 def test_harness_model_step_commits_first_delta_then_coalesces_small_chunks() -> None:

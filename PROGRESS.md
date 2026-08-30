@@ -7,8 +7,10 @@
 
 - Trench/Zebra response-latency and availability closeout (`TRN-PERF-01`) is
   implemented on `codex/fix-agui-live-tail`. Host-bound Tasks skip disposable
-  workspace scanning; the first provider delta is committed immediately and
-  later tiny chunks are bounded; PostgreSQL commits publish Redis live hints
+  workspace scanning; the first provider delta is committed immediately even
+  when Host tools are advertised, and a streamed partial response disables
+  semantic replay so visible text cannot be duplicated; later tiny chunks are
+  bounded; PostgreSQL commits publish Redis live hints
   only after commit; the Worker fallback poll is 100ms; Memory/title side
   effects recover off the reply path. Conversation recovery now supplies the
   bounded completed-turn history, and AG-UI suppresses the internal tool-only
@@ -19,8 +21,10 @@
   this worktree. Real Trench TLS/Broker/Worker acceptance after rebuild passes
   three consecutive Turns: first visible events `36ms / 8ms / 7ms`, ordinary
   first text `4.04s / 4.15s`, exact recall of `灯塔`, and `sources.list` callback
-  plus clean final answer in `6.65s`. A logged-in Chrome turn streams, completes,
-  survives reload and leaves no localhost console errors. `make check` is green;
+  plus clean final answer in `6.65s`. The Trench development BFF now uses an
+  explicit same-origin streaming Route Handler instead of the generic Next.js
+  rewrite for chat SSE. A logged-in Chrome turn produced 27 increasing body
+  snapshots (`47 -> 1625` characters) before terminal state. `make check` is green;
   the final repository-wide suite is `2826 passed, 369 skipped`.
 
 - Cloud user file delivery (`CLOUD-USER-FILES-01`) is implemented on

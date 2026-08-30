@@ -3811,7 +3811,7 @@ instead of leaving Trench's SSE stream open indefinitely.
   `apps/worker/src/zebra_agent_worker/{context_materialization.py,execution.py,execution_completion.py,execution_context.py,execution_finalization.py,execution_recovery.py,gateway_release.py,live_event_runtime.py,loop.py,main.py,runtime_authority.py,runtime_setup.py,task_recovery.py,worker_polling.py}`,
   `packages/agent-context/`,
   `packages/agent-core/src/agent_core/domain/messages.py`,
-  `packages/agent-core/src/agent_core/harness/{model_step.py,models.py}`,
+  `packages/agent-core/src/agent_core/harness/{model_request.py,model_step.py,models.py}`,
   `packages/agent-core/src/agent_core/harness/stream_deltas.py`,
   `packages/agent-core/src/agent_core/harness/model_step_support.py`,
   `packages/agent-integrations/src/agent_integrations/{openai_payloads.py,ag_ui/projection.py}`,
@@ -3860,9 +3860,12 @@ work without weakening Host Grant replay or resource enforcement.
   completes with one structured Tool result and a clean final answer in
   `6.65 s` without exposing `Tool calls proposed.`.
 - Real logged-in Chrome acceptance streams `正在规划证据路径...`, returns
-  `浏览器流式闭环正常`, survives a reload, and records no localhost console
-  error or warning.
-- Trench companion change is committed as `0b1732b`; its full `make check`,
+  incremental text through Trench's explicit same-origin SSE Route Handler;
+  the final probe recorded 27 increasing body snapshots from 47 to 1625
+  characters before terminal state.
+- Trench companion latency baseline is `0b1732b`; the explicit SSE proxy and
+  stable streaming bubble closeout is committed as `66b6bc9`. The baseline
+  full `make check` and closeout 31-test frontend suite, lint, production build,
   startup-script syntax check and local health probes are green.
 
 ### TRN-MEM-E2E-01 - Trench Cloud Governed Memory Closeout
