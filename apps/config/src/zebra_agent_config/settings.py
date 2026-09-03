@@ -131,6 +131,12 @@ def trusted_local_mode_enabled(settings: ZebraAgentSettings) -> bool:
     return settings.profile == "local" and settings.runtime.runtime_class == "trusted-local"
 
 
+def unrestricted_policy_mode_enabled(settings: ZebraAgentSettings) -> bool:
+    return trusted_local_mode_enabled(settings) or (
+        settings.profile == "cloud" and settings.development_unrestricted
+    )
+
+
 def _read_model_wire_api(values: Mapping[str, str], *, provider: str) -> str:
     wire_api = _read(values, "ZEBRA_DEEPSEEK_WIRE_API", default="chat_completions")
     if wire_api not in {"chat_completions", "responses"}:

@@ -72,17 +72,16 @@ def dsn(postgres_dsn: str) -> Generator[str]:
         connection.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
 
 
-def test_tool_output_commits_postgres_event_and_versioned_object(dsn: str) -> None:
+def test_user_file_commits_postgres_event_and_versioned_object(dsn: str) -> None:
     context = _context(dsn)
-    projected = context.coordinator.output_projector.project_text(
-        "complete cloud tool output",
-        artifact_name="command-run.txt",
-    )
+    payload = b"symbol,score\nAAPL,1\n"
+    uri = context.coordinator.capture_file(payload, "research.csv", "text/csv")
+    output_metadata: dict[str, object] = {"artifact_uri": uri}
     event = context.coordinator.append_draft(
-        _terminal_draft(projected.model_output, projected.metadata),
+        _terminal_draft(f"Published research.csv: {uri}", output_metadata),
         cast(DurableHarnessEventRecorder, context.recorder),
     )
-    artifact_id = _artifact_id(projected.metadata)
+    artifact_id = _artifact_id(output_metadata)
     metadata = context.metadata.get_metadata(
         ArtifactMetadataQuery(
             deployment_namespace=context.namespace,
@@ -94,6 +93,9 @@ def test_tool_output_commits_postgres_event_and_versioned_object(dsn: str) -> No
     assert event.sequence == 1
     assert metadata is not None
     assert metadata.lifecycle_status is CloudArtifactPayloadLifecycleStatus.FINALIZED
+    assert metadata.reservation.kind == "user_file"
+    assert metadata.reservation.file_name == "research.csv"
+    assert metadata.reservation.mime_type == "text/csv"
     assert metadata.event_binding is not None
     assert metadata.event_binding.event_id == event.event_id
     expectation = ArtifactObjectExpectation(
@@ -102,7 +104,7 @@ def test_tool_output_commits_postgres_event_and_versioned_object(dsn: str) -> No
         sha256=metadata.reservation.sha256,
         size_bytes=metadata.reservation.size_bytes,
     )
-    assert context.objects.read_verified(expectation) == b"complete cloud tool output"
+    assert context.objects.read_verified(expectation) == payload
 
 
 def test_failed_tool_output_uses_the_same_managed_lifecycle(dsn: str) -> None:

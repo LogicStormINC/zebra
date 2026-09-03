@@ -306,3 +306,64 @@ def test_cloud_recovery_projects_persisted_effect_with_current_lease() -> None:
     assert tool_indexer.index_worker_event.call_count == len(event_store.list_for_session())
     projection_store.save_session.assert_not_called()
     workspace_store.save_workspace.assert_not_called()
+
+
+def test_cloud_recovery_repairs_lagging_workspace_before_projecting_tail() -> None:
+    created_at = datetime(2026, 8, 30, 11, 0, tzinfo=UTC)
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Approval projection repair",
+            user_input="subscribe",
+            workspace_root=Path("/tmp/approval-projection-repair"),
+        )
+    )
+    workspace = rebuild_workspace(list(bootstrap.events))
+    approval = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=bootstrap.session.current_sequence + 1,
+        event_type=EventType.APPROVAL_GRANTED,
+        actor=EventActor.USER,
+        payload={"operator": "tester", "reason": "approved"},
+        created_at=created_at,
+    )
+    events = [*bootstrap.events, approval]
+    session = rebuild_session(events)
+    repaired_workspace = apply_workspace_event(workspace, approval)
+    projection_store = Mock()
+    projection_store.get_session.return_value = session
+    workspace_store = Mock()
+    workspace_store.get_workspace.return_value = workspace
+    workspace_store.save_workspace.return_value = repaired_workspace
+    event_store = Mock()
+    event_store.list_for_session.return_value = events
+    transaction = Mock()
+    model_indexer = Mock()
+    tool_indexer = Mock()
+    lease = WorkerLease(
+        session_id=session.session_id,
+        fence=LeaseFence(
+            control_plane_epoch=uuid4(),
+            fencing_token=5,
+            owner_instance_id="worker-repair",
+        ),
+        checkpoint=bootstrap.session.current_sequence,
+        acquired_at=created_at,
+        heartbeat_at=created_at,
+        expires_at=datetime(2026, 8, 30, 11, 1, tzinfo=UTC),
+    )
+
+    recovered = SessionRecoveryService(
+        event_store,
+        projection_store,
+        workspace_store,
+        worker_projection_transaction=transaction,
+        deployment_namespace="cloud-approval-repair",
+        model_call_indexer=model_indexer,
+        tool_run_indexer=tool_indexer,
+    ).recover_session(session.session_id, worker_lease=lease)
+
+    assert recovered.session == session
+    assert recovered.workspace == repaired_workspace
+    workspace_store.save_workspace.assert_called_once_with(repaired_workspace)
+    projection_store.save_session.assert_not_called()
+    transaction.project_persisted_worker_event.assert_not_called()

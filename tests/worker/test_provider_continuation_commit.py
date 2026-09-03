@@ -215,6 +215,40 @@ def test_cloud_coordinator_stages_then_commits_one_fenced_aggregate() -> None:
         )
 
 
+def test_cloud_coordinator_persists_capsule_fallback_without_artifact() -> None:
+    class _FallbackRecorder(_FakeRecorder):
+        def append_draft(self, draft: HarnessEventDraft) -> SessionEvent:
+            return self.prepare(draft.event_type, draft.actor, draft.payload)
+
+    session, workspace = _bootstrap()
+    recorder = _FallbackRecorder(
+        session,
+        workspace,
+        _authority(session.session_id, expected_revision=2),
+    )
+    coordinator = CloudProviderContinuationCoordinator(
+        store=cast(
+            CloudProviderContinuationStorePort,
+            _FakeStore(deployment_namespace="cloud-prod"),
+        ),
+        scope=OpaqueAuthorityScope(
+            authority_issuer="https://issuer.example",
+            namespace_id="org-42",
+            allowed_session_ids=(str(session.session_id),),
+        ),
+        session_id=session.session_id,
+    )
+    draft = HarnessEventDraft(
+        event_type=EventType.CONTEXT_CONTINUATION_SELECTED,
+        actor=EventActor.HARNESS,
+        payload={"attempt_number": 1, "mode": "capsule_fallback", "reason": "provider unavailable"},
+    )
+
+    event = coordinator.append_draft(draft, cast(DurableHarnessEventRecorder, recorder))
+
+    assert event.payload["mode"] == "capsule_fallback"
+
+
 def test_cloud_provider_factory_rejects_implicit_sqlite_fallback(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="explicitly composed ControlPlaneStores"):
         SessionExecutionService(

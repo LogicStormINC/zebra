@@ -61,7 +61,9 @@ from agent_storage.idempotency import (
 from agent_storage.leases import SQLiteLeaseStore
 from agent_storage.live_event_store import (
     PostCommitPublishingEventStore,
+    PostCommitPublishingWorkerProjectionTransaction,
     with_committed_event_publisher,
+    with_worker_projection_publisher,
 )
 from agent_storage.memories import SQLiteMemoryStore
 from agent_storage.memory_lookup import (
@@ -293,7 +295,9 @@ __all__ = [
     "SQLiteIdempotencyStore",
     "SQLiteLeaseStore",
     "PostCommitPublishingEventStore",
+    "PostCommitPublishingWorkerProjectionTransaction",
     "with_committed_event_publisher",
+    "with_worker_projection_publisher",
     "SQLiteModelCallStore",
     "SQLiteProjectionStore",
     "SQLiteProviderContinuationStore",

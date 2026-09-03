@@ -22,7 +22,6 @@ from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
 from agent_integrations import (
     GitHubPullRequestTransport,
-    ModelProviderSettings,
     build_model_gateway,
 )
 from agent_runtime import (
@@ -63,6 +62,7 @@ from zebra_agent_api.api_workspace_mixin import (
 )
 from zebra_agent_api.factory import create_app as create_app
 from zebra_agent_api.idempotency import replay_idempotent_response
+from zebra_agent_api.model_configuration import model_provider_settings
 from zebra_agent_api.platform_operator_auth import PlatformOperatorAuthorizer
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
 from zebra_agent_api.serialization import serialize_trace_events
@@ -136,14 +136,17 @@ class ZebraAgentApi(
         idempotency_key: str | None = None,
         host_context: HostContextEnvelope | None = None,
     ) -> ApiResponse:
+        from zebra_agent_api.idempotency import scoped_idempotency_key
+
+        storage_idempotency_key = scoped_idempotency_key(idempotency_key, host_context)
         replayed = (
             replay_idempotent_response(
                 store=self.stores.idempotency,
                 action="session.create",
-                idempotency_key=idempotency_key,
+                idempotency_key=storage_idempotency_key,
                 payload=payload,
             )
-            if idempotency_key is not None
+            if storage_idempotency_key is not None
             else None
         )
         if replayed is not None:
@@ -203,7 +206,7 @@ class ZebraAgentApi(
             return bad_request(str(error))
         parsed["attachments"] = (*parsed["attachments"], *resource_attachments, *prompt_attachments)
 
-        admission = _compose_admission(self, host_context, payload, idempotency_key)
+        admission = _compose_admission(self, host_context, payload, storage_idempotency_key)
         if isinstance(admission, ApiResponse):
             return admission
         admission_kwargs: dict[str, str] = admission  # type: ignore[assignment]
@@ -218,7 +221,7 @@ class ZebraAgentApi(
             )
 
         response = (
-            self.queue_cloud_run(_queued(), idempotency_key=idempotency_key)
+            self.queue_cloud_run(_queued(), idempotency_key=storage_idempotency_key)
             if parsed["execute"] and self.settings.deployment == "cloud"
             else self._create_and_execute_session(parsed)
             if parsed["execute"]
@@ -235,7 +238,12 @@ class ZebraAgentApi(
                 stores=self.stores,
             )
         result = _post_admission_idempotency(
-            self.settings, self.stores, idempotency_key, response, payload
+            self.settings,
+            self.stores,
+            storage_idempotency_key,
+            response,
+            payload,
+            public_idempotency_key=idempotency_key,
         )
         return result if isinstance(result, ApiResponse) else response
 
@@ -397,7 +405,7 @@ class ZebraAgentApi(
             repo_id=str(workspace_root),
         )
         try:
-            model_gateway = build_model_gateway(_model_provider_settings(self.settings))
+            model_gateway = build_model_gateway(model_provider_settings(self.settings))
         except ValueError as error:
             return service_unavailable(
                 status="model_gateway_unavailable",
@@ -483,23 +491,3 @@ class ZebraAgentApi(
                 "attachments": [ref.to_mapping() for ref in attachment_refs],
             },
         )
-
-
-def _model_provider_settings(settings: ZebraAgentSettings) -> ModelProviderSettings:
-    model = settings.model
-    return ModelProviderSettings(
-        provider=model.provider,
-        api_key_env=model.api_key_env,
-        base_url=model.base_url,
-        model=model.model,
-        wire_api=model.wire_api,
-        executor_profile=model.executor_profile,
-        planner_profile=model.planner_profile,
-        reviewer_profile=model.reviewer_profile,
-        summarizer_profile=model.summarizer_profile,
-        analyst_profile=model.analyst_profile,
-        classifier_profile=model.classifier_profile,
-        max_retries=model.max_retries,
-        deepseek_beta_enabled=model.deepseek_beta_enabled,
-        deepseek_beta_base_url=model.deepseek_beta_base_url,
-    )

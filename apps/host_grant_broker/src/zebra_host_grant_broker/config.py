@@ -43,6 +43,9 @@ class BrokerSettings:
     max_runtime_seconds: int
     max_model_tokens: int
     max_artifact_bytes: int
+    workload_identities: tuple[str, ...] = ()
+    workload_shared_secret: str = ""
+    workload_clock_skew_seconds: int = 60
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> BrokerSettings:
@@ -71,7 +74,7 @@ class BrokerSettings:
                 source.get(f"{prefix}KEY_ID", "trench-host-grant-v1"), "KEY_ID", 128
             ),
             ttl_seconds=_bounded_int(
-                source.get(f"{prefix}TTL_SECONDS", "300"), "TTL_SECONDS", 1, 3600
+                source.get(f"{prefix}TTL_SECONDS", "1900"), "TTL_SECONDS", 1, 3600
             ),
             trench_me_url=_https_url(_require(source, f"{prefix}TRENCH_ME_URL"), "TRENCH_ME_URL"),
             trench_sources_url=_https_url(
@@ -103,6 +106,16 @@ class BrokerSettings:
                 "MAX_ARTIFACT_BYTES",
                 1,
                 1_073_741_824,
+            ),
+            workload_identities=_scopes(source.get(f"{prefix}WORKLOAD_IDENTITIES"))
+            if source.get(f"{prefix}WORKLOAD_IDENTITIES", "").strip()
+            else (),
+            workload_shared_secret=source.get(f"{prefix}WORKLOAD_SHARED_SECRET", "").strip(),
+            workload_clock_skew_seconds=_bounded_int(
+                source.get(f"{prefix}WORKLOAD_CLOCK_SKEW_SECONDS", "60"),
+                "WORKLOAD_CLOCK_SKEW_SECONDS",
+                1,
+                300,
             ),
         )
 

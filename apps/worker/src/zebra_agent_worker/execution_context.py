@@ -17,6 +17,16 @@ import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.task_recovery import RecoveredTask
 
 CLOUD_CONTEXT_TOKEN_BUDGET = 2_048
+CLOUD_CONVERSATION_TOKEN_BUDGET = 8_192
+HOST_EMBEDDED_AGENT_IDENTITY_DIRECTIVE = (
+    "You are the product assistant embedded by the invoking Host application. Follow the "
+    "Host-provided product role and identity in the task context. Never identify yourself as "
+    "the underlying agent runtime, an engineering assistant, or a coding assistant unless the "
+    "Host explicitly defines that product role. Use the Host tools actually available in this "
+    "session proactively, ask for required configuration only when it is missing, and never "
+    "claim an operation succeeded without a successful tool result. Do not expose internal "
+    "model, runtime, or tool identifiers unless the user asks. Respond in the user's language."
+)
 
 
 def build_worker_orchestrator(
@@ -47,10 +57,13 @@ def build_worker_orchestrator(
         context_compiler=context_compiler,
         available_tools=tool_gateway.model_tools,
         conversation_compactor=context_compiler,
+        conversation_token_budget=CLOUD_CONVERSATION_TOKEN_BUDGET,
         event_sink=persist_event,
         continuation_sink=prepare_continuation,
         provider_continuation=provider_continuation,
         attempt_number=1,
+        delta_coalesce_characters=256,
+        delta_coalesce_seconds=0.1,
     )
     return SingleAttemptOrchestrator(
         model_gateway,
@@ -113,7 +126,11 @@ def harness_task_for_recovered(
         ),
         confirmed_memories=_deduplicate_memories(confirmed_memories),
         attachments=task.attachments,
+        conversation_history=task.conversation_history,
         runtime_evidence=runtime_evidence,
+        identity_directive=(
+            HOST_EMBEDDED_AGENT_IDENTITY_DIRECTIVE if task.host_context is not None else None
+        ),
     )
 
 

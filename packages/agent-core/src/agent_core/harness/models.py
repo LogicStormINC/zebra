@@ -8,6 +8,7 @@ from typing import Any
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.mcp import normalize_mcp_allowlist
+from agent_core.domain.messages import SessionMessage
 from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import Session
 from agent_core.domain.skills import normalize_skill_components
@@ -54,7 +55,9 @@ class HarnessTask:
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
     attachments: tuple[AttachmentContextInput, ...] = ()
+    conversation_history: tuple[SessionMessage, ...] = ()
     task_plan: SessionPlan = field(default_factory=SessionPlan)
+    identity_directive: str | None = None
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -71,6 +74,8 @@ class HarnessTask:
             raise ValueError("harness task workspace_root must be absolute when set")
         if self.context_token_budget <= 0:
             raise ValueError("harness task context_token_budget must be positive")
+        if self.identity_directive is not None and not self.identity_directive.strip():
+            raise ValueError("harness task identity_directive must not be blank when set")
         object.__setattr__(self, "mcp_allowlist", normalize_mcp_allowlist(self.mcp_allowlist))
         object.__setattr__(
             self, "skill_components", normalize_skill_components(self.skill_components)
@@ -87,6 +92,8 @@ class HarnessTask:
                 raise ValueError(
                     "harness task attachments must contain AttachmentContextInput values"
                 )
+        if any(not isinstance(message, SessionMessage) for message in self.conversation_history):
+            raise ValueError("harness task conversation_history must contain SessionMessage values")
 
 
 @dataclass(frozen=True)

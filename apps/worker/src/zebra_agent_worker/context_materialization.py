@@ -31,8 +31,8 @@ from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.runtime_authority import (
-    AttemptAuthorityEvidence,
     attempt_authority_scope,
+    persist_attempt_authority,
 )
 from zebra_agent_worker.task_recovery import RecoveredTask
 
@@ -46,6 +46,52 @@ class PreparedWorkerContext:
     events: list[SessionEvent]
     binding: TaskBindingSnapshot | None
     materialization: ContextMaterialization | None
+
+
+@dataclass(frozen=True)
+class AttemptAuthorityEvidence:
+    """Persist attempt authority evidence before Context materialization."""
+
+    resolver: ExecutionAuthorityResolverPort | None
+    static_scope: OpaqueAuthorityScope | None
+    scope_provider: AuthorityScopeProvider | None
+    recovery_service: SessionRecoveryService
+    event_store: EventStorePort
+
+    def persist(
+        self,
+        recorder: DurableHarnessEventRecorder,
+        claimed: ClaimedSession,
+        session_events: list[SessionEvent],
+        *,
+        session_id: SessionId,
+        started_at: datetime,
+    ) -> tuple[ClaimedSession, list[SessionEvent]]:
+        scope = attempt_authority_scope(
+            self.static_scope,
+            self.scope_provider,
+            claimed.recovery.session,
+        )
+        if not persist_attempt_authority(
+            recorder,
+            self.resolver,
+            scope,
+            session_id=session_id,
+            existing_events=session_events,
+            attempt_number=1,
+            created_at=started_at,
+        ):
+            return claimed, session_events
+        return (
+            ClaimedSession(
+                recovery=self.recovery_service.recover_session(
+                    session_id,
+                    worker_lease=claimed.lease,
+                ),
+                lease=claimed.lease,
+            ),
+            self.event_store.list_for_session(session_id),
+        )
 
 
 def prepare_worker_context(

@@ -64,6 +64,7 @@ READ_ONLY_TOOLS = frozenset(
         "agent.tools.describe",
         "agent.tools.search",
         "files.list",
+        "files.publish",
         "files.read",
         "files.search",
         "git.status",
@@ -96,18 +97,29 @@ class LocalPolicyEngine:
     web_pipeline_v2: bool = False
     additional_read_only_tools: frozenset[str] = frozenset()
     additional_write_tools: frozenset[str] = frozenset()
+    additional_approval_tools: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
         for label, names in (
             ("read-only", self.additional_read_only_tools),
             ("write", self.additional_write_tools),
+            ("approval", self.additional_approval_tools),
         ):
             if not isinstance(names, frozenset) or any(
                 not isinstance(name, str) or not name.strip() for name in names
             ):
                 raise ValueError(f"additional {label} tools must be a frozenset of names")
-        if self.additional_read_only_tools & self.additional_write_tools:
-            raise ValueError("additional read-only and write tools must be disjoint")
+        declared_sets = (
+            self.additional_read_only_tools,
+            self.additional_write_tools,
+            self.additional_approval_tools,
+        )
+        if any(
+            left & right
+            for index, left in enumerate(declared_sets)
+            for right in declared_sets[index + 1 :]
+        ):
+            raise ValueError("additional tool policy sets must be disjoint")
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
@@ -149,6 +161,21 @@ class LocalPolicyEngine:
             return _allow(
                 self.profile,
                 f"{tool_name} is allowed as a grant-authorized Host write tool",
+            )
+        if tool_name in self.additional_approval_tools:
+            if self.profile is PolicyProfile.READ_ONLY:
+                return _deny(
+                    self.profile,
+                    f"{tool_name} is a manifest-declared write tool denied by read-only policy",
+                )
+            if self.trusted_local:
+                return _allow(
+                    self.profile,
+                    f"{tool_name} is allowed by trusted local operator mode",
+                )
+            return _approval(
+                self.profile,
+                f"{tool_name} requires approval as a manifest-declared write tool",
             )
         if self.profile is PolicyProfile.READ_ONLY:
             decision = _decision_for_read_only(tool_name, self.profile)

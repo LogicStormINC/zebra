@@ -187,6 +187,9 @@ def test_worker_gateway_exposes_only_grant_authorized_host_writes() -> None:
     )
 
     assert gateway.authorized_write_tools == frozenset({"sources.add"})
+    assert gateway.read_only_tools.isdisjoint({"sources.add"})
+    assert gateway.approval_tools == frozenset({"sources.add", "sources.remove"})
+    assert gateway.approval_required_tools == frozenset({"sources.remove"})
 
 
 def test_worker_gateway_destroys_owned_runtime_handle_once() -> None:

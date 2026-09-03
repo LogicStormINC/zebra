@@ -134,6 +134,47 @@ def test_golden_text_tool_state_and_terminal_events_are_officially_valid() -> No
     assert projection.next_cursor.sequence == 6
 
 
+def test_tool_only_model_sentinel_is_not_exposed_as_assistant_text() -> None:
+    session_id = new_session_id()
+    events = (
+        _event(
+            session_id,
+            0,
+            EventType.TASK_PREPARED,
+            {"title": "List sources", "user_input": "List sources"},
+        ),
+        _event(
+            session_id,
+            1,
+            EventType.MODEL_RESPONSE_RECEIVED,
+            {
+                "attempt_number": 1,
+                "model_call_id": "model-tool-only",
+                "assistant_message": "Tool calls proposed.",
+            },
+        ),
+        _event(
+            session_id,
+            2,
+            EventType.TOOL_CALL_PROPOSED,
+            {
+                "attempt_number": 1,
+                "tool_name": "sources.list",
+                "tool_call_id": "tool-1",
+                "arguments": {},
+            },
+        ),
+    )
+
+    projection = AgUiProjector().project(events, _identity(session_id))
+
+    types = [event.type for event in projection.events]
+    assert AgUiEventType.TEXT_MESSAGE_START not in types
+    assert AgUiEventType.TEXT_MESSAGE_CONTENT not in types
+    assert AgUiEventType.TEXT_MESSAGE_END not in types
+    assert AgUiEventType.TOOL_CALL_START in types
+
+
 def test_reconnect_tail_requires_exact_cursor_and_replays_only_new_durable_events() -> None:
     session_id = new_session_id()
     events = _golden_events(session_id)

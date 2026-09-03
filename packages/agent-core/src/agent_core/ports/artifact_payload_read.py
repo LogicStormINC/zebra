@@ -34,6 +34,8 @@ class ArtifactPayloadReadInspection(BaseModel):
     artifact_id: ArtifactId
     session_id: SessionId
     mime_type: str
+    file_name: str | None = None
+    size_bytes: int | None = None
     status: ArtifactPayloadReadStatus
     lifecycle_status: str
     retained_until: datetime | None = None
@@ -47,6 +49,14 @@ class ArtifactPayloadReadInspection(BaseModel):
         if not value or value != value.strip():
             raise ValueError("payload read fields must be non-blank and trimmed")
         return value
+
+    @field_validator("file_name")
+    @classmethod
+    def normalize_file_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
 
     @field_validator("retained_until", "pruned_at")
     @classmethod

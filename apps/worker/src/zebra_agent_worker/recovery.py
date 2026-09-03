@@ -132,12 +132,14 @@ class SessionRecoveryService:
         )
         if projected_session is None or projected_workspace is None:
             raise SessionRecoveryError("cloud recovery requires primary projections")
-        if projected_workspace.current_sequence != projected_session.current_sequence:
-            raise SessionRecoveryError("cloud primary projections are not aligned")
-
         events = self._event_store.list_for_session(session_id)
         if not events:
             raise SessionRecoveryError("cannot recover missing session")
+        projected_session, projected_workspace = self._align_cloud_primary_projections(
+            projected_session,
+            projected_workspace,
+            events,
+        )
         self._replay_cloud_indexes(events, worker_lease=worker_lease)
 
         session = projected_session
@@ -168,6 +170,29 @@ class SessionRecoveryService:
             last_sequence=session.current_sequence,
             is_terminal=session.status.value in {"completed", "failed", "cancelled"},
         )
+
+    def _align_cloud_primary_projections(
+        self,
+        session: Session,
+        workspace: WorkspaceProjection,
+        events: list[SessionEvent],
+    ) -> tuple[Session, WorkspaceProjection]:
+        """Repair a one-sided control-plane projection write from canonical Events."""
+
+        if workspace.current_sequence < session.current_sequence:
+            for event in events:
+                if workspace.current_sequence < event.sequence <= session.current_sequence:
+                    workspace = apply_workspace_event(workspace, event)
+            assert self._workspace_store is not None
+            workspace = self._workspace_store.save_workspace(workspace)
+        elif session.current_sequence < workspace.current_sequence:
+            for event in events:
+                if session.current_sequence < event.sequence <= workspace.current_sequence:
+                    session = apply_event(session, event)
+            session = self._projection_store.save_session(session)
+        if workspace.current_sequence != session.current_sequence:
+            raise SessionRecoveryError("cloud primary projections could not be aligned")
+        return session, workspace
 
     def _replay_cloud_indexes(
         self,

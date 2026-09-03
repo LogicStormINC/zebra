@@ -9,10 +9,12 @@ from agent_core.application import (
     ApprovalDecisionService,
 )
 from agent_core.application.session_projection import apply_event
+from agent_core.application.workspace_projection import apply_event as apply_workspace_event
 from agent_core.domain.identifiers import SessionId
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.approval_context import serialize_approval_context
+from zebra_agent_api.command_submission import submit_session_command
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_payloads import parse_approval_decision_payload
 
@@ -84,6 +86,24 @@ class ApiApprovalControlMixin:
         approval_context = serialize_approval_context(session.approval_context)
         event_store.append(event)
         updated_session = projection_store.save_session(apply_event(session, event))
+        workspace = self.stores.workspaces.get_workspace(session_key)
+        if workspace is not None:
+            self.stores.workspaces.save_workspace(apply_workspace_event(workspace, event))
+        resume_response = None
+        if action is ApprovalDecisionAction.GRANT:
+            resume_response = submit_session_command(
+                self.stores,
+                str(session_key),
+                {
+                    "kind": "resume",
+                    "expected_revision": updated_session.current_sequence,
+                },
+                idempotency_key=(
+                    f"approval:{session_key}:{event.sequence}:resume"
+                ),
+            )
+            if resume_response.status_code not in {200, 202}:
+                return resume_response
         task_id = self.stores.tasks.ensure_for_session(session_key).task_id
         body: dict[str, object] = {
             "approval_id": approval_id,

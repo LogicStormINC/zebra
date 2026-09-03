@@ -15,6 +15,7 @@ GENERAL_TOOL_NAMES = frozenset(
         "command.run",
         "files.list",
         "files.read",
+        "files.publish",
         "files.search",
         "patch.apply",
         "sessions.search",
@@ -29,13 +30,15 @@ GENERAL_TOOL_NAMES = frozenset(
     }
 )
 CODING_TOOL_NAMES = GENERAL_TOOL_NAMES | {"git.status", "tests.run"}
-# Durable research children: read-only surface with NO agent.research — a
-# delegated child must not delegate again (depth-1 durable delegation).
+# Read-only research surface with NO agent.research — a delegated child must
+# not delegate again. Publishing a user deliverable writes only to the governed
+# Artifact Store; it does not mutate the workspace.
 RESEARCH_TOOL_NAMES = frozenset(
     {
         "agent.clarify",
         "agent.plan",
         "files.list",
+        "files.publish",
         "files.read",
         "files.search",
         "sessions.search",

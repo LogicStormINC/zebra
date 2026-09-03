@@ -36,11 +36,17 @@ def test_sse_decoder_keeps_opaque_cursor_and_bounded_payload() -> None:
     assert decode_sse(None, []) is None
 
 
-def test_read_tool_contract_is_exactly_the_five_trench_tools() -> None:
+def test_read_tool_contract_includes_trench_native_history_tools() -> None:
     assert READ_TOOL_NAMES == {
         "events.get_event",
         "events.get_evidence",
         "events.get_related_events",
         "events.get_entity_timeline",
         "events.get_topic",
+        "sources.list",
+        "sources.get_status",
+        "subscriptions.list_history",
+        "events.search_history",
+        "events.get_historical_event",
+        "events.trace_historical_event",
     }

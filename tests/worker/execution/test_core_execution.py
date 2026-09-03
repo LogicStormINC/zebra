@@ -307,10 +307,10 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
         trusted_local,
         additional_read_only_tools,
         additional_write_tools,
+        additional_approval_tools,
     ):
-        captured.append(
-            (network_profile, additional_read_only_tools, additional_write_tools)
-        )
+        assert additional_approval_tools == frozenset()
+        captured.append((network_profile, additional_read_only_tools, additional_write_tools))
         assert web_search_endpoint is None
         assert trusted_local is False
         return LocalPolicyEngine(
@@ -318,6 +318,7 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
             network_profile=network_profile,
             additional_read_only_tools=additional_read_only_tools,
             additional_write_tools=additional_write_tools,
+            additional_approval_tools=additional_approval_tools,
         )
 
     monkeypatch.setattr(

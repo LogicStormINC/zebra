@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,6 +11,11 @@ from agent_core.domain.context_materialization import (
     ContextMaterializationRequest,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.host_authority import (
+    HostContextEnvelope,
+    HostResourceRef,
+    HostTechnicalLimits,
+)
 from agent_core.domain.memories import MemoryQuery, MemoryRecord, MemoryVisibility
 from agent_core.domain.session_history import SessionHistoryMessage
 from agent_core.domain.tool_profiles import ToolProfile
@@ -176,6 +182,40 @@ def test_cloud_harness_uses_materialized_inputs_and_keeps_local_baseline(
     }
     assert local_task.context_token_budget == 200
     assert len(memory_store.queries) == 2
+
+
+def test_trench_host_uses_trench_product_identity(tmp_path: Path) -> None:
+    task = replace(
+        _task(tmp_path),
+        host_context=HostContextEnvelope(
+            grant_id="grant-1",
+            host_app_id="trench",
+            namespace_id="tenant-a",
+            workspace_ref="workspace-a",
+            resource_refs=(HostResourceRef(type="workspace", id="workspace-a"),),
+            scopes=("agent.run",),
+            limits=HostTechnicalLimits(
+                max_runtime_seconds=300,
+                max_model_tokens=100_000,
+                max_artifact_bytes=1_048_576,
+            ),
+            origin="https://trench.example.test",
+            policy_version="1",
+        ),
+    )
+    gateway = SimpleNamespace(effective_mcp_tools=(), effective_skill_components=())
+
+    harness_task = harness_task_for_recovered(
+        task,
+        network_profile=task.network_profile,
+        tool_gateway=gateway,
+        memory_store=_RecordingMemoryStore(),
+    )
+
+    assert harness_task.identity_directive is not None
+    assert "product assistant embedded by the invoking Host" in harness_task.identity_directive
+    assert "Host-provided product role and identity" in harness_task.identity_directive
+    assert "underlying agent runtime" in harness_task.identity_directive
 
 
 def test_automation_handoff_seed_does_not_count_as_conversation_history(

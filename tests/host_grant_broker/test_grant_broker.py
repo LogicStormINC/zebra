@@ -8,6 +8,11 @@ semantics.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
+import time
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import jwt as pyjwt
@@ -49,6 +54,8 @@ def _settings(key) -> BrokerSettings:
             "entity.read",
             "topic.read",
             "subscription.write",
+            "source.read",
+            "history.read",
         ),
         private_key_pem=pem,
         key_id="test-key-1",
@@ -113,6 +120,7 @@ def test_minted_grant_passes_real_zebra_verifier():
     resources = {ref.key for ref in verified.context.resource_refs}
     assert ("thread", "0f0e8b74-8d64-4d55-9f8e-2a1b3c4d5e6f") in resources
     assert ("run", "run-123") in resources
+    assert ("principal", "user-42") in resources
 
 
 def test_grant_carries_exactly_the_model_claim_set():
@@ -153,15 +161,16 @@ def test_grant_carries_exactly_the_model_claim_set():
     assert claims["resource_refs"] == [
         {"type": "thread", "id": "t-1"},
         {"type": "run", "id": "r-1"},
+        {"type": "principal", "id": "u"},
     ]
 
 
 def test_exchange_rejects_unknown_scope_and_audience():
     settings = _settings(_key())
     with pytest.raises(GrantMintError):
-        ExchangeRequest(
-            audience="other", thread_id="t", run_id="r", scopes=("agent.run",)
-        ).enforce(settings)
+        ExchangeRequest(audience="other", thread_id="t", run_id="r", scopes=("agent.run",)).enforce(
+            settings
+        )
     with pytest.raises(GrantMintError):
         ExchangeRequest(
             audience="zebra", thread_id="t", run_id="r", scopes=("bank.write",)
@@ -180,8 +189,14 @@ def test_fetch_viewer_extracts_identity():
                     "success": True,
                     "data": {
                         "items": [
-                            {"source_id": "src-active", "subscription_status": "active"},
-                            {"source_id": "src-paused", "subscription_status": "paused"},
+                            {
+                                "source_id": "src-active",
+                                "subscription_status": "active",
+                            },
+                            {
+                                "source_id": "src-paused",
+                                "subscription_status": "paused",
+                            },
                         ]
                     },
                 },
@@ -224,6 +239,7 @@ def _client(settings: BrokerSettings, viewer: TrenchViewer | None) -> TestClient
     import zebra_host_grant_broker.app as app_module
 
     if viewer is None:
+
         def fail(*args, **kwargs):
             raise TrenchSessionError("session_inactive")
 
@@ -252,6 +268,94 @@ def test_exchange_endpoint_mints_grant():
     _verify_with_zebra(token, settings, key)
 
 
+def test_workload_exchange_mints_principal_bound_grant_without_cookie():
+    key = _key()
+    settings = _settings(key)
+    settings = replace(
+        settings,
+        workload_identities=("trench-agent-worker",),
+        workload_shared_secret="server-secret",
+    )
+    client = TestClient(create_app(settings))
+    body = {
+        "audience": "zebra",
+        "runId": "run-server-1",
+        "scopes": ["agent.run", "event.read", "source.read", "history.read"],
+        "threadId": "0f0e8b74-8d64-4d55-9f8e-2a1b3c4d5e6f",
+        "resourceRefs": [
+            {"type": "trench.source", "id": "src-1"},
+            {"type": "trench.history", "id": "user-42"},
+        ],
+        "principal": {
+            "activeSourceIds": ["src-1"],
+            "userId": "user-42",
+            "workspaceId": "ws-7",
+        },
+    }
+    timestamp = str(int(time.time()))
+    nonce = "turn-1-grant-1"
+    digest = hashlib.sha256(
+        json.dumps(body, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()
+    ).hexdigest()
+    signature = hmac.new(
+        b"server-secret", f"{timestamp}\n{nonce}\n{digest}".encode(), hashlib.sha256
+    ).hexdigest()
+
+    headers = {
+        "X-Zebra-Workload-Identity": "trench-agent-worker",
+        "X-Zebra-Workload-Timestamp": timestamp,
+        "X-Zebra-Workload-Nonce": nonce,
+        "X-Zebra-Workload-Signature": signature,
+    }
+    response = client.post(
+        "/exchange",
+        json=body,
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    verified = _verify_with_zebra(response.json()["grant"], settings, key)
+    assert ("principal", "user-42") in {ref.key for ref in verified.context.resource_refs}
+    repeated = client.post("/exchange", json=body, headers=headers)
+    assert repeated.status_code == 200
+    first_jti = pyjwt.decode(response.json()["grant"], options={"verify_signature": False})["jti"]
+    repeated_jti = pyjwt.decode(repeated.json()["grant"], options={"verify_signature": False})[
+        "jti"
+    ]
+    assert repeated_jti == first_jti
+
+
+def test_workload_exchange_rejects_tampered_principal():
+    key = _key()
+    settings = _settings(key)
+    settings = replace(
+        settings,
+        workload_identities=("trench-agent-worker",),
+        workload_shared_secret="server-secret",
+    )
+    client = TestClient(create_app(settings))
+    body = {
+        "audience": "zebra",
+        "runId": "run-server-1",
+        "scopes": ["agent.run"],
+        "threadId": "thread-1",
+        "principal": {"activeSourceIds": [], "userId": "attacker", "workspaceId": "ws-7"},
+    }
+    response = client.post(
+        "/exchange",
+        json=body,
+        headers={
+            "X-Zebra-Workload-Identity": "trench-agent-worker",
+            "X-Zebra-Workload-Timestamp": str(int(time.time())),
+            "X-Zebra-Workload-Nonce": "turn-1-grant-1",
+            "X-Zebra-Workload-Signature": "0" * 64,
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json()["reason"] == "workload_signature_invalid"
+
+
 def test_exchange_mints_only_viewer_authorized_read_resources():
     key = _key()
     settings = _settings(key)
@@ -264,11 +368,18 @@ def test_exchange_mints_only_viewer_authorized_read_resources():
         json={
             "audience": "zebra",
             "runId": "run-1",
-            "scopes": ["agent.run", "event.read", "topic.read"],
+            "scopes": [
+                "agent.run",
+                "event.read",
+                "topic.read",
+                "source.read",
+                "history.read",
+            ],
             "threadId": "thread-1",
             "resourceRefs": [
                 {"type": "trench.source", "id": "src-1"},
                 {"type": "trench.topic", "id": "robotics"},
+                {"type": "trench.history", "id": "user-42"},
             ],
         },
         headers={"Cookie": "trench_ai_product_session=abc"},
@@ -279,6 +390,7 @@ def test_exchange_mints_only_viewer_authorized_read_resources():
     assert {ref.key for ref in verified.context.resource_refs} >= {
         ("trench.source", "src-1"),
         ("trench.topic", "robotics"),
+        ("trench.history", "user-42"),
     }
 
 
@@ -309,6 +421,30 @@ def test_exchange_rejects_unsubscribed_source_and_unbound_business_resource():
 
     assert unsubscribed.json() == {"status": "rejected", "reason": "source_not_allowed"}
     assert no_source.json() == {"status": "rejected", "reason": "source_binding_required"}
+
+
+def test_exchange_rejects_another_users_history_ledger():
+    settings = _settings(_key())
+    client = _client(
+        settings,
+        TrenchViewer("user-42", "ws-7"),
+    )
+    response = client.post(
+        "/exchange",
+        json={
+            "audience": "zebra",
+            "runId": "run-1",
+            "scopes": ["agent.run", "history.read"],
+            "threadId": "thread-1",
+            "resourceRefs": [{"type": "trench.history", "id": "user-other"}],
+        },
+        headers={"Cookie": "trench_ai_product_session=abc"},
+    )
+
+    assert response.json() == {
+        "status": "rejected",
+        "reason": "history_not_allowed",
+    }
 
 
 def test_exchange_endpoint_rejections():

@@ -44,6 +44,74 @@ does not authorize production code, migrations or activation of its successor.
   only with `ZEBRA_DEVELOPMENT_UNRESTRICTED=true`; production still requires
   gVisor.
 
+- `CLOUD-USER-FILES-TRN-PROFILE-02` is `Review` on
+  `codex/zebra-durable-turn-grants`. Owner: `/root`. It exposes the existing
+  Grant-gated `files.publish` delivery Tool to Trench's read-only research
+  parent profile so information sessions can create user assets without
+  enabling shell, patch, Git or nested delegation. Owned paths:
+  `packages/agent-core/src/agent_core/domain/tool_profiles.py`,
+  `tests/agent_core/test_tool_profiles.py`, this task card and focused
+  `PROGRESS.md`. Focused profile/runtime validation passes `27 passed` with
+  Ruff and Mypy clean. The Trench browser acceptance published and downloaded
+  a real Markdown deliverable through the governed Artifact Store.
+
+- `CLOUD-CONT-FALLBACK-02` is `Review` on
+  `codex/zebra-durable-turn-grants`. Owner: `/root`. It keeps
+  `capsule_fallback` continuation events on the ordinary durable event path;
+  only `provider_native` selections require a staged opaque artifact. Owned
+  paths: `apps/worker/src/zebra_agent_worker/provider_continuation_commit.py`,
+  `tests/worker/test_provider_continuation_commit.py`, this task card and
+  focused `PROGRESS.md`.
+
+- `TRN-MODEL-TOOL-REPAIR-02` is `Review` on
+  `codex/zebra-durable-turn-grants`. Owner: `/root`. It preserves the rejected
+  provider tool name at the OpenAI-compatible response boundary so Zebra's
+  bounded repair prompt and durable failure metadata can identify an
+  unadvertised tool call. Owned paths:
+  `packages/agent-integrations/src/agent_integrations/openai_payloads.py`,
+  `tests/agent_integrations/test_openai_compatible.py`, this task card and
+  focused `PROGRESS.md`.
+
+- `CLOUD-TRN-MULTITENANT-01` is `Review` on
+  `codex/fix-agui-live-tail` with the Trench companion branch
+  `codex/trn-perf-01`. Owner: Codex. It closes the user-authorized Trench/Zebra
+  multi-user isolation audit findings without changing ordinary single-user
+  behavior. Owned paths: `apps/api/src/zebra_agent_api/{http,tenant_guard,
+  idempotency,app,session_binding,ag_ui_stream}.py`, focused API tests,
+  `apps/host_grant_broker/` focused tests, and the Trench product-auth,
+  product-source, product-route composition, Zebra BFF/event-task cache and
+  focused tests in `/Users/lukeding/.codex/worktrees/trn-native-history-v2/Trench`.
+  The existing uncommitted live-tail/model-projection work is explicitly
+  preserved. Acceptance requires two-principal Task admission isolation,
+  cross-principal AG-UI denial, fail-closed legacy Session visibility, disabled
+  implicit development identities, viewer-derived workspace ownership, and
+  cookie-only browser auth regression coverage. The reopened current-diff review
+  also removed Host business vocabulary from the generic Worker, kept SQLite
+  tenant-only compatibility explicit, fixed repository-wide snapshotting in the
+  suspend/resume acceptance helper, and passed Zebra `make check` plus the full
+  `2849 passed, 369 skipped` test suite. The Trench companion passes `make check`.
+
+- `CLOUD-USER-FILES-01` is `Review` on `codex/cloud-user-files-01`.
+  It adds an opt-in, user-bound deliverable publication and download path on
+  top of the existing fenced Artifact authority. Owned paths:
+  `packages/agent-core/src/agent_core/domain/host_authority.py`, focused
+  Artifact delivery contracts under `packages/agent-core/src/agent_core/`,
+  `packages/agent-storage/src/agent_storage/`, `packages/agent-tools/src/agent_tools/`,
+  `packages/agent-security/src/agent_security/`, `apps/api/src/zebra_agent_api/`,
+  `apps/worker/src/zebra_agent_worker/`,
+  `apps/host_grant_broker/src/zebra_host_grant_broker/`, focused tests,
+  MinIO compose configuration, this registry, `PROGRESS.md`, and the focused
+  architecture/runbook document. Existing Tool-output Artifact capture and
+  ordinary chat execution must remain unchanged when the capability is unused.
+  Depends on the completed Cloud Artifact payload/object/read slices.
+  Focused publication/download/isolation matrices pass; Ruff and focused Mypy pass. Real
+  PostgreSQL + MinIO publication and raw HTTP download pass `2/2`. Full suite:
+  the pre-fix run was `2804 passed / 369 skipped / 8 failures`; its one
+  introduced API/CLI projection mismatch was then fixed and its contract matrix
+  passes `14/14`. The other seven failures are inherited. `make check` remains blocked by six
+  inherited file-size violations and five inherited Mypy errors; Ruff and Eval
+  `10/10` pass.
+
 - `CTX-TURN-LIFECYCLE` (ADR-026 cards `CTX-TURN-ADR-01` through
   `CTX-TURN-API-01`) is `Review` on `codex/ctx-turn-lifecycle-01`, stacked
   on the `CTX-INHERIT-CLOUD-01` closeout: a final model answer closes a
@@ -3817,12 +3885,20 @@ instead of leaving Trench's SSE stream open indefinitely.
 - Status: `Review`
 - Owner: `lukeding`
 - Depends on: `TRN-HOST-GRANT-RENEW-01`, `TRN-WORKER-TERMINAL-01`
-- Branch: `cloud-agent-trench`
+- Branch: `codex/fix-agui-live-tail`
 - Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
-- Owned paths: `docker/trench-acceptance/`,
-  `docker/compose.trench-acceptance.yml`, `apps/api/src/zebra_agent_api/task_api.py`,
-  focused Zebra API tests, Trench Zebra BFF/suggestions/frontend suggestion paths,
-  this task card
+- Owned paths: `docker/compose.application.yml`,
+  `apps/api/src/zebra_agent_api/{ag_ui_command.py,app.py,model_configuration.py,task_api.py,task_responses.py}`,
+  `apps/worker/src/zebra_agent_worker/{context_materialization.py,execution.py,execution_completion.py,execution_context.py,execution_finalization.py,execution_recovery.py,gateway_release.py,live_event_runtime.py,loop.py,main.py,runtime_authority.py,runtime_setup.py,task_recovery.py,worker_polling.py}`,
+  `packages/agent-context/`,
+  `packages/agent-core/src/agent_core/domain/messages.py`,
+  `packages/agent-core/src/agent_core/harness/{model_request.py,model_step.py,models.py}`,
+  `packages/agent-core/src/agent_core/harness/stream_deltas.py`,
+  `packages/agent-core/src/agent_core/harness/model_step_support.py`,
+  `packages/agent-integrations/src/agent_integrations/{openai_payloads.py,ag_ui/projection.py}`,
+  `packages/agent-storage/src/agent_storage/{__init__.py,live_event_store.py}`, focused Zebra
+  API/Worker/Context/Storage tests, Trench Zebra BFF/suggestions/frontend suggestion
+  paths, Compose Worker polling configuration, this task card and focused `PROGRESS.md`
 
 #### Goal
 
@@ -3839,12 +3915,101 @@ work without weakening Host Grant replay or resource enforcement.
   Task create/message responses, and records per-stage latency.
 - Suggestion calls are abortable/deduplicated and an upstream authorization
   failure opens a bounded server-side circuit.
-- A real browser conversation completes two scoped Host Tool turns and all
-  focused backend/frontend checks remain green.
+- Host-bound Tasks do not scan their disposable workspace while local coding
+  Tasks retain workspace context unchanged.
+- The first model delta is committed immediately; later tiny provider chunks are
+  coalesced before durable append, and aggregate Worker commits publish only
+  after PostgreSQL accepts them.
+- AG-UI replays durable history once and tails incrementally; Redis loss falls
+  back to durable reads without duplicate assistant content.
+- The acceptance Worker notices durable work within 100 ms in the polling
+  fallback, with an explicit event-driven wakeup follow-up before multi-worker scale.
+- A real browser conversation streams and survives reload; scoped Host Tool and
+  multi-turn Memory acceptance complete through the same Trench BFF path, and
+  all focused backend/frontend checks remain green.
+
+#### Validation Evidence
+
+- `make check`: green (Ruff, mypy across 788 source files, file-size policy and
+  eval `10/10`).
+- `uv run pytest -q`: `2826 passed, 369 skipped in 699.99s`.
+- Current Compose images rebuilt from this worktree; Zebra API and Worker,
+  PostgreSQL, Redis Live and MinIO are healthy. Trench API readiness reports
+  both Redis and PostgreSQL ready.
+- Real Trench TLS/Broker/Worker sequence: first visible event
+  `36 ms / 8 ms / 7 ms`; two-turn recall returns `灯塔`; `sources.list`
+  completes with one structured Tool result and a clean final answer in
+  `6.65 s` without exposing `Tool calls proposed.`.
+- Real logged-in Chrome acceptance streams `正在规划证据路径...`, returns
+  incremental text through Trench's explicit same-origin SSE Route Handler;
+  the final probe recorded 27 increasing body snapshots from 47 to 1625
+  characters before terminal state.
+- Trench companion latency baseline is `0b1732b`; the explicit SSE proxy and
+  stable streaming bubble closeout is committed as `66b6bc9`. The baseline
+  full `make check` and closeout 31-test frontend suite, lint, production build,
+  startup-script syntax check and local health probes are green.
+
+### HOST-WRITE-POLICY-01 - Manifest-Declared Host Write Approval
+
+- Status: `Review`
+- Owner: `Codex`
+- Depends on: `EMB-HOST-RUNTIME-01`, Trench native V3 manifest
+- Integrated branch: `codex/fix-agui-live-tail`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
+- Owned paths: `packages/agent-security/src/agent_security/policy.py`,
+  `apps/worker/src/zebra_agent_worker/{execution.py,recovery.py,tool_gateway_runtime.py}`,
+  `apps/api/src/zebra_agent_api/{ag_ui_command.py,api_approval_control_mixin.py}`,
+  `apps/worker/src/zebra_agent_worker/loop.py`,
+  `apps/config/src/zebra_agent_config/settings.py`, `docker/compose.application.yml`,
+  `docker/trench-acceptance.env`, focused Config/Agent Security/API/Worker tests,
+  this task card and focused `PROGRESS.md`
+
+#### Goal
+
+Map manifest-declared Host write tools to Zebra's durable approval boundary
+without adding Host-specific tool names to the core policy allowlists.
+
+#### Acceptance
+
+- [x] A `read_only` Task still denies every manifest-declared Host write tool.
+- [x] A `workspace_write` or `full_access` Task requires approval for a
+  manifest-declared Host write tool before Host invocation.
+- [x] Manifest read tools remain automatically allowed and local tool policy is unchanged.
+- [x] Trench `sources.add` reaches the approval boundary and executes only after
+  an explicit approval with its existing Grant, resource and idempotency checks.
+- [x] Granting an approval durably enqueues one idempotent resume command so a
+  cloud Worker can continue without READY-session scanning.
+- [x] The explicit Cloud development switch auto-allows approval-bound tools,
+  while production rejects the switch and Host Grant/user isolation stay enforced.
+- [x] A terminal follow-up Segment renews and loads the stable root Task binding,
+  so the internal rollover cannot reject its own Run or lose its frozen Host manifest.
+
+#### Evidence
+
+- Focused policy/API/Worker regression set: `97 passed`.
+- Repository gates: `make check` passed; full suite: `2830 passed, 372 skipped`.
+- Real Trench/Zebra flow: exact X URL proposed `sources.add`, explicit approval
+  reached `awaiting_turn`, stored `rsshub://twitter/user/aleabitoreddit`, and a
+  second approved request kept the subscription count at one.
+- Development-unrestricted closeout: the final focused policy/API/Worker set is
+  `118 passed`; `make check` is green. The application API and Worker were rebuilt
+  with `ZEBRA_DEVELOPMENT_UNRESTRICTED=true`, while the runtime stayed on the
+  cloud gVisor network profile rather than inheriting local trusted-runtime behavior.
+- Real logged-in Chrome acceptance directly invoked `sources.add` for
+  `https://www.itjuzi.com/api/telegraph.xml`. Zebra durably recorded an `allow`
+  policy decision and a completed tool sequence; Trench stored source
+  `src_f6e1b778` and active subscription `tais_53287013bf0841d5a5d17267`, with
+  exactly one matching row for the authenticated user and workspace.
+
+#### Production Boundary
+
+- no Trench-specific tool names in Zebra policy or Worker code
+- no production automatic approval and no weakening of Host Grant, principal,
+  resource, SSRF or path binding
 
 ### TRN-MEM-E2E-01 - Trench Cloud Governed Memory Closeout
 
-- Status: `In Progress`
+- Status: `Review`
 - Owner: `lukeding`
 - Depends on: `CLOUD-MEMORY-PG-01`, `CTX-MEM-01`, `TRN-PERF-01`
 - Branch: `cloud-agent-trench`
@@ -26077,6 +26242,54 @@ launch behind explicit evidence, independently of the Files API work.
   remote cleanup and Files cache hit rate belong to DS-VIS-FILES-EVAL-01
 - no new eval framework — reuse the existing provider eval harness
 
+### EMB-TRN-NATIVE-HISTORY-V2-01 - Trench Native History Host Acceptance
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `QA / HOST INTEGRATION`
+- Branch: `codex/trn-native-history-v2`
+- Worktree: `/Users/lukeding/.codex/worktrees/trn-native-history-v2/zebra-agent`
+- Depends on: Trench `TRN-NATIVE-HISTORY-V2-01`; generic Host manifest, resource
+  binding and bounded effect contracts already on the delivery line
+- Owned paths: `apps/host_grant_broker/`, `tests/host_grant_broker/`,
+  `tests/compose/trench_read_e2e/`, `docker/compose.trench-acceptance.yml`,
+  `docs/trench_agent_profile_v1.md`, this card and focused `PROGRESS.md`
+
+#### Goal
+
+Extend the real Trench Host acceptance from the original five read tools to the
+versioned native source/history surface without adding Trench vocabulary to
+Zebra core or Worker production code.
+
+#### Acceptance
+
+- [x] V2 manifest remains backward compatible with the five V1 event tools and
+  explicitly declares source/history scopes and resource bindings.
+- [x] A real user can search only events whose `visible_at` falls inside one of
+  that user's historical subscription periods; another user and paused gaps are denied.
+- [x] Event detail and provenance trace use the same historical entitlement as
+  search, with bounded output and no raw storage URI leakage.
+- [x] Frozen V1 sessions stay V1; newly admitted V2 sessions receive the native tools.
+- [x] Real local fail-closed Grant/Host Tool calls and the existing business-snapshot
+  runner contract prove the native reads leave Trench business state unchanged.
+
+#### Explicit Non-Goals
+
+- no Trench-specific branch in `agent-core` or Worker production code
+- no credential CRUD, arbitrary SQL, raw queue control or destructive source write
+
+#### Review Evidence
+
+- Focused Host/Broker/manifest/resource-binding suite: `25 passed`; ruff and eval
+  release gate `10/10` passed.
+- Manifest freeze focused suite: `2 passed, 7 skipped` (PostgreSQL-only cases remain
+  environment-gated); generic full suite reached `2796 passed, 372 skipped` with seven
+  unrelated inherited failures in untouched prompt, attachment and file-size baselines.
+- Real local HTTP acceptance minted a `trench.history` grant for the authenticated
+  viewer, rejected another viewer with HTTP 400, and invoked signed
+  `subscriptions.list_history` plus `events.search_history` against the migrated Trench
+  database without changing Event business rows.
+
 ### DS-VIS-FILES-EVAL-01 - Files Post-Merge Eval And Launch Gate
 
 - Status: `Locked`
@@ -26123,3 +26336,34 @@ concurrency dedup, reliable cleanup and cache economics.
 
 - no Files binding or lifecycle code (DS-VIS-FILES-01)
 - no new eval framework — reuse the existing provider eval harness
+### TRN-DURABLE-GRANT-01 - Trench Worker Host Grant Exchange
+
+- Status: `Review`
+- Owner: `/root`
+- Branch: `codex/zebra-durable-turn-grants`
+- Owned paths: `apps/host_grant_broker/src/zebra_host_grant_broker/`,
+  `tests/host_grant_broker/test_grant_broker.py`, this task card, focused `PROGRESS.md`
+
+#### Goal
+
+Allow an authenticated Trench server workload to mint a principal-bound,
+single-use Host Grant after the browser disconnects, without persisting a
+browser Cookie or Host Grant.
+
+#### Acceptance
+
+- Workload exchange is HMAC authenticated, timestamp bounded and bound to the
+  exact canonical request body; unknown workloads fail closed.
+- The signed principal, workspace and active-source set are rechecked by the
+  existing ExchangeRequest policy before minting.
+- A repeated workload nonce produces the same JTI so Zebra's replay ledger
+  rejects a second use; browser Cookie exchange remains compatible.
+
+#### Validation
+
+- Broker contract tests: `13 passed`, including deterministic repeated-nonce JTI.
+- Repository Ruff, mypy (`789` source files), and 10-case release eval pass.
+- Full suite: `2850 passed, 370 skipped`; only the pre-existing 742-line
+  `tests/agent_storage/test_postgres_session_handoffs.py` size gate fails.
+- Local real Trench/Zebra A/B offline completion and browser C/B switch, return,
+  and refresh acceptance pass; production deployment remains separate.

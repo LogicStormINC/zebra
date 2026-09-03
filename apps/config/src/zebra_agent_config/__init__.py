@@ -10,6 +10,7 @@ from zebra_agent_config.settings import (
     ZebraAgentSettings,
     load_settings,
     trusted_local_mode_enabled,
+    unrestricted_policy_mode_enabled,
 )
 from zebra_agent_config.setup_settings import SetupDependencySettings, SetupSettings
 
@@ -27,4 +28,5 @@ __all__ = [
     "ZebraAgentSettings",
     "load_settings",
     "trusted_local_mode_enabled",
+    "unrestricted_policy_mode_enabled",
 ]

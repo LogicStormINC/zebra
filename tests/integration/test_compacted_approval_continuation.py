@@ -79,7 +79,7 @@ def test_compacted_conversation_survives_exact_approval_continuation() -> None:
         model_step=HarnessModelStep(
             available_tools=TOOLS,
             conversation_compactor=compiler,
-            conversation_token_budget=180,
+            conversation_token_budget=240,
         ),
         synthesize_tool_results=True,
     )
@@ -95,7 +95,7 @@ def test_compacted_conversation_survives_exact_approval_continuation() -> None:
     compacted = next(
         event for event in waiting.events if event.event_type is EventType.CONTEXT_COMPACTED
     )
-    assert compacted.payload["after_tokens"] <= 180
+    assert compacted.payload["after_tokens"] <= 240
     assert "OLD-SECRET" not in str(compacted.payload)
     approval = next(
         event for event in waiting.events if event.event_type is EventType.APPROVAL_REQUESTED
@@ -104,7 +104,7 @@ def test_compacted_conversation_survives_exact_approval_continuation() -> None:
         SessionMessage.model_validate(message) for message in approval.payload["conversation"]
     )
     assert any(SUMMARY_MARKER in message.content for message in conversation)
-    assert estimate_message_tokens(conversation[:-1]) <= 180
+    assert estimate_message_tokens(conversation[:-1]) <= 240
     assert conversation[-1].tool_calls == (pending,)
 
     completed = orchestrator.continue_approved_tool_call(

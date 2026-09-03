@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime
@@ -30,6 +31,8 @@ from zebra_agent_worker.recovery import RecoveredSession
 from zebra_agent_worker.session_handoff import recover_worker_handoff
 from zebra_agent_worker.task_recovery import RecoveredTask, recover_task
 from zebra_agent_worker.workspace_resolution import apply_workspace_resolver
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -184,6 +187,7 @@ def execute_session_with_lease(
                 ownership_check=heartbeat.require_owned,
             )
         except WorkerExecutionError as error:
+            logger.exception("Worker execution failed for session %s", session_id)
             heartbeat.require_owned()
             recovery = service._recovery_service.recover_session(
                 session_id,

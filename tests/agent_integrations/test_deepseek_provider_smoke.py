@@ -115,7 +115,7 @@ def test_real_deepseek_thinking_tool_round_trip() -> None:
     )
 
     first = gateway.complete([user], tools=(tool,), invocation_policy=policy)
-    assert first.assistant_message.provider_reasoning_content
+    assert first.assistant_message.provider_reasoning_content is not None
     call = first.tool_calls[0]
     final = gateway.complete(
         [
@@ -185,7 +185,7 @@ def test_real_deepseek_responses_thinking_tool_round_trip() -> None:
         invocation_policy=policy,
         on_text_delta=lambda delta: None,
     )
-    assert first.assistant_message.provider_reasoning_content
+    assert first.assistant_message.provider_reasoning_content is not None
     call = first.tool_calls[0]
     public_deltas = []
     final = gateway.complete_stream(

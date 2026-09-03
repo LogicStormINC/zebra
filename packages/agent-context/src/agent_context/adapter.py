@@ -31,6 +31,9 @@ MAX_CONTINUITY_ITEM_TOKENS = 1_000
 
 
 class LocalContextCompiler:
+    def __init__(self, *, include_workspace: bool = True) -> None:
+        self._include_workspace = include_workspace
+
     def compact_conversation(
         self,
         messages: tuple[SessionMessage, ...],
@@ -65,6 +68,7 @@ class LocalContextCompiler:
                 task_input=task_input,
                 workspace_root=workspace_root,
                 budget=ContextBudget(max_tokens=max_tokens + attachment_tokens),
+                include_workspace=self._include_workspace,
                 runtime_evidence_items=evidence_items,
                 memory_items=memory_items,
                 attachment_items=attachment_items,

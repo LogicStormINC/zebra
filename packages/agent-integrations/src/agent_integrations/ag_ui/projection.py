@@ -161,6 +161,8 @@ class AgUiProjector:
             message_id = state.text_messages.get(model_call_id)
             had_message = message_id is not None
             assistant_message = _optional_payload_text(payload, "assistant_message")
+            if assistant_message == "Tool calls proposed." and not had_message:
+                return ()
             output: list[Event] = []
             if message_id is None:
                 message_id = f"message:{model_call_id}"
@@ -293,6 +295,18 @@ class AgUiProjector:
             )
             return (
                 RunErrorEvent(timestamp=timestamp, message=message, code="zebra_turn_failed"),
+            )
+        if event.event_type is EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED:
+            state.turn_finished = True
+            return (
+                RunErrorEvent(
+                    timestamp=timestamp,
+                    message=(
+                        "The workspace changed while the conversation was resuming. "
+                        "Retry the request."
+                    ),
+                    code="zebra_handoff_workspace_drift",
+                ),
             )
         if event.event_type is EventType.SESSION_FAILED:
             if state.turn_finished:

@@ -28,10 +28,14 @@ class PayloadReaderStub:
         *,
         mime_type: str = "text/plain",
         bound_event_sequence: int | None = None,
+        file_name: str | None = None,
+        size_bytes: int | None = None,
     ) -> None:
         self.status = status
         self.mime_type = mime_type
         self.bound_event_sequence = bound_event_sequence
+        self.file_name = file_name
+        self.size_bytes = size_bytes
         self.inspect_count = 0
         self.read_count = 0
 
@@ -52,6 +56,8 @@ class PayloadReaderStub:
                 else "staged"
             ),
             bound_event_sequence=self.bound_event_sequence,
+            file_name=self.file_name,
+            size_bytes=self.size_bytes,
         )
 
     def inspect_payload(
@@ -94,6 +100,44 @@ def test_api_reads_content_through_injected_cloud_read_capability(tmp_path: Path
 
     assert response.status_code == 200
     assert response.body["content_base64"] == "Y2xvdWQgcGF5bG9hZA=="
+
+
+def test_api_projects_cloud_user_file_delivery_metadata(tmp_path: Path) -> None:
+    database_path = tmp_path / "api.db"
+    stores = sqlite_control_plane_stores(database_path)
+    session = stores.sessions.save_session(Session.create(title="cloud"))
+    SQLiteToolRunStore(database_path).upsert(
+        ToolRunRecord(
+            session_id=session.session_id,
+            sequence=1,
+            tool_name="files.publish",
+            status="executed",
+            output=f"Published report.xlsx: artifact://{ARTIFACT_ID}",
+            artifact_uri=f"artifact://{ARTIFACT_ID}",
+            created_at=NOW,
+        )
+    )
+    cloud_stores = replace(
+        stores,
+        artifact_payload_reader=PayloadReaderStub(
+            ArtifactPayloadReadStatus.AVAILABLE,
+            mime_type="text/csv",
+            file_name="report.csv",
+            size_bytes=123,
+        ),
+    )
+
+    response = create_app(database_path, stores=cloud_stores).get_session_artifact_detail(
+        str(session.session_id),
+        "tool-run:1",
+    )
+
+    assert response.status_code == 200
+    assert response.body["artifact"]["delivery"] == {
+        "file_name": "report.csv",
+        "mime_type": "text/csv",
+        "size_bytes": 123,
+    }
 
 
 def test_api_reports_nonfinalized_cloud_payload_as_unavailable(tmp_path: Path) -> None:

@@ -9,7 +9,9 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.contracts import SessionCommand, SessionCommandKind
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import SessionStatus
 from agent_storage import sqlite_control_plane_stores
+from zebra_agent_api import create_app
 from zebra_agent_worker.command_consumer import SessionCommandConsumer
 
 
@@ -59,6 +61,37 @@ def test_consumer_wakes_worker_and_does_not_replay_projected_command(tmp_path: P
     assert first.status == "executed"
     assert second.status == "idle"
     assert execution.calls == [(session_id, "worker-a", 30)]
+
+
+def test_approval_grant_enqueues_resume_that_wakes_cloud_worker(tmp_path: Path) -> None:
+    stores, session_id, revision = _seed_session(tmp_path)
+    session = stores.sessions.get_session(session_id)
+    assert session is not None
+    stores.sessions.save_session(
+        session.model_copy(update={"status": SessionStatus.WAITING_APPROVAL})
+    )
+
+    decision = create_app(tmp_path / "worker.sqlite").approve(
+        str(session_id),
+        {"operator": "tester", "reason": "approved host write"},
+    )
+    execution = _ExecutionSpy(stores)
+
+    consumed = SessionCommandConsumer(stores, execution).consume_once(
+        worker_id="cloud-worker",
+        lease_ttl_seconds=30,
+    )  # type: ignore[arg-type]
+
+    assert decision.status_code == 200
+    resume_event = stores.events.list_for_session(session_id)[-1]
+    assert resume_event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+    assert resume_event.payload["kind"] == "resume"
+    assert consumed.status == "executed"
+    assert consumed.command_kind == "resume"
+    assert execution.calls == [(session_id, "cloud-worker", 30)]
+    resumed = stores.sessions.get_session(session_id)
+    assert resumed is not None
+    assert resumed.current_sequence == revision + 2
 
 
 def test_message_command_appends_user_event_before_waking_worker(tmp_path: Path) -> None:

@@ -1,12 +1,20 @@
 from __future__ import annotations
 
+from typing import Any
 from uuid import uuid4
 
 import pytest
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-from agent_storage import sqlite_control_plane_stores, with_committed_event_publisher
-from agent_storage.live_event_store import PostCommitPublishingEventStore
+from agent_storage import (
+    sqlite_control_plane_stores,
+    with_committed_event_publisher,
+    with_worker_projection_publisher,
+)
+from agent_storage.live_event_store import (
+    PostCommitPublishingEventStore,
+    PostCommitPublishingWorkerProjectionTransaction,
+)
 
 
 class _EventStore:
@@ -37,6 +45,22 @@ class _Publisher:
         if self.fail:
             raise ConnectionError("live publisher unavailable")
         self.events.append(event)
+
+
+class _ProjectionTransaction:
+    def __init__(self, result: Any) -> None:
+        self.result = result
+        self.calls: list[SessionEvent] = []
+
+    def commit_worker_event(self, event: SessionEvent, *_args: Any, **_kwargs: Any) -> Any:
+        self.calls.append(event)
+        return self.result
+
+    def project_persisted_worker_event(
+        self, event: SessionEvent, *_args: Any, **_kwargs: Any
+    ) -> Any:
+        self.calls.append(event)
+        return self.result
 
 
 def _event(session_id: SessionId, sequence: int = 0) -> SessionEvent:
@@ -104,3 +128,43 @@ def test_composition_wraps_event_store_once(tmp_path) -> None:
 
     assert isinstance(wired.events, PostCommitPublishingEventStore)
     assert rewired.events is wired.events
+
+
+def test_worker_aggregate_publishes_only_after_commit() -> None:
+    event = _event(SessionId(uuid4()))
+    result = type("CommitResult", (), {"event": event})()
+    transaction = _ProjectionTransaction(result)
+    publisher = _Publisher()
+    decorated = with_worker_projection_publisher(transaction, publisher)
+
+    committed = decorated.commit_worker_event(
+        event,
+        object(),  # type: ignore[arg-type]
+        object(),  # type: ignore[arg-type]
+        authority=object(),  # type: ignore[arg-type]
+    )
+
+    assert committed is result
+    assert transaction.calls == [event]
+    assert publisher.events == [event]
+    assert isinstance(decorated, PostCommitPublishingWorkerProjectionTransaction)
+
+
+def test_worker_aggregate_failure_never_publishes() -> None:
+    event = _event(SessionId(uuid4()))
+    publisher = _Publisher()
+
+    class _FailingTransaction(_ProjectionTransaction):
+        def commit_worker_event(self, event: SessionEvent, *_args: Any, **_kwargs: Any) -> Any:
+            raise ValueError("aggregate commit failed")
+
+    decorated = with_worker_projection_publisher(_FailingTransaction(None), publisher)
+    with pytest.raises(ValueError, match="aggregate commit failed"):
+        decorated.commit_worker_event(
+            event,
+            object(),  # type: ignore[arg-type]
+            object(),  # type: ignore[arg-type]
+            authority=object(),  # type: ignore[arg-type]
+        )
+
+    assert publisher.events == []

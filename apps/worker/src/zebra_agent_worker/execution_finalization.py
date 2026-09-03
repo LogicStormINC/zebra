@@ -150,6 +150,7 @@ def finalize_execution(
     workspace_store: WorkspaceProjectionStorePort | None = None,
     started_at: datetime,
     interaction_mode: InteractionMode = InteractionMode.ONE_SHOT,
+    defer_cloud_side_effects: bool = False,
 ) -> tuple[SessionEvent, ...]:
     try:
         return _finalize_execution(
@@ -165,6 +166,7 @@ def finalize_execution(
             workspace_store=workspace_store,
             started_at=started_at,
             interaction_mode=interaction_mode,
+            defer_cloud_side_effects=defer_cloud_side_effects,
         )
     except ExecutionInterrupted:
         return recorder.events
@@ -184,6 +186,7 @@ def _finalize_execution(
     workspace_store: WorkspaceProjectionStorePort | None,
     started_at: datetime,
     interaction_mode: InteractionMode,
+    defer_cloud_side_effects: bool,
 ) -> tuple[SessionEvent, ...]:
     if recorder.session.status in {
         SessionStatus.CANCELLED,
@@ -260,6 +263,10 @@ def _finalize_execution(
     else:
         return recorder.events
     if attempt_result.outcome is not HarnessAttemptOutcome.COMPLETED:
+        return recorder.events
+    if cloud_memory_store is not None and defer_cloud_side_effects:
+        # The closed Turn is already durable and visible to AG-UI. The existing
+        # fenced recovery worker owns Memory/title side effects off the reply path.
         return recorder.events
     try:
         if cloud_memory_store is not None:
@@ -475,4 +482,4 @@ def rebuild_task_index(task_store: object, session_id: object) -> None:
     """
     ensure = getattr(task_store, "ensure_for_session", None)
     if ensure is not None:
-        ensure(session_id)  # type: ignore[call-arg]
+        ensure(session_id)

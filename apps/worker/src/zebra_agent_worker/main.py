@@ -102,7 +102,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--idle-sleep-seconds",
         type=float,
-        default=1.0,
+        default=0.1,
         help="Sleep duration between idle polls when not stopping.",
     )
     return parser

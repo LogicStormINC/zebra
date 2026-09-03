@@ -50,7 +50,7 @@ def test_conversation_task_keeps_one_segment_across_turns(tmp_path: Path, monkey
         _gateway_for("Turn one done.", "Turn two done."),
     )
     client = TestClient(create_http_app(tmp_path / "turns.sqlite", settings=_settings(None)))
-    task_id = _create_conversation_task(client)
+    task_id = _create_conversation_task(client, workspace_root=tmp_path)
 
     first = _run_turn(client, task_id)
     assert first["status"] == "awaiting_turn"
@@ -135,7 +135,7 @@ def test_task_message_idempotency_replays_same_turn_and_conflicts_on_drift(
         _gateway_for("Turn one done."),
     )
     client = TestClient(create_http_app(tmp_path / "idem.sqlite", settings=_settings(None)))
-    task_id = _create_conversation_task(client)
+    task_id = _create_conversation_task(client, workspace_root=tmp_path)
     _run_turn(client, task_id)
 
     headers = {"Idempotency-Key": "acceptance-key-1"}
@@ -250,7 +250,7 @@ def test_awaiting_turn_resume_is_rejected_without_a_new_message(
     counter: dict[str, int] = {"calls": 0}
     _counting_gateway(monkeypatch, counter, "Turn one done.")
     client = TestClient(create_http_app(tmp_path / "noresume.sqlite", settings=_settings(None)))
-    task_id = _create_conversation_task(client)
+    task_id = _create_conversation_task(client, workspace_root=tmp_path)
     assert _run_turn(client, task_id)["status"] == "awaiting_turn"
 
     response = client.post(f"/tasks/{task_id}/resume", json={})
@@ -264,7 +264,7 @@ def test_message_on_ready_bootstrap_with_open_turn_is_rejected(
 ) -> None:
     _counting_gateway(monkeypatch, {"calls": 0}, "unused")
     client = TestClient(create_http_app(tmp_path / "open.sqlite", settings=_settings(None)))
-    task_id = _create_conversation_task(client)
+    task_id = _create_conversation_task(client, workspace_root=tmp_path)
 
     early = client.post(f"/tasks/{task_id}/messages", json={"content": "Before first run."})
 
@@ -277,7 +277,7 @@ def test_awaiting_turn_task_can_be_cancelled_and_suspended(
     counter: dict[str, int] = {"calls": 0}
     _counting_gateway(monkeypatch, counter, "Turn one done.")
     client = TestClient(create_http_app(tmp_path / "control.sqlite", settings=_settings(None)))
-    task_id = _create_conversation_task(client)
+    task_id = _create_conversation_task(client, workspace_root=tmp_path)
     assert _run_turn(client, task_id)["status"] == "awaiting_turn"
 
     suspended = client.post(f"/tasks/{task_id}/suspend", json={})
@@ -337,7 +337,7 @@ def test_cancel_after_follow_up_message_writes_turn_cancelled(
     counter: dict[str, int] = {"calls": 0}
     _counting_gateway(monkeypatch, counter, "Turn one done.")
     client = TestClient(create_http_app(tmp_path / "cancel-open.sqlite", settings=_settings(None)))
-    task_id = _create_conversation_task(client)
+    task_id = _create_conversation_task(client, workspace_root=tmp_path)
     assert _run_turn(client, task_id)["status"] == "awaiting_turn"
 
     follow_up = client.post(f"/tasks/{task_id}/messages", json={"content": "Next round."})

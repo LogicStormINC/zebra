@@ -23,6 +23,7 @@ from zebra_agent_api.ag_ui_stream import (
     tail_agui_events,
 )
 from zebra_agent_api.app import create_app
+from zebra_agent_api.artifact_download import artifact_download_response
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 from zebra_agent_api.session_identity_read import _parse_session_id
@@ -122,27 +123,31 @@ def create_http_app(
         )
         if auth_error is not None:
             return auth_error
+        download_response = await artifact_download_response(request, adapter)
+        if download_response is not None:
+            return download_response
         body, body_error = await _read_request_body(request)
         if body_error is not None:
             return body_error
         if _is_agui_stream_request(request):
-            from zebra_agent_api.tenant_guard import (
-                session_tenant_denied,
-                tenant_forbidden_response,
-            )
+            from zebra_agent_api.tenant_guard import task_access_response
 
             agui_thread = _stream_resource_id(request.url.path).split("/")[0]
-            if session_tenant_denied(
-                api.stores.sessions,
+            denied = task_access_response(
+                api,
                 agui_thread,
                 getattr(request.state, "host_context", None),
-            ):
-                denied = tenant_forbidden_response(agui_thread)
+            )
+            if denied is not None:
                 return JSONResponse(status_code=denied.status_code, content=denied.body)
+            host_context = getattr(request.state, "host_context", None)
             agui_stream = prepare_agui_stream(
                 api.stores,
                 request.url.path,
                 request.query_params,
+                live_event_fanout=api.live_event_fanout,
+                deployment_namespace=_deployment_namespace(api),
+                authorization_expires_at=getattr(host_context, "expires_at", None),
             )
             if isinstance(agui_stream, ApiResponse):
                 return JSONResponse(status_code=agui_stream.status_code, content=agui_stream.body)

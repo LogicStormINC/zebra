@@ -200,6 +200,7 @@ def test_single_attempt_orchestrator_synthesizes_tool_result_when_enabled() -> N
     )
     assert result.run_result.model_calls_used == 2
     assert [message.role for message in gateway.requests[1]] == [
+        MessageRole.SYSTEM,
         MessageRole.USER,
         MessageRole.ASSISTANT,
         MessageRole.TOOL,

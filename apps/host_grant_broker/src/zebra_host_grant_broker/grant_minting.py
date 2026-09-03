@@ -68,12 +68,21 @@ class ExchangeRequest:
         }
         if requested_sources - viewer.active_source_ids:
             raise GrantMintError("source_not_allowed")
-        if self.resource_refs and not requested_sources:
+        requested_history = {
+            resource_id
+            for resource_type, resource_id in self.resource_refs
+            if resource_type == "trench.history"
+        }
+        if requested_history - {viewer.user_id}:
+            raise GrantMintError("history_not_allowed")
+        if self.resource_refs and not requested_sources and not requested_history:
             raise GrantMintError("source_binding_required")
         required_scopes = {
             "trench.event": "event.read",
             "trench.entity": "entity.read",
             "trench.topic": "topic.read",
+            "trench.source": "source.read",
+            "trench.history": "history.read",
         }
         for resource_type, _resource_id in self.resource_refs:
             required_scope = required_scopes.get(resource_type)
@@ -106,6 +115,7 @@ def mint_grant(
         "resource_refs": [
             {"type": "thread", "id": request.thread_id},
             {"type": "run", "id": request.run_id},
+            {"type": "principal", "id": viewer.user_id},
             *(
                 {"type": resource_type, "id": resource_id}
                 for resource_type, resource_id in request.resource_refs
@@ -135,7 +145,13 @@ def _text(value: object, name: str) -> str:
 def _resource_refs(value: object) -> tuple[tuple[str, str], ...]:
     if not isinstance(value, list) or len(value) > 128:
         raise GrantMintError("resource_refs_invalid")
-    allowed_types = {"trench.source", "trench.event", "trench.entity", "trench.topic"}
+    allowed_types = {
+        "trench.source",
+        "trench.event",
+        "trench.entity",
+        "trench.topic",
+        "trench.history",
+    }
     refs: list[tuple[str, str]] = []
     for item in value:
         if not isinstance(item, dict):

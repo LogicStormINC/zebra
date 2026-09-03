@@ -156,7 +156,19 @@ def commit_handoff_in_transaction(
     for event in child_events:
         append_event_in_transaction(connection, deployment_namespace, event)
     child = rebuild_session(child_events)
-    child_workspace = rebuild_workspace(child_events)
+    child_workspace = rebuild_workspace(child_events).model_copy(
+        update={
+            "definition_snapshot": workspace.definition_snapshot,
+            "runtime_name": workspace.runtime_name,
+            "runtime_engine": workspace.runtime_engine,
+            "runtime_image": workspace.runtime_image,
+            "runtime_spec_digest": workspace.runtime_spec_digest,
+            "runtime_network_enforcement": workspace.runtime_network_enforcement,
+            "runtime_workspace_writable": workspace.runtime_workspace_writable,
+            "snapshot_id": workspace.snapshot_id,
+            "snapshot_path": workspace.snapshot_path,
+        }
+    )
     save_session_in_transaction(connection, deployment_namespace, child)
     save_workspace_in_transaction(connection, deployment_namespace, child_workspace)
     attach_segment_in_transaction(

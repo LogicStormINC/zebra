@@ -92,6 +92,18 @@ class WorkerToolGateway:
             if tool.risk is ToolRisk.WRITE and frozenset(tool.scopes) <= granted_scopes
         )
 
+    @property
+    def approval_tools(self) -> frozenset[str]:
+        if self.host_manifest is None:
+            return frozenset()
+        return frozenset(
+            tool.name for tool in self.host_manifest.tools if tool.risk is not ToolRisk.READ
+        )
+
+    @property
+    def approval_required_tools(self) -> frozenset[str]:
+        return self.approval_tools - self.authorized_write_tools
+
     def resolve_model_tool_calls(self, tool_calls: tuple[ToolCall, ...]) -> tuple[ToolCall, ...]:
         return self.local.resolve_model_tool_calls(tool_calls)
 
@@ -167,6 +179,11 @@ def build_worker_tool_gateway(
     frozen_manifest_loader: object = None,
     client_gateway: ClientToolGateway | None = None,
 ) -> WorkerToolGateway:
+    can_publish = (
+        cloud_artifacts is not None
+        and task.host_context is not None
+        and "artifact.publish" in task.host_context.scopes
+    )
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,
         admin=settings.skill_roots_admin,
@@ -198,6 +215,14 @@ def build_worker_tool_gateway(
         runtime_handle=None,
         artifact_payload_store=local_artifacts if cloud_artifacts is None else None,
         output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
+        file_publisher=(
+            cloud_artifacts.capture_file if can_publish and cloud_artifacts is not None else None
+        ),
+        max_publish_bytes=(
+            task.host_context.limits.max_artifact_bytes
+            if can_publish and task.host_context is not None
+            else 0
+        ),
         trusted_local=trusted_local,
         web_pipeline_v2=settings.web_pipeline_v2,
         durable_delegation=durable_delegation,

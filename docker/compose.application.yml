@@ -27,6 +27,7 @@ x-zebra-cloud-environment: &zebra-cloud-environment
   ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY: ${ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY:-}
   ZEBRA_HOST_TOOL_SHARED_SECRET: ${ZEBRA_HOST_TOOL_SHARED_SECRET:-}
   ZEBRA_HOST_TOOL_SSRF_ALLOW_HOSTNAMES: ${ZEBRA_HOST_TOOL_SSRF_ALLOW_HOSTNAMES:-}
+  ZEBRA_DEVELOPMENT_UNRESTRICTED: ${ZEBRA_DEVELOPMENT_UNRESTRICTED:-false}
   ZEBRA_WORKSPACE_VOLUME_LAYOUT: ${ZEBRA_WORKSPACE_VOLUME_LAYOUT:-}
   DOCKER_HOST: ${DOCKER_HOST:-}
 
@@ -95,7 +96,9 @@ services:
       - --worker-id
       - ${ZEBRA_WORKER_ID:-zebra-cloud-worker}
       - --idle-sleep-seconds
-      - "${ZEBRA_WORKER_IDLE_SLEEP_SECONDS:-1.0}"
+      # ponytail: 100 ms bounds pilot latency; replace polling with a global
+      # Redis wake stream before scaling Worker replicas materially.
+      - "${ZEBRA_WORKER_IDLE_SLEEP_SECONDS:-0.1}"
     init: true
     read_only: true
     volumes:

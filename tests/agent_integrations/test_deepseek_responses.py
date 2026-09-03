@@ -39,7 +39,8 @@ def test_factory_selects_responses_only_when_explicit() -> None:
     assert isinstance(gateway, DeepSeekResponsesModelGateway)
 
 
-def test_responses_maps_thinking_tool_call_and_replays_reasoning() -> None:
+@pytest.mark.parametrize("reasoning", ["private plan", ""])
+def test_responses_maps_thinking_tool_call_and_replays_reasoning(reasoning: str) -> None:
     requests: list[dict[str, object]] = []
 
     def handle(request: httpx.Request) -> httpx.Response:
@@ -47,7 +48,7 @@ def test_responses_maps_thinking_tool_call_and_replays_reasoning() -> None:
         if len(requests) == 1:
             return _response(
                 "",
-                reasoning="private plan",
+                reasoning=reasoning,
                 function_call={
                     "call_id": "call-1",
                     "name": "files__read",
@@ -97,7 +98,7 @@ def test_responses_maps_thinking_tool_call_and_replays_reasoning() -> None:
     ]
     replay = requests[1]["input"]
     assert {"type": "reasoning", "content": [
-        {"type": "reasoning_text", "text": "private plan"}
+        {"type": "reasoning_text", "text": reasoning}
     ]} in replay
     assert final.assistant_message.provider_reasoning_content is None
     assert "private" not in final.assistant_message.content

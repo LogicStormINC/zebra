@@ -1,4 +1,3 @@
-import json
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -10,10 +9,9 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
-    ModelTextDelta,
     ModelToolDefinition,
 )
-from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness.context_recovery import prepare_bounded_conversation
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.hooks import CompactionHook
@@ -24,6 +22,12 @@ from agent_core.harness.model_request import (
     context_window,
     with_context_plan,
 )
+from agent_core.harness.model_step_support import (
+    MODEL_NATIVE_DELEGATION_GUIDANCE,
+    MODEL_REQUIRED_DELEGATION_DIRECTIVE,
+    ZEBRA_AGENT_IDENTITY_DIRECTIVE,
+    tool_result_content,
+)
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_core.harness.provider_continuation import (
@@ -31,6 +35,7 @@ from agent_core.harness.provider_continuation import (
     continuation_event,
     prepare_provider_continuation,
 )
+from agent_core.harness.stream_deltas import TextDeltaCoalescer
 from agent_core.ports.context_compiler import ContextCompilerPort
 from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
@@ -38,48 +43,6 @@ from agent_core.ports.conversation_compactor import (
 )
 from agent_core.ports.model_gateway import ModelGatewayPort, ModelResponseRejectedError
 from agent_core.ports.provider_continuation import ProviderContinuationCompletionPort
-
-MODEL_NATIVE_DELEGATION_GUIDANCE = (
-    "Subagent delegation:\n"
-    "- Answer directly when context is sufficient or evidence collection is not needed.\n"
-    "- Use a normal parent tool for one direct operation or a short linear sequence.\n"
-    "- Call agent.research only for bounded, independent, multi-step evidence "
-    "collection whose separate context is materially useful.\n"
-    "- Words such as research, search, analysis, or comparison do not require "
-    "delegation by themselves.\n"
-    "- Every agent.research call must include objective and a concise "
-    "delegation_reason explaining why direct work is less suitable."
-)
-
-MODEL_REQUIRED_DELEGATION_DIRECTIVE = (
-    "Subagent delegation (MANDATORY for this task):\n"
-    "- You MUST call agent.research exactly once before producing your final "
-    "answer.\n"
-    "- Answering without delegating is a task failure with reason "
-    "delegation_required_not_used.\n"
-    "- The call must include a specific objective and a concise "
-    "delegation_reason."
-)
-
-ZEBRA_AGENT_IDENTITY_DIRECTIVE = (
-    "You are Zebra Agent, a provider-neutral engineering agent runtime. "
-    "When asked who you are, identify yourself as Zebra Agent. Do not claim to be "
-    "Claude, ChatGPT, DeepSeek, or the underlying model provider. Describe capabilities "
-    "only from the tools and runtime evidence actually available in this session."
-)
-
-
-def _tool_result_content(tool_result: ToolResult) -> str:
-    if tool_result.output:
-        return tool_result.output
-    if tool_result.status is ToolCallStatus.EXECUTED:
-        return "Tool executed."
-    observation: dict[str, object] = {"status": tool_result.status.value}
-    for key in ("reason", "detail"):
-        value = tool_result.metadata.get(key)
-        if isinstance(value, str | int | float | bool):
-            observation[key] = value
-    return json.dumps(observation, ensure_ascii=False, sort_keys=True)
 
 
 class HarnessModelStep:
@@ -97,6 +60,8 @@ class HarnessModelStep:
         provider_continuation: ProviderContinuationRef | None = None,
         compaction_hook: CompactionHook | None = None,
         attempt_number: int = 1,
+        delta_coalesce_characters: int | None = None,
+        delta_coalesce_seconds: float | None = None,
     ) -> None:
         if conversation_token_budget is not None and conversation_token_budget <= 0:
             raise ValueError("conversation_token_budget must be positive")
@@ -112,6 +77,16 @@ class HarnessModelStep:
         self._provider_continuation = provider_continuation
         self._compaction_hook = compaction_hook
         self._delegation_mode = delegation_mode
+        self._text_deltas = (
+            TextDeltaCoalescer(
+                event_sink,
+                attempt_number=attempt_number,
+                characters=delta_coalesce_characters,
+                seconds=delta_coalesce_seconds,
+            )
+            if event_sink is not None
+            else None
+        )
 
     def prepare_conversation(
         self,
@@ -241,6 +216,8 @@ class HarnessModelStep:
                 },
             )
         )
+        assert self._text_deltas is not None
+        self._text_deltas.reset()
         if self._provider_continuation is not None and isinstance(
             model_gateway, ProviderContinuationCompletionPort
         ):
@@ -262,25 +239,31 @@ class HarnessModelStep:
                         reason="provider continuation request failed",
                     )
                 )
+                try:
+                    completion = complete_model(
+                        model_gateway,
+                        messages,
+                        tools,
+                        model_call_id=model_call_id,
+                        on_delta=self._text_deltas.emit,
+                        response_repair_limit=response_repair_limit,
+                    )
+                finally:
+                    self._text_deltas.flush()
+            finally:
+                self._provider_continuation = None
+        else:
+            try:
                 completion = complete_model(
                     model_gateway,
                     messages,
                     tools,
                     model_call_id=model_call_id,
-                    on_delta=self._emit_text_delta,
+                    on_delta=self._text_deltas.emit,
                     response_repair_limit=response_repair_limit,
                 )
             finally:
-                self._provider_continuation = None
-        else:
-            completion = complete_model(
-                model_gateway,
-                messages,
-                tools,
-                model_call_id=model_call_id,
-                on_delta=self._emit_text_delta,
-                response_repair_limit=response_repair_limit,
-            )
+                self._text_deltas.flush()
         planned_completion = with_context_plan(completion, plan)
         return replace(
             planned_completion,
@@ -307,22 +290,6 @@ class HarnessModelStep:
         if self._event_sink is None:
             return
         self._event_sink(continuation_event(selection, attempt_number=self._attempt_number))
-
-    def _emit_text_delta(self, model_call_id: str, delta: ModelTextDelta) -> None:
-        if self._event_sink is None:
-            return
-        self._event_sink(
-            HarnessEventDraft(
-                event_type=EventType.MODEL_RESPONSE_DELTA,
-                actor=EventActor.HARNESS,
-                payload={
-                    "attempt_number": self._attempt_number,
-                    "model_call_id": model_call_id,
-                    "delta_index": delta.index,
-                    "content_delta": delta.content,
-                },
-            )
-        )
 
     def append_tool_exchange(
         self,
@@ -368,7 +335,7 @@ class HarnessModelStep:
             SessionMessage(
                 message_id=new_message_id(),
                 role=MessageRole.TOOL,
-                content=_tool_result_content(tool_result),
+                content=tool_result_content(tool_result),
                 created_at=created_at,
                 tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
                 metadata=dict(tool_result.metadata),
@@ -428,6 +395,7 @@ class HarnessModelStep:
         *,
         created_at: datetime,
     ) -> list[SessionMessage]:
+        identity_directive = task.identity_directive or ZEBRA_AGENT_IDENTITY_DIRECTIVE
         messages: list[SessionMessage] = []
         if self._context_compiler is not None and task.workspace_root is not None:
             if task.attachments:
@@ -497,17 +465,18 @@ class HarnessModelStep:
             )
         if messages:
             messages[0] = messages[0].model_copy(
-                update={"content": f"{ZEBRA_AGENT_IDENTITY_DIRECTIVE}\n\n{messages[0].content}"}
+                update={"content": f"{identity_directive}\n\n{messages[0].content}"}
             )
         else:
             messages.append(
                 SessionMessage(
                     message_id=new_message_id(),
                     role=MessageRole.SYSTEM,
-                    content=ZEBRA_AGENT_IDENTITY_DIRECTIVE,
+                    content=identity_directive,
                     created_at=created_at,
                 )
             )
+        messages.extend(task.conversation_history)
         messages.append(
             SessionMessage(
                 message_id=new_message_id(),

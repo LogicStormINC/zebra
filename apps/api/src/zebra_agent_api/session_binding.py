@@ -58,6 +58,8 @@ def renew_task_binding_snapshot(
     )
     if any(getattr(previous, name) != getattr(host_context, name) for name in stable_identity):
         raise ValueError("Host Grant identity or workspace drifted from the Task binding")
+    if _principal_ref(previous) != _principal_ref(host_context):
+        raise ValueError("Host Grant principal drifted from the Task binding")
     if (
         host.host_app_id != host_context.host_app_id
         or host.namespace_id != host_context.namespace_id
@@ -132,6 +134,14 @@ def renew_host_binding_for_command(
     except Exception:
         return ApiResponse(503, {"status": "host_binding_renewal_unavailable"})
     return None
+
+
+def _principal_ref(context: HostContextEnvelope) -> tuple[str, ...]:
+    return tuple(
+        resource.resource_id
+        for resource in context.resource_refs
+        if resource.resource_type == "principal"
+    )
 
 
 def freeze_task_binding(
@@ -378,6 +388,8 @@ def _post_admission_idempotency(
     idempotency_key: str | None,
     response: ApiResponse,
     payload: dict[str, object],
+    *,
+    public_idempotency_key: str | None = None,
 ) -> ApiResponse:
     """Sync the stored receipt with the final response body.
 
@@ -392,6 +404,7 @@ def _post_admission_idempotency(
             update_idempotency_response,
         )
 
+        response.body["idempotency_key"] = public_idempotency_key or idempotency_key
         update_idempotency_response(
             getattr(settings, "database_url", ""),
             deployment_namespace=str(getattr(stores, "deployment_namespace", "zebra")),
@@ -411,4 +424,5 @@ def _post_admission_idempotency(
         idempotency_key=idempotency_key,
         payload=payload,
         response=response,
+        public_idempotency_key=public_idempotency_key,
     )

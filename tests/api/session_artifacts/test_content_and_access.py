@@ -1,3 +1,4 @@
+import asyncio
 import base64
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from agent_storage import (
     SQLiteDeliveryAuditStore,
     SQLiteToolRunStore,
 )
+from fastapi import Request
 from fastapi.testclient import TestClient
 from session_artifact_support import (
     _created_at,
@@ -18,6 +20,7 @@ from session_artifact_support import (
 )
 from zebra_agent_api import create_http_app
 from zebra_agent_api.app import create_app
+from zebra_agent_api.artifact_download import artifact_download_response
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
 
@@ -262,3 +265,57 @@ def test_route_adapter_handles_session_artifact_content(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert response.body["artifact_id"] == "tool-run:5"
+
+
+def test_http_download_returns_raw_private_attachment(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    _seed_payload_backed_tool_artifact(database_path, session.session_id)
+    client = TestClient(create_http_app(database_path))
+
+    response = client.get(
+        f"/tasks/{session.session_id}/artifacts/tool-run:5/download"
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"pytest passed"
+    assert response.headers["cache-control"] == "private, no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["content-disposition"].startswith("attachment;")
+
+
+def test_http_download_resolves_published_artifact_uuid(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    payload = _seed_payload_backed_tool_artifact(database_path, session.session_id)
+    client = TestClient(create_http_app(database_path))
+
+    response = client.get(
+        f"/tasks/{session.session_id}/artifacts/{payload.uri.removeprefix('artifact://')}/download"
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"pytest passed"
+
+
+def test_http_download_requires_explicit_host_artifact_scope() -> None:
+    request = Request(
+        {
+            "headers": [],
+            "method": "GET",
+            "path": "/tasks/task-1/artifacts/artifact-1/download",
+            "query_string": b"",
+            "type": "http",
+        }
+    )
+
+    class MissingScope:
+        def require_scope(self, scope: str) -> None:
+            assert scope == "artifact.read"
+            raise ValueError("missing")
+
+    request.state.host_context = MissingScope()
+    response = asyncio.run(artifact_download_response(request, None))  # type: ignore[arg-type]
+
+    assert response is not None
+    assert response.status_code == 403

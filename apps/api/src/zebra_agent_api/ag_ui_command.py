@@ -20,7 +20,9 @@ _AGUI_COMMAND_PATH = "/agui/commands"
 
 class _AgUiCommandApp(Protocol):
     stores: ControlPlaneStores
-    settings: object
+
+    @property
+    def settings(self) -> object: ...
 
     def submit_command(
         self,
@@ -111,7 +113,7 @@ def handle_agui_command(app: _AgUiCommandApp, request: object) -> ApiResponse | 
         return _problem(403, "host_binding_renewal_rejected", "Host context is invalid", path)
     renewal_error = renew_host_binding_for_command(
         app,
-        str(task.active_segment_id),
+        str(task.task_id),
         host_context,
     )
     if renewal_error is not None:

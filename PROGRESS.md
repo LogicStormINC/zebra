@@ -5,6 +5,91 @@
 
 ## Active Review
 
+- Trench user-file profile follow-up (`CLOUD-USER-FILES-TRN-PROFILE-02`) is in
+  review on `codex/zebra-durable-turn-grants`. The research parent profile
+  now exposes the existing governed `files.publish` Tool while keeping shell,
+  patch, Git and nested delegation unavailable. Focused validation passes
+  `27 passed`, Ruff and Mypy are clean, and real Trench browser acceptance
+  published and downloaded a governed Markdown file.
+
+- Trench long-turn recovery fixes (`TRN-MODEL-TOOL-REPAIR-02` and
+  `CLOUD-CONT-FALLBACK-02`) are in review on
+  `codex/zebra-durable-turn-grants`. OpenAI-compatible response rejection now
+  preserves the provider tool name for bounded repair/audit. Cloud Provider
+  Continuation only intercepts `provider_native`; `capsule_fallback` follows
+  the ordinary durable Event path instead of failing for a missing artifact.
+  Focused tests are `18 passed` with Ruff clean. A real Trench Task crossed
+  three context compactions, persisted the fallback selections and completed
+  with 360 Zebra Events; the repository-wide `make check` remains blocked only
+  by the pre-existing 742-line handoff test against the 700-line size gate.
+
+- Trench Durable Turn workload grants (`TRN-DURABLE-GRANT-01`) are in review on
+  `codex/zebra-durable-turn-grants`. The Host Grant Broker now accepts either
+  the existing verified browser Cookie or an allowlisted HMAC-authenticated
+  Trench server workload. Workload signatures bind timestamp, nonce and the
+  canonical principal/workspace/source request; repeated nonces derive the
+  same JTI for Zebra replay rejection. The default grant TTL is 1900 seconds
+  against the current 1800-second execution ceiling. Broker focused tests are
+  `13 passed`; full Ruff, mypy (`789` source files), and the 10-case release eval
+  pass. The full suite reached `2850 passed, 370 skipped`; its only failure is
+  the pre-existing, out-of-scope 742-line
+  `tests/agent_storage/test_postgres_session_handoffs.py` file-size violation.
+  Local real Trench/Zebra cross-service execution and browser switch/refresh
+  acceptance pass; production deployment remains a separate gate.
+
+- Manifest-declared Host write approval (`HOST-WRITE-POLICY-01`) is in review on
+  `codex/fix-agui-live-tail` after integrating `codex/host-write-policy-01`.
+  The slice maps Host manifest write risk into
+  Zebra's existing durable approval flow while keeping read-only Tasks closed;
+  approval now enqueues one idempotent resume command, and cloud recovery repairs
+  a one-sided Session/Workspace projection write from canonical Events before
+  continuing. Real Trench acceptance subscribed an X profile through
+  `sources.add`, resumed after explicit approval, and kept one subscription on
+  an idempotent repeat. `make check` and the full suite (`2830 passed, 372
+  skipped`) are green. The local Trench Cloud stack now has an explicit
+  `ZEBRA_DEVELOPMENT_UNRESTRICTED` operator switch; it auto-allows approval-bound
+  tools only in the `cloud` development profile and is rejected by production.
+  The switch changes policy decisions only: the cloud gVisor/network profile,
+  Host Grant, principal/resource binding, SSRF and path checks remain enforced.
+  A logged-in browser acceptance directly subscribed the public ITJuzi feed and
+  persisted exactly one user/workspace-scoped row. Trench remains responsible
+  for business authorization and idempotent writes.
+
+- Trench/Zebra response-latency and availability closeout (`TRN-PERF-01`) is
+  implemented on `codex/fix-agui-live-tail`. Host-bound Tasks skip disposable
+  workspace scanning; the first provider delta is committed immediately even
+  when Host tools are advertised, and a streamed partial response disables
+  semantic replay so visible text cannot be duplicated; later tiny chunks are
+  bounded; PostgreSQL commits publish Redis live hints
+  only after commit; the Worker fallback poll is 100ms; Memory/title side
+  effects recover off the reply path. Conversation recovery now supplies the
+  bounded completed-turn history, and AG-UI suppresses the internal tool-only
+  assistant sentinel. DeepSeek Chat and Responses adapters preserve a present
+  but empty provider reasoning field exactly, so a valid thinking-mode tool
+  call no longer becomes a generic unavailable error while a genuinely missing
+  continuation still fails closed. Current Compose images were rebuilt from
+  this worktree. Real Trench TLS/Broker/Worker acceptance after rebuild passes
+  three consecutive Turns: first visible events `36ms / 8ms / 7ms`, ordinary
+  first text `4.04s / 4.15s`, exact recall of `灯塔`, and `sources.list` callback
+  plus clean final answer in `6.65s`. The Trench development BFF now uses an
+  explicit same-origin streaming Route Handler instead of the generic Next.js
+  rewrite for chat SSE. A logged-in Chrome turn produced 27 increasing body
+  snapshots (`47 -> 1625` characters) before terminal state. `make check` is green;
+  the final repository-wide suite is `2826 passed, 369 skipped`.
+
+- Cloud user file delivery (`CLOUD-USER-FILES-01`) is implemented on
+  `codex/cloud-user-files-01`. A Grant-gated `files.publish` Tool accepts
+  generated UTF-8 content or a safe workspace file, commits `kind=user_file`
+  through the existing PostgreSQL Event/Artifact authority and private
+  versioned MinIO store, and exposes raw private downloads behind
+  `artifact.read`. The broker binds an opaque authenticated `principal`; Task
+  binding renewal and task reads reject principal drift, so users sharing a
+  namespace/workspace cannot cross-read files. Trench owns the stable BFF URL;
+  neither MinIO credentials nor presigned URLs reach the browser. Real
+  PostgreSQL + MinIO publication and HTTP download pass `2/2`; focused
+  regression is green. Full-gate inherited failures remain separately recorded
+  on the task card.
+
 - Trench cloud governed Memory closeout (`TRN-MEM-E2E-01`) now routes API
   confirm/expire through the PostgreSQL aggregate CAS instead of the SQLite-only
   `upsert` path. Worker recovery persists a receipt for each closed Turn and
@@ -1797,3 +1882,40 @@ business domains. The durable decision is `ADR-012`.
 
 Before architecture changes, also read the source-of-truth documents in the
 precedence order defined by `AGENTS.md`.
+# 2026-08-28: Trench Native History Host Grant V2
+
+- Trench Host Grant broker 现在会以 `include_removed=true` 回查用户来源投影，同时校验
+  active `trench.source` 与恒定大小的 `trench.history` 账本资源；他人账本在 mint 前
+  fail closed，具体 period 的用户/工作区归属继续由 Trench 权威账本校验。
+- 默认允许 scope 增加 `source.read` 与 `history.read`，`trench.history`
+  必须携带 `history.read`。通用 Host manifest/resource-binding/Worker 路径保持不含
+  Trench 词汇，业务可见性仍由 Trench 执行。
+- Trench real-service acceptance 的精确 manifest 期望升级为 `trench-native-v2`，保留
+  原五项事件工具并加入六项来源/历史工具；acceptance compose policy 同步版本化。
+# 2026-09-03 Multi-user isolation closeout
+
+`CLOUD-TRN-MULTITENANT-01` is in Review on `codex/fix-agui-live-tail` with the
+Trench companion branch `codex/trn-perf-01`. The slice is limited to the
+audited Trench authentication/internal-route/workspace boundaries and Zebra
+principal-scoped admission/AG-UI/legacy-session boundaries. Existing dirty
+live-tail and model-projection work remains outside this slice and must be
+preserved.
+
+The closeout now scopes admission idempotency to Host/namespace/workspace/
+principal authority, applies tenant and principal fences to AG-UI and Task
+transports, hides unbound legacy Sessions from Host tenants, and terminates
+streams at Grant expiry. Zebra `make check` passes. The Trench companion now
+uses HttpOnly browser sessions, rejects implicit development identities,
+derives source workspace ownership from the authenticated viewer, hides the
+legacy/internal API composition by default, and isolates browser event-task
+caches by user/workspace. Trench `make check` and live HTTP negative probes
+pass.
+
+The final code review removed the remaining Host-specific product vocabulary
+from generic Zebra Worker/API paths: embedded runs now receive a generic
+Host-product identity boundary while Trench retains its exact product role in
+the Host task context. PostgreSQL Task bindings enforce principal ownership;
+SQLite remains explicitly tenant-only because it has no durable binding table.
+The suspend/resume acceptance helper now binds a temporary workspace instead of
+snapshotting the repository and `.venv`. Final Zebra validation passes
+`make check` and `make test` (`2849 passed, 369 skipped`).

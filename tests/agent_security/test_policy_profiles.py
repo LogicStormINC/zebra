@@ -38,6 +38,9 @@ def test_read_only_profile_allows_read_tools_and_denies_write_tools() -> None:
     assert engine.evaluate_tool_call(_tool_call("git.status")).decision is (
         PolicyDecisionType.ALLOW
     )
+    assert engine.evaluate_tool_call(_tool_call("files.publish")).decision is (
+        PolicyDecisionType.ALLOW
+    )
     assert engine.evaluate_tool_call(_tool_call("patch.apply")).decision is (
         PolicyDecisionType.DENY
     )
@@ -52,9 +55,7 @@ def test_manifest_declared_read_tool_is_allowed_by_all_profiles(
         additional_read_only_tools=frozenset({"events.get_topic"}),
     )
 
-    decision = engine.evaluate_tool_call(
-        _tool_call("events.get_topic", {"topic": "cn-a-share"})
-    )
+    decision = engine.evaluate_tool_call(_tool_call("events.get_topic", {"topic": "cn-a-share"}))
 
     assert decision.decision is PolicyDecisionType.ALLOW
     assert "manifest-declared read-only tool" in decision.reason
@@ -105,6 +106,43 @@ def test_manifest_tool_declarations_must_be_disjoint() -> None:
 def test_manifest_declared_write_tools_reject_mutable_input() -> None:
     with pytest.raises(ValueError, match="additional write tools"):
         LocalPolicyEngine(additional_write_tools={"sources.add"})  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("profile", [PolicyProfile.WORKSPACE_WRITE, PolicyProfile.FULL_ACCESS])
+def test_manifest_declared_write_tool_requires_approval(profile: PolicyProfile) -> None:
+    engine = LocalPolicyEngine(
+        profile=profile,
+        additional_approval_tools=frozenset({"sources.add"}),
+    )
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("sources.add", {"url": "https://x.com/aleabitoreddit"})
+    )
+
+    assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert "manifest-declared write tool" in decision.reason
+
+
+def test_read_only_profile_denies_manifest_declared_write_tool() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.READ_ONLY,
+        additional_approval_tools=frozenset({"sources.add"}),
+    )
+
+    decision = engine.evaluate_tool_call(_tool_call("sources.add"))
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert "read-only policy" in decision.reason
+
+
+def test_manifest_tool_policy_sets_must_be_valid_and_disjoint() -> None:
+    with pytest.raises(ValueError, match="additional approval tools"):
+        LocalPolicyEngine(additional_approval_tools={"sources.add"})  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="disjoint"):
+        LocalPolicyEngine(
+            additional_read_only_tools=frozenset({"sources.add"}),
+            additional_approval_tools=frozenset({"sources.add"}),
+        )
 
 
 def test_workspace_write_profile_allows_patch_and_requires_command_approval() -> None:
@@ -328,6 +366,19 @@ def test_trusted_local_mode_auto_allows_mcp_and_command_approval_boundaries() ->
     assert mcp_decision.route == "mcp_proxy"
     assert command_decision.decision is PolicyDecisionType.ALLOW
     assert "trusted local" in command_decision.reason
+
+
+def test_trusted_local_mode_auto_allows_manifest_declared_host_write() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.WORKSPACE_WRITE,
+        trusted_local=True,
+        additional_approval_tools=frozenset({"sources.add"}),
+    )
+
+    decision = engine.evaluate_tool_call(_tool_call("sources.add"))
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+    assert "trusted local" in decision.reason
 
 
 def test_web_fetch_uses_durable_allowlist_as_prior_authority() -> None:

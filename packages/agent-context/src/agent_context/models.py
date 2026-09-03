@@ -86,6 +86,7 @@ class ContextCompileRequest:
     task_input: str
     workspace_root: Path
     budget: ContextBudget = field(default_factory=lambda: ContextBudget(max_tokens=1200))
+    include_workspace: bool = True
     runtime_evidence_items: tuple[ContextItem, ...] = ()
     memory_items: tuple[ContextItem, ...] = ()
     attachment_items: tuple[ContextItem, ...] = ()

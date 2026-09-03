@@ -341,6 +341,7 @@ def _parse_responses_completion(
     if not isinstance(output, list):
         raise ValueError("DeepSeek Responses output must be a list")
     reasoning_parts: list[str] = []
+    reasoning_seen = False
     text_parts: list[str] = []
     tool_calls: list[ToolCall] = []
     for item in output:
@@ -348,6 +349,7 @@ def _parse_responses_completion(
             raise ValueError("DeepSeek Responses output item must be an object")
         item_type = item.get("type")
         if item_type == "reasoning":
+            reasoning_seen = True
             reasoning_parts.extend(_content_text(item.get("content"), "reasoning_text"))
         elif item_type == "message":
             text_parts.extend(_content_text(item.get("content"), "output_text"))
@@ -365,7 +367,7 @@ def _parse_responses_completion(
                 phase="output_item",
                 retryable=False,
             )
-    reasoning = "".join(reasoning_parts) or None
+    reasoning = "".join(reasoning_parts) if reasoning_seen else None
     thinking_with_tools = bool(
         tools_advertised and resolved.thinking_mode is ModelThinkingMode.ENABLED
     )

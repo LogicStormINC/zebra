@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+import asyncio
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+import pytest
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.ports.agent_tasks import TaskEvent
@@ -14,6 +16,11 @@ from agent_integrations.ag_ui import (
     AgUiRunIdentity,
 )
 from agent_integrations.ag_ui.task_stream import AgUiTaskProjector
+from zebra_agent_api.ag_ui_stream import (
+    _TERMINAL_EVENTS,
+    AgUiStreamContext,
+    tail_agui_events,
+)
 
 TASK_ID = TaskId(uuid4())
 SEGMENT_A = SessionId(uuid4())
@@ -127,3 +134,23 @@ class TestSegmentContinuation:
 def test_task_id_roundtrip() -> None:
     # thread identity stays the Task UUID across both segments
     assert UUID(IDENTITY.thread_id) == TASK_ID
+
+
+def test_handoff_workspace_drift_is_a_terminal_stream_event() -> None:
+    assert EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED in _TERMINAL_EVENTS
+
+
+def test_expired_host_authority_ends_the_stream_before_store_access() -> None:
+    async def run_case() -> None:
+        context = AgUiStreamContext(
+            stores=None,  # type: ignore[arg-type]
+            task_id=TASK_ID,
+            identity=IDENTITY,
+            cursor=None,
+            authorization_expires_at=datetime.now(UTC) - timedelta(seconds=1),
+        )
+        stream = tail_agui_events(context, object())  # type: ignore[arg-type]
+        with pytest.raises(StopAsyncIteration):
+            await anext(stream)
+
+    asyncio.run(run_case())

@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from ag_ui.core import (
+    RunErrorEvent,
     RunFinishedEvent,
     RunStartedEvent,
     TextMessageEndEvent,
@@ -118,6 +119,26 @@ def test_turn_cancelled_finishes_the_run_with_interrupt_outcome() -> None:
     outcome = finishes[0].outcome
     assert outcome.type == "interrupt"
     assert outcome.interrupts[0].reason == "session_cancelled"
+
+
+def test_handoff_workspace_drift_fails_the_run_instead_of_hanging() -> None:
+    events, add = _stream()
+    add(
+        EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED,
+        {
+            "handoff_id": "handoff-1",
+            "expected_revision_hash": "expected",
+            "actual_revision_hash": "actual",
+        },
+        actor=EventActor.SYSTEM,
+    )
+
+    projection = AgUiProjector().project(events, _identity(events))
+    errors = [event for event in projection.events if isinstance(event, RunErrorEvent)]
+
+    assert len(errors) == 1
+    assert errors[0].code == "zebra_handoff_workspace_drift"
+    assert "Retry the request" in errors[0].message
 
 
 def test_mid_stream_cursor_replay_keeps_turn_boundaries_stable() -> None:

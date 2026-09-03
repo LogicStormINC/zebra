@@ -2,13 +2,28 @@ from pathlib import Path
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
-from agent_storage import SQLiteEventStore, SQLiteProjectionStore
+from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
+from agent_storage import (
+    SQLiteEventStore,
+    SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
+)
 from zebra_agent_api.app import create_app
 
 
 def test_api_approve_records_granted_decision(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = _seed_waiting_session(database_path)
+    SQLiteWorkspaceProjectionStore(database_path).save_workspace(
+        WorkspaceProjection(
+            session_id=session.session_id,
+            workspace_root=str(tmp_path),
+            prepared_at=session.created_at,
+            updated_at=session.updated_at,
+            current_sequence=session.current_sequence,
+            status=WorkspaceStatus.WAITING_APPROVAL,
+        )
+    )
 
     response = create_app(database_path).approve(
         str(session.session_id),
@@ -17,6 +32,9 @@ def test_api_approve_records_granted_decision(tmp_path: Path) -> None:
 
     events = SQLiteEventStore(database_path).list_for_session(session.session_id)
     updated = SQLiteProjectionStore(database_path).get_session(session.session_id)
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
+        session.session_id
+    )
 
     assert response.status_code == 200
     assert response.body == {
@@ -27,10 +45,15 @@ def test_api_approve_records_granted_decision(tmp_path: Path) -> None:
         "sequence": 3,
         "status": SessionStatus.RUNNING.value,
     }
-    assert len(events) == 1
+    assert len(events) == 2
     assert events[0].event_type is EventType.APPROVAL_GRANTED
+    assert events[1].event_type is EventType.SESSION_COMMAND_ACCEPTED
+    assert events[1].idempotency_key == f"approval:{session.session_id}:3:resume"
     assert updated is not None
     assert updated.status is SessionStatus.RUNNING
+    assert workspace is not None
+    assert workspace.status is WorkspaceStatus.RUNNING
+    assert workspace.current_sequence == updated.current_sequence == 3
 
 
 def test_api_reject_records_rejected_decision(tmp_path: Path) -> None:
