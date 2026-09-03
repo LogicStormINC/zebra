@@ -310,6 +310,7 @@ def test_openai_compatible_gateway_rejects_unadvertised_tool_call() -> None:
         gateway.complete([_user_message("Run something")], tools=(tool,))
 
     assert caught.value.reason == "unadvertised_tool_call"
+    assert caught.value.provider_tool_name == "command__run"
     assert caught.value.phase == "tool_name"
     assert caught.value.provider_call_id == "call_1"
 

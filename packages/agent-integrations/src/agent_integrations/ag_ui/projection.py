@@ -296,6 +296,18 @@ class AgUiProjector:
             return (
                 RunErrorEvent(timestamp=timestamp, message=message, code="zebra_turn_failed"),
             )
+        if event.event_type is EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED:
+            state.turn_finished = True
+            return (
+                RunErrorEvent(
+                    timestamp=timestamp,
+                    message=(
+                        "The workspace changed while the conversation was resuming. "
+                        "Retry the request."
+                    ),
+                    code="zebra_handoff_workspace_drift",
+                ),
+            )
         if event.event_type is EventType.SESSION_FAILED:
             if state.turn_finished:
                 return ()

@@ -395,6 +395,7 @@ class HarnessModelStep:
         *,
         created_at: datetime,
     ) -> list[SessionMessage]:
+        identity_directive = task.identity_directive or ZEBRA_AGENT_IDENTITY_DIRECTIVE
         messages: list[SessionMessage] = []
         if self._context_compiler is not None and task.workspace_root is not None:
             if task.attachments:
@@ -464,14 +465,14 @@ class HarnessModelStep:
             )
         if messages:
             messages[0] = messages[0].model_copy(
-                update={"content": f"{ZEBRA_AGENT_IDENTITY_DIRECTIVE}\n\n{messages[0].content}"}
+                update={"content": f"{identity_directive}\n\n{messages[0].content}"}
             )
         else:
             messages.append(
                 SessionMessage(
                     message_id=new_message_id(),
                     role=MessageRole.SYSTEM,
-                    content=ZEBRA_AGENT_IDENTITY_DIRECTIVE,
+                    content=identity_directive,
                     created_at=created_at,
                 )
             )

@@ -8,6 +8,11 @@ semantics.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
+import time
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import jwt as pyjwt
@@ -255,6 +260,96 @@ def test_exchange_endpoint_mints_grant():
     assert response.status_code == 200
     token = response.json()["grant"]
     _verify_with_zebra(token, settings, key)
+
+
+def test_workload_exchange_mints_principal_bound_grant_without_cookie():
+    key = _key()
+    settings = _settings(key)
+    settings = replace(
+        settings,
+        workload_identities=("trench-agent-worker",),
+        workload_shared_secret="server-secret",
+    )
+    client = TestClient(create_app(settings))
+    body = {
+        "audience": "zebra",
+        "runId": "run-server-1",
+        "scopes": ["agent.run", "event.read", "source.read", "history.read"],
+        "threadId": "0f0e8b74-8d64-4d55-9f8e-2a1b3c4d5e6f",
+        "resourceRefs": [
+            {"type": "trench.source", "id": "src-1"},
+            {"type": "trench.history", "id": "user-42"},
+        ],
+        "principal": {
+            "activeSourceIds": ["src-1"],
+            "userId": "user-42",
+            "workspaceId": "ws-7",
+        },
+    }
+    timestamp = str(int(time.time()))
+    nonce = "turn-1-grant-1"
+    digest = hashlib.sha256(
+        json.dumps(body, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()
+    ).hexdigest()
+    signature = hmac.new(
+        b"server-secret", f"{timestamp}\n{nonce}\n{digest}".encode(), hashlib.sha256
+    ).hexdigest()
+
+    headers = {
+        "X-Zebra-Workload-Identity": "trench-agent-worker",
+        "X-Zebra-Workload-Timestamp": timestamp,
+        "X-Zebra-Workload-Nonce": nonce,
+        "X-Zebra-Workload-Signature": signature,
+    }
+    response = client.post(
+        "/exchange",
+        json=body,
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    verified = _verify_with_zebra(response.json()["grant"], settings, key)
+    assert ("principal", "user-42") in {ref.key for ref in verified.context.resource_refs}
+    repeated = client.post("/exchange", json=body, headers=headers)
+    assert repeated.status_code == 200
+    first_jti = pyjwt.decode(
+        response.json()["grant"], options={"verify_signature": False}
+    )["jti"]
+    repeated_jti = pyjwt.decode(
+        repeated.json()["grant"], options={"verify_signature": False}
+    )["jti"]
+    assert repeated_jti == first_jti
+
+
+def test_workload_exchange_rejects_tampered_principal():
+    key = _key()
+    settings = _settings(key)
+    settings = replace(
+        settings,
+        workload_identities=("trench-agent-worker",),
+        workload_shared_secret="server-secret",
+    )
+    client = TestClient(create_app(settings))
+    body = {
+        "audience": "zebra",
+        "runId": "run-server-1",
+        "scopes": ["agent.run"],
+        "threadId": "thread-1",
+        "principal": {"activeSourceIds": [], "userId": "attacker", "workspaceId": "ws-7"},
+    }
+    response = client.post(
+        "/exchange",
+        json=body,
+        headers={
+            "X-Zebra-Workload-Identity": "trench-agent-worker",
+            "X-Zebra-Workload-Timestamp": str(int(time.time())),
+            "X-Zebra-Workload-Nonce": "turn-1-grant-1",
+            "X-Zebra-Workload-Signature": "0" * 64,
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json()["reason"] == "workload_signature_invalid"
 
 
 def test_exchange_mints_only_viewer_authorized_read_resources():

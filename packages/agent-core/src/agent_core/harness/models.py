@@ -57,6 +57,7 @@ class HarnessTask:
     attachments: tuple[AttachmentContextInput, ...] = ()
     conversation_history: tuple[SessionMessage, ...] = ()
     task_plan: SessionPlan = field(default_factory=SessionPlan)
+    identity_directive: str | None = None
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -73,6 +74,8 @@ class HarnessTask:
             raise ValueError("harness task workspace_root must be absolute when set")
         if self.context_token_budget <= 0:
             raise ValueError("harness task context_token_budget must be positive")
+        if self.identity_directive is not None and not self.identity_directive.strip():
+            raise ValueError("harness task identity_directive must not be blank when set")
         object.__setattr__(self, "mcp_allowlist", normalize_mcp_allowlist(self.mcp_allowlist))
         object.__setattr__(
             self, "skill_components", normalize_skill_components(self.skill_components)

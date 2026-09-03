@@ -64,7 +64,10 @@ class CloudProviderContinuationCoordinator:
         draft: HarnessEventDraft,
         recorder: DurableHarnessEventRecorder,
     ) -> SessionEvent:
-        if draft.event_type is not EventType.CONTEXT_CONTINUATION_SELECTED:
+        if (
+            draft.event_type is not EventType.CONTEXT_CONTINUATION_SELECTED
+            or draft.payload.get("mode") != "provider_native"
+        ):
             return recorder.append_draft(draft)
         artifact_id = draft.payload.get("artifact_id")
         if not isinstance(artifact_id, str) or not artifact_id.strip():

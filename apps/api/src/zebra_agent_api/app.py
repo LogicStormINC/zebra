@@ -136,14 +136,17 @@ class ZebraAgentApi(
         idempotency_key: str | None = None,
         host_context: HostContextEnvelope | None = None,
     ) -> ApiResponse:
+        from zebra_agent_api.idempotency import scoped_idempotency_key
+
+        storage_idempotency_key = scoped_idempotency_key(idempotency_key, host_context)
         replayed = (
             replay_idempotent_response(
                 store=self.stores.idempotency,
                 action="session.create",
-                idempotency_key=idempotency_key,
+                idempotency_key=storage_idempotency_key,
                 payload=payload,
             )
-            if idempotency_key is not None
+            if storage_idempotency_key is not None
             else None
         )
         if replayed is not None:
@@ -203,7 +206,7 @@ class ZebraAgentApi(
             return bad_request(str(error))
         parsed["attachments"] = (*parsed["attachments"], *resource_attachments, *prompt_attachments)
 
-        admission = _compose_admission(self, host_context, payload, idempotency_key)
+        admission = _compose_admission(self, host_context, payload, storage_idempotency_key)
         if isinstance(admission, ApiResponse):
             return admission
         admission_kwargs: dict[str, str] = admission  # type: ignore[assignment]
@@ -218,7 +221,7 @@ class ZebraAgentApi(
             )
 
         response = (
-            self.queue_cloud_run(_queued(), idempotency_key=idempotency_key)
+            self.queue_cloud_run(_queued(), idempotency_key=storage_idempotency_key)
             if parsed["execute"] and self.settings.deployment == "cloud"
             else self._create_and_execute_session(parsed)
             if parsed["execute"]
@@ -235,7 +238,12 @@ class ZebraAgentApi(
                 stores=self.stores,
             )
         result = _post_admission_idempotency(
-            self.settings, self.stores, idempotency_key, response, payload
+            self.settings,
+            self.stores,
+            storage_idempotency_key,
+            response,
+            payload,
+            public_idempotency_key=idempotency_key,
         )
         return result if isinstance(result, ApiResponse) else response
 

@@ -7,6 +7,7 @@ import logging
 import os
 from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from time import monotonic
 from typing import Protocol
 from uuid import UUID
@@ -43,6 +44,7 @@ _TERMINAL_EVENTS = frozenset(
         EventType.APPROVAL_REQUESTED,
         EventType.CLARIFICATION_REQUESTED,
         EventType.TURN_COMPLETED,
+        EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED,
     }
 )
 _TERMINAL_STATUSES = frozenset(
@@ -62,6 +64,7 @@ class AgUiStreamContext:
     cursor: AgUiCursor | None
     live_event_fanout: LiveEventFanoutPort | None = None
     deployment_namespace: str | None = None
+    authorization_expires_at: datetime | None = None
 
 
 def prepare_agui_stream(
@@ -71,6 +74,7 @@ def prepare_agui_stream(
     *,
     live_event_fanout: LiveEventFanoutPort | None = None,
     deployment_namespace: str | None = None,
+    authorization_expires_at: datetime | None = None,
 ) -> AgUiStreamContext | ApiResponse | None:
     """Resolve and validate a stream before HTTP sends response headers."""
 
@@ -112,6 +116,7 @@ def prepare_agui_stream(
         cursor,
         live_event_fanout,
         deployment_namespace,
+        authorization_expires_at,
     )
 
 
@@ -128,7 +133,12 @@ async def tail_agui_events(
 
     cursor = context.cursor
     last_delivery = monotonic()
-    deadline = monotonic() + _MAX_STREAM_SECONDS
+    authorization_seconds = (
+        max(0.0, (context.authorization_expires_at - datetime.now(UTC)).total_seconds())
+        if context.authorization_expires_at is not None
+        else _MAX_STREAM_SECONDS
+    )
+    deadline = monotonic() + min(_MAX_STREAM_SECONDS, authorization_seconds)
     iterations = 0
     failures = 0
     terminal_status_since: float | None = None

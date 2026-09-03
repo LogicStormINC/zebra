@@ -135,13 +135,14 @@ def _counting_gateway(monkeypatch, counter: dict[str, int], *replies: str, gatew
     monkeypatch.setattr(worker_execution_module, "build_model_gateway", factory)
 
 
-def _create_conversation_task(client: TestClient) -> str:
+def _create_conversation_task(client: TestClient, *, workspace_root: Path) -> str:
     response = client.post(
         "/tasks",
         json={
             "prompt": "Remember the codeword is granite.",
             "title": "Conversation acceptance",
             "interaction_mode": "conversation",
+            "workspace": str(workspace_root),
         },
     )
     assert response.status_code == 201

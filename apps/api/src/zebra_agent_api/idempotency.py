@@ -14,6 +14,30 @@ def request_hash(payload: dict[str, object]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def scoped_idempotency_key(idempotency_key: str | None, host_context: object | None) -> str | None:
+    """Partition Host admission receipts by the durable caller authority."""
+
+    if idempotency_key is None or host_context is None:
+        return idempotency_key
+    principal_refs = sorted(
+        str(getattr(resource, "resource_id", ""))
+        for resource in getattr(host_context, "resource_refs", ())
+        if getattr(resource, "resource_type", "") == "principal"
+    )
+    authority = {
+        "host_app_id": str(getattr(host_context, "host_app_id", "")),
+        "namespace_id": str(getattr(host_context, "namespace_id", "")),
+        "principals": principal_refs,
+        "workspace_ref": str(getattr(host_context, "workspace_ref", "")),
+    }
+    encoded = json.dumps(
+        {"authority": authority, "idempotency_key": idempotency_key},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return f"host:{hashlib.sha256(encoded).hexdigest()}"
+
+
 def replay_idempotent_response(
     *,
     store: IdempotencyStorePort,
@@ -47,11 +71,12 @@ def save_idempotent_response(
     idempotency_key: str | None,
     payload: dict[str, object],
     response: ApiResponse,
+    public_idempotency_key: str | None = None,
 ) -> ApiResponse:
     if idempotency_key is None:
         response.body["idempotency_key"] = None
         return response
-    response.body["idempotency_key"] = idempotency_key
+    response.body["idempotency_key"] = public_idempotency_key or idempotency_key
     store.save(
         new_idempotency_record(
             action=action,

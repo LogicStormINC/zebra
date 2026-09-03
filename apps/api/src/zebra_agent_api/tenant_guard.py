@@ -51,8 +51,10 @@ def session_tenant_denied(
     except (ValueError, AttributeError):
         return False
     session = sessions.get_session(parsed)
-    if session is None or session.namespace_id is None:
+    if session is None:
         return False
+    if session.namespace_id is None:
+        return True
     return bool(session.namespace_id != namespace)
 
 
@@ -60,12 +62,12 @@ def session_in_tenant(
     session: object,
     host_context: HostContextEnvelope | None,
 ) -> bool:
-    """List filter: keep unbound sessions and sessions of the caller's tenant."""
+    """List filter: Host callers see only sessions bound to their tenant."""
     namespace = tenant_namespace(host_context)
     if namespace is None:
         return True
     bound = getattr(session, "namespace_id", None)
-    return bound is None or bound == namespace
+    return bound == namespace
 
 
 def scope_session_list_response(
@@ -98,10 +100,7 @@ def scope_session_list_response(
         except (ValueError, AttributeError):
             kept.append(item)
             continue
-        if session is None or session.namespace_id is None:
-            kept.append(item)
-            continue
-        if session.namespace_id == namespace:
+        if session is not None and session.namespace_id == namespace:
             kept.append(item)
     body[key] = kept
     body["tenant_scope"] = namespace
@@ -124,13 +123,25 @@ def tenant_scope_response(
     for prefix in ("/sessions/", "/approvals/", "/tasks/"):
         if path.startswith(prefix):
             target = path.removeprefix(prefix).split("/")[0]
-            if target and session_tenant_denied(sessions, target, host_context):
-                return tenant_forbidden_response(target)
             if prefix == "/tasks/" and target:
-                principal_response = _task_principal_response(app, target, host_context)
-                if principal_response is not None:
-                    return principal_response
+                task_response = task_access_response(app, target, host_context)
+                if task_response is not None:
+                    return task_response
+            elif target and session_tenant_denied(sessions, target, host_context):
+                return tenant_forbidden_response(target)
     return None
+
+
+def task_access_response(
+    app: Any,
+    task_id: str,
+    host_context: HostContextEnvelope | None,
+) -> ApiResponse | None:
+    """Apply the same tenant and principal fence to every Task transport."""
+
+    if session_tenant_denied(app.stores.sessions, task_id, host_context):
+        return tenant_forbidden_response(task_id)
+    return _task_principal_response(app, task_id, host_context)
 
 
 def _task_principal_response(
@@ -138,12 +149,20 @@ def _task_principal_response(
     task_id: str,
     host_context: HostContextEnvelope | None,
 ) -> ApiResponse | None:
+    database_url = getattr(app.settings, "database_url", None)
+    if not isinstance(database_url, str) or not database_url.startswith(
+        ("postgresql://", "postgresql+psycopg://")
+    ):
+        # ponytail: SQLite has no durable TaskBinding authority table; keep local
+        # profiles tenant-only until a local binding store is deliberately added.
+        return None
     current = _principal_ref(host_context)
     if current is None:
+        if host_context is not None:
+            return tenant_forbidden_response(task_id)
         return None
     namespace = getattr(app.stores, "deployment_namespace", None)
-    database_url = getattr(app.settings, "database_url", None)
-    if not isinstance(namespace, str) or not isinstance(database_url, str):
+    if not isinstance(namespace, str):
         return ApiResponse(503, {"status": "principal_binding_unavailable"})
     try:
         binding = load_task_binding(

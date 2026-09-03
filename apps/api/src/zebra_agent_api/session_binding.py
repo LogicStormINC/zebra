@@ -388,6 +388,8 @@ def _post_admission_idempotency(
     idempotency_key: str | None,
     response: ApiResponse,
     payload: dict[str, object],
+    *,
+    public_idempotency_key: str | None = None,
 ) -> ApiResponse:
     """Sync the stored receipt with the final response body.
 
@@ -402,6 +404,7 @@ def _post_admission_idempotency(
             update_idempotency_response,
         )
 
+        response.body["idempotency_key"] = public_idempotency_key or idempotency_key
         update_idempotency_response(
             getattr(settings, "database_url", ""),
             deployment_namespace=str(getattr(stores, "deployment_namespace", "zebra")),
@@ -421,4 +424,5 @@ def _post_admission_idempotency(
         idempotency_key=idempotency_key,
         payload=payload,
         response=response,
+        public_idempotency_key=public_idempotency_key,
     )

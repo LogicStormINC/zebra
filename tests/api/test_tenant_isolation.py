@@ -20,7 +20,10 @@ def _host_context(namespace_id: str) -> HostContextEnvelope:
         host_app_id=f"host-{namespace_id}",
         namespace_id=namespace_id,
         workspace_ref="workspace://unit",
-        resource_refs=(HostResourceRef(type="trench.event", id="evt-1"),),
+        resource_refs=(
+            HostResourceRef(type="trench.event", id="evt-1"),
+            HostResourceRef(type="principal", id=f"user-{namespace_id}"),
+        ),
         scopes=("session.write",),
         limits=HostTechnicalLimits(
             max_runtime_seconds=3600,
@@ -56,12 +59,14 @@ def _create_session(
     adapter: RouteAdapter,
     *,
     host_context: HostContextEnvelope | None,
+    idempotency_key: str | None = None,
 ) -> ApiResponse:
     return adapter.handle(
         RouteRequest(
             method="POST",
             path="/sessions",
             body={"prompt": "tenant isolation probe", "execute": False},
+            headers={"Idempotency-Key": idempotency_key} if idempotency_key else None,
             host_context=host_context,
         )
     )
@@ -88,6 +93,24 @@ def test_session_read_is_tenant_scoped(tmp_path: Path) -> None:
 
     store = adapter.app.stores.sessions.get_session(adapter.app._parse_session_id(session_id))
     assert store is not None and store.namespace_id == "tenant-a"
+
+
+def test_session_create_idempotency_is_partitioned_by_host_namespace(tmp_path: Path) -> None:
+    adapter, _app = _adapter(tmp_path)
+
+    first = _create_session(adapter, host_context=TENANT_A, idempotency_key="same-key")
+    replay = _create_session(adapter, host_context=TENANT_A, idempotency_key="same-key")
+    other_tenant = _create_session(
+        adapter,
+        host_context=TENANT_B,
+        idempotency_key="same-key",
+    )
+
+    assert first.status_code == replay.status_code == other_tenant.status_code == 201
+    assert replay.body["session_id"] == first.body["session_id"]
+    assert other_tenant.body["session_id"] != first.body["session_id"]
+    assert first.body["idempotency_key"] == "same-key"
+    assert other_tenant.body["idempotency_key"] == "same-key"
 
 
 def test_session_listing_is_tenant_scoped(tmp_path: Path) -> None:
@@ -139,15 +162,15 @@ def test_task_routes_are_tenant_scoped(tmp_path: Path) -> None:
     assert allowed.status_code == 200
 
 
-def test_unnamespaced_sessions_stay_operator_scoped(tmp_path: Path) -> None:
+def test_unnamespaced_sessions_are_hidden_from_host_tenants(tmp_path: Path) -> None:
     adapter, _app = _adapter(tmp_path)
     created = _create_session(adapter, host_context=None)
     session_id = created.body["session_id"]
 
-    assert _get(adapter, f"/sessions/{session_id}", TENANT_B).status_code == 200
-    assert _get(adapter, f"/sessions/{session_id}", TENANT_A).status_code == 200
+    assert _get(adapter, f"/sessions/{session_id}", TENANT_B).status_code == 404
+    assert _get(adapter, f"/sessions/{session_id}", TENANT_A).status_code == 404
     listed = _get(adapter, "/sessions", TENANT_B)
-    assert any(
+    assert not any(
         item["session_id"] == session_id for item in listed.body["sessions"]
     )
 

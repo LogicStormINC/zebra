@@ -323,6 +323,7 @@ def _parse_tool_calls(
                     "unadvertised_tool_call",
                     phase="tool_name",
                     retryable=True,
+                    provider_tool_name=provider_tool_name,
                     provider_call_id=provider_call_id,
                 ) from exc
         parsed.append(

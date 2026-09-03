@@ -66,6 +66,21 @@ def test_delegation_guidance_follows_effective_tool_manifest() -> None:
     assert "identify yourself as Zebra Agent" in direct_messages[0].content
 
 
+def test_harness_model_step_uses_task_identity_override() -> None:
+    messages = HarnessModelStep().build_initial_messages(
+        HarnessTask(
+            title="Embedded",
+            user_input="Who are you?",
+            identity_directive="You are the embedded product assistant.",
+        ),
+        created_at=datetime(2026, 9, 1, 0, 0, tzinfo=UTC),
+    )
+
+    assert messages[0].role is MessageRole.SYSTEM
+    assert messages[0].content == "You are the embedded product assistant."
+    assert "Zebra Agent" not in messages[0].content
+
+
 def test_harness_model_step_preserves_durable_conversation_tail() -> None:
     created_at = datetime(2026, 8, 30, 0, 0, tzinfo=UTC)
     history = (

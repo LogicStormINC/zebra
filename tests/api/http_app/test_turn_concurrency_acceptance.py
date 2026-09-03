@@ -39,7 +39,7 @@ def test_concurrent_follow_up_arriving_after_claim_executes_the_new_turn(
         gateways=gateways,
     )
     client = TestClient(create_http_app(tmp_path / "race.sqlite", settings=_settings(None)))
-    task_id = _create_conversation_task(client)
+    task_id = _create_conversation_task(client, workspace_root=tmp_path)
     assert _run_turn(client, task_id)["status"] == "awaiting_turn"
 
     import zebra_agent_worker.execution as execution_module
@@ -425,7 +425,7 @@ def test_next_message_during_finalization_tail_defers_instead_of_crashing(
         gateways=gateways,
     )
     client = TestClient(create_http_app(tmp_path / "tail.sqlite", settings=_settings(None)))
-    task_id = _create_conversation_task(client)
+    task_id = _create_conversation_task(client, workspace_root=tmp_path)
 
     import zebra_agent_worker.execution as execution_module
     from agent_core.application.session_projection import rebuild_session

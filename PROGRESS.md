@@ -5,6 +5,38 @@
 
 ## Active Review
 
+- Trench user-file profile follow-up (`CLOUD-USER-FILES-TRN-PROFILE-02`) is in
+  review on `codex/zebra-durable-turn-grants`. The research parent profile
+  now exposes the existing governed `files.publish` Tool while keeping shell,
+  patch, Git and nested delegation unavailable. Focused validation passes
+  `27 passed`, Ruff and Mypy are clean, and real Trench browser acceptance
+  published and downloaded a governed Markdown file.
+
+- Trench long-turn recovery fixes (`TRN-MODEL-TOOL-REPAIR-02` and
+  `CLOUD-CONT-FALLBACK-02`) are in review on
+  `codex/zebra-durable-turn-grants`. OpenAI-compatible response rejection now
+  preserves the provider tool name for bounded repair/audit. Cloud Provider
+  Continuation only intercepts `provider_native`; `capsule_fallback` follows
+  the ordinary durable Event path instead of failing for a missing artifact.
+  Focused tests are `18 passed` with Ruff clean. A real Trench Task crossed
+  three context compactions, persisted the fallback selections and completed
+  with 360 Zebra Events; the repository-wide `make check` remains blocked only
+  by the pre-existing 742-line handoff test against the 700-line size gate.
+
+- Trench Durable Turn workload grants (`TRN-DURABLE-GRANT-01`) are in review on
+  `codex/zebra-durable-turn-grants`. The Host Grant Broker now accepts either
+  the existing verified browser Cookie or an allowlisted HMAC-authenticated
+  Trench server workload. Workload signatures bind timestamp, nonce and the
+  canonical principal/workspace/source request; repeated nonces derive the
+  same JTI for Zebra replay rejection. The default grant TTL is 1900 seconds
+  against the current 1800-second execution ceiling. Broker focused tests are
+  `13 passed`; full Ruff, mypy (`789` source files), and the 10-case release eval
+  pass. The full suite reached `2850 passed, 370 skipped`; its only failure is
+  the pre-existing, out-of-scope 742-line
+  `tests/agent_storage/test_postgres_session_handoffs.py` file-size violation.
+  Local real Trench/Zebra cross-service execution and browser switch/refresh
+  acceptance pass; production deployment remains a separate gate.
+
 - Manifest-declared Host write approval (`HOST-WRITE-POLICY-01`) is in review on
   `codex/fix-agui-live-tail` after integrating `codex/host-write-policy-01`.
   The slice maps Host manifest write risk into
@@ -1860,3 +1892,30 @@ precedence order defined by `AGENTS.md`.
   Trench 词汇，业务可见性仍由 Trench 执行。
 - Trench real-service acceptance 的精确 manifest 期望升级为 `trench-native-v2`，保留
   原五项事件工具并加入六项来源/历史工具；acceptance compose policy 同步版本化。
+# 2026-09-03 Multi-user isolation closeout
+
+`CLOUD-TRN-MULTITENANT-01` is in Review on `codex/fix-agui-live-tail` with the
+Trench companion branch `codex/trn-perf-01`. The slice is limited to the
+audited Trench authentication/internal-route/workspace boundaries and Zebra
+principal-scoped admission/AG-UI/legacy-session boundaries. Existing dirty
+live-tail and model-projection work remains outside this slice and must be
+preserved.
+
+The closeout now scopes admission idempotency to Host/namespace/workspace/
+principal authority, applies tenant and principal fences to AG-UI and Task
+transports, hides unbound legacy Sessions from Host tenants, and terminates
+streams at Grant expiry. Zebra `make check` passes. The Trench companion now
+uses HttpOnly browser sessions, rejects implicit development identities,
+derives source workspace ownership from the authenticated viewer, hides the
+legacy/internal API composition by default, and isolates browser event-task
+caches by user/workspace. Trench `make check` and live HTTP negative probes
+pass.
+
+The final code review removed the remaining Host-specific product vocabulary
+from generic Zebra Worker/API paths: embedded runs now receive a generic
+Host-product identity boundary while Trench retains its exact product role in
+the Host task context. PostgreSQL Task bindings enforce principal ownership;
+SQLite remains explicitly tenant-only because it has no durable binding table.
+The suspend/resume acceptance helper now binds a temporary workspace instead of
+snapshotting the repository and `.venv`. Final Zebra validation passes
+`make check` and `make test` (`2849 passed, 369 skipped`).
