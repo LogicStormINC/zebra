@@ -12,6 +12,11 @@ DEFAULT_ALLOWED_SCOPES = (
     "evidence.read",
     "entity.read",
     "topic.read",
+    "source.read",
+    "history.read",
+    "artifact.read",
+    "artifact.publish",
+    "subscription.write",
 )
 
 

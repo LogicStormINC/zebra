@@ -297,7 +297,7 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
         network_profile="domain-allowlist",
         network_allowlist=("docs.example.com",),
     )
-    captured: list[tuple[NetworkProfile, frozenset[str]]] = []
+    captured: list[tuple[NetworkProfile, frozenset[str], frozenset[str]]] = []
 
     def build_policy(
         *,
@@ -306,14 +306,18 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
         web_search_endpoint,
         trusted_local,
         additional_read_only_tools,
+        additional_write_tools,
     ):
-        captured.append((network_profile, additional_read_only_tools))
+        captured.append(
+            (network_profile, additional_read_only_tools, additional_write_tools)
+        )
         assert web_search_endpoint is None
         assert trusted_local is False
         return LocalPolicyEngine(
             profile=profile,
             network_profile=network_profile,
             additional_read_only_tools=additional_read_only_tools,
+            additional_write_tools=additional_write_tools,
         )
 
     monkeypatch.setattr(
@@ -331,6 +335,7 @@ def test_worker_execution_recovers_network_authority(tmp_path: Path, monkeypatch
     assert captured[0][0].name.value == "domain-allowlist"
     assert captured[0][0].domain_allowlist == ("docs.example.com",)
     assert "files.read" in captured[0][1]
+    assert captured[0][2] == frozenset()
 
 
 def test_cloud_setup_only_is_persistently_rejected_before_model_start(

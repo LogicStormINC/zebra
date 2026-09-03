@@ -74,6 +74,39 @@ def test_manifest_declared_read_tools_reject_mutable_or_blank_input(
         LocalPolicyEngine(additional_read_only_tools=declared)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("profile", list(PolicyProfile))
+def test_grant_authorized_host_write_tool_is_allowed_by_all_profiles(
+    profile: PolicyProfile,
+) -> None:
+    engine = LocalPolicyEngine(
+        profile=profile,
+        additional_write_tools=frozenset({"sources.add"}),
+    )
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("sources.add", {"url": "https://example.test/feed.xml"})
+    )
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+    assert "grant-authorized Host write tool" in decision.reason
+    assert engine.evaluate_tool_call(_tool_call("sources.remove")).decision is (
+        PolicyDecisionType.DENY
+    )
+
+
+def test_manifest_tool_declarations_must_be_disjoint() -> None:
+    with pytest.raises(ValueError, match="must be disjoint"):
+        LocalPolicyEngine(
+            additional_read_only_tools=frozenset({"sources.add"}),
+            additional_write_tools=frozenset({"sources.add"}),
+        )
+
+
+def test_manifest_declared_write_tools_reject_mutable_input() -> None:
+    with pytest.raises(ValueError, match="additional write tools"):
+        LocalPolicyEngine(additional_write_tools={"sources.add"})  # type: ignore[arg-type]
+
+
 def test_workspace_write_profile_allows_patch_and_requires_command_approval() -> None:
     engine = LocalPolicyEngine(profile=PolicyProfile.WORKSPACE_WRITE)
     safe_patch = """--- a/README.md

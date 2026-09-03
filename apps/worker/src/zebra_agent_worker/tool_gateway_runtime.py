@@ -81,6 +81,17 @@ class WorkerToolGateway:
 
         return READ_ONLY_TOOLS | host_read
 
+    @property
+    def authorized_write_tools(self) -> frozenset[str]:
+        if self.host_manifest is None or self.host_context is None:
+            return frozenset()
+        granted_scopes = frozenset(self.host_context.scopes)
+        return frozenset(
+            tool.name
+            for tool in self.host_manifest.tools
+            if tool.risk is ToolRisk.WRITE and frozenset(tool.scopes) <= granted_scopes
+        )
+
     def resolve_model_tool_calls(self, tool_calls: tuple[ToolCall, ...]) -> tuple[ToolCall, ...]:
         return self.local.resolve_model_tool_calls(tool_calls)
 

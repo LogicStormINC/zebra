@@ -95,13 +95,19 @@ class LocalPolicyEngine:
     trusted_local: bool = False
     web_pipeline_v2: bool = False
     additional_read_only_tools: frozenset[str] = frozenset()
+    additional_write_tools: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
-        if not isinstance(self.additional_read_only_tools, frozenset) or any(
-            not isinstance(name, str) or not name.strip()
-            for name in self.additional_read_only_tools
+        for label, names in (
+            ("read-only", self.additional_read_only_tools),
+            ("write", self.additional_write_tools),
         ):
-            raise ValueError("additional read-only tools must be a frozenset of names")
+            if not isinstance(names, frozenset) or any(
+                not isinstance(name, str) or not name.strip() for name in names
+            ):
+                raise ValueError(f"additional {label} tools must be a frozenset of names")
+        if self.additional_read_only_tools & self.additional_write_tools:
+            raise ValueError("additional read-only and write tools must be disjoint")
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
@@ -138,6 +144,11 @@ class LocalPolicyEngine:
             return _allow(
                 self.profile,
                 f"{tool_name} is allowed as a manifest-declared read-only tool",
+            )
+        if tool_name in self.additional_write_tools:
+            return _allow(
+                self.profile,
+                f"{tool_name} is allowed as a grant-authorized Host write tool",
             )
         if self.profile is PolicyProfile.READ_ONLY:
             decision = _decision_for_read_only(tool_name, self.profile)

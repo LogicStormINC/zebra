@@ -337,6 +337,8 @@ class SessionExecutionService:
                 frozen_manifest_loader=self._frozen_manifest_loader,
                 client_gateway=self._client_runtime(session_id) if self._client_runtime else None,  # type: ignore[arg-type]
             )
+            read_only_tools = local_tool_gateway.read_only_tools
+            authorized_write_tools = local_tool_gateway.authorized_write_tools
             tool_gateway = guard_worker_effects(
                 local_tool_gateway,
                 ledger=self._effect_ledger,
@@ -459,7 +461,8 @@ class SessionExecutionService:
                     network_profile=effective_network_profile,
                     web_search_endpoint=self._settings.web_search_endpoint,
                     trusted_local=trusted_local,
-                    additional_read_only_tools=tool_gateway.read_only_tools,
+                    additional_read_only_tools=read_only_tools,
+                    additional_write_tools=authorized_write_tools,
                 ),
                 context_compiler=context_compiler,
                 cloud_continuation=cloud_continuation,

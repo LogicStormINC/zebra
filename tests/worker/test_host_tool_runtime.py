@@ -60,14 +60,14 @@ class _Runtime:
         self.destroyed.append(handle)
 
 
-def _context() -> HostContextEnvelope:
+def _context(*, scopes: tuple[str, ...] = ("event.read",)) -> HostContextEnvelope:
     return HostContextEnvelope(
         grant_id="grant-1",
         host_app_id="trench",
         namespace_id="tenant-a",
         workspace_ref="workspace-a",
         resource_refs=(HostResourceRef(type="trench.event", id="evt-1"),),
-        scopes=("event.read",),
+        scopes=scopes,
         limits=HostTechnicalLimits(
             max_runtime_seconds=300,
             max_model_tokens=100_000,
@@ -151,6 +151,42 @@ def test_manifest_host_tool_never_falls_back_to_local() -> None:
     with pytest.raises(ValueError, match="gateway is unavailable"):
         gateway.execute(call)
     assert local.calls == 0
+
+
+def test_worker_gateway_exposes_only_grant_authorized_host_writes() -> None:
+    manifest = HostToolManifest.from_payload(
+        {
+            "workloadIdentity": "zebra-worker",
+            "tools": [
+                {
+                    "name": "sources.add",
+                    "description": "Add one source",
+                    "executionLocation": "host",
+                    "scopes": ["subscription.write"],
+                    "risk": "write",
+                    "requiredArguments": ["url"],
+                    "argumentProperties": {"url": {"type": "string"}},
+                },
+                {
+                    "name": "sources.remove",
+                    "description": "Remove one source",
+                    "executionLocation": "host",
+                    "scopes": ["subscription.delete"],
+                    "risk": "write",
+                    "requiredArguments": ["source_id"],
+                    "argumentProperties": {"source_id": {"type": "string"}},
+                },
+            ],
+        }
+    )
+    gateway = WorkerToolGateway(
+        local=_Local(),
+        host=_Host(),
+        host_context=_context(scopes=("event.read", "subscription.write")),
+        host_manifest=manifest,
+    )
+
+    assert gateway.authorized_write_tools == frozenset({"sources.add"})
 
 
 def test_worker_gateway_destroys_owned_runtime_handle_once() -> None:

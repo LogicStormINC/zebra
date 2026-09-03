@@ -18,7 +18,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 from zebra_host_grant_broker.app import create_app
-from zebra_host_grant_broker.config import BrokerSettings
+from zebra_host_grant_broker.config import DEFAULT_ALLOWED_SCOPES, BrokerSettings
 from zebra_host_grant_broker.grant_minting import ExchangeRequest, GrantMintError, mint_grant
 from zebra_host_grant_broker.keys import jwk_document
 from zebra_host_grant_broker.trench_session import TrenchSessionError, TrenchViewer, fetch_viewer
@@ -48,6 +48,7 @@ def _settings(key) -> BrokerSettings:
             "evidence.read",
             "entity.read",
             "topic.read",
+            "subscription.write",
         ),
         private_key_pem=pem,
         key_id="test-key-1",
@@ -59,6 +60,10 @@ def _settings(key) -> BrokerSettings:
         max_model_tokens=1_000_000,
         max_artifact_bytes=64_000_000,
     )
+
+
+def test_default_scope_ceiling_includes_trench_subscription_write() -> None:
+    assert "subscription.write" in DEFAULT_ALLOWED_SCOPES
 
 
 class _StaticJwks:
