@@ -112,6 +112,7 @@ class ZebraAgentSettings:
     host_tool_endpoint: str | None = None
     host_tool_workload_identity: str | None = None
     host_tool_shared_secret: str | None = None
+    development_unrestricted: bool = False
 
     @property
     def deployment(self) -> str:
@@ -163,10 +164,14 @@ def load_settings(
         default=".zebra-agent/sessions.sqlite",
     )
     runtime = _load_runtime_settings(values, profile=profile)
+    development_unrestricted = _read_bool(
+        values, "ZEBRA_DEVELOPMENT_UNRESTRICTED", default=False
+    )
     _validate_profile_contract(
         profile=profile,
         database_url=database_url,
         runtime=runtime,
+        development_unrestricted=development_unrestricted,
     )
     return ZebraAgentSettings(
         profile=profile,
@@ -233,6 +238,7 @@ def load_settings(
         host_tool_endpoint=_read_optional(values, "ZEBRA_HOST_TOOL_ENDPOINT"),
         host_tool_workload_identity=_read_optional(values, "ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY"),
         host_tool_shared_secret=_read_optional(values, "ZEBRA_HOST_TOOL_SHARED_SECRET"),
+        development_unrestricted=development_unrestricted,
     )
 
 
@@ -319,10 +325,17 @@ def _validate_profile_contract(
     profile: str,
     database_url: str,
     runtime: RuntimeSettings,
+    development_unrestricted: bool,
 ) -> None:
+    if development_unrestricted and profile != "cloud":
+        raise ValueError(
+            "ZEBRA_DEVELOPMENT_UNRESTRICTED=true is allowed only for ZEBRA_PROFILE=cloud"
+        )
     if profile not in {"cloud", "production"}:
         return
-    if runtime.runtime_class != "gvisor":
+    if runtime.runtime_class != "gvisor" and not (
+        profile == "cloud" and development_unrestricted
+    ):
         raise ValueError(f"ZEBRA_PROFILE={profile} requires ZEBRA_RUNTIME_CLASS=gvisor")
     if not database_url.startswith(("postgresql://", "postgres://")):
         raise ValueError(f"ZEBRA_PROFILE={profile} requires a PostgreSQL DSN")

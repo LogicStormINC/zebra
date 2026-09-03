@@ -43,6 +43,21 @@ class _FailingGateway(ModelGatewayPort):
         raise RuntimeError("model unavailable")
 
 
+class _CapturingGateway(_ScriptedGateway):
+    def __init__(self, text: str) -> None:
+        super().__init__(text)
+        self.messages: list[SessionMessage] = []
+
+    def complete(
+        self,
+        messages: list[SessionMessage],
+        *,
+        tools: tuple[ModelToolDefinition, ...] = (),
+    ) -> ModelCompletion:
+        self.messages = messages
+        return super().complete(messages, tools=tools)
+
+
 def _session(title: str) -> Session:
     return Session.create(title=title, created_at=_CREATED_AT).model_copy(
         update={"session_id": new_session_id(), "updated_at": _CREATED_AT}
@@ -89,6 +104,23 @@ def test_generate_returns_title_update_event() -> None:
     assert gateway.calls == 1
 
 
+def test_generate_requests_an_outcome_summary_instead_of_echoing_the_question() -> None:
+    session = _session("New Task")
+    gateway = _CapturingGateway("README translation completed")
+    service = SessionTitleService(gateway)
+
+    event = service.generate(
+        session=session,
+        events=_exchange_events(session),
+        next_sequence=2,
+    )
+
+    assert event is not None
+    assert "outcome-oriented summary title" in gateway.messages[0].content
+    assert "Do not copy or lightly shorten the user's question" in gateway.messages[0].content
+    assert "Done — translated the install section" in gateway.messages[1].content
+
+
 def test_generate_strips_quotes_and_title_prefix() -> None:
     session = _session("placeholder")
     service = SessionTitleService(_ScriptedGateway('Title: "Fix login bug"'))
@@ -128,7 +160,7 @@ def test_generate_is_idempotent_when_title_already_updated() -> None:
             sequence=2,
             event_type=EventType.SESSION_TITLE_UPDATED,
             actor=EventActor.HARNESS,
-            payload={"title": "Existing semantic title"},
+            payload={"title": "Existing semantic title", "format_version": 3},
             created_at=_CREATED_AT,
         ),
     ]
@@ -137,6 +169,27 @@ def test_generate_is_idempotent_when_title_already_updated() -> None:
 
     assert event is None
     assert gateway.calls == 0
+
+
+def test_generate_refreshes_legacy_question_style_title_once() -> None:
+    session = _session("查看tibo最近帖子")
+    service = SessionTitleService(_ScriptedGateway("Tibo帖子同步完成"))
+    events = [
+        *_exchange_events(session),
+        SessionEvent.create(
+            session_id=session.session_id,
+            sequence=2,
+            event_type=EventType.SESSION_TITLE_UPDATED,
+            actor=EventActor.HARNESS,
+            payload={"title": "查看tibo最近帖子"},
+            created_at=_CREATED_AT,
+        ),
+    ]
+
+    event = service.generate(session=session, events=events, next_sequence=3)
+
+    assert event is not None
+    assert event.payload == {"title": "Tibo帖子同步完成", "format_version": 3}
 
 
 def test_generate_returns_none_without_user_message() -> None:

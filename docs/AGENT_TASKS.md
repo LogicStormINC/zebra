@@ -30,6 +30,20 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `TRN-CONVERSATION-UX-01` is `Review` on `cloud-agent-trench`.
+  Owner: Codex. It makes Trench conversation titles summarize the completed
+  first exchange instead of echoing the user's request. Owned paths:
+  `packages/agent-core/src/agent_core/application/session_title.py`,
+  `packages/agent-core/src/agent_core/contracts/events.py`,
+  `apps/config/src/zebra_agent_config/settings.py`,
+  `tests/agent_core/test_session_title.py`, `tests/config/test_settings.py`, and
+  this registry. The title remains
+  best-effort and must not delay or fail the response stream. Focused title
+  tests and Ruff pass; the Trench acceptance worker rebuilt from this prompt
+  contract is healthy. Local cloud-profile acceptance may use `trusted-local`
+  only with `ZEBRA_DEVELOPMENT_UNRESTRICTED=true`; production still requires
+  gVisor.
+
 - `CTX-TURN-LIFECYCLE` (ADR-026 cards `CTX-TURN-ADR-01` through
   `CTX-TURN-API-01`) is `Review` on `codex/ctx-turn-lifecycle-01`, stacked
   on the `CTX-INHERIT-CLOUD-01` closeout: a final model answer closes a
@@ -3698,7 +3712,7 @@ run.
   real Trench/Zebra deployment inputs (the Trench session cookie in
   particular cannot be supplied by the repository).
 
-### TRN-HOST-POLICY-01 - Manifest-Declared Read Tool Policy Wiring
+### TRN-HOST-POLICY-01 - Manifest-Declared Host Tool Policy Wiring
 
 - Status: `Review`
 - Owner: `lukeding`
@@ -3707,20 +3721,40 @@ run.
 - Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
 - Owned paths: `packages/agent-security/src/agent_security/policy.py`,
   `apps/worker/src/zebra_agent_worker/execution.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `apps/host_grant_broker/src/zebra_host_grant_broker/config.py`,
+  `docker/compose.trench-acceptance.yml`,
   `tests/agent_security/test_policy_profiles.py`,
-  `tests/worker/execution/test_core_execution.py`, this task card
+  `tests/worker/execution/test_core_execution.py`,
+  `tests/worker/test_host_tool_runtime.py`,
+  `tests/host_grant_broker/test_grant_broker.py`, this task card
 
 #### Goal
 
-Allow only manifest-declared `risk=read` Host tools through every local policy
-profile while preserving path, egress, scope and Host resource enforcement.
+Allow manifest-declared Host tools only when their required scopes are present
+in the verified Host Grant, while preserving path, egress and Host resource
+enforcement. This includes Trench subscription writes without widening local
+workspace permissions.
 
 #### Acceptance
 
-- Dynamic read declarations are explicit composition input; unknown dynamic
-  tools remain denied and malformed declarations fail closed.
-- Worker composition passes the frozen gateway's read-only tool set to the
-  policy engine; no Host vocabulary enters `agent-security`.
+- Dynamic read declarations and grant-authorized write declarations are
+  explicit composition input; unknown or ungranted tools remain denied and
+  malformed declarations fail closed.
+- Worker composition derives write authority from the frozen manifest plus the
+  verified Host Grant; no Host vocabulary enters `agent-security`.
+- The acceptance Grant Broker can mint the complete bounded Trench native
+  scope set, including `subscription.write`.
+
+#### Review Evidence
+
+- Focused Security, Worker and Broker regression suite: `79 passed`; full
+  workspace mypy: `788 source files` clean; focused Ruff: clean.
+- Trench Zebra runtime and Host tool contract regression suite: `27 passed`.
+- Rebuilt and restarted the local acceptance Broker and Worker. Real browser
+  acceptance invoked both `sources.add` and `sources.remove` without a policy
+  block; Broker exchanges returned 200, Worker stayed healthy, and the user's
+  original two active subscriptions were restored after cleanup.
 - Focused Security and Worker regression tests pass.
 
 ### TRN-HOST-GRANT-RENEW-01 - Per-Turn Host Grant Binding Renewal

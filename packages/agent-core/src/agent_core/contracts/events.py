@@ -93,6 +93,7 @@ class SessionTitleUpdatedPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str
+    format_version: int | None = Field(default=None, ge=1)
 
     @field_validator("title")
     @classmethod

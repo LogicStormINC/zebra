@@ -281,6 +281,19 @@ def test_production_profile_fails_closed_without_gvisor() -> None:
                 "ZEBRA_RUNTIME_CLASS": "trusted-local",
             }
         )
+
+
+def test_cloud_development_unrestricted_allows_trusted_local_runtime() -> None:
+    settings = load_settings(
+        {
+            "ZEBRA_PROFILE": "cloud",
+            "ZEBRA_DATABASE_URL": "postgresql://zebra:secret@postgres/zebra",
+            "ZEBRA_RUNTIME_CLASS": "trusted-local",
+            "ZEBRA_DEVELOPMENT_UNRESTRICTED": "true",
+        }
+    )
+
+    assert settings.runtime.runtime_class == "trusted-local"
     image = "zebra/runtime@sha256:" + "a" * 64
     with pytest.raises(ValueError, match="storage-enforced workspace quota"):
         load_settings(

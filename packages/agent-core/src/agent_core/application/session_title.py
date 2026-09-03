@@ -10,11 +10,17 @@ from agent_core.ports.model_gateway import ModelGatewayPort
 
 _MAX_TITLE_CHARS = 40
 _MAX_PROMPT_MESSAGE_CHARS = 2000
+_TITLE_FORMAT_VERSION = 3
 
 _SYSTEM_PROMPT = (
-    "You name conversations. Given the user's first request and the assistant's "
-    "reply, produce a short title that captures the topic. Rules: reply with the "
-    "title only, no quotes, no punctuation at the end, at most 6 words (or ~24 "
+    "You name completed conversations. Given the user's first request and the "
+    "assistant's reply, produce a short outcome-oriented summary title. Capture "
+    "the topic plus the result, state, or action completed in the reply. Do not "
+    "copy or lightly shorten the user's question. Use a completed-result noun "
+    "phrase, not a request or to-do phrase. For example, turn '查询 tibo 最近三帖' "
+    "into 'Tibo最新三帖已整理', and '查看昨天发生了什么' into '昨日订阅事件已汇总'. "
+    "Never start a Chinese title with 请, 查询, 查看, 帮我, or 能否. Rules: reply with the title "
+    "only, no quotes, no punctuation at the end, at most 6 words (or ~24 "
     "characters for CJK text). Use the same language as the user. Do not add "
     "prefixes like 'Title:'."
 )
@@ -39,8 +45,12 @@ class SessionTitleService:
         events: list[SessionEvent],
         next_sequence: int,
     ) -> SessionEvent | None:
-        # Idempotent: never regenerate once a semantic title has been produced.
-        if any(event.event_type is EventType.SESSION_TITLE_UPDATED for event in events):
+        # Regenerate once when the title contract changes, then remain idempotent.
+        if any(
+            event.event_type is EventType.SESSION_TITLE_UPDATED
+            and event.payload.get("format_version") == _TITLE_FORMAT_VERSION
+            for event in events
+        ):
             return None
 
         user_text = _first_text(events, EventType.USER_MESSAGE_RECEIVED, "content")
@@ -63,7 +73,7 @@ class SessionTitleService:
             sequence=next_sequence,
             event_type=EventType.SESSION_TITLE_UPDATED,
             actor=EventActor.HARNESS,
-            payload={"title": title},
+            payload={"title": title, "format_version": _TITLE_FORMAT_VERSION},
             created_at=session.updated_at,
         )
 
