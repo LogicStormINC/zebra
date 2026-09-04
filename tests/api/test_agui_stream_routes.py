@@ -28,9 +28,19 @@ from zebra_agent_api.ag_ui_stream import (
     prepare_agui_stream,
     tail_agui_events,
 )
-from zebra_agent_api.http import create_http_app
+from zebra_agent_api.http import _stream_resource_id, create_http_app
 
 NOW = datetime(2026, 8, 11, 8, 0, tzinfo=UTC)
+
+
+def test_agui_stream_tenant_guard_uses_thread_id_not_run_id() -> None:
+    assert (
+        _stream_resource_id(
+            "/agui/threads/283f65ec-a279-453d-ac4a-59f2e5da6ccd/"
+            "runs/bd617b73-2e21-4dbc-b3f9-ceb786fdce51/stream"
+        )
+        == "283f65ec-a279-453d-ac4a-59f2e5da6ccd"
+    )
 
 
 def test_agui_stream_replays_official_events_with_exact_cursor_ids(tmp_path: Path) -> None:

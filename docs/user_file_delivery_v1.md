@@ -29,6 +29,9 @@ the capability is absent.
 1. The Agent emits only `artifact://<uuid>` in the Tool result. Trench maps it
    to its own stable authenticated BFF route and persists structured attachment
    metadata with the assistant message.
+   For a successful `files.publish`, AG-UI carries the whitelisted
+   `zebra.user_file.v1` JSON envelope in `TOOL_CALL_RESULT.content`; ordinary
+   Tool results keep their existing plain-text content.
 2. The browser sends its existing Trench product session to Trench only.
 3. Trench exchanges a fresh short-lived Host Grant containing `artifact.read`
    and the current user's `trench.history` binding. Browser credentials are not

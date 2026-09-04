@@ -217,7 +217,7 @@ class AgUiProjector:
                     timestamp=timestamp,
                     message_id=result_id,
                     tool_call_id=call_id,
-                    content=tool_output,
+                    content=_tool_result_content(payload, tool_output),
                     role="tool",
                 ),
             )
@@ -354,3 +354,40 @@ def _json_text(value: Mapping[str, object]) -> str:
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     except (TypeError, ValueError) as exc:
         raise AgUiProjectionError("tool arguments are not JSON serializable") from exc
+
+
+def _tool_result_content(payload: Mapping[str, Any], output: str) -> str:
+    metadata = payload.get("metadata")
+    if not isinstance(metadata, Mapping) or metadata.get("delivery") is not True:
+        return output
+    artifact_uri = metadata.get("artifact_uri")
+    file_name = metadata.get("file_name")
+    mime_type = metadata.get("mime_type")
+    size_bytes = metadata.get("size_bytes")
+    status = payload.get("status")
+    if not (
+        isinstance(artifact_uri, str)
+        and artifact_uri.startswith("artifact://")
+        and isinstance(file_name, str)
+        and file_name
+        and isinstance(mime_type, str)
+        and mime_type
+        and isinstance(size_bytes, int)
+        and size_bytes >= 0
+        and isinstance(status, str)
+        and status
+    ):
+        return output
+    return _json_text(
+        {
+            "artifact": {
+                "file_name": file_name,
+                "mime_type": mime_type,
+                "size_bytes": size_bytes,
+                "uri": artifact_uri,
+            },
+            "output": output,
+            "status": status,
+            "type": "zebra.user_file.v1",
+        }
+    )

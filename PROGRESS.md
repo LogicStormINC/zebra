@@ -89,6 +89,11 @@
   PostgreSQL + MinIO publication and HTTP download pass `2/2`; focused
   regression is green. Full-gate inherited failures remain separately recorded
   on the task card.
+  The AG-UI adapter now preserves only the downloadable file fields in a
+  versioned Tool-result envelope, allowing Hosts to build authenticated links
+  without exposing MinIO keys, credentials, or presigned URLs. The production
+  AG-UI stream tenant guard now authorizes the path's thread id (not its run id),
+  restoring secure Host streaming without weakening principal isolation.
 
 - Trench cloud governed Memory closeout (`TRN-MEM-E2E-01`) now routes API
   confirm/expire through the PostgreSQL aggregate CAS instead of the SQLite-only

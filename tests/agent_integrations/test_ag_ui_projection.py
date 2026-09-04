@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -132,6 +133,63 @@ def test_golden_text_tool_state_and_terminal_events_are_officially_valid() -> No
         TypeAdapter(AgUiEvent).validate_python(event.model_dump(mode="json", by_alias=True))
     assert projection.next_cursor is not None
     assert projection.next_cursor.sequence == 6
+
+
+def test_user_file_tool_result_preserves_download_metadata_for_host_projection() -> None:
+    session_id = new_session_id()
+    artifact_uri = "artifact://5e23c02e-ca10-4851-b575-a3080a4b8f34"
+    events = (
+        _event(
+            session_id,
+            0,
+            EventType.TOOL_CALL_PROPOSED,
+            {
+                "attempt_number": 1,
+                "tool_name": "files.publish",
+                "tool_call_id": "tool-file-1",
+                "arguments": {"content": "ok", "display_name": "result.md"},
+            },
+        ),
+        _event(
+            session_id,
+            1,
+            EventType.TOOL_EXECUTION_COMPLETED,
+            {
+                "attempt_number": 1,
+                "tool_name": "files.publish",
+                "tool_call_id": "tool-file-1",
+                "status": "executed",
+                "output": f"Published result.md: {artifact_uri}",
+                "metadata": {
+                    "artifact_uri": artifact_uri,
+                    "delivery": True,
+                    "file_name": "result.md",
+                    "mime_type": "text/markdown",
+                    "size_bytes": 2,
+                    "sha256": "secret-not-needed-by-host",
+                },
+            },
+        ),
+    )
+
+    projection = AgUiProjector().project(events, _identity(session_id))
+    result = next(
+        event
+        for event in projection.events
+        if event.type is AgUiEventType.TOOL_CALL_RESULT
+    )
+
+    assert json.loads(result.content) == {
+        "artifact": {
+            "file_name": "result.md",
+            "mime_type": "text/markdown",
+            "size_bytes": 2,
+            "uri": artifact_uri,
+        },
+        "output": f"Published result.md: {artifact_uri}",
+        "status": "executed",
+        "type": "zebra.user_file.v1",
+    }
 
 
 def test_tool_only_model_sentinel_is_not_exposed_as_assistant_text() -> None:

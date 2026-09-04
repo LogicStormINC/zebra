@@ -132,7 +132,7 @@ def create_http_app(
         if _is_agui_stream_request(request):
             from zebra_agent_api.tenant_guard import task_access_response
 
-            agui_thread = _stream_resource_id(request.url.path).split("/")[0]
+            agui_thread = _stream_resource_id(request.url.path)
             denied = task_access_response(
                 api,
                 agui_thread,
@@ -280,6 +280,8 @@ async def _read_request_body(request: Request) -> tuple[dict[str, Any] | None, J
 
 def _stream_resource_id(path: str) -> str:
     parts = [part for part in path.split("/") if part]
+    if len(parts) >= 3 and parts[:2] == ["agui", "threads"]:
+        return parts[2]
     return parts[-2] if len(parts) >= 2 else ""
 
 
