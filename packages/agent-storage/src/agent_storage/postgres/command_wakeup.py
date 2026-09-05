@@ -331,11 +331,33 @@ def _validated_host_context(
             raise ValueError("inconsistent binding")
         if context is None and allow_unbound:
             return None
+        session_namespace = row["namespace_id"]
+        if session_namespace is None and context is not None:
+            # Legacy handoffs omitted TASK_PREPARED.host_context. Recover identity
+            # only from a same-Task parent with an already-bound namespace.
+            parent = connection.execute(
+                """SELECT parent.namespace_id FROM session_events received
+                JOIN execution_segments child
+                  ON child.deployment_namespace=received.deployment_namespace
+                  AND child.session_id=received.session_id
+                JOIN execution_segments source
+                  ON source.deployment_namespace=child.deployment_namespace
+                  AND source.task_id=child.task_id
+                  AND source.session_id::text=received.payload->>'parent_session_id'
+                JOIN session_projections parent
+                  ON parent.deployment_namespace=source.deployment_namespace
+                  AND parent.session_id=source.session_id
+                WHERE received.deployment_namespace=%s AND received.session_id=%s
+                  AND received.event_type='session_handoff_received'""",
+                (namespace, event.session_id),
+            ).fetchone()
+            if parent is not None:
+                session_namespace = parent["namespace_id"]
         if (
             context is None
             or host.grant_digest != host_context_digest(context)
             or host.namespace_id != context.namespace_id
-            or row["namespace_id"] != context.namespace_id
+            or session_namespace != context.namespace_id
             or host.host_app_id != context.host_app_id
             or host.authority_issuer != context.origin
         ):

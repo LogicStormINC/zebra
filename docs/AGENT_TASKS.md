@@ -1324,6 +1324,7 @@ confirmed repo memory by current-task relevance within a token budget.
   `packages/agent-storage/src/agent_storage/postgres/outbox.py`,
   `packages/agent-storage/src/agent_storage/postgres_composition.py`,
   `packages/agent-storage/src/agent_storage/runtime_composition.py`,
+  `packages/agent-storage/src/agent_storage/postgres/command_wakeup.py`,
   `packages/agent-storage/src/agent_storage/__init__.py`,
   `packages/agent-storage/src/agent_storage/memory_lookup.py`,
   `packages/agent-storage/src/agent_storage/postgres/governed_memories.py`,
@@ -27241,7 +27242,10 @@ concurrency dedup, reliable cleanup and cache economics.
 - Branch: `codex/trn-authority-renewal-01`
 - Owned paths: `apps/worker/src/zebra_agent_worker/bound_execution_authority.py`,
   `apps/worker/src/zebra_agent_worker/runtime_authority.py`,
-  `tests/worker/test_bound_authority_renewal.py`, this card, `WORKLOG.md`
+  `tests/worker/test_bound_authority_renewal.py`, this card, `WORKLOG.md`,
+  `packages/agent-storage/src/agent_storage/postgres/migration_runner.py`,
+  `packages/agent-storage/src/agent_storage/runtime_composition.py`,
+  `tests/agent_storage/test_schema_readiness.py`
 - Acceptance: fresh API-verified binding can authorize a later command; unchanged
   or expired grants cannot extend execution; identity and capability ceilings remain frozen.
 - Validation: Worker suite 246 passed / 13 skipped; renewal boundaries 8 passed;

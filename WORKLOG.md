@@ -8353,3 +8353,16 @@ actual byte access.
   Running container imports renewal implementation; API health remains OK.
 - Remaining acceptance: real authenticated browser continuation (browser debugger
   timed out). Do not label unit/deployment verification as complete browser E2E.
+# 2026-09-05 deployment/schema and legacy handoff follow-up
+
+- Confirmed second failure: database v34 with newer Worker needing v38 receipts;
+  runtime setup failure could not commit terminal evidence. Applied the repository
+  migration runner successfully through v50, without deleting user data.
+- Existing API handoff Host context propagation was absent from the old deployed
+  API. Rebuilt API, Worker and migration targets together.
+- Added exact read-only schema compatibility check before cloud store composition.
+- Legacy missing-namespace handoffs can use a persisted same-Task parent namespace;
+  no absent or different-user parent is accepted. No immutable event was rewritten.
+- Validation: 888 passed / 13 skipped across Worker, core and focused storage;
+  focused Ruff/mypy passed. Browser control unavailable; true request latency and
+  report/download acceptance remain to be measured, not claimed complete.

@@ -15,6 +15,7 @@ from botocore.session import Session  # type: ignore[import-untyped]
 
 from agent_storage.artifact_objects import S3ArtifactObjectStore
 from agent_storage.composition import ControlPlaneStores, sqlite_control_plane_stores
+from agent_storage.postgres.migration_runner import require_current_schema
 from agent_storage.postgres_composition import postgres_control_plane_stores
 
 
@@ -45,6 +46,7 @@ def compose_control_plane_stores(
     resolved = cloud or cloud_composition_from_environment()
     if not resolved.dsn.strip():
         raise ValueError(f"{profile} profile requires ZEBRA_DATABASE_URL")
+    require_current_schema(resolved.dsn)
     stores = postgres_control_plane_stores(
         resolved.dsn,
         deployment_namespace=resolved.deployment_namespace,

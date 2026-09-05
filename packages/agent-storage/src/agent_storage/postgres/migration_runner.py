@@ -8,6 +8,20 @@ from agent_storage.postgres.migrations import MIGRATIONS
 _MIGRATION_LOCK_ID = 9_187_330_641
 
 
+def require_current_schema(dsn: str) -> None:
+    """Fail before admission when the deployed application and schema differ."""
+    with psycopg.connect(dsn) as connection:
+        connection.execute("SET TRANSACTION READ ONLY")
+        applied = connection.execute(
+            "SELECT version, name, checksum FROM zebra_schema_migrations"
+        ).fetchall()
+    expected = {(m.version, m.name, m.checksum) for m in MIGRATIONS}
+    if set(applied) != expected:
+        raise PostgresMigrationError(
+            "database schema differs from this application; run matching migrations before startup"
+        )
+
+
 def apply_postgres_migrations(dsn: str) -> None:
     """Apply known migrations under one transaction-scoped advisory lock."""
     with psycopg.connect(dsn) as connection:
