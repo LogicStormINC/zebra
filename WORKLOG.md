@@ -10,7 +10,10 @@
 - Live candidate source probe inside the existing Worker (5 calls each):
   median baseline 374ms versus candidate 188ms. This is not full-turn latency.
 - Runtime tests: 274 passed/10 environment-gated skipped. Full check passed.
-  Worker image rebuild/deployment still pending at this entry.
+  Worker image `4e8354ae0c51` deployed and healthy. Real consecutive response
+  test first text 4.399s / 3.709s, finished 5.320s / 4.731s; same Task reused.
+  Follow-up command-to-model preparation 2.800s, model-to-first-delta 0.570s.
+  These are small-sample cross-service timings, not browser first-paint or p95.
 - Apple Silicon host currently runs an amd64 Worker. Public ARM64 manifest was
   verified, but image pull failed in the Docker credential helper (-25293).
   Native-worker comparison remains blocked; existing credentials were untouched.

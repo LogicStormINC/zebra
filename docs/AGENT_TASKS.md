@@ -30,12 +30,15 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
-- `TRN-OCI-INFO-01`: created Ready and claimed In Progress by Luke Ding
+- `TRN-OCI-INFO-01`: created Ready, claimed, now Review by Luke Ding
   (executor Codex), branch `codex/trn-oci-info-01`, current worktree.
   Owned: `packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py`,
   `tests/agent_runtime/test_oci_engine.py`, this registry, `WORKLOG.md`.
   Scope: combine formatted read-only Docker info and daemon identity check;
   preserve per-command identity validation, TLS drift and mutation protection.
+  Runtime tests 274 passed/10 skipped; make check green; local Worker
+  4e8354ae0c51 healthy. Follow-up first text 3.709s, finished 4.731s;
+  same Task reused. Native ARM comparison blocked by Docker credential helper.
 
 - `TRN-INDEX-ROUTING-01`: created Ready, claimed, now Review by Luke Ding
   (executor Codex), branch `codex/trn-index-routing-01`, current Zebra worktree.
