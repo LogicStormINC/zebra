@@ -8338,3 +8338,18 @@ actual byte access.
   the pre-existing MCP prompt atomicity and repository file-size-gate defects.
   The task is `Done`; API/Worker/SSE, Redis, Host transport and Trench runtime
   successors remain separately locked.
+# 2026-09-05 TRN-AUTHORITY-RENEWAL-01
+
+- Root cause: clarification continuation revalidated an expired prior Attempt
+  even after the API had verified a fresh Host Grant and renewed Task binding.
+- Reuse existing API binding renewal. Worker resolves new durable authority only
+  when the binding revision/digest and bound time establish a newer command.
+  Same-binding revalidation remains narrowing-only. Namespace, definition,
+  policy, capability and limits cannot broaden; expiry is capped by Host Grant.
+- Validation: Worker suite 246 passed / 13 skipped, renewal boundaries 8 passed,
+  core/contracts 641 passed; focused Ruff and mypy passed.
+- Rebuilt and recreated only local acceptance Worker (no data deletion).
+  Image: dde28f6e8fa613b2e1c6422e90f11fbf62a1fec22d9ad149c5b6e46c7afea8d9.
+  Running container imports renewal implementation; API health remains OK.
+- Remaining acceptance: real authenticated browser continuation (browser debugger
+  timed out). Do not label unit/deployment verification as complete browser E2E.

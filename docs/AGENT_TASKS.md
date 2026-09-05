@@ -27234,6 +27234,21 @@ concurrency dedup, reliable cleanup and cache economics.
 
 - no Files binding or lifecycle code (DS-VIS-FILES-01)
 - no new eval framework — reuse the existing provider eval harness
+### TRN-AUTHORITY-RENEWAL-01 - Verified command authority renewal
+
+- Status: `Review` (claimed from Ready for the user-requested repair)
+- Human owner: Luke Ding; implementation: Codex
+- Branch: `codex/trn-authority-renewal-01`
+- Owned paths: `apps/worker/src/zebra_agent_worker/bound_execution_authority.py`,
+  `apps/worker/src/zebra_agent_worker/runtime_authority.py`,
+  `tests/worker/test_bound_authority_renewal.py`, this card, `WORKLOG.md`
+- Acceptance: fresh API-verified binding can authorize a later command; unchanged
+  or expired grants cannot extend execution; identity and capability ceilings remain frozen.
+- Validation: Worker suite 246 passed / 13 skipped; renewal boundaries 8 passed;
+  core and authority contracts 641 passed; focused Ruff and mypy pass.
+- Local Worker rebuilt and recreated; renewal code import verified in running
+  container. Browser end-to-end recovery remains unverified (debugger timed out).
+
 ### TRN-DURABLE-GRANT-01 - Trench Worker Host Grant Exchange
 
 - Status: `Review`

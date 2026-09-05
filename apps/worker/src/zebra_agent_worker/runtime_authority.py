@@ -26,6 +26,7 @@ from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResul
 from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
 from agent_core.ports.runtime import EffectiveRuntimeAuthority
 
+from zebra_agent_worker.bound_execution_authority import BoundHostExecutionAuthorityResolver
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 
 
@@ -211,8 +212,12 @@ def persist_attempt_authority(
         validated_at=created_at,
     )
     prior = _latest_authority_snapshot(existing_events)
-    if prior is None:
-        snapshot = resolver.resolve_for_attempt(request)
+    snapshot = None
+    if prior is not None and isinstance(resolver, BoundHostExecutionAuthorityResolver):
+        snapshot = resolver.resolve_renewed_binding(request, prior)
+    if prior is None or snapshot is not None:
+        if snapshot is None:
+            snapshot = resolver.resolve_for_attempt(request)
         _validate_snapshot(snapshot, request)
         recorder.append(
             EventType.EXECUTION_AUTHORITY_RESOLVED,

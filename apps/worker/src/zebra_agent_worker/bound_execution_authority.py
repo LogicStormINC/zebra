@@ -68,9 +68,12 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
         request: ExecutionAuthorityResolutionRequest,
     ) -> ExecutionAuthoritySnapshot:
         self._fail_closed_checks(request.scope, request.validated_at)
+        expires_at = request.validated_at + timedelta(seconds=self.lifetime_seconds)
+        if self.binding.host_capability.grant_expires_at is not None:
+            expires_at = min(expires_at, self.binding.host_capability.grant_expires_at)
         grant = self._grant(
             issued_at=request.validated_at,
-            expires_at=request.validated_at + timedelta(seconds=self.lifetime_seconds),
+            expires_at=expires_at,
         )
         return ExecutionAuthoritySnapshot.from_request(
             request.model_copy(
@@ -86,6 +89,38 @@ class BoundHostExecutionAuthorityResolver(ExecutionAuthorityResolverPort):
             policy_version=self.policy_version,
             policy_effective_digest=self.binding.zebra_policy_digest,
         )
+
+    def resolve_renewed_binding(
+        self,
+        request: ExecutionAuthorityResolutionRequest,
+        prior: ExecutionAuthoritySnapshot,
+    ) -> ExecutionAuthoritySnapshot | None:
+        """Start new evidence only for a newer API-verified command binding.
+
+        Revalidating the same binding still cannot extend its lifetime. The API
+        renewal path preserves principal, workspace, and admission ceilings.
+        """
+        host = self.binding.host_capability
+        if (
+            self.binding.binding_revision <= 1
+            or host.host_context is None
+            or host.grant_expires_at is None
+            or host.bound_at <= prior.validated_at
+            or host.bound_at > request.validated_at
+            or self._source_digest() == prior.source_authority_digest
+        ):
+            return None
+        snapshot = self.resolve_for_attempt(request)
+        if (
+            snapshot.scope != prior.scope
+            or snapshot.attempt_number != prior.attempt_number
+            or snapshot.agent_definition_snapshot_digest != prior.agent_definition_snapshot_digest
+            or snapshot.policy_effective_digest != prior.policy_effective_digest
+            or not set(snapshot.granted_authorities).issubset(prior.granted_authorities)
+            or not snapshot.effective_limits.is_no_broader_than(prior.effective_limits)
+        ):
+            raise ExecutionAuthorityResolutionError("renewed binding changed authority ceilings")
+        return snapshot
 
     def revalidate_attempt(
         self,
