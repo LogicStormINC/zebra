@@ -21,6 +21,8 @@ class Runner:
             output = json.dumps([{"Endpoints": {"docker": {"Host": self.endpoint}}}])
         if "{{.ID}}" in command:
             output = self.daemon
+        if command[-1] == "{{.ID}}\n{{json .Runtimes}}":
+            output = self.daemon + '\n{"runc": {}}\n'
         return CompletedProcess(command, 0, output, "")
 
 
@@ -68,6 +70,37 @@ def test_daemon_replacement_fails_before_mutation():
     with pytest.raises(RuntimeCapabilityError, match="daemon identity"):
         pinned(("docker", "rm", "exact-id"), timeout=1)
     assert not any("rm" in command for command, _ in runner.calls)
+
+
+def test_info_checks_identity_in_the_same_read_without_extra_probe():
+    runner = Runner()
+    pinned = PinnedOciEngine("docker", env={"DOCKER_HOST": runner.endpoint}, runner=runner)
+    before = len(runner.calls)
+    result = pinned(
+        ("docker", "info", "--format", "{{json .Runtimes}}"),
+        text=True, capture_output=True, check=False, timeout=10,
+    )
+    assert len(runner.calls) == before + 1
+    assert result.stdout == '{"runc": {}}\n'
+    runner.daemon = "replacement"
+    with pytest.raises(RuntimeCapabilityError, match="daemon identity"):
+        pinned(("docker", "info", "--format", "{{json .Runtimes}}"),
+               text=True, capture_output=True, check=False, timeout=10)
+
+
+@pytest.mark.parametrize("code,output", [(1, "fake-daemon-a\n{}"), (0, ""), (0, "fake-daemon-a")])
+def test_failed_or_incomplete_combined_info_is_rejected(code, output):
+    runner = Runner()
+
+    def invoke(command, **kwargs):
+        if command[-1] == "{{.ID}}\n{{json .Runtimes}}":
+            return CompletedProcess(command, code, output, "")
+        return runner(command, **kwargs)
+
+    pinned = PinnedOciEngine("docker", env={"DOCKER_HOST": runner.endpoint}, runner=invoke)
+    with pytest.raises(RuntimeCapabilityError, match="daemon identity"):
+        pinned(("docker", "info", "--format", "{{json .Runtimes}}"),
+               text=True, capture_output=True, check=False, timeout=10)
 
 
 @pytest.mark.parametrize(

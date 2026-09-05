@@ -128,6 +128,23 @@ class PinnedOciEngine:
             for path, digest in self._files.items()
         ):
             raise RuntimeCapabilityError("runtime engine TLS identity changed after pinning")
+        if (
+            self._daemon_id is not None
+            and len(command) == 4
+            and tuple(command[1:3]) == ("info", "--format")
+            and kwargs.get("text") is True
+            and kwargs.get("capture_output") is True
+        ):
+            # Read the identity and capability from the same response, not a cached probe.
+            result = self._runner(
+                (*self._prefix, "info", "--format", "{{.ID}}\n" + command[3]),
+                env=self._env, **kwargs,
+            )
+            identity, separator, output = result.stdout.partition("\n")
+            if result.returncode or not separator or identity.strip() != self._daemon_id:
+                raise RuntimeCapabilityError("runtime engine daemon identity changed after pinning")
+            result.stdout = output
+            return result
         if self._daemon_id is not None and self._read_daemon_id() != self._daemon_id:
             raise RuntimeCapabilityError("runtime engine daemon identity changed after pinning")
         return self._runner((*self._prefix, *command[1:]), env=self._env, **kwargs)

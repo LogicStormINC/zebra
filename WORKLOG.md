@@ -1,5 +1,20 @@
 # Progress Log
 
+## 2026-09-05 - TRN-OCI-INFO-01
+
+- Targeted live phase probe: runtime preparation 2.874s; Host context 0.189s;
+  tool gateway 0.048s; harness task/orchestrator under 2ms. The remaining
+  bottleneck is OCI preparation, not context compilation in this sample.
+- Combine read-only formatted Docker info with its daemon-ID validation in one
+  response. No identity cache, TLS bypass, or change to mutation checks.
+- Live candidate source probe inside the existing Worker (5 calls each):
+  median baseline 374ms versus candidate 188ms. This is not full-turn latency.
+- Runtime tests: 274 passed/10 environment-gated skipped. Full check passed.
+  Worker image rebuild/deployment still pending at this entry.
+- Apple Silicon host currently runs an amd64 Worker. Public ARM64 manifest was
+  verified, but image pull failed in the Docker credential helper (-25293).
+  Native-worker comparison remains blocked; existing credentials were untouched.
+
 ## 2026-09-05 - TRN-INDEX-ROUTING-01
 
 - Real local Worker cProfile capture executed a session and recorded roughly
