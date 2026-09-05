@@ -30,13 +30,16 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
-- `TRN-INDEX-ROUTING-01`: created Ready and claimed In Progress by Luke Ding
+- `TRN-INDEX-ROUTING-01`: created Ready, claimed, now Review by Luke Ding
   (executor Codex), branch `codex/trn-index-routing-01`, current Zebra worktree.
   Owned paths: `packages/agent-storage/src/agent_storage/postgres_model_tool_compat.py`,
   `tests/agent_storage/test_postgres_index_routing.py`, this registry and `WORKLOG.md`.
   Scope: avoid duplicate/irrelevant PostgreSQL index calls at compatibility adapters;
   retain canonical-event and lease validation for all actual projection writes.
   Validate all event types, focused storage/worker tests, and local Worker timing.
+  Evidence: make check green; Worker 246 passed/13 skipped; focused 56 passed/2
+  skipped. Deployed local Worker d4ddae2721d6; follow-up first text 3.997s,
+  finished 5.000s, same Task reused. Remaining preparation ~3s; not fully closed.
 
 - `RABBIT-ROLLOUT-SHADOW-01` is `Review`, created Ready and claimed after
   Stage 5 group 1 acceptance. Owner Luke Ding; executor Codex; stacked on the

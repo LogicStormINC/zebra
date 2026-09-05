@@ -14,7 +14,17 @@
   246 passed / 13 skipped; `make check` passes (847 typed source files, eval 10/10).
   Wider composition test has one startup-schema-check connection failure at
   localhost:5432; no claim of a fully passing entire repository test suite.
-- Local Worker image rebuild and post-deploy timing pending.
+- Local Worker image `d4ddae2721d6` deployed and healthy. Consecutive real-model
+  tests: first text 5.419s / 3.997s, finished 6.366s / 5.000s; same Task reused.
+  Prior follow-up was 4.952s / 5.925s. Command-to-model-request interval fell
+  from 3.955s to 3.039s for the follow-up; first run was 3.569s versus prior
+  4.376s, but model first delta took longer (1.111s), so first-text total did
+  not improve. Small sample only, not a percentile/SLA claim. Remaining ~3s
+  preparation and browser first-paint acceptance are not closed.
+- Profiling request encountered one truncated HTTP response after command
+  acceptance; durable events nevertheless reached turn_completed. Subsequent
+  two-turn acceptance completed normally. This isolated transport failure is
+  recorded, not silently treated as proof of transport reliability.
 
 ## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 10 (3xP1, 2xP2, 1xP3)
 
