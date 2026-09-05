@@ -1,0 +1,7 @@
+# syntax=docker/dockerfile:1.7
+# Local Apple Silicon acceptance only; same CLI version as the existing Worker.
+FROM python:3.12-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2 AS unpack
+ADD --checksum=sha256:e6b53725a73763ab3f988c73f8772eaed429754c1a579db5ff11f21990fd1817 https://download.docker.com/linux/static/stable/aarch64/docker-27.5.1.tgz /tmp/docker.tgz
+RUN tar -xzf /tmp/docker.tgz -C /tmp docker/docker
+FROM scratch
+COPY --from=unpack /tmp/docker/docker /usr/local/bin/docker

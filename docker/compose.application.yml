@@ -88,6 +88,9 @@ services:
     build:
       <<: *zebra-application-build
       target: worker-engine
+      args:
+        ZEBRA_PYTHON_BASE_IMAGE: ${ZEBRA_WORKER_PYTHON_BASE_IMAGE:-${ZEBRA_APPLICATION_PYTHON_BASE_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.12-slim-bookworm}}
+        ZEBRA_DOCKER_CLI_IMAGE: ${ZEBRA_WORKER_DOCKER_CLI_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/docker:27-cli}
     environment:
       <<: *zebra-cloud-environment
       ZEBRA_WORKER_ID: ${ZEBRA_WORKER_ID:-zebra-cloud-worker}

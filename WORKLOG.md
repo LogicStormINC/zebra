@@ -1,5 +1,21 @@
 # Progress Log
 
+## 2026-09-05 - TRN-NATIVE-WORKER-01
+
+- Root cause confirmed: ARM host was executing amd64 Worker/CLI. Ten
+  alternating read-only CLI calls: amd64 median 149.86ms, arm64 18.34ms.
+  Official same-version static CLI archive is HTTPS downloaded and SHA-256
+  pinned in an opt-in build stage; no host credential helper changes.
+- Worker-only build arguments preserve defaults and API/broker configuration.
+  Ignored local docker/.env selects native inputs. Python/CLI ELF verification
+  passes; deployed image fcf4474fc30e is healthy, sandbox checks unchanged.
+- 527 runtime/Worker tests passed, 23 skipped; make check passed. Real signed
+  Task c96a2359-313b-4900-9095-ffea2cce7a3f: fresh first text 2.395s, follow-up
+  2.021s (previous 3.374s), follow-up finish 2.446s (previous 4.358s).
+  Preparation 0.860s (previous 2.622s); sources.list executed, 3.184s turn.
+- Details, reproducible check and rollback: docs/native-worker-local.md.
+  Small sample only; browser/concurrent load acceptance not claimed.
+
 ## 2026-09-05 - TRN-OCI-CAPABILITIES-01
 
 - Docker gVisor preflight now reads ServerVersion and Runtimes in one live

@@ -5,6 +5,13 @@
 
 ## Active Review
 
+- `TRN-NATIVE-WORKER-01`: local Apple Silicon latency investigation identified
+  amd64 CLI emulation overhead (150 ms versus 18 ms median native info query).
+  Worker-only opt-in native image inputs preserve deployment defaults and all
+  runtime checks; see `docs/native-worker-local.md`. Local native Worker is
+  healthy: continuation first text 2.021s, preparation 0.860s, real sources.list
+  executed. This is local cross-service acceptance, not browser paint or p95.
+
 - `RABBIT-SOURCE-CREDENTIAL-REF-01` passes isolated acceptance and is in
   Review. Source bindings now validate an existing credential identity's enabled
   state and source platform without loading its payload. Missing, inactive,

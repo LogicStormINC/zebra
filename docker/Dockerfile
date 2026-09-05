@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 ARG ZEBRA_PYTHON_BASE_IMAGE=python:3.12-slim-bookworm@sha256:d50fb7611f86d04a3b0471b46d7557818d88983fc3136726336b2a4c657aa30b
+ARG ZEBRA_DOCKER_CLI_IMAGE=swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/docker:27-cli
 FROM ghcr.io/astral-sh/uv:0.11.12@sha256:3a59a3cdd5f7c217faa36e32dbc7fddbb0412889c2a0a5229f6d790e5a019dd7 AS uv
 FROM ${ZEBRA_PYTHON_BASE_IMAGE} AS runtime
 
@@ -44,7 +45,7 @@ ENTRYPOINT ["zebra-agent-worker"]
 FROM runtime AS broker
 ENTRYPOINT ["python", "-m", "zebra_host_grant_broker"]
 
-FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/docker:27-cli AS docker-cli
+FROM ${ZEBRA_DOCKER_CLI_IMAGE} AS docker-cli
 
 FROM worker AS worker-engine
 USER root

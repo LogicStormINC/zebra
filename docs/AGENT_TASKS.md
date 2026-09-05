@@ -30,6 +30,17 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `TRN-NATIVE-WORKER-01`: Ready, claimed, now Review by Luke Ding (Codex).
+  Branch `codex/trn-native-worker-01`; owned paths: `docker/Dockerfile`,
+  `docker/Dockerfile.arm64-cli`, `docker/compose.application.yml`,
+  local `docker/.env`, `docs/native-worker-local.md`, `PROGRESS.md`,
+  `WORKLOG.md`, this card. Scope: opt-in native local Worker build and
+  real cross-service latency acceptance; no policy or sandbox changes.
+  Validation: 527 passed/23 skipped; make check green; image architecture
+  and actual CLI ELF verified; deployed Worker fcf4474fc30e healthy.
+  Fresh/continuation first text 2.395s/2.021s, finish 2.732s/2.446s;
+  real sources.list executed and turn finished in 3.184s. No browser-paint claim.
+
 - `TRN-OCI-CAPABILITIES-01`: created Ready, claimed, now Review by Luke Ding
   (implementation: Codex), branch `codex/trn-oci-capabilities-01`.
   Owned paths: `packages/agent-runtime/src/agent_runtime/adapters/oci.py`,
