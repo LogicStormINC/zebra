@@ -1,0 +1,28 @@
+name: zebra-rabbitmq
+
+# Opt-in infrastructure only. Existing application Compose files do not include this.
+services:
+  rabbitmq:
+    image: rabbitmq:4.3.5-management-alpine@sha256:ac1201d1dc227779d93c607f976e7f9156fd5b551ee5ff7946cab6c242091bf3
+    hostname: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: provisioner
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_ADMIN_PASSWORD:?run provision_rabbitmq.py prepare}
+    ports:
+      - "127.0.0.1:${RABBITMQ_AMQP_PORT:-25672}:5672"
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-25673}:15672"
+      - "127.0.0.1:${RABBITMQ_METRICS_PORT:-25692}:15692"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 15s
+
+volumes:
+  rabbitmq-data:

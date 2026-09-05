@@ -1,0 +1,35 @@
+{
+    auto_https disable_redirects
+    default_sni 127.0.0.1
+}
+
+https://127.0.0.1:28443 {
+    tls /certs/tls.crt /certs/tls.key
+    handle_path /broker/* {
+        reverse_proxy broker:8090
+    }
+    handle {
+        reverse_proxy zebra-api:8000 {
+            flush_interval -1
+        }
+    }
+}
+
+https://zebra.zebra.local:28443 {
+    tls /certs/tls.crt /certs/tls.key
+    reverse_proxy zebra-api:8000 {
+        flush_interval -1
+    }
+}
+
+https://broker.zebra.local:28443 {
+    tls /certs/tls.crt /certs/tls.key
+    reverse_proxy broker:8090
+}
+
+https://trench.zebra.local:28443 {
+    tls /certs/tls.crt /certs/tls.key
+    reverse_proxy host.docker.internal:28000 {
+        flush_interval -1
+    }
+}

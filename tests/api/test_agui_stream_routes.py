@@ -326,6 +326,9 @@ class _FrozenTaskStore:
     def get_task(self, task_id: TaskId) -> AgentTask | None:
         return self._delegate.get_task(task_id)
 
+    def segments(self, task_id: TaskId):
+        return self._delegate.segments(task_id)
+
     def read_events(self, task_id: TaskId, after_sequence: int) -> tuple[TaskEvent, ...]:
         return tuple(
             entry
@@ -360,6 +363,8 @@ def _append(
     event_type: EventType,
     payload: dict[str, object],
 ) -> SessionEvent:
+    if event_type is EventType.SESSION_COMMAND_ACCEPTED:
+        payload = {"kind": "run", **payload}
     event = SessionEvent(
         event_id=new_event_id(),
         session_id=session_id,

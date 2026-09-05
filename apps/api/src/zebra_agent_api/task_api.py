@@ -54,7 +54,15 @@ class TaskSessionApi(Protocol):
         self, session_id: str, payload: dict[str, object]
     ) -> ApiResponse: ...
 
-    def cancel_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse: ...
+    def cancel_session(
+        self,
+        session_id: str,
+        payload: dict[str, object],
+        *,
+        host_context: HostContextEnvelope | None = None,
+        idempotency_key: str | None = None,
+        task_id: TaskId | None = None,
+    ) -> ApiResponse: ...
 
     def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse: ...
 
@@ -252,9 +260,11 @@ def mutate_task(
     task_id: str,
     action: str,
     payload: dict[str, object],
+    *,
+    host_context: HostContextEnvelope | None = None,
+    idempotency_key: str | None = None,
 ) -> ApiResponse:
-    reader = TaskReadApi(app.stores)
-    active = reader.active_segment(task_id)
+    active = TaskReadApi(app.stores).active_segment(task_id)
     if isinstance(active, ApiResponse):
         return active
     session = app.stores.sessions.get_session(active)
@@ -271,14 +281,19 @@ def mutate_task(
         )
         if rollover.status_code not in {200, 201}:
             return rollover
-        active = reader.active_segment(task_id)
+        active = TaskReadApi(app.stores).active_segment(task_id)
         if isinstance(active, ApiResponse):
             return active
-    handler = {
-        "cancel": app.cancel_session,
-        "suspend": app.suspend_session,
-        "resume": app.resume_session,
-    }[action]
+    if action == "cancel":
+        response = app.cancel_session(
+            str(active),
+            payload,
+            host_context=host_context,
+            idempotency_key=idempotency_key,
+            task_id=TaskId(UUID(task_id)),
+        )
+        return _rewrite_task_identity(response, task_id)
+    handler = {"suspend": app.suspend_session, "resume": app.resume_session}[action]
     return _rewrite_task_identity(handler(str(active), payload), task_id)
 
 

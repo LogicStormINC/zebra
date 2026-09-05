@@ -148,6 +148,8 @@ def create_http_app(
                 live_event_fanout=api.live_event_fanout,
                 deployment_namespace=_deployment_namespace(api),
                 authorization_expires_at=getattr(host_context, "expires_at", None),
+                command_outcome=api.command_outcome,
+                host_context=host_context,
             )
             if isinstance(agui_stream, ApiResponse):
                 return JSONResponse(status_code=agui_stream.status_code, content=agui_stream.body)

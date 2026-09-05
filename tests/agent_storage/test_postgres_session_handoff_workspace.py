@@ -5,7 +5,8 @@ from agent_storage import PostgresWorkspaceProjectionStore
 
 import tests.agent_storage.test_postgres_session_handoffs as handoff_tests
 
-pytest_plugins = ("tests.agent_storage.test_postgres_session_handoffs",)
+postgres_dsn = handoff_tests.postgres_dsn
+handoff_namespace = handoff_tests.handoff_namespace
 
 
 def test_commit_preserves_the_workspace_binding_revision_for_child_recovery(

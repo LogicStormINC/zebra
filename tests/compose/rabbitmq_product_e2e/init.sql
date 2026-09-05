@@ -1,0 +1,3 @@
+CREATE DATABASE trench_e2e OWNER e2e;
+CREATE DATABASE zebra_stage3_e2e OWNER e2e;
+CREATE DATABASE trench_stage3_e2e OWNER e2e;

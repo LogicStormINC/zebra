@@ -14,7 +14,6 @@ from uuid import UUID
 
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
-from agent_storage.postgres.task_admission import load_task_binding
 
 from zebra_agent_api.responses import ApiResponse
 
@@ -149,10 +148,8 @@ def _task_principal_response(
     task_id: str,
     host_context: HostContextEnvelope | None,
 ) -> ApiResponse | None:
-    database_url = getattr(app.settings, "database_url", None)
-    if not isinstance(database_url, str) or not database_url.startswith(
-        ("postgresql://", "postgresql+psycopg://")
-    ):
+    namespace = getattr(app.stores, "deployment_namespace", None)
+    if namespace is None:
         # ponytail: SQLite has no durable TaskBinding authority table; keep local
         # profiles tenant-only until a local binding store is deliberately added.
         return None
@@ -161,24 +158,16 @@ def _task_principal_response(
         if host_context is not None:
             return tenant_forbidden_response(task_id)
         return None
-    namespace = getattr(app.stores, "deployment_namespace", None)
-    if not isinstance(namespace, str):
+    control = getattr(app, "cloud_control", None)
+    if control is None or control.deployment_namespace != namespace:
         return ApiResponse(503, {"status": "principal_binding_unavailable"})
     try:
-        binding = load_task_binding(
-            database_url,
-            deployment_namespace=namespace,
-            task_id=TaskId(UUID(task_id)),
-        )
+        binding = control.load_task_binding(TaskId(UUID(task_id)))
     except (ValueError, TypeError):
         return tenant_forbidden_response(task_id)
     except Exception:
         return ApiResponse(503, {"status": "principal_binding_unavailable"})
-    bound = (
-        _principal_ref(binding.host_capability.host_context)
-        if binding is not None
-        else None
-    )
+    bound = _principal_ref(binding.host_capability.host_context) if binding is not None else None
     if bound != current:
         return tenant_forbidden_response(task_id)
     return None
@@ -193,6 +182,7 @@ def _principal_ref(context: HostContextEnvelope | None) -> str | None:
         if resource.resource_type == "principal"
     ]
     return refs[0] if len(refs) == 1 else None
+
 
 def tenant_memory_denied(
     host_context: HostContextEnvelope | None,

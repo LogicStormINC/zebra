@@ -11,6 +11,7 @@ from agent_context import LocalContextCompiler
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.leases import WorkerLease
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_integrations import build_model_gateway
@@ -49,6 +50,7 @@ from zebra_agent_worker.execution_preflight import (
     prepare_execution_preflight,
 )
 from zebra_agent_worker.execution_recovery import (
+    execute_existing_lease,
     execute_session_with_lease,
     persist_runtime_cleanup_failure,
     recover_execution_inputs,
@@ -90,10 +92,10 @@ class SessionExecutionService:
         frozen_manifest_loader: Callable[[str], object] | None = None,
         client_runtime: Callable[[SessionId], object] | None = None,
         model_http_client: httpx.Client | None = None,
+        runtime_instance_factory: runtime_setup.InstanceFactory | None = None,
     ) -> None:
         runtime_authority.validate_authority_wiring(
-            execution_authority_resolver,
-            execution_authority_scope,
+            execution_authority_resolver, execution_authority_scope,
             execution_authority_scope_provider,
         )
         cloud_artifact_factory = artifact_runtime.validate_cloud_artifact_factory(
@@ -109,6 +111,7 @@ class SessionExecutionService:
             stores,
         )
         self._database_path = database_path
+        self._runtime_instance_factory = runtime_instance_factory
         self._client_runtime = client_runtime
         self._model_http_client = model_http_client
         self._claim_service = claim_service
@@ -149,8 +152,7 @@ class SessionExecutionService:
             tool_run_indexer=self._tool_run_indexer if worker_projection_transaction else None,
         )
         self._control_service = SessionControlService(
-            database_path,
-            settings=self._settings,
+            database_path, settings=self._settings,
             stores=active_stores,
         )
         self._projection_recorder_factory = WorkerProjectionRecorderFactory(
@@ -164,8 +166,7 @@ class SessionExecutionService:
         self._workspace_resolver = workspace_resolver
         self._session_history = active_stores.session_history
         self._handoff_gate = handoff.SessionHandoffRecoveryGate(
-            str(database_path),
-            stores=active_stores,
+            str(database_path), stores=active_stores,
             worker_projection_transaction=worker_projection_transaction,
             deployment_namespace=deployment_namespace,
         )
@@ -180,20 +181,19 @@ class SessionExecutionService:
         self._frozen_manifest_loader = frozen_manifest_loader
 
     def execute_session(
-        self,
-        session_id: SessionId,
-        *,
-        worker_id: str,
-        executed_at: datetime | None = None,
+        self, session_id: SessionId, *, worker_id: str,
+        executed_at: datetime | None = None, lease_ttl_seconds: int = 30,
+    ) -> execution_finalization.ExecutedSession:
+        return execute_session_with_lease(self, session_id, worker_id=worker_id,
+            executed_at=executed_at, lease_ttl_seconds=lease_ttl_seconds)
+
+    def execute_claimed_session(
+        self, lease: WorkerLease, *, executed_at: datetime | None = None,
         lease_ttl_seconds: int = 30,
     ) -> execution_finalization.ExecutedSession:
-        return execute_session_with_lease(
-            self,
-            session_id,
-            worker_id=worker_id,
-            executed_at=executed_at,
-            lease_ttl_seconds=lease_ttl_seconds,
-        )
+        """Execute an already handed-off lease without acquiring another fence."""
+        return execute_existing_lease(self, lease, executed_at=executed_at,
+            lease_ttl_seconds=lease_ttl_seconds)
 
     def _execute_claimed_session_once(
         self,
@@ -280,14 +280,14 @@ class SessionExecutionService:
             raise WorkerExecutionError(str(exc)) from exc
         try:
             runtime, prepared_runtime = runtime_setup.build_prepared_runtime(
-                self._settings,
-                self._database_path,
+                self._settings, self._database_path,
                 workspace_root=task.workspace_root,
                 network_profile=effective_network_profile.name.value,
-                session_id=session_id,
-                attempt_number=1,
+                session_id=session_id, attempt_number=1,
                 artifact_store=self._artifact_payload_store,
                 created_at=started_at,
+                instance_factory=runtime_setup.bind_instance_factory(
+                    self._runtime_instance_factory, claimed.lease, session_events, task_binding),
             )
             runtime_handle = prepared_runtime.handle
             authority = runtime_handle.authority

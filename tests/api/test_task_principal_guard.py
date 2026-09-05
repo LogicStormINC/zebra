@@ -58,10 +58,6 @@ def test_principal_bound_task_hides_artifacts_from_another_user(monkeypatch) -> 
     binding = SimpleNamespace(
         host_capability=SimpleNamespace(host_context=owner),
     )
-    monkeypatch.setattr(
-        "zebra_agent_api.tenant_guard.load_task_binding",
-        lambda *args, **kwargs: binding,
-    )
     session = SimpleNamespace(namespace_id="trench-prod")
     app = SimpleNamespace(
         stores=SimpleNamespace(
@@ -69,6 +65,9 @@ def test_principal_bound_task_hides_artifacts_from_another_user(monkeypatch) -> 
             sessions=SimpleNamespace(get_session=lambda _: session),
         ),
         settings=SimpleNamespace(database_url="postgresql://unused"),
+        cloud_control=SimpleNamespace(
+            deployment_namespace="trench-prod", load_task_binding=lambda _: binding
+        ),
     )
 
     denied = tenant_scope_response(
@@ -95,10 +94,6 @@ def test_principal_bound_task_hides_artifacts_from_another_user(monkeypatch) -> 
 def test_agui_task_access_uses_the_same_principal_fence(monkeypatch) -> None:
     owner = _context("user-a")
     binding = SimpleNamespace(host_capability=SimpleNamespace(host_context=owner))
-    monkeypatch.setattr(
-        "zebra_agent_api.tenant_guard.load_task_binding",
-        lambda *args, **kwargs: binding,
-    )
     app = SimpleNamespace(
         stores=SimpleNamespace(
             deployment_namespace="trench-prod",
@@ -107,6 +102,9 @@ def test_agui_task_access_uses_the_same_principal_fence(monkeypatch) -> None:
             ),
         ),
         settings=SimpleNamespace(database_url="postgresql://unused"),
+        cloud_control=SimpleNamespace(
+            deployment_namespace="trench-prod", load_task_binding=lambda _: binding
+        ),
     )
 
     denied = task_access_response(app, TASK_ID, _context("user-b"))

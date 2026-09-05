@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.ports.session_handoff import HandoffOperation, SessionHandoffCommitRequest
 
 
@@ -10,6 +11,8 @@ def build_handoff_events(
     operation: HandoffOperation,
     request: SessionHandoffCommitRequest,
     workspace: Mapping[str, Any],
+    *,
+    host_context: HostContextEnvelope | None = None,
 ) -> tuple[SessionEvent, ...]:
     envelope = request.envelope
     parent = SessionEvent.create(
@@ -65,6 +68,11 @@ def build_handoff_events(
                 "title": request.create_request.title,
                 "user_input": request.create_request.stage_prompt,
                 "workspace_root": workspace["workspace_root"],
+                **(
+                    {"host_context": host_context.model_dump(mode="json")}
+                    if host_context is not None
+                    else {}
+                ),
                 "policy_profile": workspace["policy_profile"],
                 "tool_profile": workspace["tool_profile"],
                 "network_profile": workspace["network_profile"],

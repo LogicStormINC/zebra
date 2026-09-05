@@ -12,6 +12,7 @@ from agent_core.contracts import (
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_storage import ControlPlaneStores
+from agent_storage.postgres.command_wakeup import CommandAdmissionCapacityError
 from pydantic import ValidationError
 
 from zebra_agent_api.responses import ApiResponse, bad_request, conflict
@@ -78,6 +79,11 @@ def submit_session_command(
     )
     try:
         persisted = stores.events.append(event)
+    except CommandAdmissionCapacityError as exc:
+        return ApiResponse(
+            status_code=429 if exc.code == "command_scope_capacity" else 503,
+            body={"session_id": session_id, "status": "capacity_limited", "reason": exc.code},
+        )
     except ValueError:
         return _retry_after_append_race(stores, session_key, session_id, command)
     return _accepted_response(session_id, command, persisted)

@@ -9,7 +9,9 @@ from agent_core.application.workspace_projection import (
     apply_event as apply_workspace_event,
 )
 from agent_core.application.workspace_projection import rebuild_workspace
-from agent_core.domain.identifiers import TaskId
+from agent_core.domain.events import SessionEvent
+from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.session_handoff import (
     HandoffOperationStatus,
     SessionHandoffEnvelope,
@@ -24,6 +26,7 @@ from agent_core.ports.session_handoff import (
 )
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.command_wakeup import _validated_host_context
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.leases import lock_session_lease_boundary
 from agent_storage.postgres.projections import (
@@ -140,7 +143,14 @@ def commit_handoff_in_transaction(
         or segment["segment_index"] != request.envelope.source_stage_index
     ):
         raise HandoffStorageConflictError("handoff Task lineage changed")
-    events = build_handoff_events(operation, request, workspace.model_dump(mode="json"))
+    events = build_handoff_events(
+        operation,
+        request,
+        workspace.model_dump(mode="json"),
+        host_context=_child_host_context(
+            connection, deployment_namespace, operation.source_session_id
+        ),
+    )
     parent_event, child_events = events[0], list(events[1:])
     append_event_in_transaction(connection, deployment_namespace, parent_event)
     save_session_in_transaction(
@@ -211,6 +221,23 @@ def commit_handoff_in_transaction(
         artifact_id=request.artifact_id,
         checksum=request.envelope.checksum,
         child_status=child.status.value,
+    )
+
+
+def _child_host_context(
+    connection: Any, namespace: str, session_id: SessionId
+) -> HostContextEnvelope | None:
+    tail = connection.execute(
+        """SELECT * FROM session_events WHERE deployment_namespace=%s
+        AND session_id=%s ORDER BY sequence DESC LIMIT 1""",
+        (namespace, session_id),
+    ).fetchone()
+    if tail is None:
+        raise HandoffStorageConflictError("handoff source binding evidence is missing")
+    # Identity continuity only: preserve even expired timestamps. A child Attempt
+    # still resolves fresh execution authority; no grant or authority Event is minted.
+    return _validated_host_context(
+        connection, namespace, SessionEvent.model_validate(tail), allow_unbound=True
     )
 
 

@@ -283,7 +283,7 @@ def test_migration_v25_table_exists(postgres_dsn: str) -> None:
         row = connection.execute(
             """
             SELECT count(*) FROM information_schema.tables
-            WHERE table_name = 'task_binding_snapshots'
+            WHERE table_name = 'task_binding_snapshots' AND table_schema = current_schema()
             """
         ).fetchone()
     assert int(row[0]) == 1

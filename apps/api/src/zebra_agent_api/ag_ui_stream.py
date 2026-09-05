@@ -5,16 +5,17 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from collections.abc import AsyncIterator, Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import AsyncGenerator, AsyncIterator, Callable, Mapping, Sequence
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from time import monotonic
 from typing import Protocol
 from uuid import UUID
 
-from ag_ui.core import Event
+from ag_ui.core import Event, RunErrorEvent
 from ag_ui.encoder import EventEncoder
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
@@ -24,9 +25,12 @@ from agent_integrations.ag_ui import (
     AgUiProjectionError,
     AgUiRunIdentity,
 )
+from agent_integrations.ag_ui.task_run_binding import bind_task_run
 from agent_integrations.ag_ui.task_stream import AgUiTaskProjector
 from agent_storage import ControlPlaneStores
 
+from zebra_agent_api.ag_ui_task_view import canonical_task_view, deadline_frames
+from zebra_agent_api.ag_ui_task_view import stream_problem as _problem
 from zebra_agent_api.responses import ApiResponse
 
 _POLL_SECONDS = float(os.environ.get("ZEBRA_AGUI_POLL_SECONDS", "0.25"))
@@ -65,6 +69,8 @@ class AgUiStreamContext:
     live_event_fanout: LiveEventFanoutPort | None = None
     deployment_namespace: str | None = None
     authorization_expires_at: datetime | None = None
+    command_outcome: Callable[[TaskId, str, UUID, HostContextEnvelope], str | None] | None = None
+    host_context: HostContextEnvelope | None = None
 
 
 def prepare_agui_stream(
@@ -75,6 +81,8 @@ def prepare_agui_stream(
     live_event_fanout: LiveEventFanoutPort | None = None,
     deployment_namespace: str | None = None,
     authorization_expires_at: datetime | None = None,
+    command_outcome: Callable[[TaskId, str, UUID, HostContextEnvelope], str | None] | None = None,
+    host_context: HostContextEnvelope | None = None,
 ) -> AgUiStreamContext | ApiResponse | None:
     """Resolve and validate a stream before HTTP sends response headers."""
 
@@ -102,8 +110,15 @@ def prepare_agui_stream(
     if error is not None:
         return error
     try:
+        view = canonical_task_view(stores, thread_id)
+        if (
+            command_outcome is not None
+            and cursor is not None
+            and bind_task_run(view, run_id).anchor is None
+        ):
+            raise AgUiProjectionError("cursor has no canonical run anchor")
         AgUiTaskProjector().project_task(
-            stores.tasks.read_events(thread_id, -1),
+            view,
             identity,
             after=cursor,
         )
@@ -117,6 +132,8 @@ def prepare_agui_stream(
         live_event_fanout,
         deployment_namespace,
         authorization_expires_at,
+        command_outcome,
+        host_context,
     )
 
 
@@ -131,15 +148,23 @@ async def tail_agui_events(
     tail is bounded by a wall-clock deadline.
     """
 
-    cursor = context.cursor
-    last_delivery = monotonic()
     authorization_seconds = (
         max(0.0, (context.authorization_expires_at - datetime.now(UTC)).total_seconds())
         if context.authorization_expires_at is not None
         else _MAX_STREAM_SECONDS
     )
     deadline = monotonic() + min(_MAX_STREAM_SECONDS, authorization_seconds)
-    iterations = 0
+    async for frame in deadline_frames(_tail_agui_events(context, request, deadline), deadline):
+        yield frame
+
+
+async def _tail_agui_events(
+    context: AgUiStreamContext,
+    request: _DisconnectableRequest,
+    deadline: float,
+) -> AsyncGenerator[str, None]:
+    cursor = context.cursor
+    last_delivery = monotonic()
     failures = 0
     terminal_status_since: float | None = None
     events: list[TaskEvent] = []
@@ -157,7 +182,6 @@ async def tail_agui_events(
             live_cursor = None
     del request  # disconnects are detected at yield time
     while monotonic() < deadline:
-        iterations += 1
         waited_for_live = False
         try:
             if task_index_ready:
@@ -169,9 +193,9 @@ async def tail_agui_events(
             else:
                 events = list(
                     await asyncio.to_thread(
-                        context.stores.tasks.read_events,
+                        canonical_task_view,
+                        context.stores,
                         context.task_id,
-                        -1,
                     )
                 )
             if (
@@ -203,7 +227,22 @@ async def tail_agui_events(
                 return
             await asyncio.sleep(_POLL_SECONDS)
             continue
+        try:
+            bind_task_run(events, context.identity.run_id)
+        except AgUiProjectionError:
+            yield EventEncoder().encode(
+                RunErrorEvent(
+                    code="invalid_run_binding", message="The run has an ambiguous command binding."
+                )
+            )
+            return
         if cursor is None:
+            if (
+                context.command_outcome is not None
+                and bind_task_run(events, context.identity.run_id).anchor is None
+            ):
+                await asyncio.sleep(_POLL_SECONDS)
+                continue
             cursor = _cursor_before_run(events, context.identity)
             if cursor is None and _run_command_is_not_indexed(events, context.identity.run_id):
                 await asyncio.sleep(_POLL_SECONDS)
@@ -241,7 +280,50 @@ async def tail_agui_events(
             return
         if _has_run_terminal_event(events, context.identity.run_id):
             return
-        if task.status in _TERMINAL_STATUSES:
+        binding = bind_task_run(events, context.identity.run_id)
+        if (
+            context.command_outcome is not None
+            and context.host_context is not None
+            and binding.anchor is not None
+        ):
+            try:
+                outcome = await asyncio.to_thread(
+                    context.command_outcome,
+                    context.task_id,
+                    context.identity.run_id,
+                    binding.anchor.event.event_id,
+                    context.host_context,
+                )
+            except Exception:
+                failures += 1
+                if failures > 20:
+                    return
+                await asyncio.sleep(_POLL_SECONDS)
+                continue
+            if outcome in {
+                "command_requires_reconciliation",
+                "command_unsupported",
+                "command_recovery_exhausted",
+                "command_delivery_failed",
+            }:
+                yield EventEncoder().encode(
+                    RunErrorEvent(
+                        code=outcome,
+                        message="The command could not proceed. Refresh or contact an operator.",
+                    )
+                )
+                return
+        if task.active_segment_id != context.identity.session_id:
+            context = replace(
+                context,
+                identity=context.identity.model_copy(update={"session_id": task.active_segment_id}),
+            )
+            task_index_ready = False
+            live_cursor = None
+        if (
+            task.status in _TERMINAL_STATUSES
+            and bind_task_run(events, context.identity.run_id).legacy
+        ):
             now = monotonic()
             terminal_status_since = terminal_status_since or now
             if now - terminal_status_since >= _TERMINAL_FLUSH_SECONDS:
@@ -315,23 +397,9 @@ def _has_run_terminal_event(
     events: list[TaskEvent] | tuple[TaskEvent, ...],
     run_id: str,
 ) -> bool:
-    run_start: int | None = None
-    command_seen = False
-    for entry in events:
-        if entry.event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
-            continue
-        command_seen = True
-        if _command_run_id(entry) == run_id:
-            run_start = entry.task_sequence
-    if run_start is None:
-        # A stream opened before its command must not close on another run's
-        # terminal event. Command-less fixtures retain legacy replay behavior.
-        if command_seen:
-            return False
-        run_start = -1
+    binding = bind_task_run(events, run_id)
     return any(
-        entry.task_sequence > run_start and entry.event.event_type in _TERMINAL_EVENTS
-        for entry in events
+        binding.includes(entry) and entry.event.event_type in _TERMINAL_EVENTS for entry in events
     )
 
 
@@ -339,12 +407,10 @@ def _cursor_before_run(
     events: list[TaskEvent] | tuple[TaskEvent, ...],
     identity: AgUiRunIdentity,
 ) -> AgUiCursor | None:
-    for index, entry in enumerate(events):
-        if entry.event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
-            continue
-        if _command_run_id(entry) != identity.run_id or index == 0:
-            continue
-        previous = events[index - 1]
+    binding = bind_task_run(events, identity.run_id)
+    preceding = [e for e in events if e.task_sequence < binding.start]
+    if binding.anchor is not None and preceding:
+        previous = preceding[-1]
         return AgUiCursor(
             thread_id=identity.thread_id,
             run_id=identity.run_id,
@@ -358,22 +424,8 @@ def _run_command_is_not_indexed(
     events: list[TaskEvent] | tuple[TaskEvent, ...],
     run_id: str,
 ) -> bool:
-    command_run_ids = {
-        candidate
-        for entry in events
-        if entry.event.event_type is EventType.SESSION_COMMAND_ACCEPTED
-        if (candidate := _command_run_id(entry)) is not None
-    }
-    return bool(command_run_ids) and run_id not in command_run_ids
-
-
-def _command_run_id(entry: TaskEvent) -> str | None:
-    payload = entry.event.payload
-    command_payload = payload.get("payload")
-    candidate = payload.get("run_id")
-    if isinstance(command_payload, Mapping):
-        candidate = command_payload.get("run_id", candidate)
-    return candidate if isinstance(candidate, str) else None
+    binding = bind_task_run(events, run_id)
+    return not binding.legacy and binding.anchor is None
 
 
 def _project_new_task_events(
@@ -394,8 +446,9 @@ def _project_new_task_events(
     encoder = EventEncoder()
     projector = AgUiTaskProjector()
     projected: list[tuple[AgUiCursor, str]] = []
+    binding = bind_task_run(events, identity.run_id)
     for index, entry in enumerate(events):
-        if entry.task_sequence <= start_sequence:
+        if entry.task_sequence <= start_sequence or not binding.includes(entry):
             continue
         projection = projector.project_task(
             events[: index + 1],
@@ -439,17 +492,3 @@ def _query_cursor(
         return AgUiCursor.decode(raw), None
     except AgUiProjectionError:
         return None, _problem(400, "invalid_cursor", "cursor is malformed", path)
-
-
-def _problem(status: int, code: str, detail: str, path: str) -> ApiResponse:
-    return ApiResponse(
-        status,
-        {
-            "type": f"https://zebra.invalid/problems/{code}",
-            "title": "AG-UI stream rejected",
-            "status": status,
-            "detail": detail[:512],
-            "instance": path,
-            "code": code,
-        },
-    )

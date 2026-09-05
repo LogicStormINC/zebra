@@ -39,6 +39,8 @@ from agent_storage import (
     list_confirmed_repo_memories,
     store_text_attachments,
 )
+from agent_storage.postgres.command_wakeup_outcome import PostgresCommandOutcomeReader
+from agent_storage.postgres.direct_control import PostgresDirectControl
 from zebra_agent_config import (
     ZebraAgentSettings,
     trusted_local_mode_enabled,
@@ -72,7 +74,7 @@ from zebra_agent_api.session_binding import (
     _post_admission_idempotency,
     freeze_binding_for_response,
 )
-from zebra_agent_api.session_control import cancel_session_control, suspend_session_control
+from zebra_agent_api.session_control import ApiSessionControlMixin
 from zebra_agent_api.session_identity_read import _parse_session_id as parse_session_id
 from zebra_agent_api.session_message_submission import (
     append_session_message_event,
@@ -101,6 +103,7 @@ class ZebraAgentApi(
     ControlPlaneStorageMixin,
     ApiStatusMixin,
     ApiCommandMixin,
+    ApiSessionControlMixin,
     ApiSessionReadMixin,
     ApiSessionHandoffMixin,
     ApiMemoryReadMixin,
@@ -116,6 +119,8 @@ class ZebraAgentApi(
     database_path: Path
     settings: ZebraAgentSettings
     _stores: ControlPlaneStores | None = None
+    cloud_control: PostgresDirectControl | None = None
+    command_outcome: PostgresCommandOutcomeReader | None = None
     live_event_fanout: LiveEventFanoutPort | None = None
     effect_state: EffectStateReadPort | None = None
     workspace_control_store: WorkspaceControlStorePort | None = None
@@ -308,22 +313,6 @@ class ZebraAgentApi(
                 "assistant_message": result.attempt_result.metadata.get("assistant_message"),
                 "trace": serialize_trace_events(result.events),
             },
-        )
-
-    def cancel_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
-        session_key = self._parse_session_id(session_id)
-        if isinstance(session_key, ApiResponse):
-            return session_key
-        return cancel_session_control(
-            self.database_path, str(session_key), payload, stores=self.stores
-        )
-
-    def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse:
-        session_key = self._parse_session_id(session_id)
-        if isinstance(session_key, ApiResponse):
-            return session_key
-        return suspend_session_control(
-            self.database_path, str(session_key), payload, stores=self.stores
         )
 
     def append_session_message(self, session_id: str, payload: dict[str, object]) -> ApiResponse:

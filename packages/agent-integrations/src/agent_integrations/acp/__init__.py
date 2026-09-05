@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.identifiers import SessionId, new_session_id
 
 _ACP_SESSION_PREFIX = "acp"
@@ -46,8 +47,11 @@ class AcpEntryAdapter:
     HTTP entry; the adapter owns no second authority.
     """
 
-    def __init__(self, app: Any) -> None:
+    def __init__(
+        self, app: Any, *, trusted_control_scope: OpaqueAuthorityScope | None = None
+    ) -> None:
         self._app = app
+        self._trusted_control_scope = trusted_control_scope
 
     # -- lifecycle ---------------------------------------------------------
 
@@ -63,9 +67,7 @@ class AcpEntryAdapter:
         )
         response = AcpResponse(status_code=raw.status_code, body=dict(raw.body))
         if response.status_code not in (200, 201):
-            raise AcpAdapterError(
-                f"ACP session initialize failed: {response.body.get('reason')}"
-            )
+            raise AcpAdapterError(f"ACP session initialize failed: {response.body.get('reason')}")
         session_id = SessionId(response.body["session_id"])
         handle = AcpSessionHandle(
             acp_session_ref=f"{_ACP_SESSION_PREFIX}:{session_id}",
@@ -96,20 +98,23 @@ class AcpEntryAdapter:
         after_sequence: int | None = None,
     ) -> list[Any]:
         """Durable replay from the checkpoint; never repeats completed effects."""
-        cursor = (
-            after_sequence
-            if after_sequence is not None
-            else handle.last_delivered_sequence
-        )
-        return list(
-            self._app.stores.events.read_since(handle.session_id, cursor)
-        )
+        cursor = after_sequence if after_sequence is not None else handle.last_delivered_sequence
+        return list(self._app.stores.events.read_since(handle.session_id, cursor))
 
     # -- control -----------------------------------------------------------
 
-    def cancel(self, acp_session_ref: str) -> AcpResponse:
+    def cancel(self, acp_session_ref: str, *, idempotency_key: str | None = None) -> AcpResponse:
         session_id = _parse_acp_ref(acp_session_ref)
-        raw = self._app.cancel_session(str(session_id), {})
+        raw = (
+            self._app.cancel_session(
+                str(session_id),
+                {},
+                trusted_scope=self._trusted_control_scope,
+                idempotency_key=idempotency_key,
+            )
+            if self._trusted_control_scope is not None
+            else self._app.cancel_session(str(session_id), {})
+        )
         return AcpResponse(status_code=raw.status_code, body=dict(raw.body))
 
     def approve(self, session_id: str, body: dict[str, Any]) -> AcpResponse:

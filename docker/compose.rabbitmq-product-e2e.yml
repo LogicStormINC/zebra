@@ -1,0 +1,201 @@
+# Test-only: invoke through tests/compose/rabbitmq_product_e2e/fixture.py.
+# Image IDs provide dependencies; all application source is the isolated checkout.
+name: rabbitmq-product-e2e
+
+x-cloud: &cloud
+  ZEBRA_PROFILE: cloud
+  ZEBRA_DATABASE_URL: ${ZEBRA_DATABASE_URL:?fixture environment required}
+  ZEBRA_DEPLOYMENT_NAMESPACE: rabbitmq-product-e2e
+  ZEBRA_AUTHORITY_ISSUER: rabbitmq-product-e2e
+  ZEBRA_HISTORY_SCOPE_NAMESPACE: rabbitmq-product-e2e
+  ZEBRA_CONTINUATION_SCOPE_NAMESPACE: rabbitmq-product-e2e
+  ZEBRA_MEMORY_CURSOR_SIGNING_KEY: ${E2E_CURSOR_KEY:?required}
+  ZEBRA_API_AUTH_TOKEN: ${E2E_API_TOKEN:?required}
+  ZEBRA_RUNTIME_CLASS: gvisor
+  ZEBRA_GVISOR_RUNTIME: runsc
+  ZEBRA_RUNTIME_IMAGE: ${ZEBRA_RUNTIME_IMAGE:?required}
+  ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA: "true"
+  ZEBRA_RUNTIME_UID: ${ZEBRA_RUNTIME_UID:?required}
+  ZEBRA_RUNTIME_GID: ${ZEBRA_RUNTIME_GID:?required}
+  ZEBRA_RUNTIME_WORKSPACE_QUOTA_MB: ${ZEBRA_RUNTIME_WORKSPACE_QUOTA_MB:?required}
+  ZEBRA_WORKSPACE_VOLUME_ROOT: /Volumes/ZEBRATRENCH/rabbitmq-product-e2e
+  ZEBRA_WORKSPACE_VOLUME_LAYOUT: root
+  DOCKER_HOST: tcp://host.docker.internal:2375
+  ZEBRA_S3_ENDPOINT: http://minio:9000
+  ZEBRA_S3_BUCKET: rabbitmq-product-e2e
+  ZEBRA_S3_ACCESS_KEY: ${E2E_MINIO_USER:?required}
+  ZEBRA_S3_SECRET_KEY: ${E2E_MINIO_PASSWORD:?required}
+  ZEBRA_S3_REGION: us-east-1
+  ZEBRA_S3_KEY_PREFIX: rabbitmq-product-e2e/artifacts/v1
+  ZEBRA_LIVE_REDIS_URL: redis://redis:6379/0
+  ZEBRA_LIVE_STREAM_KEY_PREFIX: rabbitmq-product-e2e:live
+  ZEBRA_MODEL_PROVIDER: deepseek
+  ZEBRA_MODEL_API_KEY_ENV: DEEPSEEK_API_KEY
+  ZEBRA_MODEL_BASE_URL: https://api.deepseek.com
+  ZEBRA_MODEL_NAME: deepseek-v4-flash
+  DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?required}
+  ZEBRA_HOST_TOOL_ENDPOINT: https://trench.zebra.local:28443/api/trench-ai/agent
+  ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY: rabbitmq-product-e2e-worker
+  ZEBRA_HOST_TOOL_SHARED_SECRET: ${E2E_WORKLOAD_SECRET:?required}
+  ZEBRA_HOST_TOOL_SSRF_ALLOW_HOSTNAMES: trench.zebra.local
+  SSL_CERT_DIR: /etc/ssl/certs
+  PYTHONDONTWRITEBYTECODE: "1"
+
+x-source: &source
+  - ${E2E_SOURCE_ROOT:?required}/apps:/app/apps:ro
+  - ${E2E_SOURCE_ROOT:?required}/packages:/app/packages:ro
+  - ${E2E_SOURCE_ROOT:?required}/configs:/app/configs:ro
+  - ${E2E_SOURCE_ROOT:?required}/docker/migrate.py:/app/docker/migrate.py:ro
+  - ${E2E_SOURCE_ROOT:?required}/tests/compose/rabbitmq_product_e2e:/fixture:ro
+  - ${E2E_SECRETS_ROOT:?required}/ca.crt:/etc/ssl/certs/${E2E_CA_HASH:?required}.0:ro
+  - /Volumes/ZEBRATRENCH/rabbitmq-product-e2e:/Volumes/ZEBRATRENCH/rabbitmq-product-e2e
+
+x-app: &app
+  image: ${E2E_WORKER_IMAGE:?required}
+  pull_policy: never
+  working_dir: /app
+  environment: *cloud
+  volumes: *source
+  read_only: true
+  init: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  networks: [isolated]
+
+services:
+  postgres:
+    image: postgres:17.5-alpine3.21
+    pull_policy: never
+    environment:
+      POSTGRES_USER: e2e
+      POSTGRES_DB: zebra_e2e
+      POSTGRES_PASSWORD: ${E2E_POSTGRES_PASSWORD:?required}
+    ports: ["127.0.0.1:28432:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ${E2E_SOURCE_ROOT:?required}/tests/compose/rabbitmq_product_e2e/init.sql:/docker-entrypoint-initdb.d/01-trench.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U e2e -d zebra_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks: [isolated]
+
+  redis:
+    image: redis:8.2.1-alpine
+    pull_policy: never
+    command: [redis-server, --save, "", --appendonly, "no"]
+    ports: ["127.0.0.1:28379:6379"]
+    networks: [isolated]
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    pull_policy: never
+    command: [server, /data, --console-address, ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${E2E_MINIO_USER:?required}
+      MINIO_ROOT_PASSWORD: ${E2E_MINIO_PASSWORD:?required}
+    ports: ["127.0.0.1:29000:9000", "127.0.0.1:29001:9001"]
+    volumes: [minio-data:/data]
+    healthcheck:
+      test: [CMD, curl, --fail, http://localhost:9000/minio/health/live]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks: [isolated]
+
+  minio-init:
+    <<: *app
+    entrypoint: [python, /fixture/bootstrap_storage.py]
+    depends_on:
+      minio: {condition: service_healthy}
+
+  zebra-migrate:
+    <<: *app
+    entrypoint: [python, docker/migrate.py]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  zebra-authority:
+    <<: *app
+    entrypoint: [python, /fixture/bootstrap_authority.py]
+    depends_on:
+      zebra-migrate: {condition: service_completed_successfully}
+
+  zebra-api:
+    <<: *app
+    image: ${E2E_API_IMAGE:?required}
+    entrypoint: [uvicorn, "zebra_agent_api.http:create_http_app", --factory, --host, "0.0.0.0", --port, "8000"]
+    ports: ["127.0.0.1:28080:8000"]
+    depends_on:
+      zebra-authority: {condition: service_completed_successfully}
+      minio-init: {condition: service_completed_successfully}
+      redis: {condition: service_started}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  zebra-worker:
+    <<: *app
+    stop_grace_period: 10m
+    environment:
+      <<: *cloud
+      ZEBRA_RABBIT_PUBLISH_ENABLED: ${ZEBRA_RABBIT_PUBLISH_ENABLED:-false}
+      ZEBRA_RABBIT_CONSUME_ENABLED: ${ZEBRA_RABBIT_CONSUME_ENABLED:-false}
+      ZEBRA_COMMAND_SCAN_FALLBACK_ENABLED: ${ZEBRA_COMMAND_SCAN_FALLBACK_ENABLED:-true}
+      ZEBRA_COMMAND_SCOPED_ROLLOUT_ENABLED: ${ZEBRA_COMMAND_SCOPED_ROLLOUT_ENABLED:-false}
+      ZEBRA_RABBIT_RELAY_URL: ${ZEBRA_RABBIT_RELAY_URL:-}
+      ZEBRA_RABBIT_CONSUMER_URL: ${ZEBRA_RABBIT_CONSUMER_URL:-}
+      ZEBRA_RABBIT_SHADOW_CONSUMER_URL: ${ZEBRA_RABBIT_SHADOW_CONSUMER_URL:-}
+    entrypoint: [zebra-agent-worker]
+    command: [--worker-id, rabbitmq-product-e2e-worker, --idle-sleep-seconds, "0.1"]
+    depends_on:
+      zebra-api: {condition: service_healthy}
+
+  broker:
+    <<: *app
+    image: ${E2E_BROKER_IMAGE:?required}
+    entrypoint: [python, -m, zebra_host_grant_broker]
+    environment:
+      ZEBRA_GRANT_BROKER_ISSUER: https://broker.zebra.local:28443
+      ZEBRA_GRANT_BROKER_ORIGIN: https://127.0.0.1:28443
+      ZEBRA_GRANT_BROKER_HOST_APP_ID: trench
+      ZEBRA_GRANT_BROKER_NAMESPACE_ID: trench-rabbitmq-e2e
+      ZEBRA_GRANT_BROKER_POLICY_VERSION: trench-native-v2
+      ZEBRA_GRANT_BROKER_ALLOWED_SCOPES: ${E2E_ALLOWED_SCOPES:?required}
+      ZEBRA_GRANT_BROKER_WORKLOAD_IDENTITIES: rabbitmq-product-e2e-worker
+      ZEBRA_GRANT_BROKER_WORKLOAD_SHARED_SECRET: ${E2E_WORKLOAD_SECRET:?required}
+      ZEBRA_GRANT_BROKER_TRENCH_ME_URL: https://trench.zebra.local:28443/api/trench-ai/me
+      ZEBRA_GRANT_BROKER_TRENCH_SOURCES_URL: https://trench.zebra.local:28443/api/trench-ai/sources
+      ZEBRA_GRANT_BROKER_PRIVATE_KEY_FILE: /secrets/trench-host-grant-v1.pem
+      SSL_CERT_DIR: /etc/ssl/certs
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ${E2E_SOURCE_ROOT:?required}/apps:/app/apps:ro
+      - ${E2E_SOURCE_ROOT:?required}/packages:/app/packages:ro
+      - ${E2E_SECRETS_ROOT:?required}/trench-host-grant-v1.pem:/secrets/trench-host-grant-v1.pem:ro
+      - ${E2E_SECRETS_ROOT:?required}/ca.crt:/etc/ssl/certs/${E2E_CA_HASH:?required}.0:ro
+
+  tls:
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/caddy:2-alpine
+    pull_policy: never
+    ports: ["127.0.0.1:28443:28443"]
+    volumes:
+      - ${E2E_SOURCE_ROOT:?required}/tests/compose/rabbitmq_product_e2e/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${E2E_SECRETS_ROOT:?required}/tls.crt:/certs/tls.crt:ro
+      - ${E2E_SECRETS_ROOT:?required}/tls.key:/certs/tls.key:ro
+    depends_on: [broker, zebra-api]
+    networks:
+      isolated:
+        aliases: [zebra.zebra.local, broker.zebra.local, trench.zebra.local]
+
+volumes:
+  postgres-data:
+  minio-data:
+
+networks:
+  isolated:
+    name: rabbitmq-product-e2e

@@ -22,6 +22,7 @@ from agent_storage import (
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
 )
+from zebra_agent_worker.runtime_instances import InstanceFactory
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
 
 
@@ -39,6 +40,7 @@ class CloudWorkerComposition:
     authority_resolver: ExecutionAuthorityResolverPort | None = None
     authority_scope_provider: Callable[[Session], OpaqueAuthorityScope] | None = None
     dsn: str | None = None
+    runtime_instance_factory: InstanceFactory | None = None
 
 
 def compose_cloud_worker(
@@ -169,6 +171,16 @@ def compose_cloud_worker(
             namespace_id=session.namespace_id or stores.deployment_namespace,
         )
 
+    from agent_core.domain.leases import WorkerLease
+    from agent_storage.postgres.runtime_instances import PostgresRuntimeInstances
+
+    def runtime_instance_factory(lease: WorkerLease, scope: OpaqueAuthorityScope,
+                                 workspace: str | None, engine: str) -> PostgresRuntimeInstances:
+        return PostgresRuntimeInstances(
+            cloud.dsn, deployment_namespace=cloud.deployment_namespace, scope=scope,
+            lease=lease, workspace_ref=workspace, engine_identity=engine,
+        )
+
     return CloudWorkerComposition(
         stores=stores,
         effect_dispatch=dispatch,
@@ -180,4 +192,5 @@ def compose_cloud_worker(
         authority_resolver=authority_resolver,
         authority_scope_provider=authority_scope_provider,
         dsn=cloud.dsn,
+        runtime_instance_factory=runtime_instance_factory,
     )

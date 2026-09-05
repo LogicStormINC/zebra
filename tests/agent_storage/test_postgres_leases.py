@@ -24,7 +24,7 @@ from agent_storage import (
     bootstrap_control_plane_epoch,
     rotate_control_plane_epoch,
 )
-from psycopg.conninfo import make_conninfo
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
 
 @pytest.fixture(scope="session")
@@ -422,8 +422,9 @@ def test_database_time_is_independent_of_session_timezone(
     postgres_dsn: str,
     lease_namespace: str,
 ) -> None:
-    ahead_dsn = make_conninfo(postgres_dsn, options="-c timezone=Pacific/Kiritimati")
-    behind_dsn = make_conninfo(postgres_dsn, options="-c timezone=Pacific/Honolulu")
+    options = conninfo_to_dict(postgres_dsn).get("options", "")
+    ahead_dsn = make_conninfo(postgres_dsn, options=f"{options} -c timezone=Pacific/Kiritimati")
+    behind_dsn = make_conninfo(postgres_dsn, options=f"{options} -c timezone=Pacific/Honolulu")
     session_id = new_session_id()
     first = _store(ahead_dsn, lease_namespace).acquire(
         session_id,

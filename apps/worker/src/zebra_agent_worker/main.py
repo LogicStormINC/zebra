@@ -42,7 +42,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         json.dumps(
             {
                 "command": "loop",
-                "database": str(database_path),
+                "database": (
+                    "postgresql:[redacted]"
+                    if settings.storage_authority == "postgresql"
+                    else str(database_path)
+                ),
                 "worker_id": namespace.worker_id,
                 "batch_size": namespace.batch_size,
                 "lease_ttl_seconds": namespace.lease_ttl_seconds,

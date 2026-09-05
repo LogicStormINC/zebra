@@ -24,7 +24,9 @@ from agent_runtime.adapters.local_snapshot_state import (
     LocalSnapshotInspection,
 )
 from agent_runtime.adapters.local_snapshots import LocalSnapshotBackend
+from agent_runtime.adapters.oci_instances import OciInstances
 from agent_runtime.runtime_failures import normalize_runtime_failure
+from agent_runtime.runtime_instance_lifecycle import RuntimeInstanceLifecycle
 
 EngineRunner = Callable[..., CompletedProcess[str]]
 _KEEPALIVE_SCRIPT = "trap 'exit 0' TERM INT; while :; do sleep 3600; done"
@@ -41,6 +43,7 @@ class OciRuntime(RuntimePort):
         gvisor_runtime: str = "runsc",
         snapshot_root: str | Path | None = None,
         runner: EngineRunner = run,
+        instance_lifecycle: RuntimeInstanceLifecycle | None = None,
     ) -> None:
         if spec.runtime_class not in {RuntimeClass.OCI_ROOTLESS, RuntimeClass.GVISOR}:
             raise ValueError("OciRuntime requires an OCI or gVisor SandboxSpec")
@@ -61,6 +64,8 @@ class OciRuntime(RuntimePort):
         self._containers: dict[str, str] = {}
         self._handles: dict[str, RuntimeHandle] = {}
         self._active_handle_id: str | None = None
+        self._instances = (None if instance_lifecycle is None else
+                           OciInstances(instance_lifecycle, self._invoke, self._engine))
 
     @property
     def spec(self) -> SandboxSpec:
@@ -116,7 +121,8 @@ class OciRuntime(RuntimePort):
         capabilities = self.inspect_capabilities()
         if not capabilities.available:
             raise RuntimeCapabilityError(capabilities.reason or "hard runtime is unavailable")
-        self.destroy_session(effective_spec.session_id)
+        if self._instances is None:
+            self.destroy_session(effective_spec.session_id)
         authority = EffectiveRuntimeAuthority(
             runtime_class=effective_spec.runtime_class,
             engine=capabilities.engine,
@@ -131,16 +137,29 @@ class OciRuntime(RuntimePort):
             authority=authority,
         )
         container_name = f"zebra-{handle.handle_id}"
-        created = self._invoke(self._create_command(container_name, root, effective_spec))
+        labels = (() if self._instances is None else self._instances.reserve(
+            handle.handle_id, effective_spec.session_id, effective_spec.digest))
+        created = self._invoke(self._create_command(container_name, root, effective_spec, labels))
         if created.returncode != 0:
             raise RuntimeCapabilityError(self._engine_failure("container create", created))
         container_id = created.stdout.strip()
         if not container_id:
-            self._invoke((*self._engine, "rm", "--force", container_name))
+            if self._instances is None:
+                self._invoke((*self._engine, "rm", "--force", container_name))
             raise RuntimeCapabilityError("OCI engine returned an empty container id")
+        self._containers[handle.handle_id] = container_id
+        self._handles[handle.handle_id] = handle
+        if self._instances is not None:
+            try:
+                self._instances.lifecycle.created(handle.handle_id, container_id)
+                self._instances.authorize(handle.handle_id, container_id)
+            except Exception:
+                # Reservation survives uncertain create/DB outcomes; never scan-and-forget.
+                self.destroy(handle)
+                raise
         started = self._invoke((*self._engine, "start", container_id))
         if started.returncode != 0:
-            self._invoke((*self._engine, "rm", "--force", container_id))
+            self.destroy(handle)
             raise RuntimeCapabilityError(self._engine_failure("container start", started))
         if effective_spec.workspace_writable:
             writable = self._invoke(
@@ -155,7 +174,7 @@ class OciRuntime(RuntimePort):
                 timeout=10,
             )
             if writable.returncode != 0:
-                self._invoke((*self._engine, "rm", "--force", container_id))
+                self.destroy(handle)
                 raise RuntimeCapabilityError(
                     "hard runtime container user cannot write the workspace"
                 )
@@ -171,6 +190,8 @@ class OciRuntime(RuntimePort):
             )
         handle = self._active_handle()
         container_id = self._containers[handle.handle_id]
+        if self._instances is not None:
+            self._instances.authorize(handle.handle_id, container_id)
         cwd = self._container_cwd(request.cwd, handle)
         timeout = min(
             request.timeout_seconds or self._spec.limits.max_execution_seconds,
@@ -251,6 +272,8 @@ class OciRuntime(RuntimePort):
 
     def resume(self, handle: RuntimeHandle) -> RuntimeHandle:
         current = self._require_handle(handle)
+        if self._instances is not None:
+            self._instances.authorize(current.handle_id, self._containers[current.handle_id])
         if not current.suspended:
             return current
         completed = self._invoke((*self._engine, "unpause", self._containers[current.handle_id]))
@@ -261,17 +284,24 @@ class OciRuntime(RuntimePort):
         return resumed
 
     def destroy(self, handle: RuntimeHandle) -> None:
-        current = self._handles.pop(handle.handle_id, None)
-        container_id = self._containers.pop(handle.handle_id, None)
+        current = self._handles.get(handle.handle_id)
+        container_id = self._containers.get(handle.handle_id)
         if current is None or container_id is None:
             return
-        removed = self._invoke((*self._engine, "rm", "--force", "--volumes", container_id))
+        if self._instances is not None:
+            self._instances.remove(handle.handle_id, container_id)
+        else:
+            removed = self._invoke((*self._engine, "rm", "--force", "--volumes", container_id))
+            if removed.returncode != 0:
+                raise RuntimeCapabilityError(self._engine_failure("container cleanup", removed))
+        self._handles.pop(handle.handle_id)
+        self._containers.pop(handle.handle_id)
         if self._active_handle_id == handle.handle_id:
             self._active_handle_id = None
-        if removed.returncode != 0:
-            raise RuntimeCapabilityError(self._engine_failure("container cleanup", removed))
 
     def destroy_session(self, session_id: str) -> int:
+        if self._instances is not None:
+            raise RuntimeCapabilityError("cloud cleanup requires an exact runtime instance")
         listed = self._invoke(
             (
                 *self._engine,
@@ -300,6 +330,7 @@ class OciRuntime(RuntimePort):
         container_name: str,
         workspace_root: Path,
         spec: SandboxSpec,
+        instance_labels: Sequence[str] = (),
     ) -> tuple[str, ...]:
         bind_mount = f"type=bind,source={workspace_root},target=/workspace"
         if not spec.workspace_writable:
@@ -341,6 +372,7 @@ class OciRuntime(RuntimePort):
         ]
         if spec.runtime_class is RuntimeClass.GVISOR:
             command.extend(("--runtime", self._gvisor_runtime))
+        command.extend(instance_labels)
         command.extend(("--entrypoint", "/bin/sh", spec.image, "-c", _KEEPALIVE_SCRIPT))
         return tuple(command)
 
@@ -394,13 +426,15 @@ class OciRuntime(RuntimePort):
         *,
         timeout: float | None = None,
     ) -> CompletedProcess[str]:
-        return self._runner(
-            tuple(command),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=timeout,
-        )
+        try:
+            return self._runner(
+                tuple(command), capture_output=True, text=True, check=False,
+                timeout=30 if self._instances is not None and timeout is None else timeout,
+            )
+        except TimeoutExpired:
+            if self._instances is not None and timeout is None:
+                raise RuntimeCapabilityError("cloud runtime administration timed out") from None
+            raise
 
     def _unavailable(self, reason: str, *, version: str | None = None) -> RuntimeCapabilities:
         return RuntimeCapabilities(

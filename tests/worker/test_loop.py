@@ -129,7 +129,7 @@ def test_worker_checks_durable_command_before_cloud_memory_recovery(
             order.append("command")
 
     monkeypatch.setattr(
-        "zebra_agent_worker.loop.recover_completed_cloud_memory",
+        "zebra_agent_worker.worker_loop_service.recover_completed_cloud_memory",
         lambda **_kwargs: order.append("recovery"),
     )
     service = WorkerLoopService(
@@ -163,7 +163,7 @@ def test_worker_defers_cloud_memory_recovery_while_commands_are_pending(
             )
 
     monkeypatch.setattr(
-        "zebra_agent_worker.loop.recover_completed_cloud_memory",
+        "zebra_agent_worker.worker_loop_service.recover_completed_cloud_memory",
         lambda **_kwargs: recovery_calls.append("recovery"),
     )
     WorkerLoopService(
@@ -204,7 +204,7 @@ def test_cloud_memory_recovery_does_not_block_a_later_command(
         assert release_recovery.wait(timeout=1)
 
     monkeypatch.setattr(
-        "zebra_agent_worker.loop.recover_completed_cloud_memory",
+        "zebra_agent_worker.worker_loop_service.recover_completed_cloud_memory",
         blocking_recovery,
     )
     service = WorkerLoopService(

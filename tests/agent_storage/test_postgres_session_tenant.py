@@ -123,5 +123,7 @@ def test_session_tenant_namespace_roundtrip_and_guard(dsn: str) -> None:
         current_sequence=0,
     )
     store.save_session(unbound)
-    assert session_tenant_denied(store, str(unbound_id), _host_context("tenant-b")) is False
-    assert session_in_tenant(unbound, _host_context("tenant-b")) is True
+    assert session_tenant_denied(store, str(unbound_id), _host_context("tenant-b")) is True
+    assert session_in_tenant(unbound, _host_context("tenant-b")) is False
+    assert session_tenant_denied(store, str(unbound_id), None) is False
+    assert session_in_tenant(unbound, None) is True

@@ -186,6 +186,12 @@ def test_cloud_and_production_api_profiles_use_shared_composition(
         return local
 
     monkeypatch.setattr("zebra_agent_api.factory.compose_control_plane_stores", fake_compose)
+    # This test replaces cloud stores with SQLite only to inspect forwarding;
+    # direct-control authority composition is covered by the real PG API test.
+    monkeypatch.setattr("zebra_agent_api.factory.PostgresDirectControl", lambda *a, **kw: None)
+    monkeypatch.setattr(
+        "zebra_agent_api.factory.PostgresCommandOutcomeReader", lambda *a, **kw: None
+    )
     api = create_app(settings=settings, cloud_composition=_cloud_settings())
     assert captured["profile"] == profile
     assert captured["storage_authority"] == "postgresql"
@@ -218,9 +224,13 @@ def test_cloud_and_production_worker_profiles_use_shared_composition_without_sql
             deployment_namespace="deployment",
             artifact_factory=lambda _: None,  # type: ignore[arg-type,return-value]
             provider_continuation_factory=lambda _: None,  # type: ignore[arg-type,return-value]
+            dsn=cloud.dsn,
         )
 
     monkeypatch.setattr("zebra_agent_worker.loop.compose_cloud_worker", fake_compose)
+    monkeypatch.setattr(
+        "zebra_agent_worker.command_process_state.command_cutover_state", lambda *a, **kw: False
+    )
     monkeypatch.setattr("zebra_agent_worker.loop.SessionExecutionService", lambda **_: object())
     build_worker_loop_service(
         database_path=tmp_path / "ignored.sqlite",

@@ -1,0 +1,506 @@
+{
+  "$defs": {
+    "PrincipalScope": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "principal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "tenant_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workspace Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "tenant_id",
+        "workspace_id"
+      ],
+      "title": "PrincipalScope",
+      "type": "object"
+    },
+    "SharedSourceScope": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "shared_source",
+          "title": "Kind",
+          "type": "string"
+        },
+        "service_scope_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Service Scope Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "service_scope_id"
+      ],
+      "title": "SharedSourceScope",
+      "type": "object"
+    },
+    "SourceFetchEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregate_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Aggregate Id",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Causation Id"
+        },
+        "correlation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Correlation Id",
+          "type": "string"
+        },
+        "deployment_namespace": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Deployment Namespace",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "message_id": {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "title": "Message Id",
+          "type": "string"
+        },
+        "message_type": {
+          "const": "trench.source.fetch.ready",
+          "title": "Message Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "maxLength": 128,
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "payload_ref": {
+          "$ref": "#/$defs/SourceFetchRef"
+        },
+        "schema_version": {
+          "maximum": 1,
+          "minimum": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "scope": {
+          "discriminator": {
+            "mapping": {
+              "principal": "#/$defs/PrincipalScope",
+              "shared_source": "#/$defs/SharedSourceScope"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PrincipalScope"
+            },
+            {
+              "$ref": "#/$defs/SharedSourceScope"
+            }
+          ],
+          "title": "Scope"
+        },
+        "traceparent": {
+          "anyOf": [
+            {
+              "maxLength": 55,
+              "minLength": 55,
+              "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Traceparent"
+        },
+        "wake_generation": {
+          "minimum": 0,
+          "title": "Wake Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "message_id",
+        "schema_version",
+        "deployment_namespace",
+        "aggregate_id",
+        "operation_id",
+        "wake_generation",
+        "idempotency_key",
+        "correlation_id",
+        "causation_id",
+        "occurred_at",
+        "traceparent",
+        "payload_ref",
+        "message_type",
+        "scope"
+      ],
+      "title": "SourceFetchEnvelope",
+      "type": "object"
+    },
+    "SourceFetchRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "source_fetch_command",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "title": "SourceFetchRef",
+      "type": "object"
+    },
+    "TurnEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregate_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Aggregate Id",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Causation Id"
+        },
+        "correlation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Correlation Id",
+          "type": "string"
+        },
+        "deployment_namespace": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Deployment Namespace",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "message_id": {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "title": "Message Id",
+          "type": "string"
+        },
+        "message_type": {
+          "const": "trench.ai.turn.ready",
+          "title": "Message Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "maxLength": 128,
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "payload_ref": {
+          "$ref": "#/$defs/TurnRef"
+        },
+        "schema_version": {
+          "maximum": 1,
+          "minimum": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "scope": {
+          "$ref": "#/$defs/PrincipalScope"
+        },
+        "traceparent": {
+          "anyOf": [
+            {
+              "maxLength": 55,
+              "minLength": 55,
+              "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Traceparent"
+        },
+        "wake_generation": {
+          "minimum": 0,
+          "title": "Wake Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "message_id",
+        "schema_version",
+        "deployment_namespace",
+        "aggregate_id",
+        "operation_id",
+        "wake_generation",
+        "idempotency_key",
+        "correlation_id",
+        "causation_id",
+        "occurred_at",
+        "traceparent",
+        "payload_ref",
+        "message_type",
+        "scope"
+      ],
+      "title": "TurnEnvelope",
+      "type": "object"
+    },
+    "TurnRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "trench_turn",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "title": "TurnRef",
+      "type": "object"
+    },
+    "ZebraCommandEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted_event_id": {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "title": "Accepted Event Id",
+          "type": "string"
+        },
+        "accepted_sequence": {
+          "exclusiveMinimum": 0,
+          "title": "Accepted Sequence",
+          "type": "integer"
+        },
+        "aggregate_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Aggregate Id",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Causation Id"
+        },
+        "correlation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Correlation Id",
+          "type": "string"
+        },
+        "deployment_namespace": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Deployment Namespace",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "message_id": {
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "title": "Message Id",
+          "type": "string"
+        },
+        "message_type": {
+          "const": "zebra.session.command.ready",
+          "title": "Message Type",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "maxLength": 128,
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "payload_ref": {
+          "$ref": "#/$defs/ZebraCommandRef"
+        },
+        "schema_version": {
+          "maximum": 1,
+          "minimum": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "scope": {
+          "$ref": "#/$defs/PrincipalScope"
+        },
+        "traceparent": {
+          "anyOf": [
+            {
+              "maxLength": 55,
+              "minLength": 55,
+              "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Traceparent"
+        },
+        "wake_generation": {
+          "minimum": 0,
+          "title": "Wake Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "message_id",
+        "schema_version",
+        "deployment_namespace",
+        "aggregate_id",
+        "operation_id",
+        "wake_generation",
+        "idempotency_key",
+        "correlation_id",
+        "causation_id",
+        "occurred_at",
+        "traceparent",
+        "payload_ref",
+        "message_type",
+        "scope",
+        "accepted_event_id",
+        "accepted_sequence"
+      ],
+      "title": "ZebraCommandEnvelope",
+      "type": "object"
+    },
+    "ZebraCommandRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "zebra_command",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "title": "ZebraCommandRef",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "trench.ai.turn.ready": "#/$defs/TurnEnvelope",
+      "trench.source.fetch.ready": "#/$defs/SourceFetchEnvelope",
+      "zebra.session.command.ready": "#/$defs/ZebraCommandEnvelope"
+    },
+    "propertyName": "message_type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/TurnEnvelope"
+    },
+    {
+      "$ref": "#/$defs/ZebraCommandEnvelope"
+    },
+    {
+      "$ref": "#/$defs/SourceFetchEnvelope"
+    }
+  ]
+}

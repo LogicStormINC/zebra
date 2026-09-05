@@ -3,12 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import UUID
 
 from agent_core.application import current_turn
 from agent_core.application.session_projection import apply_event as apply_session_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
+from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_core.ports.runtime import (
@@ -21,6 +24,7 @@ from agent_storage import (
     PostgresControlPlaneStores,
     sqlite_control_plane_stores,
 )
+from agent_storage.postgres.direct_control import PostgresDirectControl
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_worker.recovery import (
@@ -82,10 +86,24 @@ class SessionControlService:
         *,
         settings: ZebraAgentSettings | None = None,
         stores: ControlPlaneStores | PostgresControlPlaneStores | None = None,
+        cloud_control: PostgresDirectControl | None = None,
     ) -> None:
         self._database_path = database_path
         self._settings = settings or load_settings()
+        if stores is None and self._settings.storage_authority == "postgresql":
+            raise SessionControlError("cloud direct control requires explicit stores")
         active_stores = stores or sqlite_control_plane_stores(database_path)
+        self._cloud = (
+            isinstance(active_stores, PostgresControlPlaneStores)
+            or self._settings.storage_authority == "postgresql"
+        )
+        self._cloud_control = cloud_control
+        if (
+            cloud_control is not None
+            and getattr(active_stores, "deployment_namespace", None)
+            != cloud_control.deployment_namespace
+        ):
+            raise SessionControlError("cloud direct control composition does not match stores")
         self._event_store = active_stores.events
         self._projection_store = active_stores.sessions
         self._workspace_store = active_stores.workspaces
@@ -101,6 +119,8 @@ class SessionControlService:
         *,
         suspended_at: datetime | None = None,
     ) -> SuspendedSession:
+        if self._cloud:
+            raise SessionControlError("cloud user suspend is unsupported")
         recovery = self._recover(session_id)
         if recovery.session.status not in _SUSPENDABLE_STATUSES:
             raise SessionControlError("session cannot be suspended from its current state")
@@ -187,7 +207,32 @@ class SessionControlService:
         session_id: SessionId,
         *,
         cancelled_at: datetime | None = None,
+        scope: OpaqueAuthorityScope | None = None,
+        host_context: HostContextEnvelope | None = None,
+        idempotency_key: str | None = None,
+        operation_id: UUID | None = None,
+        task_id: TaskId | None = None,
     ) -> CancelledSession:
+        if self._cloud:
+            if self._cloud_control is None:
+                raise SessionControlError("cloud direct control requires explicit composition")
+            try:
+                if host_context is not None:
+                    scope = self._cloud_control.host_scope(session_id, host_context)
+                if scope is None:
+                    raise ValueError("cloud direct control requires trusted caller scope")
+                result = self._cloud_control.cancel(
+                    session_id,
+                    scope=scope,
+                    host_context=host_context,
+                    workspace_ref=None if host_context is None else host_context.workspace_ref,
+                    idempotency_key=idempotency_key,
+                    operation_id=operation_id,
+                    task_id=task_id,
+                )
+                return CancelledSession(result.event, result.workspace)
+            except ValueError as exc:
+                raise SessionControlError(str(exc)) from exc
         recovery = self._recover(session_id)
         if recovery.session.status not in _CANCELLABLE_STATUSES:
             raise SessionControlError("session cannot be cancelled from its current state")

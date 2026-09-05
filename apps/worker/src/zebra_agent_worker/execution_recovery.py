@@ -10,6 +10,7 @@ from typing import Any, Literal
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.leases import WorkerLease
 from agent_core.domain.sessions import SessionStatus
 
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
@@ -169,6 +170,41 @@ def execute_session_with_lease(
         claimed_at=started_at,
         lease_ttl_seconds=lease_ttl_seconds,
     )
+    return _execute_with_heartbeat(service, claimed, started_at, lease_ttl_seconds)
+
+
+def execute_existing_lease(
+    service: Any,
+    lease: WorkerLease,
+    *,
+    executed_at: datetime | None = None,
+    lease_ttl_seconds: int = 30,
+) -> ExecutedSession:
+    """Recover the supplied fence, never reacquire; transfer cleanup to heartbeat."""
+    from datetime import UTC  # noqa: PLC0415
+
+    if not isinstance(lease, WorkerLease):
+        raise TypeError("claimed execution requires a WorkerLease")
+    started_at = executed_at or datetime.now(UTC)
+    try:
+        if started_at.tzinfo is None or started_at.utcoffset() is None:
+            raise ValueError("execution timestamps must be timezone-aware")
+        claimed = service._claim_service.recover_lease(
+            lease, lease_ttl_seconds=lease_ttl_seconds,
+        )
+    except BaseException as error:
+        try:
+            service._claim_service.release_lease(lease)
+        except Exception as cleanup_error:
+            error.add_note(f"lease cleanup failed: {type(cleanup_error).__name__}")
+        raise
+    return _execute_with_heartbeat(service, claimed, started_at, lease_ttl_seconds)
+
+
+def _execute_with_heartbeat(
+    service: Any, claimed: ClaimedSession, started_at: datetime, lease_ttl_seconds: int,
+) -> ExecutedSession:
+    session_id = claimed.lease.session_id
     with LeaseHeartbeat(
         service._claim_service,
         claimed.lease,

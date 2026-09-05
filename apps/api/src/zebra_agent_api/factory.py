@@ -12,9 +12,12 @@ from agent_security import CredentialBroker
 from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
+    cloud_composition_from_environment,
     compose_control_plane_stores,
     with_committed_event_publisher,
 )
+from agent_storage.postgres.command_wakeup_outcome import PostgresCommandOutcomeReader
+from agent_storage.postgres.direct_control import PostgresDirectControl
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_api.api_workspace_mixin import WorkspaceControlStorePort
@@ -31,6 +34,8 @@ def create_app(
     settings: ZebraAgentSettings | None = None,
     stores: ControlPlaneStores | None = None,
     cloud_composition: CloudCompositionSettings | None = None,
+    cloud_control: PostgresDirectControl | None = None,
+    command_outcome: PostgresCommandOutcomeReader | None = None,
     administrative_context_namespace: str | None = None,
     context_administrative_namespace: str | None = None,
     credential_broker: CredentialBroker | None = None,
@@ -50,6 +55,7 @@ def create_app(
     live_event_fanout: LiveEventFanoutPort | None = None
     composed_stores = None
     if active_stores is None and active_settings.storage_authority == "postgresql":
+        cloud_composition = cloud_composition or cloud_composition_from_environment()
         composed_stores = compose_control_plane_stores(
             profile=active_settings.profile,
             storage_authority=active_settings.storage_authority,
@@ -57,6 +63,22 @@ def create_app(
             cloud=cloud_composition,
         )
         active_stores = composed_stores
+        cloud_control = cloud_control or PostgresDirectControl(
+            cloud_composition.dsn, deployment_namespace=cloud_composition.deployment_namespace
+        )
+        command_outcome = command_outcome or PostgresCommandOutcomeReader(
+            cloud_composition.dsn, deployment_namespace=cloud_composition.deployment_namespace
+        )
+    if command_outcome is not None and (
+        getattr(active_stores, "deployment_namespace", None) != command_outcome.deployment_namespace
+    ):
+        raise ValueError("command outcome composition does not match stores")
+    if (
+        cloud_control is not None
+        and getattr(active_stores, "deployment_namespace", None)
+        != cloud_control.deployment_namespace
+    ):
+        raise ValueError("cloud direct control composition does not match stores")
     if effect_state is None and composed_stores is not None:
         effect_state = composed_stores.effects
     if active_stores is not None and active_settings.live_events.redis_url is not None:
@@ -145,4 +167,6 @@ def create_app(
         publication_security_revocation_actors=publication_security_revocation_actors,
         client_platform=client_platform,
         platform_operator_authorizer=operator_authorizer,
+        cloud_control=cloud_control,
+        command_outcome=command_outcome,
     )

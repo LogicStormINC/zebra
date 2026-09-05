@@ -1,0 +1,28 @@
+groups:
+  - name: rabbitmq-infrastructure
+    rules:
+      - alert: RabbitMQUnavailable
+        expr: up{job="rabbitmq-node"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "RabbitMQ exporter unavailable; check broker and DB recovery path"}
+      - alert: RabbitMQDiskPressure
+        expr: rabbitmq_disk_space_available_bytes < rabbitmq_disk_space_available_limit_bytes * 1.5
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "RabbitMQ disk nearing publisher-block threshold"}
+      - alert: RabbitMQMemoryPressure
+        expr: rabbitmq_process_resident_memory_bytes > rabbitmq_resident_memory_limit_bytes * 0.9
+        for: 1m
+        labels: {severity: warning}
+        annotations: {summary: "RabbitMQ memory nearing publisher-block threshold"}
+      - alert: RabbitMQRestrictedQuarantine
+        expr: rabbitmq_detailed_queue_messages{queue=~".*[.]dlq"} > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations: {summary: "Restricted quarantine has messages; do not log or replay raw bodies"}
+      - alert: RabbitMQUnclaimedBacklog
+        expr: rabbitmq_detailed_queue_messages_ready{queue=~".*[.]q"} > 0 and on(vhost, queue) rabbitmq_detailed_queue_consumers == 0
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: "Queued wakeups without a RabbitMQ consumer; verify DB fallback"}

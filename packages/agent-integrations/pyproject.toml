@@ -13,6 +13,9 @@ dependencies = [
     "redis>=6.4.0,<7.0.0",
 ]
 
+[project.optional-dependencies]
+rabbitmq = ["aio-pika==10.0.1"]
+
 [tool.uv.sources]
 agent-core = { workspace = true }
 agent-orchestration = { workspace = true }

@@ -12,6 +12,7 @@ from agent_storage.event_rows import (
     SessionEventSequenceConflictError,
     ensure_idempotent_event_retry,
 )
+from agent_storage.postgres.command_wakeup import record_command_wakeup_in_transaction
 from agent_storage.postgres.database import PostgresDatabase
 
 
@@ -59,7 +60,13 @@ class PostgresEventStore(EventStorePort):
 
     def _find_existing_after_rollback(self, event: SessionEvent) -> SessionEvent | None:
         with self._database.connect() as connection:
-            return self._find_existing_idempotent_event(connection, event)
+            existing = self._find_existing_idempotent_event(connection, event)
+            if existing is None:
+                return None
+            canonical = ensure_idempotent_event_retry(existing, event)
+            return _record_command_wakeup(
+                connection, self._database.deployment_namespace, canonical
+            )
 
     def _find_existing_idempotent_event(
         self,
@@ -103,11 +110,15 @@ def append_event_in_transaction(
     """Append one Event using the caller's PostgreSQL transaction."""
     existing = _find_idempotent_event(connection, deployment_namespace, event)
     if existing is not None:
-        return ensure_idempotent_event_retry(existing, event)
+        return _record_command_wakeup(
+            connection, deployment_namespace, ensure_idempotent_event_retry(existing, event)
+        )
     if not _advance_stream(connection, deployment_namespace, event):
         existing = _find_idempotent_event(connection, deployment_namespace, event)
         if existing is not None:
-            return ensure_idempotent_event_retry(existing, event)
+            return _record_command_wakeup(
+                connection, deployment_namespace, ensure_idempotent_event_retry(existing, event)
+            )
         # A replayed event id fails the stream CAS exactly like a lost
         # race; classify by identity first: only a DIFFERENT event taking
         # the sequence is the retriable CAS loss, an id replay fails
@@ -139,7 +150,17 @@ def append_event_in_transaction(
             event.model_profile,
         ),
     )
-    return event
+    return _record_command_wakeup(connection, deployment_namespace, event, is_new_admission=True)
+
+
+def _record_command_wakeup(
+    connection: Any, deployment_namespace: str, canonical: SessionEvent, *,
+    is_new_admission: bool = False,
+) -> SessionEvent:
+    record_command_wakeup_in_transaction(
+        connection, deployment_namespace, canonical, is_new_admission=is_new_admission
+    )
+    return canonical
 
 
 def _advance_stream(

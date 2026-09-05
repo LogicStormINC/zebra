@@ -61,22 +61,25 @@ def mark_completed_continuation_started(
     tool_name: str,
     tool_call_id: str,
     started_at: datetime,
+    recorder: DurableHarnessEventRecorder | None = None,
 ) -> ClaimedSession:
-    event_store.append(
-        SessionEvent.create(
-            session_id=claimed.recovery.session.session_id,
-            sequence=claimed.recovery.session.current_sequence + 1,
-            event_type=EventType.HARNESS_ATTEMPT_STARTED,
-            actor=EventActor.HARNESS,
-            payload={
-                "attempt_number": 1,
-                "completed_continuation": True,
-                "tool_name": tool_name,
-                "tool_call_id": tool_call_id,
-            },
-            created_at=started_at,
-        )
+    event = SessionEvent.create(
+        session_id=claimed.recovery.session.session_id,
+        sequence=claimed.recovery.session.current_sequence + 1,
+        event_type=EventType.HARNESS_ATTEMPT_STARTED,
+        actor=EventActor.HARNESS,
+        payload={
+            "attempt_number": 1,
+            "completed_continuation": True,
+            "tool_name": tool_name,
+            "tool_call_id": tool_call_id,
+        },
+        created_at=started_at,
     )
+    if recorder is None:
+        event_store.append(event)
+    else:
+        recorder.append_event(event)
     return _recovered_claim(claimed, recovery_service)
 
 
@@ -219,6 +222,7 @@ def start_recovered_continuation(
             tool_name=continuation.tool_call.name,
             tool_call_id=str(continuation.tool_call.tool_call_id),
             started_at=started_at,
+            recorder=recorder,
         )
     if continuation is not None:
         return mark_approved_continuation_started(

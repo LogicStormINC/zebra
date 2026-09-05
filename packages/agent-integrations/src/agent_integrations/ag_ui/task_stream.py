@@ -23,6 +23,7 @@ from agent_integrations.ag_ui.contracts import (
     AgUiRunIdentity,
 )
 from agent_integrations.ag_ui.projection import AgUiProjector
+from agent_integrations.ag_ui.task_run_binding import bind_task_run
 
 
 class AgUiTaskProjector:
@@ -40,16 +41,37 @@ class AgUiTaskProjector:
     ) -> AgUiProjection:
         ordered = tuple(task_events)
         _validate_task_ordering(ordered)
+        if any(str(entry.task_id) != identity.thread_id for entry in ordered):
+            raise AgUiProjectionError("events do not belong to the requested Task")
+        binding = bind_task_run(ordered, identity.run_id)
         if after is not None and (
             after.thread_id != identity.thread_id or after.run_id != identity.run_id
         ):
             raise AgUiProjectionError("cursor does not match the requested Task/run")
+        if after is not None:
+            anchor = next((e for e in ordered if e.task_sequence == after.sequence), None)
+            if anchor is None or str(anchor.event.event_id) != after.event_id:
+                raise AgUiProjectionError("cursor does not identify a canonical Task event")
+            if not binding.legacy and (
+                binding.anchor is None
+                or after.sequence < binding.start - 1
+                or (binding.stop is not None and after.sequence >= binding.stop)
+            ):
+                raise AgUiProjectionError("cursor is outside the requested run")
         resume_task_sequence = after.sequence if after is not None else -1
 
         projected_events: list[Event] = []
         for segment_slice in _contiguous_segments(ordered):
+            eligible = [entry for entry in segment_slice if binding.includes(entry)]
+            if not eligible:
+                continue
+            segment_slice = tuple(
+                e for e in segment_slice if (e.task_sequence <= eligible[-1].task_sequence)
+            )
             resume_inside = [
-                entry for entry in segment_slice if entry.task_sequence <= resume_task_sequence
+                entry
+                for entry in segment_slice
+                if entry.task_sequence <= max(resume_task_sequence, eligible[0].task_sequence - 1)
             ]
             if len(resume_inside) == len(segment_slice):
                 continue
@@ -75,8 +97,9 @@ class AgUiTaskProjector:
             projected_events.extend(projection.events)
 
         next_cursor: AgUiCursor | None = None
-        if ordered:
-            last = ordered[-1]
+        eligible = [entry for entry in ordered if binding.includes(entry)]
+        if eligible:
+            last = eligible[-1]
             next_cursor = AgUiCursor(
                 thread_id=identity.thread_id,
                 run_id=identity.run_id,
@@ -94,6 +117,11 @@ def _validate_task_ordering(events: tuple[TaskEvent, ...]) -> None:
     previous = -1
     seen: set[str] = set()
     for entry in events:
+        if (
+            entry.segment_id != entry.event.session_id
+            or entry.segment_sequence != entry.event.sequence
+        ):
+            raise AgUiProjectionError("Task index does not match its canonical Event")
         if entry.task_sequence <= previous:
             raise AgUiProjectionError("task events must have increasing task_sequence")
         event_id = str(entry.event.event_id)

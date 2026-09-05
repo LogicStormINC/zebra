@@ -1,4 +1,48 @@
-# TRN-LINK Trench 对接（cloud-agent-trench 分支，2026-08-26）
+# Current task — RabbitMQ reliability (2026-09-05)
+
+Approved isolated worktrees: `rabbitmq-reliability/zebra-agent` and
+`rabbitmq-reliability/Trench`; original services remain unchanged.
+
+1. Completed: stages 0/1 local contracts and broker evidence.
+2. Completed: Stage 2 Trench Turn, 10/10 isolated acceptance.
+3. Completed: Stage 3 Zebra command, 6/6 isolated acceptance; actual product,
+   browser/file, broker restart, fallback/restore and process-fault evidence in
+   `docs/rabbitmq_stage3_composition.md`.
+4. Review: `RABBIT-SOURCE-SCOPE-01`, explicit source bindings and operator
+   CAS backfill. Private/credential execution remains fail-closed.
+5. Review: `RABBIT-SOURCE-SCHEDULE-01`, source-wide scheduling/fencing and
+   atomic FetchCommand/source-Outbox admission; slice 6/6 and Stage 4 group 2
+   accepted.
+6. Review: `RABBIT-SOURCE-DELIVERY-01`, dedicated source relay/Inbox,
+   bounded consumer/recovery/quarantine and opt-in restricted topology; Stage 4
+   group 3 accepted. Stage 4 is now 2/7.
+7. Review: `RABBIT-SOURCE-CUTOVER-01`, every old business fetch entry point now
+   uses one default-off authority without double scheduling; Stage 4 group 4
+   accepted. Stage 4 is now 3/7.
+8. Review: `RABBIT-SOURCE-RESULT-01`, durable fenced fetch-result
+   classification, safe diagnostics and bounded retry/recovery; Stage 4 group 5
+   accepted. Stage 4 is now 4/7.
+9. Review: `RABBIT-SOURCE-E2E-01`, real fixture HTTP fetch through
+   PostgreSQL/Redis/RabbitMQ into authenticated history/timeline, including
+   duplicate, Redis-rejection and cross-user isolation evidence; Stage 4 group 6
+   accepted. Stage 4 is now 5/7.
+10. Review: `RABBIT-SOURCE-COMPOSE-01`, default-off process composition,
+    explicit cutover, actual-process fallback/restore/rollback and terminal
+    database evidence; Stage 4 group 7 accepted. Stage 4 is now 6/7.
+11. Review: `RABBIT-SOURCE-CREDENTIAL-REF-01`, existing credential identity,
+    enabled state and platform validation with principal association and
+    fail-closed drift; Stage 4 group 1 accepted. Stage 4 is now 7/7.
+12. Review: `RABBIT-ROLLOUT-CAPACITY-01`, atomic admission/backlog bounds and
+    frozen active-scope fair pickup accepted; Stage 5 is 1/8 (12.5%).
+13. Review: Stage 5 group 2, default-off scope allowlist, physically separate
+    side-effect-free bounded shadow lane and exact message/digest reconciliation;
+    Stage 5 is 2/8 (25%).
+
+Use `docs/AGENT_TASKS.md` for ownership and `docs/rabbitmq_completion.md` for
+fixed acceptance counts. Implementation, isolated acceptance, commit/merge and
+production activation remain separate. No commit or activation requested here.
+
+## Prior task record — TRN-LINK (2026-08-26)
 
 1. `completed` - P0 契约核对：7 项契合 / 5 项差距冻结
    （`docs/Zebra_Trench对接差距清单.md`）。

@@ -12,6 +12,15 @@ from agent_security import SetupDownload, SetupEgressGateway, TemporarySetupCred
 from zebra_agent_config import SetupSettings, ZebraAgentSettings
 
 from zebra_agent_worker.runtime_factory import build_runtime
+from zebra_agent_worker.runtime_instances import (
+    BoundInstanceFactory,
+)
+from zebra_agent_worker.runtime_instances import (
+    InstanceFactory as InstanceFactory,
+)
+from zebra_agent_worker.runtime_instances import (
+    bind_instance_factory as bind_instance_factory,
+)
 
 
 class RuntimeSetupError(RuntimeError):
@@ -34,6 +43,7 @@ def build_prepared_runtime(
     attempt_number: int,
     artifact_store: ArtifactPayloadStorePort | None,
     created_at: datetime,
+    instance_factory: BoundInstanceFactory | None = None,
 ) -> tuple[RuntimePort, PreparedRuntime]:
     runtime = build_runtime(
         settings,
@@ -42,6 +52,7 @@ def build_prepared_runtime(
         network_profile="none" if network_profile == "setup-only" else network_profile,
         session_id=str(session_id),
         attempt_number=attempt_number,
+        instance_factory=instance_factory,
     )
     return runtime, prepare_runtime(
         runtime,

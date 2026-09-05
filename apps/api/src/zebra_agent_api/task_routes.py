@@ -79,7 +79,21 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
             "resume",
         }
     ):
-        return mutate_task(app, parts[0], parts[1], request.body or {})
+        return mutate_task(
+            app,
+            parts[0],
+            parts[1],
+            request.body or {},
+            host_context=request.host_context,
+            idempotency_key=next(
+                (
+                    value
+                    for name, value in (request.headers or {}).items()
+                    if name.lower() == "idempotency-key"
+                ),
+                None,
+            ),
+        )
     if method == "GET" and len(parts) == 1:
         return TaskReadApi(app.stores).get(parts[0])
     if method == "GET" and len(parts) == 2 and parts[1] == "stream":

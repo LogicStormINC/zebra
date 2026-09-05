@@ -14,7 +14,7 @@ from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from psycopg import errors
 from psycopg.rows import dict_row
 
-from agent_storage.postgres.leases import assert_current_lease_fence
+from agent_storage.postgres.leases import assert_current_lease_fence, lock_session_lease_boundary
 from agent_storage.postgres.task_lineage import (
     PostgresAgentTaskConflictError,
     derive_lineage,
@@ -162,7 +162,12 @@ def attach_segment_for_worker_in_transaction(
     reason: RolloverReason,
     authority: WorkerMutationAuthority,
 ) -> None:
-    """Attach a Segment only after the source Worker fence is valid."""
+    """Serialize the source Session before validating its Worker fence.
+
+    Call before taking lease/stream locks in an enclosing transaction; callers
+    already holding those locks must have acquired this Session boundary first.
+    Task serialization stays after stream validation, including non-root Segments.
+    """
     try:
         with connection.cursor(row_factory=dict_row) as cursor:
             cursor.execute("SELECT 1")
@@ -173,6 +178,7 @@ def attach_segment_for_worker_in_transaction(
                     )
                 if authority.session_id != predecessor_id:
                     raise LeaseLostError("Task mutation authority belongs to another Session")
+                lock_session_lease_boundary(cursor, deployment_namespace, predecessor_id)
                 assert_current_lease_fence(
                     cursor,
                     deployment_namespace,

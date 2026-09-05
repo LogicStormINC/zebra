@@ -1,0 +1,16 @@
+# Optional scrape fragment for a HOST-local Prometheus. Container deployments
+# must supply their private network target; never publish these ports publicly.
+scrape_configs:
+  - job_name: rabbitmq-node
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["127.0.0.1:25692"]
+  - job_name: rabbitmq-queues
+    scrape_interval: 15s
+    metrics_path: /metrics/detailed
+    params:
+      family: [queue_coarse_metrics, queue_consumer_count]
+      vhost: [/zebra, /trench]
+    static_configs:
+      - targets: ["127.0.0.1:25692"]
+rule_files: [alerts.yml]

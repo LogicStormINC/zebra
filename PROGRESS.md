@@ -5,6 +5,251 @@
 
 ## Active Review
 
+- `RABBIT-SOURCE-CREDENTIAL-REF-01` passes isolated acceptance and is in
+  Review. Source bindings now validate an existing credential identity's enabled
+  state and source platform without loading its payload. Missing, inactive,
+  mismatched and post-bind drifted references fail closed; principal user,
+  workspace and active-subscription association remains mandatory. Even a valid
+  reference stays `credential_execution_unavailable`, so this closes identity
+  integrity without enabling secret resolution or X fetching. Final source
+  regression is 100 passed/21 explicit-integration skipped; focused actual
+  PostgreSQL is 5/5 including a controlled credential-writer lock race;
+  independent SPEC/QUALITY pass. Stage 4 is **7/7 = 100%** at the isolated
+  acceptance boundary. No credential payload, live source/schema or production
+  process was activated.
+
+- `RABBIT-SOURCE-COMPOSE-01` passes isolated acceptance and is in Review. An
+  opt-in minimal-credential process composes the accepted source relay,
+  consumer, recovery and quarantine with one shared fail-closed cutover
+  selector and a 45-second drain window. Separate real Python processes passed
+  broker execution, database fallback, broker restore and default-off rollback;
+  fallback generations remain auditable as `superseded` and are not published
+  on restore. Actual subprocess E2E is 2/2, cleanup leaves Redis DB 14 empty,
+  and independent SPEC/QUALITY pass. Stage 4 group 7 is accepted and Stage 4 is
+  **6/7 = 85.7%**. Credential-reference scope closure remains open; no live
+  business schema/feed, credentialed source or production process was activated.
+
+- `RABBIT-SOURCE-E2E-01` passes isolated acceptance and is in Review. A real
+  fixture HTTP feed traverses durable PostgreSQL admission/Outbox, RabbitMQ,
+  fenced execution, Redis raw handoff, normalize and archive into the
+  authenticated product timeline and signed Host history Tool. Duplicate
+  delivery proves two ACKs, zero requeues and one canonical raw item. A
+  deterministic Redis-rejection fault injection leaves source success, raw
+  length and normalize cursor unchanged, while two users see only entitled
+  source content. Combined source acceptance is 106/106 on actual
+  PostgreSQL/Redis/RabbitMQ where applicable; SPEC/QUALITY pass. Stage 4 group 6
+  is accepted and Stage 4 is **5/7 = 71.4%**. No credentialed source, live
+  business schema/feed or production process was activated.
+
+- `RABBIT-SOURCE-RESULT-01` passes isolated acceptance and is in Review. Six
+  sanitized result classes now finalize only the exact command/fence and reuse
+  durable FetchAttempt/parse evidence plus a callback-minted Redis checkpoint.
+  Retry-After/exponential delay, generation and age are bounded; fallback uses
+  the latest due Outbox and completes claim/Inbox/receipt in one transaction,
+  while prior generations become auditable `superseded` rows. Migrated URL and
+  exception logs are safe, malformed scraper shapes are typed, and downgrade is
+  conservative. Combined result/delivery/schedule/cutover/adapter acceptance is
+  63/63 including actual generated-schema PostgreSQL; SPEC/QUALITY pass. Stage 4
+  group 5 is accepted and Stage 4 is **4/7 = 57.1%**. No live schema/feed,
+  credential or production process was activated.
+
+- `RABBIT-SOURCE-CUTOVER-01` passes isolated acceptance and is in Review.
+  Managed/default RSS, scraper ARQ and legacy fallback entry points now share a
+  default-off selector; broker and DB fallback modes are exclusive and migrated
+  mode has one admission trigger. Exact locked validation freezes a non-secret
+  execution snapshot before IO; config races fail closed and legacy result state
+  is suppressed. Focused 75 passed/12 explicit-PG skipped; parent combined 21/21
+  including actual PostgreSQL 9; SPEC/QUALITY pass. Stage 4 group 4 is accepted
+  and Stage 4 is **3/7 = 42.9%**. No live process/schema/feed activation.
+
+- `RABBIT-SOURCE-DELIVERY-01` passes isolated acceptance and is in Review.
+  Dedicated source Outbox/Inbox/receipt, bounded relay/consumer/recovery,
+  exact Redis-checkpoint ACK and opt-in least-privilege RabbitMQ topology are
+  implemented independently from the Turn lane. Trench local 15 passed/5
+  explicit-PG skipped; parent actual PostgreSQL delivery+schedule 9/9; Zebra
+  topology 9/9; isolated live Rabbit source route/ACL 1/1; post-fix SPEC/QUALITY
+  pass. Stage 4 group 3 is accepted and Stage 4 is **2/7 = 28.6%**. No old fetch
+  entry point, live business schema, feed or production process was activated.
+
+- `RABBIT-SOURCE-SCHEDULE-01` passes isolated acceptance and is in Review.
+  Source-wide immutable schedule ownership, atomic FetchCommand plus dedicated
+  source Outbox, DB-clock due coalescing, stable manual idempotency and exact
+  lease/fence/Redis-handoff finalization are implemented without network or
+  process activation. Local 116 passed/4 explicit-PG skipped; parent random-schema
+  PostgreSQL 4/4 passed; SPEC/QUALITY pass. Slice **6/6 = 100%**; Stage 4 group 2
+  is accepted. Private, credential-reference and
+  ambient-auth execution remain blocked; original services are unchanged.
+
+- `RABBIT-ZEBRA-COMPOSE-01` now passes isolated acceptance and is in Review.
+  Stage 3 **6/6 = 100%**: broker-only real model, stream replay/user isolation,
+  semantic titles/stable routes/draft-only creation, actual answer and asset-page
+  file downloads; real broker restart, duplicate drain, fallback/restore and
+  canonical cancellation/cleanup. Process fault harness uses real subprocess/PG
+  with explicitly injected transport/executor/OCI: final 15 passed. Parent local
+  regression 3223 passed/692 skipped, PG 279, live relay/quarantine 7, check 842;
+  independent SPEC/QUALITY pass. See `docs/rabbitmq_stage3_composition.md` for
+  exact versions, terminal counts, timings and evidence boundaries. Stages 4/5
+  remain open; original services and checkouts are unchanged. No commit/merge or
+  production-HA acceptance is implied.
+
+- `RABBIT-ZEBRA-RECEIPTS-01` passes SPEC/QUALITY: precise full-fence and canonical
+  execution-floor attribution, atomic start/handled receipt with primary worker
+  Event/projection commit; no arbitrary model-output completion heuristic.
+  Slice 5/5; 61 actual PG cases and 54 shared callers pass; make check (803).
+  `RABBIT-ZEBRA-CLAIMED-EXECUTION-01` passes 42 PG/worker cases plus both reviews:
+  existing handed-off leases enter the real worker with a scripted model, and
+  the completed-tool continuation raw-start gap closes when recorder is supplied.
+  `RABBIT-ZEBRA-RECOVERY-01` now handles bounded, proven-unstarted recovery and
+  uncertainty isolation; it will not blindly replay prior model/tool execution.
+  Recovery accepted 5/5: 129 combined PG/Rabbit cases, final 44 recovery cases,
+  make check (806) and SPEC/QUALITY. Poison rows cannot starve healthy candidates.
+  Stage 3 is 5/6 (83.3%). MESSAGE atomic input/handoff is accepted: 12 actual PG
+  cases, expanded 145 cases, make check (808), SPEC/QUALITY. Canonical CANCEL/STOP
+  storage is accepted: 18 actual PG cases, combined 121 cases, make check (810),
+  SPEC/QUALITY. Historical cutover accepted after stream-head guard fix: final
+  81 PG cases, make check (812), SPEC/QUALITY. Shared fenced Task attach lock-order
+  correction passed 7 PG/24 shared tests and both reviews. Consumer accepted:
+  final 40 PG/runtime/migration cases, make check (815), SPEC/QUALITY, durable
+  reconciliation ACK and bounded requeue fixes included. Quarantine, instance-safe
+  cleanup and client-visible outcomes still require composition. Quarantine now
+  passes 60 actual PG/Rabbit/runtime cases, check (819), SPEC/QUALITY; slice 5/5.
+  Runtime instance identity is accepted 5/5: final 20 actual PG cases, check
+  (827), SPEC/QUALITY, including row-lock waits across lease/authority expiry.
+  Exact post-commit cleanup accepted 5/5: 92 PG/runtime + 5 live Docker cases,
+  check (831), SPEC/QUALITY; plaintext Docker routing fixed from live evidence.
+  Public cancel compatibility accepted 5/5: 91 actual PG + 6 live Docker cases,
+  check (834), SPEC/QUALITY. Cross-rollover Task-target/CAS and canonical child
+  Host identity are now accepted 5/5: 65 + 18 actual PG cases, check (835),
+  SPEC/QUALITY. Client-visible outcomes accepted 5/5: actual PG 101 cases,
+  final API/projection 52 cases, check (838), SPEC/QUALITY. Shared frame gating
+  fixes expiry during DB waits or consumer pauses. Process composition is now
+  claimed; Stage 3 group 6 remains open until actual fault/client acceptance.
+  Original runtime unchanged.
+
+- `RABBIT-ZEBRA-HANDOFF-01` storage slice passes SPEC/QUALITY: atomic Inbox plus the existing
+  Session Lease/Fence and explicit canonical command association. Read-only audit
+  confirms old RUN/RESUME execution has no generic command completion receipt;
+  ambiguous backfill must not automatically rerun or be marked completed.
+  Storage slice 5/5: initial 118 actual PG cases; review found terminal-state
+  change during lease wait, fixed with post-lock recheck/savepoint rollback.
+  Final race/clock 40 and shared-callers 54 pass. Later receipts, claimed execution,
+  control and cutover slices now close group 4; process activation remains off.
+
+- `RABBIT-ZEBRA-RELAY-01` passes SPEC/QUALITY: fenced Broker Outbox relay, confirmed
+  transport, bounded physical retry and no network inside DB transactions.
+  Actual PG/Rabbit combined suite 111 passed in 49.94 s; make check passes
+  (799 typed files). Slice 5/5; later slices now close groups 1–5. Runtime
+  activation remains off pending the remaining composition acceptance.
+
+- `RABBIT-ZEBRA-LEASE-CLOCK-01` passes SPEC/QUALITY after a real-PG blocked-heartbeat
+  expiry defect was reproduced. Fix the shared current Lease/Fence boundary before
+  handoff activation; no new lease authority or original service changes. Slice
+  5/5; 81 targeted/real-PG cases and full make check pass, including DST handling.
+
+- `RABBIT-ZEBRA-DISCOVERY-01` passes independent SPEC/QUALITY: bounded canonical-history backfill
+  and scoped pending discovery. Explicit admission cutover only; consumers remain
+  off. Cursor and derived rows commit together, including old sessions and
+  concurrent live admission. Slice 5/5; 60 focused/real-PG tests and make check
+  (796 typed files) pass. Group 2 is not accepted until recovery also passes.
+
+- `RABBIT-ZEBRA-ADMISSION-01` passes independent SPEC and QUALITY. Common
+  PostgreSQL command admission gains opt-in derived pending/Outbox records; no
+  publisher/consumer activation or SQLite changes. Real-PG plus focused tests pass
+  36 cases across all four producers; existing PG regression 14 and make check pass.
+  Slice 5/5; stage 3 is 1/6 (16.7%). Bounded historical backfill and recovery are
+  next, with no activation. See `docs/rabbitmq_stage3_commands.md`.
+
+- `RABBIT-TURN-E2E-01` passes isolated real-model/browser acceptance and independent
+  reviews. Fixed shared mapper buffering, takeover reconstruction, separate model
+  idle timeout, terminal replay and Next SSE gzip buffering. Browser first text
+  4.795s with continuous increments; real files.publish/native asset download
+  verified by bytes/hash. Slice 7/7; stage 2 10/10. Original activation remains off;
+  stages 3–5 are not complete. Evidence: `docs/rabbitmq_stage2_product_e2e.md`.
+  Full frontend typecheck retains three documented baseline fixture errors.
+
+- `RABBIT-TURN-COMPOSE-01` passes spec and quality reviews after fixing real
+  signed cancellation replay past earlier approval terminals. Default-off managed
+  lifecycle, independent recovery, bounded drain, cancellation control capacity
+  and fallback rollback are implemented. Actual PG/Rabbit acceptance: 10 passed,
+  including three abrupt subprocess exits; 1000 Turns/route reduce local pickup
+  p95 from 250.067ms to 53.939ms. Slice 6/6; stage 2 now 9/10 (90%). Real-model/
+  browser verification awaits isolated authority confirmation; stages 3–5 remain
+  pending. Original services/data untouched; no production activation or HA claim.
+
+- `RABBIT-TURN-QUARANTINE-01` passes both independent reviews. Sanitized
+  receipt/diagnostic Outbox, strict matching DTOs, mandatory confirmed transport,
+  separate diagnostic quorum topology/ACL and additive migration are implemented.
+  Parent actual PG/Rabbit suite passes 4 cases including 8-way receipt dedupe,
+  fencing/migration parity and malformed-secret-safe delivery. Zebra `make check`
+  passes (792 Mypy files, eval 10/10). Slice 5/5; stage 2 now 7/10 (70%).
+  Default-off composition and dead-owner cancellation gap G20 are in progress.
+
+- `RABBIT-TURN-CONSUMER-01` passes both independent reviews (28 tests each),
+  and the combined consumer/dispatcher/handoff/recovery suite passes 65 tests.
+  Actual PG/Rabbit capacity-1/prefetch-2 execution persists both answers without
+  over-claiming after ACK. Shared reservations keep polling and broker execution
+  within one bound. Slice 5/5; stage 2 is 6/10 (60%). Sanitized rejection and
+  diagnostic delivery are next; original application startup remains unchanged.
+
+- `RABBIT-TURN-RELAY-01` passes independent spec and quality reviews. Fenced
+  relay preserves physical retry identity; durable recovery and scheduling
+  deferral create atomic successor generations. Combined tests 60 passed;
+  actual isolated PG/Rabbit lost-confirm/duplicate/owner-death acceptance passed.
+  Slice 6/6; stage 2 now 5/10 (50%). Bounded consumer implementation continues;
+  no original runtime activation. See `docs/rabbitmq_stage2_delivery_evidence.md`.
+
+- `RABBIT-TURN-HANDOFF-01` adds dormant, explicit migration-mode atomic broker
+  admission and scoped Inbox+execution-lease handoff in isolated Trench. Shared
+  claim logic preserves fencing and fallback; separate broker tables do not
+  replace execution Outbox. Independent spec/quality reviews pass, 174 targeted
+  tests pass including 37 new cases; final 12 real PG cases pass three extra runs.
+  Fixed publishing-state vocabulary and Unicode scope-key overflow. Current slice
+  8/8 (100%); Trench Turn stage 3/10 (30%) under the fixed acceptance ledger in
+  `docs/rabbitmq_completion.md`. No relay/consumer/sweeper or live activation yet.
+  Evidence: `docs/rabbitmq_stage2_handoff_evidence.md`.
+
+- `RABBIT-TURN-FENCE-01` completes the stage-2 prerequisite in isolated Trench:
+  monotonic lease fences, owner/active/DB-expiry validation after Turn→Outbox
+  locks, local cancellation on heartbeat loss, authoritative execution identity
+  and individual shutdown release. Repeated PG tests exposed and fixed mixed
+  admission/claim clocks. Independent spec/quality reviews pass; 53 targeted
+  tests pass, including 9 real PG scenarios repeated three extra times. Additive
+  migration tested on synthetic existing rows only. No business Rabbit activation,
+  atomic broker Outbox/Inbox, original-service migration, merge or E2E claim.
+  Evidence and next gates: `docs/rabbitmq_stage2_fencing_evidence.md`.
+
+- `RABBIT-INFRA-01` adds optional RabbitMQ transports to both approved isolated
+  repositories and a pinned 4.3.5 local broker fixture with least-privilege vhosts,
+  quorum queues, mandatory confirmed publishing and explicit manual settlement.
+  Both actual adapters pass the same 8 real broker scenarios (disconnect/restart,
+  redelivery, routing/role isolation, prefetch, capacity and quarantine), with
+  30 unit tests each and 3 provisioning tests. Zebra make check passes (791 Mypy
+  files, eval 10/10). Independent spec and quality reviews pass after closing
+  initial-connect cancellation and default-dev-install defects. No business activation,
+  PG handoff, browser E2E or production HA is claimed. See
+  `docs/rabbitmq_stage1_evidence.md` and `docker/rabbitmq/README.md`.
+  Final full Zebra suite: 2984 passed, 381 skipped; disposable acceptance broker
+  and test volume removed after zero-connection/zero-message checks.
+
+- `RABBIT-FOUNDATION-01` implements the stage-0 envelope contract in both isolated
+  repositories, with identical generated schema/fixtures and 84 envelope tests per
+  repository. Real disposable PostgreSQL baselines measured Trench pickup p95 at
+  242–257ms for 100-Turn runs and proved Zebra's recent-session scan misses an older
+  pending command (9 SQL/9 connections per scan). No runtime integration or service
+  activation. Core tests pass 637; Trench focused tests pass 97; Zebra make check
+  passes (790 Mypy files, eval 10/10). See `docs/rabbitmq_stage0_evidence.md` for
+  reproduction, identity/command producer inventory and remaining integration gates.
+
+- `RABBIT-RELIABILITY-REVIEW-01`: RabbitMQ plan revised to content v1.1 after
+  checking existing Trench/Zebra code and RabbitMQ delivery semantics. The
+  audit distinguishes deterministic contradictions from implementation risks;
+  it specifies scoped operation/generation deduplication, fenced handoff,
+  mandatory returns, isolated shadow traffic, source scope and Redis limits.
+  Work is isolated on `codex/rabbitmq-foundation-01`; no runtime activation or
+  migration. The foundation continuation above supplies Schema/local baseline;
+  real PG/Rabbit failure tests and runtime integration remain open. See
+  `docs/RabbitMQ可靠投递缺口核验与验收.md` for evidence and gates.
+
 - Trench user-file profile follow-up (`CLOUD-USER-FILES-TRN-PROFILE-02`) is in
   review on `codex/zebra-durable-turn-grants`. The research parent profile
   now exposes the existing governed `files.publish` Tool while keeping shell,
@@ -1885,6 +2130,19 @@ business domains. The durable decision is `ADR-012`.
 3. `docs/AGENT_TASKS.md`
 4. `AGENTS.md`
 
+## 2026-09-05 RabbitMQ Stage 5 capacity acceptance
+
+`RABBIT-ROLLOUT-CAPACITY-01` is in Review and accepts Stage 5 group 1. Trench
+now serializes per-user cross-conversation admission in PostgreSQL. Zebra
+enforces global unpublished-Outbox and per-scope execution/control ceilings,
+including recovery, backfill and old-writer migration paths, while reserving
+control capacity. Fair pickup retains forward progress and probes a frozen ring
+of active scope heads so continuous tail traffic cannot starve a newly active
+scope. Actual PostgreSQL/API regression passed 146/146, the final migration
+negative proof passed 2/2, and independent SPEC/QUALITY reviews passed. Stage 5
+is **1/8 = 12.5%**; rollout/shadow, production activation and later hardening
+groups remain open.
+
 Before architecture changes, also read the source-of-truth documents in the
 precedence order defined by `AGENTS.md`.
 # 2026-08-28: Trench Native History Host Grant V2
@@ -1924,3 +2182,23 @@ SQLite remains explicitly tenant-only because it has no durable binding table.
 The suspend/resume acceptance helper now binds a temporary workspace instead of
 snapshotting the repository and `.venv`. Final Zebra validation passes
 `make check` and `make test` (`2849 passed, 369 skipped`).
+
+# 2026-09-05 RabbitMQ Stage 5 scoped rollout acceptance
+
+`RABBIT-ROLLOUT-SHADOW-01` is in Review and accepts Stage 5 group 2. Zebra and
+Trench now default unlisted scopes to database fallback, use one audited rollout
+authority, and recheck execution/control lane authority inside the fenced
+handoff transaction. The physically separate shadow lane is bounded and
+side-effect free; advisory try-lock contention skips evidence without delaying
+formal admission. Formal and shadow consumers require distinct percent-decoded
+Rabbit principals and mutually exclusive queue ACLs. Existing credential files
+remain usable and gain shadow identities through an atomic, non-rotating
+`prepare-shadow` upgrade.
+
+Exact reconciliation starts from eligible formal Outbox rows and requires full
+formal/shadow IDs, scope and digest equality; controlled corruption tests prove
+drifted mirror/observation rows are not counted. Final evidence is Zebra focused
+63/63 and actual PostgreSQL 30/30, Trench focused 32/32 and actual PostgreSQL
+1/1, isolated RabbitMQ ACL acceptance, both full `make check` gates, and
+independent SPEC/QUALITY pass. Stage 5 is **2/8 = 25%**. Production activation,
+commit, merge and push remain separate and were not performed.

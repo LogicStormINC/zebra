@@ -1,0 +1,239 @@
+{
+  "valid": [
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "trench.ai.turn.ready",
+      "schema_version": 1,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "principal",
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1"
+      },
+      "aggregate_id": "turn-1",
+      "operation_id": "turn-1",
+      "wake_generation": 0,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "trench_turn",
+        "id": "turn-1"
+      }
+    },
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "zebra.session.command.ready",
+      "schema_version": 1,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "principal",
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1"
+      },
+      "aggregate_id": "session-1",
+      "operation_id": "turn-1",
+      "wake_generation": 0,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "zebra_command",
+        "id": "turn-1"
+      },
+      "accepted_event_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "accepted_sequence": 1
+    },
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "trench.source.fetch.ready",
+      "schema_version": 1,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "principal",
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1"
+      },
+      "aggregate_id": "source-1",
+      "operation_id": "turn-1",
+      "wake_generation": 0,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "source_fetch_command",
+        "id": "turn-1"
+      }
+    },
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "trench.source.fetch.ready",
+      "schema_version": 1,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "shared_source",
+        "service_scope_id": "shared-source-service"
+      },
+      "aggregate_id": "source-1",
+      "operation_id": "turn-1",
+      "wake_generation": 0,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "source_fetch_command",
+        "id": "turn-1"
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "trench.ai.turn.ready",
+      "schema_version": 2,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "principal",
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1"
+      },
+      "aggregate_id": "turn-1",
+      "operation_id": "turn-1",
+      "wake_generation": 0,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "trench_turn",
+        "id": "turn-1"
+      }
+    },
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "trench.ai.turn.ready",
+      "schema_version": 1,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "principal",
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1"
+      },
+      "aggregate_id": "turn-1",
+      "operation_id": "turn-1",
+      "wake_generation": true,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "trench_turn",
+        "id": "turn-1"
+      }
+    },
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "trench.ai.turn.ready",
+      "schema_version": 1,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "principal",
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1"
+      },
+      "aggregate_id": "turn-1",
+      "operation_id": "turn-1",
+      "wake_generation": 0,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "trench_turn",
+        "id": "wrong"
+      }
+    },
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "trench.ai.turn.ready",
+      "schema_version": 1,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "shared_source",
+        "service_scope_id": "shared"
+      },
+      "aggregate_id": "turn-1",
+      "operation_id": "turn-1",
+      "wake_generation": 0,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "trench_turn",
+        "id": "turn-1"
+      }
+    },
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "trench.source.fetch.ready",
+      "schema_version": 1,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "principal",
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1"
+      },
+      "aggregate_id": "source-1",
+      "operation_id": "turn-1",
+      "wake_generation": 0,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "source_fetch_command",
+        "id": "turn-1"
+      },
+      "accepted_sequence": 1
+    },
+    {
+      "message_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "message_type": "zebra.session.command.ready",
+      "schema_version": 1,
+      "deployment_namespace": "dev",
+      "scope": {
+        "kind": "principal",
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1"
+      },
+      "aggregate_id": "session-1",
+      "operation_id": "turn-1",
+      "wake_generation": 0,
+      "idempotency_key": "turn-1:0",
+      "correlation_id": "correlation-1",
+      "causation_id": null,
+      "occurred_at": "2026-09-04T10:00:00Z",
+      "traceparent": null,
+      "payload_ref": {
+        "kind": "zebra_command",
+        "id": "turn-1"
+      },
+      "accepted_event_id": "01234567-89ab-4cde-8123-0123456789ab",
+      "accepted_sequence": 0
+    }
+  ]
+}

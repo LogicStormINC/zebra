@@ -30,6 +30,904 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `RABBIT-ROLLOUT-SHADOW-01` is `Review`, created Ready and claimed after
+  Stage 5 group 1 acceptance. Owner Luke Ding; executor Codex; stacked on the
+  explicitly approved isolated RabbitMQ worktrees while the accepted group-1
+  paths remain frozen. Scope: Stage 5 group 2 only—one default-off authoritative
+  scope allowlist shared by publisher, consumer and fallback scanner; a separate
+  bounded shadow Outbox/exchange/queue/consumer role/observation store that can
+  neither claim leases nor mutate formal Inbox/Outbox/business state; exact
+  message-id reconciliation. Owned Zebra: command-delivery config/composition,
+  focused rollout/shadow PostgreSQL storage and migration, relay/consumer gates,
+  topology and focused tests. Owned Trench: existing Turn/source delivery config
+  and composition, focused rollout/shadow storage/migrations and tests. Parent
+  owns Stage-5 docs. No business execution redesign, payload duplication beyond
+  bounded shadow protocol evidence, production activation, commit, merge or push.
+  Final evidence: default-off shared scope authority, transaction-locked
+  execution/control mode checks, non-blocking shadow admission, separate
+  percent-decoded Rabbit principals/ACLs, atomic legacy credential upgrade and
+  full-identity/digest reconciliation passed Zebra focused 63/63 plus actual PG
+  30/30, Trench focused 32/32 plus actual PG 1/1, isolated broker ACL acceptance,
+  both full `make check` gates and independent SPEC/QUALITY review. Stage 5 group
+  2 is accepted at 2/8 (25%), without production activation.
+
+- `RABBIT-ROLLOUT-CAPACITY-01` is `Review`, created Ready and claimed after
+  Stage 4 isolated acceptance. Owner Luke Ding; executor Codex; same isolated
+  branch/worktrees. Scope: Stage 5 group 1 only—close verified admission races,
+  cap durable queued/Outbox pressure and make bounded pickup fair across scopes
+  while preserving canonical PostgreSQL authority and existing execution/control
+  lanes. Reuse current user rows, admission transactions, keyset selectors and
+  process capacity settings; no second quota service, generic scheduler or new
+  dependency. Owned Trench: turn admission/store/config and focused actual-PG
+  concurrency tests. Owned Zebra: command admission/pickup/config and focused
+  actual-PG tests only. Parent owns Stage-5 docs. No source pipeline change,
+  production activation, commit, merge or push.
+  Final evidence: Trench atomic cross-conversation user admission and Zebra
+  global/scope quotas, control reserve, recovery/backfill caps, frozen
+  active-scope probe ring and mixed-writer database enforcement passed focused
+  and actual PostgreSQL regression. Zebra combined actual-PG/API suite is
+  146/146; exact migration negative proof is 2/2; independent SPEC/QUALITY pass.
+  Stage 5 group 1 is accepted at 1/8, without production activation.
+
+- `RABBIT-SOURCE-CREDENTIAL-REF-01` is `Review`, created Ready and claimed
+  after source process composition acceptance. Owner Luke Ding; executor Codex;
+  same isolated branch/worktrees. Scope: close fixed Stage 4 group 1 by validating
+  each non-secret source credential reference against the existing credential
+  identity, enabled state and source platform while preserving the proven
+  principal/subscription association. Missing, inactive, mismatched or later
+  drifted references fail closed with sanitized codes; successful identity
+  validation remains non-executable because secret resolution/injection is not
+  part of this card. Reuse `CredentialRow`; do not add a vault, read credential
+  payloads, enable X fetching, mutate live sources or expose identifiers/secrets
+  in logs or results. Owned Trench: existing source scope contract/store and
+  focused SQLite/generated-schema PostgreSQL tests only. Owned Zebra: Stage 4
+  evidence, registry and progress docs only. No migration, process activation,
+  commit, merge or push in this card.
+  Final evidence: metadata-only identity lookup rejects missing, inactive and
+  platform-mismatched references during atomic apply and on every eligibility
+  read; a controlled PostgreSQL credential-writer race proves the waiting
+  operator observes the winning disabled state. Valid references remain
+  non-executable and credential payloads never enter results or logs. Final
+  source regression 100 passed/21 explicit-integration skipped; actual
+  PostgreSQL scope 5/5; independent SPEC/QUALITY pass. This accepts Stage 4
+  group 1 and closes Stage 4 at 7/7 without credential execution activation.
+
+- `RABBIT-SOURCE-COMPOSE-01` is `Review`, created Ready and claimed after
+  source pipeline E2E acceptance. Owner Luke Ding; executor Codex; same isolated
+  branch/worktrees. Scope: compose the accepted source scheduler, relay,
+  consumer, recovery and quarantine adapters as explicit default-off processes;
+  prove one isolated cutover, broker-to-database fallback, restore and rollback
+  without old/new double scheduling, then record terminal command, Outbox,
+  Inbox, receipt, result and source projection state. Reuse existing adapters and
+  deployment configuration; do not add another queue framework or duplicate the
+  fetch pipeline. Owned Trench: narrowly related source process composition and
+  settings/entry points, isolated Compose fixture and focused process tests;
+  integration fixes only where the real process proof exposes a defect. Owned
+  Zebra: Stage-4 composition evidence and existing isolated Rabbit fixture only.
+  Feature remains off by default. No credentialed-X claim, live business schema
+  or feed mutation, production activation, commit, merge or push in this card.
+  Final evidence: one shared fail-closed selector prevents legacy and migrated
+  execution together; the opt-in source process has a minimal environment and
+  bounded graceful shutdown. Actual independent Python processes completed
+  broker, database fallback and broker restore, while a fourth default-off
+  process failed before mutation. Terminal evidence is 3 Commands, 3 Inbox
+  rows, 3 receipts and 3 results with 2 published and 1 fallback-superseded
+  Outbox generation; Redis DB 14 was empty after cleanup. Actual subprocess E2E
+  2/2 and independent post-fix SPEC/QUALITY pass. This accepts Stage 4 group 7.
+
+- `RABBIT-SOURCE-E2E-01` is `Review`, created Ready and claimed after
+  source result acceptance. Owner Luke Ding; executor Codex; same isolated
+  branch/worktrees. Scope: prove one real fixture HTTP fetch through the accepted
+  command, broker/fallback, fenced execution, Redis raw handoff, normalization,
+  archive and authenticated history/timeline read paths. Exercise actual
+  PostgreSQL, Redis and RabbitMQ; duplicate/lost-response handling must preserve
+  one canonical content identity, Redis rejection must not project success or a
+  content cursor, and another user's private source/content must remain
+  inaccessible. Reuse existing ingest, normalize, archive, auth and product API
+  composition; no parallel test-only business pipeline. Owned Trench: narrowly
+  named Stage-4 E2E runner/fixtures and only integration fixes exposed by that
+  proof, with deterministic regressions in the touched component paths. Owned
+  Zebra: source-E2E evidence docs and existing isolated Rabbit test composition
+  only. No credentialed-X claim, live business schema/feed mutation, production
+  activation, commit, merge or push in this card.
+  Final evidence: one real fixture HTTP feed traversed PostgreSQL command/Outbox,
+  RabbitMQ, fenced execution, Redis raw handoff, normalize and archive into the
+  authenticated product timeline and signed Host history Tool. Duplicate
+  delivery completed with two broker ACKs, zero requeues and one canonical raw
+  item; deterministic Redis rejection fault injection preserved the prior raw
+  length, source success projection and normalize cursor. Two product users saw
+  only their entitled source content. Combined source acceptance is 106/106 on
+  actual PostgreSQL/Redis/RabbitMQ where applicable; post-fix SPEC/QUALITY pass.
+  This accepts Stage 4 group 6 only.
+
+- `RABBIT-SOURCE-RESULT-01` is `Review`, created Ready and claimed after
+  source cutover acceptance. Owner Luke Ding; executor Codex; same isolated
+  branch/worktrees. Scope: one durable fenced result for migrated RSS/scraper
+  execution that distinguishes success with content, valid empty, malformed,
+  configuration required, rate limited and transient failure. Reuse existing
+  FetchAttempt/raw artifact/parse-attempt evidence and canonical Redis handoff;
+  do not add a raw spool or generic retry framework. Preserve safe HTTP status,
+  retry-after and diagnostic codes without URLs, headers, bodies or credentials.
+  Only exact command/fence finalization may project source sync status; retries,
+  age/generation budget and terminal recovery are bounded. Legacy mode remains
+  unchanged. Owned Trench: source command/result ORM and one additive migration;
+  narrowly named core result/finalization modules; existing RSS/scraper result
+  seams and social source diagnosis mapping; focused deterministic and actual-PG
+  tests. No live schema/feed/credential/process activation in this card.
+  Final evidence: result/delivery/schedule/cutover/adapter combination 63/63 on
+  actual generated-schema PostgreSQL where applicable; retry due-time and a
+  controlled finalize/fallback race prove exact next-generation execution;
+  migrated sentinel URLs are absent from logs, malformed scraper shapes remain
+  typed, and downgrade maps valid-empty `completed` rows conservatively to
+  recovery. Targeted static checks and post-fix SPEC/QUALITY pass. This accepts
+  Stage 4 group 5 only.
+
+- `RABBIT-SOURCE-CUTOVER-01` is `Review`, created Ready and claimed after
+  source delivery acceptance. Owner Luke Ding; executor Codex; same isolated
+  branch/worktrees. Scope: make every managed/default RSS, scraper, ARQ and
+  fallback business entry point use the accepted source admission/claim/fence,
+  with one default-off cutover selector and no old/new double scheduling.
+  Reuse existing ingest/scrape implementations behind one execution callback;
+  do not duplicate parsing, normalization or persistence. Legacy mode remains
+  unchanged while disabled. Migrated broker and database-fallback modes are
+  mutually exclusive, and standalone CLIs must be explicit diagnostics rather
+  than silently bypassing business authority. Owned Trench: existing narrowly
+  related rss_ingest/scraper/worker settings, schedulers and task entry points;
+  a narrowly named source process/composition module and focused tests. Existing
+  source delivery/schedule modules may receive only integration fixes covered by
+  regression tests. No live schema, credential, process activation or real feed
+  mutation in this card; durable result semantics remain the next card.
+  Final evidence: focused source suite 75 passed/12 explicit-PG skipped; parent
+  cutover+delivery+schedule 21/21 including actual PostgreSQL 9; targeted static
+  checks and post-fix SPEC/QUALITY pass. Execution uses a lock-validated frozen
+  non-secret source snapshot, migrated mode suppresses legacy result writes, and
+  no process, live schema, source or feed was activated. This accepts Stage 4
+  group 4 only.
+
+- `RABBIT-SOURCE-DELIVERY-01` is `Review`, created Ready and claimed after
+  source schedule/fence acceptance. Owner Luke Ding; executor Codex; same
+  isolated branch/worktrees. Scope: dedicated source Outbox relay, durable
+  source Inbox/handoff receipt, bounded source consumer and explicit recovery,
+  plus opt-in restricted RabbitMQ source topology. Reuse the accepted
+  `SourceFetchEnvelope`, Rabbit transport and source-wide lease/fence; never use
+  the Trench Turn Outbox/consumer or create a generic queue abstraction. Broker
+  ACK requires either exact committed source handoff or confirmed durable
+  sanitized quarantine. Publisher confirm must settle the exact relay fence;
+  lost confirm/redelivery must retain identical message bytes/identity. A source
+  execution callback owns network fetch plus successful Redis push and may mint
+  `RedisHandoffCheckpoint` only after that push; Rabbit/Redis are not business
+  authority. Expiry and ambiguous callback outcomes remain explicit recovery,
+  not blind replay. Bound claims, tasks, retry/backoff, sweeps and shutdown.
+  Source relay/consumer accounts and source ready/DLQ are opt-in under `/trench`,
+  total queues remain <=5, legacy Turn ACL/settings stay compatible. Owned
+  Trench: new narrowly named `trench_core/source_fetch_delivery*.py` and ORM,
+  one additive Alembic revision after `708192a3b4c5`; new narrowly named
+  `trench_api/source_fetch_{relay,consumer,recovery,quarantine}.py`; focused
+  `tests/test_source_fetch_delivery*.py` and `tests/api/test_source_fetch_*.py`.
+  A narrow `trench_core/source_fetch_schedule_claim.py` extraction and edits to
+  `source_fetch_schedule_leases.py` are owned only to make existing broker and
+  fallback handoff call the same transactional claim helper; accepted claim,
+  lock, clock and fence behavior must remain covered by regression tests.
+  Owned Zebra: narrow opt-in additions in `scripts/provision_rabbitmq.py`,
+  `docker/rabbitmq/*`, source-only topology tests, and source delivery evidence
+  docs. No old source entry-point mutation, live credentials/schema, actual feed
+  fetch, process composition or activation in this card.
+  Final evidence: Trench delivery regression 15 passed/5 explicit-PG skipped;
+  parent actual PostgreSQL delivery+schedule 9/9; Zebra topology 9/9; isolated
+  live RabbitMQ source route/ACL 1/1; post-fix independent SPEC/QUALITY pass.
+  The accepted recovery path covers broker-off accepted-but-not-started crashes
+  without weakening ordinary lost-publication or started-work ambiguity rules.
+
+- `RABBIT-SOURCE-SCHEDULE-01` is `Review`, created Ready and claimed after
+  scope-binding slice review. Owner Luke Ding; executor Codex; same isolated
+  branch/worktrees. Scope: durable source schedule/FetchCommand, atomic source
+  wakeup Outbox admission and fenced lease primitives, no network fetch or live
+  scheduler activation. Shared/public eligible bindings only; private/credential
+  references remain blocked. One source-wide schedule/fence must prevent overlap
+  even across adjacent windows; namespaces cannot bypass source mutual exclusion.
+  Explicit bounded schedule initialization, DB-clock due/coalescing, stable manual
+  idempotency, strict config/binding revalidation, finite lease/retry bounds and
+  fenced finalization are required. Broker hints do not grant authority.
+  Owned Trench: new `trench_core/source_fetch_schedule*.py`, narrowly named
+  command/claim/finalization modules as needed, new ORM `source_fetch_command.py`
+  and `source_fetch_schedule.py` (including source-specific Outbox), registration,
+  one additive Alembic revision, focused `tests/test_source_fetch_schedule*.py`.
+  May reuse/extract scope-store validation only without changing its accepted
+  behavior. No generic queue abstraction, Trench Turn table reuse, network IO in
+  transactions, raw spool, old fetch-entry mutation or activation. Parent owns
+  governance docs. This slice is not Stage 4 runtime/pipeline acceptance.
+  Slice passes local **116 passed / 4 explicit-PG skipped**, parent-generated
+  random-schema PostgreSQL **4/4 passed**, targeted Ruff/diff/Alembic-head checks,
+  and independent SPEC/QUALITY review. No live schema, Redis, broker, fetch entry
+  point or process was activated. This accepts Stage 4 group 2 only.
+
+- `RABBIT-SOURCE-SCOPE-01` is `Review`, created Ready and claimed after
+  Stage 3 isolated acceptance. Owner Luke Ding; executor Codex; same approved
+  isolated branch/worktrees. First Stage 4 slice: explicit source fetch binding,
+  read-only eligibility validation and bounded operator CAS backfill. Reuse
+  existing PrincipalScope/SharedSourceScope; unknown is ineligible. Do not infer
+  public/private from Source.owner or auth_mode. No scheduler activation yet.
+  Owned Trench paths: new narrowly named `trench_core/source_fetch_scope*.py`,
+  new `trench_core/orm/source_fetch_binding.py`, ORM registration, one additive
+  Alembic revision, narrowly named `scripts/source_fetch_bindings.py` and focused
+  `tests/test_source_fetch_scope*.py`; no existing source mutation/discovery or
+  credential payload/vault changes in this slice. Referenced credentials without
+  a verified principal-bound execution path remain ineligible; public service
+  authorization must be explicit, never guessed from global RSSHub settings.
+  Validate source config fingerprint (exclude transient fetch status), explicit
+  scope, principal subscription association, expected revision/config CAS and
+  batch rollback; return no secrets. Do not enable private fetching or silently
+  reclassify existing shared rows. Docs/progress/registry owned by parent.
+  Stage 4 remains 0/7 until each full acceptance group, including its deferred
+  credential/discovery execution boundary, is implemented and verified.
+  First slice passes SPEC/QUALITY; parent 29 focused checks include three actual
+  PostgreSQL migration/CAS/lock-wait cases, plus 114 envelope/source-route
+  regressions reported by implementer. No live business schema migration.
+
+- `RABBIT-ZEBRA-COMPOSE-01` is `Review`, claimed from Ready after
+  AG-UI outcome acceptance.
+  Owner Luke Ding; executor Codex; approved isolated branch/worktrees retained.
+  Scope: default-off process composition of the accepted command adapters,
+  migrated receipt-aware fallback/rollback and real isolated process acceptance.
+  Owned: worker loop/entry/cloud composition and narrowly named composition
+  module; existing config package flags/validation and corresponding tests;
+  existing runtime adapters only for verified composition defects; test-only
+  `agent_integrations/rabbitmq.py` narrowly owns consumer cancellation/drain
+  support and its transport tests for the verified missing lifecycle operation;
+  product fixture/Compose/dependency-image build and the production Dockerfile's
+  explicit optional Rabbit dependency selection and `.dockerignore` exclusion
+  of the verified nested local broker secret file, Trench product-E2E fixture's
+  validated database selection and tests; registry/progress/focused docs.
+  Reuse bounded consumer, relay, recovery, quarantine and exact cleanup. Preserve
+  child wakeups/memory recovery; do not run the old normal command scanner beside
+  migrated pickup. Same actual DSN/namespace for all adapters; no network calls
+  inside DB transactions. Validate at least one recoverable execution path.
+  Preserve the old test databases and migration ledger; use only the exact fresh
+  pair documented in `rabbitmq_stage3_composition.md`. Original service mutation,
+  blanket queue purges, constraint relaxation and deployment-wide scans are out
+  of scope. Actual process fault and browser evidence is required, not inferred
+  from the accepted supporting adapters. Stage 3 group 6 is now accepted:
+  final process fault matrix 15 actual-PG/subprocess checks; real broker restart,
+  real-model stream/replay/isolation, browser route/title/draft/download, explicit
+  fallback and restore, canonical cancellation and exact cleanup terminal state.
+  SPEC/QUALITY pass; make check 842 passes. Evidence distinctions and timings are
+  recorded in `rabbitmq_stage3_composition.md`. Stage 3 is 6/6 isolated acceptance;
+  no original activation, commit, merge or production-HA claim.
+
+- `RABBIT-ZEBRA-TASK-CONTROL-TARGET-01` is `Review`, created Ready and claimed
+  after direct-control acceptance; identified by the direct
+  cancellation SPEC review. Owner Luke Ding; executor Codex; approved isolated
+  branch/worktree retained. Scope: public Task cancellation's existing
+  active-Segment selection race and scoped idempotent retry across rollover.
+  Owned: narrow Task control storage adapter/shared direct-control transaction,
+  Task API target selection, API session-control mixin and worker control's narrow
+  optional Task identity forwarding, focused actual-PG concurrent handoff/cancel tests;
+  `postgres/session_handoff_transactions.py` and `session_handoff_events.py` for
+  the verified Host-context propagation prerequisite, corresponding PG tests;
+  `postgres/command_wakeup.py`'s existing binding validation seam may be extracted
+  to return the exact validated HostContext, avoiding two-read snapshot races;
+  registry/progress/docs. Reuse existing Session-before-Task lock order and
+  canonical Task membership. A suspended source must not be successfully
+  cancelled after rollover while the live successor is left untouched. A retry
+  must not silently retarget a previously completed cancellation operation.
+  Preserve authorization, response fields, local behavior and exact cleanup.
+  Do not introduce Task-wide container deletion or a second lease authority.
+  This is a prerequisite for claiming full Task/control process acceptance,
+  not a regression attributed to the direct-control storage slice.
+  Accepted 5/5 (target CAS, pinned replay, canonical identity propagation,
+  regression evidence, independent reviews): final 65 actual PG cases in
+  59.56 s, 18 shared PG handoff/migration cases in 6.74 s, make check (835),
+  SPEC/QUALITY. The two-read binding race found in SPEC is fixed by one shared
+  validated-context query; its connection-proxy test is not a real writer race.
+  PG handoff must preserve the verified frozen HostContext in the child's
+  canonical TASK_PREPARED event so replay derives the correct namespace. Keep
+  its original expiry; do not invent new execution authority. Verify parent
+  binding/scope first; no blanket acceptance of unbound child projections.
+  The shared event builder's optional argument defaults to None, preserving
+  SQLite and old migration callers. Test child replay, command admission and
+  expired-context preservation using actual handoff rather than patched projections.
+
+- `RABBIT-ZEBRA-AGUI-OUTCOME-01` is `Review`, created Ready and claimed
+  after direct-control and Task-target acceptance, scoped after direct-control
+  compatibility acceptance. Owner Luke Ding; executor Codex; approved isolated
+  branch/worktree retained. Scope: exact Task/run binding and client-visible
+  durable command failure without fake Session events or replay cursors.
+  Owned: narrow PostgreSQL command outcome reader and tests; API `ag_ui_stream.py`,
+  optional focused stream binding helper, factory/app/http composition seams;
+  `agent_integrations/ag_ui/task_stream.py` cursor validation and the shared pure
+  `agent_integrations/ag_ui/task_run_binding.py` run-window helper; focused API and
+  integration projection tests; registry/progress/docs. Reuse existing verified
+  caller scope and actual composition DSN, preserve local default-None behavior.
+  Resolve canonical executable command across Task segments; reject ambiguous
+  executable anchors, do not confuse controls or a later run's terminal event.
+  Validate exact incoming cursor event identity and bounds, including durable
+  live-tail overlay while the Task index lags. Fixed sanitized RUN_ERROR frames
+  carry no SSE id and do not advance durable replay. Exact terminal handling wins
+  over stale delivery failures; no error from old generation, physical retry,
+  raw quarantine or cleanup-only reconciliation. Test scope isolation, rollover,
+  ambiguity, subsequent runs, reconnect, invalid cursors and local compatibility.
+  No original activation or broker process wiring in this slice.
+  Accepted 5/5: actual PG outcome/handoff/receipt/recovery 101 passed in 86.02 s;
+  final API/projection 52 passed in 3.35 s; make check (838), SPEC/QUALITY PASS.
+  SPEC's slow-query authorization-expiry defect was corrected at the shared
+  output boundary, including generator backpressure. No synthetic cursor/Event.
+
+- `RABBIT-ZEBRA-RECEIPTS-01` is `Review`, created Ready and claimed after
+  storage handoff acceptance. Owner Luke Ding; executor Codex; approved isolated
+  branch/worktree retained. Scope: exact canonical worker Event to command handoff
+  association and atomic handled receipt, not scheduling or runtime activation.
+  Owned: narrow `postgres/command_wakeup_receipts*.py`, additive migration/catalog,
+  `postgres/workspaces.py` transaction hooks, `command_wakeup_handoff.py` shared
+  ordering/handled predecessor checks, focused storage tests, docs/progress.
+  Match existing full LeaseFence to one accepted command; preserve model correlation
+  and existing event payloads. Commit explicit started/handled Event identity with
+  Event/projections; handle canonical idempotent replay. Handled means a durable
+  command boundary, not permanent session completion or external exactly-once.
+  Never classify arbitrary model output as final. Unknown/uncertain output remains
+  unresolved. Audit companion event paths. Keep lease-before-business-row lock
+  order across receipt hook and handoff; no pending/receipt lock before lease wait.
+  Accepted 5/5: corrected contract-valid fixtures, 61 actual PG receipt/handoff/
+  clock tests, 54 shared callers, full make check (803), independent SPEC/QUALITY.
+
+- `RABBIT-ZEBRA-CLAIMED-EXECUTION-01` is `Review`, created Ready and claimed
+  after receipts acceptance. Owner Luke Ding; executor Codex; approved isolated
+  branch/worktree retained. Scope: reuse a handed-off existing WorkerLease in
+  the existing execution/heartbeat/resume path without a second acquisition.
+  Owned: worker `execution.py`, `execution_recovery.py`, `continuation_lifecycle.py`
+  optional recorder forwarding only, narrow worker execution tests and focused
+  actual-PG handoff-to-worker acceptance; registry/progress/docs.
+  Preserve old local/SQLite entry behavior. Validate/recover/renew the exact fence,
+  clean up ownership on setup failure, and never invent another execution lease.
+  Completed-tool continuation START must use supplied recorder, preserving the
+  optional legacy path. No broker consumer/startup or original activation yet.
+  Accepted 5/5: final 42 PG/worker cases in 8.28 s, make check (803), independent
+  SPEC/QUALITY. Actual PG handoff executes through the real worker with scripted
+  model/local temporary runtime; first TURN_COMPLETED receipt remains stable
+  through later SESSION_COMPLETED. This is not cloud real-model acceptance.
+
+- `RABBIT-ZEBRA-RECOVERY-01` is `Review`, created Ready and claimed after
+  claimed execution acceptance. Owner Luke Ding; executor Codex; approved isolated
+  branch/worktree retained. Scope: bounded published-unhandled and proven-unstarted
+  expired handoff recovery, durable generation identity and uncertainty isolation.
+  Owned: narrow `postgres/command_wakeup_recovery*.py`, additive migration/catalog,
+  command-wakeup identity/relay validation/handoff helpers as required for shared
+  generation handling, focused storage/live integration tests, registry/docs/progress.
+  Relay due-selector clock binding is also owned: actual PG EXPLAIN shows the
+  volatile clock predicate becomes Filter rather than available_at Index Cond.
+  Bind a sampled DB clock for selection, retaining post-lock clock authorization.
+  Preserve old attempt/fence/Inbox evidence; no deletion or arbitrary duplicate
+  reacquisition. Recovery must serialize on existing session/epoch/lease locks,
+  then DB time and canonical evidence. Started NULL alone is insufficient; any
+  post-floor execution evidence prevents automatic retry. Exact handled/terminal/
+  historical/dead commands never revive. Broker and fallback use the same approved
+  recovery generation; new physical message causation points to prior message.
+  No consumer/runtime activation or generic model program-counter recovery claim.
+  Accepted 5/5: 129 combined actual PG/Rabbit cases, then final 44 recovery cases
+  in 33.70 s after poison-message isolation and both fallback/recovery race orders;
+  make check (806), independent SPEC/QUALITY. Stage 3 group 2 is accepted.
+
+- `RABBIT-ZEBRA-MESSAGE-01` is `Review`, created Ready and claimed after
+  recovery acceptance. Owner Luke Ding; executor Codex; approved isolated branch/
+  worktree retained. Scope: canonical MESSAGE input, projection, existing lease,
+  Inbox and command receipt in one transaction, followed by claimed execution.
+  Owned: narrow `postgres/command_wakeup_message*.py`, handoff shared seam,
+  additive migration/catalog only if needed, focused storage/worker tests;
+  registry/progress/docs. Reuse core SessionMessageAppendService and existing
+  transaction event/projection writers; preserve clarification and one-open-Turn
+  validation. Duplicate/recovery must not append input twice. Busy or unresolved
+  predecessor must not mutate input. No runtime activation or control-path change.
+  Test multi-command order, clarification, duplicate broker/fallback, rollback,
+  scope rejection and actual PG handoff-to-worker execution.
+  Accepted 5/5: 12 actual PG cases in 24.15 s, 31 local cases, make check (808),
+  independent SPEC/QUALITY. Multi-turn worker execution, duplicate/recovery input
+  reuse and rollback pass. No original activation.
+
+- `RABBIT-ZEBRA-CONTROL-01` is `Review`, created Ready and claimed after
+  MESSAGE acceptance. Owner Luke Ding; executor Codex; approved isolated branch/
+  worktree retained. Scope: independent canonical PG CANCEL/STOP receipt, fence
+  revocation and terminal Event/projection transaction; explicit unsupported cloud
+  snapshot-SUSPEND outcome without mutating the active execution. No generic resume.
+  Owned: narrow `postgres/command_wakeup_control*.py`, additive migration/catalog,
+  shared handoff validation/predecessor seam if needed; focused actual-PG tests;
+  registry/progress/docs. Reuse core projections/current_turn and existing lease
+  lock order. Control bypasses RUN capacity/predecessor wait; never acquires a new
+  execution lease. Preserve exact old fence and canonical outcome evidence;
+  duplicate has no effect, failed transaction revokes/writes nothing. No network IO
+  in transaction; cleanup remains a durable post-commit obligation for composition.
+  Invalid scope never touches victim. Terminal no-op must cite canonical evidence,
+  not pretend the old RUN completed. Keep local control unchanged.
+  Accepted storage slice 5/5: final 18 actual PG cases in 21.21 s, make check
+  (810), SPEC/QUALITY. Runtime cleanup/consumer capacity remain composition work.
+
+- `RABBIT-ZEBRA-CUTOVER-01` is `Review`, created Ready and claimed after
+  control storage acceptance. Owner Luke Ding; executor Codex; approved isolated
+  branch/worktree retained. Scope: explicit audited retirement of exact historical
+  commands in quiescent completed-Turn conversation Sessions; allow existing Task
+  messages then RUN after migration without replaying or falsely handling history.
+  Owned: narrow `postgres/command_wakeup_cutover*.py`, additive migration/catalog,
+  handoff predecessor/retired-noop seam, focused actual-PG/API integration tests;
+  registry/progress/docs. No original activation or automatic retirement.
+  Require independent scope/binding, active Task/Session, expected stream revision,
+  exact command set, canonical nonlegacy closed Turn, no open Turn/unreleased lease,
+  historical origin and explicit backfill boundary. Idempotent audit includes
+  actor/reason/operation key, scope/Task/Session, closure and command identities.
+  Atomic immutable audit plus non-executable pending; no fake started/handled,
+  Event deletion or arbitrary sequence completion heuristic. Only explicit safe
+  metadata tails may follow closure; execution/intent/input tails are rejected.
+  Fallback/recovery/old delivery cannot revive retired commands. Broker rollback
+  retains receipt-aware fallback, never re-enables the old recent-session consumer.
+  Accepted 5/5: final 81 combined actual-PG cases in 97.03 s, including stream-head
+  drift rejection after SPEC fix; make check (812), SPEC/QUALITY. Missing head is
+  a read injection with real DB elsewhere, not an invalid FK-breaking fixture.
+
+- `RABBIT-ZEBRA-TASK-LOCK-01` is `Review`, created Ready and claimed after
+  cutover acceptance. Owner Luke Ding; executor Codex; approved isolated branch/
+  worktree retained. Scope: public fenced Task attach lock inversion with command
+  handoff/recovery/control; root Task ID and Session ID share the advisory key.
+  Owned: `postgres/task_index_transactions.py` fenced attach entry only; narrow
+  actual-PG lock-order tests, shared caller regressions, registry/progress/docs.
+  Acquire existing source Session advisory before epoch/lease/stream validation,
+  retaining Task advisory after stream and all fence/revision/CAS guards. Do not
+  change advisory key domains or acquire Task first for non-root segments.
+  Test root and non-root concurrency, no partial lineage on refusal, existing
+  Task attach behavior. Public adapter defect is constructible but no current
+  worker-runtime caller was found; do not claim observed production deadlocks.
+  Default-off composition requires draining old related transactions before
+  uniform upgrade; this is not a mixed-version live-upgrade guarantee.
+  Accepted 5/5: 7 actual PG cases in 7.70 s, 24 shared Task cases in 12.55 s,
+  make check (812), SPEC/QUALITY. Removing only the new lock makes the regression
+  fail on transactionid rather than advisory wait, proving the targeted defect.
+
+- `RABBIT-ZEBRA-CONSUMER-01` is `Review`, created Ready and claimed after
+  TASK-LOCK acceptance. Owner Luke Ding; executor Codex;
+  approved isolated branch/worktree retained. Scope: bounded execution scheduling
+  and independent canonical control pickup, no process activation yet.
+  Owned: narrow runtime `command_wakeup_consumer*.py`; storage
+  `command_wakeup_pickup*.py` and additive migration/catalog if needed;
+  `command_wakeup.py` canonical insert field only for persisted command kind;
+  focused runtime/actual-PG consumer tests; registry/progress/docs.
+  Reuse canonical binding validation, existing handoff/control and claimed worker
+  execution. Resolve trusted scope from persisted authority, never raw envelope.
+  Reserve a slot before handoff; ACK accepted work only after durable handoff and
+  successful scheduling. Hold slots until synchronous execution actually finishes.
+  Independent bounded control discovery and DB execution cannot share exhausted
+  RUN capacity/thread pools or wait behind Rabbit prefetch credits. Broker and
+  fallback use the same authority and lease path. No second lease acquisition.
+  Test capacity, scheduling failure, cancellation/shutdown, duplicate, scope,
+  oldest-session discovery and control while RUN slots are full. Quarantine,
+  runtime cleanup, client outcomes and default-off process wiring are next slices.
+  Accepted 5/5: final 40 actual-PG/runtime/migration cases in 15.23 s after SPEC
+  corrections; initial combined 72 in 52.39 s; make check (815), SPEC/QUALITY.
+  Durable reconciliation now ACKs; transient requeues have bounded delay;
+  scheduling exceptions preserve lease/recovery rather than poisoning delivery.
+
+- `RABBIT-ZEBRA-QUARANTINE-01` is `Review`, created Ready and claimed after
+  consumer acceptance. Owner Luke Ding; executor Codex;
+  approved isolated branch/worktree retained; starts after consumer review.
+  Owned: narrow storage `command_wakeup_quarantine*.py`, additive migration and
+  migration catalog split if its 500-line limit requires it; runtime
+  `command_wakeup_quarantine*.py`, consumer callback mapping and per-candidate
+  failed-quarantine cursor advance only (no fake ACK/isolation); focused
+  deterministic/real-PG/Rabbit tests; registry/progress/docs.
+  Reuse strict BrokerDiagnostic, existing confirmed publisher and fixed topology.
+  Persist only digest/byte count/fixed code/namespace/role/receipt metadata, never
+  raw delivery, secrets or untrusted claimed identities. Durable rejection plus
+  confirmed diagnostic precedes ACK; failed DB/publication/settlement requeues.
+  Stable bytes across physical retries, post-lock database clock and exact claim
+  fence, no network inside transactions. Broker hints must never quarantine a
+  victim pending command. Any fallback-candidate isolation must revalidate its
+  actual canonical inconsistency atomically, not trust a stale discovery hint.
+  No process activation, broader raw DLQ or unrelated contract changes.
+  Accepted 5/5: 60 actual PG/Rabbit/runtime/migration/consumer cases in 29.02 s,
+  make check (819), SPEC/QUALITY. Rabbit evidence is confirmed publication and
+  PG settlement after injected confirmation loss, not privileged queue readback.
+
+- `RABBIT-ZEBRA-RUNTIME-INSTANCE-01` is `Review`, created Ready and claimed
+  after quarantine acceptance. Owner Luke Ding; executor Codex;
+  approved isolated branch/worktree retained. Scope: precise cloud OCI instance
+  identity and safe provision/removal, prerequisite to durable cleanup executor.
+  Owned: storage `runtime_instances*.py`, additive migration/catalog split if
+  needed; runtime `runtime_instance_lifecycle.py`, OCI adapter and responsibility-
+  specific extraction to respect size limits; worker runtime_factory/runtime_setup/
+  execution narrow injection seam and focused helper; focused tests; docs/progress.
+  Also owned: existing worker `runtime_authority.py` snapshot-reader extraction
+  into a focused core application helper, reused by storage without app imports;
+  preserve existing resolution/revalidation semantics and add shared regressions.
+  Cloud composition/loop narrow lifecycle-factory injection is also owned; build
+  it from the actual CloudComposition DSN, never assume settings.database_url
+  equals injected stores. No RabbitMQ process wiring is included in this seam.
+  Reuse existing lease/binding and handle UUID. Register before create, exact
+  instance labels and trusted pinned engine identity, record returned ID, refuse
+  start after revocation. Do not alter SandboxSpec digest with ephemeral identity.
+  Cloud must not fall back to session-wide deletion; local constructors retain
+  compatibility. Failed removal retains identity for retry. Provisioning/unknown
+  create results cannot be marked removed merely because one scan finds nothing.
+  No infrastructure imports into core, new dependencies or generic fleet framework.
+  Generic cloud and delegated execution must retain existing OpaqueAuthorityScope
+  support; Host context is optional, never required solely for runtime tracking.
+  Validate canonical attempt authority plus exact lease; additionally validate
+  frozen Host/workspace binding when present. Never derive scope from a path.
+  Test multi-namespace same Session, successor fence, create/cancel/late result,
+  lost post-create write, setup-only instances, removal failure and local baseline.
+  No activation; post-commit bounded cleanup executor is a following slice.
+  Accepted 5/5 after QUALITY P1 correction: post-instance-lock full-fence and
+  authority-expiry recheck. Final real PG 20 passed in 23.33 s, expanded 66
+  passed before that correction, make check (827), SPEC/QUALITY pass.
+
+- `RABBIT-ZEBRA-RUNTIME-CLEANUP-01` is `Review`, created Ready and claimed
+  after instance acceptance. Owner Luke Ding; executor Codex;
+  approved isolated branch/worktree retained. Depends on accepted
+  RUNTIME-INSTANCE-01. Scope: bounded post-commit cleanup of exact cancelled
+  execution instances; no process activation or public cancel routing yet.
+  Owned: storage `command_runtime_cleanup*.py`, additive migration/catalog;
+  runtime `command_runtime_cleanup.py`, narrow shared OCI identity extraction;
+  focused runtime/storage/OCI tests and owned live cleanup acceptance; docs/progress.
+  Also owned: OCI engine pinning and its tests. Live Docker acceptance discovered
+  explicit --tlsverify=false still triggers certificate loading in the installed
+  CLI; plaintext routing must omit TLS flags after clearing ambient overrides,
+  while configured TLS retains explicit certificate validation.
+  Reuse v42 cleanup obligations and v46 runtime instances. Claims and settlements
+  use owner/fence/post-lock DB clock; engine IO must occur after commit. Verify
+  canonical CANCEL/STOP receipt/terminal Event and its frozen tenant/workspace,
+  exact revoked epoch/token/owner and trusted pinned engine. Never trust broker
+  IDs, create a synthetic WorkerLease, or delete by Session-wide filters.
+  Match exact container ID, instance name and all persisted ownership labels;
+  recover create-before-ID-write by exact reserved name plus labels. Uncertain
+  provisioning with no observed container remains unresolved, not removed.
+  Known exact container absence may settle only after a successful bounded engine
+  lookup; transport/permission failures are not absence. Preserve newer fences,
+  other namespaces and unowned legacy resources. Missing revoked identity requires
+  explicit reconciliation, never broad cleanup. Retry is bounded and sanitized;
+  failures cannot starve other obligations. Cancellation and physical deletion
+  remain distinct outcomes. Test stale settlement, duplicate removal, delayed
+  create, wrong labels/engine/scope and successful exact cleanup after crash.
+  Accepted 5/5: 92 actual PG/runtime cases in 69.09 s, 5 actual PG/Docker cases
+  in 27.08 s, make check (831), SPEC/QUALITY. Live plaintext CLI defect corrected;
+  multi-Session fixture corrected without weakening production epoch bootstrap.
+  Only owned synthetic containers were created/deleted; final fixture listing
+  is empty, original runtime unchanged. Process composition remains pending.
+
+- `RABBIT-ZEBRA-DIRECT-CONTROL-01` is `Review`, created Ready and claimed
+  after exact cleanup acceptance. Owner Luke Ding; executor Codex;
+  approved isolated branch/worktree retained. Depends on accepted exact cleanup.
+  Scope: preserve public cloud Task/ACP cancellation without session-wide runtime
+  deletion; keep direct 200 vs command-admission 202 semantics explicit.
+  Accepted 5/5: final 91 actual PG direct/API/ACP/migration and shared regression
+  cases in 90.63 s, 6 live PG/Docker cases in 32.44 s, make check (834), SPEC/QUALITY.
+  Cloud workspace status is cancelled, not prematurely destroyed. The existing
+  cross-rollover Task-target boundary is tracked separately above.
+  Owned: storage focused canonical cancellation/direct-control transaction and
+  cleanup anchor/proof adapters, existing command control extraction, additive
+  migration/catalog; worker control and focused cloud composition injection;
+  API app/session_control/task_api/task_routes and composition's narrow verified
+  authority plumbing, tenant_guard's binding lookup using the same actual
+  composed stores/DSN, relevant ACP control adapter if required; focused tests;
+  docs/progress. No source scheduling, broad API redesign or original activation.
+  Reuse the canonical TURN/SESSION cancellation + projection + full lease revoke
+  transaction from command control; command receipt/Inbox remain wrapper-specific.
+  Direct calls use a distinct operation/terminal-event cleanup anchor, not a
+  forged accepted command or invented PrincipalScope to satisfy receipt FKs.
+  Approved v48 seam: direct_control_operations plus cleanup_id on the existing
+  cleanup queue; preserve command accepted-event FK/unique identity, add nullable
+  direct-operation FK and exactly-one-anchor constraint. Backfill existing rows
+  without altering their status/fence; claim/settle use cleanup_id. No duplicate
+  cleanup queue. Optional existing HTTP Idempotency-Key supports scoped replay;
+  no-header repeated terminal cancel keeps the current 409 behavior. No new
+  cancellation payload fields; validate header bounds and conflicting reuse.
+  Actual CloudComposition DSN and verified caller scope must be explicitly injected.
+  Generic cloud OpaqueAuthorityScope remains supported; additionally validate
+  frozen workspace binding when present. Never derive authority from raw payload,
+  workspace path, or ambient settings. Cancellation permission is independent of
+  the stopped attempt's expired execution grant. Missing authority fails closed.
+  Preserve local control/snapshot behavior; cloud SUSPEND is explicitly unsupported
+  without mutation. Commit cancellation before cleanup and never call cloud
+  destroy_session. Keep 404/409 and direct cancellation response fields compatible;
+  successful durable cancellation does not claim physical cleanup completed.
+  Test real PG rollback/expiry/fence/duplicate/scope and actual-vs-settings DSN,
+  Task HTTP verified scope plumbing, generic cloud no-Host and local regressions.
+
+- `RABBIT-ZEBRA-HANDOFF-01` is `Review`, created Ready and claimed after
+  relay acceptance. Owner Luke Ding; executor Codex; approved isolated branch/
+  worktree retained. Scope: atomic Inbox and canonical command handoff under the
+  existing Session Lease/Fence, shared broker/fallback acquisition. No activation.
+  Owned: narrow `postgres/command_wakeup_handoff*.py`, additive migration/catalog,
+  existing `postgres/leases.py` acquisition extraction only, narrow shared
+  command-wakeup validation helpers, focused storage tests, registry/progress/docs.
+  Also owned: `postgres/events.py` new-insert seam only and `command_wakeup.py`
+  admission-origin marker. Only newly inserted canonical Events may mark live;
+  backfill/duplicate/default and pre-migration rows remain historical, never upgraded.
+  Preserve existing acquire validation/lock order and SQLite behavior. One DB
+  transaction must validate namespace/scope/canonical command, deduplicate Inbox,
+  acquire the existing lease and persist explicit command/fence handoff receipt.
+  No independent processed Inbox before lease commit; no second execution lease.
+  Historical RUN/RESUME without exact execution attribution remain ambiguous,
+  never automatically replayed or marked completed. Busy commands remain pending
+  with durable recovery responsibility; no projection sequence completion heuristic.
+  Worker scheduling/control/completion and recovery generations are follow-on
+  slices, not silently claimed by this storage handoff acceptance.
+  Accepted storage slice 5/5: initial 118 actual PG cases, then 40 terminal-race/
+  clock cases plus 54 shared-callers after review fix; full make check (801),
+  independent SPEC/QUALITY. Lease acquisition now rechecks terminal projection
+  after lease serialization; savepoint rolls back tentative lease on terminal.
+
+- `RABBIT-ZEBRA-RELAY-01` is `Review`, created Ready and claimed after
+  lease-clock acceptance. Owner Luke Ding; executor Codex; approved isolated
+  branch/worktree retained. Scope: fenced PostgreSQL Broker Outbox relay with
+  bounded async publication using the existing confirmed transport. No execution
+  lease, consumer or original runtime activation.
+  Owned: narrow `postgres/command_wakeup_relay*.py`, additive migration and catalog,
+  shared `command_wakeup.py` identity helpers only if needed; runtime
+  `command_wakeup_relay.py`; focused storage/runtime/integration relay tests;
+  registry/progress/evidence. No new dependency or Effect Outbox changes.
+  Claim/settle use DB time after row locking, owner/fence/expiry checks, stable
+  physical identity and bounded retry; DB transactions never span network IO.
+  Actual isolated PG/Rabbit confirm-loss and duplicate tests required.
+  Accepted 5/5: actual PG/Rabbit combined suite 111 passed in 49.94 s,
+  make check (799 typed files), independent SPEC/QUALITY (21 passed each).
+  Real broker confirmation-loss retry preserved identical body/message identity;
+  independent PG NOWAIT lock proved publication holds no Outbox transaction.
+
+- `RABBIT-ZEBRA-LEASE-CLOCK-01` is `Review`, created Ready and claimed after
+  discovery SPEC/QUALITY acceptance. Owner Luke Ding; executor Codex; approved
+  isolated branch/worktree retained. Scope: confirmed existing expired-fence
+  resurrection after DB lock waits; prerequisite for stage-3 handoff acceptance.
+  Owned: `postgres/leases.py` (under agent-storage), narrow lease support module
+  only if required by file limit, `tests/agent_storage/test_postgres_leases.py`,
+  new focused lease-clock regression test, registry/progress/evidence.
+  Preserve existing LeaseFence, epoch locks and assertion SHARE lock strength.
+  Obtain real DB time only after locking the actual authority/lease rows; do not
+  merely substitute a time function in a pre-lock predicate. No new lease or
+  SQLite change. Audit every caller; preserve checkpoint/error/TTL semantics.
+  Fix the existing timezone test to preserve DSN search_path options so isolated
+  test schemas remain isolated. No original service or credential changes.
+  Accepted 5/5 after 81 actual-PG/targeted cases, full make check (796), independent
+  SPEC/QUALITY and DST/UTC tests. Shared writer authority remains unchanged.
+
+- `RABBIT-ZEBRA-DISCOVERY-01` is `Review`, created Ready and claimed after
+  admission SPEC/QUALITY acceptance. Owner Luke Ding; executor Codex; existing
+  approved isolated branch/worktree retained. Scope: bounded historical command
+  backfill and pending discovery, not worker execution or broker consumption.
+  Owned: narrow `postgres/command_wakeup*.py` modules, `postgres/migrations.py`,
+  focused `tests/agent_storage/test*command*wakeup*.py`, registry/progress/evidence.
+  Reuse canonical writer; no copied envelope/auth rules. Backfill cursor commits
+  with derived records, includes old sessions and closes live-admission races.
+  No session projection sequence may be used as a handled-command watermark.
+  An explicit bounded operator cutover may enable admission only, not consumers.
+  Invalid historical scope must be reported without silent skip or public fallback.
+  Tests: bounded pages, old sessions, equal/backdated times, concurrent admission,
+  failure/cursor rollback, scope isolation, strict bounds, restart/idempotency.
+  Recovery generations and durable command receipts remain subsequent sub-slices
+  of stage-3 group 2; discovery alone does not complete that group.
+  Slice accepted 5/5: 60 combined focused/real-PG tests, full make check (796),
+  independent SPEC and QUALITY pass. Stage 3 remains 1/6 until group 2 closes.
+
+- `RABBIT-ZEBRA-ADMISSION-01` is `Review`, created Ready and claimed after
+  stage-2 product acceptance. Owner Luke Ding; executor Codex; approved isolated
+  branch/worktree retained. Scope: PostgreSQL canonical command pending index and
+  Broker Outbox in the common event transaction, no broker publishing/consuming.
+  Default disabled; rollout must be explicit and consistent for every transaction
+  caller, including client effects and child wakeups. Do not reuse Effect Outbox.
+  Owned: `packages/agent-storage/src/agent_storage/postgres/events.py`, new narrow
+  command wakeup/migration modules, `postgres/migrations.py`, focused tests under
+  `tests/agent_storage/`, registry/progress/plan/evidence. No SQLite or original service
+  changes. Scope identity comes from authoritative DB session/workspace bindings;
+  no untrusted payload-derived principal or implicit public fallback.
+  Validation: canonical duplicate IDs, atomic rollback/races, non-command no-op,
+  disabled baseline, all common-seam callers; actual isolated PG before acceptance.
+  Baseline test alignment: `test_postgres_session_tenant.py` still expects Host
+  access to unbound operator sessions, contrary to current tenant guard. Update
+  only that obsolete assertion and retain explicit operator access coverage.
+  Isolated-schema regression extension: scope the task-admission table-existence
+  assertion to current_schema(), not every test schema in the database.
+  Accepted 5/5 after 36 focused/real-PG tests, 14 baseline PG tests, make check,
+  independent SPEC and QUALITY (17 unit cases each). Stage 3 group 1 accepted.
+
+- `RABBIT-TURN-E2E-01` is `Review`, claimed from Ready after composition
+  spec/quality PASS and the user's continuation authorizing isolated reuse of
+  development model/workload configuration. Owner Luke Ding; executor Codex;
+  existing approved isolated branch and sibling worktrees retained.
+  Scope: stage-2 real-model/HTTP/browser replay, multi-user and artifact regression;
+  reproduce with disposable service data, never mutate original service config.
+  Owned Zebra: `tests/compose/rabbitmq_product_e2e/`,
+  `docker/compose.rabbitmq-product-e2e.yml`, registry/progress/completion/evidence.
+  Owned Trench: `scripts/rabbitmq_product_e2e.py`, focused corresponding test file,
+  existing isolated frontend dependency/build outputs (not source changes).
+  Model and workload secrets must stay out of logs, argv, artifacts and replies.
+  Any discovered production-source fix requires explicit owned-path extension.
+  Extension (verified E2E prerequisite): Trench shared `trench_ai_zebra_event_map.py`,
+  `trench_ai_zebra_runtime.py`, `routers/trench_ai_chat.py` and focused streaming
+  regression tests. Current mapper buffers every text delta until RUN_FINISHED;
+  restore increment delivery/reset in the common mapper and retain authoritative
+  final download links in both chat consumers. No transport/policy redesign.
+  Browser E2E extension: separate bounded model-stream idle timeout from RPC
+  timeout in Trench `trench_ai_zebra_contract.py`, `trench_ai_zebra_client.py`,
+  core `config.py`, `.env.example`; frontend `strategy-chat-api.ts`,
+  `strategy-message-state.ts` and focused tests. Verified 60s RPC config silently
+  becomes 5s; empty failed snapshot renders as perpetual waiting and frontend
+  final precedence drops appended download links. Fix these shared boundaries.
+  Proxy streaming extension: shared Trench `routers/sse_response.py` and its
+  focused test. Live Next rewrite gzip buffers 44 durable text deltas until
+  completion; set no-transform on SSE only, keeping ordinary response compression.
+  Accepted 7/7, stage 2 10/10 after actual browser increments, native download,
+  real-model replay/isolation and independent spec/quality PASS. Evidence:
+  `docs/rabbitmq_stage2_product_e2e.md`. Original activation remains off.
+
+- `RABBIT-TURN-COMPOSE-01` is `Review`, claimed from Ready after quarantine
+  spec/quality PASS. Owner Luke Ding; executor Codex; approved isolated branch
+  and worktrees unchanged. Scope: default-off settings/lifespan composition,
+  independent recovery and safe reconnect/shutdown, plus dead-owner cancellation
+  recovery before allowing normal DB polling to be disabled (G20).
+  Owned Trench: `packages/core/src/trench_core/config.py`, ORM `__init__.py`,
+  `services/api/src/trench_api/main.py`, new `trench_ai_broker_runtime.py`,
+  `trench_ai_turn_dispatcher.py`, `trench_ai_turn_store.py`, `.env.example`,
+  `trench_ai_zebra_client.py` (signed cancellation confirmation helper only),
+  `trench_ai_zebra_cancellation.py` (bounded confirmation using shared signed stream),
+  `tests/api/test_trench_ai_broker_runtime.py`, dispatcher tests and
+  `tests/api/test_trench_ai_turn_cancellation_recovery.py`,
+  `tests/api/test_trench_ai_zebra_cancellation_confirmation.py`;
+  parent `tests/api/test_trench_ai_broker_delivery_live.py`,
+  `tests/api/test_trench_ai_broker_process_crash.py`, delivery boundary doc.
+  Owned Zebra: registry/progress/completion/evidence/gap matrix. No original
+  service activation or destructive migrations; integrated acceptance is isolated.
+  Spec re-review PASS (56 tests), quality PASS (56 + 13 tests). Parent actual
+  PG/Rabbit suite 10 passed; 1000 samples/route pickup p95 250.067ms DB polling
+  versus 53.939ms Rabbit. Slice 6/6, stage 2 groups 8/9 accepted, total 9/10.
+  Real-model/browser group 10 awaits operator confirmation of isolated credential
+  reuse. No original migrations, staging, commits, merge or runtime activation.
+
+- `RABBIT-TURN-QUARANTINE-01` is `Review`, claimed from Ready after
+  consumer spec/quality PASS. Owner Luke Ding; executor Codex; isolated branch
+  and worktrees unchanged. Scope: durable sanitized rejection/diagnostic Outbox,
+  confirmed diagnostic publication, separate diagnostic topology/ACL and tests.
+  Owned Trench: `packages/models/src/trench_models/broker_diagnostic.py`,
+  `packages/core/src/trench_core/orm/trench_ai_broker_rejection.py`,
+  `packages/core/src/trench_core/rabbitmq.py`,
+  `services/api/src/trench_api/trench_ai_broker_quarantine.py`, additive Alembic
+  revision `5e6f708192a3`, `tests/api/test_trench_ai_broker_quarantine.py` and
+  parent `tests/api/test_trench_ai_broker_delivery_live.py`.
+  Owned Zebra: matching `agent_core/contracts/broker_diagnostic.py`,
+  `agent_integrations/rabbitmq.py` under their packages; `scripts/provision_rabbitmq.py`,
+  `tests/test_rabbitmq_topology.py`, `tests/integrations/test_broker_diagnostic.py`,
+  registry, progress, completion/evidence, the reliability gap matrix and
+  `docker/rabbitmq/README.md`.
+  No original-service activation or payload forwarding to the restricted raw DLQ.
+
+- `RABBIT-TURN-CONSUMER-01` is `Review`, claimed from Ready after relay
+  spec and quality PASS. Human owner Luke Ding; executor Codex; same approved
+  isolated branch/worktrees. Scope: shared execution capacity for DB fallback
+  and broker handoff, local scheduling before ACK, safe failure/cancellation.
+  Owned Trench: `services/api/src/trench_api/trench_ai_turn_dispatcher.py`,
+  `services/api/src/trench_api/trench_ai_broker_consumer.py`,
+  `tests/api/test_trench_ai_broker_consumer.py`,
+  `tests/api/test_trench_ai_turn_dispatcher.py`; parent integration tests
+  `tests/api/test_trench_ai_broker_delivery_live.py` and completion/evidence docs.
+  Rejection persistence and default-off composition follow before activation.
+
+- `RABBIT-TURN-RELAY-01` is `Review`, claimed from Ready for the user's
+  request to complete the remaining plan without per-slice handoff. Human owner:
+  Luke Ding; executor: Codex. Approved isolated branch/worktrees unchanged.
+  Scope: fenced Trench broker relay, durable due/expired/unhandled recovery and
+  generation-safe retry. Owned Trench paths:
+  `services/api/src/trench_api/trench_ai_broker_relay.py`,
+  `services/api/src/trench_api/trench_ai_broker_recovery.py`,
+  `services/api/src/trench_api/trench_ai_turn_broker.py`,
+  `tests/api/test_trench_ai_broker_relay.py`,
+  `tests/api/test_trench_ai_broker_recovery.py`,
+  `tests/api/test_trench_ai_broker_delivery_postgres.py` (parent acceptance),
+  `tests/api/test_trench_ai_broker_delivery_live.py` (parent isolated broker acceptance),
+  `docs/rabbitmq_delivery_boundary.md`.
+  Owned Zebra: registry, PROGRESS.md, docs/rabbitmq_completion.md,
+  docs/rabbitmq_stage2_delivery_evidence.md. Consumer wiring follows its review;
+  this card does not authorize replacing original dirty work or unsafe activation.
+
+- `RABBIT-TURN-HANDOFF-01` is `Review`, claimed from Ready for the user's
+  continuation. Human owner: Luke Ding; executor: Codex. Reuses the approved
+  isolated sibling worktrees on `codex/rabbitmq-foundation-01`, after fence review.
+  Scope: separate broker Outbox/Inbox schema, atomic optional migration-mode Turn
+  admission, shared claim-next/by-ID primitive, verified scoped Inbox+lease handoff,
+  and deterministic/real PostgreSQL transaction tests. No live consumer activation.
+  Owned Trench paths: `packages/core/src/trench_core/orm/trench_ai_broker.py`,
+  `packages/core/src/trench_core/orm/__init__.py`,
+  `infra/alembic/versions/4d5e6f708192_add_turn_broker_handoff.py`,
+  `services/api/src/trench_api/trench_ai_turn_store.py`,
+  `services/api/src/trench_api/trench_ai_turn_claim.py`,
+  `services/api/src/trench_api/trench_ai_turn_broker.py`,
+  `tests/api/test_trench_ai_turn_broker.py`,
+  `tests/api/test_trench_ai_turn_broker_postgres.py`,
+  `docs/rabbitmq_delivery_boundary.md`.
+  Owned Zebra paths: this registry, `PROGRESS.md`,
+  `docs/rabbitmq_stage2_handoff_evidence.md`, `docs/rabbitmq_completion.md`.
+  Relay, consumer capacity/ACK wiring, sweeper, deployment flags/backfill and
+  cross-service acceptance remain separate stage-2 gates, not implied completion.
+  Final targeted validation: 174 passed, including 37 new handoff cases (25 SQLite,
+  12 real PG); PG repeated three extra times. Spec and quality reviews pass after
+  publishing-state and Unicode-key regressions were fixed. Slice 8/8; stage 3/10.
+  Evidence: `docs/rabbitmq_stage2_handoff_evidence.md`; ongoing completion ledger:
+  `docs/rabbitmq_completion.md`. Not committed, merged or activated.
+
+- `RABBIT-TURN-FENCE-01` is `Review`, claimed from Ready for the user's
+  continuation. Human owner: Luke Ding; executor: Codex. Approved isolated
+  sibling worktrees on `codex/rabbitmq-foundation-01`. Stage 2 prerequisite:
+  atomic owner/fence/unexpired lease validation across ALL Turn mutations,
+  dispatcher lease-loss cancellation and PostgreSQL concurrency regressions.
+  Owned Trench paths: `services/api/src/trench_api/trench_ai_turn_store.py`,
+  `services/api/src/trench_api/trench_ai_turn_dispatcher.py`,
+  `services/api/src/trench_api/trench_ai_turn_projection.py`,
+  `packages/core/src/trench_core/orm/trench_ai_turn.py`,
+  `infra/alembic/versions/3c4d5e6f7081_add_turn_lease_fence.py`,
+  `tests/api/test_trench_ai_turn_store.py`,
+  `tests/api/test_trench_ai_turn_dispatcher.py`,
+  `tests/api/test_trench_ai_turn_fencing.py`,
+  `tests/api/test_trench_ai_turn_fencing_postgres.py`,
+  `scripts/benchmark_turn_pickup.py`, `docs/rabbitmq_delivery_boundary.md`.
+  Owned Zebra paths: this registry, `PROGRESS.md`,
+  `docs/rabbitmq_stage2_fencing_evidence.md`.
+  This slice does not activate RabbitMQ or claim Outbox/Inbox implementation;
+  it closes the stale-writer gate before broker-backed handoff is added.
+  Independent spec and quality reviews pass. Final targeted suite: 53 passed,
+  including 9 real PostgreSQL cases repeated three extra times. Admission/claim
+  clock mismatch and lock-wait lease revival were reproduced and corrected.
+  Evidence: `docs/rabbitmq_stage2_fencing_evidence.md`. Not deployed or committed.
+
+- `RABBIT-INFRA-01` is `Review` (claimed from Ready for the user's
+  explicit continuation) on `codex/rabbitmq-foundation-01`.
+  Human owner: Luke Ding; executor: Codex. Continue the approved isolated
+  integration worktrees after RABBIT-FOUNDATION-01 independent reviews.
+  Scope: stage 1 transport only, no business activation or DB migrations.
+  Owned Zebra paths: `packages/agent-integrations/src/agent_integrations/rabbitmq.py`,
+  `packages/agent-integrations/pyproject.toml`, root `pyproject.toml` (dev test dependency), `uv.lock`,
+  `tests/integrations/test_rabbitmq.py`, `tests/integrations/test_rabbitmq_live.py`,
+  `docker/compose.rabbitmq.yml`, `docker/rabbitmq/`,
+  `scripts/provision_rabbitmq.py`, `tests/test_rabbitmq_topology.py`,
+  `docs/rabbitmq_stage1_evidence.md`, this registry and `PROGRESS.md`.
+  Companion Trench owned paths: `packages/core/src/trench_core/rabbitmq.py`,
+  `tests/test_rabbitmq.py`, `pyproject.toml`, `pdm.lock`,
+  `docs/rabbitmq_delivery_boundary.md`. Existing dirty baseline stays untouched.
+  Deliver persistent mandatory confirmed publish, explicit manual settlement,
+  bounded QoS, isolated vhosts/quorum queues and reproducible real broker checks.
+  No new application entrypoints or claims of durable business handoff yet.
+  Evidence: 30 transport tests per repo, 3 provisioning tests, 8 real RabbitMQ
+  scenarios per actual adapter, make check PASS. Spec and quality reviews PASS
+  after closing initial-connect orphan-task and default-dev-install defects.
+  Details/full-suite result: `docs/rabbitmq_stage1_evidence.md`.
+  Next: stage 2 Trench atomic Outbox/Inbox and fenced Turn writes; no merge,
+  original service activation or stage 2 business recovery claimed here.
+
+- `RABBIT-FOUNDATION-01` is `Review` on `codex/rabbitmq-foundation-01`.
+  Human owner: Luke Ding; executor: Codex. Stage 0 typed envelope and measured
+  baseline on the approved sibling isolated worktrees. Owned Zebra paths:
+  `packages/agent-core/src/agent_core/contracts/broker_envelope.py`,
+  `tests/agent_core/test_broker_envelope.py`, `docs/contracts/broker-envelope-v1*`,
+  `scripts/benchmark_command_scan.py`, `docs/rabbitmq_stage0_evidence.md`,
+  `tests/test_benchmark_command_scan.py`,
+  this card and `PROGRESS.md`. Companion Trench paths:
+  `packages/models/src/trench_models/broker_envelope.py`,
+  `tests/test_broker_envelope.py`, `docs/contracts/broker-envelope-v1*`,
+  `scripts/benchmark_turn_pickup.py`, `docs/rabbitmq_delivery_boundary.md`.
+  Benchmark safety regression companion: `tests/test_benchmark_turn_pickup.py`.
+  No application integration or runtime activation; preserve user baseline.
+  Evidence: envelope tests 84/repo, Zebra core 637, Trench focused 97, Zebra
+  make check PASS. Real disposable PostgreSQL baseline and scope-safe runners
+  documented in rabbitmq_stage0_evidence.md. Independent spec and quality
+  reviews pass after closing two benchmark connection-target override findings.
+  No commits/merges or Rabbit activation. Next: compose/adapter infrastructure
+  slice after carrying forward identity mapping, recovery and F01–F20 gates.
+
+- `RABBIT-RELIABILITY-REVIEW-01` is `Review` on `codex/rabbitmq-foundation-01`.
+  Human owner: Luke Ding; executor: Codex. Systematic review and correction of
+  the RabbitMQ delivery plan before runtime implementation. Owned paths:
+  `docs/Zebra_Trench_RabbitMQ可靠投递与服务质量实施方案_v1.0.md`,
+  `docs/RabbitMQ可靠投递缺口核验与验收.md`,
+  `scripts/check_rabbitmq_delivery_contract.py`, this card, `PROGRESS.md`.
+  Worktree: `/Users/lukeding/.codex/worktrees/rabbitmq-reliability/zebra-agent`.
+  No runtime activation, source baseline commits, or production data changes.
+  Companion Trench docs-only boundary: `docs/rabbitmq_delivery_boundary.md`
+  in the sibling isolated Trench worktree, same human owner and branch.
+  Evidence: stdlib counterexample check passes 8 design scenarios, Ruff and
+  git diff --check pass. Plan v1.1 and audit freeze G01–G19/F01–F20; no real
+  PG/Rabbit acceptance claimed. Next: stage 0 Schema, identity/caller inventory
+  and measured baseline; runtime implementation requires its own scoped card.
+
 - `TRN-CONVERSATION-UX-01` is `Review` on `cloud-agent-trench`.
   Owner: Codex. It makes Trench conversation titles summarize the completed
   first exchange instead of echoing the user's request. Owned paths:

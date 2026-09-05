@@ -9,6 +9,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "aio-pika==10.0.1",
     "ag-ui-protocol==0.1.19",
     "httpx>=0.28.1,<0.29.0",
     "pytest>=8.4.2,<9.0.0",

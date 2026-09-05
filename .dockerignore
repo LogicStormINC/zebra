@@ -10,3 +10,7 @@ tests
 *.sqlite-wal
 docker/.env
 docker/*.test.env
+**/.env
+**/.env.*
+**/*.env
+!**/.env.example

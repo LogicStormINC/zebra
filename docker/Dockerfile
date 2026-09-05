@@ -21,7 +21,12 @@ COPY apps ./apps
 COPY packages ./packages
 COPY docker/migrate.py ./docker/migrate.py
 
-RUN uv sync --frozen --all-packages --no-dev \
+ARG ZEBRA_INSTALL_RABBITMQ=false
+RUN case "$ZEBRA_INSTALL_RABBITMQ" in \
+      true) uv sync --frozen --all-packages --no-dev --extra rabbitmq ;; \
+      false) uv sync --frozen --all-packages --no-dev ;; \
+      *) exit 2 ;; \
+    esac \
     && useradd --system --create-home --uid 65532 --shell /usr/sbin/nologin zebra \
     && chown -R zebra:zebra /app
 

@@ -25,6 +25,7 @@ from agent_core.ports.workspace_projection_store import (
 )
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.command_wakeup_receipts import record_worker_command_boundary
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import (
     append_event_in_transaction,
@@ -91,6 +92,7 @@ class PostgresWorkspaceProjectionStore(
                 )
             )
             if already_projected:
+                record_worker_command_boundary(connection, persisted_event, authority)
                 return WorkerProjectionCommitResult(
                     event=persisted_event,
                     session=canonical_session,
@@ -106,6 +108,7 @@ class PostgresWorkspaceProjectionStore(
                 self._database.deployment_namespace,
                 canonical_workspace,
             )
+            record_worker_command_boundary(connection, persisted_event, authority)
             return WorkerProjectionCommitResult(
                 event=persisted_event,
                 session=stored_session,
@@ -151,6 +154,7 @@ class PostgresWorkspaceProjectionStore(
                 )
             )
             if already_projected:
+                record_worker_command_boundary(connection, persisted_event, authority)
                 return WorkerProjectionCommitResult(
                     event=persisted_event,
                     session=canonical_session,
@@ -166,6 +170,7 @@ class PostgresWorkspaceProjectionStore(
                 self._database.deployment_namespace,
                 canonical_workspace,
             )
+            record_worker_command_boundary(connection, persisted_event, authority)
             return WorkerProjectionCommitResult(
                 event=persisted_event,
                 session=stored_session,
