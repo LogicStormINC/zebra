@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agent_core.domain.events import SessionEvent
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.tool_runs import ToolRunRecord
@@ -30,6 +30,8 @@ class PostgresModelCallProjectionAdapter(ModelCallStorePort):
         *,
         authority: WorkerMutationAuthority,
     ) -> ModelCallRecord | None:
+        if event.event_type is not EventType.MODEL_RESPONSE_RECEIVED:
+            return None
         record = self._projection.index_worker_event(event, authority=authority)
         return record if isinstance(record, ModelCallRecord) else None
 
@@ -52,5 +54,9 @@ class PostgresToolRunProjectionAdapter(ToolRunStorePort):
         *,
         authority: WorkerMutationAuthority,
     ) -> ToolRunRecord | None:
+        if event.event_type not in {
+            EventType.TOOL_EXECUTION_COMPLETED, EventType.TOOL_EXECUTION_FAILED,
+        }:
+            return None
         record = self._projection.index_worker_event(event, authority=authority)
         return record if isinstance(record, ToolRunRecord) else None

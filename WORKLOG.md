@@ -1,5 +1,21 @@
 # Progress Log
 
+## 2026-09-05 - TRN-INDEX-ROUTING-01
+
+- Real local Worker cProfile capture executed a session and recorded roughly
+  4,800 connection calls across 150 polling cycles, with recovery replay and
+  model/tool projection adapters prominent. This aggregate includes background
+  recovery; it is not a per-turn connection count.
+- Both compatibility adapters previously sent every event to the same fenced
+  projection store, duplicating actual writes and connecting for unrelated events.
+  Route model responses and tool results separately; no changes to the canonical
+  event check, namespace isolation, lease fencing, or full-history recovery.
+- Validation: 56 focused passed / 2 PostgreSQL tests skipped; Worker suite
+  246 passed / 13 skipped; `make check` passes (847 typed source files, eval 10/10).
+  Wider composition test has one startup-schema-check connection failure at
+  localhost:5432; no claim of a fully passing entire repository test suite.
+- Local Worker image rebuild and post-deploy timing pending.
+
 ## 2026-08-25 - CTX-TURN-LIFECYCLE review fixes round 10 (3xP1, 2xP2, 1xP3)
 
 - API 只把 `SessionEventSequenceConflictError` 映射为 409;SQLite/PG
