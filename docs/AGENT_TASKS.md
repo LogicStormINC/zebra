@@ -30,12 +30,15 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
-- `TRN-OCI-CAPABILITIES-01`: created Ready, claimed In Progress by Luke Ding
+- `TRN-OCI-CAPABILITIES-01`: created Ready, claimed, now Review by Luke Ding
   (implementation: Codex), branch `codex/trn-oci-capabilities-01`.
   Owned paths: `packages/agent-runtime/src/agent_runtime/adapters/oci.py`,
   `tests/agent_runtime/test_oci_runtime.py`, this card and `WORKLOG.md`.
   Scope: combine Docker gVisor capability queries without caching identity or
   weakening isolation; preserve non-Docker and rootless compatibility.
+  Validation: 527 passed / 23 skipped; make check passed. Worker 08ad8a6600a9
+  deployed healthy. Real same-Task follow-up first text 3.374s, finish 4.358s;
+  fresh first text 4.419s. Small sample, not browser first-paint or p95.
 - `TRN-OCI-INFO-01`: created Ready, claimed, now Review by Luke Ding
   (executor Codex), branch `codex/trn-oci-info-01`, current worktree.
   Owned: `packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py`,

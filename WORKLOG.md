@@ -9,7 +9,14 @@
 - Regression includes repeated live queries, malformed/failed responses and
   non-Docker compatibility. Runtime plus Worker: 527 passed / 23 skipped;
   make check passes (847 typed source files, 10 release eval cases).
-- Local Worker rebuild and real cross-service latency acceptance in progress.
+- Local Worker image `08ad8a6600a9` rebuilt, deployed and healthy. Real signed
+  Trench-to-Zebra test task `c82853ba-4a48-449f-82df-3ebfe5e0f442` reused for
+  two turns: first text 4.419s / 3.374s; finish 5.617s / 4.358s.
+  Follow-up command-to-model 2.622s; model-to-first-delta 0.385s.
+  Previous follow-up was 3.709s / 4.731s. Fresh first text did not materially
+  improve (previous 4.399s). Small samples do not establish p95 or browser paint.
+  No browser E2E claim; no merge or push. Remaining bottleneck is preparation;
+  native ARM Worker validation remains blocked by the credential helper.
 
 ## 2026-09-05 - TRN-OCI-INFO-01
 
