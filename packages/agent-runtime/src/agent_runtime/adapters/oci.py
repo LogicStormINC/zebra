@@ -72,14 +72,27 @@ class OciRuntime(RuntimePort):
         return self._spec
 
     def inspect_capabilities(self) -> RuntimeCapabilities:
-        version = self._invoke((*self._engine, "version", "--format", "{{.Server.Version}}"))
-        if version.returncode != 0:
-            return self._unavailable("OCI engine is unavailable")
-        engine_version = version.stdout.strip() or None
+        engine_version: str | None
+        combined = (self._spec.runtime_class is RuntimeClass.GVISOR
+                    and Path(self._engine[0]).name == "docker")
+        if combined:
+            info = self._invoke((*self._engine, "info", "--format",
+                                 "{{.ServerVersion}}\n{{json .Runtimes}}"))
+            version_text, separator, runtimes_text = info.stdout.partition("\n")
+            if info.returncode != 0 or not separator or not version_text.strip():
+                return self._unavailable("OCI engine is unavailable")
+            engine_version = version_text.strip()
+        else:
+            version = self._invoke((*self._engine, "version", "--format", "{{.Server.Version}}"))
+            if version.returncode != 0:
+                return self._unavailable("OCI engine is unavailable")
+            engine_version = version.stdout.strip() or None
         if self._spec.runtime_class is RuntimeClass.GVISOR:
-            info = self._invoke((*self._engine, "info", "--format", "{{json .Runtimes}}"))
+            if not combined:
+                info = self._invoke((*self._engine, "info", "--format", "{{json .Runtimes}}"))
+                runtimes_text = info.stdout
             try:
-                runtimes = json.loads(info.stdout) if info.returncode == 0 else None
+                runtimes = json.loads(runtimes_text) if info.returncode == 0 else None
             except json.JSONDecodeError:
                 runtimes = None
             if not isinstance(runtimes, dict) or self._gvisor_runtime not in runtimes:

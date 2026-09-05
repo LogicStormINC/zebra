@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-09-05 - TRN-OCI-CAPABILITIES-01
+
+- Docker gVisor preflight now reads ServerVersion and Runtimes in one live
+  info response; PinnedOciEngine checks daemon identity on that same response.
+  Removes two CLI invocations without caching capabilities or changing isolation.
+  Podman and rootless queries retain their existing compatibility paths.
+- Regression includes repeated live queries, malformed/failed responses and
+  non-Docker compatibility. Runtime plus Worker: 527 passed / 23 skipped;
+  make check passes (847 typed source files, 10 release eval cases).
+- Local Worker rebuild and real cross-service latency acceptance in progress.
+
 ## 2026-09-05 - TRN-OCI-INFO-01
 
 - Targeted live phase probe: runtime preparation 2.874s; Host context 0.189s;

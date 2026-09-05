@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 from subprocess import CompletedProcess, TimeoutExpired
 
@@ -28,6 +29,8 @@ class FakeEngine:
         self.calls.append(normalized)
         if "version" in normalized:
             return CompletedProcess(normalized, 0, "26.1\n", "")
+        if "{{.ServerVersion}}\n{{json .Runtimes}}" in normalized:
+            return CompletedProcess(normalized, 0, "26.1\n" + self.runtimes, "")
         if "info" in normalized and "{{json .Runtimes}}" in normalized:
             return CompletedProcess(normalized, 0, self.runtimes, "")
         if "info" in normalized:
@@ -80,6 +83,36 @@ def test_gvisor_runtime_provisions_with_hardening_and_authority(tmp_path: Path) 
     assert handle.authority.runtime_class is RuntimeClass.GVISOR
     assert handle.authority.image == IMAGE
     assert handle.authority.network_enforcement == "container-network-none"
+
+
+def test_gvisor_capabilities_use_one_live_query(tmp_path: Path) -> None:
+    engine = FakeEngine()
+    runtime = OciRuntime(_spec(tmp_path), runner=engine)
+    for _ in range(2):
+        capabilities = runtime.inspect_capabilities()
+        assert capabilities.available
+        assert capabilities.engine_version == "26.1"
+    assert len(engine.calls) == 2
+    assert all("info" in call for call in engine.calls)
+
+
+def test_non_docker_capabilities_keep_compatible_queries(tmp_path: Path) -> None:
+    engine = FakeEngine()
+    runtime = OciRuntime(replace(_spec(tmp_path), engine="podman"),
+                         engine_command=("podman",), runner=engine)
+    assert runtime.inspect_capabilities().available
+    assert [call[1] for call in engine.calls] == ["version", "info"]
+
+
+@pytest.mark.parametrize("output,code", [
+    ("26.1", 0), ("\n{}", 0), ("26.1\ninvalid", 0),
+    ("26.1\n[]", 0), ('26.1\n{"runsc":{}}', 1),
+])
+def test_gvisor_capabilities_fail_closed_on_invalid_response(tmp_path, output, code):
+    def runner(command, **kwargs):
+        return CompletedProcess(command, code, output, "")
+
+    assert not OciRuntime(_spec(tmp_path), runner=runner).inspect_capabilities().available
 
 
 def test_runtime_fails_closed_without_required_isolation(tmp_path: Path) -> None:
