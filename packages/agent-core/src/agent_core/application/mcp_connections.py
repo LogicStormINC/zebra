@@ -1,5 +1,6 @@
 """Idempotent configuration creation; no endpoint or credential I/O."""
 
+from collections.abc import Callable
 from hashlib import sha256
 from typing import Literal
 
@@ -39,6 +40,7 @@ def _checked(record: McpConnection, expected: McpConnection) -> McpConnection:
 async def create_mcp_connection(
     *, store: ExtensionStore, scope: ExtensionScope, idempotency_key: str,
     payload: object,
+    before_save: Callable[[], None] | None = None,
 ) -> tuple[McpConnection, bool]:
     key = _KEY.validate_python(idempotency_key)
     request = McpConnectionCreate.model_validate(payload)
@@ -53,6 +55,8 @@ async def create_mcp_connection(
     )
     try:
         try:
+            if before_save is not None:
+                before_save()
             await store.save_mcp(scope=scope, connection=connection, expected_revision=None)
         except ExtensionRevisionConflictError:
             original = _checked(await store.get_mcp_creation(

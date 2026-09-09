@@ -13,6 +13,7 @@ from agent_core.ports import ArtifactPayloadStorePort, ModelGatewayPort, Session
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_integrations import ModelProviderSettings
+from agent_tools.extension_management import READ_NAMES, WRITE_NAMES
 from zebra_agent_config import ZebraAgentSettings
 
 import zebra_agent_worker.worker_skill_catalog as worker_skills
@@ -22,6 +23,7 @@ from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.task_recovery import RecoveredTask
 from zebra_agent_worker.tool_gateway_runtime import WorkerToolGateway, build_worker_tool_gateway
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
+from zebra_agent_worker.worker_extension_management import prepare_extension_management
 from zebra_agent_worker.worker_mcp_catalog import WorkerMcpSource as WorkerMcpSource
 from zebra_agent_worker.worker_mcp_catalog import prepare_worker_mcp
 
@@ -89,7 +91,7 @@ def build_execution_tool_gateway(
     fence: LeaseFence,
 ) -> WorkerToolGateway:
     """Compose one execution gateway from already trusted Worker state."""
-    return build_worker_tool_gateway(
+    gateway = build_worker_tool_gateway(
         task,
         settings=service._settings,
         model_gateway=model_gateway,
@@ -124,3 +126,20 @@ def build_execution_tool_gateway(
             extension, source=service._extensions.mcp, session_id=session_id, fence=fence,
         ),
     )
+    gateway.management = prepare_extension_management(
+        extension, mcp=service._extensions.mcp, skills=service._extensions.skills,
+        session_id=session_id, fence=fence,
+        allow_network=task.network_profile.name.value in ("mcp-proxy-only", "full-trusted-local"),
+    )
+    if gateway.management is not None and extension is not None:
+        context = extension.task_ceiling.binding.host_capability.host_context
+        assert context is not None
+        gateway.management_names = (
+            (READ_NAMES if "extensions.read" in context.scopes else frozenset())
+            | (WRITE_NAMES if "extensions.manage" in context.scopes else frozenset())
+        )
+        if gateway.management.refresh is None:
+            gateway.management_names -= {"extensions.refresh_mcp"}
+        if gateway.management.import_skill is None:
+            gateway.management_names -= {"extensions.import_skill"}
+    return gateway

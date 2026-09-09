@@ -1,5 +1,6 @@
 """Install only server-published versions; no package or runtime I/O."""
 
+from collections.abc import Callable
 from hashlib import sha256
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter, ValidationError
@@ -59,6 +60,7 @@ async def _replay(
 async def create_skill_installation(
     *, store: ExtensionStore, scope: ExtensionScope, idempotency_key: str,
     payload: object,
+    before_save: Callable[[], None] | None = None,
 ) -> tuple[SkillInstallation, bool]:
     key = _KEY.validate_python(idempotency_key)
     request = SkillInstallationCreate.model_validate(payload)
@@ -93,6 +95,8 @@ async def create_skill_installation(
         # ponytail: ready publications are immutable; a future revoke lifecycle must
         # atomically check publication eligibility and create the installation.
         try:
+            if before_save is not None:
+                before_save()
             await store.save_skill(scope=scope, installation=installation, expected_revision=None)
         except ExtensionRevisionConflictError:
             original = await store.get_skill_creation(scope=scope, installation_id=identifier)

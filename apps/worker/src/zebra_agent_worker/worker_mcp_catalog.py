@@ -13,6 +13,7 @@ from agent_core.ports.lease_store import LeaseStorePort
 from agent_core.ports.mcp_catalog import McpCatalogStore
 from agent_core.ports.mcp_credentials import McpCredentialManagementStore
 from agent_runtime.cloud_mcp_transport import CloudMcpTransport
+from agent_runtime.mcp_catalog_refresh import McpCatalogRefresh
 from agent_runtime.mcp_execution_authorization import McpExecutionCredentialResolver
 from agent_runtime.mcp_http_authorization import McpHttpBearerCredential
 from agent_security.mcp_credential_release import McpCredentialRelease
@@ -29,6 +30,7 @@ class WorkerMcpSource:
     release: McpCredentialRelease
     leases: LeaseStorePort
     execution_authority: Callable[[SessionId, str], McpWorkerAuthority]
+    refresh: McpCatalogRefresh | None = None
 
 
 def prepare_worker_mcp(

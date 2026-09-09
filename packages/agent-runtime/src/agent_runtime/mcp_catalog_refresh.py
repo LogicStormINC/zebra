@@ -1,11 +1,11 @@
 """Management discovery orchestration; never authorizes tools/call or Agent execution."""
 
 import asyncio
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from agent_core.domain.extensions import ExtensionRevision, OpaqueExtensionId
+from agent_core.domain.extensions import ExtensionRevision, ExtensionScope, OpaqueExtensionId
 from agent_core.domain.mcp_catalog import McpToolCatalog
 from agent_core.domain.mcp_credentials import McpCredentialBinding
 from agent_core.ports.extensions import ExtensionNotFoundError, ExtensionRevisionConflictError
@@ -58,6 +58,17 @@ class McpCatalogRefresh:
     ) -> McpToolCatalog:
         _require_live_grant(verified)
         scope = extension_scope_from_grant(verified, permission="extensions.manage")
+        return await self.refresh_authorized(
+            scope=scope, connection_id=connection_id, expected_revision=expected_revision,
+            revalidate=lambda: _require_live_grant(verified),
+        )
+
+    async def refresh_authorized(
+        self, *, scope: ExtensionScope, connection_id: str, expected_revision: int,
+        revalidate: Callable[[], None],
+    ) -> McpToolCatalog:
+        """Internal composition only: caller supplies exact scope and live management checks."""
+        revalidate()
         TypeAdapter(OpaqueExtensionId).validate_python(connection_id)
         TypeAdapter(ExtensionRevision).validate_python(expected_revision)
         current = await self.connections.get_connection(scope=scope, connection_id=connection_id)
@@ -67,11 +78,11 @@ class McpCatalogRefresh:
             raise ExtensionRevisionConflictError("MCP connection revision conflict")
 
         async def check() -> None:
-            _require_live_grant(verified)
+            revalidate()
             latest = await self.connections.get_connection(scope=scope, connection_id=connection_id)
             if latest != current:
                 raise ExtensionRevisionConflictError("MCP connection changed during discovery")
-            _require_live_grant(verified)
+            revalidate()
 
         def authorize(endpoint: str, frame: Mapping[str, object]) -> None:
             if endpoint != current.endpoint or frame.get("method") not in (
@@ -96,7 +107,7 @@ class McpCatalogRefresh:
             )
             if record.binding != expected:
                 raise HostGrantBindingError("MCP credential binding mismatch")
-            _require_live_grant(verified)
+            revalidate()
             return McpHttpBearerCredential(
                 current.endpoint, self.protector.unseal(expected, record.envelope)
             )
@@ -116,5 +127,5 @@ class McpCatalogRefresh:
             raise HostGrantBindingError("MCP discovered catalog binding mismatch")
         await check()
         await self.catalogs.publish(scope=scope, catalog=catalog)
-        _require_live_grant(verified)
+        revalidate()
         return catalog

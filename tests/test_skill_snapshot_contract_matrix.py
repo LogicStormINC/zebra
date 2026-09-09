@@ -18,6 +18,16 @@ def test_normalize_skill_components_rejects_non_canonical_names() -> None:
             normalize_skill_components((invalid,))
 
 
+def test_published_uuid_skill_ids_are_accepted_even_with_leading_digit() -> None:
+    skill_id = "120349ee-8526-5f82-bb83-304d4b6ea421"
+    assert normalize_skill_components((skill_id,)) == (skill_id,)
+    payload = TaskPreparedPayload(title="title", user_input="go", skill_components=[skill_id])
+    assert payload.skill_components == [skill_id]
+    for invalid in (skill_id.replace("-", ""), "{" + skill_id + "}", skill_id.upper()):
+        with pytest.raises(ValueError):
+            normalize_skill_components((invalid,))
+
+
 def test_task_prepared_payload_skill_components_is_optional() -> None:
     payload = TaskPreparedPayload(title="title", user_input="user input")
     assert payload.skill_components is None

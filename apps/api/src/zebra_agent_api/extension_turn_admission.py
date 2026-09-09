@@ -25,7 +25,10 @@ from agent_core.ports.extensions import (
     ExtensionStore,
 )
 from agent_core.ports.mcp_catalog import McpCatalogStore
-from agent_security.extension_authority import extension_runtime_scope_from_task_grant
+from agent_security.extension_authority import (
+    extension_runtime_scope_from_grant,
+    extension_runtime_scope_from_task_grant,
+)
 from agent_security.host_grant import VerifiedHostGrant
 
 from zebra_agent_api.extension_mcp_selection import select_enabled_mcp
@@ -66,6 +69,16 @@ class CloudExtensionTurnAdmission:
         self._snapshots = snapshots
         self._task_authority = task_authority
         self._mcp_catalogs = mcp_catalogs
+
+    def validate_task_skills(
+        self, verified: VerifiedHostGrant, components: tuple[str, ...]
+    ) -> None:
+        """Freeze only the caller's currently enabled, published Skill IDs."""
+        scope = extension_runtime_scope_from_grant(verified)
+        selected = tuple(self._enabled_skills(scope, components))
+        if {item.version.skill_id for item in selected} != set(components):
+            raise ValueError("requested Skills are not enabled in this scope")
+        asyncio.run(self._store.authorize_frozen_skills(scope=scope, installations=selected))
 
     def authorize(
         self,

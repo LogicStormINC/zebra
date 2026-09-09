@@ -17,6 +17,25 @@ class TrenchViewer:
     user_id: str
     workspace_id: str
     active_source_ids: frozenset[str] = frozenset()
+    allowed_scopes: frozenset[str] | None = None
+
+
+def parse_agent_scopes(value: object) -> frozenset[str]:
+    """Validate an explicit Host capability ceiling; empty means no authority."""
+    if not isinstance(value, list) or len(value) > 64:
+        raise ValueError("agent_scopes_invalid")
+    if any(
+        not isinstance(scope, str)
+        or not scope
+        or scope != scope.strip()
+        or len(scope) > 512
+        for scope in value
+    ):
+        raise ValueError("agent_scopes_invalid")
+    scopes = frozenset(value)
+    if len(scopes) != len(value):
+        raise ValueError("agent_scopes_invalid")
+    return scopes
 
 
 def fetch_viewer(
@@ -47,6 +66,12 @@ def fetch_viewer(
     viewer = payload.get("data", {}).get("viewer") if isinstance(payload, dict) else None
     if not isinstance(viewer, dict):
         raise TrenchSessionError("viewer_missing")
+    try:
+        allowed_scopes = (
+            parse_agent_scopes(viewer["agent_scopes"]) if "agent_scopes" in viewer else None
+        )
+    except ValueError as exc:
+        raise TrenchSessionError("viewer_agent_scopes_invalid") from exc
     user_id = viewer.get("user_id")
     if not isinstance(user_id, str) or not user_id.strip() or len(user_id) > 512:
         raise TrenchSessionError("viewer_identity_invalid")
@@ -85,4 +110,5 @@ def fetch_viewer(
         user_id=user_id.strip(),
         workspace_id=workspace_id,
         active_source_ids=frozenset(source_ids),
+        allowed_scopes=allowed_scopes,
     )

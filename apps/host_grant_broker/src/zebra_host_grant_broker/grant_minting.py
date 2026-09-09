@@ -61,6 +61,12 @@ class ExchangeRequest:
             raise GrantMintError("scope_not_allowed")
 
     def authorize(self, viewer: TrenchViewer) -> None:
+        if viewer.allowed_scopes is None:
+            # Legacy Hosts retain base capabilities, never implicit extension management.
+            if any(scope.startswith("extensions.") for scope in self.scopes):
+                raise GrantMintError("viewer_scope_not_allowed")
+        elif not set(self.scopes).issubset(viewer.allowed_scopes):
+            raise GrantMintError("viewer_scope_not_allowed")
         requested_sources = {
             resource_id
             for resource_type, resource_id in self.resource_refs

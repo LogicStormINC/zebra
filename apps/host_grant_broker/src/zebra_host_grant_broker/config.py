@@ -17,6 +17,8 @@ DEFAULT_ALLOWED_SCOPES = (
     "artifact.read",
     "artifact.publish",
     "subscription.write",
+    "extensions.read",
+    "extensions.manage",
 )
 
 

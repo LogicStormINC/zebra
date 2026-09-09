@@ -47,6 +47,7 @@ from agent_tools import (
     WorkspaceSearchTool,
 )
 from agent_tools.builtin.publish import FilePublishTool
+from agent_tools.cloud_skills import CloudSkillCatalog
 from agent_tools.errors import ToolRegistryError
 from agent_tools.skills_catalog import (
     LocalSkillCatalog,
@@ -269,13 +270,14 @@ class LocalToolGateway(ToolGatewayPort):
         self._skill_component_names: tuple[str, ...] = ()
         if skill_roots or skill_catalog is not None:
             catalog = skill_catalog or LocalSkillCatalog(skill_roots, skills_state=skills_state)
+            cloud = isinstance(catalog, CloudSkillCatalog)
             self._skill_component_names = (
                 skill_component_names
                 if skill_catalog is not None
                 else tuple(metadata.name for metadata in catalog.list()[0])
             )
             for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
-                if skill_tool.contract.name in enabled_names:
+                if cloud or skill_tool.contract.name in enabled_names:
                     registry.register(skill_tool.contract, skill_tool.handle)
         if session_history is not None and "sessions.search" in enabled_names:
             history_tool = SessionSearchTool(session_history, current_session_id)
@@ -485,8 +487,7 @@ class LocalToolGateway(ToolGatewayPort):
 
 
 def _optional_web_search_endpoint(
-    value: str | None, *, web_pipeline_v2: bool = False,
-) -> WebTarget | None:
+    value: str | None, *, web_pipeline_v2: bool = False) -> WebTarget | None:
     if value is None:
         return None
     try:

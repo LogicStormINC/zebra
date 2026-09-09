@@ -30,6 +30,60 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `EXT-SKILL-UX-01`: Review (local API and browser verified, uncommitted), Luke Ding (Codex), current
+  branches per user instruction. Scope: scoped publication metadata in installed
+  Skill reads; Trench searchable readable Skill list, details and enable switch.
+  Owned: API extension_reads/http, focused API tests, Trench extension settings
+  and new Skill list/tests; this registry, WORKLOG/PROGRESS and extension doc.
+  Reuse publication metadata; no schema migration, fabricated descriptions or
+  changes to MCP execution/permission boundaries.
+
+- `EXT-GITHUB-SKILL-01`: Review (source and repeated live flow validated;
+  uncommitted), owned by Luke Ding (Codex).
+  Old pending-clarification capability rollover also validated, returned to Review:
+  additionally owns Trench zebra_contract generation and runtime/Skill tests.
+  Current branch per user instruction. GitHub public repository import through
+  governed publication then existing installation/enable and next-Turn binding.
+  Owned: agent-runtime/github_skill_import.py and tests; agent-tools extension
+  management contract/service, skill_import_installation.py and publication
+  write revalidation, Worker extension/Skill composition and loop; related tests;
+  Trench live acceptance script; PROGRESS/WORKLOG and extension management doc.
+  Never execute downloaded code or grant arbitrary URL/network access.
+
+- `EXT-SKILL-AUTO-01`: Review (source and live core flow validated; uncommitted),
+  owned by Luke Ding (Codex),
+  current Zebra/Trench branches per user instruction. Scope: automatic scoped
+  installed Skill binding on next user Turn, stable frontend conversation,
+  safe successor idempotency and replay, research gateway Skill tools, tests.
+  Owned: Trench Zebra client/contract and new skill binding module, conversation
+  binding store and related tests, Trench core config's separate stream idle
+  timeout (live Skill round trips exposed the shared five-second cutoff);
+  Zebra API session preparation/extension
+  admission and Worker scoped tool composition, agent-runtime gateway,
+  agent-core/domain/skills.py canonical published UUID support, related
+  tests; this registry, PROGRESS/WORKLOG and extension management design.
+  Zebra lane: skill_task_gateway; Trench and integration lane: primary Codex.
+
+- `EXT-NATIVE-MANAGE-01`: Ready, claimed In Progress by Luke Ding (Codex).
+  Branch/worktree: current `cloud-agent-trench` checkout per user instruction.
+  Scope: typed Agent configuration tools reusing scoped extension services;
+  explicit Host management authority, no credential-bearing model arguments,
+  immutable Turn selection, truthful next-Turn and setup feedback.
+  Owned: packages/agent-tools/src/agent_tools/extension_management*.py;
+  packages/agent-core/src/agent_core/application/{extension_configuration,mcp_connections,
+  skill_installations}.py;
+  packages/agent-security/src/agent_security/extension_worker_authority.py;
+  packages/agent-runtime/src/agent_runtime/mcp_catalog_refresh.py;
+  apps/worker/src/zebra_agent_worker/{worker_extension_management,worker_mcp_catalog,
+  mcp_composition,execution_tool_gateway,tool_gateway_runtime}.py;
+  related tests, this registry, docs/cloud-extension-agent-management.md,
+  PROGRESS.md and WORKLOG.md. User approved login-once Host activation on
+  2026-09-09: ownership extended to Broker config/trench_session/grant_minting/
+  workload_auth and tests, docker/compose.trench-acceptance.yml; Trench
+  session viewer contract, centralized Agent scopes, Zebra grant client/contract,
+  related auth/runtime tests. Broker lane: login_authority_broker; Trench lane:
+  primary Codex. Never manufacture VerifiedHostGrant in Worker.
+
 - `EXT-AGUI-01`: Review, implemented/deployed by Luke Ding (Codex), current branches.
   Scope: bind AG-UI RUN/RESUME to the already materialized current Turn;
   preserve MESSAGE admission, replay and local extension-disabled behavior.

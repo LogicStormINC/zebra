@@ -18,6 +18,7 @@ from agent_security import NetworkProfileError, PolicyProfile, parse_network_pro
 
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
+from zebra_agent_api.session_skill_inputs import parse_skill_components
 
 
 class CreateSessionPayload(TypedDict):
@@ -33,6 +34,7 @@ class CreateSessionPayload(TypedDict):
     network_profile: str
     network_allowlist: list[str]
     mcp_allowlist: list[str]
+    skill_components: list[str]
     mcp_resource_ids: list[str]
     mcp_prompt_id: str | None
     mcp_prompt_arguments: dict[str, str]
@@ -193,6 +195,9 @@ def parse_create_session_payload(
         )
     except ValueError as exc:
         return bad_request(str(exc))
+    normalized_skills = parse_skill_components(payload)
+    if isinstance(normalized_skills, ApiResponse):
+        return normalized_skills
     mcp_allowlist = payload.get("mcp_allowlist", [])
     if not isinstance(mcp_allowlist, list) or not all(
         isinstance(item, str) for item in mcp_allowlist
@@ -266,6 +271,7 @@ def parse_create_session_payload(
         "network_profile": network.name.value,
         "network_allowlist": list(network.domain_allowlist),
         "mcp_allowlist": list(normalized_mcp),
+        "skill_components": list(normalized_skills),
         "mcp_resource_ids": list(normalized_resources),
         "mcp_prompt_id": normalized_prompt_id,
         "mcp_prompt_arguments": dict(raw_prompt_arguments),
@@ -489,7 +495,4 @@ def parse_queue_sweep_preview_payload(
             return bad_request("memory_type is not supported")
         memory_type = memory_type.strip()
 
-    return {
-        "decision": decision,
-        "memory_type": memory_type,
-    }
+    return {"decision": decision, "memory_type": memory_type}

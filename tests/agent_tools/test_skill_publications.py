@@ -90,6 +90,24 @@ def test_invalid_zip_performs_no_external_io() -> None:
     assert store.reserve_count == objects.calls == 0
 
 
+@pytest.mark.parametrize("stop", [1, 2, 3])
+def test_publication_revalidates_before_each_write(stop: int) -> None:
+    store = Store()
+    objects = Objects(store)
+    calls = 0
+
+    def before_save() -> None:
+        nonlocal calls
+        calls += 1
+        if calls == stop:
+            raise PermissionError("revoked")
+    with pytest.raises(PermissionError):
+        asyncio.run(publish(archive(), store, objects, before_save=before_save))
+    assert store.reserve_count == (0 if stop == 1 else 1)
+    assert objects.calls == (1 if stop == 3 else 0)
+    assert store.current is None or store.current.state == "publishing"
+
+
 @pytest.mark.parametrize("failure", ["object", "ready"])
 def test_failure_retry_and_ready_short_circuit(failure: str) -> None:
     store = Store()

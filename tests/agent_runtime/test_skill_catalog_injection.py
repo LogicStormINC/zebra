@@ -1,10 +1,14 @@
+import asyncio
 from datetime import UTC, datetime
 
 import pytest
 from agent_core.domain.identifiers import new_tool_call_id
+from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_runtime import LocalToolGateway
 from agent_tools.skills_catalog import SkillMetadata, SkillReadResult
+
+from tests.agent_tools.test_cloud_skills import Backend
 
 
 class Catalog:
@@ -62,5 +66,33 @@ def test_gateway_construction_does_not_read_injected_catalog(tmp_path) -> None:
     )
     try:
         assert gateway.effective_skill_components == ("frozen-skill-id",)
+    finally:
+        gateway.close()
+
+
+def test_research_cloud_catalog_exposes_read_tools_but_not_engineering(tmp_path) -> None:
+    backend = Backend()
+    catalog = asyncio.run(backend.prepare())
+    gateway = LocalToolGateway(
+        tmp_path, tool_profile=ToolProfile.RESEARCH,
+        skill_catalog=catalog, skill_component_names=(backend.installation.version.skill_id,),
+    )
+    try:
+        names = {tool.name for tool in gateway.model_tools}
+        assert {"skills.list", "skills.read"} <= names
+        assert "command.run" not in names
+        result = gateway.execute(_call("skills.read", {"name": "sample"}))
+        assert result.status is ToolCallStatus.EXECUTED
+        assert "UNTRUSTED CLOUD SKILL GUIDANCE" in result.output
+    finally:
+        gateway.close()
+
+
+def test_research_generic_local_catalog_does_not_expand_profile(tmp_path) -> None:
+    gateway = LocalToolGateway(
+        tmp_path, tool_profile=ToolProfile.RESEARCH, skill_catalog=Catalog(),
+    )
+    try:
+        assert not {"skills.list", "skills.read"} & {tool.name for tool in gateway.model_tools}
     finally:
         gateway.close()

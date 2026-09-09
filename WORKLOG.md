@@ -1,5 +1,168 @@
 # Progress Log
 
+## 2026-09-09 - Readable Skill management
+
+Root cause: publication already stored validated name/description/version_label,
+but installed-extension HTTP serializer exposed only opaque IDs. Added scoped
+publication enrichment for list/detail with at most eight concurrent metadata
+reads; exact version/digest validation, missing legacy metadata fallback, foreign
+or failed store data fail closed. No archive I/O or schema migration.
+Trench uses a Codex-like compact list (existing Trench amber theme), name/purpose
+search, native details and Radix switch; keeps current revision-based PATCH,
+plain text escaping, legacy fallback, pagination caveat and account-switch stale
+response fencing. MCP behavior preserved.
+
+Validation: 56 backend tests, 7 frontend tests; make check (914 typed sources,
+Ruff, file size, Eval 10/10) and focused frontend ESLint pass. Full tsc reports
+three unrelated missing-field fixtures in dashboard-data-settings.test.tsx:72-74;
+not claimed clean. API rebuilt preserving all existing environment values after
+mirror EOF; used existing cached pinned official Python image, no proxy changes.
+Chrome actual logged-in user: better-writing and stored English purpose shown;
+search no-such-skill gives empty results, reports matches purpose, details shows
+full description and version; enabled state unchanged. Existing data rendered
+without reinstall. No browser toggle mutation performed. No commit/push.
+
+## 2026-09-09 - GitHub retry resumed an exhausted pre-import clarification
+
+Observed user Task a1827d0f-8761-4a96-a53d-181495d22a11: initial request at
+05:22 UTC preceded importer rollout; clarification_requested preserved 5 model
+calls and 8 tool calls. Retry at 05:53 UTC became clarification_responded, then
+only final synthesis (tool_choice none, schema bytes 2) and repeated the old
+unsupported-install answer. Worker was healthy/current; new-account-only
+acceptance missed this path. Earlier MCP fetches also recorded SSE failure,
+not a successfully fetched empty repository.
+
+Advanced Trench capability generation v11 -> v12 using existing scoped successor
+CAS and bounded history. No changing frozen authority/budgets, wiping messages,
+or direct user configuration writes. Existing reload API loaded the source.
+Added old-generation no-append tests with/without installed Skills (37 related
+tests passed). Legacy live mode first obtains a real awaiting_input Cloud Turn,
+marks only isolated test binding as v11, then exercises normal user retry.
+PASS conv_github_skill_ed8aeda94e154b65: old Task
+9d763027-dd7f-4f80-9191-6c645a7326fc, import successor
+66d8778a-d7bd-4029-8a55-521bcfdf27b4, Skill successor
+2118b678-9ef2-4100-b106-3662bd1bc88e. Install 8.19s, reference read 6.11s,
+repeat 6.13s; one enabled installation. No browser/user-account installation
+claim; no commit/push. Existing current-generation follow-ups still reuse Task.
+
+## 2026-09-09 - Public GitHub Skill import
+
+User requested https://github.com/forjd/better-writing after low-level install
+correctly rejected URLs. Added bounded runtime downloader and native import
+tool; reused existing publication/install/upgrade/enable, user scope and live
+execution authority. Root Skill preferred over symlink tap layout; preserve
+references and license, do not execute scripts. Public API rate-limit fallback
+uses official codeload Git SHA comment then immutable SHA archive verification.
+Publication optionally revalidates before every write. Concurrent version replay
+is rejected rather than silently reporting another version as imported.
+
+Source validation: initial focused 83 passed, concurrent replay test 4/4 import
+tests passed, broad suite 4371 passed / 875 skipped with only the DeepSeek real
+provider smoke file deliberately excluded due known local proxy TLS failure.
+No claim those omitted live cases passed. Final make check passed after the CAS
+fix (914 mypy sources, Ruff, size gate, Eval 10/10). Runtime Worker rebuilt, existing env values
+compared against Compose config to avoid credential drift. Temporary network
+overlay adds API/codeload GitHub public IPs from HTTPS DNS; no system edits.
+
+Backend real acceptance conv_github_skill_12501c669e3542f5:
+Task 4f096e2f-b224-4f57-b863-fceae8a4b10d executed extensions.import_skill;
+successor 18f5f011-ed8f-4469-adee-37a26a87771e executed skills.read for actual
+reference content. Three completed Turns 12.20 / 8.14 / 8.11 seconds.
+Enabled installation persisted and reimport left exactly one record. Test used
+isolated labelled account, not the user's settings. Commit downloaded:
+dd9d0a50581a7652fb38f03b7b751741ed917993. No commit/merge/push.
+
+Final deployed-source repeat passed: conv_github_skill_6777f305ccd74fac,
+initial Task ad7fdf41-f6d4-4e2e-b3d7-f49c64dc778e, successor
+6acdcce7-d427-4a44-a045-d5b3f3103d26. Installation/read/repeated request
+completed in 10.17 / 8.16 / 6.10 seconds; reference read verified and one enabled
+installation retained. Final five-file focused command passed 82 tests:
+test_github_skill_import.py, test_extension_management.py,
+test_github_skill_installation.py, test_skill_publications.py,
+test_extension_management_wiring.py. This is a different selection from the
+initial 83-test command. Worker healthy. Backend E2E only; browser rendering
+not re-tested. Changes remain in current checkouts, task moved to Review.
+
+## 2026-09-09 - Automatic subsequent-Turn Skill binding
+
+Implemented Trench scoped catalog discovery, stable generation/CAS successor
+binding and bounded context seeding; Zebra validates publication eligibility
+and composes CloudSkillCatalog read tools in research. Real publication exposed
+canonical UUID rejection: fixed shared normalizer, not individual API callers.
+Review aligned four-page scan ceilings. Live tool round trips exposed Trench's
+five-second SSE idle cutoff: split stream idle (60 seconds default, configurable)
+from control request timeout. Task/Turn permission snapshots remain immutable.
+
+Validation: Zebra make check passes. Latest full make test: 4335 passed / 875
+skipped / 3 failed real DeepSeek transport probes; previous run 4336 passed / 875
+skipped before UUID tests. Trench binding/runtime focused 35 passed. Real test
+script tests/api/skill_binding_live.py proves publication, install/enable, same
+conversation successor, secret marker read, native Agent version update, v2
+read, disable and cross-user configuration/Turn denial. Passing conversation:
+conv_skill_acceptance_9440006fdf6749b3, tasks b20d3be7-7653-4313-aebd-dbf07c1d3546
+then 6b2ac2a5-cc2e-454d-b3e7-020ebb800bda then fc28fb37-f6e0-4d1f-a6e6-52fe8f1c859a.
+These are isolated labelled test accounts, not the user's configuration.
+
+Runtime: API/Worker rebuilt with existing pinned Python base after Huawei mirror
+TLS/EOF failures. Preserved all live service environment values and credentials
+by comparing rendered Compose config. Started Trench api_stable on previously
+unused port 8000. Model DNS resolved to proxy fake-IP 198.18.4.30 and failed TLS;
+public DNS HTTPS lookup returned 3.173.21.63 and TLS-preserving direct probe
+succeeded. Temporary Worker extra_hosts overlay is
+/tmp/zebra-skill-acceptance-network.yml, not a durable endpoint replacement.
+No DB migration/reset, system proxy change, commit or push. No new browser test.
+
+Final continuity probe found the existing generic Cloud attachment API calls
+store_payload on PostgresCloudArtifactPayloadStore, which exposes no such method
+and returns 500. Automatic Skill rollover therefore does not use that unrelated
+unimplemented attachment path: it seeds bounded quoted Host-owned history in
+the new Task prompt. Generic Cloud attachment composition remains a separate
+tracked gap; no cross-Task history permissions were broadened as a workaround.
+
+Final source repeated live acceptance passed:
+conv_skill_acceptance_d5b35f4efb8e4a9d; initial Task
+dce99c9a-d2b6-4b36-a700-d9b03bc070a2, Skill-enabled successor
+ab5a44d2-8424-4286-a53a-223950792f55, disabled successor
+05d92b6c-dcff-412b-bae8-bc2ae4deddbc. Five completed Turns:
+4.11 / 8.11 / 6.12 / 6.09 / 4.06 seconds. Native configuration upgrade persisted,
+v2-only marker returned, cross-user installation and Turn reads rejected (404).
+Final Trench focused tests 35 passed; Zebra make check passed (912 mypy sources,
+file-size gate, Ruff, Eval 10/10). Trench api_stable remains running for user
+testing. No commit/merge/push performed.
+
+## 2026-09-09 - Login-once Host authority integration
+
+User confirmed one-time login authority, with silent bounded Grant exchange.
+Primary changed Trench's shared Agent ceiling, viewer schema, ordinary/workload
+grant requests and Task generation rollover; Broker agent changed validation,
+default allowed scopes and 24 new regression cases (38 Broker tests total).
+Workload signing now checks active account and exact workspace; cookie exchange
+continues to validate the existing session. Logout does not cancel already
+accepted durable work or instantly revoke previously issued grants.
+
+Validation: make check passed; make test 4321 passed / 875 skipped. Trench:
+PYTHONPATH=.:packages/models/src:packages/core/src:services/api/src:services/state_derive/src
+pdm run pytest -q tests/api => 582 passed / 4 failed. Failures are startup mock
+missing include_active_turns, capsule background selection, X source rss versus
+web expectation, and obsolete all-tools-readonly assertion. Those paths were not
+edited in this slice. Focused authority/session/extensions/Zebra tests: 37 passed.
+New Trench files Ruff clean; both worktrees diff-check clean. No deployment or
+commit; existing dirty changes preserved. Next: automatic new-Skill Task ceiling
+selection, secure setup UI and live Agent management/browser acceptance.
+
+## 2026-09-09 - EXT-NATIVE-MANAGE-01 runtime tools
+
+User approved Agent-native Skill/MCP configuration. Implemented seven tools,
+shared revision-guarded update functions, protected internal catalog refresh,
+and optional Worker registration with exact-scope live authority/lease checks.
+An independent reviewer added 39 deterministic tests and caught missing pre-save
+revalidation; it now prevents mutation after authority loss during a store read.
+Focused cross-package run: 119 passed. Full make test: 4295 passed, 875 skipped.
+make check passed size/Ruff/Mypy(910)/Eval(10). Existing AGENTS.md preserved.
+Next: explicit Trench/Broker management delegation, successor Task Skill ceiling
+selection, secure credential form and real Agent management/browser acceptance.
+Current branch unchanged; no commit, push, runtime migration or deployment.
+
 ## 2026-09-09 - EXT-AGUI-01 deployed and real MCP call verified
 
 Reused existing command admission and immutable snapshots; RUN/RESUME bind the

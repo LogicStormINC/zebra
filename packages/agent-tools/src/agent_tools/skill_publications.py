@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from agent_core.domain.artifact_objects import (
@@ -65,23 +66,30 @@ async def publish_skill_package(
     *, archive: bytes, scope: ExtensionScope, deployment_namespace: str,
     store: SkillPublicationStorePort, objects: ArtifactObjectStorePort,
     idempotency_key: str | None = None,
+    before_save: Callable[[], None] | None = None,
 ) -> SkillPublication:
     if idempotency_key is not None:
         idempotency_key = UPLOAD_IDEMPOTENCY_KEY.validate_python(idempotency_key)
     scope = ExtensionScope.model_validate(scope.model_dump())
     candidate = await asyncio.to_thread(_candidate, archive, scope, deployment_namespace)
+    if before_save is not None:
+        before_save()
     current = _checked(await store.reserve(
         scope=scope, publication=candidate,
         **({"idempotency_key": idempotency_key} if idempotency_key is not None else {}),
     ), candidate)
     if current.state == "ready":
         return current
+    if before_save is not None:
+        before_save()
     receipt = await asyncio.to_thread(_put, objects, candidate, archive)
     if not isinstance(receipt, ArtifactObjectReceipt):
         raise ValueError("object store returned an invalid receipt")
     receipt = ArtifactObjectReceipt.model_validate(receipt.model_dump())
     if receipt.expectation != candidate.expectation:
         raise ValueError("object store returned a foreign receipt")
+    if before_save is not None:
+        before_save()
     ready = _checked(await store.mark_ready(
         scope=scope, skill_id=candidate.version.skill_id,
         version_id=candidate.version.version_id, receipt=receipt,
@@ -101,10 +109,12 @@ class SkillPublicationService:
 
     async def publish(
         self, *, archive: bytes, scope: ExtensionScope, idempotency_key: str,
+        before_save: Callable[[], None] | None = None,
     ) -> SkillPublication:
         return await publish_skill_package(
             archive=archive, scope=scope, idempotency_key=idempotency_key,
             store=self.store, objects=self.objects, deployment_namespace=self.deployment_namespace,
+            before_save=before_save,
         )
 
     async def get(

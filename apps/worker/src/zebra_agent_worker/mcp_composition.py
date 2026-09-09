@@ -4,6 +4,7 @@ from agent_core.application import current_turn
 from agent_core.application.execution_authority_replay import latest_authority_snapshot
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports.event_store import EventStorePort
+from agent_runtime.mcp_catalog_refresh import McpCatalogRefresh
 from agent_security.mcp_credential_protection import mounted_mcp_protector
 from agent_security.mcp_credential_release import McpCredentialRelease
 from agent_security.mcp_execution_authority import McpWorkerAuthority
@@ -64,5 +65,10 @@ def compose_worker_mcp(
         leases=cloud.stores.leases,
         execution_authority=lambda session, turn: load_worker_mcp_authority(
             cloud.stores.events, session, turn,
+        ),
+        refresh=McpCatalogRefresh(
+            connections, PostgresMcpCatalogStore(
+                cloud.dsn, deployment_namespace=cloud.deployment_namespace,
+            ), protector, cloud.deployment_namespace,
         ),
     )

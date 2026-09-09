@@ -1,13 +1,17 @@
 """Opt-in asynchronous reads of scoped extension configuration; no execution."""
 
+import asyncio
+
 from agent_core.domain.extensions import McpConnection, OpaqueExtensionId, SkillInstallation
 from agent_core.ports.extensions import (
     ExtensionNotFoundError,
     ExtensionPageRequest,
     ExtensionStore,
 )
+from agent_core.ports.skill_publications import SkillPublicationNotFoundError
 from agent_security.extension_authority import extension_scope_from_grant
 from agent_security.host_grant import HostGrantSecurityError, VerifiedHostGrant
+from agent_tools.skill_publications import SkillPublicationService
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from pydantic import TypeAdapter, ValidationError
@@ -71,6 +75,7 @@ def _public_record(record: SkillInstallation | McpConnection) -> dict[str, objec
 async def extension_read_response(
     request: Request, *, store: ExtensionStore | None, deployment: str,
     manage_enabled: bool = False,
+    publications: SkillPublicationService | None = None,
 ) -> JSONResponse | None:
     if not is_extension_path(request.url.path):
         return None
@@ -130,7 +135,7 @@ async def extension_read_response(
             )
             if record.scope != scope:
                 return extension_error(404)
-            content = _public_record(record)
+            content = await _described_record(record, publications)
         else:
             records = (
                 await store.list_skills(scope=scope, page=page)
@@ -139,8 +144,14 @@ async def extension_read_response(
             )
             if any(record.scope != scope for record in records.items):
                 return extension_error(404)
+            semaphore = asyncio.Semaphore(8)
+
+            async def describe(record: SkillInstallation | McpConnection) -> dict[str, object]:
+                async with semaphore:
+                    return await _described_record(record, publications)
+
             content = {
-                "items": [_public_record(record) for record in records.items],
+                "items": await asyncio.gather(*(describe(record) for record in records.items)),
                 "next_cursor": records.next_cursor,
             }
     except ExtensionNotFoundError:
@@ -152,3 +163,23 @@ async def extension_read_response(
     if len(parts) == 2:
         headers["ETag"] = f'"{record.revision}"'
     return JSONResponse(content=content, headers=headers)
+
+
+async def _described_record(
+    record: SkillInstallation | McpConnection, publications: SkillPublicationService | None,
+) -> dict[str, object]:
+    content = _public_record(record)
+    if not isinstance(record, SkillInstallation) or publications is None:
+        return content
+    try:
+        publication = await publications.get(
+            scope=record.scope, skill_id=record.version.skill_id,
+            version_id=record.version.version_id,
+        )
+    except SkillPublicationNotFoundError:
+        return content  # Legacy installations remain manageable without metadata.
+    if publication.state != "ready" or publication.version != record.version:
+        return content
+    content.update(name=publication.name, description=publication.description,
+                   version_label=publication.version_label)
+    return content

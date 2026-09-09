@@ -1,5 +1,79 @@
 # Zebra Agent Project Status
 
+2026-09-09 EXT-SKILL-UX-01: installed Skill reads enrich exact scoped/versioned
+ready publication names, descriptions and version labels; no migration or object
+downloads. Trench settings now provides a searchable readable list, details and
+Radix enable switches, missing-metadata/empty/error feedback. Actual user's
+better-writing name/description, purpose search and details verified in Chrome.
+56 backend tests, 7 frontend tests, make check and focused ESLint pass. Full
+frontend tsc remains blocked by three pre-existing dashboard-data-settings test
+fixture type errors. API rebuilt with preserved environment; no Git operations.
+
+2026-09-09 GitHub import follow-up: real user retry resumed a pre-deployment
+clarification with 5/6 model calls consumed, so only tool-less final synthesis
+ran. Trench capability generation now advances v11 -> v12, reusing existing
+scoped CAS successor binding and bounded history without resetting Turn budgets.
+37 focused tests passed. Real pending-clarification upgrade/import/reference
+read passed (8.19 / 6.11 seconds) in an isolated account. User's existing
+conversation is not edited; its next message selects the current generation.
+
+2026-09-09 EXT-GITHUB-SKILL-01: Agent now accepts public GitHub Skill links via
+extensions.import_skill: bounded HTTPS download, immutable commit verification,
+package validation, scoped publication, idempotent install/enable and next-Turn
+automatic binding. No script execution, arbitrary fetch or secret model inputs.
+Real forjd/better-writing import and subsequent reference read passed through
+Trench/Broker/Cloud Worker/model; reimport retained one installation. Worker
+rebuilt locally with credentials/environment preserved. 83 initial focused tests
+passed plus a subsequent concurrent-version regression; broad suite 4371 passed,
+875 skipped with DeepSeek live smoke module explicitly excluded (known network
+issue). No full-live-suite/browser/merge/push claim. See management doc and log.
+
+2026-09-09 EXT-SKILL-AUTO-01: scoped enabled Skill IDs now bind automatically
+on each new Trench Turn. Changed ID sets create a CAS-protected successor Task
+under the same frontend conversation; upgrades select the new version next
+Turn without unnecessary Task replacement. Replay/cancel keep their original
+binding. Research exposes only the scoped Cloud Skill read tools. Canonical
+publication UUIDs, bounded four-page selection and successor context seeding
+are covered. Trench separates five-second control requests from a configurable
+60-second stream idle budget (1–300 seconds), preventing premature interruption
+between Skill tool calls. No schema migration or new consent UI.
+
+Live HTTP-to-Worker/model acceptance passed in
+conv_skill_acceptance_d5b35f4efb8e4a9d: initial reply, new Skill read using a
+marker present only inside SKILL.md, Agent-native version upgrade, next-Turn
+v2 read, disable/successor and other-user installation/Turn 404; all five Turns
+completed in 4–8 seconds. API/Worker/Broker source deployed locally. Worker
+currently has an acceptance-only api.deepseek.com public-IP mapping because
+the host proxy fake-IP path fails TLS; see management doc before recreating it.
+Latest Zebra make check passed; full make test: 4335 passed, 875 skipped, three
+DeepSeek live transport failures (not passed). Trench focused 35 passed; prior
+broader API baseline retains four unrelated failures. No new browser acceptance,
+commit, merge or push claim. Other Skill upload/credential UI and full cross-Task
+history authorization are separate work, not delivered by this slice.
+
+2026-09-09 EXT-NATIVE-MANAGE-01 Host delegation source: confirmed login-once
+policy now shares Trench viewer/chat scopes, including extensions.read/manage.
+Broker checks explicit viewer/signed-workload ceilings and operator allowlist;
+legacy Hosts cannot gain extension scopes implicitly. Trench rechecks workload
+account/workspace before signing and advances Task/idempotency generations.
+No perpetual grant, extra consent database or per-Turn consent UI. Accepted
+durable work retains existing logout-independent semantics; not immediate global
+revocation of issued grants. Zebra make test 4321 passed / 875 skipped; make check
+passed. Trench targeted 37 passed; API suite 582 passed / 4 failed in untouched
+startup/capsule/harness expectations. Deployment, real management E2E and new
+Skill successor ceilings remain open. No commit/push or container recreation.
+
+2026-09-09 EXT-NATIVE-MANAGE-01: seven typed extension management tools now
+reuse scoped create/update/installation/catalog services. Cloud Worker registers
+them only for explicit frozen Host management/read scopes and revalidates live
+Task/Turn identity and lease, including before writes after intermediate reads.
+No secret-bearing tool arguments, no synthetic HTTP grants, no active snapshot
+rewrite; network-disabled Tasks cannot refresh MCP. Focused tests 119 passed;
+full suite 4295 passed / 875 skipped; make check passed. This is runtime source
+delivery, not Trench activation: signed Host delegation, new-Skill Task ceilings,
+credential UI and real management E2E remain open. See
+docs/cloud-extension-agent-management.md. No deployment or Git push this slice.
+
 2026-09-09 EXT-AGUI-01: real Trench MCP fetch execution now verified. Fixed
 AG-UI admission forwarding, existing-Turn RUN/RESUME selection/recovery,
 PostgreSQL MESSAGE-only atomic admission, and the live publisher decorator

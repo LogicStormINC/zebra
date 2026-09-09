@@ -19,6 +19,8 @@ from agent_storage import (
     PostgresControlPlaneStores,
     cloud_composition_from_environment,
 )
+from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
+from agent_tools.skill_publications import SkillPublicationService
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.claims import SessionClaimService
@@ -104,7 +106,12 @@ def build_worker_loop_service(
         if settings.cloud_skill_worker_enabled:
             assert cloud_bundle.extensions is not None and cloud_bundle.skill_objects is not None
             active_extension_skills = WorkerSkillCatalogSource(
-                cloud_bundle.extensions, cloud_bundle.skill_objects
+                cloud_bundle.extensions, cloud_bundle.skill_objects,
+                SkillPublicationService(
+                    PostgresSkillPublicationStore(
+                        cloud_bundle.dsn, deployment_namespace=cloud_bundle.deployment_namespace,
+                    ), cloud_bundle.skill_objects, cloud_bundle.deployment_namespace,
+                ) if cloud_bundle.dsn else None,
             )
         else:
             active_extension_skills = None

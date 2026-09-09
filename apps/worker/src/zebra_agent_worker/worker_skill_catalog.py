@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from agent_core.ports import ArtifactObjectStorePort
 from agent_core.ports.extensions import ExtensionStore
 from agent_tools.cloud_skills import prepare_cloud_skill_catalog
+from agent_tools.skill_publications import SkillPublicationService
 from agent_tools.skills_catalog import SkillCatalog
 
 from zebra_agent_worker.extension_recovery import RecoveredTurnExtension
@@ -15,6 +16,7 @@ from zebra_agent_worker.extension_recovery import RecoveredTurnExtension
 class WorkerSkillCatalogSource:
     store: ExtensionStore
     objects: ArtifactObjectStorePort
+    publications: SkillPublicationService | None = None
 
 
 def require_recovery[T](

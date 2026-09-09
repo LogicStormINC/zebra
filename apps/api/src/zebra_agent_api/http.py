@@ -196,6 +196,7 @@ def create_http_app(
             store=active_extension_store,
             deployment=active_settings.deployment,
             manage_enabled=active_settings.cloud_extensions_manage_enabled,
+            publications=skill_publication_service,
         )
         if extension_response is not None:
             return extension_response

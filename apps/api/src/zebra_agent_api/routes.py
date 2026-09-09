@@ -14,6 +14,7 @@ from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.client_runtime_routes import handle_client_runtime_route
+from zebra_agent_api.extension_task_selection import validate_task_skill_selection
 from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
 from zebra_agent_api.memory_routes import handle_memory_route
 from zebra_agent_api.platform_client_routes import handle_platform_client_route
@@ -51,6 +52,12 @@ class RouteAdapter:
         tenant_response = tenant_scope_response(self.app, request)
         if tenant_response is not None:
             return tenant_response
+        if method == "POST" and request.path in {"/sessions", "/tasks"}:
+            skill_error = validate_task_skill_selection(
+                request.body or {}, request.verified_host_grant, self.extension_turn_admission,
+            )
+            if skill_error is not None:
+                return skill_error
         agui_response = handle_agui_command(
             self.app, request, extension_admission=self.extension_turn_admission,
         )

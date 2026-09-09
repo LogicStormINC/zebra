@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from uuid import NAMESPACE_URL, uuid5
 
 from zebra_host_grant_broker.config import BrokerSettings
-from zebra_host_grant_broker.trench_session import TrenchViewer
+from zebra_host_grant_broker.trench_session import TrenchViewer, parse_agent_scopes
 
 
 class WorkloadAuthError(ValueError):
@@ -63,6 +63,12 @@ def verify_workload(
     principal = body.get("principal")
     if not isinstance(principal, dict):
         raise WorkloadAuthError("workload_principal_invalid")
+    try:
+        allowed_scopes = (
+            parse_agent_scopes(principal["agentScopes"]) if "agentScopes" in principal else None
+        )
+    except ValueError as exc:
+        raise WorkloadAuthError("workload_agent_scopes_invalid") from exc
     user_id = _text(principal.get("userId"), "workload_principal_invalid")
     workspace_id = _text(principal.get("workspaceId"), "workload_workspace_invalid")
     raw_sources = principal.get("activeSourceIds", [])
@@ -73,7 +79,12 @@ def verify_workload(
         identity=normalized_identity,
         nonce=normalized_nonce,
         issued_at=issued_at,
-        viewer=TrenchViewer(user_id=user_id, workspace_id=workspace_id, active_source_ids=sources),
+        viewer=TrenchViewer(
+            user_id=user_id,
+            workspace_id=workspace_id,
+            active_source_ids=sources,
+            allowed_scopes=allowed_scopes,
+        ),
     )
 
 

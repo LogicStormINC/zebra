@@ -49,6 +49,7 @@ def create_queued_session(
             network_profile=str(parsed["network_profile"]),
             network_allowlist=tuple(parsed["network_allowlist"]),
             mcp_allowlist=tuple(parsed["mcp_allowlist"]),
+            skill_components=tuple(parsed["skill_components"]),
             history_session_ids=parsed["history_session_ids"],
             max_model_calls=parsed["max_model_calls"],
             max_tool_calls=parsed["max_tool_calls"],
@@ -78,6 +79,7 @@ def create_queued_session(
             "network_profile": str(parsed["network_profile"]),
             "network_allowlist": parsed["network_allowlist"],
             "mcp_allowlist": parsed["mcp_allowlist"],
+            "skill_components": parsed["skill_components"],
             "mcp_resource_ids": parsed["mcp_resource_ids"],
             **(
                 {"history_session_ids": list(parsed["history_session_ids"])}

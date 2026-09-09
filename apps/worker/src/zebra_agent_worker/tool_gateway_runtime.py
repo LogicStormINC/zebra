@@ -22,6 +22,13 @@ from agent_integrations.host_tools import (
 from agent_runtime import LocalToolGateway
 from agent_runtime.cloud_mcp_transport import CloudMcpTransport
 from agent_storage import SQLiteSkillsStateStore
+from agent_tools.extension_management import (
+    READ_NAMES,
+    WRITE_NAMES,
+    ExtensionManagementTools,
+    management_contracts,
+)
+from agent_tools.registry import ToolRegistry
 from agent_tools.skills_catalog import SkillCatalog
 from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings
@@ -43,10 +50,18 @@ class WorkerToolGateway:
     runtime: RuntimePort | None = None
     runtime_handle: RuntimeHandle | None = None
     client: ClientToolGateway | None = None
+    management: ExtensionManagementTools | None = None
+    management_names: frozenset[str] = frozenset()
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
         tools = self.local.model_tools + _host_model_tools(self.host_manifest)
+        if self.management is not None:
+            registry = ToolRegistry()
+            for contract in management_contracts():
+                if contract.name in self.management_names:
+                    registry.register(contract, self.management.execute)
+            tools += registry.model_tools()
         client_gateway = self.client
         if client_gateway is not None:
             tools = tools + tuple(client_gateway.model_tools)
@@ -85,14 +100,15 @@ class WorkerToolGateway:
         )
         from agent_tools.effect_guard_support import READ_ONLY_TOOLS
 
-        return READ_ONLY_TOOLS | host_read
+        return READ_ONLY_TOOLS | host_read | (self.management_names & READ_NAMES)
 
     @property
     def authorized_write_tools(self) -> frozenset[str]:
+        management_write = self.management_names & WRITE_NAMES
         if self.host_manifest is None or self.host_context is None:
-            return frozenset()
+            return management_write
         granted_scopes = frozenset(self.host_context.scopes)
-        return frozenset(
+        return management_write | frozenset(
             tool.name
             for tool in self.host_manifest.tools
             if tool.risk is ToolRisk.WRITE and frozenset(tool.scopes) <= granted_scopes
@@ -117,6 +133,8 @@ class WorkerToolGateway:
         return self._execute(toolCall)
 
     def _execute(self, tool_call: ToolCall) -> ToolResult:
+        if self.management is not None and tool_call.name in self.management_names:
+            return self.management.execute(tool_call)
         if self.client is not None and tool_call.name in {
             tool.name for tool in self.client.model_tools
         }:
