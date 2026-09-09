@@ -34,6 +34,7 @@ from agent_security import (
     parse_network_profile,
     resolve_effective_network_profile,
 )
+from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import (
     ControlPlaneStores,
     list_confirmed_repo_memories,
@@ -72,7 +73,6 @@ from zebra_agent_api.session_attachment_persistence import persist_initial_attac
 from zebra_agent_api.session_binding import (
     _compose_admission,
     _post_admission_idempotency,
-    freeze_binding_for_response,
 )
 from zebra_agent_api.session_control import ApiSessionControlMixin
 from zebra_agent_api.session_identity_read import _parse_session_id as parse_session_id
@@ -140,6 +140,7 @@ class ZebraAgentApi(
         *,
         idempotency_key: str | None = None,
         host_context: HostContextEnvelope | None = None,
+        verified_host_grant: VerifiedHostGrant | None = None,
     ) -> ApiResponse:
         from zebra_agent_api.idempotency import scoped_idempotency_key
 
@@ -222,6 +223,7 @@ class ZebraAgentApi(
                 parsed,
                 host_context=host_context,
                 definition_snapshot=definition_snapshot,
+                verified_host_grant=verified_host_grant,
                 **admission_kwargs,
             )
 
@@ -232,16 +234,6 @@ class ZebraAgentApi(
             if parsed["execute"]
             else _queued()
         )
-        if response.status_code == 201 and host_context is not None:
-            freeze_binding_for_response(
-                response,
-                host_context,
-                definition_snapshot,
-                deployment=self.settings.deployment,
-                storage_authority=self.settings.storage_authority,
-                database_url=self.settings.database_url,
-                stores=self.stores,
-            )
         result = _post_admission_idempotency(
             self.settings,
             self.stores,

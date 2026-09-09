@@ -104,9 +104,9 @@ def test_tenant_scoped_revalidation_reuses_the_same_namespace() -> None:
     )
     assert persisted is True
     assert recorder.events[-1][0] is EventType.EXECUTION_AUTHORITY_REVALIDATED
-    assert recorder.events[-1][1]["prior_snapshot_digest"] == recorder.events[0][1][
-        "snapshot_digest"
-    ]
+    assert (
+        recorder.events[-1][1]["prior_snapshot_digest"] == recorder.events[0][1]["snapshot_digest"]
+    )
 
 
 def test_foreign_issuer_scope_fails_closed() -> None:
@@ -153,9 +153,7 @@ def test_cloud_composition_builds_the_tenant_scope_provider() -> None:
         deployment_namespace="deployment-a",
         memory_cursor_signing_key=b"unit-signing-key-32-bytes-XXXXXXXX",
         artifact_objects=cast(ArtifactObjectStorePort, _MemoryObjects()),
-        history_scope=OpaqueAuthorityScope(
-            authority_issuer=ISSUER, namespace_id="history"
-        ),
+        history_scope=OpaqueAuthorityScope(authority_issuer=ISSUER, namespace_id="history"),
         continuation_scope=OpaqueAuthorityScope(
             authority_issuer=ISSUER, namespace_id="continuation"
         ),
@@ -163,6 +161,10 @@ def test_cloud_composition_builds_the_tenant_scope_provider() -> None:
     composition = compose_cloud_worker(cloud)
     assert composition.authority_resolver is not None
     assert composition.authority_scope_provider is not None
+    assert composition.extension_snapshots is not None
+    assert composition.extension_snapshots.deployment_namespace == "deployment-a"
+    assert composition.extensions is not None
+    assert composition.skill_objects is cloud.artifact_objects
 
     tenant_session = Session(
         session_id=new_session_id(),

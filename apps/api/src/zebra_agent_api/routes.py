@@ -8,11 +8,13 @@ from uuid import UUID
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
+from agent_security.host_grant import VerifiedHostGrant
 
 from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.agent_definitions import handle_agent_definition_route
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.client_runtime_routes import handle_client_runtime_route
+from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
 from zebra_agent_api.memory_routes import handle_memory_route
 from zebra_agent_api.platform_client_routes import handle_platform_client_route
 from zebra_agent_api.responses import ApiResponse, bad_request
@@ -30,11 +32,13 @@ class RouteRequest:
     headers: dict[str, str] | None = None
     query: dict[str, str] | None = None
     host_context: HostContextEnvelope | None = None
+    verified_host_grant: VerifiedHostGrant | None = None
 
 
 @dataclass(frozen=True)
 class RouteAdapter:
     app: ZebraAgentApi
+    extension_turn_admission: CloudExtensionTurnAdmission | None = None
 
     def handle(self, request: RouteRequest) -> ApiResponse:
         method = request.method.upper()
@@ -47,12 +51,15 @@ class RouteAdapter:
         tenant_response = tenant_scope_response(self.app, request)
         if tenant_response is not None:
             return tenant_response
-        agui_response = handle_agui_command(self.app, request)
+        agui_response = handle_agui_command(
+            self.app, request, extension_admission=self.extension_turn_admission,
+        )
         if agui_response is not None:
             return agui_response
         if method == "GET" and request.path == "/sessions":
             return self.app.list_sessions(
-                request.query or {}, host_context=request.host_context,
+                request.query or {},
+                host_context=request.host_context,
             )
         if method == "POST" and request.path == "/workspaces":
             return self.app.create_workspace(request.body or {})
@@ -62,8 +69,10 @@ class RouteAdapter:
             return self.app.get_workspace(request.path.removeprefix("/workspaces/"))
         if method == "POST" and request.path == "/sessions":
             return self.app.create_session(
-                request.body or {}, idempotency_key=_idempotency_key(request),
+                request.body or {},
+                idempotency_key=_idempotency_key(request),
                 host_context=request.host_context,
+                verified_host_grant=request.verified_host_grant,
             )
         task_response = handle_task_route(self.app, request)
         if task_response is not None:
@@ -123,7 +132,11 @@ class RouteAdapter:
                     if isinstance(command, ApiResponse):
                         return command
                     return self.app.submit_command(
-                        parts[0], command, idempotency_key=_idempotency_key(request)
+                        parts[0],
+                        command,
+                        idempotency_key=_idempotency_key(request),
+                        extension_admission=self.extension_turn_admission,
+                        verified_host_grant=request.verified_host_grant,
                     )
                 return self.app.append_session_message(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "commands":
@@ -131,6 +144,8 @@ class RouteAdapter:
                     parts[0],
                     request.body or {},
                     idempotency_key=_idempotency_key(request),
+                    extension_admission=self.extension_turn_admission,
+                    verified_host_grant=request.verified_host_grant,
                 )
             if len(parts) == 2 and parts[1] in {"stop", "cancel", "suspend"}:
                 if self.app.settings.deployment == "cloud":
@@ -173,59 +188,39 @@ class RouteAdapter:
                     parts[0], request.body or {}
                 )
             if len(parts) == 2 and parts[1] == "memory-overdue-flags":
-                return self.app.get_memory_follow_up_overdue_flags(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_follow_up_overdue_flags(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-age-buckets":
                 return self.app.get_memory_overdue_age_buckets(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-types":
                 return self.app.get_memory_overdue_type_rollups(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-visibility":
-                return self.app.get_memory_overdue_visibility_rollups(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_overdue_visibility_rollups(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-trends":
                 return self.app.get_memory_overdue_trend_signals(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-interventions":
-                return self.app.get_memory_overdue_intervention_hints(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_overdue_intervention_hints(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-escalation-lanes":
-                return self.app.get_memory_overdue_escalation_lanes(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_overdue_escalation_lanes(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-recovery-paths":
-                return self.app.get_memory_overdue_recovery_paths(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_overdue_recovery_paths(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-resolution-checkpoints":
                 return self.app.get_memory_overdue_resolution_checkpoints(
                     parts[0], request.body or {}
                 )
             if len(parts) == 2 and parts[1] == "memory-overdue-resolution-outcomes":
-                return self.app.get_memory_overdue_resolution_outcomes(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_overdue_resolution_outcomes(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-closure-decisions":
-                return self.app.get_memory_overdue_closure_decisions(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_overdue_closure_decisions(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-archive-recommendations":
                 return self.app.get_memory_overdue_archive_recommendations(
                     parts[0], request.body or {}
                 )
             if len(parts) == 2 and parts[1] == "memory-overdue-retention-guidance":
-                return self.app.get_memory_overdue_retention_guidance(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_overdue_retention_guidance(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-retention-windows":
-                return self.app.get_memory_overdue_retention_windows(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_overdue_retention_windows(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-retention-breaches":
-                return self.app.get_memory_overdue_retention_breaches(
-                    parts[0], request.body or {}
-                )
+                return self.app.get_memory_overdue_retention_breaches(parts[0], request.body or {})
             if len(parts) == 2 and parts[1] == "memory-overdue-retention-breach-aging":
                 return self.app.get_memory_overdue_retention_breach_aging(
                     parts[0], request.body or {}
@@ -258,8 +253,7 @@ class RouteAdapter:
                 )
             if (
                 len(parts) == 2
-                and parts[1]
-                == "memory-overdue-retention-breach-follow-through-completion-states"
+                and parts[1] == "memory-overdue-retention-breach-follow-through-completion-states"
             ):
                 return (
                     self.app.get_memory_overdue_retention_breach_follow_through_completion_states(
@@ -268,8 +262,7 @@ class RouteAdapter:
                 )
             if (
                 len(parts) == 2
-                and parts[1]
-                == "memory-overdue-retention-breach-follow-through-verification-states"
+                and parts[1] == "memory-overdue-retention-breach-follow-through-verification-states"
             ):
                 return (
                     self.app.get_memory_overdue_retention_breach_follow_through_verification_states(

@@ -145,6 +145,8 @@ class FencedEffectToolGateway:
                 raise EffectDispatchStateError("scheduled Effect was not claimable")
             claimed_call = self._read_tool_call(claim.dispatch.payload_artifact_ref)
             try:
+                # Payload retrieval can outlive ownership; do not dispatch under a stale lease.
+                self._ownership_check()
                 result = self._gateway.execute(claimed_call)
             except BaseException as error:
                 try:

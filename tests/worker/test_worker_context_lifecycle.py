@@ -51,6 +51,17 @@ def test_context_window_overflow_is_a_recoverable_suspension() -> None:
     ]
 
 
+def test_unknown_error_detail_is_not_persisted() -> None:
+    error = RuntimeError("postgresql://user:SECRET@database/private")
+
+    metadata = error_metadata(error, None, None)
+
+    assert metadata["error_type"] == "RuntimeError"
+    assert metadata["error_message"] == "RuntimeError (details withheld)"
+    assert "SECRET" not in str(metadata)
+    assert str(error) == "postgresql://user:SECRET@database/private"
+
+
 def test_compaction_capsule_event_and_active_projection_commit_atomically(
     tmp_path: Path,
 ) -> None:

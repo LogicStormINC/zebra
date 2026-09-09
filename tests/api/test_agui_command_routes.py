@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import uuid4
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
@@ -20,6 +21,9 @@ from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.app import create_app
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
+
+from tests.agent_security.test_extension_authority import _verified
+from tests.api.test_extension_turn_admission import _admission
 
 
 def test_run_command_validates_agui_input_and_appends_only_intent(tmp_path: Path) -> None:
@@ -182,6 +186,9 @@ def test_rollover_command_renews_stable_task_binding(monkeypatch) -> None:
         status=SessionStatus.READY,
     )
     renewed: list[str] = []
+    admission, _, _ = _admission()
+    verified = _verified(scopes=["agent.run"])
+    submit = Mock(return_value=ApiResponse(202, {"status": "accepted"}))
 
     def renew(_app, binding_id: str, _host_context):
         renewed.append(binding_id)
@@ -196,9 +203,7 @@ def test_rollover_command_renews_stable_task_binding(monkeypatch) -> None:
             tasks=SimpleNamespace(get_task=lambda _task_id: task),
             sessions=SimpleNamespace(get_session=lambda _session_id: object()),
         ),
-        submit_command=lambda _session_id, _payload, idempotency_key: ApiResponse(
-            202, {"status": "accepted"}
-        ),
+        submit_command=submit,
     )
 
     response = handle_agui_command(
@@ -215,11 +220,15 @@ def test_rollover_command_renews_stable_task_binding(monkeypatch) -> None:
                 "input": _run_input(task_id, "rollover-1"),
             },
             host_context=HostContextEnvelope.model_construct(),
+            verified_host_grant=verified,
         ),
+        extension_admission=admission,
     )
 
     assert response is not None and response.status_code == 202
     assert renewed == [str(task_id)]
+    assert submit.call_args.kwargs["extension_admission"] is admission
+    assert submit.call_args.kwargs["verified_host_grant"] is verified
 
 
 def _adapter(database_path: Path) -> RouteAdapter:

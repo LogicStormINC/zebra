@@ -8,6 +8,7 @@ from pathlib import Path
 
 from zebra_agent_config import mcp_settings
 from zebra_agent_config.command_delivery import CommandDeliverySettings, load_command_delivery
+from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_credentials
 from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
 
 MAX_MCP_SERVERS = mcp_settings.MAX_MCP_SERVERS
@@ -103,6 +104,13 @@ class ZebraAgentSettings:
     web_search_endpoint: str | None = None
     web_pipeline_v2: bool = False
     client_integration_enabled: bool = False
+    cloud_extensions_read_enabled: bool = False
+    cloud_extensions_manage_enabled: bool = False
+    mcp_credentials: McpCredentialSettings = field(default_factory=McpCredentialSettings)
+    cloud_extension_turn_admission_enabled: bool = False
+    cloud_extension_worker_enabled: bool = False
+    cloud_skill_worker_enabled: bool = False
+    cloud_skills_publish_enabled: bool = False
     platform_operator_token: str | None = None
     skill_roots: tuple[str, ...] = ()
     skill_roots_system: tuple[str, ...] = ()
@@ -172,9 +180,7 @@ def load_settings(
         default=".zebra-agent/sessions.sqlite",
     )
     runtime = _load_runtime_settings(values, profile=profile)
-    development_unrestricted = _read_bool(
-        values, "ZEBRA_DEVELOPMENT_UNRESTRICTED", default=False
-    )
+    development_unrestricted = _read_bool(values, "ZEBRA_DEVELOPMENT_UNRESTRICTED", default=False)
     _validate_profile_contract(
         profile=profile,
         database_url=database_url,
@@ -228,9 +234,26 @@ def load_settings(
         client_integration_enabled=_read_bool(
             values, "ZEBRA_CLIENT_INTEGRATION_ENABLED", default=False
         ),
-        platform_operator_token=_read_optional(
-            values, "ZEBRA_PLATFORM_OPERATOR_TOKEN"
+        cloud_extensions_read_enabled=_read_bool(
+            values, "ZEBRA_CLOUD_EXTENSIONS_READ_ENABLED", default=False
         ),
+        cloud_extensions_manage_enabled=_read_bool(
+            values, "ZEBRA_CLOUD_EXTENSIONS_MANAGE_ENABLED", default=False
+        ),
+        mcp_credentials=load_mcp_credentials(values),
+        cloud_extension_turn_admission_enabled=_read_bool(
+            values, "ZEBRA_CLOUD_EXTENSION_TURN_ADMISSION_ENABLED", default=False
+        ),
+        cloud_extension_worker_enabled=_read_bool(
+            values, "ZEBRA_CLOUD_EXTENSION_WORKER_ENABLED", default=False
+        ),
+        cloud_skill_worker_enabled=_read_bool(
+            values, "ZEBRA_CLOUD_SKILL_WORKER_ENABLED", default=False
+        ),
+        cloud_skills_publish_enabled=_read_bool(
+            values, "ZEBRA_CLOUD_SKILLS_PUBLISH_ENABLED", default=False
+        ),
+        platform_operator_token=_read_optional(values, "ZEBRA_PLATFORM_OPERATOR_TOKEN"),
         skill_roots=_read_paths(values, "ZEBRA_SKILL_ROOTS"),
         skill_roots_system=_read_paths(values, "ZEBRA_SKILL_ROOTS_SYSTEM"),
         skill_roots_admin=_read_paths(values, "ZEBRA_SKILL_ROOTS_ADMIN"),
@@ -241,9 +264,7 @@ def load_settings(
             default=".zebra-agent/skills-state.sqlite",
         ),
         mcp_servers=_read_mcp_servers(values),
-        mcp_elicitation_enabled=_read_bool(
-            values, "ZEBRA_MCP_ELICITATION", default=True
-        ),
+        mcp_elicitation_enabled=_read_bool(values, "ZEBRA_MCP_ELICITATION", default=True),
         host_tool_endpoint=_read_optional(values, "ZEBRA_HOST_TOOL_ENDPOINT"),
         host_tool_workload_identity=_read_optional(values, "ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY"),
         host_tool_shared_secret=_read_optional(values, "ZEBRA_HOST_TOOL_SHARED_SECRET"),
@@ -284,9 +305,7 @@ def _load_runtime_settings(
         and runtime_class == "gvisor"
         and not require_workspace_quota
     ):
-        raise ValueError(
-            f"ZEBRA_PROFILE={profile} requires a storage-enforced workspace quota"
-        )
+        raise ValueError(f"ZEBRA_PROFILE={profile} requires a storage-enforced workspace quota")
     return RuntimeSettings(
         runtime_class=runtime_class,
         engine=engine,
@@ -342,9 +361,7 @@ def _validate_profile_contract(
         )
     if profile not in {"cloud", "production"}:
         return
-    if runtime.runtime_class != "gvisor" and not (
-        profile == "cloud" and development_unrestricted
-    ):
+    if runtime.runtime_class != "gvisor" and not (profile == "cloud" and development_unrestricted):
         raise ValueError(f"ZEBRA_PROFILE={profile} requires ZEBRA_RUNTIME_CLASS=gvisor")
     if not database_url.startswith(("postgresql://", "postgres://")):
         raise ValueError(f"ZEBRA_PROFILE={profile} requires a PostgreSQL DSN")

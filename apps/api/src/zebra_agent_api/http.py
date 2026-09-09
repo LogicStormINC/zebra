@@ -6,12 +6,16 @@ from dataclasses import dataclass
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Protocol
-from urllib.parse import urlsplit
 
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.ports.extensions import ExtensionStore
 from agent_integrations import GitHubPullRequestTransport
+from agent_runtime.mcp_catalog_refresh import McpCatalogRefresh
 from agent_security import CredentialBroker, HostGrantSecurityError
+from agent_security.host_grant import VerifiedHostGrant
+from agent_security.mcp_credential_management import McpCredentialManagement
 from agent_storage import CloudCompositionSettings, ControlPlaneStores, PostgresControlPlaneStores
+from agent_tools.skill_publications import SkillPublicationService
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -24,10 +28,24 @@ from zebra_agent_api.ag_ui_stream import (
 )
 from zebra_agent_api.app import create_app
 from zebra_agent_api.artifact_download import artifact_download_response
+from zebra_agent_api.extension_composition import (
+    compose_http_extensions,
+    compose_http_turn_admission,
+    resolve_publication_cloud,
+)
+from zebra_agent_api.extension_management_routes import extension_management_response
+from zebra_agent_api.extension_reads import (
+    extension_error,
+    extension_read_response,
+    is_extension_path,
+)
+from zebra_agent_api.http_origins import _normalize_exact_origin as _normalize_exact_origin
+from zebra_agent_api.request_cursor import after_sequence
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 from zebra_agent_api.session_identity_read import _parse_session_id
 from zebra_agent_api.session_streaming import tail_session_events, tail_task_events
+from zebra_agent_api.skill_publications import skill_publication_response
 from zebra_agent_api.task_api import parse_task_id
 
 HTTP_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
@@ -76,9 +94,22 @@ def create_http_app(
     github_transport: GitHubPullRequestTransport | None = None,
     host_grant_authorizer: HostGrantRequestAuthorizer | None = None,
     host_grant_origins: tuple[str, ...] | None = None,
+    extension_store: ExtensionStore | None = None,
+    skill_publication_service: SkillPublicationService | None = None,
+    mcp_credential_management: McpCredentialManagement | None = None,
+    mcp_catalog_refresh: McpCatalogRefresh | None = None,
 ) -> FastAPI:
     active_settings = settings or load_settings()
     active_database_path = Path(database_path or active_settings.database_url)
+    cloud_composition = resolve_publication_cloud(
+        active_settings,
+        stores,
+        cloud_composition,
+        extension_store,
+        skill_publication_service,
+        mcp_credential_management,
+        mcp_catalog_refresh,
+    )
     api = create_app(
         active_database_path,
         settings=active_settings,
@@ -90,6 +121,20 @@ def create_http_app(
         credential_env=credential_env,
         github_transport=github_transport,
     )
+    (
+        active_extension_store,
+        skill_publication_service,
+        mcp_credential_management,
+        mcp_catalog_refresh,
+    ) = compose_http_extensions(
+        active_settings,
+        api,
+        service=skill_publication_service,
+        cloud_composition=cloud_composition,
+        extension_store=extension_store,
+        credentials=mcp_credential_management,
+        refresh=mcp_catalog_refresh,
+    )
     active_host_grant_authorizer = host_grant_authorizer
     if active_host_grant_authorizer is None and active_settings.deployment != "local":
         active_host_grant_authorizer = _compose_production_host_grant_authorizer(
@@ -97,7 +142,10 @@ def create_http_app(
             api.stores,
             cloud_composition=cloud_composition,
         )
-    adapter = RouteAdapter(api)
+    turn_admission = compose_http_turn_admission(
+        active_settings, api, active_extension_store, cloud_composition=cloud_composition
+    )
+    adapter = RouteAdapter(api, turn_admission)
     exact_host_origins = _resolve_host_origins(
         active_host_grant_authorizer,
         host_grant_origins,
@@ -107,13 +155,13 @@ def create_http_app(
         CORSMiddleware,
         allow_origins=["*"] if active_settings.deployment == "local" else exact_host_origins,
         allow_methods=HTTP_METHODS,
-        allow_headers=HTTP_ALLOWED_HEADERS,
+        allow_headers=[*HTTP_ALLOWED_HEADERS, "If-Match", "Idempotency-Key"],
+        expose_headers=["ETag"],
         allow_credentials=False,
     )
 
     async def handle(request: Request, full_path: str = "") -> Response:
-        del full_path
-        if request.method.upper() == "OPTIONS":
+        if request.method.upper() == "OPTIONS" and not is_extension_path(request.url.path):
             return Response(status_code=200)
         auth_error = _authorize_request(
             request,
@@ -122,7 +170,35 @@ def create_http_app(
             host_grant_origins=exact_host_origins,
         )
         if auth_error is not None:
+            if is_extension_path(request.url.path):
+                return extension_error(auth_error.status_code)
             return auth_error
+        credential_response = await extension_management_response(
+            request,
+            service=mcp_credential_management,
+            refresh=mcp_catalog_refresh,
+            deployment=active_settings.deployment,
+            manage_enabled=active_settings.cloud_extensions_manage_enabled,
+        )
+        if credential_response is not None:
+            return credential_response
+        publication_response = await skill_publication_response(
+            request,
+            service=skill_publication_service,
+            deployment=active_settings.deployment,
+            read_enabled=active_settings.cloud_extensions_read_enabled,
+            manage_enabled=active_settings.cloud_extensions_manage_enabled,
+        )
+        if publication_response is not None:
+            return publication_response
+        extension_response = await extension_read_response(
+            request,
+            store=active_extension_store,
+            deployment=active_settings.deployment,
+            manage_enabled=active_settings.cloud_extensions_manage_enabled,
+        )
+        if extension_response is not None:
+            return extension_response
         download_response = await artifact_download_response(request, adapter)
         if download_response is not None:
             return download_response
@@ -169,11 +245,12 @@ def create_http_app(
             headers=dict(request.headers),
             query=dict(request.query_params),
             host_context=getattr(request.state, "host_context", None),
+            verified_host_grant=getattr(request.state, "verified_host_grant", None),
         )
         response = await asyncio.to_thread(adapter.handle, route_request)
         if _is_stream_request(request) and response.status_code == 200:
             stream_id = _stream_resource_id(request.url.path)
-            after_sequence, cursor_error = _after_sequence(request)
+            after_sequence_value, cursor_error = after_sequence(request)
             if cursor_error is not None:
                 return cursor_error
             if request.url.path.startswith("/tasks/"):
@@ -188,7 +265,7 @@ def create_http_app(
                     stores=api.stores,
                     task_id=task_key,
                     request=request,
-                    after_sequence=after_sequence,
+                    after_sequence=after_sequence_value,
                 )
             else:
                 session_key = _parse_session_id(stream_id)
@@ -204,7 +281,7 @@ def create_http_app(
                     deployment_namespace=_deployment_namespace(api),
                     session_id=session_key,
                     request=request,
-                    after_sequence=after_sequence,
+                    after_sequence=after_sequence_value,
                 )
             return StreamingResponse(
                 stream,
@@ -217,6 +294,15 @@ def create_http_app(
         return JSONResponse(status_code=response.status_code, content=response.body)
 
     app.add_api_route("/", handle, methods=HTTP_METHODS, response_model=None)
+    app.add_api_route(
+        "/v1/extensions", handle, methods=["HEAD", "TRACE", "CONNECT"], response_model=None
+    )
+    app.add_api_route(
+        "/v1/extensions/{full_path:path}",
+        handle,
+        methods=["HEAD", "TRACE", "CONNECT"],
+        response_model=None,
+    )
     app.add_api_route("/{full_path:path}", handle, methods=HTTP_METHODS, response_model=None)
     return app
 
@@ -296,25 +382,6 @@ def _deployment_namespace(api: object) -> str | None:
     return "local" if getattr(settings, "deployment", None) == "local" else None
 
 
-def _after_sequence(request: Request) -> tuple[int, JSONResponse | None]:
-    raw = request.query_params.get("after_sequence")
-    if raw is None:
-        return -1, None
-    try:
-        value = int(raw)
-    except ValueError:
-        value = -2
-    if value < -1:
-        return -1, JSONResponse(
-            status_code=400,
-            content={
-                "status": "invalid_request",
-                "reason": "after_sequence must be an integer greater than or equal to -1",
-            },
-        )
-    return value, None
-
-
 def _authorize_request(
     request: Request,
     settings: ZebraAgentSettings,
@@ -322,7 +389,7 @@ def _authorize_request(
     host_grant_authorizer: HostGrantRequestAuthorizer | None,
     host_grant_origins: tuple[str, ...],
 ) -> JSONResponse | None:
-    if request.method.upper() == "OPTIONS":
+    if request.method.upper() == "OPTIONS" and not is_extension_path(request.url.path):
         return None
     if request.url.path == "/health":
         return None
@@ -383,6 +450,8 @@ def _authorize_host_request(
         if context is not None and not isinstance(context, HostContextEnvelope):
             return _forbidden("host_grant_context_invalid")
         request.state.host_context = context
+        if isinstance(verified, VerifiedHostGrant):
+            request.state.verified_host_grant = verified
     except (HostGrantSecurityError, ValueError):
         return _forbidden("host_grant_rejected")
     return None
@@ -403,44 +472,9 @@ def _resolve_host_origins(
     return normalized
 
 
-def _normalize_exact_origin(value: str) -> str:
-    normalized = value.strip()
-    parsed = urlsplit(normalized)
-    if (
-        parsed.scheme != "https"
-        or not parsed.netloc
-        or parsed.path not in {"", "/"}
-        or parsed.query
-        or parsed.fragment
-        or parsed.username is not None
-        or parsed.password is not None
-    ):
-        raise ValueError("Host Grant origins must be exact HTTPS origins")
-    host = parsed.hostname
-    if host is None:
-        raise ValueError("Host Grant origin must contain a host")
-    try:
-        port = parsed.port
-    except ValueError as exc:
-        raise ValueError("Host Grant origin has an invalid port") from exc
-    return f"https://{host.lower()}{f':{port}' if port is not None else ''}"
-
-
 def _unauthorized(*, reason: str = "missing_or_invalid_bearer_token") -> JSONResponse:
-    return JSONResponse(
-        status_code=401,
-        content={
-            "status": "unauthorized",
-            "reason": reason,
-        },
-    )
+    return JSONResponse(status_code=401, content={"status": "unauthorized", "reason": reason})
 
 
 def _forbidden(reason: str) -> JSONResponse:
-    return JSONResponse(
-        status_code=403,
-        content={
-            "status": "forbidden",
-            "reason": reason,
-        },
-    )
+    return JSONResponse(status_code=403, content={"status": "forbidden", "reason": reason})

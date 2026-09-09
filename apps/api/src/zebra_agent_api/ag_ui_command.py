@@ -7,11 +7,12 @@ from uuid import UUID
 
 from ag_ui.core import RunAgentInput
 from agent_core.contracts import SessionCommandKind
-from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import TaskId
+from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, ValidationError, field_validator
 
+from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
 from zebra_agent_api.responses import ApiResponse
 
 _MAX_IDENTITY_TEXT = 256
@@ -30,6 +31,8 @@ class _AgUiCommandApp(Protocol):
         payload: dict[str, object],
         *,
         idempotency_key: str | None,
+        extension_admission: CloudExtensionTurnAdmission | None = None,
+        verified_host_grant: VerifiedHostGrant | None = None,
     ) -> ApiResponse: ...
 
 
@@ -67,7 +70,12 @@ class AgUiCommandEnvelope(BaseModel):
         return normalized
 
 
-def handle_agui_command(app: _AgUiCommandApp, request: object) -> ApiResponse | None:
+def handle_agui_command(
+    app: _AgUiCommandApp,
+    request: object,
+    *,
+    extension_admission: CloudExtensionTurnAdmission | None = None,
+) -> ApiResponse | None:
     """Handle the AG-UI command paths without importing Worker execution code."""
 
     method = getattr(request, "method", "").upper()
@@ -108,13 +116,11 @@ def handle_agui_command(app: _AgUiCommandApp, request: object) -> ApiResponse | 
         return _problem(400, "missing_idempotency_key", "Idempotency-Key header is required", path)
     from zebra_agent_api.session_binding import renew_host_binding_for_command
 
-    host_context = getattr(request, "host_context", None)
-    if host_context is not None and not isinstance(host_context, HostContextEnvelope):
-        return _problem(403, "host_binding_renewal_rejected", "Host context is invalid", path)
+    verified_host_grant = getattr(request, "verified_host_grant", None)
     renewal_error = renew_host_binding_for_command(
         app,
         str(task.task_id),
-        host_context,
+        verified_host_grant,
     )
     if renewal_error is not None:
         return _problem_from_response(renewal_error, path)
@@ -126,6 +132,8 @@ def handle_agui_command(app: _AgUiCommandApp, request: object) -> ApiResponse | 
             "payload": command_payload,
         },
         idempotency_key=idempotency_key,
+        extension_admission=extension_admission,
+        verified_host_grant=verified_host_grant,
     )
     if response.status_code in {200, 202}:
         return _success(response, envelope)

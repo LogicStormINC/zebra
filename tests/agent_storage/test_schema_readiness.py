@@ -26,12 +26,13 @@ def test_legacy_handoff_requires_matching_parent(parent_namespace):
     from agent_storage.postgres.command_wakeup import _validated_host_context
     from zebra_agent_api.session_binding import _build_binding_snapshot
 
-    from tests.api.test_session_binding_renewal import _context
+    from tests.api.test_session_binding_renewal import _context, _verified
 
     context = _context(grant_id="test")
     binding = _build_binding_snapshot(
         "11111111-1111-1111-1111-111111111111",
         host_context=context,
+        verified_host_grant=_verified(context),
         definition_snapshot_digest="a" * 64,
     )
     connection = MagicMock()

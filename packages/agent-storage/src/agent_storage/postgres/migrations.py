@@ -11,12 +11,16 @@ from agent_storage.postgres.client_security_migration import CLIENT_SECURITY_MIG
 from agent_storage.postgres.client_session_migration import CLIENT_SESSION_MIGRATION
 from agent_storage.postgres.control_plane_migration import CONTROL_PLANE_MIGRATION
 from agent_storage.postgres.delivery_transaction_migration import DELIVERY_TRANSACTION_MIGRATION
+from agent_storage.postgres.extension_snapshots_migration import EXTENSION_SNAPSHOTS_MIGRATION
+from agent_storage.postgres.extensions_migration import EXTENSIONS_MIGRATION
 from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
 from agent_storage.postgres.governed_memory_scope_migration import GOVERNED_MEMORY_SCOPE_MIGRATION
 from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
 from agent_storage.postgres.host_auth_migration import HOST_AUTH_MIGRATION
 from agent_storage.postgres.host_connector_migration import HOST_CONNECTOR_MIGRATION
 from agent_storage.postgres.host_manifest_freeze_migration import HOST_MANIFEST_FREEZE_MIGRATION
+from agent_storage.postgres.mcp_catalog_migration import MCP_CATALOG_MIGRATION
+from agent_storage.postgres.mcp_credentials_migration import MCP_CREDENTIALS_MIGRATION
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
 from agent_storage.postgres.migration_extensions import RELIABILITY_MIGRATIONS
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
@@ -26,6 +30,8 @@ from agent_storage.postgres.orchestration_migration import ORCHESTRATION_MIGRATI
 from agent_storage.postgres.provider_continuation_migration import PROVIDER_CONTINUATION_MIGRATION
 from agent_storage.postgres.research_profile_migration import RESEARCH_TOOL_PROFILE_MIGRATION
 from agent_storage.postgres.session_tenant_migration import SESSION_TENANT_NAMESPACE_MIGRATION
+from agent_storage.postgres.skill_publications_migration import SKILL_PUBLICATIONS_MIGRATION
+from agent_storage.postgres.skill_uploads_migration import SKILL_UPLOADS_MIGRATION
 from agent_storage.postgres.subagent_delegation_migration import SUBAGENT_DELEGATION_MIGRATION
 from agent_storage.postgres.task_admission_migration import TASK_BINDING_MIGRATION
 from agent_storage.postgres.workspace_control_migration import WORKSPACE_CONTROL_MIGRATION
@@ -483,4 +489,6 @@ MIGRATIONS = (
     SUBAGENT_DELEGATION_MIGRATION, ORCHESTRATION_MIGRATION,
     AGENT_MAILBOX_MIGRATION, RESEARCH_TOOL_PROFILE_MIGRATION, HOST_MANIFEST_FREEZE_MIGRATION,
     CLIENT_CAPABILITY_MIGRATION, CLIENT_SESSION_MIGRATION, CLIENT_EFFECT_MIGRATION,
-    CLIENT_SECURITY_MIGRATION, *RELIABILITY_MIGRATIONS)
+    CLIENT_SECURITY_MIGRATION, *RELIABILITY_MIGRATIONS, EXTENSIONS_MIGRATION,
+    SKILL_PUBLICATIONS_MIGRATION, SKILL_UPLOADS_MIGRATION, EXTENSION_SNAPSHOTS_MIGRATION,
+    MCP_CREDENTIALS_MIGRATION, MCP_CATALOG_MIGRATION)

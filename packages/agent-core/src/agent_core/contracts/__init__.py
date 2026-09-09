@@ -17,6 +17,8 @@ from agent_core.contracts.session_commands import (
     SessionCommandKind,
     SessionCommandStatus,
     decide_session_command,
+    is_command_message_materialization,
+    validate_accepted_session_command,
 )
 
 __all__ = [
@@ -30,6 +32,8 @@ __all__ = [
     "SessionCommandKind",
     "SessionCommandStatus",
     "decide_session_command",
+    "is_command_message_materialization",
+    "validate_accepted_session_command",
     "event_payload_schema_for",
     "validate_event_payload",
 ]

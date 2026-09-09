@@ -1,9 +1,418 @@
 # Zebra Agent Project Status
 
+2026-09-09 EXT-AGUI-01: real Trench MCP fetch execution now verified. Fixed
+AG-UI admission forwarding, existing-Turn RUN/RESUME selection/recovery,
+PostgreSQL MESSAGE-only atomic admission, and the live publisher decorator
+dropping the atomic method. Cloud aliases now fit the provider's 64-character
+limit. Trench requests mcp-proxy-only (not unrestricted egress) and advances
+its task generation/idempotency namespace to avoid old frozen none profiles.
+Browser conv_1788883798514_259bde fetched public example.com via configured SSE:
+policy allow, tool_execution_completed=executed with actual remote text,
+model deltas, turn_completed and semantic title persisted; about 19 seconds.
+API/Worker rebuilt and healthy. Focused Zebra 64 + 12 + 21 passed (one optional
+live transport test skipped); Trench runtime 23 passed. Mypy 907 sources passes.
+No full-suite, merge or commit claim. Skill upload/credential/deletion UI and
+full multi-user live/revocation acceptance remain outstanding. Historical
+rollout failures below are retained as evidence, not current MCP status.
+
+2026-09-08 live rollout: schema v56 applied; 250 existing session streams retained.
+API/Worker extension overlay active and healthy; Broker extension scopes enabled
+with existing credentials retained. Trench API restored; real browser MCP list,
+create and enable pass. Fixed production authorizer's unconditional agent.run
+requirement (8 real PostgreSQL signed-authority tests pass), BFF history refs,
+and refresh body contract (4 UI tests pass). Catalog refresh succeeded after a
+transient 503; one catalog persisted. Real AG-UI Turn did not receive MCP:
+no snapshot created. AG-UI RUN/RESUME bypasses MESSAGE-only admission. Worker
+MCP E2E failed; normal reply/title persisted. See
+docs/cloud-extensions-rollout.md for env preservation and remaining UI gaps.
+
+Historical source-delivery entry below predates this activation:
+
+2026-09-08: EXT-TRENCH-BFF-01 implemented in Trench's existing current branch.
+Authenticated extension BFF reuses grant exchange with operation-only
+extensions.read/manage; no management workload fallback or upstream Cookie.
+Explicit bounded collection/create/enable/catalog/refresh paths only. Trench
+settings now have Skill/MCP sections: public MCP create, toggle, refresh and
+installed Skill toggle. Upload/credentials/deletion are not yet delivered.
+Backend focused regression 30 passed. Runtime broker scopes, migration and
+API/Worker activation remain pending; no browser/live Worker closure claim.
+Extension UI tests 3 passed; focused ESLint and backend Ruff passed.
+Frontend tsc is blocked by three pre-existing incomplete source fixtures in
+dashboard-data-settings.test.tsx, not the added extension component.
+
+2026-09-08: EXT-ROLLOUT-01 opt-in deployment overlay prepared in
+docker/compose.extensions.yml. Actual Compose rendering tests: 3 passed;
+paired API/Worker switches, private read-only required key mounts and unchanged
+base defaults verified. Running stack NOT changed. Broker scope/Host ceiling,
+Trench management BFF/UI, operator key and migrations remain activation gates.
+See docs/cloud-extensions-rollout.md for exact sequencing and rollback boundary.
+
+2026-09-08: EXT-MCP-SSE-01 remote legacy SSE compatibility implemented after
+user approval. Cloud connections accept explicit sse alongside default
+streamable_http; cloud stdio remains rejected. Discovery and execution reuse
+bounded framing, schema checks and per-frame live authority/credentials.
+Same-origin derived endpoints and public-IP-pinned sockets remain mandatory.
+SSE focused 13 passed; make check passed (907 sources, Eval 10/10).
+Full regression: 4238 passed / 866 skipped in 133.40s; two subsequently added
+SSE checks passed with the complete focused suite (13 passed).
+Repository live probe unblocked: a single-host Mihomo fake-IP exclusion restored
+public DNS (39.96.127.68). Default discovery completed in 1.71s; CloudMcpTransport
+fetch returned real example.com content, isError=false, total 7.47s. One initial
+five-second discovery timeout was observed; no timeout/security bypass applied.
+Probe used fixture scope/authority, not durable Worker or Trench authentication.
+No runtime rollout or Trench E2E claim.
+
+2026-09-08 live acceptance preflight: running zebra-trench-acceptance API/Worker
+containers are healthy, but neither contains extension/MCP enable flags or an
+MCP master-key mount. Verified runtime PostgreSQL database zebra remains v50;
+extension_configurations and mcp_catalog_versions are absent. Active frontend is
+Trench/toc-frontend on port 3000; settings sources contain no Skill/MCP management
+entry. Live extension acceptance has NOT started. Requires runtime migration/
+image/config rollout, Trench management delivery and a configured HTTP MCP target.
+No database migration, container restart or operator secret changes were made.
+
+2026-09-08: EXT-MCP-WORKER-01 lifecycle wiring implemented behind
+ZEBRA_CLOUD_MCP_WORKER_ENABLED (default off). API composes stored catalog selection;
+Worker composes catalog/credential stores from its existing cloud bundle and
+replays current-Turn durable authority before HTTP frames. Execution gateway
+receives the transport; empty cloud selection cannot fall back to process MCP.
+Shared mounted-key startup validation preserves API behavior. Focused 102 passed /
+1 skipped, isolated PostgreSQL-related subset 56 passed; make check passed
+(906 sources, Eval 10/10). Runtime activation and real remote/Trench E2E pending.
+Full regression: 4226 passed / 866 skipped in 151.01s; the subsequently added
+empty-selection case passed in the focused gateway suite (3 passed).
+
+2026-09-08: EXT-MCP-WORKER-01 authority adapter implemented. MCP accepts existing
+bound Worker execution evidence without an HTTP Grant callback; release compares
+it with current Task identity/digests/capability/expiry. Shared scope derivation
+preserves user/workspace isolation. Focused 49 passed / 4 DB skipped; make check
+passed (905 sources, Eval 10/10). Default lifecycle wiring and real MCP/Trench
+acceptance remain pending; this is not a production activation. Expanded focused
+regression: 70 passed / 4 skipped; isolated PostgreSQL subset: 33 passed.
+Full regression: 4213 passed / 866 skipped in 139.67s; diff check passed.
+
+2026-09-08: EXT-MCP-WORKER-01 remains In Progress. Explicit catalog/transport
+composition passes 3 captured-network checks; full 4202 passed / 866 skipped
+in 142.81s; make check passed (904 sources, Eval 10/10). Found startup mismatch:
+Worker uses bound execution-authority snapshots/revalidation, not fresh verified
+HTTP grants. MCP release must adapt to that existing authority boundary before
+default lifecycle wiring. No fabricated Grant, activation, commit or deployment.
+
+2026-09-08: EXT-MCP-AUTH-02 is in Review. Anonymous MCP now has a shared
+snapshot/grant authorization hook with exact live config and lease/fence checks;
+no credential access on that path. Existing Bearer release remains unchanged.
+Focused 35 passed / 4 DB skipped; real isolated PG/runtime 39 passed; full
+4199 passed / 866 skipped in 144.35s; make check passed (903 sources, Eval 10/10).
+Worker transport callback and startup/recovery composition remain incomplete;
+no live remote MCP/Trench E2E, production activation, commit or deployment.
+
+2026-09-08: EXT-MCP-ADMISSION-01 is in Review. Optional catalog-store composition
+automatically selects current-user enabled usable MCP catalogs for new Turns;
+no remote discovery or client allowlist required. Unrefreshed connections are
+skipped; exact scope/revision and bounded paging/tool counts enforced. Focused
+28 passed; actual isolated PostgreSQL/admission 29 passed; full 4192 passed /
+866 skipped in 139.92s; make check passed (903 sources, Eval 10/10).
+Default startup remains unchanged pending production Worker recovery/live
+authority composition. No deployment, activation or real Agent/browser E2E.
+
+2026-09-08: EXT-MCP-EXEC-01 is in Review. Added pinned cloud HTTP transport
+and explicit existing Harness injection, without per-turn remote discovery.
+Exact catalog/digest and alias mapping, argument checks, per-frame authority,
+none/Bearer auth, protocol drift rejection and bounded untrusted results reuse
+existing runtime components. Focused 32 passed; full 4184 passed / 865 skipped
+in 143.89s; fixture enum warning subsequently corrected with focused 5 passing.
+make check passed (902 sources, Eval 10/10). Automatic scoped admission and
+production Worker authorization/startup wiring are still incomplete; captured
+HTTP is not real remote MCP or Trench E2E. No activation, commit or deployment.
+
+2026-09-08: EXT-MCP-NAMES-01 is in Review. Fixed cloud discovery incorrectly
+rejecting remote names through local alias restrictions. Preserve exact bounded
+remote names, use collision-checked internal aliases with shared schema parsing,
+keep local HTTP/stdio behavior unchanged. Focused 35 passed / 2 DB skipped;
+full 4179 passed / 865 skipped in 141.91s; make check passed (901 sources,
+Eval 10/10). Cloud Worker execution and Settings E2E remain incomplete; no
+service activation, commit or deployment.
+
+2026-09-08: EXT-MCP-CATALOG-01E is in Review. Scoped catalog GET now exposes
+current-revision tool metadata without discovery or credential release. Product
+decision clarified: configure/enable once, AI chooses tools; Task/Turn bookkeeping
+is internal, never a new manual binding workflow. Focused 16 passed / 5 DB
+skipped; real isolated PG/captured HTTP 21 passed; full rerun 4165 passed /
+865 skipped in 132.16s. Initial unrelated process kill PermissionError passed
+isolated retry and full rerun. make check passed (901 sources, Eval 10/10).
+Cloud admission/Worker still need persisted user catalogs instead of process
+MCP settings; execution and Settings/browser acceptance remain incomplete.
+
+2026-09-08: EXT-MCP-CATALOG-01D is in Review. Separately opt-in automatic
+management refresh startup shares credential storage/protector and resolved
+cloud database/namespace. Defaults remain disabled; invalid prerequisites fail
+startup and boot performs no discovery. Focused 50 passed / 3 DB skipped;
+actual isolated PostgreSQL and captured HTTP matrix 14 passed; full 4159 passed /
+864 skipped in 134.53s; make check passed (901 sources, Eval 10/10).
+Distributed refresh coordination/limits, Task MCP ceiling/Turn admission,
+Worker dispatch and Trench Settings E2E remain pending. No live schema changes,
+service activation, remote MCP acceptance, commit or deployment.
+
+2026-09-08: EXT-MCP-CATALOG-01C is in Review. Explicitly injected management
+refresh service and protected POST route now connect scoped configuration,
+per-frame grant expiry/configuration checks, Bearer ciphertext release, discovery
+and revision-checked catalog publication. Input cannot supply URL, scope or token.
+Focused 38 passed / 3 DB skipped; captured-network plus real PostgreSQL matrix
+21 passed; full 4154 passed / 862 skipped in 132.64s; make check passed
+(900 sources, Eval 10/10). Startup activation, distributed refresh scheduling,
+Task MCP ceiling/Turn selection, Worker execution and Trench E2E remain pending.
+No live schema change, activation, commit or deployment.
+
+2026-09-08: EXT-MCP-CATALOG-01B is in Review. HTTP-only discovery now returns
+complete connection-bound immutable catalogs through existing pagination/schema
+and HTTPS framing. Per-frame Bearer resolver required; missing/unsupported auth
+fails before send. Shared HTTP discovery rejects duplicate remote names early.
+Focused 45 passed / 1 DB skipped; captured-network plus real PostgreSQL matrix
+23 passed; full 4139 passed / 860 skipped in 130.33s; make check passed
+(897 sources, Eval 10/10). Public authorized refresh route, Task MCP ceiling,
+Worker dispatch and Trench Settings E2E remain pending. No live network/server
+acceptance, schema changes, service activation, commit or deployment.
+
+2026-09-08: EXT-MCP-CATALOG-01A is in Review. Bounded immutable tool catalog
+contracts and PostgreSQL v56 persistence bind exact scoped connection/revision.
+Parent-lock publication rejects configuration drift; validated digest readback
+rejects corruption. Identical A-after-B refresh advances latest publication
+without changing historical definition payloads. Deterministic 11 passed;
+isolated PostgreSQL catalog/credential matrix 37 passed; full 4124 passed /
+859 skipped in 133.57s; make check passed (896 sources, Eval 10/10).
+Migration was tested only in disposable schemas. Remote discovery, Task MCP
+ceiling/Turn admission, Worker execution and Trench Settings E2E remain pending.
+No live service migration, activation, commit or deployment.
+
+2026-09-08: EXT-AUTH-01I is in Review. Opt-in API credential startup now reuses
+the admitted cloud DSN/namespace and existing SecretStore/AES-GCM components.
+Operator supplies read-only mounted master key with exact handle/version;
+missing, malformed or insecure key files stop startup. No user plaintext token
+store or default permissions expansion. Focused 98 passed / 2 DB skipped;
+real PostgreSQL startup/HTTP/management matrix 54 passed; full 4113 passed /
+852 skipped in 122.86s; make check passed (892 sources, Eval 10/10).
+Worker dispatch/catalog admission, OAuth and Trench Settings/deployed E2E remain
+pending. No service activation, live schema migration, commit or deployment.
+
+2026-09-08: EXT-AUTH-01H is in Review. Protected opt-in HTTP credential
+provision/revoke routes reuse verified management grants and atomic revision CAS.
+No credential readback, client identity override or default permission expansion.
+Focused 23 passed / 1 DB skipped; isolated real PostgreSQL HTTP/service matrix
+36 passed; full 4096 passed / 851 skipped in 131.21s. make check passed
+(890 sources, Eval 10/10). Service injection is explicit: automatic SecretStore
+composition, Worker dispatch and Trench settings/deployed E2E remain pending.
+No live schema changes, commit or deployment.
+
+2026-09-08: EXT-AUTH-01G is in Review. Internal MCP execution resolver binds
+fresh grant, current lease fence, recovered snapshot and exact operation/params.
+Lease is rechecked after credential I/O; shared release now explicitly verifies
+target endpoint. Shared fenced Effect gateway rechecks ownership after payload
+read and before tool invocation, preserving existing uncertain/recovery handling.
+Focused 52 passed / 4 DB skipped; isolated real-DB matrix 44 passed including
+existing terminal-result replay. Final full 4073 passed / 850 skipped in 128.59s;
+make check passed (889 sources, Eval 10/10). Broker routes, trusted Worker
+composition, MCP catalog admission and deployed E2E remain pending. No live
+schema changes, Worker activation, commit or deployment.
+
+2026-09-08: EXT-AUTH-01F is in Review. Existing MCP HTTP sessions support
+per-frame endpoint-bound Bearer resolution without environment mutation or shared
+credential caching. Mixed environment/scoped auth fails closed; initialize,
+notification and tool frames reauthorize independently. Failure sends no denied
+frame and adds no retry. Secret-bearing exception chains are suppressed.
+Validation: 52 transport tests passed (15 new), full 4059 passed / 850 skipped
+in 129.37s; make check passed (888 sources, Eval 10/10). Test composition connects
+internal release to a captured HTTP opener, not a deployed remote MCP server.
+Worker lease/digest/dispatch-ledger composition, API-key templates, OAuth, routes
+and Settings E2E remain pending. No service activation, commit or deployment.
+
+2026-09-08: EXT-AUTH-01E is in Review. Internal MCP credential release validates
+live Task grant, frozen snapshot scope/coordinates/digest and operation permission,
+then reads ciphertext under current-connection lock. Revoked/rotated/disabled or
+changed connections reject old snapshots; secret material stays Broker-internal.
+Expanded real-DB/crypto matrix 122 passed; final full 4044 passed / 850 skipped
+in 125.73s; make check passed (887 sources, Eval 10/10). Initial real DeepSeek
+smoke failed for missing reasoning output; isolated and full retries passed
+without parser changes (see WORKLOG.md). No Worker/API/transport activation;
+trusted lease/digest composition, OAuth and Settings/browser E2E still pending.
+
+2026-09-08: EXT-AUTH-01D is in Review. Verified extensions.manage authority now
+provisions bearer/API-key ciphertext and publishes its connection reference/state
+atomically with configuration CAS; revoke disables and revisions the connection.
+Fixed stale joined-lock reads by locking the parent before reading current payload.
+Real PostgreSQL matrix 73 passed; crypto 30 passed; default full suite 4029 passed /
+846 skipped in 129.50s; make check passed (886 sources, Eval 10/10). Five new DB
+cases passed separately. Management slice complete; runtime credential release and
+revocation enforcement, OAuth, public API and Trench Settings remain pending.
+No live schema migration, runtime enablement, commit or deployment.
+
+2026-09-08: EXT-AUTH-01C is in Review. Core encrypted credential DTO/Port and
+PostgreSQL v55 ciphertext history implemented. Parent locking validates exact
+connection/scope/endpoint and serializes append-only revision CAS. Storage never
+decrypts or changes authentication state. Real PostgreSQL matrix 61 passed;
+crypto 30 passed; full default suite 4022 passed / 841 skipped in 130.38s;
+make check passed. Eleven new DB cases were exercised in the dedicated real
+run. No service schema migrated; Broker authorization/revocation, OAuth, Worker
+and Trench UI remain pending. See docs/cloud-mcp-credential-storage.md.
+
+2026-09-08: EXT-AUTH-01B is in Review. Broker-internal MCP token protection
+uses existing SecretStore and installed AES-GCM implementation with exact
+deployment/scope/connection/endpoint/credential identity binding. Ciphertext
+substitution, tamper and key-version mismatch fail closed; rotation retains
+old readback only while old key handles remain available. Validation: 30 focused,
+263 security tests; full 4021 passed / 830 skipped in 126.26s; make check passed.
+This is cryptographic protection only, not persistence, authority, expiry,
+revocation, OAuth, cloud Worker or Trench browser delivery.
+
+2026-09-08: EXT-AUTH-01A is in Review. MCP HTTPS sockets now revalidate DNS
+and connect directly to a validated numeric IP, retain original-host TLS checks,
+disable environment proxies and reject tunnels. Failed sockets close; no request
+replay is added. Validation: 16 egress / 135 MCP tests; full 3991 passed / 830
+skipped in 134.86s; make check passed. User credential Broker/OAuth, cloud MCP
+Worker activation and Settings/browser acceptance remain outstanding.
+
+2026-09-08: EXT-MCP-HTTP-01B is in Review. HTTP resource and explicit prompt
+discovery/read now reuse existing bounded content validation rather than being
+silently skipped. Empty resource selection has zero I/O; duplicate server names
+fail before network access. Validation: 15 focused / 119 MCP tests; full suite
+3975 passed / 830 skipped in 132.12s; make check passed. This is shared transport
+support, not user credential Broker, cloud MCP Worker activation or Settings E2E.
+
+2026-09-08: EXT-MCP-HTTP-01A is in Review. HTTP SSE response framing now
+returns the correlated result before EOF and carries negotiated protocol and
+per-instance session headers. Failed initialization delivery stops the handshake.
+Validation: 104 MCP tests; full suite 3960 passed / 830 skipped; make check
+passed. Cloud MCP credential/egress composition, Worker activation, GET replay
+and Trench settings/browser acceptance remain outstanding.
+
 > This is the current project snapshot, not an append-only session log. Detailed
 > history lives in task cards, acceptance records, merge commits, and Git history.
 
 ## Active Review
+
+- `EXT-STORE-01B`: immutable exact-scope per-turn ExtensionSnapshot storage
+  and migration v54 implemented. Trusted expected digest, full seven-coordinate
+  lookup, typed payload/identity checks, idempotent replay, concurrent conflict,
+  tamper and tenant isolation covered. Real PG/MinIO and related matrix:
+  94 passed in 63.19 seconds, including persisted two-user private Skill
+  readback after adapter restart and live disable rejection. make check passed
+  (873 typed files, eval 10/10); independent spec/quality PASS.
+  Final full regression: 3851 passed / 805 skipped in 145.98 seconds; final
+  lint, type, eval, diff and size gates passed. This is persistence only: no
+  admission, API, Worker activation, business migration, deployment or commit.
+
+- `EXT-API-03B`: normal cloud HTTP startup now supports default-off Skill
+  publication composition using one resolved control-plane bundle (DSN,
+  deployment namespace and the same artifact object store). Mixed explicit
+  store injection is rejected for automatic publication; explicit publication
+  services and local/default-off paths retain their prior behavior.
+  Real PostgreSQL/MinIO and related matrix: 77 passed in 55.41 seconds,
+  including normal environment and explicit-bundle startup, upload, restart
+  read/replay, installation and foreign-user denial. make check passed.
+  Independent spec/quality PASS; 129 focused checks passed. First full run:
+  3836 passed / 785 skipped / one live DeepSeek Responses payload rejection;
+  isolated retry passed (3.22s). Final full rerun: 3837 passed / 785 skipped
+  in 128.23s. No actual flags,
+  business schema, running services, Worker or Trench Settings were changed.
+
+- `EXT-API-03A`: explicitly composed raw ZIP upload and scoped publication
+  metadata GET implemented. Migration 53 atomically binds hashed request keys
+  and immutable publication reservations; interrupted uploads resume without
+  creating another version. 125 focused tests, real PostgreSQL/MinIO and
+  related matrix 75 passed, independent spec/quality PASS; make check passed
+  (870 typed files). Real HTTP recovery/install/enable/tool-read path verified.
+  Final full suite: 3809 passed / 783 skipped in 137.50 seconds.
+  Default service injection remains absent; production object-store wiring,
+  Worker authorization/admission and Trench Settings are still pending.
+  No business migration, deployment, commit or branch change.
+
+- `EXT-SKILL-02A`: private cloud Skill read adapter now consumes an explicitly
+  bound frozen snapshot and verifies current installations, ready publication,
+  archive bytes and complete package manifest. Existing skills.list/read reused
+  with cloud provenance; no host extraction or script execution. 135 focused
+  tests and real PG/MinIO matrix 67 passed, including two users' actual private
+  bytes through shared tools. make check passed (868 typed files).
+  Independent spec/quality PASS; full suite 3787 passed / 775 skipped.
+  Not activated: admitted snapshot persistence, per-call live authorization,
+  Worker composition, public upload, MCP execution and Trench Settings remain.
+  Preloads bounded selected packages; first-text latency must be verified at
+  Worker integration rather than inferred from this off-thread adapter.
+
+- `EXT-API-02C`: Skill installation POST pins an own ready published version
+  server-side at disabled revision 1. Scoped idempotency replays current state
+  without overriding later toggles; existing store composition and migration
+  reused. 114 focused tests, independent spec/quality PASS, real PostgreSQL/
+  MinIO and related regressions 66 passed; make check passed (867 typed files).
+  Final full suite: 3752 passed / 774 skipped in 137.93 seconds.
+  Public upload, Worker consumption and Trench Settings remain unconnected;
+  no business migration, environment activation, commit or deployment.
+
+- `EXT-SKILL-01B`: internal durable package publication implemented and
+  independently reviewed. Existing ZIP validation and ArtifactObjectStore are
+  reused; migration 52 records exact-scope immutable named versions before
+  object upload. Verified expectation and object version gate readiness;
+  interrupted publication is resumable, with no false Session or raw bytes in PG.
+  Final PostgreSQL/MinIO and related regression matrix: 59 passed, including
+  recovery/readback and private user objects; make check passed (866 typed files).
+  Full suite: 3695 passed / 767 skipped in 144.08 seconds.
+  No public upload/install/Worker/Settings
+  activation, business migration, commit or deployment.
+
+- `EXT-API-02B`: MCP configuration creation is implemented behind the existing
+  default-off management flag. Immutable revision 1 binds a scoped idempotency
+  key; replay returns the current revision without overwriting later edits.
+  New connections stay disabled and have no credentials or runtime admission.
+  Real PostgreSQL matrix: 47 passed (including HTTP create/read/toggle/replay
+  and concurrent duplicates); make check passed (861 typed files). Independent
+  spec/quality re-reviews passed; 83 focused tests and final full suite
+  3671 passed / 756 skipped (135.73 seconds). Storage validation failures now
+  return sanitized 503 instead of blaming valid request input with 422.
+  No deployment, business schema change or Trench Settings activation.
+
+- `EXT-API-02A`: enabled-only PATCH with separate default-off management flag,
+  strong If-Match/ETag, scoped CAS and bounded strict JSON implemented/reviewed.
+  114 focused tests and 40 actual PostgreSQL tests passed; full suite 3614 passed
+  / 749 skipped in 132.25 seconds, make check passed (858 typed files).
+  No deployment or live Worker revocation. Creation/upload/delete/credentials,
+  Worker composition and Trench Settings remain pending.
+
+- `EXT-API-01B`: default-off PostgreSQL read composition implemented and
+  independently reviewed. `ZEBRA_CLOUD_EXTENSIONS_READ_ENABLED` defaults false;
+  cloud-only, matching namespace, read-only schema admission before construction.
+  Local lazy SQLite startup preserved by factory-level regression tests;
+  119 focused tests passed; final full suite 3574 passed / 747 skipped in
+  129.58 seconds, make check passed (856 typed files). No actual environment
+  change or migration applied.
+
+- `EXT-API-01A`: opt-in read-only HTTP installation/MCP configuration adapter
+  implemented and independently reviewed. Strict verified identity, bounded
+  query/IDs, no-store, sanitized responses and cross-scope rejection. 53 focused
+  tests after final method correction; preceding full suite 3544 passed / 747
+  skipped. Write APIs, Broker scopes, Worker and
+  Trench Settings remain pending; no running service activation.
+
+- `EXT-CON-01` and configuration-only `EXT-STORE-01A`: implemented on the
+  current branch by explicit user request. Immutable HTTP-only Skill/MCP
+  configuration contracts and scoped PostgreSQL CAS/pagination/revision history
+  pass independent spec and quality reviews. Evidence: 33 contract tests, 670
+  core tests, 38 actual PostgreSQL tests in temporary schemas; make check passes.
+  No live schema or Worker activation. Package/catalog/Outbox/Turn snapshot
+  persistence, credential authorization, write management API, Trench Settings Skills
+  and MCP sections, and actual Agent/browser acceptance remain unimplemented.
+  Full-suite baseline repaired in EXT-BASELINE-01; Skill/identity checkpoint:
+  changes: 3500 passed / 747 skipped (132.46 seconds).
+  Unit tests now isolate their synthetic checkout and schema validation;
+  production schema and original-worktree safeguards remain unchanged.
+  EXT-SKILL-01A ZIP validation passed 57 tests and independent spec/quality
+  reviews, including forged sizes and bounded deflate draining. No extraction,
+  upload or script execution enabled. EXT-AUTH-01A passed 41 focused tests and
+  independent reviews: verified issuer/subject retained, management permissions
+  explicit. Read HTTP routes use this identity; Broker scopes are not enabled.
+
+- `CLOUD-EXT-HTTP-DESIGN-01`: Skill and HTTP-only MCP cloud design drafted in
+  `docs/cloud-skills-http-mcp-design.md`. User confirmed no cloud stdio support.
+  The design is approved; initial contracts/configuration storage are in review,
+  not implemented cloud extension management. Existing
+  local compatibility remains unchanged; implementation requires separate task claims.
 
 - `TRN-NATIVE-WORKER-01`: local Apple Silicon latency investigation identified
   amd64 CLI emulation overhead (150 ms versus 18 ms median native info query).
@@ -2152,6 +2561,48 @@ groups remain open.
 
 Before architecture changes, also read the source-of-truth documents in the
 precedence order defined by `AGENTS.md`.
+
+## 2026-09-07 Cloud extension Turn admission
+
+`EXT-ADMIT-01A` is in Review after independent spec and quality re-reviews
+passed. A separate default-off cloud flag now admits only
+message commands carrying a genuine exact-scope Host Grant with `agent.run`.
+The server selects a bounded set of currently enabled Skills, derives the same
+Turn identity used by execution, and atomically persists the accepted command,
+RabbitMQ wakeup/Outbox records, trusted digest binding and immutable v54
+snapshot. Selection is limited by the authoritative root Task's immutable Host
+binding and frozen `skill_components`: issuer, namespace, workspace and exactly
+one principal must remain identical, while absent or empty Skill ceilings select
+nothing. Client binding aliases are rejected; idempotent retries retain their
+first binding, a second pending message is rejected before Turn selection, and
+clarification continuations reuse the original Turn snapshot and digest even if
+live configuration changed. Configuration and stream races leave no orphan
+records. Local, disabled and non-message behavior is unchanged. This slice does
+not activate Worker extension loading or MCP network execution.
+
+Worker activation has an explicit follow-up blocker in
+`apps/worker/src/zebra_agent_worker/task_recovery.py`: recovery still compares
+browser origin with the frozen JWT issuer. This admission slice does not modify
+Worker production code, and does not claim end-to-end extension execution.
+
+Final issuer/origin remediation evidence: 184 focused deterministic checks and
+140 related actual-PostgreSQL checks passed, including a production-shaped Task
+creation and message admission with distinct JWT issuer/browser origin plus
+forged issuer rejection. Final full regression is 3884 passed / 812 skipped;
+`make check` passed file-size, Ruff, strict Mypy over 875 sources and Eval 10/10.
+The quality-review follow-up now checks exact Task authority before duplicate or
+revision disclosure, preserves duplicate replay without live configuration
+selection, enforces one enabled installation per exact scope and Skill under
+concurrent writes while retaining disabled history, and revalidates up to 32
+selected installations with one parameterized PostgreSQL lock query. Evidence:
+62 service-free focused checks, 249 related real-PostgreSQL checks, full suite
+3892 passed / 814 skipped, and `make check` passed. Independent quality
+re-review passed with no remaining actionable defect. Final P2 remediation makes
+the advisory key an opaque digest of complete deployment/scope coordinates plus
+Skill identity and detects legacy duplicate Skill IDs before applying the
+unique-Skill count limit. Validation: 36 service-free focused checks, 67 real
+PostgreSQL focused checks with controlled lock-timeout tenant isolation, full
+suite 3893 passed / 815 skipped, and `make check` passed.
 # 2026-08-28: Trench Native History Host Grant V2
 
 - Trench Host Grant broker 现在会以 `include_removed=true` 回查用户来源投影，同时校验
@@ -2209,3 +2660,109 @@ drifted mirror/observation rows are not counted. Final evidence is Zebra focused
 1/1, isolated RabbitMQ ACL acceptance, both full `make check` gates, and
 independent SPEC/QUALITY pass. Stage 5 is **2/8 = 25%**. Production activation,
 commit, merge and push remain separate and were not performed.
+
+## 2026-09-07 Cloud Worker extension snapshot recovery
+
+`EXT-WORKER-01A` is implemented and is now in Review after independent
+review. A separate default-off cloud Worker flag composes the existing exact
+PostgreSQL extension snapshot/Task authority only for cloud PostgreSQL workers;
+disabled, local and projected legacy Turns perform no extension reads. An
+enabled unbound nonlegacy Turn performs one exact boolean existence probe so a
+persisted snapshot cannot be hidden by deleting accepted binding coordinates.
+The accepted command's server-selected Turn and digest now survive message
+materialization. Before Attempt authority persistence or any model/tool call,
+the Worker resolves the active human Turn from durable events, requires the
+extension authority's root Task binding to exactly equal the independently
+loaded execution binding, derives scope from the frozen verified issuer rather
+than browser origin, and revalidates deployment/scope/session/Turn/digest and
+the frozen Skill ceiling. Missing, tampered, ambiguous and cross-tenant state
+fails closed; restart and retry reload the same immutable binding.
+
+Validation: 32 focused deterministic checks; 59 related actual-PostgreSQL
+checks passed with 1 environment-gated skip; full suite 3903 passed / 816
+skipped; `make check` passed file size, Ruff, strict Mypy over 876 sources and
+Eval 10/10. This slice does not register Skill tools, load package bytes, call
+MCP, add credentials/UI, activate deployment flags, commit or deploy.
+
+Spec review then found the migrated RabbitMQ Worker bypassed the legacy message
+consumer: `handoff_command` materialized `command-input:{accepted.event_id}`
+with trusted causation but did not preserve the accepted extension Turn, while
+recovery only recognized the legacy idempotency convention. The shared canonical
+materializer now parses `SessionCommandAcceptedPayload` and supplies its bound
+Turn for normal messages; clarification continues the already-open Turn.
+Recovery prefers `causation_id == accepted.event_id`, validates canonical key,
+actor, type, content and clarification identity, and retains legacy correlation
+only for compatibility. Every bound association is validated, including
+completed historical Turns, before only the current Turn participates.
+
+Remediation evidence: dedicated deterministic and real-PostgreSQL handoff tests
+passed 13, including normal/restart, missing and tampered correlation,
+clarification and two consecutive bound Turns; the wider RabbitMQ handoff,
+admission and recovery matrix passed 68; full suite passed 3904 / 821 skipped;
+`make check`, diff and file-size gates passed. Independent re-review remains.
+
+Quality review then found the API still treated Rabbit's canonical causation as
+pending, and the materializer/recovery did not share a durable command-integrity
+proof. Core now reconstructs an accepted `SessionCommand` and verifies its
+fingerprint plus session/idempotency continuity at Rabbit materialization and
+bound-message Worker recovery. API admission recognizes the exact Rabbit
+causation/key and strict causation-free legacy key, so a completed first Turn
+admits the second. Recovery validates all bound history even with no active Turn,
+merges/de-duplicates canonical and legacy candidates by Event ID, and rejects
+distinct dual, missing or tampered materializations before any extension read.
+Unbound legacy streams remain unchanged. Deterministic/Core/API/Worker checks
+passed 50; dedicated actual PostgreSQL admission/handoff checks passed 16; the
+full suite passed 3913 / 824 skipped; and `make check` passed size, Ruff, strict
+Mypy over 876 sources and Eval 10/10. Status remains In Progress for independent
+re-review.
+
+Final quality review centralized the exact association predicate: canonical
+means matching causation and canonical key; legacy means no causation and the
+strict legacy key. Accepted payloads are typed before binding semantics are
+inspected, partial/non-MESSAGE bindings fail, and API/Worker correlation is
+indexed in one pass. Deterministic operation-count tests exercise 100/120-command
+histories. PostgreSQL exposes only an exact-coordinate boolean `exists` probe,
+never an untrusted digest. API indexes retain candidate lists, validate accepted
+Event-ID uniqueness, merge strict associations and require exactly one result,
+so duplicate canonical/legacy/history identities cannot be overwritten. Focused
+checks passed 59, dedicated actual PostgreSQL checks passed 51, the clean final
+full suite passed 3922 / 826
+skipped, and `make check` passed size, Ruff, strict Mypy over 876 sources and
+Eval 10/10. The task remains In Progress pending independent re-review.
+
+## 2026-09-07 Cloud Worker typed Skill tools
+
+`EXT-WORKER-01B` is implemented and in Review after independent final quality
+review passed with no remaining P0-P2 finding. A separate default-off flag
+composes the same PostgreSQL deployment,
+extension store and private object reader into cloud Workers only. The Worker
+uses only `PreparedWorkerContext.extension`; local, disabled and legacy paths
+do not construct a cloud catalog or read Skill publication/object state.
+
+The existing typed `skills.list` and `skills.read` tools accept a narrow
+injected catalog. Every call revalidates each frozen installation and pinned
+publication against the complete trusted scope. Disable, revision/version
+drift, missing or cross-tenant state fails closed. Listing reads metadata only;
+reading one file uses the ready publication receipt's exact object version and
+verifies object size/SHA, ZIP manifest/content digest,
+name/description/version and bounded canonical UTF-8 content in memory, without
+host extraction or script execution. Restart/retry reconstructs the same
+catalog from the immutable recovered snapshot.
+
+Validation: focused deterministic and PostgreSQL/MinIO/Rabbit Worker matrix
+`86 passed, 35 dependency skips`; the broker-only production composition published and
+consumed the command before the real model/tool gateway executed `skills.read`.
+Strict Mypy passed 878 sources; format, lint, diff and source-size gates passed,
+with `execution.py` at 499 lines. Full suite passed `3945 passed, 830 skipped`.
+Deployment activation, MCP,
+credentials, UI, commit and merge remain separate.
+
+Quality follow-up replaced per-installation live reads with one bounded
+PostgreSQL authorization query over all frozen installations and ready
+publications. `skills.read` repeats that same batch after object/ZIP validation,
+so concurrent disable/upgrade discards the provisional body. Synchronous Worker
+calls now use `asyncio.run` directly unless already embedded in an event loop;
+gateway construction performs no catalog authorization/object I/O. Unknown
+cloud adapter exceptions are logged with the original traceback and translated
+to a fixed chained catalog failure, keeping parallel and durable/client results
+free of backend secrets.

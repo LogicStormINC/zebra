@@ -75,6 +75,8 @@ class VerifiedHostGrant:
     context: HostContextEnvelope
     grant_id: str
     algorithm: JwtAlgorithm
+    authority_issuer: str
+    subject_ref: str
 
 
 class DecodedHostGrant(Protocol):
@@ -122,7 +124,13 @@ class HostGrantVerifier:
             raise HostGrantBindingError(
                 "Host Grant requested scope or resource is not granted"
             ) from exc
-        return VerifiedHostGrant(context=context, grant_id=grant.jti, algorithm=algorithm)
+        return VerifiedHostGrant(
+            context=context,
+            grant_id=grant.jti,
+            algorithm=algorithm,
+            authority_issuer=grant.iss,
+            subject_ref=grant.sub,
+        )
 
 
 def _required_text(value: str, field_name: str, maximum: int) -> str:

@@ -9,7 +9,7 @@ from uuid import uuid4
 import jwt
 import psycopg
 import pytest
-from agent_security import PyJwtHostGrantDecoder
+from agent_security import HostGrantSecurityError, PyJwtHostGrantDecoder
 from agent_storage import (
     HostRegistryRecord,
     PostgresHostAuthorityStore,
@@ -22,6 +22,7 @@ from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from zebra_agent_api import create_http_app
 from zebra_agent_api.host_auth import PostgresHostGrantRequestAuthorizer
+from zebra_agent_api.http import HostGrantHttpRequest
 from zebra_agent_config import ApiSettings, ModelSettings, RuntimeSettings, ZebraAgentSettings
 
 
@@ -157,6 +158,34 @@ def test_real_signed_grant_replay_scope_origin_and_audit_matrix(dsn: str, tmp_pa
     scope_audit = registry.list_audit(issuer=_registry().issuer, jti="scope-1")
     assert [record.outcome for record in scope_audit] == ["rejected"]
     assert all(record.grant_digest != valid for record in (*audit, *scope_audit))
+
+
+@pytest.mark.parametrize("method,path,scope,accepted", [
+    ("GET", "/v1/extensions/mcp-connections", "extensions.read", True),
+    ("POST", "/v1/extensions/mcp-connections", "extensions.manage", True),
+    ("PATCH", "/v1/extensions/skill-installations/item", "extensions.manage", True),
+    ("POST", "/v1/extensions/mcp-connections", "extensions.read", False),
+    ("GET", "/v1/extensions/mcp-connections", "agent.run", False),
+    ("GET", "/sessions", "extensions.read", False),
+    ("GET", "/v1/extensions-other", "extensions.read", False),
+])
+def test_extension_operation_grants(dsn, method, path, scope, accepted):
+    key = rsa.generate_private_key(public_exponent=65_537, key_size=2_048)
+    registry = PostgresHostAuthorityStore(dsn, deployment_namespace="deployment-a")
+    registry.upsert_registry(_registry())
+    authorizer = PostgresHostGrantRequestAuthorizer(
+        registry=registry, decoder=PyJwtHostGrantDecoder(_StaticResolver(key.public_key())),
+    )
+    token = jwt.encode(_claims(str(uuid4()), scopes=[scope]), key, algorithm="RS256")
+    request = HostGrantHttpRequest(
+        method=method, path=path, origin="https://trench.example.com",
+        authorization=f"Bearer {token}",
+    )
+    if accepted:
+        assert authorizer.authorize(request) is not None
+    else:
+        with pytest.raises(HostGrantSecurityError):
+            authorizer.authorize(request)
 
 
 class _StaticResolver:

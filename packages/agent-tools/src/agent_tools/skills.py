@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 
@@ -8,7 +8,7 @@ from agent_tools.contracts import ToolContract
 from agent_tools.skills_catalog import (
     MAX_NAME_CHARS,
     MAX_SKILLS,
-    LocalSkillCatalog,
+    SkillCatalog,
     SkillCatalogError,
     SkillMetadata,
 )
@@ -49,29 +49,29 @@ skills_read_contract = ToolContract(
 
 @dataclass(frozen=True)
 class SkillsListTool:
-    catalog: LocalSkillCatalog
+    catalog: SkillCatalog
 
     @property
     def contract(self) -> ToolContract:
-        return skills_list_contract
+        return _contract(skills_list_contract, self.catalog)
 
     def handle(self, tool_call: ToolCall) -> ToolResult:
         if set(tool_call.arguments) - {"limit"}:
-            return _invalid_arguments(tool_call)
+            return _invalid_arguments(tool_call, self.catalog)
         raw_limit = tool_call.arguments.get("limit", 100)
         if not isinstance(raw_limit, int) or isinstance(raw_limit, bool):
-            return _invalid_arguments(tool_call)
+            return _invalid_arguments(tool_call, self.catalog)
         try:
             skills, ambiguous_count, catalog_truncated = self.catalog.list(limit=raw_limit)
         except SkillCatalogError as exc:
-            return _failure(tool_call, exc)
-        lines, output_truncated = _bounded_metadata_lines(skills)
+            return _failure(tool_call, exc, self.catalog)
+        lines, output_truncated = _bounded_metadata_lines(skills, _origin(self.catalog))
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=ToolCallStatus.EXECUTED,
             output="\n".join(lines),
             metadata={
-                "route": "local_skill_catalog",
+                "route": _route(self.catalog),
                 "skill_count": len(lines) - 1,
                 "ambiguous_count": ambiguous_count,
                 "truncated": catalog_truncated or output_truncated,
@@ -82,29 +82,29 @@ class SkillsListTool:
 
 @dataclass(frozen=True)
 class SkillsReadTool:
-    catalog: LocalSkillCatalog
+    catalog: SkillCatalog
 
     @property
     def contract(self) -> ToolContract:
-        return skills_read_contract
+        return _contract(skills_read_contract, self.catalog)
 
     def handle(self, tool_call: ToolCall) -> ToolResult:
         if set(tool_call.arguments) - {"name", "file_path"}:
-            return _invalid_arguments(tool_call)
+            return _invalid_arguments(tool_call, self.catalog)
         raw_name = tool_call.arguments.get("name")
         raw_file_path = tool_call.arguments.get("file_path", "SKILL.md")
         if not isinstance(raw_name, str) or not isinstance(raw_file_path, str):
-            return _invalid_arguments(tool_call)
+            return _invalid_arguments(tool_call, self.catalog)
         try:
             result = self.catalog.read(raw_name, file_path=raw_file_path)
         except SkillCatalogError as exc:
-            return _failure(tool_call, exc)
+            return _failure(tool_call, exc, self.catalog)
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=ToolCallStatus.EXECUTED,
-            output="[UNTRUSTED LOCAL SKILL GUIDANCE]\n" + result.content,
+            output=f"[UNTRUSTED {_origin(self.catalog)} SKILL GUIDANCE]\n" + result.content,
             metadata={
-                "route": "local_skill_catalog",
+                "route": _route(self.catalog),
                 "skill_name": result.metadata.name,
                 "source": result.metadata.source,
                 "file_path": result.file_path,
@@ -118,27 +118,46 @@ class SkillsReadTool:
         )
 
 
-def _failure(tool_call: ToolCall, error: SkillCatalogError) -> ToolResult:
+def _origin(catalog: SkillCatalog) -> str:
+    return getattr(catalog, "guidance_origin", "LOCAL")
+
+
+def _route(catalog: SkillCatalog) -> str:
+    return getattr(catalog, "route", "local_skill_catalog")
+
+
+def _contract(contract: ToolContract, catalog: SkillCatalog) -> ToolContract:
+    if _origin(catalog) == "LOCAL":
+        return contract
+    return replace(contract, description=contract.description.replace("local", "cloud"))
+
+
+def _failure(
+    tool_call: ToolCall, error: SkillCatalogError, catalog: SkillCatalog,
+) -> ToolResult:
     return ToolResult(
         tool_call_id=tool_call.tool_call_id,
         status=ToolCallStatus.FAILED,
         metadata={
-            "route": "local_skill_catalog",
+            "route": _route(catalog),
             "reason": error.reason,
             "detail": str(error),
         },
     )
 
 
-def _invalid_arguments(tool_call: ToolCall) -> ToolResult:
+def _invalid_arguments(tool_call: ToolCall, catalog: SkillCatalog) -> ToolResult:
     return _failure(
         tool_call,
         SkillCatalogError("invalid_arguments", "skill tool arguments are malformed"),
+        catalog,
     )
 
 
-def _bounded_metadata_lines(skills: tuple[SkillMetadata, ...]) -> tuple[list[str], bool]:
-    lines = ["[UNTRUSTED LOCAL SKILL METADATA]"]
+def _bounded_metadata_lines(
+    skills: tuple[SkillMetadata, ...], origin: str = "LOCAL",
+) -> tuple[list[str], bool]:
+    lines = [f"[UNTRUSTED {origin} SKILL METADATA]"]
     byte_count = len(lines[0].encode("utf-8"))
     for skill in skills:
         line = f"{skill.name}: {skill.description}"

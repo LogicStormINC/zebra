@@ -2,7 +2,10 @@
 
 from typing import Any
 
+from agent_core.contracts import SessionCommandAcceptedPayload, SessionCommandKind
 from agent_core.domain.events import SessionEvent
+from agent_core.domain.extension_snapshots import ExtensionSnapshot, ExtensionTaskCeiling
+from agent_core.domain.extensions import ExtensionScope
 from agent_core.domain.identifiers import EventId, SessionId
 from agent_core.ports.event_store import EventStorePort
 from psycopg import errors
@@ -14,6 +17,15 @@ from agent_storage.event_rows import (
 )
 from agent_storage.postgres.command_wakeup import record_command_wakeup_in_transaction
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.extension_snapshots import (
+    load_extension_snapshot_in_transaction,
+    resolve_extension_task_ceiling_in_transaction,
+    save_extension_snapshot_in_transaction,
+)
+from agent_storage.postgres.extensions import (
+    ExtensionSnapshotAdmissionConflictError,
+    validate_skill_snapshot_in_transaction,
+)
 
 
 class PostgresEventStore(EventStorePort):
@@ -35,6 +47,76 @@ class PostgresEventStore(EventStorePort):
             existing = self._find_existing_after_rollback(event)
             if existing is not None:
                 return ensure_idempotent_event_retry(existing, event)
+            raise ValueError("duplicate or conflicting session event") from exc
+
+    def append_with_extension_snapshot(
+        self,
+        event: SessionEvent,
+        *,
+        scope: ExtensionScope,
+        snapshot: ExtensionSnapshot,
+        task_ceiling: ExtensionTaskCeiling,
+    ) -> SessionEvent:
+        """Atomically admit one execution command and its immutable Turn inputs."""
+        accepted = SessionCommandAcceptedPayload.model_validate(event.payload)
+        if (
+            accepted.kind
+            not in {
+                SessionCommandKind.MESSAGE,
+                SessionCommandKind.RUN,
+                SessionCommandKind.RESUME,
+            }
+            or str(event.session_id) != snapshot.session_id
+            or accepted.extension_turn_id != snapshot.turn_id
+            or accepted.extension_snapshot_digest != snapshot.digest
+            or snapshot.scope != scope
+            or task_ceiling.task_id != task_ceiling.binding.task_id
+        ):
+            raise ValueError("extension snapshot does not match execution command binding")
+        try:
+            with self._database.connect() as connection:
+                current_ceiling = resolve_extension_task_ceiling_in_transaction(
+                    connection,
+                    self._database.deployment_namespace,
+                    snapshot.session_id,
+                )
+                if current_ceiling != task_ceiling:
+                    raise ExtensionSnapshotAdmissionConflictError(
+                        "Task extension authority changed during admission"
+                    )
+                if any(
+                    skill.version.skill_id not in task_ceiling.skill_components
+                    for skill in snapshot.skills
+                ):
+                    raise ExtensionSnapshotAdmissionConflictError(
+                        "selected Skill exceeds the Task ceiling"
+                    )
+                existing_snapshot = load_extension_snapshot_in_transaction(
+                    connection,
+                    self._database.deployment_namespace,
+                    scope=scope,
+                    session_id=snapshot.session_id,
+                    turn_id=snapshot.turn_id,
+                    expected_digest=snapshot.digest,
+                )
+                if existing_snapshot is None:
+                    validate_skill_snapshot_in_transaction(
+                        connection,
+                        self._database.deployment_namespace,
+                        scope,
+                        snapshot.skills,
+                    )
+                canonical = append_event_in_transaction(
+                    connection, self._database.deployment_namespace, event
+                )
+                save_extension_snapshot_in_transaction(
+                    connection,
+                    self._database.deployment_namespace,
+                    scope,
+                    snapshot,
+                )
+                return canonical
+        except errors.UniqueViolation as exc:
             raise ValueError("duplicate or conflicting session event") from exc
 
     def list_for_session(self, session_id: SessionId) -> list[SessionEvent]:
@@ -154,7 +236,10 @@ def append_event_in_transaction(
 
 
 def _record_command_wakeup(
-    connection: Any, deployment_namespace: str, canonical: SessionEvent, *,
+    connection: Any,
+    deployment_namespace: str,
+    canonical: SessionEvent,
+    *,
     is_new_admission: bool = False,
 ) -> SessionEvent:
     record_command_wakeup_in_transaction(

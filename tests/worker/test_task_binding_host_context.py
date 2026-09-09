@@ -11,6 +11,7 @@ from agent_core.domain.host_authority import (
 from agent_core.domain.task_bindings import host_context_digest
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_security import parse_network_profile
+from agent_security.host_grant import JwtAlgorithm, VerifiedHostGrant
 from zebra_agent_api.session_binding import _build_binding_snapshot
 from zebra_agent_worker.task_recovery import RecoveredTask, apply_bound_host_context
 
@@ -55,22 +56,46 @@ def _task(tmp_path) -> RecoveredTask:
     )
 
 
+def _verified(context: HostContextEnvelope) -> VerifiedHostGrant:
+    return VerifiedHostGrant(context, context.grant_id, JwtAlgorithm.RS256, context.origin, "user")
+
+
 def test_worker_uses_exact_context_from_latest_binding(tmp_path) -> None:
     context = _context()
+    verified = _verified(context)
     binding = _build_binding_snapshot(
         "11111111-1111-1111-1111-111111111111",
         host_context=context,
+        verified_host_grant=verified,
         definition_snapshot_digest="a" * 64,
     )
 
     assert apply_bound_host_context(_task(tmp_path), binding).host_context == context
 
 
-def test_worker_rejects_context_digest_drift(tmp_path) -> None:
+def test_worker_does_not_confuse_browser_origin_with_verified_jwt_issuer(tmp_path) -> None:
     context = _context()
+    verified = VerifiedHostGrant(
+        context, context.grant_id, JwtAlgorithm.RS256, "https://api.trench.local", "user"
+    )
     binding = _build_binding_snapshot(
         "11111111-1111-1111-1111-111111111111",
         host_context=context,
+        verified_host_grant=verified,
+        definition_snapshot_digest="a" * 64,
+    )
+
+    assert binding.host_capability.authority_issuer != context.origin
+    assert apply_bound_host_context(_task(tmp_path), binding).host_context == context
+
+
+def test_worker_rejects_context_digest_drift(tmp_path) -> None:
+    context = _context()
+    verified = _verified(context)
+    binding = _build_binding_snapshot(
+        "11111111-1111-1111-1111-111111111111",
+        host_context=context,
+        verified_host_grant=verified,
         definition_snapshot_digest="a" * 64,
     )
     drifted = binding.model_copy(

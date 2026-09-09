@@ -53,3 +53,16 @@ def test_cloud_artifact_output_accepts_payload_aware_effect_dispatch(tmp_path: P
     )
 
     assert service is not None
+
+
+def test_cloud_skill_dependencies_require_pair_and_snapshot_recovery(tmp_path: Path) -> None:
+    base = {
+        "database_path": tmp_path / "sessions.sqlite",
+        "claim_service": cast(Any, object()),
+        "resume_service": cast(Any, object()),
+    }
+    with pytest.raises(ValueError, match="snapshot recovery"):
+        SessionExecutionService(
+            **base,
+            extension_skills=cast(Any, object()),
+        )

@@ -8,6 +8,7 @@ from agent_core.contracts import (
     SessionCommandKind,
     SessionCommandStatus,
     decide_session_command,
+    validate_accepted_session_command,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -78,6 +79,60 @@ def test_accepted_command_has_durable_event_payload() -> None:
     )
     assert event.payload["fingerprint"] == command.fingerprint
     assert event.payload["kind"] == "run"
+
+
+def test_server_extension_binding_does_not_change_client_intent_fingerprint() -> None:
+    from agent_core.contracts import SessionCommandAcceptedPayload
+
+    command = _command(SessionCommandKind.MESSAGE, payload={"content": "hello"})
+    payload = command.event_payload(
+        extension_snapshot_digest="a" * 64,
+        extension_turn_id="legacy-turn:1",
+    )
+
+    accepted = SessionCommandAcceptedPayload.model_validate(payload)
+    assert accepted.fingerprint == command.fingerprint
+    assert accepted.extension_snapshot_digest == "a" * 64
+    assert accepted.extension_turn_id == "legacy-turn:1"
+
+
+def test_accepted_command_integrity_rejects_fingerprint_and_identity_drift() -> None:
+    command = _command(SessionCommandKind.MESSAGE, payload={"content": "hello"})
+    payload = command.event_payload()
+    assert validate_accepted_session_command(
+        payload, session_id=command.session_id, idempotency_key=command.idempotency_key
+    ).fingerprint == command.fingerprint
+    with pytest.raises(ValueError, match="integrity"):
+        validate_accepted_session_command(
+            payload | {"payload": {"content": "tampered"}},
+            session_id=command.session_id,
+            idempotency_key=command.idempotency_key,
+        )
+    with pytest.raises(ValueError, match="integrity"):
+        validate_accepted_session_command(
+            payload, session_id=command.session_id, idempotency_key="other"
+        )
+
+
+def test_server_extension_binding_is_all_or_nothing() -> None:
+    from agent_core.contracts import SessionCommandAcceptedPayload
+
+    payload = _command().event_payload()
+    payload["extension_snapshot_digest"] = "a" * 64
+    with pytest.raises(ValidationError, match="binding must be complete"):
+        SessionCommandAcceptedPayload.model_validate(payload)
+
+
+def test_server_extension_binding_rejects_malformed_turn_identity() -> None:
+    from agent_core.contracts import SessionCommandAcceptedPayload
+
+    payload = _command().event_payload()
+    payload.update(
+        extension_snapshot_digest="a" * 64,
+        extension_turn_id="turn-1",
+    )
+    with pytest.raises(ValidationError, match="UUID or legacy-turn"):
+        SessionCommandAcceptedPayload.model_validate(payload)
 
 
 def test_duplicate_is_returned_before_revision_check() -> None:

@@ -12,6 +12,11 @@ from agent_core.application import (
 )
 from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.contracts import (
+    SessionCommandKind,
+    is_command_message_materialization,
+    validate_accepted_session_command,
+)
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import EventId
 
@@ -32,7 +37,22 @@ def append_command_message(
     input_event_id: UUID | None,
 ) -> SessionEvent:
     """Caller holds lease UPDATE then stream UPDATE until receipt/Inbox commit."""
-    payload = accepted.payload.get("payload")
+    if (
+        accepted.event_type is not EventType.SESSION_COMMAND_ACCEPTED
+        or accepted.actor is not EventActor.USER
+    ):
+        raise MessageInputRejected("invalid canonical message input")
+    try:
+        command = validate_accepted_session_command(
+            accepted.payload,
+            session_id=accepted.session_id,
+            idempotency_key=accepted.idempotency_key,
+        )
+    except ValueError:
+        raise MessageInputRejected("invalid canonical message input") from None
+    if command.kind is not SessionCommandKind.MESSAGE:
+        raise MessageInputRejected("invalid canonical message input")
+    payload = command.payload
     if not isinstance(payload, dict):
         raise MessageInputRejected("invalid canonical message input")
     content = payload.get("content")
@@ -68,11 +88,20 @@ def append_command_message(
             or input_event_id != event_id
             or existing.event_type is not expected_type
             or existing.actor is not EventActor.USER
-            or existing.causation_id != accepted.event_id
-            or existing.idempotency_key != key
+            or not is_command_message_materialization(
+                causation_id=existing.causation_id,
+                idempotency_key=existing.idempotency_key,
+                accepted_event_id=accepted.event_id,
+                accepted_idempotency_key=command.idempotency_key,
+            )
             or existing.sequence <= accepted.sequence
             or existing.payload.get("content") != content.strip()
             or existing.payload.get("clarification_id") != clarification_id
+            or (
+                clarification_id is None
+                and command.extension_turn_id is not None
+                and existing.payload.get("turn_id") != command.extension_turn_id
+            )
         ):
             raise MessageInputRejected("canonical command input association mismatch")
         return existing
@@ -88,6 +117,7 @@ def append_command_message(
                 clarification_id=clarification_id,
                 appended_at=now,
                 prior_human_turns=len(project_turns(events)),
+                turn_id=(command.extension_turn_id if clarification_id is None else None),
                 open_turn_exists=current_turn(events) is not None,
             ),
         )

@@ -9,12 +9,23 @@ from agent_core.domain.host_authority import (
     HostTechnicalLimits,
 )
 from agent_core.domain.task_bindings import host_context_digest
+from agent_security.host_grant import JwtAlgorithm, VerifiedHostGrant
 from zebra_agent_api.session_binding import (
     _build_binding_snapshot,
     renew_task_binding_snapshot,
 )
 
 NOW = datetime(2026, 8, 27, 12, 0, tzinfo=UTC)
+
+
+def _verified(context: HostContextEnvelope) -> VerifiedHostGrant:
+    return VerifiedHostGrant(
+        context=context,
+        grant_id=context.grant_id,
+        algorithm=JwtAlgorithm.RS256,
+        authority_issuer="https://api.trench.local",
+        subject_ref="user-1",
+    )
 
 
 def _context(
@@ -46,12 +57,15 @@ def test_renewal_appends_revision_and_preserves_frozen_anchors() -> None:
     binding = _build_binding_snapshot(
         "11111111-1111-1111-1111-111111111111",
         host_context=original,
+        verified_host_grant=_verified(original),
         definition_snapshot_digest="a" * 64,
         frozen_manifest_digest="b" * 64,
     )
     fresh = _context(grant_id="grant-2", expires_at=NOW + timedelta(minutes=10))
 
-    renewed = renew_task_binding_snapshot(binding, fresh, bound_at=NOW)
+    renewed = renew_task_binding_snapshot(
+        binding, fresh, authority_issuer="https://api.trench.local", bound_at=NOW
+    )
 
     assert renewed.binding_revision == 2
     assert renewed.host_capability.host_context == fresh
@@ -63,12 +77,14 @@ def test_renewal_appends_revision_and_preserves_frozen_anchors() -> None:
         binding.host_capability.connector_profile_digest
     )
     assert renewed.zebra_policy_digest == binding.zebra_policy_digest
+    assert renewed.host_capability.authority_issuer == "https://api.trench.local"
 
 
 def test_renewal_rejects_workspace_drift() -> None:
     binding = _build_binding_snapshot(
         "11111111-1111-1111-1111-111111111111",
-        host_context=_context(grant_id="grant-1"),
+        host_context=(context := _context(grant_id="grant-1")),
+        verified_host_grant=_verified(context),
         definition_snapshot_digest="a" * 64,
     )
 
@@ -77,6 +93,35 @@ def test_renewal_rejects_workspace_drift() -> None:
             binding,
             _context(grant_id="grant-2", workspace_ref="trench-workspace:user-2"),
         )
+
+
+def test_renewal_rejects_verified_authority_issuer_drift() -> None:
+    context = _context(grant_id="grant-1")
+    binding = _build_binding_snapshot(
+        "11111111-1111-1111-1111-111111111111",
+        host_context=context,
+        verified_host_grant=_verified(context),
+        definition_snapshot_digest="a" * 64,
+    )
+
+    with pytest.raises(ValueError, match="authority issuer drifted"):
+        renew_task_binding_snapshot(
+            binding,
+            _context(grant_id="grant-2"),
+            authority_issuer="https://forged.example.com",
+        )
+
+
+def test_host_binding_builder_rejects_unverified_or_mismatched_context() -> None:
+    context = _context(grant_id="grant-1")
+    for verified in (None, _verified(_context(grant_id="other"))):
+        with pytest.raises(ValueError, match="matching verified Host Grant"):
+            _build_binding_snapshot(
+                "11111111-1111-1111-1111-111111111111",
+                host_context=context,
+                verified_host_grant=verified,
+                definition_snapshot_digest="a" * 64,
+            )
 
 
 def test_host_context_digest_covers_ephemeral_authority_fields() -> None:

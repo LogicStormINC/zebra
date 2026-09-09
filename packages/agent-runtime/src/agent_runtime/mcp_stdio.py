@@ -133,11 +133,15 @@ def _discover_server(server: McpServerSpec) -> list[DiscoveredMcpTool]:
     raise McpProtocolError(f"MCP server {server.name} exceeded the tool-list page limit")
 
 
-def _parse_tool(server_name: str, value: object) -> DiscoveredMcpTool:
+def _parse_tool(
+    server_name: str, value: object, *, remote_alias: str | None = None
+) -> DiscoveredMcpTool:
     if not isinstance(value, dict):
         raise McpProtocolError(f"MCP server {server_name} returned an invalid tool")
     remote_name = value.get("name")
-    if not isinstance(remote_name, str) or not _TOOL_NAME_RE.fullmatch(remote_name):
+    if not isinstance(remote_name, str) or not _TOOL_NAME_RE.fullmatch(
+        remote_alias if remote_alias is not None else remote_name
+    ):
         raise McpProtocolError(f"MCP server {server_name} returned an unsupported tool name")
     schema = value.get("inputSchema")
     if not isinstance(schema, dict) or schema.get("type") != "object":
@@ -166,7 +170,7 @@ def _parse_tool(server_name: str, value: object) -> DiscoveredMcpTool:
         server_name=server_name,
         remote_name=remote_name,
         definition=ModelToolDefinition(
-            name=f"mcp.{server_name}.{remote_name}",
+            name=f"mcp.{server_name}.{remote_alias or remote_name}",
             description=f"Untrusted external MCP capability. {description}",
             parameters=schema,
         ),

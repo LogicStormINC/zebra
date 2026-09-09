@@ -5,11 +5,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
 
+from agent_runtime.mcp_http import McpHttpSession
 from agent_runtime.mcp_protocol import (
     McpAnyServerSpec,
     McpHttpServerSpec,
     McpProtocolError,
-    McpServerSpec,
     StdioMcpSession,
 )
 from agent_runtime.mcp_stdio import MCP_CALL_TIMEOUT_SECONDS, MCP_DISCOVERY_TIMEOUT_SECONDS
@@ -75,11 +75,9 @@ class ResolvedMcpPrompt:
 
 
 def discover_mcp_prompts(servers: Sequence[McpAnyServerSpec]) -> tuple[McpPrompt, ...]:
-    # Prompts are a stdio-only capability in Phase A; HTTP servers are skipped.
-    stdio_servers = [server for server in servers if not isinstance(server, McpHttpServerSpec)]
-    _require_unique_server_names(stdio_servers)
+    _require_unique_server_names(servers)
     prompts: list[McpPrompt] = []
-    for server in sorted(stdio_servers, key=lambda item: item.name):
+    for server in sorted(servers, key=lambda item: item.name):
         prompts.extend(_discover_server_prompts(server))
     prompt_ids = [prompt.prompt_id for prompt in prompts]
     if len(set(prompt_ids)) != len(prompt_ids):
@@ -99,11 +97,7 @@ def resolve_mcp_prompt(
     if prompt is None:
         raise McpProtocolError("selected MCP prompt is unavailable")
     normalized_arguments = _normalize_arguments(prompt, arguments)
-    server = next(
-        server
-        for server in servers
-        if not isinstance(server, McpHttpServerSpec) and server.name == prompt.server_name
-    )
+    server = next(server for server in servers if server.name == prompt.server_name)
     messages = _get_prompt(server, prompt, normalized_arguments)
     return ResolvedMcpPrompt(
         prompt_id=prompt.prompt_id,
@@ -114,11 +108,16 @@ def resolve_mcp_prompt(
     )
 
 
-def _discover_server_prompts(server: McpServerSpec) -> list[McpPrompt]:
+def _discover_server_prompts(server: McpAnyServerSpec) -> list[McpPrompt]:
     prompts: list[McpPrompt] = []
     cursor: str | None = None
     seen_cursors: set[str] = set()
-    with StdioMcpSession(server, MCP_DISCOVERY_TIMEOUT_SECONDS) as session:
+    connection = (
+        McpHttpSession(server, MCP_DISCOVERY_TIMEOUT_SECONDS)
+        if isinstance(server, McpHttpServerSpec)
+        else StdioMcpSession(server, MCP_DISCOVERY_TIMEOUT_SECONDS)
+    )
+    with connection as session:
         if not session.supports("prompts"):
             return []
         _reject_server_instructions(session, server.name)
@@ -148,9 +147,7 @@ def _discover_server_prompts(server: McpServerSpec) -> list[McpPrompt]:
 def _parse_prompt(server_name: str, value: object) -> McpPrompt:
     if not isinstance(value, Mapping):
         raise McpProtocolError(f"MCP server {server_name} returned an invalid prompt")
-    remote_name = _bounded_identifier(
-        value.get("name"), "prompt name", MAX_MCP_PROMPT_NAME_CHARS
-    )
+    remote_name = _bounded_identifier(value.get("name"), "prompt name", MAX_MCP_PROMPT_NAME_CHARS)
     description = _bounded_optional(
         value.get("description"), "prompt description", MAX_MCP_PROMPT_DESCRIPTION_CHARS
     )
@@ -216,11 +213,16 @@ def _normalize_arguments(prompt: McpPrompt, value: Mapping[str, str]) -> dict[st
 
 
 def _get_prompt(
-    server: McpServerSpec,
+    server: McpAnyServerSpec,
     prompt: McpPrompt,
     arguments: Mapping[str, str],
 ) -> tuple[McpPromptMessage, ...]:
-    with StdioMcpSession(server, MCP_CALL_TIMEOUT_SECONDS) as session:
+    connection = (
+        McpHttpSession(server, MCP_CALL_TIMEOUT_SECONDS)
+        if isinstance(server, McpHttpServerSpec)
+        else StdioMcpSession(server, MCP_CALL_TIMEOUT_SECONDS)
+    )
+    with connection as session:
         if not session.supports("prompts"):
             raise McpProtocolError(f"MCP server {server.name} no longer declares prompts")
         _reject_server_instructions(session, server.name)
@@ -266,7 +268,9 @@ def _parse_message(value: object) -> McpPromptMessage:
     return McpPromptMessage(role=role, text=text)
 
 
-def _reject_server_instructions(session: StdioMcpSession, server_name: str) -> None:
+def _reject_server_instructions(
+    session: StdioMcpSession | McpHttpSession, server_name: str
+) -> None:
     if session.has_server_instructions:
         raise McpProtocolError(f"MCP server {server_name} returned unsupported instructions")
 
@@ -277,7 +281,7 @@ def _reject_duplicate_prompt_names(server_name: str, prompts: Sequence[McpPrompt
         raise McpProtocolError(f"MCP server {server_name} returned duplicate prompt names")
 
 
-def _require_unique_server_names(servers: Sequence[McpServerSpec]) -> None:
+def _require_unique_server_names(servers: Sequence[McpAnyServerSpec]) -> None:
     names = [server.name for server in servers]
     if len(set(names)) != len(names):
         raise McpProtocolError("MCP server names must be unique")

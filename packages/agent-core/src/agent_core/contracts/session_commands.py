@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from agent_core.contracts.turn_events import validate_turn_identity
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
 
@@ -69,9 +70,7 @@ class SessionCommand(BaseModel):
                 raise ValueError("message command requires non-blank payload.content")
         if self.kind is SessionCommandKind.RESUME:
             worker_id = self.payload.get("worker_id")
-            if worker_id is not None and (
-                not isinstance(worker_id, str) or not worker_id.strip()
-            ):
+            if worker_id is not None and (not isinstance(worker_id, str) or not worker_id.strip()):
                 raise ValueError("resume payload.worker_id must be non-blank when provided")
             lease_ttl = self.payload.get("lease_ttl_seconds")
             if lease_ttl is not None and (
@@ -91,7 +90,12 @@ class SessionCommand(BaseModel):
         encoded = json.dumps(intent, sort_keys=True, separators=(",", ":")).encode()
         return hashlib.sha256(encoded).hexdigest()
 
-    def event_payload(self) -> dict[str, object]:
+    def event_payload(
+        self,
+        *,
+        extension_snapshot_digest: str | None = None,
+        extension_turn_id: str | None = None,
+    ) -> dict[str, object]:
         return SessionCommandAcceptedPayload(
             command_id=str(self.command_id),
             session_id=str(self.session_id),
@@ -100,7 +104,9 @@ class SessionCommand(BaseModel):
             idempotency_key=self.idempotency_key,
             payload=self.payload,
             fingerprint=self.fingerprint,
-        ).model_dump(mode="json")
+            extension_snapshot_digest=extension_snapshot_digest,
+            extension_turn_id=extension_turn_id,
+        ).model_dump(mode="json", exclude_none=True)
 
 
 class SessionCommandAcceptedPayload(BaseModel):
@@ -113,6 +119,15 @@ class SessionCommandAcceptedPayload(BaseModel):
     idempotency_key: str = Field(min_length=1, max_length=MAX_IDEMPOTENCY_KEY_LENGTH)
     payload: dict[str, object]
     fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    extension_snapshot_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    extension_turn_id: str | None = Field(default=None, min_length=1, max_length=512)
+
+    @model_validator(mode="after")
+    def require_complete_extension_binding(self) -> SessionCommandAcceptedPayload:
+        values = (self.extension_snapshot_digest, self.extension_turn_id)
+        if (values[0] is None) != (values[1] is None):
+            raise ValueError("extension snapshot binding must be complete")
+        return self
 
     @field_validator("command_id", "session_id")
     @classmethod
@@ -121,6 +136,55 @@ class SessionCommandAcceptedPayload(BaseModel):
             return str(UUID(value))
         except ValueError as exc:
             raise ValueError("command identity must be a UUID") from exc
+
+    @field_validator("extension_turn_id")
+    @classmethod
+    def validate_extension_turn_identity(cls, value: str | None) -> str | None:
+        return None if value is None else validate_turn_identity(value)
+
+
+def validate_accepted_session_command(
+    payload: dict[str, object],
+    *,
+    session_id: SessionId,
+    idempotency_key: str | None,
+) -> SessionCommandAcceptedPayload:
+    """Prove an accepted event still represents its original command intent."""
+
+    accepted = SessionCommandAcceptedPayload.model_validate(payload)
+    command = SessionCommand(
+        command_id=UUID(accepted.command_id),
+        session_id=SessionId(UUID(accepted.session_id)),
+        kind=accepted.kind,
+        expected_revision=accepted.expected_revision,
+        idempotency_key=accepted.idempotency_key,
+        payload=accepted.payload,
+    )
+    if (
+        accepted.session_id != str(session_id)
+        or accepted.idempotency_key != idempotency_key
+        or accepted.fingerprint != command.fingerprint
+    ):
+        raise ValueError("accepted command integrity check failed")
+    return accepted
+
+
+def is_command_message_materialization(
+    *,
+    causation_id: UUID | None,
+    idempotency_key: str | None,
+    accepted_event_id: UUID,
+    accepted_idempotency_key: str,
+) -> bool:
+    """Match only the canonical Rabbit association or strict legacy form."""
+
+    return (
+        causation_id == accepted_event_id
+        and idempotency_key == f"command-input:{accepted_event_id}"
+    ) or (
+        causation_id is None
+        and idempotency_key == f"{accepted_idempotency_key}:message"
+    )
 
 
 class SessionCommandDecision(BaseModel):

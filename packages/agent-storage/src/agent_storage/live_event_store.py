@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import replace
 
 from agent_core.domain.events import SessionEvent
+from agent_core.domain.extension_snapshots import ExtensionSnapshot, ExtensionTaskCeiling
+from agent_core.domain.extensions import ExtensionScope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
 from agent_core.domain.workspaces import WorkspaceProjection
@@ -31,12 +33,32 @@ class PostCommitPublishingEventStore(EventStorePort):
 
     def append(self, event: SessionEvent) -> SessionEvent:
         persisted = self._event_store.append(event)
+        self._publish(persisted)
+        return persisted
+
+    def append_with_extension_snapshot(
+        self,
+        event: SessionEvent,
+        *,
+        scope: ExtensionScope,
+        snapshot: ExtensionSnapshot,
+        task_ceiling: ExtensionTaskCeiling,
+    ) -> SessionEvent:
+        append = getattr(self._event_store, "append_with_extension_snapshot", None)
+        if append is None:
+            raise ValueError("underlying store cannot atomically admit extension snapshots")
+        persisted: SessionEvent = append(
+            event, scope=scope, snapshot=snapshot, task_ceiling=task_ceiling
+        )
+        self._publish(persisted)
+        return persisted
+
+    def _publish(self, persisted: SessionEvent) -> None:
         try:
             self._publisher.publish_committed(persisted)
         except Exception:
             # ponytail: live delivery is a hint; durable replay remains authoritative.
             pass
-        return persisted
 
     def list_for_session(self, session_id: SessionId) -> list[SessionEvent]:
         return self._event_store.list_for_session(session_id)

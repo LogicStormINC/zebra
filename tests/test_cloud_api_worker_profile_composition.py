@@ -112,16 +112,23 @@ def _cloud_settings() -> CloudCompositionSettings:
 def test_local_profile_keeps_sqlite_and_cloud_selection_never_falls_back(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    order: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        "agent_storage.runtime_composition.require_current_schema",
+        lambda dsn: order.append(("schema", dsn)),
+    )
     local = compose_control_plane_stores(
         profile="local",
         storage_authority="sqlite",
         database_path=tmp_path / "local.sqlite",
     )
     assert isinstance(local, ControlPlaneStores)
+    assert order == []
 
     calls: list[dict[str, object]] = []
 
     def fake_postgres(dsn: str, **kwargs: object) -> object:
+        order.append(("stores", dsn))
         calls.append({"dsn": dsn, **kwargs})
         return object()
 
@@ -134,6 +141,7 @@ def test_local_profile_keeps_sqlite_and_cloud_selection_never_falls_back(
         database_path=tmp_path / "ignored.sqlite",
         cloud=_cloud_settings(),
     )
+    assert order == [("schema", _cloud_settings().dsn), ("stores", _cloud_settings().dsn)]
     assert len(calls) == 1
     assert calls[0]["dsn"] == "postgresql://zebra:test@localhost/zebra"
     assert calls[0]["deployment_namespace"] == "deployment"
@@ -141,6 +149,31 @@ def test_local_profile_keeps_sqlite_and_cloud_selection_never_falls_back(
     assert calls[0]["history_scope"] == _cloud_settings().history_scope
     assert calls[0]["continuation_scope"] == _cloud_settings().continuation_scope
     assert cloud is not local
+
+
+def test_cloud_schema_failure_aborts_store_composition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def reject_schema(dsn: str) -> None:
+        assert dsn == _cloud_settings().dsn
+        raise RuntimeError("schema is not current")
+
+    monkeypatch.setattr("agent_storage.runtime_composition.require_current_schema", reject_schema)
+    monkeypatch.setattr(
+        "agent_storage.runtime_composition.postgres_control_plane_stores",
+        lambda *_a, **_k: pytest.fail("store factory ran after schema failure"),
+    )
+    monkeypatch.setattr(
+        "agent_storage.runtime_composition.sqlite_control_plane_stores",
+        lambda *_a, **_k: pytest.fail("schema failure fell back to SQLite"),
+    )
+    with pytest.raises(RuntimeError, match="schema is not current"):
+        compose_control_plane_stores(
+            profile="cloud",
+            storage_authority="postgresql",
+            database_path=tmp_path / "ignored.sqlite",
+            cloud=_cloud_settings(),
+        )
 
 
 def test_cloud_environment_missing_required_configuration_fails_closed() -> None:
@@ -231,7 +264,11 @@ def test_cloud_and_production_worker_profiles_use_shared_composition_without_sql
     monkeypatch.setattr(
         "zebra_agent_worker.command_process_state.command_cutover_state", lambda *a, **kw: False
     )
-    monkeypatch.setattr("zebra_agent_worker.loop.SessionExecutionService", lambda **_: object())
+    def capture_service(**kwargs: object) -> object:
+        captured["service"] = kwargs
+        return object()
+
+    monkeypatch.setattr("zebra_agent_worker.loop.SessionExecutionService", capture_service)
     build_worker_loop_service(
         database_path=tmp_path / "ignored.sqlite",
         settings=settings,
@@ -240,6 +277,9 @@ def test_cloud_and_production_worker_profiles_use_shared_composition_without_sql
     )
     assert captured["cloud"] is not None
     assert cast(CloudCompositionSettings, captured["cloud"]).dsn == _cloud_settings().dsn
+    service = cast(dict[str, object], captured["service"])
+    assert service["extension_snapshot_store"] is None
+    assert service["extension_skills"] is None
 
 
 def test_worker_cloud_profile_rejects_local_store_injection(tmp_path: Path) -> None:
@@ -260,3 +300,59 @@ def test_worker_cloud_profile_rejects_local_store_injection(tmp_path: Path) -> N
             cloud_composition=_cloud_settings(),
             sleep=lambda _: None,
         )
+
+
+def test_cloud_skill_worker_passes_one_bundle_and_requires_snapshot_recovery(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    base = {
+        "ZEBRA_PROFILE": "cloud",
+        "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
+        "ZEBRA_RUNTIME_CLASS": "gvisor",
+        "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
+        "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA": "true",
+        "ZEBRA_CLOUD_SKILL_WORKER_ENABLED": "true",
+    }
+    with pytest.raises(ValueError, match="snapshot recovery"):
+        build_worker_loop_service(
+            database_path=tmp_path / "ignored.sqlite",
+            settings=load_settings(env=base),
+            cloud_composition=_cloud_settings(),
+            sleep=lambda _: None,
+        )
+
+    settings = load_settings(env={
+        **base, "ZEBRA_CLOUD_EXTENSION_WORKER_ENABLED": "true",
+    })
+    local = sqlite_control_plane_stores(tmp_path / "worker.sqlite")
+    extension_snapshots, extensions, objects = object(), object(), _ObjectReader()
+    bundle = CloudWorkerComposition(
+        stores=local,  # type: ignore[arg-type]
+        effect_dispatch=local.effects,  # type: ignore[arg-type]
+        projection_transaction=local.workspaces,  # type: ignore[arg-type]
+        deployment_namespace="deployment",
+        artifact_factory=lambda _: None,  # type: ignore[arg-type,return-value]
+        provider_continuation_factory=lambda _: None,  # type: ignore[arg-type,return-value]
+        dsn=_cloud_settings().dsn,
+        extension_snapshots=extension_snapshots,  # type: ignore[arg-type]
+        extensions=extensions,  # type: ignore[arg-type]
+        skill_objects=objects,
+    )
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(
+        "zebra_agent_worker.command_process_state.command_cutover_state", lambda *a, **kw: False
+    )
+
+    def capture_service(**kwargs: object) -> object:
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr("zebra_agent_worker.loop.SessionExecutionService", capture_service)
+    build_worker_loop_service(
+        database_path=tmp_path / "ignored.sqlite", settings=settings,
+        cloud_worker_composition=bundle, sleep=lambda _: None,
+    )
+    assert captured["extension_snapshot_store"] is extension_snapshots
+    source = captured["extension_skills"]
+    assert source.store is extensions  # type: ignore[attr-defined]
+    assert source.objects is objects  # type: ignore[attr-defined]

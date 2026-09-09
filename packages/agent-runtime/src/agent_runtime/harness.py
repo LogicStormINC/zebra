@@ -48,9 +48,15 @@ from agent_tools import (
 )
 from agent_tools.builtin.publish import FilePublishTool
 from agent_tools.errors import ToolRegistryError
-from agent_tools.skills_catalog import LocalSkillCatalog, ScopedSkillRoot, SkillEnablementState
+from agent_tools.skills_catalog import (
+    LocalSkillCatalog,
+    ScopedSkillRoot,
+    SkillCatalog,
+    SkillEnablementState,
+)
 
 from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.cloud_mcp_transport import CloudMcpTransport
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
@@ -67,6 +73,7 @@ DEFAULT_TEST_PRESETS = {
     "test": ("make", "test"),
 }
 DEFAULT_RESEARCH_CHILD_LIMIT = 3
+
 
 def run_local_harness(
     *,
@@ -155,6 +162,7 @@ def run_local_harness(
     finally:
         tool_gateway.close()
 
+
 class LocalToolGateway(ToolGatewayPort):
     def __init__(
         self,
@@ -174,11 +182,14 @@ class LocalToolGateway(ToolGatewayPort):
         web_search_endpoint: str | None = None,
         web_search_transport: WebSearchTransport | None = None,
         skill_roots: tuple[str | Path | ScopedSkillRoot, ...] = (),
+        skill_catalog: SkillCatalog | None = None,
+        skill_component_names: tuple[str, ...] = (),
         skills_state: SkillEnablementState | None = None,
         session_history: SessionHistoryPort | None = None,
         current_session_id: str | None = None,
         mcp_servers: Sequence[McpAnyServerSpec] = (),
         mcp_allowlist: Sequence[str] | None = None,
+        cloud_mcp_transport: CloudMcpTransport | None = None,
         runtime: RuntimePort | None = None,
         runtime_handle: RuntimeHandle | None = None,
         artifact_payload_store: ArtifactPayloadStorePort | None = None,
@@ -196,6 +207,10 @@ class LocalToolGateway(ToolGatewayPort):
             raise ValueError(
                 f"selected MCP tools are unavailable: {', '.join(sorted(mcp_allowlist))}"
             )
+        if skill_catalog is not None and skill_roots:
+            raise ValueError("configure skill_roots or skill_catalog, not both")
+        if skill_component_names and skill_catalog is None:
+            raise ValueError("skill_component_names require an injected skill_catalog")
         self._workspace = LocalWorkspace(workspace_root)
         self._workspace.ensure()
         self._runtime = runtime or LocalRuntime()
@@ -252,10 +267,12 @@ class LocalToolGateway(ToolGatewayPort):
             web_pipeline_v2=web_pipeline_v2,
         )
         self._skill_component_names: tuple[str, ...] = ()
-        if skill_roots:
-            catalog = LocalSkillCatalog(skill_roots, skills_state=skills_state)
-            self._skill_component_names = tuple(
-                metadata.name for metadata in catalog.list()[0]
+        if skill_roots or skill_catalog is not None:
+            catalog = skill_catalog or LocalSkillCatalog(skill_roots, skills_state=skills_state)
+            self._skill_component_names = (
+                skill_component_names
+                if skill_catalog is not None
+                else tuple(metadata.name for metadata in catalog.list()[0])
             )
             for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
                 if skill_tool.contract.name in enabled_names:
@@ -267,6 +284,7 @@ class LocalToolGateway(ToolGatewayPort):
             mcp_servers,
             mcp_allowlist,
             max_output_bytes=None if output_projector is not None else 32_768,
+            cloud=cloud_mcp_transport,
         )
         self._mcp_catalog = AuthorizedMcpToolCatalog(
             mcp_transport.model_tools if mcp_transport is not None else ()
@@ -465,10 +483,9 @@ class LocalToolGateway(ToolGatewayPort):
                 self._runtime.destroy(self._runtime_handle)
                 self._runtime_handle = None
 
+
 def _optional_web_search_endpoint(
-    value: str | None,
-    *,
-    web_pipeline_v2: bool = False,
+    value: str | None, *, web_pipeline_v2: bool = False,
 ) -> WebTarget | None:
     if value is None:
         return None

@@ -26,6 +26,7 @@ from agent_core.domain.session_handoff import HandoffActorKind
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.ports import EventStorePort
 from agent_core.ports.agent_tasks import TaskEvent
+from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
@@ -48,11 +49,11 @@ class TaskSessionApi(Protocol):
         *,
         idempotency_key: str | None = None,
         host_context: HostContextEnvelope | None = None,
+        verified_host_grant: VerifiedHostGrant | None = None,
     ) -> ApiResponse: ...
 
     def append_session_message(
-        self, session_id: str, payload: dict[str, object]
-    ) -> ApiResponse: ...
+        self, session_id: str, payload: dict[str, object]) -> ApiResponse: ...
 
     def cancel_session(
         self,
@@ -67,7 +68,6 @@ class TaskSessionApi(Protocol):
     def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse: ...
 
     def resume_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse: ...
-
 
 @dataclass(frozen=True)
 class TaskReadApi:
@@ -100,7 +100,6 @@ class TaskReadApi:
         if attachments:
             body["attachments"] = attachments
         return ApiResponse(200, body)
-
     def list(self, query: Mapping[str, str]) -> ApiResponse:
         limit = parse_task_limit(query.get("limit"))
         if isinstance(limit, ApiResponse):
@@ -139,7 +138,6 @@ class TaskReadApi:
             200,
             {"tasks": items, "sessions": items, "count": len(items), "limit": limit},
         )
-
     def stream(self, task_id: str) -> ApiResponse:
         parsed = parse_task_id(task_id)
         if isinstance(parsed, ApiResponse):
@@ -230,11 +228,13 @@ def create_task(
     *,
     idempotency_key: str | None,
     host_context: HostContextEnvelope | None = None,
+    verified_host_grant: VerifiedHostGrant | None = None,
 ) -> ApiResponse:
     response = app.create_session(
         payload,
         idempotency_key=idempotency_key,
         host_context=host_context,
+        verified_host_grant=verified_host_grant,
     )
     if response.status_code not in {200, 201}:
         return response

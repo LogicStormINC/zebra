@@ -106,9 +106,7 @@ class _Dispatch:
     def reconcile_expired(self, dispatch_id, *, old_claim, current_fence, evidence):
         del dispatch_id, current_fence, evidence
         self.reconciled += 1
-        return old_claim.dispatch.model_copy(
-            update={"status": EffectDispatchStatus.UNCERTAIN}
-        )
+        return old_claim.dispatch.model_copy(update={"status": EffectDispatchStatus.UNCERTAIN})
 
 
 class _CloudPayloads:
@@ -152,9 +150,7 @@ class _CloudPayloads:
         assert self.call is not None
         return self.call
 
-    def complete_with_payload(
-        self, claim, *, result, terminal_event, authority
-    ) -> SessionEvent:
+    def complete_with_payload(self, claim, *, result, terminal_event, authority) -> SessionEvent:
         del claim, result, authority
         self.completed += 1
         return terminal_event
@@ -514,6 +510,52 @@ def test_lease_loss_after_schedule_stops_provider_call(tmp_path) -> None:
 
     assert gateway.calls == 0
     assert dispatch.pending is not None
+
+
+def test_lease_lost_during_payload_read_stops_dispatch(tmp_path, monkeypatch) -> None:
+    gateway = _Gateway()
+    dispatch = _Dispatch()
+    session_id = new_session_id()
+    accepted = []
+    owned = True
+
+    def require_owned():
+        if not owned:
+            raise LeaseLostError("ownership lost during payload read")
+
+    guarded = FencedEffectToolGateway(
+        gateway,
+        dispatch=dispatch,
+        artifacts=SQLiteArtifactPayloadStore(tmp_path / "stale-payload.db"),
+        execution_session_id=session_id,
+        root_session_id=session_id,
+        fence=_fence(),
+        claim_ttl=timedelta(seconds=30),
+        authority_scope="workspace-write",
+        next_event=lambda event_type, actor, payload: SessionEvent.create(
+            session_id=session_id,
+            sequence=len(accepted),
+            event_type=event_type,
+            actor=actor,
+            payload=payload,
+        ),
+        accept_event=accepted.append,
+        ownership_check=require_owned,
+    )
+    read = guarded._read_tool_call
+
+    def lose_after_read(ref):
+        nonlocal owned
+        call = read(ref)
+        owned = False
+        return call
+
+    monkeypatch.setattr(guarded, "_read_tool_call", lose_after_read)
+    with pytest.raises(LeaseLostError):
+        guarded.execute(_call("mcp.fixture.write"))
+    assert gateway.calls == 0
+    assert dispatch.last_claim is not None
+    assert dispatch.uncertain == 1
 
 
 def _fence() -> LeaseFence:

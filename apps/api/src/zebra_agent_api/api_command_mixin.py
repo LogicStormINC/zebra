@@ -6,9 +6,11 @@ from uuid import UUID
 
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.command_submission import submit_session_command
+from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
 from zebra_agent_api.responses import ApiResponse, conflict
 
 
@@ -85,6 +87,8 @@ class ApiCommandMixin:
         payload: dict[str, object],
         *,
         idempotency_key: str | None,
+        extension_admission: CloudExtensionTurnAdmission | None = None,
+        verified_host_grant: VerifiedHostGrant | None = None,
     ) -> ApiResponse:
         """Append intent only; a Worker owns the eventual execution side effect."""
         return submit_session_command(
@@ -92,6 +96,8 @@ class ApiCommandMixin:
             session_id,
             payload,
             idempotency_key=idempotency_key,
+            extension_admission=extension_admission,
+            verified_host_grant=verified_host_grant,
         )
 
 

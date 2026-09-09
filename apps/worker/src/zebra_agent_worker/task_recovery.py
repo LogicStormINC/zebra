@@ -64,11 +64,7 @@ def apply_bound_host_context(
     host = binding.host_capability
     if host_context_digest(context) != host.grant_digest:
         raise ValueError("bound Host context digest does not match the Task binding")
-    if (
-        context.host_app_id != host.host_app_id
-        or context.namespace_id != host.namespace_id
-        or context.origin != host.authority_issuer
-    ):
+    if context.host_app_id != host.host_app_id or context.namespace_id != host.namespace_id:
         raise ValueError("bound Host context authority does not match the Task binding")
     return replace(task, host_context=context)
 

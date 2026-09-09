@@ -31,6 +31,7 @@ from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.live_event_runtime import configure_live_event_delivery
+from zebra_agent_worker.mcp_composition import compose_worker_mcp
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.provider_configuration import model_provider_settings
 from zebra_agent_worker.provider_continuation_commit import (
@@ -52,6 +53,7 @@ from zebra_agent_worker.worker_loop_service import (
     _task_binding_id,
 )
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
+from zebra_agent_worker.worker_skill_catalog import WorkerSkillCatalogSource
 
 
 def build_worker_loop_service(
@@ -70,6 +72,12 @@ def build_worker_loop_service(
     model_http_client: httpx.Client | None = None,
 ) -> WorkerLoopService:
     client_runtime = None
+    if settings.mcp_credentials.worker_enabled and settings.storage_authority != "postgresql":
+        raise ValueError("cloud MCP Worker requires PostgreSQL cloud composition")
+    if settings.cloud_skill_worker_enabled and settings.storage_authority != "postgresql":
+        raise ValueError("cloud Skill Worker requires PostgreSQL cloud composition")
+    if settings.cloud_skill_worker_enabled and not settings.cloud_extension_worker_enabled:
+        raise ValueError("cloud Skill Worker requires extension snapshot recovery")
     if settings.storage_authority == "postgresql":
         if stores is not None:
             raise ValueError("cloud Worker requires CloudWorkerComposition, not ControlPlaneStores")
@@ -86,6 +94,20 @@ def build_worker_loop_service(
         cloud_bundle = cloud_worker_composition or compose_cloud_worker(
             cloud_composition or cloud_composition_from_environment()
         )
+        if settings.cloud_skill_worker_enabled and (
+            cloud_bundle.extensions is None or cloud_bundle.skill_objects is None
+        ):
+            raise ValueError("cloud Skill Worker dependencies are unavailable")
+        active_extension_store = (
+            cloud_bundle.extension_snapshots if settings.cloud_extension_worker_enabled else None
+        )
+        if settings.cloud_skill_worker_enabled:
+            assert cloud_bundle.extensions is not None and cloud_bundle.skill_objects is not None
+            active_extension_skills = WorkerSkillCatalogSource(
+                cloud_bundle.extensions, cloud_bundle.skill_objects
+            )
+        else:
+            active_extension_skills = None
         active_stores: ControlPlaneStores | PostgresControlPlaneStores = cloud_bundle.stores
         cloud_memory_store: GovernedMemoryStorePort | None = cloud_bundle.stores.memories
         active_transaction: WorkerProjectionTransactionPort | None = (
@@ -118,6 +140,8 @@ def build_worker_loop_service(
         active_provider_factory = cloud_provider_continuation_factory
         active_authority_resolver = None
         active_authority_scope_provider = None
+        active_extension_store = None
+        active_extension_skills = None
     active_stores, active_transaction = configure_live_event_delivery(
         active_stores,
         active_transaction,
@@ -195,6 +219,9 @@ def build_worker_loop_service(
                 wakeup_dsn, deployment_namespace=active_namespace
             )
 
+    active_extension_mcp = compose_worker_mcp(
+        settings, cloud_bundle if settings.storage_authority == "postgresql" else None,
+    )
     execution_service = SessionExecutionService(
         database_path=database_path,
         claim_service=claim_service,
@@ -215,6 +242,9 @@ def build_worker_loop_service(
             if settings.storage_authority == "postgresql"
             else None
         ),
+        extension_snapshot_store=active_extension_store,
+        extension_skills=active_extension_skills,
+        extension_mcp=active_extension_mcp,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,
         workspace_resolver=(

@@ -16,6 +16,7 @@ spec.loader.exec_module(fixture)
 
 @pytest.fixture
 def environment(monkeypatch, tmp_path):
+    monkeypatch.setattr(fixture, "ROOT", tmp_path)
     for name in ("ca.crt", "tls.crt", "tls.key", "trench-host-grant-v1.pem"):
         (tmp_path / name).touch()
     monkeypatch.setattr(fixture, "SECRETS", tmp_path)
@@ -32,6 +33,17 @@ def environment(monkeypatch, tmp_path):
             "ZEBRA_HOST_TOOL_SHARED_SECRET": "original-workload-secret",
         }
     )
+
+
+def test_original_checkout_rejected_before_secrets_or_commands(monkeypatch):
+    monkeypatch.setattr(fixture, "ROOT", fixture.ORIGINAL)
+    monkeypatch.setattr(
+        fixture, "reuse_worker_environment", lambda: pytest.fail("worker environment read")
+    )
+    monkeypatch.setattr(Path, "is_file", lambda *_a: pytest.fail("secret material inspected"))
+    monkeypatch.setattr(subprocess, "run", lambda *_a, **_k: pytest.fail("command ran"))
+    with pytest.raises(ValueError, match="run only from the isolated worktree"):
+        fixture.build_environment()
 
 
 def test_synthetic_targets_and_no_reused_authority(environment):

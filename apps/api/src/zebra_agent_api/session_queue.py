@@ -12,6 +12,7 @@ from agent_core.ports.idempotency_store import IdempotencyRecord
 from agent_core.ports.task_admission_transaction import (
     TaskAdmissionIdempotencyConflict,
 )
+from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.responses import ApiResponse
@@ -30,7 +31,14 @@ def create_queued_session(
     idempotency_key: str | None = None,
     idempotency_request_hash: str | None = None,
     frozen_manifest_digest: str | None = None,
+    verified_host_grant: VerifiedHostGrant | None = None,
 ) -> ApiResponse:
+    if admission_dsn and host_context is not None:
+        if (
+            not isinstance(verified_host_grant, VerifiedHostGrant)
+            or verified_host_grant.context != host_context
+        ):
+            return ApiResponse(403, {"status": "verified_host_grant_required"})
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title=str(parsed["title"]),
@@ -107,6 +115,7 @@ def create_queued_session(
             definition_snapshot=definition_snapshot,
             deployment_namespace=admission_namespace,
             frozen_manifest_digest=frozen_manifest_digest,
+            verified_host_grant=verified_host_grant,
         )
         idempotency_record = None
         if idempotency_key is not None and idempotency_request_hash is not None:
@@ -165,6 +174,7 @@ def _derive_binding(
     definition_snapshot: AgentDefinitionSnapshot | None,
     deployment_namespace: str = "zebra",
     frozen_manifest_digest: str | None = None,
+    verified_host_grant: VerifiedHostGrant | None = None,
 ) -> object:
     """Derive the TaskBindingSnapshot for atomic admission (F3).
 
@@ -182,4 +192,5 @@ def _derive_binding(
         ),
         deployment_namespace=deployment_namespace,
         frozen_manifest_digest=frozen_manifest_digest,
+        verified_host_grant=verified_host_grant,
     )

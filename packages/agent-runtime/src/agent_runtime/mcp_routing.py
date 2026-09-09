@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_tools import McpProxyRequest, McpProxyResponse
 
+from agent_runtime.cloud_mcp_transport import CloudMcpTransport
 from agent_runtime.mcp_http import StreamableHttpMcpTransport
 from agent_runtime.mcp_pool import McpSessionPool
 from agent_runtime.mcp_protocol import McpAnyServerSpec, McpHttpServerSpec, McpProtocolError
@@ -44,7 +45,8 @@ def build_mcp_transport(
     allowlist: Sequence[str] | None,
     *,
     max_output_bytes: int | None,
-) -> McpSessionPool | _CompositeMcpTransport | None:
+    cloud: CloudMcpTransport | None = None,
+) -> McpSessionPool | _CompositeMcpTransport | CloudMcpTransport | None:
     """Build the effective MCP transport(s), partitioning servers by kind.
 
     Each sub-transport is wrapped in a :class:`McpSessionPool` so health
@@ -52,6 +54,10 @@ def build_mcp_transport(
     on the live harness path. Returns ``None`` when there are no servers or the
     allowlist is empty, mirroring the original stdio-only guard.
     """
+    if cloud is not None:
+        if servers or allowlist:
+            raise ValueError("cloud MCP cannot be mixed with process MCP configuration")
+        return cloud
     if not servers or (allowlist is not None and not allowlist):
         return None
     stdio_servers = [server for server in servers if not isinstance(server, McpHttpServerSpec)]

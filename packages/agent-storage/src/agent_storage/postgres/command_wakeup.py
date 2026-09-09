@@ -356,11 +356,10 @@ def _validated_host_context(
         if (
             context is None
             or host.grant_digest != host_context_digest(context)
-            or host.namespace_id != context.namespace_id
-            or session_namespace != context.namespace_id
-            or host.host_app_id != context.host_app_id
-            or host.authority_issuer != context.origin
-        ):
+                or host.namespace_id != context.namespace_id
+                or session_namespace != context.namespace_id
+                or host.host_app_id != context.host_app_id
+            ):
             raise ValueError("inconsistent binding")
         # The frozen host workspace is the business scope, not a filesystem path.
         # Expiry is NOT re-admission: downstream execution still verifies authority.

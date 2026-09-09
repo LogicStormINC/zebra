@@ -1,0 +1,39 @@
+# Opt-in overlay for compose.application.yml. No defaults enable extensions.
+# Requires reviewed migrations and an operator-owned key directory; see
+# docs/cloud-extensions-rollout.md. Never mount this directory into sandboxes.
+services:
+  zebra-api:
+    environment:
+      ZEBRA_CLOUD_EXTENSIONS_READ_ENABLED: "true"
+      ZEBRA_CLOUD_EXTENSIONS_MANAGE_ENABLED: "true"
+      ZEBRA_CLOUD_MCP_CREDENTIALS_ENABLED: "true"
+      ZEBRA_CLOUD_MCP_REFRESH_ENABLED: "true"
+      ZEBRA_CLOUD_MCP_WORKER_ENABLED: "true"
+      ZEBRA_CLOUD_EXTENSION_TURN_ADMISSION_ENABLED: "true"
+      ZEBRA_CLOUD_SKILLS_PUBLISH_ENABLED: "true"
+      ZEBRA_MCP_SECRET_ROOT: /run/zebra-mcp-secrets
+      ZEBRA_MCP_KEY_HANDLE: ${ZEBRA_MCP_KEY_HANDLE:?set operator MCP key handle}
+      ZEBRA_MCP_KEY_VERSION: ${ZEBRA_MCP_KEY_VERSION:?set operator MCP key version}
+    volumes:
+      - type: bind
+        source: ${ZEBRA_MCP_SECRET_HOST_ROOT:?set absolute operator MCP secret directory}
+        target: /run/zebra-mcp-secrets
+        read_only: true
+        bind:
+          create_host_path: false
+
+  zebra-worker:
+    environment:
+      ZEBRA_CLOUD_EXTENSION_WORKER_ENABLED: "true"
+      ZEBRA_CLOUD_SKILL_WORKER_ENABLED: "true"
+      ZEBRA_CLOUD_MCP_WORKER_ENABLED: "true"
+      ZEBRA_MCP_SECRET_ROOT: /run/zebra-mcp-secrets
+      ZEBRA_MCP_KEY_HANDLE: ${ZEBRA_MCP_KEY_HANDLE:?set operator MCP key handle}
+      ZEBRA_MCP_KEY_VERSION: ${ZEBRA_MCP_KEY_VERSION:?set operator MCP key version}
+    volumes:
+      - type: bind
+        source: ${ZEBRA_MCP_SECRET_HOST_ROOT:?set absolute operator MCP secret directory}
+        target: /run/zebra-mcp-secrets
+        read_only: true
+        bind:
+          create_host_path: false

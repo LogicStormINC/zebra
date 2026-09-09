@@ -16,6 +16,7 @@ from agent_core.domain.host_authority import (
     HostTechnicalLimits,
 )
 from agent_core.domain.identifiers import SessionId
+from agent_security.host_grant import JwtAlgorithm, VerifiedHostGrant
 from zebra_agent_api.session_binding import _build_binding_snapshot, renew_task_binding_snapshot
 from zebra_agent_worker.bound_execution_authority import BoundHostExecutionAuthorityResolver
 from zebra_agent_worker.runtime_authority import persist_attempt_authority
@@ -41,9 +42,13 @@ def _context(*, grant_id, expires_at=None):
 
 
 def _case():
+    context = _context(grant_id="first")
     binding = _build_binding_snapshot(
         "11111111-1111-1111-1111-111111111111",
-        host_context=_context(grant_id="first"),
+        host_context=context,
+        verified_host_grant=VerifiedHostGrant(
+            context, context.grant_id, JwtAlgorithm.RS256, context.origin, "user-1"
+        ),
         definition_snapshot_digest="a" * 64,
     )
     resolver = BoundHostExecutionAuthorityResolver(binding)

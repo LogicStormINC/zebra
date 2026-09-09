@@ -60,6 +60,7 @@ __all__ = [
     "MAX_NAME_CHARS",
     "MAX_SKILLS",
     "LocalSkillCatalog",
+    "SkillCatalog",
     "SkillCatalogError",
     "SkillCatalogReason",
     "SkillEnablementState",
@@ -101,6 +102,14 @@ class SkillReadResult:
     file_path: str
     content: str
     byte_count: int
+
+
+class SkillCatalog(Protocol):
+    """Read-only skill content; implementations grant no execution authority."""
+
+    def list(self, *, limit: int = 100) -> tuple[tuple[SkillMetadata, ...], int, bool]: ...
+
+    def read(self, name: str, *, file_path: str = "SKILL.md") -> SkillReadResult: ...
 
 
 @dataclass(frozen=True)

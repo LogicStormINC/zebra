@@ -9,8 +9,13 @@ from uuid import uuid4
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session
-from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
+from agent_core.ports import (
+    ArtifactObjectStorePort,
+    EffectDispatchPort,
+    WorkerProjectionTransactionPort,
+)
 from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
+from agent_core.ports.extensions import ExtensionStore
 from agent_runtime import WorkspaceRuntimeResolver
 from agent_storage import (
     CloudCompositionSettings,
@@ -18,6 +23,8 @@ from agent_storage import (
     PostgresWorkspaceControlStore,
     postgres_control_plane_stores,
 )
+from agent_storage.postgres.extension_snapshots import PostgresExtensionSnapshotStore
+from agent_storage.postgres.extensions import PostgresExtensionStore
 
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
@@ -41,6 +48,9 @@ class CloudWorkerComposition:
     authority_scope_provider: Callable[[Session], OpaqueAuthorityScope] | None = None
     dsn: str | None = None
     runtime_instance_factory: InstanceFactory | None = None
+    extension_snapshots: PostgresExtensionSnapshotStore | None = None
+    extensions: ExtensionStore | None = None
+    skill_objects: ArtifactObjectStorePort | None = None
 
 
 def compose_cloud_worker(
@@ -174,11 +184,16 @@ def compose_cloud_worker(
     from agent_core.domain.leases import WorkerLease
     from agent_storage.postgres.runtime_instances import PostgresRuntimeInstances
 
-    def runtime_instance_factory(lease: WorkerLease, scope: OpaqueAuthorityScope,
-                                 workspace: str | None, engine: str) -> PostgresRuntimeInstances:
+    def runtime_instance_factory(
+        lease: WorkerLease, scope: OpaqueAuthorityScope, workspace: str | None, engine: str
+    ) -> PostgresRuntimeInstances:
         return PostgresRuntimeInstances(
-            cloud.dsn, deployment_namespace=cloud.deployment_namespace, scope=scope,
-            lease=lease, workspace_ref=workspace, engine_identity=engine,
+            cloud.dsn,
+            deployment_namespace=cloud.deployment_namespace,
+            scope=scope,
+            lease=lease,
+            workspace_ref=workspace,
+            engine_identity=engine,
         )
 
     return CloudWorkerComposition(
@@ -193,4 +208,11 @@ def compose_cloud_worker(
         authority_scope_provider=authority_scope_provider,
         dsn=cloud.dsn,
         runtime_instance_factory=runtime_instance_factory,
+        extension_snapshots=PostgresExtensionSnapshotStore(
+            cloud.dsn, deployment_namespace=cloud.deployment_namespace
+        ),
+        extensions=PostgresExtensionStore(
+            cloud.dsn, deployment_namespace=cloud.deployment_namespace
+        ),
+        skill_objects=cloud.artifact_objects,
     )

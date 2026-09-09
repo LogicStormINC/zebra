@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+import io
 import json
 import os
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_tools import McpProxyRequest, McpProxyResponse
 from agent_tools.web_gateway import WebGatewayError
 
+from agent_runtime.mcp_http_authorization import McpHttpCredentialResolver, resolve_bearer_header
+from agent_runtime.mcp_http_egress import PublicMcpHttpsHandler
+from agent_runtime.mcp_http_response import read_response
 from agent_runtime.mcp_protocol import (
     MAX_MCP_FRAME_BYTES,
     MCP_PROTOCOL_VERSION_LATEST,
@@ -45,18 +50,19 @@ class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 @dataclass
 class McpHttpSession:
-    """Stateless-per-request JSON-RPC session over Streamable HTTP.
-
-    Phase A supports single-shot JSON-RPC over POST, accepting either an
-    ``application/json`` body or a ``text/event-stream`` response that carries
-    one JSON-RPC message. Full SSE streaming is deferred.
-    """
+    """Per-operation HTTP session with bounded JSON/SSE response framing."""
 
     server: McpHttpServerSpec
     timeout_seconds: float
+    credential_resolver: McpHttpCredentialResolver | None = field(default=None, repr=False)
+    frame_authorizer: Callable[[str, Mapping[str, object]], None] | None = field(
+        default=None, repr=False
+    )
     _request_id: int = field(default=0, init=False)
     _capabilities: dict[str, object] = field(default_factory=dict, init=False)
     _protocol_version: str | None = field(default=None, init=False)
+    _session_id: str | None = field(default=None, init=False, repr=False)
+    _has_server_instructions: bool = field(default=False, init=False)
 
     def __enter__(self) -> McpHttpSession:
         if self.timeout_seconds <= 0:
@@ -64,7 +70,7 @@ class McpHttpSession:
         result = self.request(
             "initialize",
             {
-                "protocolVersion": MCP_PROTOCOL_VERSION_LATEST,
+                "protocolVersion": self.requested_protocol_version,
                 "capabilities": {},
                 "clientInfo": {"name": "zebra-agent", "version": "0.1.0"},
             },
@@ -72,7 +78,7 @@ class McpHttpSession:
         server_version = result.get("protocolVersion")
         if (
             not isinstance(server_version, str)
-            or server_version not in SUPPORTED_PROTOCOL_VERSIONS
+            or server_version not in self.supported_protocol_versions
         ):
             raise McpProtocolError(
                 f"MCP server {self.server.name} returned an unsupported protocol version"
@@ -82,14 +88,20 @@ class McpHttpSession:
         if not isinstance(capabilities, Mapping):
             raise McpProtocolError(f"MCP server {self.server.name} has invalid capabilities")
         self._capabilities = dict(capabilities)
-        # Best-effort: tell a strict server the initialize handshake is complete.
-        # Streamable HTTP notifications have no JSON-RPC response, so failures are
-        # swallowed rather than killing the session.
+        self._has_server_instructions = result.get("instructions") is not None
         self.notify("notifications/initialized")
         return self
 
     def __exit__(self, *_: object) -> None:
         return None
+
+    @property
+    def requested_protocol_version(self) -> str:
+        return MCP_PROTOCOL_VERSION_LATEST
+
+    @property
+    def supported_protocol_versions(self) -> frozenset[str]:
+        return SUPPORTED_PROTOCOL_VERSIONS
 
     def request(
         self,
@@ -107,9 +119,7 @@ class McpHttpSession:
         message = self._post(payload)
         message_id = message.get("id")
         if type(message_id) is not int or message_id != self._request_id:
-            raise McpProtocolError(
-                f"MCP server {self.server.name} returned an unexpected message"
-            )
+            raise McpProtocolError(f"MCP server {self.server.name} returned an unexpected message")
         error = message.get("error")
         if error is not None:
             raise McpProtocolError(f"MCP server {self.server.name} returned a protocol error")
@@ -122,26 +132,31 @@ class McpHttpSession:
         return capability in self._capabilities
 
     @property
+    def has_server_instructions(self) -> bool:
+        return self._has_server_instructions
+
+    @property
     def protocol_version(self) -> str | None:
         return self._protocol_version
 
     def notify(self, method: str) -> None:
-        """Send a JSON-RPC notification (no id, no response) best-effort.
-
-        Streamable HTTP notifications are fire-and-forget; any network or server
-        error is swallowed so a notification can never kill the session.
-        """
-        try:
-            self._send_frame({"jsonrpc": "2.0", "method": method})
-        except McpProtocolError:
-            pass
+        """Require successful delivery before continuing the handshake."""
+        self._send_frame({"jsonrpc": "2.0", "method": method})
 
     def _post(self, payload: Mapping[str, object]) -> dict[str, object]:
         content_type, text = self._send_frame(payload)
         return _parse_response_message(self.server.name, content_type, text)
 
     def _send_frame(self, payload: Mapping[str, object]) -> tuple[str, str]:
-        parsed = urllib.parse.urlparse(self.server.url)
+        endpoint = self.server.url
+        if self.frame_authorizer is not None:
+            try:
+                self.frame_authorizer(endpoint, payload)
+            except Exception:
+                raise McpProtocolError("MCP request authorization failed") from None
+        if self.credential_resolver is not None and self.server.bearer_token_env is not None:
+            raise McpProtocolError("MCP scoped authorization cannot use environment credentials")
+        parsed = urllib.parse.urlparse(endpoint)
         if parsed.scheme != "https":
             raise McpProtocolError(f"MCP server {self.server.name} url must use https")
         hostname = parsed.hostname
@@ -159,6 +174,10 @@ class McpHttpSession:
             "Accept": "application/json, text/event-stream",
             "User-Agent": "Zebra-Agent-MCP-HTTP/1.0",
         }
+        if self._session_id is not None:
+            headers["MCP-Session-Id"] = self._session_id
+        if self._protocol_version is not None:
+            headers["MCP-Protocol-Version"] = self._protocol_version
         bearer_env = self.server.bearer_token_env
         if bearer_env:
             token = os.environ.get(bearer_env)
@@ -167,35 +186,52 @@ class McpHttpSession:
         frame = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
         if len(frame) > MAX_MCP_FRAME_BYTES:
             raise McpProtocolError(f"MCP request to {self.server.name} exceeds the frame limit")
-        opener = urllib.request.build_opener(_NoRedirectHandler())
+        opener = urllib.request.build_opener(
+            urllib.request.ProxyHandler({}), PublicMcpHttpsHandler(), _NoRedirectHandler()
+        )
+        if self.credential_resolver is not None:
+            headers["Authorization"] = resolve_bearer_header(
+                self.credential_resolver, endpoint, json.loads(frame)
+            )
         request = urllib.request.Request(
-            self.server.url,
+            endpoint,
             data=frame,
             headers=headers,
             method="POST",
         )
+        deadline = time.monotonic() + self.timeout_seconds
         try:
             with opener.open(request, timeout=self.timeout_seconds) as response:
+                session_id = response.headers.get("MCP-Session-Id")
+                if session_id is not None:
+                    if (
+                        not session_id
+                        or len(session_id) > 4096
+                        or any(not 0x21 <= ord(char) <= 0x7E for char in session_id)
+                        or (
+                            payload.get("method") != "initialize" and session_id != self._session_id
+                        )
+                    ):
+                        raise McpProtocolError("MCP server returned an invalid session header")
+                    self._session_id = session_id
+                if "id" not in payload:
+                    return "application/json", ""
                 content_type = response.headers.get("Content-Type") or ""
                 content_type = content_type.partition(";")[0].strip().lower()
-                body = response.read(MAX_MCP_FRAME_BYTES + 1)
+                message = read_response(response, content_type, payload["id"], deadline)
         except urllib.error.HTTPError as exc:
             if 300 <= exc.code < 400:
                 raise McpProtocolError(
                     f"MCP server {self.server.name} attempted an unsafe redirect"
-                ) from exc
+                ) from None
             raise McpProtocolError(
                 f"MCP server {self.server.name} returned HTTP error {exc.code}"
-            ) from exc
-        except (OSError, ValueError) as exc:
-            raise McpProtocolError(f"MCP server {self.server.name} request failed: {exc}") from exc
-        if len(body) > MAX_MCP_FRAME_BYTES:
-            raise McpProtocolError(f"MCP server {self.server.name} returned an oversized frame")
-        try:
-            text = body.decode("utf-8")
-        except UnicodeDecodeError as exc:
-            raise McpProtocolError(f"MCP server {self.server.name} returned non-utf8 body") from exc
-        return content_type, text
+            ) from None
+        except McpProtocolError:
+            raise
+        except (OSError, ValueError):
+            raise McpProtocolError(f"MCP server {self.server.name} request failed") from None
+        return "application/json", json.dumps(message, ensure_ascii=False, separators=(",", ":"))
 
 
 class StreamableHttpMcpTransport:
@@ -233,16 +269,13 @@ class StreamableHttpMcpTransport:
             available = {tool.definition.name for tool in discovered}
             missing = sorted(set(normalized) - available)
             if missing:
-                raise McpProtocolError(
-                    f"selected MCP tools are unavailable: {', '.join(missing)}"
-                )
+                raise McpProtocolError(f"selected MCP tools are unavailable: {', '.join(missing)}")
             selected = set(normalized)
             discovered = [tool for tool in discovered if tool.definition.name in selected]
         self._tools = {(tool.server_name, tool.remote_name): tool for tool in discovered}
         self._max_output_bytes = max_output_bytes
         self.model_tools = tuple(
-            tool.definition
-            for tool in sorted(discovered, key=lambda item: item.definition.name)
+            tool.definition for tool in sorted(discovered, key=lambda item: item.definition.name)
         )
 
     def execute(self, request: McpProxyRequest) -> McpProxyResponse:
@@ -272,50 +305,52 @@ class StreamableHttpMcpTransport:
 
 
 def _discover_http_server(server: McpHttpServerSpec) -> list[DiscoveredMcpTool]:
+    with McpHttpSession(server, MCP_DISCOVERY_TIMEOUT_SECONDS) as session:
+        return _discover_http_tools(session)
+
+
+def _discover_http_tools(
+    session: McpHttpSession,
+    *,
+    parse_tool: Callable[[str, object], DiscoveredMcpTool] = _parse_tool,
+) -> list[DiscoveredMcpTool]:
+    """Share paging/parser bounds with scoped cloud catalog discovery."""
+    server = session.server
     tools: list[DiscoveredMcpTool] = []
     cursor: str | None = None
     seen_cursors: set[str] = set()
-    with McpHttpSession(server, MCP_DISCOVERY_TIMEOUT_SECONDS) as session:
-        if not session.supports("tools"):
-            return []
-        for _ in range(MAX_MCP_LIST_PAGES):
-            params = {"cursor": cursor} if cursor is not None else None
-            result = session.request("tools/list", params)
-            entries = result.get("tools")
-            if not isinstance(entries, list):
-                raise McpProtocolError(f"MCP server {server.name} returned an invalid tool list")
-            for entry in entries:
-                tools.append(_parse_tool(server.name, entry))
-                if len(tools) > MAX_MCP_TOOLS_PER_SERVER:
-                    raise McpProtocolError(
-                        f"MCP server {server.name} exposes more than "
-                        f"{MAX_MCP_TOOLS_PER_SERVER} tools"
-                    )
-            next_cursor = result.get("nextCursor")
-            if next_cursor is None:
-                return tools
-            if not isinstance(next_cursor, str) or not next_cursor or next_cursor in seen_cursors:
-                raise McpProtocolError(f"MCP server {server.name} returned an invalid cursor")
-            seen_cursors.add(next_cursor)
-            cursor = next_cursor
+    seen_names: set[str] = set()
+    seen_aliases: set[str] = set()
+    if not session.supports("tools"):
+        return []
+    for _ in range(MAX_MCP_LIST_PAGES):
+        params = {"cursor": cursor} if cursor is not None else None
+        result = session.request("tools/list", params)
+        entries = result.get("tools")
+        if not isinstance(entries, list):
+            raise McpProtocolError(f"MCP server {server.name} returned an invalid tool list")
+        for entry in entries:
+            tool = parse_tool(server.name, entry)
+            if tool.remote_name in seen_names:
+                raise McpProtocolError("MCP discovery returned duplicate tool names")
+            if tool.definition.name in seen_aliases:
+                raise McpProtocolError("MCP discovery returned colliding tool aliases")
+            seen_names.add(tool.remote_name)
+            seen_aliases.add(tool.definition.name)
+            tools.append(tool)
+            if len(tools) > MAX_MCP_TOOLS_PER_SERVER:
+                raise McpProtocolError(
+                    f"MCP server {server.name} exposes more than {MAX_MCP_TOOLS_PER_SERVER} tools"
+                )
+        next_cursor = result.get("nextCursor")
+        if next_cursor is None:
+            return tools
+        if not isinstance(next_cursor, str) or not next_cursor or next_cursor in seen_cursors:
+            raise McpProtocolError(f"MCP server {server.name} returned an invalid cursor")
+        seen_cursors.add(next_cursor)
+        cursor = next_cursor
     raise McpProtocolError(f"MCP server {server.name} exceeded the tool-list page limit")
 
 
 def _parse_response_message(server_name: str, content_type: str, text: str) -> dict[str, object]:
-    if content_type == "text/event-stream":
-        data_lines: list[str] = []
-        for line in text.splitlines():
-            if line.startswith("data:"):
-                data_lines.append(line[5:].lstrip())
-        if not data_lines:
-            raise McpProtocolError(f"MCP server {server_name} returned an empty event stream")
-        payload_text = "\n".join(data_lines)
-    else:
-        payload_text = text
-    try:
-        message = json.loads(payload_text)
-    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
-        raise McpProtocolError(f"MCP server {server_name} returned invalid JSON") from exc
-    if not isinstance(message, dict) or message.get("jsonrpc") != "2.0":
-        raise McpProtocolError(f"MCP server {server_name} returned an invalid message")
-    return message
+    return read_response(io.BytesIO(text.encode()), content_type, None, time.monotonic() + 5)

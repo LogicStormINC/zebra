@@ -122,6 +122,42 @@ def test_message_command_appends_user_event_before_waking_worker(tmp_path: Path)
     assert events[-1].payload["content"] == "continue"
 
 
+def test_message_materialization_preserves_server_bound_extension_turn(tmp_path: Path) -> None:
+    from agent_core.domain.turns import derive_turn_id
+
+    stores, session_id, revision = _seed_session(tmp_path)
+    session_id, revision = _finish_first_turn(stores, session_id, revision)
+    turn_id = str(derive_turn_id(session_id, 1))
+    command = SessionCommand(
+        command_id=uuid4(),
+        session_id=session_id,
+        kind=SessionCommandKind.MESSAGE,
+        expected_revision=revision,
+        idempotency_key="bound-message",
+        payload={"content": "continue"},
+    )
+    stores.events.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=revision + 1,
+            event_type=EventType.SESSION_COMMAND_ACCEPTED,
+            actor=EventActor.USER,
+            payload=command.event_payload(
+                extension_snapshot_digest="a" * 64, extension_turn_id=turn_id
+            ),
+            idempotency_key=command.idempotency_key,
+        )
+    )
+    execution = _ExecutionSpy(stores)
+
+    result = SessionCommandConsumer(stores, execution).consume_once(
+        worker_id="worker-bound", lease_ttl_seconds=30
+    )  # type: ignore[arg-type]
+
+    assert result.status == "executed"
+    assert stores.events.list_for_session(session_id)[-1].payload["turn_id"] == turn_id
+
+
 @pytest.mark.parametrize(
     ("kind", "control_attr"),
     (
@@ -198,9 +234,7 @@ def _finish_first_turn(stores, session_id, revision: int):
             payload={"turn_id": turn_id, "turn_index": turn_index, "closes_segment": False},
         )
     )
-    stores.sessions.save_session(
-        rebuild_session(stores.events.list_for_session(session_id))
-    )
+    stores.sessions.save_session(rebuild_session(stores.events.list_for_session(session_id)))
     return session_id, revision + 2
 
 

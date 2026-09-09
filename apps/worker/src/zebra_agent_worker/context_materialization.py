@@ -29,6 +29,11 @@ from zebra_agent_worker.bound_execution_authority import (
 )
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+from zebra_agent_worker.extension_recovery import (
+    RecoveredTurnExtension,
+    WorkerExtensionStore,
+    recover_turn_extension,
+)
 from zebra_agent_worker.recovery import SessionRecoveryService
 from zebra_agent_worker.runtime_authority import (
     attempt_authority_scope,
@@ -46,6 +51,7 @@ class PreparedWorkerContext:
     events: list[SessionEvent]
     binding: TaskBindingSnapshot | None
     materialization: ContextMaterialization | None
+    extension: RecoveredTurnExtension | None
 
 
 @dataclass(frozen=True)
@@ -109,6 +115,8 @@ def prepare_worker_context(
     task: RecoveredTask,
     active_capsule_id: str | None,
     as_of: datetime,
+    extension_store: WorkerExtensionStore | None = None,
+    allow_mcp: bool = False,
 ) -> PreparedWorkerContext:
     session_id = claimed.lease.session_id
     binding = load_bound_binding(task_binding_loader, session_id)
@@ -119,6 +127,13 @@ def prepare_worker_context(
         task_binding_loader,
         session_id,
         binding=binding,
+    )
+    extension = recover_turn_extension(
+        store=extension_store,
+        events=events,
+        session_id=session_id,
+        task_binding=binding,
+        allow_mcp=allow_mcp,
     )
     claimed, events = AttemptAuthorityEvidence(
         *authority,
@@ -141,7 +156,7 @@ def prepare_worker_context(
         events=events,
         as_of=as_of,
     )
-    return PreparedWorkerContext(claimed, events, binding, materialization)
+    return PreparedWorkerContext(claimed, events, binding, materialization, extension)
 
 
 def materialize_worker_context(

@@ -77,7 +77,10 @@ class PostgresHostGrantRequestAuthorizer(HostGrantRequestAuthorizer):
                     algorithm=decoded.algorithm,
                     now=self.now(),
                     expected_host_app_id=record.host_app_id,
-                    required_scopes=self.required_scopes,
+                    required_scopes=(
+                        ("extensions.read",) if request.method in {"GET", "HEAD"}
+                        else ("extensions.manage",)
+                    ) if request.path.startswith("/v1/extensions/") else self.required_scopes,
                 )
                 _require_request_origin(request.origin, verified.context.origin)
             except (HostGrantSecurityError, ValueError) as exc:

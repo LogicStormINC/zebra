@@ -73,12 +73,23 @@ def error_metadata(
     response_repair_count = (
         exc.response_repair_count if isinstance(exc, ModelResponseRejectedError) else 0
     )
+    public_detail = isinstance(
+        exc,
+        ContextCapsuleValidationError
+        | ContextWindowExceededError
+        | ModelResponseRejectedError
+        | ModelProviderError,
+    )
     metadata: dict[str, object] = {
         "stop_reason": "model_execution_failed",
         "error_type": error_type,
         "model_calls_used": (model_calls or 0) + 1 + response_repair_count,
         "tool_calls_executed": tool_calls or 0,
-        "error_message": raw_error or f"{error_type} (no detail was provided)",
+        "error_message": (
+            raw_error or f"{error_type} (no detail was provided)"
+            if public_detail
+            else f"{error_type} (details withheld)"
+        ),
     }
     if isinstance(exc, ModelResponseRejectedError):
         metadata.update(exc.metadata())

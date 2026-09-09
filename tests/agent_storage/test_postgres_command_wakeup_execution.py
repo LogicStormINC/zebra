@@ -63,22 +63,30 @@ def test_fixture_authority_resolves_valid_snapshot_without_database():
     assert snapshot.snapshot_digest
 
 
-def _setup(dsn, tmp_path, monkeypatch, *, interaction_mode=None):
+def _setup(
+    dsn, tmp_path, monkeypatch, *, interaction_mode=None, skill_components=(),
+    manifest_digest="d" * 64,
+):
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="claimed execution",
             user_input="Return a short answer.",
             workspace_root=tmp_path,
             interaction_mode=interaction_mode,
+            skill_components=skill_components,
             host_context=_binding("fixture").host_capability.host_context,
         )
     )
+    binding = _binding(str(bootstrap.session.session_id))
+    binding = binding.model_copy(update={"host_capability": binding.host_capability.model_copy(
+        update={"manifest_digest": manifest_digest},
+    )})
     PostgresTaskAdmissionTransaction(dsn, deployment_namespace=NAMESPACE).admit(
         TaskAdmissionRequest(
             events=tuple(bootstrap.events),
             session=bootstrap.session,
             workspace=rebuild_workspace(list(bootstrap.events)),
-            binding=_binding(str(bootstrap.session.session_id)),
+            binding=binding,
         )
     )
     bootstrap_control_plane_epoch(dsn, deployment_namespace=NAMESPACE)

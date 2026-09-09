@@ -23,6 +23,7 @@ from agent_core.domain.task_bindings import (
     TaskBindingSnapshot,
     host_context_digest,
 )
+from agent_security.host_grant import VerifiedHostGrant
 from agent_storage.postgres.task_admission import load_task_binding, save_task_binding
 
 from zebra_agent_api.responses import ApiResponse
@@ -42,6 +43,7 @@ def renew_task_binding_snapshot(
     binding: TaskBindingSnapshot,
     host_context: HostContextEnvelope,
     *,
+    authority_issuer: str | None = None,
     bound_at: datetime | None = None,
 ) -> TaskBindingSnapshot:
     """Create the next immutable revision from one freshly verified Grant."""
@@ -63,9 +65,10 @@ def renew_task_binding_snapshot(
     if (
         host.host_app_id != host_context.host_app_id
         or host.namespace_id != host_context.namespace_id
-        or host.authority_issuer != host_context.origin
     ):
         raise ValueError("Host Grant authority drifted from the Task binding")
+    if authority_issuer is not None and host.authority_issuer != authority_issuer:
+        raise ValueError("Host Grant authority issuer drifted from the Task binding")
     renewed_at = bound_at or datetime.now(UTC)
     renewed_host = host.model_copy(
         update={
@@ -87,12 +90,15 @@ def renew_task_binding_snapshot(
 def renew_host_binding_for_command(
     app: object,
     session_id: str,
-    host_context: HostContextEnvelope | None,
+    verified_host_grant: VerifiedHostGrant | None,
 ) -> ApiResponse | None:
     """Renew a cloud Task binding before accepting a Host command."""
 
-    if host_context is None:
+    if verified_host_grant is None:
         return None
+    if not isinstance(verified_host_grant, VerifiedHostGrant):
+        return ApiResponse(403, {"status": "host_binding_renewal_rejected"})
+    host_context = verified_host_grant.context
     settings = getattr(app, "settings", None)
     if (
         getattr(settings, "deployment", None) != "cloud"
@@ -116,7 +122,11 @@ def renew_host_binding_for_command(
     if current is None:
         return ApiResponse(409, {"status": "host_binding_missing"})
     try:
-        renewed = renew_task_binding_snapshot(current, host_context)
+        renewed = renew_task_binding_snapshot(
+            current,
+            host_context,
+            authority_issuer=verified_host_grant.authority_issuer,
+        )
     except ValueError as exc:
         return ApiResponse(
             403,
@@ -144,88 +154,6 @@ def _principal_ref(context: HostContextEnvelope) -> tuple[str, ...]:
     )
 
 
-def freeze_task_binding(
-    session_id: object,
-    *,
-    host_context: HostContextEnvelope,
-    definition_snapshot_digest: str | None,
-    deployment_namespace: str,
-    dsn: str,
-) -> str | None:
-    """Derive and persist the binding; returns the digest or None on refusal.
-
-    Refusal (never a crash) keeps today's behavior when persistence is
-    unavailable — the Worker falls back to the deployment resolver.
-    """
-
-    ceiling = AgentCapabilityCeilingSnapshot(
-        definition_snapshot_digest=definition_snapshot_digest or NO_CONNECTOR_DIGEST,
-        capability_profile_ref="profile/default@1",
-        capabilities=DEFAULT_CAPABILITIES,
-        resolved_at=datetime.now(UTC),
-    )
-    host = HostCapabilitySnapshot(
-        host_app_id=host_context.host_app_id,
-        authority_issuer=host_context.origin,
-        namespace_id=host_context.namespace_id,
-        grant_digest=envelope_grant_digest(host_context),
-        grant_expires_at=host_context.expires_at,
-        connector_id=f"{host_context.host_app_id}-unbound",
-        connector_profile_revision=1,
-        connector_profile_digest=NO_CONNECTOR_DIGEST,
-        manifest_digest=NO_CONNECTOR_DIGEST,
-        capabilities=DEFAULT_CAPABILITIES,
-        resource_binding_digest=NO_CONNECTOR_DIGEST,
-        bound_at=datetime.now(UTC),
-        host_context=host_context,
-    )
-    binding = TaskBindingSnapshot(
-        task_id=str(session_id),
-        agent_capability_ceiling=ceiling,
-        host_capability=host,
-        zebra_policy_digest=NO_CONNECTOR_DIGEST,
-        effective_capabilities=DEFAULT_CAPABILITIES,
-        binding_revision=1,
-        bound_at=datetime.now(UTC),
-    )
-    try:
-        return save_task_binding(
-            dsn,
-            deployment_namespace=deployment_namespace,
-            binding=binding,
-        )
-    except Exception:
-        return None
-
-
-def freeze_binding_for_response(
-    response: object,
-    host_context: HostContextEnvelope,
-    definition_snapshot: object,
-    *,
-    deployment: str,
-    storage_authority: str,
-    database_url: str,
-    stores: object,
-) -> None:
-    """Phase F3 entry from the API: freeze the binding after a 201.
-
-    Cloud + PostgreSQL only; refusal keeps today's behavior silently.
-    """
-
-    assert isinstance(response, ApiResponse)
-    if deployment != "cloud" or storage_authority != "postgresql":
-        return
-    digest = getattr(definition_snapshot, "definition_digest", None)
-    freeze_task_binding(
-        response.body.get("session_id"),
-        host_context=host_context,
-        definition_snapshot_digest=str(digest) if digest else None,
-        deployment_namespace=str(getattr(stores, "deployment_namespace", "zebra")),
-        dsn=database_url,
-    )
-
-
 def _build_binding_snapshot(
     session_id: object,
     *,
@@ -233,6 +161,7 @@ def _build_binding_snapshot(
     definition_snapshot_digest: str | None,
     deployment_namespace: str = "zebra",
     frozen_manifest_digest: str | None = None,
+    verified_host_grant: VerifiedHostGrant | None = None,
 ) -> TaskBindingSnapshot:
     """Build the binding model without persisting (used by atomic admission).
 
@@ -260,9 +189,14 @@ def _build_binding_snapshot(
             bound_at=datetime.now(UTC),
         )
     else:
+        if (
+            not isinstance(verified_host_grant, VerifiedHostGrant)
+            or verified_host_grant.context != host_context
+        ):
+            raise ValueError("matching verified Host Grant is required")
         host = HostCapabilitySnapshot(
             host_app_id=host_context.host_app_id,
-            authority_issuer=host_context.origin,
+            authority_issuer=verified_host_grant.authority_issuer,
             namespace_id=host_context.namespace_id,
             grant_digest=envelope_grant_digest(host_context),
             grant_expires_at=host_context.expires_at,

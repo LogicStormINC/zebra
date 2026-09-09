@@ -7,7 +7,11 @@ from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolIdempotency, ToolResult, ToolRisk
-from agent_core.ports import ArtifactPayloadStorePort, ModelGatewayPort, SessionHistoryPort
+from agent_core.ports import (
+    ArtifactPayloadStorePort,
+    ModelGatewayPort,
+    SessionHistoryPort,
+)
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_integrations.host_tools import (
@@ -16,7 +20,9 @@ from agent_integrations.host_tools import (
     HostWorkloadIdentity,
 )
 from agent_runtime import LocalToolGateway
+from agent_runtime.cloud_mcp_transport import CloudMcpTransport
 from agent_storage import SQLiteSkillsStateStore
+from agent_tools.skills_catalog import SkillCatalog
 from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings
 
@@ -178,6 +184,9 @@ def build_worker_tool_gateway(
     manifest_digest: str | None = None,
     frozen_manifest_loader: object = None,
     client_gateway: ClientToolGateway | None = None,
+    skill_catalog: SkillCatalog | None = None,
+    skill_component_names: tuple[str, ...] = (),
+    cloud_mcp_transport: CloudMcpTransport | None = None,
 ) -> WorkerToolGateway:
     can_publish = (
         cloud_artifacts is not None
@@ -198,17 +207,23 @@ def build_worker_tool_gateway(
             settings.skill_roots_repo,
         )
     )
+    cloud_mcp = cloud_mcp_transport is not None or settings.mcp_credentials.worker_enabled
     local = LocalToolGateway(
         task.workspace_root,
         model_gateway=model_gateway,
         tool_profile=task.tool_profile,
         web_search_endpoint=settings.web_search_endpoint,
-        skill_roots=skill_roots,
+        skill_roots=() if skill_catalog is not None else skill_roots,
+        skill_catalog=skill_catalog,
+        skill_component_names=skill_component_names,
         skills_state=(
-            SQLiteSkillsStateStore(settings.skills_state_path) if skills_enabled else None
+            SQLiteSkillsStateStore(settings.skills_state_path)
+            if skills_enabled and skill_catalog is None
+            else None
         ),
-        mcp_servers=settings.mcp_servers,
-        mcp_allowlist=task.mcp_allowlist,
+        mcp_servers=() if cloud_mcp else settings.mcp_servers,
+        mcp_allowlist=() if cloud_mcp else task.mcp_allowlist,
+        cloud_mcp_transport=cloud_mcp_transport,
         session_history=session_history.scoped(task.history_session_ids),
         current_session_id=str(session_id),
         runtime=runtime,

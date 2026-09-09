@@ -30,6 +30,825 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `EXT-AGUI-01`: Review, implemented/deployed by Luke Ding (Codex), current branches.
+  Scope: bind AG-UI RUN/RESUME to the already materialized current Turn;
+  preserve MESSAGE admission, replay and local extension-disabled behavior.
+  Owned: apps/api/src/zebra_agent_api/{ag_ui_command,routes,command_submission,
+  extension_turn_admission}.py; apps/worker/src/zebra_agent_worker/extension_recovery.py;
+  packages/agent-storage/src/agent_storage/postgres/events.py;
+  packages/agent-storage/src/agent_storage/live_event_store.py;
+  packages/agent-runtime/src/agent_runtime/cloud_mcp_transport.py and transport tests;
+  Trench services/api/src/trench_api/trench_ai_zebra_contract.py and runtime tests
+  for explicit proxy-only task network authority and generation rollover;
+  related API/Worker/PostgreSQL tests and governance documents. Real MCP acceptance.
+
+- `EXT-LIVE-01`: Ready, claimed In Progress by Luke Ding (Codex), current branches.
+  Scope: authorized local runtime migration/activation and live extension checks.
+  Owned: docker/compose.extensions.yml, docker/compose.trench-acceptance.yml,
+  scripts/bootstrap_mcp_key.py, apps/api/src/zebra_agent_api/host_auth.py,
+  apps/api/src/zebra_agent_api/mcp_catalog_refresh.py, related
+  tests, governance; Trench extension BFF/client and tests for live-found defects.
+  Preserve existing runtime environment, secrets and all user data.
+
+- `EXT-TRENCH-BFF-01`: Review (source ready, runtime acceptance pending), Luke Ding (Codex).
+  Use existing branches without isolation per user instruction. Owned in Trench:
+  services/api/src/trench_api/trench_ai_zebra_client.py,
+  routers/trench_ai_extensions.py, main.py, tests/api/test_trench_ai_extensions.py;
+  toc-frontend/src/components/product/dashboard-account-dialog.tsx,
+  dashboard-extension-settings.tsx and its test; existing settings composition.
+  Zebra registry/PROGRESS/WORKLOG. Scope: authenticated bounded extension BFF,
+  reuse grant exchange with narrow operation scopes, no fixture identity.
+
+- `EXT-ROLLOUT-01`: Review (overlay prepared, activation pending), Luke Ding (Codex), current
+  branch per user instruction. Scope: opt-in Compose wiring for existing cloud
+  extension services, operator prerequisites and deployment configuration tests.
+  Owned: docker/compose.extensions.yml, tests/compose/application/test_extensions_overlay.py,
+  docs/cloud-extensions-rollout.md, PROGRESS.md, WORKLOG.md, this registry.
+  Does not silently migrate runtime data, mint user Grants or activate unfinished
+  Trench management UI. Real deployed acceptance remains a distinct gate.
+
+- `EXT-MCP-SSE-01`: Review (live adapter passed; Worker/UI pending), Luke Ding (Codex), current
+  branch per user instruction. User approved remote legacy SSE alongside
+  Streamable HTTP, still no cloud stdio. Owned: core domain/extensions.py,
+  application/mcp_connections.py; runtime mcp_http.py, mcp_sse.py,
+  mcp_catalog_discovery.py, cloud_mcp_transport.py; focused tests, governance
+  files and docs/cloud-skills-http-mcp-design.md, docs/cloud-mcp-catalog.md.
+  Validate remote fetch without storing its opaque URL or sending user data.
+
+- `EXT-MCP-WORKER-01`: Ready, claimed In Progress by Luke Ding (Codex), current
+  branch. Scope: recover pinned catalogs and bind existing transport to live
+  lease/grant/credential callbacks. Owned: apps/worker/worker_mcp_catalog.py;
+  tests/worker/test_worker_mcp_catalog.py; registry, PROGRESS, WORKLOG,
+  docs/cloud-mcp-catalog.md. Explicit composition only; preserve startup gate.
+  Helper implemented: focused 3 passed; full 4202 passed / 866 skipped in
+  142.81s; make check passed (904 sources, Eval 10/10). Remains In Progress:
+  fresh VerifiedHostGrant callback does not exist in production Worker; adapt
+  release to its existing ExecutionAuthoritySnapshot revalidation before wiring.
+  Authority adapter scope extension: agent-security/mcp_execution_authority.py,
+  mcp_credential_release.py; agent-runtime/mcp_execution_authorization.py;
+  Worker extension_recovery.py; related runtime/Worker authority tests.
+  Reuse frozen Task identity and current execution evidence; never mint an HTTP Grant.
+  Adapter implemented: Worker callback now accepts execution evidence; release
+  checks current Task digest/scope/capability/expiry. Focused 49 passed / 4 skipped;
+  check passed (905 sources). Remaining: default composition/revalidation wiring
+  and actual Agent/browser acceptance; task remains In Progress.
+  Final validation: 70 focused passed / 4 skipped, 33 isolated-PG subset passed;
+  full 4213 passed / 866 skipped (139.67s), make check passed.
+  Lifecycle wiring scope: Worker execution.py, execution_tool_gateway.py,
+  tool_gateway_runtime.py, context_materialization.py, loop.py,
+  mcp_composition.py; config/mcp_credentials.py; API
+  mcp_credential_composition.py and extension_composition.py; security
+  mcp_credential_protection.py; corresponding tests, .env.example and docs.
+  Operator opt-in only; no live configuration activation or deployment.
+  Lifecycle now wired: opt-in startup source, durable current-Turn authority
+  replay, recovery gate, execution gateway and automatic API catalog selection.
+  Focused 102 passed / 1 skipped, real PG-related subset 56 passed; make check
+  passed (906 sources, Eval 10/10). Remains In Progress for live cross-service
+  acceptance; no live operator configuration changed.
+  Full 4226 passed / 866 skipped (151.01s); additional empty-selection case
+  passed separately in the 3-test gateway suite. No merge or deployment.
+
+- `EXT-MCP-AUTH-02`: Ready, implemented and now Review by Luke Ding (Codex), current
+  branch. Scope: anonymous execution uses the same snapshot/grant/fence checks
+  as Bearer, plus live config equality. Owned: agent-security/mcp_credential_release.py;
+  agent-runtime/mcp_execution_authorization.py;
+  tests/agent_runtime/test_mcp_anonymous_execution.py; registry, PROGRESS,
+  WORKLOG, docs/cloud-mcp-catalog.md. No default Worker activation or deployment.
+  Validation: focused 35 passed / 4 DB skipped; real isolated PG/runtime 39
+  passed; full 4199 passed / 866 skipped in 144.35s; make check passed
+  (903 typed sources, Eval 10/10). Production composition/E2E remain pending.
+
+- `EXT-MCP-ADMISSION-01`: Ready, implemented and now Review by Luke Ding (Codex), current
+  branch. Scope: automatic exact-user persisted MCP selection in Turn admission.
+  Owned: apps/api/extension_mcp_selection.py, extension_turn_admission.py;
+  tests/api/test_extension_mcp_selection.py; registry, PROGRESS, WORKLOG,
+  docs/cloud-mcp-catalog.md. Optional catalog injection only until Worker startup
+  supports recovered MCP; no manual user binding or remote discovery.
+  Validation: focused 28 passed; actual isolated PostgreSQL/admission 29 passed;
+  full 4192 passed / 866 skipped in 139.92s; make check passed (903 sources,
+  Eval 10/10). Default startup/production Worker and browser E2E still pending.
+
+- `EXT-MCP-EXEC-01`: Ready, implemented and now Review by Luke Ding (Codex), current
+  branch. Scope: pinned HTTP catalog transport and existing Harness injection;
+  no discovery during model setup; exact remote routing and per-frame authority.
+  Owned: agent-runtime/cloud_mcp_transport.py, harness.py, mcp_routing.py;
+  tests/agent_runtime/test_cloud_mcp_transport.py; registry, PROGRESS, WORKLOG,
+  docs/cloud-mcp-catalog.md. Keep production Worker gate until scoped startup
+  and admission are composed; no manual user bindings, secrets or deployment.
+  Validation: focused 32 passed; full 4184 passed / 865 skipped in 143.89s.
+  Test fixture enum warning corrected; focused 5 passed without warning.
+  make check passed (902 sources, Eval 10/10). Captured HTTP/Harness acceptance
+  only; production Worker and real remote/browser acceptance remain pending.
+
+- `EXT-MCP-NAMES-01`: Ready, implemented and now Review by Luke Ding (Codex), current
+  branch. Scope: cloud discovery preserves opaque remote names while producing
+  stable provider-compatible aliases; local parser behavior unchanged. Owned:
+  agent-runtime/mcp_stdio.py, mcp_http.py, mcp_catalog_discovery.py;
+  tests/agent_runtime/test_mcp_cloud_names.py; registry, PROGRESS, WORKLOG,
+  docs/cloud-mcp-catalog.md. No execution activation or user allowlist workflow.
+  Validation: focused 35 passed / 2 DB skipped; full 4179 passed / 865 skipped
+  in 141.91s; make check passed (901 sources, Eval 10/10). Captured HTTP only;
+  no live MCP execution, browser acceptance, activation or deployment.
+
+- `EXT-MCP-CATALOG-01E`: Ready, implemented and now Review by Luke Ding (Codex), current
+  branch. Scope: current-user catalog inspection without remote discovery or
+  credential release. Owned: agent-runtime/mcp_catalog_refresh.py;
+  apps/api/mcp_catalog_refresh.py; tests/api/test_mcp_catalog_read_http.py;
+  docs/cloud-mcp-catalog.md, cloud-skills-http-mcp-design.md; registry, PROGRESS,
+  WORKLOG. Reuse composed service and exact configuration revision. No Worker
+  activation; AI tool choice remains automatic, not a user Task binding workflow.
+  Validation: focused 16 passed / 5 DB skipped; real isolated PG/captured HTTP
+  21 passed; full rerun 4165 passed / 865 skipped in 132.16s. First full run had
+  an unrelated local process termination PermissionError; isolated retry passed.
+  make check passed (901 typed sources, Eval 10/10). No live MCP/browser E2E.
+
+- `EXT-MCP-CATALOG-01D`: Ready, implemented and now Review by Luke Ding (Codex), current
+  branch. Scope: independently opt-in automatic refresh startup sharing credential
+  storage/protector and cloud authority. Owned: apps/config/mcp_credentials.py;
+  apps/api/extension_composition.py, http.py, http_origins.py;
+  tests/api/test_mcp_refresh_startup.py; .env.example; registry, PROGRESS, WORKLOG,
+  docs/cloud-mcp-catalog.md. Extract unchanged origin parser to respect HTTP
+  module size limit. Verify default-off, invalid startup and real PG refresh.
+  No Worker activation, production service configuration or permission expansion.
+  Validation: focused 50 passed / 3 DB skipped; actual isolated PostgreSQL with
+  captured HTTP matrix 14 passed; full 4159 passed / 864 skipped in 134.53s.
+  make check passed (901 typed sources, Eval 10/10). No live upstream/browser
+  acceptance, service activation, commit or deployment.
+
+- `EXT-MCP-CATALOG-01C`: Ready, implemented and now Review by Luke Ding (Codex), current
+  branch. Scope: management-authorized catalog refresh service and opt-in HTTP
+  adapter with per-frame configuration/expiry checks and secret-safe response.
+  Owned: agent-runtime/mcp_http.py, mcp_catalog_discovery.py, mcp_catalog_refresh.py;
+  apps/api/http.py, extension_management_routes.py, mcp_catalog_refresh.py;
+  tests/agent_runtime/test_mcp_catalog_refresh.py, tests/api/test_mcp_catalog_refresh_http.py;
+  registry, PROGRESS, WORKLOG, docs/cloud-mcp-catalog.md. Explicit service injection;
+  no default service activation, permission expansion or Worker dispatch.
+  Validation: focused 38 passed / 3 DB skipped; captured-network and actual
+  isolated PostgreSQL matrix 21 passed (including anonymous/Bearer HTTP refresh).
+  Full 4154 passed / 862 skipped in 132.64s; make check passed (900 sources,
+  Eval 10/10). No running service activation, commit or deployment.
+
+- `EXT-MCP-CATALOG-01B`: Ready, implemented and now Review by Luke Ding (Codex), current
+  branch. Scope: HTTP-only bounded discovery into immutable tool catalog using
+  existing session, schema parser and per-frame credential resolver.
+  Owned: agent-runtime/mcp_http.py, mcp_catalog_discovery.py;
+  tests/agent_runtime/test_mcp_catalog_discovery.py; registry, PROGRESS, WORKLOG,
+  docs/cloud-mcp-catalog.md. No automatic network activation or public refresh
+  route; authorized refresh composition and Worker admission remain separate.
+  Validation: focused 45 passed / 1 DB skipped; captured HTTP + real isolated
+  PostgreSQL matrix 23 passed; full 4139 passed / 860 skipped in 130.33s.
+  make check passed (897 typed sources, Eval 10/10). No live remote MCP,
+  browser acceptance, activation, commit or deployment.
+
+- `EXT-MCP-CATALOG-01A`: Ready, implemented and now Review by Luke Ding (Codex),
+  current branch. Scope: immutable bounded tool catalog contract and PostgreSQL
+  persistence pinned to exact scoped connection revision; no execution activation.
+  Owned: agent-core/domain/mcp_catalog.py, ports/mcp_catalog.py;
+  agent-storage/postgres/mcp_catalog.py, mcp_catalog_migration.py, migrations.py;
+  tests/agent_core/test_mcp_catalog.py, tests/agent_storage/test_mcp_catalog.py;
+  registry, PROGRESS, WORKLOG, docs/cloud-mcp-catalog.md.
+  Reuse existing parent lock/config and digest helpers. Validate stale refresh,
+  restart, cross-user reads and corrupted payload. Migrate disposable schemas only.
+  Validation: 11 deterministic passed / 7 DB skipped; actual isolated PostgreSQL
+  catalog/credential matrix 37 passed; full 4124 passed / 859 skipped in 133.57s.
+  make check passed (896 typed sources, Eval 10/10). No remote discovery,
+  Worker activation, running-service migration, commit or deployment.
+
+- `EXT-AUTH-01I`: Ready, implemented and now Review by Luke Ding (Codex) on current
+  branch. Scope: explicit server-side mounted master-key configuration and
+  startup composition sharing admitted cloud DSN/namespace; fail closed before
+  serving credentials. Owned: apps/config/mcp_credentials.py, settings.py;
+  apps/api/extension_composition.py, mcp_credential_composition.py, http.py;
+  agent-security/mcp_credential_protection.py; tests/api/test_mcp_credential_composition.py;
+  .env.example; registry, PROGRESS, WORKLOG, docs/cloud-mcp-credential-storage.md.
+  Reuse SecretStore/AES-GCM; mounted file holds only operator master key, never
+  user tokens. Default disabled. No deployment or Worker activation.
+  Validation: focused 98 passed / 2 DB skipped; isolated real-DB startup,
+  HTTP and management matrix 54 passed; full 4113 passed / 852 skipped in
+  122.86s. make check passed (892 sources, Eval 10/10). Operator mount required
+  for activation; no secrets generated, live schema changes, commit or deployment.
+
+- `EXT-AUTH-01H`: created Ready, implemented and now Review by Luke Ding (Codex),
+  current branch. Scope: opt-in protected credential management HTTP route using
+  existing service, Host Grant authorizer, bounded JSON and revision CAS.
+  Owned paths: apps/api/extension_credentials.py, http.py;
+  tests/api/test_extension_credentials.py; registry, PROGRESS.md, WORKLOG.md,
+  docs/cloud-mcp-credential-storage.md. POST provision and DELETE revoke require
+  extensions.manage + If-Match; no credential GET; local/default hidden; response
+  metadata only. Explicit service composition only; no key loading from browser.
+  Worker dispatch route and automatic secret-store configuration remain pending.
+  Validation: 23 focused passed / 1 DB skipped; isolated real PostgreSQL HTTP
+  and management matrix 36 passed; full 4096 passed / 851 skipped (131.21s).
+  make check passed (890 typed sources, Eval 10/10). No deployment or commit.
+
+- `EXT-AUTH-01G`: created Ready, implemented and now Review by Luke Ding (Codex),
+  current branch. Scope: lease-fenced per-frame credential resolver binding one
+  frozen MCP operation, plus final ownership recheck in shared Effect gateway.
+  Owned paths: agent-runtime/mcp_execution_authorization.py; agent-tools/
+  effect_guard.py; tests/agent_runtime/test_mcp_execution_authorization.py;
+  tests/agent_tools/test_effect_guard.py; this registry, PROGRESS.md, WORKLOG.md,
+  docs/cloud-mcp-credential-storage.md.
+  Ownership amendment: agent-security/mcp_credential_release.py and
+  tests/agent_storage/test_mcp_credential_release.py for explicit target-endpoint
+  binding at the shared release boundary (prevents relabeling a valid token).
+  Acceptance: missing/expired/stolen lease or changed request refuses release;
+  lease lost during credential lookup refuses send; ownership lost during Effect
+  payload read refuses gateway invocation and retains existing uncertain handling.
+  Broker route/Worker activation and durable MCP catalog selection remain pending.
+  Validation: focused 52 passed / 4 DB skipped; separate disposable-schema
+  matrix 44 passed including PostgreSQL terminal replay. Final full 4073 passed /
+  850 skipped in 128.59s; make check passed (889 sources, Eval 10/10).
+
+- `EXT-AUTH-01F`: created Ready, implemented and now Review by Luke Ding (Codex),
+  current branch. Scope: per-frame scoped Bearer credential injection seam in
+  existing MCP HTTP transport, without environment mutation or shared auth cache.
+  Owned paths: agent-runtime/mcp_http.py and mcp_http_authorization.py;
+  tests/agent_runtime/test_mcp_http_authorization.py; this registry, PROGRESS.md,
+  WORKLOG.md, docs/cloud-mcp-credential-storage.md.
+  Acceptance: initialize/notification/call each reauthorize; exact endpoint;
+  no environment fallback, secret repr or exception leakage, no request replay;
+  old local unauth/environment transport remains compatible. Broker live
+  lease/digest composition, API-key templates and Worker activation remain pending.
+  Validation: 52 focused transport tests passed (15 new); full suite 4059 passed /
+  850 skipped in 129.37s; make check passed (888 sources, Eval 10/10). HTTP tests
+  capture opener requests; no remote MCP or deployed Worker acceptance claimed.
+
+- `EXT-AUTH-01E`: created Ready, implemented and now Review by Luke Ding
+  (executor Codex), current branch per user. Scope: internal credential release
+  requiring live Task grant, authoritative snapshot coordinates/digest and current
+  connection equality, with a serialized PostgreSQL credential read.
+  Owned paths: agent-core/ports/mcp_credentials.py; agent-security/
+  mcp_credential_release.py; agent-storage/postgres/mcp_credentials.py;
+  tests/agent_storage/test_mcp_credential_release.py; this registry, PROGRESS.md,
+  WORKLOG.md, docs/cloud-mcp-credential-storage.md.
+  Acceptance: reject expired/wrong Task/snapshot/permission and revoked or rotated
+  connections; return redacted SecretMaterial internally only. No HTTP route,
+  Worker activation, OAuth or cancellation of already dispatched remote calls.
+  Validation: expanded matrix 122 passed (including real PostgreSQL and crypto);
+  final full suite 4044 passed / 850 skipped in 125.73s; make check passed.
+  Initial full run had one real DeepSeek response-format failure; isolated and
+  full retries passed unchanged. Details retained in WORKLOG.md.
+
+- `EXT-AUTH-01D`: created Ready, implemented and now Review by Luke Ding
+  (executor Codex), current branch per user. Scope: verified-management-grant
+  credential provisioning/revocation and atomic ciphertext/configuration CAS.
+  Owned paths: agent-core/ports/mcp_credentials.py; agent-security/
+  mcp_credential_management.py; agent-storage/postgres/mcp_credentials.py;
+  tests/agent_storage/test_mcp_credential_management.py; this registry,
+  PROGRESS.md, WORKLOG.md and docs/cloud-mcp-credential-storage.md.
+  Acceptance: read/run scopes cannot write; identity is derived from verified
+  grant; no plaintext return; stale CAS leaves no ciphertext orphan; revoke
+  disables and revisions connection while retaining history. OAuth, runtime
+  credential release/expiry and public API/Worker activation remain successors.
+  Validation: real PostgreSQL matrix 73 passed; crypto 30 passed; full default
+  4029 passed / 846 skipped; make check passed. Five new DB cases passed in the
+  dedicated real run. No service schema migration, runtime activation or commit.
+
+- `EXT-AUTH-01C`: created Ready, implemented and now Review by Luke Ding
+  (executor Codex), current branch per user. Scope: core encrypted credential
+  DTO/Port and PostgreSQL immutable ciphertext versions with exact-scope CAS.
+  Owned paths: agent-core/domain/mcp_credentials.py and ports/mcp_credentials.py;
+  agent-security/mcp_credential_protection.py compatibility imports;
+  agent-storage/postgres/mcp_credentials.py, mcp_credentials_migration.py and
+  migrations.py; tests/agent_storage/test_postgres_mcp_credentials.py;
+  this registry, PROGRESS.md, WORKLOG.md, docs/cloud-mcp-credential-storage.md.
+  Acceptance: real disposable-schema roundtrip/restart, no plaintext columns,
+  full-scope isolation, connection existence/endpoint binding, immutable history,
+  one concurrent CAS winner. No public decrypt, live migration or Broker activation.
+  Evidence: real PostgreSQL credential/extension matrix 61 passed; crypto 30
+  passed; full default suite 4022 passed / 841 skipped in 130.38s. Eleven new
+  DB tests skip without DSN and passed in the dedicated real-DB run. make check
+  passed (885 typed sources, Eval 10/10). Test schemas only; no live migration.
+
+- `EXT-AUTH-01B`: created Ready, implemented and now Review by Luke Ding
+  (executor Codex), current branch per user. Scope: authenticated MCP token
+  encryption bound to deployment, exact extension scope, connection, endpoint,
+  auth mode and credential identity/revision. Reuse SecretStore and installed
+  cryptography; no plaintext persistence or public decrypt endpoint.
+  Owned paths: agent-security/mcp_credential_protection.py; tests/agent_security/
+  test_mcp_credential_protection.py; this registry, PROGRESS.md, WORKLOG.md,
+  docs/cloud-skills-http-mcp-design.md. Acceptance: roundtrip, cross-scope and
+  endpoint substitution rejection, tamper/invalid key failure, key rotation
+  readback, bounded inputs and redacted errors. Storage, live revocation,
+  Broker authority, OAuth and Worker wiring remain successor tasks.
+  Evidence: 30 focused / 263 security tests passed; full suite 4021 passed,
+  830 skipped in 126.26s. make check passed (881 typed sources, Eval 10/10).
+  Uses real cryptography with in-memory test keys, no deployment credentials.
+
+- `EXT-AUTH-01A`: created Ready, implemented and now Review by Luke Ding
+  (executor Codex), current branch per user. Scope: MCP direct HTTPS egress
+  pins the actual socket to a freshly validated public IP, retains hostname
+  certificate validation and rejects implicit proxies/tunnels. Owned paths:
+  agent-runtime/mcp_http.py and new mcp_http_egress.py; tests/agent_runtime/
+  test_mcp_http_egress.py; this registry, PROGRESS.md, WORKLOG.md and design doc.
+  Acceptance: rebinding/mixed/private DNS answers fail before socket connect,
+  TLS uses original hostname, failed sockets close, no proxy or redirect replay;
+  shared tools/resources/prompts and local regressions pass. Credentials,
+  OAuth and cloud Worker authorization remain separate successor work.
+  Evidence: 16 egress / 135 MCP regression tests passed; full suite 3991 passed,
+  830 skipped in 134.86s. make check passed (880 typed sources, Eval 10/10).
+  Socket/TLS/DNS tests use controlled doubles; no external MCP or browser E2E
+  claimed. First validated IP only; multi-address availability fallback pending.
+
+- `EXT-MCP-HTTP-01B`: created Ready, implemented and now Review by Luke Ding
+  (executor Codex), current branch per user. Scope: HTTP resource discovery/read
+  and explicit prompt discovery/get using existing parsing and selection bounds.
+  Owned paths: agent-runtime/mcp_http.py, mcp_resources.py, mcp_prompts.py;
+  tests/agent_runtime/test_mcp_http_content.py; this registry, PROGRESS.md,
+  WORKLOG.md and cloud-skills-http-mcp-design.md.
+  Acceptance: HTTP capabilities no longer silently skipped; empty resource
+  selection has zero I/O; explicit IDs and arguments required; duplicate server
+  names rejected before network; binary/foreign URI/system prompt/instructions
+  rejected through existing validators; local MCP regression remains green.
+  Cloud Broker/Worker authorization and settings UI remain successor work.
+  Evidence: 15 focused / 119 MCP regression tests passed; full suite 3975 passed,
+  830 skipped in 132.12s. make check passed (879 typed sources, Eval 10/10),
+  diff check clean. HTTP responses are simulated; external MCP/browser E2E
+  and live cloud activation are not claimed.
+
+- `EXT-MCP-HTTP-01A`: created Ready, implemented and now Review by Luke Ding
+  (executor Codex), current branch per user. Scope: bounded incremental HTTP
+  SSE response correlation and negotiated session/protocol headers, with strict
+  initialization failure propagation. Owned paths: agent-runtime/mcp_http.py,
+  agent-runtime/mcp_http_response.py, tests/agent_runtime/test_mcp_http*,
+  this registry, PROGRESS.md, WORKLOG.md and cloud-skills-http-mcp-design.md.
+  Acceptance: progress frames do not become results; matching response returns
+  before stream EOF; malformed/mismatched/oversized input fails; session tokens
+  stay per instance, validated and excluded from repr/errors; no write replay.
+  GET replay, Broker credentials and cloud Worker MCP activation follow later.
+  Evidence: 27 focused / 104 MCP regression tests passed; full suite 3960 passed,
+  830 skipped; make check passed size, Ruff, Mypy 879 sources and Eval 10/10.
+  Tests prove return before EOF, notification separation, session headers and
+  handshake failure. No external MCP server or Trench browser acceptance yet.
+
+- `EXT-WORKER-01B`: created Ready, claimed, now Review by Luke Ding
+  (executor Codex), current branch per user. Depends on reviewed
+  `EXT-WORKER-01A` and `EXT-SKILL-02A`. Scope: expose the exact frozen cloud
+  Skill snapshot to the existing typed `skills.list` / `skills.read` tools in
+  an enabled PostgreSQL Worker, with live revocation before every call and no
+  host extraction or script execution. MCP transport, credentials, UI and
+  deployment activation remain out of scope.
+  Owned paths: cloud Skill catalog/tool composition under
+  `packages/agent-tools/src/agent_tools/`; the narrow optional catalog injection
+  point under `packages/agent-runtime/src/agent_runtime/harness.py`; Worker
+  composition/execution/tool-gateway wiring under
+  `apps/worker/src/zebra_agent_worker/`; one default-off execution flag under
+  `apps/config/src/zebra_agent_config/settings.py` and `.env.example`; focused
+  exact-scope batch live-authorization Port/implementation under
+  `packages/agent-core/src/agent_core/ports/` and
+  `packages/agent-storage/src/agent_storage/postgres/extensions.py`; focused
+  tests under `tests/agent_tools/`, `tests/agent_runtime/`, `tests/worker/`,
+  `tests/agent_storage/`, and
+  `tests/test_cloud_api_worker_profile_composition.py`; this card,
+  `PROGRESS.md`, `WORKLOG.md`, and `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: local/default-off behavior is byte-for-byte equivalent and does
+  no Skill publication/object reads; enabled cloud execution consumes only the
+  already recovered exact Turn snapshot and independently proven scope; the
+  frozen catalog cannot exceed the Task ceiling; list/read use existing typed
+  contracts and identify cloud untrusted guidance; every call rechecks the
+  current exact-scope installation and fails closed after disable, revision or
+  version change; `skills.list` performs no object-byte read and `skills.read`
+  verifies the pinned ready publication receipt's exact `object_version` via
+  versioned object read, object digest, package manifest and UTF-8 path bounds
+  on demand; retry/restart preserves the same receipt-pinned object version;
+  missing/tampered/cross-tenant state fails before content is returned. No
+  scripts are executed and no archive is extracted to the host. Validate
+  one exact-scope batch authorization query per list, two around read, no
+  unconditional thread creation or gateway-construction authorization I/O;
+  discard content when authorization changes during object read; preserve
+  unknown programming failures for server diagnostics while sanitizing known
+  boundary failures; keep changed files formatter-clean by real module splits.
+  Validate
+  deterministic tool calls, actual PostgreSQL/MinIO Worker wiring, two-tenant
+  isolation, restart/revocation/tamper cases, full regression, type/lint/size
+  gates and independent spec/quality review.
+  Implementation evidence (2026-09-07): the default-off cloud-only composition
+  passes the exact recovered Turn snapshot into the existing typed Skill tools.
+  Each list/read revalidates exact-scope installation and publication state;
+  list remains metadata-only, while read verifies one pinned ZIP in memory.
+  The production-composed, broker-only Rabbit path advertises and executes
+  `skills.read` without post-construction service mutation. Focused deterministic
+  plus actual PostgreSQL/MinIO/Rabbit/Worker validation: 86 passed / 35 skipped;
+  full suite passed 3945 / 830 skipped; strict Mypy passed 878 sources.
+  File-size, Ruff and diff gates passed.
+  Quality remediation adds one exact-scope batch authorization transaction
+  (one query for list, two bracketing read), discards verified bytes when live
+  authority changes during object I/O, avoids sync-path threads and catalog
+  construction I/O, and sanitizes unknown adapter exception details at each
+  cloud backend boundary while logging and chaining the original exception.
+  Independent final quality review passed with no remaining P0-P2 finding;
+  status is Review. Deployment activation, MCP, credentials and UI remain
+  separate work.
+
+- `EXT-WORKER-01A`: created Ready, claimed, now Review by Luke Ding
+  (executor Codex), current branch per user. Depends on reviewed
+  `EXT-ADMIT-01A` and `EXT-STORE-01B`. Scope: make the cloud Worker recover and
+  validate the exact server-bound extension Turn snapshot before execution;
+  repair the legacy JWT issuer/browser-origin comparison. No Skill tool
+  registration, package loading, MCP network execution, credential handling,
+  UI work or deployment activation.
+  Owned paths: Worker recovery/composition under
+  `apps/worker/src/zebra_agent_worker/`; Worker execution flag in
+  `apps/config/src/zebra_agent_config/settings.py` and `.env.example`; narrowly
+  scoped accepted-command integrity/correlation used by the API admission path
+  under `apps/api/src/zebra_agent_api/extension_turn_admission.py`; narrowly
+  scoped snapshot read/authority and accepted-command validation contracts under
+  `packages/agent-core/src/agent_core/` and
+  `packages/agent-storage/src/agent_storage/postgres/`; focused tests under
+  `tests/worker/`, `tests/api/`, `tests/agent_core/`, `tests/agent_storage/`, and
+  `tests/test_cloud_api_worker_profile_composition.py`; this card,
+  `PROGRESS.md`, `WORKLOG.md`, and `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: disabled/local paths are unchanged and perform no extension
+  reads; an enabled cloud Worker may perform one exact indexed existence probe
+  for an otherwise extension-unbound current nonlegacy Turn so deleted binding fields cannot
+  downgrade an immutable stored snapshot into unbound execution; an enabled
+  cloud Worker derives the active Turn only from
+  the durable accepted command and materialized human-message event, never from
+  client payload; the trusted event digest loads one exact immutable snapshot;
+  deployment, issuer, namespace, principal, workspace, session, Turn, Task
+  binding and frozen Skill ceiling all match; browser origin is never treated
+  as the JWT issuer; restart/retry reuses the same binding; missing, tampered,
+  ambiguous or cross-tenant state fails closed before model/tool execution.
+  Validate deterministic and actual-PostgreSQL recovery, full regression,
+  type/lint/size gates and independent spec/quality review.
+  Implementation evidence: command materialization preserves the server-bound
+  Turn, and the default-off cloud Worker recovers the exact immutable snapshot
+  before Attempt authority persistence. The snapshot authority's root Task
+  ceiling must exactly equal the independently loaded execution
+  `TaskBindingSnapshot`; scope, session, Turn, digest and frozen Skill ceiling
+  are revalidated. Disabled, local and projected legacy Turns perform zero
+  extension reads; enabled unbound nonlegacy Turns use only the exact existence
+  probe. Focused deterministic checks passed 32; related actual
+  PostgreSQL checks passed 59 with 1 environment-gated skip; full suite passed
+  3903 / 816 skipped; `make check` passed file-size, Ruff, strict Mypy over 876
+  sources and Eval 10/10. Status remains In Progress pending independent spec
+  and quality review; Skill loading/tools and MCP execution remain inactive.
+  Spec-review remediation traced the migrated RabbitMQ path through
+  `handoff_command` and canonical `append_command_message`: materialization now
+  parses the accepted contract, preserves its server-bound Turn, and recovery
+  correlates primarily by accepted Event causation while strictly validating
+  canonical identity/payload. Bound missing, tampered or ambiguous associations
+  fail closed; completed bound Turns are validated then ignored when recovering
+  the next active Turn, and clarification reuses its open Turn. Dedicated
+  deterministic/real-PG checks passed 13; the wider handoff/admission matrix
+  passed 68; full suite passed 3904 / 821 skipped; `make check` and diff/size
+  gates passed. Status remains In Progress pending re-review.
+  Quality-review remediation now uses one Core integrity validator at the two
+  trusted execution boundaries: it rebuilds the accepted `SessionCommand` and
+  proves fingerprint, session and idempotency continuity. Rabbit
+  materialization and Worker recovery share it; unbound legacy Turns remain
+  untouched. API pending detection recognizes the canonical Rabbit causation
+  and key as well as the strict causation-free legacy key. Recovery validates
+  every bound association, including completed history, merges canonical and
+  legacy candidates by Event ID, and rejects missing, corrupt or distinct dual
+  materializations before extension reads. Deterministic/API checks passed 50;
+  dedicated actual PostgreSQL admission/handoff checks passed 16. Full gates
+  are recorded in `WORKLOG.md`. Status remains In Progress pending re-review.
+  Final quality remediation makes canonical/legacy association one shared
+  strict predicate, validates typed accepted payloads before reading binding
+  semantics, and uses one-pass event indexes. An exact boolean snapshot
+  existence probe prevents deleting both accepted binding fields from
+  downgrading an active nonlegacy Turn. Deterministic operation-count checks
+  cover 100/120-command histories without quadratic rescans. Updated validation
+  retains all indexed candidates and validates accepted Event-ID uniqueness;
+  distinct canonical/legacy, two canonical, or duplicate accepted identities
+  fail before new admission. Updated validation passed 59 focused checks, 51
+  dedicated actual PostgreSQL checks, the clean final full suite at 3922 / 826
+  skipped, and complete quality gates. Independent final quality re-review
+  passed with no remaining P0-P2 findings;
+  the slice is now Review. Skill package loading/tool registration and MCP
+  execution remain separate, inactive work.
+
+- `EXT-ADMIT-01A`: created Ready, claimed, now Review by Luke Ding
+  (executor Codex), current branch per user. Depends on reviewed
+  `EXT-STORE-01B`. Scope: bind the server-selected enabled Skill snapshot to
+  each accepted cloud message command and its deterministic Turn in the same
+  PostgreSQL transaction; no Worker activation or MCP network execution.
+  Owned paths: core extension snapshot/admission contracts under
+  `packages/agent-core/src/agent_core/`; PostgreSQL event/snapshot admission
+  under `packages/agent-storage/src/agent_storage/postgres/`; API command,
+  route, HTTP and extension composition under
+  `apps/api/src/zebra_agent_api/`; narrowly scoped verified runtime identity
+  mapping in `packages/agent-security/src/agent_security/extension_authority.py`;
+  admission flag in `apps/config/src/zebra_agent_config/settings.py`,
+  `.env.example`, and focused config tests;
+  focused tests under `tests/agent_core/`, `tests/agent_security/`,
+  `tests/agent_storage/`, and `tests/api/`; this card, `PROGRESS.md`,
+  `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`; exact private binding
+  builder callers `tests/worker/test_task_binding_host_context.py` and
+  `tests/worker/test_bound_authority_renewal.py` may be updated to pass the
+  trusted issuer explicitly, without changing Worker production code.
+  Acceptance: a separate cloud admission flag is false by default; only a
+  verified exact-scope cloud request may select a snapshot when enabled;
+  client snapshot fields are rejected or overwritten and never trusted;
+  selection is bounded and contains only currently enabled Skill installations;
+  command event, trusted digest, and immutable snapshot commit atomically;
+  duplicate commands reuse their original binding even after configuration
+  changes; concurrent revision races cannot orphan either record; local,
+  non-message, disabled-extension and existing command behavior stay unchanged.
+  The authoritative root Task binding supplies exact issuer, namespace,
+  workspace and single-principal continuity plus an explicit frozen Skill
+  ceiling; absent or empty ceilings grant zero. Pending messages are rejected
+  until materialized, and clarification continuations reuse the original Turn
+  digest and immutable snapshot. The stored snapshot remains an input pin, not
+  execution authority. Validate
+  deterministic, real PostgreSQL, full regression, type/lint/size gates and
+  independent spec/quality review. Worker activation remains a separate task:
+  `apps/worker/src/zebra_agent_worker/task_recovery.py` still compares browser
+  origin with frozen JWT issuer, and origin cannot prove issuer. Evidence before
+  issuer/origin remediation: 112 focused API/Core/Security
+  checks and 58 related real-PostgreSQL checks passed; the dedicated atomic
+  admission matrix passed 4/4 and proves event, wakeup/Outbox and immutable
+  snapshot commit or roll back together. Full regression passed 3866 with 809
+  skipped; `make check` passed (875 typed source files, Eval 10/10). Independent
+  spec review found four blocking gaps, now remediated: Task-bound identity and
+  Skill ceilings, pending-message Turn identity, same-Turn snapshot reuse, and
+  complete rejection of client snapshot aliases. Remediation validation passed
+  97 focused deterministic checks, 6/6 dedicated actual-PostgreSQL authority,
+  atomicity and race cases, full regression 3880 passed / 810 skipped, and
+  `make check` (875 typed sources, Eval 10/10). Quality review remains gated on
+  a clean spec re-review; Worker and MCP execution stay inactive. The final
+  issuer/origin remediation carries the genuine verified Grant through actual
+  Session/Task admission, freezes JWT issuer separately from browser origin,
+  and renews only against verified issuer continuity. Validation: 184 focused
+  deterministic checks, 140 related actual-PostgreSQL checks (including the
+  production-shaped distinct issuer/origin Task-to-message path), full suite
+  3884 passed / 812 skipped, and `make check` passed (875 typed sources, Eval
+  10/10). Independent spec re-review passed. Quality-review remediation now
+  authorizes every message before
+  duplicate/revision disclosure without reselecting live configuration for an
+  authorized replay; exact-scope writes serialize by Skill identity so only one
+  installation may be enabled while disabled history remains valid; snapshot
+  revalidation uses one bounded parameterized lock query. Validation: 62
+  service-free focused checks, 249 related actual-PostgreSQL checks, full suite
+  3892 passed / 814 skipped, and `make check` passed (875 typed sources, Eval
+  10/10). Final P2 remediation keys advisory locks by an opaque canonical digest
+  of the complete deployment/scope coordinates plus Skill identity, so unrelated
+  principals do not serialize. Duplicate detection now precedes the unique
+  32-Skill limit within each selected page. Service-free focused checks passed
+  36; actual-PostgreSQL focused checks passed 67, including controlled lock
+  timeout isolation; full suite passed 3893 / 815 skipped; `make check` passed.
+  Independent final quality re-review passed with no remaining actionable
+  defect. Worker and MCP execution remain inactive.
+
+- `EXT-STORE-01B`: created Ready, claimed, now Review by Luke Ding (executor
+  Codex), current branch per user. Scope: immutable exact-scope per-turn
+  extension snapshot persistence required before Worker binding/recovery.
+  Owned: core `ports/extension_snapshots.py`; storage
+  `postgres/extension_snapshots.py`, `extension_snapshots_migration.py`,
+  `migrations.py`; `tests/agent_storage/test_postgres_extension_snapshots.py`;
+  root integration `tests/agent_storage/test_cloud_skill_snapshot_readback.py`;
+  this card, `PROGRESS.md`, `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: same turn is immutable, replay idempotent, digest verified on
+  write/read, every query checks deployment and all scope coordinates;
+  concurrent conflicting writers, restart, tamper and tenant isolation tested.
+  Persistence is not admission or authorization: no API accepts a client
+  snapshot, no Worker activation, no business migration or credentials changes.
+  Evidence: 82 focused checks (19 infrastructure skips), real PG/MinIO and
+  related matrix 94 passed; make check passed (873 typed files, eval 10/10);
+  independent spec/quality PASS. Final full regression: 3851 passed /
+  805 skipped in 145.98s; final lint, type, eval, diff and size gates passed.
+
+- `EXT-API-03B`: created Ready, claimed, now Review by Luke Ding (executor
+  Codex), current branch per user. Scope: default-off normal cloud Skill
+  publication composition reusing the control plane's resolved cloud bundle.
+  Owned: API `extension_composition.py`, `http.py`; config `settings.py`;
+  `.env.example`; `tests/api/test_skill_publication_composition.py`,
+  `tests/api/test_extension_composition.py`; root integration
+  `tests/agent_storage/test_skill_upload_composition.py`; this card,
+  `PROGRESS.md`, `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: opt-in only; one resolved DSN/namespace/object bundle; fail-fast
+  inconsistent configuration; existing explicit injection and local/disabled
+  behavior unchanged; actual PG/MinIO upload through startup composition.
+  No deployment, business migrations, Worker activation or new dependencies.
+  Evidence: 129 focused checks and real PG/MinIO matrix 77 passed; independent
+  spec/quality PASS; make check passed (870 typed files, eval 10/10).
+  First full run: 3836 passed / 785 skipped / one live DeepSeek Responses
+  payload rejection; isolated retry passed. Final full rerun: 3837 passed /
+  785 skipped in 128.23s. No whole-feature or live Worker/UI acceptance claimed.
+
+- `EXT-API-03A`: created Ready, claimed, now Review by Luke Ding (executor
+  Codex), current branch per user. Scope: opt-in bounded Skill ZIP upload and
+  authorized publication detail, with durable scoped upload idempotency.
+  Owned: core `ports/skill_publications.py`; tools `skill_publications.py`;
+  storage `postgres/skill_publications.py`, `skill_uploads_migration.py`,
+  `migrations.py`; API `skill_publications.py`, `http.py`;
+  `tests/api/test_skill_publications_http.py`,
+  `tests/agent_storage/test_skill_upload_http.py` (root real integration),
+  `tests/agent_storage/test_postgres_skill_uploads.py`; this card,
+  `PROGRESS.md`, `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: exact signed read/manage scope before body; bounded ZIP request;
+  private verified ready only; atomic key reservation tied to immutable bytes;
+  crash/retry and conflicting/concurrent keys; sanitized metadata and errors;
+  local/default-off behavior unchanged, no deployment or Worker activation.
+  Evidence: 125 focused checks; live PG/MinIO and related matrix 75 passed;
+  independent spec/quality PASS; make check passed (870 typed files).
+  Final full suite: 3809 passed / 783 skipped; diff and size gates passed.
+
+- `EXT-SKILL-02A`: created Ready, claimed, now Review by Luke Ding (executor
+  Codex), current branch per user. Scope: verified private package catalog for
+  frozen cloud turn inputs, reusing skills.list/read without host extraction.
+  Owned: `packages/agent-tools/src/agent_tools/skills.py`,
+  `packages/agent-tools/src/agent_tools/skills_catalog.py`,
+  `packages/agent-tools/src/agent_tools/cloud_skills.py`,
+  `tests/agent_tools/test_cloud_skills.py`,
+  `tests/agent_storage/test_cloud_skill_readback.py` (root integration),
+  this card, `PROGRESS.md`, `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: exact trusted scope/deployment/turn and enabled pinned installs;
+  ready publications and actual object/package digest/manifest equality;
+  bounded UTF-8 reads and metadata; no scripts, host extraction or activation;
+  local tool behavior unchanged; independent reviews and regression gates.
+  Evidence: 135 focused tests, 67 real PG/MinIO and related checks passed;
+  independent spec/quality PASS. Final full suite 3787 passed / 775 skipped;
+  make check (868 typed files), diff and file-size gates passed. No activation.
+
+- `EXT-API-02C`: created Ready, claimed, now Review by Luke Ding (executor
+  Codex), current branch per user. Scope: install a published Skill version
+  through the existing default-off management API, without runtime activation.
+  Owned: core `domain/extensions.py`, `ports/extensions.py`, application
+  `mcp_connections.py` and `skill_installations.py`; storage
+  `postgres/extensions.py`; API `extension_creates.py`, `extension_reads.py`;
+  `tests/agent_core/test_skill_installation_creation.py`,
+  `tests/api/test_skill_installations.py`,
+  `tests/api/test_extension_creates.py` (updated collection Allow contract),
+  `tests/api/test_extension_updates.py` (updated collection Allow contract),
+  `tests/agent_storage/test_postgres_skill_installations.py`; this card,
+  `PROGRESS.md`, `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: server-owned published version and exact owner/deployment;
+  disabled initial installation; strict bounded request and idempotency;
+  replay never overwrites toggles; concurrent duplicates and tenant isolation;
+  focused tests, real PostgreSQL, quality gates and independent review.
+  Evidence: 114 focused tests; independent spec and quality PASS; live
+  PostgreSQL/MinIO and related regression matrix 66 passed. Quality gates
+  passed (867 typed files). No deployment or runtime activation.
+  Final full suite: 3752 passed / 774 skipped; diff and size checks passed.
+
+- `EXT-SKILL-01B`: created Ready, claimed, now Review by Luke Ding (executor
+  Codex), current branch per user. Scope: internal durable Skill package
+  publication using the existing immutable ArtifactObjectStore, not HTTP upload
+  activation or installation UI.
+  Owned: `packages/agent-core/src/agent_core/domain/skill_publications.py`,
+  `packages/agent-core/src/agent_core/ports/skill_publications.py`,
+  `packages/agent-tools/src/agent_tools/skill_publications.py`,
+  `packages/agent-storage/src/agent_storage/postgres/skill_publications.py`,
+  `packages/agent-storage/src/agent_storage/postgres/skill_publications_migration.py`,
+  `packages/agent-storage/src/agent_storage/postgres/migrations.py`,
+  `tests/agent_core/test_skill_publication_contracts.py`,
+  `tests/agent_tools/test_skill_publications.py`,
+  `tests/agent_storage/test_postgres_skill_publications.py`,
+  `tests/agent_storage/test_skill_publication_minio.py` (root-owned real object-store check), this card,
+  `PROGRESS.md`, `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: validate ZIP before writes; exact owner/deployment isolation;
+  durable reservation before object upload; immutable named versions; verified
+  object receipt before ready; idempotent crash/retry recovery; no fake session,
+  host filesystem extraction, scripts, dependency installation or public URLs.
+  Validate with deterministic tests, real PostgreSQL, full gates and review.
+  Evidence: independent spec/quality PASS after object-version receipt fix;
+  59 PostgreSQL/MinIO and related regression checks passed; make check passed
+  (866 typed files). Full suite 3695 passed / 767 skipped; no deployment or
+  HTTP activation.
+
+- `EXT-API-02B`: created Ready, claimed, now Review by Luke Ding (executor
+  Codex), current branch per user. Scope: idempotent HTTP MCP configuration
+  creation, no network execution or credential storage.
+  Owned: `packages/agent-core/src/agent_core/ports/extensions.py`,
+  `packages/agent-core/src/agent_core/application/mcp_connections.py`,
+  `packages/agent-storage/src/agent_storage/postgres/extensions.py`,
+  `apps/api/src/zebra_agent_api/extension_creates.py`,
+  `apps/api/src/zebra_agent_api/extension_updates.py`,
+  `apps/api/src/zebra_agent_api/extension_request_body.py`,
+  `apps/api/src/zebra_agent_api/extension_reads.py`,
+  `apps/api/src/zebra_agent_api/http.py`,
+  `tests/agent_core/test_mcp_connections.py`,
+  `tests/agent_storage/test_postgres_extension_creates.py`,
+  `tests/api/test_extension_creates.py`, this card, `PROGRESS.md`, `WORKLOG.md`,
+  `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: exact manage permission and existing default-off flags; bounded
+  strict input, HTTP-only configuration; Idempotency-Key retries compare the
+  immutable original revision, never overwrite later edits; cross-scope isolation,
+  concurrent duplicate protection, sanitized responses, real PostgreSQL checks.
+  Evidence: 83 focused tests and independent spec/quality re-reviews passed;
+  47 actual PostgreSQL checks include concurrent duplicates and HTTP replay.
+  Storage validation errors are server failures, not invalid client requests.
+  Final full suite 3671 passed / 756 skipped; make check passed (861 typed
+  files). No deployment or environment activation.
+
+- `EXT-API-02A`: created Ready, claimed, now Review, owner Luke Ding (executor
+  Codex), current branch per user. Scope: revision-guarded enabled-state update
+  of existing Skill installations and MCP connections, default-off write flag.
+  Owned: `packages/agent-core/src/agent_core/application/extension_configuration.py`,
+  `tests/agent_core/test_extension_configuration.py`,
+  `tests/agent_storage/test_postgres_extensions.py` (real CAS update regression),
+  `apps/api/src/zebra_agent_api/extension_reads.py`,
+  `apps/api/src/zebra_agent_api/extension_updates.py`,
+  `apps/api/src/zebra_agent_api/http.py`,
+  `apps/config/src/zebra_agent_config/settings.py`,
+  `tests/api/test_extension_updates.py`, `tests/api/test_extension_composition.py`,
+  `.env.example`, this card, `PROGRESS.md`, `WORKLOG.md`,
+  `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: exact management permission; strict bounded enabled-only body;
+  If-Match/CAS, scoped read/write, no lost updates, no secret/version changes,
+  no automatic retries or runtime activation; old read routes unchanged.
+  Evidence: 114 focused tests, 40 actual PostgreSQL tests, independent reviews;
+  full suite 3614 passed / 749 skipped, make check passed. No deployment.
+
+- `EXT-API-01B`: created Ready, claimed, now Review, owner Luke Ding (executor
+  Codex), current branch per user. Scope: default-off cloud PostgreSQL read
+  store composition, no writes or Broker permission activation.
+  Owned: `apps/config/src/zebra_agent_config/settings.py`,
+  `apps/api/src/zebra_agent_api/http.py`,
+  `apps/api/src/zebra_agent_api/extension_composition.py`,
+  `tests/api/test_extension_composition.py`, this card, `PROGRESS.md`,
+  `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`, `.env.example`.
+  Acceptance: false by default; cloud-only, exact deployment namespace/DSN,
+  schema check before constructing default store; no SQLite fallback or implicit
+  migrations; disabled path adds no database operations; preserve injection.
+  Evidence: 119 focused tests, independent spec/quality reviews passed after
+  factory-level lazy SQLite regression fix; no running service activation.
+
+- `EXT-API-01A`: created Ready, claimed, now Review, owner Luke Ding (executor
+  Codex), current branch/workspace per user. Scope: authenticated read-only
+  Skill installation and MCP configuration HTTP adapters over ExtensionStore.
+  Owned: `apps/api/src/zebra_agent_api/http.py`,
+  `apps/api/src/zebra_agent_api/extension_reads.py`,
+  `tests/api/test_extension_reads.py`, this card, `PROGRESS.md`, `WORKLOG.md`,
+  `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: explicit injected store opt-in; verified identity and read scope;
+  bounded pagination, consistent unknown/cross-user 404, no credential refs in
+  responses, no local fallback, no mutations or automatic runtime activation.
+  Evidence: independent spec/quality PASS; 53 focused tests after final method
+  correction; prior full suite 3544 passed / 747 skipped. See WORKLOG.md.
+
+- `EXT-AUTH-01A`: created Ready, claimed, now Review, owner Luke Ding (executor Codex), current branch
+  per user. Prerequisite: EXT-SKILL-01A reviews accepted. Scope: retain signed
+  issuer/subject in VerifiedHostGrant and derive extension management scope
+  using explicit read/manage permissions; no HTTP activation or OAuth yet.
+  Owned: `packages/agent-security/src/agent_security/host_grant.py`,
+  `packages/agent-security/src/agent_security/extension_authority.py`,
+  `tests/agent_security/test_host_grant_contract.py`,
+  `tests/agent_security/test_extension_authority.py`, this card,
+  `PROGRESS.md`, `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: verified identity only, no agent.run permission escalation,
+  no changes to HostContextEnvelope serialization, deterministic isolation tests.
+  Evidence: 41 focused grant/extension/JWT tests; independent spec and quality
+  reviews passed. No HTTP routes or Broker scope activation in this slice.
+
+- `EXT-SKILL-01A`: created Ready, claimed, now Review by Luke Ding
+  (executor Codex), current branch/workspace per user. Scope: bounded cloud ZIP
+  Skill validation, immutable canonical content manifest, no execution or upload
+  activation. Owned: `packages/agent-tools/src/agent_tools/skill_packages.py`,
+  `tests/agent_tools/test_skill_packages.py`, this card, `PROGRESS.md`,
+  `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`; exact legacy builder
+  callers `tests/worker/test_task_binding_host_context.py` and
+  `tests/worker/test_bound_authority_renewal.py`.
+  Acceptance: reuse metadata parser; reject traversal, links, conflicting names,
+  malformed ZIP/UTF-8, oversized archives; stable all-file digest; no filesystem
+  writes, script execution, new dependencies, or model/network calls.
+  Evidence: 57 tests passed; independent spec/quality reviews passed after
+  forged-size and buffered-deflate regression fixes. No upload activation.
+
+- `EXT-BASELINE-01`: created Ready, claimed, now Review by Luke Ding
+  (executor Codex). Current branch by user request. Scope: repair service-free
+  tests whose mocks omit worktree/schema boundaries; preserve live safeguards.
+  Owned paths: `tests/compose/rabbitmq_product_e2e/test_fixture.py`,
+  `tests/test_cloud_api_worker_profile_composition.py`, `pyproject.toml`
+  (pytest import path only), this card, `PROGRESS.md`, `WORKLOG.md`.
+  Acceptance: deterministic targeted tests, explicit live guard assertions,
+  full suite; no production isolation or schema checks bypassed.
+  Evidence: 56 targeted tests; full suite 3413 passed / 747 explicitly skipped;
+  independent spec/quality reviews passed. Production checks unchanged.
+
+- `EXT-STORE-01A`: created Ready, claimed, now Review by Luke Ding (executor
+  Codex), same current branch by explicit user request. Depends on reviewed
+  EXT-CON-01. This is the scoped configuration persistence slice, not complete
+  package/catalog/Outbox/turn-snapshot persistence.
+  Owned paths: `packages/agent-storage/src/agent_storage/postgres/extensions.py`,
+  `packages/agent-storage/src/agent_storage/postgres/extensions_migration.py`,
+  `packages/agent-storage/src/agent_storage/postgres/migrations.py`,
+  `tests/agent_storage/test_postgres_extensions.py`, this card,
+  `PROGRESS.md`, `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: additive schema; scoped read/write/list; atomic CAS; immutable
+  revisions; bounded keyset pagination; live isolated PostgreSQL regressions.
+  Evidence: all 38 tests passed against actual local PostgreSQL using temporary
+  schemas; independent spec and quality reviews pass; make check passes.
+  No business schema migration or process activation.
+
+- `EXT-CON-01`: created Ready, claimed, now Review by Luke Ding (executor
+  Codex). User explicitly requested the current branch/workspace instead of
+  isolation: `codex/cloud-extensions-http-design`. Scope: first contract slice
+  of `docs/cloud-skills-http-mcp-design.md`; no API/Worker activation yet.
+  Owned paths: `packages/agent-core/src/agent_core/domain/extensions.py`,
+  `packages/agent-core/src/agent_core/domain/extension_snapshots.py`,
+  `packages/agent-core/src/agent_core/ports/extensions.py`,
+  `tests/agent_core/test_extensions.py`, this card, `PROGRESS.md`,
+  `WORKLOG.md`, `docs/cloud-skills-http-mcp-design.md`.
+  Acceptance: immutable scoped identity/version/config/snapshot contracts;
+  HTTP-only configuration; explicit permission narrowing; secret-free records;
+  deterministic regression tests and independent spec/quality review.
+  Settings-page management remains required downstream, not delivered by this slice.
+  Evidence: 33 focused tests; all 670 core tests; make check (size/Ruff/mypy/
+  eval) passed; independent spec and quality review passed.
+
 - `TRN-NATIVE-WORKER-01`: Ready, claimed, now Review by Luke Ding (Codex).
   Branch `codex/trn-native-worker-01`; owned paths: `docker/Dockerfile`,
   `docker/Dockerfile.arm64-cli`, `docker/compose.application.yml`,

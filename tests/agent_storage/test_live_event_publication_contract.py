@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import Mock, sentinel
 from uuid import uuid4
 
 import pytest
@@ -95,6 +96,29 @@ def test_append_failure_never_publishes() -> None:
         PostCommitPublishingEventStore(store, publisher).append(_event(SessionId(uuid4())))
 
     assert publisher.events == []
+
+
+@pytest.mark.parametrize("fail_commit", [False, True])
+@pytest.mark.parametrize("fail_publish", [False, True])
+def test_extension_append_keeps_atomic_boundary(fail_commit: bool, fail_publish: bool) -> None:
+    requested = _event(SessionId(uuid4()))
+    canonical = requested.model_copy(update={"sequence": 4})
+    store = Mock()
+    store.append_with_extension_snapshot.return_value = canonical
+    if fail_commit:
+        store.append_with_extension_snapshot.side_effect = ValueError("transaction failed")
+    publisher = _Publisher()
+    publisher.fail = fail_publish
+    wrapper = PostCommitPublishingEventStore(store, publisher)
+    kwargs = dict(scope=sentinel.scope, snapshot=sentinel.snapshot, task_ceiling=sentinel.ceiling)
+    if fail_commit:
+        with pytest.raises(ValueError, match="transaction failed"):
+            wrapper.append_with_extension_snapshot(requested, **kwargs)
+    else:
+        assert wrapper.append_with_extension_snapshot(requested, **kwargs) == canonical
+    store.append_with_extension_snapshot.assert_called_once_with(requested, **kwargs)
+    store.append.assert_not_called()
+    assert publisher.events == ([] if fail_commit or fail_publish else [canonical])
 
 
 def test_publish_failure_does_not_hide_committed_event() -> None:

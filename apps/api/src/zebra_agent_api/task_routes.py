@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_security.host_grant import VerifiedHostGrant
 
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
@@ -35,6 +36,9 @@ class TaskRouteRequest(Protocol):
     @property
     def host_context(self) -> HostContextEnvelope | None: ...
 
+    @property
+    def verified_host_grant(self) -> VerifiedHostGrant | None: ...
+
 
 def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiResponse | None:
     method = request.method.upper()
@@ -46,6 +50,7 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
             request.body or {},
             idempotency_key=_idempotency_key(request),
             host_context=request.host_context,
+            verified_host_grant=request.verified_host_grant,
         )
     if request.path.startswith("/internal/tasks/"):
         parts = _parts(request.path, "/internal/tasks/")

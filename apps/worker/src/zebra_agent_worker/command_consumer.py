@@ -85,7 +85,7 @@ class SessionCommandConsumer:
                 elif command.kind is SessionCommandKind.SUSPEND:
                     self._suspend(command)
                 elif command.kind is SessionCommandKind.MESSAGE:
-                    self._append_message(command)
+                    self._append_message(command, accepted)
                 if command.kind in {
                     SessionCommandKind.RUN,
                     SessionCommandKind.RESUME,
@@ -123,7 +123,9 @@ class SessionCommandConsumer:
                 return event
         return None
 
-    def _append_message(self, command: SessionCommand) -> None:
+    def _append_message(
+        self, command: SessionCommand, accepted: SessionCommandAcceptedPayload
+    ) -> None:
         recovery = self._recovery.recover_session(command.session_id)
         content = command.payload.get("content")
         if not isinstance(content, str):
@@ -141,6 +143,7 @@ class SessionCommandConsumer:
                     content=content,
                     clarification_id=clarification_id,
                     prior_human_turns=len(project_turns(events)),
+                    turn_id=accepted.extension_turn_id,
                     open_turn_exists=current_turn(events) is not None,
                 ),
             )

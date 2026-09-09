@@ -7,11 +7,11 @@ from urllib.parse import urlsplit
 
 from agent_core.domain.attachments import TextAttachmentInput
 
+from agent_runtime.mcp_http import McpHttpSession
 from agent_runtime.mcp_protocol import (
     McpAnyServerSpec,
     McpHttpServerSpec,
     McpProtocolError,
-    McpServerSpec,
     StdioMcpSession,
 )
 from agent_runtime.mcp_stdio import MCP_DISCOVERY_TIMEOUT_SECONDS
@@ -49,10 +49,10 @@ class McpResource:
 
 
 def discover_mcp_resources(servers: Sequence[McpAnyServerSpec]) -> tuple[McpResource, ...]:
-    # Resources are a stdio-only capability in Phase A; HTTP servers are skipped.
-    stdio_servers = [server for server in servers if not isinstance(server, McpHttpServerSpec)]
+    if len({server.name for server in servers}) != len(servers):
+        raise McpProtocolError("configured MCP server names must be unique")
     resources: list[McpResource] = []
-    for server in sorted(stdio_servers, key=lambda item: item.name):
+    for server in sorted(servers, key=lambda item: item.name):
         resources.extend(_discover_server_resources(server))
         if len(resources) > MAX_MCP_RESOURCES_TOTAL:
             raise McpProtocolError(
@@ -90,9 +90,7 @@ def read_mcp_resource_attachments(
     missing = sorted(set(selected_ids) - set(resources))
     if missing:
         raise McpProtocolError(f"selected MCP resources are unavailable: {', '.join(missing)}")
-    servers_by_name = {
-        server.name: server for server in servers if not isinstance(server, McpHttpServerSpec)
-    }
+    servers_by_name = {server.name: server for server in servers}
     attachments: list[TextAttachmentInput] = []
     total_bytes = 0
     for resource_id in selected_ids:
@@ -116,11 +114,16 @@ def read_mcp_resource_attachments(
     return tuple(attachments)
 
 
-def _discover_server_resources(server: McpServerSpec) -> list[McpResource]:
+def _discover_server_resources(server: McpAnyServerSpec) -> list[McpResource]:
     resources: list[McpResource] = []
     cursor: str | None = None
     seen_cursors: set[str] = set()
-    with StdioMcpSession(server, MCP_DISCOVERY_TIMEOUT_SECONDS) as session:
+    connection = (
+        McpHttpSession(server, MCP_DISCOVERY_TIMEOUT_SECONDS)
+        if isinstance(server, McpHttpServerSpec)
+        else StdioMcpSession(server, MCP_DISCOVERY_TIMEOUT_SECONDS)
+    )
+    with connection as session:
         if not session.supports("resources"):
             return []
         for _ in range(MAX_MCP_RESOURCE_PAGES):
@@ -177,8 +180,13 @@ def _parse_resource(server_name: str, value: object) -> McpResource:
     )
 
 
-def _read_resource(server: McpServerSpec, resource: McpResource) -> tuple[bytes, str]:
-    with StdioMcpSession(server, MCP_RESOURCE_READ_TIMEOUT_SECONDS) as session:
+def _read_resource(server: McpAnyServerSpec, resource: McpResource) -> tuple[bytes, str]:
+    connection = (
+        McpHttpSession(server, MCP_RESOURCE_READ_TIMEOUT_SECONDS)
+        if isinstance(server, McpHttpServerSpec)
+        else StdioMcpSession(server, MCP_RESOURCE_READ_TIMEOUT_SECONDS)
+    )
+    with connection as session:
         if not session.supports("resources"):
             raise McpProtocolError(f"MCP server {server.name} no longer declares resources")
         result = session.request("resources/read", {"uri": resource.uri})
