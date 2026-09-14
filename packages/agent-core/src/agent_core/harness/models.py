@@ -7,6 +7,7 @@ from typing import Any
 
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.image_attachments import ImageAttachmentContextInput
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.plans import SessionPlan
@@ -55,6 +56,7 @@ class HarnessTask:
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
     attachments: tuple[AttachmentContextInput, ...] = ()
+    image_attachments: tuple[ImageAttachmentContextInput, ...] = ()
     conversation_history: tuple[SessionMessage, ...] = ()
     task_plan: SessionPlan = field(default_factory=SessionPlan)
     identity_directive: str | None = None
@@ -92,6 +94,13 @@ class HarnessTask:
                 raise ValueError(
                     "harness task attachments must contain AttachmentContextInput values"
                 )
+        if any(
+            not isinstance(attachment, ImageAttachmentContextInput)
+            for attachment in self.image_attachments
+        ):
+            raise ValueError(
+                "harness task image_attachments must contain ImageAttachmentContextInput values"
+            )
         if any(not isinstance(message, SessionMessage) for message in self.conversation_history):
             raise ValueError("harness task conversation_history must contain SessionMessage values")
 

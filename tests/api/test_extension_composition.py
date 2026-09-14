@@ -270,6 +270,7 @@ def test_http_factory_passes_composed_store(
         "store": composed,
         "deployment": "cloud",
         "manage_enabled": False,
+        "publications": None,
     }
 
 

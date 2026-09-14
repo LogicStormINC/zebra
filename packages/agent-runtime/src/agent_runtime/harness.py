@@ -7,11 +7,11 @@ from pathlib import Path
 from agent_context import LocalContextCompiler
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.context_materialization import ContextMaterialization
+from agent_core.domain.image_attachments import ImageAttachmentContextInput
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.subagents import DelegationMode
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.harness.models import HarnessLoopResult
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
@@ -65,7 +65,7 @@ from agent_runtime.subagents import LocalResearchSubagentCoordinator
 from agent_runtime.tool_output_projection import build_output_projector
 from agent_runtime.web_gateway import LocalWebGatewayTransport
 from agent_runtime.web_search import LocalWebSearchTransport
-from agent_runtime.web_tools import register_native_web_tools
+from agent_runtime.web_tools import optional_web_search_endpoint, register_native_web_tools
 from agent_runtime.workspace import LocalWorkspace
 
 DEFAULT_TEST_PRESETS = {
@@ -91,6 +91,7 @@ def run_local_harness(
     session_history: SessionHistoryPort | None = None,
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = (),
     attachments: tuple[AttachmentContextInput, ...] = (),
+    image_attachments: tuple[ImageAttachmentContextInput, ...] = (),
     mcp_servers: Sequence[McpAnyServerSpec] = (),
     mcp_allowlist: Sequence[str] | None = None,
     trusted_local: bool = False,
@@ -136,6 +137,7 @@ def run_local_harness(
                 skill_components=tool_gateway.effective_skill_components,
                 confirmed_memories=confirmed_memories,
                 attachments=attachments,
+                image_attachments=image_attachments,
             ),
             SingleAttemptOrchestrator(
                 model_gateway,
@@ -344,7 +346,7 @@ class LocalToolGateway(ToolGatewayPort):
         output_projector: ToolOutputProjector | None,
         web_pipeline_v2: bool,
     ) -> None:
-        search_endpoint = _optional_web_search_endpoint(
+        search_endpoint = optional_web_search_endpoint(
             web_search_endpoint,
             web_pipeline_v2=web_pipeline_v2,
         )
@@ -484,17 +486,3 @@ class LocalToolGateway(ToolGatewayPort):
             if self._runtime_handle is not None:
                 self._runtime.destroy(self._runtime_handle)
                 self._runtime_handle = None
-
-
-def _optional_web_search_endpoint(
-    value: str | None, *, web_pipeline_v2: bool = False) -> WebTarget | None:
-    if value is None:
-        return None
-    try:
-        return parse_web_target(value)
-    except WebTargetError as exc:
-        if web_pipeline_v2:
-            raise ValueError(
-                f"web_search_endpoint is not a valid web target for web_pipeline_v2: {exc}"
-            ) from exc
-        return None

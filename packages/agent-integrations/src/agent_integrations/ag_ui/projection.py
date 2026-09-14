@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ag_ui.core import (
+    CustomEvent,
     Event,
     Interrupt,
     RunErrorEvent,
@@ -42,6 +43,7 @@ from agent_integrations.ag_ui.interrupts import (
     RunFinishedInterruptOutcome,
     project_interrupt_event,
 )
+from agent_integrations.ag_ui.model_usage import project_model_usage
 
 
 @dataclass(slots=True)
@@ -142,6 +144,9 @@ class AgUiProjector:
         client_effect = project_client_effect(event, timestamp=timestamp)
         if client_effect is not None:
             return client_effect
+        subagent_events = _project_subagent_event(event, timestamp=timestamp)
+        if subagent_events:
+            return subagent_events
         if event.event_type is EventType.MODEL_RESPONSE_DELTA:
             model_call_id = _required_payload_text(payload, "model_call_id")
             delta = _required_payload_text(payload, "content_delta", allow_empty=True)
@@ -161,8 +166,9 @@ class AgUiProjector:
             message_id = state.text_messages.get(model_call_id)
             had_message = message_id is not None
             assistant_message = _optional_payload_text(payload, "assistant_message")
+            usage_event = project_model_usage(payload, timestamp=timestamp)
             if assistant_message == "Tool calls proposed." and not had_message:
-                return ()
+                return (usage_event,) if usage_event is not None else ()
             output: list[Event] = []
             if message_id is None:
                 message_id = f"message:{model_call_id}"
@@ -181,6 +187,8 @@ class AgUiProjector:
             if model_call_id not in state.text_ended:
                 output.append(TextMessageEndEvent(timestamp=timestamp, message_id=message_id))
                 state.text_ended.add(model_call_id)
+            if usage_event is not None:
+                output.append(usage_event)
             return tuple(output)
         if event.event_type is EventType.TOOL_CALL_PROPOSED:
             call_id = _required_payload_text(payload, "tool_call_id")
@@ -331,6 +339,76 @@ class AgUiProjector:
                 ),
             )
         return ()
+
+
+def _project_subagent_event(event: SessionEvent, *, timestamp: int) -> tuple[Event, ...]:
+    payload = event.payload
+    if event.event_type is EventType.SUBAGENT_DELEGATED:
+        arguments = payload.get("arguments")
+        details = arguments if isinstance(arguments, Mapping) else {}
+        return (
+            CustomEvent(
+                timestamp=timestamp,
+                name="zebra.subagent",
+                value={
+                    "child_task_id": _required_payload_text(payload, "child_task_id"),
+                    "delegation_reason": _optional_payload_text(details, "delegation_reason"),
+                    "objective": _optional_payload_text(details, "objective"),
+                    "status": "running",
+                    "tool_call_id": _required_payload_text(payload, "tool_call_id"),
+                },
+            ),
+        )
+    if event.event_type in {
+        EventType.SUBAGENT_STARTED,
+        EventType.SUBAGENT_COMPLETED,
+        EventType.SUBAGENT_FAILED,
+        EventType.SUBAGENT_CANCELLED,
+    }:
+        return (
+            CustomEvent(
+                timestamp=timestamp,
+                name="zebra.subagent",
+                value={
+                    key: payload[key]
+                    for key in (
+                        "confidence",
+                        "model_calls_used",
+                        "source_count",
+                        "status",
+                        "subagent_id",
+                        "tool_calls_used",
+                    )
+                    if key in payload
+                },
+            ),
+        )
+    if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
+        return ()
+    command_payload = payload.get("payload")
+    child_results = (
+        command_payload.get("child_results")
+        if isinstance(command_payload, Mapping)
+        else None
+    )
+    if not isinstance(child_results, list):
+        return ()
+    projected: list[Event] = []
+    for result in child_results:
+        if not isinstance(result, Mapping):
+            continue
+        child_task_id = _optional_payload_text(result, "child_task_id")
+        status = _optional_payload_text(result, "status")
+        if child_task_id is None or status is None:
+            continue
+        projected.append(
+            CustomEvent(
+                timestamp=timestamp,
+                name="zebra.subagent",
+                value={"child_task_id": child_task_id, "status": status},
+            )
+        )
+    return tuple(projected)
 
 
 def _required_payload_text(

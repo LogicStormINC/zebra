@@ -16,7 +16,13 @@ from agent_core.domain.context_inheritance import DelegatedContextSnapshot
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import new_message_id
+from agent_core.domain.image_attachments import ImageAttachmentContextInput
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.modeling import (
+    ModelInvocationPolicy,
+    ModelReasoningEffort,
+    ModelThinkingMode,
+)
 from agent_core.domain.session_history import normalize_history_session_ids
 from agent_core.domain.task_bindings import TaskBindingSnapshot, host_context_digest
 from agent_core.domain.tool_profiles import ToolProfile
@@ -25,7 +31,10 @@ from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.ports import ArtifactPayloadReadPort
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_security import NetworkProfile, PolicyProfile, parse_network_profile
-from agent_storage import load_attachment_contexts_from_reader
+from agent_storage import (
+    load_attachment_contexts_from_reader,
+    load_image_attachment_contexts_from_reader,
+)
 
 
 @dataclass(frozen=True)
@@ -46,10 +55,12 @@ class RecoveredTask:
     runtime_evidence: tuple[RuntimeEvidenceInput, ...]
     host_context: HostContextEnvelope | None
     definition_snapshot: AgentDefinitionSnapshot | None
+    image_attachments: tuple[ImageAttachmentContextInput, ...] = ()
     conversation_history: tuple[SessionMessage, ...] = ()
     client_state: RuntimeEvidenceInput | None = None
     delegated_context: DelegatedContextSnapshot | None = None
     interaction_mode: InteractionMode = InteractionMode.ONE_SHOT
+    model_invocation_policy: ModelInvocationPolicy | None = None
 
 
 def apply_bound_host_context(
@@ -96,14 +107,27 @@ def recover_task(
     resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
     policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
     try:
+        refs = attachment_refs_from_event(user_event)
         attachments = load_attachment_contexts_from_reader(
             attachment_reader,
             session_id=user_event.session_id,
-            refs=attachment_refs_from_event(user_event),
+            refs=refs,
+        )
+        image_attachments = load_image_attachment_contexts_from_reader(
+            attachment_reader,
+            session_id=user_event.session_id,
+            refs=refs,
         )
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"queued session attachment recovery failed: {exc}") from exc
     definition_snapshot = _definition_snapshot(task_payload.get("definition_snapshot"))
+    invocation_policy = _model_invocation_policy(user_event.payload, task_payload)
+    if (
+        image_attachments
+        and invocation_policy is not None
+        and invocation_policy.profile_id == "deepseek-v4-pro-executor-v1"
+    ):
+        raise ValueError("image attachments require the DeepSeek V4.1 Flash profile")
     return RecoveredTask(
         title=resolved_title,
         user_input=user_input,
@@ -125,6 +149,7 @@ def recover_task(
         max_model_calls=_optional_positive_int(task_payload.get("max_model_calls")),
         max_tool_calls=_optional_positive_int(task_payload.get("max_tool_calls")),
         attachments=attachments,
+        image_attachments=image_attachments,
         host_context=_host_context(task_payload.get("host_context")),
         definition_snapshot=definition_snapshot,
         conversation_history=_conversation_history(events, before_sequence=user_event.sequence),
@@ -136,6 +161,29 @@ def recover_task(
             *((client_state_evidence,) if client_state_evidence is not None else ()),
         ),
         client_state=client_state_evidence,
+        model_invocation_policy=invocation_policy,
+    )
+
+
+def _model_invocation_policy(
+    user_payload: dict[str, object], task_payload: dict[str, object]
+) -> ModelInvocationPolicy | None:
+    profile = user_payload.get("model_profile") or task_payload.get("model_profile")
+    effort = user_payload.get("reasoning_effort") or task_payload.get("reasoning_effort")
+    if profile is None and effort is None:
+        return None
+    if profile not in {
+        "deepseek-v4-flash-executor-v1",
+        "deepseek-v4-pro-executor-v1",
+    }:
+        raise ValueError("queued session model_profile is invalid")
+    if effort not in {"none", "low", "high", "max"}:
+        raise ValueError("queued session reasoning_effort is invalid")
+    disabled = effort == "none"
+    return ModelInvocationPolicy(
+        profile_id=str(profile),
+        thinking_mode=(ModelThinkingMode.DISABLED if disabled else ModelThinkingMode.ENABLED),
+        reasoning_effort=(None if disabled else ModelReasoningEffort(str(effort))),
     )
 
 

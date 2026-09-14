@@ -47,7 +47,7 @@ RESPONSES_PATH = "/responses"
 
 
 class DeepSeekResponsesModelGateway:
-    """Explicit text-profile adapter for DeepSeek's stateless Responses API."""
+    """DeepSeek's stateless Responses adapter, including native image inputs."""
 
     def __init__(
         self,
@@ -188,8 +188,13 @@ class DeepSeekResponsesModelGateway:
             invocation_policy or ModelInvocationPolicy(),
             has_tools=bool(tools),
         )
-        if resolved.profile.model not in {"deepseek-v4-flash", "deepseek-v4-pro"}:
-            raise ValueError("DeepSeek Responses requires a supported text model profile")
+        if resolved.profile.model not in {
+            "deepseek-flash",
+            "deepseek-v4-flash",
+            "deepseek-v4-flash-vision-exp",
+            "deepseek-v4-pro",
+        }:
+            raise ValueError("DeepSeek Responses requires a supported model profile")
         names = provider_tool_names(tools)
         serialized_tools = [
             {
@@ -371,8 +376,6 @@ def _parse_responses_completion(
     thinking_with_tools = bool(
         tools_advertised and resolved.thinking_mode is ModelThinkingMode.ENABLED
     )
-    if thinking_with_tools and tool_calls and reasoning is None:
-        raise ValueError("DeepSeek thinking tool request requires reasoning output")
     requires_reasoning = thinking_with_tools and reasoning is not None
     content = "".join(text_parts).strip()
     if not content:

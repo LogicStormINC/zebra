@@ -50,7 +50,6 @@ interface CodexConversationPaneProps {
   mcpPrompts: McpPromptsResponse | undefined;
   mcpPromptsBusy: boolean;
   mcpPromptsError: string | null;
-  onCancel: () => void;
   onCopySessionId: () => void;
   onCopyWorkspacePath: () => void;
   onCreateConversation: () => void;
@@ -147,10 +146,11 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
     <ConversationComposer
       attachments={pendingAttachments}
       canSubmit={composerValue.trim().length > 0 && !launchError}
+      controlsBusy={props.controlsBusy}
       currentConversation={props.currentConversation}
       effectiveLaunchConfig={effectiveLaunchConfig}
+      events={props.events}
       isRequesting={props.isRequesting}
-      launchConfig={props.launchConfig}
       launchEditable={launchEditable}
       launchError={launchError}
       mcpCapabilities={props.mcpCapabilities}
@@ -160,10 +160,11 @@ export function CodexConversationPane(props: CodexConversationPaneProps) {
       mcpPromptsBusy={props.mcpPromptsBusy}
       mcpPromptsError={props.mcpPromptsError}
       onAttachmentsChange={setPendingAttachments}
-      onCancel={props.onCancel}
       onChange={setComposerValue}
+      onPause={props.onSuspendSession}
       onPatchLaunchConfig={props.onPatchLaunchConfig}
       onRetryMcpPrompts={props.onRetryMcpPrompts}
+      onResume={props.onResumeSession}
       onSubmit={submitComposer}
       senderRef={props.senderRef}
       sessionSummary={props.sessionSummary}

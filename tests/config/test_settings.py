@@ -24,7 +24,7 @@ def test_load_settings_reads_default_profile() -> None:
     assert settings.model.provider == "deepseek"
     assert settings.model.api_key_env == "DEEPSEEK_API_KEY"
     assert settings.model.base_url == "https://api.deepseek.com"
-    assert settings.model.model == "deepseek-v4-flash"
+    assert settings.model.model == "deepseek-flash"
     assert settings.model.wire_api == "chat_completions"
     assert settings.model.executor_profile == "deepseek-v4-flash-executor-v1"
     assert settings.model.planner_profile == "deepseek-v4-pro-planner-v1"

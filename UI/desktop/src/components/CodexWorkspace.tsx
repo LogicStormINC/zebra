@@ -65,7 +65,6 @@ interface CodexWorkspaceProps {
   mcpPromptsBusy: boolean;
   mcpPromptsError: string | null;
   operatorConfig: OperatorConfig;
-  onCancel: () => void;
   onCopySessionId: () => void;
   onCopyWorkspacePath: () => void;
   onPatchConfig: (patch: Partial<OperatorConfig>) => void;
@@ -176,7 +175,6 @@ export function CodexWorkspace(props: CodexWorkspaceProps) {
             mcpPromptsBusy={props.mcpPromptsBusy}
             mcpPromptsError={props.mcpPromptsError}
             messages={props.messages}
-            onCancel={props.onCancel}
             onCancelSession={props.onCancelSession}
             onCopySessionId={props.onCopySessionId}
             onCopyWorkspacePath={props.onCopyWorkspacePath}

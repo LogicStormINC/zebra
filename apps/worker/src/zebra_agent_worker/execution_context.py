@@ -43,6 +43,7 @@ def build_worker_orchestrator(
     local_continuation_store: Any,
     session_id: SessionId,
     provider_continuation: Any,
+    invocation_policy: Any = None,
 ) -> SingleAttemptOrchestrator:
     persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
         cloud_continuation,
@@ -64,6 +65,7 @@ def build_worker_orchestrator(
         attempt_number=1,
         delta_coalesce_characters=256,
         delta_coalesce_seconds=0.1,
+        invocation_policy=invocation_policy,
     )
     return SingleAttemptOrchestrator(
         model_gateway,
@@ -126,6 +128,7 @@ def harness_task_for_recovered(
         ),
         confirmed_memories=_deduplicate_memories(confirmed_memories),
         attachments=task.attachments,
+        image_attachments=task.image_attachments,
         conversation_history=task.conversation_history,
         runtime_evidence=runtime_evidence,
         identity_directive=(

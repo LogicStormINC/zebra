@@ -453,6 +453,7 @@ class SessionExecutionService:
                 local_continuation_store=self._provider_continuation_store,
                 session_id=session_id,
                 provider_continuation=provider_continuation,
+                invocation_policy=task.model_invocation_policy,
             )
             client_wakeup = recover_client_effect_wakeup(session_events)
             try:

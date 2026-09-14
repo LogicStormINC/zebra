@@ -16,12 +16,38 @@ from agent_core.domain.host_authority import (
     HostResourceRef,
     HostTechnicalLimits,
 )
+from agent_core.domain.modeling import ModelReasoningEffort, ModelThinkingMode
 from agent_storage import (
     LocalArtifactPayloadReader,
     SQLiteArtifactPayloadStore,
     store_initial_text_attachments,
 )
 from zebra_agent_worker.task_recovery import recover_task
+
+
+def test_worker_recovers_explicit_model_and_reasoning_policy(tmp_path: Path) -> None:
+    database = tmp_path / "sessions.sqlite"
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Selected model",
+            user_input="Use the requested model",
+            workspace_root=tmp_path,
+            model_profile="deepseek-v4-pro-executor-v1",
+            reasoning_effort="max",
+        )
+    )
+
+    recovered = recover_task(
+        list(bootstrap.events),
+        workspace=rebuild_workspace(list(bootstrap.events)),
+        fallback_title="fallback",
+        attachment_reader=LocalArtifactPayloadReader(SQLiteArtifactPayloadStore(database)),
+    )
+
+    assert recovered.model_invocation_policy is not None
+    assert recovered.model_invocation_policy.profile_id == "deepseek-v4-pro-executor-v1"
+    assert recovered.model_invocation_policy.thinking_mode is ModelThinkingMode.ENABLED
+    assert recovered.model_invocation_policy.reasoning_effort is ModelReasoningEffort.MAX
 
 
 def test_worker_recovers_only_captured_prompt_bytes(

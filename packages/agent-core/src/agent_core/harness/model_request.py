@@ -1,12 +1,14 @@
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
+from typing import Any, cast
 
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
+    ModelInvocationPolicy,
     ModelTextDelta,
     ModelToolDefinition,
 )
@@ -80,6 +82,7 @@ def complete_model(
     model_call_id: str,
     on_delta: Callable[[str, ModelTextDelta], None],
     response_repair_limit: int = _MODEL_RESPONSE_REPAIR_LIMIT,
+    invocation_policy: ModelInvocationPolicy | None = None,
 ) -> ModelCompletion:
     if not 0 <= response_repair_limit <= _MODEL_RESPONSE_REPAIR_LIMIT:
         raise ValueError("response_repair_limit must be zero or one")
@@ -104,15 +107,31 @@ def complete_model(
     while True:
         attempt_deltas.clear()
         try:
-            completion = (
-                gateway.complete_stream(
-                    request_messages,
-                    tools=tools,
-                    on_text_delta=capture,
+            if isinstance(gateway, StreamingModelGatewayPort):
+                completion = (
+                    gateway.complete_stream(
+                        request_messages,
+                        tools=tools,
+                        on_text_delta=capture,
+                    )
+                    if invocation_policy is None
+                    else cast(Any, gateway).complete_stream(
+                        request_messages,
+                        tools=tools,
+                        on_text_delta=capture,
+                        invocation_policy=invocation_policy,
+                    )
                 )
-                if isinstance(gateway, StreamingModelGatewayPort)
-                else gateway.complete(request_messages, tools=tools)
-            )
+            else:
+                completion = (
+                    gateway.complete(request_messages, tools=tools)
+                    if invocation_policy is None
+                    else cast(Any, gateway).complete(
+                        request_messages,
+                        tools=tools,
+                        invocation_policy=invocation_policy,
+                    )
+                )
         except ModelResponseRejectedError as error:
             public_output_committed = bool(attempt_deltas)
             if (

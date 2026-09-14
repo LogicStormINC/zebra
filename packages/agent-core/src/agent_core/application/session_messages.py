@@ -18,6 +18,8 @@ class SessionMessageAppendCommand:
     # Exactly-one-open-Turn invariant (ADR-026 §5): callers that can read
     # the event stream must report whether a Turn is still open.
     open_turn_exists: bool = False
+    model_profile: str | None = None
+    reasoning_effort: str | None = None
 
 
 class SessionMessageAppendService:
@@ -79,6 +81,12 @@ class SessionMessageAppendService:
                 "turn_id": turn_id,
                 "turn_index": command.prior_human_turns,
                 "origin": "human",
+                **({"model_profile": command.model_profile} if command.model_profile else {}),
+                **(
+                    {"reasoning_effort": command.reasoning_effort}
+                    if command.reasoning_effort
+                    else {}
+                ),
             },
             created_at=command.appended_at,
         )

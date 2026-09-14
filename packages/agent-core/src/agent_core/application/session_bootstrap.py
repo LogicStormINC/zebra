@@ -35,6 +35,8 @@ class SessionBootstrapCommand:
     definition_snapshot: AgentDefinitionSnapshot | None = None
     delegated_context: DelegatedContextSnapshot | None = None
     interaction_mode: InteractionMode | None = None
+    model_profile: str | None = None
+    reasoning_effort: str | None = None
     created_at: datetime | None = None
 
 
@@ -99,6 +101,12 @@ class SessionBootstrapService:
                     "max_attempts": command.max_attempts,
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,
+                    **({"model_profile": command.model_profile} if command.model_profile else {}),
+                    **(
+                        {"reasoning_effort": command.reasoning_effort}
+                        if command.reasoning_effort
+                        else {}
+                    ),
                     **(
                         {
                             "host_context": command.host_context.model_dump(

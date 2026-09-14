@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agent_core.domain.web import WebTarget
+from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
 from agent_storage.web_resource import SQLiteWebResourceStore, WebResourceStoreAdapter
 from agent_tools import ToolRegistry
 from agent_tools.search_pipeline import (
@@ -32,6 +32,21 @@ from agent_tools.web_projection import WebFindTool, WebProjector, WebReadTool
 from agent_runtime.crawl_gateway import Crawl4AIFetchProvider, CrawlGateway, is_crawl4ai_available
 from agent_runtime.fetch_providers import LocalHttpFetchProvider
 from agent_runtime.search_providers import SearXNGSearchProvider
+
+
+def optional_web_search_endpoint(
+    value: str | None, *, web_pipeline_v2: bool = False
+) -> WebTarget | None:
+    if value is None:
+        return None
+    try:
+        return parse_web_target(value)
+    except WebTargetError as exc:
+        if web_pipeline_v2:
+            raise ValueError(
+                f"web_search_endpoint is not a valid web target for web_pipeline_v2: {exc}"
+            ) from exc
+        return None
 
 
 def register_native_web_tools(

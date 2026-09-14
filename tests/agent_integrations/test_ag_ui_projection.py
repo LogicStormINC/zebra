@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
+from uuid import uuid4
 
 import pytest
 from ag_ui.core import Event as AgUiEvent
@@ -231,6 +232,103 @@ def test_tool_only_model_sentinel_is_not_exposed_as_assistant_text() -> None:
     assert AgUiEventType.TEXT_MESSAGE_CONTENT not in types
     assert AgUiEventType.TEXT_MESSAGE_END not in types
     assert AgUiEventType.TOOL_CALL_START in types
+
+
+def test_model_usage_is_projected_as_a_public_custom_event() -> None:
+    session_id = new_session_id()
+    events = (
+        _event(
+            session_id,
+            0,
+            EventType.MODEL_RESPONSE_RECEIVED,
+            {
+                "model_call_id": "model-usage",
+                "assistant_message": "Done.",
+                "input_tokens": 10_100,
+                "input_token_limit": 105_000,
+                "prompt_cache_hit_tokens": 96_800,
+                "prompt_cache_miss_tokens": 3_200,
+                "resolved_model": "deepseek/deepseek-flash",
+                "reasoning_effort": "high",
+                "stable_prefix_hash": "must-not-leave-zebra",
+            },
+        ),
+    )
+
+    projection = AgUiProjector().project(events, _identity(session_id))
+    usage = next(event for event in projection.events if event.type is AgUiEventType.CUSTOM)
+
+    assert usage.name == "zebra.model_usage"
+    assert usage.value == {
+        "input_tokens": 10_100,
+        "input_token_limit": 105_000,
+        "prompt_cache_hit_tokens": 96_800,
+        "prompt_cache_miss_tokens": 3_200,
+        "resolved_model": "deepseek/deepseek-flash",
+        "reasoning_effort": "high",
+    }
+
+
+def test_durable_subagent_lifecycle_is_projected_without_child_summary() -> None:
+    session_id = new_session_id()
+    child_task_id = str(uuid4())
+    events = (
+        _event(
+            session_id,
+            0,
+            EventType.SUBAGENT_DELEGATED,
+            {
+                "attempt_number": 1,
+                "child_task_id": child_task_id,
+                "tool_name": "agent.research",
+                "tool_call_id": "research-1",
+                "arguments": {
+                    "objective": "Compare independent sources",
+                    "delegation_reason": "Keep evidence collection isolated",
+                },
+                "assistant_message": "I will compare the sources.",
+                "conversation": [],
+                "model_calls_used": 1,
+                "tool_calls_executed": 1,
+            },
+        ),
+        _event(
+            session_id,
+            1,
+            EventType.SESSION_COMMAND_ACCEPTED,
+            {
+                "command_id": str(uuid4()),
+                "session_id": str(session_id),
+                "kind": "resume",
+                "expected_revision": 0,
+                "idempotency_key": "child-wakeup:test",
+                "payload": {
+                    "child_results": [
+                        {
+                            "child_task_id": child_task_id,
+                            "status": "completed",
+                            "summary": "private child result",
+                        }
+                    ]
+                },
+                "fingerprint": "a" * 64,
+            },
+        ),
+    )
+
+    projection = AgUiProjector().project(events, _identity(session_id))
+    custom = [event for event in projection.events if event.type is AgUiEventType.CUSTOM]
+
+    assert [event.name for event in custom] == ["zebra.subagent", "zebra.subagent"]
+    assert custom[0].value == {
+        "child_task_id": child_task_id,
+        "delegation_reason": "Keep evidence collection isolated",
+        "objective": "Compare independent sources",
+        "status": "running",
+        "tool_call_id": "research-1",
+    }
+    assert custom[1].value == {"child_task_id": child_task_id, "status": "completed"}
+    assert "private child result" not in json.dumps(custom[1].value)
 
 
 def test_reconnect_tail_requires_exact_cursor_and_replays_only_new_durable_events() -> None:

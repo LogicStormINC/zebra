@@ -54,6 +54,139 @@ def test_task_create_list_and_control_route_to_active_segment(tmp_path: Path) ->
     assert read.body["status"] == "cancelled"
 
 
+def test_task_read_projects_bounded_task_model_usage(tmp_path: Path) -> None:
+    app = create_app(tmp_path / "task-usage.sqlite")
+    adapter = RouteAdapter(app)
+    created = adapter.handle(
+        RouteRequest(
+            "POST",
+            "/tasks",
+            body={"title": "Usage", "prompt": "Inspect", "workspace": str(tmp_path)},
+        )
+    )
+    task_id = str(created.body["task_id"])
+    session_id = SessionId(UUID(task_id))
+    session = app.stores.sessions.get_session(session_id)
+    assert session is not None
+    for offset, payload in enumerate(
+        (
+            {
+                "input_tokens": 8_000,
+                "input_token_limit": 105_000,
+                "prompt_cache_hit_tokens": 90,
+                "prompt_cache_miss_tokens": 10,
+                "resolved_model": "deepseek/flash",
+                "reasoning_effort": "high",
+                "provider": "private-provider",
+                "stable_prefix_hash": "private-hash",
+            },
+            {
+                "input_tokens": 10_500,
+                "input_token_limit": 105_000,
+                "prompt_cache_hit_tokens": 80,
+                "prompt_cache_miss_tokens": 20,
+                "resolved_model": "deepseek/flash",
+                "reasoning_effort": "high",
+            },
+        ),
+        start=1,
+    ):
+        app.stores.events.append(
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=session.current_sequence + offset,
+                event_type=EventType.MODEL_RESPONSE_RECEIVED,
+                actor=EventActor.HARNESS,
+                payload=payload,
+                created_at=NOW,
+            )
+        )
+
+    read = adapter.handle(RouteRequest("GET", f"/tasks/{task_id}"))
+
+    assert read.status_code == 200
+    assert read.body["model_usage"] == {
+        "cache_hit_tokens": 170,
+        "cache_miss_tokens": 30,
+        "input_token_limit": 105_000,
+        "input_tokens": 10_500,
+        "model": "deepseek/flash",
+        "model_call_count": 2,
+        "reasoning_effort": "high",
+    }
+    assert "provider" not in read.body["model_usage"]
+    assert "stable_prefix_hash" not in read.body["model_usage"]
+
+
+def test_task_subagents_route_projects_real_parent_child_events(tmp_path: Path) -> None:
+    app = create_app(tmp_path / "subagents.sqlite")
+    adapter = RouteAdapter(app)
+    parent = adapter.handle(
+        RouteRequest(
+            "POST",
+            "/tasks",
+            body={
+                "title": "Parent",
+                "prompt": "Compare sources",
+                "tool_profile": "research_coordinator",
+                "workspace": str(tmp_path),
+            },
+        )
+    )
+    child = adapter.handle(
+        RouteRequest(
+            "POST",
+            "/tasks",
+            body={"title": "Child", "prompt": "Read sources", "workspace": str(tmp_path)},
+        )
+    )
+    parent_id = str(parent.body["task_id"])
+    parent_session_id = SessionId(UUID(parent_id))
+    parent_session = app.stores.sessions.get_session(parent_session_id)
+    assert parent_session is not None
+    app.stores.events.append(
+        SessionEvent.create(
+            session_id=parent_session_id,
+            sequence=parent_session.current_sequence + 1,
+            event_type=EventType.SUBAGENT_DELEGATED,
+            actor=EventActor.HARNESS,
+            payload={
+                "attempt_number": 1,
+                "child_task_id": str(child.body["task_id"]),
+                "tool_name": "agent.research",
+                "tool_call_id": "research-1",
+                "arguments": {
+                    "objective": "Compare independent sources",
+                    "delegation_reason": "Keep the evidence context bounded",
+                },
+                "assistant_message": "I will compare independent sources.",
+                "conversation": [],
+                "model_calls_used": 1,
+                "tool_calls_executed": 1,
+            },
+            created_at=NOW,
+        )
+    )
+
+    response = adapter.handle(RouteRequest("GET", f"/tasks/{parent_id}/subagents"))
+
+    assert response.status_code == 200
+    assert response.body == {
+        "count": 1,
+        "subagents": [
+            {
+                "child_task_id": str(child.body["task_id"]),
+                "created_at": NOW.isoformat(),
+                "delegation_reason": "Keep the evidence context bounded",
+                "objective": "Compare independent sources",
+                "parent_task_id": parent_id,
+                "status": "ready",
+            }
+        ],
+        "task_id": parent_id,
+    }
+
+
 def test_task_route_persists_verified_host_context_for_worker_recovery(tmp_path: Path) -> None:
     context = HostContextEnvelope(
         grant_id="grant-1",

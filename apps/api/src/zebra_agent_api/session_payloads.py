@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TypedDict
 from uuid import UUID
 
 from agent_core.domain.attachments import TextAttachmentInput
 from agent_core.domain.identifiers import AgentDefinitionId
+from agent_core.domain.image_attachments import ImageAttachmentInput
 from agent_core.domain.mcp import normalize_mcp_allowlist
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.networking import NetworkProfileName
@@ -18,90 +18,24 @@ from agent_security import NetworkProfileError, PolicyProfile, parse_network_pro
 
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
+from zebra_agent_api.session_payload_types import (
+    AppendSessionMessagePayload,
+    ApprovalDecisionPayload,
+    BulkMemoryReviewPayload,
+    CancelSessionPayload,
+    CommitSessionPayload,
+    MemoryOverviewPayload,
+    PullRequestPayload,
+    QueueSweepPreviewPayload,
+    ResumeSessionPayload,
+    SuspendSessionPayload,
+)
+from zebra_agent_api.session_payload_types import (
+    CreateSessionPayload as CreateSessionPayload,
+)
 from zebra_agent_api.session_skill_inputs import parse_skill_components
 
-
-class CreateSessionPayload(TypedDict):
-    prompt: str
-    title: str
-    workspace: str
-    workspace_source: WorkspaceSource | None
-    execute: bool
-    policy_profile: str
-    tool_profile: str
-    max_model_calls: int | None
-    max_tool_calls: int | None
-    network_profile: str
-    network_allowlist: list[str]
-    mcp_allowlist: list[str]
-    skill_components: list[str]
-    mcp_resource_ids: list[str]
-    mcp_prompt_id: str | None
-    mcp_prompt_arguments: dict[str, str]
-    history_session_ids: tuple[str, ...] | None
-    attachments: tuple[TextAttachmentInput, ...]
-    definition_id: AgentDefinitionId | None
-    definition_environment: str | None
-    interaction_mode: InteractionMode | None
-
-
 CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
-
-
-class ResumeSessionPayload(TypedDict):
-    worker_id: str
-    lease_ttl_seconds: int
-
-
-class SuspendSessionPayload(TypedDict):
-    pass
-
-
-class CancelSessionPayload(TypedDict):
-    pass
-
-
-class AppendSessionMessagePayload(TypedDict):
-    content: str
-    clarification_id: str | None
-    attachments: tuple[TextAttachmentInput, ...]
-
-
-class ApprovalDecisionPayload(TypedDict):
-    operator: str
-    reason: str
-
-
-class BulkMemoryReviewPayload(TypedDict):
-    decision: str
-    operator: str
-    reason: str
-    memory_ids: list[str]
-
-
-class CommitSessionPayload(TypedDict):
-    message: str
-    author_name: str
-    author_email: str
-
-
-class PullRequestPayload(TypedDict):
-    title: str
-    body: str
-    base_branch: str
-    head_branch: str | None
-    dry_run: bool
-
-
-class MemoryOverviewPayload(TypedDict):
-    user_id: str | None
-    tenant_id: str | None
-    as_of: datetime | None
-
-
-class QueueSweepPreviewPayload(TypedDict):
-    decision: str
-    memory_type: str | None
 
 
 def parse_create_session_payload(
@@ -258,6 +192,15 @@ def parse_create_session_payload(
         except ValueError:
             return bad_request("interaction_mode must be conversation or one_shot")
 
+    model_profile = _model_profile(payload.get("model_profile"))
+    if isinstance(model_profile, ApiResponse):
+        return model_profile
+    if _has_images(attachments) and model_profile == "deepseek-v4-pro-executor-v1":
+        return bad_request("image attachments require the DeepSeek V4.1 Flash profile")
+    reasoning_effort = _reasoning_effort(payload.get("reasoning_effort"))
+    if isinstance(reasoning_effort, ApiResponse):
+        return reasoning_effort
+
     return {
         "prompt": prompt.strip(),
         "title": title.strip(),
@@ -280,6 +223,8 @@ def parse_create_session_payload(
         "definition_id": definition_id,
         "definition_environment": definition_environment,
         "interaction_mode": interaction_mode,
+        "model_profile": model_profile,
+        "reasoning_effort": reasoning_effort,
     }
 
 
@@ -335,11 +280,46 @@ def parse_append_session_message_payload(
         return bad_request(str(exc))
     if clarification_id is not None and attachments:
         return bad_request("clarification responses do not accept attachments")
+    model_profile = _model_profile(payload.get("model_profile"))
+    if isinstance(model_profile, ApiResponse):
+        return model_profile
+    if _has_images(attachments) and model_profile == "deepseek-v4-pro-executor-v1":
+        return bad_request("image attachments require the DeepSeek V4.1 Flash profile")
+    reasoning_effort = _reasoning_effort(payload.get("reasoning_effort"))
+    if isinstance(reasoning_effort, ApiResponse):
+        return reasoning_effort
     return {
         "content": content.strip(),
         "clarification_id": clarification_id.strip() if clarification_id else None,
         "attachments": attachments,
+        "model_profile": model_profile,
+        "reasoning_effort": reasoning_effort,
     }
+
+
+def _model_profile(value: object) -> str | None | ApiResponse:
+    if value is None:
+        return None
+    if value not in {
+        "deepseek-v4-flash-executor-v1",
+        "deepseek-v4-pro-executor-v1",
+    }:
+        return bad_request("model_profile is not supported")
+    return str(value)
+
+
+def _has_images(
+    attachments: tuple[TextAttachmentInput | ImageAttachmentInput, ...],
+) -> bool:
+    return any(isinstance(attachment, ImageAttachmentInput) for attachment in attachments)
+
+
+def _reasoning_effort(value: object) -> str | None | ApiResponse:
+    if value is None:
+        return None
+    if value not in {"none", "low", "high", "max"}:
+        return bad_request("reasoning_effort is not supported")
+    return str(value)
 
 
 def parse_approval_decision_payload(

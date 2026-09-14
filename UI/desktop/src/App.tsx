@@ -15,6 +15,7 @@ import { useWorkspaceSessionIndex } from "./lib/use-workspace-session-index";
 import { useWorkspaceSelection } from "./lib/use-workspace-selection";
 import { useCopyText } from "./lib/use-copy-text";
 import { useActiveApproval } from "./lib/use-active-approval";
+import { useSupplementQueue } from "./lib/use-supplement-queue";
 import { zebraApi } from "./lib/zebra-api";
 import type { SessionEvent, SessionSummary } from "./types";
 const WORKSPACE_HOME_KEY = "__workspace-home__";
@@ -64,7 +65,9 @@ export default function App() {
   const [controlsBusy, setControlsBusy] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
   const events = conversationEvents[currentConversation] ?? [];
-  const messages = conversationMessages[currentConversation] ?? [];
+  const durableMessages = conversationMessages[currentConversation] ?? [];
+  const supplementQueue = useSupplementQueue(currentConversation, durableMessages);
+  const messages = supplementQueue.messages;
   const activeConversation = conversations.find((item) => item.key === currentConversation);
   const activeLabel = activeConversation?.label ?? locale.agentName;
   const currentSessionId =
@@ -135,7 +138,6 @@ export default function App() {
     },
     [api, conversationToSessionId, setSessionSummaries],
   );
-
   const loadSessionSummary = useCallback(
     async (conversationKey: string, sessionId: string) => {
       try {
@@ -149,7 +151,6 @@ export default function App() {
     },
     [api, setSessionSummaries],
   );
-
   const refreshConversation = useCallback(
     async (conversationKey: string) => {
       const sessionId = conversationToSessionId[conversationKey];
@@ -293,6 +294,7 @@ export default function App() {
         conversationEventsRef.current = next;
         return next;
       });
+      supplementQueue.clear(conversationKey);
       streamControllersRef.current.get(conversationKey)?.abort();
       streamControllersRef.current.delete(conversationKey);
       if (sessionId && sessionId === config.sessionId) patchConfig({ sessionId: "" });
@@ -301,9 +303,8 @@ export default function App() {
       }
       setCurrentConversation(WORKSPACE_HOME_KEY);
     },
-    [config.sessionId, conversationToSessionId, currentConversation, patchConfig, removeIndexedConversation],
+    [config.sessionId, conversationToSessionId, currentConversation, patchConfig, removeIndexedConversation, supplementQueue.clear],
   );
-
   const submitMessage = useCallback(
     async (input: string, launchConfig: TaskLaunchConfig, attachments: AttachmentPayload[]) => {
       const trimmed = input.trim();
@@ -316,6 +317,14 @@ export default function App() {
         conversationKey = createIndexedConversation(trimmed.slice(0, 36));
         createdFromWorkspaceHome = true;
         setCurrentConversation(conversationKey);
+      }
+
+      if (isRequesting && conversationToSessionId[conversationKey]) {
+        if (!supplementQueue.enqueue(conversationKey, trimmed, attachments)) {
+          messageApi.warning(`最多可排队 ${supplementQueue.maxQueued} 条补充信息`);
+          return false;
+        }
+        return true;
       }
 
       appendMessageToConversation(conversationKey, {
@@ -345,6 +354,18 @@ export default function App() {
           await api.appendMessage(sessionId, { content: trimmed, attachments });
         }
         await executeSession(conversationKey, sessionId);
+        // ponytail: a bounded browser queue is enough for interactive steering;
+        // promote it to a durable command inbox if cross-device recovery is required.
+        while (supplementQueue.peek(conversationKey)) {
+          const supplement = supplementQueue.peek(conversationKey)!;
+          await api.appendMessage(sessionId, {
+            content: supplement.content,
+            attachments: supplement.attachments,
+          });
+          appendMessageToConversation(conversationKey, { key: `local-supplement-${Date.now()}`, role: "user", status: "success", content: supplement.content });
+          supplementQueue.shift(conversationKey);
+          await executeSession(conversationKey, sessionId);
+        }
         return true;
       } catch (error: unknown) {
         messageApi.error(toErrorMessage(error));
@@ -360,9 +381,11 @@ export default function App() {
       currentConversation,
       createIndexedConversation,
       executeSession,
+      isRequesting,
       messageApi,
       patchConfig,
       renameConversation,
+      supplementQueue,
     ],
   );
 
@@ -416,7 +439,6 @@ export default function App() {
         approvalErrorText={activeApproval.errorText}
         clarificationBusy={controlsBusy}
         onApprove={activeApproval.approve}
-        onCancel={cancelSession}
         onCopySessionId={() => {
           if (!currentSessionId) {
             return;

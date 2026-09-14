@@ -160,6 +160,7 @@ from agent_storage.runtime_composition import (
 from agent_storage.session_attachments import (
     load_attachment_contexts,
     load_attachment_contexts_from_reader,
+    load_image_attachment_contexts_from_reader,
     store_initial_text_attachments,
     store_text_attachments,
 )
@@ -209,6 +210,7 @@ __all__ = [
     "list_confirmed_repo_memory_texts",
     "load_attachment_contexts",
     "load_attachment_contexts_from_reader",
+    "load_image_attachment_contexts_from_reader",
     "payload_for_artifact_uri",
     "PostgresAgentTaskConflictError",
     "PostgresAgentTaskStore",

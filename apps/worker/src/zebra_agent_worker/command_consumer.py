@@ -145,6 +145,8 @@ class SessionCommandConsumer:
                     prior_human_turns=len(project_turns(events)),
                     turn_id=accepted.extension_turn_id,
                     open_turn_exists=current_turn(events) is not None,
+                    model_profile=_optional_string(command.payload.get("model_profile")),
+                    reasoning_effort=_optional_string(command.payload.get("reasoning_effort")),
                 ),
             )
             .model_copy(update={"idempotency_key": f"{command.idempotency_key}:message"})
@@ -182,3 +184,7 @@ def _lease_ttl(command: SessionCommand, default: int) -> int:
         if isinstance(lease_ttl, int) and not isinstance(lease_ttl, bool) and lease_ttl > 0:
             return lease_ttl
     return default
+
+
+def _optional_string(value: object) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None

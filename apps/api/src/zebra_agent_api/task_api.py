@@ -4,7 +4,6 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
-from typing import Protocol
 from uuid import UUID
 
 from agent_core.application import (
@@ -33,41 +32,10 @@ from zebra_agent_api.idempotency import replay_idempotent_response, save_idempot
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_handoff import SessionHandoffApi
 from zebra_agent_api.session_summary import serialize_session_summary
+from zebra_agent_api.task_model_usage import summarize_task_model_usage
 from zebra_agent_api.task_responses import parse_task_limit, task_not_found
+from zebra_agent_api.task_session_api import TaskSessionApi
 
-
-class TaskSessionApi(Protocol):
-    @property
-    def database_path(self) -> Path: ...
-
-    @property
-    def stores(self) -> ControlPlaneStores: ...
-
-    def create_session(
-        self,
-        payload: dict[str, object],
-        *,
-        idempotency_key: str | None = None,
-        host_context: HostContextEnvelope | None = None,
-        verified_host_grant: VerifiedHostGrant | None = None,
-    ) -> ApiResponse: ...
-
-    def append_session_message(
-        self, session_id: str, payload: dict[str, object]) -> ApiResponse: ...
-
-    def cancel_session(
-        self,
-        session_id: str,
-        payload: dict[str, object],
-        *,
-        host_context: HostContextEnvelope | None = None,
-        idempotency_key: str | None = None,
-        task_id: TaskId | None = None,
-    ) -> ApiResponse: ...
-
-    def suspend_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse: ...
-
-    def resume_session(self, session_id: str, payload: dict[str, object]) -> ApiResponse: ...
 
 @dataclass(frozen=True)
 class TaskReadApi:
@@ -93,7 +61,11 @@ class TaskReadApi:
             status=task.status.value,
         )
         _update_turn_fields(body, session, events_store=self.stores.events)
-        events = [item.event for item in self.stores.tasks.read_events(parsed, -1)]
+        task_events = self.stores.tasks.read_events(parsed, -1)
+        model_usage = summarize_task_model_usage(task_events)
+        if model_usage is not None:
+            body["model_usage"] = model_usage
+        events = [item.event for item in task_events]
         attachments = [
             ref.to_mapping() for event in events for ref in attachment_refs_from_event(event)
         ]

@@ -9,12 +9,14 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
+    ModelInvocationPolicy,
     ModelToolDefinition,
 )
 from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness.context_recovery import prepare_bounded_conversation
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.hooks import CompactionHook
+from agent_core.harness.image_messages import image_data_urls
 from agent_core.harness.model_request import (
     allowed_response_repairs,
     build_context_plan,
@@ -62,6 +64,7 @@ class HarnessModelStep:
         attempt_number: int = 1,
         delta_coalesce_characters: int | None = None,
         delta_coalesce_seconds: float | None = None,
+        invocation_policy: ModelInvocationPolicy | None = None,
     ) -> None:
         if conversation_token_budget is not None and conversation_token_budget <= 0:
             raise ValueError("conversation_token_budget must be positive")
@@ -77,6 +80,7 @@ class HarnessModelStep:
         self._provider_continuation = provider_continuation
         self._compaction_hook = compaction_hook
         self._delegation_mode = delegation_mode
+        self._invocation_policy = invocation_policy
         self._text_deltas = (
             TextDeltaCoalescer(
                 event_sink,
@@ -161,8 +165,10 @@ class HarnessModelStep:
             raise ContextWindowExceededError(plan)
         validate_tool_call_pairing(messages)
         if self._event_sink is None:
-            if self._provider_continuation is not None and isinstance(
-                model_gateway, ProviderContinuationCompletionPort
+            if (
+                self._invocation_policy is None
+                and self._provider_continuation is not None
+                and isinstance(model_gateway, ProviderContinuationCompletionPort)
             ):
                 try:
                     completion = model_gateway.complete_from_reference(
@@ -181,6 +187,7 @@ class HarnessModelStep:
                         model_call_id="untracked",
                         on_delta=lambda _model_call_id, _delta: None,
                         response_repair_limit=response_repair_limit,
+                        invocation_policy=self._invocation_policy,
                     )
                 finally:
                     self._provider_continuation = None
@@ -192,6 +199,7 @@ class HarnessModelStep:
                     model_call_id="untracked",
                     on_delta=lambda _model_call_id, _delta: None,
                     response_repair_limit=response_repair_limit,
+                    invocation_policy=self._invocation_policy,
                 )
             return with_context_plan(completion, plan)
         model_call_id = str(new_correlation_id())
@@ -218,8 +226,10 @@ class HarnessModelStep:
         )
         assert self._text_deltas is not None
         self._text_deltas.reset()
-        if self._provider_continuation is not None and isinstance(
-            model_gateway, ProviderContinuationCompletionPort
+        if (
+            self._invocation_policy is None
+            and self._provider_continuation is not None
+            and isinstance(model_gateway, ProviderContinuationCompletionPort)
         ):
             try:
                 completion = model_gateway.complete_from_reference(
@@ -247,6 +257,7 @@ class HarnessModelStep:
                         model_call_id=model_call_id,
                         on_delta=self._text_deltas.emit,
                         response_repair_limit=response_repair_limit,
+                        invocation_policy=self._invocation_policy,
                     )
                 finally:
                     self._text_deltas.flush()
@@ -261,6 +272,7 @@ class HarnessModelStep:
                     model_call_id=model_call_id,
                     on_delta=self._text_deltas.emit,
                     response_repair_limit=response_repair_limit,
+                    invocation_policy=self._invocation_policy,
                 )
             finally:
                 self._text_deltas.flush()
@@ -432,9 +444,7 @@ class HarnessModelStep:
             )
             if messages:
                 messages[-1] = messages[-1].model_copy(
-                    update={
-                        "content": (f"{messages[-1].content}\n\n{delegation_guidance}")
-                    }
+                    update={"content": (f"{messages[-1].content}\n\n{delegation_guidance}")}
                 )
             else:
                 messages.append(
@@ -483,6 +493,7 @@ class HarnessModelStep:
                 role=MessageRole.USER,
                 content=task.user_input,
                 created_at=created_at,
+                provider_image_data_urls=image_data_urls(task.image_attachments),
             )
         )
         return messages

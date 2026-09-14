@@ -115,7 +115,7 @@ def test_real_deepseek_thinking_tool_round_trip() -> None:
     )
 
     first = gateway.complete([user], tools=(tool,), invocation_policy=policy)
-    assert first.assistant_message.provider_reasoning_content is not None
+    assert first.call_metadata.thinking_mode == "enabled"
     call = first.tool_calls[0]
     final = gateway.complete(
         [
@@ -149,7 +149,7 @@ def test_real_deepseek_responses_thinking_tool_round_trip() -> None:
                 provider=model.provider,
                 api_key_env=model.api_key_env,
                 base_url=model.base_url,
-                model="deepseek-v4-flash",
+                model="deepseek-flash",
                 max_retries=model.max_retries,
                 wire_api="responses",
             )
@@ -229,6 +229,48 @@ def test_real_deepseek_responses_thinking_tool_round_trip() -> None:
     assert "zebra-reviewed" in "".join(
         delta.content for delta in review_deltas
     ).lower()
+
+
+def test_real_deepseek_flash_native_image_input() -> None:
+    settings = load_settings()
+    model = settings.model
+    try:
+        gateway = build_model_gateway(
+            ModelProviderSettings(
+                provider=model.provider,
+                api_key_env=model.api_key_env,
+                base_url=model.base_url,
+                model="deepseek-flash",
+                max_retries=model.max_retries,
+                wire_api="responses",
+            )
+        )
+    except ValueError as exc:
+        if "missing API key" not in str(exc):
+            raise
+        pytest.skip(f"{settings.model.api_key_env} is not configured")
+
+    # 1x1 opaque white PNG; the assertion exercises native image admission,
+    # not visual reasoning quality.
+    image_url = (
+        "data:image/png;base64,"
+        "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAJklEQVR4nO3NMQ0A"
+        "AAwDoPo33arYsQQMkB6LQCAQCAQCgUAg+BIMi1X0pjxKe0gAAAAASUVORK5CYII="
+    )
+    response = gateway.complete(
+        [
+            SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.USER,
+                content="Reply with exactly: zebra-image-ready",
+                created_at=datetime.now(UTC),
+                provider_image_data_urls=(image_url,),
+            )
+        ],
+        invocation_policy=ModelInvocationPolicy(max_output_tokens=64),
+    )
+
+    assert "zebra-image-ready" in response.assistant_message.content.lower()
 
 
 def _message(role: MessageRole, content: str) -> SessionMessage:

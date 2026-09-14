@@ -201,7 +201,7 @@ def load_settings(
                 default=f"{provider.upper()}_API_KEY",
             ),
             base_url=_read(values, "ZEBRA_MODEL_BASE_URL", default="https://api.deepseek.com"),
-            model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-v4-flash"),
+            model=_read(values, "ZEBRA_MODEL_NAME", default="deepseek-flash"),
             wire_api=_read_model_wire_api(values, provider=provider),
             executor_profile=_read_optional(values, "ZEBRA_DEEPSEEK_EXECUTOR_PROFILE"),
             planner_profile=_read_optional(values, "ZEBRA_DEEPSEEK_PLANNER_PROFILE"),

@@ -1,5 +1,5 @@
-import { Dropdown, Flex, Input, Popover } from "antd";
-import locale from "../../_utils/local";
+import { ControlOutlined, DownOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import { Dropdown, Flex, Input, Popover, Select } from "antd";
 import type { McpCapabilitiesResponse, McpPromptsResponse } from "../../types";
 import { compactWorkspaceLabel, taskNetworkProfileLabel, type TaskLaunchConfig } from "../../lib/task-launch-config";
 import { McpTaskSelector } from "../McpTaskSelector";
@@ -34,115 +34,131 @@ export function TaskLaunchControls({
 }: TaskLaunchControlsProps) {
   const { styles } = useConversationPaneStyle();
   const { styles: launchStyles } = useTaskLaunchStyle();
-  const workspaceEditor = (
+
+  const resetMcp = {
+    mcpAllowlist: [],
+    mcpResourceIds: [],
+    mcpPromptId: null,
+    mcpPromptArguments: {},
+    mcpPromptSchema: null,
+  };
+  const editor = (
     <div className={launchStyles.editor}>
-      <strong>新任务工作区</strong>
-      <Input
-        aria-label="新任务工作区"
-        name="task-workspace"
-        onChange={(event) => onPatch({ workspace: event.target.value })}
-        placeholder="绝对路径或 ."
-        status={config.workspace.trim() ? undefined : "error"}
-        value={config.workspace}
-      />
-      <span>路径由本地 API 解析；`.` 表示 API 服务当前目录。</span>
+      <div className={styles.launchEditorHeading}>
+        <strong>任务配置</strong>
+        <span>仅应用于尚未启动的新任务</span>
+      </div>
+      <label className={styles.launchEditorField}>
+        <span>工作区</span>
+        <Input
+          aria-label="新任务工作区"
+          name="task-workspace"
+          onChange={(event) => onPatch({ workspace: event.target.value })}
+          placeholder="绝对路径或 ."
+          status={config.workspace.trim() ? undefined : "error"}
+          value={config.workspace}
+        />
+      </label>
+      <div className={styles.launchEditorGrid}>
+        <label className={styles.launchEditorField}>
+          <span>工具能力</span>
+          <Select
+            aria-label="工具能力"
+            onChange={(toolProfile) => onPatch({ toolProfile })}
+            options={[{ value: "general", label: "通用工具" }, { value: "coding", label: "编码工具" }]}
+            value={config.toolProfile}
+          />
+        </label>
+        <label className={styles.launchEditorField}>
+          <span>网络</span>
+          <Select
+            aria-label="网络配置"
+            onChange={(networkProfile) => onPatch({
+              networkProfile,
+              networkAllowlist: networkProfile === "domain-allowlist" ? config.networkAllowlist : [],
+              ...(networkProfile === "mcp-proxy-only" ? {} : resetMcp),
+            })}
+            options={[
+              { value: "none", label: "无外部网络" },
+              { value: "domain-allowlist", label: "域名白名单" },
+              { value: "mcp-proxy-only", label: "仅 MCP 代理" },
+              { value: "full-trusted-local", label: "本地可信网络" },
+            ]}
+            value={config.networkProfile}
+          />
+        </label>
+      </div>
+      {config.networkProfile === "domain-allowlist" ? (
+        <label className={styles.launchEditorField}>
+          <span>允许访问的域名</span>
+          <Input
+            aria-label="允许访问的域名"
+            onChange={(event) => onPatch({
+              networkAllowlist: event.target.value.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean),
+            })}
+            placeholder="docs.example.com, api.example.com"
+            value={config.networkAllowlist.join(", ")}
+          />
+        </label>
+      ) : null}
+      {editable && config.networkProfile === "mcp-proxy-only" ? (
+        <>
+          <McpTaskSelector
+            capabilities={capabilities}
+            busy={capabilitiesBusy}
+            className=""
+            errorText={capabilitiesError}
+            onResourcesChange={(mcpResourceIds) => onPatch({ mcpResourceIds })}
+            onToolsChange={(mcpAllowlist) => onPatch({ mcpAllowlist })}
+            selectedResources={config.mcpResourceIds}
+            selectedTools={config.mcpAllowlist}
+          />
+          <McpPromptSelector
+            arguments={config.mcpPromptArguments}
+            busy={promptsBusy}
+            data={prompts}
+            errorText={promptsError}
+            onArgumentsChange={(mcpPromptArguments) => onPatch({ mcpPromptArguments })}
+            onRefresh={onRetryPrompts}
+            onSelectionChange={(mcpPromptId, mcpPromptSchema) => onPatch({
+              mcpPromptId,
+              mcpPromptArguments: {},
+              mcpPromptSchema,
+            })}
+            selectedPromptId={config.mcpPromptId}
+          />
+        </>
+      ) : null}
     </div>
   );
-  const networkEditor = (
-    <div className={launchStyles.editor}>
-      <strong>允许访问的域名</strong>
-      <Input
-        aria-label="允许访问的域名"
-        onChange={(event) => onPatch({
-          networkAllowlist: event.target.value.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean),
-        })}
-        placeholder="docs.example.com, api.example.com"
-        value={config.networkAllowlist.join(", ")}
-      />
-      <span>仅填写裸域名，使用逗号分隔；不接受协议、路径或通配符。</span>
-    </div>
-  );
-  const mcpEditor = (
-    <div className={launchStyles.editor}>
-      <McpTaskSelector
-        capabilities={capabilities}
-        busy={capabilitiesBusy}
-        className=""
-        errorText={capabilitiesError}
-        onResourcesChange={(mcpResourceIds) => onPatch({ mcpResourceIds })}
-        onToolsChange={(mcpAllowlist) => onPatch({ mcpAllowlist })}
-        selectedResources={config.mcpResourceIds}
-        selectedTools={config.mcpAllowlist}
-      />
-      <McpPromptSelector
-        arguments={config.mcpPromptArguments}
-        busy={promptsBusy}
-        data={prompts}
-        errorText={promptsError}
-        onArgumentsChange={(mcpPromptArguments) => onPatch({ mcpPromptArguments })}
-        onRefresh={onRetryPrompts}
-        onSelectionChange={(mcpPromptId, mcpPromptSchema) => onPatch({
-          mcpPromptId,
-          mcpPromptArguments: {},
-          mcpPromptSchema,
-        })}
-        selectedPromptId={config.mcpPromptId}
-      />
-    </div>
+  const permissionButton = (
+    <button
+      aria-label={editable ? "选择任务权限" : "当前任务权限"}
+      className={`${styles.permissionButton} ${config.policyProfile === "full_access" ? styles.permissionButtonFull : ""}`}
+      disabled={!editable}
+      type="button"
+    >
+      <SafetyCertificateOutlined />
+      <span>{config.policyProfile === "full_access" ? "完全访问" : "工作区写入"}</span>
+      {editable ? <DownOutlined /> : null}
+    </button>
   );
 
   return (
-    <Flex align="center" className={styles.composerTools} gap={8}>
-      <span className={styles.modeSegment}>
-        <span className={styles.modePill}>{locale.modeAsk}</span>
-        <span className={styles.modePillActive}>{locale.modeAct}</span>
-      </span>
-      {editable ? (
-        <Popover content={workspaceEditor} placement="topLeft" trigger="click">
-          <button className={styles.toolbarButton} type="button">工作区: {compactWorkspaceLabel(config.workspace)}</button>
-        </Popover>
-      ) : null}
-      {editable ? (
-        <Dropdown menu={{ items: [
-          { key: "workspace_write", label: "权限: 工作区写入", onClick: () => onPatch({ policyProfile: "workspace_write" }) },
-          { key: "full_access", label: "权限: 完整访问（全部受控工具）", onClick: () => onPatch({ policyProfile: "full_access" }) },
-        ] }} trigger={["click"]}>
-          <button className={styles.toolbarButton} type="button">
-            {config.policyProfile === "full_access" ? "权限: 完整访问" : locale.accessWorkspaceWrite}
-          </button>
-        </Dropdown>
-      ) : null}
-      {editable ? (
-        <Dropdown menu={{ items: [
-          { key: "general", label: "能力: 通用工具", onClick: () => onPatch({ toolProfile: "general" }) },
-          { key: "coding", label: "能力: 编码工具", onClick: () => onPatch({ toolProfile: "coding" }) },
-        ] }} trigger={["click"]}>
-          <button className={styles.toolbarButton} type="button">
-            {config.toolProfile === "coding" ? "能力: 编码工具" : "能力: 通用工具"}
-          </button>
-        </Dropdown>
-      ) : null}
-      {editable ? (
-        <Dropdown menu={{ items: [
-          { key: "none", label: "网络: 无外部网络", onClick: () => onPatch({ networkProfile: "none", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null }) },
-          { key: "domain-allowlist", label: "网络: 域名白名单", onClick: () => onPatch({ networkProfile: "domain-allowlist", mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null }) },
-          { key: "mcp-proxy-only", label: "网络: 仅 MCP 代理", onClick: () => onPatch({ networkProfile: "mcp-proxy-only", networkAllowlist: [] }) },
-          { key: "full-trusted-local", label: "网络: 本地可信网络", onClick: () => onPatch({ networkProfile: "full-trusted-local", networkAllowlist: [], mcpAllowlist: [], mcpResourceIds: [], mcpPromptId: null, mcpPromptArguments: {}, mcpPromptSchema: null }) },
-        ] }} trigger={["click"]}>
-          <button className={styles.toolbarButton} type="button">网络: {taskNetworkProfileLabel(config.networkProfile)}</button>
-        </Dropdown>
-      ) : null}
-      {editable && config.networkProfile === "domain-allowlist" ? (
-        <Popover content={networkEditor} placement="topLeft" trigger="click">
-          <button className={styles.toolbarButton} type="button">域名: {config.networkAllowlist.length || "未配置"}</button>
-        </Popover>
-      ) : null}
-      {editable && config.networkProfile === "mcp-proxy-only" ? (
-        <Popover content={mcpEditor} placement="topLeft" trigger="click">
-          <button className={styles.toolbarButton} type="button">MCP: {config.mcpAllowlist.length} 工具 · {config.mcpResourceIds.length} 资源 · {config.mcpPromptId ? 1 : 0} Prompt</button>
-        </Popover>
-      ) : null}
-      {editable ? <span className={launchStyles.staticBadge}>模型: API 运行时配置</span> : null}
+    <Flex align="center" className={styles.composerTools} gap={4}>
+      {editable ? <Dropdown menu={{ items: [
+        { key: "workspace_write", label: "工作区写入", onClick: () => onPatch({ policyProfile: "workspace_write" }) },
+        { key: "full_access", label: "完全访问（全部受控工具）", onClick: () => onPatch({ policyProfile: "full_access" }) },
+      ] }} trigger={["click"]}>
+        {permissionButton}
+      </Dropdown> : permissionButton}
+      {editable ? <Popover content={editor} placement="topLeft" trigger="click">
+        <button
+          aria-label={`任务配置：${compactWorkspaceLabel(config.workspace)}，${taskNetworkProfileLabel(config.networkProfile)}`}
+          className={styles.launchConfigButton}
+          type="button"
+        ><ControlOutlined /><span>任务配置</span></button>
+      </Popover> : null}
     </Flex>
   );
 }

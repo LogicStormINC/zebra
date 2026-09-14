@@ -7,6 +7,7 @@ from agent_security.host_grant import VerifiedHostGrant
 
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.subagent_read import SubagentReadApi
 from zebra_agent_api.task_api import (
     TaskReadApi,
     append_task_message,
@@ -103,6 +104,8 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
         return TaskReadApi(app.stores).get(parts[0])
     if method == "GET" and len(parts) == 2 and parts[1] == "stream":
         return TaskReadApi(app.stores).stream(parts[0])
+    if method == "GET" and len(parts) == 2 and parts[1] == "subagents":
+        return SubagentReadApi(app.stores).list_for_parent(parts[0])
     if method == "GET" and len(parts) == 2 and parts[1] == "diff":
         return route_active_task(app.stores, parts[0], app.get_session_diff)
     if method == "GET" and len(parts) == 2 and parts[1] == "context":

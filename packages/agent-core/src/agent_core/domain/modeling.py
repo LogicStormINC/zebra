@@ -92,12 +92,15 @@ class ModelInvocationPolicy:
     reasoning_effort: ModelReasoningEffort | None = None
     tool_choice: ModelToolChoice = ModelToolChoice.AUTO
     max_output_tokens: int | None = None
+    profile_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.max_output_tokens is not None and self.max_output_tokens <= 0:
             raise ValueError("max_output_tokens must be positive when set")
         if self.thinking_mode is ModelThinkingMode.DISABLED and self.reasoning_effort is not None:
             raise ValueError("reasoning_effort requires thinking to be enabled or auto")
+        if self.profile_id is not None and not self.profile_id.strip():
+            raise ValueError("profile_id must not be blank when set")
 
 
 @dataclass(frozen=True)

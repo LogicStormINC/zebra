@@ -20,6 +20,7 @@ from agent_core.ports.model_gateway import ModelResponseRejectedError
 
 from agent_integrations.deepseek_profiles import ResolvedDeepSeekInvocation
 from agent_integrations.model_errors import ModelProviderError, finish_reason_error
+from agent_integrations.provider_images import chat_completions_content
 from agent_integrations.request_metadata import ModelRequestMetadata
 
 
@@ -30,7 +31,7 @@ def serialize_message(
 ) -> dict[str, object]:
     payload: dict[str, object] = {
         "role": message.role.value,
-        "content": message.content,
+        "content": chat_completions_content(message),
     }
     if message.tool_calls:
         payload["tool_calls"] = [

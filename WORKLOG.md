@@ -1,5 +1,58 @@
 # Progress Log
 
+## 2026-09-14 - Compact Cloud Agent composer and live supplements
+
+Reworked the sender as a compact two-sided command bar. The left side retains
+attachments, displays the session's effective permission, and places all
+editable launch fields in one task-config popover. The right side projects real
+context-window use, weighted prompt-cache hit rate, resolved model, reasoning
+effort, and the single send/pause/continue action. Model and reasoning controls
+are intentionally read-only because the current API owns those settings.
+
+Kept the input usable during execution. Supplements appear immediately, queue
+up to eight per conversation, and run in order after the current Turn closes.
+After the API accepts a queued item it becomes a local committed message before
+the queue marker is removed, so the subsequent event-stream replacement cannot
+produce the earlier disappear/reappear gap. The queue is intentionally scoped to
+the active browser process; durable cross-device steering remains a separate
+command-inbox capability rather than an implicit change to exactly-one-open-Turn
+semantics.
+
+Validation: Desktop production build passed; every executable Desktop check
+passed under the bundled Node 24 runtime; `git diff --check` passed; touched
+source files remain within repository hard limits. Browser inspection at the
+local Vite surface confirmed the compact layout, active-session read-only
+permission and context popover. The local API was disconnected in that preview,
+so no claim is made for a live pause/resume or model execution. No commit/push.
+
+## 2026-09-14 - Trench durable Subagent lifecycle
+
+Added the smallest authority expansion needed for model-native delegation:
+`research_coordinator` reuses the read-only research profile and adds only
+`agent.research`. Trench capability generation v13 gives an existing conversation
+a CAS-bound successor Task on its next Turn, because Zebra Task authority is
+frozen at admission. The child remains bounded by the existing one-level durable
+research composition; no recursive delegation or broad coding tools were added.
+
+Zebra now projects delegation and completion as `zebra.subagent` AG-UI custom
+events and offers `GET /tasks/{task_id}/subagents`, derived from authoritative
+Task events and live child status. Only child ID, public objective, delegation
+reason and status are available; wakeup summaries/private child reasoning are
+not sent to the Host. Trench maps and stores those events as public progress,
+merges lifecycle updates by child ID, and leaves details collapsed after the Turn
+finishes.
+
+Validation: Zebra focused 17 passed; Ruff and diff checks passed; file-size gate
+passed for 2,158 files; Mypy passed 915 sources. Trench focused backend 44 passed,
+frontend 14 passed, and focused ESLint passed. This is source-level acceptance,
+not a live browser/model delegation claim. Rebuilt and recreated only the local
+acceptance Zebra API/Worker while retaining database, object store, secrets,
+workspace mounts and existing network mappings; both returned healthy and the
+containers import `research_coordinator`, `SubagentReadApi`, and the delegated
+tool set. A direct Task probe without a valid Host grant returned 401 and created
+no Task, as required. Trench retains unrelated pre-existing worktree changes and
+its known full TypeScript fixture failures. No commit or push.
+
 ## 2026-09-09 - Readable Skill management
 
 Root cause: publication already stored validated name/description/version_label,
@@ -9630,3 +9683,49 @@ actual byte access.
   checks, full suite 3893 passed / 815 skipped, and `make check` passed.
   Independent final quality re-review passed with no remaining actionable
   defect.
+
+## 2026-09-14 - TRN-COMPOSER-METRICS-01
+
+- Added the safe AG-UI model-usage projection consumed by Trench's context ring.
+- Added a regression proving only the public allowlist leaves Zebra.
+- Validation: projection tests `9 passed`; focused Ruff and Mypy passed.
+- Follow-up fixed the historical-session gap: Task GET aggregates the latest
+  context/model values and task-wide cache counters from durable model-response
+  events using the same public allowlist. Trench performs one bounded, nonfatal
+  hydration on conversation open and stores the result in its latest Turn.
+- Validation: Zebra Task regression `1 passed`; Trench client/store regressions
+  `3 passed`; frontend focused suite `17 passed`; browser and PostgreSQL checks
+  confirmed `9261 / 557632`, `44544 / (44544 + 32616) = 57.7%`, and refresh
+  persistence.
+
+## 2026-09-14 - TRN-COMPOSER-MODEL-CONTROLS-01
+
+- Replaced the Trench composer authorization pill with the requested plus
+  attachment button and added real Flash/Pro and reasoning-effort selectors.
+- Propagated the selected values through durable Trench and Zebra event/queue
+  recovery into `HarnessModelStep`; fixed the shared DeepSeek profile router so
+  an explicit selection wins over legacy compatibility configuration.
+- Kept image upload unavailable because the repository's reviewed vision plan
+  is not implemented past planning. This avoids a selectable control that would
+  fail after submission or bypass Artifact/egress governance.
+- Evidence: Zebra focused `51 passed`, Ruff/Mypy pass; Trench API `45 passed`,
+  frontend `70 passed`, focused ESLint and browser interaction pass.
+
+## 2026-09-14 - TRN-DEEPSEEK-V41-MM-01
+
+- Rechecked the September 10 official release and corrected the earlier design:
+  V4.1 Flash itself is native multimodal and the Provider alias is
+  `deepseek-flash`; no separate Vision profile or preprocessing Agent is needed.
+- Added bounded image validation, durable Artifact references, Worker recovery,
+  transient USER-message image content, and native Chat Completions/Responses
+  serialization. Existing stable profile IDs remain unchanged for compatibility.
+- Trench's existing attachment plus button now accepts JPEG/PNG/GIF/WebP,
+  identifies images in the pending list, and automatically selects V4.1 Flash.
+- A real `deepseek-flash` Responses API request accepted an inline PNG and
+  returned the expected answer. V4.1's valid thinking-tool response without a
+  reasoning item exposed and fixed one stale parser assumption.
+- Validation: Provider/Responses focus `14 passed`; image/API/Worker focus
+  `159 passed`; Trench API `44 passed` plus native-image forwarding `26 passed`;
+  Trench composer/workspace `6 passed`; `make check` passed; full Zebra suite
+  `4401 passed`, `875 skipped`. No deployment or logged-in Trench browser image
+  submission was performed.

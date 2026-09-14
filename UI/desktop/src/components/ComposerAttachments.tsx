@@ -1,4 +1,4 @@
-import { FileExcelOutlined, FilePdfOutlined, FilePptOutlined, FileTextOutlined, FileWordOutlined, PaperClipOutlined } from "@ant-design/icons";
+import { FileExcelOutlined, FilePdfOutlined, FilePptOutlined, FileTextOutlined, FileWordOutlined, PlusOutlined } from "@ant-design/icons";
 import React from "react";
 import {
   readAttachmentFiles,
@@ -53,7 +53,7 @@ export function ComposerAttachments({
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
         type="button"
-      ><PaperClipOutlined /></button>
+      ><PlusOutlined /></button>
       {attachments.map((attachment) => (
         <span className={styles.chip} key={attachment.key}>
           {attachment.media_type === "application/pdf" ? <FilePdfOutlined />

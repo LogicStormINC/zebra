@@ -1,5 +1,49 @@
 # Zebra Agent Project Status
 
+2026-09-14 TRN-DEEPSEEK-V41-MM-01: DeepSeek V4.1 Flash replaces the historical
+dual-channel Vision design. The stable Zebra Flash profile now calls the official
+`deepseek-flash` alias and accepts validated JPEG/PNG/GIF/WebP attachments through
+the existing durable Artifact path. Worker recovery verifies session ownership,
+size and digest before attaching transient image content to the current USER
+message; Chat Completions and Responses serializers emit their native image
+parts. Trench exposes image selection on the existing plus button and switches
+image requests from Pro to V4.1 Flash. A real Responses API request with an inline
+PNG reached `deepseek-flash` successfully; V4.1 tool calls that omit an optional
+reasoning item are also accepted without exposing or fabricating reasoning.
+Focused tests, `make check`, and the full suite (`4401 passed`, `875 skipped`)
+pass. No deployment or logged-in Trench browser image submission is claimed.
+
+2026-09-14 DESKTOP-COMPOSER-UX-01: Desktop Cloud Agent composer is now a
+compact command bar with attachment, truthful current permission, task config,
+actual model/reasoning labels, and an SVG context-capacity ring. The popover is
+derived exclusively from durable model request/response usage and reports the
+latest input-window utilization plus weighted session prompt-cache hit rate; it
+does not estimate tokens or expose private reasoning. One primary action now
+switches between send, pause, and continue. While a Turn is running, typed
+supplements remain visible in a bounded eight-item browser queue and are
+submitted sequentially at safe Turn boundaries; the local optimistic message is
+reconciled by the durable event stream without a blank-frame flicker. Existing
+session control and authority contracts are unchanged. Build, all Desktop checks,
+diff check, and browser layout/popover inspection passed; local API connectivity
+was not available for a live execution/pause acceptance. No commit or push.
+
+2026-09-14 TRN-SUBAGENT-UX-02: Trench Tasks now use a least-privilege
+`research_coordinator` profile: the existing research read/publish surface plus
+durable `agent.research`, without command, patch, Git or test tools. The
+capability generation advances to v13 so the next Turn replaces existing
+admission-frozen research Tasks instead of silently retaining the old profile.
+Zebra projects safe child lifecycle metadata over AG-UI and exposes an
+authoritative read-only parent-child Task query; child summaries and reasoning
+remain private. Trench persists lifecycle events in the durable Turn stream and
+renders one merged row per child in an opt-in detail panel that stays collapsed
+after completion. Focused Zebra 17 tests, Ruff, file-size gate and Mypy over 915
+sources passed; Trench 44 backend and 14 frontend tests plus focused ESLint
+passed. The local acceptance Zebra API/Worker were rebuilt and are healthy; the
+running images import the new profile/query and Worker tool set. A direct live
+Task probe without a valid Host grant was correctly rejected with 401 and created
+no Task, so logged-in Trench browser/model delegation remains unclaimed. No
+commit or push.
+
 2026-09-09 EXT-SKILL-UX-01: installed Skill reads enrich exact scoped/versioned
 ready publication names, descriptions and version labels; no migration or object
 downloads. Trench settings now provides a searchable readable list, details and
@@ -2481,63 +2525,13 @@ Redis composition.
 10. Keep `WEB-INT-PLAN-01` in review until its document evidence is accepted;
     do not activate Web Intelligence contracts, Provider, security, tools,
     orchestration or Watch cards out of dependency order.
-11. The DeepSeek vision dual-channel plan is registered as the docs card
-    `DS-VIS-PLAN-01` (owner `lukeding`, `Done` on `cloud-agent`), which unlocks
-    `DS-VIS-CON-01` as the sole `Ready` implementation card,
-    followed by `DS-VIS-CON-01` → `DS-VIS-ING-01` → `DS-VIS-ART-01`
-    (control-plane Artifact transaction/migration) → `DS-VIS-WIRE-01`
-    (initial/follow-up reference-only Local/Cloud recovery) → `DS-VIS-EGR-01`
-    (metadata-scrubbed Provider image and Worker capacity) → `DS-VIS-DUR-01`
-    (request/attempt single-flight, distributed tenant/account admission,
-    failed/unknown ModelCall lifecycle and recoverable result commit), in
-    parallel with `DS-VIS-ADP-01`, then `DS-VIS-ORCH-01` →
-    `DS-VIS-EVAL-01` (P0 base64 path) and
-    `DS-VIS-FILES-01` → `DS-VIS-FILES-EVAL-01` (see
-    `docs/DeepSeek_视觉双通道多模态架构方案_v1.0.md`): raw images stay
-    artifact-authoritative, vision output stays derived evidence with
-    authority-scoped replay identity (source Artifact/session + request/
-    question hash + profile/prompt/schema/deployment versions); cache hits
-    re-authorize both source and result Artifacts, and Responses `user` is a
-    versioned non-PII HMAC of the complete opaque authority scope. Initial
-    observation reaches the main model only through the canonical USER-role
-    `VisionEvidenceMessageV1`, never through SYSTEM/DEVELOPER messages or
-    `build_system_prompt`; it is authorized Artifact materialization at dispatch,
-    not a durable USER message or protected-instruction/compaction/memory input;
-    the one-call
-    Q&A path requires typed `purpose=answer_only`. Every vision model call
-    counts toward the harness model budget, and the egress gate (tenant
-    authorization, artifact permission, sensitive-data classification) runs
-    at every vision dispatch and before both enqueue and delayed execution of
-    Files upload/re-upload. Image dispatch also requires an explicit
-    `input_modalities=[text,image]` profile plus the exact vision model and
-    fails before network I/O on text/legacy routes. Provider-bound bytes use a
-    deterministic metadata-scrubbed derivative whose retention cannot exceed
-    its source; cache identity includes the actual prepared-image digest/
-    transform version, and observation derivatives use the earliest multi-source
-    expiry. Engineering model events retain only a marker/telemetry, answer-only
-    retains only its checked public answer, and both correlate through
-    `model_call_id` without persisting observation JSON; every started call ends
-    in received or `MODEL_REQUEST_FAILED`; cost pins an official vision-pricing
-    snapshot or remains explicitly unknown. `vision.inspect` terminal events/
-    projections persist only an
-    Artifact tombstone; authorized crash recovery verifies its digest/budget and
-    rehydrates the same paired tool result instead of inlining OCR.
-    P0 independently enforces a 48 MiB streaming HTTP cap, 16 MiB/image,
-    32 MiB/message, 4 images, 8192 px edge, 36,000,000 pixels/image and
-    72,000,000 pixels/message, plus one active vision request/32 MiB source
-    image bytes per Worker by default. The Files path requires a dedicated typed
-    Provider-file effect contract (the existing `EffectScheduleRequest` is
-    tool-only), namespace-scoped cleanup independent of an active Session,
-    atomic binding tombstone + delete outbox, quota/dead-letter/operator
-    outcomes, credential/account rotation isolation, explicit `expires_after` with
-    remote TTL capped by source retention (under 1h falls back to base64),
-    and its eval/launch gate waits on both `DS-VIS-FILES-01` and the P0
-    `DS-VIS-EVAL-01`. All dependency
-    wording targets the `cloud-agent` delivery line: `DS-RESP-01` source commit
-    `90906267` and `AL-BOUNDARY-ORCH-01` are now integrated there, so
-    `DS-VIS-ADP-01` waits only on `DS-VIS-CON-01` and `DS-VIS-ORCH-01` waits
-    on its DS-VIS contract/durability/adapter predecessors. No DS-VIS production
-    implementation has started.
+11. The former DeepSeek vision dual-channel plan registered as `DS-VIS-PLAN-01`
+    is retained only as a historical record and is superseded by
+    `TRN-DEEPSEEK-V41-MM-01`; do not claim or implement the old `DS-VIS-*` chain.
+    The replacement keeps Artifact/session authority and bounded image validation,
+    but sends the authorized image directly in the current USER message to the
+    official `deepseek-flash` model. Files API, remote image fetching and derived
+    OCR/vision evidence remain separate future work rather than prerequisites.
 
 ## Runtime Blueprint
 
@@ -2840,3 +2834,32 @@ gateway construction performs no catalog authorization/object I/O. Unknown
 cloud adapter exceptions are logged with the original traceback and translated
 to a fixed chained catalog failure, keeping parallel and durable/client results
 free of backend secrets.
+
+## 2026-09-14 Trench composer model usage projection
+
+- `MODEL_RESPONSE_RECEIVED` now emits a `zebra.model_usage` AG-UI custom event
+  containing only input/limit/cache/model/reasoning fields.
+- Private prompt hashes, provider payloads and reasoning content remain outside
+  the host stream.
+- Focused projection tests passed `9/9`; Ruff and strict Mypy passed.
+- Zebra Task reads now also project a durable, task-level public usage summary.
+  This lets an authorized host recover metrics for runs completed before the
+  AG-UI custom event was deployed without exposing provider or prompt internals.
+- Trench hydrates that summary only when an opened conversation has no local
+  usage, caps the upstream wait at 1.5 seconds, then persists it on the latest
+  Turn so later refreshes stay local. A real historical conversation displays
+  `9.3k / 55.8万` and `57.7%` cache hits after refresh.
+
+## 2026-09-14 Trench composer model and reasoning controls
+
+- Trench now exposes a plus attachment control, switchable Flash/Pro executor
+  profile, and DeepSeek-native `none|low|high|max` reasoning choices with wider
+  control spacing.
+- Model profile and reasoning effort now survive Trench durable Turn dispatch,
+  Zebra admission/event persistence, Rabbit/Worker recovery, and reach the
+  Harness model gateway. Explicit profiles no longer get overwritten by the
+  legacy executor-model compatibility setting.
+- Image input remains intentionally hidden until the existing `DS-VIS-*` chain
+  supplies authoritative image Artifacts, egress checks and durable audit.
+- Focused validation: Zebra `51 passed` plus Ruff/Mypy; Trench API `45 passed`,
+  frontend `70 passed`, ESLint and live browser control switching.

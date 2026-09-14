@@ -11,7 +11,7 @@ from agent_core.domain.modeling import (
     ModelToolChoice,
 )
 
-PROFILE_VERSION_OBSERVED_AT = "2026-08-25"
+PROFILE_VERSION_OBSERVED_AT = "2026-09-10"
 
 
 @dataclass(frozen=True)
@@ -70,7 +70,7 @@ def _profile(
 DEEPSEEK_PROFILES = (
     _profile(
         "deepseek-v4-flash-executor-v1",
-        "deepseek-v4-flash",
+        "deepseek-flash",
         (ModelRole.EXECUTOR,),
         ModelThinkingMode.DISABLED,
         None,
@@ -78,7 +78,7 @@ DEEPSEEK_PROFILES = (
     ),
     _profile(
         "deepseek-v4-flash-fast-v1",
-        "deepseek-v4-flash",
+        "deepseek-flash",
         (ModelRole.CLASSIFIER, ModelRole.SUMMARIZER),
         ModelThinkingMode.DISABLED,
         None,
@@ -86,7 +86,7 @@ DEEPSEEK_PROFILES = (
     ),
     _profile(
         "deepseek-v4-flash-reasoning-v1",
-        "deepseek-v4-flash",
+        "deepseek-flash",
         (ModelRole.ANALYST,),
         ModelThinkingMode.ENABLED,
         ModelReasoningEffort.HIGH,
@@ -149,15 +149,15 @@ class DeepSeekProfileRouter:
         *,
         has_tools: bool,
     ) -> ResolvedDeepSeekInvocation:
-        profile_id = self._role_profiles.get(
-            policy.role,
-            _DEFAULT_PROFILE_BY_ROLE[policy.role],
+        profile_id = policy.profile_id or self._role_profiles.get(
+            policy.role, _DEFAULT_PROFILE_BY_ROLE[policy.role]
         )
         profile = deepseek_profile(profile_id)
         if (
             policy.role is ModelRole.EXECUTOR
             and self._legacy_executor_model
             and policy.role not in self._role_profiles
+            and policy.profile_id is None
         ):
             profile = DeepSeekModelProfile(
                 profile_id="deepseek-legacy-executor-v1",

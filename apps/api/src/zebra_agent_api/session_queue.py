@@ -56,6 +56,8 @@ def create_queued_session(
             host_context=host_context,
             definition_snapshot=definition_snapshot,
             interaction_mode=parsed["interaction_mode"],
+            model_profile=parsed["model_profile"],
+            reasoning_effort=parsed["reasoning_effort"],
         )
     )
     events, attachment_refs = persist_initial_attachments(
@@ -81,6 +83,8 @@ def create_queued_session(
             "mcp_allowlist": parsed["mcp_allowlist"],
             "skill_components": parsed["skill_components"],
             "mcp_resource_ids": parsed["mcp_resource_ids"],
+            "model_profile": parsed["model_profile"],
+            "reasoning_effort": parsed["reasoning_effort"],
             **(
                 {"history_session_ids": list(parsed["history_session_ids"])}
                 if parsed["history_session_ids"] is not None

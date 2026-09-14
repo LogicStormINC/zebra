@@ -39,8 +39,10 @@ def test_factory_selects_responses_only_when_explicit() -> None:
     assert isinstance(gateway, DeepSeekResponsesModelGateway)
 
 
-@pytest.mark.parametrize("reasoning", ["private plan", ""])
-def test_responses_maps_thinking_tool_call_and_replays_reasoning(reasoning: str) -> None:
+@pytest.mark.parametrize("reasoning", ["private plan", "", None])
+def test_responses_maps_thinking_tool_call_and_replays_reasoning(
+    reasoning: str | None,
+) -> None:
     requests: list[dict[str, object]] = []
 
     def handle(request: httpx.Request) -> httpx.Response:
@@ -97,9 +99,11 @@ def test_responses_maps_thinking_tool_call_and_replays_reasoning(reasoning: str)
         }
     ]
     replay = requests[1]["input"]
-    assert {"type": "reasoning", "content": [
-        {"type": "reasoning_text", "text": reasoning}
-    ]} in replay
+    expected_reasoning = {
+        "type": "reasoning",
+        "content": [{"type": "reasoning_text", "text": reasoning}],
+    }
+    assert (expected_reasoning in replay) is (reasoning is not None)
     assert final.assistant_message.provider_reasoning_content is None
     assert "private" not in final.assistant_message.content
     assert final.call_metadata.prompt_version == "zebra-deepseek-responses-v1"

@@ -30,6 +30,41 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `DESKTOP-COMPOSER-UX-01`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction. Scope: reshape the Cloud
+  Agent composer into a compact two-sided command bar and expose truthful
+  per-session context-window utilization, aggregate prompt-cache hit rate,
+  resolved model and reasoning effort from the existing durable model events.
+  Owned: `UI/desktop/src/components/conversation/{ConversationComposer,
+  ContextUsageIndicator,TaskLaunchControls}.tsx`,
+  `UI/desktop/src/components/{CodexConversationPane,CodexWorkspace,
+  CodexConversationPane.styles,ComposerAttachments}.tsx`,
+  `UI/desktop/src/{App.tsx,lib/context-usage.ts,lib/use-supplement-queue.ts}`,
+  focused Desktop checks, this
+  registry, `PROGRESS.md` and `WORKLOG.md`. The single primary action changes
+  between send/pause/resume, and messages entered during an in-flight Turn stay
+  visible in a bounded UI queue and execute in order at the next safe Turn
+  boundary. No frontend token estimation, simulated model selector, private
+  reasoning content, backend authority change or new package.
+
+- `TRN-SUBAGENT-UX-02`: Review, owned by Luke Ding (Codex), current
+  Zebra/Trench branches per user instruction. Scope: expose model-native durable
+  Subagent delegation to Trench through a least-privilege coordinator profile,
+  project parent/child lifecycle over AG-UI, persist it in the Trench Turn stream,
+  and render an automatically collapsed child-task summary in the conversation.
+  Owned Zebra paths: `packages/agent-core/src/agent_core/domain/tool_profiles.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/projection.py`, focused
+  Core/AG-UI tests, `apps/api/src/zebra_agent_api/{subagent_read,task_routes}.py`,
+  focused API tests, this registry, `PROGRESS.md`, `WORKLOG.md`. Owned Trench paths:
+  `services/api/src/trench_api/trench_ai_zebra_contract.py`,
+  `trench_ai_zebra_event_map.py`, focused API tests,
+  `toc-frontend/src/lib/{strategy-chat-api,strategy-message-state}.ts`,
+  `toc-frontend/src/hooks/use-strategy-turn.ts`,
+  `toc-frontend/src/components/product/strategy-progress.tsx`, focused tests and
+  Trench `progress.md`.
+  No recursive delegation, new approval prompt, broad General/Coding authority,
+  or exposure of child reasoning/private context.
+
 - `EXT-SKILL-UX-01`: Review (local API and browser verified, uncommitted), Luke Ding (Codex), current
   branches per user instruction. Scope: scoped publication metadata in installed
   Skill reads; Trench searchable readable Skill list, details and enable switch.
@@ -6334,7 +6369,7 @@ Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store�
 
 ### CLIENT-MGMT-API-01 - Frontend Profile Management API
 
-- Status: `In Progress`
+- Status: `Review`
 - Implemented evidence: operator authentication, profile validation/lifecycle,
   stable Problem Details and natural Host binding CAS are present.
 - Remaining acceptance: durable audit records for Bind/Deprecate/Revoke,
@@ -27099,6 +27134,10 @@ Event Store, Policy/Tool Gateway, or private-reasoning boundaries.
 
 ## DeepSeek Vision Multimodal Board
 
+> Superseded on 2026-09-14 by `TRN-DEEPSEEK-V41-MM-01` after DeepSeek released
+> V4.1 Flash with native multimodal support. No task in this historical board may
+> be claimed; the entries remain only to preserve the prior design record.
+
 Design source: `docs/DeepSeek_视觉双通道多模态架构方案_v1.0.md`
 (2026-08-25, read-only provider verification + official-docs research;
 DeepSeek-only dual-channel vision architecture; recalibrated after the
@@ -27192,7 +27231,7 @@ one independent docs slice; stage exactly these files and never the unrelated
 
 ### DS-VIS-CON-01 - Vision Contracts Foundation
 
-- Status: `Ready`
+- Status: `Superseded`
 - Owner: 未认领
 - Suggested role: `CORE / ARCH`
 - Depends on: `DS-VIS-PLAN-01` accepted
@@ -28198,3 +28237,66 @@ browser Cookie or Host Grant.
   `tests/agent_storage/test_postgres_session_handoffs.py` size gate fails.
 - Local real Trench/Zebra A/B offline completion and browser C/B switch, return,
   and refresh acceptance pass; production deployment remains separate.
+
+### TRN-COMPOSER-METRICS-01 - Public model usage projection for Trench composer
+
+- Status: `Review`
+- Owner: `/root`
+- Branch: `cloud-agent-trench`
+- Owned paths: `packages/agent-integrations/src/agent_integrations/ag_ui/projection.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/model_usage.py`,
+  `apps/api/src/zebra_agent_api/task_api.py`,
+  `apps/api/src/zebra_agent_api/task_model_usage.py`,
+  `tests/api/test_task_routes.py`,
+  `tests/agent_integrations/test_ag_ui_projection.py`, Trench task snapshot/client/store
+  and composer metric paths, this card, `PROGRESS.md`, `WORKLOG.md`
+- Goal: expose only bounded model/context/cache fields needed by the authorized
+  Trench host, including durable task-level hydration for historical conversations,
+  while keeping provider payloads, prompt hashes and private reasoning out of AG-UI.
+- Validation: focused AG-UI projection suite `9 passed`; Task summary regression
+  `1 passed`; Trench hydration/store regressions `3 passed`; frontend metric,
+  hook and workspace regressions `17 passed`; focused Ruff, Mypy and ESLint pass.
+  A real historical Trench conversation hydrates `9261 / 557632` input tokens
+  and `57.7%` cache hits, persists them locally and retains them after refresh.
+
+### TRN-COMPOSER-MODEL-CONTROLS-01 - Durable model and reasoning selection
+
+- Status: `Review`
+- Owner: `/root`
+- Branch: `cloud-agent-trench`
+- Owned paths: model event contracts and Harness request paths,
+  `packages/agent-integrations/src/agent_integrations/deepseek_profiles.py`,
+  API/Worker session admission and recovery paths, focused DeepSeek/Worker tests,
+  Trench composer/turn/Zebra-client paths, this card, `PROGRESS.md`, `WORKLOG.md`
+- Goal: make the Trench composer model and reasoning controls durable from the
+  browser request through queue recovery to the actual DeepSeek invocation.
+- Validation: Zebra focused suites `51 passed`, focused Ruff and Mypy pass;
+  Trench API suites `45 passed`, frontend suite `70 passed`, focused ESLint and
+  browser control switching pass. The full Trench TypeScript gate remains blocked
+  by three pre-existing incomplete source fixtures outside this card.
+- Boundary: document attachments use the existing text-attachment path. The old
+  `deepseek-v4-flash-vision-exp` dual-channel plan is superseded by
+  `TRN-DEEPSEEK-V41-MM-01` after the V4.1 Flash release.
+
+### TRN-DEEPSEEK-V41-MM-01 - Native multimodal V4.1 Flash
+
+- Status: `In Progress`
+- Owner: `/root`
+- Branch: current `cloud-agent-trench` and Trench current checkout per explicit
+  user instruction
+- Owned paths: image attachment domain/API/storage/Worker/Harness paths;
+  DeepSeek profile and Chat Completions/Responses serialization; focused tests;
+  Trench composer image selection and focused test; this card, replacement
+  design note, `PROGRESS.md`, `WORKLOG.md`
+- Goal: use V4.1 Flash native image input through `deepseek-flash`, preserving
+  Artifact/session authority and stable historical Zebra profile IDs without a
+  separate Vision model or image-to-text pre-pass.
+- Acceptance: validated image input survives durable queue recovery, reaches
+  both Provider wire formats only as a USER content part, Pro mismatches fail
+  closed, and the Trench composer advertises the correct V4.1 model.
+- Validation: real `deepseek-flash` Responses API inline-PNG smoke passed;
+  Provider/Responses focus `14 passed`; image/API/Worker focus `159 passed`;
+  Trench API `44 passed` plus native-image forwarding `26 passed`; Trench
+  composer/workspace `6 passed`; `make check` passed; full Zebra suite
+  `4401 passed`, `875 skipped`.
+- Boundary: no deployment or logged-in Trench browser image submission claim.

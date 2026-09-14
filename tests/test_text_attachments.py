@@ -35,9 +35,7 @@ def _finish_first_turn(database_path: Path, session_id: str) -> None:
     events = event_store.list_for_session(key)
     session = events[0].session_id
     open_turn = current_turn(events)
-    turn_id = (
-        open_turn.turn_id if open_turn else str(derive_turn_id(session, 0))
-    )
+    turn_id = open_turn.turn_id if open_turn else str(derive_turn_id(session, 0))
     turn_index = open_turn.turn_index if open_turn else 0
     base = events[-1].sequence
     event_store.append(
@@ -62,10 +60,7 @@ def _finish_first_turn(database_path: Path, session_id: str) -> None:
             },
         )
     )
-    _Proj(database_path).save_session(
-        rebuild_session(event_store.list_for_session(key))
-    )
-
+    _Proj(database_path).save_session(rebuild_session(event_store.list_for_session(key)))
 
 
 def test_attachment_parser_accepts_bounded_utf8_text() -> None:
@@ -97,7 +92,7 @@ def test_attachment_parser_accepts_bounded_utf8_text() -> None:
         ),
         (
             {"file_name": "image.png", "media_type": "image/png", "content_base64": "QQ=="},
-            "media_type is not supported",
+            "not a supported image",
         ),
         (
             {"file_name": "bad.txt", "media_type": "text/plain", "content_base64": "not base64"},
@@ -160,9 +155,10 @@ def test_queued_session_persists_attachment_without_exposing_payload(tmp_path: P
     assert refs[0].to_mapping() == attachment
     assert "content_base64" not in user_event.payload
     assert "ATTACHMENT-QUEUE-131" not in str(user_event.payload)
-    assert SQLiteArtifactPayloadStore(database_path).read_payload_bytes(
-        refs[0].attachment_id
-    ) == b"ATTACHMENT-QUEUE-131"
+    assert (
+        SQLiteArtifactPayloadStore(database_path).read_payload_bytes(refs[0].attachment_id)
+        == b"ATTACHMENT-QUEUE-131"
+    )
 
     restarted = create_app(database_path, settings=_settings(database_path))
     detail = restarted.get_session(str(session_id))
@@ -216,6 +212,46 @@ def test_execute_session_projects_attachment_as_untrusted_context(
     assert "do not use workspace tools to retrieve it" in requests[0][0].content
     assert "ATTACHMENT-CONTEXT-131" in requests[0][0].content
     assert requests[0][-1].content == "Read my material."
+
+
+def test_execute_session_recovers_image_for_native_model_input(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    requests: list[tuple[SessionMessage, ...]] = []
+
+    class RecordingGateway:
+        def complete(
+            self,
+            messages: list[SessionMessage],
+            *,
+            tools: tuple[ModelToolDefinition, ...] = (),
+        ) -> ModelCompletion:
+            requests.append(tuple(messages))
+            return ModelCompletion(
+                assistant_message=SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.ASSISTANT,
+                    content="Image received.",
+                    created_at=_created_at(),
+                )
+            )
+
+    monkeypatch.setattr(api_app_module, "build_model_gateway", lambda settings: RecordingGateway())
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {
+            "prompt": "Read this image.",
+            "workspace": str(tmp_path),
+            "execute": True,
+            "attachments": [_image_attachment()],
+        }
+    )
+
+    assert response.status_code == 201
+    image_urls = requests[0][-1].provider_image_data_urls
+    assert image_urls[0].startswith("data:image/png;base64,iVBOR")
+    assert "PNG" not in requests[0][0].content
 
 
 def test_later_message_attachment_survives_worker_recovery(
@@ -337,6 +373,17 @@ def _attachment(file_name: str, content: str) -> dict[str, str]:
         "file_name": file_name,
         "media_type": "text/plain",
         "content_base64": _encoded(content),
+    }
+
+
+def _image_attachment() -> dict[str, str]:
+    payload = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    )
+    return {
+        "file_name": "chart.png",
+        "media_type": "image/png",
+        "content_base64": base64.b64encode(payload).decode("ascii"),
     }
 
 

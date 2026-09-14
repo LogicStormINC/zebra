@@ -30,6 +30,16 @@ class UserMessageReceivedPayload(BaseModel):
         default=None, ge=0, exclude_if=lambda value: value is None
     )
     origin: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    model_profile: str | None = Field(
+        default=None,
+        max_length=128,
+        exclude_if=lambda value: value is None,
+    )
+    reasoning_effort: str | None = Field(
+        default=None,
+        max_length=32,
+        exclude_if=lambda value: value is None,
+    )
 
     @field_validator("content")
     @classmethod
@@ -37,6 +47,16 @@ class UserMessageReceivedPayload(BaseModel):
         value = value.strip()
         if not value:
             raise ValueError("content must not be blank")
+        return value
+
+    @field_validator("model_profile", "reasoning_effort")
+    @classmethod
+    def ensure_optional_text_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("model selection fields must not be blank")
         return value
 
     @field_validator("origin")

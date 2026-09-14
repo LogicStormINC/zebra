@@ -12,6 +12,7 @@ from agent_core.domain.attachments import (
 )
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.image_attachments import ImageAttachmentContextInput, ImageAttachmentInput
 from agent_core.ports.artifact_payload_read import ArtifactPayloadReadPort
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 
@@ -21,7 +22,7 @@ def store_text_attachments(
     *,
     session_id: SessionId,
     message_event: SessionEvent,
-    attachments: tuple[TextAttachmentInput, ...],
+    attachments: tuple[TextAttachmentInput | ImageAttachmentInput, ...],
     created_at: datetime,
 ) -> tuple[SessionAttachmentRef, ...]:
     stored_ids = []
@@ -49,18 +50,24 @@ def store_text_attachments(
                     size_bytes=stored.size_bytes,
                     sha256=stored.sha256,
                     source_type=attachment.source_type,
-                    source_server=attachment.source_server,
-                    source_id=attachment.source_id,
-                    source_argument_names=attachment.source_argument_names,
-                    original_media_type=attachment.original_media_type,
-                    original_size_bytes=attachment.original_size_bytes,
-                    original_sha256=attachment.original_sha256,
-                    page_count=attachment.page_count,
-                    paragraph_count=attachment.paragraph_count,
-                    worksheet_count=attachment.worksheet_count,
-                    cell_count=attachment.cell_count,
-                    slide_count=attachment.slide_count,
-                    extraction_status=attachment.extraction_status,
+                    source_server=getattr(attachment, "source_server", None),
+                    source_id=getattr(attachment, "source_id", None),
+                    source_argument_names=getattr(attachment, "source_argument_names", ()),
+                    original_media_type=getattr(attachment, "original_media_type", None),
+                    original_size_bytes=getattr(attachment, "original_size_bytes", None),
+                    original_sha256=getattr(attachment, "original_sha256", None),
+                    page_count=getattr(attachment, "page_count", None),
+                    paragraph_count=getattr(attachment, "paragraph_count", None),
+                    worksheet_count=getattr(attachment, "worksheet_count", None),
+                    cell_count=getattr(attachment, "cell_count", None),
+                    slide_count=getattr(attachment, "slide_count", None),
+                    extraction_status=getattr(attachment, "extraction_status", None),
+                    image_width=(
+                        attachment.width if isinstance(attachment, ImageAttachmentInput) else None
+                    ),
+                    image_height=(
+                        attachment.height if isinstance(attachment, ImageAttachmentInput) else None
+                    ),
                 )
             )
     except Exception:
@@ -76,6 +83,8 @@ def load_attachment_contexts(
 ) -> tuple[AttachmentContextInput, ...]:
     contexts: list[AttachmentContextInput] = []
     for ref in refs:
+        if ref.media_type.startswith("image/"):
+            continue
         payload = store.read_payload_bytes(ref.attachment_id)
         if len(payload) != ref.size_bytes:
             raise ValueError("attachment payload size does not match durable metadata")
@@ -118,6 +127,8 @@ def load_attachment_contexts_from_reader(
     """Recover immutable attachment text without granting payload write access."""
     contexts: list[AttachmentContextInput] = []
     for ref in refs:
+        if ref.media_type.startswith("image/"):
+            continue
         payload = reader.read_payload_bytes(session_id, f"artifact://{ref.attachment_id}")
         if len(payload) != ref.size_bytes:
             raise ValueError("attachment payload size does not match durable metadata")
@@ -151,10 +162,39 @@ def load_attachment_contexts_from_reader(
     return tuple(contexts)
 
 
+def load_image_attachment_contexts_from_reader(
+    reader: ArtifactPayloadReadPort,
+    *,
+    session_id: SessionId,
+    refs: tuple[SessionAttachmentRef, ...],
+) -> tuple[ImageAttachmentContextInput, ...]:
+    images: list[ImageAttachmentContextInput] = []
+    for ref in refs:
+        if not ref.media_type.startswith("image/"):
+            continue
+        payload = reader.read_payload_bytes(session_id, f"artifact://{ref.attachment_id}")
+        if len(payload) != ref.size_bytes or sha256(payload).hexdigest() != ref.sha256:
+            raise ValueError("image attachment payload does not match durable metadata")
+        if ref.image_width is None or ref.image_height is None:
+            raise ValueError("image attachment dimensions are missing from durable metadata")
+        images.append(
+            ImageAttachmentContextInput(
+                attachment_id=ref.attachment_id,
+                file_name=ref.file_name,
+                media_type=ref.media_type,
+                payload=payload,
+                width=ref.image_width,
+                height=ref.image_height,
+                sha256=ref.sha256,
+            )
+        )
+    return tuple(images)
+
+
 def store_initial_text_attachments(
     store: ArtifactPayloadStorePort,
     events: tuple[SessionEvent, ...],
-    attachments: tuple[TextAttachmentInput, ...],
+    attachments: tuple[TextAttachmentInput | ImageAttachmentInput, ...],
 ) -> tuple[tuple[SessionEvent, ...], tuple[SessionAttachmentRef, ...]]:
     if not attachments:
         return events, ()

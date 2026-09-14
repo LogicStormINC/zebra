@@ -5,7 +5,14 @@ from binascii import Error as Base64Error
 from hashlib import sha256
 
 from agent_core.domain.attachments import TextAttachmentInput
+from agent_core.domain.image_attachments import ImageAttachmentInput
 
+from zebra_agent_api.image_attachment_inputs import (
+    MAX_IMAGE_BYTES,
+    MAX_IMAGE_TOTAL_BYTES,
+    inspect_image,
+    is_image_media_type,
+)
 from zebra_agent_api.session_document_inputs import extract_docx_text, extract_pdf_text
 from zebra_agent_api.session_presentation_inputs import extract_pptx_text
 from zebra_agent_api.session_spreadsheet_inputs import extract_xlsx_text
@@ -45,16 +52,19 @@ _extract_xlsx_text = extract_xlsx_text
 _extract_pptx_text = extract_pptx_text
 
 
-def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
+def parse_attachment_inputs(
+    value: object,
+) -> tuple[TextAttachmentInput | ImageAttachmentInput, ...]:
     if value is None:
         return ()
     if not isinstance(value, list):
         raise ValueError("attachments must be a list when provided")
     if len(value) > MAX_ATTACHMENT_COUNT:
         raise ValueError(f"attachments accepts at most {MAX_ATTACHMENT_COUNT} files")
-    attachments: list[TextAttachmentInput] = []
+    attachments: list[TextAttachmentInput | ImageAttachmentInput] = []
     total_stored_bytes = 0
     total_document_bytes = 0
+    total_image_bytes = 0
     for item in value:
         if not isinstance(item, dict):
             raise ValueError("each attachment must be an object")
@@ -62,6 +72,24 @@ def parse_attachment_inputs(value: object) -> tuple[TextAttachmentInput, ...]:
             raise ValueError("attachment fields must be file_name, media_type, content_base64")
         file_name = _safe_file_name(item.get("file_name"))
         media_type = _media_type(item.get("media_type"))
+        if is_image_media_type(media_type):
+            raw_payload = _decode_payload(item.get("content_base64"), max_bytes=MAX_IMAGE_BYTES)
+            total_image_bytes += len(raw_payload)
+            if total_image_bytes > MAX_IMAGE_TOTAL_BYTES:
+                raise ValueError(
+                    f"image attachments exceed the {MAX_IMAGE_TOTAL_BYTES}-byte aggregate limit"
+                )
+            width, height = inspect_image(raw_payload, media_type)
+            attachments.append(
+                ImageAttachmentInput(
+                    file_name=file_name,
+                    media_type=media_type,
+                    payload=raw_payload,
+                    width=width,
+                    height=height,
+                )
+            )
+            continue
         max_bytes = (
             MAX_PDF_BYTES
             if media_type == "application/pdf"
@@ -158,6 +186,8 @@ def _media_type(value: object) -> str:
     if not isinstance(value, str):
         raise ValueError("attachment media_type must be a string")
     media_type = value.strip().lower()
+    if is_image_media_type(media_type):
+        return media_type
     if media_type == "application/pdf":
         return media_type
     if media_type == DOCX_MEDIA_TYPE:

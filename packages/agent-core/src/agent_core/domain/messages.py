@@ -25,6 +25,7 @@ class SessionMessage(BaseModel):
     tool_call_id: str | None = None
     metadata: dict[str, object] = Field(default_factory=dict)
     provider_reasoning_content: str | None = Field(default=None, exclude=True, repr=False)
+    provider_image_data_urls: tuple[str, ...] = Field(default=(), exclude=True, repr=False)
 
     @field_validator("content")
     @classmethod
@@ -61,4 +62,10 @@ class SessionMessage(BaseModel):
             raise ValueError("tool_calls are only valid for assistant messages")
         if self.provider_reasoning_content is not None and self.role is not MessageRole.ASSISTANT:
             raise ValueError("provider_reasoning_content is only valid for assistant messages")
+        if self.provider_image_data_urls and self.role is not MessageRole.USER:
+            raise ValueError("provider_image_data_urls are only valid for user messages")
+        if len(self.provider_image_data_urls) > 4 or any(
+            not value.startswith("data:image/") for value in self.provider_image_data_urls
+        ):
+            raise ValueError("provider_image_data_urls must contain at most four image data URLs")
         return self

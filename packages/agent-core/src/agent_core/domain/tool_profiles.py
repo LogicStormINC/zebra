@@ -5,6 +5,7 @@ class ToolProfile(StrEnum):
     GENERAL = "general"
     CODING = "coding"
     RESEARCH = "research"
+    RESEARCH_COORDINATOR = "research_coordinator"
 
 
 GENERAL_TOOL_NAMES = frozenset(
@@ -44,6 +45,7 @@ RESEARCH_TOOL_NAMES = frozenset(
         "sessions.search",
     }
 )
+RESEARCH_COORDINATOR_TOOL_NAMES = RESEARCH_TOOL_NAMES | {"agent.research"}
 
 
 def tool_names_for_profile(profile: ToolProfile) -> frozenset[str]:
@@ -51,4 +53,6 @@ def tool_names_for_profile(profile: ToolProfile) -> frozenset[str]:
         return GENERAL_TOOL_NAMES
     if profile is ToolProfile.RESEARCH:
         return RESEARCH_TOOL_NAMES
+    if profile is ToolProfile.RESEARCH_COORDINATOR:
+        return RESEARCH_COORDINATOR_TOOL_NAMES
     return CODING_TOOL_NAMES

@@ -8,6 +8,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelUsage
 
 from agent_integrations.openai_payloads import optional_int
+from agent_integrations.provider_images import responses_content
 from agent_integrations.request_metadata import ModelRequestMetadata
 
 RESPONSES_PROMPT_VERSION = "zebra-deepseek-responses-v1"
@@ -61,7 +62,11 @@ def serialize_input(
             )
             continue
         items.append(
-            {"type": "message", "role": message.role.value, "content": message.content}
+            {
+                "type": "message",
+                "role": message.role.value,
+                "content": responses_content(message),
+            }
         )
     return "\n\n".join(instructions), items
 

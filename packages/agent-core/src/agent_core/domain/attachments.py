@@ -88,6 +88,8 @@ class SessionAttachmentRef(BaseModel):
     cell_count: int | None = Field(default=None, ge=1)
     slide_count: int | None = Field(default=None, ge=1)
     extraction_status: Literal["text_extracted"] | None = None
+    image_width: int | None = Field(default=None, ge=1)
+    image_height: int | None = Field(default=None, ge=1)
 
     @field_validator("file_name", "media_type")
     @classmethod
@@ -129,6 +131,10 @@ class SessionAttachmentRef(BaseModel):
             self.slide_count,
             self.extraction_status,
         )
+        if (self.image_width is None) != (self.image_height is None):
+            raise ValueError("image dimensions must be provided together")
+        if self.media_type.startswith("image/") != (self.image_width is not None):
+            raise ValueError("image attachment metadata must match its media_type")
         return self
 
     def to_mapping(self) -> dict[str, object]:
@@ -163,6 +169,10 @@ class SessionAttachmentRef(BaseModel):
                     "slide_count": self.slide_count,
                     "extraction_status": self.extraction_status,
                 }
+            )
+        if self.image_width is not None and self.image_height is not None:
+            result.update(
+                {"image_width": self.image_width, "image_height": self.image_height}
             )
         return result
 

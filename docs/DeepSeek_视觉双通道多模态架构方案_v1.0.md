@@ -1,16 +1,23 @@
 # Zebra Agent DeepSeek 视觉双通道多模态架构方案 v1.0
 
+> **2026-09-14 superseded notice:** DeepSeek V4.1 Flash now provides native
+> multimodal input through the stable `deepseek-flash` alias. The separate
+> `vision-exp -> VisualObservation -> Flash/Pro` dual-channel design below is a
+> historical August baseline and must not be implemented. The current direct
+> implementation and acceptance boundary is
+> `DeepSeek_V4.1_Flash_原生多模态实施说明_v1.0.md`.
+
 ## 1. 文档状态
 
 | 字段 | 值 |
 |---|---|
-| 状态 | 方案设计与供应商只读实测完成并进入 `cloud-agent`；`DS-VIS-CON-01` 已解锁，生产实现尚未开始 |
+| 状态 | 已被 DeepSeek V4.1 Flash 原生多模态方案取代；保留作历史决策记录 |
 | 调研基线 | 2026-08-25（现有 DeepSeek 凭证只读实测 + 官方文档核对） |
 | 评审校准 | 2026-08-25 多轮闭环评审已校准：事件/摄取/预算/重放、统一出境、Files 耐久副作用、authority-scope 身份、非 system 证据、模态 fail-closed、派生 retention、净化图/资源背压、request/attempt 单飞计费、模型失败/unknown 终态与 Artifact-backed 视觉工具结果均已固化 |
 | 适用范围 | Cloud Agent 与 Local Runtime 的图片输入、视觉分析与多模态证据链 |
 | 目标读者 | Model Gateway、Harness/编排、Artifact、Policy、API、Eval 维护者 |
 | 上位约束 | 最终架构 v1.0、ADR-012、`DeepSeek_V4_模型适配与专项优化方案_v1.0.md`、`AGENT_TASKS.md`、`PROGRESS.md` |
-| 模型边界 | DeepSeek-only：`vision-exp` 视觉通道 + `flash/pro` 文本通道；不引入 GPT、Claude、Qwen，不建设多供应商兼容层 |
+| 模型边界 | 历史方案：`vision-exp` 视觉通道 + `flash/pro` 文本通道；当前实现见替代文档 |
 | 交付线 | 所有依赖统一指向 `cloud-agent` delivery line，不使用模糊的"合入主线"表述 |
 
 本方案不改变平台不变量：模型只能提出动作，Policy 和 Tool Gateway 决定动作能否

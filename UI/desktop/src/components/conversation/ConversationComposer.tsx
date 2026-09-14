@@ -1,14 +1,16 @@
 import { Sender } from "@ant-design/x";
-import { Flex, GetRef, Input, Tooltip } from "antd";
+import { ArrowUpOutlined, CaretRightOutlined, PauseOutlined } from "@ant-design/icons";
+import { Button, Flex, GetRef, Input, Tooltip } from "antd";
 import React from "react";
 import locale from "../../_utils/local";
 import type { PendingAttachment } from "../../lib/text-attachments";
 import type { TaskLaunchConfig } from "../../lib/task-launch-config";
-import type { McpCapabilitiesResponse, McpPromptsResponse, SessionSummary } from "../../types";
+import type { McpCapabilitiesResponse, McpPromptsResponse, SessionEvent, SessionSummary } from "../../types";
 import { ComposerAttachments } from "../ComposerAttachments";
 import { useConversationPaneStyle } from "../CodexConversationPane.styles";
 import { TaskLaunchSummary } from "../TaskLaunchSummary";
 import { useTaskLaunchStyle } from "../TaskLaunchConfig.styles";
+import { ContextUsageIndicator } from "./ContextUsageIndicator";
 import { TaskLaunchControls } from "./TaskLaunchControls";
 
 const NamedComposerInput = React.forwardRef<
@@ -20,9 +22,10 @@ interface ConversationComposerProps {
   attachments: PendingAttachment[];
   canSubmit: boolean;
   currentConversation: string;
+  controlsBusy: boolean;
   effectiveLaunchConfig: TaskLaunchConfig;
+  events: SessionEvent[];
   isRequesting: boolean;
-  launchConfig: TaskLaunchConfig;
   launchEditable: boolean;
   launchError: string | null;
   mcpCapabilities: McpCapabilitiesResponse | undefined;
@@ -32,10 +35,11 @@ interface ConversationComposerProps {
   mcpPromptsBusy: boolean;
   mcpPromptsError: string | null;
   onAttachmentsChange: (attachments: PendingAttachment[]) => void;
-  onCancel: () => void;
   onChange: (value: string) => void;
+  onPause: () => void;
   onPatchLaunchConfig: (patch: Partial<TaskLaunchConfig>) => void;
   onRetryMcpPrompts: () => void;
+  onResume: () => void;
   onSubmit: (value: string) => Promise<void>;
   senderRef: React.RefObject<GetRef<typeof Sender> | null>;
   sessionSummary: SessionSummary | null;
@@ -47,9 +51,10 @@ export function ConversationComposer({
   attachments,
   canSubmit,
   currentConversation,
+  controlsBusy,
   effectiveLaunchConfig,
+  events,
   isRequesting,
-  launchConfig,
   launchEditable,
   launchError,
   mcpCapabilities,
@@ -59,10 +64,11 @@ export function ConversationComposer({
   mcpPromptsBusy,
   mcpPromptsError,
   onAttachmentsChange,
-  onCancel,
   onChange,
+  onPause,
   onPatchLaunchConfig,
   onRetryMcpPrompts,
+  onResume,
   onSubmit,
   senderRef,
   sessionSummary,
@@ -71,6 +77,11 @@ export function ConversationComposer({
 }: ConversationComposerProps) {
   const { styles } = useConversationPaneStyle();
   const { styles: launchStyles } = useTaskLaunchStyle();
+  const hasInput = value.trim().length > 0;
+  const action = hasInput ? "send" : isRequesting ? "pause" : sessionSummary?.status === "suspended" ? "resume" : "send";
+  const actionLabel = action === "pause" ? "暂停任务" : action === "resume" ? "继续任务" : "发送任务";
+  const actionIcon = action === "pause" ? <PauseOutlined /> : action === "resume" ? <CaretRightOutlined /> : <ArrowUpOutlined />;
+  const actionDisabled = controlsBusy || (action === "send" && !canSubmit);
 
   return (
     <div className={styles.composerCard}>
@@ -87,10 +98,10 @@ export function ConversationComposer({
         <Sender
           autoSize={{ minRows: 1, maxRows: 6 }}
           components={{ input: NamedComposerInput }}
-          footer={(actionNode) => (
+          footer={() => (
             <Flex align="center" className={styles.composerFooter} justify="space-between">
               <Flex align="center" className={styles.composerActions} gap={8}>
-                <ComposerAttachments attachments={attachments} disabled={isRequesting} onChange={onAttachmentsChange} />
+                <ComposerAttachments attachments={attachments} disabled={controlsBusy} onChange={onAttachmentsChange} />
                 <TaskLaunchControls
                   capabilities={mcpCapabilities}
                   capabilitiesBusy={mcpCapabilitiesBusy}
@@ -98,26 +109,31 @@ export function ConversationComposer({
                   prompts={mcpPrompts}
                   promptsBusy={mcpPromptsBusy}
                   promptsError={mcpPromptsError}
-                  config={launchConfig}
+                  config={effectiveLaunchConfig}
                   editable={launchEditable}
                   onPatch={onPatchLaunchConfig}
                   onRetryPrompts={onRetryMcpPrompts}
                 />
               </Flex>
-              <Tooltip title={isRequesting ? "停止任务" : "发送任务"}>
-                <span className={`${styles.sendSlot} ${canSubmit || isRequesting ? "" : styles.sendSlotDisabled}`}>
-                  {React.isValidElement(actionNode)
-                    ? React.cloneElement(actionNode as React.ReactElement<{ "aria-label"?: string }>, {
-                        "aria-label": isRequesting ? "停止任务" : "发送任务",
-                      })
-                    : actionNode}
-                </span>
-              </Tooltip>
+              <Flex align="center" className={styles.composerRuntime} gap={6}>
+                <ContextUsageIndicator events={events} />
+                <Tooltip title={actionLabel}>
+                  <span className={`${styles.sendSlot} ${actionDisabled ? styles.sendSlotDisabled : ""}`}>
+                    <Button
+                      aria-label={actionLabel}
+                      disabled={actionDisabled}
+                      icon={actionIcon}
+                      onClick={() => action === "pause" ? onPause() : action === "resume" ? onResume() : void onSubmit(value)}
+                      shape="circle"
+                      type="primary"
+                    />
+                  </span>
+                </Tooltip>
+              </Flex>
             </Flex>
           )}
           key={`${variant}-${currentConversation}`}
-          loading={isRequesting}
-          onCancel={onCancel}
+          loading={false}
           onChange={onChange}
           onSubmit={onSubmit}
           placeholder={variant === "thread" ? locale.threadComposerHint : locale.placeholder}

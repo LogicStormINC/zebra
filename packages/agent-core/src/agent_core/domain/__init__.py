@@ -211,6 +211,11 @@ from agent_core.domain.host_effect_receipts import (
     HostEffectStatus,
     uncertain_receipt,
 )
+from agent_core.domain.image_attachments import (
+    SUPPORTED_IMAGE_MEDIA_TYPES,
+    ImageAttachmentContextInput,
+    ImageAttachmentInput,
+)
 from agent_core.domain.leases import (
     DEFAULT_MAX_LEASE_TTL,
     LeaseCheckpointRegressionError,
@@ -320,7 +325,8 @@ __all__ = [
     "AgentReleaseStatus", "AgentReleaseTransitionError", "AgentDefinitionDraft",
     "AgentDefinitionDraftValidation", "AgentDraftValidationIssue",
     "AgentDraftValidationStatus", "canonical_agent_definition_digest",
-    "AttachmentContextInput", "DeliveryAuditRecord", "DeliveryTransactionConflictError",
+    "AttachmentContextInput", "ImageAttachmentContextInput", "ImageAttachmentInput",
+    "SUPPORTED_IMAGE_MEDIA_TYPES", "DeliveryAuditRecord", "DeliveryTransactionConflictError",
     "DeliveryTransactionInvariantError", "DeliveryTransactionNotFoundError",
     "DeliveryTransactionOwnershipError", "DeliveryTransactionRecord",
     "DeliveryTransactionState", "DeliveryTransactionStateError",

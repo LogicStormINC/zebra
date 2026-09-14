@@ -35,7 +35,7 @@ def test_deepseek_routes_no_tool_planner_to_pro_reasoning_profile() -> None:
     assert captured["reasoning_effort"] == "max"
     assert "tool_choice" not in captured
     assert completion.call_metadata.profile_id == "deepseek-v4-pro-planner-v1"
-    assert completion.call_metadata.profile_version_observed_at == "2026-08-25"
+    assert completion.call_metadata.profile_version_observed_at == "2026-09-10"
 
 
 def test_deepseek_tool_request_explicitly_disables_thinking() -> None:
@@ -50,6 +50,27 @@ def test_deepseek_tool_request_explicitly_disables_thinking() -> None:
     assert captured["thinking"] == {"type": "disabled"}
     assert captured["tool_choice"] == "auto"
     assert "reasoning_effort" not in captured
+
+
+def test_explicit_executor_profile_is_not_overridden_by_legacy_model() -> None:
+    captured: dict[str, object] = {}
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        captured.update(json.loads(request.content))
+        return _completion("done", model="deepseek-v4-pro")
+
+    _gateway(handle).complete(
+        [_message("use the selected model")],
+        invocation_policy=ModelInvocationPolicy(
+            profile_id="deepseek-v4-pro-executor-v1",
+            thinking_mode=ModelThinkingMode.ENABLED,
+            reasoning_effort=ModelReasoningEffort.MAX,
+        ),
+    )
+
+    assert captured["model"] == "deepseek-v4-pro"
+    assert captured["thinking"] == {"type": "enabled"}
+    assert captured["reasoning_effort"] == "max"
 
 
 def test_deepseek_thinking_rejects_required_tool_choice_locally() -> None:

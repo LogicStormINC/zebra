@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 
 from agent_core.application import (
@@ -16,6 +17,10 @@ from agent_core.application.workspace_projection import (
 )
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.image_attachments import (
+    ImageAttachmentContextInput,
+    ImageAttachmentInput,
+)
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
 from agent_core.ports.agent_registry import AgentRegistryPort
@@ -329,6 +334,8 @@ class ZebraAgentApi(
                 session=session,
                 content=parsed["content"],
                 clarification_id=parsed["clarification_id"],
+                model_profile=parsed["model_profile"],
+                reasoning_effort=parsed["reasoning_effort"],
             )
         except ValueError as exc:
             return conflict(
@@ -429,6 +436,20 @@ class ZebraAgentApi(
                         }
                     )
                     for attachment in parsed["attachments"]
+                    if not isinstance(attachment, ImageAttachmentInput)
+                ),
+                image_attachments=tuple(
+                    ImageAttachmentContextInput(
+                        attachment_id=attachment.attachment_id,
+                        file_name=attachment.file_name,
+                        media_type=attachment.media_type,
+                        payload=attachment.payload,
+                        width=attachment.width,
+                        height=attachment.height,
+                        sha256=sha256(attachment.payload).hexdigest(),
+                    )
+                    for attachment in parsed["attachments"]
+                    if isinstance(attachment, ImageAttachmentInput)
                 ),
             )
         except ValueError as error:

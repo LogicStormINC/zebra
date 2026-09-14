@@ -19,6 +19,8 @@ def build_session_message_event(
     session: Session,
     content: str,
     clarification_id: str | None,
+    model_profile: str | None = None,
+    reasoning_effort: str | None = None,
 ) -> SessionEvent:
     """Build the next durable message Event with ADR-026 Turn identity."""
 
@@ -31,6 +33,8 @@ def build_session_message_event(
             clarification_id=clarification_id,
             prior_human_turns=len(project_turns(events)),
             open_turn_exists=current_turn(events) is not None,
+            model_profile=model_profile,
+            reasoning_effort=reasoning_effort,
         ),
     )
 

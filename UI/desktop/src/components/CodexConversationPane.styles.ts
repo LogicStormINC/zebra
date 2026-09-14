@@ -196,81 +196,180 @@ export const useConversationPaneStyle = createStyles(({ css }) => {
     `,
     composerActions: css`
       min-width: 0;
-      overflow: hidden;
+      overflow: visible;
     `,
     composerTools: css`
       min-width: 0;
-      overflow: hidden;
+      flex: 0 1 auto;
     `,
-    modeSegment: css`
-      height: 30px;
+    composerRuntime: css`
+      min-width: 0;
+      flex: 0 1 auto;
+    `,
+    runtimeControls: css`
       display: inline-flex;
       align-items: center;
-      gap: 2px;
-      padding: 2px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
+      gap: 4px;
+      min-width: 0;
       flex: 0 0 auto;
     `,
-    modePill: css`
+    contextRingButton: css`
+      width: 32px;
+      height: 32px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      height: 26px;
-      min-width: 42px;
-      padding: 0 10px;
-      border-radius: 999px;
-      color: var(--zebra-text-muted);
-      font-size: 12px;
-      line-height: 18px;
-      font-weight: 500;
-    `,
-    modePillActive: css`
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 26px;
-      min-width: 42px;
-      padding: 0 10px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--zebra-text-primary);
-      font-size: 12px;
-      line-height: 18px;
-      font-weight: 500;
-    `,
-    toolbarButton: css`
-      height: 30px;
-      display: inline-flex;
-      align-items: center;
-      padding: 0 10px;
+      padding: 0;
       border: 0;
-      border-radius: 8px;
+      border-radius: 9px;
       background: transparent;
-      color: rgba(255, 255, 255, 0.58);
-      font: inherit;
+      color: rgba(255, 255, 255, 0.72);
+      cursor: pointer;
+      transition: background 160ms ease, color 160ms ease;
+      &:hover,
+      &:focus-visible {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.92);
+        outline: none;
+      }
+      svg { width: 24px; height: 24px; transform: rotate(-90deg); }
+      circle { fill: none; stroke-width: 3.5; }
+      .track { stroke: rgba(255, 255, 255, 0.14); }
+      .value { stroke: currentColor; stroke-linecap: round; transition: stroke-dasharray 220ms ease; }
+    `,
+    contextRingEmpty: css`color: rgba(255, 255, 255, 0.38);`,
+    contextRingNormal: css`color: rgba(255, 255, 255, 0.82);`,
+    contextRingWarning: css`color: #f0b55a;`,
+    contextRingCritical: css`color: #ff7373;`,
+    contextPopover: css`
+      width: min(310px, calc(100vw - 40px));
+      display: inline-flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 4px;
+      color: rgba(255, 255, 255, 0.9);
       font-size: 12px;
       line-height: 18px;
+      small { color: rgba(255, 255, 255, 0.42); }
+    `,
+    contextPopoverHeader: css`
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      strong { font-size: 15px; }
+      span { color: rgba(255, 255, 255, 0.58); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    `,
+    contextPopoverMetric: css`
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      color: rgba(255, 255, 255, 0.55);
+      strong { color: rgba(255, 255, 255, 0.9); font-size: 14px; font-variant-numeric: tabular-nums; }
+    `,
+    runtimeBadge: css`
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      max-width: min(250px, 24vw);
+      padding: 0 8px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.78);
+      font: inherit;
+      font-size: 13px;
+      line-height: 20px;
       white-space: nowrap;
       cursor: pointer;
       transition: background 160ms ease, color 160ms ease;
-      &:hover {
-        background: rgba(255, 255, 255, 0.07);
-        color: rgba(255, 255, 255, 0.82);
+      span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      .anticon:last-child { color: rgba(255, 255, 255, 0.34); font-size: 9px; }
+      &:hover,
+      &:focus-visible {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.95);
+        outline: none;
       }
-      &:last-child {
-        color: rgba(255, 255, 255, 0.44);
+      @media (max-width: 900px) {
+        max-width: 150px;
       }
-      &:last-child:hover {
-        color: rgba(255, 255, 255, 0.68);
+      @media (max-width: 680px) {
+        width: 32px;
+        justify-content: center;
+        padding: 0;
+        span, .anticon:last-child { display: none; }
       }
-      @media (max-width: 767px) {
-        display: none;
+    `,
+    permissionButton: css`
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.68);
+      font: inherit;
+      font-size: 13px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 160ms ease, color 160ms ease;
+      .anticon:last-child { color: currentColor; opacity: 0.5; font-size: 9px; }
+      &:hover,
+      &:focus-visible { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.92); outline: none; }
+      &:disabled { cursor: default; opacity: 0.82; }
+      &:disabled:hover { background: transparent; }
+      @media (max-width: 680px) {
+        span { display: none; }
       }
+    `,
+    permissionButtonFull: css`color: #ff8a24;`,
+    launchConfigButton: css`
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.48);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      &:hover,
+      &:focus-visible { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.85); outline: none; }
+      @media (max-width: 760px) { span { display: none; } }
+    `,
+    launchEditorHeading: css`
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      strong { color: rgba(255, 255, 255, 0.92); font-size: 15px; }
+      span { color: rgba(255, 255, 255, 0.45); font-size: 12px; }
+    `,
+    launchEditorField: css`
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      > span { color: rgba(255, 255, 255, 0.64); font-size: 12px; }
+      .ant-select { width: 100%; }
+    `,
+    launchEditorGrid: css`
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      @media (max-width: 480px) { grid-template-columns: 1fr; }
     `,
     sendSlot: css`
       flex: 0 0 auto;
       .ant-btn {
+        width: 38px;
+        height: 38px;
         transition: opacity 160ms ease, background 160ms ease, color 160ms ease;
       }
     `,
