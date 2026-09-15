@@ -63,7 +63,9 @@ class PostgresTaskScheduleStore(PostgresDatabase):
         owner = validate_owner(owner, self.deployment_namespace)
         with self.connect() as connection:
             row = connection.execute(
-                "SELECT " + _SCHEDULE_COLUMNS + " FROM task_schedules WHERE "
+                "SELECT "
+                + _SCHEDULE_COLUMNS
+                + " FROM task_schedules WHERE "
                 + _OWNER
                 + " AND schedule_id = %s",
                 (self.deployment_namespace, *owner_values(owner), schedule_id),
@@ -79,7 +81,8 @@ class PostgresTaskScheduleStore(PostgresDatabase):
         owner = validate_owner(owner, self.deployment_namespace)
         with self.connect() as connection:
             row = connection.execute(
-                "SELECT " + ", ".join(f"a.{part.strip()}" for part in _AUTHORITY_COLUMNS.split(","))
+                "SELECT "
+                + ", ".join(f"a.{part.strip()}" for part in _AUTHORITY_COLUMNS.split(","))
                 + " FROM schedule_authority_bindings a JOIN task_schedules s ON "
                 "s.deployment_namespace = a.deployment_namespace "
                 "AND s.schedule_id = a.schedule_id "
@@ -101,7 +104,9 @@ class PostgresTaskScheduleStore(PostgresDatabase):
             raise ValueError("limit must be between 1 and 200")
         with self.connect() as connection:
             rows = connection.execute(
-                "SELECT " + _SCHEDULE_COLUMNS + " FROM task_schedules WHERE "
+                "SELECT "
+                + _SCHEDULE_COLUMNS
+                + " FROM task_schedules WHERE "
                 + _OWNER
                 + " ORDER BY updated_at DESC, schedule_id LIMIT %s",
                 (self.deployment_namespace, *owner_values(owner), limit),
@@ -126,8 +131,7 @@ class PostgresTaskScheduleStore(PostgresDatabase):
                 "revoked_at = %s, payload = %s WHERE deployment_namespace = %s "
                 "AND tenant_id = %s AND workspace_id = %s AND principal_id = %s "
                 "AND host_app_id = %s AND schedule_id = %s AND binding_id = %s "
-                "AND binding_revision = %s AND revoked_at IS NULL RETURNING "
-                + _AUTHORITY_COLUMNS,
+                "AND binding_revision = %s AND revoked_at IS NULL RETURNING " + _AUTHORITY_COLUMNS,
                 (
                     authority.binding_revision,
                     authority.revoked_at,
@@ -162,35 +166,129 @@ class PostgresTaskScheduleStore(PostgresDatabase):
                 + _OWNER
                 + " AND schedule_id = %s AND schedule_version = %s RETURNING "
                 + _SCHEDULE_COLUMNS,
-                (*values, self.deployment_namespace, *owner_values(owner),
-                 schedule.schedule_id, expected_version),
+                (
+                    *values,
+                    self.deployment_namespace,
+                    *owner_values(owner),
+                    schedule.schedule_id,
+                    expected_version,
+                ),
             ).fetchone()
         if row is None:
             raise TaskScheduleConflictError("Task Schedule version or ownership changed")
         return decode_schedule(row)
 
+    def replace_authority(
+        self,
+        schedule: TaskSchedule,
+        authority: ScheduleAuthorityBinding,
+        previous_authority: ScheduleAuthorityBinding,
+        *,
+        expected_version: int,
+        expected_authority_revision: int,
+    ) -> TaskSchedule:
+        schedule = TaskSchedule.model_validate(schedule.model_dump())
+        authority = ScheduleAuthorityBinding.model_validate(authority.model_dump())
+        previous_authority = ScheduleAuthorityBinding.model_validate(
+            previous_authority.model_dump()
+        )
+        owner = validate_owner(schedule.owner, self.deployment_namespace)
+        if (
+            schedule.schedule_version != expected_version + 1
+            or authority.owner != owner
+            or previous_authority.owner != owner
+            or authority.schedule_id != schedule.schedule_id
+            or previous_authority.schedule_id != schedule.schedule_id
+            or schedule.authority_binding_id != authority.binding_id
+            or authority.binding_id == previous_authority.binding_id
+            or authority.revoked_at is not None
+            or previous_authority.revoked_at is None
+            or previous_authority.binding_revision != expected_authority_revision + 1
+        ):
+            raise ValueError("Schedule authority replacement is inconsistent")
+        try:
+            with self.connect() as connection:
+                self._insert_authority(connection, authority)
+                row = connection.execute(
+                    "UPDATE task_schedules SET title = %s, status = %s, "
+                    "schedule_version = %s, next_fire_at = %s, last_fire_at = %s, "
+                    "authority_binding_id = %s, updated_at = %s, payload = %s WHERE "
+                    + _OWNER
+                    + " AND schedule_id = %s AND schedule_version = %s "
+                    "AND authority_binding_id = %s RETURNING " + _SCHEDULE_COLUMNS,
+                    (
+                        *self._schedule_mutable_values(schedule),
+                        self.deployment_namespace,
+                        *owner_values(owner),
+                        schedule.schedule_id,
+                        expected_version,
+                        previous_authority.binding_id,
+                    ),
+                ).fetchone()
+                revoked = connection.execute(
+                    "UPDATE schedule_authority_bindings SET binding_revision = %s, "
+                    "revoked_at = %s, payload = %s WHERE deployment_namespace = %s "
+                    "AND binding_id = %s AND schedule_id = %s AND binding_revision = %s "
+                    "AND revoked_at IS NULL RETURNING binding_id",
+                    (
+                        previous_authority.binding_revision,
+                        previous_authority.revoked_at,
+                        Jsonb(previous_authority.model_dump(mode="json")),
+                        self.deployment_namespace,
+                        previous_authority.binding_id,
+                        schedule.schedule_id,
+                        expected_authority_revision,
+                    ),
+                ).fetchone()
+                if row is None or revoked is None:
+                    raise TaskScheduleConflictError(
+                        "Task Schedule version, ownership or authority changed"
+                    )
+        except UniqueViolation as exc:
+            raise TaskScheduleConflictError("Schedule authority identity already exists") from exc
+        return decode_schedule(row)
+
     def _insert_authority(self, connection: Any, authority: ScheduleAuthorityBinding) -> None:
         connection.execute(
-            "INSERT INTO schedule_authority_bindings (" + _AUTHORITY_COLUMNS
+            "INSERT INTO schedule_authority_bindings ("
+            + _AUTHORITY_COLUMNS
             + ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (self.deployment_namespace, authority.binding_id, authority.schedule_id,
-             *owner_values(authority.owner), authority.binding_revision,
-             authority.revoked_at, Jsonb(authority.model_dump(mode="json"))),
+            (
+                self.deployment_namespace,
+                authority.binding_id,
+                authority.schedule_id,
+                *owner_values(authority.owner),
+                authority.binding_revision,
+                authority.revoked_at,
+                Jsonb(authority.model_dump(mode="json")),
+            ),
         )
 
     def _insert_schedule(self, connection: Any, schedule: TaskSchedule) -> None:
         connection.execute(
-            "INSERT INTO task_schedules (" + _SCHEDULE_COLUMNS
+            "INSERT INTO task_schedules ("
+            + _SCHEDULE_COLUMNS
             + ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (self.deployment_namespace, schedule.schedule_id, *owner_values(schedule.owner),
-             *self._schedule_mutable_values(schedule)[0:6], schedule.created_at,
-             schedule.updated_at, Jsonb(schedule.model_dump(mode="json"))),
+            (
+                self.deployment_namespace,
+                schedule.schedule_id,
+                *owner_values(schedule.owner),
+                *self._schedule_mutable_values(schedule)[0:6],
+                schedule.created_at,
+                schedule.updated_at,
+                Jsonb(schedule.model_dump(mode="json")),
+            ),
         )
 
     @staticmethod
     def _schedule_mutable_values(schedule: TaskSchedule) -> tuple[object, ...]:
         return (
-            schedule.title, schedule.status, schedule.schedule_version,
-            schedule.next_fire_at, schedule.last_fire_at, schedule.authority_binding_id,
-            schedule.updated_at, Jsonb(schedule.model_dump(mode="json")),
+            schedule.title,
+            schedule.status,
+            schedule.schedule_version,
+            schedule.next_fire_at,
+            schedule.last_fire_at,
+            schedule.authority_binding_id,
+            schedule.updated_at,
+            Jsonb(schedule.model_dump(mode="json")),
         )

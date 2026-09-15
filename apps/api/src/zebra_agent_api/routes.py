@@ -20,6 +20,7 @@ from zebra_agent_api.memory_routes import handle_memory_route
 from zebra_agent_api.platform_client_routes import handle_platform_client_route
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.task_routes import handle_task_route
+from zebra_agent_api.task_schedule_routes import handle_schedule_route
 from zebra_agent_api.tenant_guard import (
     tenant_scope_response,
 )
@@ -52,6 +53,13 @@ class RouteAdapter:
         tenant_response = tenant_scope_response(self.app, request)
         if tenant_response is not None:
             return tenant_response
+        schedule_response = handle_schedule_route(
+            self.app,
+            request,
+            extension_admission=self.extension_turn_admission,
+        )
+        if schedule_response is not None:
+            return schedule_response
         if method == "POST" and request.path in {"/sessions", "/tasks"}:
             skill_error = validate_task_skill_selection(
                 request.body or {}, request.verified_host_grant, self.extension_turn_admission,

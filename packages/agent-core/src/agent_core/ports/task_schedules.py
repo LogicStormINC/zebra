@@ -60,6 +60,16 @@ class TaskScheduleStorePort(Protocol):
         expected_version: int,
     ) -> TaskSchedule: ...
 
+    def replace_authority(
+        self,
+        schedule: TaskSchedule,
+        authority: ScheduleAuthorityBinding,
+        previous_authority: ScheduleAuthorityBinding,
+        *,
+        expected_version: int,
+        expected_authority_revision: int,
+    ) -> TaskSchedule: ...
+
 
 class TaskScheduleFiringStorePort(Protocol):
     def claim_due(
@@ -74,6 +84,30 @@ class TaskScheduleFiringStorePort(Protocol):
         self,
         fire_id: TaskScheduleFiringId,
     ) -> TaskScheduleFiring | None: ...
+
+    def get_for_owner(
+        self,
+        fire_id: TaskScheduleFiringId,
+        *,
+        schedule_id: TaskScheduleId,
+        owner: ScheduleOwner,
+    ) -> TaskScheduleFiring | None: ...
+
+    def list_for_schedule(
+        self,
+        schedule_id: TaskScheduleId,
+        *,
+        owner: ScheduleOwner,
+        limit: int,
+    ) -> tuple[TaskScheduleFiring, ...]: ...
+
+    def create_manual(
+        self,
+        schedule: TaskSchedule,
+        *,
+        owner: ScheduleOwner,
+        idempotency_key: str,
+    ) -> TaskScheduleFiring: ...
 
     def settle_firing(
         self,

@@ -25,6 +25,7 @@ from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
 from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
+from agent_core.ports.task_schedules import TaskScheduleFiringStorePort, TaskScheduleStorePort
 from agent_integrations import (
     GitHubPullRequestTransport,
     build_model_gateway,
@@ -137,6 +138,8 @@ class ZebraAgentApi(
     publication_security_revocation_actors: frozenset[str] = frozenset()
     client_platform: AgentPlatformControlPlane | None = None
     platform_operator_authorizer: PlatformOperatorAuthorizer | None = None
+    task_schedule_store: TaskScheduleStorePort | None = None
+    task_schedule_firing_store: TaskScheduleFiringStorePort | None = None
     _parse_session_id = staticmethod(parse_session_id)
 
     def create_session(

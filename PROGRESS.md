@@ -1,5 +1,17 @@
 # Zebra Agent Project Status
 
+2026-09-15 CLOUD-USER-SCHEDULE-API-01: The user schedule management surface is
+implemented on `codex/cloud-user-schedule-api`. Verified Host grants now expose
+owner-scoped create/list/get/update/delete, pause/resume, idempotent run-now and
+run history with Task deep links. Schedule template changes pass through the
+normal Task/Skill/MCP/Definition admission rules and atomically rotate the
+immutable authority binding; optimistic versions protect every lifecycle write.
+The focused API/Core/Storage group passes `824` with `37` dependency skips,
+actual PostgreSQL schedule tests pass `9`, and file-size, Ruff, strict Mypy over
+`941` sources plus Eval `10/10` are green. The full repository suite passes
+`4429` with `887` dependency skips. Frontend, Trench UI, deployment and browser
+E2E remain future slices.
+
 2026-09-15 CLOUD-USER-SCHEDULE-STORAGE-01: User-level Task schedules now have
 forward-only PostgreSQL v58 authority. Schedule and authority reads require all
 owner coordinates; lifecycle and revocation writes use optimistic concurrency;

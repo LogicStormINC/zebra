@@ -108,3 +108,13 @@ def task_schedule_firing_id(
         raise ValueError("scheduled_for must be timezone-aware")
     canonical = scheduled_for.astimezone(UTC).isoformat()
     return TaskScheduleFiringId(uuid5(schedule_id, canonical))
+
+
+def manual_task_schedule_firing_id(
+    schedule_id: TaskScheduleId,
+    idempotency_key: str,
+) -> TaskScheduleFiringId:
+    normalized = idempotency_key.strip()
+    if not normalized or len(normalized) > 512:
+        raise ValueError("idempotency_key must be non-blank and at most 512 characters")
+    return TaskScheduleFiringId(uuid5(schedule_id, f"manual:{normalized}"))

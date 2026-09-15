@@ -162,6 +162,72 @@ def test_owner_scoped_crud_authority_and_cas(dsn: str) -> None:
         store.create(item, authority)
 
 
+def test_manual_firing_is_idempotent_and_owner_scoped(dsn: str) -> None:
+    schedules = PostgresTaskScheduleStore(dsn, deployment_namespace="cloud")
+    firings = PostgresTaskScheduleFiringStore(dsn, deployment_namespace="cloud")
+    item, authority = schedule()
+    schedules.create(item, authority)
+
+    first = firings.create_manual(item, owner=item.owner, idempotency_key="run-now-1")
+    replayed = firings.create_manual(item, owner=item.owner, idempotency_key="run-now-1")
+
+    assert replayed == first
+    assert firings.list_for_schedule(item.schedule_id, owner=item.owner, limit=10) == (first,)
+    assert (
+        firings.get_for_owner(
+            first.fire_id,
+            schedule_id=item.schedule_id,
+            owner=item.owner,
+        )
+        == first
+    )
+    other = owner(principal="user-2")
+    assert firings.list_for_schedule(item.schedule_id, owner=other, limit=10) == ()
+    assert firings.get_for_owner(first.fire_id, schedule_id=item.schedule_id, owner=other) is None
+
+
+def test_template_change_replaces_authority_atomically(dsn: str) -> None:
+    store = PostgresTaskScheduleStore(dsn, deployment_namespace="cloud")
+    item, authority = schedule()
+    store.create(item, authority)
+    moment = datetime.now(UTC)
+    replacement = ScheduleAuthorityBinding(
+        **{
+            **authority.model_dump(),
+            "binding_id": uuid4(),
+            "binding_revision": 1,
+            "bound_at": moment,
+        }
+    )
+    changed = TaskSchedule.model_validate(
+        {
+            **item.model_dump(),
+            "task_template": {"payload": {"prompt": "Updated report"}},
+            "authority_binding_id": replacement.binding_id,
+            "schedule_version": 2,
+            "updated_at": moment,
+        }
+    )
+
+    assert (
+        store.replace_authority(
+            changed,
+            replacement,
+            authority.revoke(at=moment),
+            expected_version=1,
+            expected_authority_revision=1,
+        )
+        == changed
+    )
+    assert store.get_authority(item.schedule_id, owner=item.owner) == replacement
+    with store.connect() as connection:
+        old = connection.execute(
+            "SELECT revoked_at FROM schedule_authority_bindings WHERE binding_id = %s",
+            (authority.binding_id,),
+        ).fetchone()
+    assert old is not None and old["revoked_at"] is not None
+
+
 def test_due_claim_advances_schedule_and_settles_firing(dsn: str) -> None:
     schedules = PostgresTaskScheduleStore(dsn, deployment_namespace="cloud")
     firings = PostgresTaskScheduleFiringStore(dsn, deployment_namespace="cloud")

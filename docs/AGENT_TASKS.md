@@ -28386,7 +28386,26 @@ browser Cookie or Host Grant.
 
 ### CLOUD-USER-SCHEDULE-API-01 - User schedule management API
 
-- Status: `Locked` (materializer is verified but not yet merged to `main`)
-- Human owner: Luke Ding
+- Status: `Review` (implemented and validated 2026-09-15)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `codex/cloud-user-schedule-api`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-management-api/zebra-agent`
+- Owned paths: schedule-specific API service/routes and composition under
+  `apps/api`; schedule management/query extensions under `agent-core` and
+  `agent-storage`; focused API/Core/Storage tests; this card, `task_plan.md`,
+  `PROGRESS.md`, `WORKLOG.md`, and the accepted design document.
 - Goal: authenticated user-scoped CRUD, controls, run history, Host scopes and
-  next-run preview. Claim only after the materializer card reaches Review.
+  next-run preview.
+- Dependency boundary: this branch is a linear child of the verified
+  materializer Review commit. It remains intentionally unintegrated while the
+  `cloud-agent-trench` checkout carries unrelated uncommitted migration work.
+- Delivered: authenticated owner-scoped CRUD, pause/resume, idempotent run-now,
+  run history and Task deep links. Template edits rerun normal Task admission
+  validation and atomically rotate the immutable authority binding. Reads use
+  `schedule.read`; every mutation additionally requires `agent.run` and
+  `schedule.manage` from the verified Host grant.
+- Validation: focused API/Core/Storage group `824 passed, 37 skipped`; actual
+  PostgreSQL Task Schedule suite `9 passed`; file-size, full Ruff, strict Mypy
+  over `941` sources and Eval `10/10` passed; full repository regression passed
+  `4429` with `887` dependency skips. No frontend, deployment or browser E2E is
+  claimed.

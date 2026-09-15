@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 from agent_core.application.agent_definitions import PublisherGrantPort
 from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
 from agent_core.ports.agent_registry import AgentRegistryPort
+from agent_core.ports.task_schedules import TaskScheduleFiringStorePort, TaskScheduleStorePort
 from agent_integrations import GitHubPullRequestTransport, RedisCommittedEventPublisher
 from agent_security import CredentialBroker
 from agent_storage import (
@@ -46,6 +47,8 @@ def create_app(
     agent_registry: AgentRegistryPort | None = None,
     publisher_grants: PublisherGrantPort | None = None,
     publication_security_revocation_actors: frozenset[str] = frozenset(),
+    task_schedule_store: TaskScheduleStorePort | None = None,
+    task_schedule_firing_store: TaskScheduleFiringStorePort | None = None,
 ) -> ZebraAgentApi:
     from zebra_agent_api.app import ZebraAgentApi
 
@@ -125,6 +128,24 @@ def create_app(
                 deployment_namespace=namespace,
             )
             publisher_grants = publisher_grants or StaticPublisherGrantResolver({})
+    if (
+        active_settings.deployment == "cloud"
+        and active_settings.storage_authority == "postgresql"
+        and (task_schedule_store is None or task_schedule_firing_store is None)
+    ):
+        from agent_storage import PostgresTaskScheduleFiringStore, PostgresTaskScheduleStore
+
+        namespace = getattr(active_stores, "deployment_namespace", None)
+        if isinstance(namespace, str) and namespace.strip():
+            task_schedule_store = task_schedule_store or PostgresTaskScheduleStore(
+                active_settings.database_url, deployment_namespace=namespace
+            )
+            task_schedule_firing_store = (
+                task_schedule_firing_store
+                or PostgresTaskScheduleFiringStore(
+                    active_settings.database_url, deployment_namespace=namespace
+                )
+            )
     client_platform = None
     if (
         active_settings.client_integration_enabled
@@ -169,4 +190,6 @@ def create_app(
         platform_operator_authorizer=operator_authorizer,
         cloud_control=cloud_control,
         command_outcome=command_outcome,
+        task_schedule_store=task_schedule_store,
+        task_schedule_firing_store=task_schedule_firing_store,
     )

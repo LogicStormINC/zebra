@@ -240,6 +240,8 @@ GET    /schedules/{schedule_id}/runs/{fire_id}
 
 所有读写按 tenant/workspace/principal/namespace 过滤；更新携带 `schedule_version` 或 `If-Match`；删除为可审计软删除；`run-now` 也创建 Firing。运行详情只返回对应 Task 深链，不复制 Task 流和 Artifact 内容。
 
+修改冻结的 `task_template` 时必须重新执行普通 Task 的 Skill、MCP 和 Agent Definition admission，并在一个数据库事务中创建新 Authority Binding、切换 Schedule 版本和吊销旧 Binding；普通标题或时间规则修改不需要轮换权限。
+
 ## 12. 进程与配置
 
 新增独立 composition root：

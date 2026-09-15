@@ -6,20 +6,32 @@ from datetime import datetime, timedelta
 from typing import Any, cast
 
 from agent_core.application.task_schedule_time import next_fire_at
-from agent_core.domain.identifiers import TaskScheduleFiringId, task_schedule_firing_id
+from agent_core.domain.identifiers import (
+    TaskScheduleFiringId,
+    TaskScheduleId,
+    manual_task_schedule_firing_id,
+    task_schedule_firing_id,
+)
+from agent_core.domain.task_schedule_authority import ScheduleOwner
 from agent_core.domain.task_schedules import (
     OnceScheduleTrigger,
     ScheduleFiringStatus,
     ScheduleOverlapPolicy,
     TaskSchedule,
     TaskScheduleFiring,
+    TaskScheduleStatus,
 )
 from agent_core.ports.task_schedules import TaskScheduleConflictError
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.task_schedule_rows import decode_firing, decode_schedule
-from agent_storage.postgres.task_schedules import _SCHEDULE_COLUMNS
+from agent_storage.postgres.task_schedule_rows import (
+    decode_firing,
+    decode_schedule,
+    owner_values,
+    validate_owner,
+)
+from agent_storage.postgres.task_schedules import _OWNER, _SCHEDULE_COLUMNS
 
 _FIRING_COLUMNS = """fire_id, schedule_id, schedule_version, scheduled_for,
     status, task_id, attempt, failure_code, claimed_by, claim_expires_at,
@@ -68,6 +80,115 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
                 (self.deployment_namespace, fire_id),
             ).fetchone()
         return decode_firing(row) if row is not None else None
+
+    def get_for_owner(
+        self,
+        fire_id: TaskScheduleFiringId,
+        *,
+        schedule_id: TaskScheduleId,
+        owner: ScheduleOwner,
+    ) -> TaskScheduleFiring | None:
+        owner = validate_owner(owner, self.deployment_namespace)
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT "
+                + ", ".join(f"f.{part.strip()}" for part in _FIRING_COLUMNS.split(","))
+                + " FROM task_schedule_firings f JOIN task_schedules s ON "
+                "s.deployment_namespace = f.deployment_namespace "
+                "AND s.schedule_id = f.schedule_id WHERE "
+                + " AND ".join(f"s.{part.strip()}" for part in _OWNER.split(" AND "))
+                + " AND f.schedule_id = %s AND f.fire_id = %s",
+                (
+                    self.deployment_namespace,
+                    *owner_values(owner),
+                    schedule_id,
+                    fire_id,
+                ),
+            ).fetchone()
+        return decode_firing(row) if row is not None else None
+
+    def list_for_schedule(
+        self,
+        schedule_id: TaskScheduleId,
+        *,
+        owner: ScheduleOwner,
+        limit: int,
+    ) -> tuple[TaskScheduleFiring, ...]:
+        owner = validate_owner(owner, self.deployment_namespace)
+        if isinstance(limit, bool) or limit < 1 or limit > 200:
+            raise ValueError("limit must be between 1 and 200")
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT "
+                + ", ".join(f"f.{part.strip()}" for part in _FIRING_COLUMNS.split(","))
+                + " FROM task_schedule_firings f JOIN task_schedules s ON "
+                "s.deployment_namespace = f.deployment_namespace "
+                "AND s.schedule_id = f.schedule_id WHERE "
+                + " AND ".join(f"s.{part.strip()}" for part in _OWNER.split(" AND "))
+                + " AND f.schedule_id = %s ORDER BY f.scheduled_for DESC, f.fire_id LIMIT %s",
+                (
+                    self.deployment_namespace,
+                    *owner_values(owner),
+                    schedule_id,
+                    limit,
+                ),
+            ).fetchall()
+        return tuple(decode_firing(row) for row in rows)
+
+    def create_manual(
+        self,
+        schedule: TaskSchedule,
+        *,
+        owner: ScheduleOwner,
+        idempotency_key: str,
+    ) -> TaskScheduleFiring:
+        owner = validate_owner(owner, self.deployment_namespace)
+        if schedule.owner != owner or schedule.status is TaskScheduleStatus.DELETED:
+            raise ValueError("manual firing requires an owned non-deleted schedule")
+        fire_id = manual_task_schedule_firing_id(schedule.schedule_id, idempotency_key)
+        with self.connect() as connection:
+            locked = connection.execute(
+                "SELECT " + _SCHEDULE_COLUMNS + " FROM task_schedules WHERE " + _OWNER
+                + " AND schedule_id = %s FOR UPDATE",
+                (self.deployment_namespace, *owner_values(owner), schedule.schedule_id),
+            ).fetchone()
+            if locked is None:
+                raise TaskScheduleConflictError("Task Schedule does not exist")
+            current = decode_schedule(locked)
+            if current.status is TaskScheduleStatus.DELETED:
+                raise TaskScheduleConflictError("deleted Task Schedule cannot run")
+            existing = connection.execute(
+                "SELECT " + _FIRING_COLUMNS
+                + " FROM task_schedule_firings WHERE deployment_namespace = %s AND fire_id = %s",
+                (self.deployment_namespace, fire_id),
+            ).fetchone()
+            if existing is not None:
+                return decode_firing(existing)
+            now = self._database_now(connection)
+            if current.overlap_policy is ScheduleOverlapPolicy.FORBID:
+                overlap = connection.execute(
+                    "SELECT 1 FROM task_schedule_firings WHERE deployment_namespace = %s "
+                    "AND schedule_id = %s AND status IN ('materializing', 'dispatched') LIMIT 1",
+                    (self.deployment_namespace, current.schedule_id),
+                ).fetchone()
+                if overlap is not None:
+                    raise TaskScheduleConflictError("Task Schedule already has an active firing")
+            firing = TaskScheduleFiring(
+                fire_id=fire_id,
+                schedule_id=current.schedule_id,
+                schedule_version=current.schedule_version,
+                schedule_snapshot=current,
+                scheduled_for=now,
+                status=ScheduleFiringStatus.MATERIALIZING,
+                attempt=0,
+                claimed_by="schedule-api-run-now",
+                claim_expires_at=now + timedelta(milliseconds=1),
+                created_at=now,
+            )
+            inserted = self._insert_firing(connection, firing)
+            if inserted is None:
+                raise TaskScheduleConflictError("manual Firing identity conflicted")
+            return inserted
 
     def settle_firing(
         self,

@@ -9782,3 +9782,19 @@ actual byte access.
   actual PostgreSQL 7, file-size gate, full Ruff, strict Mypy (938 sources) and
   Eval 10/10 passed. The final full repository gate passed `4426` with `885`
   dependency skips.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-API-01
+
+- Created `codex/cloud-user-schedule-api` as a linear child of the verified
+  Materializer commit without modifying the dirty `cloud-agent-trench` checkout.
+- Added verified Host-grant owner-scoped Schedule CRUD, pause/resume, optimistic
+  version checks, idempotent manual Firings, run history and Task deep links.
+- Reused normal Task payload, Skill, MCP and Agent Definition admission for both
+  create and template edits. Template edits atomically install the successor
+  authority, update the Schedule binding/version and revoke the predecessor.
+- Validation: focused API/Core/Storage `824 passed, 37 skipped`; actual
+  PostgreSQL schedule suite `9 passed`; file-size gate, full Ruff, strict Mypy
+  over `941` sources and Eval `10/10` passed; the full repository suite passed
+  `4429` with `887` dependency skips.
+- Boundary: Cloud Agent and Trench schedule UI, deployment and browser E2E remain
+  separate future slices.
