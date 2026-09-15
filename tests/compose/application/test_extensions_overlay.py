@@ -50,6 +50,11 @@ def test_extension_overlay_pairs_api_worker_and_private_key_mounts():
     worker_env = services["zebra-worker"]["environment"]
     assert api_env["ZEBRA_CLOUD_EXTENSION_TURN_ADMISSION_ENABLED"] == "true"
     assert worker_env["ZEBRA_CLOUD_EXTENSION_WORKER_ENABLED"] == "true"
+    scheduler_env = services["zebra-scheduler"]["environment"]
+    assert scheduler_env["ZEBRA_CLOUD_EXTENSIONS_READ_ENABLED"] == "true"
+    assert scheduler_env["ZEBRA_CLOUD_EXTENSION_TURN_ADMISSION_ENABLED"] == "true"
+    assert scheduler_env["ZEBRA_CLOUD_MCP_WORKER_ENABLED"] == "true"
+    assert "ZEBRA_MCP_SECRET_ROOT" not in scheduler_env
     assert "ZEBRA_MCP_SECRET_ROOT" not in services["zebra-migrate"]["environment"]
 
 

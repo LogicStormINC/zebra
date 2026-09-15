@@ -37,3 +37,9 @@ services:
         read_only: true
         bind:
           create_host_path: false
+
+  zebra-scheduler:
+    environment:
+      ZEBRA_CLOUD_EXTENSIONS_READ_ENABLED: "true"
+      ZEBRA_CLOUD_EXTENSION_TURN_ADMISSION_ENABLED: "true"
+      ZEBRA_CLOUD_MCP_WORKER_ENABLED: "true"

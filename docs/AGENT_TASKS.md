@@ -28416,3 +28416,33 @@ browser Cookie or Host Grant.
   over `941` sources and Eval `10/10` passed; full repository regression passed
   `4429` with `887` dependency skips. No frontend, deployment or browser E2E is
   claimed.
+
+### CLOUD-USER-SCHEDULE-DEPLOY-01 - Trench schedule runtime composition
+
+- Status: `Review` (implemented and accepted locally 2026-09-15)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `cloud-agent-trench` (explicit user instruction to continue in place)
+- Owned paths: `docker/Dockerfile`, `docker/compose.application.yml`,
+  `docker/compose.trench-acceptance.yml`, `docker/.env.application.example`,
+  schedule-focused Compose tests, this card, `task_plan.md`, `PROGRESS.md`, and
+  `WORKLOG.md`.
+- Goal: ship the Scheduler as an independent least-privilege process beside the
+  API and Worker, then prove one logged-in Trench user can create and trigger a
+  durable Cloud Agent schedule.
+- Acceptance: migration v58 is applied before Scheduler startup; the Scheduler
+  alone receives its workload secret; the broker admits `trench-scheduler` and
+  schedule scopes; API, Worker and Scheduler remain healthy; a run-now Firing
+  reaches a normal Task and is visible through Trench run history.
+- Delivered: production Scheduler image/Compose target, least-privilege workload
+  exchange, Trench ToC CRUD/controls/history, host-bound workspace references,
+  automatic enabled-Skill binding, and normal RUN-command admission. Scheduled
+  Turns now freeze the same Skill/MCP snapshot as interactive Turns instead of
+  bypassing extension admission through the Task-create shortcut. Terminal Task
+  state is reconciled back into durable Firing state before overlap decisions.
+- Acceptance evidence: API, Worker and Scheduler are healthy in the real local
+  Compose stack; logged-in browser run-now produced a completed Firing/Task and
+  displayed `9/15 16:02 已完成`; the matching PostgreSQL Turn snapshot contained
+  one enabled Skill and one enabled MCP connection. Focused runtime/broker tests
+  passed `24`, actual PostgreSQL schedule tests `13`, Trench schedule API `6`,
+  ToC frontend `78`, plus Zebra Ruff, strict Mypy over `942` sources, Eval
+  `10/10`, frontend ESLint and production build.

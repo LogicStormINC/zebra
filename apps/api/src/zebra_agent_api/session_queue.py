@@ -75,6 +75,7 @@ def create_queued_session(
             "workspace": str(parsed["workspace"]),
             "executed": False,
             "status": bootstrap.session.status.value,
+            "current_sequence": bootstrap.session.current_sequence,
             "tool_profile": str(parsed["tool_profile"]),
             "max_model_calls": parsed["max_model_calls"],
             "max_tool_calls": parsed["max_tool_calls"],

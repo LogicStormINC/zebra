@@ -123,6 +123,39 @@ services:
       retries: 3
     networks: [dependencies]
 
+  zebra-scheduler:
+    build:
+      <<: *zebra-application-build
+      target: scheduler
+    environment:
+      <<: *zebra-cloud-environment
+      ZEBRA_SCHEDULER_ID: ${ZEBRA_SCHEDULER_ID:-trench-scheduler}
+      ZEBRA_SCHEDULER_GRANT_EXCHANGE_URL: ${ZEBRA_SCHEDULER_GRANT_EXCHANGE_URL:?set ZEBRA_SCHEDULER_GRANT_EXCHANGE_URL}
+      ZEBRA_SCHEDULER_WORKLOAD_IDENTITY: ${ZEBRA_SCHEDULER_WORKLOAD_IDENTITY:-trench-scheduler}
+      ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET: ${ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET:?set ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET}
+      ZEBRA_SCHEDULER_GRANT_ISSUER: ${ZEBRA_SCHEDULER_GRANT_ISSUER:?set ZEBRA_SCHEDULER_GRANT_ISSUER}
+      ZEBRA_SCHEDULER_GRANT_AUDIENCE: ${ZEBRA_SCHEDULER_GRANT_AUDIENCE:-zebra}
+      ZEBRA_SCHEDULER_GRANT_JWKS_URI: ${ZEBRA_SCHEDULER_GRANT_JWKS_URI:?set ZEBRA_SCHEDULER_GRANT_JWKS_URI}
+      ZEBRA_SCHEDULER_ALLOWED_ORIGINS: ${ZEBRA_SCHEDULER_ALLOWED_ORIGINS:?set ZEBRA_SCHEDULER_ALLOWED_ORIGINS}
+      SSL_CERT_FILE: /etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0
+    restart: unless-stopped
+    init: true
+    read_only: true
+    volumes:
+      - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    depends_on:
+      zebra-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD-SHELL, kill -0 1]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks: [dependencies]
+
 networks:
   dependencies:
     name: ${ZEBRA_APPLICATION_NETWORK:-zebra-dependencies}

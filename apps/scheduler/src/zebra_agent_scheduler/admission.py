@@ -42,7 +42,7 @@ class ZebraApiScheduledTaskAdmission:
         execution_authority: ScheduleExecutionAuthority,
         idempotency_key: str,
     ) -> TaskId:
-        payload = {**template.payload, "execute": True}
+        payload = {**template.payload, "execute": False}
         verified = VerifiedHostGrant(
             context=execution_authority.host_context,
             grant_id=execution_authority.grant_id,
@@ -57,7 +57,23 @@ class ZebraApiScheduledTaskAdmission:
             host_context=execution_authority.host_context,
             verified_host_grant=verified,
         )
-        return self._task_id(response)
+        task_id = self._task_id(response)
+        revision = response.body.get("current_sequence")
+        if not isinstance(revision, int) or isinstance(revision, bool) or revision < 0:
+            raise RuntimeError("scheduled Task admission returned no revision")
+        command = self.api.submit_command(
+            str(task_id),
+            {"kind": "run", "expected_revision": revision},
+            idempotency_key=f"schedule:{firing.fire_id}:run",
+            extension_admission=self.extension_admission,
+            verified_host_grant=verified,
+        )
+        if command.status_code not in {200, 202} or command.body.get("status") not in {
+            "accepted",
+            "duplicate",
+        }:
+            self._reject_or_retry(command, "task_command")
+        return task_id
 
     def _validate_frozen_admission(
         self,

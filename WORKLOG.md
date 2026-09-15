@@ -9798,3 +9798,19 @@ actual byte access.
   `4429` with `887` dependency skips.
 - Boundary: Cloud Agent and Trench schedule UI, deployment and browser E2E remain
   separate future slices.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-DEPLOY-01 closeout
+
+- Rebuilt and restarted the Scheduler in `zebra-trench-acceptance` with the
+  extension overlay; API, Worker and Scheduler reported healthy.
+- Replaced scheduled Task-create execution with the standard RUN command so
+  scheduled Turns use the same extension admission and RabbitMQ path as normal
+  Cloud Agent Turns. Added the queued Task revision required by command CAS.
+- Added terminal Task-to-Firing reconciliation and regressions for completion,
+  failure and retry/overlap behavior.
+- Trench BFF now binds opaque workspace references and enabled Skills with
+  separate one-use Host grants. The ToC automation board refreshes an expanded
+  run list after manual dispatch.
+- Browser and PostgreSQL acceptance proved the 16:02 manual run completed and
+  froze one Skill plus one MCP. Quality evidence: `24`, `13`, `6`, and `78`
+  focused tests respectively; all Zebra static gates and ToC lint/build passed.

@@ -58,6 +58,7 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
         ):
             raise ValueError("claim_ttl_seconds must be between 1 and 3600")
         with self.connect() as connection:
+            self._reconcile_terminal_tasks(connection, limit=limit)
             now = self._database_now(connection)
             claimed = self._recover_expired(connection, claimant, now, limit, claim_ttl_seconds)
             remaining = limit - len(claimed)
@@ -147,6 +148,7 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
             raise ValueError("manual firing requires an owned non-deleted schedule")
         fire_id = manual_task_schedule_firing_id(schedule.schedule_id, idempotency_key)
         with self.connect() as connection:
+            self._reconcile_terminal_tasks(connection, limit=200)
             locked = connection.execute(
                 "SELECT " + _SCHEDULE_COLUMNS + " FROM task_schedules WHERE " + _OWNER
                 + " AND schedule_id = %s FOR UPDATE",
@@ -375,6 +377,26 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
             ),
         ).fetchone()
         return decode_firing(row) if row is not None else None
+
+    def _reconcile_terminal_tasks(self, connection: Any, *, limit: int) -> None:
+        """Project terminal Task state before evaluating schedule overlap."""
+        connection.execute(
+            "WITH terminal AS (SELECT f.fire_id, p.status FROM task_schedule_firings f "
+            "JOIN session_projections p ON p.deployment_namespace = f.deployment_namespace "
+            "AND p.session_id = f.task_id WHERE f.deployment_namespace = %s "
+            "AND f.status = 'dispatched' "
+            "AND p.status IN ('awaiting_turn', 'completed', 'failed', 'cancelled') "
+            "ORDER BY f.dispatched_at, f.fire_id LIMIT %s FOR UPDATE OF f SKIP LOCKED) "
+            "UPDATE task_schedule_firings f SET status = CASE "
+            "WHEN terminal.status IN ('awaiting_turn', 'completed') "
+            "THEN 'completed' ELSE 'failed' END, failure_code = CASE terminal.status "
+            "WHEN 'failed' THEN 'task_failed' WHEN 'cancelled' THEN 'task_cancelled' "
+            "ELSE NULL END, "
+            "completed_at = GREATEST(clock_timestamp(), f.dispatched_at), "
+            "claimed_by = NULL, claim_expires_at = NULL FROM terminal "
+            "WHERE f.deployment_namespace = %s AND f.fire_id = terminal.fire_id",
+            (self.deployment_namespace, limit, self.deployment_namespace),
+        )
 
     def _advance_schedule(
         self,

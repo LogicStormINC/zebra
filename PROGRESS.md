@@ -1,5 +1,18 @@
 # Zebra Agent Project Status
 
+2026-09-15 CLOUD-USER-SCHEDULE-DEPLOY-01: The independent Scheduler is now
+composed beside the API and Worker in the real Trench acceptance stack. Trench
+ToC provides logged-in user schedule CRUD, controls and durable run history;
+the BFF binds opaque host workspaces and enabled Skills with separate one-use
+Host grants. Scheduled execution now submits the standard RUN command, so its
+Turn freezes normal Skill/MCP admission and uses the RabbitMQ wakeup path.
+Terminal Task state is reconciled into durable Firing state. The logged-in
+browser shows the latest manual run as `9/15 16:02 已完成`; its PostgreSQL Turn
+snapshot contains Skill `1` and MCP `1`. Runtime/broker `24`, actual PostgreSQL
+`13`, Trench API `6`, and ToC `78` tests pass, together with Zebra file-size,
+Ruff, strict Mypy over `942` sources, Eval `10/10`, frontend ESLint and build.
+This local slice is in Review; remote deployment remains separate.
+
 2026-09-15 CLOUD-USER-SCHEDULE-API-01: The user schedule management surface is
 implemented on `codex/cloud-user-schedule-api`. Verified Host grants now expose
 owner-scoped create/list/get/update/delete, pause/resume, idempotent run-now and

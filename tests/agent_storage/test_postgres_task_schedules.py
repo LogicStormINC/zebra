@@ -372,6 +372,60 @@ def test_forbidden_overlap_records_skip_without_claiming_work(dsn: str) -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("task_status", "firing_status", "failure_code"),
+    [
+        ("awaiting_turn", ScheduleFiringStatus.COMPLETED, None),
+        ("completed", ScheduleFiringStatus.COMPLETED, None),
+        ("failed", ScheduleFiringStatus.FAILED, "task_failed"),
+        ("cancelled", ScheduleFiringStatus.FAILED, "task_cancelled"),
+    ],
+)
+def test_terminal_task_reconciles_dispatched_firing_before_overlap(
+    dsn: str,
+    task_status: str,
+    firing_status: ScheduleFiringStatus,
+    failure_code: str | None,
+) -> None:
+    schedules = PostgresTaskScheduleStore(dsn, deployment_namespace="cloud")
+    firings = PostgresTaskScheduleFiringStore(dsn, deployment_namespace="cloud")
+    item, authority = schedule(next_fire_at=datetime.now(UTC) - timedelta(seconds=2))
+    schedules.create(item, authority)
+    (claimed,) = firings.claim_due(claimant="scheduler-a", limit=1, claim_ttl_seconds=30)
+    task_id = TaskId(uuid4())
+    dispatched = claimed.transition(
+        ScheduleFiringStatus.DISPATCHED,
+        at=claimed.created_at + timedelta(seconds=1),
+        task_id=task_id,
+    )
+    firings.settle_firing(
+        dispatched,
+        expected_status=ScheduleFiringStatus.MATERIALIZING,
+        expected_claim_expiry=claimed.claim_expires_at,
+    )
+    with firings.connect() as connection:
+        connection.execute(
+            "INSERT INTO session_streams (deployment_namespace, session_id, current_version) "
+            "VALUES (%s, %s, 1)",
+            ("cloud", task_id),
+        )
+        connection.execute(
+            "INSERT INTO session_projections (deployment_namespace, session_id, title, status, "
+            "created_at, updated_at, current_sequence) VALUES (%s, %s, 'scheduled', %s, "
+            "clock_timestamp(), clock_timestamp(), 1)",
+            ("cloud", task_id, task_status),
+        )
+
+    firings.claim_due(claimant="scheduler-b", limit=10, claim_ttl_seconds=30)
+
+    reconciled = firings.get_firing(claimed.fire_id)
+    assert reconciled is not None
+    assert reconciled.status is firing_status
+    assert reconciled.failure_code == failure_code
+    assert reconciled.completed_at is not None
+    assert reconciled.claimed_by is None
+
+
 def test_two_schedulers_create_exactly_one_firing(dsn: str) -> None:
     schedules = PostgresTaskScheduleStore(dsn, deployment_namespace="cloud")
     item, authority = schedule(next_fire_at=datetime.now(UTC) - timedelta(seconds=2))

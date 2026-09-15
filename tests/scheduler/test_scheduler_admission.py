@@ -99,13 +99,20 @@ class FakeApi:
     agent_registry = None
     publisher_grants = None
 
-    def __init__(self, response: ApiResponse) -> None:
+    def __init__(self, response: ApiResponse, command: ApiResponse | None = None) -> None:
         self.response = response
+        self.command = command or ApiResponse(202, {"status": "accepted"})
         self.calls: list[dict[str, object]] = []
 
     def create_session(self, payload: dict[str, object], **kwargs: object) -> ApiResponse:
         self.calls.append({"payload": payload, **kwargs})
         return self.response
+
+    def submit_command(
+        self, session_id: str, payload: dict[str, object], **kwargs: object
+    ) -> ApiResponse:
+        self.calls.append({"session_id": session_id, "payload": payload, **kwargs})
+        return self.command
 
 
 def execution(binding: ScheduleAuthorityBinding) -> ScheduleExecutionAuthority:
@@ -121,7 +128,12 @@ def execution(binding: ScheduleAuthorityBinding) -> ScheduleExecutionAuthority:
 
 def test_scheduled_admission_reuses_api_queue_with_stable_key() -> None:
     task_id = uuid4()
-    api = FakeApi(ApiResponse(201, {"session_id": str(task_id), "status": "queued"}))
+    api = FakeApi(
+        ApiResponse(
+            201,
+            {"session_id": str(task_id), "status": "awaiting_input", "current_sequence": 2},
+        )
+    )
     firing, binding = schedule_fixture()
     admission = ZebraApiScheduledTaskAdmission(cast(ZebraAgentApi, cast(Any, api)))
 
@@ -135,7 +147,11 @@ def test_scheduled_admission_reuses_api_queue_with_stable_key() -> None:
 
     assert UUID(str(admitted)) == task_id
     assert api.calls[0]["idempotency_key"] == firing.idempotency_key
-    assert cast(dict[str, object], api.calls[0]["payload"])["execute"] is True
+    assert cast(dict[str, object], api.calls[0]["payload"])["execute"] is False
+    assert api.calls[1]["session_id"] == str(task_id)
+    assert api.calls[1]["payload"] == {"kind": "run", "expected_revision": 2}
+    assert api.calls[1]["idempotency_key"] == f"schedule:{firing.fire_id}:run"
+    assert api.calls[1]["verified_host_grant"].grant_id == "fresh-grant"
 
 
 def test_scheduled_admission_classifies_permanent_and_transient_failures() -> None:
@@ -154,6 +170,25 @@ def test_scheduled_admission_classifies_permanent_and_transient_failures() -> No
     transient = FakeApi(ApiResponse(503, {"status": "unavailable"}))
     admission = ZebraApiScheduledTaskAdmission(cast(ZebraAgentApi, cast(Any, transient)))
     with pytest.raises(RuntimeError, match="temporarily unavailable"):
+        admission.admit(
+            firing.schedule_snapshot.task_template,
+            binding=binding,
+            firing=firing,
+            execution_authority=execution(binding),
+            idempotency_key=firing.idempotency_key,
+        )
+
+
+def test_scheduled_admission_classifies_command_failure() -> None:
+    task_id = uuid4()
+    firing, binding = schedule_fixture()
+    api = FakeApi(
+        ApiResponse(201, {"session_id": str(task_id), "current_sequence": 2}),
+        ApiResponse(503, {"status": "extension_admission_unavailable"}),
+    )
+    admission = ZebraApiScheduledTaskAdmission(cast(ZebraAgentApi, cast(Any, api)))
+
+    with pytest.raises(RuntimeError, match="task_command is temporarily unavailable"):
         admission.admit(
             firing.schedule_snapshot.task_template,
             binding=binding,

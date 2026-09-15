@@ -45,6 +45,9 @@ ENTRYPOINT ["zebra-agent-worker"]
 FROM runtime AS broker
 ENTRYPOINT ["python", "-m", "zebra_host_grant_broker"]
 
+FROM runtime AS scheduler
+ENTRYPOINT ["zebra-agent-scheduler"]
+
 FROM ${ZEBRA_DOCKER_CLI_IMAGE} AS docker-cli
 
 FROM worker AS worker-engine

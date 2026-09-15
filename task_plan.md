@@ -1,16 +1,17 @@
-# Current task — CLOUD-USER-SCHEDULE-API-01 (2026-09-15)
+# Current task — CLOUD-USER-SCHEDULE-DEPLOY-01 (2026-09-15)
 
-Branch: `codex/cloud-user-schedule-api`
-Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-management-api/zebra-agent`
+Branch: `cloud-agent-trench` (explicit user-requested in-place integration)
+Trench consumer: `/Users/lukeding/Desktop/playground/2026/product/Trench`
 
-1. `completed` — claim the API slice and freeze its owned paths.
-2. `completed` — compose owner-scoped Schedule and Firing stores for cloud PostgreSQL.
-3. `completed` — add authenticated CRUD, pause/resume and optimistic concurrency.
-4. `completed` — add idempotent run-now, run history and Task deep links.
-5. `completed` — reuse normal Skill/MCP/Definition admission for create and template edits.
-6. `completed` — rotate Schedule authority atomically when the frozen template changes.
-7. `completed` — run focused, actual PostgreSQL and repository quality gates.
-8. `completed` — update durable project records and commit the verified slice.
+1. `completed` — compose the independent API, Worker and Scheduler processes.
+2. `completed` — expose user-scoped schedule CRUD and controls in Trench ToC.
+3. `completed` — bind host workspace references and enabled Skills at the BFF.
+4. `completed` — dispatch schedules through the standard RUN-command path.
+5. `completed` — freeze one Skill and one MCP in the scheduled Turn snapshot.
+6. `completed` — reconcile terminal Task state into durable Firing history.
+7. `completed` — prove logged-in browser run-now and visible completed history.
+8. `completed` — pass focused, PostgreSQL, type/lint/eval and frontend build gates.
+9. `completed` — update durable project records for review handoff.
 
 Implementation plan: `docs/Cloud_Agent用户级定时任务技术方案_v1.0.md`
 (accepted and present in this worktree).
