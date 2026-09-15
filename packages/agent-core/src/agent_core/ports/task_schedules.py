@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Protocol
 
 from agent_core.domain.identifiers import TaskScheduleFiringId, TaskScheduleId
-from agent_core.domain.task_schedule_authority import ScheduleAuthorityBinding
+from agent_core.domain.task_schedule_authority import ScheduleAuthorityBinding, ScheduleOwner
 from agent_core.domain.task_schedules import (
     ScheduleFiringStatus,
     TaskSchedule,
@@ -25,12 +25,33 @@ class TaskScheduleStorePort(Protocol):
         authority: ScheduleAuthorityBinding,
     ) -> TaskSchedule: ...
 
-    def get(self, schedule_id: TaskScheduleId) -> TaskSchedule | None: ...
+    def get(
+        self,
+        schedule_id: TaskScheduleId,
+        *,
+        owner: ScheduleOwner,
+    ) -> TaskSchedule | None: ...
 
     def get_authority(
         self,
         schedule_id: TaskScheduleId,
+        *,
+        owner: ScheduleOwner,
     ) -> ScheduleAuthorityBinding | None: ...
+
+    def list_for_owner(
+        self,
+        owner: ScheduleOwner,
+        *,
+        limit: int,
+    ) -> tuple[TaskSchedule, ...]: ...
+
+    def revoke_authority(
+        self,
+        authority: ScheduleAuthorityBinding,
+        *,
+        expected_revision: int,
+    ) -> ScheduleAuthorityBinding: ...
 
     def update(
         self,
@@ -44,7 +65,7 @@ class TaskScheduleFiringStorePort(Protocol):
     def claim_due(
         self,
         *,
-        owner: str,
+        claimant: str,
         limit: int,
         claim_ttl_seconds: int,
     ) -> tuple[TaskScheduleFiring, ...]: ...

@@ -1,17 +1,15 @@
-# Current task — CLOUD-USER-SCHEDULE-01 Core contracts (2026-09-15)
+# Current task — CLOUD-USER-SCHEDULE-STORAGE-01 (2026-09-15)
 
-Branch: `codex/cloud-user-schedule-core`
-Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-core/zebra-agent`
+Branch: `codex/cloud-user-schedule-storage`
+Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-storage/zebra-agent`
 
-1. `completed` — claim the Core slice and freeze its owned paths.
-2. `completed` — add Schedule/Firing identifiers and immutable domain contracts.
-3. `completed` — implement pure next-fire calculation for once, interval, daily
-   and weekly triggers with IANA timezone and DST handling.
-4. `completed` — define storage-neutral Schedule/Firing ports.
-5. `completed` — add focused contract, transition, timezone and DST tests.
-6. `completed` — run focused pytest, Ruff, Mypy, diff and file-size checks.
-7. `completed` — update durable progress and leave the Storage slice explicitly
-   locked behind the verified Core contracts.
+1. `completed` — claim the Storage slice and freeze its owned paths.
+2. `completed` — add forward-only PostgreSQL v58 schema and migration catalog entry.
+3. `completed` — implement owner-scoped Schedule/Authority CRUD with CAS updates.
+4. `completed` — implement atomic due creation, expired-claim recovery and Firing CAS.
+5. `completed` — add migration, isolation, recovery and dual-Scheduler tests.
+6. `completed` — run focused PostgreSQL tests plus Storage/Core quality gates.
+7. `completed` — update durable progress and commit the verified Storage slice.
 
 Implementation plan: `docs/Cloud_Agent用户级定时任务技术方案_v1.0.md`
 (accepted and present in this worktree).

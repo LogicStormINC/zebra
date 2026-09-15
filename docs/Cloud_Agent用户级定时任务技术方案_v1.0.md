@@ -1,6 +1,6 @@
 # Cloud Agent 用户级定时任务技术方案 v1.0
 
-> 状态：实施中；Core 契约切片已完成，后续切片待实施
+> 状态：实施中；Core 与 PostgreSQL Storage 切片已完成，后续切片待实施
 > 日期：2026-09-15
 > 适用范围：Zebra Cloud Agent、Trench Host、HTTP/SSE MCP、Skill、Subagent
 > 明确不包含：RSS 订阅源抓取调度、运维 Cron、DAG 节点选择器

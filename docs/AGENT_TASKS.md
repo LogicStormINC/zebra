@@ -28323,3 +28323,29 @@ browser Cookie or Host Grant.
   suite `763 passed`; focused Ruff, strict Mypy over 215 Core sources,
   `git diff --check` and source-size checks passed. No PostgreSQL, API,
   Scheduler, RabbitMQ, frontend, deployment or browser acceptance is claimed.
+
+### CLOUD-USER-SCHEDULE-STORAGE-01 - User schedule PostgreSQL authority
+
+- Status: `Review` (claimed and implemented on 2026-09-15)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `codex/cloud-user-schedule-storage`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-storage/zebra-agent`
+- Owned paths: schedule-specific modules and exports under `packages/agent-storage`,
+  PostgreSQL migration catalog, focused Task Schedule Core/Storage tests,
+  Task Schedule authority/Store Port corrections under `packages/agent-core`,
+  this card, `task_plan.md`, `PROGRESS.md`, and `WORKLOG.md`.
+- Goal: make PostgreSQL the user-scoped Schedule, authority and Firing source of
+  truth, with CAS updates and multi-Scheduler-safe due claiming/recovery.
+- Acceptance: every read/write includes all owner coordinates; migration v58 is
+  forward-only; due selection uses database time and `FOR UPDATE SKIP LOCKED`;
+  `(namespace, schedule, scheduled_for)` is unique; expired materialization claims
+  recover; duplicate Scheduler pickup cannot create a second Firing or Task key.
+- Dependency boundary: v58 intentionally avoids the active v57 Tool Profile
+  migration in the parent checkout. API, Scheduler process, Task materializer,
+  RabbitMQ and UI remain outside this slice.
+- Validation: actual PostgreSQL Task Schedule suite `7 passed`; focused Core
+  schedule suite `19 passed`; complete Storage suite `361 passed, 799 skipped`;
+  complete Core suite `763 passed`; full Ruff, strict Mypy over the 9 touched
+  source files, source-size and diff checks passed. The pre-existing real-DB
+  migration test still hard-codes only v1-v30 although the baseline is v1-v56;
+  it reports `17 passed, 1 failed` and is not claimed as fixed by this slice.

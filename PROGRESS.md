@@ -1,5 +1,14 @@
 # Zebra Agent Project Status
 
+2026-09-15 CLOUD-USER-SCHEDULE-STORAGE-01: User-level Task schedules now have
+forward-only PostgreSQL v58 authority. Schedule and authority reads require all
+owner coordinates; lifecycle and revocation writes use optimistic concurrency;
+due pickup uses database time plus `FOR UPDATE SKIP LOCKED`; deterministic
+Firings survive duplicate pickup and expired claims; misfire and overlap skips
+remain durable evidence. Actual PostgreSQL tests pass 7, full Storage passes 361
+with 799 externally gated skips, and full Core passes 763. API, Scheduler process,
+Task materialization, RabbitMQ wakeup, UI and deployment remain future slices.
+
 2026-09-15 CLOUD-USER-SCHEDULE-CORE-01: The first user-level scheduling slice
 is implemented on `codex/cloud-user-schedule-core`. Core now owns immutable
 Schedule, Trigger, Firing, secret-free authority and storage Port contracts,

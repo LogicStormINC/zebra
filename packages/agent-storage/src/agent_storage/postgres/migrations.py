@@ -34,6 +34,7 @@ from agent_storage.postgres.skill_publications_migration import SKILL_PUBLICATIO
 from agent_storage.postgres.skill_uploads_migration import SKILL_UPLOADS_MIGRATION
 from agent_storage.postgres.subagent_delegation_migration import SUBAGENT_DELEGATION_MIGRATION
 from agent_storage.postgres.task_admission_migration import TASK_BINDING_MIGRATION
+from agent_storage.postgres.task_schedule_migration import TASK_SCHEDULE_MIGRATION
 from agent_storage.postgres.workspace_control_migration import WORKSPACE_CONTROL_MIGRATION
 from agent_storage.postgres.workspace_definition_snapshot_migration import (
     WORKSPACE_DEFINITION_SNAPSHOT_MIGRATION,
@@ -491,4 +492,4 @@ MIGRATIONS = (
     CLIENT_CAPABILITY_MIGRATION, CLIENT_SESSION_MIGRATION, CLIENT_EFFECT_MIGRATION,
     CLIENT_SECURITY_MIGRATION, *RELIABILITY_MIGRATIONS, EXTENSIONS_MIGRATION,
     SKILL_PUBLICATIONS_MIGRATION, SKILL_UPLOADS_MIGRATION, EXTENSION_SNAPSHOTS_MIGRATION,
-    MCP_CREDENTIALS_MIGRATION, MCP_CATALOG_MIGRATION)
+    MCP_CREDENTIALS_MIGRATION, MCP_CATALOG_MIGRATION, TASK_SCHEDULE_MIGRATION)

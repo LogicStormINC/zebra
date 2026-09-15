@@ -170,3 +170,19 @@ class ScheduleAuthorityBinding(BaseModel):
         if self.revoked_at is not None and self.revoked_at < self.bound_at:
             raise ValueError("revoked_at must not precede bound_at")
         return self
+
+    def revoke(self, *, at: datetime) -> ScheduleAuthorityBinding:
+        if self.revoked_at is not None:
+            raise ValueError("Schedule authority is already revoked")
+        if at.tzinfo is None or at.utcoffset() is None:
+            raise ValueError("at must be timezone-aware")
+        moment = at.astimezone(UTC)
+        if moment < self.bound_at:
+            raise ValueError("revocation cannot precede binding")
+        return ScheduleAuthorityBinding.model_validate(
+            {
+                **self.model_dump(),
+                "binding_revision": self.binding_revision + 1,
+                "revoked_at": moment,
+            }
+        )

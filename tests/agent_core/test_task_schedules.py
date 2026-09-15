@@ -164,6 +164,11 @@ def test_authority_binding_contains_digests_and_no_credentials() -> None:
     assert item.host_capability_digest == "a" * 64
     assert "token" not in ScheduleAuthorityBinding.model_fields
     assert "credential" not in ScheduleAuthorityBinding.model_fields
+    revoked = item.revoke(at=datetime(2026, 9, 15, 2, 0, tzinfo=UTC))
+    assert revoked.binding_revision == 2
+    assert revoked.revoked_at == datetime(2026, 9, 15, 2, 0, tzinfo=UTC)
+    with pytest.raises(ValueError, match="already revoked"):
+        revoked.revoke(at=datetime(2026, 9, 15, 3, 0, tzinfo=UTC))
 
 
 def test_once_and_interval_occurrences_are_strictly_after_boundary() -> None:

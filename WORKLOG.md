@@ -9744,3 +9744,22 @@ actual byte access.
   `git diff --check` passed.
 - Boundary: no PostgreSQL migration/store, API, Scheduler process, RabbitMQ
   materializer, Trench UI, deployment or browser E2E has started.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-STORAGE-01
+
+- Created `codex/cloud-user-schedule-storage` from verified Core commit
+  `7ba97927`; the parent checkout's uncommitted v57 Tool Profile migration was
+  neither copied nor modified, so Task Schedule storage intentionally uses v58.
+- Added owner-scoped Schedule/authority persistence, authority revocation and
+  Schedule CAS updates; all indexed coordinates are checked against JSONB payloads.
+- Added database-clock due selection, deterministic Firing insertion, recurring
+  advancement, once completion, misfire/overlap evidence, expired-claim recovery
+  and Firing settlement CAS under `FOR UPDATE SKIP LOCKED`.
+- Validation: actual PostgreSQL suite `7 passed`; focused Core `19 passed`; full
+  Storage `361 passed, 799 skipped`; full Core `763 passed`; full Ruff, strict
+  Mypy over 9 touched sources, file-size and diff gates passed.
+- Existing baseline: real-DB `test_postgres_migrations.py` hard-codes v1-v30 while
+  current baseline already contains v1-v56; combined migration/readiness run was
+  `17 passed, 1 failed`. This slice does not rewrite that unrelated legacy test.
+- Boundary: API, Scheduler process, Task admission materializer, RabbitMQ wakeup,
+  Trench UI, deployment and browser E2E have not started.
