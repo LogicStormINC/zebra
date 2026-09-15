@@ -21,6 +21,7 @@ members = [
     "zebra-agent-api",
     "zebra-agent-cli",
     "zebra-agent-config",
+    "zebra-agent-scheduler",
     "zebra-agent-worker",
     "zebra-agent-workspace",
     "zebra-host-grant-broker",
@@ -1320,6 +1321,31 @@ requires-dist = [
 name = "zebra-agent-config"
 version = "0.1.0"
 source = { editable = "apps/config" }
+
+[[package]]
+name = "zebra-agent-scheduler"
+version = "0.1.0"
+source = { editable = "apps/scheduler" }
+dependencies = [
+    { name = "agent-core" },
+    { name = "agent-integrations" },
+    { name = "agent-security" },
+    { name = "agent-storage" },
+    { name = "httpx" },
+    { name = "zebra-agent-api" },
+    { name = "zebra-agent-config" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agent-core", editable = "packages/agent-core" },
+    { name = "agent-integrations", editable = "packages/agent-integrations" },
+    { name = "agent-security", editable = "packages/agent-security" },
+    { name = "agent-storage", editable = "packages/agent-storage" },
+    { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
+    { name = "zebra-agent-api", editable = "apps/api" },
+    { name = "zebra-agent-config", editable = "apps/config" },
+]
 
 [[package]]
 name = "zebra-agent-worker"

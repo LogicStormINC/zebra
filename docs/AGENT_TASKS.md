@@ -28307,3 +28307,112 @@ browser Cookie or Host Grant.
   request returned HTTP 201 from `POST /tasks`, and the browser rendered
   `会话打开正常` instead of the generic open failure.
 - Boundary: no deployment or logged-in Trench browser image submission claim.
+
+### CLOUD-USER-SCHEDULE-CORE-01 - User schedule domain contracts
+
+- Status: `Review` (claimed from Ready and implemented on 2026-09-15)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `codex/cloud-user-schedule-core`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-core/zebra-agent`
+- Owned paths: new task-schedule domain/application/port modules under
+  `packages/agent-core`, identifier/export surfaces, focused
+  `tests/agent_core/test_task_schedules.py`, this card, `task_plan.md`,
+  `PROGRESS.md`, `WORKLOG.md`, and the accepted focused design document.
+- Goal: freeze storage-neutral user-level Schedule, Trigger, Firing and
+  secret-free authority contracts plus deterministic next-fire calculation.
+- Acceptance: structured once/interval/daily/weekly rules use IANA timezones;
+  next occurrences are strictly after the supplied instant; DST gaps advance
+  to the next valid wall time; DST folds fire once; invalid state, secret-like
+  templates and contradictory Firing evidence fail closed.
+- Dependency boundary: PostgreSQL, API, Scheduler process, RabbitMQ materializer
+  and UI remain out of scope and must not start until this card is verified.
+- Validation: focused schedule contracts `19 passed`; complete `agent_core`
+  suite `763 passed`; focused Ruff, strict Mypy over 215 Core sources,
+  `git diff --check` and source-size checks passed. No PostgreSQL, API,
+  Scheduler, RabbitMQ, frontend, deployment or browser acceptance is claimed.
+
+### CLOUD-USER-SCHEDULE-STORAGE-01 - User schedule PostgreSQL authority
+
+- Status: `Review` (claimed and implemented on 2026-09-15)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `codex/cloud-user-schedule-storage`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-storage/zebra-agent`
+- Owned paths: schedule-specific modules and exports under `packages/agent-storage`,
+  PostgreSQL migration catalog, focused Task Schedule Core/Storage tests,
+  Task Schedule authority/Store Port corrections under `packages/agent-core`,
+  this card, `task_plan.md`, `PROGRESS.md`, and `WORKLOG.md`.
+- Goal: make PostgreSQL the user-scoped Schedule, authority and Firing source of
+  truth, with CAS updates and multi-Scheduler-safe due claiming/recovery.
+- Acceptance: every read/write includes all owner coordinates; migration v58 is
+  forward-only; due selection uses database time and `FOR UPDATE SKIP LOCKED`;
+  `(namespace, schedule, scheduled_for)` is unique; expired materialization claims
+  recover; duplicate Scheduler pickup cannot create a second Firing or Task key.
+- Dependency boundary: v58 intentionally avoids the active v57 Tool Profile
+  migration in the parent checkout. API, Scheduler process, Task materializer,
+  RabbitMQ and UI remain outside this slice.
+- Validation: actual PostgreSQL Task Schedule suite `7 passed`; focused Core
+  schedule suite `19 passed`; complete Storage suite `361 passed, 799 skipped`;
+  complete Core suite `763 passed`; full Ruff, strict Mypy over the 9 touched
+  source files, source-size and diff checks passed. The pre-existing real-DB
+  migration test still hard-codes only v1-v30 although the baseline is v1-v56;
+  it reports `17 passed, 1 failed` and is not claimed as fixed by this slice.
+
+### CLOUD-USER-SCHEDULE-MATERIALIZER-01 - Schedule admission and process
+
+- Status: `Review` (implemented and validated on 2026-09-15)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `codex/cloud-user-schedule-materializer`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-api/zebra-agent`
+- Owned paths: new schedule application service modules under `agent-core`,
+  schedule-specific adapters under `agent-storage` and `agent-integrations`,
+  the schedule scope default in `apps/host_grant_broker`, new `apps/scheduler`
+  composition root, its workspace registration in root `pyproject.toml` and
+  `uv.lock`, focused Scheduler/materializer tests, this card, `task_plan.md`,
+  `PROGRESS.md`, `WORKLOG.md`, and the accepted design document.
+- Goal: turn claimed Firings into normal Tasks through one shared admission
+  seam, then let the existing transactional Outbox/RabbitMQ path wake Workers.
+- Acceptance: deterministic Firing idempotency reaches the same Task after
+  retry; authority is revalidated before admission; no HTTP loopback or copied
+  session-creation flow; claim recovery is bounded; Scheduler readiness proves
+  PostgreSQL authority and process configuration; failures remain durable.
+- Dependency boundary: no management API, frontend, deployment activation or
+  browser claim in this slice. API remains locked until materialization is
+  verified, matching phase 4 before phase 5 in the accepted plan.
+- Delivered: each Firing freezes its exact Schedule/Task template; expired
+  claims replay the same admission key; the Scheduler exchanges HMAC workload
+  authority for a fresh asymmetric Host Grant, verifies and narrows it, checks
+  frozen Agent Definition identity, validates root Skill selection, then calls
+  the existing in-process `ZebraAgentApi.create_session` facade. Its established
+  transactional admission and Outbox/RabbitMQ wakeup remain the only Task path.
+- Validation: focused Core/Scheduler/real Broker exchange `28 passed`; complete
+  Core `767 passed`; complete Storage `361 passed, 799 skipped`; Host Grant
+  Broker/Scheduler group `43 passed`; actual PostgreSQL Schedule suite `7
+  passed`; file-size, full Ruff, strict Mypy over `938` sources and Eval `10/10`
+  passed; the full repository suite passed `4426` with `885` dependency skips.
+  No deployment, RabbitMQ fault injection or browser E2E is claimed.
+
+### CLOUD-USER-SCHEDULE-API-01 - User schedule management API
+
+- Status: `Review` (implemented and validated 2026-09-15)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `codex/cloud-user-schedule-api`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-management-api/zebra-agent`
+- Owned paths: schedule-specific API service/routes and composition under
+  `apps/api`; schedule management/query extensions under `agent-core` and
+  `agent-storage`; focused API/Core/Storage tests; this card, `task_plan.md`,
+  `PROGRESS.md`, `WORKLOG.md`, and the accepted design document.
+- Goal: authenticated user-scoped CRUD, controls, run history, Host scopes and
+  next-run preview.
+- Dependency boundary: this branch is a linear child of the verified
+  materializer Review commit. It remains intentionally unintegrated while the
+  `cloud-agent-trench` checkout carries unrelated uncommitted migration work.
+- Delivered: authenticated owner-scoped CRUD, pause/resume, idempotent run-now,
+  run history and Task deep links. Template edits rerun normal Task admission
+  validation and atomically rotate the immutable authority binding. Reads use
+  `schedule.read`; every mutation additionally requires `agent.run` and
+  `schedule.manage` from the verified Host grant.
+- Validation: focused API/Core/Storage group `824 passed, 37 skipped`; actual
+  PostgreSQL Task Schedule suite `9 passed`; file-size, full Ruff, strict Mypy
+  over `941` sources and Eval `10/10` passed; full repository regression passed
+  `4429` with `887` dependency skips. No frontend, deployment or browser E2E is
+  claimed.

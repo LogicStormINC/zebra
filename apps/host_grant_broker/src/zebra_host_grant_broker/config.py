@@ -19,6 +19,8 @@ DEFAULT_ALLOWED_SCOPES = (
     "subscription.write",
     "extensions.read",
     "extensions.manage",
+    "schedule.read",
+    "schedule.manage",
 )
 
 

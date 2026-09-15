@@ -1,4 +1,21 @@
-# Current task — RabbitMQ reliability (2026-09-05)
+# Current task — CLOUD-USER-SCHEDULE-API-01 (2026-09-15)
+
+Branch: `codex/cloud-user-schedule-api`
+Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-management-api/zebra-agent`
+
+1. `completed` — claim the API slice and freeze its owned paths.
+2. `completed` — compose owner-scoped Schedule and Firing stores for cloud PostgreSQL.
+3. `completed` — add authenticated CRUD, pause/resume and optimistic concurrency.
+4. `completed` — add idempotent run-now, run history and Task deep links.
+5. `completed` — reuse normal Skill/MCP/Definition admission for create and template edits.
+6. `completed` — rotate Schedule authority atomically when the frozen template changes.
+7. `completed` — run focused, actual PostgreSQL and repository quality gates.
+8. `completed` — update durable project records and commit the verified slice.
+
+Implementation plan: `docs/Cloud_Agent用户级定时任务技术方案_v1.0.md`
+(accepted and present in this worktree).
+
+## Prior task — RabbitMQ reliability (2026-09-05)
 
 Approved isolated worktrees: `rabbitmq-reliability/zebra-agent` and
 `rabbitmq-reliability/Trench`; original services remain unchanged.

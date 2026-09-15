@@ -72,15 +72,13 @@ class PostgresHostGrantRequestAuthorizer(HostGrantRequestAuthorizer):
             )
             verifier = HostGrantVerifier(config)
             try:
+                required_scopes = _required_scopes_for_request(request)
                 verified = verifier.verify(
                     decoded.grant,
                     algorithm=decoded.algorithm,
                     now=self.now(),
                     expected_host_app_id=record.host_app_id,
-                    required_scopes=(
-                        ("extensions.read",) if request.method in {"GET", "HEAD"}
-                        else ("extensions.manage",)
-                    ) if request.path.startswith("/v1/extensions/") else self.required_scopes,
+                    required_scopes=required_scopes or self.required_scopes,
                 )
                 _require_request_origin(request.origin, verified.context.origin)
             except (HostGrantSecurityError, ValueError) as exc:
@@ -91,6 +89,22 @@ class PostgresHostGrantRequestAuthorizer(HostGrantRequestAuthorizer):
                 raise HostGrantBindingError("Host Grant replay rejected")
             return verified
         raise HostGrantBindingError("Host Grant signature or registry binding rejected")
+
+
+def _required_scopes_for_request(request: HostGrantHttpRequest) -> tuple[str, ...]:
+    if request.path == "/schedules" or request.path.startswith("/schedules/"):
+        return (
+            ("schedule.read",)
+            if request.method in {"GET", "HEAD"}
+            else ("agent.run", "schedule.manage")
+        )
+    if request.path.startswith("/v1/extensions/"):
+        return (
+            ("extensions.read",)
+            if request.method in {"GET", "HEAD"}
+            else ("extensions.manage",)
+        )
+    return ()
 
 
 def _verification_config(record: HostRegistryRecord) -> HostGrantVerificationConfig:

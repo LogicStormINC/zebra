@@ -1,0 +1,29 @@
+[project]
+name = "zebra-agent-scheduler"
+version = "0.1.0"
+description = "User Task Schedule materializer composition root for Zebra Agent."
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "agent-core",
+    "agent-integrations",
+    "agent-security",
+    "agent-storage",
+    "httpx>=0.28.1,<0.29.0",
+    "zebra-agent-api",
+    "zebra-agent-config",
+]
+
+[project.scripts]
+zebra-agent-scheduler = "zebra_agent_scheduler.main:main"
+
+[tool.uv.sources]
+agent-core = { workspace = true }
+agent-integrations = { workspace = true }
+agent-security = { workspace = true }
+agent-storage = { workspace = true }
+zebra-agent-api = { workspace = true }
+zebra-agent-config = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

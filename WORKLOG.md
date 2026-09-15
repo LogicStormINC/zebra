@@ -9729,3 +9729,72 @@ actual byte access.
   Trench composer/workspace `6 passed`; `make check` passed; full Zebra suite
   `4401 passed`, `875 skipped`. No deployment or logged-in Trench browser image
   submission was performed.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-CORE-01
+
+- Created isolated branch/worktree `codex/cloud-user-schedule-core` without
+  moving the parent checkout's uncommitted multimodal migration work.
+- Added user ownership, bounded secret-free Task template, Schedule authority,
+  once/interval/daily/weekly Trigger, Schedule lifecycle and Firing contracts.
+- Added deterministic Firing IDs and next-fire calculation using IANA timezones;
+  DST gaps advance to the first valid minute and folds emit the earlier instant
+  once. One-time plans terminate as `completed`, not a fake paused state.
+- Validation: focused schedule suite `19 passed`; full `agent_core` suite
+  `763 passed`; focused Ruff, strict Mypy over 215 sources, source-size and
+  `git diff --check` passed.
+- Boundary: no PostgreSQL migration/store, API, Scheduler process, RabbitMQ
+  materializer, Trench UI, deployment or browser E2E has started.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-STORAGE-01
+
+- Created `codex/cloud-user-schedule-storage` from verified Core commit
+  `7ba97927`; the parent checkout's uncommitted v57 Tool Profile migration was
+  neither copied nor modified, so Task Schedule storage intentionally uses v58.
+- Added owner-scoped Schedule/authority persistence, authority revocation and
+  Schedule CAS updates; all indexed coordinates are checked against JSONB payloads.
+- Added database-clock due selection, deterministic Firing insertion, recurring
+  advancement, once completion, misfire/overlap evidence, expired-claim recovery
+  and Firing settlement CAS under `FOR UPDATE SKIP LOCKED`.
+- Validation: actual PostgreSQL suite `7 passed`; focused Core `19 passed`; full
+  Storage `361 passed, 799 skipped`; full Core `763 passed`; full Ruff, strict
+  Mypy over 9 touched sources, file-size and diff gates passed.
+- Existing baseline: real-DB `test_postgres_migrations.py` hard-codes v1-v30 while
+  current baseline already contains v1-v56; combined migration/readiness run was
+  `17 passed, 1 failed`. This slice does not rewrite that unrelated legacy test.
+- Boundary: API, Scheduler process, Task admission materializer, RabbitMQ wakeup,
+  Trench UI, deployment and browser E2E have not started.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-MATERIALIZER-01
+
+- Claimed the Admission/Scheduler phase after Core and Storage, then corrected
+  the unpublished v58 migration so Firing snapshots exist at table creation
+  instead of fabricating historical snapshots through a later backfill.
+- Implemented secret-free login authority binding plus a real Broker HMAC
+  workload exchange, asymmetric Grant verification, identity/resource drift
+  checks and runtime scope/limit narrowing.
+- Reused the normal in-process Zebra API Task admission facade. Stable Firing
+  keys therefore preserve atomic admission, replay reconciliation and the
+  current transactional Outbox/RabbitMQ wakeup without an HTTP loopback.
+- Added bounded Scheduler process and tests for settings, transient/permanent
+  failures, stale authority, idempotency, real Broker JWT exchange, and real
+  PostgreSQL snapshot/claim/settlement behavior.
+- Evidence: focused 28, Core 767, Storage 361/799 skips, Broker/Scheduler 43,
+  actual PostgreSQL 7, file-size gate, full Ruff, strict Mypy (938 sources) and
+  Eval 10/10 passed. The final full repository gate passed `4426` with `885`
+  dependency skips.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-API-01
+
+- Created `codex/cloud-user-schedule-api` as a linear child of the verified
+  Materializer commit without modifying the dirty `cloud-agent-trench` checkout.
+- Added verified Host-grant owner-scoped Schedule CRUD, pause/resume, optimistic
+  version checks, idempotent manual Firings, run history and Task deep links.
+- Reused normal Task payload, Skill, MCP and Agent Definition admission for both
+  create and template edits. Template edits atomically install the successor
+  authority, update the Schedule binding/version and revoke the predecessor.
+- Validation: focused API/Core/Storage `824 passed, 37 skipped`; actual
+  PostgreSQL schedule suite `9 passed`; file-size gate, full Ruff, strict Mypy
+  over `941` sources and Eval `10/10` passed; the full repository suite passed
+  `4429` with `887` dependency skips.
+- Boundary: Cloud Agent and Trench schedule UI, deployment and browser E2E remain
+  separate future slices.

@@ -42,6 +42,10 @@ from agent_integrations.redis_live_fanout import (
     RedisLiveEventError,
     RedisLiveEventFanout,
 )
+from agent_integrations.schedule_grant_exchange import (
+    HttpScheduleAuthorityRevalidator,
+    ScheduleGrantExchangeSettings,
+)
 from agent_integrations.scm import (
     GitHubProxyPullRequestTransport,
     GitHubPullRequestConfig,
@@ -103,6 +107,8 @@ __all__ = [
     "ScmHttpProxyTransport",
     "ScmProxyTransport",
     "ScmUnavailableError",
+    "HttpScheduleAuthorityRevalidator",
+    "ScheduleGrantExchangeSettings",
     "ResolvedDeepSeekInvocation",
     "build_model_gateway",
     "build_deepseek_beta_gateway",

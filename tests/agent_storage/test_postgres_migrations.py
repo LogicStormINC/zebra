@@ -230,6 +230,7 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (55, "encrypted_mcp_credential_versions", 64),
         (56, "scoped_mcp_tool_catalog_versions", 64),
         (57, "complete_workspace_tool_profiles", 64),
+        (58, "user_task_schedules", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [

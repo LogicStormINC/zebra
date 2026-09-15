@@ -1,5 +1,36 @@
 # Zebra Agent Project Status
 
+2026-09-15 CLOUD-USER-SCHEDULE-API-01: The user schedule management surface is
+implemented on `codex/cloud-user-schedule-api`. Verified Host grants now expose
+owner-scoped create/list/get/update/delete, pause/resume, idempotent run-now and
+run history with Task deep links. Schedule template changes pass through the
+normal Task/Skill/MCP/Definition admission rules and atomically rotate the
+immutable authority binding; optimistic versions protect every lifecycle write.
+The focused API/Core/Storage group passes `824` with `37` dependency skips,
+actual PostgreSQL schedule tests pass `9`, and file-size, Ruff, strict Mypy over
+`941` sources plus Eval `10/10` are green. The full repository suite passes
+`4429` with `887` dependency skips. Frontend, Trench UI, deployment and browser
+E2E remain future slices.
+
+2026-09-15 CLOUD-USER-SCHEDULE-STORAGE-01: User-level Task schedules now have
+forward-only PostgreSQL v58 authority. Schedule and authority reads require all
+owner coordinates; lifecycle and revocation writes use optimistic concurrency;
+due pickup uses database time plus `FOR UPDATE SKIP LOCKED`; deterministic
+Firings survive duplicate pickup and expired claims; misfire and overlap skips
+remain durable evidence. Actual PostgreSQL tests pass 7, full Storage passes 361
+with 799 externally gated skips, and full Core passes 763. API, Scheduler process,
+Task materialization, RabbitMQ wakeup, UI and deployment remain future slices.
+
+2026-09-15 CLOUD-USER-SCHEDULE-CORE-01: The first user-level scheduling slice
+is implemented on `codex/cloud-user-schedule-core`. Core now owns immutable
+Schedule, Trigger, Firing, secret-free authority and storage Port contracts,
+plus deterministic IANA-timezone next-fire calculation. Once/interval/daily/
+weekly rules, DST gap/fold behavior, monotonic lifecycle evidence and stable
+Firing identity are pinned by 19 focused tests; the complete agent-core suite
+passes 763, with Ruff, strict Mypy and diff checks green. PostgreSQL, API,
+Scheduler process, RabbitMQ materialization, UI and deployment remain separate
+unstarted slices.
+
 2026-09-14 TRN-DEEPSEEK-V41-MM-01: DeepSeek V4.1 Flash replaces the historical
 dual-channel Vision design. The stable Zebra Flash profile now calls the official
 `deepseek-flash` alias and accepts validated JPEG/PNG/GIF/WebP attachments through
@@ -2871,3 +2902,22 @@ free of backend secrets.
   supplies authoritative image Artifacts, egress checks and durable audit.
 - Focused validation: Zebra `51 passed` plus Ruff/Mypy; Trench API `45 passed`,
   frontend `70 passed`, ESLint and live browser control switching.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-MATERIALIZER-01
+
+- Added an independent `zebra-agent-scheduler` cloud/PostgreSQL composition root
+  with bounded polling, batch, claim TTL, attempts and graceful shutdown.
+- Each Firing freezes the exact Schedule version and Task template. Retries use
+  one stable key and the existing in-process `ZebraAgentApi.create_session`
+  facade, retaining atomic Task admission and Outbox/RabbitMQ Worker wakeup.
+- Scheduler authority uses an HMAC workload exchange for a fresh asymmetric
+  Host Grant, then verifies issuer/audience/JWKS/origin, identity and resources
+  and removes management scopes before Task admission. No bearer token, Cookie
+  or workload secret is persisted in a Schedule, Firing or Task.
+- Validation: focused Schedule/Scheduler/Broker exchange `28 passed`; Core `767
+  passed`; Storage `361 passed, 799 skipped`; Broker/Scheduler group `43 passed`;
+  actual PostgreSQL Schedule tests `7 passed`; size, Ruff, strict Mypy over 938
+  sources and Eval 10/10 passed; full repository regression passed `4426` with
+  `885` dependency skips.
+- Boundary: management API, frontend, deployment activation, RabbitMQ fault
+  injection and Trench browser acceptance remain later phases.
