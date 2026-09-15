@@ -1,5 +1,15 @@
 # Zebra Agent Project Status
 
+2026-09-15 CLOUD-USER-SCHEDULE-CORE-01: The first user-level scheduling slice
+is implemented on `codex/cloud-user-schedule-core`. Core now owns immutable
+Schedule, Trigger, Firing, secret-free authority and storage Port contracts,
+plus deterministic IANA-timezone next-fire calculation. Once/interval/daily/
+weekly rules, DST gap/fold behavior, monotonic lifecycle evidence and stable
+Firing identity are pinned by 19 focused tests; the complete agent-core suite
+passes 763, with Ruff, strict Mypy and diff checks green. PostgreSQL, API,
+Scheduler process, RabbitMQ materialization, UI and deployment remain separate
+unstarted slices.
+
 2026-09-14 TRN-DEEPSEEK-V41-MM-01: DeepSeek V4.1 Flash replaces the historical
 dual-channel Vision design. The stable Zebra Flash profile now calls the official
 `deepseek-flash` alias and accepts validated JPEG/PNG/GIF/WebP attachments through

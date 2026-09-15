@@ -28300,3 +28300,26 @@ browser Cookie or Host Grant.
   composer/workspace `6 passed`; `make check` passed; full Zebra suite
   `4401 passed`, `875 skipped`.
 - Boundary: no deployment or logged-in Trench browser image submission claim.
+
+### CLOUD-USER-SCHEDULE-CORE-01 - User schedule domain contracts
+
+- Status: `Review` (claimed from Ready and implemented on 2026-09-15)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `codex/cloud-user-schedule-core`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-core/zebra-agent`
+- Owned paths: new task-schedule domain/application/port modules under
+  `packages/agent-core`, identifier/export surfaces, focused
+  `tests/agent_core/test_task_schedules.py`, this card, `task_plan.md`,
+  `PROGRESS.md`, `WORKLOG.md`, and the accepted focused design document.
+- Goal: freeze storage-neutral user-level Schedule, Trigger, Firing and
+  secret-free authority contracts plus deterministic next-fire calculation.
+- Acceptance: structured once/interval/daily/weekly rules use IANA timezones;
+  next occurrences are strictly after the supplied instant; DST gaps advance
+  to the next valid wall time; DST folds fire once; invalid state, secret-like
+  templates and contradictory Firing evidence fail closed.
+- Dependency boundary: PostgreSQL, API, Scheduler process, RabbitMQ materializer
+  and UI remain out of scope and must not start until this card is verified.
+- Validation: focused schedule contracts `19 passed`; complete `agent_core`
+  suite `763 passed`; focused Ruff, strict Mypy over 215 Core sources,
+  `git diff --check` and source-size checks passed. No PostgreSQL, API,
+  Scheduler, RabbitMQ, frontend, deployment or browser acceptance is claimed.

@@ -1,5 +1,6 @@
+from datetime import UTC, datetime
 from typing import NewType
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 
 SessionId = NewType("SessionId", UUID)
 TaskId = NewType("TaskId", UUID)
@@ -19,6 +20,8 @@ AgentReleaseId = NewType("AgentReleaseId", UUID)
 ClientSessionId = NewType("ClientSessionId", UUID)
 ClientRunBindingId = NewType("ClientRunBindingId", UUID)
 ClientEffectId = NewType("ClientEffectId", UUID)
+TaskScheduleId = NewType("TaskScheduleId", UUID)
+TaskScheduleFiringId = NewType("TaskScheduleFiringId", UUID)
 
 
 def new_session_id() -> SessionId:
@@ -87,3 +90,21 @@ def new_client_run_binding_id() -> ClientRunBindingId:
 
 def new_client_effect_id() -> ClientEffectId:
     return ClientEffectId(uuid4())
+
+
+def new_task_schedule_id() -> TaskScheduleId:
+    return TaskScheduleId(uuid4())
+
+
+def new_task_schedule_firing_id() -> TaskScheduleFiringId:
+    return TaskScheduleFiringId(uuid4())
+
+
+def task_schedule_firing_id(
+    schedule_id: TaskScheduleId,
+    scheduled_for: datetime,
+) -> TaskScheduleFiringId:
+    if scheduled_for.tzinfo is None or scheduled_for.utcoffset() is None:
+        raise ValueError("scheduled_for must be timezone-aware")
+    canonical = scheduled_for.astimezone(UTC).isoformat()
+    return TaskScheduleFiringId(uuid5(schedule_id, canonical))

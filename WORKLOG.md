@@ -9729,3 +9729,18 @@ actual byte access.
   Trench composer/workspace `6 passed`; `make check` passed; full Zebra suite
   `4401 passed`, `875 skipped`. No deployment or logged-in Trench browser image
   submission was performed.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-CORE-01
+
+- Created isolated branch/worktree `codex/cloud-user-schedule-core` without
+  moving the parent checkout's uncommitted multimodal migration work.
+- Added user ownership, bounded secret-free Task template, Schedule authority,
+  once/interval/daily/weekly Trigger, Schedule lifecycle and Firing contracts.
+- Added deterministic Firing IDs and next-fire calculation using IANA timezones;
+  DST gaps advance to the first valid minute and folds emit the earlier instant
+  once. One-time plans terminate as `completed`, not a fake paused state.
+- Validation: focused schedule suite `19 passed`; full `agent_core` suite
+  `763 passed`; focused Ruff, strict Mypy over 215 sources, source-size and
+  `git diff --check` passed.
+- Boundary: no PostgreSQL migration/store, API, Scheduler process, RabbitMQ
+  materializer, Trench UI, deployment or browser E2E has started.

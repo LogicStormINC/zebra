@@ -267,6 +267,25 @@ from agent_core.domain.task_bindings import (
     bind_task,
     compute_effective_capabilities,
 )
+from agent_core.domain.task_schedule_authority import (
+    ScheduleAuthorityBinding,
+    ScheduledTaskTemplate,
+    ScheduleOwner,
+)
+from agent_core.domain.task_schedules import (
+    SCHEDULE_FIRING_TERMINAL_STATUSES,
+    DailyScheduleTrigger,
+    IntervalScheduleTrigger,
+    OnceScheduleTrigger,
+    ScheduleFiringStatus,
+    ScheduleMisfirePolicy,
+    ScheduleOverlapPolicy,
+    ScheduleTrigger,
+    TaskSchedule,
+    TaskScheduleFiring,
+    TaskScheduleStatus,
+    WeeklyScheduleTrigger,
+)
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.domain.tools import (
@@ -309,6 +328,11 @@ __all__ = [
     "HostCapabilityManifestV1", "HostConnectorBinding", "HostConnectorProfileVersion",
     "HostConnectorStatus", "AgentCapabilityCeilingSnapshot", "HostCapabilitySnapshot",
     "TaskBindingSnapshot", "accepts_new_tasks", "fails_closed_for_running_tasks",
+    "DailyScheduleTrigger", "IntervalScheduleTrigger", "OnceScheduleTrigger",
+    "ScheduleAuthorityBinding", "ScheduleFiringStatus", "ScheduleMisfirePolicy",
+    "ScheduleOverlapPolicy", "ScheduleOwner", "ScheduleTrigger",
+    "ScheduledTaskTemplate", "SCHEDULE_FIRING_TERMINAL_STATUSES", "TaskSchedule",
+    "TaskScheduleFiring", "TaskScheduleStatus", "WeeklyScheduleTrigger",
     "HostEffectReceipt", "HostEffectStatus", "HostToolContractV1",
     "ResourceBindingRule", "capability", "capability_set", "grant_scope",
     "grant_scope_set", "intersect_capabilities", "bind_task",
