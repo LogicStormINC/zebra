@@ -175,10 +175,14 @@ class TaskSchedule(BaseModel):
             raise ValueError("updated_at must not precede created_at")
         if self.status is TaskScheduleStatus.ACTIVE and self.next_fire_at is None:
             raise ValueError("active schedules require next_fire_at")
-        if self.status in {
-            TaskScheduleStatus.COMPLETED,
-            TaskScheduleStatus.DELETED,
-        } and self.next_fire_at is not None:
+        if (
+            self.status
+            in {
+                TaskScheduleStatus.COMPLETED,
+                TaskScheduleStatus.DELETED,
+            }
+            and self.next_fire_at is not None
+        ):
             raise ValueError("terminal schedules must not retain next_fire_at")
         return self
 
@@ -256,6 +260,7 @@ class TaskScheduleFiring(BaseModel):
     fire_id: TaskScheduleFiringId
     schedule_id: TaskScheduleId
     schedule_version: int = Field(ge=1)
+    schedule_snapshot: TaskSchedule
     scheduled_for: datetime
     status: ScheduleFiringStatus = ScheduleFiringStatus.MATERIALIZING
     task_id: TaskId | None = None
@@ -291,14 +296,23 @@ class TaskScheduleFiring(BaseModel):
 
     @model_validator(mode="after")
     def validate_evidence(self) -> Self:
+        if (
+            self.schedule_snapshot.schedule_id != self.schedule_id
+            or self.schedule_snapshot.schedule_version != self.schedule_version
+        ):
+            raise ValueError("schedule_snapshot must match Firing identity and version")
         if (self.claimed_by is None) != (self.claim_expires_at is None):
             raise ValueError("claim owner and expiry must be present together")
         if self.claim_expires_at is not None and self.claim_expires_at <= self.created_at:
             raise ValueError("claim expiry must be after creation")
-        if self.status in {
-            ScheduleFiringStatus.DISPATCHED,
-            ScheduleFiringStatus.COMPLETED,
-        } and self.task_id is None:
+        if (
+            self.status
+            in {
+                ScheduleFiringStatus.DISPATCHED,
+                ScheduleFiringStatus.COMPLETED,
+            }
+            and self.task_id is None
+        ):
             raise ValueError("dispatched or completed firings require task_id")
         if self.dispatched_at is not None and self.task_id is None:
             raise ValueError("dispatched_at requires task_id")
@@ -313,10 +327,14 @@ class TaskScheduleFiring(BaseModel):
             ScheduleFiringStatus.SKIPPED,
         }:
             raise ValueError("failure_code is only valid for failed or skipped firings")
-        if self.status in {
-            ScheduleFiringStatus.FAILED,
-            ScheduleFiringStatus.SKIPPED,
-        } and self.failure_code is None:
+        if (
+            self.status
+            in {
+                ScheduleFiringStatus.FAILED,
+                ScheduleFiringStatus.SKIPPED,
+            }
+            and self.failure_code is None
+        ):
             raise ValueError("failed or skipped firings require failure_code")
         if self.completed_at is not None:
             lower_bound = self.dispatched_at or self.created_at

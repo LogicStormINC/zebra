@@ -23,7 +23,7 @@ from agent_storage.postgres.task_schedules import _SCHEDULE_COLUMNS
 
 _FIRING_COLUMNS = """fire_id, schedule_id, schedule_version, scheduled_for,
     status, task_id, attempt, failure_code, claimed_by, claim_expires_at,
-    created_at, dispatched_at, completed_at"""
+    created_at, dispatched_at, completed_at, schedule_snapshot"""
 
 
 class PostgresTaskScheduleFiringStore(PostgresDatabase):
@@ -47,15 +47,11 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
             raise ValueError("claim_ttl_seconds must be between 1 and 3600")
         with self.connect() as connection:
             now = self._database_now(connection)
-            claimed = self._recover_expired(
-                connection, claimant, now, limit, claim_ttl_seconds
-            )
+            claimed = self._recover_expired(connection, claimant, now, limit, claim_ttl_seconds)
             remaining = limit - len(claimed)
             if remaining:
                 claimed.extend(
-                    self._create_due(
-                        connection, claimant, now, remaining, claim_ttl_seconds
-                    )
+                    self._create_due(connection, claimant, now, remaining, claim_ttl_seconds)
                 )
             return tuple(claimed)
 
@@ -65,7 +61,8 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
     ) -> TaskScheduleFiring | None:
         with self.connect() as connection:
             row = connection.execute(
-                "SELECT " + _FIRING_COLUMNS
+                "SELECT "
+                + _FIRING_COLUMNS
                 + " FROM task_schedule_firings WHERE deployment_namespace = %s "
                 "AND fire_id = %s",
                 (self.deployment_namespace, fire_id),
@@ -82,7 +79,8 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
         firing = TaskScheduleFiring.model_validate(firing.model_dump())
         with self.connect() as connection:
             current_row = connection.execute(
-                "SELECT " + _FIRING_COLUMNS
+                "SELECT "
+                + _FIRING_COLUMNS
                 + " FROM task_schedule_firings WHERE deployment_namespace = %s "
                 "AND fire_id = %s FOR UPDATE",
                 (self.deployment_namespace, firing.fire_id),
@@ -141,7 +139,8 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
         ttl: int,
     ) -> list[TaskScheduleFiring]:
         rows = connection.execute(
-            "SELECT " + _FIRING_COLUMNS
+            "SELECT "
+            + _FIRING_COLUMNS
             + " FROM task_schedule_firings WHERE deployment_namespace = %s "
             "AND status = 'materializing' AND claim_expires_at <= %s "
             "ORDER BY claim_expires_at, scheduled_for, fire_id "
@@ -157,8 +156,13 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
                 "attempt = attempt + 1 WHERE deployment_namespace = %s AND fire_id = %s "
                 "AND status = 'materializing' AND claim_expires_at = %s RETURNING "
                 + _FIRING_COLUMNS,
-                (claimant, expires, self.deployment_namespace, current.fire_id,
-                 current.claim_expires_at),
+                (
+                    claimant,
+                    expires,
+                    self.deployment_namespace,
+                    current.fire_id,
+                    current.claim_expires_at,
+                ),
             ).fetchone()
             if changed is not None:
                 recovered.append(decode_firing(changed))
@@ -173,8 +177,7 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
         ttl: int,
     ) -> list[TaskScheduleFiring]:
         rows = connection.execute(
-            "SELECT " + _SCHEDULE_COLUMNS
-            + " FROM task_schedules WHERE deployment_namespace = %s "
+            "SELECT " + _SCHEDULE_COLUMNS + " FROM task_schedules WHERE deployment_namespace = %s "
             "AND status = 'active' AND next_fire_at <= %s "
             "ORDER BY next_fire_at, schedule_id LIMIT %s FOR UPDATE SKIP LOCKED",
             (self.deployment_namespace, now, limit),
@@ -216,9 +219,11 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
             fire_id=task_schedule_firing_id(schedule.schedule_id, scheduled_for),
             schedule_id=schedule.schedule_id,
             schedule_version=schedule.schedule_version,
+            schedule_snapshot=schedule,
             scheduled_for=scheduled_for,
-            status=(ScheduleFiringStatus.SKIPPED if terminal
-                    else ScheduleFiringStatus.MATERIALIZING),
+            status=(
+                ScheduleFiringStatus.SKIPPED if terminal else ScheduleFiringStatus.MATERIALIZING
+            ),
             attempt=(0 if terminal else 1),
             failure_code=failure_code,
             claimed_by=(None if terminal else claimant),
@@ -235,12 +240,18 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
         row = connection.execute(
             "INSERT INTO task_schedule_firings (deployment_namespace, "
             + _FIRING_COLUMNS
-            + ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+            + ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "ON CONFLICT (deployment_namespace, schedule_id, scheduled_for) DO NOTHING "
             "RETURNING " + _FIRING_COLUMNS,
-            (self.deployment_namespace, *(
-                getattr(firing, field.strip()) for field in _FIRING_COLUMNS.split(",")
-            )),
+            (
+                self.deployment_namespace,
+                *(
+                    Jsonb(firing.schedule_snapshot.model_dump(mode="json"))
+                    if field.strip() == "schedule_snapshot"
+                    else getattr(firing, field.strip())
+                    for field in _FIRING_COLUMNS.split(",")
+                ),
+            ),
         ).fetchone()
         return decode_firing(row) if row is not None else None
 
@@ -260,8 +271,12 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
             if following is None:
                 raise RuntimeError("recurring schedule did not produce a next occurrence")
             advanced = TaskSchedule.model_validate(
-                {**schedule.model_dump(), "next_fire_at": following,
-                 "last_fire_at": scheduled_for, "updated_at": now}
+                {
+                    **schedule.model_dump(),
+                    "next_fire_at": following,
+                    "last_fire_at": scheduled_for,
+                    "updated_at": now,
+                }
             )
         row = connection.execute(
             "UPDATE task_schedules SET status = %s, schedule_version = %s, "
@@ -269,11 +284,18 @@ class PostgresTaskScheduleFiringStore(PostgresDatabase):
             "WHERE deployment_namespace = %s AND schedule_id = %s "
             "AND status = 'active' AND schedule_version = %s "
             "AND next_fire_at = %s RETURNING schedule_id",
-            (advanced.status, advanced.schedule_version, advanced.next_fire_at,
-             advanced.last_fire_at, advanced.updated_at,
-             Jsonb(advanced.model_dump(mode="json")),
-             self.deployment_namespace, schedule.schedule_id,
-             schedule.schedule_version, scheduled_for),
+            (
+                advanced.status,
+                advanced.schedule_version,
+                advanced.next_fire_at,
+                advanced.last_fire_at,
+                advanced.updated_at,
+                Jsonb(advanced.model_dump(mode="json")),
+                self.deployment_namespace,
+                schedule.schedule_id,
+                schedule.schedule_version,
+                scheduled_for,
+            ),
         ).fetchone()
         if row is None:
             raise TaskScheduleConflictError("locked Task Schedule changed during advancement")

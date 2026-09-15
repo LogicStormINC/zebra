@@ -6,12 +6,14 @@ from uuid import uuid4
 import pytest
 from agent_core.application import next_fire_at, schedule_timezone
 from agent_core.domain import TaskScheduleStatus as PublicTaskScheduleStatus
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import (
     TaskId,
     TaskScheduleFiringId,
     TaskScheduleId,
     task_schedule_firing_id,
 )
+from agent_core.domain.task_bindings import host_context_digest
 from agent_core.domain.task_schedule_authority import (
     ScheduleAuthorityBinding,
     ScheduledTaskTemplate,
@@ -40,6 +42,24 @@ def owner() -> ScheduleOwner:
     )
 
 
+def host_context() -> HostContextEnvelope:
+    return HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id="trench-toc",
+        namespace_id="tenant-1",
+        workspace_ref="workspace-1",
+        resource_refs=({"type": "principal", "id": "user-1"},),
+        scopes=("agent.run", "schedule.manage"),
+        limits={
+            "max_runtime_seconds": 1800,
+            "max_model_tokens": 1_000_000,
+            "max_artifact_bytes": 64_000_000,
+        },
+        origin="https://trench.example",
+        policy_version="trench-read-v1",
+    )
+
+
 def schedule(**overrides: object) -> TaskSchedule:
     now = datetime(2026, 9, 15, 1, 0, tzinfo=UTC)
     values: dict[str, object] = {
@@ -63,8 +83,9 @@ def firing(**overrides: object) -> TaskScheduleFiring:
     now = datetime(2026, 9, 15, 1, 0, tzinfo=UTC)
     values: dict[str, object] = {
         "fire_id": TaskScheduleFiringId(uuid4()),
-        "schedule_id": TaskScheduleId(uuid4()),
+        "schedule_id": (item := schedule()).schedule_id,
         "schedule_version": 1,
+        "schedule_snapshot": item,
         "scheduled_for": now,
         "created_at": now,
     }
@@ -133,9 +154,7 @@ def test_task_template_never_persists_credential_like_fields(key: str) -> None:
 
 def test_task_template_is_bounded_json_and_materializer_controls_execution() -> None:
     raw = {"prompt": "hello", "skill_components": ["better-writing@1"]}
-    template = ScheduledTaskTemplate(
-        payload=raw
-    )
+    template = ScheduledTaskTemplate(payload=raw)
 
     assert len(template.template_digest) == 64
     raw["prompt"] = "mutated"
@@ -153,7 +172,8 @@ def test_authority_binding_contains_digests_and_no_credentials() -> None:
         binding_id=uuid4(),
         schedule_id=TaskScheduleId(uuid4()),
         owner=owner(),
-        host_capability_digest="A" * 64,
+        host_context=host_context(),
+        host_capability_digest=host_context_digest(host_context()),
         agent_definition_digest="b" * 64,
         policy_digest="c" * 64,
         extension_snapshot_digest="d" * 64,
@@ -161,7 +181,7 @@ def test_authority_binding_contains_digests_and_no_credentials() -> None:
         bound_at=datetime(2026, 9, 15, 1, 0, tzinfo=UTC),
     )
 
-    assert item.host_capability_digest == "a" * 64
+    assert item.host_capability_digest == host_context_digest(host_context())
     assert "token" not in ScheduleAuthorityBinding.model_fields
     assert "credential" not in ScheduleAuthorityBinding.model_fields
     revoked = item.revoke(at=datetime(2026, 9, 15, 2, 0, tzinfo=UTC))
@@ -169,6 +189,29 @@ def test_authority_binding_contains_digests_and_no_credentials() -> None:
     assert revoked.revoked_at == datetime(2026, 9, 15, 2, 0, tzinfo=UTC)
     with pytest.raises(ValueError, match="already revoked"):
         revoked.revoke(at=datetime(2026, 9, 15, 3, 0, tzinfo=UTC))
+
+
+def test_authority_binding_rejects_forged_or_mismatched_host_context() -> None:
+    context = host_context()
+    values = {
+        "binding_id": uuid4(),
+        "schedule_id": TaskScheduleId(uuid4()),
+        "owner": owner(),
+        "host_context": context,
+        "host_capability_digest": host_context_digest(context),
+        "agent_definition_digest": "b" * 64,
+        "policy_digest": "c" * 64,
+        "extension_snapshot_digest": "d" * 64,
+        "binding_revision": 1,
+        "bound_at": datetime(2026, 9, 15, 1, 0, tzinfo=UTC),
+    }
+
+    with pytest.raises(ValidationError, match="must match host_context"):
+        ScheduleAuthorityBinding.model_validate({**values, "host_capability_digest": "e" * 64})
+    with pytest.raises(ValidationError, match="owner principal"):
+        ScheduleAuthorityBinding.model_validate(
+            {**values, "owner": owner().model_copy(update={"principal_id": "user-2"})}
+        )
 
 
 def test_once_and_interval_occurrences_are_strictly_after_boundary() -> None:
@@ -255,6 +298,8 @@ def test_firing_requires_consistent_task_claim_and_terminal_evidence() -> None:
 
     claimed = firing(claimed_by="scheduler-1", claim_expires_at=now + timedelta(seconds=30))
     assert claimed.claimed_by == "scheduler-1"
+    with pytest.raises(ValidationError, match="schedule_snapshot"):
+        firing(schedule_version=2)
 
 
 def test_firing_transition_is_monotonic_and_preserves_one_task() -> None:

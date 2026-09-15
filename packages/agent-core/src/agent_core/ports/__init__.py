@@ -160,6 +160,10 @@ from agent_core.ports.task_admission_transaction import (
     TaskAdmissionRequest,
     TaskAdmissionTransactionPort,
 )
+from agent_core.ports.task_schedule_materializer import (
+    ScheduleAuthorityRevalidatorPort,
+    ScheduledTaskAdmissionPort,
+)
 from agent_core.ports.task_schedules import (
     TaskScheduleConflictError,
     TaskScheduleFiringStorePort,
@@ -242,6 +246,8 @@ __all__ = [
     "TaskScheduleConflictError",
     "TaskScheduleFiringStorePort",
     "TaskScheduleStorePort",
+    "ScheduleAuthorityRevalidatorPort",
+    "ScheduledTaskAdmissionPort",
     "GovernedMemoryScanCursor",
     "GovernedMemoryScanPage",
     "GovernedMemoryScanQuery",

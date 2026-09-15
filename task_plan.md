@@ -1,15 +1,15 @@
-# Current task — CLOUD-USER-SCHEDULE-STORAGE-01 (2026-09-15)
+# Current task — CLOUD-USER-SCHEDULE-MATERIALIZER-01 (2026-09-15)
 
-Branch: `codex/cloud-user-schedule-storage`
-Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-storage/zebra-agent`
+Branch: `codex/cloud-user-schedule-materializer`
+Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-api/zebra-agent`
 
-1. `completed` — claim the Storage slice and freeze its owned paths.
-2. `completed` — add forward-only PostgreSQL v58 schema and migration catalog entry.
-3. `completed` — implement owner-scoped Schedule/Authority CRUD with CAS updates.
-4. `completed` — implement atomic due creation, expired-claim recovery and Firing CAS.
-5. `completed` — add migration, isolation, recovery and dual-Scheduler tests.
-6. `completed` — run focused PostgreSQL tests plus Storage/Core quality gates.
-7. `completed` — update durable progress and commit the verified Storage slice.
+1. `completed` — claim the Materializer slice and freeze its owned paths.
+2. `completed` — reuse `ZebraAgentApi.create_session` as the shared Task admission facade.
+3. `completed` — revalidate Schedule authority and materialize claimed Firings.
+4. `completed` — add bounded Scheduler loop and composition root.
+5. `completed` — add retry, stale authority, idempotency and process tests.
+6. `completed` — run focused Scheduler plus Core/Storage/API quality gates.
+7. `completed` — update durable progress and commit the verified slice.
 
 Implementation plan: `docs/Cloud_Agent用户级定时任务技术方案_v1.0.md`
 (accepted and present in this worktree).

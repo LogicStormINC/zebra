@@ -100,7 +100,10 @@ def decode_authority(row: dict[str, Any]) -> ScheduleAuthorityBinding:
 def decode_firing(row: dict[str, Any]) -> TaskScheduleFiring:
     try:
         return TaskScheduleFiring.model_validate(
-            {key: row[key] for key in TaskScheduleFiring.model_fields}
+            {
+                key: row["schedule_snapshot"] if key == "schedule_snapshot" else row[key]
+                for key in TaskScheduleFiring.model_fields
+            }
         )
     except (KeyError, TypeError, ValidationError) as exc:
         raise TaskScheduleStorageIntegrityError("invalid stored Schedule Firing") from exc

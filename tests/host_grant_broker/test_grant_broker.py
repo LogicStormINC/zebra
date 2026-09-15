@@ -71,6 +71,7 @@ def _settings(key) -> BrokerSettings:
 
 def test_default_scope_ceiling_includes_trench_subscription_write() -> None:
     assert "subscription.write" in DEFAULT_ALLOWED_SCOPES
+    assert {"schedule.read", "schedule.manage"} <= set(DEFAULT_ALLOWED_SCOPES)
 
 
 class _StaticJwks:

@@ -2882,3 +2882,22 @@ free of backend secrets.
   supplies authoritative image Artifacts, egress checks and durable audit.
 - Focused validation: Zebra `51 passed` plus Ruff/Mypy; Trench API `45 passed`,
   frontend `70 passed`, ESLint and live browser control switching.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-MATERIALIZER-01
+
+- Added an independent `zebra-agent-scheduler` cloud/PostgreSQL composition root
+  with bounded polling, batch, claim TTL, attempts and graceful shutdown.
+- Each Firing freezes the exact Schedule version and Task template. Retries use
+  one stable key and the existing in-process `ZebraAgentApi.create_session`
+  facade, retaining atomic Task admission and Outbox/RabbitMQ Worker wakeup.
+- Scheduler authority uses an HMAC workload exchange for a fresh asymmetric
+  Host Grant, then verifies issuer/audience/JWKS/origin, identity and resources
+  and removes management scopes before Task admission. No bearer token, Cookie
+  or workload secret is persisted in a Schedule, Firing or Task.
+- Validation: focused Schedule/Scheduler/Broker exchange `28 passed`; Core `767
+  passed`; Storage `361 passed, 799 skipped`; Broker/Scheduler group `43 passed`;
+  actual PostgreSQL Schedule tests `7 passed`; size, Ruff, strict Mypy over 938
+  sources and Eval 10/10 passed; full repository regression passed `4426` with
+  `885` dependency skips.
+- Boundary: management API, frontend, deployment activation, RabbitMQ fault
+  injection and Trench browser acceptance remain later phases.

@@ -9763,3 +9763,22 @@ actual byte access.
   `17 passed, 1 failed`. This slice does not rewrite that unrelated legacy test.
 - Boundary: API, Scheduler process, Task admission materializer, RabbitMQ wakeup,
   Trench UI, deployment and browser E2E have not started.
+
+## 2026-09-15 - CLOUD-USER-SCHEDULE-MATERIALIZER-01
+
+- Claimed the Admission/Scheduler phase after Core and Storage, then corrected
+  the unpublished v58 migration so Firing snapshots exist at table creation
+  instead of fabricating historical snapshots through a later backfill.
+- Implemented secret-free login authority binding plus a real Broker HMAC
+  workload exchange, asymmetric Grant verification, identity/resource drift
+  checks and runtime scope/limit narrowing.
+- Reused the normal in-process Zebra API Task admission facade. Stable Firing
+  keys therefore preserve atomic admission, replay reconciliation and the
+  current transactional Outbox/RabbitMQ wakeup without an HTTP loopback.
+- Added bounded Scheduler process and tests for settings, transient/permanent
+  failures, stale authority, idempotency, real Broker JWT exchange, and real
+  PostgreSQL snapshot/claim/settlement behavior.
+- Evidence: focused 28, Core 767, Storage 361/799 skips, Broker/Scheduler 43,
+  actual PostgreSQL 7, file-size gate, full Ruff, strict Mypy (938 sources) and
+  Eval 10/10 passed. The final full repository gate passed `4426` with `885`
+  dependency skips.

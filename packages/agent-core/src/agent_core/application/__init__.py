@@ -45,6 +45,11 @@ from agent_core.application.session_messages import (
     SessionMessageAppendService,
 )
 from agent_core.application.session_title import SessionTitleService
+from agent_core.application.task_schedule_materializer import (
+    ScheduleAuthorityRejected,
+    ScheduleMaterializationBatch,
+    TaskScheduleMaterializer,
+)
 from agent_core.application.task_schedule_time import next_fire_at, schedule_timezone
 from agent_core.application.turn_projection import (
     TurnRecord,
@@ -87,6 +92,9 @@ __all__ = [
     "SessionTitleService",
     "next_fire_at",
     "schedule_timezone",
+    "ScheduleAuthorityRejected",
+    "ScheduleMaterializationBatch",
+    "TaskScheduleMaterializer",
     "TurnRecord",
     "current_turn",
     "interaction_mode_of",

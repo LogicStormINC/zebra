@@ -1,6 +1,6 @@
 # Cloud Agent 用户级定时任务技术方案 v1.0
 
-> 状态：实施中；Core 与 PostgreSQL Storage 切片已完成，后续切片待实施
+> 状态：实施中；Core、PostgreSQL Storage 与 Admission/Scheduler 切片已完成
 > 日期：2026-09-15
 > 适用范围：Zebra Cloud Agent、Trench Host、HTTP/SSE MCP、Skill、Subagent
 > 明确不包含：RSS 订阅源抓取调度、运维 Cron、DAG 节点选择器
@@ -92,6 +92,7 @@ Scheduler 是共享系统进程，但调度对象和授权边界是用户级的�
 |---|---|
 | `fire_id` | 确定性触发 ID |
 | `schedule_id/schedule_version` | 所属计划及版本 |
+| `schedule_snapshot` | 领取事务冻结的完整计划版本和 Task 模板 |
 | `scheduled_for` | 原计划执行时间 |
 | `status` | `materializing`、`dispatched`、`completed`、`failed`、`skipped` |
 | `task_id` | 产生的 Cloud Agent Task |
@@ -109,7 +110,7 @@ Scheduler 是共享系统进程，但调度对象和授权边界是用户级的�
 
 ### 4.3 ScheduleAuthorityBinding
 
-后台计划不保存浏览器 Cookie、JWT、MCP 密钥或 Host Grant，只保存 principal、tenant、workspace、namespace、Host capability、Agent Definition、Policy、Skill/MCP 安装范围和版本摘要，以及授权版本、撤销状态和失败原因。
+后台计划不保存浏览器 Cookie、JWT、MCP 密钥或 Host Grant bearer token。它保存经过验证且不含密钥的 `HostContextEnvelope`，以及 principal、tenant、workspace、namespace、Host capability、Agent Definition、Policy、Skill/MCP 安装范围和版本摘要、授权版本与撤销状态。Scheduler 每次触发都用 HMAC workload 身份向 Host Grant Broker 兑换新的短期签名 Grant，随后再次验签、核对身份和资源并收窄权限。
 
 ## 5. Task 模板
 
@@ -210,7 +211,7 @@ FOR UPDATE SKIP LOCKED;
 
 ## 10. Firing 物化与 Task Admission
 
-Firing materializer 必须复用现有 Task admission 应用服务，不通过 HTTP 回调本机 API，也不复制 `create_session` 逻辑：
+Firing materializer 复用 `ZebraAgentApi.create_session` 应用 facade，不通过 HTTP 回调本机 API，也不复制 `create_session` 逻辑。该 facade 已原子提交 Event、Projection、TaskBinding、幂等回执和 Outbox，并由现有 RabbitMQ relay 唤醒 Worker：
 
 1. 领取 `materializing` Firing；
 2. 重新验证 Schedule Authority；
@@ -250,6 +251,8 @@ zebra-agent-scheduler
 
 完整云端进程包含 API、Scheduler、Worker 和现有 RabbitMQ relay/recovery。Scheduler poll interval 建议 1～5 秒，并配置 bounded batch size、claim TTL、misfire grace window、最大补跑 1 次、namespace allowlist 和 readiness 检查。Scheduler 可水平扩展，正确性不能依赖单实例。
 
+Scheduler 使用独立的 `ZEBRA_SCHEDULER_*` 配置组，包含实例 ID、轮询周期、批大小、claim TTL、最大物化尝试次数、Broker exchange URL、workload identity/secret，以及 Grant issuer/audience/JWKS/origin 验证钉住。workload secret 仅存在于进程环境，不写入 Schedule、Firing、日志或 Task payload。
+
 ## 13. 前端与 Trench 体验
 
 Cloud Agent 控制台增加“定时任务”页面；Trench 启用“自动化”入口。
@@ -285,7 +288,7 @@ Cloud Agent 控制台增加“定时任务”页面；Trench 启用“自动化�
 1. **合同与治理**：新建实施卡并确认授权、时区、misfire、overlap 语义。
 2. **Core**：Schedule、Trigger、Firing、Authority Binding 和 next-fire 纯函数测试。
 3. **Storage**：前向 migration、Store、并发 claim、实际 PostgreSQL 双 Scheduler 测试。
-4. **Admission/Scheduler**：共享 Task admission、materializer、`apps/scheduler`、崩溃恢复。
+4. **Admission/Scheduler**：已完成；共享 Task admission、materializer、`apps/scheduler`、Broker 短期授权兑换和崩溃恢复均已落地。
 5. **API/权限**：CRUD、控制、历史、Host scope、tenant guard、运行前复核。
 6. **前端**：Cloud Agent 页面、Trench 自动化入口、运行历史和 Task 深链。
 7. **系统验收**：PostgreSQL/RabbitMQ 故障注入、真实 Trench 到期执行、流式输出和 Artifact。

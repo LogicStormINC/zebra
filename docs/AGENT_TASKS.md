@@ -28349,3 +28349,44 @@ browser Cookie or Host Grant.
   source files, source-size and diff checks passed. The pre-existing real-DB
   migration test still hard-codes only v1-v30 although the baseline is v1-v56;
   it reports `17 passed, 1 failed` and is not claimed as fixed by this slice.
+
+### CLOUD-USER-SCHEDULE-MATERIALIZER-01 - Schedule admission and process
+
+- Status: `Review` (implemented and validated on 2026-09-15)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `codex/cloud-user-schedule-materializer`
+- Worktree: `/Users/lukeding/.codex/worktrees/cloud-user-schedule-api/zebra-agent`
+- Owned paths: new schedule application service modules under `agent-core`,
+  schedule-specific adapters under `agent-storage` and `agent-integrations`,
+  the schedule scope default in `apps/host_grant_broker`, new `apps/scheduler`
+  composition root, its workspace registration in root `pyproject.toml` and
+  `uv.lock`, focused Scheduler/materializer tests, this card, `task_plan.md`,
+  `PROGRESS.md`, `WORKLOG.md`, and the accepted design document.
+- Goal: turn claimed Firings into normal Tasks through one shared admission
+  seam, then let the existing transactional Outbox/RabbitMQ path wake Workers.
+- Acceptance: deterministic Firing idempotency reaches the same Task after
+  retry; authority is revalidated before admission; no HTTP loopback or copied
+  session-creation flow; claim recovery is bounded; Scheduler readiness proves
+  PostgreSQL authority and process configuration; failures remain durable.
+- Dependency boundary: no management API, frontend, deployment activation or
+  browser claim in this slice. API remains locked until materialization is
+  verified, matching phase 4 before phase 5 in the accepted plan.
+- Delivered: each Firing freezes its exact Schedule/Task template; expired
+  claims replay the same admission key; the Scheduler exchanges HMAC workload
+  authority for a fresh asymmetric Host Grant, verifies and narrows it, checks
+  frozen Agent Definition identity, validates root Skill selection, then calls
+  the existing in-process `ZebraAgentApi.create_session` facade. Its established
+  transactional admission and Outbox/RabbitMQ wakeup remain the only Task path.
+- Validation: focused Core/Scheduler/real Broker exchange `28 passed`; complete
+  Core `767 passed`; complete Storage `361 passed, 799 skipped`; Host Grant
+  Broker/Scheduler group `43 passed`; actual PostgreSQL Schedule suite `7
+  passed`; file-size, full Ruff, strict Mypy over `938` sources and Eval `10/10`
+  passed; the full repository suite passed `4426` with `885` dependency skips.
+  No deployment, RabbitMQ fault injection or browser E2E is claimed.
+
+### CLOUD-USER-SCHEDULE-API-01 - User schedule management API
+
+- Status: `Locked` (materializer is verified but not yet merged to `main`)
+- Human owner: Luke Ding
+- Goal: authenticated user-scoped CRUD, controls, run history, Host scopes and
+  next-run preview. Claim only after the materializer card reaches Review.

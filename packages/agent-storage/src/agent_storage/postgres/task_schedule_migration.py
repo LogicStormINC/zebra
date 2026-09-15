@@ -68,6 +68,9 @@ TASK_SCHEDULE_MIGRATION = Migration(
             fire_id UUID NOT NULL,
             schedule_id UUID NOT NULL,
             schedule_version BIGINT NOT NULL CHECK (schedule_version >= 1),
+            schedule_snapshot JSONB NOT NULL CHECK (
+                jsonb_typeof(schedule_snapshot) = 'object'
+            ),
             scheduled_for TIMESTAMPTZ NOT NULL,
             status TEXT NOT NULL CHECK (
                 status IN ('materializing', 'dispatched', 'completed', 'failed', 'skipped')

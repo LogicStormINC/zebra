@@ -8,7 +8,9 @@ from uuid import uuid4
 
 import psycopg
 import pytest
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import TaskId, TaskScheduleId
+from agent_core.domain.task_bindings import host_context_digest
 from agent_core.domain.task_schedule_authority import (
     ScheduleAuthorityBinding,
     ScheduledTaskTemplate,
@@ -28,6 +30,7 @@ from agent_storage.postgres.task_schedule_firings import PostgresTaskScheduleFir
 from agent_storage.postgres.task_schedules import PostgresTaskScheduleStore
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
+from pydantic import ValidationError
 
 
 @pytest.fixture(scope="session")
@@ -62,6 +65,24 @@ def owner(*, principal: str = "user-1") -> ScheduleOwner:
     )
 
 
+def host_context(schedule_owner: ScheduleOwner) -> HostContextEnvelope:
+    return HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id=schedule_owner.host_app_id,
+        namespace_id=schedule_owner.tenant_id,
+        workspace_ref=schedule_owner.workspace_id,
+        resource_refs=({"type": "principal", "id": schedule_owner.principal_id},),
+        scopes=("agent.run", "schedule.manage"),
+        limits={
+            "max_runtime_seconds": 1800,
+            "max_model_tokens": 1_000_000,
+            "max_artifact_bytes": 64_000_000,
+        },
+        origin="https://trench.example",
+        policy_version="trench-read-v1",
+    )
+
+
 def schedule(
     *,
     schedule_id: TaskScheduleId | None = None,
@@ -80,8 +101,11 @@ def schedule(
         owner=trusted_owner,
         title="Daily research",
         timezone="Asia/Shanghai",
-        trigger=(OnceScheduleTrigger(fire_at=due) if once
-                 else DailyScheduleTrigger(local_time=time(9, 0))),
+        trigger=(
+            OnceScheduleTrigger(fire_at=due)
+            if once
+            else DailyScheduleTrigger(local_time=time(9, 0))
+        ),
         task_template=ScheduledTaskTemplate.model_validate(
             {"payload": {"prompt": "Summarize my sources"}}
         ),
@@ -96,7 +120,8 @@ def schedule(
         binding_id=binding_id,
         schedule_id=identity,
         owner=trusted_owner,
-        host_capability_digest="a" * 64,
+        host_context=host_context(trusted_owner),
+        host_capability_digest=host_context_digest(host_context(trusted_owner)),
         agent_definition_digest="b" * 64,
         policy_digest="c" * 64,
         extension_snapshot_digest="d" * 64,
@@ -147,6 +172,7 @@ def test_due_claim_advances_schedule_and_settles_firing(dsn: str) -> None:
     (claimed,) = firings.claim_due(claimant="scheduler-a", limit=10, claim_ttl_seconds=30)
 
     assert claimed.schedule_id == item.schedule_id
+    assert claimed.schedule_snapshot == item
     assert claimed.scheduled_for == due
     assert claimed.status is ScheduleFiringStatus.MATERIALIZING
     assert claimed.attempt == 1
@@ -160,21 +186,27 @@ def test_due_claim_advances_schedule_and_settles_firing(dsn: str) -> None:
         at=claimed.created_at + timedelta(seconds=1),
         task_id=TaskId(uuid4()),
     )
-    assert firings.settle_firing(
-        dispatched,
-        expected_status=ScheduleFiringStatus.MATERIALIZING,
-        expected_claim_expiry=claimed.claim_expires_at,
-    ) == dispatched
+    assert (
+        firings.settle_firing(
+            dispatched,
+            expected_status=ScheduleFiringStatus.MATERIALIZING,
+            expected_claim_expiry=claimed.claim_expires_at,
+        )
+        == dispatched
+    )
     completed = dispatched.transition(
         ScheduleFiringStatus.COMPLETED,
         at=claimed.created_at + timedelta(seconds=2),
     )
-    assert firings.settle_firing(
-        completed,
-        expected_status=ScheduleFiringStatus.DISPATCHED,
-        expected_claim_expiry=claimed.claim_expires_at,
-    ) == completed
-    with pytest.raises(TaskScheduleConflictError):
+    assert (
+        firings.settle_firing(
+            completed,
+            expected_status=ScheduleFiringStatus.DISPATCHED,
+            expected_claim_expiry=claimed.claim_expires_at,
+        )
+        == completed
+    )
+    with pytest.raises(ValidationError, match="schedule_snapshot"):
         firings.settle_firing(
             completed.model_copy(update={"schedule_id": TaskScheduleId(uuid4())}),
             expected_status=ScheduleFiringStatus.COMPLETED,
@@ -229,9 +261,9 @@ def test_expired_materialization_claim_recovers_without_second_firing(dsn: str) 
     assert recovered.attempt == 2
     assert recovered.claimed_by == "scheduler-b"
     with second.connect() as connection:
-        assert connection.execute(
-            "SELECT count(*) AS n FROM task_schedule_firings"
-        ).fetchone() == {"n": 1}
+        assert connection.execute("SELECT count(*) AS n FROM task_schedule_firings").fetchone() == {
+            "n": 1
+        }
 
 
 def test_forbidden_overlap_records_skip_without_claiming_work(dsn: str) -> None:
@@ -266,8 +298,7 @@ def test_forbidden_overlap_records_skip_without_claiming_work(dsn: str) -> None:
     assert firings.claim_due(claimant="scheduler-b", limit=1, claim_ttl_seconds=30) == ()
     with firings.connect() as connection:
         rows = connection.execute(
-            "SELECT status, failure_code FROM task_schedule_firings "
-            "ORDER BY scheduled_for"
+            "SELECT status, failure_code FROM task_schedule_firings ORDER BY scheduled_for"
         ).fetchall()
     assert rows == [
         {"status": "dispatched", "failure_code": None},
@@ -289,6 +320,4 @@ def test_two_schedulers_create_exactly_one_firing(dsn: str) -> None:
 
     assert sum(len(result) for result in results) == 1
     with psycopg.connect(dsn) as connection:
-        assert connection.execute(
-            "SELECT count(*) FROM task_schedule_firings"
-        ).fetchone() == (1,)
+        assert connection.execute("SELECT count(*) FROM task_schedule_firings").fetchone() == (1,)
