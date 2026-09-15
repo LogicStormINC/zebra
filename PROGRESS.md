@@ -12,6 +12,14 @@ PNG reached `deepseek-flash` successfully; V4.1 tool calls that omit an optional
 reasoning item are also accepted without exposing or fabricating reasoning.
 Focused tests, `make check`, and the full suite (`4401 passed`, `875 skipped`)
 pass. No deployment or logged-in Trench browser image submission is claimed.
+Follow-up browser acceptance exposed a stale PostgreSQL check constraint that
+admitted `research` but not the current `research_coordinator` ToolProfile.
+Forward migration v57 now accepts all domain ToolProfile values without
+rewriting migration v29; a focused regression pins that enum/schema parity.
+The existing acceptance database upgraded to v57, Extensions remained enabled
+with the original read-only key mount, and a real logged-in Trench conversation
+completed through API/Worker with `POST /tasks` 201. Focused checks passed 11;
+`make check` passed file-size, Ruff, strict Mypy over 924 sources and Eval 10/10.
 
 2026-09-14 DESKTOP-COMPOSER-UX-01: Desktop Cloud Agent composer is now a
 compact command bar with attachment, truthful current permission, task config,

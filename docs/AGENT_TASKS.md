@@ -28286,6 +28286,7 @@ browser Cookie or Host Grant.
   user instruction
 - Owned paths: image attachment domain/API/storage/Worker/Harness paths;
   DeepSeek profile and Chat Completions/Responses serialization; focused tests;
+  forward-only workspace tool-profile constraint migration and focused test;
   Trench composer image selection and focused test; this card, replacement
   design note, `PROGRESS.md`, `WORKLOG.md`
 - Goal: use V4.1 Flash native image input through `deepseek-flash`, preserving
@@ -28294,9 +28295,15 @@ browser Cookie or Host Grant.
 - Acceptance: validated image input survives durable queue recovery, reaches
   both Provider wire formats only as a USER content part, Pro mismatches fail
   closed, and the Trench composer advertises the correct V4.1 model.
+- Admission accepts the `research_coordinator` profile selected by Trench after
+  upgrading an existing PostgreSQL schema; legacy profile rows remain valid.
 - Validation: real `deepseek-flash` Responses API inline-PNG smoke passed;
   Provider/Responses focus `14 passed`; image/API/Worker focus `159 passed`;
   Trench API `44 passed` plus native-image forwarding `26 passed`; Trench
   composer/workspace `6 passed`; `make check` passed; full Zebra suite
   `4401 passed`, `875 skipped`.
+- Follow-up migration regression `11 passed`; `make check` passed over 924 typed
+  sources. The existing acceptance database upgraded to v57, a real Trench
+  request returned HTTP 201 from `POST /tasks`, and the browser rendered
+  `会话打开正常` instead of the generic open failure.
 - Boundary: no deployment or logged-in Trench browser image submission claim.
