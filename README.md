@@ -13,6 +13,12 @@ composition is the delivery target. Zebra turns Agent requests into durable,
 streamable, stoppable, resumable, and auditable execution while remaining
 independent of the business system that calls it.
 
+## License
+
+Zebra Agent is released under the GNU General Public License v3.0 or later
+(GPL-3.0-or-later). See [LICENSE](./LICENSE) for the project license notice and
+the official [GPLv3 text](https://www.gnu.org/licenses/gpl-3.0.html).
+
 Zebra owns Task, Conversation, Session, Model, Context, Tool, Agent Memory,
 Artifact, Worker, Sandbox, streaming, concurrency, and recovery. It does not own
 user registration, organizations, memberships, business RBAC, subscriptions, or

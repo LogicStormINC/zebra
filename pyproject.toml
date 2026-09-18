@@ -3,6 +3,7 @@ name = "zebra-agent-workspace"
 version = "0.1.0"
 description = "Workspace root for the Zebra Agent engineering platform."
 readme = "README.md"
+license = "GPL-3.0-or-later"
 requires-python = ">=3.12,<4.0"
 authors = [{ name = "Luke Ding" }]
 dependencies = []
