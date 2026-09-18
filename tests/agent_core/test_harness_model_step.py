@@ -42,6 +42,16 @@ RESEARCH_TOOL = ModelToolDefinition(
     description="Delegate bounded research.",
     parameters={"type": "object", "properties": {}},
 )
+SKILLS_LIST_TOOL = ModelToolDefinition(
+    name="skills.list",
+    description="List selected skills.",
+    parameters={"type": "object", "properties": {}},
+)
+SKILLS_READ_TOOL = ModelToolDefinition(
+    name="skills.read",
+    description="Read one selected skill.",
+    parameters={"type": "object", "properties": {}},
+)
 
 
 def test_delegation_guidance_follows_effective_tool_manifest() -> None:
@@ -79,6 +89,28 @@ def test_harness_model_step_uses_task_identity_override() -> None:
     assert messages[0].role is MessageRole.SYSTEM
     assert messages[0].content == "You are the embedded product assistant."
     assert "Zebra Agent" not in messages[0].content
+
+
+def test_harness_model_step_requires_selected_skills_to_be_read() -> None:
+    messages = HarnessModelStep(
+        available_tools=(SKILLS_LIST_TOOL, SKILLS_READ_TOOL),
+    ).build_initial_messages(
+        HarnessTask(
+            title="Write",
+            user_input="Write a detailed report.",
+            skill_components=("better-writing",),
+        ),
+        created_at=datetime(2026, 9, 16, 0, 0, tzinfo=UTC),
+    )
+
+    system_text = "\n".join(
+        message.content for message in messages if message.role is MessageRole.SYSTEM
+    )
+    assert "call skills.list" in system_text
+    assert "better-writing" in system_text
+    assert "published skill_id" in system_text
+    assert "skills.read for every applicable selected Skill" in system_text
+    assert "Never claim that a Skill was used unless it was read" in system_text
 
 
 def test_harness_model_step_preserves_durable_conversation_tail() -> None:

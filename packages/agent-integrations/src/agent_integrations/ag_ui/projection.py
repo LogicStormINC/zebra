@@ -41,6 +41,7 @@ from agent_integrations.ag_ui.contracts import (
 )
 from agent_integrations.ag_ui.interrupts import (
     RunFinishedInterruptOutcome,
+    project_budget_suspension_event,
     project_interrupt_event,
 )
 from agent_integrations.ag_ui.model_usage import project_model_usage
@@ -189,6 +190,20 @@ class AgUiProjector:
                 state.text_ended.add(model_call_id)
             if usage_event is not None:
                 output.append(usage_event)
+            response_stage = _optional_payload_text(payload, "response_stage")
+            if response_stage in {"tool_loop", "final"}:
+                output.append(
+                    CustomEvent(
+                        timestamp=timestamp,
+                        name="zebra.model_response",
+                        value={
+                            "assistant_message": assistant_message or "",
+                            "message_id": message_id,
+                            "model_call_id": model_call_id,
+                            "response_stage": response_stage,
+                        },
+                    )
+                )
             return tuple(output)
         if event.event_type is EventType.TOOL_CALL_PROPOSED:
             call_id = _required_payload_text(payload, "tool_call_id")
@@ -304,6 +319,11 @@ class AgUiProjector:
             return (
                 RunErrorEvent(timestamp=timestamp, message=message, code="zebra_turn_failed"),
             )
+        if event.event_type is EventType.SESSION_SUSPENDED:
+            projected = project_budget_suspension_event(event, identity, timestamp)
+            if projected:
+                state.turn_finished = True
+            return projected
         if event.event_type is EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED:
             state.turn_finished = True
             return (

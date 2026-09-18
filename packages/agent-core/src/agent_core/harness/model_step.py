@@ -28,6 +28,8 @@ from agent_core.harness.model_step_support import (
     MODEL_NATIVE_DELEGATION_GUIDANCE,
     MODEL_REQUIRED_DELEGATION_DIRECTIVE,
     ZEBRA_AGENT_IDENTITY_DIRECTIVE,
+    final_answer_instruction,
+    selected_skill_message,
     tool_result_content,
 )
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
@@ -389,17 +391,7 @@ class HarnessModelStep:
         *,
         created_at: datetime,
     ) -> None:
-        messages.append(
-            SessionMessage(
-                message_id=new_message_id(),
-                role=MessageRole.USER,
-                content=(
-                    "The tool budget is complete. Answer the original request using "
-                    "the available tool results. Do not request or invoke another tool."
-                ),
-                created_at=created_at,
-            )
-        )
+        messages.append(final_answer_instruction(created_at=created_at))
 
     def build_initial_messages(
         self,
@@ -455,6 +447,11 @@ class HarnessModelStep:
                         created_at=created_at,
                     )
                 )
+        skill_message = selected_skill_message(
+            task.skill_components, self._available_tools, created_at=created_at
+        )
+        if skill_message is not None:
+            messages.append(skill_message)
         active_steps = tuple(
             step for step in task.task_plan.steps if step.status.value in {"pending", "in_progress"}
         )

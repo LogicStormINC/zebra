@@ -27,7 +27,11 @@ x-zebra-cloud-environment: &zebra-cloud-environment
   ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY: ${ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY:-}
   ZEBRA_HOST_TOOL_SHARED_SECRET: ${ZEBRA_HOST_TOOL_SHARED_SECRET:-}
   ZEBRA_HOST_TOOL_SSRF_ALLOW_HOSTNAMES: ${ZEBRA_HOST_TOOL_SSRF_ALLOW_HOSTNAMES:-}
+  SSL_CERT_FILE: ${SSL_CERT_FILE:-/etc/ssl/certs/ca-certificates.crt}
+  ZEBRA_CLOUD_EXTENSIONS_READ_ENABLED: ${ZEBRA_CLOUD_EXTENSIONS_READ_ENABLED:-true}
+  ZEBRA_CLOUD_EXTENSIONS_MANAGE_ENABLED: ${ZEBRA_CLOUD_EXTENSIONS_MANAGE_ENABLED:-false}
   ZEBRA_DEVELOPMENT_UNRESTRICTED: ${ZEBRA_DEVELOPMENT_UNRESTRICTED:-false}
+  ZEBRA_COMMAND_TICK_SECONDS: ${ZEBRA_COMMAND_TICK_SECONDS:-10}
   ZEBRA_WORKSPACE_VOLUME_LAYOUT: ${ZEBRA_WORKSPACE_VOLUME_LAYOUT:-}
   DOCKER_HOST: ${DOCKER_HOST:-}
 
@@ -58,6 +62,7 @@ services:
     read_only: true
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+      - ${ZEBRA_ACCEPTANCE_CA_FILE:-./trench-acceptance/secrets/ca.crt}:/etc/ssl/certs/zebra-acceptance-ca.crt:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
     group_add:
@@ -106,6 +111,7 @@ services:
     read_only: true
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+      - ${ZEBRA_ACCEPTANCE_CA_FILE:-./trench-acceptance/secrets/ca.crt}:/etc/ssl/certs/zebra-acceptance-ca.crt:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
     group_add:

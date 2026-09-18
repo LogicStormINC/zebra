@@ -21,6 +21,12 @@ from agent_core.harness.plan_step import execute_plan_call
 from agent_core.harness.policy_step import policy_stop_result
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.tool_execution import execute_tool_call, record_tool_result
+from agent_core.harness.tool_freshness import (
+    can_refresh_repeated_read,
+    declared_mutation_tools,
+    declared_read_only_tools,
+    record_tool_freshness,
+)
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
@@ -44,6 +50,8 @@ class ToolBatchExecutor:
         self._tool_gateway = tool_gateway
         self._model_step = model_step
         self._verifier = verifier
+        self.read_only_tools = declared_read_only_tools(tool_gateway)
+        self.mutation_tools = declared_mutation_tools(tool_gateway)
         self._repeat_hard_stop_threshold = repeat_hard_stop_threshold
         self._concurrent = ConcurrentToolBatchExecutor(
             policy_engine=policy_engine,
@@ -110,6 +118,7 @@ class ToolBatchExecutor:
             tool_calls,
             fingerprints=fingerprints,
             metadata=metadata,
+            read_only_tools=self.read_only_tools,
         ):
             return self._recover_repeated_reads(
                 context,
@@ -165,7 +174,14 @@ class ToolBatchExecutor:
                     "tool_selection_summary": selection_summary,
                     "tool_selection_metadata": selection_metadata,
                 }
-                if action_fingerprint(tool_call) in fingerprints:
+                if (
+                    action_fingerprint(tool_call) in fingerprints
+                    and not can_refresh_repeated_read(
+                        tool_call,
+                        metadata=metadata,
+                        read_only_tools=self.read_only_tools,
+                    )
+                ):
                     loop_guard_counts = _loop_guard_counts(metadata)
                     fingerprint = action_fingerprint(tool_call)
                     loop_guard_counts[fingerprint] = loop_guard_counts.get(fingerprint, 0) + 1
@@ -307,6 +323,14 @@ class ToolBatchExecutor:
             tool_calls_executed += 1
             fingerprints.add(action_fingerprint(tool_call))
             metadata = {**metadata, **execution.metadata}
+            if tool_call.name != "agent.plan":
+                metadata = record_tool_freshness(
+                    metadata,
+                    tool_call,
+                    execution.result,
+                    read_only_tools=self.read_only_tools,
+                    mutation_tools=self.mutation_tools,
+                )
             self._model_step.append_tool_result(
                 messages,
                 tool_call=tool_call,
@@ -430,6 +454,7 @@ def _can_recover_repeated_reads(
     *,
     fingerprints: set[str],
     metadata: Mapping[str, object],
+    read_only_tools: frozenset[str],
 ) -> bool:
     recovery_count = metadata.get("repeated_read_recovery_count", 0)
     if recovery_count != 0:
@@ -437,6 +462,11 @@ def _can_recover_repeated_reads(
     return all(
         tool_call.name in {"files.read", "sessions.search"}
         and action_fingerprint(tool_call) in fingerprints
+        and not can_refresh_repeated_read(
+            tool_call,
+            metadata=metadata,
+            read_only_tools=read_only_tools,
+        )
         for tool_call in tool_calls
     )
 

@@ -319,6 +319,7 @@ class LocalToolGateway(ToolGatewayPort):
                 parent_task_id=parent_task_id,
                 parent_binding=parent_binding,
                 parent_context=parent_context,
+                skill_components=self.effective_skill_components,
             )
             registry.register(research.contract, research.handle)
         self._model_tools = registry.model_tools() + self._mcp_catalog.model_tools

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -156,14 +157,18 @@ class HostToolGateway:
                 idempotency_key=idempotency_key,
             )
         if not 200 <= response.status_code < 300:
+            detail, error_code = _safe_http_error(response.body)
             return _failure(
                 tool_call,
                 reason="host_http_error",
-                detail=str(response.status_code),
+                detail=detail or str(response.status_code),
                 contract=contract,
                 scopes=effective_scopes,
                 idempotency_key=idempotency_key,
-                metadata={"http_status": response.status_code},
+                metadata={
+                    "http_status": response.status_code,
+                    **({"http_error_code": error_code} if error_code else {}),
+                },
             )
         if not isinstance(response.body, Mapping):
             return _failure(
@@ -305,6 +310,36 @@ def _join_endpoint(endpoint: str, suffix: str) -> str:
     base_path = parsed.path.rstrip("/")
     path = f"{base_path}{suffix}"
     return urlunsplit((parsed.scheme, parsed.netloc, path, "", ""))
+
+
+def _safe_http_error(body: object) -> tuple[str | None, str | None]:
+    """Expose bounded business diagnostics while removing secret/path leakage."""
+    if not isinstance(body, Mapping):
+        return None, None
+    detail: str | None = None
+    for key in ("detail", "message", "error"):
+        value = body.get(key)
+        if isinstance(value, str) and value.strip():
+            candidate = " ".join(value.split())
+            candidate = re.sub(
+                r"(?i)(?<!\w)(bearer|basic|api[_-]?key|access[_-]?token|client[_-]?secret|token|secret|password|credential|authorization)\s*[:=]\s*\S+",
+                r"\1=<redacted>",
+                candidate,
+            )
+            candidate = re.sub(
+                r"(?<![\w])/(?:Users|home|app|workspace|tmp|var|srv|opt|mnt)/[^\s,;]+",
+                "<path>",
+                candidate,
+            )
+            if "<redacted>" not in candidate and re.search(
+                r"\beyJ[a-zA-Z0-9_-]{20,}\.[^\s]+", candidate
+            ):
+                candidate = ""
+            if candidate and not candidate.lower().startswith(("traceback", "stack trace")):
+                detail = candidate[:256]
+            break
+    code = body.get("code")
+    return detail, code.strip()[:128] if isinstance(code, str) and code.strip() else None
 
 
 def _failure(

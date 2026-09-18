@@ -22,6 +22,12 @@ from agent_core.harness.policy_step import policy_stop_result
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.subagent_metadata import aggregate_subagent_metadata
 from agent_core.harness.tool_execution import record_tool_result
+from agent_core.harness.tool_freshness import (
+    can_refresh_repeated_read,
+    declared_mutation_tools,
+    declared_read_only_tools,
+    record_tool_freshness,
+)
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
@@ -56,6 +62,8 @@ class ConcurrentToolBatchExecutor:
         self._tool_gateway = tool_gateway
         self._model_step = model_step
         self._verifier = verifier
+        self._read_only_tools = declared_read_only_tools(tool_gateway)
+        self._mutation_tools = declared_mutation_tools(tool_gateway)
         self._parallel_safe_tools = parallel_safe_tools
         self._parallel_batch_limits = dict(parallel_batch_limits or {})
         invalid_limits = (
@@ -139,7 +147,11 @@ class ConcurrentToolBatchExecutor:
                 )
             )
             fingerprint = action_fingerprint(tool_call)
-            if fingerprint in seen:
+            if fingerprint in seen and not can_refresh_repeated_read(
+                tool_call,
+                metadata=metadata,
+                read_only_tools=self._read_only_tools,
+            ):
                 loop_guard_counts[fingerprint] = (
                     loop_guard_counts.get(fingerprint, 0) + 1
                 )
@@ -202,6 +214,7 @@ class ConcurrentToolBatchExecutor:
         executed_results = self._execute_all(executable_calls)
         results = _merge_results(tool_calls, executable_calls, executed_results, duplicate_indices)
         failed_names: list[str] = []
+        observed_epoch = _integer(batch_metadata.get("mutation_epoch"))
         for tool_call, tool_result in zip(tool_calls, results, strict=True):
             execution = record_tool_result(
                 context,
@@ -221,6 +234,14 @@ class ConcurrentToolBatchExecutor:
             if tool_result.status is not ToolCallStatus.EXECUTED:
                 failed_names.append(tool_call.name)
             batch_metadata = {**batch_metadata, **execution.metadata}
+            batch_metadata = record_tool_freshness(
+                batch_metadata,
+                tool_call,
+                tool_result,
+                read_only_tools=self._read_only_tools,
+                mutation_tools=self._mutation_tools,
+                observed_epoch=observed_epoch,
+            )
             batch_metadata = aggregate_subagent_metadata(
                 batch_metadata,
                 tool_result,
@@ -295,6 +316,10 @@ def selection_evidence(
         "selected_index": index,
         "candidate_count": count,
     }
+
+
+def _integer(value: object) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
 def _started_event(context: HarnessContext, tool_call: ToolCall) -> HarnessEventDraft:

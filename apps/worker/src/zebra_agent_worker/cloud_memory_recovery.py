@@ -219,15 +219,18 @@ def recover_completed_cloud_memory(
     if recovery is None:
         return
     pending_reader = getattr(projection_store, "list_memory_recovery_sessions", None)
-    pending = (
-        pending_reader(limit=max(batch_size, 1), recovery_action=MEMORY_RECOVERY_ACTION)
-        if callable(pending_reader)
-        else []
-    )
-    # Recent Sessions retain the existing best-effort title retry behavior. The
-    # PostgreSQL pending reader is durable and oldest-first, so Memory recovery
-    # itself no longer depends on a moving recent-Session window.
-    recent = projection_store.list_recent_sessions(limit=max(batch_size, 32))
+    if callable(pending_reader):
+        pending = pending_reader(
+            limit=max(batch_size, 1), recovery_action=MEMORY_RECOVERY_ACTION
+        )
+        # The durable PostgreSQL reader is oldest-first and authoritative. Do
+        # not rescan recent completed sessions on every maintenance tick.
+        recent = []
+    else:
+        pending = []
+        # Legacy stores have no durable recovery queue, so retain their bounded
+        # recent-session compatibility behavior.
+        recent = projection_store.list_recent_sessions(limit=max(batch_size, 32))
     sessions = {session.session_id: session for session in (*pending, *recent)}
     for session in sessions.values():
         # COMPLETED: legacy/one-shot finalization; AWAITING_TURN: a

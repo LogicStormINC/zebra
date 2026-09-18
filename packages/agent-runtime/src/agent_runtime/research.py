@@ -82,6 +82,7 @@ class LocalResearchSubagentRunner:
                 max_model_calls=task.max_model_calls,
                 max_tool_calls=task.max_tool_calls,
                 workspace_root=task.workspace_root,
+                skill_components=task.skill_components,
             ),
             SingleAttemptOrchestrator(
                 self._model_gateway,
@@ -219,6 +220,7 @@ class ResearchSubagentTool:
         parent_task_id: object | None = None,
         parent_binding: object | None = None,
         parent_context: ContextMaterialization | None = None,
+        skill_components: tuple[str, ...] = (),
     ) -> None:
         self._coordinator = coordinator
         self._workspace_root = workspace_root
@@ -234,6 +236,7 @@ class ResearchSubagentTool:
         self._parent_task_id = parent_task_id
         self._parent_binding = parent_binding
         self._parent_context = parent_context
+        self._skill_components = skill_components
 
     @property
     def contract(self) -> ToolContract:
@@ -262,6 +265,7 @@ class ResearchSubagentTool:
             max_model_calls=self._max_model_calls,
             max_tool_calls=self._max_tool_calls,
             depth=1,
+            skill_components=self._skill_components,
         )
         try:
             if self._delegation_store is not None and not self._wait_for_result:

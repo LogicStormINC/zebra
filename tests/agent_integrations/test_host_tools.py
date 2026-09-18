@@ -144,6 +144,39 @@ def test_http_and_invalid_body_failures_are_recoverable(
     assert result.metadata["recoverable"] is True
 
 
+def test_http_business_error_detail_is_bounded_and_redacted() -> None:
+    transport = _FakeTransport(
+        [
+            HostToolTransportResponse(
+                200,
+                {"workloadIdentity": "trench-worker", "tools": [_tool_payload()]},
+            ),
+            HostToolTransportResponse(
+                422,
+                {
+                    "message": (
+                        "source is paused; access_token=top-secret /app/internal/trace"
+                    ),
+                    "code": "source_paused",
+                },
+            ),
+        ]
+    )
+    gateway = HostToolGateway(
+        "https://trench.example",
+        HostWorkloadIdentity("trench-worker", "tenant-1", "trench"),
+        transport=transport,
+    )
+    manifest = gateway.discover(_context())
+
+    result = gateway.invoke(_tool_call(), _context(), manifest=manifest, idempotency_key="invoke-1")
+
+    assert result.metadata["detail"] == "source is paused; access_token=<redacted> <path>"
+    assert result.metadata["http_error_code"] == "source_paused"
+    assert "top-secret" not in str(result)
+    assert "/app/internal" not in str(result)
+
+
 def test_output_limit_and_manifest_integrity_fail_closed() -> None:
     payload = _tool_payload()
     payload["maxOutputBytes"] = 2

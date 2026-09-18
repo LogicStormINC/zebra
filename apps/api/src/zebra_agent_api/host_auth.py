@@ -6,6 +6,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from hashlib import sha256
+import logging
 
 from agent_core.domain.host_authority import HostSessionGrant
 from agent_security import (
@@ -22,6 +23,7 @@ from agent_storage import HostGrantAttempt, HostRegistryRecord, PostgresHostAuth
 from zebra_agent_api.http import HostGrantHttpRequest, HostGrantRequestAuthorizer
 
 _DEFAULT_REQUIRED_SCOPES = ("agent.run",)
+logger = logging.getLogger(__name__)
 
 
 def build_postgres_host_grant_authorizer(
@@ -63,7 +65,8 @@ class PostgresHostGrantRequestAuthorizer(HostGrantRequestAuthorizer):
             config = _verification_config(record)
             try:
                 decoded = self.decoder.decode(token, config=config)
-            except HostGrantSecurityError:
+            except HostGrantSecurityError as exc:
+                logger.warning("Host Grant decode rejected: %s: %s", type(exc).__name__, str(exc))
                 continue
             attempt = _attempt_for(
                 token,
@@ -82,6 +85,7 @@ class PostgresHostGrantRequestAuthorizer(HostGrantRequestAuthorizer):
                 )
                 _require_request_origin(request.origin, verified.context.origin)
             except (HostGrantSecurityError, ValueError) as exc:
+                logger.warning("Host Grant verifier detail: %s", type(exc).__name__)
                 self.registry.record_rejection(attempt, "Host Grant binding or scope rejected")
                 raise HostGrantBindingError("Host Grant binding or scope rejected") from exc
             decision = self.registry.consume_grant(attempt)

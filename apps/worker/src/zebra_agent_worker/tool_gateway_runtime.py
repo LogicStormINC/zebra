@@ -103,6 +103,15 @@ class WorkerToolGateway:
         return READ_ONLY_TOOLS | host_read | (self.management_names & READ_NAMES)
 
     @property
+    def mutation_tools(self) -> frozenset[str]:
+        host_writes = (
+            frozenset(tool.name for tool in self.host_manifest.tools if tool.risk is ToolRisk.WRITE)
+            if self.host_manifest is not None
+            else frozenset()
+        )
+        return host_writes | (self.management_names & WRITE_NAMES)
+
+    @property
     def authorized_write_tools(self) -> frozenset[str]:
         management_write = self.management_names & WRITE_NAMES
         if self.host_manifest is None or self.host_context is None:

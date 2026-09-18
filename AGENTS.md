@@ -356,7 +356,76 @@ If you stop mid-stream, leave behind:
 <claude-mem-context>
 # Memory Context
 
-# [zebra-agent] recent context, 2026-09-08 11:44am GMT+8
+# [zebra-agent] recent context, 2026-09-17 11:58am GMT+8
 
-No previous sessions found.
+Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
+Format: ID TIME TYPE TITLE
+Fetch details: get_observations([IDs]) | Search: mem-search skill
+
+Stats: 50 obs (23,736t read) | 947,404t work | 97% savings
+
+### Jul 22, 2026
+S167 查看本地分支并提交到 GitHub — codex/har-tool-recovery-01 分支三项功能全部验证完毕，已提交并开 PR #191 (Jul 22 at 6:04 PM)
+S165 Commit and push codex/har-tool-recovery-01 branch to GitHub — three feature areas (HAR-TOOL-RECOVERY-01, CTX-ART-01, CTX-ART-02) fully validated and shipped as PR #191 (Jul 22 at 6:04 PM)
+S174 Local Branch Cleanup and GitHub Push — Post PR #191 Merge Housekeeping (Jul 22 at 6:06 PM)
+S179 Remote Branch Cleanup — Delete Stale/Obsolete Branches, Preserve Active Contributor Work (Jul 22 at 6:20 PM)
+277 6:31p ✅ Remote Branch Cleanup Requested Post-PR #191 Merge
+279 " 🔵 Remote Branch Audit: 3 Unmerged Codex Branches Found on Origin
+280 " 🔵 codex/fix-artifact-ref-tail-commas Contains Unmerged Bug Fix Not Present on Main
+281 " 🔵 PR #74 (finos-vision-mcp) Open Since Jul 14 — Blocked on Real FinOS Deploy
+282 6:32p 🔵 Codex FinOS Branches Authored by vinson1101, PR #74 is Draft
+S182 Git status check — are there any uncommitted changes on the current branch? (Jul 22 at 6:33 PM)
+283 7:01p 🔵 Only Untracked Binary sessions.sqlite Has Uncommitted Changes on Main
+S186 Session title generation investigation — how does the desktop sidebar derive conversation titles? (Jul 22 at 7:01 PM)
+284 7:02p 🔵 Zebra Agent Desktop UI Architecture: Tauri + React/TypeScript with Checks System
+285 7:03p 🔵 Session Title Derivation: First 36 Chars of User Message, Stored in localStorage
+286 " 🔵 Workspace Session Reconciliation: Local-First with Server Merge on Startup
+S203 Semantic Session Title Feature — Full Implementation Complete, All Checks Green, Awaiting Commit/PR Decision (Jul 22 at 7:04 PM)
+287 7:04p 🔵 No Session Title Update Endpoint Exists in Backend — Title Is Permanently Set at Creation
+288 7:05p 🔵 Session Title Stored in Projection Table, Not Tasks Table; Bounded on History Write
+289 7:07p 🔵 Projection Store UPSERT Updates Title — Session Domain Object Title Change Would Auto-Persist
+290 " 🔵 apply_event Never Updates Session.title; No SESSION_TITLE_UPDATED EventType Exists
+291 7:09p ⚖️ Semantic Session Title Feature — Full Architecture Plan Written
+292 7:12p 🟣 Semantic Session Title Feature Implementation Started — Tasks Created
+293 " 🔵 SessionEvent.create() Has Optional Payload Validation — Unknown Event Types Fall Through Safely
+294 7:13p 🟣 SESSION_TITLE_UPDATED Event Type Implemented — Domain Layer Complete
+295 7:14p 🔵 Task 2 Groundwork — Key Payload Keys and Service Pattern Confirmed
+296 7:16p 🟣 Task 2 Complete + Task 3 Partially Wired — SessionTitleService Created and Injected Into Worker
+297 7:17p 🟣 Task 3 Complete — finalize_execution Wired to Call SessionTitleService After Memory Extraction
+298 7:18p 🟣 Task 4 Complete + Task 5 Begun — Frontend Sync useEffect Landed, Projection Test Added
+300 7:24p 🔵 Session Title Feature Files Pass mypy Type Check
+301 7:25p 🔵 SESSION_TITLE_UPDATED Payload Contract: Auto-Strips Whitespace, Rejects Blank Titles
+S207 Semantic Session Title Feature — Fully Shipped: Commit dfc04ca5, Branch feat/semantic-session-title, PR #192 Opened (Jul 22 at 7:25 PM)
+302 7:26p ✅ Feature Branch Created and Files Staged for Semantic Session Title
+303 7:27p 🟣 Semantic Session Title Feature Committed and PR #192 Opened
+S213 Desktop UI Live Preview — Zebra Agent Desktop App Launched for Visual Inspection, Awaiting UI Change Request (Jul 22 at 7:29 PM)
+304 7:32p 🔵 Desktop UI Component Hierarchy Mapped — CodexWorkspace as Top-Level Shell
+305 " 🔵 Vite Dev Server Port Mismatch — Configured 1420, Running on 5173/5174
+306 " 🔵 Zebra Desktop App Not Running — Ports 5173/5174 Belong to Other Projects
+307 7:33p ✅ Zebra Desktop Vite Dev Server Started on Port 1420
+330 8:12p 🔵 Publisher Platform Workspace vs Chat Differentiation — Evaluation Requested
+332 8:13p 🔵 Zebra Agent Desktop UI — Workspace vs Chat Architecture Mapped
+S229 Workspace home page differentiation design — Plan A approval checkpoint for four-cell execution environment card UI component (Jul 22 at 8:20 PM)
+383 9:21p 🟣 Tool Calls Proposed — Animated Label + Collapsible Panel UI Request
+384 " 🔵 Tool Call Proposed Event — Codebase Location Map
+385 9:22p 🔵 SessionExecutionTrace Component — Tool Call Rendering Architecture
+386 9:23p 🔵 "Tool calls proposed." Text — Backend-Injected Placeholder, Not Frontend Label
+400 10:00p 🔵 Zebra Agent Desktop — Branch Clean, No Uncommitted Changes
+401 10:01p 🔵 Zebra Agent Makefile Targets and API Architecture Confirmed
+402 10:02p 🔵 Zebra Agent Default SQLite Database Path Confirmed
+403 10:04p 🔵 Zebra Agent API Server Health Endpoint Response Confirmed
+405 10:05p 🔵 Zebra Agent UI Connected to Local Runtime — Existing Tasks Surfaced
+### Jul 28, 2026
+1047 11:12a 🔵 Zebra Agent — Cloud Phase Branch Topology and Stacked Review State
+1048 " 🔵 CLOUD-COMPOSE-INFRA-01 — Docker Compose Dependency Stack with Mem0 Boot-Smoke
+1049 " 🔵 MEM-GW-CON-01 Session Initiation — AgentMemoryGateway Contract Planning
+1050 11:15a 🔵 MEM-GW-CON-01 — Worktree Created and Initial Contract Files Written
+1051 11:17a 🔵 MEM-GW-CON-01 Contract Tests Pass — 12/12 Green, Ruff Clean, Mypy Has One Expected Type Error Proved by Test
+1052 11:18a 🔵 MEM-GW-CON-01 — Full Validation Green: 12 Tests, Ruff Clean, Mypy 116 Files Clean; Doc Updates Applied
+1053 11:19a 🔵 MEM-GW-CON-01 — Full agent_core Test Suite 220/220 Green; Ruff Baseline Confirmed 6 Pre-existing Errors in Untouched Harness Files
+1054 11:20a 🔵 MEM-GW-CON-01 — Full make test Baseline Confirmed: 9 Inherited Failures, 1759 Pass, 8 Skipped; Contract Tests Now 13/13 Green
+1055 11:21a 🔵 MEM-GW-CON-01 — Final Validation Complete: Eval10/10,1760 Pass, 9 Inherited Failures Confirmed Stable
+1056 11:22a 🔵 MEM-GW-CON-01— Task Moved to Review; Final Pre-Commit Verification Green; Changeset Ready for Commit
+
+Access 947k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

@@ -94,6 +94,9 @@ class SkillMetadata:
     digest: str | None = None
     scope: SkillScope = SkillScope.USER
     namespace: str | None = None
+    # Kept after the historical positional fields so external local catalogs
+    # remain source-compatible while cloud catalogs can expose published IDs.
+    skill_id: str | None = None
 
 
 @dataclass(frozen=True)

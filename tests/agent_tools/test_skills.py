@@ -5,7 +5,14 @@ import pytest
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_tools import SkillsListTool, SkillsReadTool
-from agent_tools.skills_catalog import LocalSkillCatalog, SkillCatalogError
+from agent_tools.skills_catalog import LocalSkillCatalog, SkillCatalogError, SkillMetadata
+
+
+def test_skill_metadata_keeps_historical_positional_version_slot() -> None:
+    metadata = SkillMetadata("sample", "description", "source", "v1")
+
+    assert metadata.version == "v1"
+    assert metadata.skill_id is None
 
 
 def test_skill_tools_progressively_disclose_metadata_then_content(tmp_path: Path) -> None:

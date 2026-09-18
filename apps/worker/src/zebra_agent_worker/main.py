@@ -24,7 +24,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     namespace = _build_parser().parse_args(list(argv) if argv is not None else None)
     settings = load_settings()
     database_path = Path(namespace.database or settings.database_url)
-    with httpx.Client(timeout=httpx.Timeout(300.0, connect=10.0)) as model_http_client:
+    # The process may need an internal CA for Host Grant traffic, but model
+    # providers use public TLS. Keep their client independent of SSL_CERT_FILE.
+    with httpx.Client(
+        timeout=httpx.Timeout(300.0, connect=10.0),
+        trust_env=False,
+    ) as model_http_client:
         loop_service = build_worker_loop_service(
             database_path=database_path,
             settings=settings,

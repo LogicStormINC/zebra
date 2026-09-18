@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from json import JSONDecodeError
@@ -57,6 +58,7 @@ HTTP_ALLOWED_HEADERS = [
     "X-Zebra-Client-Fence",
     "X-Zebra-Client-Session",
 ]
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -453,7 +455,8 @@ def _authorize_host_request(
         request.state.host_context = context
         if isinstance(verified, VerifiedHostGrant):
             request.state.verified_host_grant = verified
-    except (HostGrantSecurityError, ValueError):
+    except (HostGrantSecurityError, ValueError) as exc:
+        logger.warning("Host Grant request rejected: %s", type(exc).__name__)
         return _forbidden("host_grant_rejected")
     return None
 

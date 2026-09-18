@@ -53,6 +53,11 @@ class SequenceToolGateway:
         )
 
 
+class EvidenceToolGateway(SequenceToolGateway):
+    read_only_tools = frozenset({"files.read"})
+    mutation_tools = frozenset({"tests.run"})
+
+
 def test_bounded_loop_executes_two_tools_before_final_answer() -> None:
     first = _tool_call("files.read", {"path": "input.txt"}, "call_read")
     second = _tool_call("tests.run", {"preset": "test"}, "call_test")
@@ -93,6 +98,84 @@ def test_bounded_loop_executes_two_tools_before_final_answer() -> None:
         MessageRole.TOOL,
         MessageRole.USER,
     ]
+
+
+def test_identical_read_executes_again_after_a_successful_mutation() -> None:
+    first_read = _tool_call("files.read", {"path": "state.json"}, "call_read_before")
+    mutation = _tool_call("tests.run", {"preset": "mutate"}, "call_mutate")
+    fresh_read = _tool_call("files.read", {"path": "state.json"}, "call_read_after")
+    gateway = _gateway(
+        _completion("Inspect current state.", first_read),
+        _completion("Apply the change.", mutation),
+        _completion("Verify current state.", fresh_read),
+        _completion("The change is verified."),
+    )
+    tools = EvidenceToolGateway()
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Mutate and verify",
+            user_input="Change state and verify it.",
+            max_model_calls=4,
+            max_tool_calls=3,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert [call.provider_call_id for call in tools.calls] == [
+        "call_read_before",
+        "call_mutate",
+        "call_read_after",
+    ]
+    assert result.attempt_result.metadata["mutation_epoch"] == 1
+    assert result.attempt_result.metadata["verified_mutation_epoch"] == 1
+    assert "unverified_mutation" not in result.attempt_result.metadata
+
+
+def test_mutation_gets_one_bounded_fresh_evidence_turn_before_completion() -> None:
+    mutation = _tool_call("tests.run", {"preset": "mutate"}, "call_mutate")
+    verification = _tool_call("files.read", {"path": "state.json"}, "call_verify")
+    gateway = _gateway(
+        _completion("Apply the change.", mutation),
+        _completion("The change is complete."),
+        _completion("I will verify the result.", verification),
+        _completion("The current state confirms the change."),
+    )
+    tools = EvidenceToolGateway()
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Require evidence closure",
+            user_input="Change state and report the result.",
+            max_model_calls=4,
+            max_tool_calls=2,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert [call.provider_call_id for call in tools.calls] == ["call_mutate", "call_verify"]
+    assert any(
+        "verify the current state" in message.content
+        for message in gateway.requests[2]
+        if message.role is MessageRole.USER
+    )
+    assert result.attempt_result.metadata["verified_mutation_epoch"] == 1
 
 
 def test_failed_research_returns_to_model_and_uses_web_fallback() -> None:
@@ -252,6 +335,39 @@ def test_bounded_loop_stops_when_no_model_call_remains_for_final_answer() -> Non
     assert result.attempt_result.metadata["stop_reason"] == ("model_call_budget_exhausted")
     assert result.events[-1].event_type is EventType.SESSION_SUSPENDED
     assert result.run_result.stop_reason is HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
+
+
+def test_final_permitted_model_call_can_still_use_a_tool_before_suspending() -> None:
+    first = _tool_call("files.read", {"path": "a.txt"}, "call_a")
+    second = _tool_call("files.read", {"path": "b.txt"}, "call_b")
+    gateway = _gateway(
+        _completion("Read the first input.", first),
+        _completion("Read the second input too.", second),
+    )
+    tools = SequenceToolGateway()
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Use the full explicit model budget",
+            user_input="Read both inputs.",
+            max_model_calls=2,
+            max_tool_calls=2,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.metadata["stop_reason"] == "model_call_budget_exhausted"
+    assert result.run_result.model_calls_used == 2
+    assert result.run_result.tool_calls_used == 2
+    assert [call.provider_call_id for call in tools.calls] == ["call_a", "call_b"]
 
 
 def _gateway(*completions: ModelCompletion) -> ScriptedModelGateway:

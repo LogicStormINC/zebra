@@ -17,14 +17,21 @@ import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.task_recovery import RecoveredTask
 
 CLOUD_CONTEXT_TOKEN_BUDGET = 2_048
-CLOUD_CONVERSATION_TOKEN_BUDGET = 8_192
+CLOUD_CONVERSATION_TOKEN_BUDGET = 32_768
 HOST_EMBEDDED_AGENT_IDENTITY_DIRECTIVE = (
     "You are the product assistant embedded by the invoking Host application. Follow the "
     "Host-provided product role and identity in the task context. Never identify yourself as "
     "the underlying agent runtime, an engineering assistant, or a coding assistant unless the "
     "Host explicitly defines that product role. Use the Host tools actually available in this "
     "session proactively, ask for required configuration only when it is missing, and never "
-    "claim an operation succeeded without a successful tool result. Do not expose internal "
+    "claim an operation succeeded without a successful tool result. Reconcile conflicting "
+    "evidence, verify mutations with a fresh read when a read tool exists, and distinguish "
+    "confirmed results from unresolved uncertainty. For substantial deliverables, use any "
+    "selected Skill before drafting and review the result for completeness. Match the depth and "
+    "format the user requested; reports and articles need developed structure, supporting "
+    "evidence, and explicit limitations rather than a short generic summary. When a tool "
+    "fails, inspect the failure and exhaust safe in-scope alternatives before asking the "
+    "user to retry. Do not expose internal "
     "model, runtime, or tool identifiers unless the user asks. Respond in the user's language."
 )
 

@@ -30,6 +30,43 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
+  Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:
+  enforce selected Skill reads, bind mutation verification to resource evidence,
+  preserve safe Host business-error details, add deterministic final-answer
+  quality/revision checks, propagate selected Skill context to bounded research
+  children, improve Trench source mutation refresh semantics, and close the
+  adjacent durable-pipeline review defects found in the same audit. Owned Zebra
+  paths: `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-core/src/agent_core/domain/tool_profiles.py`,
+  `packages/agent-core/src/agent_core/domain/subagents.py`,
+  `packages/agent-integrations/src/agent_integrations/host_tools/gateway.py`,
+  `packages/agent-runtime/src/agent_runtime/research.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-tools/src/agent_tools/skills.py`,
+  `packages/agent-tools/src/agent_tools/cloud_skills.py`,
+  `packages/agent-tools/src/agent_tools/skills_catalog.py`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`, focused tests,
+  `PROGRESS.md`, `WORKLOG.md`, and this registry. Owned Trench paths:
+  `services/api/src/trench_api/trench_ai_read_tools_contract.py`,
+  `services/api/src/trench_api/trench_ai_read_tools.py`,
+  `services/api/src/trench_api/routers/trench_ai_read_tools.py`,
+  `services/api/src/trench_api/trench_ai_native_history_tools.py`,
+  `services/api/src/trench_api/harness/source_tools.py`,
+  `services/api/src/trench_api/harness/source_tool_dispatch.py`,
+  `services/api/src/trench_api/trench_ai_source_rows.py`,
+  `services/api/src/trench_api/trench_ai_source_jobs.py`,
+  `packages/core/src/trench_core/raw_inbox.py`,
+  `packages/core/src/trench_core/worker_loops.py`,
+  `services/api/src/trench_api/routers/health.py`,
+  `services/api/src/trench_api/routers/trench_ai_timeline.py`,
+  `services/api/src/trench_api/trench_ai_source_store.py`, focused API tests
+  (including route registration, native history and legacy source compatibility), the timeline
+  reliability runbook and `progress.md`. No new authority, no credential
+  changes, and no schema migration in this slice.
+
 - `DESKTOP-COMPOSER-UX-01`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: reshape the Cloud
   Agent composer into a compact two-sided command bar and expose truthful
@@ -6456,7 +6493,7 @@ Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store�
 
 ### CLIENT-AGUI-ADMISSION-01 - AG-UI Command Client Admission
 
-- Status: `In Progress`
+- Status: `Review`
 - Implemented evidence: published-profile name admission, handler rejection,
   deep redaction and state byte bounds are attached to the durable Command.
 - Remaining acceptance: validate declared Tool contract digests and Readable
@@ -25982,6 +26019,118 @@ treat caller-supplied hard-budget exhaustion as a recoverable suspension.
 - replaying provider-private continuation or raw tool output across Segments
 - removing explicit caller budgets or repeated-action stopping conditions
 - hard-coded finance, stock, or intent-specific routing heuristics
+
+### CTX-SEG-03 - Host Budget Defaults And Truthful Suspension
+
+- Status: `Review`
+- Owner: `Codex`
+- Suggested role: `CORE / INTEGRATIONS / TRENCH / QA`
+- Depends on: merged `CTX-SEG-02`
+- Branch: `cloud-agent-trench`
+- Owned paths: `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/`,
+  `tests/agent_core/test_sequential_tool_loop.py`,
+  `tests/agent_integrations/test_ag_ui_projection.py`,
+  `docs/自适应Agent循环与预算治理方案_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `PROGRESS.md`, `task_plan.md`, plus the Trench host task-contract adapter and
+  its focused tests in the sibling Trench repository.
+
+#### Goal
+
+Remove Trench's implicit interactive model/tool ceilings, let the final allowed
+model call use tools, and project explicit hard-budget suspension truthfully to
+AG-UI instead of fabricating a successful terminal answer.
+
+#### Acceptance
+
+- [x] Normal Trench conversations omit model/tool hard limits; scheduled tasks
+  retain their explicit user-configured limits.
+- [x] The last permitted model call may still invoke tools; if another model
+  turn is then required, the Session suspends with a structured budget reason.
+- [x] AG-UI emits a terminal interrupt for `SESSION_SUSPENDED`, so clients do
+  not hang and can present a recoverable continuation state.
+- [x] The incident shape (sixth model call requests tools) has a focused
+  regression test, alongside adapter and projection tests.
+- [x] Focused tests and affected repository quality checks pass.
+
+#### Validation Evidence
+
+- Core/AG-UI affected suites: `948 passed, 1 skipped`; focused regression:
+  `24 passed`
+- Zebra quality gate: file-size, Ruff, strict Mypy over `942` source files and
+  release Eval `10/10` passed
+- full Zebra suite: `4439 passed, 887 skipped`; one elapsed-time-sensitive
+  schedule grant test failed after the suite exceeded its module-level 30-second
+  clock window, then passed alone (`1 passed`)
+- Trench budget/runtime/interrupt/progress group: `35 passed`; Python gate:
+  `121 passed` with the same 5 pre-existing `_IncludedRouter` registration
+  failures already recorded by `TRN-PIPE-RELIABILITY-01`
+
+#### Explicit Non-Goals
+
+- removing explicit budgets from scheduled or administrative workloads
+- heuristic parsing of model prose to decide whether work is complete
+- changing policy, approval, cancellation, or duplicate-effect stops
+
+### AGENT-QUALITY-01 - Evidence Closure And Skill-Guided Deliverables
+
+- Status: `In Progress`
+- Owner: `Codex`
+- Suggested role: `CORE / WORKER / INTEGRATIONS / TRENCH / QA`
+- Depends on: `CTX-SEG-03`
+- Branch: `cloud-agent-trench` (explicit user-requested in-place integration)
+- Owned paths: `packages/agent-core/src/agent_core/domain/tool_profiles.py`,
+  `packages/agent-core/src/agent_core/harness/`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`, focused Core/Worker
+  tests, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`, plus the Trench
+  source-truth and Zebra event-projection adapters and their focused tests in
+  the sibling Trench repository.
+
+#### Goal
+
+Raise Cloud Agent answer quality by making selected Skills operational, requiring
+fresh read evidence after mutations, preserving enough conversation context for
+long research work, and preventing intermediate model prose from being mistaken
+for the final answer.
+
+#### Acceptance
+
+- [x] The Trench research coordinator can discover and read its frozen selected
+  Skills, and the initial prompt requires applicable Skills to be read before a
+  substantial deliverable is written.
+- [x] A successful declared business mutation creates an unverified evidence state; an identical
+  read may execute again after that mutation and completion gets one bounded
+  verification turn when fresh evidence is still missing.
+- [x] Repeated reads without an intervening mutation remain loop-guarded, and
+  policy, approval, cancellation and explicit-budget behavior stay unchanged.
+- [x] Cloud conversation compaction uses a materially larger bounded budget,
+  with a deterministic regression check.
+- [x] Trench source status/list results expose the user's subscription truth
+  instead of conflating it with the global Source switch.
+- [x] Only the final model response becomes the durable assistant answer;
+  intermediate tool-loop prose remains progress and never replaces the body.
+- [x] Focused Core, Worker, projection and Trench contract tests pass; affected
+  lint/type/build gates are reported separately from deployment/browser proof.
+
+#### Validation
+
+- Zebra affected suites: `800 passed`; post-classification regression:
+  `40 passed`.
+- Zebra full deterministic suite excluding the separately live-provider smoke:
+  `4441 passed, 887 skipped`; Ruff, strict Mypy (`943` source files), file-size
+  gate, Eval `10/10`, and diff check pass.
+- The live DeepSeek Responses smoke remains provider-dependent: the sampled
+  `deepseek-flash` tool call succeeded but returned no reasoning item
+  (`reasoning_tokens=0`), while the smoke requires one.
+- Trench source/progress/runtime contract group: `42 passed`; target Ruff and
+  diff check pass.
+- No commit, push, deployment, service restart, or browser acceptance is claimed.
+
+#### Explicit Non-Goals
+
+- intent-specific finance or writing heuristics
+- unrestricted retries or bypassing deterministic policy/approval controls
+- production deployment, merge or push without a separate request
 
 ## Extension Architecture Planning
 

@@ -216,6 +216,7 @@ class ResearchSubagentTask:
     max_model_calls: int = 3
     max_tool_calls: int = 2
     depth: int = 1
+    skill_components: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.objective.strip():
@@ -226,6 +227,11 @@ class ResearchSubagentTask:
             raise ValueError("research budgets must be positive")
         if self.depth <= 0:
             raise ValueError("research depth must be positive")
+        if (
+            len(self.skill_components) > 32
+            or len(set(self.skill_components)) != len(self.skill_components)
+        ):
+            raise ValueError("research skill_components must be unique and bounded")
 
 
 @dataclass(frozen=True)

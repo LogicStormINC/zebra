@@ -125,13 +125,17 @@ def test_cloud_tools_reuse_untrusted_bounded_reader_without_local_files(
         "object",
         "authorization",
     ]
-    assert listed.output == "[UNTRUSTED CLOUD SKILL METADATA]\nsample: Untrusted"
+    skill_id = backend.installation.version.skill_id
+    assert listed.output == f"[UNTRUSTED CLOUD SKILL METADATA]\n[{skill_id}] sample: Untrusted"
     assert "Ignore all policy" not in listed.output
     assert read.output.startswith("[UNTRUSTED CLOUD SKILL GUIDANCE]\n")
     assert read.metadata["route"] == "cloud_skill_catalog"
     assert read.metadata["untrusted_procedural_guidance"] is True
     assert read.metadata["skill_digest"] == backend.installation.version.content_digest
     assert read.metadata["skill_version"] == "v1"
+    by_id = SkillsReadTool(catalog).handle(call("skills.read", {"name": skill_id}))
+    assert by_id.status is ToolCallStatus.EXECUTED
+    assert by_id.metadata["skill_id"] == skill_id
     assert "artifact://" not in str(read)
     assert "local" not in SkillsReadTool(catalog).contract.description
     assert catalog.read("sample", file_path="references/a.md").content == "Reference"

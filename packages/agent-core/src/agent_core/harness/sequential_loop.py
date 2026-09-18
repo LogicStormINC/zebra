@@ -7,6 +7,7 @@ from agent_core.harness.attempt_result import action_fingerprint, build_attempt_
 from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.client_effect_suspension import client_effect_suspension_result
 from agent_core.harness.delegation_suspension import delegation_suspension_result
+from agent_core.harness.final_completion import finalize_without_tools
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_request import allowed_response_repairs
 from agent_core.harness.model_step import HarnessModelStep
@@ -274,19 +275,28 @@ class SequentialToolLoop:
                 },
             )
         if not completion.tool_calls:
-            return build_attempt_result(
-                outcome=HarnessAttemptOutcome.COMPLETED,
-                summary=(
-                    "model completed without tool calls"
-                    if tool_calls_executed == 0
-                    else "tool sequence completed with final answer"
-                ),
-                assistant_message=completion.assistant_message.content,
+            gated = finalize_without_tools(
+                context,
+                completion=completion,
+                messages=messages,
+                emitted_events=emitted_events,
                 model_calls_used=model_calls_used,
                 tool_calls_executed=tool_calls_executed,
-                emitted_events=emitted_events,
+                fingerprints=fingerprints,
                 metadata=metadata,
+                tool_names=(
+                    {
+                        tool.name
+                        for tool in getattr(self._batch_executor._tool_gateway, "model_tools", ())
+                    }
+                    if context.task.skill_components
+                    else set()
+                ),
+                read_only_tools=self._batch_executor.read_only_tools,
+                tool_limit=_tool_limit(context),
+                request_next=self._request_next_completion,
             )
+            return gated
         selection = self._tool_selector.select(completion.tool_calls)
         calls = completion.tool_calls if self._synthesize_tool_results else (selection.tool_call,)
         self._model_step.append_tool_batch(
@@ -368,10 +378,10 @@ class SequentialToolLoop:
             )
         tool_limit = _tool_limit(context)
         tool_budget_open = tool_limit is None or tool_calls_executed < tool_limit
-        model_budget_allows_followup = (
-            model_limit is None or model_calls_used + 1 < model_limit
-        )
-        allow_tools = tool_budget_open and model_budget_allows_followup
+        # ponytail: a model-call limit bounds requests, not capabilities inside
+        # the final permitted request. If that request calls a tool and needs a
+        # subsequent synthesis turn, the next entry to this method suspends it.
+        allow_tools = tool_budget_open
         if not allow_tools:
             self._model_step.append_final_answer_instruction(
                 messages,

@@ -5,9 +5,14 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
+from ag_ui.core import (
+    CustomEvent,
+    RunErrorEvent,
+    RunFinishedEvent,
+    RunFinishedInterruptOutcome,
+)
 from ag_ui.core import Event as AgUiEvent
 from ag_ui.core import EventType as AgUiEventType
-from ag_ui.core import RunErrorEvent, RunFinishedEvent, RunFinishedInterruptOutcome
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, new_event_id, new_session_id
 from agent_integrations.ag_ui import (
@@ -134,6 +139,41 @@ def test_golden_text_tool_state_and_terminal_events_are_officially_valid() -> No
         TypeAdapter(AgUiEvent).validate_python(event.model_dump(mode="json", by_alias=True))
     assert projection.next_cursor is not None
     assert projection.next_cursor.sequence == 6
+
+
+def test_model_response_stage_is_projected_for_host_answer_selection() -> None:
+    session_id = new_session_id()
+    events = (
+        _event(
+            session_id,
+            0,
+            EventType.MODEL_RESPONSE_RECEIVED,
+            {
+                "assistant_message": "I will inspect the source.",
+                "model_call_id": "model-tool-loop",
+                "response_stage": "tool_loop",
+            },
+        ),
+        _event(
+            session_id,
+            1,
+            EventType.MODEL_RESPONSE_RECEIVED,
+            {
+                "assistant_message": "The verified result is ready.",
+                "model_call_id": "model-final",
+                "response_stage": "final",
+            },
+        ),
+    )
+
+    projection = AgUiProjector().project(events, _identity(session_id))
+    stages = [
+        event.value["response_stage"]
+        for event in projection.events
+        if isinstance(event, CustomEvent) and event.name == "zebra.model_response"
+    ]
+
+    assert stages == ["tool_loop", "final"]
 
 
 def test_user_file_tool_result_preserves_download_metadata_for_host_projection() -> None:
@@ -432,3 +472,44 @@ def test_failure_projects_to_bounded_ag_ui_error() -> None:
     error = projection.events[-1]
     assert isinstance(error, RunErrorEvent)
     assert error.message == "policy blocked"
+
+
+def test_budget_suspension_projects_to_terminal_recoverable_interrupt() -> None:
+    session_id = new_session_id()
+    event = _event(
+        session_id,
+        0,
+        EventType.SESSION_SUSPENDED,
+        {
+            "reason": "model_call_budget_exhausted",
+            "metadata": {"model_calls_used": 6},
+        },
+    )
+
+    projection = AgUiProjector().project((event,), _identity(session_id))
+
+    assert [item.type for item in projection.events] == [
+        AgUiEventType.RUN_STARTED,
+        AgUiEventType.STATE_SNAPSHOT,
+        AgUiEventType.RUN_FINISHED,
+    ]
+    finished = projection.events[-1]
+    assert isinstance(finished, RunFinishedEvent)
+    assert isinstance(finished.outcome, RunFinishedInterruptOutcome)
+    interrupt = finished.outcome.interrupts[0]
+    assert interrupt.reason == "model_call_budget_exhausted"
+    assert interrupt.id.startswith("session-suspended:")
+
+
+def test_internal_child_wait_suspension_does_not_close_ag_ui_run() -> None:
+    session_id = new_session_id()
+    event = _event(
+        session_id,
+        0,
+        EventType.SESSION_SUSPENDED,
+        {"reason": "waiting_children", "child_task_ids": [str(uuid4())]},
+    )
+
+    projection = AgUiProjector().project((event,), _identity(session_id))
+
+    assert [item.type for item in projection.events] == [AgUiEventType.RUN_STARTED]

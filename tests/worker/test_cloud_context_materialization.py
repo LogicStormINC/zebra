@@ -24,11 +24,16 @@ from agent_security import parse_network_profile
 from zebra_agent_worker.context_materialization import materialize_worker_context
 from zebra_agent_worker.execution_context import (
     CLOUD_CONTEXT_TOKEN_BUDGET,
+    CLOUD_CONVERSATION_TOKEN_BUDGET,
     harness_task_for_recovered,
 )
 from zebra_agent_worker.task_recovery import RecoveredTask
 
 NOW = datetime(2026, 8, 23, 13, 0, tzinfo=UTC)
+
+
+def test_cloud_conversation_budget_retains_long_research_history() -> None:
+    assert CLOUD_CONVERSATION_TOKEN_BUDGET == 32_768
 
 
 class _RecordingContextStore:
@@ -216,6 +221,8 @@ def test_trench_host_uses_trench_product_identity(tmp_path: Path) -> None:
     assert "product assistant embedded by the invoking Host" in harness_task.identity_directive
     assert "Host-provided product role and identity" in harness_task.identity_directive
     assert "underlying agent runtime" in harness_task.identity_directive
+    assert "exhaust safe in-scope alternatives" in harness_task.identity_directive
+    assert "reports and articles need developed structure" in harness_task.identity_directive
 
 
 def test_automation_handoff_seed_does_not_count_as_conversation_history(

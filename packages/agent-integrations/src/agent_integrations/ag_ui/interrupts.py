@@ -60,6 +60,40 @@ def project_interrupt_event(
     )
 
 
+def project_budget_suspension_event(
+    event: SessionEvent,
+    identity: AgUiRunIdentity,
+    timestamp: int,
+) -> tuple[Event, ...]:
+    reason = _optional_text(event.payload, "reason")
+    if reason not in {"model_call_budget_exhausted", "tool_call_budget_exhausted"}:
+        return ()
+    subject = "model-call" if reason == "model_call_budget_exhausted" else "tool-call"
+    interrupt = Interrupt(
+        id=f"session-suspended:{event.event_id}",
+        reason=reason,
+        message=(
+            f"The explicit {subject} limit was reached. The task is paused and can "
+            "continue with a larger limit."
+        ),
+    )
+    return (
+        StateSnapshotEvent(
+            timestamp=timestamp,
+            snapshot={
+                "session": {"status": "suspended", "reason": reason},
+                "openInterruptIds": [interrupt.id],
+            },
+        ),
+        RunFinishedEvent(
+            timestamp=timestamp,
+            thread_id=identity.thread_id,
+            run_id=identity.run_id,
+            outcome=RunFinishedInterruptOutcome(interrupts=[interrupt]),
+        ),
+    )
+
+
 def _optional_text(payload: dict[str, object], key: str) -> str | None:
     value = payload.get(key)
     return value.strip() if isinstance(value, str) and value.strip() else None

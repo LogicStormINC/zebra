@@ -374,7 +374,7 @@ def test_cloud_memory_scan_does_not_hide_deterministic_value_errors() -> None:
         )
 
 
-def test_cloud_memory_scan_includes_old_durable_pending_sessions() -> None:
+def test_cloud_memory_scan_uses_durable_pending_sessions_without_recent_rescan() -> None:
     from agent_core.domain.identifiers import new_session_id
     from agent_core.domain.sessions import SessionStatus
     from zebra_agent_worker.cloud_memory_recovery import recover_completed_cloud_memory
@@ -407,7 +407,7 @@ def test_cloud_memory_scan_includes_old_durable_pending_sessions() -> None:
         projection_store=projection,
     )
 
-    assert recovered == [old_session.session_id, recent_session.session_id]
+    assert recovered == [old_session.session_id]
 
 
 def _build_receipt_session(tmp_path: Path, *, with_follow_up: bool):

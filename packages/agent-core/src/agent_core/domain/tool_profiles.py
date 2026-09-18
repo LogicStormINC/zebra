@@ -45,7 +45,11 @@ RESEARCH_TOOL_NAMES = frozenset(
         "sessions.search",
     }
 )
-RESEARCH_COORDINATOR_TOOL_NAMES = RESEARCH_TOOL_NAMES | {"agent.research"}
+RESEARCH_COORDINATOR_TOOL_NAMES = RESEARCH_TOOL_NAMES | {
+    "agent.research",
+    "skills.list",
+    "skills.read",
+}
 
 
 def tool_names_for_profile(profile: ToolProfile) -> frozenset[str]:

@@ -1,6 +1,7 @@
 """Opt-in asynchronous reads of scoped extension configuration; no execution."""
 
 import asyncio
+import logging
 
 from agent_core.domain.extensions import McpConnection, OpaqueExtensionId, SkillInstallation
 from agent_core.ports.extensions import (
@@ -29,6 +30,7 @@ _ERRORS = {
     428: ("precondition_required", "If-Match is required."),
     503: ("service_unavailable", "Extension configuration is temporarily unavailable."),
 }
+logger = logging.getLogger(__name__)
 
 
 def is_extension_path(path: str) -> bool:
@@ -105,7 +107,8 @@ async def extension_read_response(
         )
     try:
         scope = extension_scope_from_grant(verified, permission="extensions.read")
-    except HostGrantSecurityError:
+    except HostGrantSecurityError as exc:
+        logger.warning("Extension Host Grant scope rejected: %s", type(exc).__name__)
         return extension_error(403)
     if request.method != "GET":
         allow = "GET, PATCH" if manage_enabled and len(parts) == 2 else "GET"

@@ -1,5 +1,55 @@
 # Zebra Agent Project Status
 
+2026-09-16 AGENT-QUALITY-02: the Cloud Agent quality-loop repair is implemented
+in-place on `cloud-agent-trench`. Finalization now enforces selected Skill reads,
+revises shallow substantive deliverables once, and records a bounded warning if
+the second answer remains weak. Mutation freshness is resource-scoped when a
+tool exposes an id/url/path and keeps a global fallback for opaque mutations;
+Host business errors retain bounded detail/code metadata. Research children
+inherit the selected Skill components. Trench native source mutations now
+reject ambiguous `sources.add` arguments and schedule an immediate RSS refresh
+after add/resume, with periodic fallback truthfully reported. Zebra `make check`
+passes (file-size, Ruff, strict Mypy over 945 sources, Eval 10/10); focused
+quality/runtime tests pass 49, and the full suite reached 4446 passed, 887
+skipped; the two timing-sensitive baseline failures passed in isolation. Trench
+targeted tests pass 25/25; the stale custom-website fixture now uses a true
+website URL while X URL normalization remains covered by native-history tests.
+Acceptance images were rebuilt
+from the current source; API, Worker, Scheduler, and Trench live/readiness
+health checks are green.
+
+2026-09-16 AGENT-QUALITY-01: the in-place Cloud Agent quality repair is ready
+for review on `cloud-agent-trench`. Frozen selected Skills are now available to
+the Trench coordinator and must be resolved/read before substantial output.
+Declared business mutations enter an unverified state, allow a fresh repeated
+read, and receive one bounded verification turn; tests and generic commands are
+not misclassified as business writes. Cloud conversation history grows from
+8192 to 32768 bounded tokens. Trench source reads project current user
+subscription truth, while AG-UI marks `tool_loop/final` responses so live
+progress remains visible but only the final response becomes the durable body.
+Zebra affected suites passed 800 plus a 40-test classification regression;
+the deterministic full suite excluding the live-provider smoke passed 4441
+with 887 skips. Ruff, strict Mypy over 943 sources, file-size, Eval 10/10 and
+diff gates pass. The live DeepSeek smoke's tool call returned reasoning_tokens=0
+and fails only its external reasoning-presence assertion. Trench's affected
+group passed 42 with target Ruff/diff green. Existing dirty work is preserved;
+no commit, push, deployment, restart, or browser acceptance is claimed.
+
+2026-09-16 CTX-SEG-03: budget-governance repair is ready for review on
+`cloud-agent-trench`. Trench interactive tasks no longer inject implicit `6/16`
+model/tool limits. The harness no longer reserves the final permitted model call
+as a tool-disabled synthesis turn: that call retains tools, and only a required
+subsequent model request causes structured `model_call_budget_exhausted`
+suspension. AG-UI now closes explicit budget suspensions with a recoverable
+interrupt while leaving internal `waiting_children` suspension untouched.
+Core/AG-UI suites pass `948` with `1` skip; the focused regression passes `24`.
+File-size, Ruff, strict Mypy over `942` source files and Eval `10/10` pass. The
+full suite passed `4439` with `887` skips; its only failure was a pre-existing
+module-level 30-second clock-window test that passed alone. Trench's affected
+group passes `35`; its Python gate remains at the recorded baseline of `121`
+passes plus 5 unrelated `_IncludedRouter` failures. No commit, push, deployment,
+or browser acceptance is claimed.
+
 2026-09-15 CLOUD-USER-SCHEDULE-DEPLOY-01: The independent Scheduler is now
 composed beside the API and Worker in the real Trench acceptance stack. Trench
 ToC provides logged-in user schedule CRUD, controls and durable run history;
@@ -2934,3 +2984,39 @@ free of backend secrets.
   `885` dependency skips.
 - Boundary: management API, frontend, deployment activation, RabbitMQ fault
   injection and Trench browser acceptance remain later phases.
+
+## 2026-09-16 - Cloud/Trench quality review remediation
+
+The remaining review defects in the selected Skill and Trench pipeline paths
+were corrected without changing authority boundaries. Cloud Skill metadata now
+contains the server-published ID and the typed reader resolves either ID or
+name. Host HTTP diagnostics preserve a bounded business message while
+redacting credentials and internal paths. Trench Raw Inbox recovery is now
+lock-claimed with a publish-time backoff, worker heartbeats distinguish last
+success from last failure, and pipeline health reports durable/replay
+capabilities from the actual database probe. Zebra's full suite (`4450 passed,
+887 skipped`) and `make check` are green; Trench's focused reliability and
+cleaning gates are green. Deployment and browser acceptance remain separate
+gates.
+
+## 2026-09-17 - Cloud/Trench quality review follow-up
+
+The compatibility fallback for legacy Trench source databases is now complete:
+subscription lookup handles a missing user-subscription table and returns to
+the owner-scoped source path. Route-registration coverage was made compatible
+with the current FastAPI/Starlette nested-router implementation without
+weakening path or precedence checks, and RSSHub serialization now matches the
+canonical `rsshub://` source kind. Native history source listing also probes
+subscription readiness before loading ORM rows, avoiding an expired-object
+failure during the legacy fallback. Native history search and event lookup
+also probe the events table, covering the case where the period ledger is
+migrated before event storage. The Trench Python gate is green at `127
+passed`; native-history/extension/route regression coverage is `20 passed`,
+the product timeline now also degrades safely when the events table is absent,
+evidence and historical trace now degrade when projection tables are absent,
+and the combined timeline/read/native/extension/route compatibility set is
+`37 passed`;
+focused reliability/review coverage is `47 passed`, cleaning is `73 passed`,
+ToC tests are `79 passed`, and the frontend/ToC builds, lint, migration SQL
+generation, and diff checks are green. No deployment or browser acceptance is
+claimed.

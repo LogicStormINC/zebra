@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-09-16 - AGENT-QUALITY-02 quality-loop and source refresh closure
+
+Audited the Cloud Agent and Trench source-mutation paths against the durable
+conversation evidence and acceptance runtime. Added selected-Skill read
+enforcement, resource-scoped freshness, bounded Host business diagnostics,
+substantive-answer revision gates, and Skill propagation to research children.
+Tightened native `sources.add` input validation and scheduled an immediate RSS
+refresh after add/resume while retaining periodic fallback.
+
+Validation: Zebra `make check` passed; focused quality/runtime tests passed
+(49); the full Zebra suite passed 4446 tests with 887 skips, and the two
+timing-sensitive baseline tests passed in isolation. Trench targeted tests
+passed 25/25; the stale custom-website fixture now uses a true website URL
+while X URL normalization remains covered by native-history tests. Acceptance images
+were rebuilt from the current source and the running API, Worker, and Scheduler
+are healthy; Trench `/api/health/live` and `/api/health/ready` are healthy.
+
 ## 2026-09-14 - Compact Cloud Agent composer and live supplements
 
 Reworked the sender as a compact two-sided command bar. The left side retains
@@ -9814,3 +9831,60 @@ actual byte access.
 - Browser and PostgreSQL acceptance proved the 16:02 manual run completed and
   froze one Skill plus one MCP. Quality evidence: `24`, `13`, `6`, and `78`
   focused tests respectively; all Zebra static gates and ToC lint/build passed.
+
+## 2026-09-16 - AGENT-QUALITY-02 review remediation
+
+- Closed the reviewed Skill identifier gap: cloud `skills.list` now exposes the
+  published UUID, `skills.read` accepts either name or UUID, and the selected
+  Skill prompt names the exact frozen identifiers. Historical positional
+  `SkillMetadata(..., version)` construction remains compatible.
+- Host business-error details remain useful but are bounded and redact bearer,
+  token, credential and internal-path material before entering a model result.
+- Trench Raw Inbox recovery now claims rows under a lock and uses the last
+  publish claim as its retry backoff, preventing repeated five-second duplicate
+  requeues. Worker progress keeps the last successful completion separate from
+  the last failure, and pipeline health derives durable/replay flags from an
+  actual inbox probe instead of constants.
+- Evidence: Zebra focused `86 passed`, full suite `4450 passed, 887 skipped`,
+  and `make check` passed (file size, Ruff, strict Mypy over 945 sources and
+  Eval 10/10). Trench focused `32 passed`, reliability subset `6 passed`, and
+  cleaning gate `73 passed`. No deployment or live browser acceptance was
+  performed.
+
+## 2026-09-17 - AGENT-QUALITY-02 follow-up review
+
+- Restored the legacy source compatibility guard in `get_user_subscription`;
+  an older database without `trench_ai_user_subscriptions` now falls back to
+  the legacy source row instead of raising an operational error.
+- Restored the native history `sources.list` fallback as well; its readiness
+  probe now runs before source rows are loaded so the fallback rollback cannot
+  expire those ORM objects.
+- Completed the same compatibility boundary for native history periods:
+  `subscriptions.list_history`, period lookup and cross-period event search
+  now return an empty result when the period ledger is not yet migrated.
+- Added the event-table readiness boundary to native history search and event
+  lookup; a deployment with the period ledger ahead of the events migration
+  now also degrades to an empty result instead of failing the tool call.
+- Added the same event-table guard to the regular `events.get_*` read-tool
+  family, so an active source in a partially migrated database cannot turn a
+  read call into a SQL error.
+- Added the event-table readiness guard to the product timeline list endpoint;
+  ToC now receives an empty timeline during the migration window instead of a
+  500 from the missing events table.
+- Guarded evidence reads and historical trace against partially migrated
+  projection tables; missing document/link/artifact tables now produce an
+  empty evidence result rather than a SQL exception.
+- Split the extension proxy's GET/POST/PATCH registration into explicit
+  operation IDs; OpenAPI no longer emits duplicate operation identifiers.
+- Updated route-registration tests for FastAPI/Starlette's nested
+  `_IncludedRouter` representation while retaining exact path-converter and
+  route-precedence assertions. Corrected the RSSHub contract expectation for
+  `rsshub://` sources.
+- Evidence: Trench Python gate `127 passed`, native-history/extension/route
+  regression set `20 passed`, focused review/reliability set `47 passed`,
+  combined read/native/extension/route compatibility set `29 passed`,
+  timeline/read/native/extension/route compatibility set `37 passed`,
+  cleaning gate `73 passed`, ToC frontend tests `79 passed`, frontend and ToC
+  production builds, lint, migration SQL generation, and `git diff --check`
+  all passed. No
+  deployment or live browser acceptance was performed.

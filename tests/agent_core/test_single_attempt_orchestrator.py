@@ -204,11 +204,9 @@ def test_single_attempt_orchestrator_synthesizes_tool_result_when_enabled() -> N
         MessageRole.USER,
         MessageRole.ASSISTANT,
         MessageRole.TOOL,
-        MessageRole.USER,
     ]
-    assert gateway.requests[1][-2].tool_call_id == "call_proof"
-    assert gateway.requests[1][-2].content == "zebra-ready"
-    assert "Do not request or invoke another tool" in gateway.requests[1][-1].content
+    assert gateway.requests[1][-1].tool_call_id == "call_proof"
+    assert gateway.requests[1][-1].content == "zebra-ready"
     model_events = [
         event for event in result.events if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
     ]

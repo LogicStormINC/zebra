@@ -1,4 +1,43 @@
-# Current task — CLOUD-USER-SCHEDULE-DEPLOY-01 (2026-09-15)
+# Current task — AGENT-QUALITY-01 Evidence Closure And Skill-Guided Deliverables (2026-09-16)
+
+## Current task — AGENT-QUALITY-02 Quality Loop Completion (2026-09-16)
+
+Branch: `cloud-agent-trench`; Trench consumer: `/Users/lukeding/Desktop/playground/2026/product/Trench`.
+
+1. `completed` — enforce selected Skill reads before final answers.
+2. `completed` — bind freshness verification to resource evidence with opaque fallback.
+3. `completed` — retain safe Host business-error diagnostics.
+4. `completed` — add deterministic substantive-answer revision/warning gates.
+5. `completed` — carry selected Skill components into bounded research children.
+6. `completed` — validate and refresh Trench native source mutations.
+7. `completed` — run static/focused/full checks and record remaining baseline failures.
+8. `completed` — rebuild the live acceptance stack and verify service health; the
+   source mutation path is covered by the focused Trench contract suite.
+
+Branch: `cloud-agent-trench` (explicit user-requested in-place integration)
+Trench consumer: `/Users/lukeding/Desktop/playground/2026/product/Trench`
+
+1. `completed` — bind selected Skills to the coordinator prompt and tool profile.
+2. `completed` — add declared mutation/fresh-read evidence tracking and bounded
+   completion verification.
+3. `completed` — increase the bounded Cloud conversation history budget.
+4. `completed` — project user subscription truth in Trench source reads.
+5. `completed` — separate tool-loop progress prose from the final assistant answer.
+6. `completed` — run focused and affected validation, then close durable records.
+
+## Prior task — CTX-SEG-03 Host Budget Defaults And Truthful Suspension (2026-09-16)
+
+Branch: `cloud-agent-trench` (explicit user-requested in-place integration)
+Trench consumer: `/Users/lukeding/Desktop/playground/2026/product/Trench`
+
+1. `completed` — reproduce the incident from durable events and separate model-call
+   exhaustion from tool-call exhaustion.
+2. `completed` — remove Trench's implicit `6/16` limits from normal conversations.
+3. `completed` — let the final permitted model request retain tool capability.
+4. `completed` — project explicit budget suspension as a terminal AG-UI interrupt.
+5. `completed` — run focused and affected repository validation, then close docs.
+
+## Prior task — CLOUD-USER-SCHEDULE-DEPLOY-01 (2026-09-15)
 
 Branch: `cloud-agent-trench` (explicit user-requested in-place integration)
 Trench consumer: `/Users/lukeding/Desktop/playground/2026/product/Trench`

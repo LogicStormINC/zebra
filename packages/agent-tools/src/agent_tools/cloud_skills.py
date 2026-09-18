@@ -75,6 +75,11 @@ class CloudSkillCatalog:
         before = self._live_entries()
         entry = before.get(name)
         if entry is None:
+            entry = next(
+                (candidate for candidate in before.values() if candidate.metadata.skill_id == name),
+                None,
+            )
+        if entry is None:
             raise SkillCatalogError("skill_not_found", "skill is not available")
         path = _validated_support_path(file_path).as_posix()
         if path != file_path:
@@ -201,6 +206,7 @@ def _metadata(publication: SkillPublication) -> SkillMetadata:
         name=publication.name,
         description=publication.description,
         source=publication.version.version_id,
+        skill_id=publication.version.skill_id,
         version=publication.version_label,
         digest=publication.version.content_digest,
         namespace=publication.scope.namespace_id,
