@@ -285,6 +285,29 @@ def _tool_payload() -> dict[str, object]:
     }
 
 
+def test_manifest_round_trip_preserves_declared_resource_bindings() -> None:
+    from agent_integrations.host_tools.contracts import HostToolManifest
+
+    payload = _tool_payload()
+    payload["resourceBindings"] = [
+        {
+            "argumentPointer": "/event_id",
+            "resourceType": "event",
+            "required": True,
+            "matchMode": "exact",
+        }
+    ]
+    manifest = HostToolManifest.from_payload(
+        {"workloadIdentity": "worker-1", "tools": [payload]}
+    )
+
+    round_tripped = HostToolManifest.from_payload(manifest.to_payload())
+
+    assert round_tripped.digest == manifest.digest
+    assert round_tripped.to_payload() == manifest.to_payload()
+    assert round_tripped.resource_bindings_for("event.get")[0].resource_type == "event"
+
+
 def _tool_call() -> ToolCall:
     return ToolCall(
         tool_call_id=ToolCallId(uuid4()),

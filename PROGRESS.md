@@ -1,5 +1,14 @@
 # Zebra Agent Project Status
 
+2026-09-18 CLOUD-REMEDIATION-R01: Manifest resource-binding rules now belong
+to the canonical Host manifest payload and digest when explicitly declared.
+`HostToolManifest.to_payload()` preserves those rules through PostgreSQL
+freeze/recovery, while legacy manifests without declared rules retain their
+existing digest and legacy inference behavior. Focused integration,
+conformance, and storage-boundary validation passes `29 passed, 4 skipped`;
+targeted Ruff and diff checks pass. This slice has no credential, Worker,
+schema, deployment, or Trench worktree change.
+
 2026-09-18 CLOUD-REMEDIATION-R00: the Zebra/Trench remediation plan baseline
 was re-collected and registered. Zebra is at `026f59ef` (the plan baseline
 `07dca873` plus the prior GPL license commit) with a clean worktree; Trench is

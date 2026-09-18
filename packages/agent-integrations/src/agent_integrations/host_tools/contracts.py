@@ -69,6 +69,7 @@ class HostToolManifest:
     tools: tuple[ToolContract, ...]
     digest: str
     tool_resource_bindings: tuple[tuple[str, tuple[ResourceBindingRule, ...]], ...] = ()
+    resource_bindings_declared: bool = False
 
     def resource_bindings_for(self, name: str) -> tuple[ResourceBindingRule, ...]:
         """Declared (or legacy-inferred) binding rules for one tool name."""
@@ -93,6 +94,8 @@ class HostToolManifest:
             raise HostToolGatewayError("manifest entries must be Host tools")
         if len(self.digest) != 64 or any(char not in "0123456789abcdef" for char in self.digest):
             raise HostToolGatewayError("manifest digest is invalid")
+        if not isinstance(self.resource_bindings_declared, bool):
+            raise HostToolGatewayError("manifest resource binding marker is invalid")
         object.__setattr__(self, "workload_identity", identity)
 
     @classmethod
@@ -125,7 +128,13 @@ class HostToolManifest:
             )
         canonical = {
             "workloadIdentity": identity,
-            "tools": [_tool_payload(tool) for tool in tools],
+            "tools": [
+                _tool_payload(
+                    tool,
+                    dict(declared_bindings).get(tool.name, ()),
+                )
+                for tool in tools
+            ],
         }
         encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode()
         if len(encoded) > MAX_MANIFEST_BYTES:
@@ -139,6 +148,7 @@ class HostToolManifest:
             tools=tools,
             digest=digest,
             tool_resource_bindings=tool_resource_bindings,
+            resource_bindings_declared=bool(declared_bindings),
         )
 
     def get(self, name: str) -> ToolContract | None:
@@ -147,11 +157,20 @@ class HostToolManifest:
     def to_payload(self) -> dict[str, object]:
         """Serialize for durable freezing; from_payload round-trips it."""
 
-        return {
+        payload = {
             "workloadIdentity": self.workload_identity,
-            "tools": [_tool_payload(tool) for tool in self.tools],
+            "tools": [
+                _tool_payload(
+                    tool,
+                    dict(self.tool_resource_bindings).get(tool.name, ())
+                    if self.resource_bindings_declared
+                    else (),
+                )
+                for tool in self.tools
+            ],
             "manifestDigest": self.digest,
         }
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -304,8 +323,11 @@ def _tool_contract(raw: object) -> ToolContract:
         raise HostToolGatewayError("manifest tool entry is invalid") from exc
 
 
-def _tool_payload(tool: ToolContract) -> dict[str, object]:
-    return {
+def _tool_payload(
+    tool: ToolContract,
+    resource_bindings: tuple[ResourceBindingRule, ...] = (),
+) -> dict[str, object]:
+    payload = {
         "name": tool.name,
         "description": tool.description,
         "requiredArguments": list(tool.required_arguments),
@@ -320,6 +342,17 @@ def _tool_payload(tool: ToolContract) -> dict[str, object]:
         "idempotency": tool.idempotency.value,
         "receiptSchemaVersion": tool.receipt_schema_version,
     }
+    if resource_bindings:
+        payload["resourceBindings"] = [
+            {
+                "argumentPointer": rule.argument_pointer,
+                "resourceType": rule.resource_type,
+                "required": rule.required,
+                "matchMode": rule.match_mode,
+            }
+            for rule in resource_bindings
+        ]
+    return payload
 
 
 def _required_text(value: object, field_name: str) -> str:

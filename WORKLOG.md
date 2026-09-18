@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-09-18 - CLOUD-REMEDIATION-R01 Manifest serialization
+
+The existing Host manifest parser accepted declared `resourceBindings`, but
+the canonical digest and durable payload omitted them. A frozen manifest could
+therefore recover with a different resource contract. The serializer now
+includes declared rules in the digest and round-trips them; manifests that do
+not declare rules retain the legacy inferred-binding path and digest.
+
+Validation: focused integration/conformance/storage checks passed (29 passed,
+4 PostgreSQL-dependent skips); targeted Ruff and `git diff --check` passed.
+
 ## 2026-09-18 - CLOUD-REMEDIATION-R00 baseline
 
 Re-read the architecture, phase, and collaboration rules required by the

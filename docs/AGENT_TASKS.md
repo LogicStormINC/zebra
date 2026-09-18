@@ -30,7 +30,7 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
-- `CLOUD-REMEDIATION-R00`: In Progress, owned by Luke Ding (Codex), current
+- `CLOUD-REMEDIATION-R00`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: establish the
   reproducible Zebra/Trench baseline for the cloud-agent remediation plan,
   classify existing validation failures, record runtime/database/image
@@ -41,6 +41,17 @@ does not authorize production code, migrations or activation of its successor.
   secret rotation, or modification of the existing dirty Trench checkout.
   R01 and later remediation slices remain locked until this baseline is
   committed and reviewed.
+
+- `CLOUD-REMEDIATION-R01`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on the R00
+  baseline commit `84079d31`. Scope: close the Manifest v2 serialization gap
+  by making declared resource-binding rules part of the canonical manifest
+  payload and digest, preserve legacy manifests that have no rules, and add a
+  round-trip regression at the integration/storage freeze boundary. Owned
+  paths: `packages/agent-integrations/src/agent_integrations/host_tools/contracts.py`,
+  focused integration/storage tests, this registry, `PROGRESS.md`, and
+  `WORKLOG.md`. No connector credential, Worker gateway, schema migration,
+  deployment, or Trench worktree change is included.
 
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
