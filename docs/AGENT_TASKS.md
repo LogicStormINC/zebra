@@ -64,6 +64,18 @@ does not authorize production code, migrations or activation of its successor.
   migration, object deletion, deployment, or Trench worktree change is
   included.
 
+- `CLOUD-REMEDIATION-R03`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on R00 and
+  serialised after the R02 governance update. Scope: keep the client/front-end
+  gateway attached in every Worker gateway construction branch, including
+  pinned Host, local-only, and no-legacy-egress paths; preserve the existing
+  Host/local routing and add the capability-matrix regression. Owned paths:
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `apps/worker/src/zebra_agent_worker/execution_tool_gateway.py`, focused
+  Worker tests, this registry, `PROGRESS.md`, and `WORKLOG.md`. No credential
+  resolver, schema migration, deployment, or Trench worktree change is
+  included.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

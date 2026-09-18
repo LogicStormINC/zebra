@@ -279,6 +279,7 @@ def build_worker_tool_gateway(
             local=local,
             runtime=runtime,
             runtime_handle=runtime_handle,
+            client=client_gateway,
         )
     pinned = _resolve_pinned_gateway(task.host_context, egress_registry)
     if pinned is not None:
@@ -306,6 +307,7 @@ def build_worker_tool_gateway(
             host_manifest=manifest,
             runtime=runtime,
             runtime_handle=runtime_handle,
+            client=client_gateway,
         )
     if manifest_digest and manifest_digest != _NO_MANIFEST_DIGEST:
         # The binding froze a real Host manifest, yet no pinned connector
@@ -323,6 +325,7 @@ def build_worker_tool_gateway(
             local=local,
             runtime=runtime,
             runtime_handle=runtime_handle,
+            client=client_gateway,
         )
     if not settings.host_tool_shared_secret:
         local.close()

@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-09-18 - CLOUD-REMEDIATION-R03 Worker gateway capability matrix
+
+Audited every return branch in `build_worker_tool_gateway`. Fixed the shared
+composition defect where `client_gateway` was supplied only for legacy Host
+egress; pinned connectors and local/no-legacy paths now retain the same client
+capability when one is configured. Host, client-effect and extension wiring
+regressions passed (17 tests).
+
 ## 2026-09-18 - CLOUD-REMEDIATION-R02 workspace snapshot identity
 
 The cloud composition root wrote `workspace-snapshot/...` but the reader

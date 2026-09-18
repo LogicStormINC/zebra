@@ -1,5 +1,12 @@
 # Zebra Agent Project Status
 
+2026-09-18 CLOUD-REMEDIATION-R03: Worker gateway composition now retains the
+  configured ClientToolGateway in pinned Host, local-only, and no-legacy-egress
+  branches; previously only the legacy Host path preserved it, silently
+  removing front-end capabilities in the other modes. Host/client/extension
+  composition checks pass `17`; targeted Ruff and diff checks pass. No
+  credential, schema, deployment, or Trench worktree change was made.
+
 2026-09-18 CLOUD-REMEDIATION-R02: cloud workspace snapshots now use the
   `workspace-snapshot:<artifact_id>/<sha256>/<size>/<object_version>` URI
   contract. The reader validates and reuses the original artifact identity
