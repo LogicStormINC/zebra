@@ -1,5 +1,18 @@
 # Progress Log
 
+## 2026-09-18 - CLOUD-REMEDIATION-R00 baseline
+
+Re-read the architecture, phase, and collaboration rules required by the
+repository, then registered the first remediation-plan task with explicit
+owned paths. Captured the Zebra and Trench commits, preserved Trench's dirty
+checkout, recorded the production container/database/config fingerprints, and
+classified the current Zebra validation baseline.
+
+Validation: file-size check passed (2,204 files); pytest collection passed
+(5,336 tests); `make check` stops at the pre-existing Ruff `I001` in
+`apps/api/src/zebra_agent_api/host_auth.py:3`. No production code, schema,
+deployment, or secret was changed.
+
 ## 2026-09-16 - AGENT-QUALITY-02 quality-loop and source refresh closure
 
 Audited the Cloud Agent and Trench source-mutation paths against the durable

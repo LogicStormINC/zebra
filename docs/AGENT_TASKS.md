@@ -30,6 +30,18 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLOUD-REMEDIATION-R00`: In Progress, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction. Scope: establish the
+  reproducible Zebra/Trench baseline for the cloud-agent remediation plan,
+  classify existing validation failures, record runtime/database/image
+  versions and configuration fingerprints, and close the G0 evidence package.
+  Owned paths: `docs/evidence/zebra-cloud-trench-r00-baseline-2026-09-18.md`,
+  this registry, `PROGRESS.md`, and `WORKLOG.md`. This is a governance and
+  evidence slice only: no production code, schema migration, deployment,
+  secret rotation, or modification of the existing dirty Trench checkout.
+  R01 and later remediation slices remain locked until this baseline is
+  committed and reviewed.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

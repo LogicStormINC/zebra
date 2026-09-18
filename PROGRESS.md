@@ -1,5 +1,17 @@
 # Zebra Agent Project Status
 
+2026-09-18 CLOUD-REMEDIATION-R00: the Zebra/Trench remediation plan baseline
+was re-collected and registered. Zebra is at `026f59ef` (the plan baseline
+`07dca873` plus the prior GPL license commit) with a clean worktree; Trench is
+at `05c6bc1` with pre-existing dirty work intentionally preserved. The runtime
+fingerprint records the production compose files, container image digests,
+PostgreSQL 16.11, and Alembic `3c4d5e6f7081` without recording secrets. Zebra
+file-size and test collection checks pass; the baseline `make check` gate stops
+at one pre-existing Ruff import-order error in `apps/api/.../host_auth.py`, so
+Mypy and eval were not run in that sequence. No production code, deployment,
+schema migration, or Trench worktree mutation was performed. R01/R02 remain
+separate implementation slices after the G0 evidence package is committed.
+
 2026-09-16 AGENT-QUALITY-02: the Cloud Agent quality-loop repair is implemented
 in-place on `cloud-agent-trench`. Finalization now enforces selected Skill reads,
 revises shallow substantive deliverables once, and records a bounded warning if
