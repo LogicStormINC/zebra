@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-09-18 - CLOUD-REMEDIATION-R02 workspace snapshot identity
+
+The cloud composition root wrote `workspace-snapshot/...` but the reader
+required `workspace-snapshot:...`; it also generated a fresh artifact UUID on
+read even though the immutable object identity is part of the object key. The
+writer and reader now share a bounded URI codec carrying the original
+artifact_id, digest, size, and object version. Legacy URIs without an identity
+are rejected instead of guessed.
+
+Validation: focused snapshot/workspace tests passed (18); targeted Ruff and
+`git diff --check` passed.
+
 ## 2026-09-18 - CLOUD-REMEDIATION-R01 Manifest serialization
 
 The existing Host manifest parser accepted declared `resourceBindings`, but

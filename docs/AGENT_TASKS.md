@@ -53,6 +53,17 @@ does not authorize production code, migrations or activation of its successor.
   `WORKLOG.md`. No connector credential, Worker gateway, schema migration,
   deployment, or Trench worktree change is included.
 
+- `CLOUD-REMEDIATION-R02`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on R00 and
+  serialized after R01's shared governance update. Scope: make the durable
+  workspace snapshot URI self-describing, preserve the original artifact
+  identity across a new-process read, and add a regression for the cloud
+  composition writer/reader boundary. Owned paths:
+  `apps/worker/src/zebra_agent_worker/cloud_composition.py`, focused Worker
+  tests, this registry, `PROGRESS.md`, and `WORKLOG.md`. No storage schema
+  migration, object deletion, deployment, or Trench worktree change is
+  included.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

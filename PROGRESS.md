@@ -1,5 +1,13 @@
 # Zebra Agent Project Status
 
+2026-09-18 CLOUD-REMEDIATION-R02: cloud workspace snapshots now use the
+  `workspace-snapshot:<artifact_id>/<sha256>/<size>/<object_version>` URI
+  contract. The reader validates and reuses the original artifact identity
+  instead of generating a new UUID, and the writer emits the same parseable
+  prefix it expects. URI round-trip and legacy-shape rejection tests pass;
+  focused workspace tests pass `18`, targeted Ruff and diff checks pass. No
+  schema, object deletion, deployment, or Trench worktree change was made.
+
 2026-09-18 CLOUD-REMEDIATION-R01: Manifest resource-binding rules now belong
 to the canonical Host manifest payload and digest when explicitly declared.
 `HostToolManifest.to_payload()` preserves those rules through PostgreSQL

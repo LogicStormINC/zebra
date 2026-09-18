@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import ArtifactId, SessionId
 from agent_core.domain.sessions import Session
 from agent_core.ports import (
     ArtifactObjectStorePort,
@@ -31,6 +31,32 @@ from zebra_agent_worker.provider_continuation_commit import (
 )
 from zebra_agent_worker.runtime_instances import InstanceFactory
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
+
+
+def _workspace_snapshot_uri(
+    artifact_id: ArtifactId,
+    digest: str,
+    size_bytes: int,
+    object_version: str,
+) -> str:
+    """Encode all immutable object coordinates needed by a later Worker."""
+
+    return f"workspace-snapshot:{artifact_id}/{digest}/{size_bytes}/{object_version}"
+
+
+def _parse_workspace_snapshot_uri(uri: str) -> tuple[ArtifactId, str, int, str]:
+    prefix, separator, body = uri.partition(":")
+    if prefix != "workspace-snapshot" or not separator:
+        raise ValueError(f"unsupported workspace object uri: {uri}")
+    try:
+        artifact_text, digest, size_text, object_version = body.split("/", 3)
+        artifact_id = ArtifactId(UUID(artifact_text))
+        size_bytes = int(size_text)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid workspace object uri: {uri}") from exc
+    if not digest or size_bytes < 0 or not object_version:
+        raise ValueError(f"invalid workspace object uri: {uri}")
+    return artifact_id, digest, size_bytes, object_version
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,16 +142,13 @@ def compose_cloud_worker(
 
         def read_object(uri: str) -> bytes:
             from agent_core.domain.artifact_objects import ArtifactObjectExpectation
-            from agent_core.domain.identifiers import ArtifactId
 
-            kind, digest, size_text, version = uri.split("/", 3)
-            if kind != "workspace-snapshot:":
-                raise ValueError(f"unsupported workspace object uri: {uri}")
+            artifact_id, digest, size_bytes, version = _parse_workspace_snapshot_uri(uri)
             expectation = ArtifactObjectExpectation(
                 deployment_namespace=stores.deployment_namespace,
-                artifact_id=ArtifactId(uuid4()),
+                artifact_id=artifact_id,
                 sha256=digest,
-                size_bytes=int(size_text),
+                size_bytes=size_bytes,
             )
             return cloud.artifact_objects.read_version_verified(expectation, version)
 
@@ -147,8 +170,11 @@ def compose_cloud_worker(
             receipt = cloud.artifact_objects.put_if_absent(
                 ArtifactObjectPutRequest(expectation=expectation, payload=payload)
             )
-            return (
-                f"workspace-snapshot/{expectation.sha256}/{len(payload)}/{receipt.object_version}"
+            return _workspace_snapshot_uri(
+                expectation.artifact_id,
+                expectation.sha256,
+                expectation.size_bytes,
+                receipt.object_version,
             )
 
         return WorkspaceRuntimeResolver(
