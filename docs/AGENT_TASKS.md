@@ -2874,6 +2874,50 @@ aggregate without treating `PostgresControlPlaneStores` as local
   authorized. Workspace bytes stay in object storage; PostgreSQL remains
   the single authority; the local SQLite profile is untouched.
 
+### CLOUD-EFFECT-EPOCH-REGRESSION-01 - Align Effect E2E With Migration Epoch Bootstrap
+
+- Status: `Review`
+- Owner: `Luke Ding (Codex)`
+- Depends on: `CLOUD-EFFECT-DEFAULT-E2E-01`; discovered while executing the
+  R14 local gVisor release gate against a fresh PostgreSQL dependency stack.
+- Branch: `cloud-agent-trench` (current remediation branch per user instruction)
+- Owned paths: `tests/compose/effect_default_e2e/run_default_e2e.py`,
+  `tests/compose/effect_default_e2e/approve_and_resume.py`,
+  `tests/compose/effect_default_e2e/resume_session.py`,
+  `tests/compose/effect_default_e2e/execution_tier.py`,
+  `tests/compose/effect_default_e2e/seed_session.py`,
+  `tests/compose/effect_default_e2e/verify_durable.py`,
+  `tests/compose/effect_default_e2e/test_effect_default_e2e_contract.py`, this
+  task card, `PROGRESS.md`, and `WORKLOG.md`.
+
+#### Goal
+
+Keep the real effect gate aligned with the production migration entrypoint:
+`docker/migrate.py` is the sole idempotent epoch bootstrap owner, while the
+post-migration E2E infrastructure scenario reads and proves that epoch instead
+of attempting a second bootstrap that must violate the namespace primary key.
+
+#### Acceptance
+
+- [x] A fresh dependency stack passes migration plus epoch verification.
+- [x] The verifier reads the authoritative PostgreSQL epoch and cannot create or
+  rotate it from the infrastructure assertion.
+- [x] Focused contract tests and the full local gVisor execution-tier matrix pass.
+- [x] No production startup behavior, epoch rotation semantics, or local SQLite
+  behavior changes.
+
+Implemented on 2026-09-20: the rig now follows the current Cloud API contract
+(`execute=true` queues a durable run), treats approval as the atomic
+approval-plus-resume boundary, keeps explicit recovery resume separate, reads
+the migration-owned epoch, and accepts an optional pre-mounted control-plane
+scratch volume for hypervisors that do not propagate nested mounts after VM
+startup. Evidence: focused contract suite `7 passed`, Ruff clean, and the real
+local Colima/runsc execution matrix reported
+`ZEBRA_EFFECT_DEFAULT_E2E=PASS` for all ten scenarios. Repository validation
+completed with `4537 passed, 891 skipped` plus one transient real DeepSeek
+reasoning-shape failure whose isolated retry passed; `make check` is green
+(Ruff, strict Mypy over 958 sources, Eval 10/10 and file-size gate).
+
 ### CLOUD-EFFECT-DEFAULT-E2E-01 - Default Entrypoint Real Side-Effect Acceptance
 
 - Status: `Done`

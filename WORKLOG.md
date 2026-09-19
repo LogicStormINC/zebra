@@ -10148,3 +10148,23 @@ actual byte access.
   gates passed. `make check` stops only at the unchanged R00 import-order
   baseline. Real Redis Agent Memory remains `NOT_ENABLED` because no explicit
   test data-export authorization or service credentials were supplied.
+## 2026-09-20 - CLOUD-EFFECT-EPOCH-REGRESSION-01 local gVisor gate repair
+
+- Reproduced the R14 effect gate on the local Colima `zebra-gvisor` rig with
+  real PostgreSQL, MinIO, digest-pinned Python and runsc.
+- Root-caused three test-contract drifts: `docker/migrate.py` already bootstraps
+  the epoch; `execute=false` no longer queues a Cloud command; approval now
+  atomically submits the durable resume. Replaced the duplicate epoch bootstrap
+  with a read, queued the seed through the current Cloud contract, and split
+  initial approval from explicit recovery resume.
+- Added `ZEBRA_EFFECT_E2E_CP_VOLUME_ROOT` for a pre-mounted dedicated volume;
+  the default temporary-volume path remains unchanged. This is required by the
+  local VZ/virtiofs rig because nested APFS mounts created after VM startup are
+  not propagated into the guest.
+- Validation: focused contract suite `7 passed`, Ruff clean, diff check clean,
+  and all ten execution-tier scenarios PASS, including Worker death, lease
+  rotation, payload binding and Workspace Control Plane side effects.
+- Full repository: `4537 passed, 891 skipped`; one live DeepSeek smoke initially
+  observed a successful tool call without provider reasoning content, and its
+  isolated retry passed. `make check` passed file-size, Ruff, strict Mypy (958
+  sources) and Eval 10/10.

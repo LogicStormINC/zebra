@@ -7,7 +7,7 @@ import os
 import sys
 import uuid
 
-from agent_storage.postgres.epoch import bootstrap_control_plane_epoch
+from agent_storage.postgres.epoch import read_control_plane_epoch
 from agent_storage.postgres_composition import postgres_control_plane_stores
 from agent_storage.runtime_composition import cloud_composition_from_environment
 
@@ -18,8 +18,8 @@ def _connect():
     return psycopg.connect(os.environ["ZEBRA_DATABASE_URL"])
 
 
-def bootstrap_epoch() -> int:
-    epoch = bootstrap_control_plane_epoch(
+def read_epoch() -> int:
+    epoch = read_control_plane_epoch(
         os.environ["ZEBRA_DATABASE_URL"],
         deployment_namespace=os.environ["ZEBRA_DEPLOYMENT_NAMESPACE"],
     )
@@ -197,7 +197,7 @@ def handoff_read(session_id: str) -> int:
 
 
 COMMANDS = {
-    "bootstrap-epoch": bootstrap_epoch,
+    "read-epoch": read_epoch,
     "effect-outbox-count": effect_outbox_count,
     "effect-summary": effect_summary,
     "session-status": session_status,

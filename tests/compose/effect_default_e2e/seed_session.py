@@ -26,7 +26,7 @@ def main() -> int:
                 "prompt": os.environ["ZEBRA_EFFECT_E2E_PROMPT"],
                 "title": "effect default e2e",
                 **({} if source_json else {"workspace": workspace}),
-                "execute": False,
+                "execute": True,
                 "policy_profile": "workspace_write",
                 "tool_profile": "general",
                 **({"workspace_source": json.loads(source_json)} if source_json else {}),

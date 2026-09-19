@@ -281,14 +281,14 @@ def scenario_worker_death_recovers(runner: Runner) -> None:
         str(runner.runner_dir / "verify_durable.py"), "tool-events", session_id
     )
     resume = runner.uv(
-        str(runner.runner_dir / "approve_and_resume.py"),
+        str(runner.runner_dir / "resume_session.py"),
         env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": session_id},
         check=False,
     )
     _cycles(runner, 3)
     if _status(runner, session_id) != "completed":
         second_resume = runner.uv(
-            str(runner.runner_dir / "approve_and_resume.py"),
+            str(runner.runner_dir / "resume_session.py"),
             env_extra={"ZEBRA_EFFECT_E2E_SESSION_ID": session_id},
             check=False,
         )
@@ -448,6 +448,16 @@ def _scratch_volume(label: str) -> Iterator[Path | None]:
     when the scenario exits, success or failure, so repeated rig runs do not
     accumulate mounted volumes on the host Desktop.
     """
+    configured = os.environ.get("ZEBRA_EFFECT_E2E_CP_VOLUME_ROOT", "").strip()
+    if configured:
+        mounted = Path(configured).resolve()
+        if not os.path.ismount(mounted):
+            yield None
+            return
+        _ensure_writable_through_share(mounted)
+        yield mounted
+        return
+
     device = subprocess.run(
         ("hdiutil", "attach", "-nomount", "ram://262144"),
         capture_output=True,

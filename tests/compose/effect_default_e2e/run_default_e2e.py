@@ -204,7 +204,7 @@ class Runner:
 
     def scenario_infrastructure(self) -> None:
         migration = self.uv(str(ROOT / "docker/migrate.py"), check=False)
-        epoch = self.uv_json(str(RUNNER_DIR / "verify_durable.py"), "bootstrap-epoch")
+        epoch = self.uv_json(str(RUNNER_DIR / "verify_durable.py"), "read-epoch")
         sqlite_files = _find_sqlite(self.run_root)
         try:
             leases = self.uv_json(str(RUNNER_DIR / "verify_durable.py"), "lease-rows")

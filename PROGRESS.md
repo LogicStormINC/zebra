@@ -3227,3 +3227,19 @@ claimed.
   gates passed. Full `make check` retains only the R00 import-order baseline.
   The real Redis service gate is `NOT_ENABLED`, so no production rollout or
   external data export is claimed.
+2026-09-20 CLOUD-EFFECT-EPOCH-REGRESSION-01: the R14 local gVisor rehearsal
+found three stale assumptions in the effect-default E2E rig rather than in the
+production runtime: migrations now own idempotent epoch bootstrap, Cloud
+`execute=true` queues the durable run while `false` creates a draft, and an
+approval already submits its durable resume. The verifier is now read-only,
+initial approval and recovery resume have separate helpers, and the rig can use
+an explicitly pre-mounted control-plane volume when Colima cannot discover a
+host submount created after VM startup. Focused contracts pass `7 passed`; the
+real PostgreSQL/MinIO/Colima/runsc matrix passes all ten scenarios including
+side-effect binding/idempotency, governed completion, Worker-death recovery,
+lease-loss reconciliation and Workspace Control Plane execution. Production
+startup, epoch rotation, local SQLite and runtime semantics are unchanged.
+Repository validation completed with `4537 passed, 891 skipped` and one
+transient live DeepSeek smoke failure (missing optional provider reasoning on a
+successful tool call); the isolated retry passed. `make check` is fully green:
+file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.

@@ -4,6 +4,8 @@ RUNNER = Path(__file__).with_name("run_default_e2e.py")
 VERIFY = Path(__file__).with_name("verify_durable.py")
 SEED = Path(__file__).with_name("seed_session.py")
 STUB = Path(__file__).with_name("stub_model.py")
+APPROVE = Path(__file__).with_name("approve_and_resume.py")
+RESUME = Path(__file__).with_name("resume_session.py")
 COMPOSE = Path(__file__).with_name("compose.yml")
 
 
@@ -28,6 +30,10 @@ def test_runner_keeps_execution_tier_fail_closed() -> None:
     # The runner must never report PASS while execution tier scenarios are skipped.
     assert "self.failures == 0 and execution_enabled" in source
 
+    execution = Path(__file__).with_name("execution_tier.py").read_text(encoding="utf-8")
+    assert "ZEBRA_EFFECT_E2E_CP_VOLUME_ROOT" in execution
+    assert "os.path.ismount(mounted)" in execution
+
 
 def test_worker_fail_closed_asserts_zero_side_effects() -> None:
     source = RUNNER.read_text(encoding="utf-8")
@@ -43,7 +49,8 @@ def test_durable_verifier_uses_only_authoritative_postgres_paths() -> None:
     source = VERIFY.read_text(encoding="utf-8")
 
     assert "postgres_control_plane_stores" in source
-    assert "bootstrap_control_plane_epoch" in source
+    assert "read_control_plane_epoch" in source
+    assert "bootstrap_control_plane_epoch" not in source
     assert ".terminal_keys(" in source
     assert ".has_uncertain(" in source
     assert "sqlite" not in source.lower()
@@ -54,7 +61,22 @@ def test_seed_drives_the_committed_api_application_object() -> None:
 
     assert "from zebra_agent_api import create_app" in source
     assert "RouteAdapter" in source
-    assert '"execute": False' in source
+    assert '"execute": True' in source
+
+
+def test_approval_uses_the_atomic_approval_resume_contract() -> None:
+    source = APPROVE.read_text(encoding="utf-8")
+
+    assert 'path=f"/approvals/{session_id}/approve"' in source
+    assert '"approval_granted"' in source
+    assert '/sessions/{session_id}/resume' not in source
+
+    recovery = RESUME.read_text(encoding="utf-8")
+    assert 'path=f"/sessions/{session_id}/resume"' in recovery
+    assert "/approvals/" not in recovery
+
+    execution = Path(__file__).with_name("execution_tier.py").read_text(encoding="utf-8")
+    assert 'runner.runner_dir / "resume_session.py"' in execution
 
 
 def test_stub_stays_provider_shaped_and_prompt_gated() -> None:
