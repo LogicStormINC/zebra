@@ -12,6 +12,19 @@ import {
 const ACTION_DIGEST = "f".repeat(64);
 const BINDING_DIGEST = "e".repeat(64);
 
+function effectBinding() {
+  const deadline = new Date(Date.now() + 60_000).toISOString();
+  return {
+    task_id: "22222222-2222-4222-8222-222222222222",
+    run_id: "run-1",
+    surface_instance_id: "11111111-1111-4111-8111-111111111111",
+    capability_version: ACTION_DIGEST,
+    deadline,
+    expires_at: deadline,
+    idempotency_key: "client-effect:test-effect",
+  };
+}
+
 test("registry resolves handlers by name only", async () => {
   const registry = new MountedActionRegistry();
   registry.mount("app.ui.item.open", () => ({ opened: true }));
@@ -76,12 +89,12 @@ test("runtime executes each effect at most once", async () => {
     return { opened: true };
   });
   const effect = {
+    ...effectBinding(),
     effect_id: "e-1",
     action_name: "app.ui.item.open",
     arguments: {},
     status: "pending" as const,
     expected_ui_revision: 0,
-    expires_at: new Date().toISOString(),
     request_digest: "0".repeat(64),
     action_contract_digest: ACTION_DIGEST,
     client_binding_digest: BINDING_DIGEST,
@@ -112,12 +125,12 @@ test("session storage prevents effect replay after a page refresh", async () => 
     fetchImpl: fakeFetch([]),
   };
   const effect = {
+    ...effectBinding(),
     effect_id: "refresh-effect",
     action_name: "app.ui.item.open",
     arguments: {},
     status: "pending" as const,
     expected_ui_revision: 0,
-    expires_at: new Date().toISOString(),
     request_digest: "0".repeat(64),
     action_contract_digest: ACTION_DIGEST,
     client_binding_digest: BINDING_DIGEST,
@@ -140,6 +153,7 @@ test("session storage prevents effect replay after a page refresh", async () => 
 
 test("refresh during an in-flight handler never starts the effect twice", async () => {
   const values = new Map<string, string>();
+  const receipts: Array<Record<string, unknown>> = [];
   const storage = {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),
@@ -155,15 +169,20 @@ test("refresh during an in-flight handler never starts the effect twice", async 
     clientBindingDigest: BINDING_DIGEST,
     actionContractDigests: { "app.ui.item.open": ACTION_DIGEST },
     storage,
-    fetchImpl: fakeFetch([]),
+    fetchImpl: (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.body !== undefined) {
+        receipts.push(JSON.parse(String(init.body)) as Record<string, unknown>);
+      }
+      return new Response("{}");
+    }) as unknown as typeof fetch,
   };
   const effect = {
+    ...effectBinding(),
     effect_id: "inflight-refresh-effect",
     action_name: "app.ui.item.open",
     arguments: {},
     status: "pending" as const,
     expected_ui_revision: 0,
-    expires_at: new Date().toISOString(),
     request_digest: "0".repeat(64),
     action_contract_digest: ACTION_DIGEST,
     client_binding_digest: BINDING_DIGEST,
@@ -186,6 +205,10 @@ test("refresh during an in-flight handler never starts the effect twice", async 
   });
   await refreshed.runEffect(effect);
   assert.equal(calls, 1);
+  assert.equal(receipts[0]?.status, "unavailable");
+  assert.deepEqual(receipts[0]?.result, {
+    error: "interrupted_requires_confirmation",
+  });
 
   finish();
   await pending;
@@ -210,12 +233,12 @@ test("unmounted actions return unavailable receipts", async () => {
     fetchImpl,
   });
   await runtime.runEffect({
+    ...effectBinding(),
     effect_id: "e-2",
     action_name: "app.ui.never",
     arguments: {},
     status: "pending",
     expected_ui_revision: 0,
-    expires_at: new Date().toISOString(),
     request_digest: "0".repeat(64),
     action_contract_digest: ACTION_DIGEST,
     client_binding_digest: BINDING_DIGEST,
@@ -308,12 +331,12 @@ test("observer and stale-ui effects never invoke a handler", async () => {
     return {};
   });
   const effect = {
+    ...effectBinding(),
     effect_id: "observer-effect",
     action_name: "app.open",
     arguments: {},
     status: "pending" as const,
     expected_ui_revision: 0,
-    expires_at: new Date().toISOString(),
     request_digest: "a".repeat(64),
     action_contract_digest: ACTION_DIGEST,
     client_binding_digest: BINDING_DIGEST,
@@ -347,6 +370,11 @@ test("observer and stale-ui effects never invoke a handler", async () => {
 });
 
 test("SSE reconnect sends Last-Event-ID and executes only client effects", async () => {
+  const stored = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => stored.get(key) ?? null,
+    setItem: (key: string, value: string) => stored.set(key, value),
+  } as unknown as Storage;
   let streamCalls = 0;
   let handlerCalls = 0;
   let secondHeaders: HeadersInit | undefined;
@@ -367,12 +395,12 @@ test("SSE reconnect sends Last-Event-ID and executes only client effects", async
         return new Response(": keepalive\n\n");
       }
       const effect = {
+        ...effectBinding(),
         effect_id: "sse-effect-1",
         action_name: "app.ui.item.open",
         arguments: {},
         status: "pending",
         expected_ui_revision: 0,
-        expires_at: new Date(Date.now() + 60_000).toISOString(),
         request_digest: "a".repeat(64),
         action_contract_digest: ACTION_DIGEST,
         client_binding_digest: BINDING_DIGEST,
@@ -395,6 +423,7 @@ test("SSE reconnect sends Last-Event-ID and executes only client effects", async
     clientBindingDigest: BINDING_DIGEST,
     actionContractDigests: { "app.ui.item.open": ACTION_DIGEST },
     streamUrl: "https://bff.example/agui/threads/task/runs/run/stream",
+    storage,
     fetchImpl,
   });
   runtime.registry.mount("app.ui.item.open", () => {
@@ -407,6 +436,7 @@ test("SSE reconnect sends Last-Event-ID and executes only client effects", async
   runtime.stop();
 
   assert.equal(handlerCalls, 1);
+  assert.match([...stored.values()].join("\n"), /"lastEventId":"cursor-1"/);
   assert.equal(
     (secondHeaders as Record<string, string>)["Last-Event-ID"],
     "cursor-1",

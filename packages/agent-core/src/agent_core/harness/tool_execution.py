@@ -46,13 +46,30 @@ def execute_tool_call(
                     "attempt_number": context.attempt.number,
                     "tool_name": tool_call.name,
                     "tool_call_id": str(tool_call.tool_call_id),
-                    "client_effect_id": str(
-                        tool_result.metadata.get("client_effect_id", "")
+                    "client_effect_id": str(tool_result.metadata.get("client_effect_id", "")),
+                    "task_id": str(tool_result.metadata.get("client_effect_task_id", "")),
+                    "run_id": str(tool_result.metadata.get("client_effect_run_id", "")),
+                    "surface_instance_id": str(
+                        tool_result.metadata.get("client_effect_surface_instance_id", "")
                     ),
                     "action_name": str(tool_result.metadata.get("action_name", tool_call.name)),
+                    "arguments": tool_result.metadata.get("client_effect_arguments", {}),
+                    "action_contract_digest": str(
+                        tool_result.metadata.get("client_effect_action_contract_digest", "")
+                    ),
+                    "client_binding_digest": str(
+                        tool_result.metadata.get("client_effect_binding_digest", "")
+                    ),
+                    "expected_ui_revision": int(
+                        tool_result.metadata.get("client_effect_expected_ui_revision", 0)
+                    ),
                     "idempotency_key": str(
                         tool_result.metadata.get("client_effect_idempotency_key", "")
                     ),
+                    "request_digest": str(
+                        tool_result.metadata.get("client_effect_request_digest", "")
+                    ),
+                    "expires_at": str(tool_result.metadata.get("client_effect_expires_at", "")),
                 },
             )
         )

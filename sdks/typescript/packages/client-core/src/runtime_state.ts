@@ -4,6 +4,7 @@ export interface ClientRuntimeState {
   executedEffects: Set<string>;
   inflightEffects: Set<string>;
   pendingReceipts: Map<string, ReceiptSubmission>;
+  lastEventId: string | null;
 }
 
 /** Per-tab refresh recovery; browsers provide sessionStorage for this boundary. */
@@ -24,6 +25,7 @@ export class ClientRuntimeStateStore {
         executedEffects?: unknown;
         inflightEffects?: unknown;
         pendingReceipts?: unknown;
+        lastEventId?: unknown;
       };
       const executedEffects = Array.isArray(parsed.executedEffects)
         ? new Set(parsed.executedEffects.filter(isText))
@@ -37,7 +39,12 @@ export class ClientRuntimeStateStore {
           if (isReceipt(item)) pendingReceipts.set(item.effect_id, item);
         }
       }
-      return { executedEffects, inflightEffects, pendingReceipts };
+      return {
+        executedEffects,
+        inflightEffects,
+        pendingReceipts,
+        lastEventId: isText(parsed.lastEventId) ? parsed.lastEventId : null,
+      };
     } catch {
       return emptyState();
     }
@@ -49,6 +56,7 @@ export class ClientRuntimeStateStore {
         executedEffects: [...state.executedEffects].slice(-500),
         inflightEffects: [...state.inflightEffects].slice(-100),
         pendingReceipts: [...state.pendingReceipts.values()].slice(-100),
+        lastEventId: state.lastEventId,
       }));
     } catch {
       // Storage denial/quota exhaustion degrades to the in-memory contract.
@@ -61,6 +69,7 @@ function emptyState(): ClientRuntimeState {
     executedEffects: new Set(),
     inflightEffects: new Set(),
     pendingReceipts: new Map(),
+    lastEventId: null,
   };
 }
 

@@ -33,6 +33,7 @@ from ag_ui.core import (
 from agent_core.domain.events import EventType, SessionEvent
 
 from agent_integrations.ag_ui.client_effect_projection import project_client_effect
+from agent_integrations.ag_ui.client_state_projection import project_client_state
 from agent_integrations.ag_ui.contracts import (
     AgUiCursor,
     AgUiProjection,
@@ -301,8 +302,7 @@ class AgUiProjector:
                             Interrupt(
                                 id=f"turn-cancelled:{turn_id}",
                                 reason=(
-                                    _optional_payload_text(payload, "reason")
-                                    or "session_cancelled"
+                                    _optional_payload_text(payload, "reason") or "session_cancelled"
                                 ),
                             )
                         ]
@@ -316,9 +316,7 @@ class AgUiProjector:
                 or _optional_payload_text(payload, "summary")
                 or "Zebra turn failed"
             )
-            return (
-                RunErrorEvent(timestamp=timestamp, message=message, code="zebra_turn_failed"),
-            )
+            return (RunErrorEvent(timestamp=timestamp, message=message, code="zebra_turn_failed"),)
         if event.event_type is EventType.SESSION_SUSPENDED:
             projected = project_budget_suspension_event(event, identity, timestamp)
             if projected:
@@ -405,15 +403,14 @@ def _project_subagent_event(event: SessionEvent, *, timestamp: int) -> tuple[Eve
         )
     if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
         return ()
+    client_state = project_client_state(event, timestamp=timestamp)
+    projected: list[Event] = list(client_state or ())
     command_payload = payload.get("payload")
     child_results = (
-        command_payload.get("child_results")
-        if isinstance(command_payload, Mapping)
-        else None
+        command_payload.get("child_results") if isinstance(command_payload, Mapping) else None
     )
     if not isinstance(child_results, list):
-        return ()
-    projected: list[Event] = []
+        return tuple(projected)
     for result in child_results:
         if not isinstance(result, Mapping):
             continue

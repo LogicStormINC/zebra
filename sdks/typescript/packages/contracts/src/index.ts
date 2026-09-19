@@ -22,13 +22,21 @@ export type ReceiptTerminalStatus =
 
 export interface ClientEffectWire {
   effect_id: string;
+  task_id: string;
+  run_id: string;
+  /** One browser surface only; V1 uses the per-tab Client Session ID. */
+  surface_instance_id: string;
   action_name: string;
   arguments: Record<string, unknown>;
   status: ClientEffectStatus;
   expected_ui_revision: number;
+  deadline: string;
   expires_at: string;
+  idempotency_key: string;
   request_digest: string;
   action_contract_digest: string;
+  /** Content-addressed action contract revision. */
+  capability_version: string;
   client_binding_digest: string;
 }
 

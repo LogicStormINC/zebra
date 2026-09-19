@@ -10,6 +10,9 @@ class ClientEffectScheduledPayload(BaseModel):
     tool_name: str
     tool_call_id: str
     client_effect_id: str
+    task_id: str = ""
+    run_id: str = ""
+    surface_instance_id: str = ""
     action_name: str
     arguments: dict[str, object] = Field(default_factory=dict)
     action_contract_digest: str = Field(default="", pattern=r"^$|^[0-9a-f]{64}$")
@@ -17,6 +20,7 @@ class ClientEffectScheduledPayload(BaseModel):
     expected_ui_revision: int = Field(default=0, ge=0)
     idempotency_key: str = ""
     request_digest: str = ""
+    expires_at: str = ""
     assistant_message: str | None = Field(default=None, exclude_if=lambda value: value is None)
     conversation: list[dict[str, object]] | None = Field(
         default=None, exclude_if=lambda value: value is None

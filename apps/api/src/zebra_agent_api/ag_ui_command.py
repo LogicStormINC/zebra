@@ -221,6 +221,15 @@ def _admit_client_mounts(
     forwarded = run_input.get("forwardedProps")
     forwarded = forwarded if isinstance(forwarded, dict) else {}
     frontend_app_id = forwarded.get("frontendAppId")
+    client_session_id = forwarded.get("clientSessionId")
+    ui_revision = forwarded.get("uiRevision")
+    tools = run_input.get("tools")
+    if not any(
+        value is not None for value in (frontend_app_id, client_session_id, ui_revision)
+    ) and not tools:
+        # AG-UI state also carries server-owned run configuration. It becomes
+        # client-owned Shared State only through an explicit frontend mount.
+        return None
     profile = None
     if isinstance(frontend_app_id, str) and frontend_app_id.strip():
         profile = capabilities.get_latest_profile(frontend_app_id.strip())
@@ -231,7 +240,7 @@ def _admit_client_mounts(
         )
 
         admission = admit_agui_client_payload(
-            tools=run_input.get("tools"),
+            tools=tools,
             state=run_input.get("state"),
             profile=profile,
         )
@@ -245,9 +254,36 @@ def _admit_client_mounts(
         "state_bytes": admission.state_bytes,
         "redacted_keys": list(admission.redacted_keys),
         "frontend_app_id": frontend_app_id if isinstance(frontend_app_id, str) else None,
+        "client_session_id": (client_session_id if isinstance(client_session_id, str) else None),
+        "ui_revision": ui_revision if type(ui_revision) is int and ui_revision >= 0 else None,
         "profile_digest": profile.profile_digest if profile is not None else None,
+        "state_owner": "client",
+        "state_snapshot": admission.sanitized_state,
     }
+    if (admission.mounted_tools or admission.sanitized_state) and (
+        not _valid_client_session_id(client_session_id)
+        or type(ui_revision) is not int
+        or ui_revision < 0
+    ):
+        return _problem(
+            422,
+            "client_admission_rejected",
+            "clientSessionId and uiRevision are required for mounted client state",
+            path,
+        )
+    # Keep only the validated/redacted client-owned fields in the durable command.
+    run_input["state"] = admission.sanitized_state
     return None
+
+
+def _valid_client_session_id(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        UUID(value)
+    except ValueError:
+        return False
+    return True
 
 
 def _idempotency_key(request: object) -> str | None:

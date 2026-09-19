@@ -1,5 +1,21 @@
 # Zebra Agent Project Status
 
+2026-09-20 CLOUD-REMEDIATION-R07 (implementation): Client Effects now preserve
+their Task/Run, Surface, capability digest, expected UI revision, deadline,
+request digest and idempotency key through PostgreSQL, Worker metadata, REST and
+AG-UI. Sparse historical events remain readable but cannot execute. The
+TypeScript runtime persists its SSE cursor, replays receipts, rejects stale
+bindings and never restarts an interrupted handler after refresh. Explicitly
+mounted Client State is profile/schema bounded, redacted before persistence,
+recovered after Worker restart and projected under a field-owned `/client`
+namespace; ordinary server-owned AG-UI state remains backward compatible.
+Trench commits `63c9ba9` and `5650b19` add a same-origin BFF and fenced dashboard
+bridge without exposing HostGrant or business-write actions. Focused Zebra
+Python `20`, SDK `15`, Trench BFF `1` and frontend `2` tests pass with focused
+Ruff/Mypy/ESLint. Full Zebra regression passes with `4513 passed, 891 skipped`;
+real PostgreSQL/profile/browser acceptance remains open before R07 leaves In
+Progress.
+
 2026-09-19 CLOUD-REMEDIATION-R05: Host Effect delivery and recovery now retain
 three distinct truths: transport outcome, business outcome, and a bounded
 durable Host receipt. A write is successful only with an applied/succeeded

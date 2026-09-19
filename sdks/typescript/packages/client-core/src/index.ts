@@ -64,7 +64,9 @@ export class ZebraClientRuntime {
   readonly uiRevision = new UiRevisionClock();
   private executedEffects: Set<string>;
   private inflightEffects: Set<string>;
+  private recoveredInflightEffects: Set<string>;
   private pendingReceipts: Map<string, ReceiptSubmission>;
+  private lastEventId: string | null;
   private stateStore: ClientRuntimeStateStore;
   private mountedProfileDigest: string | null = null;
   private abortController: AbortController | null = null;
@@ -79,8 +81,10 @@ export class ZebraClientRuntime {
     this.stateStore = new ClientRuntimeStateStore(deps.storage, deps.clientSessionId);
     const restored = this.stateStore.load();
     this.executedEffects = restored.executedEffects;
-    this.inflightEffects = restored.inflightEffects;
+    this.inflightEffects = new Set();
+    this.recoveredInflightEffects = restored.inflightEffects;
     this.pendingReceipts = restored.pendingReceipts;
+    this.lastEventId = restored.lastEventId;
   }
 
   static fromConfig(config: RuntimeClientConfig): ZebraClientRuntime {
@@ -255,6 +259,11 @@ export class ZebraClientRuntime {
         headers: () => this.headers(),
         stopped: () => this.stopped,
         signal: this.abortController.signal,
+        initialEventId: this.lastEventId,
+        onCursor: (eventId) => {
+          this.lastEventId = eventId;
+          this.persistState();
+        },
         onEffect: (effect) => this.runEffect(effect),
       });
     }
@@ -284,7 +293,11 @@ export class ZebraClientRuntime {
   async runEffect(effect: ClientEffectWire): Promise<void> {
     if (this.stopped || this.deps.controllerFenceToken === undefined) return;
     if (
+      effect.surface_instance_id !== this.deps.clientSessionId ||
+      effect.task_id !== this.deps.taskId ||
+      effect.run_id !== this.deps.runId ||
       effect.client_binding_digest !== this.deps.clientBindingDigest ||
+      effect.capability_version !== effect.action_contract_digest ||
       this.deps.actionContractDigests?.[effect.action_name] !==
         effect.action_contract_digest
     ) {
@@ -292,8 +305,29 @@ export class ZebraClientRuntime {
       return;
     }
     const effectId = effect.effect_id;
+    const deadline = Date.parse(effect.deadline);
+    if (
+      !Number.isFinite(deadline) ||
+      effect.deadline !== effect.expires_at ||
+      deadline <= Date.now()
+    ) {
+      this.rememberExecuted(effectId);
+      return;
+    }
     if (this.executedEffects.has(effectId) || this.inflightEffects.has(effectId)) {
       return; // idempotent local dedup
+    }
+    if (this.recoveredInflightEffects.delete(effectId)) {
+      this.rememberExecuted(effectId);
+      const receipt: ReceiptSubmission = {
+        effect_id: effectId,
+        request_digest: effect.request_digest,
+        status: "unavailable",
+        result: { error: "interrupted_requires_confirmation" },
+      };
+      this.rememberReceipt(receipt);
+      if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
+      return;
     }
     this.inflightEffects.add(effectId);
     this.persistState();
@@ -407,6 +441,7 @@ export class ZebraClientRuntime {
       executedEffects: this.executedEffects,
       inflightEffects: this.inflightEffects,
       pendingReceipts: this.pendingReceipts,
+      lastEventId: this.lastEventId,
     });
   }
 

@@ -1,5 +1,29 @@
 # Progress Log
 
+## 2026-09-20 - CLOUD-REMEDIATION-R07 frontend action protocol
+
+Completed the deterministic Client Effect wire and Trench pilot implementation.
+Effect projection now requires the exact Task/Run, Surface, action contract,
+UI revision, deadline and idempotency coordinates. The SDK persists cursor and
+receipt state, refuses stale targets, and converts an interrupted in-flight
+handler into a non-replayed `unavailable` receipt. API admission validates only
+explicitly mounted client state against published Readables, redacts it before
+durable persistence, and Worker restart restores the same digest-bound snapshot.
+
+The Trench pilot uses a same-origin BFF. Each Open, Mount, Bind, poll, heartbeat,
+release and receipt call receives a fresh HostGrant server-side; only the Client
+Session credential and controller fence reach the browser. The bridge rotates
+Surfaces per durable Turn and publishes only safe navigation/presentation/local
+state actions. Trench's pre-existing dirty checkout was stashed, the isolated
+commit was cherry-picked, and the stash was restored without conflicts.
+
+Validation so far: Zebra focused Python `20 passed`, TypeScript SDK `15 passed`,
+Ruff and strict Mypy over `957` sources; Trench BFF contract `1 passed`, frontend
+action tests `2 passed`, focused Ruff/Mypy and ESLint. Full Zebra regression
+passes with `4513 passed, 891 skipped`. Global Trench TypeScript checking still
+reports two pre-existing unrelated errors. The real PostgreSQL/profile/browser
+pilot remains pending.
+
 ## 2026-09-19 - CLOUD-REMEDIATION-R05 Host Effect recovery
 
 Completed the audited Effect outcome and recovery path. Host writes no longer

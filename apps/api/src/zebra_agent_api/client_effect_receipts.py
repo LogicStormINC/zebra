@@ -120,14 +120,20 @@ def list_pending_client_effects(app: ZebraAgentApi, *, auth: ClientAuthContext) 
             "effects": [
                 {
                     "effect_id": str(effect.effect_id),
+                    "task_id": str(effect.task_id),
+                    "run_id": effect.run_id,
+                    "surface_instance_id": str(effect.client_session_id),
                     "action_name": effect.action_name,
                     "arguments": effect.arguments,
                     "status": effect.status.value,
                     "expected_ui_revision": effect.expected_ui_revision,
                     "expires_at": effect.expires_at.isoformat(),
+                    "deadline": effect.expires_at.isoformat(),
                     "request_digest": effect.request_digest,
                     "action_contract_digest": effect.action_contract_digest,
+                    "capability_version": effect.action_contract_digest,
                     "client_binding_digest": effect.client_binding_digest,
+                    "idempotency_key": effect.idempotency_key,
                     "execution_location": "client",
                 }
                 for effect in effects

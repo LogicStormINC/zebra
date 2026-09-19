@@ -47,6 +47,9 @@ def test_client_effect_replays_once_then_terminal_cursor_only_removes_it(
             "tool_name": "app.ui.item.open",
             "tool_call_id": "call-1",
             "client_effect_id": "effect-1",
+            "task_id": str(bootstrap.session.session_id),
+            "run_id": "run-client",
+            "surface_instance_id": "surface-1",
             "action_name": "app.ui.item.open",
             "arguments": {"itemId": "item-1"},
             "action_contract_digest": "a" * 64,
@@ -54,6 +57,7 @@ def test_client_effect_replays_once_then_terminal_cursor_only_removes_it(
             "expected_ui_revision": 3,
             "idempotency_key": "client-effect:effect-1",
             "request_digest": "c" * 64,
+            "expires_at": "2099-01-01T00:00:00+00:00",
         },
     )
     _append(

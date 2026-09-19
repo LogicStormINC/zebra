@@ -6,9 +6,11 @@ export async function consumeClientEffectStream(options: {
   headers: () => Record<string, string>;
   stopped: () => boolean;
   signal: AbortSignal;
+  initialEventId?: string | null;
+  onCursor?: (eventId: string) => void;
   onEffect: (effect: ClientEffectWire) => Promise<void>;
 }): Promise<void> {
-  let lastEventId: string | null = null;
+  let lastEventId: string | null = options.initialEventId ?? null;
   while (!options.stopped() && !options.signal.aborted) {
     try {
       const headers = options.headers();
@@ -44,7 +46,11 @@ async function readSse(
     while (boundary >= 0) {
       const record = buffer.slice(0, boundary);
       buffer = buffer.slice(boundary + 2);
-      lastEventId = await handleRecord(record, options.onEffect, lastEventId);
+      const nextEventId = await handleRecord(record, options.onEffect, lastEventId);
+      if (nextEventId !== null && nextEventId !== lastEventId) {
+        options.onCursor?.(nextEventId);
+      }
+      lastEventId = nextEventId;
       boundary = buffer.indexOf("\n\n");
     }
   }

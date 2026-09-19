@@ -126,13 +126,19 @@ test("Zod rejects invalid action parameters before the handler runs", async () =
       await new Promise((resolve) => setTimeout(resolve, 0));
       return new Response(JSON.stringify({ effects: [{
         effect_id: "invalid-args",
+        task_id: "22222222-2222-4222-8222-222222222222",
+        run_id: "run-1",
+        surface_instance_id: "11111111-1111-4111-8111-111111111111",
         action_name: "app.ui.item.open",
         arguments: { itemId: 42 },
         status: "pending",
         expected_ui_revision: 1,
-        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        expires_at: "2099-01-01T00:00:00.000Z",
+        deadline: "2099-01-01T00:00:00.000Z",
+        idempotency_key: "client-effect:invalid-args",
         request_digest: "d".repeat(64),
         action_contract_digest: "a".repeat(64),
+        capability_version: "a".repeat(64),
         client_binding_digest: "b".repeat(64),
       }] }));
     }

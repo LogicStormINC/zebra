@@ -224,6 +224,33 @@ does not authorize production code, migrations or activation of its successor.
   Redis service gate is `NOT_ENABLED` because explicit data-export authorization
   and service credentials were not supplied; production rollout remains off.
 
+- `CLOUD-REMEDIATION-R07`: In Progress, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on reviewed R03
+  and R04. Scope: close the dynamic frontend-action protocol and Trench pilot
+  gaps without granting arbitrary DOM or business-write authority. Owned Zebra
+  paths: Client Effect/capability contracts and builders, PostgreSQL Client
+  Effect adapter/migration when required, AG-UI Client Effect/State projection,
+  TypeScript client-core/React runtime and tests, focused API/Worker/conformance
+  tests, this registry, `PROGRESS.md`, `WORKLOG.md`, and one focused ADR/runbook.
+  Owned Trench paths will be isolated in a dedicated worktree and limited to the
+  ToC BFF proxy, typed frontend bridge/hooks, pilot profile/config, tests and
+  progress evidence. Acceptance requires complete action binding (Task/Run,
+  Surface, capability revision, UI revision, deadline and idempotency), exact
+  cursor replay, refresh/in-flight fail-closed behavior, one-controller fencing,
+  field-owned Shared State, offline recovery and a real browser pilot. Existing
+  dirty Trench paths are excluded unless independently reconciled. Implemented
+  locally: complete Effect coordinates in PostgreSQL/API/AG-UI, fail-closed
+  historical projection, persisted SSE cursor, duplicate receipt replay,
+  refresh/interrupted-handler protection, schema-bound/redacted Client State
+  recovery and projection, and Trench same-origin BFF plus dashboard bridge.
+  Trench commits `63c9ba9` and `5650b19` were integrated without overwriting its
+  pre-existing dirty work. Focused Zebra validation passes `20` Python tests,
+  TypeScript `15` tests, Ruff and strict Mypy over `957` sources. Trench BFF
+  contract `1 passed`, frontend action tests `2 passed`, focused Ruff/Mypy and
+  ESLint pass; the complete Zebra regression passes with `4513 passed, 891
+  skipped`. R07 remains In Progress until the real PostgreSQL/profile/browser
+  pilot is recorded.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

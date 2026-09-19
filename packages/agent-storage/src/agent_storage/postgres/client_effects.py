@@ -154,6 +154,9 @@ class PostgresClientEffectDispatch(ClientEffectDispatchPort):
                     "tool_name": request.action_name,
                     "tool_call_id": str(request.tool_call_id),
                     "client_effect_id": str(request.effect_id),
+                    "task_id": str(request.task_id),
+                    "run_id": request.run_id,
+                    "surface_instance_id": str(request.client_session_id),
                     "action_name": request.action_name,
                     "arguments": request.arguments,
                     "action_contract_digest": request.action_contract_digest,
@@ -161,6 +164,7 @@ class PostgresClientEffectDispatch(ClientEffectDispatchPort):
                     "expected_ui_revision": request.expected_ui_revision,
                     "idempotency_key": request.idempotency_key,
                     "request_digest": request.request_digest,
+                    "expires_at": request.expires_at.isoformat(),
                 },
                 idempotency_key=f"client-effect-scheduled:{request.effect_id}",
             )

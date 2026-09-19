@@ -20,12 +20,17 @@ def test_scheduled_effect_projects_client_only_state_without_fence() -> None:
             "tool_name": "app.ui.item.open",
             "tool_call_id": "call-1",
             "client_effect_id": "effect-1",
+            "task_id": "task-1",
+            "run_id": "run-1",
+            "surface_instance_id": "surface-1",
             "action_name": "app.ui.item.open",
             "arguments": {"itemId": "item-1"},
             "action_contract_digest": "a" * 64,
             "client_binding_digest": "b" * 64,
             "expected_ui_revision": 3,
             "request_digest": "c" * 64,
+            "idempotency_key": "client-effect:test",
+            "expires_at": "2026-09-20T01:00:00+00:00",
         },
         created_at=datetime.now(UTC),
     )
@@ -37,6 +42,10 @@ def test_scheduled_effect_projects_client_only_state_without_fence() -> None:
     value = delta.delta[0]["value"]
     assert value["execution_location"] == "client"
     assert value["arguments"] == {"itemId": "item-1"}
+    assert value["task_id"] == "task-1"
+    assert value["surface_instance_id"] == "surface-1"
+    assert value["capability_version"] == "a" * 64
+    assert value["deadline"] == "2026-09-20T01:00:00+00:00"
     assert "fence" not in str(value).lower()
 
 
@@ -53,7 +62,17 @@ def test_terminal_receipt_removes_effect_on_exact_cursor_replay() -> None:
             "tool_name": "app.ui.item.open",
             "tool_call_id": "call-1",
             "client_effect_id": "effect-1",
+            "task_id": "task-1",
+            "run_id": "run-1",
+            "surface_instance_id": "surface-1",
             "action_name": "app.ui.item.open",
+            "arguments": {},
+            "action_contract_digest": "a" * 64,
+            "client_binding_digest": "b" * 64,
+            "expected_ui_revision": 3,
+            "idempotency_key": "client-effect:test",
+            "request_digest": "c" * 64,
+            "expires_at": "2026-09-20T01:00:00+00:00",
         },
         created_at=now,
     )

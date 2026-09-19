@@ -112,8 +112,17 @@ class ClientToolGateway:
             metadata={
                 "client_effect_deferred": True,
                 "client_effect_id": str(outcome.effect.effect_id),
+                "client_effect_task_id": str(request.task_id),
+                "client_effect_run_id": request.run_id,
+                "client_effect_surface_instance_id": str(request.client_session_id),
                 "action_name": tool_call.name,
                 "client_effect_idempotency_key": request.idempotency_key,
+                "client_effect_arguments": request.arguments,
+                "client_effect_action_contract_digest": request.action_contract_digest,
+                "client_effect_binding_digest": request.client_binding_digest,
+                "client_effect_expected_ui_revision": request.expected_ui_revision,
+                "client_effect_request_digest": request.request_digest,
+                "client_effect_expires_at": request.expires_at.isoformat(),
                 "client_effect_scheduled": outcome.created,
             },
         )

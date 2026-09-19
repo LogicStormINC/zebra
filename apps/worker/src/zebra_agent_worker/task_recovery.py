@@ -11,6 +11,7 @@ from agent_core.application.agent_definition_binding import (
 )
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.client_context import ClientStateSnapshot
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.context_inheritance import DelegatedContextSnapshot
 from agent_core.domain.events import EventType, SessionEvent
@@ -35,6 +36,54 @@ from agent_storage import (
     load_attachment_contexts_from_reader,
     load_image_attachment_contexts_from_reader,
 )
+
+
+def recover_client_state_evidence(
+    events: list[SessionEvent],
+) -> RuntimeEvidenceInput | None:
+    """Recover only the latest API-admitted, redacted Client State snapshot."""
+
+    from agent_context.client_state import client_state_evidence
+
+    for event in reversed(events):
+        if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
+            continue
+        command = event.payload.get("payload")
+        client = command.get("client") if isinstance(command, dict) else None
+        if not isinstance(client, dict):
+            continue
+        state = client.get("state_snapshot")
+        if not isinstance(state, dict) or not state:
+            continue
+        client_session_id = client.get("client_session_id")
+        frontend_app_id = client.get("frontend_app_id")
+        profile_digest = client.get("profile_digest")
+        ui_revision = client.get("ui_revision")
+        redacted_keys = client.get("redacted_keys", [])
+        if (
+            not isinstance(client_session_id, str)
+            or not client_session_id
+            or (frontend_app_id is not None and not isinstance(frontend_app_id, str))
+            or (profile_digest is not None and not isinstance(profile_digest, str))
+            or type(ui_revision) is not int
+            or ui_revision < 0
+            or not isinstance(redacted_keys, list)
+            or any(not isinstance(item, str) for item in redacted_keys)
+        ):
+            raise ValueError("client state snapshot metadata is invalid")
+        snapshot = ClientStateSnapshot(
+            client_session_id=client_session_id,
+            frontend_app_id=frontend_app_id,
+            profile_digest=profile_digest,
+            ui_revision=ui_revision,
+            state=state,
+            redacted_keys=tuple(redacted_keys),
+        )
+        expected_digest = client.get("state_digest")
+        if expected_digest != snapshot.state_digest:
+            raise ValueError("client state snapshot digest does not match admission")
+        return client_state_evidence(snapshot)
+    return None
 
 
 @dataclass(frozen=True)

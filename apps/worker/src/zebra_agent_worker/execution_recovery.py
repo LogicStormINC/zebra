@@ -30,7 +30,11 @@ from zebra_agent_worker.provider_continuation_execution import (
 )
 from zebra_agent_worker.recovery import RecoveredSession
 from zebra_agent_worker.session_handoff import recover_worker_handoff
-from zebra_agent_worker.task_recovery import RecoveredTask, recover_task
+from zebra_agent_worker.task_recovery import (
+    RecoveredTask,
+    recover_client_state_evidence,
+    recover_task,
+)
 from zebra_agent_worker.workspace_resolution import apply_workspace_resolver
 
 logger = logging.getLogger(__name__)
@@ -135,6 +139,7 @@ def recover_execution_inputs(
             handoff_evidence=(
                 None if recovered_handoff is None else recovered_handoff.runtime_evidence
             ),
+            client_state_evidence=recover_client_state_evidence(session_events),
         )
         if workspace_resolver is not None:
             task = apply_workspace_resolver(task, workspace_resolver, session_id)
@@ -190,7 +195,8 @@ def execute_existing_lease(
         if started_at.tzinfo is None or started_at.utcoffset() is None:
             raise ValueError("execution timestamps must be timezone-aware")
         claimed = service._claim_service.recover_lease(
-            lease, lease_ttl_seconds=lease_ttl_seconds,
+            lease,
+            lease_ttl_seconds=lease_ttl_seconds,
         )
     except BaseException as error:
         try:
@@ -202,7 +208,10 @@ def execute_existing_lease(
 
 
 def _execute_with_heartbeat(
-    service: Any, claimed: ClaimedSession, started_at: datetime, lease_ttl_seconds: int,
+    service: Any,
+    claimed: ClaimedSession,
+    started_at: datetime,
+    lease_ttl_seconds: int,
 ) -> ExecutedSession:
     session_id = claimed.lease.session_id
     with LeaseHeartbeat(
