@@ -90,7 +90,7 @@ does not authorize production code, migrations or activation of its successor.
   choices; no schema migration, deployment, or Trench worktree change is
   included.
 
-- `CLOUD-REMEDIATION-R06`: In Progress, owned by Luke Ding (Codex), current
+- `CLOUD-REMEDIATION-R06`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction, dependent on R01. Scope:
   make resource verification epoch-safe for concurrent batches, introduce
   explicit resource/effect/read evidence without trusting arbitrary same-name

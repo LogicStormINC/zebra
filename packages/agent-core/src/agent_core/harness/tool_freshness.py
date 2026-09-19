@@ -6,7 +6,11 @@ from datetime import datetime
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.domain.verification_evidence import VerificationResourceRef
+from agent_core.domain.verification_evidence import (
+    VerificationEvidence,
+    VerificationResourceRef,
+    VerificationStatus,
+)
 from agent_core.harness.attempt_result import action_fingerprint
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
@@ -80,6 +84,25 @@ def record_tool_freshness(
         for key in resource_keys or {f"tool:{tool_call.name}"}:
             resource_epochs[key] = next_epoch
         updated["mutation_resource_epochs"] = resource_epochs
+        evidence_by_resource = _mutation_evidence(updated)
+        for resource in _explicit_resource_refs(tool_result.metadata):
+            evidence_by_resource[resource.key] = {
+                "resource_ref": resource.model_dump(mode="json"),
+                "mutation_effect_id": _metadata_text(
+                    tool_result.metadata, "mutation_effect_id", "provider_operation_id"
+                )
+                or str(tool_call.tool_call_id),
+                "host_receipt_ref": (
+                    f"tool-receipt:{tool_call.tool_call_id}"
+                    if tool_result.receipt is not None
+                    else None
+                ),
+                "commit_version": _metadata_text(
+                    tool_result.metadata, "commit_version", "business_revision"
+                ),
+            }
+        if evidence_by_resource:
+            updated["mutation_resource_evidence"] = evidence_by_resource
         updated["post_mutation_verification_prompted"] = False
         return updated
     if tool_call.name not in read_only_tools:
@@ -90,13 +113,56 @@ def record_tool_freshness(
     updated["read_fingerprint_epochs"] = read_epochs
     resource_epochs = _resource_epochs(updated, "mutation_resource_epochs")
     verified_resources = _resource_epochs(updated, "verified_resource_epochs")
-    for key in _resource_keys(tool_call, tool_result.metadata):
-        if key in resource_epochs:
-            verified_resources[key] = min(resource_epochs[key], verified_epoch)
+    explicit_resources = _explicit_resource_refs(tool_result.metadata)
+    verified_any = False
+    if explicit_resources:
+        evidence_by_resource = _mutation_evidence(updated)
+        evidence_records = _verification_evidence(updated)
+        for resource in explicit_resources:
+            mutation_epoch_for_resource = resource_epochs.get(resource.key)
+            if mutation_epoch_for_resource is None:
+                continue
+            mutation = evidence_by_resource.get(resource.key, {})
+            status = _verification_status(
+                observed_epoch=verified_epoch,
+                mutation_epoch=mutation_epoch_for_resource,
+                commit_version=_optional_text(mutation.get("commit_version")),
+                read_version=_metadata_text(
+                    tool_result.metadata, "read_version", "business_revision"
+                ),
+                postcondition_met=tool_result.metadata.get("postcondition_met"),
+            )
+            evidence = VerificationEvidence(
+                resource_ref=resource,
+                mutation_effect_id=_optional_text(mutation.get("mutation_effect_id")),
+                host_receipt_ref=_optional_text(mutation.get("host_receipt_ref")),
+                commit_version=_optional_text(mutation.get("commit_version")),
+                read_version=_metadata_text(
+                    tool_result.metadata, "read_version", "business_revision"
+                ),
+                observed_epoch=verified_epoch,
+                postcondition=_metadata_text(tool_result.metadata, "postcondition"),
+                verification_status=status,
+            )
+            evidence_records.append(evidence.model_dump(mode="json"))
+            if status is VerificationStatus.VERIFIED:
+                verified_resources[resource.key] = mutation_epoch_for_resource
+                verified_any = True
+        updated["verification_evidence"] = evidence_records[-32:]
+    else:
+        for key in _resource_keys(tool_call, tool_result.metadata):
+            if key in resource_epochs:
+                verified_resources[key] = min(resource_epochs[key], verified_epoch)
+                verified_any = True
     updated["verified_resource_epochs"] = verified_resources
-    updated["verified_mutation_epoch"] = max(
-        _integer(updated.get("verified_mutation_epoch")), verified_epoch
-    )
+    if (
+        metadata.get("mutation_requires_global") is True
+        or verified_any
+        or not resource_epochs
+    ):
+        updated["verified_mutation_epoch"] = max(
+            _integer(updated.get("verified_mutation_epoch")), verified_epoch
+        )
     return updated
 
 
@@ -198,23 +264,76 @@ def _resource_keys(
 def _explicit_resource_keys(
     result_metadata: Mapping[str, object] | None,
 ) -> set[str]:
+    return {resource.key for resource in _explicit_resource_refs(result_metadata)}
+
+
+def _explicit_resource_refs(
+    result_metadata: Mapping[str, object] | None,
+) -> tuple[VerificationResourceRef, ...]:
     if not result_metadata:
-        return set()
+        return ()
     raw_refs = result_metadata.get("verification_resource_refs")
     if raw_refs is None:
         single = result_metadata.get("verification_resource_ref")
         raw_refs = (single,) if single is not None else ()
     if not isinstance(raw_refs, list | tuple):
-        return set()
-    keys: set[str] = set()
+        return ()
+    refs: list[VerificationResourceRef] = []
     for raw in raw_refs:
         if not isinstance(raw, Mapping):
             continue
         try:
-            keys.add(VerificationResourceRef.model_validate(raw).key)
+            refs.append(VerificationResourceRef.model_validate(raw))
         except ValueError:
             continue
-    return keys
+    return tuple(refs)
+
+
+def _mutation_evidence(metadata: Mapping[str, object]) -> dict[str, dict[str, object]]:
+    raw = metadata.get("mutation_resource_evidence")
+    if not isinstance(raw, dict):
+        return {}
+    return {
+        str(key): dict(value)
+        for key, value in raw.items()
+        if isinstance(key, str) and isinstance(value, dict)
+    }
+
+
+def _verification_evidence(metadata: Mapping[str, object]) -> list[dict[str, object]]:
+    raw = metadata.get("verification_evidence")
+    if not isinstance(raw, list):
+        return []
+    return [dict(item) for item in raw if isinstance(item, dict)]
+
+
+def _verification_status(
+    *,
+    observed_epoch: int,
+    mutation_epoch: int,
+    commit_version: str | None,
+    read_version: str | None,
+    postcondition_met: object,
+) -> VerificationStatus:
+    if observed_epoch < mutation_epoch:
+        return VerificationStatus.STALE
+    if postcondition_met is False:
+        return VerificationStatus.FAILED
+    if commit_version is not None and read_version != commit_version:
+        return VerificationStatus.UNVERIFIED
+    return VerificationStatus.VERIFIED
+
+
+def _metadata_text(metadata: Mapping[str, object], *keys: str) -> str | None:
+    for key in keys:
+        value = metadata.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()[:512]
+    return None
+
+
+def _optional_text(value: object) -> str | None:
+    return value.strip()[:512] if isinstance(value, str) and value.strip() else None
 
 
 def _integer(value: object) -> int:

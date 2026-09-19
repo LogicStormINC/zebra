@@ -118,7 +118,11 @@ def test_explicit_resource_identity_prevents_cross_namespace_verification() -> N
     )
     resource_b = resource_a.model_copy(update={"namespace_id": "tenant-b"})
 
-    def result(call: ToolCall, resource: VerificationResourceRef) -> ToolResult:
+    def result(
+        call: ToolCall,
+        resource: VerificationResourceRef,
+        **extra: object,
+    ) -> ToolResult:
         return ToolResult(
             tool_call_id=call.tool_call_id,
             status=ToolCallStatus.EXECUTED,
@@ -126,6 +130,7 @@ def test_explicit_resource_identity_prevents_cross_namespace_verification() -> N
             metadata={
                 "route": "host_tool_gateway",
                 "verification_resource_ref": resource.model_dump(mode="json"),
+                **extra,
             },
         )
 
@@ -156,4 +161,24 @@ def test_explicit_resource_identity_prevents_cross_namespace_verification() -> N
     )
     assert not needs_post_mutation_verification(
         metadata, read_only_tools=frozenset({"sources.get_status"})
+    )
+    assert metadata["verification_evidence"][-1]["verification_status"] == "verified"
+
+    versioned = record_tool_freshness(
+        {},
+        mutation,
+        result(mutation, resource_a, commit_version="revision-2"),
+        read_only_tools=frozenset({"sources.get_status"}),
+        mutation_tools=frozenset({"sources.resume"}),
+    )
+    versioned = record_tool_freshness(
+        versioned,
+        read,
+        result(read, resource_a, read_version="revision-1"),
+        read_only_tools=frozenset({"sources.get_status"}),
+        mutation_tools=frozenset({"sources.resume"}),
+    )
+    assert versioned["verification_evidence"][-1]["verification_status"] == "unverified"
+    assert needs_post_mutation_verification(
+        versioned, read_only_tools=frozenset({"sources.get_status"})
     )

@@ -1,5 +1,16 @@
 # Zebra Agent Project Status
 
+2026-09-19 CLOUD-REMEDIATION-R06 (closeout): resource-scoped mutations now
+retain bounded mutation evidence and fresh reads append structured
+`VerificationEvidence` with effect/receipt refs, commit/read versions,
+observed epoch, postcondition, and verified/unverified/stale/failed status.
+When a Host supplies a commit version, a missing or different read version
+cannot close the mutation. Global local-tool fallback remains compatible, while
+Host verification requires the trusted authority-qualified resource ref.
+Focused quality/loop/Host tests pass `17`; targeted Ruff, Mypy, and diff checks
+pass. R10 can now consume the frozen evidence contract without re-inferring
+resource identity.
+
 2026-09-19 CLOUD-REMEDIATION-R06 (part 1): resource verification is now
 epoch-safe and authority-qualified. A read from the same concurrent batch can
 advance only to its captured `observed_epoch`, never to a mutation completed in
@@ -9,7 +20,7 @@ ID; Host freshness no longer falls back to arbitrary `_id/name/path` fields
 when that trusted identity is absent. The `VerificationResourceRef` and
 `VerificationEvidence` contracts are added for the remaining evidence and
 R10 consumption work. Focused Core/Worker tests pass `27`; targeted Ruff,
-Mypy, and diff checks pass. R06 remains In Progress.
+Mypy, and diff checks pass.
 
 2026-09-19 CLOUD-REMEDIATION-R04: pinned Host egress no longer manufactures
 `compat:{credential_ref}` tokens. API manifest freeze and Worker execution now

@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-09-19 - CLOUD-REMEDIATION-R06 verification evidence closeout
+
+Completed the evidence half of R06. Mutation metadata now keeps the trusted
+resource, effect/receipt reference and commit version; each matching read emits
+a bounded `VerificationEvidence` record. Old epochs become stale, false
+postconditions become failed, and versioned writes stay unverified until the
+read reports the same version. Only verified evidence advances the resource
+epoch.
+
+Validation: focused quality, sequential-loop and Host gateway tests passed
+(17); targeted Ruff and Mypy passed; `git diff --check` passed.
+
 ## 2026-09-19 - CLOUD-REMEDIATION-R06 epoch and resource identity
 
 Fixed the concurrent-batch freshness defect: resource verification is capped
