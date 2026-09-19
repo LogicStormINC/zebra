@@ -101,6 +101,7 @@ def test_worker_gateway_exposes_manifest_and_routes_host_resource() -> None:
         host=host,
         host_context=_context(),
         host_manifest=manifest,
+        resource_authority_issuer="https://issuer.example.com",
     )
     call = ToolCall(
         tool_call_id=new_tool_call_id(),
@@ -115,6 +116,13 @@ def test_worker_gateway_exposes_manifest_and_routes_host_resource() -> None:
     assert "events.get_event" in gateway.read_only_tools
     assert result.output == "host"
     assert host.resource == HostResourceRef(type="trench.event", id="evt-1")
+    assert result.metadata["verification_resource_ref"] == {
+        "authority_issuer": "https://issuer.example.com",
+        "namespace_id": "tenant-a",
+        "host_app_id": "trench",
+        "resource_type": "trench.event",
+        "resource_id": "evt-1",
+    }
 
 
 def test_manifest_host_tool_never_falls_back_to_local() -> None:

@@ -54,6 +54,7 @@ class WorkerToolGateway:
     client: ClientToolGateway | None = None
     management: ExtensionManagementTools | None = None
     management_names: frozenset[str] = frozenset()
+    resource_authority_issuer: str | None = None
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
@@ -169,16 +170,36 @@ class WorkerToolGateway:
             if contract.idempotency is ToolIdempotency.REQUIRED
             else None
         )
-        return self.host.invoke(
+        required_resource = resolve_required_resource(
+            host_manifest.resource_bindings_for(tool_call.name),
+            tool_call,
+            self.host_context,
+        )
+        result = self.host.invoke(
             tool_call,
             self.host_context,
             idempotency_key=idempotency_key,
-            required_resource=resolve_required_resource(
-                host_manifest.resource_bindings_for(tool_call.name),
-                tool_call,
-                self.host_context,
-            ),
+            required_resource=required_resource,
             manifest=self.host_manifest,
+        )
+        if required_resource is None or self.resource_authority_issuer is None:
+            return result
+        from agent_core.domain.verification_evidence import VerificationResourceRef
+
+        resource_ref = VerificationResourceRef(
+            authority_issuer=self.resource_authority_issuer,
+            namespace_id=self.host_context.namespace_id,
+            host_app_id=self.host_context.host_app_id,
+            resource_type=required_resource.resource_type,
+            resource_id=required_resource.resource_id,
+        )
+        return result.model_copy(
+            update={
+                "metadata": {
+                    **result.metadata,
+                    "verification_resource_ref": resource_ref.model_dump(mode="json"),
+                }
+            }
         )
 
     def close(self) -> None:
@@ -216,6 +237,7 @@ def build_worker_tool_gateway(
     skill_catalog: SkillCatalog | None = None,
     skill_component_names: tuple[str, ...] = (),
     cloud_mcp_transport: CloudMcpTransport | None = None,
+    resource_authority_issuer: str | None = None,
 ) -> WorkerToolGateway:
     can_publish = (
         cloud_artifacts is not None
@@ -282,6 +304,7 @@ def build_worker_tool_gateway(
             runtime=runtime,
             runtime_handle=runtime_handle,
             client=client_gateway,
+            resource_authority_issuer=resource_authority_issuer,
         )
     credential_resolver = (
         ConfiguredHmacHostCredentialResolver(settings.host_tool_shared_secret)
@@ -319,6 +342,7 @@ def build_worker_tool_gateway(
             runtime=runtime,
             runtime_handle=runtime_handle,
             client=client_gateway,
+            resource_authority_issuer=resource_authority_issuer,
         )
     if manifest_digest and manifest_digest != _NO_MANIFEST_DIGEST:
         # The binding froze a real Host manifest, yet no pinned connector
@@ -337,6 +361,7 @@ def build_worker_tool_gateway(
             runtime=runtime,
             runtime_handle=runtime_handle,
             client=client_gateway,
+            resource_authority_issuer=resource_authority_issuer,
         )
     if not settings.host_tool_shared_secret:
         local.close()
@@ -369,6 +394,7 @@ def build_worker_tool_gateway(
         runtime=runtime,
         runtime_handle=runtime_handle,
         client=client_gateway,
+        resource_authority_issuer=resource_authority_issuer,
     )
 
 

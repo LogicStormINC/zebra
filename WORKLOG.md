@@ -1,5 +1,18 @@
 # Progress Log
 
+## 2026-09-19 - CLOUD-REMEDIATION-R06 epoch and resource identity
+
+Fixed the concurrent-batch freshness defect: resource verification is capped
+at the read's observed epoch. Added authority-qualified verification resource
+and evidence contracts, and project trusted Host resource bindings into tool
+results using the frozen Task binding issuer. Host calls without explicit
+trusted resource evidence are treated as global/unverified instead of using
+arbitrary same-name fields.
+
+Validation: focused Core and Worker tests passed (27); targeted Ruff and Mypy
+passed; `git diff --check` passed. R06 remains open for full evidence records
+and completion-gate consumption.
+
 ## 2026-09-19 - CLOUD-REMEDIATION-R04 Host egress credentials
 
 Replaced production `compat:{credential_ref}` placeholders with a real

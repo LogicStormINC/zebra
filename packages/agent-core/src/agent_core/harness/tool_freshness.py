@@ -6,6 +6,7 @@ from datetime import datetime
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.domain.verification_evidence import VerificationResourceRef
 from agent_core.harness.attempt_result import action_fingerprint
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
@@ -73,7 +74,7 @@ def record_tool_freshness(
         next_epoch = mutation_epoch + 1
         updated["mutation_epoch"] = next_epoch
         resource_epochs = _resource_epochs(updated, "mutation_resource_epochs")
-        resource_keys = _resource_keys(tool_call)
+        resource_keys = _resource_keys(tool_call, tool_result.metadata)
         if not resource_keys:
             updated["mutation_requires_global"] = True
         for key in resource_keys or {f"tool:{tool_call.name}"}:
@@ -91,7 +92,7 @@ def record_tool_freshness(
     verified_resources = _resource_epochs(updated, "verified_resource_epochs")
     for key in _resource_keys(tool_call, tool_result.metadata):
         if key in resource_epochs:
-            verified_resources[key] = resource_epochs[key]
+            verified_resources[key] = min(resource_epochs[key], verified_epoch)
     updated["verified_resource_epochs"] = verified_resources
     updated["verified_mutation_epoch"] = max(
         _integer(updated.get("verified_mutation_epoch")), verified_epoch
@@ -174,6 +175,11 @@ def _resource_keys(
     tool_call: ToolCall,
     result_metadata: Mapping[str, object] | None = None,
 ) -> set[str]:
+    explicit = _explicit_resource_keys(result_metadata)
+    if explicit:
+        return explicit
+    if result_metadata and result_metadata.get("route") == "host_tool_gateway":
+        return set()
     values: dict[str, object] = dict(tool_call.arguments)
     if result_metadata:
         values.update(result_metadata)
@@ -186,6 +192,28 @@ def _resource_keys(
             text = str(value).strip()
             if text:
                 keys.add(f"{normalized}:{text[:512]}")
+    return keys
+
+
+def _explicit_resource_keys(
+    result_metadata: Mapping[str, object] | None,
+) -> set[str]:
+    if not result_metadata:
+        return set()
+    raw_refs = result_metadata.get("verification_resource_refs")
+    if raw_refs is None:
+        single = result_metadata.get("verification_resource_ref")
+        raw_refs = (single,) if single is not None else ()
+    if not isinstance(raw_refs, list | tuple):
+        return set()
+    keys: set[str] = set()
+    for raw in raw_refs:
+        if not isinstance(raw, Mapping):
+            continue
+        try:
+            keys.add(VerificationResourceRef.model_validate(raw).key)
+        except ValueError:
+            continue
     return keys
 
 

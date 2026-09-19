@@ -90,6 +90,16 @@ does not authorize production code, migrations or activation of its successor.
   choices; no schema migration, deployment, or Trench worktree change is
   included.
 
+- `CLOUD-REMEDIATION-R06`: In Progress, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on R01. Scope:
+  make resource verification epoch-safe for concurrent batches, introduce
+  explicit resource/effect/read evidence without trusting arbitrary same-name
+  arguments, and separate verified/unverified completion evidence. Owned paths:
+  `packages/agent-core/src/agent_core/harness/tool_freshness.py`, adjacent
+  Tool/Host receipt contracts and focused Core/Worker tests, this registry,
+  `PROGRESS.md`, and `WORKLOG.md`. R10 consumption changes remain separate;
+  no deployment or Trench worktree change is included.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

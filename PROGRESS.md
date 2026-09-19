@@ -1,5 +1,16 @@
 # Zebra Agent Project Status
 
+2026-09-19 CLOUD-REMEDIATION-R06 (part 1): resource verification is now
+epoch-safe and authority-qualified. A read from the same concurrent batch can
+advance only to its captured `observed_epoch`, never to a mutation completed in
+that batch. Host results carry an explicit resource identity derived from the
+frozen Task binding issuer plus namespace, Host, resource type, and resource
+ID; Host freshness no longer falls back to arbitrary `_id/name/path` fields
+when that trusted identity is absent. The `VerificationResourceRef` and
+`VerificationEvidence` contracts are added for the remaining evidence and
+R10 consumption work. Focused Core/Worker tests pass `27`; targeted Ruff,
+Mypy, and diff checks pass. R06 remains In Progress.
+
 2026-09-19 CLOUD-REMEDIATION-R04: pinned Host egress no longer manufactures
 `compat:{credential_ref}` tokens. API manifest freeze and Worker execution now
 adapt the configured `ZEBRA_HOST_TOOL_SHARED_SECRET` through the existing

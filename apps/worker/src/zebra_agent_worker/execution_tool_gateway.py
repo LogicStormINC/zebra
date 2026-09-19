@@ -125,6 +125,9 @@ def build_execution_tool_gateway(
         cloud_mcp_transport=prepare_worker_mcp(
             extension, source=service._extensions.mcp, session_id=session_id, fence=fence,
         ),
+        resource_authority_issuer=(
+            task_binding.host_capability.authority_issuer if task_binding is not None else None
+        ),
     )
     gateway.management = prepare_extension_management(
         extension, mcp=service._extensions.mcp, skills=service._extensions.skills,
