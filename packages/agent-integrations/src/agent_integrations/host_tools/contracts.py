@@ -157,7 +157,7 @@ class HostToolManifest:
     def to_payload(self) -> dict[str, object]:
         """Serialize for durable freezing; from_payload round-trips it."""
 
-        payload = {
+        payload: dict[str, object] = {
             "workloadIdentity": self.workload_identity,
             "tools": [
                 _tool_payload(
