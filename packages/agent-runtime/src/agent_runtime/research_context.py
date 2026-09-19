@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
-from uuid import UUID
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from agent_context import delegated_context_from_materialization
 from agent_core.domain.context_inheritance import ContextInheritanceMode
@@ -75,13 +75,17 @@ def delegate_durable_research(
     delegation_store: object,
     parent_task_id: object | None,
     parent_binding: object | None,
+    max_model_calls: int,
+    max_tool_calls: int,
 ) -> ToolResult:
     from agent_core.application.session_bootstrap import (
         SessionBootstrapCommand,
         SessionBootstrapService,
     )
     from agent_core.application.workspace_projection import rebuild_workspace
+    from agent_core.contracts import SessionCommand, SessionCommandKind
     from agent_core.domain.agent_capabilities import capability_set
+    from agent_core.domain.events import EventActor, EventType, SessionEvent
     from agent_core.domain.subagent_delegation import (
         SubagentDelegationRequest,
         derive_child_binding,
@@ -152,6 +156,9 @@ def delegate_durable_research(
                 policy_profile="read_only",
                 tool_profile=ToolProfile.RESEARCH,
                 network_profile="none",
+                max_model_calls=max_model_calls,
+                max_tool_calls=max_tool_calls,
+                host_context=parent_binding.host_capability.host_context,
                 delegated_context=delegated_context,
             )
         )
@@ -162,8 +169,26 @@ def delegate_durable_research(
             child_definition_ceiling=child_capabilities,
             zebra_child_policy_capabilities=child_capabilities,
         )
+        run_key = f"subagent-run:{request.idempotency_key}"
+        run_command = SessionCommand(
+            command_id=uuid5(NAMESPACE_URL, run_key),
+            session_id=bootstrap.session.session_id,
+            kind=SessionCommandKind.RUN,
+            expected_revision=bootstrap.events[-1].sequence,
+            idempotency_key=run_key,
+        )
+        run_event = SessionEvent.create(
+            session_id=bootstrap.session.session_id,
+            sequence=run_command.expected_revision + 1,
+            event_type=EventType.SESSION_COMMAND_ACCEPTED,
+            actor=EventActor.HARNESS,
+            payload=run_command.event_payload(),
+            idempotency_key=run_key,
+            created_at=bootstrap.session.updated_at,
+        )
+        child_events = (*bootstrap.events, run_event)
         child_admission = TaskAdmissionRequest(
-            events=tuple(bootstrap.events),
+            events=child_events,
             session=bootstrap.session,
             workspace=rebuild_workspace(list(bootstrap.events)),
             binding=child_binding,

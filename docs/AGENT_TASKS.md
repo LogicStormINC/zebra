@@ -146,6 +146,32 @@ does not authorize production code, migrations or activation of its successor.
   `WORKLOG.md`. No schema migration, deployment, or Trench worktree change is
   included.
 
+- `CLOUD-REMEDIATION-R11`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on R05 commits
+  `4df36a1d` and `35a7e967`. Scope: close the existing Scheduler and durable
+  subtask authority/budget/recovery loop without introducing another scheduler.
+  Preserve the parent counters across waiting-child recovery, freeze bounded
+  child model/tool budgets into the admitted child Task, keep child authority a
+  strict subset, make budget receipt replay idempotent, and verify duplicate
+  trigger, expired claim, DST, misfire, overlap, cancellation, authority
+  revocation, child failure/timeout, and parent recovery behavior. Owned paths:
+  `packages/agent-runtime/src/agent_runtime/research.py`,
+  `packages/agent-runtime/src/agent_runtime/research_context.py`, the existing
+  orchestration budget contract,
+  `packages/agent-storage/src/agent_storage/postgres/task_admission.py` (only
+  the atomic ordering needed to admit an initial child run command), focused
+  Scheduler/subagent/Worker/PostgreSQL tests, this registry, `PROGRESS.md`, and
+  `WORKLOG.md`. No new scheduling engine, schema migration, deployment, or
+  Trench worktree change is included. Implemented: child budgets are frozen,
+  budget receipts are replay-safe and reservation-bounded, waiting-child
+  recovery preserves parent counters, and durable child admission now writes
+  exactly one deterministic RUN command atomically after the binding/index are
+  available while leaving it unprojected for Worker pickup. Evidence: `62
+  passed, 1 skipped` focused; `52 passed` against real PostgreSQL/MinIO; full
+  repository `4478 passed, 887 skipped`; file-size, touched Ruff, strict Mypy
+  (949 sources), Eval 10/10 and diff gates passed. Full `make check` retains the
+  R00 baseline import-order finding in untouched `apps/api/.../host_auth.py`.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

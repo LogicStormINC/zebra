@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.ports.idempotency_store import IdempotencyRecord
@@ -77,8 +78,31 @@ class PostgresTaskAdmissionTransaction:
                     idempotent_replay=True,
                     replayed_record=replayed,
                 )
+        command_start = next(
+            (
+                index
+                for index, event in enumerate(request.events)
+                if event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+            ),
+            len(request.events),
+        )
+        bootstrap_events = request.events[:command_start]
+        command_events = request.events[command_start:]
+        if not bootstrap_events or any(
+            event.event_type is not EventType.SESSION_COMMAND_ACCEPTED
+            for event in command_events
+        ):
+            raise ValueError("initial task commands must trail bootstrap events")
+        if command_events and request.binding is None:
+            raise ValueError("initial task commands require a frozen Task binding")
+        if command_events and (
+            request.session.current_sequence != bootstrap_events[-1].sequence
+            or request.workspace.current_sequence != bootstrap_events[-1].sequence
+        ):
+            raise ValueError("initial task command must remain unprojected until Worker pickup")
         persisted_events = tuple(
-            append_event_in_transaction(connection, namespace, event) for event in request.events
+            append_event_in_transaction(connection, namespace, event)
+            for event in bootstrap_events
         )
         save_session_in_transaction(connection, namespace, request.session)
         save_workspace_in_transaction(connection, namespace, request.workspace)
@@ -91,6 +115,12 @@ class PostgresTaskAdmissionTransaction:
                 namespace,
                 request.binding,
             )
+        persisted_events += tuple(
+            append_event_in_transaction(connection, namespace, event)
+            for event in command_events
+        )
+        if command_events:
+            task = rebuild_task_in_transaction(connection, namespace, root_session_id)
         return TaskAdmissionReceipt(
             task_id=task.task_id,
             session_id=root_session_id,

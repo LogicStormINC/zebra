@@ -76,6 +76,14 @@ class BudgetLedger(BaseModel):
         reserved = self._reserved_unlocked()
         if not self.ceiling.covers(reserved):
             raise ValueError("reservations exceed the budget ceiling")
+        child_refs = [receipt.child_task_ref for receipt in self.receipts]
+        if len(set(child_refs)) != len(child_refs):
+            raise ValueError("a child budget receipt may be booked only once")
+        used = self._used()
+        if not self.ceiling.covers(used):
+            raise ValueError("booked usage exceeds the budget ceiling")
+        if self.reservations and not reserved.covers(used):
+            raise ValueError("booked usage exceeds reserved child budget")
         return self
 
     def _reserved_unlocked(self) -> BudgetReservation:
@@ -128,6 +136,18 @@ class BudgetLedger(BaseModel):
         )
 
     def book(self, receipt: BudgetUsageReceipt) -> BudgetLedger:
+        existing = next(
+            (
+                booked
+                for booked in self.receipts
+                if booked.child_task_ref == receipt.child_task_ref
+            ),
+            None,
+        )
+        if existing is not None:
+            if existing == receipt:
+                return self
+            raise BudgetExceededError("child budget receipt conflicts with prior usage")
         used = self._used()
         after = BudgetReservation(
             model_tokens=used.model_tokens + receipt.model_tokens,
@@ -136,6 +156,9 @@ class BudgetLedger(BaseModel):
         )
         if not self.ceiling.covers(after):
             raise BudgetExceededError("budget usage exceeds the ceiling")
+        reserved = self._reserved_unlocked()
+        if self.reservations and not reserved.covers(after):
+            raise BudgetExceededError("budget usage exceeds child reservations")
         return BudgetLedger(
             parent_task_ref=self.parent_task_ref,
             ceiling=self.ceiling,

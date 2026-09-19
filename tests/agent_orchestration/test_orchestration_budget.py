@@ -65,3 +65,38 @@ def test_ledger_rejects_prebuilt_overreservation() -> None:
                 BudgetReservation(model_tokens=600, tool_calls=1, runtime_seconds=1),
             ),
         )
+
+
+def test_booking_is_replay_safe_across_recovery() -> None:
+    ledger = BudgetLedger(parent_task_ref="parent-1", ceiling=_ceiling()).reserve(
+        BudgetReservation(model_tokens=500, tool_calls=5, runtime_seconds=50)
+    )
+    receipt = BudgetUsageReceipt(
+        child_task_ref="child-1",
+        model_tokens=200,
+        tool_calls=2,
+        runtime_seconds=20,
+    )
+
+    booked = ledger.book(receipt)
+    recovered = BudgetLedger.model_validate_json(booked.model_dump_json())
+
+    assert recovered.book(receipt) == recovered
+    with pytest.raises(BudgetExceededError, match="conflicts"):
+        recovered.book(receipt.model_copy(update={"model_tokens": 201}))
+
+
+def test_booking_cannot_exceed_reserved_child_budget() -> None:
+    ledger = BudgetLedger(parent_task_ref="parent-1", ceiling=_ceiling()).reserve(
+        BudgetReservation(model_tokens=100, tool_calls=2, runtime_seconds=20)
+    )
+
+    with pytest.raises(BudgetExceededError, match="reservations"):
+        ledger.book(
+            BudgetUsageReceipt(
+                child_task_ref="child-1",
+                model_tokens=101,
+                tool_calls=1,
+                runtime_seconds=1,
+            )
+        )

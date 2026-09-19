@@ -279,6 +279,8 @@ class ResearchSubagentTool:
                     delegation_store=self._delegation_store,
                     parent_task_id=self._parent_task_id,
                     parent_binding=self._parent_binding,
+                    max_model_calls=self._max_model_calls,
+                    max_tool_calls=self._max_tool_calls,
                 )
             if context_mode is not ContextInheritanceMode.FRESH:
                 raise ToolArgumentError("non-fresh context_mode requires durable Cloud delegation")

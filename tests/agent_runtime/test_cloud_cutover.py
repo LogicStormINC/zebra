@@ -13,7 +13,7 @@ from agent_core.application.mock_model import (
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
-from agent_core.domain.tools import ToolCall
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_runtime.harness import LocalToolGateway
 from agent_runtime.research import ResearchSubagentTool
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
@@ -127,3 +127,29 @@ def test_only_durable_research_contract_exposes_context_mode(tmp_path: Path) -> 
             durable.handle(invalid)
     finally:
         coordinator.close()
+
+
+def test_durable_tool_forwards_frozen_child_budgets(tmp_path: Path, monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def delegate(tool_call, **kwargs):
+        captured.update(kwargs)
+        return ToolResult(tool_call_id=tool_call.tool_call_id, status=ToolCallStatus.EXECUTED)
+
+    monkeypatch.setattr("agent_runtime.research.delegate_durable_research", delegate)
+    coordinator = LocalResearchSubagentCoordinator(SlowRunner())
+    tool = ResearchSubagentTool(
+        coordinator,
+        tmp_path,
+        wait_for_result=False,
+        delegation_store=object(),
+        max_model_calls=5,
+        max_tool_calls=7,
+    )
+    try:
+        tool.handle(_research_call())
+    finally:
+        coordinator.close()
+
+    assert captured["max_model_calls"] == 5
+    assert captured["max_tool_calls"] == 7

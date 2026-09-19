@@ -3117,3 +3117,27 @@ focused reliability/review coverage is `47 passed`, cleaning is `73 passed`,
 ToC tests are `79 passed`, and the frontend/ToC builds, lint, migration SQL
 generation, and diff checks are green. No deployment or browser acceptance is
 claimed.
+
+## 2026-09-20 - CLOUD-REMEDIATION-R11 scheduler and durable child closure
+
+- Reused the existing Schedule/Scheduler path and revalidated duplicate firing,
+  expired claim recovery, DST gap/fold, misfire, overlap, terminal cancellation
+  and authority revocation behavior; no second scheduling engine or schema was
+  introduced.
+- Durable research children now freeze their configured model/tool call limits
+  and retain the narrowed child binding. The child bootstrap and one
+  deterministic HARNESS-authored RUN command commit in the same delegation
+  transaction; admission establishes the Task index and binding before command
+  wakeup projection, while Session/Workspace projections deliberately remain at
+  bootstrap revision until the Worker consumes the command.
+- Orchestration budget receipts are idempotent on identical recovery replay,
+  reject conflicting duplicate receipts and cannot exceed either their child
+  reservation or aggregate ceiling. Parent continuation rebuild preserves the
+  pre-suspension model/tool counters.
+- Evidence: focused Scheduler/subagent/Worker suite `62 passed, 1 skipped`;
+  real PostgreSQL/MinIO admission, delegation, concurrency and Scheduler suite
+  `52 passed`; default cloud API -> parent -> child -> wakeup -> parent chain
+  passed with one child RUN and frozen `3/2` limits; full repository `4478
+  passed, 887 skipped`. File-size, touched Ruff, strict Mypy over 949 sources,
+  Eval 10/10 and diff gates passed. Full `make check` remains stopped only by
+  the R00 import-order baseline in untouched `apps/api/.../host_auth.py`.

@@ -10004,3 +10004,24 @@ actual byte access.
   production builds, lint, migration SQL generation, and `git diff --check`
   all passed. No
   deployment or live browser acceptance was performed.
+
+## 2026-09-20 - CLOUD-REMEDIATION-R11
+
+- Claimed the existing Scheduler/durable-subtask remediation lane on
+  `cloud-agent-trench`; expanded ownership only to the PostgreSQL admission
+  ordering required by the discovered child wakeup defect.
+- Found the real end-to-end gap: durable delegation committed a child Session,
+  Task and binding but no RUN command, so the child stopped at `TASK_PREPARED`
+  and the suspended parent could never receive a wakeup.
+- Added a deterministic child RUN to the same admission/link transaction. The
+  admission now writes bootstrap events first, establishes projections, Task
+  index and binding, then appends command events and rebuilds the Task index.
+  The command remains beyond the bootstrap projection so the existing Worker
+  consumer sees and executes it exactly once.
+- Froze child model/tool limits from `ResearchSubagentTool`, preserved narrowed
+  authority/Host context, made budget settlement replay-safe and bounded, and
+  added a continuation regression proving parent counters survive wakeup.
+- Validation: local focused `62 passed, 1 skipped`; real PostgreSQL/MinIO `52
+  passed`; full `4478 passed, 887 skipped`; file-size, touched Ruff, Mypy 949,
+  Eval 10/10 and `git diff --check` passed. `make check` only reports the
+  pre-recorded R00 import-order baseline in untouched `host_auth.py`.

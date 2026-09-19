@@ -328,7 +328,20 @@ def test_default_chain_delegates_suspends_and_resumes(
     delegated = [
         event for event in events if event.event_type is EventType.SUBAGENT_DELEGATED
     ]
-    assert delegated, f"parent never delegated; saw {[t.value for t in event_types]}"
+    suspension_payloads = [
+        event.payload
+        for event in events
+        if event.event_type is EventType.SESSION_SUSPENDED
+    ]
+    terminal_payloads = [
+        event.payload
+        for event in events
+        if event.event_type in {EventType.TURN_FAILED, EventType.SESSION_FAILED}
+    ]
+    assert delegated, (
+        f"parent never delegated; saw {[t.value for t in event_types]}; "
+        f"suspensions={suspension_payloads}; terminals={terminal_payloads}"
+    )
     child_task_id = str(delegated[0].payload["child_task_id"])
 
     assert EventType.SESSION_SUSPENDED in event_types, "parent must suspend"
@@ -337,7 +350,11 @@ def test_default_chain_delegates_suspends_and_resumes(
     ]
     assert suspended[0].payload["reason"] == "waiting_children"
     assert suspended[0].payload["child_task_ids"] == [child_task_id]
-    assert EventType.SESSION_RESUMED in event_types, "wakeup must resume the parent"
+    child_debug_events = stores.events.list_for_session(SessionId(UUID(child_task_id)))
+    assert EventType.SESSION_RESUMED in event_types, (
+        "wakeup must resume the parent; child events="
+        f"{[(event.event_type.value, event.payload) for event in child_debug_events]}"
+    )
     assert EventType.SESSION_COMPLETED in event_types, "parent must complete after join"
 
     completed_index = event_types.index(EventType.SESSION_COMPLETED)
@@ -375,9 +392,20 @@ def test_default_chain_delegates_suspends_and_resumes(
     assert child_binding.task_id == child_task_id
 
     child_events = stores.events.list_for_session(SessionId(UUID(child_task_id)))
+    initial_runs = [
+        event
+        for event in child_events
+        if event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+        and event.payload.get("kind") == "run"
+    ]
+    assert len(initial_runs) == 1, "child admission must queue exactly one initial run"
+    assert initial_runs[0].actor.value == "harness"
+    assert initial_runs[0].payload["expected_revision"] == 2
     child_prepared = next(
         event for event in child_events if event.event_type is EventType.TASK_PREPARED
     )
+    assert child_prepared.payload["max_model_calls"] == 3
+    assert child_prepared.payload["max_tool_calls"] == 2
     inherited = child_prepared.payload["delegated_context"]
     assert inherited["mode"] == "fork_tail"
     assert inherited["source_session_id"] == session_id
