@@ -99,11 +99,19 @@ def run(spec: RunnerSpec, evidence_dir: Path) -> int:
         "return_code": return_code,
         "timed_out": timed_out,
         "passed": return_code == 0 and not timed_out,
+        "candidate_sha": _git("rev-parse", "HEAD"),
+        "worktree_clean": not bool(_git("status", "--porcelain")),
     }
     result_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     outcome = "PASS" if result["passed"] else "FAIL"
     print(f"ZEBRA_CLOUDLINE_RUNNER={spec.runner_id} RESULT={outcome}")
     return return_code
+
+
+def _git(*args: str) -> str:
+    return subprocess.run(
+        ("git", *args), cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout.strip()
 
 
 def _terminate_process_group(process: subprocess.Popen[str]) -> None:
@@ -120,6 +128,7 @@ def _terminate_process_group(process: subprocess.Popen[str]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runner", choices=sorted(load_specs()))
+    parser.add_argument("--all", action="store_true")
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--evidence-dir", type=Path, default=Path("cloudline-evidence"))
     args = parser.parse_args()
@@ -128,8 +137,17 @@ def main() -> int:
         for runner_id in sorted(specs):
             print(runner_id)
         return 0
+    if args.all and args.runner is not None:
+        parser.error("--all and --runner are mutually exclusive")
+    if args.all:
+        return_code = 0
+        for runner_id in sorted(specs):
+            current = run(specs[runner_id], args.evidence_dir / runner_id)
+            if current != 0:
+                return_code = current
+        return return_code
     if args.runner is None:
-        parser.error("--runner is required unless --list is used")
+        parser.error("--runner or --all is required unless --list is used")
     return run(specs[args.runner], args.evidence_dir)
 
 

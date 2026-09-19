@@ -251,7 +251,7 @@ does not authorize production code, migrations or activation of its successor.
   skipped`. R07 remains In Progress until the real PostgreSQL/profile/browser
   pilot is recorded.
 
-- `CLOUD-REMEDIATION-R12`: In Progress, owned by Luke Ding (Codex), current
+- `CLOUD-REMEDIATION-R12`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction, dependent on completed R00
   and R04 implementation. Scope: audit and harden runtime credentials, network
   isolation and enforceable resource limits without weakening the existing
@@ -267,7 +267,34 @@ does not authorize production code, migrations or activation of its successor.
   stdout/stderr into Worker memory and reports both truncation flags as false.
   Acceptance requires bounded streaming capture, truthful UTF-8-safe truncation
   flags on normal and timeout paths, process-tree termination, regression tests,
-  and unchanged trusted-local compatibility.
+  and unchanged trusted-local compatibility. Implemented and validated with
+  `751 passed, 11 skipped`; strict Mypy passes over `957` sources. The real
+  target gVisor execution/cleanup proof is deliberately assigned to R14/G2 and
+  remains a release gate, not an R12 implementation claim.
+
+- `CLOUD-REMEDIATION-R13`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on R00. Scope:
+  turn cloud test classification, real-dependency/fault/Trench entry points,
+  low-cardinality stage latency summaries and release evidence into executable,
+  fail-closed gates. Owned paths: `packages/agent-observability`, focused tests,
+  `scripts/`, `Makefile`, `.github/workflows/quality.yml`, release evidence
+  configuration/runbook, the inherited R00 static-gate blocker in
+  `apps/api/src/zebra_agent_api/host_auth.py`, this registry, `PROGRESS.md`, and
+  `WORKLOG.md`.
+  Acceptance requires deterministic L1/L2 JUnit output, explicit L3-L6
+  dependency states, candidate/config/dependency fingerprints without secrets,
+  `PASS`/`FAIL`/`NOT_ENABLED` separation, no skipped enabled capability treated
+  as success, and a machine-readable release manifest. Performance targets are
+  recorded only from a named workload; no unsupported capacity claim is made.
+  Implemented: all requested Make entry points, credential-free gate envelopes,
+  clean-SHA capability-aware release aggregation, L1-L6 CI wiring, real
+  PostgreSQL fault runner, Trench staging workflow and fixed-label latency
+  summaries. Local evidence: L1 `54 passed`, L2 `35 passed`, L4 PostgreSQL `39
+  passed`, and all five L3 real-service runners passed after fixing stale
+  Scheduler fixture inputs. The 10/100/1000-session command-scan baseline held
+  at 9 explicit queries per scan with local p95 `35.691-37.647ms`. The final
+  manifest correctly fails on dirty/stale/missing evidence and reports disabled
+  Redis Agent Memory as `NOT_ENABLED`.
 
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining

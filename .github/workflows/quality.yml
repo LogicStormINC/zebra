@@ -35,6 +35,106 @@ jobs:
       - name: Run static and release gates
         run: make check
 
+  classified-cloud-gates:
+    name: Classified cloud gate (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [test-cloud-contracts, test-cloud-composition]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-dependency-glob: uv.lock
+          enable-cache: true
+          python-version: "3.12"
+          version: "0.11.12"
+      - name: Install locked workspace
+        run: uv sync --frozen --all-packages --group dev
+      - name: Run classified gate
+        run: make "${{ matrix.target }}" EVIDENCE_ROOT=cloud-gate-evidence
+      - name: Retain gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ matrix.target }}-evidence
+          path: cloud-gate-evidence
+          if-no-files-found: error
+          retention-days: 14
+
+  cloud-faults:
+    name: Real PostgreSQL cloud faults
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-dependency-glob: uv.lock
+          enable-cache: true
+          python-version: "3.12"
+          version: "0.11.12"
+      - name: Install locked workspace
+        run: uv sync --frozen --all-packages --group dev
+      - name: Run fault gate
+        run: make test-cloud-faults EVIDENCE_ROOT=cloud-fault-evidence
+      - name: Retain fault evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cloud-fault-evidence
+          path: cloud-fault-evidence
+          if-no-files-found: error
+          retention-days: 14
+
+  performance-baseline:
+    name: PostgreSQL command scan baseline
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17.5-alpine3.21
+        env:
+          POSTGRES_DB: rabbitmq_baseline
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rabbitmq_baseline"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-dependency-glob: uv.lock
+          enable-cache: true
+          python-version: "3.12"
+          version: "0.11.12"
+      - name: Install locked workspace
+        run: uv sync --frozen --all-packages --group dev
+      - name: Record named synthetic workload
+        env:
+          RABBITMQ_BASELINE_DSN: postgresql://postgres@127.0.0.1:${{ job.services.postgres.ports[5432] }}/rabbitmq_baseline
+        run: uv run python scripts/benchmark_command_scan.py > command-scan-baseline.json
+      - name: Retain performance baseline
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: command-scan-baseline
+          path: command-scan-baseline.json
+          if-no-files-found: error
+          retention-days: 14
+
   real-services:
     name: Real service contract (${{ matrix.runner }})
     runs-on: ubuntu-22.04
@@ -246,12 +346,13 @@ jobs:
       - name: Run real gVisor isolation smoke
         env:
           ZEBRA_GVISOR_SMOKE: "1"
-        run: uv run pytest -q --junitxml=gvisor-runtime.xml tests/agent_runtime/test_gvisor_smoke.py
+        run: make test-gvisor-runtime EVIDENCE_ROOT=gvisor-runtime-evidence
       - name: Retain gVisor evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: gvisor-runtime-evidence
-          path: gvisor-runtime.xml
+          path: gvisor-runtime-evidence
+          if-no-files-found: error
           retention-days: 14
 
   workspace-quota:

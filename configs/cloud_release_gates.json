@@ -1,0 +1,17 @@
+{
+  "schema_version": "zebra.cloud-release-gates.v1",
+  "gates": [
+    {"id": "cloud-contracts", "level": "L1", "capability": "core"},
+    {"id": "cloud-composition", "level": "L2", "capability": "core"},
+    {
+      "id": "cloud-integration",
+      "level": "L3",
+      "capability": "cloud_dependencies",
+      "members": ["application", "live-fanout", "recovery-pitr", "recovery-s3", "recovery-restore"]
+    },
+    {"id": "cloud-faults", "level": "L4", "capability": "cloud_dependencies"},
+    {"id": "trench-e2e", "level": "L5", "capability": "trench"},
+    {"id": "gvisor-runtime", "level": "L3", "capability": "task_execution"},
+    {"id": "redis-agent-memory", "level": "L6", "capability": "redis_agent_memory"}
+  ]
+}

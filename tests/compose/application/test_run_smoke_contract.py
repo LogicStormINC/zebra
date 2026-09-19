@@ -16,3 +16,11 @@ def test_application_smoke_seeds_a_valid_host_registry_before_api_start() -> Non
     assert ".upsert_registry(" in source
     assert 'allowed_origins=("https://application-compose.example",)' in source
     assert '"RS256"' in source
+    for required in (
+        "ZEBRA_SCHEDULER_GRANT_EXCHANGE_URL",
+        "ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET",
+        "ZEBRA_SCHEDULER_GRANT_ISSUER",
+        "ZEBRA_SCHEDULER_GRANT_JWKS_URI",
+        "ZEBRA_SCHEDULER_ALLOWED_ORIGINS",
+    ):
+        assert f"export {required}=" in source

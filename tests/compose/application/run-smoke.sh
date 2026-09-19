@@ -27,6 +27,11 @@ export ZEBRA_S3_SECRET_KEY=zebra-application-test-secret
 export ZEBRA_S3_REGION=us-east-1
 export ZEBRA_API_PORT="$API_PORT"
 export ZEBRA_WORKER_ID=application-compose-test-worker
+export ZEBRA_SCHEDULER_GRANT_EXCHANGE_URL=https://application-compose-test-authority.example/scheduler/grants
+export ZEBRA_SCHEDULER_WORKLOAD_SHARED_SECRET=application-compose-test-scheduler-secret
+export ZEBRA_SCHEDULER_GRANT_ISSUER=https://application-compose-test-authority.example
+export ZEBRA_SCHEDULER_GRANT_JWKS_URI=https://application-compose-test-authority.example/.well-known/jwks.json
+export ZEBRA_SCHEDULER_ALLOWED_ORIGINS=https://application-compose.example
 
 cleanup() {
   "${APP_COMPOSE[@]}" down --volumes --remove-orphans

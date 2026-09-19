@@ -9,6 +9,10 @@ from agent_observability.evals import (
     ReleaseGateResult,
     load_eval_cases,
 )
+from agent_observability.execution_metrics import (
+    StageLatencySummary,
+    summarize_execution_latencies,
+)
 from agent_observability.jsonl import JsonlTraceStore
 from agent_observability.models import (
     AuditRecord,
@@ -39,8 +43,10 @@ __all__ = [
     "ReplayResult",
     "ReleaseGatePolicy",
     "ReleaseGateResult",
+    "StageLatencySummary",
     "TraceRecord",
     "build_trace_record",
     "load_eval_cases",
     "summarize_model_profiles",
+    "summarize_execution_latencies",
 ]

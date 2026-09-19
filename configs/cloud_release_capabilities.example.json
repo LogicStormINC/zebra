@@ -1,0 +1,10 @@
+{
+  "schema_version": "zebra.cloud-release-capabilities.v1",
+  "capabilities": {
+    "core": "enabled",
+    "cloud_dependencies": "enabled",
+    "trench": "enabled",
+    "task_execution": "enabled",
+    "redis_agent_memory": "not_enabled"
+  }
+}

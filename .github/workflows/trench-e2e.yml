@@ -1,0 +1,53 @@
+name: Zebra Trench Cross-Repository E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trench-e2e:
+    name: Trench BFF and Zebra durable flow
+    runs-on: [self-hosted, linux, trench-staging]
+    environment: trench-staging
+    timeout-minutes: 45
+    env:
+      TRENCH_E2E_BFF_URL: ${{ vars.TRENCH_E2E_BFF_URL }}
+      TRENCH_E2E_READ_TOOLS_URL: ${{ vars.TRENCH_E2E_READ_TOOLS_URL }}
+      TRENCH_E2E_SESSION_COOKIE: ${{ secrets.TRENCH_E2E_SESSION_COOKIE }}
+      TRENCH_E2E_EVENT_ID: ${{ vars.TRENCH_E2E_EVENT_ID }}
+      TRENCH_E2E_HEALTH_URL: ${{ vars.TRENCH_E2E_HEALTH_URL }}
+      TRENCH_E2E_DATABASE_DSN: ${{ secrets.TRENCH_E2E_DATABASE_DSN }}
+      TRENCH_E2E_REDIS_URL: ${{ secrets.TRENCH_E2E_REDIS_URL }}
+      TRENCH_E2E_OBJECT_STORE_HEALTH_URL: ${{ vars.TRENCH_E2E_OBJECT_STORE_HEALTH_URL }}
+      TRENCH_E2E_BUSINESS_SNAPSHOT_URL: ${{ vars.TRENCH_E2E_BUSINESS_SNAPSHOT_URL }}
+      ZEBRA_E2E_BASE_URL: ${{ vars.ZEBRA_E2E_BASE_URL }}
+      ZEBRA_E2E_HEALTH_URL: ${{ vars.ZEBRA_E2E_HEALTH_URL }}
+      ZEBRA_E2E_DATABASE_DSN: ${{ secrets.ZEBRA_E2E_DATABASE_DSN }}
+      ZEBRA_E2E_REDIS_URL: ${{ secrets.ZEBRA_E2E_REDIS_URL }}
+      ZEBRA_E2E_OBJECT_STORE_HEALTH_URL: ${{ vars.ZEBRA_E2E_OBJECT_STORE_HEALTH_URL }}
+      ZEBRA_E2E_GRANT_EXCHANGE_URL: ${{ vars.ZEBRA_E2E_GRANT_EXCHANGE_URL }}
+      ZEBRA_E2E_WORKER_RESTART_URL: ${{ vars.ZEBRA_E2E_WORKER_RESTART_URL }}
+    steps:
+      - name: Check out Zebra candidate
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          cache-dependency-glob: uv.lock
+          enable-cache: true
+          python-version: "3.12"
+          version: "0.11.12"
+      - name: Install locked workspace
+        run: uv sync --frozen --all-packages --group dev
+      - name: Run cross-repository gate
+        run: make test-trench-e2e EVIDENCE_ROOT=trench-e2e-evidence
+      - name: Retain cross-repository evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: trench-e2e-evidence
+          path: trench-e2e-evidence
+          if-no-files-found: error
+          retention-days: 14

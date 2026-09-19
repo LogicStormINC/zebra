@@ -1,5 +1,24 @@
 # Progress Log
 
+## 2026-09-20 - CLOUD-REMEDIATION-R13 release evidence
+
+Added executable cloud-contract, composition, integration, fault, Trench,
+gVisor, external-memory and release-manifest targets. Every gate binds a clean
+candidate SHA and configuration/dependency fingerprints without retaining the
+raw command or environment. The aggregator accepts the five distinct L3 service
+results, rejects missing/dirty/stale/failed evidence, and keeps `NOT_ENABLED`
+separate from success. CI now runs classified gates, PostgreSQL faults, the
+named command-scan baseline and manual protected Trench staging acceptance.
+
+Local execution passed L1 `54`, L2 `35`, real PostgreSQL L4 `39`, and all five
+L3 service runners. The first L3 application attempt exposed missing Scheduler
+fixture inputs; those inputs were added and both the application runner and the
+complete matrix then passed. The 10/100/1000-session, 10-repeat local performance
+sample used 9 explicit queries per scan and measured p95 `35.691`, `35.691` and
+`37.647ms`. Release aggregation was deliberately run from the dirty development
+tree and correctly failed every enabled gate while marking Redis Agent Memory
+`NOT_ENABLED`. The inherited `host_auth.py` Ruff ordering blocker was fixed.
+
 ## 2026-09-20 - CLOUD-REMEDIATION-R12 runtime boundary
 
 Audited the existing OCI/OS sandbox, credential, egress, workspace and archive

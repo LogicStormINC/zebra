@@ -1,5 +1,15 @@
 # Zebra Agent Project Status
 
+2026-09-20 CLOUD-REMEDIATION-R13: cloud release checks now have explicit L1-L6
+Make/CI entry points, JUnit and credential-free gate envelopes, clean candidate
+binding and capability-aware `PASS`/`FAIL`/`NOT_ENABLED` aggregation. Fixed-label
+event summaries expose queue/model/tool/client/turn latency without identity
+labels. L1 `54`, L2 `35`, real PostgreSQL L4 `39`, and all five L3 service
+runners pass. The named 10/100/1000-session local scan stayed at 9 queries per
+scan with p95 `35.691-37.647ms`; it is a regression baseline, not a capacity
+claim. The R00 Ruff blocker is closed. Trench browser and target gVisor evidence
+remain required inputs to G2/G3 rather than being marked successful.
+
 2026-09-20 CLOUD-REMEDIATION-R12: sandbox stdout/stderr capture is now bounded
 while both pipes continue draining, with UTF-8-safe output and truthful
 truncation flags on completion and timeout. OCI defaults and pinned engine calls
