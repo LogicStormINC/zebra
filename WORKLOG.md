@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-09-19 - CLOUD-REMEDIATION-R05 Host Effect recovery
+
+Completed the audited Effect outcome and recovery path. Host writes no longer
+equate HTTP success with an applied business mutation: success requires a
+structured receipt with operation ID and revision, explicit rejection becomes
+`failed_no_effect`, and every ambiguous result remains `uncertain`. Unknown
+writes persist a content-free Host receipt in Effect evidence. A fenced,
+bounded recovery pass reads those receipts, calls only the pinned signed
+reconciliation endpoint by provider operation ID, and atomically settles the
+original dispatch; it never replays the original business write.
+
+Validation: focused Integration/Tool/Worker/PostgreSQL tests passed `42` with
+`23` dependency skips; full pytest passed `4474` with `887` skips; file-size,
+targeted Ruff, strict Mypy over `949` sources, and `git diff --check` passed.
+`make check` proceeds through file-size and stops at the unchanged R00 Ruff
+import-order baseline in `apps/api/src/zebra_agent_api/host_auth.py:3`.
+
 ## 2026-09-19 - CLOUD-REMEDIATION-R10 hard evidence and soft quality gates
 
 Separated completion truth from prose quality. Unresolved post-mutation state

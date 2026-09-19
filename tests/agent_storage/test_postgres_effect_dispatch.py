@@ -354,6 +354,12 @@ def test_epoch_rotation_exposes_old_claim_for_reconciliation(
         ).status
         is EffectDispatchStatus.UNCERTAIN
     )
+    uncertain = store.list_uncertain(
+        session_id,
+        current_fence=second.fence,
+    )
+    assert len(uncertain) == 1
+    assert uncertain[0].dispatch_id == old_claim.dispatch.dispatch_id
 
 
 def test_concurrent_reconciliation_allows_one_claim_cas(

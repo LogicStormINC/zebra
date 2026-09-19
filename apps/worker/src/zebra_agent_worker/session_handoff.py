@@ -218,6 +218,7 @@ def guard_effectful_tools(
             mutation_authority=mutation_authority,
         )
         guarded.reconcile_expired()
+        guarded.reconcile_uncertain()
         return guarded
     if effect_payloads is not None or mutation_authority is not None:
         raise ValueError("cloud Effect payload coordination requires fenced dispatch")

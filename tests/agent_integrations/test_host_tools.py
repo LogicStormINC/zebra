@@ -11,6 +11,7 @@ from agent_core.domain.host_authority import (
     HostResourceRef,
     HostTechnicalLimits,
 )
+from agent_core.domain.host_effect_receipts import HostEffectStatus, uncertain_receipt
 from agent_core.domain.identifiers import ToolCallId
 from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_integrations.host_tools import (
@@ -228,6 +229,41 @@ def test_host_write_requires_structured_business_outcome(
     if status is ToolCallStatus.EXECUTED:
         assert result.metadata["commit_version"] == "revision-7"
         assert result.metadata["mutation_effect_id"] == "operation-1"
+    elif business_outcome == "unknown":
+        assert result.metadata["provider_operation_id"] == "invoke-1"
+        receipt = result.metadata["host_effect_receipt"]
+        assert isinstance(receipt, dict)
+        assert receipt["effect_status"] == "uncertain"
+
+
+def test_host_effect_reconcile_uses_signed_pinned_path() -> None:
+    transport = _FakeTransport(
+        [
+            HostToolTransportResponse(
+                200,
+                {
+                    "effectStatus": "succeeded",
+                    "providerOperationId": "operation-7",
+                    "businessRevision": "revision-8",
+                },
+            )
+        ]
+    )
+    gateway = HostToolGateway(
+        "https://trench.example",
+        HostWorkloadIdentity("trench-worker", "tenant-1", "trench"),
+        shared_secret="test-secret",
+        transport=transport,
+        reconcile_path="/effects/reconcile",
+    )
+
+    settled = gateway.reconcile_effect(uncertain_receipt("operation-7"), _context())
+
+    assert settled.effect_status is HostEffectStatus.SUCCEEDED
+    assert settled.business_revision == "revision-8"
+    assert transport.calls[0][1] == "https://trench.example/effects/reconcile"
+    assert transport.calls[0][3] == {"providerOperationId": "operation-7"}
+    assert len(transport.calls[0][2]["X-Zebra-Host-Auth"]) == 64
 
 
 def test_output_limit_and_manifest_integrity_fail_closed() -> None:

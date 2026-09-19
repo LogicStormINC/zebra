@@ -29,6 +29,7 @@ from agent_storage.postgres.effect_payload_transactions import (
     finish_claim_in_transaction,
     schedule_effect_in_transaction,
 )
+from agent_storage.postgres.effect_reconciliation import list_uncertain_effects as query_uncertain
 from agent_storage.postgres.effects import (
     assert_terminal_event,
     effect_claim_from_row,
@@ -51,9 +52,7 @@ from agent_storage.postgres.leases import assert_current_lease_fence
 
 
 class PostgresEffectDispatchStore(
-    EffectPayloadDispatchMixin,
-    EffectDispatchPort,
-    EffectStateReadPort,
+    EffectPayloadDispatchMixin, EffectDispatchPort, EffectStateReadPort
 ):
     """Keep Event intent, delivery state, and terminal fact in one transaction."""
 
@@ -245,6 +244,22 @@ class PostgresEffectDispatchStore(
             terminal_event=terminal_event,
             evidence=evidence,
         )
+
+    def list_uncertain(
+        self,
+        execution_session_id: SessionId,
+        *,
+        current_fence: LeaseFence,
+        limit: int = 100,
+    ) -> tuple[EffectDispatch, ...]:
+        with self._database.connect() as connection:
+            assert_current_lease_fence(
+                connection,
+                self._namespace,
+                execution_session_id,
+                current_fence,
+            )
+            return query_uncertain(connection, self._namespace, execution_session_id, limit)
 
     def mark_uncertain(
         self,

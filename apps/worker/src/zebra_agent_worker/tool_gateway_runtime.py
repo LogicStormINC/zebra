@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.host_effect_receipts import HostEffectReceipt
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolIdempotency, ToolResult, ToolRisk
@@ -145,6 +146,11 @@ class WorkerToolGateway:
 
     def resolve_model_tool_calls(self, tool_calls: tuple[ToolCall, ...]) -> tuple[ToolCall, ...]:
         return self.local.resolve_model_tool_calls(tool_calls)
+
+    def reconcile_effect_receipt(self, receipt: HostEffectReceipt) -> HostEffectReceipt:
+        if self.host is None or self.host_context is None:
+            return receipt
+        return self.host.reconcile_effect(receipt, self.host_context)
 
     def execute(self, toolCall: ToolCall) -> ToolResult:
         return self._execute(toolCall)

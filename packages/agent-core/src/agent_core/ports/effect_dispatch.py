@@ -39,6 +39,14 @@ class EffectDispatchPort(Protocol):
         limit: int = 100,
     ) -> tuple[EffectClaim, ...]: ...
 
+    def list_uncertain(
+        self,
+        execution_session_id: SessionId,
+        *,
+        current_fence: LeaseFence,
+        limit: int = 100,
+    ) -> tuple[EffectDispatch, ...]: ...
+
     def complete(
         self,
         claim: EffectClaim,

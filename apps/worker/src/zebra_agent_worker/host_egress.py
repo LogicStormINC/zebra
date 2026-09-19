@@ -123,4 +123,5 @@ def build_pinned_host_gateway(
         connector.endpoint,
         identity,
         shared_secret=credential.token,
+        reconcile_path=connector.profile.reconcile_path_template,
     )

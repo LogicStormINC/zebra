@@ -90,7 +90,7 @@ does not authorize production code, migrations or activation of its successor.
   choices; no schema migration, deployment, or Trench worktree change is
   included.
 
-- `CLOUD-REMEDIATION-R05`: In Progress, owned by Luke Ding (Codex), current
+- `CLOUD-REMEDIATION-R05`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction, dependent on R01, R02,
   and R04. Scope: audit and close the existing Effect intent/fence/recovery
   path, preserve UNKNOWN for response-loss and lease-loss cases, distinguish a
@@ -103,7 +103,17 @@ does not authorize production code, migrations or activation of its successor.
   Worker recovery/reconciliation modules, focused Core/Tool/Integration/
   Storage/Worker tests, this registry, `PROGRESS.md`, and `WORKLOG.md`. No
   unrelated schema migration, deployment, or Trench worktree change is
-  included.
+  included. Outcome evidence: Host writes now require a structured succeeded
+  receipt plus business revision before success; explicit no-effect rejection
+  is terminal while timeout, response loss, malformed evidence, and 5xx remain
+  uncertain. The outbox persists the bounded Host receipt, recovery lists only
+  the current fenced Session's uncertain effects, queries the pinned signed
+  reconcile endpoint by provider operation ID, and atomically settles the
+  existing dispatch without replaying the original write. Focused regressions
+  pass `42` with `23` PostgreSQL-dependent skips; the full suite passes `4474`
+  with `887` skips; file-size, targeted Ruff, strict Mypy over `949` sources,
+  and diff checks pass. `make check` reaches only the unchanged R00 Ruff `I001`
+  baseline in `apps/api/src/zebra_agent_api/host_auth.py:3`.
 
 - `CLOUD-REMEDIATION-R06`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction, dependent on R01. Scope:

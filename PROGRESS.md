@@ -1,5 +1,19 @@
 # Zebra Agent Project Status
 
+2026-09-19 CLOUD-REMEDIATION-R05: Host Effect delivery and recovery now retain
+three distinct truths: transport outcome, business outcome, and a bounded
+durable Host receipt. A write is successful only with an applied/succeeded
+receipt, provider operation ID, and business revision; a proven no-effect
+rejection is terminal, while timeout, response loss, 5xx, invalid payloads,
+and missing commit evidence remain uncertain. The PostgreSQL outbox exposes a
+fence-checked bounded uncertain scan, Worker startup reconciles those receipts
+through the pinned signed Host path, and settlement updates the existing
+dispatch atomically without replaying the write. Focused regressions pass `42`
+with `23` PostgreSQL-dependent skips; the full suite passes `4474` with `887`
+skips; file-size, targeted Ruff, strict Mypy over `949` sources, and diff checks
+pass. `make check` reaches only the unchanged R00 Ruff import-order baseline in
+`apps/api/src/zebra_agent_api/host_auth.py:3`.
+
 2026-09-19 CLOUD-REMEDIATION-R10: finalization now treats unresolved mutation
 evidence as a hard truth gate. A mutation that cannot be closed by a fresh read
 returns a user-visible unverified partial result, suspends with the dedicated

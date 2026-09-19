@@ -11,9 +11,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from urllib.parse import quote, urlsplit, urlunsplit
 
-from agent_core.domain.effect_dispatch import EffectBusinessOutcome, EffectTransportOutcome
+from agent_core.domain.effect_dispatch import EffectBusinessOutcome
 from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
-from agent_core.domain.host_effect_receipts import HostEffectReceipt, HostEffectStatus
+from agent_core.domain.host_effect_receipts import (
+    HostEffectReceipt,
+    uncertain_receipt,
+)
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult, ToolRisk
 from agent_tools.contracts import ToolContract
 
@@ -25,6 +28,7 @@ from agent_integrations.host_tools.contracts import (
     HostToolTransportError,
     HostWorkloadIdentity,
 )
+from agent_integrations.host_tools.effect_metadata import failure_outcomes, host_effect_metadata
 from agent_integrations.host_tools.http import HttpHostToolTransport
 
 
@@ -35,6 +39,7 @@ class HostToolGateway:
     shared_secret: str | None = None
     transport: HostToolTransport | None = None
     manifest: HostToolManifest | None = None
+    reconcile_path: str | None = None
 
     def discover(self, context: HostContextEnvelope) -> HostToolManifest:
         _ensure_context_live(context)
@@ -193,7 +198,7 @@ class HostToolGateway:
             )
         effect_metadata: dict[str, object] = {}
         if contract.risk is not ToolRisk.READ:
-            effect_metadata = _host_effect_metadata(response.body)
+            effect_metadata = host_effect_metadata(response.body)
             business_outcome = effect_metadata["business_outcome"]
             if business_outcome != EffectBusinessOutcome.APPLIED.value:
                 return _failure(
@@ -246,6 +251,50 @@ class HostToolGateway:
                 idempotency_key=idempotency_key,
             ),
         )
+
+    def reconcile_effect(
+        self,
+        receipt: HostEffectReceipt,
+        context: HostContextEnvelope,
+    ) -> HostEffectReceipt:
+        if receipt.reconciled or self.reconcile_path is None:
+            return receipt
+        try:
+            _ensure_context_live(context)
+            self.workload_identity.assert_matches(context)
+            url = _join_endpoint(self.endpoint, self.reconcile_path)
+            body = {"providerOperationId": receipt.provider_operation_id}
+            response = (self.transport or HttpHostToolTransport()).request(
+                "POST",
+                url,
+                headers=_headers(
+                    self.workload_identity,
+                    context,
+                    method="POST",
+                    path=urlsplit(url).path,
+                    body=body,
+                    host_app_id=self.workload_identity.host_app_id,
+                    namespace_id=self.workload_identity.namespace_id,
+                    shared_secret=self.shared_secret,
+                ),
+                body=body,
+                timeout_seconds=10,
+            )
+        except (HostToolGatewayError, HostToolTransportError, TimeoutError, ValueError):
+            return receipt
+        if not 200 <= response.status_code < 300 or not isinstance(response.body, Mapping):
+            return receipt
+        metadata = host_effect_metadata(response.body)
+        raw = metadata.get("host_effect_receipt")
+        if not isinstance(raw, Mapping):
+            return receipt
+        try:
+            settled = HostEffectReceipt.model_validate(raw)
+        except ValueError:
+            return receipt
+        if settled.provider_operation_id != receipt.provider_operation_id:
+            return receipt
+        return settled
 
 
 def _invoke_body(invocation: HostToolInvocation) -> dict[str, object]:
@@ -373,74 +422,6 @@ def _safe_http_error(body: object) -> tuple[str | None, str | None]:
     return detail, code.strip()[:128] if isinstance(code, str) and code.strip() else None
 
 
-def _host_effect_metadata(body: Mapping[str, object]) -> dict[str, object]:
-    nested = body.get("metadata")
-    metadata = nested if isinstance(nested, Mapping) else {}
-
-    def value(*keys: str) -> object:
-        for source in (body, metadata):
-            for key in keys:
-                candidate = source.get(key)
-                if candidate is not None:
-                    return candidate
-        return None
-
-    raw_status = value("effectStatus", "effect_status")
-    provider_operation_id = value("providerOperationId", "provider_operation_id")
-    business_revision = value("businessRevision", "business_revision")
-    raw_status_text = raw_status if isinstance(raw_status, str) else ""
-    normalized_status = {
-        "applied": HostEffectStatus.SUCCEEDED,
-        "rejected": HostEffectStatus.FAILED_NO_EFFECT,
-    }.get(raw_status_text, raw_status_text)
-    receipt: HostEffectReceipt | None = None
-    try:
-        receipt = HostEffectReceipt(
-            provider_operation_id=(
-                provider_operation_id.strip()
-                if isinstance(provider_operation_id, str)
-                else ""
-            ),
-            business_revision=(
-                business_revision.strip()
-                if isinstance(business_revision, str) and business_revision.strip()
-                else None
-            ),
-            effect_status=HostEffectStatus(str(normalized_status)),
-            evidence_digest=(
-                str(value("evidenceDigest", "evidence_digest"))[:128]
-                if value("evidenceDigest", "evidence_digest") is not None
-                else None
-            ),
-            received_at=datetime.now(UTC),
-        )
-    except ValueError:
-        pass
-    applied = receipt is not None and receipt.effect_status is HostEffectStatus.SUCCEEDED
-    rejected = receipt is not None and receipt.effect_status is HostEffectStatus.FAILED_NO_EFFECT
-    outcome = (
-        EffectBusinessOutcome.APPLIED
-        if applied
-        else EffectBusinessOutcome.REJECTED
-        if rejected
-        else EffectBusinessOutcome.UNKNOWN
-    )
-    result: dict[str, object] = {
-        "transport_outcome": EffectTransportOutcome.RETURNED.value,
-        "business_outcome": outcome.value,
-    }
-    if isinstance(provider_operation_id, str) and provider_operation_id.strip():
-        result["provider_operation_id"] = provider_operation_id.strip()[:256]
-        result["mutation_effect_id"] = provider_operation_id.strip()[:256]
-    if isinstance(business_revision, str) and business_revision.strip():
-        result["business_revision"] = business_revision.strip()[:256]
-        result["commit_version"] = business_revision.strip()[:256]
-    if receipt is not None:
-        result["host_effect_receipt"] = receipt.model_dump(mode="json")
-        result["host_effect_receipt_digest"] = receipt.receipt_digest
-    return result
-
-
 def _failure(
     tool_call: ToolCall,
     *,
@@ -460,7 +441,21 @@ def _failure(
         result_metadata["detail"] = detail[:256]
     if metadata:
         result_metadata.update(_safe_metadata(metadata))
-    result_metadata.update(_failure_outcomes(reason, result_metadata))
+    result_metadata.update(failure_outcomes(reason, result_metadata))
+    if (
+        contract is not None
+        and contract.risk is not ToolRisk.READ
+        and idempotency_key is not None
+        and result_metadata.get("business_outcome") == EffectBusinessOutcome.UNKNOWN.value
+    ):
+        host_receipt = uncertain_receipt(idempotency_key)
+        result_metadata.update(
+            {
+                "provider_operation_id": host_receipt.provider_operation_id,
+                "host_effect_receipt": host_receipt.model_dump(mode="json"),
+                "host_effect_receipt_digest": host_receipt.receipt_digest,
+            }
+        )
     receipt = None
     if contract is not None and scopes:
         receipt = contract.receipt(
@@ -474,40 +469,6 @@ def _failure(
         metadata=result_metadata,
         receipt=receipt,
     )
-
-
-def _failure_outcomes(reason: str, metadata: Mapping[str, object]) -> dict[str, str]:
-    if "transport_outcome" in metadata and "business_outcome" in metadata:
-        return {}
-    if reason == "timeout":
-        return {
-            "transport_outcome": EffectTransportOutcome.TIMED_OUT.value,
-            "business_outcome": EffectBusinessOutcome.UNKNOWN.value,
-        }
-    if reason in {"transport_error", "host_transport_error", "manifest_http_error"}:
-        return {
-            "transport_outcome": EffectTransportOutcome.UNAVAILABLE.value,
-            "business_outcome": EffectBusinessOutcome.UNKNOWN.value,
-        }
-    status = metadata.get("http_status")
-    rejected = isinstance(status, int) and 400 <= status < 500
-    return {
-        "transport_outcome": EffectTransportOutcome.RETURNED.value,
-        "business_outcome": (
-            EffectBusinessOutcome.REJECTED.value
-            if rejected
-            or reason
-            in {
-                "unknown_host_tool",
-                "missing_required_argument",
-                "scope_denied",
-                "resource_denied",
-                "idempotency_required",
-                "grant_expired",
-            }
-            else EffectBusinessOutcome.UNKNOWN.value
-        ),
-    }
 
 
 def _safe_metadata(value: object) -> dict[str, object]:

@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.host_effect_receipts import HostEffectReceipt
 from agent_core.domain.identifiers import EventId, SessionId
 from agent_core.domain.leases import LeaseFence
 from agent_core.domain.session_handoff import EffectIdentity
@@ -55,6 +56,7 @@ class EffectEvidence(BaseModel):
     detail: str | None = Field(default=None, max_length=1024)
     provider_operation_id_hash: str | None = Field(default=None, max_length=64)
     artifact_ref: str | None = Field(default=None, max_length=2048)
+    host_effect_receipt: HostEffectReceipt | None = None
 
     @field_validator("reason_code")
     @classmethod

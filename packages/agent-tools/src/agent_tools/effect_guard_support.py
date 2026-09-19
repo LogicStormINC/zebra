@@ -12,6 +12,7 @@ from agent_core.domain.effect_dispatch import (
     EffectTransportOutcome,
 )
 from agent_core.domain.events import SessionEvent
+from agent_core.domain.host_effect_receipts import HostEffectReceipt
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.session_handoff import EffectIdentity
@@ -158,9 +159,16 @@ def uncertain_evidence(result: ToolResult) -> EffectEvidence:
         if isinstance(operation_id, str) and operation_id
         else None
     )
+    raw_receipt = result.metadata.get("host_effect_receipt")
+    receipt = (
+        HostEffectReceipt.model_validate(raw_receipt)
+        if isinstance(raw_receipt, dict)
+        else None
+    )
     return EffectEvidence(
         reason_code="provider_result_did_not_prove_no_effect",
         provider_operation_id_hash=operation_hash,
+        host_effect_receipt=receipt,
     )
 
 

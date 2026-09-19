@@ -54,6 +54,8 @@ class _Dispatch:
         self.uncertain = 0
         self.failed_no_effect = 0
         self.last_claim: EffectClaim | None = None
+        self.uncertain_dispatch: EffectDispatch | None = None
+        self.resolved = 0
 
     def schedule(self, request, *, fence):
         del fence
@@ -96,8 +98,15 @@ class _Dispatch:
         return terminal_event
 
     def mark_uncertain(self, claim, *, evidence, terminal_event):
-        del claim, evidence
         self.uncertain += 1
+        self.uncertain_dispatch = claim.dispatch.model_copy(
+            update={
+                "status": EffectDispatchStatus.UNCERTAIN,
+                "evidence": evidence,
+                "evidence_history": (evidence,),
+                "terminal_event_id": terminal_event.event_id,
+            }
+        )
         return terminal_event
 
     def fail_no_effect(self, claim, *, evidence, terminal_event):
@@ -113,6 +122,18 @@ class _Dispatch:
         del dispatch_id, current_fence, evidence
         self.reconciled += 1
         return old_claim.dispatch.model_copy(update={"status": EffectDispatchStatus.UNCERTAIN})
+
+    def list_uncertain(self, execution_session_id, *, current_fence, limit=100):
+        del execution_session_id, current_fence
+        return (() if self.uncertain_dispatch is None else (self.uncertain_dispatch,))[:limit]
+
+    def resolve_uncertain(
+        self, dispatch_id, *, current_fence, evidence, outcome, terminal_event, result=None
+    ):
+        del dispatch_id, current_fence, evidence, outcome, result
+        self.resolved += 1
+        self.uncertain_dispatch = None
+        return terminal_event
 
 
 class _CloudPayloads:
