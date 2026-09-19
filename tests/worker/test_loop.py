@@ -19,6 +19,7 @@ from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker import build_worker_loop_service
 from zebra_agent_worker.loop import WorkerLoopService
 from zebra_agent_worker.main import main
+from zebra_agent_worker.memory_delivery_consumer import MemoryDeliveryConsumption
 
 
 def test_worker_loop_returns_idle_when_no_ready_sessions(tmp_path: Path) -> None:
@@ -145,6 +146,54 @@ def test_worker_checks_durable_command_before_cloud_memory_recovery(
     service._cloud_memory_recovery_thread.join(timeout=1)
 
     assert order == ["command", "recovery"]
+
+
+def test_idle_worker_delivers_bounded_memory_batch_in_background(tmp_path: Path) -> None:
+    calls: list[str] = []
+
+    def deliver(owner: str) -> MemoryDeliveryConsumption:
+        calls.append(owner)
+        return MemoryDeliveryConsumption(
+            idempotency_key=None,
+            status="completed" if len(calls) < 3 else "idle",
+        )
+
+    service = WorkerLoopService(
+        projection_store=SQLiteProjectionStore(tmp_path / "worker.db"),
+        execution_service=object(),  # type: ignore[arg-type]
+        memory_delivery=deliver,
+        scan_ready_sessions=False,
+        sleep=lambda _: None,
+    )
+
+    service.poll_once(worker_id="cloud-worker", batch_size=5)
+    service.drain()
+
+    assert calls == ["cloud-worker:memory"] * 3
+
+
+def test_pending_command_does_not_start_memory_delivery(tmp_path: Path) -> None:
+    calls: list[str] = []
+
+    class _PendingCommand:
+        def consume_once(self, **_kwargs: Any) -> SimpleNamespace:
+            return SimpleNamespace(
+                session_id="session-1",
+                command_kind="run",
+                status="executed",
+                reason=None,
+            )
+
+    WorkerLoopService(
+        projection_store=SQLiteProjectionStore(tmp_path / "worker.db"),
+        execution_service=object(),  # type: ignore[arg-type]
+        memory_delivery=lambda owner: calls.append(owner),  # type: ignore[arg-type,func-returns-value]
+        command_consumer=_PendingCommand(),  # type: ignore[arg-type]
+        scan_ready_sessions=False,
+        sleep=lambda _: None,
+    ).poll_once(worker_id="cloud-worker")
+
+    assert calls == []
 
 
 def test_worker_defers_cloud_memory_recovery_while_commands_are_pending(

@@ -38,6 +38,11 @@ from agent_integrations.openai_compatible import (
     build_model_gateway,
 )
 from agent_integrations.provider_settings import ModelProviderSettings, ScmProviderSettings
+from agent_integrations.redis_agent_memory import (
+    RedisAgentMemoryConfig,
+    RedisAgentMemoryGateway,
+    encode_owner_id,
+)
 from agent_integrations.redis_live_fanout import (
     RedisCommittedEventPublisher,
     RedisLiveEventError,
@@ -97,6 +102,8 @@ __all__ = [
     "RedisLiveEventError",
     "RedisCommittedEventPublisher",
     "RedisLiveEventFanout",
+    "RedisAgentMemoryConfig",
+    "RedisAgentMemoryGateway",
     "ModelProviderError",
     "Mem0AgentMemoryGateway",
     "Mem0GatewayConfig",
@@ -117,5 +124,6 @@ __all__ = [
     "build_pull_request_gateway",
     "build_github_pull_request_proxy_request",
     "deepseek_profile",
+    "encode_owner_id",
     "encode_mem0_namespace",
 ]

@@ -25,6 +25,7 @@ from zebra_agent_worker.execution import SessionExecutionService
 from zebra_agent_worker.execution_events import ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeatError
+from zebra_agent_worker.memory_delivery_consumer import MemoryDeliveryConsumption
 from zebra_agent_worker.recovery import SessionRecoveryError
 from zebra_agent_worker.resume import SessionResumeError
 from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
@@ -73,6 +74,7 @@ class WorkerLoopService:
         scan_ready_sessions: bool = True,
         migrated_run: Callable[..., WorkerLoopRunResult] | None = None,
         cutover_probe: Callable[[], bool] | None = None,
+        memory_delivery: Callable[[str], MemoryDeliveryConsumption] | None = None,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
@@ -82,6 +84,8 @@ class WorkerLoopService:
         self._command_consumer = command_consumer
         self._scan_ready_sessions = scan_ready_sessions
         self._cloud_memory_recovery_thread: Thread | None = None
+        self._memory_delivery = memory_delivery
+        self._memory_delivery_thread: Thread | None = None
         self.migrated_run = migrated_run
         self._cutover_probe = cutover_probe
 
@@ -93,6 +97,7 @@ class WorkerLoopService:
         lease_ttl_seconds: int,
     ) -> None:
         self._process_child_wakeups()
+        self._start_memory_delivery(worker_id=worker_id, batch_size=batch_size)
         self._start_cloud_memory_recovery(
             worker_id=worker_id, batch_size=batch_size, lease_ttl_seconds=lease_ttl_seconds
         )
@@ -100,6 +105,8 @@ class WorkerLoopService:
     def drain(self) -> None:
         if self._cloud_memory_recovery_thread is not None:
             self._cloud_memory_recovery_thread.join()
+        if self._memory_delivery_thread is not None:
+            self._memory_delivery_thread.join()
 
     def poll_once(
         self,
@@ -166,6 +173,7 @@ class WorkerLoopService:
                 continue
             executed_ids.append(session_id)
         if command_result is None or command_result.status == "idle":
+            self._start_memory_delivery(worker_id=worker_id, batch_size=batch_size)
             self._start_cloud_memory_recovery(
                 worker_id=worker_id,
                 batch_size=batch_size,
@@ -176,6 +184,31 @@ class WorkerLoopService:
             executed_session_ids=tuple(executed_ids),
             skipped_session_ids=tuple(skipped_ids),
         )
+
+    def _start_memory_delivery(self, *, worker_id: str, batch_size: int) -> None:
+        delivery = self._memory_delivery
+        if delivery is None:
+            return
+        active = self._memory_delivery_thread
+        if active is not None and active.is_alive():
+            return
+
+        def deliver() -> None:
+            try:
+                for _ in range(batch_size):
+                    result = delivery(f"{worker_id}:memory")
+                    if result.status != "completed":
+                        break
+            except Exception:
+                print("worker Memory delivery failed", file=sys.stderr, flush=True)
+
+        thread = Thread(
+            target=deliver,
+            name=f"{worker_id}-memory-delivery",
+            daemon=True,
+        )
+        self._memory_delivery_thread = thread
+        thread.start()
 
     def _start_cloud_memory_recovery(
         self,

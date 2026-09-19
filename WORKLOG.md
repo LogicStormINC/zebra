@@ -10043,3 +10043,28 @@ actual byte access.
   `git diff --check` passed; full repository `4483 passed, 888 skipped`.
   `make check` retains only the R00 import-order baseline. Mem0 and Redis remain
   outside this task and no Trench/deployment state changed.
+
+## 2026-09-20 - CLOUD-REMEDIATION-R09
+
+- Claimed the Redis Agent Memory adapter/switch lane after R08 and verified the
+  current official REST surface from Redis documentation plus the official
+  linked Python SDK contract. Reused HTTPX instead of adding the SDK.
+- Added exact-ID create, update, read, search and delete behavior with bounded
+  responses, owner isolation, replay reconciliation and typed uncertainty.
+  Malformed or oversized exact reads fail closed and never authorize a write or
+  delete.
+- Added configuration and composition with explicit data-export authorization,
+  indirect API-key loading, deterministic delivery scope, background delivery
+  maintenance, shadow ranking and active rank-only recall. Active results are
+  admitted only through the existing PostgreSQL mapping and governed Memory
+  lifecycle; provider text is never inserted directly into model Context.
+- Added deterministic adapter/config/materialization tests, an opt-in synthetic
+  live contract test and real PostgreSQL end-to-end tests for commit, delivery,
+  mapping and recall. Renamed the adapter test module after the full suite found
+  a pytest basename collision with the existing Mem0 test.
+- Validation: focused `36 passed, 5 skipped`; real PostgreSQL `22 passed`; cloud
+  profile regression `23 passed, 2 skipped`; full repository `4502 passed, 891
+  skipped`; touched Ruff, Mypy over 956 sources, Eval 10/10, file-size and diff
+  gates passed. `make check` stops only at the unchanged R00 import-order
+  baseline. Real Redis Agent Memory remains `NOT_ENABLED` because no explicit
+  test data-export authorization or service credentials were supplied.

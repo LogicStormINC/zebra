@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 import httpx
@@ -72,6 +72,8 @@ def build_worker_loop_service(
     cloud_provider_continuation_factory: Callable[[SessionId], CloudProviderContinuationCoordinator]
     | None = None,
     model_http_client: httpx.Client | None = None,
+    memory_http_client: httpx.Client | None = None,
+    memory_environ: Mapping[str, str] | None = None,
 ) -> WorkerLoopService:
     client_runtime = None
     if settings.mcp_credentials.worker_enabled and settings.storage_authority != "postgresql":
@@ -93,9 +95,20 @@ def build_worker_loop_service(
             )
         ):
             raise ValueError("cloud Worker dependencies must come from one CloudWorkerComposition")
-        cloud_bundle = cloud_worker_composition or compose_cloud_worker(
-            cloud_composition or cloud_composition_from_environment()
-        )
+        cloud_bundle: CloudWorkerComposition
+        if cloud_worker_composition is None:
+            cloud_settings = cloud_composition or cloud_composition_from_environment()
+            if settings.memory_gateway.enabled or memory_environ or memory_http_client:
+                cloud_bundle = compose_cloud_worker(
+                    cloud_settings,
+                    memory_settings=settings.memory_gateway,
+                    memory_environ=memory_environ,
+                    memory_http_client=memory_http_client,
+                )
+            else:
+                cloud_bundle = compose_cloud_worker(cloud_settings)
+        else:
+            cloud_bundle = cloud_worker_composition
         if settings.cloud_skill_worker_enabled and (
             cloud_bundle.extensions is None or cloud_bundle.skill_objects is None
         ):
@@ -103,15 +116,22 @@ def build_worker_loop_service(
         active_extension_store = (
             cloud_bundle.extension_snapshots if settings.cloud_extension_worker_enabled else None
         )
+        active_memory_runtime = cloud_bundle.memory_runtime
         if settings.cloud_skill_worker_enabled:
             assert cloud_bundle.extensions is not None and cloud_bundle.skill_objects is not None
             active_extension_skills = WorkerSkillCatalogSource(
-                cloud_bundle.extensions, cloud_bundle.skill_objects,
+                cloud_bundle.extensions,
+                cloud_bundle.skill_objects,
                 SkillPublicationService(
                     PostgresSkillPublicationStore(
-                        cloud_bundle.dsn, deployment_namespace=cloud_bundle.deployment_namespace,
-                    ), cloud_bundle.skill_objects, cloud_bundle.deployment_namespace,
-                ) if cloud_bundle.dsn else None,
+                        cloud_bundle.dsn,
+                        deployment_namespace=cloud_bundle.deployment_namespace,
+                    ),
+                    cloud_bundle.skill_objects,
+                    cloud_bundle.deployment_namespace,
+                )
+                if cloud_bundle.dsn
+                else None,
             )
         else:
             active_extension_skills = None
@@ -149,6 +169,7 @@ def build_worker_loop_service(
         active_authority_scope_provider = None
         active_extension_store = None
         active_extension_skills = None
+        active_memory_runtime = None
     active_stores, active_transaction = configure_live_event_delivery(
         active_stores,
         active_transaction,
@@ -227,7 +248,8 @@ def build_worker_loop_service(
             )
 
     active_extension_mcp = compose_worker_mcp(
-        settings, cloud_bundle if settings.storage_authority == "postgresql" else None,
+        settings,
+        cloud_bundle if settings.storage_authority == "postgresql" else None,
     )
     execution_service = SessionExecutionService(
         database_path=database_path,
@@ -330,6 +352,9 @@ def build_worker_loop_service(
         command_consumer=command_consumer,
         scan_ready_sessions=not migrated and settings.deployment != "cloud",
         cutover_probe=None if migrated else cutover_probe,
+        memory_delivery=(
+            None if active_memory_runtime is None else active_memory_runtime.consume_once
+        ),
     )
     if migrated:
         from zebra_agent_worker.command_process import CommandWorkerProcess

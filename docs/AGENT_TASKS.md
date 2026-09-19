@@ -194,6 +194,36 @@ does not authorize production code, migrations or activation of its successor.
   passed. Full `make check` retains only the R00 import-order baseline. Mem0
   remains denied/deferred and no provider is enabled by default.
 
+- `CLOUD-REMEDIATION-R09`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on reviewed R08
+  commit `16fe29c6`. Scope: add the supported Redis Agent Memory REST adapter,
+  explicit disabled/shadow/active configuration, delivery composition and a
+  PostgreSQL-authority-preserving recall switch. Redis may rank opaque Zebra
+  Memory IDs only; shadow results cannot change Context, and active results are
+  admitted only after durable mapping and governed visibility/lifecycle checks.
+  Owned paths: new
+  `packages/agent-integrations/src/agent_integrations/redis_agent_memory/`,
+  integration exports, `apps/config/src/zebra_agent_config/memory_settings.py`
+  plus narrow settings exports/wiring, PostgreSQL control-plane delivery-scope
+  composition, Worker Memory composition/maintenance/materialization modules,
+  focused config/integration/storage/Worker tests, environment templates,
+  `docs/ADR-027_Redis_Agent_Memory_Adapter.md`, this registry, `PROGRESS.md`,
+  and `WORKLOG.md`. The old Mem0 adapter and
+  ADR-018 denial are not modified. Live Redis Cloud contract execution requires
+  separately supplied endpoint, Store ID, API key and explicit data-export
+  authorization; without them the external provider remains off and the gate is
+  reported as not enabled rather than passed. Implemented: stable opaque owner
+  and Memory identity, idempotent create/update/delete reconciliation, uncertain
+  outcome quarantine through the R08 ledger, explicit off/shadow/active startup
+  gates, background delivery, and PostgreSQL-authority-preserving recall rank.
+  Evidence: adapter/config/Worker focused suite `36 passed, 5 skipped`; real
+  PostgreSQL lifecycle/delivery/mapping/recall suite `22 passed`; profile
+  regression `23 passed, 2 skipped`; full repository `4502 passed, 891 skipped`;
+  touched Ruff, Mypy over 956 sources, Eval 10/10, file-size and diff gates
+  passed. Full `make check` retains only the R00 import-order baseline. The real
+  Redis service gate is `NOT_ENABLED` because explicit data-export authorization
+  and service credentials were not supplied; production rollout remains off.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

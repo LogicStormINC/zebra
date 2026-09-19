@@ -9,6 +9,7 @@ from pathlib import Path
 from zebra_agent_config import mcp_settings
 from zebra_agent_config.command_delivery import CommandDeliverySettings, load_command_delivery
 from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_credentials
+from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memory_gateway_settings
 from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
 
 MAX_MCP_SERVERS = mcp_settings.MAX_MCP_SERVERS
@@ -88,6 +89,7 @@ class ZebraAgentSettings:
     model: ModelSettings
     session_handoff: SessionHandoffSettings = field(default_factory=SessionHandoffSettings)
     live_events: LiveEventSettings = field(default_factory=LiveEventSettings)
+    memory_gateway: MemoryGatewaySettings = field(default_factory=MemoryGatewaySettings)
     command_delivery: CommandDeliverySettings = field(default_factory=CommandDeliverySettings)
     runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
     setup: SetupSettings = field(default_factory=SetupSettings)
@@ -225,6 +227,7 @@ def load_settings(
             enabled=_read_bool(values, "ZEBRA_SESSION_HANDOFF_ENABLED", default=False),
         ),
         live_events=_load_live_event_settings(values),
+        memory_gateway=load_memory_gateway_settings(values),
         command_delivery=load_command_delivery(values),
         runtime=runtime,
         setup=load_setup_settings(values),

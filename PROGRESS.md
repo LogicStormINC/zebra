@@ -3161,3 +3161,24 @@ claimed.
   full repository `4483 passed, 888 skipped`. Full `make check` retains only the
   R00 import-order baseline. Runtime composition remains default-off. Mem0 is
   still denied/deferred by ADR-018 and is not enabled.
+
+## 2026-09-20 - CLOUD-REMEDIATION-R09 Redis Agent Memory guarded rollout
+
+- Added the supported Redis Agent Memory REST adapter without adding its SDK as
+  a runtime dependency. Stable Zebra Memory IDs and hashed owner IDs support
+  exact reconciliation while keeping raw tenant, repository and user scope out
+  of the provider.
+- PostgreSQL remains the lifecycle and content authority. R08 delivery intents
+  now compose into bounded background delivery; uncertain remote outcomes
+  quarantine the scope. Shadow search cannot affect Context, while active search
+  can only reorder PostgreSQL-authorized candidates after durable mapping,
+  revision, digest and lifecycle revalidation.
+- Startup remains `disabled/off` by default. Shadow or active rollout requires
+  HTTPS service coordinates, an indirect API-key environment name and explicit
+  data-export authorization. The old Mem0 path remains denied by ADR-018.
+- Evidence: focused `36 passed, 5 skipped`; real PostgreSQL `22 passed`; cloud
+  profile regression `23 passed, 2 skipped`; full repository `4502 passed, 891
+  skipped`; touched Ruff, Mypy over 956 sources, Eval 10/10, file-size and diff
+  gates passed. Full `make check` retains only the R00 import-order baseline.
+  The real Redis service gate is `NOT_ENABLED`, so no production rollout or
+  external data export is claimed.

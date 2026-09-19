@@ -1,3 +1,4 @@
+from zebra_agent_config.memory_settings import MemoryGatewaySettings
 from zebra_agent_config.settings import (
     ApiSettings,
     LiveEventSettings,
@@ -20,6 +21,7 @@ __all__ = [
     "McpServerSettings",
     "ModelSettings",
     "LiveEventSettings",
+    "MemoryGatewaySettings",
     "RuntimeSettings",
     "ScmSettings",
     "SessionHandoffSettings",

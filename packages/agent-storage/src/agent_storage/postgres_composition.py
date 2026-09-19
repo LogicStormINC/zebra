@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
+from agent_core.domain.memory_delivery import MemoryDeliveryScope
 from agent_core.ports import (
     ArtifactPayloadObjectReadPort,
     CloudControlPlane,
@@ -73,6 +74,7 @@ def postgres_control_plane_stores(
     artifact_objects: ArtifactPayloadObjectReadPort,
     history_scope: OpaqueAuthorityScope,
     continuation_scope: OpaqueAuthorityScope,
+    memory_delivery_scope: MemoryDeliveryScope | None = None,
 ) -> PostgresControlPlaneStores:
     """Build one namespace-bound PostgreSQL cloud bundle without running DDL."""
     if not dsn.strip():
@@ -111,6 +113,7 @@ def postgres_control_plane_stores(
             dsn,
             deployment_namespace=deployment_namespace,
             cursor_signing_key=memory_cursor_signing_key,
+            delivery_scope=memory_delivery_scope,
         ),
         artifact_payloads=artifact_payloads,
         artifact_payload_reader=CloudArtifactPayloadReader(

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, replace
 from uuid import UUID, uuid4
 
+import httpx
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.identifiers import ArtifactId, SessionId
 from agent_core.domain.sessions import Session
@@ -25,7 +26,14 @@ from agent_storage import (
 )
 from agent_storage.postgres.extension_snapshots import PostgresExtensionSnapshotStore
 from agent_storage.postgres.extensions import PostgresExtensionStore
+from zebra_agent_config import MemoryGatewaySettings
 
+from zebra_agent_worker.memory_context_materialization import RankedMemoryContextMaterializer
+from zebra_agent_worker.memory_gateway_runtime import (
+    MemoryGatewayRuntime,
+    compose_memory_gateway_runtime,
+    memory_delivery_scope,
+)
 from zebra_agent_worker.provider_continuation_commit import (
     CloudProviderContinuationCoordinator,
 )
@@ -77,10 +85,15 @@ class CloudWorkerComposition:
     extension_snapshots: PostgresExtensionSnapshotStore | None = None
     extensions: ExtensionStore | None = None
     skill_objects: ArtifactObjectStorePort | None = None
+    memory_runtime: MemoryGatewayRuntime | None = None
 
 
 def compose_cloud_worker(
     cloud: CloudCompositionSettings,
+    *,
+    memory_settings: MemoryGatewaySettings | None = None,
+    memory_environ: Mapping[str, str] | None = None,
+    memory_http_client: httpx.Client | None = None,
 ) -> CloudWorkerComposition:
     required_object_operations = (
         "put_if_absent",
@@ -94,6 +107,10 @@ def compose_cloud_worker(
         for name in required_object_operations
     ):
         raise ValueError("cloud Worker requires an immutable Artifact object writer")
+    delivery_scope = memory_delivery_scope(
+        memory_settings,
+        deployment_namespace=cloud.deployment_namespace,
+    )
     stores = postgres_control_plane_stores(
         cloud.dsn,
         deployment_namespace=cloud.deployment_namespace,
@@ -101,7 +118,25 @@ def compose_cloud_worker(
         artifact_objects=cloud.artifact_objects,
         history_scope=cloud.history_scope,
         continuation_scope=cloud.continuation_scope,
+        memory_delivery_scope=delivery_scope,
     )
+    memory_runtime = compose_memory_gateway_runtime(
+        memory_settings,
+        dsn=cloud.dsn,
+        deployment_namespace=cloud.deployment_namespace,
+        authority=stores.memories,
+        scope=delivery_scope,
+        environ=memory_environ,
+        client=memory_http_client,
+    )
+    if memory_runtime is not None:
+        stores = replace(
+            stores,
+            context_materialization=RankedMemoryContextMaterializer(
+                stores.context_materialization,
+                memory_runtime,
+            ),
+        )
     dispatch = stores.effects
     required_dispatch = (
         "schedule_with_payload",
@@ -241,4 +276,5 @@ def compose_cloud_worker(
             cloud.dsn, deployment_namespace=cloud.deployment_namespace
         ),
         skill_objects=cloud.artifact_objects,
+        memory_runtime=memory_runtime,
     )
