@@ -1,5 +1,16 @@
 # Zebra Agent Project Status
 
+2026-09-19 CLOUD-REMEDIATION-R04: pinned Host egress no longer manufactures
+`compat:{credential_ref}` tokens. API manifest freeze and Worker execution now
+adapt the configured `ZEBRA_HOST_TOOL_SHARED_SECRET` through the existing
+`HostWorkloadCredentialResolverPort`; the bounded HMAC adapter keeps the secret
+out of repr/logs, validates HTTPS audience and TTL, and returns only an
+in-memory credential. A pinned connector without a configured credential fails
+closed. The unused production compat issuer was removed. Focused API,
+integration, Worker, and freeze tests pass `21` with `4` PostgreSQL skips;
+targeted Ruff, Mypy, and diff checks pass. OAuth/mTLS remains a replaceable
+adapter choice rather than a prerequisite for the configured HMAC deployment.
+
 2026-09-18 CLOUD-REMEDIATION-R03: Worker gateway composition now retains the
   configured ClientToolGateway in pinned Host, local-only, and no-legacy-egress
   branches; previously only the legacy Host path preserved it, silently

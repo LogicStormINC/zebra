@@ -67,7 +67,11 @@ def resolve_frozen_manifest(
     )
     if frozen is not None:
         return frozen
-    manifest = _discover_once(profile, host_context)
+    manifest = _discover_once(
+        profile,
+        host_context,
+        getattr(settings, "host_tool_shared_secret", None),
+    )
     payload: dict[str, Any] = dict(manifest.to_payload())
     store_frozen_manifest(
         dsn,
@@ -81,18 +85,30 @@ def resolve_frozen_manifest(
 
 
 def _discover_once(
-    profile: Any, host_context: HostContextEnvelope
+    profile: Any,
+    host_context: HostContextEnvelope,
+    configured_secret: str | None,
 ) -> Any:
+    from agent_integrations import ConfiguredHmacHostCredentialResolver
     from agent_integrations.host_tools import HostToolGateway, HostWorkloadIdentity
 
-    from zebra_agent_api.compat_host_credentials import compat_host_credential
+    if configured_secret is None or not configured_secret.strip():
+        raise HostManifestFreezeError(
+            "pinned connector requires a configured Host workload credential"
+        )
 
     identity = HostWorkloadIdentity(
         profile.workload_identity_ref,
         host_context.namespace_id,
         host_context.host_app_id,
     )
-    credential = compat_host_credential(profile.credential_ref)
+    credential = ConfiguredHmacHostCredentialResolver(configured_secret).issue(
+        credential_ref=profile.credential_ref,
+        workload_identity_ref=profile.workload_identity_ref,
+        audience=profile.base_uri,
+        scopes=host_context.scopes,
+        ttl_seconds=900,
+    )
     gateway = HostToolGateway(
         profile.base_uri,
         identity,

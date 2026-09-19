@@ -52,7 +52,7 @@ class HostEgressResolver:
     def __init__(
         self,
         registry: HostConnectorRegistryPort,
-        credentials: HostWorkloadCredentialResolverPort,
+        credentials: HostWorkloadCredentialResolverPort | None,
     ) -> None:
         self._registry = registry
         self._credentials = credentials
@@ -89,6 +89,10 @@ class HostEgressResolver:
     ) -> EphemeralHostCredential:
         """Issue a memory-only credential for the pinned profile."""
 
+        if self._credentials is None:
+            raise ValueError(
+                "pinned connector requires a configured Host workload credential; failing closed"
+            )
         return self._credentials.issue(
             credential_ref=connector.profile.credential_ref,
             workload_identity_ref=connector.profile.workload_identity_ref,

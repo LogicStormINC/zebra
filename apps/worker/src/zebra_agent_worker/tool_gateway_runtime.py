@@ -13,7 +13,9 @@ from agent_core.ports import (
     SessionHistoryPort,
 )
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
+from agent_core.ports.host_credential_resolver import HostWorkloadCredentialResolverPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
+from agent_integrations.host_credentials import ConfiguredHmacHostCredentialResolver
 from agent_integrations.host_tools import (
     HostToolGateway,
     HostToolManifest,
@@ -281,7 +283,16 @@ def build_worker_tool_gateway(
             runtime_handle=runtime_handle,
             client=client_gateway,
         )
-    pinned = _resolve_pinned_gateway(task.host_context, egress_registry)
+    credential_resolver = (
+        ConfiguredHmacHostCredentialResolver(settings.host_tool_shared_secret)
+        if settings.host_tool_shared_secret
+        else None
+    )
+    pinned = _resolve_pinned_gateway(
+        task.host_context,
+        egress_registry,
+        credential_resolver,
+    )
     if pinned is not None:
         try:
             manifest = _frozen_or_discovered_manifest(
@@ -397,6 +408,7 @@ def _frozen_or_discovered_manifest(
 def _resolve_pinned_gateway(
     host_context: HostContextEnvelope,
     egress_registry: HostConnectorRegistryPort | None,
+    credential_resolver: HostWorkloadCredentialResolverPort | None,
 ) -> HostToolGateway | None:
     """Phase F2: pinned profile egress when a connector binding exists.
 
@@ -406,37 +418,20 @@ def _resolve_pinned_gateway(
 
     if egress_registry is None:
         return None
-    from agent_core.ports.host_credential_resolver import EphemeralHostCredential
-
     from zebra_agent_worker.host_egress import (
         HostEgressResolver,
         build_pinned_host_gateway,
     )
 
-    class _CompatCredentials:
-        def issue(
-            self,
-            *,
-            credential_ref: str,
-            workload_identity_ref: str,
-            audience: str,
-            scopes: tuple[str, ...],
-            ttl_seconds: int,
-        ) -> EphemeralHostCredential:
-            from datetime import UTC, datetime
-
-            return EphemeralHostCredential(
-                token=f"compat:{credential_ref}",
-                audience=audience,
-                scopes=tuple(scopes),
-                expires_at_epoch=int(datetime.now(UTC).timestamp()) + ttl_seconds,
-            )
-
     assert egress_registry is not None
-    resolver = HostEgressResolver(egress_registry, _CompatCredentials())
+    resolver = HostEgressResolver(egress_registry, credential_resolver)
     pinned = resolver.resolve(host_context)
     if pinned is None:
         return None
+    if credential_resolver is None:
+        raise ValueError(
+            "pinned connector requires a configured Host workload credential; failing closed"
+        )
     credential = resolver.issue_credential(pinned, host_context)
     return build_pinned_host_gateway(pinned, host_context, credential)
 

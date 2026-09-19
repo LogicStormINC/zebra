@@ -16,11 +16,13 @@ from agent_core.domain.host_connectors import (
     HostConnectorStatus,
 )
 from agent_core.ports.host_credential_resolver import EphemeralHostCredential
+from agent_integrations import ConfiguredHmacHostCredentialResolver
 from zebra_agent_worker.host_egress import (
     HostEgressResolver,
     PinnedHostConnector,
     build_pinned_host_gateway,
 )
+from zebra_agent_worker.tool_gateway_runtime import _resolve_pinned_gateway
 
 
 class FakeRegistry:
@@ -125,6 +127,23 @@ class TestResolve:
     def test_unbound_namespace_returns_none_for_legacy_fallback(self) -> None:
         resolver = HostEgressResolver(FakeRegistry(None, None), FakeCredentialResolver())
         assert resolver.resolve(_context()) is None
+
+    def test_pinned_connector_without_configured_credential_fails_closed(self) -> None:
+        with pytest.raises(ValueError, match="configured Host workload credential"):
+            _resolve_pinned_gateway(
+                _context(),
+                FakeRegistry(_binding(), _profile()),
+                None,
+            )
+
+    def test_pinned_connector_uses_configured_hmac_credential(self) -> None:
+        gateway = _resolve_pinned_gateway(
+            _context(),
+            FakeRegistry(_binding(), _profile()),
+            ConfiguredHmacHostCredentialResolver("real-workload-secret"),
+        )
+        assert gateway is not None
+        assert gateway.endpoint == "https://pinned.example.com"
 
     def test_missing_profile_revision_fails_closed(self) -> None:
         resolver = HostEgressResolver(FakeRegistry(_binding(), None), FakeCredentialResolver())

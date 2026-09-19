@@ -25,6 +25,7 @@ from agent_integrations.github_app import (
     GitHubAppInstallationToken,
     GitHubAppTokenTransport,
 )
+from agent_integrations.host_credentials import ConfiguredHmacHostCredentialResolver
 from agent_integrations.mem0 import (
     Mem0AgentMemoryGateway,
     Mem0GatewayConfig,
@@ -85,6 +86,7 @@ __all__ = [
     "GitHubAppCredentialBroker",
     "GitHubAppInstallationToken",
     "GitHubAppTokenTransport",
+    "ConfiguredHmacHostCredentialResolver",
     "GitHubPullRequestGateway",
     "GitHubPullRequestPayload",
     "GitHubProxyPullRequestTransport",

@@ -1,5 +1,18 @@
 # Progress Log
 
+## 2026-09-19 - CLOUD-REMEDIATION-R04 Host egress credentials
+
+Replaced production `compat:{credential_ref}` placeholders with a real
+configured HMAC credential adapter behind `HostWorkloadCredentialResolverPort`.
+Both admission-time manifest discovery and Worker pinned-connector execution
+use the same adapter; a missing secret now rejects the pinned path. Removed the
+orphaned compat issuer and verified no production source constructs a compat
+token.
+
+Validation: focused API/integration/Worker/storage tests passed (21 passed,
+4 PostgreSQL-dependent skips); targeted Ruff and Mypy passed; `git diff
+--check` passed.
+
 ## 2026-09-18 - CLOUD-REMEDIATION-R03 Worker gateway capability matrix
 
 Audited every return branch in `build_worker_tool_gateway`. Fixed the shared

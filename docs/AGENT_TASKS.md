@@ -76,6 +76,20 @@ does not authorize production code, migrations or activation of its successor.
   resolver, schema migration, deployment, or Trench worktree change is
   included.
 
+- `CLOUD-REMEDIATION-R04`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on R01 and
+  R03. Scope: replace `compat:{credential_ref}` in production Host manifest
+  discovery and pinned Worker egress with the configured HMAC workload secret
+  through `HostWorkloadCredentialResolverPort`; missing or invalid configured
+  credentials fail closed. Owned paths: a focused Host credential adapter in
+  `packages/agent-integrations`,
+  `apps/api/src/zebra_agent_api/host_manifest_freeze.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`, focused API,
+  integration and Worker tests, this registry, `PROGRESS.md`, and `WORKLOG.md`.
+  OAuth/mTLS and a remote secret-manager exchange remain future adapter
+  choices; no schema migration, deployment, or Trench worktree change is
+  included.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:
