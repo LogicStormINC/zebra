@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-09-19 - CLOUD-REMEDIATION-R10 hard evidence and soft quality gates
+
+Separated completion truth from prose quality. Unresolved post-mutation state
+now produces a bounded, explicitly unverified partial answer and a recoverable
+`verification_required` suspension instead of a successful Session. AG-UI
+closes that durable suspension as an interrupt. Cloud Skill selections project
+the frozen skill ID, version ID and digest from the existing snapshot without a
+new authorization lookup, and `skills.read` must report that exact identity.
+Unavailable Skill tools fail closed. The soft prose gate still gets at most one
+budgeted revision, while “分析” alone no longer triggers the long-form heuristic.
+
+Validation: full pytest passed `4468` with `887` skips; the affected Core,
+Skill, Runtime, Worker and AG-UI set passed `827`; file-size, targeted Ruff,
+strict Mypy over `947` sources and diff checks passed. `make check` proceeds
+through file-size and then stops at the unchanged R00 Ruff import-order baseline
+in `apps/api/src/zebra_agent_api/host_auth.py:3`.
+
 ## 2026-09-19 - CLOUD-REMEDIATION-R06 verification evidence closeout
 
 Completed the evidence half of R06. Mutation metadata now keeps the trusted

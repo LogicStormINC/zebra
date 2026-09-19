@@ -36,9 +36,28 @@ def finalize_without_tools(
     request_next: Callable[..., HarnessAttemptResult],
 ) -> HarnessAttemptResult:
     can_verify = tool_limit is None or tool_calls_executed < tool_limit
+    skill_tools_available = {"skills.list", "skills.read"}.issubset(tool_names)
+    if context.task.skill_components and not skill_tools_available:
+        return build_attempt_result(
+            outcome=HarnessAttemptOutcome.FAILED,
+            summary="selected Skill tools are unavailable",
+            assistant_message=completion.assistant_message.content,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            emitted_events=emitted_events,
+            metadata={
+                **metadata,
+                "stop_reason": "selected_skill_tools_unavailable",
+                "missing_skill_components": list(context.task.skill_components),
+            },
+        )
     missing = (
-        missing_selected_skills(context.task.skill_components, metadata)
-        if {"skills.list", "skills.read"}.issubset(tool_names)
+        missing_selected_skills(
+            context.task.skill_components,
+            metadata,
+            context.task.skill_requirements,
+        )
+        if skill_tools_available
         else ()
     )
     if missing and metadata.get("skill_read_prompted") is not True:
@@ -113,7 +132,19 @@ def finalize_without_tools(
             fallback_message=completion.assistant_message.content,
         )
     if needs_post_mutation_verification(metadata, read_only_tools=read_only_tools):
-        metadata = {**metadata, "unverified_mutation": True}
+        return build_attempt_result(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="mutation result remains unverified",
+            assistant_message=_with_verification_gap(completion.assistant_message.content),
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            emitted_events=emitted_events,
+            metadata={
+                **metadata,
+                "stop_reason": "verification_required",
+                "unverified_mutation": True,
+            },
+        )
     return build_attempt_result(
         outcome=HarnessAttemptOutcome.COMPLETED,
         summary=(
@@ -134,3 +165,11 @@ def _user_message(content: str, context: HarnessContext) -> SessionMessage:
         message_id=new_message_id(), role=MessageRole.USER, content=content,
         created_at=context.attempt.started_at,
     )
+
+
+def _with_verification_gap(answer: str) -> str:
+    notice = (
+        "Verification status: unverified. The mutation may have been applied, "
+        "but no fresh post-mutation read proved the resulting state."
+    )
+    return f"{answer.rstrip()}\n\n{notice}" if answer.strip() else notice

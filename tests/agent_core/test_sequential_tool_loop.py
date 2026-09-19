@@ -178,6 +178,63 @@ def test_mutation_gets_one_bounded_fresh_evidence_turn_before_completion() -> No
     assert result.attempt_result.metadata["verified_mutation_epoch"] == 1
 
 
+def test_unverified_mutation_suspends_with_a_truthful_partial_result() -> None:
+    mutation = _tool_call("tests.run", {"preset": "mutate"}, "call_mutate")
+    gateway = _gateway(
+        _completion("Apply the change.", mutation),
+        _completion("The change is complete."),
+    )
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Do not claim an unverified mutation",
+            user_input="Change state and report the result.",
+            max_model_calls=2,
+            max_tool_calls=1,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            EvidenceToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.metadata["stop_reason"] == "verification_required"
+    assert result.run_result.stop_reason is HarnessStopReason.VERIFICATION_REQUIRED
+    assert result.events[-1].event_type is EventType.SESSION_SUSPENDED
+    assert "Verification status: unverified" in str(
+        result.attempt_result.metadata["assistant_message"]
+    )
+
+
+def test_selected_skill_cannot_complete_when_skill_tools_are_unavailable() -> None:
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Unavailable selected Skill",
+            user_input="Use the selected Skill.",
+            skill_components=("better-writing",),
+        ),
+        SingleAttemptOrchestrator(
+            _gateway(_completion("Finished.")),
+            AllowAllPolicy(),
+            SequenceToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
+    assert result.attempt_result.metadata["stop_reason"] == (
+        "selected_skill_tools_unavailable"
+    )
+    assert result.events[-1].event_type is EventType.SESSION_FAILED
+
+
 def test_failed_research_returns_to_model_and_uses_web_fallback() -> None:
     research = _tool_call(
         "agent.research",

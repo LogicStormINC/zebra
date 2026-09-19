@@ -100,6 +100,27 @@ does not authorize production code, migrations or activation of its successor.
   `PROGRESS.md`, and `WORKLOG.md`. R10 consumption changes remain separate;
   no deployment or Trench worktree change is included.
 
+- `CLOUD-REMEDIATION-R10`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on R06 commits
+  `8423308a` and `0defae26`. Scope: consume structured verification evidence at
+  finalization, prevent unresolved mutations from producing a successful
+  Session, expose a truthful bounded partial result, keep prose quality as a
+  one-revision soft gate, and tighten selected-Skill identity checks without
+  exceeding existing model/tool budgets. Owned paths:
+  `packages/agent-core/src/agent_core/harness/final_completion.py`,
+  `packages/agent-core/src/agent_core/harness/quality_gates.py`, narrowly
+  required Harness result/stop-reason contracts,
+  `packages/agent-core/src/agent_core/harness/tool_freshness.py`,
+  `packages/agent-tools/src/agent_tools/skills.py`,
+  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-runtime/src/agent_runtime/skill_requirements.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/interrupts.py`,
+  focused Core/Runtime/Worker/AG-UI tests, this registry, `PROGRESS.md`, and
+  `WORKLOG.md`. No schema migration, deployment, or Trench worktree change is
+  included.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

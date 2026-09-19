@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.verification_evidence import VerificationResourceRef
+from agent_core.harness.models import SkillReadRequirement
 from agent_core.harness.quality_gates import evaluate_answer, missing_selected_skills
 from agent_core.harness.tool_freshness import (
     can_refresh_repeated_read,
@@ -24,6 +25,40 @@ def test_selected_skills_are_matched_by_component_or_skill_id() -> None:
     assert missing_selected_skills(("skill-1", "writing"), {"skill_reads": {"skill-1": "d"}}) == (
         "writing",
     )
+
+
+def test_selected_skill_requires_the_frozen_version_and_digest() -> None:
+    requirement = SkillReadRequirement(
+        component="skill-1",
+        skill_id="skill-1",
+        version_id="version-2",
+        digest="b" * 64,
+    )
+    stale = {
+        "skill_reads": {
+            "skill-1": {
+                "skill_id": "skill-1",
+                "skill_version_id": "version-1",
+                "skill_digest": "a" * 64,
+            }
+        }
+    }
+    assert missing_selected_skills(("skill-1",), stale, (requirement,)) == ("skill-1",)
+
+    exact = {
+        "skill_reads": {
+            "skill-1": {
+                "skill_id": "skill-1",
+                "skill_version_id": "version-2",
+                "skill_digest": "b" * 64,
+            }
+        }
+    }
+    assert missing_selected_skills(("skill-1",), exact, (requirement,)) == ()
+
+
+def test_analysis_word_alone_does_not_force_a_long_form_answer() -> None:
+    assert evaluate_answer("分析一下原因", "根因是配置缺失。建议补齐配置后重试。").passed
 
 
 def test_resource_scoped_mutation_requires_matching_fresh_read() -> None:

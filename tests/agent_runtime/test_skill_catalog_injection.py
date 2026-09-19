@@ -84,6 +84,11 @@ def test_research_cloud_catalog_exposes_read_tools_but_not_engineering(tmp_path)
         result = gateway.execute(_call("skills.read", {"name": "sample"}))
         assert result.status is ToolCallStatus.EXECUTED
         assert "UNTRUSTED CLOUD SKILL GUIDANCE" in result.output
+        requirement = gateway.effective_skill_requirements[0]
+        assert requirement.skill_id == backend.installation.version.skill_id
+        assert requirement.version_id == backend.installation.version.version_id
+        assert requirement.digest == backend.installation.version.content_digest
+        assert result.metadata["skill_version_id"] == requirement.version_id
     finally:
         gateway.close()
 

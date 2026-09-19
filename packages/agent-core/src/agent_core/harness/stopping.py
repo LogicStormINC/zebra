@@ -97,6 +97,8 @@ class HarnessStoppingPolicy:
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return HarnessStopReason.COMPLETED
         if attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
+            if attempt_result.metadata.get("stop_reason") == "verification_required":
+                return HarnessStopReason.VERIFICATION_REQUIRED
             if attempt_result.metadata.get("stop_reason") == "tool_call_budget_exhausted":
                 return HarnessStopReason.TOOL_CALL_BUDGET_EXHAUSTED
             return HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED

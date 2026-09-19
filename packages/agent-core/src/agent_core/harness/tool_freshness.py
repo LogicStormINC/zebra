@@ -69,9 +69,19 @@ def record_tool_freshness(
         skill_name = tool_result.metadata.get("skill_name")
         skill_reads = updated.get("skill_reads")
         reads = dict(skill_reads) if isinstance(skill_reads, dict) else {}
+        skill_evidence = {
+            key: tool_result.metadata.get(key)
+            for key in (
+                "skill_name",
+                "skill_id",
+                "skill_version",
+                "skill_version_id",
+                "skill_digest",
+            )
+        }
         for value in (skill_id, skill_name):
             if isinstance(value, str) and value.strip():
-                reads[value.strip()] = tool_result.metadata.get("skill_digest")
+                reads[value.strip()] = skill_evidence
         updated["skill_reads"] = reads
     mutation_epoch = _integer(updated.get("mutation_epoch"))
     if tool_call.name in mutation_tools:

@@ -128,6 +128,7 @@ def harness_task_for_recovered(
         network_allowlist=network_profile.domain_allowlist,
         mcp_allowlist=tuple(tool.name for tool in tool_gateway.effective_mcp_tools),
         skill_components=tool_gateway.effective_skill_components,
+        skill_requirements=getattr(tool_gateway, "effective_skill_requirements", ()),
         context_token_budget=(
             CLOUD_CONTEXT_TOKEN_BUDGET
             if materialization is not None or task.delegated_context is not None

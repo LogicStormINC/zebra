@@ -13,7 +13,7 @@ from agent_core.domain.subagents import DelegationMode
 from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
-from agent_core.harness.models import HarnessLoopResult
+from agent_core.harness.models import HarnessLoopResult, SkillReadRequirement
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_core.ports.model_gateway import ModelGatewayPort
@@ -61,6 +61,7 @@ from agent_runtime.cloud_mcp_transport import CloudMcpTransport
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
+from agent_runtime.skill_requirements import build_skill_read_requirements
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
 from agent_runtime.tool_output_projection import build_output_projector
 from agent_runtime.web_gateway import LocalWebGatewayTransport
@@ -135,6 +136,7 @@ def run_local_harness(
                 network_allowlist=network_profile.domain_allowlist,
                 mcp_allowlist=resolved_mcp_allowlist,
                 skill_components=tool_gateway.effective_skill_components,
+                skill_requirements=tool_gateway.effective_skill_requirements,
                 confirmed_memories=confirmed_memories,
                 attachments=attachments,
                 image_attachments=image_attachments,
@@ -270,13 +272,18 @@ class LocalToolGateway(ToolGatewayPort):
             web_pipeline_v2=web_pipeline_v2,
         )
         self._skill_component_names: tuple[str, ...] = ()
+        self._skill_requirements: tuple[SkillReadRequirement, ...] = ()
         if skill_roots or skill_catalog is not None:
             catalog = skill_catalog or LocalSkillCatalog(skill_roots, skills_state=skills_state)
             cloud = isinstance(catalog, CloudSkillCatalog)
-            self._skill_component_names = (
-                skill_component_names
-                if skill_catalog is not None
-                else tuple(metadata.name for metadata in catalog.list()[0])
+            available_skills = (
+                () if skill_component_names else catalog.list(limit=200)[0]
+            )
+            self._skill_component_names = skill_component_names or tuple(
+                metadata.name for metadata in available_skills
+            )
+            self._skill_requirements = build_skill_read_requirements(
+                self._skill_component_names, catalog, available_skills
             )
             for skill_tool in (SkillsListTool(catalog), SkillsReadTool(catalog)):
                 if cloud or skill_tool.contract.name in enabled_names:
@@ -404,6 +411,10 @@ class LocalToolGateway(ToolGatewayPort):
     @property
     def effective_skill_components(self) -> tuple[str, ...]:
         return self._skill_component_names
+
+    @property
+    def effective_skill_requirements(self) -> tuple[SkillReadRequirement, ...]:
+        return self._skill_requirements
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:

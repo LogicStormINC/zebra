@@ -1,7 +1,9 @@
 """Small deterministic gates for skill usage and substantive final answers."""
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+
+from agent_core.harness.models import SkillReadRequirement
 
 
 @dataclass(frozen=True)
@@ -13,12 +15,36 @@ class AnswerQuality:
 def missing_selected_skills(
     selected: tuple[str, ...],
     metadata: Mapping[str, object],
+    requirements: Sequence[SkillReadRequirement] = (),
 ) -> tuple[str, ...]:
     if not selected:
         return ()
     raw = metadata.get("skill_reads")
     reads = raw if isinstance(raw, dict) else {}
-    return tuple(skill for skill in selected if skill not in reads)
+    by_component = {item.component: item for item in requirements}
+    return tuple(
+        skill
+        for skill in selected
+        if not _skill_read_matches(reads.get(skill), by_component.get(skill))
+    )
+
+
+def _skill_read_matches(
+    raw: object,
+    requirement: SkillReadRequirement | None,
+) -> bool:
+    if requirement is None:
+        return raw is not None
+    if not isinstance(raw, Mapping):
+        return False
+    expected = {
+        "skill_name": requirement.name,
+        "skill_id": requirement.skill_id,
+        "skill_version": requirement.version,
+        "skill_version_id": requirement.version_id,
+        "skill_digest": requirement.digest,
+    }
+    return all(value is None or raw.get(key) == value for key, value in expected.items())
 
 
 def is_substantive_request(user_input: str) -> bool:
@@ -32,7 +58,6 @@ def is_substantive_request(user_input: str) -> bool:
             "markdown",
             "详细",
             "完整",
-            "分析",
             "detailed",
         )
     )

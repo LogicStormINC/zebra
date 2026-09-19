@@ -66,16 +66,27 @@ def project_budget_suspension_event(
     timestamp: int,
 ) -> tuple[Event, ...]:
     reason = _optional_text(event.payload, "reason")
-    if reason not in {"model_call_budget_exhausted", "tool_call_budget_exhausted"}:
+    if reason not in {
+        "model_call_budget_exhausted",
+        "tool_call_budget_exhausted",
+        "verification_required",
+    }:
         return ()
-    subject = "model-call" if reason == "model_call_budget_exhausted" else "tool-call"
+    if reason == "verification_required":
+        message = (
+            "The mutation may have been applied, but its resulting state could not be "
+            "verified. The task is paused so a fresh read can confirm it safely."
+        )
+    else:
+        subject = "model-call" if reason == "model_call_budget_exhausted" else "tool-call"
+        message = (
+            f"The explicit {subject} limit was reached. The task is paused and can "
+            "continue with a larger limit."
+        )
     interrupt = Interrupt(
         id=f"session-suspended:{event.event_id}",
         reason=reason,
-        message=(
-            f"The explicit {subject} limit was reached. The task is paused and can "
-            "continue with a larger limit."
-        ),
+        message=message,
     )
     return (
         StateSnapshotEvent(

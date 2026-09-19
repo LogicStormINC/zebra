@@ -1,5 +1,19 @@
 # Zebra Agent Project Status
 
+2026-09-19 CLOUD-REMEDIATION-R10: finalization now treats unresolved mutation
+evidence as a hard truth gate. A mutation that cannot be closed by a fresh read
+returns a user-visible unverified partial result, suspends with the dedicated
+`verification_required` reason, and cannot emit `SESSION_COMPLETED`; AG-UI
+projects the suspension as a recoverable interrupt. Frozen cloud Skills carry
+their exact skill ID, version ID, and digest into the Harness and completion
+accepts only a matching `skills.read` result. Missing Skill tools fail closed.
+The prose gate remains a single bounded soft revision and the generic Chinese
+word “分析” no longer imposes a 320-character threshold by itself. The full
+suite passes `4468` with `887` skips; the affected regression set passes `827`,
+file-size/Ruff/strict Mypy over `947` sources/diff checks pass. Repository
+`make check` reaches only the pre-existing R00 Ruff import-order baseline in
+`apps/api/src/zebra_agent_api/host_auth.py:3` after the file-size gate passes.
+
 2026-09-19 CLOUD-REMEDIATION-R06 (closeout): resource-scoped mutations now
 retain bounded mutation evidence and fresh reads append structured
 `VerificationEvidence` with effect/receipt refs, commit/read versions,

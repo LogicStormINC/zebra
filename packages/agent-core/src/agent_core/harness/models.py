@@ -36,6 +36,26 @@ class HarnessStopReason(StrEnum):
     APPROVAL_REQUIRED = "approval_required"
     CLARIFICATION_REQUIRED = "clarification_required"
     CLIENT_EFFECT_REQUIRED = "client_effect_required"
+    VERIFICATION_REQUIRED = "verification_required"
+
+
+@dataclass(frozen=True)
+class SkillReadRequirement:
+    """Exact frozen Skill identity that must be observed before completion."""
+
+    component: str
+    name: str | None = None
+    skill_id: str | None = None
+    version: str | None = None
+    version_id: str | None = None
+    digest: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.component.strip():
+            raise ValueError("Skill read requirement component must not be blank")
+        for value in (self.name, self.skill_id, self.version, self.version_id, self.digest):
+            if value is not None and not value.strip():
+                raise ValueError("Skill read requirement values must not be blank")
 
 
 @dataclass(frozen=True)
@@ -52,6 +72,7 @@ class HarnessTask:
     network_allowlist: tuple[str, ...] = ()
     mcp_allowlist: tuple[str, ...] = ()
     skill_components: tuple[str, ...] = ()
+    skill_requirements: tuple[SkillReadRequirement, ...] = ()
     context_token_budget: int = 200
     runtime_evidence: tuple[RuntimeEvidenceInput, ...] = ()
     confirmed_memories: tuple[ConfirmedMemoryInput, ...] = ()
@@ -82,6 +103,13 @@ class HarnessTask:
         object.__setattr__(
             self, "skill_components", normalize_skill_components(self.skill_components)
         )
+        if any(not isinstance(item, SkillReadRequirement) for item in self.skill_requirements):
+            raise ValueError("harness task Skill requirements are invalid")
+        requirement_components = tuple(item.component for item in self.skill_requirements)
+        if len(requirement_components) != len(set(requirement_components)):
+            raise ValueError("harness task Skill requirements must be unique")
+        if any(component not in self.skill_components for component in requirement_components):
+            raise ValueError("harness task Skill requirements must be selected components")
         for memory in self.confirmed_memories:
             if not isinstance(memory, ConfirmedMemoryInput):
                 raise ValueError(

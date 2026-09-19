@@ -7,6 +7,7 @@ from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolIdempotency, ToolResult, ToolRisk
+from agent_core.harness.models import SkillReadRequirement
 from agent_core.ports import (
     ArtifactPayloadStorePort,
     ModelGatewayPort,
@@ -77,6 +78,10 @@ class WorkerToolGateway:
     @property
     def effective_skill_components(self) -> tuple[str, ...]:
         return self.local.effective_skill_components
+
+    @property
+    def effective_skill_requirements(self) -> tuple[SkillReadRequirement, ...]:
+        return self.local.effective_skill_requirements
 
     @property
     def parallel_safe_tools(self) -> frozenset[str]:

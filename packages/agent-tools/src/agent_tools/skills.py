@@ -115,6 +115,7 @@ class SkillsReadTool:
                 "skill_digest": result.metadata.digest,
                 "skill_scope": result.metadata.scope.value,
                 "skill_version": result.metadata.version,
+                "skill_version_id": result.metadata.source,
                 "provenance_source": result.metadata.source,
             },
         )
