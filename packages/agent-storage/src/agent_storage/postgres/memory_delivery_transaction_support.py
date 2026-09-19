@@ -119,6 +119,22 @@ def claim_next_in_transaction(
                   OR (operation.state = 'claimed'
                       AND operation.claim_expires_at <= transaction_timestamp())
               )
+              AND NOT EXISTS (
+                  SELECT 1 FROM memory_delivery_operations predecessor
+                  WHERE predecessor.deployment_namespace = operation.deployment_namespace
+                    AND predecessor.scope_digest = operation.scope_digest
+                    AND predecessor.generation = operation.generation
+                    AND predecessor.memory_id = operation.memory_id
+                    AND (
+                        predecessor.memory_revision < operation.memory_revision
+                        OR (
+                            predecessor.memory_revision = operation.memory_revision
+                            AND predecessor.delivery_operation_id
+                                < operation.delivery_operation_id
+                        )
+                    )
+                    AND predecessor.state NOT IN ('completed', 'dead_letter')
+              )
             ORDER BY operation.next_attempt_at, operation.created_at,
                      operation.delivery_operation_id
             FOR UPDATE OF operation SKIP LOCKED

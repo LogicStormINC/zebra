@@ -98,6 +98,37 @@ def test_v11_scope_isolation_idempotent_enqueue_and_claim(
     assert second_claim is not None and second_claim.operation.memory_id == second.memory_id
 
 
+def test_claims_for_one_memory_are_serialized_by_revision(
+    ledger: PostgresMemoryDeliveryLedger,
+) -> None:
+    delivery_scope = scope()
+    memory_id = MemoryId(uuid4())
+    ledger.enqueue_publish(
+        memory_id,
+        memory_revision=2,
+        content_digest="c" * 64,
+        scope=delivery_scope,
+    )
+    ledger.enqueue_delete(
+        memory_id,
+        memory_revision=3,
+        content_digest="c" * 64,
+        scope=delivery_scope,
+    )
+
+    publish = ledger.claim_next(owner="worker-a", scope=delivery_scope)
+    assert publish is not None and publish.operation.memory_revision == 2
+    assert ledger.claim_next(owner="worker-b", scope=delivery_scope) is None
+
+    publish = ledger.mark_in_flight(publish)
+    ledger.complete(
+        publish,
+        certainty=MemoryDeliveryCertainty.DEFINITE_NO_EFFECT,
+    )
+    deletion = ledger.claim_next(owner="worker-b", scope=delivery_scope)
+    assert deletion is not None and deletion.operation.memory_revision == 3
+
+
 def test_mapping_read_rejects_cross_namespace_scope(
     ledger: PostgresMemoryDeliveryLedger,
 ) -> None:

@@ -172,6 +172,28 @@ does not authorize production code, migrations or activation of its successor.
   (949 sources), Eval 10/10 and diff gates passed. Full `make check` retains the
   R00 baseline import-order finding in untouched `apps/api/.../host_auth.py`.
 
+- `CLOUD-REMEDIATION-R08`: Review, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on the reviewed
+  R00 baseline and the existing governed-Memory v10 / delivery-ledger v11
+  implementation. Scope: close provider-neutral Memory delivery and deletion
+  ordering without enabling Mem0 or creating a second authority. Serialize
+  claims per Memory revision, revalidate governed authority immediately before
+  provider mutation, quarantine unknown outcomes, and prove tombstones/newer
+  revisions prevent stale publish resurrection. Owned paths:
+  `packages/agent-storage/src/agent_storage/postgres/memory_delivery_transaction_support.py`,
+  `apps/worker/src/zebra_agent_worker/memory_delivery_consumer.py` (new), focused
+  Memory delivery/Worker/PostgreSQL tests, this registry, `PROGRESS.md`, and
+  `WORKLOG.md`. No Mem0/Redis adapter, runtime default activation, migration,
+  deployment, local SQLite, Desktop, or Trench worktree change is included.
+  Implemented: lower revisions fence later claims for the same Memory; the new
+  consumer revalidates authority immediately before the provider boundary,
+  suppresses stale publish/delete without network I/O, leaves disabled-provider
+  work pending, and quarantines unknown outcomes. Evidence: `45 passed` focused,
+  `94 passed` with real PostgreSQL, full repository `4483 passed, 888 skipped`,
+  touched Ruff, strict Mypy (950 sources), Eval 10/10, file-size and diff gates
+  passed. Full `make check` retains only the R00 import-order baseline. Mem0
+  remains denied/deferred and no provider is enabled by default.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

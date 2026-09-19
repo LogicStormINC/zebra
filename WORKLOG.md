@@ -10025,3 +10025,21 @@ actual byte access.
   passed`; full `4478 passed, 887 skipped`; file-size, touched Ruff, Mypy 949,
   Eval 10/10 and `git diff --check` passed. `make check` only reports the
   pre-recorded R00 import-order baseline in untouched `host_auth.py`.
+
+## 2026-09-20 - CLOUD-REMEDIATION-R08
+
+- Audited the existing governed Memory v10 and delivery ledger v11 rather than
+  creating another storage path. Atomic enqueue, metadata-only tombstones and
+  batch search revalidation were already present.
+- Found and fixed the remaining ordering hole: independent `SKIP LOCKED` rows
+  allowed two workers to claim old publish and new delete revisions for one
+  Memory concurrently.
+- Added the minimal provider-neutral consumer with last-moment authority checks,
+  typed certainty handling and no default runtime wiring. Stale publish/delete
+  completes with definite no effect; unknown provider outcomes quarantine the
+  scope; authority read failure never crosses the network boundary.
+- Validation: focused `45 passed`; real PostgreSQL `94 passed`; changed-path
+  Ruff, strict Mypy over 950 sources, Eval 10/10, file-size and
+  `git diff --check` passed; full repository `4483 passed, 888 skipped`.
+  `make check` retains only the R00 import-order baseline. Mem0 and Redis remain
+  outside this task and no Trench/deployment state changed.

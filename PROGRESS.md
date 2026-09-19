@@ -3141,3 +3141,23 @@ claimed.
   passed, 887 skipped`. File-size, touched Ruff, strict Mypy over 949 sources,
   Eval 10/10 and diff gates passed. Full `make check` remains stopped only by
   the R00 import-order baseline in untouched `apps/api/.../host_auth.py`.
+
+## 2026-09-20 - CLOUD-REMEDIATION-R08 Memory lifecycle delivery closure
+
+- Preserved PostgreSQL governed Memory as lifecycle authority and reused the
+  existing metadata-only v11 delivery ledger; no parallel outbox or fact source
+  was introduced.
+- Claims for the same Memory are now revision-serialized, preventing an older
+  publish and newer delete from crossing the provider boundary concurrently.
+  Other Memory identities remain independently claimable.
+- Added a provider-neutral Worker consumer that revalidates the current governed
+  revision, digest, lifecycle and expiry immediately before mutation. Tombstones
+  and newer confirmed revisions suppress stale operations without provider I/O;
+  disabled providers leave work pending, while timeouts/unknown outcomes enter
+  the existing uncertain state and quarantine the scope.
+- Evidence: focused Core/Worker/Gateway `45 passed`; real PostgreSQL governed
+  Memory, delivery, import, scan and native regression `94 passed`; touched
+  Ruff, strict Mypy over 950 sources, Eval 10/10, file-size and diff gates passed;
+  full repository `4483 passed, 888 skipped`. Full `make check` retains only the
+  R00 import-order baseline. Runtime composition remains default-off. Mem0 is
+  still denied/deferred by ADR-018 and is not enabled.
