@@ -251,6 +251,24 @@ does not authorize production code, migrations or activation of its successor.
   skipped`. R07 remains In Progress until the real PostgreSQL/profile/browser
   pilot is recorded.
 
+- `CLOUD-REMEDIATION-R12`: In Progress, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on completed R00
+  and R04 implementation. Scope: audit and harden runtime credentials, network
+  isolation and enforceable resource limits without weakening the existing
+  gVisor/rootless/OS-sandbox fail-closed boundary. Owned paths:
+  `packages/agent-runtime` process and sandbox adapters, Worker runtime
+  composition, focused runtime/security tests, this registry, `PROGRESS.md`,
+  `WORKLOG.md`, `docs/CLOUD-DEPLOY-HELM-01.md`, and one focused security note.
+  Initial audit
+  confirms OCI CPU/memory/PID/tmpfs/deadline/network/non-root/read-only/capability
+  restrictions, image pinning, workspace containment and quota admission are
+  already enforced. The open defect is that `max_output_bytes` is authoritative
+  in `SandboxSpec` but sandbox subprocess capture currently reads unbounded
+  stdout/stderr into Worker memory and reports both truncation flags as false.
+  Acceptance requires bounded streaming capture, truthful UTF-8-safe truncation
+  flags on normal and timeout paths, process-tree termination, regression tests,
+  and unchanged trusted-local compatibility.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

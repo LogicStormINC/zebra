@@ -1,5 +1,14 @@
 # Zebra Agent Project Status
 
+2026-09-20 CLOUD-REMEDIATION-R12: sandbox stdout/stderr capture is now bounded
+while both pipes continue draining, with UTF-8-safe output and truthful
+truncation flags on completion and timeout. OCI defaults and pinned engine calls
+use process-tree termination. Compose no longer exposes Docker Socket or
+`DOCKER_HOST` to API; engine authority remains Worker-only. Runtime, security,
+Worker and Compose regressions pass with `751 passed, 11 skipped`. The current
+local engine advertises no `runsc`, so target gVisor execution/cleanup remains an
+explicit G2/G3 release gate rather than an inferred success.
+
 2026-09-20 CLOUD-REMEDIATION-R07 (implementation): Client Effects now preserve
 their Task/Run, Surface, capability digest, expected UI revision, deadline,
 request digest and idempotency key through PostgreSQL, Worker metadata, REST and

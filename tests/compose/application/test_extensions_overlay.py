@@ -45,7 +45,14 @@ def test_extension_overlay_pairs_api_worker_and_private_key_mounts():
         assert mount["read_only"] is True
         assert mount["bind"]["create_host_path"] is False
         assert mount["source"] == "/tmp/zebra-extension-fixture"
-        assert any(v["target"] == "/var/run/docker.sock" for v in service["volumes"])
+    assert not any(
+        v["target"] == "/var/run/docker.sock" for v in services["zebra-api"]["volumes"]
+    )
+    assert any(
+        v["target"] == "/var/run/docker.sock" for v in services["zebra-worker"]["volumes"]
+    )
+    assert "DOCKER_HOST" not in services["zebra-api"]["environment"]
+    assert "DOCKER_HOST" in services["zebra-worker"]["environment"]
     api_env = services["zebra-api"]["environment"]
     worker_env = services["zebra-worker"]["environment"]
     assert api_env["ZEBRA_CLOUD_EXTENSION_TURN_ADMISSION_ENABLED"] == "true"

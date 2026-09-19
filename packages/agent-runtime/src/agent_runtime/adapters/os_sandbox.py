@@ -136,26 +136,51 @@ class OsSandboxRuntime(RuntimePort):
             workspace_writable=self._spec.workspace_writable,
         )
         try:
-            completed = self._invoke(command, timeout=timeout, cwd=cwd)
+            completed = self._invoke(
+                command,
+                timeout=timeout,
+                cwd=cwd,
+                max_output_bytes=self._spec.limits.max_output_bytes,
+            )
         except TimeoutExpired as exc:
+            stdout, stdout_truncated = self._bounded_output(
+                exc.stdout,
+                already_truncated=bool(getattr(exc, "stdout_truncated", False)),
+            )
+            stderr, stderr_truncated = self._bounded_output(
+                exc.stderr,
+                already_truncated=bool(getattr(exc, "stderr_truncated", False)),
+            )
             return RuntimeExecutionResult(
                 command=request.command,
                 exit_code=None,
-                stdout=self._output(exc.stdout),
-                stderr=self._output(exc.stderr),
+                stdout=stdout,
+                stderr=stderr,
                 timed_out=True,
+                stdout_truncated=stdout_truncated,
+                stderr_truncated=stderr_truncated,
                 failure_reason="timeout",
             )
+        stdout, stdout_truncated = self._bounded_output(
+            completed.stdout,
+            already_truncated=bool(getattr(completed, "stdout_truncated", False)),
+        )
+        stderr, stderr_truncated = self._bounded_output(
+            completed.stderr,
+            already_truncated=bool(getattr(completed, "stderr_truncated", False)),
+        )
         return RuntimeExecutionResult(
             command=request.command,
             exit_code=completed.returncode,
-            stdout=self._output(completed.stdout),
-            stderr=self._output(completed.stderr),
+            stdout=stdout,
+            stderr=stderr,
             timed_out=False,
+            stdout_truncated=stdout_truncated,
+            stderr_truncated=stderr_truncated,
             failure_reason=normalize_runtime_failure(
                 timed_out=False,
                 exit_code=completed.returncode,
-                stderr=self._output(completed.stderr),
+                stderr=stderr,
             ),
         )
 
@@ -246,16 +271,19 @@ class OsSandboxRuntime(RuntimePort):
         *,
         timeout: float | None = None,
         cwd: Path | None = None,
+        max_output_bytes: int | None = None,
     ) -> CompletedProcess[str]:
-        return self._runner(
-            tuple(command),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=timeout,
-            cwd=cwd,
-            env={"PATH": _SAFE_PATH},
-        )
+        kwargs = {
+            "capture_output": True,
+            "text": True,
+            "check": False,
+            "timeout": timeout,
+            "cwd": cwd,
+            "env": {"PATH": _SAFE_PATH},
+        }
+        if max_output_bytes is not None:
+            kwargs["max_output_bytes"] = max_output_bytes
+        return self._runner(tuple(command), **kwargs)
 
     def _unavailable(self, reason: str) -> RuntimeCapabilities:
         return RuntimeCapabilities(
@@ -265,8 +293,17 @@ class OsSandboxRuntime(RuntimePort):
             reason=reason,
         )
 
-    @staticmethod
-    def _output(value: bytes | str | None) -> str:
+    def _bounded_output(
+        self,
+        value: bytes | str | None,
+        *,
+        already_truncated: bool,
+    ) -> tuple[str, bool]:
         if value is None:
-            return ""
-        return value.decode("utf-8", errors="replace") if isinstance(value, bytes) else value
+            return "", already_truncated
+        encoded = value if isinstance(value, bytes) else value.encode("utf-8", errors="replace")
+        limit = self._spec.limits.max_output_bytes
+        truncated = already_truncated or len(encoded) > limit
+        return encoded[:limit].decode(
+            "utf-8", errors="ignore" if truncated else "replace"
+        ), truncated

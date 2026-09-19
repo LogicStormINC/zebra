@@ -6,11 +6,13 @@ import shutil
 from collections.abc import Callable, Mapping, Sequence
 from hashlib import sha256
 from pathlib import Path
-from subprocess import CompletedProcess, run
+from subprocess import CompletedProcess
 from typing import Any
 from urllib.parse import urlsplit
 
 from agent_core.ports.runtime import RuntimeCapabilityError
+
+from agent_runtime.process_execution import run_process_tree
 
 
 class PinnedOciEngine:
@@ -26,7 +28,7 @@ class PinnedOciEngine:
         engine: str,
         *,
         env: Mapping[str, str] | None = None,
-        runner: Callable[..., CompletedProcess[str]] = run,
+        runner: Callable[..., CompletedProcess[str]] = run_process_tree,
     ) -> None:
         self._env = dict(os.environ if env is None else env)
         self._runner = runner

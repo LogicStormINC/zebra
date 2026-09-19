@@ -1,11 +1,13 @@
+from dataclasses import replace
 from pathlib import Path
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess, TimeoutExpired
 
 import pytest
 from agent_core.ports.runtime import (
     RuntimeCapabilityError,
     RuntimeClass,
     RuntimeExecutionRequest,
+    RuntimeLimits,
     SandboxSpec,
 )
 from agent_runtime import OsSandboxRuntime
@@ -15,6 +17,8 @@ class FakeRunner:
     def __init__(self, *, probe_succeeds: bool = True) -> None:
         self.probe_succeeds = probe_succeeds
         self.calls: list[tuple[str, ...]] = []
+        self.stdout = "ok"
+        self.stderr = ""
 
     def __call__(self, command, **kwargs) -> CompletedProcess[str]:
         normalized = tuple(command)
@@ -22,7 +26,16 @@ class FakeRunner:
         is_probe = normalized[-1] in {"/usr/bin/true", "/bin/true"}
         if is_probe and not self.probe_succeeds:
             return CompletedProcess(normalized, 1, "", "sandbox unavailable")
-        return CompletedProcess(normalized, 0, "ok", "")
+        return CompletedProcess(normalized, 0, self.stdout, self.stderr)
+
+
+class TimeoutRunner(FakeRunner):
+    def __call__(self, command, **kwargs) -> CompletedProcess[str]:
+        normalized = tuple(command)
+        self.calls.append(normalized)
+        if normalized[-1] in {"/usr/bin/true", "/bin/true"}:
+            return CompletedProcess(normalized, 0, "", "")
+        raise TimeoutExpired(normalized, kwargs.get("timeout", 1), "abcdef", "late")
 
 
 def _spec(workspace: Path, engine: str) -> SandboxSpec:
@@ -88,6 +101,49 @@ def test_bubblewrap_command_uses_private_namespaces_and_workspace_only(
     bind_index = execute.index("--bind")
     assert execute[bind_index + 1 : bind_index + 3] == (str(tmp_path), str(tmp_path))
     assert execute[-3:] == ("/bin/sh", "-c", "true")
+
+
+def test_os_sandbox_enforces_output_limit(tmp_path: Path) -> None:
+    runner = FakeRunner()
+    runner.stdout = "abcdef"
+    spec = replace(
+        _spec(tmp_path, "sandbox-exec"),
+        limits=RuntimeLimits(max_output_bytes=4),
+    )
+    runtime = OsSandboxRuntime(
+        spec,
+        system="Darwin",
+        finder=lambda _: "/usr/bin/sandbox-exec",
+        runner=runner,
+    )
+    runtime.provision()
+
+    result = runtime.execute(RuntimeExecutionRequest(command=("/usr/bin/true",)))
+
+    assert result.stdout == "abcd"
+    assert result.stdout_truncated is True
+
+
+def test_os_sandbox_timeout_reports_bounded_partial_output(tmp_path: Path) -> None:
+    spec = replace(
+        _spec(tmp_path, "sandbox-exec"),
+        limits=RuntimeLimits(max_output_bytes=4),
+    )
+    runtime = OsSandboxRuntime(
+        spec,
+        system="Darwin",
+        finder=lambda _: "/usr/bin/sandbox-exec",
+        runner=TimeoutRunner(),
+    )
+    runtime.provision()
+
+    result = runtime.execute(RuntimeExecutionRequest(command=("sleep", "60")))
+
+    assert result.timed_out is True
+    assert result.stdout == "abcd"
+    assert result.stdout_truncated is True
+    assert result.stderr == "late"
+    assert result.stderr_truncated is False
 
 
 @pytest.mark.parametrize(

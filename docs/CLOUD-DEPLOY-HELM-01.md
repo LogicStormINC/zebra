@@ -9,6 +9,12 @@
 | 当前证据 | 静态 chart/schema、`helm lint/template`，以及隔离 Linux `colima-zebra-gvisor` 的真实 Helm 安装均通过 |
 | 生产含义 | 证明本地 Linux/gVisor 部署契约，不构成 managed cluster、HA 或生产 rollout 批准 |
 
+> R12 security clarification (2026-09-20): this evidence proves the
+> control-plane Pods run under gVisor. It does not prove the Worker's per-task OCI
+> engine, shared workspace or task cleanup path. Task-execution release approval
+> remains `NOT_ENABLED` until the R14 target-cluster exercise succeeds; see
+> [`SECURITY-R12-runtime-boundary.md`](SECURITY-R12-runtime-boundary.md).
+
 Chart 位于 [`deploy/helm/zebra-agent/`](../deploy/helm/zebra-agent/)。它延续已验证的
 Docker application overlay，但把进程边界搬到 Kubernetes：migration 作为 pre-install/
 pre-upgrade Job，API 和 Worker 使用独立 Deployment，API 通过 ClusterIP Service 暴露。

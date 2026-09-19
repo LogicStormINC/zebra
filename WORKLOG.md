@@ -1,5 +1,24 @@
 # Progress Log
 
+## 2026-09-20 - CLOUD-REMEDIATION-R12 runtime boundary
+
+Audited the existing OCI/OS sandbox, credential, egress, workspace and archive
+boundaries. CPU, memory, PID, tmpfs, deadline, non-root, read-only root,
+capability, network-none, image digest, cwd containment, quota, SSRF and archive
+checks already existed. Closed the material defect where `max_output_bytes` was
+part of authority but subprocess output was still accumulated without a bound.
+The shared process runner now drains both pipes concurrently, retains only the
+configured bytes, kills the process tree on timeout and exposes truncation on
+both normal and timeout results. OCI/OS adapters defensively enforce the same
+limit for injected runners.
+
+Removed Docker Socket and `DOCKER_HOST` from the API Compose service; only the
+trusted Worker retains engine authority. Focused tests pass `33`; the wider
+runtime/security/Worker/Compose suite passes `751 passed, 11 skipped`. The local
+Docker engine has no `runsc`, so no real gVisor claim was made. The Helm chart's
+historical control-plane gVisor evidence is explicitly insufficient for task
+execution until R14 proves the target engine, workspace and cleanup path.
+
 ## 2026-09-20 - CLOUD-REMEDIATION-R07 frontend action protocol
 
 Completed the deterministic Client Effect wire and Trench pilot implementation.

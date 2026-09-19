@@ -33,7 +33,6 @@ x-zebra-cloud-environment: &zebra-cloud-environment
   ZEBRA_DEVELOPMENT_UNRESTRICTED: ${ZEBRA_DEVELOPMENT_UNRESTRICTED:-false}
   ZEBRA_COMMAND_TICK_SECONDS: ${ZEBRA_COMMAND_TICK_SECONDS:-10}
   ZEBRA_WORKSPACE_VOLUME_LAYOUT: ${ZEBRA_WORKSPACE_VOLUME_LAYOUT:-}
-  DOCKER_HOST: ${DOCKER_HOST:-}
 
 x-zebra-application-build: &zebra-application-build
   context: ..
@@ -63,10 +62,7 @@ services:
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
       - ${ZEBRA_ACCEPTANCE_CA_FILE:-./trench-acceptance/secrets/ca.crt}:/etc/ssl/certs/zebra-acceptance-ca.crt:ro
-      - /var/run/docker.sock:/var/run/docker.sock
       - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
-    group_add:
-      - ${ZEBRA_DOCKER_SOCKET_GID:-984}
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -99,6 +95,7 @@ services:
     environment:
       <<: *zebra-cloud-environment
       ZEBRA_WORKER_ID: ${ZEBRA_WORKER_ID:-zebra-cloud-worker}
+      DOCKER_HOST: ${DOCKER_HOST:-}
     restart: unless-stopped
     command:
       - --worker-id

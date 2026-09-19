@@ -128,7 +128,7 @@ def test_runtime_fails_closed_without_required_isolation(tmp_path: Path) -> None
         rootful.provision()
 
 
-def test_runtime_preserves_complete_output_for_artifact_projection(tmp_path: Path) -> None:
+def test_runtime_enforces_output_limit_for_worker_memory_safety(tmp_path: Path) -> None:
     child = tmp_path / "child"
     child.mkdir()
     engine = FakeEngine()
@@ -145,8 +145,8 @@ def test_runtime_preserves_complete_output_for_artifact_projection(tmp_path: Pat
 
     execute = next(call for call in engine.calls if "exec" in call and "python" in call)
     assert execute[execute.index("--workdir") + 1] == "/workspace/child"
-    assert result.stdout == "abcdef"
-    assert result.stdout_truncated is False
+    assert result.stdout == "abcd"
+    assert result.stdout_truncated is True
 
 
 def test_runtime_timeout_destroys_container(tmp_path: Path) -> None:
@@ -158,6 +158,10 @@ def test_runtime_timeout_destroys_container(tmp_path: Path) -> None:
     result = runtime.execute(RuntimeExecutionRequest(command=("sleep", "60")))
 
     assert result.timed_out is True
+    assert result.stdout == "part"
+    assert result.stdout_truncated is True
+    assert result.stderr == "late"
+    assert result.stderr_truncated is False
     assert any("rm" in call and "--force" in call for call in engine.calls)
 
 

@@ -11,6 +11,7 @@ from agent_runtime import (
     require_workspace_quota,
 )
 from agent_runtime.adapters.oci_engine import PinnedOciEngine
+from agent_runtime.process_execution import run_process_tree
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.runtime_instances import BoundInstanceFactory
@@ -72,14 +73,12 @@ def build_runtime(
             raise ValueError("cloud OCI runtime requires a fenced instance lifecycle")
         pinned = pin_cloud_engine(settings)
         lifecycle = instance_factory(pinned.identity)
-    from subprocess import run
-
     return OciRuntime(
         spec,
         engine_command=(settings.runtime.engine,),
         gvisor_runtime=settings.runtime.gvisor_runtime,
         snapshot_root=runtime_root,
-        runner=run if pinned is None else pinned,
+        runner=run_process_tree if pinned is None else pinned,
         instance_lifecycle=lifecycle,
     )
 

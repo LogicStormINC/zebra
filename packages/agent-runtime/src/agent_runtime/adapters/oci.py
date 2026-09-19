@@ -4,7 +4,7 @@ import json
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from pathlib import Path
-from subprocess import CompletedProcess, TimeoutExpired, run
+from subprocess import CompletedProcess, TimeoutExpired
 
 from agent_core.ports.runtime import (
     EffectiveRuntimeAuthority,
@@ -25,6 +25,7 @@ from agent_runtime.adapters.local_snapshot_state import (
 )
 from agent_runtime.adapters.local_snapshots import LocalSnapshotBackend
 from agent_runtime.adapters.oci_instances import OciInstances
+from agent_runtime.process_execution import run_process_tree
 from agent_runtime.runtime_failures import normalize_runtime_failure
 from agent_runtime.runtime_instance_lifecycle import RuntimeInstanceLifecycle
 
@@ -42,7 +43,7 @@ class OciRuntime(RuntimePort):
         engine_command: Sequence[str] = ("docker",),
         gvisor_runtime: str = "runsc",
         snapshot_root: str | Path | None = None,
-        runner: EngineRunner = run,
+        runner: EngineRunner = run_process_tree,
         instance_lifecycle: RuntimeInstanceLifecycle | None = None,
     ) -> None:
         if spec.runtime_class not in {RuntimeClass.OCI_ROOTLESS, RuntimeClass.GVISOR}:
@@ -219,31 +220,47 @@ class OciRuntime(RuntimePort):
             *request.command,
         )
         try:
-            completed = self._invoke(command, timeout=timeout)
+            completed = self._invoke(
+                command,
+                timeout=timeout,
+                max_output_bytes=self._spec.limits.max_output_bytes,
+            )
         except TimeoutExpired as exc:
             self.destroy(handle)
-            stdout = self._complete_output(exc.stdout)
-            stderr = self._complete_output(exc.stderr)
+            stdout, stdout_truncated = self._bounded_output(
+                exc.stdout,
+                already_truncated=bool(getattr(exc, "stdout_truncated", False)),
+            )
+            stderr, stderr_truncated = self._bounded_output(
+                exc.stderr,
+                already_truncated=bool(getattr(exc, "stderr_truncated", False)),
+            )
             return RuntimeExecutionResult(
                 command=request.command,
                 exit_code=None,
                 stdout=stdout,
                 stderr=stderr,
                 timed_out=True,
-                stdout_truncated=False,
-                stderr_truncated=False,
+                stdout_truncated=stdout_truncated,
+                stderr_truncated=stderr_truncated,
                 failure_reason="timeout",
             )
-        stdout = self._complete_output(completed.stdout)
-        stderr = self._complete_output(completed.stderr)
+        stdout, stdout_truncated = self._bounded_output(
+            completed.stdout,
+            already_truncated=bool(getattr(completed, "stdout_truncated", False)),
+        )
+        stderr, stderr_truncated = self._bounded_output(
+            completed.stderr,
+            already_truncated=bool(getattr(completed, "stderr_truncated", False)),
+        )
         return RuntimeExecutionResult(
             command=request.command,
             exit_code=completed.returncode,
             stdout=stdout,
             stderr=stderr,
             timed_out=False,
-            stdout_truncated=False,
-            stderr_truncated=False,
+            stdout_truncated=stdout_truncated,
+            stderr_truncated=stderr_truncated,
             failure_reason=normalize_runtime_failure(
                 timed_out=False,
                 exit_code=completed.returncode,
@@ -424,26 +441,38 @@ class OciRuntime(RuntimePort):
             raise RuntimeCapabilityError("hard runtime workspace_root must be a directory")
         return root
 
-    @staticmethod
-    def _complete_output(value: bytes | str | None) -> str:
+    def _bounded_output(
+        self,
+        value: bytes | str | None,
+        *,
+        already_truncated: bool,
+    ) -> tuple[str, bool]:
         if value is None:
-            return ""
+            return "", already_truncated
         encoded = value if isinstance(value, bytes) else value.encode("utf-8", errors="replace")
-        # ponytail: subprocess capture is memory-backed; move capture directly to the
-        # artifact store if streaming runtimes need outputs larger than host memory.
-        return encoded.decode("utf-8", errors="replace")
+        limit = self._spec.limits.max_output_bytes
+        truncated = already_truncated or len(encoded) > limit
+        return encoded[:limit].decode(
+            "utf-8", errors="ignore" if truncated else "replace"
+        ), truncated
 
     def _invoke(
         self,
         command: Sequence[str],
         *,
         timeout: float | None = None,
+        max_output_bytes: int | None = None,
     ) -> CompletedProcess[str]:
         try:
-            return self._runner(
-                tuple(command), capture_output=True, text=True, check=False,
-                timeout=30 if self._instances is not None and timeout is None else timeout,
-            )
+            kwargs = {
+                "capture_output": True,
+                "text": True,
+                "check": False,
+                "timeout": 30 if self._instances is not None and timeout is None else timeout,
+            }
+            if max_output_bytes is not None:
+                kwargs["max_output_bytes"] = max_output_bytes
+            return self._runner(tuple(command), **kwargs)
         except TimeoutExpired:
             if self._instances is not None and timeout is None:
                 raise RuntimeCapabilityError("cloud runtime administration timed out") from None
