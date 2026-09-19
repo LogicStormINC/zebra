@@ -29,6 +29,7 @@ from agent_tools.effect_guard_support import (
     ToolGatewayLike,
     effect_event_payload,
     effect_identity,
+    proves_failed_no_effect,
     read_only_tool_names,
     uncertain_evidence,
 )
@@ -163,6 +164,8 @@ class FencedEffectToolGateway:
             terminal = self._terminal_event(claimed_call, result)
             if result.status is ToolCallStatus.EXECUTED:
                 persisted = self._complete(claim, result, terminal)
+            elif proves_failed_no_effect(result):
+                persisted = self._fail_no_effect(claim, result, terminal)
             else:
                 persisted = self._mark_uncertain(claim, result, terminal)
             self._accept_event(persisted)
@@ -290,6 +293,29 @@ class FencedEffectToolGateway:
             if persisted is not None:
                 return persisted
         return self._dispatch.mark_uncertain(
+            claim,
+            evidence=evidence,
+            terminal_event=terminal_event,
+        )
+
+    def _fail_no_effect(
+        self,
+        claim: EffectClaim,
+        result: ToolResult,
+        terminal_event: SessionEvent,
+    ) -> SessionEvent:
+        evidence = EffectEvidence(reason_code="provider_rejected_without_effect")
+        if self._effect_payloads is not None:
+            persisted = self._effect_payloads.fail_no_effect_with_payload(
+                claim,
+                result=result,
+                evidence=evidence,
+                terminal_event=terminal_event,
+                authority=self._require_mutation_authority(),
+            )
+            if persisted is not None:
+                return persisted
+        return self._dispatch.fail_no_effect(
             claim,
             evidence=evidence,
             terminal_event=terminal_event,

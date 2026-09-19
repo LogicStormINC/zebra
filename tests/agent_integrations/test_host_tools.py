@@ -173,8 +173,61 @@ def test_http_business_error_detail_is_bounded_and_redacted() -> None:
 
     assert result.metadata["detail"] == "source is paused; access_token=<redacted> <path>"
     assert result.metadata["http_error_code"] == "source_paused"
+    assert result.metadata["transport_outcome"] == "returned"
+    assert result.metadata["business_outcome"] == "rejected"
     assert "top-secret" not in str(result)
     assert "/app/internal" not in str(result)
+
+
+@pytest.mark.parametrize(
+    ("metadata", "status", "business_outcome"),
+    [
+        ({}, ToolCallStatus.FAILED, "unknown"),
+        (
+            {
+                "effect_status": "succeeded",
+                "provider_operation_id": "operation-1",
+                "business_revision": "revision-7",
+            },
+            ToolCallStatus.EXECUTED,
+            "applied",
+        ),
+        (
+            {"effect_status": "failed_no_effect", "provider_operation_id": "operation-2"},
+            ToolCallStatus.FAILED,
+            "rejected",
+        ),
+    ],
+)
+def test_host_write_requires_structured_business_outcome(
+    metadata: dict[str, object],
+    status: ToolCallStatus,
+    business_outcome: str,
+) -> None:
+    payload = _tool_payload()
+    payload["risk"] = "write"
+    response: dict[str, object] = {"output": "updated"}
+    if metadata:
+        response["metadata"] = metadata
+    gateway = HostToolGateway(
+        "https://trench.example",
+        HostWorkloadIdentity("trench-worker", "tenant-1", "trench"),
+        transport=_FakeTransport([HostToolTransportResponse(200, response)]),
+    )
+    manifest = HostToolManifest.from_payload(
+        {"workloadIdentity": "trench-worker", "tools": [payload]}
+    )
+
+    result = gateway.invoke(
+        _tool_call(), _context(), manifest=manifest, idempotency_key="invoke-1"
+    )
+
+    assert result.status is status
+    assert result.metadata["business_outcome"] == business_outcome
+    assert result.metadata["transport_outcome"] == "returned"
+    if status is ToolCallStatus.EXECUTED:
+        assert result.metadata["commit_version"] == "revision-7"
+        assert result.metadata["mutation_effect_id"] == "operation-1"
 
 
 def test_output_limit_and_manifest_integrity_fail_closed() -> None:
@@ -240,6 +293,8 @@ def test_manifest_rejects_non_host_location_and_invoke_discovery_transport_failu
 
     assert result.status is ToolCallStatus.FAILED
     assert result.metadata["reason"] == "timeout"
+    assert result.metadata["transport_outcome"] == "timed_out"
+    assert result.metadata["business_outcome"] == "unknown"
     with pytest.raises(HostToolTransportError, match="HTTPS"):
         HttpHostToolTransport(resolver=lambda _host: ("8.8.8.8",)).request(
             "GET", "http://trench.example/manifest", headers={}, body=None, timeout_seconds=1

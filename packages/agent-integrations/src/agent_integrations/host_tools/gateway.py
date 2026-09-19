@@ -11,8 +11,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from urllib.parse import quote, urlsplit, urlunsplit
 
+from agent_core.domain.effect_dispatch import EffectBusinessOutcome, EffectTransportOutcome
 from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
-from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
+from agent_core.domain.host_effect_receipts import HostEffectReceipt, HostEffectStatus
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult, ToolRisk
 from agent_tools.contracts import ToolContract
 
 from agent_integrations.host_tools.contracts import (
@@ -117,7 +119,9 @@ class HostToolGateway:
             return _failure(tool_call, reason=exc.reason)
         except HostToolTransportError as exc:
             return _failure(tool_call, reason=exc.reason, detail=str(exc))
-        except (TimeoutError, ValueError) as exc:
+        except TimeoutError as exc:
+            return _failure(tool_call, reason="timeout", detail=str(exc))
+        except ValueError as exc:
             return _failure(tool_call, reason="transport_error", detail=str(exc))
         try:
             url = _join_endpoint(self.endpoint, f"/tools/{quote(contract.name, safe='')}/invoke")
@@ -147,7 +151,16 @@ class HostToolGateway:
                 scopes=effective_scopes,
                 idempotency_key=idempotency_key,
             )
-        except (TimeoutError, ValueError) as exc:
+        except TimeoutError as exc:
+            return _failure(
+                tool_call,
+                reason="timeout",
+                detail=str(exc),
+                contract=contract,
+                scopes=effective_scopes,
+                idempotency_key=idempotency_key,
+            )
+        except ValueError as exc:
             return _failure(
                 tool_call,
                 reason="transport_error",
@@ -178,6 +191,23 @@ class HostToolGateway:
                 scopes=effective_scopes,
                 idempotency_key=idempotency_key,
             )
+        effect_metadata: dict[str, object] = {}
+        if contract.risk is not ToolRisk.READ:
+            effect_metadata = _host_effect_metadata(response.body)
+            business_outcome = effect_metadata["business_outcome"]
+            if business_outcome != EffectBusinessOutcome.APPLIED.value:
+                return _failure(
+                    tool_call,
+                    reason=(
+                        "host_business_rejected"
+                        if business_outcome == EffectBusinessOutcome.REJECTED.value
+                        else "host_effect_unconfirmed"
+                    ),
+                    contract=contract,
+                    scopes=effective_scopes,
+                    idempotency_key=idempotency_key,
+                    metadata=effect_metadata,
+                )
         output = response.body.get("output")
         if not isinstance(output, str):
             return _failure(
@@ -208,6 +238,7 @@ class HostToolGateway:
                 "workload_identity": self.workload_identity.subject,
                 "scope_intersection": list(effective_scopes),
                 **_safe_metadata(response.body.get("metadata")),
+                **effect_metadata,
             },
             receipt=contract.receipt(
                 status="executed",
@@ -342,6 +373,74 @@ def _safe_http_error(body: object) -> tuple[str | None, str | None]:
     return detail, code.strip()[:128] if isinstance(code, str) and code.strip() else None
 
 
+def _host_effect_metadata(body: Mapping[str, object]) -> dict[str, object]:
+    nested = body.get("metadata")
+    metadata = nested if isinstance(nested, Mapping) else {}
+
+    def value(*keys: str) -> object:
+        for source in (body, metadata):
+            for key in keys:
+                candidate = source.get(key)
+                if candidate is not None:
+                    return candidate
+        return None
+
+    raw_status = value("effectStatus", "effect_status")
+    provider_operation_id = value("providerOperationId", "provider_operation_id")
+    business_revision = value("businessRevision", "business_revision")
+    raw_status_text = raw_status if isinstance(raw_status, str) else ""
+    normalized_status = {
+        "applied": HostEffectStatus.SUCCEEDED,
+        "rejected": HostEffectStatus.FAILED_NO_EFFECT,
+    }.get(raw_status_text, raw_status_text)
+    receipt: HostEffectReceipt | None = None
+    try:
+        receipt = HostEffectReceipt(
+            provider_operation_id=(
+                provider_operation_id.strip()
+                if isinstance(provider_operation_id, str)
+                else ""
+            ),
+            business_revision=(
+                business_revision.strip()
+                if isinstance(business_revision, str) and business_revision.strip()
+                else None
+            ),
+            effect_status=HostEffectStatus(str(normalized_status)),
+            evidence_digest=(
+                str(value("evidenceDigest", "evidence_digest"))[:128]
+                if value("evidenceDigest", "evidence_digest") is not None
+                else None
+            ),
+            received_at=datetime.now(UTC),
+        )
+    except ValueError:
+        pass
+    applied = receipt is not None and receipt.effect_status is HostEffectStatus.SUCCEEDED
+    rejected = receipt is not None and receipt.effect_status is HostEffectStatus.FAILED_NO_EFFECT
+    outcome = (
+        EffectBusinessOutcome.APPLIED
+        if applied
+        else EffectBusinessOutcome.REJECTED
+        if rejected
+        else EffectBusinessOutcome.UNKNOWN
+    )
+    result: dict[str, object] = {
+        "transport_outcome": EffectTransportOutcome.RETURNED.value,
+        "business_outcome": outcome.value,
+    }
+    if isinstance(provider_operation_id, str) and provider_operation_id.strip():
+        result["provider_operation_id"] = provider_operation_id.strip()[:256]
+        result["mutation_effect_id"] = provider_operation_id.strip()[:256]
+    if isinstance(business_revision, str) and business_revision.strip():
+        result["business_revision"] = business_revision.strip()[:256]
+        result["commit_version"] = business_revision.strip()[:256]
+    if receipt is not None:
+        result["host_effect_receipt"] = receipt.model_dump(mode="json")
+        result["host_effect_receipt_digest"] = receipt.receipt_digest
+    return result
+
+
 def _failure(
     tool_call: ToolCall,
     *,
@@ -361,6 +460,7 @@ def _failure(
         result_metadata["detail"] = detail[:256]
     if metadata:
         result_metadata.update(_safe_metadata(metadata))
+    result_metadata.update(_failure_outcomes(reason, result_metadata))
     receipt = None
     if contract is not None and scopes:
         receipt = contract.receipt(
@@ -374,6 +474,40 @@ def _failure(
         metadata=result_metadata,
         receipt=receipt,
     )
+
+
+def _failure_outcomes(reason: str, metadata: Mapping[str, object]) -> dict[str, str]:
+    if "transport_outcome" in metadata and "business_outcome" in metadata:
+        return {}
+    if reason == "timeout":
+        return {
+            "transport_outcome": EffectTransportOutcome.TIMED_OUT.value,
+            "business_outcome": EffectBusinessOutcome.UNKNOWN.value,
+        }
+    if reason in {"transport_error", "host_transport_error", "manifest_http_error"}:
+        return {
+            "transport_outcome": EffectTransportOutcome.UNAVAILABLE.value,
+            "business_outcome": EffectBusinessOutcome.UNKNOWN.value,
+        }
+    status = metadata.get("http_status")
+    rejected = isinstance(status, int) and 400 <= status < 500
+    return {
+        "transport_outcome": EffectTransportOutcome.RETURNED.value,
+        "business_outcome": (
+            EffectBusinessOutcome.REJECTED.value
+            if rejected
+            or reason
+            in {
+                "unknown_host_tool",
+                "missing_required_argument",
+                "scope_denied",
+                "resource_denied",
+                "idempotency_required",
+                "grant_expired",
+            }
+            else EffectBusinessOutcome.UNKNOWN.value
+        ),
+    }
 
 
 def _safe_metadata(value: object) -> dict[str, object]:

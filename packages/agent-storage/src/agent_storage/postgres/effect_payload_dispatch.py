@@ -106,6 +106,24 @@ class EffectPayloadDispatchMixin:
             evidence=evidence,
         )
 
+    def fail_no_effect_with_payload(
+        self,
+        claim: EffectClaim,
+        *,
+        evidence: EffectEvidence,
+        terminal_event: SessionEvent,
+        authority: WorkerMutationAuthority,
+        artifact_finalize: ArtifactFinalizeRequest,
+    ) -> SessionEvent:
+        return self._finish_claim_with_payload(
+            claim,
+            status=EffectDispatchStatus.FAILED_NO_EFFECT,
+            terminal_event=terminal_event,
+            authority=authority,
+            artifact_finalize=artifact_finalize,
+            evidence=evidence,
+        )
+
     @property
     def _namespace(self) -> str:
         return self._database.deployment_namespace

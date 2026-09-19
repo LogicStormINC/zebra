@@ -28,6 +28,18 @@ class EffectResolutionOutcome(StrEnum):
     FAILED_NO_EFFECT = "failed_no_effect"
 
 
+class EffectTransportOutcome(StrEnum):
+    RETURNED = "returned"
+    TIMED_OUT = "timed_out"
+    UNAVAILABLE = "unavailable"
+
+
+class EffectBusinessOutcome(StrEnum):
+    APPLIED = "applied"
+    REJECTED = "rejected"
+    UNKNOWN = "unknown"
+
+
 class EffectDispatchConflictError(ValueError):
     """Raised when an idempotency identity is reused with different meaning."""
 

@@ -56,6 +56,16 @@ class PayloadAwareEffectDispatch(Protocol):
         artifact_finalize: ArtifactFinalizeRequest,
     ) -> SessionEvent: ...
 
+    def fail_no_effect_with_payload(
+        self,
+        claim: EffectClaim,
+        *,
+        evidence: EffectEvidence,
+        terminal_event: SessionEvent,
+        authority: WorkerMutationAuthority,
+        artifact_finalize: ArtifactFinalizeRequest,
+    ) -> SessionEvent: ...
+
 
 class CloudEffectPayloadCoordinator:
     """Stage object bytes, then delegate the relational atomic boundary to PostgreSQL."""
@@ -152,6 +162,28 @@ class CloudEffectPayloadCoordinator:
         if prepared is None:
             return None
         persisted = self._dispatch.mark_uncertain_with_payload(
+            claim,
+            evidence=evidence,
+            terminal_event=terminal_event,
+            authority=authority,
+            artifact_finalize=prepared.finalize_request(terminal_event),
+        )
+        self._artifacts.release_pending(prepared.uri)
+        return persisted
+
+    def fail_no_effect_with_payload(
+        self,
+        claim: EffectClaim,
+        *,
+        result: ToolResult,
+        evidence: EffectEvidence,
+        terminal_event: SessionEvent,
+        authority: WorkerMutationAuthority,
+    ) -> SessionEvent | None:
+        prepared = self._stage_terminal(result, terminal_event, authority)
+        if prepared is None:
+            return None
+        persisted = self._dispatch.fail_no_effect_with_payload(
             claim,
             evidence=evidence,
             terminal_event=terminal_event,

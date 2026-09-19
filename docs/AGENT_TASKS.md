@@ -90,6 +90,21 @@ does not authorize production code, migrations or activation of its successor.
   choices; no schema migration, deployment, or Trench worktree change is
   included.
 
+- `CLOUD-REMEDIATION-R05`: In Progress, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on R01, R02,
+  and R04. Scope: audit and close the existing Effect intent/fence/recovery
+  path, preserve UNKNOWN for response-loss and lease-loss cases, distinguish a
+  proven Host business rejection from an ambiguous transport result, require
+  business commit evidence before a Host write is marked successful, and wire
+  bounded reconciliation through existing dispatch/receipt contracts. Owned
+  paths: Effect outcome/domain/Port contracts in `packages/agent-core`, the
+  existing fenced Effect gateway in `packages/agent-tools`, Host result mapping
+  in `packages/agent-integrations`, existing PostgreSQL Effect transitions and
+  Worker recovery/reconciliation modules, focused Core/Tool/Integration/
+  Storage/Worker tests, this registry, `PROGRESS.md`, and `WORKLOG.md`. No
+  unrelated schema migration, deployment, or Trench worktree change is
+  included.
+
 - `CLOUD-REMEDIATION-R06`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction, dependent on R01. Scope:
   make resource verification epoch-safe for concurrent batches, introduce

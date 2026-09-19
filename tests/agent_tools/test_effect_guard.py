@@ -52,6 +52,7 @@ class _Dispatch:
         self.reconcilable: tuple[EffectClaim, ...] = ()
         self.reconciled = 0
         self.uncertain = 0
+        self.failed_no_effect = 0
         self.last_claim: EffectClaim | None = None
 
     def schedule(self, request, *, fence):
@@ -97,6 +98,11 @@ class _Dispatch:
     def mark_uncertain(self, claim, *, evidence, terminal_event):
         del claim, evidence
         self.uncertain += 1
+        return terminal_event
+
+    def fail_no_effect(self, claim, *, evidence, terminal_event):
+        del claim, evidence
+        self.failed_no_effect += 1
         return terminal_event
 
     def list_reconcilable(self, execution_session_id, *, current_fence, limit=100):
@@ -159,6 +165,13 @@ class _CloudPayloads:
         self, claim, *, result, evidence, terminal_event, authority
     ) -> SessionEvent:
         del claim, result, evidence, authority
+        return terminal_event
+
+    def fail_no_effect_with_payload(
+        self, claim, *, result, evidence, terminal_event, authority
+    ) -> SessionEvent:
+        del claim, result, evidence, authority
+        self.dispatch.failed_no_effect += 1
         return terminal_event
 
 
@@ -355,6 +368,54 @@ def test_fenced_effect_failed_result_becomes_uncertain(tmp_path) -> None:
 
     assert result.status is ToolCallStatus.FAILED
     assert dispatch.uncertain == 1
+
+
+def test_fenced_effect_proven_business_rejection_is_not_uncertain(tmp_path) -> None:
+    class RejectedGateway(_Gateway):
+        def execute(self, tool_call: ToolCall) -> ToolResult:
+            self.calls += 1
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                metadata={
+                    "transport_outcome": "returned",
+                    "business_outcome": "rejected",
+                },
+            )
+
+    dispatch = _Dispatch()
+    session_id = new_session_id()
+    sequence = 0
+
+    def next_event(event_type, actor, payload):
+        nonlocal sequence
+        event = SessionEvent.create(
+            session_id=session_id,
+            sequence=sequence,
+            event_type=event_type,
+            actor=actor,
+            payload=payload,
+        )
+        sequence += 1
+        return event
+
+    result = FencedEffectToolGateway(
+        RejectedGateway(),
+        dispatch=dispatch,
+        artifacts=SQLiteArtifactPayloadStore(tmp_path / "rejected.db"),
+        execution_session_id=session_id,
+        root_session_id=session_id,
+        fence=_fence(),
+        claim_ttl=timedelta(seconds=30),
+        authority_scope="workspace-write",
+        next_event=next_event,
+        accept_event=lambda event: event,
+        ownership_check=lambda: None,
+    ).execute(_call("command.run"))
+
+    assert result.status is ToolCallStatus.FAILED
+    assert dispatch.failed_no_effect == 1
+    assert dispatch.uncertain == 0
 
 
 def test_provider_success_commit_crash_recovers_as_uncertain_without_replay(tmp_path) -> None:

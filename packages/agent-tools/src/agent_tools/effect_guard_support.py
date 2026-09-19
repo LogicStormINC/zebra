@@ -4,7 +4,13 @@ import hashlib
 import json
 from typing import Any, Protocol
 
-from agent_core.domain.effect_dispatch import EffectClaim, EffectDispatch, EffectEvidence
+from agent_core.domain.effect_dispatch import (
+    EffectBusinessOutcome,
+    EffectClaim,
+    EffectDispatch,
+    EffectEvidence,
+    EffectTransportOutcome,
+)
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
@@ -93,6 +99,16 @@ class EffectPayloadCoordinatorLike(Protocol):
         authority: WorkerMutationAuthority,
     ) -> SessionEvent | None: ...
 
+    def fail_no_effect_with_payload(
+        self,
+        claim: EffectClaim,
+        *,
+        result: ToolResult,
+        evidence: EffectEvidence,
+        terminal_event: SessionEvent,
+        authority: WorkerMutationAuthority,
+    ) -> SessionEvent | None: ...
+
 
 READ_ONLY_TOOLS = frozenset(
     {
@@ -145,4 +161,14 @@ def uncertain_evidence(result: ToolResult) -> EffectEvidence:
     return EffectEvidence(
         reason_code="provider_result_did_not_prove_no_effect",
         provider_operation_id_hash=operation_hash,
+    )
+
+
+def proves_failed_no_effect(result: ToolResult) -> bool:
+    return (
+        result.metadata.get("transport_outcome") is EffectTransportOutcome.RETURNED
+        or result.metadata.get("transport_outcome") == EffectTransportOutcome.RETURNED.value
+    ) and (
+        result.metadata.get("business_outcome") is EffectBusinessOutcome.REJECTED
+        or result.metadata.get("business_outcome") == EffectBusinessOutcome.REJECTED.value
     )
