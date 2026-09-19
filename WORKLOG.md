@@ -1,5 +1,23 @@
 # Progress Log
 
+## 2026-09-20 - CLOUD-REMEDIATION-R14 rollout controls
+
+Added an immutable candidate contract and fail-closed validation against the
+R13 release-manifest file digest. The contract records both repository SHAs,
+digest-pinned images, database and read/write protocol compatibility, secret-free
+config digests, capability states, exact promotion phases and forward-only
+rollback coordinates. Added a separate G2/G3 rehearsal validator covering real
+dependency closure, browser Client Actions, crash/duplicate/timeout/revocation,
+scheduler and memory behavior, target gVisor cleanup, restore/migration/old
+protocol/feature-disable/application rollback, and zero-tolerance correctness
+metrics. The focused validator suite passes locally.
+
+Read-only target probes found TCP/22 connectable but SSH banner exchange timing
+out or the connection closing before authentication; port 18080 timed out or
+returned an empty reply. No authentication, deployment or destructive action
+was attempted. Production G2/G3 evidence and the R07 browser pilot remain open
+until the target is responsive.
+
 ## 2026-09-20 - CLOUD-REMEDIATION-R13 release evidence
 
 Added executable cloud-contract, composition, integration, fault, Trench,

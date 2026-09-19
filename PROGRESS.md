@@ -1,5 +1,15 @@
 # Zebra Agent Project Status
 
+2026-09-20 CLOUD-REMEDIATION-R14 (implementation): immutable rollout candidates
+now bind Zebra/Trench commits, digest-pinned images, database/protocol/config
+coordinates and the exact R13 release manifest. A second fail-closed validator
+requires internal/canary/full phase evidence plus all G2 dependency, browser,
+fault and G3 rollback scenarios; capability-disabled checks remain explicitly
+`NOT_ENABLED`. The runbook fixes deployment and rollback order and forbids
+automatic database down-migration. Local tests pass; real G2/G3 remain open
+because `192.168.110.30` currently accepts TCP/22 but times out or closes before
+SSH authentication, while port 18080 times out or returns an empty response.
+
 2026-09-20 CLOUD-REMEDIATION-R13: cloud release checks now have explicit L1-L6
 Make/CI entry points, JUnit and credential-free gate envelopes, clean candidate
 binding and capability-aware `PASS`/`FAIL`/`NOT_ENABLED` aggregation. Fixed-label

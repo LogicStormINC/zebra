@@ -296,6 +296,23 @@ does not authorize production code, migrations or activation of its successor.
   manifest correctly fails on dirty/stale/missing evidence and reports disabled
   Redis Agent Memory as `NOT_ENABLED`.
 
+- `CLOUD-REMEDIATION-R14`: In Progress, owned by Luke Ding (Codex), current
+  `cloud-agent-trench` checkout per user instruction, dependent on R07, R12 and
+  R13. Scope: bind one immutable Zebra/Trench candidate to the R13 release
+  manifest, validate staged rollout and forward-only rollback coordinates, and
+  provide the G2/G3 production rehearsal runbook. Owned paths: rollout
+  configuration and validators under `configs/` and `scripts/`, focused tests,
+  `Makefile`, one rollout runbook, this registry, `PROGRESS.md`, and `WORKLOG.md`.
+  Trench implementation remains limited to the already committed R07 pilot;
+  its unrelated dirty worktree is excluded. Acceptance requires an R13 `PASS`
+  manifest, digest-pinned images/configuration, exact repository revisions,
+  internal/canary/full promotion order, reversible capability controls, and
+  recorded real PostgreSQL/object-store/message-wakeup/browser/gVisor/fault and
+  rollback evidence. The target host currently accepts TCP/22 but times out or
+  closes before SSH authentication, while port 18080 times out or returns an
+  empty reply, so no G2/G3 success may be claimed until that environment is
+  responsive.
+
 - `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:

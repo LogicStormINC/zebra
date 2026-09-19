@@ -3,10 +3,14 @@ PYTHON := uv run
 .PHONY: sync check eval test tree api-serve ui-build ui-dev ui-tauri-build ui-tauri-check \
 	test-cloud-contracts test-cloud-composition test-cloud-integration \
 	test-cloud-faults test-trench-e2e test-gvisor-runtime \
-	test-redis-agent-memory release-evidence
+	test-redis-agent-memory release-evidence validate-rollout-candidate \
+	validate-rollout-rehearsal
 
 EVIDENCE_ROOT ?= .artifacts/cloud-evidence
 CAPABILITIES ?= configs/cloud_release_capabilities.example.json
+ROLLOUT_CANDIDATE ?= configs/cloud_rollout_candidate.example.json
+RELEASE_MANIFEST ?= $(EVIDENCE_ROOT)/release-manifest.json
+ROLLOUT_REHEARSAL ?= $(EVIDENCE_ROOT)/rollout-rehearsal.json
 
 sync:
 	uv sync --all-packages --group dev
@@ -90,6 +94,19 @@ release-evidence:
 		--capabilities "$(CAPABILITIES)" \
 		--evidence-root "$(EVIDENCE_ROOT)" \
 		--output "$(EVIDENCE_ROOT)/release-manifest.json"
+
+validate-rollout-candidate:
+	uv run python scripts/validate_rollout_candidate.py \
+		--candidate "$(ROLLOUT_CANDIDATE)" \
+		--release-manifest "$(RELEASE_MANIFEST)" \
+		--output "$(EVIDENCE_ROOT)/rollout-attestation.json"
+
+validate-rollout-rehearsal:
+	uv run python scripts/validate_rollout_rehearsal.py \
+		--candidate "$(ROLLOUT_CANDIDATE)" \
+		--attestation "$(EVIDENCE_ROOT)/rollout-attestation.json" \
+		--rehearsal "$(ROLLOUT_REHEARSAL)" \
+		--output "$(EVIDENCE_ROOT)/rollout-rehearsal-verdict.json"
 
 tree:
 	find apps packages tests -maxdepth 3 | sort

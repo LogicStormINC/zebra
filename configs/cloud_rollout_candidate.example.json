@@ -1,0 +1,50 @@
+{
+  "schema_version": "zebra.cloud-rollout-candidate.v1",
+  "candidate_id": "replace-with-release-id",
+  "zebra": {
+    "commit": "0000000000000000000000000000000000000000",
+    "image": "registry.example/zebra@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "trench": {
+    "commit": "0000000000000000000000000000000000000000",
+    "api_image": "registry.example/trench-api@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "frontend_image": "registry.example/trench-web@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "database": {
+    "zebra_schema": 1,
+    "trench_revision": "replace-with-alembic-revision",
+    "backward_compatible": true
+  },
+  "protocols": {
+    "host_manifest_read": ["v1", "v2"],
+    "host_manifest_write": "v2",
+    "workspace_snapshot_read": ["v1", "v2"],
+    "workspace_snapshot_write": "v2",
+    "frontend_protocol": "v1",
+    "memory_provider": "internal",
+    "memory_route_version": "v1"
+  },
+  "config_digests": {
+    "zebra": "0000000000000000000000000000000000000000000000000000000000000000",
+    "trench": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "release_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "test_artifact_refs": [".artifacts/cloud-evidence/release-manifest.json"],
+  "capabilities": {
+    "client_actions": "enabled",
+    "redis_agent_memory": "not_enabled",
+    "task_execution": "enabled"
+  },
+  "rollout": [
+    {"name": "internal", "traffic_percent": 0, "min_observation_seconds": 300},
+    {"name": "canary", "traffic_percent": 5, "min_observation_seconds": 900},
+    {"name": "full", "traffic_percent": 100, "min_observation_seconds": 1800}
+  ],
+  "rollback": {
+    "zebra_image": "registry.example/zebra@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "trench_api_image": "registry.example/trench-api@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "trench_frontend_image": "registry.example/trench-web@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "disable_capabilities": ["client_actions", "redis_agent_memory"],
+    "database_forward_compatible": true
+  }
+}
