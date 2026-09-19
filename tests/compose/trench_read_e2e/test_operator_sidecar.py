@@ -6,7 +6,7 @@ import hashlib
 
 import operator_sidecar as sidecar_module
 from fastapi.testclient import TestClient
-from operator_sidecar import create_sidecar
+from operator_sidecar import DEFAULT_TABLES, create_sidecar
 
 
 def _client() -> TestClient:
@@ -27,6 +27,10 @@ def test_business_snapshot_shape(monkeypatch):
     body = _client().get("/business-snapshot").json()
     assert body["schema_version"] == "trench.business-snapshot.v1"
     assert body["tables"]["events"] == {"count": 1, "digest": "d" * 64}
+
+
+def test_default_snapshot_tracks_user_mutation_tables() -> None:
+    assert DEFAULT_TABLES == "subscriptions,trench_ai_user_subscriptions"
 
 
 def test_business_snapshot_reports_read_failure(monkeypatch):

@@ -86,6 +86,19 @@ HOST_GRANT_SCOPES = (
     "topic.read",
 )
 
+HTTP_ENDPOINT_ENV = {
+    "TRENCH_E2E_BFF_URL",
+    "TRENCH_E2E_READ_TOOLS_URL",
+    "TRENCH_E2E_HEALTH_URL",
+    "TRENCH_E2E_OBJECT_STORE_HEALTH_URL",
+    "TRENCH_E2E_BUSINESS_SNAPSHOT_URL",
+    "ZEBRA_E2E_BASE_URL",
+    "ZEBRA_E2E_HEALTH_URL",
+    "ZEBRA_E2E_OBJECT_STORE_HEALTH_URL",
+    "ZEBRA_E2E_GRANT_EXCHANGE_URL",
+    "ZEBRA_E2E_WORKER_RESTART_URL",
+}
+
 
 def missing_environment(environment: Mapping[str, str], required: tuple[str, ...]) -> list[str]:
     return [name for name in required if not environment.get(name, "").strip()]
@@ -96,7 +109,7 @@ def load_config(environment: Mapping[str, str], required: tuple[str, ...]) -> Co
     invalid: list[str] = []
     for name in required:
         value = environment.get(name, "").strip()
-        if value and name.endswith(("_URL", "_HEALTH_URL")):
+        if value and name in HTTP_ENDPOINT_ENV:
             try:
                 validate_endpoint(value)
             except E2EError:
@@ -273,7 +286,7 @@ def read_manifest_and_event(config: Config, expected_tools: set[str]) -> None:
     if not isinstance(tools, list):
         raise E2EError("read_manifest_mismatch")
     names = {item.get("name") for item in tools if isinstance(item, dict)}
-    if names != expected_tools or manifest.get("manifestVersion") != "trench-native-v2":
+    if names != expected_tools or manifest.get("manifestVersion") != "trench-native-v6":
         raise E2EError("read_manifest_mismatch")
     invoke = request(
         "POST",
@@ -347,7 +360,8 @@ def task_state(config: Config, task_id: str, run_id: str) -> int:
         timeout=config.timeout_seconds,
     )
     require_status(response, {200})
-    revision = json_object(response).get("current_sequence")
+    body = json_object(response)
+    revision = body.get("active_segment_sequence", body.get("current_sequence"))
     if not isinstance(revision, int) or revision < 0:
         raise E2EError("task_revision_invalid")
     return revision

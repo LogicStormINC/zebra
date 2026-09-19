@@ -24,7 +24,7 @@ from fastapi import FastAPI, Header, Response
 from pydantic import BaseModel, ConfigDict
 
 SNAPSHOT_SCHEMA = "trench.business-snapshot.v1"
-DEFAULT_TABLES = "events,event_threads,states"
+DEFAULT_TABLES = "subscriptions,trench_ai_user_subscriptions"
 
 
 def _env_tables() -> tuple[str, ...]:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import time
 import uuid
 from collections.abc import Mapping
@@ -18,7 +19,6 @@ from support import (  # type: ignore[import-not-found]
     ConfigError,
     E2EError,
     SseEvent,
-    bootstrap,
     business_snapshot,
     cookie_headers,
     join_url,
@@ -75,6 +75,13 @@ READ_TOOL_NAMES = {
     "events.search_history",
     "events.get_historical_event",
     "events.trace_historical_event",
+    "sources.add",
+    "sources.inspect_url",
+    "sources.pause",
+    "sources.remove",
+    "sources.resolve_candidate",
+    "sources.resume",
+    "sources.search",
 }
 TERMINAL_EVENT_TYPES = {
     "RUN_FINISHED",
@@ -85,19 +92,105 @@ TERMINAL_EVENT_TYPES = {
 }
 
 
-def bff_run(
-    config: Config, task_id: str, run_id: str, prompt: str, revision: int
-) -> list[SseEvent]:
-    return cast(
-        list[SseEvent],
-        sse_events(
-            "POST",
-            join_url(config.bff_url, "/api/copilotkit-zebra/agent/zebra/run"),
-            headers={**cookie_headers(config), "Accept": "text/event-stream"},
-            payload=run_input(task_id, run_id, prompt, revision),
-            timeout=config.timeout_seconds,
-        ),
+def create_product_conversation(config: Config) -> str:
+    conversation_key = f"zebra-e2e-{uuid.uuid4()}"
+    response = request(
+        "POST",
+        join_url(config.bff_url, "/api/trench-ai/conversations"),
+        headers={**cookie_headers(config), "Content-Type": "application/json"},
+        payload={
+            "bias": "",
+            "conversation_key": conversation_key,
+            "label": "Zebra local acceptance",
+            "market": "",
+        },
+        timeout=config.timeout_seconds,
     )
+    require_status(response, {201})
+    body = response.json()
+    if not isinstance(body, dict):
+        raise E2EError("trench_conversation_invalid")
+    data = body.get("data")
+    conversation = data.get("conversation") if isinstance(data, dict) else None
+    if (
+        not isinstance(conversation, dict)
+        or conversation.get("conversation_key") != conversation_key
+    ):
+        raise E2EError("trench_conversation_invalid")
+    return conversation_key
+
+
+def run_product_turn(config: Config, conversation_key: str, prompt: str) -> str:
+    response = request(
+        "POST",
+        join_url(
+            config.bff_url,
+            f"/api/trench-ai/conversations/{quote(conversation_key, safe='')}/turns",
+        ),
+        headers={**cookie_headers(config), "Content-Type": "application/json"},
+        payload={
+            "auto_select_skills": True,
+            "client_request_id": f"zebra-e2e-{uuid.uuid4()}",
+            "conversation_key": conversation_key,
+            "market": "",
+            "message": prompt,
+            "reasoning_effort": "high",
+            "use_latest_context": True,
+        },
+        timeout=config.timeout_seconds,
+    )
+    require_status(response, {202})
+    body = response.json()
+    data = body.get("data") if isinstance(body, dict) else None
+    turn = data.get("turn") if isinstance(data, dict) else None
+    turn_id = turn.get("turn_id") if isinstance(turn, dict) else None
+    run_id = turn.get("run_id") if isinstance(turn, dict) else None
+    if not isinstance(turn_id, str) or not isinstance(run_id, str):
+        raise E2EError("trench_turn_invalid")
+    deadline = time.monotonic() + config.timeout_seconds
+    while time.monotonic() < deadline:
+        current = request(
+            "GET",
+            join_url(config.bff_url, f"/api/trench-ai/turns/{quote(turn_id, safe='')}"),
+            headers=cookie_headers(config),
+            timeout=config.timeout_seconds,
+        )
+        require_status(current, {200})
+        payload = current.json()
+        current_data = payload.get("data") if isinstance(payload, dict) else None
+        current_turn = current_data.get("turn") if isinstance(current_data, dict) else None
+        status = current_turn.get("status") if isinstance(current_turn, dict) else None
+        if status == "completed":
+            return run_id
+        if status in {"failed", "cancelled", "awaiting_input", "awaiting_approval"}:
+            raise E2EError(f"trench_turn_{status}")
+        time.sleep(0.25)
+    raise E2EError("trench_turn_timeout")
+
+
+def product_task_binding(config: Config, conversation_key: str) -> str:
+    try:
+        import psycopg
+
+        with psycopg.connect(config.trench_database_dsn, connect_timeout=5) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT zebra_task_id
+                    FROM trench_ai_product_conversations
+                    WHERE key LIKE %s
+                    ORDER BY updated_at_ms DESC
+                    LIMIT 1
+                    """,
+                    (f"%::{conversation_key}",),
+                )
+                row = cursor.fetchone()
+    except Exception as exc:
+        raise E2EError("trench_task_binding_unavailable") from exc
+    task_id = row[0] if row is not None else None
+    if not isinstance(task_id, str) or not task_id:
+        raise E2EError("trench_task_binding_unavailable")
+    return task_id
 
 
 def command(
@@ -131,11 +224,142 @@ def command(
         payload=body,
         timeout=config.timeout_seconds,
     )
-    require_status(response, {200, 202})
+    if response.status not in {200, 202}:
+        if response.status == 409:
+            payload = response.json()
+            detail = (
+                payload.get("type") or payload.get("title") or payload.get("status")
+                if isinstance(payload, dict)
+                else None
+            )
+            suffix = re.sub(r"[^a-z0-9_]+", "_", str(detail).lower()).strip("_")
+            if suffix.endswith("revision_conflict") and isinstance(payload, dict):
+                match = re.search(r"current revision (\d+)", str(payload.get("detail", "")))
+                if match is not None:
+                    suffix = f"{suffix}_current_{match.group(1)}"
+            raise E2EError(f"http_409_{suffix or 'conflict'}")
+        require_status(response, {200, 202})
     result = response.json()
     if not isinstance(result, dict) or result.get("status") not in {"accepted", "duplicate"}:
         raise E2EError("command_not_accepted")
     return result
+
+
+def append_task_message(config: Config, task_id: str, run_id: str, content: str) -> int:
+    body = {
+        "content": content,
+        "model_profile": "deepseek-v4-flash-executor-v1",
+        "reasoning_effort": "high",
+    }
+    grant = obtain_grant(config, task_id, run_id)
+    key_hash = sha256(json.dumps(body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    response = request(
+        "POST",
+        f"{config.task_url}/{quote(task_id, safe='')}/messages",
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Bearer {grant}",
+            "Content-Type": "application/json",
+            "Idempotency-Key": f"trench-e2e-{key_hash}",
+            "X-Trench-Request-Id": config.request_id,
+        },
+        payload=body,
+        timeout=config.timeout_seconds,
+    )
+    require_status(response, {200, 201})
+    result = response.json()
+    if not isinstance(result, dict):
+        raise E2EError("task_message_invalid")
+    revision = result.get("active_segment_sequence", result.get("current_sequence"))
+    if not isinstance(revision, int) or revision < 0:
+        raise E2EError("task_message_revision_invalid")
+    return revision
+
+
+def wait_task_terminal(config: Config, task_id: str, run_id: str) -> None:
+    deadline = time.monotonic() + config.timeout_seconds
+    while time.monotonic() < deadline:
+        grant = obtain_grant(config, task_id, run_id)
+        response = request(
+            "GET",
+            f"{config.task_url}/{quote(task_id, safe='')}",
+            headers={
+                "Accept": "application/json",
+                "Authorization": f"Bearer {grant}",
+                "X-Trench-Request-Id": config.request_id,
+            },
+            timeout=config.timeout_seconds,
+        )
+        require_status(response, {200})
+        body = response.json()
+        status = body.get("status") if isinstance(body, dict) else None
+        if status in {"awaiting_turn", "completed", "failed", "cancelled"}:
+            return
+        time.sleep(0.1)
+    raise E2EError("task_terminal_projection_timeout")
+
+
+def control_command(
+    config: Config,
+    task_id: str,
+    run_id: str,
+    action: str,
+    *,
+    attempts: int = 8,
+) -> dict[str, object]:
+    revision = task_state(config, task_id, run_id)
+    for attempt in range(attempts):
+        input_payload = None
+        if action == "resume":
+            input_payload = run_input(
+                task_id,
+                run_id,
+                "Resume the bounded read-only task.",
+                revision,
+            )
+            input_payload["resume"] = [
+                {"interruptId": "e2e-control", "status": "resolved"}
+            ]
+        try:
+            return command(config, task_id, run_id, action, revision, input_payload)
+        except E2EError as exc:
+            if not exc.code.startswith("http_409_") or attempt + 1 == attempts:
+                raise
+            revision = _conflict_revision(exc) or task_state(config, task_id, run_id)
+            time.sleep(0.05)
+    raise E2EError("control_revision_conflict")
+
+
+def run_command(
+    config: Config,
+    task_id: str,
+    run_id: str,
+    prompt: str,
+    *,
+    attempts: int = 8,
+) -> dict[str, object]:
+    revision = task_state(config, task_id, run_id)
+    for attempt in range(attempts):
+        try:
+            return command(
+                config,
+                task_id,
+                run_id,
+                "run",
+                revision,
+                run_input(task_id, run_id, prompt, revision),
+            )
+        except E2EError as exc:
+            if "revision_conflict" not in exc.code or attempt + 1 == attempts:
+                raise
+            revision = _conflict_revision(exc) or task_state(config, task_id, run_id)
+            time.sleep(0.05)
+    raise E2EError("run_revision_conflict")
+
+
+def _conflict_revision(error: E2EError) -> int | None:
+    match = re.search(r"_current_(\d+)$", error.code)
+    return int(match.group(1)) if match is not None else None
 
 
 def direct_stream(
@@ -171,7 +395,7 @@ def direct_stream(
 def worker_restart(config: Config, task_id: str, run_id: str) -> None:
     headers = {"Accept": "application/json", "X-Trench-Request-Id": config.request_id}
     if config.operator_token:
-        headers["Authorization"] = f"Bearer {config.operator_token}"
+        headers["X-E2E-Operator-Token"] = config.operator_token
     response = request(
         "POST",
         config.worker_restart_url,
@@ -202,7 +426,14 @@ def _scenario_infrastructure(config: Config, state: dict[str, object]) -> None:
 
 def _scenario_read_task(config: Config, state: dict[str, object]) -> None:
     read_manifest_and_event(config, READ_TOOL_NAMES)
-    task_id = bootstrap(config)
+    conversation_key = create_product_conversation(config)
+    run_product_turn(
+        config,
+        conversation_key,
+        "Load any selected Skill instructions, then return one bounded read-only summary.",
+    )
+    task_id = product_task_binding(config, conversation_key)
+    state["conversation_key"] = conversation_key
     state["task_id"] = task_id
     state["revision"] = task_state(config, task_id, "bootstrap")
 
@@ -216,15 +447,16 @@ def _require_task(state: Mapping[str, object]) -> tuple[str, int]:
 
 
 def _scenario_long_task(config: Config, state: dict[str, object]) -> None:
-    task_id, revision = _require_task(state)
-    run_id = f"long-{uuid.uuid4()}"
+    _require_task(state)
+    conversation_key = state.get("conversation_key")
+    if not isinstance(conversation_key, str):
+        raise E2EError("dependency_read_task")
     prompt = os.environ.get(
         "TRENCH_E2E_LONG_PROMPT",
-        "Read the selected event and return a bounded summary.",
+        "Load any selected Skill instructions, then read available Trench "
+        "context and return a bounded summary.",
     )
-    events = bff_run(config, task_id, run_id, prompt, revision)
-    if not any(event.data.get("type") in TERMINAL_EVENT_TYPES for event in events):
-        raise E2EError("long_task_not_terminal")
+    run_id = run_product_turn(config, conversation_key, prompt)
     state["long_run_id"] = run_id
 
 
@@ -244,31 +476,25 @@ def _scenario_disconnect_replay(config: Config, state: dict[str, object]) -> Non
 
 def _scenario_worker_restart(config: Config, state: dict[str, object]) -> None:
     task_id, _ = _require_task(state)
-    revision = task_state(config, task_id, "restart")
     run_id = f"restart-{uuid.uuid4()}"
-    input_payload = run_input(task_id, run_id, "Run a bounded read-only task.", revision)
-    command(config, task_id, run_id, "run", revision, input_payload)
+    prompt = "Load any selected Skill instructions, then run a bounded read-only task."
+    append_task_message(config, task_id, run_id, prompt)
+    run_command(config, task_id, run_id, prompt)
     worker_restart(config, task_id, run_id)
     events = direct_stream(config, task_id, run_id)
     if not any(event.data.get("type") in TERMINAL_EVENT_TYPES for event in events):
         raise E2EError("worker_restart_not_recovered")
+    wait_task_terminal(config, task_id, run_id)
 
 
 def _scenario_stop_resume(config: Config, state: dict[str, object]) -> None:
     task_id, _ = _require_task(state)
     run_id = f"control-{uuid.uuid4()}"
-    revision = task_state(config, task_id, run_id)
-    input_payload = run_input(task_id, run_id, "Start a bounded read-only task.", revision)
-    run_result = command(config, task_id, run_id, "run", revision, input_payload)
-    event_sequence = run_result.get("event_sequence")
-    stop_revision = (
-        event_sequence if isinstance(event_sequence, int) else task_state(config, task_id, run_id)
-    )
-    command(config, task_id, run_id, "stop", stop_revision)
-    resume_revision = task_state(config, task_id, run_id)
-    resume_input = run_input(task_id, run_id, "Resume the bounded read-only task.", resume_revision)
-    resume_input["resume"] = [{"interruptId": "e2e-control", "status": "resolved"}]
-    command(config, task_id, run_id, "resume", resume_revision, resume_input)
+    prompt = "Load any selected Skill instructions, then start a bounded read-only task."
+    append_task_message(config, task_id, run_id, prompt)
+    run_command(config, task_id, run_id, prompt)
+    control_command(config, task_id, run_id, "stop")
+    control_command(config, task_id, run_id, "resume")
 
 
 def _scenario_grant_replay(config: Config, state: dict[str, object]) -> None:

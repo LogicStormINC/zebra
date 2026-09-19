@@ -10168,3 +10168,21 @@ actual byte access.
   observed a successful tool call without provider reasoning content, and its
   isolated retry passed. `make check` passed file-size, Ruff, strict Mypy (958
   sources) and Eval 10/10.
+
+## 2026-09-20 - CLOUD-AGUI-SUSPENSION-TERMINAL-01 / CLOUD-TRENCH-DURABLE-E2E-01
+
+- Fixed AG-UI terminal projection for non-recoverable suspension without
+  changing child-wait or recoverable-interrupt semantics.
+- Migrated the cross-repository acceptance runner from the removed compatibility
+  route to Trench Durable Turns and added bounded authoritative-revision retry.
+- Kept zero-write verification focused on `subscriptions` and
+  `trench_ai_user_subscriptions`; background ingestion legitimately changes
+  event/source tables during the run.
+- Local gate result: `/tmp/zebra-trench-e2e-debug-r9/trench-e2e/gate-result.json`
+  reports 9/9 PASS and `ZEBRA_TRENCH_READ_E2E=PASS`.
+- Browser acceptance on `http://localhost:3000/dashboard/strategy` produced a
+  terminal skill-backed reply, kept the composer at the bottom after the Turn,
+  and restored the same message/reply after reload. DeepSeek Flash and `high`
+  reasoning remained selected.
+- Physical-host deployment was intentionally not attempted because the host is
+  currently unreachable.

@@ -2918,6 +2918,68 @@ completed with `4537 passed, 891 skipped` plus one transient real DeepSeek
 reasoning-shape failure whose isolated retry passed; `make check` is green
 (Ruff, strict Mypy over 958 sources, Eval 10/10 and file-size gate).
 
+### CLOUD-AGUI-SUSPENSION-TERMINAL-01 - Close Non-Recoverable Suspensions In AG-UI
+
+- Status: `Review`
+- Owner: `Luke Ding (Codex)`
+- Depends on: `CLOUD-EFFECT-EPOCH-REGRESSION-01`; discovered during the R14
+  local Trench browser/cross-service gate after a real model response exhausted
+  structured-response repair.
+- Branch: `cloud-agent-trench` (current remediation branch per user instruction)
+- Owned paths: `packages/agent-integrations/src/agent_integrations/ag_ui/projection.py`,
+  `tests/agent_integrations/test_ag_ui_projection.py`, this task card,
+  `PROGRESS.md`, and `WORKLOG.md`.
+
+#### Goal
+
+Ensure every externally terminal suspension closes the AG-UI run. Internal
+`waiting_children` suspension remains non-terminal, explicit budget and
+verification suspensions remain recoverable interrupts, and all other
+non-recoverable suspension reasons become a bounded `RUN_ERROR` instead of an
+SSE stream that waits until the client idle timeout.
+
+#### Acceptance
+
+- [x] `model_response_repair_exhausted` projects one bounded terminal error.
+- [x] an already-finished Turn does not emit a duplicate terminal on the
+  trailing Session suspension.
+- [x] `waiting_children` and recoverable budget/verification behavior remains
+  unchanged.
+- [x] focused projection tests and the real local Trench path pass.
+
+### CLOUD-TRENCH-DURABLE-E2E-01 - Align Cross-Repo Gate With Durable Turns
+
+- Status: `Review`
+- Owner: `Luke Ding (Codex)`
+- Depends on: `CLOUD-AGUI-SUSPENSION-TERMINAL-01`; discovered while running
+  the R14 local cross-repository gate against current Trench commit `5650b19`.
+- Branch: `cloud-agent-trench` (current remediation branch per user instruction)
+- Owned paths: `tests/compose/trench_read_e2e/run_acceptance.py`,
+  `tests/compose/trench_read_e2e/support.py`,
+  `tests/compose/trench_read_e2e/test_runner.py`,
+  `tests/compose/trench_read_e2e/operator_sidecar.py`,
+  `tests/compose/trench_read_e2e/test_operator_sidecar.py`,
+  `tests/compose/trench_read_e2e/runner_manifest.json`,
+  `docker/compose.trench-acceptance.yml`, this task card,
+  `PROGRESS.md`, and `WORKLOG.md`.
+
+#### Goal
+
+Exercise Trench's current server-owned Durable Turn surface instead of the
+retired Next.js CopilotKit compatibility route. Preserve the direct Zebra
+replay/control/fault assertions after the Trench turn has established the
+authoritative Task binding.
+
+#### Acceptance
+
+- [x] conversation creation and two Durable Turns reach a terminal state
+  through the current Trench API.
+- [x] the runner reads the resulting Task binding from the real Trench
+  PostgreSQL store and continues the existing Zebra replay/control scenarios.
+- [x] the protected Worker restart uses the operator sidecar's declared
+  `X-E2E-Operator-Token` contract.
+- [x] all nine scenarios pass without modifying Trench business tables.
+
 ### CLOUD-EFFECT-DEFAULT-E2E-01 - Default Entrypoint Real Side-Effect Acceptance
 
 - Status: `Done`

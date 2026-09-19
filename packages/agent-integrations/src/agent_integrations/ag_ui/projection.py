@@ -1,7 +1,6 @@
 """Pure, replayable projection from Zebra Events to AG-UI events.
-
-The projector only reads immutable ``SessionEvent`` values. It deliberately
-does not know about HTTP, SSE, Event Store writes, Host transport or Trench.
+The projector only reads immutable ``SessionEvent`` values and does not know
+about HTTP, SSE, Event Store writes, Host transport or Trench.
 Those concerns belong to later adapters and can consume this stable contract.
 """
 
@@ -318,10 +317,23 @@ class AgUiProjector:
             )
             return (RunErrorEvent(timestamp=timestamp, message=message, code="zebra_turn_failed"),)
         if event.event_type is EventType.SESSION_SUSPENDED:
+            if state.turn_finished:
+                return ()
             projected = project_budget_suspension_event(event, identity, timestamp)
             if projected:
                 state.turn_finished = True
-            return projected
+                return projected
+            reason = _optional_payload_text(payload, "reason") or "session_suspended"
+            if reason == "waiting_children":
+                return ()
+            state.turn_finished = True
+            return (
+                RunErrorEvent(
+                    timestamp=timestamp,
+                    message=f"Zebra session suspended: {reason}"[:512],
+                    code="zebra_session_suspended",
+                ),
+            )
         if event.event_type is EventType.SESSION_HANDOFF_WORKSPACE_DRIFT_DETECTED:
             state.turn_finished = True
             return (

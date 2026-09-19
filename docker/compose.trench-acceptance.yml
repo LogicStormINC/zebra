@@ -49,9 +49,12 @@ services:
     entrypoint:
       ["uvicorn", "operator_sidecar:create_sidecar", "--factory", "--host", "0.0.0.0", "--port", "8091"]
     working_dir: /app
+    # ponytail: acceptance-only Docker control needs access to the root-owned
+    # engine socket; replace this with a socket proxy before production reuse.
+    user: "0:0"
     environment:
       TRENCH_SNAPSHOT_DATABASE_DSN: ${TRENCH_ACCEPTANCE_TRENCH_DATABASE_DSN:-}
-      TRENCH_SNAPSHOT_TABLES: ${TRENCH_ACCEPTANCE_TRENCH_SNAPSHOT_TABLES:-events,event_threads,states}
+      TRENCH_SNAPSHOT_TABLES: ${TRENCH_ACCEPTANCE_TRENCH_SNAPSHOT_TABLES:-subscriptions,trench_ai_user_subscriptions}
       E2E_OPERATOR_TOKEN: ${TRENCH_ACCEPTANCE_OPERATOR_TOKEN:?set TRENCH_ACCEPTANCE_OPERATOR_TOKEN}
       E2E_WORKER_CONTAINER: ${TRENCH_ACCEPTANCE_WORKER_CONTAINER:-zebra-application-zebra-worker-1}
       E2E_DOCKER_SOCKET: /var/run/docker.sock

@@ -7,8 +7,8 @@
   },
   "scenarios": [
     {"id": "infrastructure", "kind": "health-and-authority-probes"},
-    {"id": "read_task", "kind": "bff-bootstrap-and-scoped-read-tool"},
-    {"id": "long_task", "kind": "bff-agui-run"},
+    {"id": "read_task", "kind": "durable-turn-bootstrap-and-scoped-read-tool"},
+    {"id": "long_task", "kind": "durable-turn-agui-run"},
     {"id": "disconnect_replay", "kind": "durable-cursor-reconnect"},
     {"id": "worker_restart", "kind": "operator-restart-and-replay"},
     {"id": "stop_resume", "kind": "durable-control-admission"},

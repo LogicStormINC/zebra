@@ -535,3 +535,44 @@ def test_internal_child_wait_suspension_does_not_close_ag_ui_run() -> None:
     projection = AgUiProjector().project((event,), _identity(session_id))
 
     assert [item.type for item in projection.events] == [AgUiEventType.RUN_STARTED]
+
+
+def test_non_recoverable_suspension_projects_to_bounded_terminal_error() -> None:
+    session_id = new_session_id()
+    event = _event(
+        session_id,
+        0,
+        EventType.SESSION_SUSPENDED,
+        {"reason": "model_response_repair_exhausted"},
+    )
+
+    projection = AgUiProjector().project((event,), _identity(session_id))
+
+    assert [item.type for item in projection.events] == [
+        AgUiEventType.RUN_STARTED,
+        AgUiEventType.RUN_ERROR,
+    ]
+    error = projection.events[-1]
+    assert isinstance(error, RunErrorEvent)
+    assert error.code == "zebra_session_suspended"
+    assert error.message == "Zebra session suspended: model_response_repair_exhausted"
+
+
+def test_trailing_suspension_does_not_duplicate_finished_turn_terminal() -> None:
+    session_id = new_session_id()
+    events = (
+        _event(session_id, 0, EventType.TURN_FAILED, {"reason": "invalid_response"}),
+        _event(
+            session_id,
+            1,
+            EventType.SESSION_SUSPENDED,
+            {"reason": "model_response_repair_exhausted"},
+        ),
+    )
+
+    projection = AgUiProjector().project(events, _identity(session_id))
+
+    assert [item.type for item in projection.events] == [
+        AgUiEventType.RUN_STARTED,
+        AgUiEventType.RUN_ERROR,
+    ]

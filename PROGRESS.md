@@ -3243,3 +3243,21 @@ Repository validation completed with `4537 passed, 891 skipped` and one
 transient live DeepSeek smoke failure (missing optional provider reasoning on a
 successful tool call); the isolated retry passed. `make check` is fully green:
 file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
+
+## 2026-09-20 - Durable Trench terminal and cross-repository gate closure
+
+- AG-UI now converts only non-recoverable Session suspension into one bounded
+  terminal `RUN_ERROR`. Child waits and recoverable budget/verification
+  interrupts remain resumable, and a Turn that already emitted its terminal
+  event suppresses a trailing duplicate.
+- Rebased the Trench acceptance runner on the current server-owned Durable Turn
+  API and manifest. Revision-conflict recovery now rebuilds the command from
+  the authoritative revision, Task state follows the active segment, and the
+  protected operator sidecar can restart the Worker on the local Docker socket.
+- The local real cross-repository matrix passed all nine scenarios: read,
+  long-run streaming, disconnect replay, Worker restart, stop/resume, grant
+  replay, host-tool failure and zero Trench subscription-table writes. A real
+  logged-in browser turn also reached a terminal answer and survived reload;
+  model selection and reasoning strength were unchanged.
+- Scope boundary: this is local acceptance only. The physical deployment host
+  was unreachable and no production rollout is claimed.
