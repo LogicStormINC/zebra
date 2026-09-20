@@ -14,6 +14,10 @@ EvalCategory = Literal[
     "recovery",
     "analysis",
     "provider",
+    "research",
+    "creation",
+    "operation",
+    "conversation",
 ]
 
 
@@ -26,6 +30,12 @@ class EvalCase:
     min_events: int = 1
     min_tool_results: int = 0
     max_cost_usd: float | None = None
+    expected_outcome: str = "completed"
+    expected_stop_reason: str = "completed"
+    expected_delivery_status: str | None = "complete"
+    require_evidence: bool = False
+    require_artifact: bool = False
+    max_failed_tool_results: int | None = None
 
     def __post_init__(self) -> None:
         if not self.case_id.strip():
@@ -40,6 +50,10 @@ class EvalCase:
             raise ValueError("eval min_tool_results must not be negative")
         if self.max_cost_usd is not None and self.max_cost_usd < 0:
             raise ValueError("eval max_cost_usd must not be negative")
+        if not self.expected_outcome.strip() or not self.expected_stop_reason.strip():
+            raise ValueError("eval terminal expectations must not be blank")
+        if self.max_failed_tool_results is not None and self.max_failed_tool_results < 0:
+            raise ValueError("eval max_failed_tool_results must not be negative")
 
 
 @dataclass(frozen=True)
@@ -103,6 +117,24 @@ class LocalEvalGrader:
             reasons.append("tool result count below case minimum")
         if case.max_cost_usd is not None and replay.cost_usd > case.max_cost_usd:
             reasons.append("cost exceeds case maximum")
+        if replay.terminal_outcome != case.expected_outcome:
+            reasons.append("terminal outcome does not match case expectation")
+        if replay.stop_reason != case.expected_stop_reason:
+            reasons.append("stop reason does not match case expectation")
+        if (
+            case.expected_delivery_status is not None
+            and replay.delivery_status != case.expected_delivery_status
+        ):
+            reasons.append("delivery status does not match case expectation")
+        if case.require_evidence and replay.evidence_count < 1:
+            reasons.append("required evidence was not collected")
+        if case.require_artifact and replay.artifact_count < 1:
+            reasons.append("required artifact was not produced")
+        if (
+            case.max_failed_tool_results is not None
+            and replay.failed_tool_results > case.max_failed_tool_results
+        ):
+            reasons.append("failed tool result count exceeds case maximum")
         passed = not reasons
         return EvalGrade(
             case_id=case.case_id,
@@ -192,6 +224,14 @@ def _case_from_json(value: object) -> EvalCase:
         min_events=_read_int(value, "min_events", default=1),
         min_tool_results=_read_int(value, "min_tool_results", default=0),
         max_cost_usd=_read_optional_float(value, "max_cost_usd"),
+        expected_outcome=_read_str_default(value, "expected_outcome", "completed"),
+        expected_stop_reason=_read_str_default(value, "expected_stop_reason", "completed"),
+        expected_delivery_status=_read_optional_str(
+            value, "expected_delivery_status", default="complete"
+        ),
+        require_evidence=_read_bool(value, "require_evidence", default=False),
+        require_artifact=_read_bool(value, "require_artifact", default=False),
+        max_failed_tool_results=_read_optional_int(value, "max_failed_tool_results"),
     )
 
 
@@ -211,6 +251,10 @@ def _read_category(value: dict[object, object], key: str) -> EvalCategory:
         "recovery",
         "analysis",
         "provider",
+        "research",
+        "creation",
+        "operation",
+        "conversation",
     }:
         raise ValueError("eval case category is not supported")
     return cast(EvalCategory, raw)
@@ -230,3 +274,35 @@ def _read_optional_float(value: dict[object, object], key: str) -> float | None:
     if isinstance(raw, bool) or not isinstance(raw, int | float):
         raise ValueError(f"eval case field {key} must be a number")
     return float(raw)
+
+
+def _read_str_default(value: dict[object, object], key: str, default: str) -> str:
+    raw = value.get(key, default)
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(f"eval case field {key} must be a non-blank string")
+    return raw
+
+
+def _read_optional_str(value: dict[object, object], key: str, *, default: str | None) -> str | None:
+    raw = value.get(key, default)
+    if raw is None:
+        return None
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(f"eval case field {key} must be a non-blank string or null")
+    return raw
+
+
+def _read_bool(value: dict[object, object], key: str, *, default: bool) -> bool:
+    raw = value.get(key, default)
+    if type(raw) is not bool:
+        raise ValueError(f"eval case field {key} must be a boolean")
+    return raw
+
+
+def _read_optional_int(value: dict[object, object], key: str) -> int | None:
+    raw = value.get(key)
+    if raw is None:
+        return None
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        raise ValueError(f"eval case field {key} must be an integer")
+    return raw

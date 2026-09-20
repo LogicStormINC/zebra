@@ -99,7 +99,11 @@ class SingleAttemptOrchestrator:
             response_repair_limit=allowed_response_repairs(task.max_model_calls, 0),
         )
         emitted_events.append(
-            model_response_event(completion, attempt_number=context.attempt.number)
+            model_response_event(
+                completion,
+                attempt_number=context.attempt.number,
+                response_stage="tool_loop" if completion.tool_calls else "candidate",
+            )
         )
         planner_result = self._planner.plan(context)
         emitted_events.append(
@@ -137,6 +141,7 @@ class SingleAttemptOrchestrator:
         conversation: tuple[SessionMessage, ...] = (),
         model_calls_used: int = 1,
         tool_calls_executed: int = 0,
+        metadata: dict[str, object] | None = None,
     ) -> HarnessAttemptResult:
         return self._tool_loop.continue_approved(
             context,
@@ -146,6 +151,7 @@ class SingleAttemptOrchestrator:
             conversation=conversation,
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
+            metadata=metadata,
         )
 
     def continue_completed_tool(
@@ -159,6 +165,7 @@ class SingleAttemptOrchestrator:
         model_calls_used: int,
         tool_calls_executed: int,
         assistant_message: str,
+        metadata: dict[str, object] | None = None,
     ) -> HarnessAttemptResult:
         return self._tool_loop.continue_completed(
             context,
@@ -169,6 +176,7 @@ class SingleAttemptOrchestrator:
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
             assistant_message=assistant_message,
+            metadata=metadata,
         )
 
     def continue_completed_tools(
@@ -206,6 +214,7 @@ class SingleAttemptOrchestrator:
         model_calls_used: int,
         tool_calls_executed: int,
         assistant_message: str,
+        metadata: dict[str, object] | None = None,
     ) -> HarnessAttemptResult:
         return self._tool_loop.continue_clarification(
             context,
@@ -215,4 +224,5 @@ class SingleAttemptOrchestrator:
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
             assistant_message=assistant_message,
+            metadata=metadata,
         )

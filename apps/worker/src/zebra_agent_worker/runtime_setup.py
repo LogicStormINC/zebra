@@ -11,7 +11,7 @@ from agent_runtime import SetupPhasePlan, SetupPhaseRunner
 from agent_security import SetupDownload, SetupEgressGateway, TemporarySetupCredential
 from zebra_agent_config import SetupSettings, ZebraAgentSettings
 
-from zebra_agent_worker.runtime_factory import build_runtime
+from zebra_agent_worker.runtime_factory import build_runtime, build_runtime_spec
 from zebra_agent_worker.runtime_instances import (
     BoundInstanceFactory,
 )
@@ -31,6 +31,7 @@ class RuntimeSetupError(RuntimeError):
 class PreparedRuntime:
     handle: RuntimeHandle
     setup_artifact_id: ArtifactId | None = None
+    compatible_authority_digests: tuple[str, ...] = ()
 
 
 def build_prepared_runtime(
@@ -44,6 +45,7 @@ def build_prepared_runtime(
     artifact_store: ArtifactPayloadStorePort | None,
     created_at: datetime,
     instance_factory: BoundInstanceFactory | None = None,
+    compatible_session_ids: tuple[str, ...] = (),
 ) -> tuple[RuntimePort, PreparedRuntime]:
     runtime = build_runtime(
         settings,
@@ -54,7 +56,7 @@ def build_prepared_runtime(
         attempt_number=attempt_number,
         instance_factory=instance_factory,
     )
-    return runtime, prepare_runtime(
+    prepared = prepare_runtime(
         runtime,
         setup=settings.setup,
         network_profile=network_profile,
@@ -62,6 +64,22 @@ def build_prepared_runtime(
         session_id=session_id,
         artifact_store=artifact_store,
         created_at=created_at,
+    )
+    compatible_digests = tuple(
+        build_runtime_spec(
+            settings,
+            workspace_root=workspace_root,
+            network_profile="none" if network_profile == "setup-only" else network_profile,
+            session_id=compatible_session_id,
+            attempt_number=attempt_number,
+        ).digest
+        for compatible_session_id in compatible_session_ids
+        if compatible_session_id != str(session_id)
+    )
+    return runtime, PreparedRuntime(
+        handle=prepared.handle,
+        setup_artifact_id=prepared.setup_artifact_id,
+        compatible_authority_digests=compatible_digests,
     )
 
 
@@ -129,9 +147,13 @@ def prepare_runtime(
 def require_matching_runtime_authority(
     handle: RuntimeHandle,
     persisted_digest: str | None,
+    compatible_digests: tuple[str, ...] = (),
 ) -> None:
     authority = handle.authority
-    if authority is not None and persisted_digest not in {None, authority.spec_digest}:
+    accepted = {None, *compatible_digests}
+    if authority is not None:
+        accepted.add(authority.spec_digest)
+    if authority is not None and persisted_digest not in accepted:
         raise RuntimeSetupError("configured runtime authority differs from session authority")
 
 

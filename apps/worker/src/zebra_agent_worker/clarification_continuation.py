@@ -19,6 +19,7 @@ class ClarificationContinuation:
     model_calls_used: int
     tool_calls_executed: int
     assistant_message: str
+    metadata: dict[str, object] | None = None
 
 
 def recover_clarification_continuation(
@@ -71,6 +72,7 @@ def recover_clarification_continuation(
         model_calls_used=_non_negative_int(requested.payload.get("model_calls_used"), 1),
         tool_calls_executed=_non_negative_int(requested.payload.get("tool_calls_executed"), 0),
         assistant_message=_required_string(requested.payload, "assistant_message"),
+        metadata=_continuation_metadata(requested.payload.get("continuation_metadata")),
     )
 
 
@@ -113,3 +115,11 @@ def _non_negative_int(value: object, default: int) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         raise ClarificationContinuationError("clarification counters are invalid")
     return value
+
+
+def _continuation_metadata(value: object) -> dict[str, object] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ClarificationContinuationError("clarification continuation metadata is invalid")
+    return dict(value)

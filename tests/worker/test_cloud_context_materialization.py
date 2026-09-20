@@ -2,8 +2,10 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import uuid4
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.contracts import SessionCommand, SessionCommandKind
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.context_materialization import (
     ContextMaterialization,
@@ -27,13 +29,63 @@ from zebra_agent_worker.execution_context import (
     CLOUD_CONVERSATION_TOKEN_BUDGET,
     harness_task_for_recovered,
 )
-from zebra_agent_worker.task_recovery import RecoveredTask
+from zebra_agent_worker.task_recovery import RecoveredTask, _host_run_context
 
 NOW = datetime(2026, 8, 23, 13, 0, tzinfo=UTC)
 
 
 def test_cloud_conversation_budget_retains_long_research_history() -> None:
     assert CLOUD_CONVERSATION_TOKEN_BUDGET == 32_768
+
+
+def test_worker_recovers_host_context_and_typed_task_contract() -> None:
+    session_id = (
+        SessionBootstrapService()
+        .build(
+            SessionBootstrapCommand(
+                title="Host context",
+                user_input="Update it.",
+                workspace_root=Path("/tmp"),
+                created_at=NOW,
+            )
+        )
+        .session.session_id
+    )
+    command = SessionCommand(
+        command_id=uuid4(),
+        session_id=session_id,
+        kind=SessionCommandKind.RUN,
+        expected_revision=2,
+        idempotency_key="host-context-run",
+        payload={
+            "input": {
+                "context": [
+                    {"description": "Trench Host context", "value": '{"mode":"general"}'},
+                    {
+                        "description": "Agent task contract",
+                        "value": (
+                            '{"goal":"Update it.","requiredOutcomes":["result_verified"],'
+                            '"taskType":"change","requireVerification":true}'
+                        ),
+                    },
+                ]
+            }
+        },
+    )
+    event = SessionEvent.create(
+        session_id=session_id,
+        sequence=3,
+        event_type=EventType.SESSION_COMMAND_ACCEPTED,
+        actor=EventActor.USER,
+        payload=command.event_payload(),
+    )
+
+    evidence, contract = _host_run_context([event], fallback_goal="Update it.")
+
+    assert evidence[0].kind == "host_context"
+    assert evidence[0].details == ('{"mode":"general"}',)
+    assert contract.task_type.value == "change"
+    assert contract.require_verification
 
 
 class _RecordingContextStore:
@@ -244,7 +296,7 @@ def test_automation_handoff_seed_does_not_count_as_conversation_history(
         payload={
             "content": "Continue from the verified Task checkpoint.",
             "source": "session_handoff",
-                "origin": "session_handoff",
+            "origin": "session_handoff",
             "handoff_id": "0b944a26-7b9e-4d43-8d1f-9db2b0bd0ba5",
             "principal_identity_hash": "0f" * 32,
             "actor_kind": "automation",

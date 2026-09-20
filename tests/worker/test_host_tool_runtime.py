@@ -161,6 +161,59 @@ def test_manifest_host_tool_never_falls_back_to_local() -> None:
     assert local.calls == 0
 
 
+def test_worker_gateway_hides_host_tools_unreachable_by_current_grant() -> None:
+    manifest = HostToolManifest.from_payload(
+        {
+            "workloadIdentity": "zebra-worker",
+            "tools": [
+                {
+                    "name": "events.get_event",
+                    "description": "Read one event",
+                    "executionLocation": "host",
+                    "scopes": ["event.read"],
+                    "risk": "read",
+                    "requiredArguments": ["event_id"],
+                    "argumentProperties": {"event_id": {"type": "string"}},
+                },
+                {
+                    "name": "events.search_history",
+                    "description": "Search granted history",
+                    "executionLocation": "host",
+                    "scopes": ["history.read"],
+                    "risk": "read",
+                    "requiredArguments": [],
+                    "argumentProperties": {},
+                },
+            ],
+        }
+    )
+    context = HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id="trench",
+        namespace_id="tenant-a",
+        workspace_ref="workspace-a",
+        resource_refs=(HostResourceRef(type="trench.history", id="user-1"),),
+        scopes=("event.read", "history.read"),
+        limits=HostTechnicalLimits(
+            max_runtime_seconds=300,
+            max_model_tokens=100_000,
+            max_artifact_bytes=10_485_760,
+        ),
+        origin="https://trench.example.com",
+        policy_version="policy-v1",
+    )
+    gateway = WorkerToolGateway(
+        local=_Local(),
+        host=_Host(),
+        host_context=context,
+        host_manifest=manifest,
+    )
+
+    assert [tool.name for tool in gateway.model_tools] == ["events.search_history"]
+    assert "events.search_history" in gateway.read_only_tools
+    assert "events.get_event" not in gateway.read_only_tools
+
+
 def test_worker_gateway_exposes_only_grant_authorized_host_writes() -> None:
     manifest = HostToolManifest.from_payload(
         {
@@ -196,8 +249,8 @@ def test_worker_gateway_exposes_only_grant_authorized_host_writes() -> None:
 
     assert gateway.authorized_write_tools == frozenset({"sources.add"})
     assert gateway.read_only_tools.isdisjoint({"sources.add"})
-    assert gateway.approval_tools == frozenset({"sources.add", "sources.remove"})
-    assert gateway.approval_required_tools == frozenset({"sources.remove"})
+    assert gateway.approval_tools == frozenset({"sources.add"})
+    assert gateway.approval_required_tools == frozenset()
 
 
 def test_worker_gateway_destroys_owned_runtime_handle_once() -> None:

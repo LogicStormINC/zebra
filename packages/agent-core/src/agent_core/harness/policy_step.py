@@ -41,6 +41,7 @@ def policy_stop_result(
                     model_calls_used=model_calls_used,
                     tool_calls_executed=tool_calls_executed,
                     remaining_tool_calls=remaining_tool_calls,
+                    metadata=metadata,
                 ),
             )
         )

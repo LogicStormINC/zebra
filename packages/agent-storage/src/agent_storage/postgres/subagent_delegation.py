@@ -264,6 +264,10 @@ _CANONICAL_FALLBACK_SUMMARY = "child reached a terminal status"
 _PER_SUMMARY_JSON_BUDGET = 3 * 1024
 
 
+def canonical_child_terminal_summary(summary: str | None) -> str:
+    return _canonical_summary(summary or _CANONICAL_FALLBACK_SUMMARY)
+
+
 def _json_bytes(value: str) -> int:
     return len(json.dumps(value, sort_keys=True, separators=(",", ":")).encode())
 

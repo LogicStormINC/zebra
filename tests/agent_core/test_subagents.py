@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from agent_core.domain.identifiers import new_subagent_id
 from agent_core.domain.subagents import (
+    DEFAULT_RESEARCH_MAX_TOOL_CALLS,
     ResearchSource,
     ResearchSubagentResult,
     ResearchSubagentTask,
@@ -11,6 +12,10 @@ from agent_core.domain.subagents import (
 
 
 def test_research_task_requires_absolute_workspace_and_positive_budgets() -> None:
+    assert ResearchSubagentTask(
+        objective="Inspect evidence", workspace_root=Path("/").resolve()
+    ).max_tool_calls == DEFAULT_RESEARCH_MAX_TOOL_CALLS
+
     with pytest.raises(ValueError, match="absolute"):
         ResearchSubagentTask(objective="Inspect evidence", workspace_root=Path("."))
 

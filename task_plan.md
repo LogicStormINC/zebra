@@ -1,4 +1,73 @@
-# Current task — AGENT-QUALITY-01 Evidence Closure And Skill-Guided Deliverables (2026-09-16)
+# Current task — CLOUD-AGENT-PARITY-01 General capability and quality closure (2026-09-20)
+
+Branch: `cloud-agent-trench`; Trench consumer:
+`/Users/lukeding/Desktop/playground/2026/product/Trench`.
+
+1. `completed` — remove Host-specific assistant identity/format constraints from generic modes and add typed task acceptance contracts.
+2. `completed` — make completion, verification, retry and continuation state task-aware and durable.
+3. `completed` — improve tool efficiency, evidence/claim quality and adaptive final-answer shaping.
+4. `completed` — harden the reusable Agent UI boundary and process rendering for future npm extraction.
+5. `completed` — add a representative multi-category quality suite and run focused/full/cross-repository acceptance.
+
+Model and reasoning-effort settings remain unchanged. This task improves the
+Cloud Agent runtime and reusable Host boundary; Trench is only the first Host.
+
+Closure evidence: Zebra `make check` and `make test` pass (`4577 passed, 892
+skipped`, deterministic eval `30/30`); TypeScript SDK check and `15/15` tests
+pass. Trench complete gates pass (`136` API/model tests, `74` pipeline tests,
+`91` ToC tests, lint, both production builds, migrations and diff check).
+Logged-in browser conversation `conv_1789910351988_0397a0` completed with one
+committed answer, one model call, no tools, no failed event and no irrelevant
+Skill binding. Local Zebra API/Worker images were rebuilt and are healthy.
+
+## Prior task — CLOUD-CAPABILITY-UI-01 Host-selectable agent modes (2026-09-20)
+
+Branch: `cloud-agent-trench`; Trench consumer:
+`/Users/lukeding/Desktop/playground/2026/product/Trench`.
+
+1. `completed` — define a server-owned research/general/coding capability contract.
+2. `completed` — bind capability changes to successor Zebra Tasks and durable Turns.
+3. `completed` — expose the contract through the reusable composer boundary.
+4. `completed` — verify API, runtime, frontend and cross-repository quality gates.
+
+The host selects a product-level mode; clients never submit raw Tool, Policy,
+network or budget profiles. Model and reasoning-effort behavior remains unchanged.
+
+Follow-up closure: exploration, research and expert conversations again omit
+model/tool call ceilings, as required by `CTX-SEG-03` and ADR-013. Explicit
+administrative, scheduled and evaluation budgets remain strict, but Zebra now
+validates them as positive integers without a magic maximum. Generation
+`trench-native-v15` migrates existing conversations away from the regressed
+snapshots. Focused Zebra API tests pass `22/22`; Trench runtime tests pass
+`35/35`, and both complete repository gates pass. Existing browser conversation
+`conv_1789911230325_53c036` migrated to v15 and completed; its successor Task
+stores both model/tool call budgets as `null`.
+
+## Prior task — AGENT-QUALITY-03 Real Answer Quality Closure (2026-09-20)
+
+Branch: `cloud-agent-trench`; Trench consumer:
+`/Users/lukeding/Desktop/playground/2026/product/Trench`.
+
+1. `completed` — preserve structured failed Tool status through AG-UI and Trench.
+2. `completed` — hide Host Tools that the current Grant cannot invoke.
+3. `completed` — replace tool-count evidence with a durable, continuation-safe evidence ledger.
+4. `completed` — require collected, matching citations for freshness-sensitive answers.
+5. `completed` — reduce broad Trench retrieval churn and verify focused regressions.
+6. `completed` — rebuild the local runtime and run real-model/API/browser acceptance.
+7. `completed` — run complete Zebra and affected Trench quality gates and record evidence.
+
+Model and reasoning-effort settings remain unchanged.
+
+Closure evidence: Zebra `make test` passes `4573 passed, 892 skipped`; `make
+check` passes the file-size gate, Ruff, strict Mypy over 968 source files and
+deterministic Harness eval 10/10. Trench `make check` passes 129 Python tests,
+74 cleaning tests, 89 ToC tests, lint, production builds, migration checks and
+the diff gate. Real browser conversation `conv_1789903152657_6847d3` completed
+with first public activity in 1.29 seconds, 6 model calls, 14 successful tools,
+7 evidence-backed findings and 21 exact source links; reload restored the same
+terminal timeline and committed answer.
+
+## Prior task — AGENT-QUALITY-01 Evidence Closure And Skill-Guided Deliverables (2026-09-16)
 
 ## Current task — AGENT-QUALITY-02 Quality Loop Completion (2026-09-16)
 
@@ -54,6 +123,16 @@ Trench consumer: `/Users/lukeding/Desktop/playground/2026/product/Trench`
 
 Implementation plan: `docs/Cloud_Agent用户级定时任务技术方案_v1.0.md`
 (accepted and present in this worktree).
+
+## Current task — Durable interactive execution and reconnect recovery (2026-09-21)
+
+1. `completed` — preserve truthful non-budget suspension reasons.
+2. `completed` — prove an unbudgeted Harness run exceeds the retired 24/64 ceilings.
+3. `completed` — reconnect Trench after AG-UI idle timeout from the durable cursor.
+4. `completed` — run focused Zebra and Trench regressions.
+5. `completed` — run both repository quality gates and record durable evidence.
+6. `completed` — verify the local composed runtime and browser path without changing
+   model or reasoning settings.
 
 ## Prior task — RabbitMQ reliability (2026-09-05)
 

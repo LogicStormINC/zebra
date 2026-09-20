@@ -138,6 +138,7 @@ does not authorize production code, migrations or activation of its successor.
   `packages/agent-core/src/agent_core/harness/tool_freshness.py`,
   `packages/agent-tools/src/agent_tools/skills.py`,
   `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-runtime/src/agent_runtime/artifact_tools.py`,
   `packages/agent-runtime/src/agent_runtime/skill_requirements.py`,
   `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
   `apps/worker/src/zebra_agent_worker/execution_context.py`,
@@ -313,7 +314,9 @@ does not authorize production code, migrations or activation of its successor.
   empty reply, so no G2/G3 success may be claimed until that environment is
   responsive.
 
-- `AGENT-QUALITY-02`: Review, owned by Luke Ding (Codex), current
+- `AGENT-QUALITY-02`: Review (real-answer closure and local runtime
+  acceptance), owned by
+  Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: close the remaining
   Cloud Agent quality-loop gaps found in the 2026-09-16 conversation audit:
   enforce selected Skill reads, bind mutation verification to resource evidence,
@@ -322,16 +325,26 @@ does not authorize production code, migrations or activation of its successor.
   children, improve Trench source mutation refresh semantics, and close the
   adjacent durable-pipeline review defects found in the same audit. Owned Zebra
   paths: `packages/agent-core/src/agent_core/harness/`,
+  `packages/agent-core/src/agent_core/domain/{attachments,messages}.py`,
+  `packages/agent-core/src/agent_core/domain/events.py`,
+  `packages/agent-core/src/agent_core/contracts/{answer_events,events,subagent_events}.py`,
+  `packages/agent-context/src/agent_context/`,
+  `packages/agent-integrations/src/agent_integrations/{ag_ui,openai_payloads}.py`,
   `packages/agent-core/src/agent_core/domain/tool_profiles.py`,
   `packages/agent-core/src/agent_core/domain/subagents.py`,
   `packages/agent-integrations/src/agent_integrations/host_tools/gateway.py`,
   `packages/agent-runtime/src/agent_runtime/research.py`,
-  `packages/agent-runtime/src/agent_runtime/harness.py`,
+  `packages/agent-runtime/src/agent_runtime/{artifact_tools,harness,harness_defaults}.py`,
   `packages/agent-tools/src/agent_tools/skills.py`,
   `packages/agent-tools/src/agent_tools/cloud_skills.py`,
+  `packages/agent-tools/src/agent_tools/builtin/`,
   `packages/agent-tools/src/agent_tools/skills_catalog.py`,
   `apps/worker/src/zebra_agent_worker/execution_context.py`,
-  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`, focused tests,
+  `apps/worker/src/zebra_agent_worker/{execution_tool_gateway,tool_gateway_runtime}.py`,
+  `apps/worker/src/zebra_agent_worker/{execution,execution_entrypoints,runtime_factory,runtime_setup}.py`,
+  `apps/worker/src/zebra_agent_worker/{approved_continuation,clarification_continuation,child_wakeup_continuation,continuation_dispatch}.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`,
+  `scripts/eval_release_check.py`, `evals/`, focused tests,
   `PROGRESS.md`, `WORKLOG.md`, and this registry. Owned Trench paths:
   `services/api/src/trench_api/trench_ai_read_tools_contract.py`,
   `services/api/src/trench_api/trench_ai_read_tools.py`,
@@ -349,6 +362,25 @@ does not authorize production code, migrations or activation of its successor.
   (including route registration, native history and legacy source compatibility), the timeline
   reliability runbook and `progress.md`. No new authority, no credential
   changes, and no schema migration in this slice.
+  Completion evidence: structured bounded tool observations retain failure
+  status and Artifact metadata; attachment/context truncation exposes readable
+  snapshot references; candidate drafts are revised against explicit defects,
+  and only a typed `ANSWER_COMMITTED` event is authoritative. Unmet final gates
+  suspend instead of completing, and continuation metadata survives approval,
+  clarification and child wakeup. The deterministic eval executes the real
+  Harness rather than synthesizing threshold values. Zebra `make check` passes
+  (file-size, Ruff, strict Mypy over 968 sources, deterministic Harness eval
+  10/10) and full regression passes `4573 passed, 892 skipped`. Trench `make
+  check` passes 129 API tests, 74 cleaning tests, 89 ToC tests, lint, builds,
+  migrations and diff checks. Real browser conversation
+  `conv_1789903152657_6847d3` completed and cold reload restored its tool
+  timeline and committed answer. No commit, deployment or production acceptance
+  was performed; model and reasoning effort were not changed.
+  Follow-up acceptance adds a continuation-safe Evidence Ledger, exact citation
+  matching for freshness-sensitive answers, Grant-aware Host manifest filtering,
+  and truthful failed-Tool projection. It also requires a rebuilt local runtime
+  plus real Trench conversation replay before returning to Review. Model and
+  reasoning-effort settings remain unchanged.
 
 - `DESKTOP-COMPOSER-UX-01`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: reshape the Cloud
@@ -373,14 +405,23 @@ does not authorize production code, migrations or activation of its successor.
   project parent/child lifecycle over AG-UI, persist it in the Trench Turn stream,
   and render an automatically collapsed child-task summary in the conversation.
   Owned Zebra paths: `packages/agent-core/src/agent_core/domain/tool_profiles.py`,
-  `packages/agent-integrations/src/agent_integrations/ag_ui/projection.py`, focused
+  `packages/agent-core/src/agent_core/domain/subagents.py`,
+  `packages/agent-core/src/agent_core/harness/plan_step.py`,
+  `packages/agent-runtime/src/agent_runtime/{harness,research,subagents}.py`,
+  `packages/agent-storage/src/agent_storage/postgres/subagent_delegation.py`,
+  `apps/worker/src/zebra_agent_worker/{child_wakeup,child_wakeup_continuation,
+  continuation_dispatch,execution,execution_continuations,runtime_factory,
+  runtime_setup}.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/{projection,
+  task_run_binding}.py`, focused
   Core/AG-UI tests, `apps/api/src/zebra_agent_api/{subagent_read,task_routes}.py`,
   focused API tests, this registry, `PROGRESS.md`, `WORKLOG.md`. Owned Trench paths:
-  `services/api/src/trench_api/trench_ai_zebra_contract.py`,
+  `services/api/src/trench_api/trench_ai_zebra_{client,contract,sse}.py`,
   `trench_ai_zebra_event_map.py`, focused API tests,
   `toc-frontend/src/lib/{strategy-chat-api,strategy-message-state}.ts`,
   `toc-frontend/src/hooks/use-strategy-turn.ts`,
-  `toc-frontend/src/components/product/strategy-progress.tsx`, focused tests and
+  `toc-frontend/src/components/product/{strategy-message-thread,strategy-progress,
+  strategy-workspace,zebra-client-bridge}.tsx`, focused tests and
   Trench `progress.md`.
   No recursive delegation, new approval prompt, broad General/Coding authority,
   or exposure of child reasoning/private context.
@@ -26470,7 +26511,9 @@ AG-UI instead of fabricating a successful terminal answer.
 - Branch: `cloud-agent-trench` (explicit user-requested in-place integration)
 - Owned paths: `packages/agent-core/src/agent_core/domain/tool_profiles.py`,
   `packages/agent-core/src/agent_core/harness/`,
-  `apps/worker/src/zebra_agent_worker/execution_context.py`, focused Core/Worker
+  `apps/worker/src/zebra_agent_worker/execution_context.py`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/task_run_binding.py`,
+  focused Core/Worker/API
   tests, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `task_plan.md`, plus the Trench
   source-truth and Zebra event-projection adapters and their focused tests in
   the sibling Trench repository.
@@ -28984,3 +29027,84 @@ browser Cookie or Host Grant.
   passed `24`, actual PostgreSQL schedule tests `13`, Trench schedule API `6`,
   ToC frontend `78`, plus Zebra Ruff, strict Mypy over `942` sources, Eval
   `10/10`, frontend ESLint and production build.
+### CLOUD-CAPABILITY-UI-01 - Host-selectable agent capability modes
+
+- Status: Done
+- Owner: Codex
+- Branch: `cloud-agent-trench`
+- Consumer branch: `codex/trench-durable-turns`
+- Owned paths: `task_plan.md`, `PROGRESS.md`, `docs/AGENT_TASKS.md`,
+  `apps/api/src/zebra_agent_api/session_payloads.py`, `tests/api/test_api_app.py`,
+  `docs/Agent_UI可复用包与宿主能力模式_v1.0.md`, and the Trench strategy
+  request/runtime/composer paths recorded in that repository's `task_plan.md`
+- Goal: expose research, general execution and coding as a typed Host-level
+  capability choice while keeping raw Tool, Policy, network and budget profiles
+  under server control; make the composer boundary reusable by future hosts.
+- Acceptance: a mode survives durable admission and dispatch, changes the
+  admission-frozen Zebra Task through a successor generation, and is selectable
+  from the shared composer without changing model reasoning defaults.
+- Follow-up acceptance evidence: capability modes no longer inject model/tool
+  call ceilings into interactive Tasks. Zebra accepts any positive explicit
+  caller budget for administrative, scheduled and evaluation workloads instead
+  of enforcing the former `24/64` magic ceiling. API tests pass `22/22`; Trench
+  runtime tests pass `35/35`. Generation `trench-native-v15` forces existing
+  conversations onto an admission snapshot without the regressed ceilings.
+  Both repository quality gates pass. A follow-up in existing browser
+  conversation `conv_1789911230325_53c036` completed on successor Task
+  `00c328d5-fa91-4306-bb44-6eef45867b67`; PostgreSQL records both call budgets
+  as `null` while retaining the `coding` / `full_access` capability boundary.
+
+### CLOUD-LONG-RUN-01 - Durable interactive execution and reconnect recovery
+
+- Status: `Done`
+- Owner: `Codex`
+- Branch: `cloud-agent-trench`
+- Consumer branch: `codex/trench-durable-turns`
+- Depends on: `CTX-SEG-03`, `CLOUD-CAPABILITY-UI-01`
+- Owned paths: Harness stop/result contracts and focused tests under
+  `packages/agent-core`; this registry, `task_plan.md`, `PROGRESS.md`; and the
+  Trench Zebra stream client plus focused runtime tests in the sibling Trench
+  repository.
+- Goal: keep an unbudgeted interactive Task running beyond the former call
+  ceilings, preserve truthful suspension reasons, and reconnect an idle AG-UI
+  stream from its durable cursor with fresh Host authority.
+- Acceptance: an unbudgeted deterministic run exceeds 24 model calls and 64
+  tool calls; unknown suspension never reports fabricated budget exhaustion;
+  an idle upstream stream reconnects and reaches its authoritative terminal
+  event without failing the durable Turn; focused and repository gates pass.
+- Acceptance evidence: the unbudgeted Harness regression completed 66 model
+  calls and 65 distinct tool executions; focused Zebra suites passed `20` and
+  `60`; full Zebra tests passed `4580` with `892` skipped; file-size, Ruff,
+  strict Mypy over `969` sources and all `30/30` deterministic Eval cases pass.
+  Trench stream/runtime regression passed `36`; durable Turn/API regression
+  passed `68`; frontend reconnect and message-state coverage passed as part of
+  `91/91`; the complete Trench gate passed `137` product/API and `74` pipeline
+  tests, both production builds, lint, migration and diff checks. The existing
+  three dashboard `<img>` lint warnings remain non-blocking and unrelated.
+
+### CLOUD-AGENT-PARITY-01 - General capability and quality closure
+
+- Status: Done
+- Owner: Codex
+- Branch: `cloud-agent-trench`
+- Consumer branch: `codex/trench-durable-turns`
+- Owned paths: Harness task/completion/evidence/retry contracts and focused tests
+  under `packages/agent-core`; quality eval contracts/cases and runner under
+  `packages/agent-observability`, `evals`, `scripts`, and `tests`; reusable Agent
+  UI contracts under `UI` or a dedicated package; this registry, `task_plan.md`,
+  `PROGRESS.md`, focused architecture docs; and the Trench Host adapter/composer
+  paths recorded in that repository's `task_plan.md`.
+- Goal: make Zebra a general Cloud Agent whose identity, completion rules,
+  verification, continuation and UI contracts remain reusable across Hosts;
+  Trench supplies capabilities and authority but does not redefine the Agent.
+- Acceptance: generic modes are not constrained to subscription research;
+  task-type completion is deterministic and continuation-safe; failed/redundant
+  tool behavior is truthful and bounded; at least five task categories have
+  executable quality cases; focused and complete repository gates pass without
+  changing model or reasoning-effort settings.
+- Acceptance evidence: typed Host task contracts now reach the stateless Worker
+  and completion gates; the deterministic suite covers 30 cases across 10 task
+  categories; Zebra passes `make check` and `4577 passed, 892 skipped`; the SDK
+  passes type-check and `15/15`; Trench passes its complete repository gate.
+  Browser conversation `conv_1789910351988_0397a0` proves a direct short answer
+  completes with one committed response, one model call and no unrelated Skill.

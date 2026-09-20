@@ -10186,3 +10186,69 @@ actual byte access.
   reasoning remained selected.
 - Physical-host deployment was intentionally not attempted because the host is
   currently unreachable.
+
+## 2026-09-20 - TRN-SUBAGENT-UX-02 final local acceptance
+
+- Raised the existing bounded research-child allowance to four provider calls
+  and 32 tool calls, retained non-recursive narrowed authority, and made
+  suspended children fail terminally instead of leaving parents waiting.
+- Rebased provider continuation from durable child summaries as new user
+  evidence. Private reasoning and stale child-provider IDs remain outside the
+  event store; invalid `agent.plan` mutations return a failed tool result so the
+  model can repair its plan without violating the one-in-progress invariant.
+- Real browser conversation `conv_1789895067088_e1bab8` showed incremental
+  narration, tools, two parallel child summaries and the final sourced answer.
+  A cold reload restored the complete timeline. Trench no longer opens client
+  surfaces for terminal latest Turns, eliminating the repeated 503 loop.
+- Validation: Zebra `69 passed`, Ruff, Mypy and diff clean; Trench API `53
+  passed`; complete frontend suite `89 passed`, ESLint and diff clean. This is local-only
+  acceptance under an explicit trusted runtime; production gVisor policy and
+  model/reasoning selections were unchanged.
+
+## 2026-09-20 - AGENT-QUALITY-02 audit remediation closure
+
+- Replaced lossy tool-result strings with bounded structured observations that
+  preserve execution status, output, truncation, paging and Artifact recovery
+  metadata without admitting arbitrary or secret metadata.
+- Kept under-budget conversation history byte-exact. Compacted tool exchanges
+  retain structured failure state and explicit recovery references; long or
+  omitted attachments disclose coverage and an `artifact://` snapshot URI.
+  Added the session-scoped read-only `artifacts.read` tool for bounded segment
+  recovery.
+- Made finalization a draft/commit protocol: candidate text is visible to the
+  revision call, runtime defects are system-owned feedback, one bounded revision
+  is allowed, and a failed second gate suspends with
+  `delivery_requirements_unmet`. Only the strictly validated
+  `ANSWER_COMMITTED` event is authoritative for new consumers; AG-UI and Trench
+  retain legacy compatibility without treating candidate text as final.
+- Persisted bounded continuation metadata through approvals, clarifications,
+  subagent wakeups and compaction. Selected frozen Skill identity validation and
+  mutation verification remain unchanged and continue to fail closed.
+- Replaced synthetic eval replay with actual deterministic Harness runs and
+  per-case event/tool/model traces under the ignored eval report directory.
+- Validation: focused closure suites `101`, `9` and `40` passed; `make check`
+  passed file-size, Ruff, strict Mypy over 964 sources and deterministic Harness
+  eval 10/10; full repository `4565 passed, 892 skipped`; Trench live-progress
+  compatibility `10 passed`; both repositories pass `git diff --check` for the
+  inspected changes. No commit, push, deployment, production acceptance or
+  live-model A/B was performed. Model/reasoning settings were not modified.
+
+## 2026-09-20 - AGENT-QUALITY-03 real-answer closure
+
+- Fixed the shared answer path rather than one conversation: durable evidence
+  accounting, Grant-aware Host tool visibility, exact citation validation,
+  forced bounded synthesis, committed-answer projection and truthful failed
+  tool rendering now survive continuations and reloads.
+- Corrected the quality gate's substring heuristic so `CONCURRENT` no longer
+  triggers the freshness requirement for the word `current`; added the focused
+  regression and retained the existing concurrent-tool behavior.
+- Real browser acceptance used conversation `conv_1789903152657_6847d3` and
+  Zebra session `afacd9fb-36a0-41cf-97af-23769ba87ce3`: first public activity
+  1.29s, 6 model calls, 14 successful tools, 7 findings, 21 exact links, one
+  `ANSWER_COMMITTED`, one terminal completion, and successful cold reload.
+- Final validation: Zebra `4573 passed, 892 skipped`; file-size gate, Ruff,
+  strict Mypy over 968 sources and eval 10/10 passed. Trench `make check` passed
+  129 Python tests, 74 cleaning tests, 89 ToC tests, lint, builds, migrations
+  and diff checks. API, Worker, PostgreSQL, Redis and MinIO are healthy locally.
+  No commit, push or remote deployment was requested or performed. Model and
+  reasoning-effort settings remain DeepSeek Flash / high.

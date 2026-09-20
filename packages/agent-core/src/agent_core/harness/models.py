@@ -14,6 +14,7 @@ from agent_core.domain.plans import SessionPlan
 from agent_core.domain.sessions import Session
 from agent_core.domain.skills import normalize_skill_components
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.harness.task_contracts import TaskAcceptanceContract
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
 
@@ -37,6 +38,8 @@ class HarnessStopReason(StrEnum):
     CLARIFICATION_REQUIRED = "clarification_required"
     CLIENT_EFFECT_REQUIRED = "client_effect_required"
     VERIFICATION_REQUIRED = "verification_required"
+    DELIVERY_REQUIREMENTS_UNMET = "delivery_requirements_unmet"
+    SUSPENDED = "suspended"
 
 
 @dataclass(frozen=True)
@@ -81,6 +84,7 @@ class HarnessTask:
     conversation_history: tuple[SessionMessage, ...] = ()
     task_plan: SessionPlan = field(default_factory=SessionPlan)
     identity_directive: str | None = None
+    acceptance_contract: TaskAcceptanceContract | None = None
 
     def __post_init__(self) -> None:
         if not self.title.strip():

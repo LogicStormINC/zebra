@@ -76,6 +76,7 @@ def test_clarification_response_resumes_same_session_once(
     assert completed.attempt_result.metadata["assistant_message"] == (
         "I will prioritize operators."
     )
+    assert completed.attempt_result.metadata["plan_summary"] == "planner hook skipped"
     assert len(initial_gateway.requests) == 1
     assert len(final_gateway.requests) == 1
     assert final_gateway.requests[0][-1].role is MessageRole.TOOL

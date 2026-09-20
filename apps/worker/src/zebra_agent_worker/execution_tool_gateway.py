@@ -9,7 +9,12 @@ from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseFence
 from agent_core.domain.task_bindings import TaskBindingSnapshot
-from agent_core.ports import ArtifactPayloadStorePort, ModelGatewayPort, SessionHistoryPort
+from agent_core.ports import (
+    ArtifactPayloadReadPort,
+    ArtifactPayloadStorePort,
+    ModelGatewayPort,
+    SessionHistoryPort,
+)
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_integrations import ModelProviderSettings
@@ -36,6 +41,7 @@ class ExecutionComposition(Protocol):
     _model_http_client: httpx.Client | None
     _session_history: SessionHistoryPort
     _artifact_payload_store: ArtifactPayloadStorePort | None
+    _artifact_payload_reader: ArtifactPayloadReadPort
     _egress_registry: HostConnectorRegistryPort | None
     _delegation_store: object | None
     _deployment_namespace: str | None
@@ -100,6 +106,7 @@ def build_execution_tool_gateway(
         runtime=runtime,
         runtime_handle=runtime_handle,
         local_artifacts=service._artifact_payload_store,
+        artifact_payload_reader=getattr(service, "_artifact_payload_reader", None),
         cloud_artifacts=cloud_artifacts,
         trusted_local=trusted_local,
         egress_registry=service._egress_registry,

@@ -7,6 +7,7 @@ from typing import Any
 
 from agent_core.domain.events import SessionEvent
 from agent_core.ports import EventStorePort
+from agent_storage.postgres.subagent_delegation import canonical_child_terminal_summary
 
 from zebra_agent_worker.approved_continuation import ApprovedContinuation
 from zebra_agent_worker.child_wakeup_continuation import (
@@ -22,6 +23,7 @@ __all__ = [
     "recover_active_continuations",
     "recover_and_start_continuations",
 ]
+from zebra_agent_worker.child_wakeup import child_terminal_status
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.clarification_continuation import ClarificationContinuation
 from zebra_agent_worker.continuation_lifecycle import start_recovered_continuation
@@ -55,7 +57,6 @@ def build_child_result_verifier(
         from uuid import UUID
 
         from agent_core.domain.identifiers import SessionId, TaskId
-
         child = TaskId(UUID(str(child_task_id)))
         link = get_link(child)
         if link is None or link.terminal_at is None:
@@ -63,10 +64,13 @@ def build_child_result_verifier(
                 f"child wakeup result rejected: {child_task_id} has no terminal delegation link"
             )
         child_session = projection_store.get_session(SessionId(UUID(str(child_task_id))))
-        if child_session is None or child_session.status.value != status:
+        actual_status = (
+            None if child_session is None else child_terminal_status(child_session.status)
+        )
+        if actual_status is None or actual_status.value != status:
             raise ValueError(f"child wakeup result rejected: {child_task_id} status drift")
         trusted = summary_of(child)
-        if (trusted or "") != summary:
+        if canonical_child_terminal_summary(trusted) != summary:
             raise ValueError(
                 f"child wakeup result rejected: {child_task_id} summary "
                 "does not match its own terminal event"

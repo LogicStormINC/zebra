@@ -1,0 +1,1 @@
+{"case_id":"research-current-sources","category":"research","title":"Research current information","prompt":"Research the latest changes, distinguish facts from inference, and cite exact source links near each claim.","min_events":3,"min_tool_results":1,"max_cost_usd":1.0,"require_evidence":true,"max_failed_tool_results":0}

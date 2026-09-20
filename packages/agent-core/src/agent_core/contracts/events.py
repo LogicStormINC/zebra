@@ -9,6 +9,7 @@ from pydantic import (
     model_validator,
 )
 
+from agent_core.contracts.answer_events import AnswerCommittedPayload
 from agent_core.contracts.client_events import (
     ClientEffectReceiptAcceptedPayload,
     ClientEffectScheduledPayload,
@@ -358,6 +359,7 @@ class ClarificationRequestedPayload(BaseModel):
     conversation: list[dict[str, Any]]
     model_calls_used: int
     tool_calls_executed: int
+    continuation_metadata: dict[str, Any] = Field(default_factory=dict)
     # Optional MCP elicitation response schema + origin. None == agent.clarify and
     # is excluded from serialization so the existing flow stays byte-identical.
     response_schema: dict[str, Any] | None = Field(
@@ -430,6 +432,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.MODEL_REQUEST_STARTED: ModelRequestStartedPayload,
     EventType.MODEL_RESPONSE_DELTA: ModelResponseDeltaPayload,
     EventType.MODEL_RESPONSE_RECEIVED: ModelResponseReceivedPayload,
+    EventType.ANSWER_COMMITTED: AnswerCommittedPayload,
     EventType.PLAN_UPDATED: PlanUpdatedPayload,
     EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
     EventType.SESSION_RESUMED: SessionResumedPayload,

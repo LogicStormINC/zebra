@@ -48,6 +48,8 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
 
+  packages/ui-contracts: {}
+
 packages:
 
   '@acemir/cssom@0.9.31':

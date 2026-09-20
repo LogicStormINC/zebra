@@ -321,22 +321,33 @@ def test_api_create_session_persists_explicit_history_scope(tmp_path: Path) -> N
     assert events[2].payload["max_tool_calls"] == 8
 
 
-def test_api_create_session_accepts_larger_tool_budget_for_material_harness(
+def test_api_create_session_accepts_explicit_budgets_without_magic_ceiling(
     tmp_path: Path,
 ) -> None:
     database_path = tmp_path / "sessions.sqlite"
 
     response = create_app(database_path, settings=_settings(database_path)).create_session(
         {
-            "prompt": "Inspect a chunked material bundle",
-            "max_model_calls": 16,
-            "max_tool_calls": 28,
+            "prompt": "Run a deterministic administrative workload",
+            "max_model_calls": 128,
+            "max_tool_calls": 1024,
         }
     )
 
     assert response.status_code == 201
-    assert response.body["max_model_calls"] == 16
-    assert response.body["max_tool_calls"] == 28
+    assert response.body["max_model_calls"] == 128
+    assert response.body["max_tool_calls"] == 1024
+
+
+def test_api_create_session_rejects_non_positive_explicit_budget(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+
+    response = create_app(database_path, settings=_settings(database_path)).create_session(
+        {"prompt": "Run a bounded task", "max_model_calls": 0}
+    )
+
+    assert response.status_code == 400
+    assert response.body["reason"] == "max_model_calls must be a positive integer when provided"
 
 
 def test_api_create_session_persists_domain_allowlist(tmp_path: Path) -> None:

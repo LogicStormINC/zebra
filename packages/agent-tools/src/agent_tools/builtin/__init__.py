@@ -1,3 +1,4 @@
+from agent_tools.builtin.artifacts import ArtifactReadTool, artifact_read_contract
 from agent_tools.builtin.clarify import ClarifyTool, clarify_contract
 from agent_tools.builtin.command import CommandRunTool, command_run_contract
 from agent_tools.builtin.files import FileReadTool, file_read_contract
@@ -9,6 +10,7 @@ from agent_tools.builtin.search import WorkspaceSearchTool, files_search_contrac
 from agent_tools.builtin.tests import TestsRunTool, tests_run_contract
 
 __all__ = [
+    "ArtifactReadTool",
     "CommandRunTool",
     "ClarifyTool",
     "FileReadTool",
@@ -18,6 +20,7 @@ __all__ = [
     "FilePublishTool",
     "TestsRunTool",
     "WorkspaceSearchTool",
+    "artifact_read_contract",
     "command_run_contract",
     "clarify_contract",
     "file_read_contract",

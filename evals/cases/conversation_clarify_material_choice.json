@@ -1,0 +1,1 @@
+{"case_id":"conversation-clarify-material-choice","category":"conversation","title":"Clarify a material choice","prompt":"Identify the one missing choice that materially changes the result and request only that clarification.","min_events":2,"min_tool_results":1,"max_cost_usd":0.75,"max_failed_tool_results":0}

@@ -40,6 +40,8 @@ def build_protected_instruction_ledger(
     for message in messages:
         if message.role not in {MessageRole.SYSTEM, MessageRole.USER}:
             continue
+        if message.metadata.get("runtime_feedback") is True:
+            continue
         if message.content.startswith(LEDGER_MARKER):
             for entry in _parse_ledger(message.content):
                 if entry.checksum not in seen:
@@ -203,7 +205,7 @@ def _fold_exchange(
         ToolResultTombstone(
             tool_name=call.name,
             call_id=result.tool_call_id or "",
-            status="succeeded",
+            status=_tool_result_status(result),
             artifact_uri=_result_artifact_uri(result)
             or f"event-sha256://{_digest(result.content)}",
             checksum=_result_checksum(result),
@@ -243,10 +245,20 @@ def _replace_projected_exchange(
 def _must_remain_exact(message: SessionMessage) -> bool:
     if ToolResultTombstone.parse(message.content) is not None:
         return True
+    status = _tool_result_status(message)
+    if status not in {"executed", "succeeded", "unknown"}:
+        return True
     normalized = message.content.casefold()
     # ponytail: SessionMessage lacks structured result status; keep suspicious results
     # exact until core exposes ToolCallStatus on conversation messages.
     return any(marker in normalized for marker in _UNRESOLVED_MARKERS)
+
+
+def _tool_result_status(message: SessionMessage) -> str:
+    status = message.metadata.get("tool_status") or message.metadata.get("status")
+    if isinstance(status, str) and status.strip():
+        return status.strip().casefold()
+    return "unknown"
 
 
 def _content_locator(tool_name: str, arguments: dict[str, object]) -> str | None:

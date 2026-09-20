@@ -1,0 +1,1 @@
+{"case_id":"refactor-contract-compatibility","category":"refactor","title":"Preserve public contract compatibility","prompt":"Refactor the internal implementation while preserving the public request and response contract and rerun contract tests.","min_events":4,"min_tool_results":1,"max_cost_usd":1.25,"max_failed_tool_results":0}

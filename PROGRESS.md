@@ -1,5 +1,75 @@
 # Zebra Agent Project Status
 
+2026-09-21 CLOUD-CAPABILITY-UI-01 (adaptive budget regression closure): the
+capability-mode adapter no longer reintroduces fixed `10/16`, `16/32` or `24/64`
+model/tool ceilings into interactive Tasks. Exploration, research and expert
+conversations now omit both fields and continue until normal completion,
+cancellation, approval, policy, repeated-action, context, runtime or provider
+limits stop them. Explicit administrative, scheduled and evaluation budgets
+remain deterministic, but Task admission now accepts any positive integer rather
+than enforcing a magic maximum. `trench-native-v15` forces existing conversations
+onto the corrected admission snapshot. Focused Zebra API tests pass `22/22`;
+Trench runtime tests pass `35/35`; both complete repository gates pass. A
+follow-up in browser conversation `conv_1789911230325_53c036` completed after
+migration from v14 to v15. Its successor Task
+`00c328d5-fa91-4306-bb44-6eef45867b67` records `null` for both call budgets while
+retaining `coding` and `full_access`. Model and reasoning settings are unchanged.
+No commit, push or remote deployment is claimed.
+
+2026-09-20 CLOUD-AGENT-PARITY-01 (local closure): Zebra now receives a typed
+task acceptance contract (`answer`, `research`, `change`, `create`, `operate`)
+from each Host and applies task-specific evidence, citation, artifact and
+postcondition gates. Trench's AG-UI context is materialized into Worker/model
+context instead of being silently discarded, and generic modes no longer force
+subscription-report identity or a fixed report length. Completion records
+durable delivery assessment, distinguishes completed/pending/blocked outcomes,
+and suspends mutations that lack verification instead of claiming success.
+Replay/eval contracts now grade terminal outcome, delivery, evidence, artifacts
+and failure truth across 30 deterministic cases in 10 categories. Reusable
+frontend types moved into dependency-free `@zebra-agent/ui-contracts`, leaving
+the React package extraction until a second Host proves the component API.
+Trench now selects enabled Skills conservatively or explicitly rather than
+binding every installation to every Task, and clears rejected candidate text
+before retry so only a committed answer remains user-visible. Zebra passes
+`make check`, eval `30/30`, and `4577 passed, 892 skipped`; SDK type-check and
+`15/15` tests pass. Trench passes its complete gate (`136`, `74`, and `91`
+tests plus lint, builds, migrations and diff check). Browser conversation
+`conv_1789910351988_0397a0` completed with one answer/model call, no tools,
+failure, or unrelated Skill; rebuilt local API/Worker containers are healthy.
+Model and reasoning effort were unchanged. No commit, push or remote deployment
+is claimed.
+
+2026-09-20 AGENT-QUALITY-03 (local acceptance closure): Cloud replies now retain
+a continuation-safe evidence ledger, exact source references, truthful failed
+tool status and one typed committed answer. Host tools are filtered by the
+active Grant, broad Trench retrieval is bounded, and the final permitted model
+call synthesizes collected evidence instead of suspending before an answer.
+The final-quality gate rejects invented or extended URLs and no longer mistakes
+words such as `CONCURRENT` for freshness claims. Real browser conversation
+`conv_1789903152657_6847d3` reached first public activity in 1.29 seconds and
+completed with 6 model calls, 14 successful tools, 7 findings and 21 exact
+source links; a cold reload restored the terminal timeline and committed answer.
+Zebra passes `4573 passed, 892 skipped` plus file-size, Ruff, strict Mypy over
+968 source files and Harness eval 10/10. Trench passes its complete `make check`
+including 129 Python tests, 74 cleaning tests, 89 ToC tests, lint, builds,
+migrations and diff checks. This is local acceptance only; no commit, push or
+deployment is claimed, and DeepSeek Flash with high reasoning was unchanged.
+
+2026-09-20 AGENT-QUALITY-02 (audit closure): the reply-quality remediation now
+preserves structured tool status and recoverable Artifact references, reports
+attachment/context coverage explicitly, carries continuation state across
+approval/clarification/child wakeup, and separates candidate model text from a
+typed authoritative `ANSWER_COMMITTED` event. Finalization receives the actual
+draft plus exact unmet acceptance requirements, permits one bounded revision,
+and suspends rather than reporting completion when delivery requirements still
+fail. The eval gate now executes the deterministic Harness and stores its trace
+artifact instead of constructing replay values from thresholds. `make check`
+passes file-size, Ruff, strict Mypy over 964 sources and Harness eval 10/10; the
+full repository passes `4565 passed, 892 skipped`; the Trench committed-answer
+consumer regression passes 10/10. This was local-only: model reasoning effort
+was unchanged, and live-model A/B, deployment and production acceptance were
+not run.
+
 2026-09-20 CLOUD-REMEDIATION-R14 (implementation): immutable rollout candidates
 now bind Zebra/Trench commits, digest-pinned images, database/protocol/config
 coordinates and the exact R13 release manifest. A second fail-closed validator
@@ -3261,3 +3331,61 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   model selection and reasoning strength were unchanged.
 - Scope boundary: this is local acceptance only. The physical deployment host
   was unreachable and no production rollout is claimed.
+
+## 2026-09-20 - TRN-SUBAGENT-UX-02 real parent/child closure
+
+- Durable research delegation now reaches a terminal child result, wakes the
+  suspended parent and replays bounded child evidence into a fresh provider
+  request without persisting private reasoning or orphan provider tool IDs.
+  Invalid plan transitions are recoverable tool failures, and AG-UI keeps one
+  public parent run across internal child wakeups.
+- The local Trench browser Turn used parent Task
+  `b13cb090-31ea-417b-be9c-877d1026c4f7`; children
+  `5c04c3ea-1e3e-412b-9961-816acbeb493e` and
+  `3ff7388a-2cf2-4542-b55c-86b297c3d009` both completed before the parent emitted
+  its terminal answer. Reload restored the same tool/child timeline and final
+  Markdown answer.
+- Focused Zebra regression is `69 passed`; changed Python files pass Ruff and
+  Mypy. Trench API regression is `53 passed`; the complete frontend suite is `89
+  passed` with ESLint and diff checks clean. DeepSeek Flash and `high` reasoning
+  remained unchanged.
+- Acceptance used OrbStack's available `runc` through an explicitly local
+  trusted-runtime override because the physical host was unavailable and this
+  Docker engine does not provide `runsc`. Production's fail-closed gVisor
+  default was not changed, and no deployment is claimed.
+# 2026-09-20 — Host-selectable Cloud Agent capability modes
+
+- Recorded the reusable Agent UI boundary and future npm extraction path in
+  `docs/Agent_UI可复用包与宿主能力模式_v1.0.md`; Trench remains a Host adapter,
+  not the product definition.
+- Trench now exposes server-owned `research`, `general`, and `coding` modes.
+  Browser clients cannot submit raw Tool, Policy, network, or budget profiles.
+- Capability mode is durable across Turn admission, dispatcher restart, queued
+  supplements, page reload, and Zebra command state. A mode change rotates the
+  admission-frozen Task generation and hands bounded Host context to a successor.
+- Model and reasoning-effort defaults are unchanged. Focused verification passed
+  42 backend and 19 frontend tests; Trench `make check` passed 134 API/product,
+  74 pipeline, and 90 ToC tests, both frontend production builds, lint, migrations,
+  and diff validation. Browser inspection confirmed all three modes in the composer.
+
+## 2026-09-21 - Durable interactive execution and idle reconnect recovery
+
+- Interactive Tasks with no explicit caller budget now have an executable
+  regression that completes 66 model calls and 65 distinct tool executions,
+  beyond the retired Trench 24/64 ceilings.
+- Harness suspension classification preserves unknown suspension as `suspended`
+  instead of fabricating model-budget exhaustion. Explicit model/tool budget,
+  verification and delivery-contract reasons remain unchanged.
+- Trench catches an idle AG-UI stream at the reconnect boundary, exchanges a
+  fresh Host Grant and resumes from the last durable cursor. The durable Turn no
+  longer fails merely because one upstream stream was quiet for 60 seconds.
+- Existing authorization renewal, Worker recovery and frontend replay paths were
+  retained and revalidated. Model profile and reasoning effort are unchanged.
+- Evidence: focused Zebra `20` and `60`; full Zebra `4580 passed, 892 skipped`;
+  Zebra check passes file-size, Ruff, strict Mypy over 969 sources and Eval
+  `30/30`. Trench focused `36` and `68`; frontend `91/91`; complete gate `137`
+  product/API and `74` pipeline tests, builds, lint, migration and diff checks.
+- Local browser acceptance on conversation `conv_1789911230325_53c036`
+  completed Turn `da4e1425-b805-447c-8583-e5f1373a13ad` with the expected
+  `37+58=95` answer. PostgreSQL records `completed`, a durable terminal cursor,
+  `trench-native-v15:coding`, DeepSeek Flash and `high` reasoning.

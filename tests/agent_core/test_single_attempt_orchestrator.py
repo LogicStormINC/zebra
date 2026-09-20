@@ -211,7 +211,8 @@ def test_single_attempt_orchestrator_synthesizes_tool_result_when_enabled() -> N
         event for event in result.events if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
     ]
     assert len(model_events) == 2
-    assert model_events[-1].payload["response_stage"] == "final"
+    assert model_events[-1].payload["response_stage"] == "candidate"
+    assert any(event.event_type is EventType.ANSWER_COMMITTED for event in result.events)
 
 
 def test_single_attempt_orchestrator_returns_failed_tool_to_model() -> None:
@@ -333,8 +334,12 @@ def test_single_attempt_orchestrator_emits_approval_requested_event() -> None:
         "tool_name": "command.run",
         "arguments": tool_call.arguments,
         "tool_call_id": str(tool_call.tool_call_id),
-        "assistant_message": "I will run tests.",
-        "call_fingerprint": tool_call.approval_fingerprint,
+            "assistant_message": "I will run tests.",
+            "call_fingerprint": tool_call.approval_fingerprint,
+            "continuation_metadata": {
+                "plan_metadata": {"attempt_number": 1},
+                "plan_summary": "planner hook skipped",
+            },
     }
     assert EventType.TOOL_EXECUTION_STARTED not in [
         event.event_type for event in result.events
@@ -422,7 +427,11 @@ def test_single_attempt_orchestrator_projects_proxy_approval_metadata() -> None:
         "arguments": tool_call.arguments,
         "tool_call_id": str(tool_call.tool_call_id),
         "assistant_message": "I will route the MCP call through the proxy path.",
-        "call_fingerprint": tool_call.approval_fingerprint,
+            "call_fingerprint": tool_call.approval_fingerprint,
+            "continuation_metadata": {
+                "plan_metadata": {"attempt_number": 1},
+                "plan_summary": "planner hook skipped",
+            },
         "route": "mcp_proxy",
         "target": "github.create_pull_request",
         "network_profile": "mcp-proxy-only",

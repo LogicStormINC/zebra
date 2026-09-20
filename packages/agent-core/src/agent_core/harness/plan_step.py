@@ -15,10 +15,6 @@ def execute_plan_call(
     verifier: VerifierHook,
     emitted_events: list[HarnessEventDraft],
 ) -> ToolExecutionStep:
-    plan = _current_plan(context, emitted_events)
-    updated = "steps" in tool_call.arguments
-    if updated:
-        plan = SessionPlan.model_validate({"steps": tool_call.arguments["steps"]})
     emitted_events.append(
         HarnessEventDraft(
             event_type=EventType.TOOL_EXECUTION_STARTED,
@@ -30,6 +26,35 @@ def execute_plan_call(
             },
         )
     )
+    updated = "steps" in tool_call.arguments
+    try:
+        plan = _current_plan(context, emitted_events)
+        if updated:
+            plan = SessionPlan.model_validate({"steps": tool_call.arguments["steps"]})
+    except ValueError as exc:
+        # ponytail: provider-generated plan arguments are recoverable model input;
+        # keep the domain invariant and let the next model step repair the request.
+        result = ToolResult(
+            tool_call_id=tool_call.tool_call_id,
+            status=ToolCallStatus.FAILED,
+            output=json.dumps(
+                {
+                    "error": "invalid_plan",
+                    "detail": str(exc),
+                    "constraint": "Use unique step_id values and at most one in_progress step.",
+                },
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ),
+            metadata={"plan_updated": False, "recoverable": True},
+        )
+        return record_tool_result(
+            context,
+            tool_call,
+            result,
+            verifier=verifier,
+            emitted_events=emitted_events,
+        )
     if updated:
         emitted_events.append(
             HarnessEventDraft(

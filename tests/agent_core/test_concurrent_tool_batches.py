@@ -206,6 +206,7 @@ def test_later_batch_over_budget_suspends_with_prior_evidence_preserved() -> Non
         responses=(
             ScriptedModelResponse(completion=_completion("Collect evidence.", *first)),
             ScriptedModelResponse(completion=_completion("Collect more.", *rejected)),
+            ScriptedModelResponse(completion=_completion("Synthesized from collected evidence.")),
         )
     )
     tools = RecordingGateway()
@@ -229,12 +230,13 @@ def test_later_batch_over_budget_suspends_with_prior_evidence_preserved() -> Non
         created_at=NOW,
     )
 
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
     assert tools.calls == list(first)
     assert result.run_result.tool_calls_used == 5
     assert result.attempt_result.metadata["proposed_tool_call_count"] == 2
     assert result.attempt_result.metadata["remaining_tool_budget"] == 1
-    assert len(model.requests) == 2
+    assert result.attempt_result.metadata["budget_forced_synthesis"] is True
+    assert len(model.requests) == 3
 
 
 def test_candidate_batch_capacity_rejection_starts_nothing() -> None:

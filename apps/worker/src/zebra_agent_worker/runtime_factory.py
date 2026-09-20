@@ -36,10 +36,45 @@ def build_runtime(
     runtime_class = RuntimeClass(settings.runtime.runtime_class)
     if runtime_class is RuntimeClass.TRUSTED_LOCAL:
         return LocalRuntime(snapshot_root=runtime_root)
+    spec = build_runtime_spec(
+        settings,
+        workspace_root=workspace_root,
+        network_profile=network_profile,
+        session_id=session_id,
+        attempt_number=attempt_number,
+    )
+    if runtime_class is RuntimeClass.OS_SANDBOX:
+        return OsSandboxRuntime(spec, snapshot_root=runtime_root)
+    pinned = None
+    lifecycle = None
+    if settings.deployment == "cloud":
+        if instance_factory is None:
+            raise ValueError("cloud OCI runtime requires a fenced instance lifecycle")
+        pinned = pin_cloud_engine(settings)
+        lifecycle = instance_factory(pinned.identity)
+    return OciRuntime(
+        spec,
+        engine_command=(settings.runtime.engine,),
+        gvisor_runtime=settings.runtime.gvisor_runtime,
+        snapshot_root=runtime_root,
+        runner=run_process_tree if pinned is None else pinned,
+        instance_lifecycle=lifecycle,
+    )
+
+
+def build_runtime_spec(
+    settings: ZebraAgentSettings,
+    *,
+    workspace_root: Path,
+    network_profile: str,
+    session_id: str,
+    attempt_number: int,
+) -> SandboxSpec:
+    runtime_class = RuntimeClass(settings.runtime.runtime_class)
     engine = (
         os_sandbox_engine() if runtime_class is RuntimeClass.OS_SANDBOX else settings.runtime.engine
     )
-    spec = SandboxSpec(
+    return SandboxSpec(
         runtime_class=runtime_class,
         image=settings.runtime.image,
         workspace_root=str(workspace_root.resolve()),
@@ -63,23 +98,6 @@ def build_runtime(
                 else None
             ),
         ),
-    )
-    if runtime_class is RuntimeClass.OS_SANDBOX:
-        return OsSandboxRuntime(spec, snapshot_root=runtime_root)
-    pinned = None
-    lifecycle = None
-    if settings.deployment == "cloud":
-        if instance_factory is None:
-            raise ValueError("cloud OCI runtime requires a fenced instance lifecycle")
-        pinned = pin_cloud_engine(settings)
-        lifecycle = instance_factory(pinned.identity)
-    return OciRuntime(
-        spec,
-        engine_command=(settings.runtime.engine,),
-        gvisor_runtime=settings.runtime.gvisor_runtime,
-        snapshot_root=runtime_root,
-        runner=run_process_tree if pinned is None else pinned,
-        instance_lifecycle=lifecycle,
     )
 
 

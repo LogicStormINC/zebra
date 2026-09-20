@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
+from agent_core.domain.attachments import AttachmentContextInput
+from agent_core.domain.identifiers import new_artifact_id
 from agent_core.domain.memories import MemoryType
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 
@@ -199,3 +201,32 @@ def test_host_bound_context_skips_workspace_content(tmp_path: Path) -> None:
     assert "Use the frozen Host tools for Trench data." in prompt
     assert "WORKSPACE_SCAN_MUST_NOT_REACH_HOST_PROMPT" not in prompt
     assert "Repo Map" not in prompt
+
+
+def test_attachment_truncation_and_omission_are_explicit(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    first = AttachmentContextInput(
+        attachment_id=new_artifact_id(), file_name="long.txt",
+        media_type="text/plain", text="x" * 9_000 + "TAIL_RESTRICTION",
+    )
+    second = AttachmentContextInput(
+        attachment_id=new_artifact_id(), file_name="second.txt",
+        media_type="text/plain", text="y" * 9_000,
+    )
+    third = AttachmentContextInput(
+        attachment_id=new_artifact_id(), file_name="third.txt",
+        media_type="text/plain", text="z" * 100,
+    )
+
+    prompt = LocalContextCompiler(include_workspace=False).build_system_prompt(
+        task_input="review all attachments", workspace_root=workspace.resolve(),
+        max_tokens=12_000, attachments=(first, second, third),
+    )
+
+    assert prompt is not None
+    assert "included characters 0-8192 of 9016; truncated=true" in prompt
+    assert f"snapshot_ref=artifact://{first.attachment_id}" in prompt
+    assert "TAIL_RESTRICTION" not in prompt
+    assert "Attachments omitted from inline context: third.txt" in prompt
+    assert "before claiming complete coverage" in prompt

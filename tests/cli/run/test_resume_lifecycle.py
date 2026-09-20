@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -258,7 +259,12 @@ def test_cli_resume_command_execute_reports_tool_trace(
     trace = result.payload["trace"]
     assert len(trace) == 1
     assert trace[0]["attempt_number"] == 1
-    assert trace[0]["assistant_message"] == "Tool result: resume readme"
+    observation = json.loads(
+        trace[0]["assistant_message"].removeprefix("Tool result: ")
+    )
+    assert observation["status"] == "executed"
+    assert observation["output"] == "resume readme\n"
+    assert observation["artifact_uri"].startswith("artifact://")
     tool = trace[0]["tools"][0]
     assert tool["tool_name"] == "files.read"
     assert tool["status"] == "executed"

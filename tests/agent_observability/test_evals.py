@@ -67,29 +67,31 @@ def test_local_eval_grader_reports_failed_thresholds() -> None:
 def test_load_eval_cases_from_directory() -> None:
     cases = load_eval_cases(Path("evals/cases"))
 
-    assert [case.case_id for case in cases] == [
+    assert len(cases) == 30
+    assert {case.case_id for case in cases} >= {
         "analysis-locate-error",
-        "bugfix-python-test",
-        "bugfix-typescript-type-error",
-        "recovery-dependency-lock-constraint",
-        "recovery-resume-task",
-        "refactor-control-unrelated-diff",
-        "refactor-cross-file",
-        "security-block-env",
-        "skill-guided-bugfix",
-        "skill-guided-refactor",
-    ]
+        "bugfix-shared-root-cause",
+        "creation-report-artifact",
+        "operation-deploy-verify",
+        "research-conflicting-sources",
+        "security-prompt-injection",
+    }
 
 
 def test_eval_case_directory_covers_phase_7_baseline_categories() -> None:
     cases = load_eval_cases(Path("evals/cases"))
 
-    assert len(cases) >= 8
+    assert len(cases) >= 30
     assert {case.category for case in cases} == {
         "analysis",
         "bugfix",
+        "conversation",
+        "creation",
+        "operation",
+        "provider",
         "recovery",
         "refactor",
+        "research",
         "security",
     }
 

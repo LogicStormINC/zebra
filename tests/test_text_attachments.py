@@ -209,7 +209,9 @@ def test_execute_session_projects_attachment_as_untrusted_context(
     assert requests[0][0].role is MessageRole.SYSTEM
     assert "[user_attachment] material.txt" in requests[0][0].content
     assert "Untrusted user-provided material" in requests[0][0].content
-    assert "do not use workspace tools to retrieve it" in requests[0][0].content
+    assert "Attachment coverage:" in requests[0][0].content
+    assert "truncated=false" in requests[0][0].content
+    assert "authorized attachment or Artifact reader" in requests[0][0].content
     assert "ATTACHMENT-CONTEXT-131" in requests[0][0].content
     assert requests[0][-1].content == "Read my material."
 

@@ -198,6 +198,9 @@ def research_evidence_gate(
 
 # --- Legacy local fast-path shapes (retained until SUBAGENT-CLOUD-CUTOVER-01) ---
 
+DEFAULT_RESEARCH_MAX_MODEL_CALLS = 4
+DEFAULT_RESEARCH_MAX_TOOL_CALLS = 32
+
 
 @dataclass(frozen=True)
 class ResearchSource:
@@ -213,8 +216,8 @@ class ResearchSource:
 class ResearchSubagentTask:
     objective: str
     workspace_root: Path
-    max_model_calls: int = 3
-    max_tool_calls: int = 2
+    max_model_calls: int = DEFAULT_RESEARCH_MAX_MODEL_CALLS
+    max_tool_calls: int = DEFAULT_RESEARCH_MAX_TOOL_CALLS
     depth: int = 1
     skill_components: tuple[str, ...] = ()
 

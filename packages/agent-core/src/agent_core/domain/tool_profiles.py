@@ -13,6 +13,7 @@ GENERAL_TOOL_NAMES = frozenset(
         "agent.clarify",
         "agent.plan",
         "agent.research",
+        "artifacts.read",
         "command.run",
         "files.list",
         "files.read",
@@ -38,6 +39,7 @@ RESEARCH_TOOL_NAMES = frozenset(
     {
         "agent.clarify",
         "agent.plan",
+        "artifacts.read",
         "files.list",
         "files.publish",
         "files.read",

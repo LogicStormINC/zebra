@@ -1,0 +1,1 @@
+{"case_id":"research-conflicting-sources","category":"research","title":"Reconcile conflicting sources","prompt":"Research conflicting reports, describe the disagreement, state what is verified, and cite the exact sources.","min_events":3,"min_tool_results":1,"max_cost_usd":1.0,"require_evidence":true,"max_failed_tool_results":0}

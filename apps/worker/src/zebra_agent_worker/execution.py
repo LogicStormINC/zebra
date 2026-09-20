@@ -11,7 +11,6 @@ from agent_context import LocalContextCompiler
 from agent_core.application import SessionTitleService
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.leases import WorkerLease
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
 from agent_integrations import build_model_gateway
@@ -38,6 +37,7 @@ from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.effect_runtime import guard_worker_effects
 from zebra_agent_worker.execution_completion import finish_execution
+from zebra_agent_worker.execution_entrypoints import SessionExecutionEntrypoints
 from zebra_agent_worker.execution_errors import (
     error_metadata,
     exception_attempt_result,
@@ -46,8 +46,6 @@ from zebra_agent_worker.execution_errors import (
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder, ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
 from zebra_agent_worker.execution_recovery import (
-    execute_existing_lease,
-    execute_session_with_lease,
     persist_runtime_cleanup_failure,
     recover_execution_inputs,
 )
@@ -63,7 +61,7 @@ from zebra_agent_worker.tool_run_index import ToolRunIndexer
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 
 
-class SessionExecutionService:
+class SessionExecutionService(SessionExecutionEntrypoints):
     def __init__(
         self,
         *,
@@ -181,33 +179,6 @@ class SessionExecutionService:
             extension_snapshot_store, extension_skills, extension_mcp,
         )
 
-    def execute_session(
-        self,
-        session_id: SessionId,
-        *,
-        worker_id: str,
-        executed_at: datetime | None = None,
-        lease_ttl_seconds: int = 30,
-    ) -> execution_finalization.ExecutedSession:
-        return execute_session_with_lease(
-            self,
-            session_id,
-            worker_id=worker_id,
-            executed_at=executed_at,
-            lease_ttl_seconds=lease_ttl_seconds,
-        )
-
-    def execute_claimed_session(
-        self,
-        lease: WorkerLease,
-        *,
-        executed_at: datetime | None = None,
-        lease_ttl_seconds: int = 30,
-    ) -> execution_finalization.ExecutedSession:
-        return execute_existing_lease(
-            self, lease, executed_at=executed_at, lease_ttl_seconds=lease_ttl_seconds
-        )
-
     def _execute_claimed_session_once(
         self,
         claimed: ClaimedSession,
@@ -289,6 +260,13 @@ class SessionExecutionService:
         except (RuntimeError, ValueError) as exc:
             raise WorkerExecutionError(str(exc)) from exc
         try:
+            compatible_runtime_session_ids: tuple[str, ...] = ()
+            if self._task_index_store is not None:
+                indexed_task = self._task_index_store.ensure_for_session(session_id)
+                compatible_runtime_session_ids = tuple(
+                    str(segment.session_id)
+                    for segment in self._task_index_store.segments(indexed_task.task_id)
+                )
             runtime, prepared_runtime = runtime_setup.build_prepared_runtime(
                 self._settings,
                 self._database_path,
@@ -301,12 +279,14 @@ class SessionExecutionService:
                 instance_factory=runtime_setup.bind_instance_factory(
                     self._runtime_instance_factory, claimed.lease, session_events, task_binding
                 ),
+                compatible_session_ids=compatible_runtime_session_ids,
             )
             runtime_handle = prepared_runtime.handle
             authority = runtime_handle.authority
             runtime_setup.require_matching_runtime_authority(
                 runtime_handle,
                 None if trusted_local else claimed.recovery.workspace.runtime_spec_digest,
+                prepared_runtime.compatible_authority_digests,
             )
             authority_recorder = self._projection_recorder_factory.build(
                 session=claimed.recovery.session,
@@ -467,7 +447,12 @@ class SessionExecutionService:
                 )
             except Exception as exc:
                 attempt_result = exception_attempt_result(
-                    exc, error_metadata(exc, clarification, continuation)
+                    exc,
+                    error_metadata(
+                        exc,
+                        clarification,
+                        child_wakeup or continuation,
+                    ),
                 )
             finally:
                 cleanup_error = release_gateway()

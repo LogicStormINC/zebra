@@ -30,6 +30,7 @@ from agent_core.harness.model_step_support import (
     ZEBRA_AGENT_IDENTITY_DIRECTIVE,
     final_answer_instruction,
     selected_skill_message,
+    task_acceptance_message,
     tool_result_content,
 )
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
@@ -286,7 +287,6 @@ class HarnessModelStep:
                 model_call_id=model_call_id,
             ),
         )
-
     def prepare_provider_continuation(
         self,
         model_gateway: ModelGatewayPort,
@@ -299,7 +299,6 @@ class HarnessModelStep:
         )
         self._provider_continuation = selection.reference
         self._emit_continuation_selection(selection)
-
     def _emit_continuation_selection(self, selection: PreparedProviderContinuation) -> None:
         if self._event_sink is None:
             return
@@ -352,7 +351,10 @@ class HarnessModelStep:
                 content=tool_result_content(tool_result),
                 created_at=created_at,
                 tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
-                metadata=dict(tool_result.metadata),
+                metadata={
+                    **tool_result.metadata,
+                    "tool_status": tool_result.status.value,
+                },
             )
         )
 
@@ -452,6 +454,11 @@ class HarnessModelStep:
         )
         if skill_message is not None:
             messages.append(skill_message)
+        acceptance_message = task_acceptance_message(
+            task.user_input, created_at=created_at, contract=task.acceptance_contract
+        )
+        if acceptance_message is not None:
+            messages.append(acceptance_message)
         active_steps = tuple(
             step for step in task.task_plan.steps if step.status.value in {"pending", "in_progress"}
         )
@@ -462,10 +469,7 @@ class HarnessModelStep:
                     role=MessageRole.SYSTEM,
                     content="\n".join(
                         ["Current durable task plan:"]
-                        + [
-                            f"- [{step.status.value}] {step.step_id}: {step.content}"
-                            for step in active_steps
-                        ]
+                        + [f"- [{s.status.value}] {s.step_id}: {s.content}" for s in active_steps]
                     ),
                     created_at=created_at,
                 )

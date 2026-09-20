@@ -27,6 +27,7 @@ from agent_core.domain.parent_continuation import (
 )
 from agent_core.domain.sessions import SessionStatus
 from agent_storage.postgres.subagent_delegation import (
+    canonical_child_terminal_summary,
     child_terminal_summary_in_transaction,
 )
 
@@ -34,10 +35,19 @@ _STATUS_MAP: dict[str, ChildTerminalStatus] = {
     SessionStatus.COMPLETED.value: ChildTerminalStatus.COMPLETED,
     SessionStatus.FAILED.value: ChildTerminalStatus.FAILED,
     SessionStatus.CANCELLED.value: ChildTerminalStatus.CANCELLED,
+    # A delegated child cannot be resumed by the parent. Treat a recoverable
+    # child suspension as a failed delegation result so every child epoch
+    # settles and the parent can decide how to continue.
+    SessionStatus.SUSPENDED.value: ChildTerminalStatus.FAILED,
 }
 
 _POLL_LIMIT = 16
 _WAKEUP_NAMESPACE = UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8")
+
+
+def child_terminal_status(status: SessionStatus | str) -> ChildTerminalStatus | None:
+    raw = status.value if isinstance(status, SessionStatus) else status
+    return _STATUS_MAP.get(raw)
 
 
 class ChildCompletionWakeupService:
@@ -69,14 +79,14 @@ class ChildCompletionWakeupService:
                     AND proj.session_id = link.child_task_id
                 WHERE link.deployment_namespace = %s
                     AND link.terminal_at IS NULL
-                    AND proj.status IN ('completed', 'failed', 'cancelled')
+                    AND proj.status IN ('completed', 'failed', 'cancelled', 'suspended')
                 LIMIT %s
                 """,
                 (namespace, _POLL_LIMIT),
             ).fetchall()
         results: list[dict[str, object]] = []
         for row in rows:
-            mapped = _STATUS_MAP.get(row["session_status"])
+            mapped = child_terminal_status(row["session_status"])
             if mapped is None:
                 continue
             results.append(
@@ -156,7 +166,7 @@ class ChildCompletionWakeupService:
                     {
                         "child_task_id": str(record.child_task_id),
                         "status": record.status.value,
-                        "summary": summary or "child reached a terminal status",
+                        "summary": canonical_child_terminal_summary(summary),
                     }
                 )
             current = connection.execute(

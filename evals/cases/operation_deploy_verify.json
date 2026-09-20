@@ -1,0 +1,1 @@
+{"case_id":"operation-deploy-verify","category":"operation","title":"Deploy and verify health","prompt":"Deploy the current version, then verify process health and the live endpoint before reporting completion.","min_events":3,"min_tool_results":1,"max_cost_usd":1.5,"max_failed_tool_results":0}

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import ToolCallId
+from agent_core.domain.identifiers import ToolCallId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.tools import ToolCall
 
@@ -47,6 +47,7 @@ class ChildWakeupContinuation:
     model_calls_used: int
     tool_calls_executed: int
     assistant_message: str
+    metadata: dict[str, object] | None = None
 
     @property
     def tool_call(self) -> ToolCall:
@@ -118,7 +119,12 @@ def recover_child_wakeup_continuation(
     )
     conversation = _conversation_without_stubs(
         epoch[-1].payload.get("conversation"),
-        {str(call.tool_call_id) for call in tool_calls},
+        {
+            call_id
+            for call in tool_calls
+            for call_id in (str(call.tool_call_id), call.provider_call_id)
+            if call_id is not None
+        },
     )
     return ChildWakeupContinuation(
         tool_calls=tool_calls,
@@ -127,6 +133,9 @@ def recover_child_wakeup_continuation(
         model_calls_used=_non_negative_int(epoch[-1].payload.get("model_calls_used"), 1),
         tool_calls_executed=_non_negative_int(epoch[-1].payload.get("tool_calls_executed"), 0),
         assistant_message=_required_string(epoch[-1].payload, "assistant_message"),
+        metadata=_continuation_metadata(
+            epoch[-1].payload.get("continuation_metadata")
+        ),
     )
 
 
@@ -140,6 +149,14 @@ def _is_child_wakeup_command(event: SessionEvent) -> bool:
         and isinstance(event.payload.get("payload"), dict)
         and isinstance(event.payload["payload"].get("child_results"), list)
     )
+
+
+def _continuation_metadata(value: object) -> dict[str, object] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ChildWakeupContinuationError("child continuation metadata is invalid")
+    return dict(value)
 
 
 def _tool_call_of(event: SessionEvent) -> ToolCall:
@@ -187,7 +204,14 @@ def _child_results(value: object) -> tuple[ChildResultDelivery, ...]:
 def _conversation_without_stubs(
     value: object, tool_call_ids: set[str]
 ) -> tuple[SessionMessage, ...]:
-    """Drop the 'materialized' stub results; the real ones are injected."""
+    """Drop stubs and rebase private provider continuations for durable resume.
+
+    DeepSeek reasoning bytes are deliberately excluded from durable Events. A
+    restored assistant tool-call message therefore cannot be replayed as the
+    same provider continuation. Preserve its public evidence as fresh user
+    context instead, so the resumed high-reasoning synthesis stays valid
+    without persisting or exposing private chain-of-thought.
+    """
 
     if not isinstance(value, list):
         raise ChildWakeupContinuationError("delegated conversation is invalid")
@@ -195,11 +219,55 @@ def _conversation_without_stubs(
         messages = tuple(SessionMessage.model_validate(item) for item in value)
     except ValueError as exc:
         raise ChildWakeupContinuationError("delegated conversation is invalid") from exc
-    return tuple(
+    messages = tuple(
         message
         for message in messages
         if not (message.role is MessageRole.TOOL and message.tool_call_id in tool_call_ids)
     )
+    private_call_ids = {
+        call.provider_call_id or str(call.tool_call_id)
+        for message in messages
+        if (
+            message.role is MessageRole.ASSISTANT
+            and message.metadata.get("provider_reasoning_required") is True
+            and message.provider_reasoning_content is None
+        )
+        for call in message.tool_calls
+    }
+    if not private_call_ids:
+        return messages
+    rebased: list[SessionMessage] = []
+    for message in messages:
+        missing_private_reasoning = (
+            message.role is MessageRole.ASSISTANT
+            and message.metadata.get("provider_reasoning_required") is True
+            and message.provider_reasoning_content is None
+        )
+        if missing_private_reasoning:
+            if message.content != "Tool calls proposed.":
+                rebased.append(
+                    SessionMessage(
+                        message_id=new_message_id(),
+                        role=MessageRole.USER,
+                        content=f"Prior public agent note:\n{message.content}",
+                        created_at=message.created_at,
+                        metadata={"durable_resume_rebased": True},
+                    )
+                )
+            continue
+        if message.role is MessageRole.TOOL and message.tool_call_id in private_call_ids:
+            rebased.append(
+                SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.USER,
+                    content=f"Durable tool evidence:\n{message.content}",
+                    created_at=message.created_at,
+                    metadata={"durable_resume_rebased": True},
+                )
+            )
+            continue
+        rebased.append(message)
+    return tuple(rebased)
 
 
 def _arguments(value: object) -> dict[str, object]:

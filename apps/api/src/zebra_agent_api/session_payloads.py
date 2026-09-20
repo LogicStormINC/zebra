@@ -89,14 +89,14 @@ def parse_create_session_payload(
 
     max_model_calls = payload.get("max_model_calls")
     max_tool_calls = payload.get("max_tool_calls")
-    for field, value, maximum in (
-        ("max_model_calls", max_model_calls, 16),
-        ("max_tool_calls", max_tool_calls, 64),
+    for field, value in (
+        ("max_model_calls", max_model_calls),
+        ("max_tool_calls", max_tool_calls),
     ):
         if value is not None and (
-            not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= maximum
+            not isinstance(value, int) or isinstance(value, bool) or value <= 0
         ):
-            return bad_request(f"{field} must be an integer from 1 to {maximum} when provided")
+            return bad_request(f"{field} must be a positive integer when provided")
     assert max_model_calls is None or isinstance(max_model_calls, int)
     assert max_tool_calls is None or isinstance(max_tool_calls, int)
     network_profile = payload.get("network_profile", "none")

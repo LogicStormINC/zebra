@@ -1,0 +1,1 @@
+{"case_id":"analysis-compare-implementations","category":"analysis","title":"Compare two implementations","prompt":"Inspect two implementations, compare tradeoffs, and report findings without editing.","min_events":3,"min_tool_results":1,"max_cost_usd":0.75,"require_evidence":true,"max_failed_tool_results":0}

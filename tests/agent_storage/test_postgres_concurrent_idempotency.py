@@ -361,6 +361,44 @@ def _complete_child(postgres_dsn: str, namespace: str, child: TaskId) -> None:
         )
 
 
+def _suspend_child(postgres_dsn: str, namespace: str, child: TaskId) -> None:
+    with connect(postgres_dsn) as connection:
+        connection.execute(
+            """
+            UPDATE session_projections
+            SET status = 'suspended', updated_at = NOW()
+            WHERE deployment_namespace = %s AND session_id = %s
+            """,
+            (namespace, str(child)),
+        )
+
+
+def test_suspended_child_settles_delegation_and_resumes_parent(
+    postgres_dsn: str, namespace: str
+) -> None:
+    from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
+
+    parent, children = _wakeup_setup(postgres_dsn, namespace, children=1)
+    child = children[0]
+    _suspend_child(postgres_dsn, namespace, child)
+
+    service = ChildCompletionWakeupService(postgres_dsn, deployment_namespace=namespace)
+    pending = service.poll_terminal_children()
+
+    assert pending == [
+        {
+            "child_task_id": child,
+            "parent_task_id": parent,
+            "status": ChildTerminalStatus.FAILED,
+        }
+    ]
+    result = service.process_child_terminal(child, status=ChildTerminalStatus.FAILED)
+    assert result is not None
+    assert result["decision"] == "resume"
+    assert result["any_success"] is False
+    assert len(_harness_resume_events(postgres_dsn, namespace, parent)) == 1
+
+
 def _harness_resume_events(postgres_dsn: str, namespace: str, parent: TaskId):
     with connect(postgres_dsn) as connection:
         rows = connection.execute(

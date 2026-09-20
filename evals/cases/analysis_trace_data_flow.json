@@ -1,0 +1,1 @@
+{"case_id":"analysis-trace-data-flow","category":"analysis","title":"Trace a data flow","prompt":"Trace the request from API admission through persistence and worker execution, then identify the authority boundary.","min_events":3,"min_tool_results":1,"max_cost_usd":0.75,"require_evidence":true,"max_failed_tool_results":0}

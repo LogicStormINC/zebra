@@ -1,0 +1,1 @@
+{"case_id":"operation-external-side-effect","category":"operation","title":"Verify an external side effect","prompt":"Execute the authorized external operation exactly once, verify the resulting state, and report the receipt.","min_events":3,"min_tool_results":1,"max_cost_usd":1.5,"max_failed_tool_results":0}

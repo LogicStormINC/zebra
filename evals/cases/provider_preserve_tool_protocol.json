@@ -1,0 +1,1 @@
+{"case_id":"provider-preserve-tool-protocol","category":"provider","title":"Preserve provider tool protocol","prompt":"Complete a tool exchange while preserving provider call identifiers and pairing every call with exactly one result.","min_events":3,"min_tool_results":1,"max_cost_usd":0.75,"max_failed_tool_results":0}

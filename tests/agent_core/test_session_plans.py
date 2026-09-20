@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -111,7 +112,7 @@ def test_agent_plan_updates_and_returns_full_plan_without_gateway_execution() ->
     assert result.metadata["tool_calls_executed"] == 1
 
 
-def test_invalid_agent_plan_fails_before_tool_or_durable_events() -> None:
+def test_invalid_agent_plan_is_returned_to_model_for_repair() -> None:
     invalid_call = ToolCall(
         tool_call_id=new_tool_call_id(),
         name="agent.plan",
@@ -123,7 +124,12 @@ def test_invalid_agent_plan_fails_before_tool_or_durable_events() -> None:
         },
         created_at=NOW,
     )
-    gateway = ScriptedModelGateway(responses=(_response("Invalid plan.", invalid_call),))
+    gateway = ScriptedModelGateway(
+        responses=(
+            _response("Invalid plan.", invalid_call),
+            _response("I corrected the plan and can continue."),
+        )
+    )
     session = Session.create(title="Plan", created_at=NOW).model_copy(
         update={"status": SessionStatus.RUNNING}
     )
@@ -142,12 +148,13 @@ def test_invalid_agent_plan_fails_before_tool_or_durable_events() -> None:
         )
     )
 
-    assert result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.metadata["stop_reason"] == "invalid_plan_request"
+    assert result.outcome is HarnessAttemptOutcome.COMPLETED
     assert EventType.PLAN_UPDATED not in {event.event_type for event in result.emitted_events}
-    assert EventType.TOOL_EXECUTION_STARTED not in {
-        event.event_type for event in result.emitted_events
-    }
+    assert EventType.TOOL_EXECUTION_STARTED in {event.event_type for event in result.emitted_events}
+    assert EventType.TOOL_EXECUTION_FAILED in {event.event_type for event in result.emitted_events}
+    observation = json.loads(gateway.requests[1][-1].content)
+    assert observation["status"] == "failed"
+    assert json.loads(observation["output"])["error"] == "invalid_plan"
 
 
 def test_recovered_active_plan_is_injected_without_completed_steps() -> None:

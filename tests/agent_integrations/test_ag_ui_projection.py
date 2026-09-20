@@ -161,7 +161,17 @@ def test_model_response_stage_is_projected_for_host_answer_selection() -> None:
             {
                 "assistant_message": "The verified result is ready.",
                 "model_call_id": "model-final",
-                "response_stage": "final",
+                "response_stage": "candidate",
+            },
+        ),
+        _event(
+            session_id,
+            2,
+            EventType.ANSWER_COMMITTED,
+            {
+                "assistant_message": "The verified result is ready.",
+                "model_call_id": "model-final",
+                "delivery_assessment": {"status": "complete"},
             },
         ),
     )
@@ -173,7 +183,12 @@ def test_model_response_stage_is_projected_for_host_answer_selection() -> None:
         if isinstance(event, CustomEvent) and event.name == "zebra.model_response"
     ]
 
-    assert stages == ["tool_loop", "final"]
+    assert stages == ["tool_loop", "candidate"]
+    committed = next(
+        event for event in projection.events
+        if isinstance(event, CustomEvent) and event.name == "zebra.answer_committed"
+    )
+    assert committed.value["delivery_assessment"] == {"status": "complete"}
 
 
 def test_user_file_tool_result_preserves_download_metadata_for_host_projection() -> None:
@@ -230,6 +245,54 @@ def test_user_file_tool_result_preserves_download_metadata_for_host_projection()
         "output": f"Published result.md: {artifact_uri}",
         "status": "executed",
         "type": "zebra.user_file.v1",
+    }
+
+
+def test_failed_tool_result_preserves_status_and_safe_diagnostics() -> None:
+    session_id = new_session_id()
+    events = (
+        _event(
+            session_id,
+            0,
+            EventType.TOOL_CALL_PROPOSED,
+            {
+                "attempt_number": 1,
+                "tool_name": "events.get_event",
+                "tool_call_id": "tool-failed-1",
+                "arguments": {"event_id": "event-1"},
+            },
+        ),
+        _event(
+            session_id,
+            1,
+            EventType.TOOL_EXECUTION_FAILED,
+            {
+                "attempt_number": 1,
+                "tool_name": "events.get_event",
+                "tool_call_id": "tool-failed-1",
+                "status": "failed",
+                "output": "",
+                "metadata": {
+                    "reason": "resource_denied",
+                    "detail": "not granted",
+                    "secret": "must-not-leak",
+                },
+            },
+        ),
+    )
+
+    projection = AgUiProjector().project(events, _identity(session_id))
+    result = next(
+        event
+        for event in projection.events
+        if event.type is AgUiEventType.TOOL_CALL_RESULT
+    )
+
+    assert json.loads(result.content) == {
+        "metadata": {"detail": "not granted", "reason": "resource_denied"},
+        "output": "",
+        "status": "failed",
+        "type": "zebra.tool_result.v1",
     }
 
 

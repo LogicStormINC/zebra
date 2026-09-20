@@ -1,0 +1,1 @@
+{"case_id":"bugfix-shared-root-cause","category":"bugfix","title":"Fix a shared root cause","prompt":"Find every caller affected by the defect, fix the shared implementation once, and run focused regression checks.","min_events":3,"min_tool_results":1,"max_cost_usd":1.0,"max_failed_tool_results":0}

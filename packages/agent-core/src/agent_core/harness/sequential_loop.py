@@ -1,12 +1,13 @@
 from collections.abc import Callable, Mapping
 
-from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall, ToolResult
-from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.attempt_result import build_attempt_result
 from agent_core.harness.clarification_step import clarification_tool_result
 from agent_core.harness.client_effect_suspension import client_effect_suspension_result
 from agent_core.harness.delegation_suspension import delegation_suspension_result
+from agent_core.harness.evidence_ledger import record_tool_evidence
 from agent_core.harness.final_completion import finalize_without_tools
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_request import allowed_response_repairs
@@ -23,6 +24,7 @@ from agent_core.harness.orchestration_events import (
     model_response_event,
 )
 from agent_core.harness.selection import ToolCallSelectionStrategy
+from agent_core.harness.sequential_support import executed_action_fingerprints
 from agent_core.harness.tool_batch import ToolBatchExecutor
 from agent_core.harness.tool_resolution import (
     ToolCallResolver,
@@ -65,7 +67,6 @@ class SequentialToolLoop:
             parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
         )
-
     def continue_approved(
         self,
         context: HarnessContext,
@@ -76,6 +77,7 @@ class SequentialToolLoop:
         conversation: tuple[SessionMessage, ...],
         model_calls_used: int,
         tool_calls_executed: int,
+        metadata: dict[str, object] | None = None,
     ) -> HarnessAttemptResult:
         messages = list(conversation) or self._model_step.build_initial_messages(
             context.task,
@@ -88,7 +90,7 @@ class SequentialToolLoop:
                 completion=completion,
                 tool_calls=calls,
             )
-        fingerprints = _executed_action_fingerprints(messages)
+        fingerprints = executed_action_fingerprints(messages)
         emitted_events: list[HarnessEventDraft] = HarnessEventBuffer(self._event_sink)
         batch = self._batch_executor.execute(
             context,
@@ -98,9 +100,9 @@ class SequentialToolLoop:
             emitted_events=emitted_events,
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
-            tool_call_limit=_tool_limit(context),
+            tool_call_limit=context.task.max_tool_calls,
             fingerprints=fingerprints,
-            metadata={"approval_continuation": True},
+            metadata={**(metadata or {}), "approval_continuation": True},
             execute_all=self._synthesize_tool_results,
             first_execution_started=True,
         )
@@ -150,6 +152,7 @@ class SequentialToolLoop:
         model_calls_used: int,
         tool_calls_executed: int,
         assistant_message: str,
+        metadata: dict[str, object] | None = None,
     ) -> HarnessAttemptResult:
         return self.continue_completed_batch(
             context,
@@ -160,7 +163,7 @@ class SequentialToolLoop:
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
             assistant_message=assistant_message,
-            metadata={"completed_continuation": True},
+            metadata={**(metadata or {}), "completed_continuation": True},
         )
 
     def continue_completed_batch(
@@ -187,6 +190,7 @@ class SequentialToolLoop:
             )
         if len(tool_results) != len(tool_calls):
             raise ValueError("completed batch results must match the tool calls")
+        updated_metadata = dict(metadata or {})
         for tool_call, tool_result in zip(tool_calls, tool_results, strict=True):
             self._model_step.append_tool_result(
                 messages,
@@ -194,14 +198,15 @@ class SequentialToolLoop:
                 tool_result=tool_result,
                 created_at=context.attempt.started_at,
             )
+            updated_metadata = record_tool_evidence(updated_metadata, tool_result)
         return self._request_next_completion(
             context,
             messages=messages,
             emitted_events=HarnessEventBuffer(self._event_sink),
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
-            fingerprints=_executed_action_fingerprints(messages),
-            metadata=metadata or {},
+            fingerprints=executed_action_fingerprints(messages),
+            metadata=updated_metadata,
             fallback_message=assistant_message,
         )
 
@@ -215,6 +220,7 @@ class SequentialToolLoop:
         model_calls_used: int,
         tool_calls_executed: int,
         assistant_message: str,
+        metadata: dict[str, object] | None = None,
     ) -> HarnessAttemptResult:
         messages = list(conversation)
         clarification_id = str(tool_call.tool_call_id)
@@ -235,8 +241,9 @@ class SequentialToolLoop:
             emitted_events=HarnessEventBuffer(self._event_sink),
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
-            fingerprints=_executed_action_fingerprints(messages),
+            fingerprints=executed_action_fingerprints(messages),
             metadata={
+                **(metadata or {}),
                 "clarification_continuation": True,
                 "clarification_id": clarification_id,
             },
@@ -293,12 +300,35 @@ class SequentialToolLoop:
                     else set()
                 ),
                 read_only_tools=self._batch_executor.read_only_tools,
-                tool_limit=_tool_limit(context),
+                tool_limit=context.task.max_tool_calls,
                 request_next=self._request_next_completion,
             )
             return gated
         selection = self._tool_selector.select(completion.tool_calls)
         calls = completion.tool_calls if self._synthesize_tool_results else (selection.tool_call,)
+        tool_limit = context.task.max_tool_calls
+        if (
+            tool_limit is not None
+            and tool_calls_executed > 0
+            and tool_calls_executed + len(calls) > tool_limit
+        ):
+            return self._request_next_completion(
+                context,
+                messages=messages,
+                emitted_events=emitted_events,
+                model_calls_used=model_calls_used,
+                tool_calls_executed=tool_calls_executed,
+                fingerprints=fingerprints,
+                metadata={
+                    **metadata,
+                    "tool_call_limit": tool_limit,
+                    "proposed_tool_call_count": len(calls),
+                    "remaining_tool_budget": tool_limit - tool_calls_executed,
+                    "budget_forced_synthesis": True,
+                },
+                fallback_message=completion.assistant_message.content,
+                force_final=True,
+            )
         self._model_step.append_tool_batch(
             messages,
             completion=completion,
@@ -312,7 +342,7 @@ class SequentialToolLoop:
             emitted_events=emitted_events,
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
-            tool_call_limit=_tool_limit(context),
+            tool_call_limit=context.task.max_tool_calls,
             fingerprints=fingerprints,
             metadata=metadata,
             execute_all=self._synthesize_tool_results,
@@ -364,6 +394,7 @@ class SequentialToolLoop:
         fingerprints: set[str],
         metadata: dict[str, object],
         fallback_message: str,
+        force_final: bool = False,
     ) -> HarnessAttemptResult:
         model_limit = context.task.max_model_calls
         if model_limit is not None and model_calls_used >= model_limit:
@@ -376,12 +407,12 @@ class SequentialToolLoop:
                 emitted_events=emitted_events,
                 metadata={**metadata, "stop_reason": "model_call_budget_exhausted"},
             )
-        tool_limit = _tool_limit(context)
+        tool_limit = context.task.max_tool_calls
         tool_budget_open = tool_limit is None or tool_calls_executed < tool_limit
         # ponytail: a model-call limit bounds requests, not capabilities inside
         # the final permitted request. If that request calls a tool and needs a
         # subsequent synthesis turn, the next entry to this method suspends it.
-        allow_tools = tool_budget_open
+        allow_tools = tool_budget_open and not force_final
         if not allow_tools:
             self._model_step.append_final_answer_instruction(
                 messages,
@@ -429,7 +460,7 @@ class SequentialToolLoop:
             model_response_event(
                 completion,
                 attempt_number=context.attempt.number,
-                response_stage="tool_loop" if completion.tool_calls else "final",
+                response_stage="tool_loop" if completion.tool_calls else "candidate",
             )
         )
         if completion.tool_calls and not allow_tools:
@@ -457,19 +488,3 @@ class SequentialToolLoop:
             fingerprints=fingerprints,
             metadata=metadata,
         )
-
-
-def _executed_action_fingerprints(messages: list[SessionMessage]) -> set[str]:
-    completed_ids = {
-        message.tool_call_id for message in messages if message.role is MessageRole.TOOL
-    }
-    return {
-        action_fingerprint(call)
-        for message in messages
-        for call in message.tool_calls
-        if (call.provider_call_id or str(call.tool_call_id)) in completed_ids
-    }
-
-
-def _tool_limit(context: HarnessContext) -> int | None:
-    return context.task.max_tool_calls

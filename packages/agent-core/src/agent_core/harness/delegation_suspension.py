@@ -19,6 +19,7 @@ from agent_core.harness.models import (
     HarnessContext,
     HarnessEventDraft,
 )
+from agent_core.harness.orchestration_events import continuation_metadata
 
 SUSPEND_AFTER_TURN = "suspend_after_turn"
 CHILD_TASK_ID = "child_task_id"
@@ -58,6 +59,7 @@ def delegation_suspension_result(
                     ],
                     "model_calls_used": model_calls_used,
                     "tool_calls_executed": tool_calls_executed,
+                    "continuation_metadata": continuation_metadata(metadata),
                     **(
                         {"provider_call_id": tool_call.provider_call_id}
                         if tool_call.provider_call_id is not None

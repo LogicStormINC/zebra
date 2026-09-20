@@ -211,6 +211,27 @@ def test_long_tool_loop_stays_bounded_and_preserves_latest_pairs(
     assert len(result.capsule.touched_files) == exchange_count
 
 
+def test_under_budget_completed_exchanges_remain_exact() -> None:
+    call = _call("report.txt", "call_exact")
+    messages = (
+        _message(MessageRole.USER, "Inspect the report."),
+        _assistant("I will inspect it.", call),
+        _tool("call_exact", "exact structured evidence"),
+        _message(MessageRole.ASSISTANT, "The report is valid."),
+    )
+
+    result = compact_message_history(
+        messages,
+        user_goal="Inspect the report.",
+        max_tokens=2_000,
+        created_at=NOW,
+    )
+
+    assert result.compacted is False
+    assert result.messages == messages
+    assert result.capsule is None
+
+
 def _message(role: MessageRole, content: str) -> SessionMessage:
     return SessionMessage(
         message_id=new_message_id(),

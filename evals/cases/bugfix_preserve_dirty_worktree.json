@@ -1,0 +1,1 @@
+{"case_id":"bugfix-preserve-dirty-worktree","category":"bugfix","title":"Preserve unrelated work","prompt":"Fix the requested defect while preserving unrelated dirty worktree changes and verify only the intended paths.","min_events":3,"min_tool_results":1,"max_cost_usd":1.0,"max_failed_tool_results":0}

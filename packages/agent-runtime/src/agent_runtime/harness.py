@@ -14,7 +14,7 @@ from agent_core.domain.tool_profiles import ToolProfile, tool_names_for_profile
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessLoop, HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
 from agent_core.harness.models import HarnessLoopResult, SkillReadRequirement
-from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
+from agent_core.ports import ArtifactPayloadReadPort, ArtifactPayloadStorePort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput
 from agent_core.ports.model_gateway import ModelGatewayPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
@@ -57,7 +57,9 @@ from agent_tools.skills_catalog import (
 )
 
 from agent_runtime.adapters.local import LocalRuntime
+from agent_runtime.artifact_tools import build_artifact_read_tools
 from agent_runtime.cloud_mcp_transport import CloudMcpTransport
+from agent_runtime.harness_defaults import DEFAULT_TEST_PRESETS
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
 from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagentTool
@@ -69,11 +71,6 @@ from agent_runtime.web_search import LocalWebSearchTransport
 from agent_runtime.web_tools import optional_web_search_endpoint, register_native_web_tools
 from agent_runtime.workspace import LocalWorkspace
 
-DEFAULT_TEST_PRESETS = {
-    "pytest": ("uv", "run", "pytest"),
-    "check": ("make", "check"),
-    "test": ("make", "test"),
-}
 DEFAULT_RESEARCH_CHILD_LIMIT = 3
 
 
@@ -198,6 +195,7 @@ class LocalToolGateway(ToolGatewayPort):
         runtime: RuntimePort | None = None,
         runtime_handle: RuntimeHandle | None = None,
         artifact_payload_store: ArtifactPayloadStorePort | None = None,
+        artifact_payload_reader: ArtifactPayloadReadPort | None = None,
         output_projector: ToolOutputProjector | None = None,
         file_publisher: Callable[[bytes, str, str], str] | None = None,
         max_publish_bytes: int = 0,
@@ -230,6 +228,7 @@ class LocalToolGateway(ToolGatewayPort):
         tools = (
             ClarifyTool(),
             PlanTool(),
+            *build_artifact_read_tools(artifact_payload_reader, current_session_id),
             WorkspaceListTool(
                 self._workspace,
                 max_output_bytes=None if output_projector is not None else 32_768,

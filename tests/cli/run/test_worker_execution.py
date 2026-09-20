@@ -87,6 +87,7 @@ def test_cli_run_command_execute_persists_harness_events(
         EventType.HARNESS_ATTEMPT_STARTED,
         EventType.MODEL_RESPONSE_RECEIVED,
         EventType.PLAN_PROPOSED,
+        EventType.ANSWER_COMMITTED,
         EventType.SESSION_COMPLETED,
     ]
     assert session is not None
@@ -140,7 +141,10 @@ def test_cli_run_command_execute_runs_file_read_tool(
     assert result.payload["trace"] == [
         {
             "attempt_number": 1,
-            "assistant_message": "Tool result: workspace readme",
+            "assistant_message": (
+                'Tool result: {"output": "workspace readme\\n", '
+                '"status": "executed", "truncated": false}'
+            ),
             "tools": [
                 {
                     "tool_name": "files.read",

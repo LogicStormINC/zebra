@@ -405,7 +405,8 @@ def test_default_chain_delegates_suspends_and_resumes(
         event for event in child_events if event.event_type is EventType.TASK_PREPARED
     )
     assert child_prepared.payload["max_model_calls"] == 3
-    assert child_prepared.payload["max_tool_calls"] == 2
+    assert child_prepared.payload["max_tool_calls"] == 32
+    assert child_prepared.payload["max_model_calls"] == 4
     inherited = child_prepared.payload["delegated_context"]
     assert inherited["mode"] == "fork_tail"
     assert inherited["source_session_id"] == session_id

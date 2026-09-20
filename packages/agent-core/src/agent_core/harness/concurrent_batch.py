@@ -9,6 +9,7 @@ from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.attempt_result import action_fingerprint, build_attempt_result
+from agent_core.harness.evidence_ledger import record_tool_evidence
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import (
@@ -234,6 +235,7 @@ class ConcurrentToolBatchExecutor:
             if tool_result.status is not ToolCallStatus.EXECUTED:
                 failed_names.append(tool_call.name)
             batch_metadata = {**batch_metadata, **execution.metadata}
+            batch_metadata = record_tool_evidence(batch_metadata, tool_result)
             batch_metadata = record_tool_freshness(
                 batch_metadata,
                 tool_call,

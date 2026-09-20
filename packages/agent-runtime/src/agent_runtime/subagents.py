@@ -5,6 +5,8 @@ from threading import Event, Lock
 
 from agent_core.domain.identifiers import SubagentId, new_subagent_id
 from agent_core.domain.subagents import (
+    DEFAULT_RESEARCH_MAX_MODEL_CALLS,
+    DEFAULT_RESEARCH_MAX_TOOL_CALLS,
     ResearchSubagentResult,
     ResearchSubagentTask,
     SubagentStatus,
@@ -50,8 +52,8 @@ class LocalResearchSubagentCoordinator(SubagentPort):
         max_children: int = 1,
         max_concurrency: int = 1,
         max_depth: int = 1,
-        max_model_calls: int = 3,
-        max_tool_calls: int = 2,
+        max_model_calls: int = DEFAULT_RESEARCH_MAX_MODEL_CALLS,
+        max_tool_calls: int = DEFAULT_RESEARCH_MAX_TOOL_CALLS,
         on_spawned: Callable[[SubagentId, "ResearchSubagentTask"], None] | None = None,
     ) -> None:
         if min(

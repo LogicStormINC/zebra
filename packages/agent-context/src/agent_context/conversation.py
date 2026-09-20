@@ -31,6 +31,8 @@ def compact_message_history(
     if max_tokens <= 0:
         raise ValueError("conversation max_tokens must be positive")
     before = estimate_message_tokens(messages)
+    if before <= max_tokens:
+        return _result(messages, before=before, max_tokens=max_tokens)
     projection = build_active_context_projection(messages)
     active_messages = projection.messages
     active_tokens = estimate_message_tokens(active_messages)
@@ -48,8 +50,6 @@ def compact_message_history(
             provenance=PROVENANCE,
             capsule=build_context_capsule(messages, user_goal=user_goal, created_at=created_at),
         )
-    if before <= max_tokens:
-        return _result(messages, before=before, max_tokens=max_tokens)
     prefix_end = _prefix_end(active_messages)
     tail_start = _recent_exact_tail_start(active_messages, prefix_end)
     middle = active_messages[prefix_end:tail_start]

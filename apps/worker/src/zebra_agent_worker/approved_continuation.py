@@ -23,6 +23,7 @@ class ApprovedContinuation:
     completed_output: str | None = None
     completed_status: str = "executed"
     completed_metadata: dict[str, object] | None = None
+    metadata: dict[str, object] | None = None
 
 
 def recover_approved_continuation(
@@ -107,6 +108,7 @@ def recover_approved_continuation(
             requested.payload.get("tool_calls_executed"),
             default=0,
         ),
+        metadata=_continuation_metadata(requested.payload.get("continuation_metadata")),
     )
     if completed is not None:
         if continuation.remaining_tool_calls:
@@ -172,3 +174,11 @@ def _non_negative_int(value: object, *, default: int) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         raise ApprovedContinuationError("pending tool call counters are invalid")
     return value
+
+
+def _continuation_metadata(value: object) -> dict[str, object] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ApprovedContinuationError("pending continuation metadata is invalid")
+    return dict(value)

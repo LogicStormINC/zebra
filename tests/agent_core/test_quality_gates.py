@@ -3,8 +3,15 @@ from uuid import uuid4
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.verification_evidence import VerificationResourceRef
+from agent_core.harness.evidence_ledger import EvidenceLedger
+from agent_core.harness.final_completion import _contract_verification_satisfied
 from agent_core.harness.models import SkillReadRequirement
 from agent_core.harness.quality_gates import evaluate_answer, missing_selected_skills
+from agent_core.harness.task_contracts import (
+    AgentTaskType,
+    TaskAcceptanceContract,
+    parse_task_contract,
+)
 from agent_core.harness.tool_freshness import (
     can_refresh_repeated_read,
     needs_post_mutation_verification,
@@ -59,6 +66,107 @@ def test_selected_skill_requires_the_frozen_version_and_digest() -> None:
 
 def test_analysis_word_alone_does_not_force_a_long_form_answer() -> None:
     assert evaluate_answer("分析一下原因", "根因是配置缺失。建议补齐配置后重试。").passed
+
+
+def test_english_markers_require_word_boundaries() -> None:
+    assert evaluate_answer("NEW CONCURRENT FOLLOW-UP", "NEW TURN ANSWER").passed
+
+
+def test_current_analysis_requires_collected_and_matching_source_reference() -> None:
+    prompt = "最近国际形势有什么变化"
+    answer = "# 变化\n\n- 已发生重要变化。\n\n" + "具体分析。" * 40
+    no_evidence = evaluate_answer(prompt, answer)
+    assert not no_evidence.passed
+    assert "verified_evidence" in no_evidence.missing_requirements
+
+    ledger = EvidenceLedger(
+        successful_tool_results=1,
+        evidence_refs=("https://example.test/source",),
+    )
+    uncited = evaluate_answer(prompt, answer, evidence=ledger)
+    assert not uncited.passed
+    assert "citation_matching_collected_evidence" in uncited.missing_requirements
+
+    cited = evaluate_answer(
+        prompt,
+        f"{answer}\n\n来源：https://example.test/source",
+        evidence=ledger,
+    )
+    assert cited.passed
+
+
+def test_citation_gate_rejects_invented_and_annotation_extended_urls() -> None:
+    prompt = "请总结最近变化并附链接"
+    source = "https://example.test/items/42"
+    ledger = EvidenceLedger(successful_tool_results=1, evidence_refs=(source,))
+    body = "# 变化\n\n- 关键事实与分析。\n\n" + "补充说明。" * 40
+
+    invented = evaluate_answer(
+        prompt,
+        f"{body}\n\n[原文](https://example.test/items/99)",
+        evidence=ledger,
+    )
+    assert not invented.passed
+    assert "citation_uses_exact_collected_url" in invented.missing_requirements
+
+    extended = evaluate_answer(
+        prompt,
+        f"{body}\n\n[原文]({source}（补充说明）)",
+        evidence=ledger,
+    )
+    assert not extended.passed
+    assert "citation_uses_exact_collected_url" in extended.missing_requirements
+
+    exact = evaluate_answer(prompt, f"{body}\n\n[原文]({source})（补充说明）", evidence=ledger)
+    assert exact.passed
+
+
+def test_claimed_evidence_text_does_not_substitute_for_a_real_ledger() -> None:
+    result = evaluate_answer("请提供证据", "证据：我猜的。")
+    assert not result.passed
+    assert result.reason == "deliverable_missing_evidence"
+
+
+def test_explicit_host_contract_overrides_prompt_heuristics() -> None:
+    contract = parse_task_contract(
+        {
+            "taskType": "change",
+            "goal": "Update the configuration and prove it worked.",
+            "requiredOutcomes": ["change_applied", "result_verified"],
+            "requireEvidence": True,
+            "requireVerification": True,
+        },
+        fallback_goal="Do it.",
+    )
+
+    assert contract.task_type is AgentTaskType.CHANGE
+    assert contract.require_verification
+    assert contract.required_outcomes == ("change_applied", "result_verified")
+    assert not evaluate_answer("Do it.", "Done.", contract=contract).passed
+
+
+def test_explicit_artifact_contract_requires_a_real_artifact_reference() -> None:
+    contract = TaskAcceptanceContract(
+        task_type=AgentTaskType.CREATE,
+        goal="Create the report artifact.",
+        require_artifact=True,
+    )
+    missing = evaluate_answer("Create it.", "Created.", contract=contract)
+    assert "required_artifact" in missing.missing_requirements
+    ledger = EvidenceLedger(artifact_refs=("artifact://report",))
+    assert evaluate_answer("Create it.", "Created.", contract=contract, evidence=ledger).passed
+
+
+def test_task_contract_verification_needs_runtime_proof() -> None:
+    assert not _contract_verification_satisfied({}, read_only_tools=frozenset())
+    assert _contract_verification_satisfied(
+        {"tool_metadata": {"postcondition_met": True}},
+        read_only_tools=frozenset(),
+    )
+    assert not _contract_verification_satisfied(
+        {"verification_passed": True, "verification_summary": "verifier hook skipped"},
+        read_only_tools=frozenset(),
+    )
 
 
 def test_resource_scoped_mutation_requires_matching_fresh_read() -> None:

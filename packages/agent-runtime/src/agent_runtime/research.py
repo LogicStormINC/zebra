@@ -11,6 +11,8 @@ from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SubagentId
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.subagents import (
+    DEFAULT_RESEARCH_MAX_MODEL_CALLS,
+    DEFAULT_RESEARCH_MAX_TOOL_CALLS,
     ResearchSource,
     ResearchSubagentResult,
     ResearchSubagentTask,
@@ -212,8 +214,8 @@ class ResearchSubagentTool:
         coordinator: SubagentPort,
         workspace_root: Path,
         *,
-        max_model_calls: int = 3,
-        max_tool_calls: int = 2,
+        max_model_calls: int = DEFAULT_RESEARCH_MAX_MODEL_CALLS,
+        max_tool_calls: int = DEFAULT_RESEARCH_MAX_TOOL_CALLS,
         max_depth: int = 1,
         wait_for_result: bool = True,
         delegation_store: object | None = None,

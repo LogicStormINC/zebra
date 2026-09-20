@@ -1,0 +1,1 @@
+{"case_id":"recovery-context-compaction","category":"recovery","title":"Continue after context compaction","prompt":"Continue the task from durable compacted context while retaining the goal, constraints, completed steps, and artifact references.","min_events":4,"min_tool_results":1,"max_cost_usd":1.5,"max_failed_tool_results":0}

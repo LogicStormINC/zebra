@@ -4,6 +4,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from agent_tools.builtin.artifacts import ArtifactReadTool, artifact_read_contract
     from agent_tools.builtin.clarify import ClarifyTool, clarify_contract
     from agent_tools.builtin.command import CommandRunTool, command_run_contract
     from agent_tools.builtin.files import FileReadTool, file_read_contract
@@ -72,6 +73,7 @@ if TYPE_CHECKING:
     )
 
 __all__ = [
+    "ArtifactReadTool",
     "CommandRunTool",
     "EffectGuardedToolGateway",
     "FencedEffectToolGateway",
@@ -116,6 +118,7 @@ __all__ = [
     "WebSearchTool",
     "WebSearchTransport",
     "build_mcp_proxy_request",
+    "artifact_read_contract",
     "command_run_contract",
     "effect_identity",
     "clarify_contract",
@@ -135,6 +138,11 @@ __all__ = [
 ]
 
 _EXPORTS = {
+    "ArtifactReadTool": ("agent_tools.builtin.artifacts", "ArtifactReadTool"),
+    "artifact_read_contract": (
+        "agent_tools.builtin.artifacts",
+        "artifact_read_contract",
+    ),
     "EffectGuardedToolGateway": (
         "agent_tools.effect_guard",
         "EffectGuardedToolGateway",

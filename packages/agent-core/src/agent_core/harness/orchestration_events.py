@@ -6,6 +6,32 @@ from agent_core.domain.tools import ToolCall
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.ports.conversation_compactor import ConversationCompactionResult
 
+_CONTINUATION_METADATA_KEYS = frozenset(
+    {
+        "conversation_compaction_count",
+        "conversation_tokens_after_compaction",
+        "mutation_epoch",
+        "mutation_resources",
+        "plan_metadata",
+        "plan_summary",
+        "post_mutation_verification_prompted",
+        "quality_reason",
+        "quality_revision_prompted",
+        "repeated_read_recovery_count",
+        "skill_read_prompted",
+        "skill_reads",
+        "verification_evidence",
+        "verified_mutation_epoch",
+        "verified_resource_epochs",
+    }
+)
+
+
+def continuation_metadata(metadata: dict[str, object]) -> dict[str, object]:
+    """Persist only bounded orchestration state required for an exact resume."""
+
+    return {key: metadata[key] for key in _CONTINUATION_METADATA_KEYS if key in metadata}
+
 
 def model_response_event(
     completion: ModelCompletion,
@@ -68,6 +94,26 @@ def model_response_event(
     )
 
 
+def answer_committed_event(
+    completion: ModelCompletion,
+    *,
+    attempt_number: int,
+    delivery_assessment: dict[str, object],
+) -> HarnessEventDraft:
+    payload: dict[str, object] = {
+        "attempt_number": attempt_number,
+        "assistant_message": completion.assistant_message.content,
+        "delivery_assessment": delivery_assessment,
+    }
+    if completion.call_metadata.model_call_id is not None:
+        payload["model_call_id"] = completion.call_metadata.model_call_id
+    return HarnessEventDraft(
+        event_type=EventType.ANSWER_COMMITTED,
+        actor=EventActor.HARNESS,
+        payload=payload,
+    )
+
+
 def context_compacted_event(
     result: ConversationCompactionResult,
     *,
@@ -119,6 +165,7 @@ def approval_requested_payload(
     model_calls_used: int,
     tool_calls_executed: int,
     remaining_tool_calls: tuple[ToolCall, ...] = (),
+    metadata: dict[str, object] | None = None,
 ) -> dict[str, object]:
     payload: dict[str, object] = {
         "attempt_number": attempt_number,
@@ -138,6 +185,8 @@ def approval_requested_payload(
         payload["remaining_tool_calls"] = [
             call.model_dump(mode="json") for call in remaining_tool_calls
         ]
+    if metadata:
+        payload["continuation_metadata"] = continuation_metadata(metadata)
     if tool_call.provider_call_id is not None:
         payload["provider_call_id"] = tool_call.provider_call_id
     if tool_call.provider_tool_name is not None:

@@ -3,7 +3,7 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventActor, EventType
 from agent_core.ports.agent_tasks import TaskEvent
 
 from agent_integrations.ag_ui.contracts import AgUiProjectionError
@@ -37,7 +37,12 @@ class TaskRunBinding:
 
 
 def bind_task_run(events: Sequence[TaskEvent], run_id: str) -> TaskRunBinding:
-    commands = [e for e in events if e.event.event_type is EventType.SESSION_COMMAND_ACCEPTED]
+    commands = [
+        e
+        for e in events
+        if e.event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+        and not _is_internal_continuation(e)
+    ]
     if not commands:
         # ponytail: command-less local replay retains the pre-command protocol.
         return TaskRunBinding(None, 0, None, frozenset(), legacy=True)
@@ -80,4 +85,18 @@ def bind_task_run(events: Sequence[TaskEvent], run_id: str) -> TaskRunBinding:
                 segments.add(str(entry.segment_id))
     return TaskRunBinding(
         anchor, anchor.task_sequence, stop, frozenset(segments), control_only=not executable
+    )
+
+
+def _is_internal_continuation(entry: TaskEvent) -> bool:
+    """Internal wakeups continue the active run; they never open a new one."""
+
+    payload = entry.event.payload
+    key = payload.get("idempotency_key")
+    return (
+        entry.event.actor is EventActor.HARNESS
+        and payload.get("kind") == "resume"
+        and isinstance(key, str)
+        and key.startswith("child-wakeup:")
+        and command_run_id(entry) is None
     )

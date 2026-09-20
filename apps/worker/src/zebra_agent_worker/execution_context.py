@@ -142,6 +142,7 @@ def harness_task_for_recovered(
         identity_directive=(
             HOST_EMBEDDED_AGENT_IDENTITY_DIRECTIVE if task.host_context is not None else None
         ),
+        acceptance_contract=task.acceptance_contract,
     )
 
 

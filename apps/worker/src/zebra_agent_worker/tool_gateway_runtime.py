@@ -10,6 +10,7 @@ from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolIdempotency, ToolResult, ToolRisk
 from agent_core.harness.models import SkillReadRequirement
 from agent_core.ports import (
+    ArtifactPayloadReadPort,
     ArtifactPayloadStorePort,
     ModelGatewayPort,
     SessionHistoryPort,
@@ -40,6 +41,12 @@ from zebra_agent_config import ZebraAgentSettings
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
 from zebra_agent_worker.resource_binding import resolve_required_resource
 from zebra_agent_worker.task_recovery import RecoveredTask
+from zebra_agent_worker.tool_gateway_reachability import (
+    available_host_tools as _available_host_tools,
+)
+from zebra_agent_worker.tool_gateway_reachability import (
+    host_model_tools as _host_model_tools,
+)
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
 
 
@@ -60,7 +67,10 @@ class WorkerToolGateway:
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
-        tools = self.local.model_tools + _host_model_tools(self.host_manifest)
+        tools = self.local.model_tools + _host_model_tools(
+            self.host_manifest,
+            self.host_context,
+        )
         if self.management is not None:
             registry = ToolRegistry()
             for contract in management_contracts():
@@ -87,7 +97,11 @@ class WorkerToolGateway:
     @property
     def parallel_safe_tools(self) -> frozenset[str]:
         host_safe = (
-            frozenset(tool.name for tool in self.host_manifest.tools if tool.parallel_safe)
+            frozenset(
+                tool.name
+                for tool in _available_host_tools(self.host_manifest, self.host_context)
+                if tool.parallel_safe
+            )
             if self.host_manifest is not None
             else frozenset()
         )
@@ -103,7 +117,11 @@ class WorkerToolGateway:
     @property
     def read_only_tools(self) -> frozenset[str]:
         host_read = (
-            frozenset(tool.name for tool in self.host_manifest.tools if tool.risk is ToolRisk.READ)
+            frozenset(
+                tool.name
+                for tool in _available_host_tools(self.host_manifest, self.host_context)
+                if tool.risk is ToolRisk.READ
+            )
             if self.host_manifest is not None
             else frozenset()
         )
@@ -114,7 +132,11 @@ class WorkerToolGateway:
     @property
     def mutation_tools(self) -> frozenset[str]:
         host_writes = (
-            frozenset(tool.name for tool in self.host_manifest.tools if tool.risk is ToolRisk.WRITE)
+            frozenset(
+                tool.name
+                for tool in _available_host_tools(self.host_manifest, self.host_context)
+                if tool.risk is ToolRisk.WRITE
+            )
             if self.host_manifest is not None
             else frozenset()
         )
@@ -128,7 +150,7 @@ class WorkerToolGateway:
         granted_scopes = frozenset(self.host_context.scopes)
         return management_write | frozenset(
             tool.name
-            for tool in self.host_manifest.tools
+            for tool in _available_host_tools(self.host_manifest, self.host_context)
             if tool.risk is ToolRisk.WRITE and frozenset(tool.scopes) <= granted_scopes
         )
 
@@ -137,7 +159,9 @@ class WorkerToolGateway:
         if self.host_manifest is None:
             return frozenset()
         return frozenset(
-            tool.name for tool in self.host_manifest.tools if tool.risk is not ToolRisk.READ
+            tool.name
+            for tool in _available_host_tools(self.host_manifest, self.host_context)
+            if tool.risk is not ToolRisk.READ
         )
 
     @property
@@ -233,6 +257,7 @@ def build_worker_tool_gateway(
     runtime: RuntimePort,
     runtime_handle: RuntimeHandle,
     local_artifacts: ArtifactPayloadStorePort | None,
+    artifact_payload_reader: ArtifactPayloadReadPort | None,
     cloud_artifacts: CloudToolOutputArtifactCoordinator | None,
     trusted_local: bool,
     durable_delegation: bool = False,
@@ -291,6 +316,7 @@ def build_worker_tool_gateway(
         runtime=runtime,
         runtime_handle=None,
         artifact_payload_store=local_artifacts if cloud_artifacts is None else None,
+        artifact_payload_reader=artifact_payload_reader,
         output_projector=cloud_artifacts.output_projector if cloud_artifacts else None,
         file_publisher=(
             cloud_artifacts.capture_file if can_publish and cloud_artifacts is not None else None
@@ -471,21 +497,3 @@ def _resolve_pinned_gateway(
         )
     credential = resolver.issue_credential(pinned, host_context)
     return build_pinned_host_gateway(pinned, host_context, credential)
-
-
-def _host_model_tools(manifest: HostToolManifest | None) -> tuple[ModelToolDefinition, ...]:
-    if manifest is None:
-        return ()
-    return tuple(
-        ModelToolDefinition(
-            name=tool.name,
-            description=tool.description,
-            parameters={
-                "type": "object",
-                "properties": {key: dict(value) for key, value in tool.argument_properties.items()},
-                "required": list(tool.required_arguments),
-                "additionalProperties": False,
-            },
-        )
-        for tool in manifest.tools
-    )

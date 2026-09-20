@@ -1,0 +1,1 @@
+{"case_id":"refactor-remove-duplication","category":"refactor","title":"Remove duplicated behavior","prompt":"Consolidate duplicated behavior into the existing shared boundary without introducing a new dependency, then verify callers.","min_events":4,"min_tool_results":1,"max_cost_usd":1.25,"max_failed_tool_results":0}

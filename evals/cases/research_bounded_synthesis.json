@@ -1,0 +1,1 @@
+{"case_id":"research-bounded-synthesis","category":"research","title":"Produce a bounded synthesis","prompt":"Research the topic and produce a concise synthesis instead of dumping raw results, with exact source links.","min_events":3,"min_tool_results":1,"max_cost_usd":1.0,"require_evidence":true,"max_failed_tool_results":0}

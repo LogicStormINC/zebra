@@ -97,11 +97,16 @@ class HarnessStoppingPolicy:
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return HarnessStopReason.COMPLETED
         if attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
-            if attempt_result.metadata.get("stop_reason") == "verification_required":
+            suspension_reason = attempt_result.metadata.get("stop_reason")
+            if suspension_reason == "delivery_requirements_unmet":
+                return HarnessStopReason.DELIVERY_REQUIREMENTS_UNMET
+            if suspension_reason == "verification_required":
                 return HarnessStopReason.VERIFICATION_REQUIRED
-            if attempt_result.metadata.get("stop_reason") == "tool_call_budget_exhausted":
+            if suspension_reason == "tool_call_budget_exhausted":
                 return HarnessStopReason.TOOL_CALL_BUDGET_EXHAUSTED
-            return HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
+            if suspension_reason == "model_call_budget_exhausted":
+                return HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
+            return HarnessStopReason.SUSPENDED
         if max_model_calls is not None and model_calls_used >= max_model_calls:
             return HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
         if max_tool_calls is not None and tool_calls_used >= max_tool_calls:

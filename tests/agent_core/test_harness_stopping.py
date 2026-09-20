@@ -124,6 +124,23 @@ def test_stopping_policy_marks_model_call_budget_exhausted() -> None:
     assert run_result.stop_reason is HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
 
 
+def test_stopping_policy_preserves_unknown_suspension_without_inventing_budget_exhaustion() -> None:
+    run_result = HarnessStoppingPolicy().build_run_result(
+        HarnessTask(title="External wait", user_input="Wait for the dependency."),
+        attempts_used=1,
+        model_calls_used=1,
+        tool_calls_used=0,
+        attempt_result=HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="waiting on an external dependency",
+            metadata={"stop_reason": "external_dependency_wait"},
+        ),
+    )
+
+    assert run_result.can_retry is False
+    assert run_result.stop_reason is HarnessStopReason.SUSPENDED
+
+
 def test_harness_loop_stops_retrying_when_tool_call_budget_is_exhausted() -> None:
     loop = HarnessLoop()
     task = HarnessTask(

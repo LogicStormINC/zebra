@@ -1,0 +1,1 @@
+{"case_id":"creation-report-artifact","category":"creation","title":"Create a report artifact","prompt":"Create a durable report file, verify it can be read, and return its artifact reference.","min_events":3,"min_tool_results":1,"max_cost_usd":1.0,"require_artifact":true,"max_failed_tool_results":0}

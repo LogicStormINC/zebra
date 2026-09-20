@@ -1,8 +1,4 @@
-"""Pure, replayable projection from Zebra Events to AG-UI events.
-The projector only reads immutable ``SessionEvent`` values and does not know
-about HTTP, SSE, Event Store writes, Host transport or Trench.
-Those concerns belong to later adapters and can consume this stable contract.
-"""
+"""Pure, replayable projection from durable Zebra Events to AG-UI events."""
 
 from __future__ import annotations
 
@@ -31,6 +27,7 @@ from ag_ui.core import (
 )
 from agent_core.domain.events import EventType, SessionEvent
 
+from agent_integrations.ag_ui.answer_commit_projection import project_answer_committed
 from agent_integrations.ag_ui.client_effect_projection import project_client_effect
 from agent_integrations.ag_ui.client_state_projection import project_client_state
 from agent_integrations.ag_ui.contracts import (
@@ -45,6 +42,7 @@ from agent_integrations.ag_ui.interrupts import (
     project_interrupt_event,
 )
 from agent_integrations.ag_ui.model_usage import project_model_usage
+from agent_integrations.ag_ui.tool_result_projection import tool_result_content
 
 
 @dataclass(slots=True)
@@ -148,6 +146,8 @@ class AgUiProjector:
         subagent_events = _project_subagent_event(event, timestamp=timestamp)
         if subagent_events:
             return subagent_events
+        if event.event_type is EventType.ANSWER_COMMITTED:
+            return (project_answer_committed(payload, timestamp=timestamp),)
         if event.event_type is EventType.MODEL_RESPONSE_DELTA:
             model_call_id = _required_payload_text(payload, "model_call_id")
             delta = _required_payload_text(payload, "content_delta", allow_empty=True)
@@ -191,7 +191,7 @@ class AgUiProjector:
             if usage_event is not None:
                 output.append(usage_event)
             response_stage = _optional_payload_text(payload, "response_stage")
-            if response_stage in {"tool_loop", "final"}:
+            if response_stage in {"tool_loop", "candidate", "final"}:
                 output.append(
                     CustomEvent(
                         timestamp=timestamp,
@@ -240,7 +240,7 @@ class AgUiProjector:
                     timestamp=timestamp,
                     message_id=result_id,
                     tool_call_id=call_id,
-                    content=_tool_result_content(payload, tool_output),
+                    content=tool_result_content(payload, tool_output),
                     role="tool",
                 ),
             )
@@ -461,40 +461,3 @@ def _json_text(value: Mapping[str, object]) -> str:
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     except (TypeError, ValueError) as exc:
         raise AgUiProjectionError("tool arguments are not JSON serializable") from exc
-
-
-def _tool_result_content(payload: Mapping[str, Any], output: str) -> str:
-    metadata = payload.get("metadata")
-    if not isinstance(metadata, Mapping) or metadata.get("delivery") is not True:
-        return output
-    artifact_uri = metadata.get("artifact_uri")
-    file_name = metadata.get("file_name")
-    mime_type = metadata.get("mime_type")
-    size_bytes = metadata.get("size_bytes")
-    status = payload.get("status")
-    if not (
-        isinstance(artifact_uri, str)
-        and artifact_uri.startswith("artifact://")
-        and isinstance(file_name, str)
-        and file_name
-        and isinstance(mime_type, str)
-        and mime_type
-        and isinstance(size_bytes, int)
-        and size_bytes >= 0
-        and isinstance(status, str)
-        and status
-    ):
-        return output
-    return _json_text(
-        {
-            "artifact": {
-                "file_name": file_name,
-                "mime_type": mime_type,
-                "size_bytes": size_bytes,
-                "uri": artifact_uri,
-            },
-            "output": output,
-            "status": status,
-            "type": "zebra.user_file.v1",
-        }
-    )

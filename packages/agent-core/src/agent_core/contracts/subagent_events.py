@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SubagentDelegatedPayload(BaseModel):
@@ -24,6 +24,7 @@ class SubagentDelegatedPayload(BaseModel):
     conversation: list[dict[str, Any]]
     model_calls_used: int
     tool_calls_executed: int
+    continuation_metadata: dict[str, Any] = Field(default_factory=dict)
     provider_call_id: str | None = None
 
     @field_validator("attempt_number")

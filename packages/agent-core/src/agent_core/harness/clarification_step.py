@@ -13,6 +13,7 @@ from agent_core.harness.models import (
     HarnessContext,
     HarnessEventDraft,
 )
+from agent_core.harness.orchestration_events import continuation_metadata
 
 
 def clarification_stop_result(
@@ -43,6 +44,7 @@ def clarification_stop_result(
                 "conversation": [message.model_dump(mode="json") for message in messages],
                 "model_calls_used": model_calls_used,
                 "tool_calls_executed": tool_calls_executed,
+                "continuation_metadata": continuation_metadata(metadata),
             },
         )
     )
@@ -100,6 +102,7 @@ def elicitation_stop_result(
                 "conversation": [message.model_dump(mode="json") for message in messages],
                 "model_calls_used": model_calls_used,
                 "tool_calls_executed": tool_calls_executed,
+                "continuation_metadata": continuation_metadata(metadata),
             },
         )
     )

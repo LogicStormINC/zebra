@@ -5,7 +5,7 @@ from dataclasses import replace
 from uuid import uuid4
 
 import pytest
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventActor, EventType
 from agent_integrations.ag_ui import AgUiCursor, AgUiProjectionError
 from agent_integrations.ag_ui.task_run_binding import bind_task_run
 from agent_integrations.ag_ui.task_stream import AgUiTaskProjector
@@ -69,6 +69,31 @@ def test_unique_execution_wins_over_controls_but_duplicate_execution_is_ambiguou
     assert AgUiTaskProjector().project_task(controls, IDENTITY).events == ()
     with pytest.raises(AgUiProjectionError, match="ambiguous"):
         bind_task_run([*controls, _entry(1, "stop")], "run-1")
+
+
+def test_internal_child_wakeup_continues_original_run_through_terminal() -> None:
+    wakeup = _entry(
+        2,
+        event_type=EventType.SESSION_COMMAND_ACCEPTED,
+        payload={
+            "kind": "resume",
+            "idempotency_key": "child-wakeup:parent",
+            "payload": {"child_results": []},
+        },
+    )
+    wakeup = replace(wakeup, event=wakeup.event.model_copy(update={"actor": EventActor.HARNESS}))
+    terminal = _entry(3, event_type=EventType.SESSION_FAILED, payload={"summary": "failed"})
+    events = [_entry(0, "run"), _entry(1), wakeup, terminal]
+
+    binding = bind_task_run(events, "run-1")
+
+    assert binding.stop is None
+    assert binding.includes(terminal)
+    assert _has_run_terminal_event(events, "run-1")
+    projection = AgUiTaskProjector().project_task(events, IDENTITY)
+    assert projection.next_cursor is not None
+    assert projection.next_cursor.sequence == 3
+    assert any(event.type == "RUN_ERROR" for event in projection.events)
 
 
 def test_unrelated_segment_terminal_cannot_end_run_but_paired_handoff_can():

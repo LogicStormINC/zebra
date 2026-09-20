@@ -37,6 +37,41 @@ def test_validate_event_payload_accepts_tool_execution_completed_shape() -> None
     }
 
 
+def test_validate_event_payload_accepts_committed_answer_shape() -> None:
+    payload = validate_event_payload(
+        EventType.ANSWER_COMMITTED,
+        {
+            "attempt_number": 1,
+            "assistant_message": "Evidence-backed answer.",
+            "delivery_assessment": {
+                "status": "complete",
+                "satisfied": ["evidence_reference"],
+                "unmet": [],
+            },
+        },
+    )
+
+    assert payload["assistant_message"] == "Evidence-backed answer."
+    assert payload["delivery_assessment"]["status"] == "complete"
+    assert payload["delivery_assessment"]["evidence_refs"] == []
+    assert payload["delivery_assessment"]["artifact_refs"] == []
+
+
+def test_validate_event_payload_rejects_unassessed_committed_answer() -> None:
+    with pytest.raises(
+        EventPayloadValidationError,
+        match="invalid payload for answer_committed",
+    ):
+        validate_event_payload(
+            EventType.ANSWER_COMMITTED,
+            {
+                "attempt_number": 1,
+                "assistant_message": "Draft answer.",
+                "delivery_assessment": {"status": "unknown"},
+            },
+        )
+
+
 def test_validate_event_payload_accepts_budget_suspension_without_snapshot() -> None:
     payload = validate_event_payload(
         EventType.SESSION_SUSPENDED,

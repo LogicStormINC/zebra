@@ -6,11 +6,20 @@ from subprocess import CompletedProcess
 
 import pytest
 from agent_core.domain.identifiers import new_session_id
-from agent_core.ports.runtime import RuntimeClass, SandboxSpec
+from agent_core.ports.runtime import (
+    EffectiveRuntimeAuthority,
+    RuntimeClass,
+    RuntimeHandle,
+    SandboxSpec,
+)
 from agent_runtime import OsSandboxRuntime
 from agent_storage import SQLiteArtifactPayloadStore
 from zebra_agent_config import SetupDependencySettings, SetupSettings
-from zebra_agent_worker.runtime_setup import RuntimeSetupError, prepare_runtime
+from zebra_agent_worker.runtime_setup import (
+    RuntimeSetupError,
+    prepare_runtime,
+    require_matching_runtime_authority,
+)
 
 
 def _settings(*, enabled: bool = True) -> SetupSettings:
@@ -93,3 +102,21 @@ def test_prepare_runtime_fails_closed_when_setup_is_disabled(tmp_path: Path) -> 
             artifact_store=store,
             created_at=datetime.now(UTC),
         )
+
+
+def test_runtime_authority_accepts_only_registered_segment_digest() -> None:
+    handle = RuntimeHandle.create(
+        runtime_name="gvisor",
+        authority=EffectiveRuntimeAuthority(
+            runtime_class=RuntimeClass.GVISOR,
+            engine="docker",
+            image="python@sha256:" + "a" * 64,
+            spec_digest="b" * 64,
+            network_enforcement="container-network-none",
+            workspace_writable=True,
+        ),
+    )
+
+    require_matching_runtime_authority(handle, "c" * 64, ("c" * 64,))
+    with pytest.raises(RuntimeSetupError, match="differs from session authority"):
+        require_matching_runtime_authority(handle, "d" * 64, ("c" * 64,))

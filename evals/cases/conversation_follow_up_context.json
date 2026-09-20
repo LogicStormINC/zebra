@@ -1,0 +1,1 @@
+{"case_id":"conversation-follow-up-context","category":"conversation","title":"Resolve a contextual follow-up","prompt":"Answer the follow-up using the durable conversation goal and constraints without asking the user to repeat them.","min_events":2,"min_tool_results":1,"max_cost_usd":0.75,"max_failed_tool_results":0}

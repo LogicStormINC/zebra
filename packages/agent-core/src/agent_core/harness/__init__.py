@@ -34,10 +34,12 @@ from agent_core.harness.selection import (
     ToolCallSelectionStrategy,
 )
 from agent_core.harness.stopping import HarnessStoppingPolicy
+from agent_core.harness.task_contracts import AgentTaskType, TaskAcceptanceContract
 from agent_core.harness.timing import StepClock, SystemClock
 
 __all__ = [
     "CompactionHook",
+    "AgentTaskType",
     "FirstToolCallSelectionStrategy",
     "HarnessAttempt",
     "HarnessAttemptOutcome",
@@ -62,6 +64,7 @@ __all__ = [
     "SingleAttemptOrchestrator",
     "StepClock",
     "SystemClock",
+    "TaskAcceptanceContract",
     "HarnessTask",
     "HarnessToolTrace",
     "HarnessTraceProjector",

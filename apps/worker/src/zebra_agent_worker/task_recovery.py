@@ -29,6 +29,11 @@ from agent_core.domain.task_bindings import TaskBindingSnapshot, host_context_di
 from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.domain.turns import InteractionMode
 from agent_core.domain.workspaces import WorkspaceProjection
+from agent_core.harness.task_contracts import (
+    TaskAcceptanceContract,
+    infer_task_contract,
+    parse_task_contract,
+)
 from agent_core.ports import ArtifactPayloadReadPort
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_security import NetworkProfile, PolicyProfile, parse_network_profile
@@ -110,6 +115,7 @@ class RecoveredTask:
     delegated_context: DelegatedContextSnapshot | None = None
     interaction_mode: InteractionMode = InteractionMode.ONE_SHOT
     model_invocation_policy: ModelInvocationPolicy | None = None
+    acceptance_contract: TaskAcceptanceContract | None = None
 
 
 def apply_bound_host_context(
@@ -177,6 +183,7 @@ def recover_task(
         and invocation_policy.profile_id == "deepseek-v4-pro-executor-v1"
     ):
         raise ValueError("image attachments require the DeepSeek V4.1 Flash profile")
+    host_evidence, task_contract = _host_run_context(events, fallback_goal=user_input)
     return RecoveredTask(
         title=resolved_title,
         user_input=user_input,
@@ -205,13 +212,59 @@ def recover_task(
         delegated_context=_delegated_context(task_payload.get("delegated_context")),
         interaction_mode=_interaction_mode(task_payload.get("interaction_mode")),
         runtime_evidence=(
+            *host_evidence,
             *_context_capsule_evidence(events, active_capsule=active_capsule),
             *((handoff_evidence,) if handoff_evidence is not None else ()),
             *((client_state_evidence,) if client_state_evidence is not None else ()),
         ),
         client_state=client_state_evidence,
         model_invocation_policy=invocation_policy,
+        acceptance_contract=task_contract,
     )
+
+
+def _host_run_context(
+    events: list[SessionEvent], *, fallback_goal: str
+) -> tuple[tuple[RuntimeEvidenceInput, ...], TaskAcceptanceContract]:
+    """Recover bounded AG-UI Host context from the durable accepted command."""
+
+    evidence: list[RuntimeEvidenceInput] = []
+    contract = infer_task_contract(fallback_goal)
+    for event in reversed(events):
+        if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
+            continue
+        raw_payload = event.payload.get("payload")
+        raw_input = raw_payload.get("input") if isinstance(raw_payload, dict) else None
+        raw_context = raw_input.get("context") if isinstance(raw_input, dict) else None
+        if not isinstance(raw_context, list):
+            continue
+        for item in raw_context[:12]:
+            if not isinstance(item, dict):
+                continue
+            description = item.get("description")
+            value = item.get("value")
+            if not isinstance(description, str) or not description.strip():
+                continue
+            if not isinstance(value, str) or not value.strip() or len(value) > 32_000:
+                continue
+            if description == "Agent task contract":
+                try:
+                    parsed = json.loads(value)
+                    if isinstance(parsed, dict):
+                        contract = parse_task_contract(parsed, fallback_goal=fallback_goal)
+                except (ValueError, TypeError, json.JSONDecodeError):
+                    contract = infer_task_contract(fallback_goal)
+                continue
+            evidence.append(
+                RuntimeEvidenceInput(
+                    kind="host_context",
+                    summary=description.strip()[:256],
+                    details=(value.strip(),),
+                    metadata={"source": "ag_ui_context"},
+                )
+            )
+        break
+    return tuple(evidence), contract
 
 
 def _model_invocation_policy(

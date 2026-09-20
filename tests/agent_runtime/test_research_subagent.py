@@ -52,7 +52,7 @@ def test_coordinator_enforces_child_and_depth_limits(tmp_path) -> None:
             ResearchSubagentTask(
                 objective="Inspect evidence.",
                 workspace_root=tmp_path.resolve(),
-                max_model_calls=4,
+                    max_model_calls=5,
             )
         )
     with pytest.raises(SubagentLimitError, match="tool-call limit"):
@@ -60,7 +60,7 @@ def test_coordinator_enforces_child_and_depth_limits(tmp_path) -> None:
             ResearchSubagentTask(
                 objective="Inspect evidence.",
                 workspace_root=tmp_path.resolve(),
-                max_tool_calls=3,
+                max_tool_calls=33,
             )
         )
     budget_limited.close()

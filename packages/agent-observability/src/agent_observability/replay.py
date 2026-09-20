@@ -19,6 +19,12 @@ class ReplayResult:
     model_calls: int
     total_tokens: int
     cost_usd: float
+    terminal_outcome: str | None = "completed"
+    stop_reason: str | None = "completed"
+    delivery_status: str | None = "complete"
+    evidence_count: int = 0
+    artifact_count: int = 0
+    failed_tool_results: int = 0
 
 
 @dataclass(frozen=True)

@@ -248,7 +248,7 @@ def test_failed_research_returns_to_model_and_uses_web_fallback() -> None:
     gateway = _gateway(
         _completion("Delegate the research.", research),
         _completion("The workspace search failed; use the Web.", web),
-        _completion("Recovered with external evidence."),
+        _completion("Recovered with external evidence: https://example.com/market"),
     )
 
     class FailingResearchGateway(SequenceToolGateway):
@@ -263,7 +263,7 @@ def test_failed_research_returns_to_model_and_uses_web_fallback() -> None:
             return ToolResult(
                 tool_call_id=tool_call.tool_call_id,
                 status=ToolCallStatus.EXECUTED,
-                output="market evidence",
+                output='{"url":"https://example.com/market","summary":"market evidence"}',
             )
 
     tools = FailingResearchGateway()
@@ -394,6 +394,66 @@ def test_bounded_loop_stops_when_no_model_call_remains_for_final_answer() -> Non
     assert result.run_result.stop_reason is HarnessStopReason.MODEL_CALL_BUDGET_EXHAUSTED
 
 
+def test_quality_revision_receives_the_candidate_and_specific_defects() -> None:
+    revised = "# 结论\n\n- 已补齐核心判断。\n\n## 方案\n\n" + "说明与边界。" * 30
+    gateway = _gateway(
+        _completion("结论很简单。"),
+        _completion(revised),
+    )
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Complete report",
+            user_input="请生成一份完整的 markdown 方案",
+            max_model_calls=2,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            SequenceToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    revision_messages = gateway.requests[1]
+    assert any(
+        message.role is MessageRole.ASSISTANT and message.content == "结论很简单。"
+        for message in revision_messages
+    )
+    feedback = next(
+        message for message in revision_messages
+        if message.metadata.get("runtime_feedback") is True
+    )
+    assert "minimum_detail:160_characters" in feedback.content
+    assert result.attempt_result.metadata["delivery_assessment"]["status"] == "complete"
+
+
+def test_failed_quality_gate_suspends_instead_of_claiming_completion() -> None:
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Incomplete report",
+            user_input="请生成一份完整的 markdown 方案",
+            max_model_calls=1,
+        ),
+        SingleAttemptOrchestrator(
+            _gateway(_completion("结论很简单。")),
+            AllowAllPolicy(),
+            SequenceToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.run_result.stop_reason is HarnessStopReason.DELIVERY_REQUIREMENTS_UNMET
+    assert result.attempt_result.metadata["delivery_assessment"]["status"] == "blocked"
+    assert not any(event.event_type is EventType.ANSWER_COMMITTED for event in result.events)
+
+
 def test_final_permitted_model_call_can_still_use_a_tool_before_suspending() -> None:
     first = _tool_call("files.read", {"path": "a.txt"}, "call_a")
     second = _tool_call("files.read", {"path": "b.txt"}, "call_b")
@@ -425,6 +485,38 @@ def test_final_permitted_model_call_can_still_use_a_tool_before_suspending() -> 
     assert result.run_result.model_calls_used == 2
     assert result.run_result.tool_calls_used == 2
     assert [call.provider_call_id for call in tools.calls] == ["call_a", "call_b"]
+
+
+def test_unbounded_interactive_loop_exceeds_legacy_call_ceilings() -> None:
+    calls = tuple(
+        _tool_call("files.read", {"path": f"input-{index}.txt"}, f"call_{index}")
+        for index in range(65)
+    )
+    gateway = _gateway(
+        *(_completion(f"Read input {index}.", call) for index, call in enumerate(calls)),
+        _completion("All 65 inputs were inspected."),
+    )
+    tools = SequenceToolGateway()
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Long interactive task",
+            user_input="Inspect every input and report when complete.",
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            tools,
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.run_result.model_calls_used == 66
+    assert result.run_result.tool_calls_used == 65
+    assert len(tools.calls) == 65
 
 
 def _gateway(*completions: ModelCompletion) -> ScriptedModelGateway:

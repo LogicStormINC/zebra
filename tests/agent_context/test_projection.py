@@ -31,7 +31,7 @@ def test_micro_compaction_projects_old_completed_pairs_and_keeps_recent_tail() -
     assert tombstone is not None
     assert tombstone.call_id == "call-0"
     assert tombstone.tool_name == "files.read"
-    assert tombstone.status == "succeeded"
+    assert tombstone.status == "unknown"
     assert tombstone.checksum
     assert tombstone.artifact_uri.startswith("event-sha256://")
     assert projection.messages[-4:] == messages[-4:]
@@ -66,6 +66,21 @@ def test_unresolved_and_failed_tool_calls_remain_exact() -> None:
 
     assert messages[-2] in projection.messages
     assert projection.messages[-1] == pending
+    assert all("call-failed" not in item.call_ids for item in projection.folded_exchanges)
+
+
+def test_structured_failed_status_remains_exact_without_error_words() -> None:
+    messages = (
+        _message(MessageRole.USER, "Inspect safely."),
+        *_exchange("call-ok-1", "src/1.py", "ok"),
+        *_exchange("call-ok-2", "src/2.py", "ok"),
+        *_exchange("call-ok-3", "src/3.py", "ok"),
+        *_exchange("call-failed", "src/fail.py", "暂时无法取得结果"),
+    )
+    failed = messages[-1].model_copy(update={"metadata": {"tool_status": "failed"}})
+    projection = build_active_context_projection((*messages[:-1], failed))
+
+    assert failed in projection.messages
     assert all("call-failed" not in item.call_ids for item in projection.folded_exchanges)
 
 

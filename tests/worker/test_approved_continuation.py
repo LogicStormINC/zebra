@@ -1,3 +1,4 @@
+import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -126,6 +127,7 @@ def test_granted_tool_call_resumes_exactly_once_without_reproposal(
 
     assert completed.session.status is SessionStatus.COMPLETED
     assert completed.attempt_result.metadata["assistant_message"] == "approved-output"
+    assert completed.attempt_result.metadata["plan_summary"] == "planner hook skipped"
     assert len(initial_gateway.requests) == 1
     assert len(final_gateway.requests) == 1
     assert final_gateway.tool_requests[0]
@@ -134,7 +136,17 @@ def test_granted_tool_call_resumes_exactly_once_without_reproposal(
         MessageRole.ASSISTANT,
         MessageRole.TOOL,
     ]
-    assert final_gateway.requests[0][-1].content.strip() == "approved-output"
+    observation = json.loads(final_gateway.requests[0][-1].content)
+    assert observation["output"].strip() == "approved-output"
+    assert observation["status"] == "executed"
+    assert observation["artifact_uri"].startswith("artifact://")
+    requested = next(
+        event for event in SQLiteEventStore(database_path).list_for_session(session_id)
+        if event.event_type is EventType.APPROVAL_REQUESTED
+    )
+    assert requested.payload["continuation_metadata"]["plan_summary"] == (
+        "planner hook skipped"
+    )
     events = SQLiteEventStore(database_path).list_for_session(session_id)
     assert sum(event.event_type is EventType.TOOL_EXECUTION_STARTED for event in events) == 1
     with pytest.raises(SessionResumeError, match="terminal session"):

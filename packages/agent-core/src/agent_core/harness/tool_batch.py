@@ -13,6 +13,7 @@ from agent_core.harness.concurrent_batch import (
     ToolBatchResult,
     selection_evidence,
 )
+from agent_core.harness.evidence_ledger import record_tool_evidence
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessContext, HarnessEventDraft
@@ -234,6 +235,7 @@ class ToolBatchExecutor:
                         created_at=context.attempt.started_at,
                     )
                     metadata = {**metadata, **execution.metadata}
+                    metadata = record_tool_evidence(metadata, result)
                     continue
                 decision = self._policy_engine.evaluate_tool_call(tool_call)
                 emitted_events.append(
@@ -323,6 +325,7 @@ class ToolBatchExecutor:
             tool_calls_executed += 1
             fingerprints.add(action_fingerprint(tool_call))
             metadata = {**metadata, **execution.metadata}
+            metadata = record_tool_evidence(metadata, execution.result)
             if tool_call.name != "agent.plan":
                 metadata = record_tool_freshness(
                     metadata,
@@ -417,6 +420,7 @@ class ToolBatchExecutor:
                 created_at=context.attempt.started_at,
             )
             recovered_metadata = {**recovered_metadata, **execution.metadata}
+            recovered_metadata = record_tool_evidence(recovered_metadata, result)
         return ToolBatchResult(
             None,
             tool_calls_executed,

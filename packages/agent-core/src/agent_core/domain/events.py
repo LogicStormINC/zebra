@@ -26,6 +26,7 @@ class EventType(StrEnum):
     MODEL_REQUEST_STARTED = "model_request_started"
     MODEL_RESPONSE_DELTA = "model_response_delta"
     MODEL_RESPONSE_RECEIVED = "model_response_received"
+    ANSWER_COMMITTED = "answer_committed"
     CONTEXT_COMPACTED = "context_compacted"
     CONTEXT_COMPACTION_REJECTED = "context_compaction_rejected"
     CONTEXT_CAPSULE_CREATED = "context_capsule_created"

@@ -1,0 +1,1 @@
+{"case_id":"recovery-tool-failure","category":"recovery","title":"Recover from a failed tool","prompt":"When the first tool path fails, use the structured error to choose a safe alternative and finish without repeating the same call.","min_events":3,"min_tool_results":1,"max_cost_usd":1.0,"max_failed_tool_results":0}
