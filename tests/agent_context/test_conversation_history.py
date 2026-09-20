@@ -232,6 +232,24 @@ def test_under_budget_completed_exchanges_remain_exact() -> None:
     assert result.capsule is None
 
 
+def test_projection_that_grows_history_is_rejected() -> None:
+    messages = (
+        _message(MessageRole.USER, "Inspect the report."),
+        _message(MessageRole.ASSISTANT, "Acknowledged."),
+    )
+
+    result = compact_message_history(
+        messages,
+        user_goal="Inspect the report.",
+        max_tokens=1,
+        created_at=NOW,
+    )
+
+    assert result.after_tokens <= result.before_tokens
+    if result.compacted:
+        assert result.after_tokens < result.before_tokens
+
+
 def _message(role: MessageRole, content: str) -> SessionMessage:
     return SessionMessage(
         message_id=new_message_id(),

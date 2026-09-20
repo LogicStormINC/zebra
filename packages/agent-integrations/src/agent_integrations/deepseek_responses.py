@@ -421,6 +421,9 @@ def _parse_responses_completion(
             tool_schema_bytes=request_metadata.tool_schema_bytes,
             tool_schema_hash=request_metadata.tool_schema_hash,
             stable_prefix_hash=request_metadata.stable_prefix_hash,
+            request_hash=request_metadata.request_hash,
+            message_count=request_metadata.message_count,
+            message_prefix_hashes=request_metadata.message_prefix_hashes,
             finish_reason=finish_reason,
             time_to_first_event_ms=optional_int(
                 payload.get("_zebra_time_to_first_event_ms")

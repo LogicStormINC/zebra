@@ -20,6 +20,7 @@ from agent_observability.models import (
     ProviderModelCallTrace,
     TraceRecord,
     build_trace_record,
+    first_message_divergence,
 )
 from agent_observability.profile_metrics import (
     ModelProfileSummary,
@@ -46,6 +47,7 @@ __all__ = [
     "StageLatencySummary",
     "TraceRecord",
     "build_trace_record",
+    "first_message_divergence",
     "load_eval_cases",
     "summarize_model_profiles",
     "summarize_execution_latencies",

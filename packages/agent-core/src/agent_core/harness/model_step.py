@@ -8,7 +8,6 @@ from agent_core.domain.identifiers import new_correlation_id, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import (
     ModelCompletion,
-    ModelContextWindow,
     ModelInvocationPolicy,
     ModelToolDefinition,
 )
@@ -113,22 +112,6 @@ class HarnessModelStep:
             conversation_token_budget=self._conversation_token_budget,
             compaction_hook=self._compaction_hook,
             user_goal=user_goal,
-            created_at=created_at,
-        )
-
-    def compact_conversation(
-        self,
-        messages: list[SessionMessage],
-        *,
-        user_goal: str,
-        created_at: datetime,
-    ) -> ConversationCompactionResult | None:
-        if self._conversation_compactor is None:
-            return None
-        return self._conversation_compactor.compact_conversation(
-            tuple(messages),
-            user_goal=user_goal,
-            max_tokens=self._conversation_token_budget or ModelContextWindow().input_token_limit,
             created_at=created_at,
         )
 

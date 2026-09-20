@@ -426,6 +426,9 @@ def test_deepseek_stable_prefix_metadata_is_deterministic_for_tool_order() -> No
     assert first.call_metadata.tool_schema_bytes > 0
     assert first.call_metadata.tool_schema_hash == second.call_metadata.tool_schema_hash
     assert first.call_metadata.stable_prefix_hash == second.call_metadata.stable_prefix_hash
+    assert first.call_metadata.request_hash == second.call_metadata.request_hash
+    assert first.call_metadata.message_count == 1
+    assert len(first.call_metadata.message_prefix_hashes) == 1
 
 
 def test_deepseek_retries_retryable_error_only_before_public_delta() -> None:

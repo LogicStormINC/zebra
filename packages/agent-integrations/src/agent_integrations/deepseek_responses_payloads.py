@@ -9,7 +9,11 @@ from agent_core.domain.modeling import ModelUsage
 
 from agent_integrations.openai_payloads import optional_int
 from agent_integrations.provider_images import responses_content
-from agent_integrations.request_metadata import ModelRequestMetadata
+from agent_integrations.request_metadata import (
+    ModelRequestMetadata,
+    _canonical_json,
+    _prefix_hashes,
+)
 
 RESPONSES_PROMPT_VERSION = "zebra-deepseek-responses-v1"
 
@@ -89,6 +93,9 @@ def request_metadata(body: dict[str, Any]) -> ModelRequestMetadata:
         tool_schema_bytes=len(tools),
         tool_schema_hash=hashlib.sha256(tools).hexdigest(),
         stable_prefix_hash=hashlib.sha256(stable).hexdigest(),
+        request_hash=hashlib.sha256(_canonical_json(body)).hexdigest(),
+        message_count=len(body.get("input", [])) if isinstance(body.get("input"), list) else 0,
+        message_prefix_hashes=_prefix_hashes(body.get("input", [])),
     )
 
 

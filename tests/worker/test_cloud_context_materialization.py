@@ -35,7 +35,7 @@ NOW = datetime(2026, 8, 23, 13, 0, tzinfo=UTC)
 
 
 def test_cloud_conversation_budget_retains_long_research_history() -> None:
-    assert CLOUD_CONVERSATION_TOKEN_BUDGET == 32_768
+    assert CLOUD_CONVERSATION_TOKEN_BUDGET is None
 
 
 def test_worker_recovers_host_context_and_typed_task_contract() -> None:

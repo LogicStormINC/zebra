@@ -10252,3 +10252,33 @@ actual byte access.
   and diff checks. API, Worker, PostgreSQL, Redis and MinIO are healthy locally.
   No commit, push or remote deployment was requested or performed. Model and
   reasoning-effort settings remain DeepSeek Flash / high.
+
+## 2026-09-21 - DS-CACHE-01 implementation and local acceptance
+
+- Claimed `DS-CACHE-01` on `codex/ds-cache-continuity-01` from the current
+  `cloud-agent-trench` head and kept changes inside the declared context,
+  integration, Worker, observability, test and governance paths.
+- Replaced the fixed cloud 32K conversation budget with the selected model's
+  context profile. Context recovery now skips unnecessary compaction and rejects
+  any result that does not reduce estimated history size.
+- Removed the duplicate recovery truncation. Added bounded content-free request
+  and cumulative prefix hashes through model events and JSONL traces, including
+  a helper that identifies the first message divergence.
+- Kept private DeepSeek reasoning out of durable state. Child wakeups expose the
+  exact-prefix count, rebased-message count, and
+  `private_reasoning_not_durable` boundary instead of misreporting the resume as
+  cache-continuous.
+- Focused regressions passed `114`; final merged repository passed `4587` with
+  `892` environment-gated skips, including all four real DeepSeek provider smoke
+  cases. `make check` passed file size, Ruff, strict Mypy over 969 sources, and
+  release eval `30/30`.
+- Rebuilt and recreated local `zebra-api` and `zebra-worker` from the changed
+  worktree; both became healthy and `/health` returned cloud/gVisor status.
+  The deployed Worker reports `cloud_budget=None` and the new cache diagnostic
+  fields.
+- Real DeepSeek acceptance passed three tool-loop scenarios. Repeating one
+  identical 2,172-token request produced `0/2172` cold and `1920/252` warm twice,
+  with the same request hash and exact response each time. This is an 88.4%
+  warm hit rate for the sample, not a claim of universal 99% cache hits.
+- No model or reasoning-strength setting changed. No production deployment or
+  remote push is claimed.

@@ -126,16 +126,23 @@ def recover_child_wakeup_continuation(
             if call_id is not None
         },
     )
+    metadata = _continuation_metadata(epoch[-1].payload.get("continuation_metadata")) or {}
+    if conversation.rebased_message_count:
+        metadata.update(
+            {
+                "cache_boundary_reason": "private_reasoning_not_durable",
+                "exact_prefix_message_count": conversation.exact_prefix_message_count,
+                "rebased_message_count": conversation.rebased_message_count,
+            }
+        )
     return ChildWakeupContinuation(
         tool_calls=tool_calls,
         child_results=aligned_results,
-        conversation=conversation,
+        conversation=conversation.messages,
         model_calls_used=_non_negative_int(epoch[-1].payload.get("model_calls_used"), 1),
         tool_calls_executed=_non_negative_int(epoch[-1].payload.get("tool_calls_executed"), 0),
         assistant_message=_required_string(epoch[-1].payload, "assistant_message"),
-        metadata=_continuation_metadata(
-            epoch[-1].payload.get("continuation_metadata")
-        ),
+        metadata=metadata or None,
     )
 
 
@@ -201,9 +208,16 @@ def _child_results(value: object) -> tuple[ChildResultDelivery, ...]:
     return tuple(results)
 
 
+@dataclass(frozen=True)
+class _RecoveredConversation:
+    messages: tuple[SessionMessage, ...]
+    exact_prefix_message_count: int
+    rebased_message_count: int
+
+
 def _conversation_without_stubs(
     value: object, tool_call_ids: set[str]
-) -> tuple[SessionMessage, ...]:
+) -> _RecoveredConversation:
     """Drop stubs and rebase private provider continuations for durable resume.
 
     DeepSeek reasoning bytes are deliberately excluded from durable Events. A
@@ -235,8 +249,15 @@ def _conversation_without_stubs(
         for call in message.tool_calls
     }
     if not private_call_ids:
-        return messages
+        return _RecoveredConversation(
+            messages=messages,
+            exact_prefix_message_count=len(messages),
+            rebased_message_count=0,
+        )
     rebased: list[SessionMessage] = []
+    exact_prefix_message_count = 0
+    rebased_message_count = 0
+    prefix_open = True
     for message in messages:
         missing_private_reasoning = (
             message.role is MessageRole.ASSISTANT
@@ -244,6 +265,8 @@ def _conversation_without_stubs(
             and message.provider_reasoning_content is None
         )
         if missing_private_reasoning:
+            prefix_open = False
+            rebased_message_count += 1
             if message.content != "Tool calls proposed.":
                 rebased.append(
                     SessionMessage(
@@ -256,6 +279,8 @@ def _conversation_without_stubs(
                 )
             continue
         if message.role is MessageRole.TOOL and message.tool_call_id in private_call_ids:
+            prefix_open = False
+            rebased_message_count += 1
             rebased.append(
                 SessionMessage(
                     message_id=new_message_id(),
@@ -266,8 +291,14 @@ def _conversation_without_stubs(
                 )
             )
             continue
+        if prefix_open:
+            exact_prefix_message_count += 1
         rebased.append(message)
-    return tuple(rebased)
+    return _RecoveredConversation(
+        messages=tuple(rebased),
+        exact_prefix_message_count=exact_prefix_message_count,
+        rebased_message_count=rebased_message_count,
+    )
 
 
 def _arguments(value: object) -> dict[str, object]:

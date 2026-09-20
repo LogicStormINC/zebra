@@ -3389,3 +3389,27 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   completed Turn `da4e1425-b805-447c-8583-e5f1373a13ad` with the expected
   `37+58=95` answer. PostgreSQL records `completed`, a durable terminal cursor,
   `trench-native-v15:coding`, DeepSeek Flash and `high` reasoning.
+
+## 2026-09-21 - DS-CACHE-01 DeepSeek prompt-cache continuity
+
+- Removed the cloud-only 32K conversation ceiling. Context recovery now uses
+  the selected model window, avoids compaction while under its trigger, and
+  rejects no-op or growing compaction results.
+- Removed the second lossy 24-message/65,536-character recovery truncation so
+  the model-aware context compiler owns the physical budget. Completed tool
+  pairs and exact recent history remain intact until compaction is required.
+- Added privacy-safe request, message-count and cumulative message-prefix hashes
+  to model telemetry and durable observability. Operators can locate the first
+  changed message without logging prompt text or private provider reasoning.
+- Child wakeup retains the maximal exact prefix. Where required DeepSeek private
+  reasoning was intentionally not persisted, continuation is marked
+  `private_reasoning_not_durable` and safely rebased; that recovery boundary is
+  measured separately from cache-eligible warm loops.
+- Validation: focused suites `114 passed`; final merged repository `4587 passed,
+  892 skipped`, including all four real DeepSeek provider smoke cases; file-size,
+  Ruff, strict Mypy over 969 sources, and eval `30/30` passed. Local cloud
+  API/Worker images were rebuilt and both are healthy.
+  Credentials-enabled DeepSeek tool-loop smoke passed `3/3`; one identical
+  2,172-token request was cold at `0/2172` hit/miss and then stable at
+  `1920/252` for two warm calls (88.4% measured warm hit rate). Model and
+  reasoning-strength settings were not changed.

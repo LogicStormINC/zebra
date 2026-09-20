@@ -178,6 +178,11 @@ def test_child_wakeup_rebases_missing_private_reasoning_as_fresh_evidence() -> N
     assert recovered.conversation[2].content == "Durable tool evidence:\nmarket evidence"
     assert all(not message.tool_calls for message in recovered.conversation)
     assert all(message.tool_call_id is None for message in recovered.conversation)
+    assert recovered.metadata == {
+        "cache_boundary_reason": "private_reasoning_not_durable",
+        "exact_prefix_message_count": 1,
+        "rebased_message_count": 2,
+    }
 
 
 def test_child_wakeup_replays_terminal_children_as_fresh_user_evidence() -> None:

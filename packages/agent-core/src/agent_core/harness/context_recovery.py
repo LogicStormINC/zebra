@@ -30,6 +30,16 @@ def prepare_bounded_conversation(
     window = context_window(model_gateway)
     budget = min(conversation_token_budget or window.compact_at, window.compact_at)
     original = tuple(messages)
+    initial_plan = build_context_plan(
+        original,
+        tools,
+        window,
+        model_gateway,
+    )
+    if initial_plan.estimated_input_tokens <= budget:
+        if not initial_plan.within_budget:
+            raise ContextWindowExceededError(initial_plan)
+        return None
     result = _compact(
         original,
         conversation_compactor,
@@ -61,15 +71,19 @@ def prepare_bounded_conversation(
             max_tokens=strict_budget,
             created_at=created_at,
         )
-        assert result is not None
-        messages[:] = result.messages
-        plan = build_context_plan(
-            tuple(messages),
-            tools,
-            window,
-            model_gateway,
-            attempted_strategies=(*attempted, "strict_original_history_retry", result.provenance),
-        )
+        if result is not None:
+            messages[:] = result.messages
+            plan = build_context_plan(
+                tuple(messages),
+                tools,
+                window,
+                model_gateway,
+                attempted_strategies=(
+                    *attempted,
+                    "strict_original_history_retry",
+                    result.provenance,
+                ),
+            )
     if not plan.within_budget:
         raise ContextWindowExceededError(plan)
     return result
@@ -94,6 +108,8 @@ def _compact(
         max_tokens=max_tokens,
         created_at=created_at,
     )
+    if result is None or not result.compacted or result.after_tokens >= result.before_tokens:
+        return None
     if hook is not None:
         hook.post_compact(result)
     return result

@@ -317,16 +317,10 @@ def _conversation_history(
                 created_at=event.created_at,
             )
         )
-    # ponytail: keep a bounded exact tail; the existing conversation compactor
-    # owns the upgrade path when product conversations outgrow this window.
-    selected: list[SessionMessage] = []
-    characters = 0
-    for message in reversed(messages[-24:]):
-        if selected and characters + len(message.content) > 65_536:
-            break
-        selected.append(message)
-        characters += len(message.content)
-    return tuple(reversed(selected))
+    # The model-aware context gate owns compaction. Truncating here used a
+    # second, character-based budget and silently moved the request prefix on
+    # every sufficiently long cross-turn conversation.
+    return tuple(messages)
 
 
 def _interaction_mode(value: object) -> InteractionMode:

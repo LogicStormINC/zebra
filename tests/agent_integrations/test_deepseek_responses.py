@@ -155,6 +155,9 @@ def test_responses_stream_uses_semantic_terminal_and_hides_reasoning() -> None:
     assert completion.call_metadata.time_to_first_public_text_ms is not None
     assert completion.call_metadata.usage.prompt_cache_hit_tokens == 7
     assert completion.call_metadata.usage.prompt_cache_miss_tokens == 5
+    assert completion.call_metadata.request_hash is not None
+    assert completion.call_metadata.message_count == 1
+    assert len(completion.call_metadata.message_prefix_hashes) == 1
 
 
 def test_responses_rejects_provider_side_web_search_output() -> None:

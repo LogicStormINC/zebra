@@ -4,7 +4,12 @@ import pytest
 from agent_core.contracts.events import EventPayloadValidationError, validate_event_payload
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, new_session_id
-from agent_observability import CostSummary, build_trace_record
+from agent_observability import (
+    CostSummary,
+    ProviderModelCallTrace,
+    build_trace_record,
+    first_message_divergence,
+)
 
 
 def _event(
@@ -57,6 +62,9 @@ def test_build_trace_record_summarizes_events_tools_and_cost() -> None:
                 "tool_schema_bytes": 128,
                 "tool_schema_hash": "schema-hash",
                 "stable_prefix_hash": "prefix-hash",
+                "request_hash": "request-hash",
+                "message_count": 2,
+                "message_prefix_hashes": ["first", "second"],
                 "estimated_input_tokens": 12,
                 "input_token_limit": 114_000,
                 "token_estimate_method": "chars_div_4",
@@ -107,7 +115,26 @@ def test_build_trace_record_summarizes_events_tools_and_cost() -> None:
     assert trace.model_calls[0].prompt_version == "zebra-deepseek-chat-v1"
     assert trace.model_calls[0].tool_schema_bytes == 128
     assert trace.model_calls[0].stable_prefix_hash == "prefix-hash"
+    assert trace.model_calls[0].request_hash == "request-hash"
+    assert trace.model_calls[0].message_prefix_hashes == ("first", "second")
     assert [record.sequence for record in trace.audit] == [0, 1, 2]
+
+
+def test_first_message_divergence_uses_only_privacy_safe_hashes() -> None:
+    previous = ProviderModelCallTrace(
+        sequence=1,
+        request_hash="old",
+        message_count=3,
+        message_prefix_hashes=("a", "b", "c"),
+    )
+    current = ProviderModelCallTrace(
+        sequence=2,
+        request_hash="new",
+        message_count=3,
+        message_prefix_hashes=("a", "x", "y"),
+    )
+
+    assert first_message_divergence(previous, current) == 1
 
 
 def test_build_trace_record_rejects_empty_event_stream() -> None:

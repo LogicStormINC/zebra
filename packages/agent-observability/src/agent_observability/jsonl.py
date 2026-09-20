@@ -109,6 +109,9 @@ def _model_call_from_json(value: object) -> ProviderModelCallTrace:
         tool_schema_bytes=_read_optional_int(value, "tool_schema_bytes"),
         tool_schema_hash=_read_optional_str(value, "tool_schema_hash"),
         stable_prefix_hash=_read_optional_str(value, "stable_prefix_hash"),
+        request_hash=_read_optional_str(value, "request_hash"),
+        message_count=_read_optional_int(value, "message_count"),
+        message_prefix_hashes=tuple(_read_string_list(value, "message_prefix_hashes")),
         input_tokens=_read_optional_int(value, "input_tokens"),
         output_tokens=_read_optional_int(value, "output_tokens"),
         reasoning_tokens=_read_optional_int(value, "reasoning_tokens"),
@@ -175,6 +178,13 @@ def _read_optional_str(value: dict[object, object], key: str) -> str | None:
         return None
     if not isinstance(raw, str):
         raise ValueError(f"trace field {key} must be a string")
+    return raw
+
+
+def _read_string_list(value: dict[object, object], key: str) -> list[str]:
+    raw = value.get(key, [])
+    if not isinstance(raw, list) or any(not isinstance(item, str) for item in raw):
+        raise ValueError(f"trace field {key} must be a string list")
     return raw
 
 

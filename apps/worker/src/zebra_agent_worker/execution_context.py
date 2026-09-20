@@ -17,7 +17,7 @@ import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.task_recovery import RecoveredTask
 
 CLOUD_CONTEXT_TOKEN_BUDGET = 2_048
-CLOUD_CONVERSATION_TOKEN_BUDGET = 32_768
+CLOUD_CONVERSATION_TOKEN_BUDGET: int | None = None
 HOST_EMBEDDED_AGENT_IDENTITY_DIRECTIVE = (
     "You are the product assistant embedded by the invoking Host application. Follow the "
     "Host-provided product role and identity in the task context. Never identify yourself as "
@@ -65,6 +65,9 @@ def build_worker_orchestrator(
         context_compiler=context_compiler,
         available_tools=tool_gateway.model_tools,
         conversation_compactor=context_compiler,
+        # ponytail: the provider profile already owns the physical context
+        # ceiling and reserves. A second fixed ceiling caused needless prefix
+        # rewrites long before DeepSeek's real window was under pressure.
         conversation_token_budget=CLOUD_CONVERSATION_TOKEN_BUDGET,
         event_sink=persist_event,
         continuation_sink=prepare_continuation,

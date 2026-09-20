@@ -50,6 +50,9 @@ class ProviderModelCallTrace:
     tool_schema_bytes: int | None = None
     tool_schema_hash: str | None = None
     stable_prefix_hash: str | None = None
+    request_hash: str | None = None
+    message_count: int | None = None
+    message_prefix_hashes: tuple[str, ...] = ()
     input_tokens: int | None = None
     output_tokens: int | None = None
     reasoning_tokens: int | None = None
@@ -78,6 +81,7 @@ class ProviderModelCallTrace:
             "reasoning_tokens",
             "prompt_cache_hit_tokens",
             "prompt_cache_miss_tokens",
+            "message_count",
         ):
             value = getattr(self, field_name)
             if value is not None and value < 0:
@@ -120,6 +124,25 @@ class TraceRecord:
             raise ValueError("trace tool_result_count must not be negative")
         if len(self.audit) > self.event_count:
             raise ValueError("trace audit cannot exceed event count")
+
+
+def first_message_divergence(
+    previous: ProviderModelCallTrace,
+    current: ProviderModelCallTrace,
+) -> int | None:
+    """Return the zero-based message where two privacy-safe request prefixes diverge."""
+
+    for index, (left, right) in enumerate(
+        zip(previous.message_prefix_hashes, current.message_prefix_hashes, strict=False)
+    ):
+        if left != right:
+            return index
+    shared = min(len(previous.message_prefix_hashes), len(current.message_prefix_hashes))
+    if previous.message_count != current.message_count:
+        return shared
+    if previous.request_hash != current.request_hash:
+        return shared
+    return None
 
 
 def build_trace_record(events: tuple[SessionEvent, ...]) -> TraceRecord:
@@ -186,6 +209,9 @@ def _model_call_trace(event: SessionEvent) -> ProviderModelCallTrace:
         tool_schema_bytes=_optional_int_payload(event, "tool_schema_bytes"),
         tool_schema_hash=_str_payload(event, "tool_schema_hash"),
         stable_prefix_hash=_str_payload(event, "stable_prefix_hash"),
+        request_hash=_str_payload(event, "request_hash"),
+        message_count=_optional_int_payload(event, "message_count"),
+        message_prefix_hashes=tuple(_string_list_payload(event, "message_prefix_hashes")),
         input_tokens=_optional_int_payload(event, "input_tokens"),
         output_tokens=_optional_int_payload(event, "output_tokens"),
         reasoning_tokens=_optional_int_payload(event, "reasoning_tokens"),
@@ -238,6 +264,13 @@ def _str_payload(event: SessionEvent, key: str) -> str | None:
     if not isinstance(value, str):
         return None
     return value.strip() or None
+
+
+def _string_list_payload(event: SessionEvent, key: str) -> list[str]:
+    value = event.payload.get(key)
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str) and item.strip()]
 
 
 def _optional_float_payload(event: SessionEvent, key: str) -> float | None:

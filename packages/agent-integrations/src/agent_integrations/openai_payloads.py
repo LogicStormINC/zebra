@@ -250,6 +250,11 @@ def _parse_completion(
             tool_schema_bytes=(request_metadata.tool_schema_bytes if request_metadata else None),
             tool_schema_hash=(request_metadata.tool_schema_hash if request_metadata else None),
             stable_prefix_hash=(request_metadata.stable_prefix_hash if request_metadata else None),
+            request_hash=(request_metadata.request_hash if request_metadata else None),
+            message_count=(request_metadata.message_count if request_metadata else None),
+            message_prefix_hashes=(
+                request_metadata.message_prefix_hashes if request_metadata else ()
+            ),
             finish_reason=finish_reason,
             time_to_first_event_ms=optional_int(payload.get("_zebra_time_to_first_event_ms")),
             time_to_first_public_text_ms=optional_int(

@@ -25697,6 +25697,74 @@ window contract while preserving legacy OpenAI-compatible behavior.
 - context capsule, tool-output artifact, API/CLI context controls, or recovery
 - enabling Beta profiles by default, routing Beta through the normal Harness, or undocumented APIs
 
+### DS-CACHE-01 - DeepSeek Prompt Cache Continuity
+
+- Status: `Done`
+- Owner: `Codex`
+- Suggested role: `CORE / CONTEXT / INTEGRATIONS / WORKER / OBSERVABILITY / QA`
+- Depends on: merged `DS-OPT-01`, `QA-148-MDL-01`, and explicit maintainer request
+- Branch: `codex/ds-cache-continuity-01`
+- Owned paths: `packages/agent-core/src/agent_core/harness/context_recovery.py`,
+  `packages/agent-core/src/agent_core/domain/modeling.py`,
+  `packages/agent-core/src/agent_core/contracts/model_events.py`,
+  `packages/agent-core/src/agent_core/harness/orchestration_events.py`,
+  `packages/agent-context/src/agent_context/conversation.py`,
+  `packages/agent-integrations/src/agent_integrations/request_metadata.py`,
+  `packages/agent-integrations/src/agent_integrations/deepseek_responses_payloads.py`,
+  `packages/agent-integrations/src/agent_integrations/openai_payloads.py`,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`,
+  `apps/worker/src/zebra_agent_worker/child_wakeup_continuation.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  matching focused tests, `docs/AGENT_TASKS.md`, `PROGRESS.md`, `WORKLOG.md`
+
+#### Goal
+
+Preserve the longest safe byte-identical DeepSeek request prefix across tool
+loops, compaction, cross-turn recovery, child wakeups, and Worker restarts while
+keeping private provider reasoning protected and fail-closed.
+
+#### Acceptance
+
+- [x] Cloud execution derives compaction from the selected model window instead
+  of a fixed 32K conversation ceiling, and no accepted compaction grows history.
+- [x] Completed tool pairs and the recent exact tail stay valid; no-benefit
+  compaction is skipped and does not emit a false compacted result.
+- [x] Child wakeup and cross-turn recovery preserve the maximal exact durable
+  prefix. A wakeup that cannot replay non-durable private reasoning is explicitly
+  classified as `private_reasoning_not_durable` and safely rebased instead of
+  claiming cache eligibility or persisting private reasoning.
+- [x] Model telemetry exposes privacy-safe request/history hashes and bounded
+  per-message prefix hashes sufficient to locate the earliest divergence.
+- [x] Weighted cache metrics remain token-weighted, and deterministic tests plus
+  a credentials-enabled real DeepSeek regression cover append-only, tool-loop,
+  child-resume, restart, and compaction boundaries.
+- [x] Full repository checks pass and the measured before/after result is
+  recorded without changing the configured model reasoning strength.
+
+#### Validation
+
+- Focused cache/context/Worker/observability contracts: `114 passed`; final
+  merged repository: `4587 passed, 892 skipped`, including all four real
+  DeepSeek provider smoke cases.
+- `make check` passed the file-size gate, Ruff, strict Mypy over 969 source files,
+  and deterministic release eval `30/30`.
+- Rebuilt and recreated the local cloud API and Worker from this branch; both
+  containers are healthy and the Worker reports model-driven
+  `cloud_budget=None` plus all privacy-safe cache diagnostics.
+- Credentials-enabled DeepSeek tool-loop smoke: `3 passed`. An identical
+  2,172-token request measured `0/2172` hit/miss cold, then `1920/252` on each
+  of two warm calls with one unchanged request hash: 88.4% measured warm hit
+  rate for this short sample.
+- No model profile or reasoning-strength setting changed. Private reasoning is
+  still excluded from durable Events, so child wakeup is an explicit recovery
+  boundary rather than a fabricated cache hit.
+
+#### Explicit Non-Goals
+
+- exposing or logging private reasoning content
+- weakening authorization, policy, sandbox, or continuation integrity checks
+- changing the user's configured model or reasoning-strength selection
+
 ### QA-148-MDL-01 - DeepSeek Thinking Tool-Loop Reasoning Replay
 
 - Status: `Done`

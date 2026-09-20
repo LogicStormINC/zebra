@@ -39,6 +39,8 @@ def compact_message_history(
     if active_tokens <= max_tokens:
         if active_messages == messages:
             return _result(messages, before=before, max_tokens=max_tokens)
+        if active_tokens >= before:
+            return _result(messages, before=before, max_tokens=max_tokens)
         return ConversationCompactionResult(
             messages=active_messages,
             before_tokens=before,
@@ -76,6 +78,8 @@ def compact_message_history(
         max_tokens=max_tokens,
     )
     after = estimate_message_tokens(candidate)
+    if after >= before:
+        return _result(messages, before=before, max_tokens=max_tokens)
     return ConversationCompactionResult(
         messages=candidate,
         before_tokens=before,

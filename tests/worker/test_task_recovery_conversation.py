@@ -48,3 +48,29 @@ def test_conversation_history_recovers_completed_turns_before_current_input() ->
         (MessageRole.USER, "暗号是海风"),
         (MessageRole.ASSISTANT, "我记住了。"),
     ]
+
+
+def test_conversation_history_does_not_apply_a_second_fixed_tail_budget() -> None:
+    events: list[SessionEvent] = []
+    for turn in range(30):
+        sequence = turn * 2
+        events.extend(
+            (
+                _event(sequence, EventType.USER_MESSAGE_RECEIVED, {"content": f"user-{turn}"}),
+                _event(
+                    sequence + 1,
+                    EventType.TURN_COMPLETED,
+                    {
+                        "turn_id": str(derive_turn_id(SESSION_ID, sequence)),
+                        "turn_index": turn,
+                        "metadata": {"assistant_message": f"assistant-{turn}"},
+                    },
+                ),
+            )
+        )
+
+    history = _conversation_history(events, before_sequence=60)
+
+    assert len(history) == 60
+    assert history[0].content == "user-0"
+    assert history[-1].content == "assistant-29"

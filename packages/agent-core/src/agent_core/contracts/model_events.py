@@ -82,6 +82,9 @@ class ModelResponseReceivedPayload(BaseModel):
     tool_schema_bytes: int | None = Field(default=None, ge=0)
     tool_schema_hash: str | None = None
     stable_prefix_hash: str | None = None
+    request_hash: str | None = None
+    message_count: int | None = Field(default=None, ge=0)
+    message_prefix_hashes: list[str] = Field(default_factory=list, max_length=256)
     estimated_input_tokens: int | None = Field(default=None, ge=0)
     input_token_limit: int | None = Field(default=None, ge=0)
     token_estimate_method: str | None = None

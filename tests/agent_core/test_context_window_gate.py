@@ -143,6 +143,25 @@ class _StrictRetryCompactor:
         )
 
 
+class _UnexpectedCompactor:
+    def compact_conversation(self, messages, *, user_goal, max_tokens, created_at):
+        raise AssertionError("under-trigger history must remain append-only")
+
+
+class _GrowingCompactor:
+    def compact_conversation(self, messages, *, user_goal, max_tokens, created_at):
+        return ConversationCompactionResult(
+            messages=tuple(messages) + (_message(MessageRole.USER, "larger"),),
+            before_tokens=200,
+            after_tokens=220,
+            removed_message_count=0,
+            retained_message_count=len(messages) + 1,
+            compacted=True,
+            within_budget=True,
+            provenance="growing-compaction",
+        )
+
+
 def test_request_completion_hard_gate_prevents_provider_call() -> None:
     gateway = _BoundedGateway(
         ModelContextWindow(
@@ -218,6 +237,57 @@ def test_prepare_conversation_retries_once_from_original_history() -> None:
     assert gateway.call_count == 0
 
 
+def test_prepare_conversation_preserves_under_trigger_history_without_compacting() -> None:
+    gateway = _BoundedGateway(
+        ModelContextWindow(
+            context_tokens=10_000,
+            max_output_tokens=1_000,
+            compaction_reserve_tokens=500,
+            protocol_reserve_tokens=500,
+            compaction_trigger_reserve_tokens=500,
+        )
+    )
+    messages = [_message(MessageRole.USER, "append-only history")]
+
+    result = HarnessModelStep(
+        conversation_compactor=_UnexpectedCompactor()
+    ).prepare_conversation(
+        messages,
+        gateway,
+        allow_tools=False,
+        user_goal="Preserve the prefix.",
+        created_at=NOW,
+    )
+
+    assert result is None
+    assert messages[0].content == "append-only history"
+
+
+def test_prepare_conversation_rejects_compaction_that_grows_history() -> None:
+    gateway = _BoundedGateway(
+        ModelContextWindow(
+            context_tokens=1_000,
+            max_output_tokens=100,
+            compaction_reserve_tokens=50,
+            protocol_reserve_tokens=50,
+            auto_compact_token_limit=200,
+        )
+    )
+    original = [_message(MessageRole.USER, "x" * 1_200)]
+    messages = list(original)
+
+    result = HarnessModelStep(conversation_compactor=_GrowingCompactor()).prepare_conversation(
+        messages,
+        gateway,
+        allow_tools=False,
+        user_goal="Do not grow history.",
+        created_at=NOW,
+    )
+
+    assert result is None
+    assert messages == original
+
+
 def test_context_plan_counts_tool_schema_and_reserves() -> None:
     tool = ModelToolDefinition(
         name="files.read",
@@ -275,7 +345,10 @@ def test_context_error_exposes_typed_diagnostics() -> None:
 def test_compaction_uses_provider_continuation_then_keeps_capsule_fallback() -> None:
     gateway = _NativeContinuationGateway()
     messages = [_message(MessageRole.USER, "continue")]
-    step = HarnessModelStep(conversation_compactor=_AlwaysCompact())
+    step = HarnessModelStep(
+        conversation_compactor=_AlwaysCompact(),
+        conversation_token_budget=100,
+    )
 
     result = step.prepare_conversation(
         messages,

@@ -126,6 +126,9 @@ class ModelCallMetadata:
     tool_schema_bytes: int | None = None
     tool_schema_hash: str | None = None
     stable_prefix_hash: str | None = None
+    request_hash: str | None = None
+    message_count: int | None = None
+    message_prefix_hashes: tuple[str, ...] = ()
     finish_reason: str | None = None
     time_to_first_event_ms: int | None = None
     time_to_first_public_text_ms: int | None = None
@@ -152,6 +155,7 @@ class ModelCallMetadata:
             "prompt_version",
             "tool_schema_hash",
             "stable_prefix_hash",
+            "request_hash",
             "finish_reason",
             "system_fingerprint",
             "normalized_error",
@@ -169,6 +173,12 @@ class ModelCallMetadata:
                 raise ValueError(f"{field_name} must not be negative")
         if self.tool_schema_bytes is not None and self.tool_schema_bytes < 0:
             raise ValueError("tool_schema_bytes must not be negative")
+        if self.message_count is not None and self.message_count < 0:
+            raise ValueError("message_count must not be negative")
+        if len(self.message_prefix_hashes) > 256:
+            raise ValueError("message_prefix_hashes must be bounded")
+        if any(not value.strip() for value in self.message_prefix_hashes):
+            raise ValueError("message_prefix_hashes must not contain blanks")
         if self.retry_count < 0 or self.response_repair_count < 0:
             raise ValueError("model response retry counts must not be negative")
         if self.cost_usd is not None and self.cost_usd < 0:
