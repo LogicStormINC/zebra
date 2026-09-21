@@ -132,6 +132,30 @@ def test_validate_event_payload_accepts_memory_review_recorded_shape() -> None:
     assert payload["duplicate_of_memory_id"] == "mem-2"
 
 
+def test_validate_event_payload_accepts_memory_runtime_evidence() -> None:
+    selected = validate_event_payload(
+        EventType.MEMORY_CONTEXT_SELECTED,
+        {
+            "selected_count": 1,
+            "memory_ids": ["mem-1"],
+            "query_has_text": True,
+            "mode": "continue",
+        },
+    )
+    completed = validate_event_payload(
+        EventType.MEMORY_EXTRACTION_COMPLETED,
+        {
+            "completion_revision": 12,
+            "candidate_count": 0,
+            "lifecycle_count": 0,
+            "outcome": "no_eligible_memory",
+        },
+    )
+
+    assert selected["memory_ids"] == ["mem-1"]
+    assert completed["completion_revision"] == 12
+
+
 def test_validate_event_payload_rejects_unknown_fields() -> None:
     with pytest.raises(
         EventPayloadValidationError,

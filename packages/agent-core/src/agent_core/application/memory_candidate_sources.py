@@ -8,6 +8,10 @@ from agent_core.application.memory_candidate_doc_sources import (
     doc_refresh_targets_from_file_read,
 )
 from agent_core.application.memory_candidate_refreshes import MemoryRefreshTarget
+from agent_core.application.memory_directives import (
+    MemoryDirectiveAction,
+    explicit_memory_directive,
+)
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import new_memory_id
 from agent_core.domain.memories import (
@@ -182,9 +186,7 @@ def _procedure_candidate_text(
 ) -> str:
     rendered_command = shell_join(command)
     if tool_name == "tests.run" and preset is not None:
-        return (
-            f"Run validation preset '{preset}' as `{rendered_command}` from `{cwd}`."
-        )
+        return f"Run validation preset '{preset}' as `{rendered_command}` from `{cwd}`."
     return f"Run `{rendered_command}` from `{cwd}`."
 
 
@@ -211,17 +213,18 @@ def _preference_candidates_from_user_message(
     content = event.payload.get("content")
     if not isinstance(content, str):
         return ()
-    preference = _explicit_preference_text(content)
-    if preference is None:
+    directive = explicit_memory_directive(content)
+    if directive is None or directive.action is not MemoryDirectiveAction.REMEMBER:
         return ()
+    visibility = MemoryVisibility.USER if user_id is not None else MemoryVisibility.REPO
     return (
         MemoryRecord(
             memory_id=new_memory_id(),
-            memory_type=MemoryType.PREFERENCE,
-            text=preference,
+            memory_type=directive.memory_type,
+            text=directive.text,
             confidence=0.7,
             status=MemoryStatus.CANDIDATE,
-            visibility=MemoryVisibility.REPO,
+            visibility=visibility,
             tenant_id=tenant_id,
             user_id=user_id,
             repo_id=repo_id,
@@ -232,14 +235,3 @@ def _preference_candidates_from_user_message(
             updated_at=created_at,
         ),
     )
-
-
-def _explicit_preference_text(content: str) -> str | None:
-    stripped = content.strip()
-    prefix = "preference:"
-    if not stripped.lower().startswith(prefix):
-        return None
-    preference = stripped[len(prefix) :].strip()
-    if not preference:
-        return None
-    return preference

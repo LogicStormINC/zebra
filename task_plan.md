@@ -1,4 +1,32 @@
-# Current task — CLOUD-AGENT-PARITY-01 General capability and quality closure (2026-09-20)
+# Current task — CLOUD-MEMORY-CLOSURE-01 PostgreSQL governed-Memory closure (2026-09-21)
+
+Branch: `codex/cloud-memory-closure-01`, based on
+`cloud-agent-trench@3fe23bbd`.
+
+1. `completed` — bind Memory writes and reads to stable frozen Host principal
+   and workspace scope without weakening Definition scope.
+2. `completed` — add deterministic Chinese/English remember, update and forget
+   directives with secret rejection and governed lifecycle mutations.
+3. `completed` — add bounded Chinese-capable PostgreSQL recall and durable
+   selected-Memory evidence.
+4. `completed` — persist finalization outcomes for zero-candidate, created,
+   updated, deleted and failed processing, and expose runtime status through the
+   existing memory API surface.
+5. `completed` — run focused, PostgreSQL, full repository and real composed
+   cross-session acceptance; record evidence and implementation percentage.
+
+Model and reasoning-effort settings remain unchanged. Redis Agent Memory stays
+disabled while PostgreSQL remains the authoritative store.
+
+Closure evidence: focused Memory/Worker/API suites passed `71`; real PostgreSQL
+Context and governed-Memory suites passed `45`; the complete repository passed
+`4593 passed, 897 skipped`. `make check` passed file-size, Ruff, strict Mypy over
+`973` source files and deterministic eval `30/30`. The isolated API/Worker
+Compose smoke rebuilt both images, reached healthy state and emitted
+`ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`. Approved-plan implementation is
+`100%`; no remote deployment or model/reasoning setting change is claimed.
+
+## Prior task — CLOUD-AGENT-PARITY-01 General capability and quality closure (2026-09-20)
 
 Branch: `cloud-agent-trench`; Trench consumer:
 `/Users/lukeding/Desktop/playground/2026/product/Trench`.

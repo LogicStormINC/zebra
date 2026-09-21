@@ -1,5 +1,23 @@
 # Progress Log
 
+## 2026-09-21 - CLOUD-MEMORY-CLOSURE-01 implementation and validation
+
+Implemented stable Host-bound memory scope, deterministic remember/forget
+directives, governed deletion, Chinese-capable recall ranking, durable recall
+and extraction checkpoints, recovery outcome counts, and additive Cloud memory
+runtime status. The task registry is in `Review`; PostgreSQL remains the sole
+authority and Redis Agent Memory remains disabled.
+
+Validation closed with `71` focused tests, `45` real PostgreSQL tests, and the
+full repository at `4593 passed, 897 skipped`. File-size, Ruff, strict Mypy over
+`973` sources and eval `30/30` passed. Fresh isolated API/Worker Compose images
+were rebuilt healthy and the smoke runner emitted
+`ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`.
+
+The declared local implementation plan is `100%` complete. Merge, push, Trench
+production rollout and remote deployment remain separate acceptance gates and
+are not claimed. Model and reasoning-effort settings were not changed.
+
 ## 2026-09-20 - CLOUD-REMEDIATION-R14 rollout controls
 
 Added an immutable candidate contract and fail-closed validation against the

@@ -18,7 +18,6 @@ from agent_core.domain.memories import (
     MemoryRecord,
     MemoryStatus,
     MemoryType,
-    MemoryVisibility,
 )
 from agent_core.domain.sessions import Session
 from agent_core.ports.memory_store import MemoryStorePort
@@ -166,13 +165,17 @@ def _records_in_review_scope(
     records: tuple[MemoryRecord, ...],
 ) -> tuple[MemoryRecord, ...]:
     def same_scope(record: MemoryRecord) -> bool:
-        if record.visibility is not candidate.visibility:
-            return False
-        if candidate.visibility is MemoryVisibility.REPO:
-            return record.repo_id == candidate.repo_id
-        if candidate.visibility is MemoryVisibility.USER:
-            return record.user_id == candidate.user_id
-        return record.tenant_id == candidate.tenant_id
+        return record.visibility is candidate.visibility and all(
+            getattr(record, field) == getattr(candidate, field)
+            for field in (
+                "tenant_id",
+                "user_id",
+                "repo_id",
+                "authority_issuer",
+                "namespace_id",
+                "definition_id",
+            )
+        )
 
     return tuple(
         record

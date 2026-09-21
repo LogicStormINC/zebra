@@ -188,6 +188,58 @@ def test_cloud_worker_materializes_one_scoped_recent_context_generation(
     assert request.memory_query.limit == 8
 
 
+def test_cloud_worker_uses_host_workspace_and_principal_memory_scope(
+    tmp_path: Path,
+) -> None:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Host Memory Context",
+            user_input="继续之前的偏好。",
+            workspace_root=tmp_path.resolve(),
+            created_at=NOW,
+        )
+    )
+    host_context = HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id="trench",
+        namespace_id="tenant-a",
+        workspace_ref="trench-workspace-7",
+        resource_refs=(HostResourceRef(type="principal", id="user-7"),),
+        scopes=("agent.run",),
+        limits=HostTechnicalLimits(
+            max_runtime_seconds=300,
+            max_model_tokens=100_000,
+            max_artifact_bytes=10_000_000,
+        ),
+        origin="https://trench.example.test",
+        policy_version="v1",
+    )
+    store = _RecordingContextStore()
+
+    materialize_worker_context(
+        store,
+        scope=OpaqueAuthorityScope(
+            authority_issuer="https://host.example.test",
+            namespace_id="tenant-a",
+            allowed_session_ids=(str(bootstrap.session.session_id),),
+        ),
+        session=bootstrap.session,
+        task=replace(_task(tmp_path), host_context=host_context),
+        source_workspace_ref=str(tmp_path.resolve()),
+        active_capsule_id=None,
+        events=list(bootstrap.events),
+        as_of=NOW,
+    )
+
+    assert store.request is not None
+    query = store.request.memory_query
+    assert query is not None
+    assert query.repo_id == "trench-workspace-7"
+    assert query.user_id == "user-7"
+    assert query.tenant_id == "tenant-a"
+    assert query.visibility is MemoryVisibility.USER
+
+
 def test_cloud_harness_uses_materialized_inputs_and_keeps_local_baseline(
     tmp_path: Path,
 ) -> None:

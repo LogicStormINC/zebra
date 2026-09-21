@@ -10,7 +10,6 @@ from agent_core.domain.memories import (
     MemoryRecord,
     MemoryStatus,
     MemoryType,
-    MemoryVisibility,
 )
 from agent_core.domain.sessions import Session
 
@@ -140,27 +139,16 @@ class MemoryReviewService:
 
 
 def memory_review_scope_query(record: MemoryRecord) -> MemoryQuery:
-    if record.visibility is MemoryVisibility.REPO:
-        return MemoryQuery(
-            repo_id=record.repo_id,
-            visibility=MemoryVisibility.REPO,
-            memory_types=(record.memory_type,),
-            statuses=(MemoryStatus.CONFIRMED,),
-            limit=50,
-        )
-    if record.visibility is MemoryVisibility.USER:
-        return MemoryQuery(
-            user_id=record.user_id,
-            visibility=MemoryVisibility.USER,
-            memory_types=(record.memory_type,),
-            statuses=(MemoryStatus.CONFIRMED,),
-            limit=50,
-        )
     return MemoryQuery(
         tenant_id=record.tenant_id,
-        visibility=MemoryVisibility.TENANT,
+        user_id=record.user_id,
+        repo_id=record.repo_id,
+        authority_issuer=record.authority_issuer,
+        namespace_id=record.namespace_id,
+        definition_id=record.definition_id,
         memory_types=(record.memory_type,),
         statuses=(MemoryStatus.CONFIRMED,),
+        visibility=record.visibility,
         limit=50,
     )
 
@@ -215,13 +203,17 @@ def _duplicate_confirmed_record(
 
 
 def _same_scope(left: MemoryRecord, right: MemoryRecord) -> bool:
-    if left.visibility is not right.visibility:
-        return False
-    if left.visibility is MemoryVisibility.REPO:
-        return left.repo_id == right.repo_id
-    if left.visibility is MemoryVisibility.USER:
-        return left.user_id == right.user_id
-    return left.tenant_id == right.tenant_id
+    return left.visibility is right.visibility and all(
+        getattr(left, field) == getattr(right, field)
+        for field in (
+            "tenant_id",
+            "user_id",
+            "repo_id",
+            "authority_issuer",
+            "namespace_id",
+            "definition_id",
+        )
+    )
 
 
 def _normalize_memory_text(text: str) -> str:

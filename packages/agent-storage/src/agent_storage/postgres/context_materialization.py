@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from agent_core.application import rank_governed_memories
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.context_materialization import (
     ContextMaterialization,
@@ -29,24 +30,11 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
 
     def materialize(self, request: ContextMaterializationRequest) -> ContextMaterialization:
         with self._database.connect() as connection:
-            connection.execute(
-                "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
-            )
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
             session_revision = self._session_revision(connection, request)
-            history, history_truncated, truncated_before = self._history(
-                connection, request
-            )
+            history, history_truncated, truncated_before = self._history(connection, request)
             capsule = self._active_capsule(connection, request)
-            memories = (
-                []
-                if request.memory_query is None
-                else query_authority_entries(
-                    connection,
-                    self._database.deployment_namespace,
-                    request.memory_query,
-                    as_of=request.as_of,
-                )
-            )
+            memories = self._memories(connection, request)
         try:
             return ContextMaterialization(
                 request=request,
@@ -62,6 +50,32 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
             # History window: fail closed instead of calling the model with
             # a hole in its context (ADR-026 §7).
             raise PostgresContextMaterializationConflictError(str(exc)) from exc
+
+    def _memories(
+        self,
+        connection: Any,
+        request: ContextMaterializationRequest,
+    ) -> tuple[Any, ...]:
+        query = request.memory_query
+        if query is None:
+            return ()
+        candidate_query = query.model_copy(
+            update={
+                "text_query": None,
+                "limit": min(500, max(50, query.limit * 10)),
+            }
+        )
+        candidates = query_authority_entries(
+            connection,
+            self._database.deployment_namespace,
+            candidate_query,
+            as_of=request.as_of,
+        )
+        return rank_governed_memories(
+            candidates,
+            query_text=query.text_query,
+            limit=query.limit,
+        )
 
     def _session_revision(self, connection: Any, request: ContextMaterializationRequest) -> int:
         row = connection.execute(
@@ -122,9 +136,7 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
             truncated_before = int(rows[0]["sequence"])
             # keep the newest window, drop the oldest.
             rows = rows[-request.history_limit :]
-        messages = tuple(
-            message for row in rows if (message := message_from_row(row)) is not None
-        )
+        messages = tuple(message for row in rows if (message := message_from_row(row)) is not None)
         return messages, history_truncated, truncated_before
 
     def _active_capsule(

@@ -32,6 +32,10 @@ from agent_core.contracts.handoff_events import (
     SessionHandoffWorkspaceDriftDetectedPayload,
     UserMessageReceivedPayload,
 )
+from agent_core.contracts.memory_events import (
+    MemoryContextSelectedPayload,
+    MemoryExtractionCompletedPayload,
+)
 from agent_core.contracts.model_events import (
     ModelRequestStartedPayload,
     ModelResponseDeltaPayload,
@@ -55,9 +59,7 @@ from agent_core.contracts.turn_events import (
     TurnCompletedPayload,
     TurnFailedPayload,
 )
-from agent_core.domain.agent_definition_snapshots import (
-    AgentDefinitionSnapshot,
-)
+from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.clarifications import (
     MAX_CLARIFICATION_CHOICE_CHARS,
     MAX_CLARIFICATION_CHOICES,
@@ -456,6 +458,8 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.EXECUTION_AUTHORITY_REVALIDATED: ExecutionAuthorityRevalidatedPayload,
     EventType.MEMORY_CANDIDATE_EXTRACTED: MemoryCandidateExtractedPayload,
     EventType.MEMORY_REVIEW_RECORDED: MemoryReviewRecordedPayload,
+    EventType.MEMORY_EXTRACTION_COMPLETED: MemoryExtractionCompletedPayload,
+    EventType.MEMORY_CONTEXT_SELECTED: MemoryContextSelectedPayload,
     EventType.CLIENT_EFFECT_SCHEDULED: ClientEffectScheduledPayload,
     EventType.CLIENT_EFFECT_RECEIPT_ACCEPTED: ClientEffectReceiptAcceptedPayload,
     EventType.SESSION_WAITING_FOR_CLIENT_EFFECT: SessionWaitingForClientEffectPayload,

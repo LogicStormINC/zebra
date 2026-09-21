@@ -30,6 +30,27 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLOUD-MEMORY-CLOSURE-01`: Review, owned by Codex on
+  `codex/cloud-memory-closure-01`, based on `cloud-agent-trench@3fe23bbd`.
+  Scope: close the PostgreSQL governed-Memory runtime loop for generic Cloud
+  Agent Hosts: derive stable principal/workspace scope from the frozen Host
+  context, recognize explicit Chinese/English remember and forget directives,
+  persist and recall only confirmed scoped Memory, record durable zero/result
+  finalization evidence and selected-Memory evidence, expose truthful memory
+  runtime status through the existing API boundary, and prove cross-session,
+  cross-principal, restart and failure behavior. Owned paths:
+  `packages/agent-core/src/agent_core/application/memory_*`, narrowly required
+  Memory/context domain and event contracts, PostgreSQL governed-Memory/context
+  adapters, Worker memory finalization/recovery/materialization modules, existing
+  API memory read surfaces, focused Core/Storage/Worker/API tests, this registry,
+  `PROGRESS.md`, `findings.md`, `WORKLOG.md`, and `task_plan.md`. Redis Agent
+  Memory remains disabled; no model or reasoning-effort setting changes, no
+  Trench business-data write, and no production deployment are included.
+  Closure evidence: focused suites `71`, real PostgreSQL suites `45`, full
+  repository `4593 passed, 897 skipped`, strict checks and eval `30/30`; isolated
+  API/Worker Compose smoke rebuilt healthy images and passed. Implementation of
+  the declared local plan is `100%`; merge and deployment remain separate gates.
+
 - `CLOUD-REMEDIATION-R00`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: establish the
   reproducible Zebra/Trench baseline for the cloud-agent remediation plan,

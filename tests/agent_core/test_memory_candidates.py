@@ -464,6 +464,40 @@ def test_memory_candidate_extraction_requires_closed_turn() -> None:
         )
 
 
+def test_explicit_forget_deletes_matching_confirmed_memory() -> None:
+    session = _completed_session()
+    confirmed = _memory_record(
+        session,
+        memory_type=MemoryType.PREFERENCE,
+        text="回复时先给结论。",
+        status=MemoryStatus.CONFIRMED,
+    )
+    store = _InMemoryMemoryStore(records=[confirmed])
+    event = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=4,
+        event_type=EventType.USER_MESSAGE_RECEIVED,
+        actor=EventActor.USER,
+        payload={"content": "忘记：回复时先给结论。"},
+        created_at=_now(),
+    )
+
+    result = MemoryCandidateExtractionService(store).extract(
+        session=session,
+        events=[event],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(
+            repo_id="zebra-agent",
+            extracted_at=_now(),
+        ),
+    )
+
+    assert result.records == ()
+    deleted = next(record for record in store.records if record.memory_id == confirmed.memory_id)
+    assert deleted.status is MemoryStatus.DELETED
+    assert result.events[0].payload["status"] == "deleted"
+
+
 class _InMemoryMemoryStore:
     def __init__(self, records: list[MemoryRecord] | None = None) -> None:
         self.records: list[MemoryRecord] = list(records or [])

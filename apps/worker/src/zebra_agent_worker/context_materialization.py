@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 
+from agent_core.application.memory_scopes import governed_memory_scope
 from agent_core.application.turn_projection import is_human_message
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.context_materialization import (
@@ -13,9 +14,9 @@ from agent_core.domain.context_materialization import (
     ContextMaterializationMode,
     ContextMaterializationRequest,
 )
-from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.memories import MemoryQuery, MemoryStatus, MemoryVisibility
+from agent_core.domain.memories import MemoryQuery
 from agent_core.domain.sessions import Session
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.ports import EventStorePort
@@ -156,6 +157,26 @@ def prepare_worker_context(
         events=events,
         as_of=as_of,
     )
+    if materialization is not None:
+        recorder.append(
+            EventType.MEMORY_CONTEXT_SELECTED,
+            EventActor.SYSTEM,
+            {
+                "selected_count": len(materialization.memories),
+                "memory_ids": [str(item.record.memory_id) for item in materialization.memories],
+                "query_has_text": (
+                    materialization.request.memory_query is not None
+                    and materialization.request.memory_query.text_query is not None
+                ),
+                "mode": materialization.request.mode.value,
+            },
+            created_at=as_of,
+        )
+        claimed = ClaimedSession(
+            recovery=recovery_service.recover_session(session_id, worker_lease=claimed.lease),
+            lease=claimed.lease,
+        )
+        events = event_store.list_for_session(session_id)
     return PreparedWorkerContext(claimed, events, binding, materialization, extension)
 
 
@@ -187,24 +208,16 @@ def materialize_worker_context(
     return store.materialize(request)
 
 
-def _memory_query(task: RecoveredTask, source_workspace_ref: str) -> MemoryQuery:
-    snapshot = task.definition_snapshot
-    if snapshot is not None:
-        return MemoryQuery(
-            authority_issuer=snapshot.authority_issuer,
-            namespace_id=snapshot.namespace_id,
-            definition_id=snapshot.definition_id,
-            text_query=task.user_input,
-            statuses=(MemoryStatus.CONFIRMED,),
-            limit=CLOUD_CONTEXT_MEMORY_LIMIT,
-        )
-    return MemoryQuery(
-        repo_id=source_workspace_ref,
-        visibility=MemoryVisibility.REPO,
-        text_query=task.user_input,
-        statuses=(MemoryStatus.CONFIRMED,),
-        limit=CLOUD_CONTEXT_MEMORY_LIMIT,
+def _memory_query(task: RecoveredTask, source_workspace_ref: str) -> MemoryQuery | None:
+    scope = governed_memory_scope(
+        fallback_repo_id=source_workspace_ref,
+        host_context=task.host_context,
+        definition_snapshot=task.definition_snapshot,
     )
+    if scope is None:
+        # Ambiguous Host principal binding fails closed: no cross-session Memory.
+        return None
+    return scope.query(text_query=task.user_input, limit=CLOUD_CONTEXT_MEMORY_LIMIT)
 
 
 def _mode(events: list[SessionEvent]) -> ContextMaterializationMode:

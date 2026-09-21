@@ -3413,3 +3413,24 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   2,172-token request was cold at `0/2172` hit/miss and then stable at
   `1920/252` for two warm calls (88.4% measured warm hit rate). Model and
   reasoning-strength settings were not changed.
+
+## 2026-09-21 - CLOUD-MEMORY-CLOSURE-01 PostgreSQL authority closure
+
+- Replaced ephemeral Session workspace scoping with frozen Host workspace,
+  principal and tenant coordinates while retaining Definition scope. Missing or
+  ambiguous Host principal bindings now fail closed instead of widening recall.
+- Added deterministic Chinese/English remember and forget directives, typed
+  project/architecture/procedure memory, sensitive-text rejection and governed
+  deletion. PostgreSQL remains authoritative; Redis Agent Memory remains off.
+- Added bounded Chinese-capable recall ranking, durable selection and extraction
+  checkpoints, recovery outcome counts, and additive Cloud runtime status on the
+  existing session-memory API without changing local response contracts.
+- Real PostgreSQL tests prove relevant Chinese recall, same-workspace
+  cross-principal isolation, governed writes/reviews/scans and native storage.
+  Focused suites pass `71`; PostgreSQL suites pass `45`; full repository passes
+  `4593 passed, 897 skipped`. File-size, Ruff, Mypy over `973` sources and eval
+  `30/30` pass. Isolated API/Worker Compose images rebuilt healthy and emitted
+  `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`.
+- Declared local implementation is `100%`. Merge, push, Trench production rollout
+  and remote deployment are separate gates and are not claimed. Model and
+  reasoning-effort settings are unchanged.

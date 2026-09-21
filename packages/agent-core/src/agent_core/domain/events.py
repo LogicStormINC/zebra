@@ -56,6 +56,8 @@ class EventType(StrEnum):
     TESTS_COMPLETED = "tests_completed"
     MEMORY_CANDIDATE_EXTRACTED = "memory_candidate_extracted"
     MEMORY_REVIEW_RECORDED = "memory_review_recorded"
+    MEMORY_EXTRACTION_COMPLETED = "memory_extraction_completed"
+    MEMORY_CONTEXT_SELECTED = "memory_context_selected"
     TURN_COMPLETED = "turn_completed"
     TURN_FAILED = "turn_failed"
     TURN_CANCELLED = "turn_cancelled"

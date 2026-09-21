@@ -79,9 +79,6 @@ def _scoped_candidate(
     )
 
 
-
-
-
 def _completed_session() -> Session:
     from agent_core.domain.sessions import Session, new_session_id
 
@@ -126,7 +123,7 @@ def test_scope_requires_all_three_fields() -> None:
         )
 
 
-def test_planner_propagates_definition_scope_and_drops_legacy_scope() -> None:
+def test_planner_combines_definition_and_stable_host_scope() -> None:
     session = _completed_session()
     plan = MemoryCandidateExtractionPlanner().plan(
         session=session,
@@ -143,7 +140,7 @@ def test_planner_propagates_definition_scope_and_drops_legacy_scope() -> None:
         assert record.authority_issuer == ISSUER
         assert record.namespace_id == "tenant-a"
         assert record.definition_id == DEFINITION_ID
-        assert record.repo_id is None
+        assert record.repo_id == "/workspaces/repo"
         assert record.tenant_id is None
         assert record.user_id is None
 

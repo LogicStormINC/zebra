@@ -1605,3 +1605,27 @@ Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
   `Review` to `Done`, and allowed the parent Context conformance audit's
   `BLOCK-GAP` to close. The aggregate fencing gate remains `Locked` because
   other aggregate cards are still pending.
+
+## CLOUD-MEMORY-CLOSURE-01 findings (2026-09-21)
+
+- Cloud memory recovery was active, but candidate extraction only recognized
+  legacy preference and tool events. Ordinary Chinese or English remember and
+  forget requests therefore produced no governed memory effect.
+- The fallback repository scope was Session-derived and ephemeral even though
+  the frozen Host envelope already carried stable workspace, principal and
+  tenant coordinates. Stable Host coordinates are now authoritative and
+  ambiguous principal bindings fail closed.
+- Zero-candidate extraction runs previously left no durable checkpoint, so
+  recovery could not distinguish completed no-op work from an interrupted run.
+  Extraction and recall selection now emit idempotent durable checkpoints.
+- PostgreSQL recall now fetches a bounded authority-filtered candidate set and
+  applies deterministic Latin and Chinese token/bigram ranking in process. This
+  avoids backend-specific text-search behavior while preserving strict scope
+  isolation and bounded work.
+- A completed Session rejects ordinary recorder preparation. Terminal memory
+  extraction therefore commits its validated event directly through the event
+  store with a completion-revision idempotency key rather than reopening the
+  Session state machine.
+- PostgreSQL remains the authoritative memory and Event chain. A separate Redis
+  Agent Memory authority would add split-brain and deletion-consistency risk, so
+  Redis remains unnecessary for this closure and stays disabled.

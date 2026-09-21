@@ -5,26 +5,22 @@ from __future__ import annotations
 from datetime import datetime
 
 from agent_core.application import (
+    GovernedMemoryScope,
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionPlanner,
     MemoryCandidatePromotionPlanner,
+    governed_memory_scope_from_events,
     memory_extraction_window,
 )
 from agent_core.application.memory_reviews import memory_review_scope_query
 from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import rebuild_workspace
-from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
-from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.governed_memories import GovernedMemoryEntry
 from agent_core.domain.governed_memory_operations import WorkerMemoryMutationPlan
 from agent_core.domain.governed_memory_receipts import GovernedMemoryOperationReceipt
-from agent_core.domain.identifiers import AgentDefinitionId, MemoryId
-from agent_core.domain.memories import (
-    MemoryQuery,
-    MemoryRecord,
-    MemoryStatus,
-    MemoryVisibility,
-)
+from agent_core.domain.identifiers import MemoryId
+from agent_core.domain.memories import MemoryRecord
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.ports import (
     EventStorePort,
@@ -55,6 +51,8 @@ def finalize_cloud_memory(
     session = recorder.session
     events = event_store.list_for_session(session.session_id)
     completion_revision = memory_completion_revision(events, session)
+    if _has_extraction_checkpoint(events, completion_revision):
+        return True
     operation_id = _operation_id(session, completion_revision)
     committed = memory_store.get_worker_commit_receipt(
         operation_id,
@@ -62,6 +60,11 @@ def finalize_cloud_memory(
     )
     if committed is not None:
         if recorder.session.current_sequence >= committed.receipt.session_revision:
+            _append_extraction_checkpoint(
+                recorder,
+                completion_revision=completion_revision,
+                events=events,
+            )
             return True
         if authority.expected_stream_revision != committed.receipt.event_sequences[0] - 1:
             raise ValueError("cloud Memory receipt cannot be accepted from a stale authority")
@@ -72,25 +75,38 @@ def finalize_cloud_memory(
             projection_store=projection_store,
             workspace_store=workspace_store,
         )
+        _append_extraction_checkpoint(
+            recorder,
+            completion_revision=completion_revision,
+            events=event_store.list_for_session(session.session_id),
+        )
         return True
     if authority.expected_stream_revision < completion_revision:
         raise ValueError("cloud Memory finalization authority precedes the closed Turn")
-    definition_scope = _definition_scope_from_events(events)
+    memory_scope = governed_memory_scope_from_events(
+        events,
+        fallback_repo_id=str(recorder.workspace.workspace_root),
+    )
+    if memory_scope is None:
+        raise ValueError("cloud Memory principal scope is absent or ambiguous")
     confirmed = memory_store.list_for_worker(
-        _confirmed_memory_query(
-            recorder,
-            definition_scope=definition_scope,
-        ),
+        memory_scope.query(limit=500),
         authority=authority,
     )
     extraction = MemoryCandidateExtractionPlanner().plan(
         session=session,
         events=events,
         next_sequence=recorder.next_sequence,
-        command=_extraction_command(recorder, started_at, definition_scope, events),
+        command=_extraction_command(recorder, started_at, memory_scope, events),
         confirmed_records=tuple(entry.record for entry in confirmed),
     )
     if not extraction.records and not extraction.stale_records:
+        if allow_commit:
+            _append_extraction_checkpoint(
+                recorder,
+                completion_revision=completion_revision,
+                events=events,
+            )
         return True
     existing_entries = _review_scope_entries(
         extraction.records,
@@ -141,7 +157,58 @@ def finalize_cloud_memory(
         projection_store=projection_store,
         workspace_store=workspace_store,
     )
+    _append_extraction_checkpoint(
+        recorder,
+        completion_revision=completion_revision,
+        events=event_store.list_for_session(session.session_id),
+    )
     return True
+
+
+def _has_extraction_checkpoint(events: list[SessionEvent], completion_revision: int) -> bool:
+    return any(
+        event.event_type is EventType.MEMORY_EXTRACTION_COMPLETED
+        and event.payload.get("completion_revision") == completion_revision
+        for event in events
+    )
+
+
+def _append_extraction_checkpoint(
+    recorder: DurableHarnessEventRecorder,
+    *,
+    completion_revision: int,
+    events: list[SessionEvent],
+) -> None:
+    if _has_extraction_checkpoint(events, completion_revision):
+        return
+    covered = [
+        event
+        for event in events
+        if event.sequence > completion_revision
+        and event.event_type
+        in {EventType.MEMORY_CANDIDATE_EXTRACTED, EventType.MEMORY_REVIEW_RECORDED}
+    ]
+    candidate_count = sum(
+        event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED for event in covered
+    )
+    lifecycle_count = sum(event.event_type is EventType.MEMORY_REVIEW_RECORDED for event in covered)
+    recorder.append_event(
+        SessionEvent.create(
+            session_id=recorder.session.session_id,
+            sequence=recorder.next_sequence,
+            event_type=EventType.MEMORY_EXTRACTION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={
+                "completion_revision": completion_revision,
+                "candidate_count": candidate_count,
+                "lifecycle_count": lifecycle_count,
+                "outcome": (
+                    "committed" if candidate_count or lifecycle_count else "no_eligible_memory"
+                ),
+            },
+            idempotency_key=f"memory-extraction:{completion_revision}",
+        )
+    )
 
 
 def _accept_receipt(
@@ -174,9 +241,7 @@ def _accept_receipt(
         # compared against the projection AT THE RECEIPT REVISION — never
         # against the pre-commit authority revision nor the ahead head.
         all_events = event_store.list_for_session(recorder.session.session_id)
-        at_receipt = [
-            event for event in all_events if event.sequence <= receipt_revision
-        ]
+        at_receipt = [event for event in all_events if event.sequence <= receipt_revision]
         stored_session = rebuild_session(at_receipt)
         stored_workspace = rebuild_workspace(at_receipt)
     recorder.accept_committed_events(
@@ -237,72 +302,23 @@ def _review_scope_entries(
     return tuple(entries.values())
 
 
-def _confirmed_memory_query(
-    recorder: DurableHarnessEventRecorder,
-    *,
-    definition_scope: tuple[str, str, AgentDefinitionId] | None,
-) -> MemoryQuery:
-    if definition_scope is not None:
-        authority_issuer, namespace_id, definition_id = definition_scope
-        return MemoryQuery(
-            authority_issuer=authority_issuer,
-            namespace_id=namespace_id,
-            definition_id=definition_id,
-            statuses=(MemoryStatus.CONFIRMED,),
-            limit=500,
-        )
-    return MemoryQuery(
-        repo_id=str(recorder.workspace.workspace_root),
-        visibility=MemoryVisibility.REPO,
-        statuses=(MemoryStatus.CONFIRMED,),
-        limit=500,
-    )
-
-
-def _definition_scope_from_events(
-    events: tuple[SessionEvent, ...] | list[SessionEvent],
-) -> tuple[str, str, AgentDefinitionId] | None:
-    """Durable Definition scope from the TASK_PREPARED snapshot; never drafts."""
-    for event in events:
-        if event.event_type is not EventType.TASK_PREPARED:
-            continue
-        raw = event.payload.get("definition_snapshot")
-        if not isinstance(raw, dict):
-            continue
-        try:
-            snapshot = AgentDefinitionSnapshot.model_validate(raw)
-        except ValueError:
-            continue
-        return (
-            snapshot.authority_issuer,
-            snapshot.namespace_id,
-            snapshot.definition_id,
-        )
-    return None
-
-
 def _extraction_command(
     recorder: DurableHarnessEventRecorder,
     started_at: datetime,
-    definition_scope: tuple[str, str, AgentDefinitionId] | None,
+    memory_scope: GovernedMemoryScope,
     events: list[SessionEvent],
 ) -> MemoryCandidateExtractionCommand:
     # Per-turn extraction window anchored on the previous Turn close
     # (ADR-026 §6): advances even for zero-candidate Turns, and a
     # successful extraction's events push it past re-derivation.
     since_sequence = memory_extraction_window(events)
-    if definition_scope is None:
-        return MemoryCandidateExtractionCommand(
-            repo_id=str(recorder.workspace.workspace_root),
-            extracted_at=started_at,
-            since_sequence=since_sequence,
-        )
-    authority_issuer, namespace_id, definition_id = definition_scope
     return MemoryCandidateExtractionCommand(
-        repo_id=str(recorder.workspace.workspace_root),
+        repo_id=memory_scope.repo_id,
+        user_id=memory_scope.user_id,
+        tenant_id=memory_scope.tenant_id,
         extracted_at=started_at,
-        authority_issuer=authority_issuer,
-        namespace_id=namespace_id,
-        definition_id=definition_id,
+        authority_issuer=memory_scope.authority_issuer,
+        namespace_id=memory_scope.namespace_id,
+        definition_id=memory_scope.definition_id,
         since_sequence=since_sequence,
     )

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 from collections.abc import Generator
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -65,9 +66,7 @@ def deployment_namespace(postgres_dsn: str) -> Generator[str, None, None]:
 class _IsolationProbeStore(PostgresContextMaterializationStore):
     transaction_settings: tuple[str, str] | None = None
 
-    def _session_revision(
-        self, connection: Any, request: ContextMaterializationRequest
-    ) -> int:
+    def _session_revision(self, connection: Any, request: ContextMaterializationRequest) -> int:
         row = connection.execute(
             """
             SELECT current_setting('transaction_isolation') AS isolation,
@@ -215,6 +214,7 @@ def test_materialization_excludes_automation_handoff_seed_from_history(
     ]
     assert result.history_truncated is False
 
+
 def test_materialization_fails_closed_on_capsule_coverage_gap(
     postgres_dsn: str,
     deployment_namespace: str,
@@ -243,9 +243,7 @@ def test_materialization_fails_closed_on_capsule_coverage_gap(
     )
     assert capsule.source_event_range is not None
 
-    with pytest.raises(
-        PostgresContextMaterializationConflictError, match="uncovered gap"
-    ):
+    with pytest.raises(PostgresContextMaterializationConflictError, match="uncovered gap"):
         PostgresContextMaterializationStore(
             postgres_dsn,
             deployment_namespace=deployment_namespace,
@@ -318,6 +316,50 @@ def test_materialization_is_read_only(
         deployment_namespace=deployment_namespace,
     ).materialize(_request(session_id, revision=5, capsule_id=capsule.capsule_id))
     assert _counts(postgres_dsn, deployment_namespace) == before
+
+
+def test_materialization_ranks_chinese_memory_and_isolates_host_principals(
+    postgres_dsn: str,
+    deployment_namespace: str,
+) -> None:
+    session_id, capsule, _ = _seed_sources(postgres_dsn, deployment_namespace)
+    expected = _memory(
+        21,
+        repo_id="workspace-a",
+        user_id="user-7",
+        visibility=MemoryVisibility.USER,
+        memory_type=MemoryType.ARCHITECTURE_FACT,
+        text="PostgreSQL 是权威记忆存储",
+    )
+    other_principal = _memory(
+        22,
+        repo_id="workspace-a",
+        user_id="user-8",
+        visibility=MemoryVisibility.USER,
+        memory_type=MemoryType.ARCHITECTURE_FACT,
+        text="PostgreSQL 是另一个用户的私有记忆",
+    )
+    _insert_memory(postgres_dsn, deployment_namespace, expected)
+    _insert_memory(postgres_dsn, deployment_namespace, other_principal)
+    request = _request(session_id, revision=5, capsule_id=capsule.capsule_id)
+    request = replace(
+        request,
+        memory_query=MemoryQuery(
+            repo_id="workspace-a",
+            user_id="user-7",
+            visibility=MemoryVisibility.USER,
+            text_query="检查 PostgreSQL 记忆链路",
+            statuses=(MemoryStatus.CONFIRMED,),
+            limit=8,
+        ),
+    )
+
+    result = PostgresContextMaterializationStore(
+        postgres_dsn,
+        deployment_namespace=deployment_namespace,
+    ).materialize(request)
+
+    assert [entry.record.memory_id for entry in result.memories] == [expected.record.memory_id]
 
 
 def _request(
@@ -488,15 +530,19 @@ def _memory(
     status: MemoryStatus = MemoryStatus.CONFIRMED,
     expires_at: datetime | None = None,
     repo_id: str = "repo-1",
+    user_id: str | None = None,
+    visibility: MemoryVisibility = MemoryVisibility.REPO,
     memory_type: MemoryType = MemoryType.PROJECT_RULE,
+    text: str | None = None,
 ) -> GovernedMemoryEntry:
     record = MemoryRecord(
         memory_id=MemoryId(UUID(int=revision + 100)),
         memory_type=memory_type,
-        text=f"Memory {revision}",
+        text=text or f"Memory {revision}",
         confidence=1.0,
         status=status,
-        visibility=MemoryVisibility.REPO,
+        visibility=visibility,
+        user_id=user_id,
         repo_id=repo_id,
         expires_at=expires_at,
         created_at=_at(-2),

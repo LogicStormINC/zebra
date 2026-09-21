@@ -9,6 +9,10 @@ from agent_core.application.memory_candidate_sources import (
     candidates_from_session_event,
     refresh_targets_from_session_event,
 )
+from agent_core.application.memory_directives import (
+    MemoryDirectiveAction,
+    explicit_memory_directive,
+)
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.governed_memories import (
     GovernedMemoryCreate,
@@ -106,6 +110,17 @@ class MemoryCandidateExtractionPlanner:
             created_at=command.extracted_at or session.updated_at,
             refresh_targets=refresh_targets,
         )
+        forgotten = _forgotten_confirmed_memories(
+            events=events,
+            since_sequence=command.since_sequence,
+            confirmed_records=confirmed_records,
+            created_at=command.extracted_at or session.updated_at,
+        )
+        stale_by_id = {str(record.memory_id): (record, reason) for record, reason in stale}
+        stale_by_id.update(
+            {str(record.memory_id): (record, reason) for record, reason in forgotten}
+        )
+        stale = tuple(stale_by_id.values())
         emitted_events = [
             SessionEvent.create(
                 session_id=session.session_id,
@@ -124,7 +139,7 @@ class MemoryCandidateExtractionPlanner:
                     sequence=next_sequence + len(emitted_events),
                     event_type=EventType.MEMORY_REVIEW_RECORDED,
                     actor=EventActor.HARNESS,
-                    payload=_event_payload_for_expiry(stale_record, reason),
+                    payload=_event_payload_for_lifecycle(stale_record, reason),
                     created_at=command.extracted_at or session.updated_at,
                 )
             )
@@ -149,7 +164,8 @@ class MemoryCandidateExtractionService:
     ) -> MemoryCandidateExtractionResult:
         refresh_targets = _refresh_targets(events)
         confirmed_records = _confirmed_records_for_refresh(
-            repo_id=command.repo_id,
+            command=command,
+            events=events,
             memory_store=self._memory_store,
             refresh_targets=refresh_targets,
         )
@@ -190,6 +206,15 @@ def memory_extraction_window(events: list[SessionEvent]) -> int:
         event.sequence for event in events if event.event_type is EventType.TURN_COMPLETED
     ]
     previous_close = turn_closes[-2] if len(turn_closes) >= 2 else -1
+    completed_checkpoint = max(
+        (
+            int(event.payload["completion_revision"])
+            for event in events
+            if event.event_type is EventType.MEMORY_EXTRACTION_COMPLETED
+            and isinstance(event.payload.get("completion_revision"), int)
+        ),
+        default=None,
+    )
     last_extraction = max(
         (
             event.sequence
@@ -198,6 +223,8 @@ def memory_extraction_window(events: list[SessionEvent]) -> int:
         ),
         default=None,
     )
+    if completed_checkpoint is not None:
+        return min(previous_close, completed_checkpoint)
     if last_extraction is None:
         # No durable extraction checkpoint exists: a zero-candidate Turn
         # and a lost extraction are indistinguishable here, and ADR-026
@@ -225,9 +252,6 @@ def _candidate_records_and_refresh_targets(
             "authority_issuer": command.authority_issuer,
             "namespace_id": command.namespace_id,
             "definition_id": command.definition_id,
-            "tenant_id": None,
-            "user_id": None,
-            "repo_id": None,
         }
     # Candidates and refresh targets must come from the same bounded
     # slice: an old Turn's refresh instruction replayed against a new
@@ -261,11 +285,25 @@ def _refresh_targets(
 
 def _confirmed_records_for_refresh(
     *,
-    repo_id: str,
+    command: MemoryCandidateExtractionCommand,
+    events: list[SessionEvent],
     memory_store: MemoryStorePort,
     refresh_targets: tuple[tuple[tuple[MemoryType, ...], str], ...],
 ) -> tuple[MemoryRecord, ...]:
     confirmed: dict[MemoryId, MemoryRecord] = {}
+    has_forget = any(
+        event.event_type is EventType.USER_MESSAGE_RECEIVED
+        and isinstance((content := event.payload.get("content")), str)
+        and (directive := explicit_memory_directive(content)) is not None
+        and directive.action is MemoryDirectiveAction.FORGET
+        for event in events
+        if event.sequence > command.since_sequence
+    )
+    if has_forget:
+        # Explicit forget needs the full bounded confirmed scope. Ordinary
+        # extraction retains the narrower legacy refresh reads.
+        for record in memory_store.list(_confirmed_scope_query(command, limit=500)):
+            confirmed[record.memory_id] = record
     for memory_types, _ in refresh_targets:
         eligible_types = tuple(
             memory_type
@@ -276,7 +314,12 @@ def _confirmed_records_for_refresh(
             continue
         for record in memory_store.list(
             MemoryQuery(
-                repo_id=repo_id,
+                repo_id=command.repo_id,
+                user_id=command.user_id,
+                tenant_id=command.tenant_id,
+                authority_issuer=command.authority_issuer,
+                namespace_id=command.namespace_id,
+                definition_id=command.definition_id,
                 visibility=MemoryVisibility.REPO,
                 memory_types=eligible_types,
                 statuses=(MemoryStatus.CONFIRMED,),
@@ -285,6 +328,23 @@ def _confirmed_records_for_refresh(
         ):
             confirmed[record.memory_id] = record
     return tuple(confirmed.values())
+
+
+def _confirmed_scope_query(
+    command: MemoryCandidateExtractionCommand,
+    *,
+    limit: int,
+) -> MemoryQuery:
+    return MemoryQuery(
+        repo_id=command.repo_id,
+        user_id=command.user_id,
+        tenant_id=command.tenant_id,
+        authority_issuer=command.authority_issuer,
+        namespace_id=command.namespace_id,
+        definition_id=command.definition_id,
+        statuses=(MemoryStatus.CONFIRMED,),
+        limit=limit,
+    )
 
 
 def _event_payload_for_candidate(candidate: MemoryRecord) -> dict[str, object]:
@@ -338,17 +398,51 @@ def _stale_confirmed_repo_memories(
     return tuple(invalidations.values())
 
 
-def _event_payload_for_expiry(record: MemoryRecord, reason: str) -> dict[str, object]:
+def _event_payload_for_lifecycle(record: MemoryRecord, reason: str) -> dict[str, object]:
     return {
         "memory_id": str(record.memory_id),
         "memory_type": record.memory_type.value,
         "previous_status": MemoryStatus.CONFIRMED.value,
-        "status": MemoryStatus.EXPIRED.value,
+        "status": record.status.value,
         "operator": "system",
         "reason": reason,
         "superseded_memory_ids": [],
         "duplicate_of_memory_id": None,
     }
+
+
+def _forgotten_confirmed_memories(
+    *,
+    events: list[SessionEvent],
+    since_sequence: int,
+    confirmed_records: tuple[MemoryRecord, ...],
+    created_at: datetime,
+) -> tuple[tuple[MemoryRecord, str], ...]:
+    targets = tuple(
+        directive.text
+        for event in events
+        if event.sequence > since_sequence and event.event_type is EventType.USER_MESSAGE_RECEIVED
+        if isinstance((content := event.payload.get("content")), str)
+        if (directive := explicit_memory_directive(content)) is not None
+        and directive.action is MemoryDirectiveAction.FORGET
+    )
+    forgotten: dict[str, tuple[MemoryRecord, str]] = {}
+    for target in targets:
+        normalized_target = _normalize_memory_text(target).casefold()
+        for record in confirmed_records:
+            normalized_text = _normalize_memory_text(record.text).casefold()
+            if (
+                normalized_target not in normalized_text
+                and normalized_text not in normalized_target
+            ):
+                continue
+            forgotten[str(record.memory_id)] = (
+                record.model_copy(
+                    update={"status": MemoryStatus.DELETED, "updated_at": created_at}
+                ),
+                "explicit user forget directive",
+            )
+    return tuple(forgotten.values())
 
 
 def _current_candidate_texts_by_type(

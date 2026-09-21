@@ -37,9 +37,7 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
 
     calls = {"count": 0}
     first_at = NOW + TITLE_RETRY_COOLDOWN - timedelta(seconds=1)
-    expected_bucket = {
-        "value": int(first_at.timestamp() // TITLE_RETRY_COOLDOWN.total_seconds())
-    }
+    expected_bucket = {"value": int(first_at.timestamp() // TITLE_RETRY_COOLDOWN.total_seconds())}
 
     class _TitleService:
         def generate(self, **kwargs):
@@ -147,6 +145,20 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
                 ),
                 expected_stream_revision=session.current_sequence,
             )
+
+            class _Transaction:
+                @staticmethod
+                def commit_worker_event(event, next_session, next_workspace, **kwargs):
+                    del kwargs
+                    stores.events.append(event)
+                    stores.sessions.save_session(next_session)
+                    stores.workspaces.save_workspace(next_workspace)
+                    return SimpleNamespace(
+                        event=event,
+                        session=next_session,
+                        workspace=next_workspace,
+                    )
+
             return DurableHarnessEventRecorder(
                 session=session,
                 workspace=workspace,
@@ -155,7 +167,7 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
                 workspace_store=stores.workspaces,
                 model_call_indexer=ModelCallIndexer(stores.model_calls),
                 tool_run_indexer=ToolRunIndexer(stores.tool_runs),
-                worker_projection_transaction=SimpleNamespace(),
+                worker_projection_transaction=_Transaction(),
                 worker_mutation_authority=authority,
             )
 
@@ -217,9 +229,7 @@ def test_title_recovery_cooldown_bounds_model_retries(tmp_path: Path) -> None:
     assert calls["count"] == 1
     # After the rolling cooldown expires a retry is allowed again.
     third_at = first_at + TITLE_RETRY_COOLDOWN + timedelta(seconds=1)
-    expected_bucket["value"] = int(
-        third_at.timestamp() // TITLE_RETRY_COOLDOWN.total_seconds()
-    )
+    expected_bucket["value"] = int(third_at.timestamp() // TITLE_RETRY_COOLDOWN.total_seconds())
     third = other_worker.recover(
         bootstrap.session.session_id,
         worker_id="w",

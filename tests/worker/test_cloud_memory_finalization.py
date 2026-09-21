@@ -24,6 +24,7 @@ class _Recorder:
         self.workspace = workspace
         self.worker_mutation_authority = authority
         self.accepted: tuple[SessionEvent, ...] = ()
+        self.appended: tuple[SessionEvent, ...] = ()
 
     @property
     def next_sequence(self) -> int:
@@ -39,6 +40,12 @@ class _Recorder:
         self.accepted = events
         self.session = session
         self.workspace = workspace
+
+    def append_event(self, event: SessionEvent) -> SessionEvent:
+        self.session = apply_session_event(self.session, event)
+        self.workspace = apply_workspace_event(self.workspace, event)
+        self.appended = (*self.appended, event)
+        return event
 
 
 class _MemoryStore:

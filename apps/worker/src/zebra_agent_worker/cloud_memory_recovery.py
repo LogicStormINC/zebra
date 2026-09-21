@@ -6,7 +6,7 @@ from typing import Any
 from uuid import uuid4
 
 from agent_core.application import SessionTitleService
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseConflictError
 from agent_core.domain.sessions import SessionStatus
@@ -89,9 +89,25 @@ def _mark_memory_recovered(
     session_id: SessionId,
     completion_revision: int,
     recovered_at: datetime,
+    events: list[SessionEvent],
 ) -> None:
     if store is None:
         return
+    memory_events = [
+        event
+        for event in events
+        if event.sequence > completion_revision
+        and event.event_type
+        in {EventType.MEMORY_CANDIDATE_EXTRACTED, EventType.MEMORY_REVIEW_RECORDED}
+    ]
+    candidate_count = sum(
+        event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED for event in memory_events
+    )
+    review_statuses = [
+        event.payload.get("status")
+        for event in memory_events
+        if event.event_type is EventType.MEMORY_REVIEW_RECORDED
+    ]
     store.save(
         IdempotencyRecord(
             action=MEMORY_RECOVERY_ACTION,
@@ -101,6 +117,11 @@ def _mark_memory_recovered(
             response_body={
                 "session_id": str(session_id),
                 "completion_revision": completion_revision,
+                "outcome": "committed" if memory_events else "no_eligible_memory",
+                "candidate_count": candidate_count,
+                "confirmed_count": review_statuses.count("confirmed"),
+                "expired_count": review_statuses.count("expired"),
+                "deleted_count": review_statuses.count("deleted"),
             },
             created_at=recovered_at,
         )
@@ -185,6 +206,7 @@ class CloudMemoryFinalizationRecovery:
                 session_id,
                 memory_completion_revision(events, recorder.session),
                 recovered_at,
+                events,
             )
             if any(event.event_type is EventType.SESSION_TITLE_UPDATED for event in events):
                 return True
@@ -220,9 +242,7 @@ def recover_completed_cloud_memory(
         return
     pending_reader = getattr(projection_store, "list_memory_recovery_sessions", None)
     if callable(pending_reader):
-        pending = pending_reader(
-            limit=max(batch_size, 1), recovery_action=MEMORY_RECOVERY_ACTION
-        )
+        pending = pending_reader(limit=max(batch_size, 1), recovery_action=MEMORY_RECOVERY_ACTION)
         # The durable PostgreSQL reader is oldest-first and authoritative. Do
         # not rescan recent completed sessions on every maintenance tick.
         recent = []

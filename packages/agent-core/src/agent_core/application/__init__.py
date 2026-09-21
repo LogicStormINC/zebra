@@ -24,12 +24,18 @@ from agent_core.application.memory_inventory import (
     serialize_memory_inventory,
     serialize_scoped_memory_inventory,
 )
+from agent_core.application.memory_ranking import rank_governed_memories
 from agent_core.application.memory_reviews import (
     MemoryReviewAction,
     MemoryReviewCommand,
     MemoryReviewResult,
     MemoryReviewService,
     memory_review_scope_query,
+)
+from agent_core.application.memory_scopes import (
+    GovernedMemoryScope,
+    governed_memory_scope,
+    governed_memory_scope_from_events,
 )
 from agent_core.application.session_attachments import (
     attach_refs_to_user_event,
@@ -84,6 +90,10 @@ __all__ = [
     "MemoryReviewCommand",
     "MemoryReviewResult",
     "MemoryReviewService",
+    "GovernedMemoryScope",
+    "governed_memory_scope",
+    "governed_memory_scope_from_events",
+    "rank_governed_memories",
     "memory_review_scope_query",
     "SessionBootstrapCommand",
     "SessionBootstrapService",
