@@ -3,10 +3,18 @@ from __future__ import annotations
 import os
 from collections.abc import Generator
 from datetime import timedelta
+from pathlib import Path
 from uuid import UUID, uuid4
 
 import psycopg
 import pytest
+from agent_core.application.session_bootstrap import (
+    SessionBootstrapCommand,
+    SessionBootstrapService,
+)
+from agent_core.application.session_projection import rebuild_session
+from agent_core.domain.cloud_scope import OpaqueAuthorityScope
+from agent_core.domain.context_materialization import ContextMaterializationRequest
 from agent_core.domain.governed_memories import (
     GovernedMemoryConflictError,
     GovernedMemoryLifecycleMutation,
@@ -24,8 +32,10 @@ from agent_core.domain.memories import (
 )
 from agent_core.domain.memory_delivery import MemoryDeliveryScope
 from agent_storage import (
+    PostgresContextMaterializationStore,
     PostgresEventStore,
     PostgresGovernedMemoryStore,
+    PostgresProjectionStore,
     apply_postgres_migrations,
 )
 from agent_storage.postgres.governed_memory_rows import provenance_digest
@@ -212,6 +222,76 @@ def test_delivery_scope_enqueues_confirmed_authority_once_on_replay(
             (memory_environment.namespace, record.memory_id),
         ).fetchone()
     assert row == (1, "pending", 2)
+
+
+def test_confirmed_user_memory_is_recalled_by_a_later_session(
+    memory_environment: _MemoryEnvironment,
+) -> None:
+    record = _candidate(
+        memory_environment,
+        text="PostgreSQL 是 Zebra 的权威记忆存储",
+        memory_type=MemoryType.ARCHITECTURE_FACT,
+        visibility=MemoryVisibility.USER,
+        user_id="user-7",
+    ).model_copy(update={"repo_id": "workspace-a"})
+    mutation = _plan(
+        memory_environment,
+        operation_id="memory:cross-session-recall",
+        expected_revision=1,
+        records=(record,),
+        confirmed=(record.memory_id,),
+    )
+    memory_environment.store.commit_worker_candidates(
+        mutation,
+        authority=_authority(memory_environment, 1),
+    )
+
+    target = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Recall governed Memory",
+            user_input="检查 PostgreSQL 记忆链路",
+            workspace_root=Path("/tmp/governed-memory"),
+            created_at=NOW + timedelta(minutes=1),
+        )
+    )
+    event_store = PostgresEventStore(
+        memory_environment.dsn,
+        deployment_namespace=memory_environment.namespace,
+    )
+    for event in target.events:
+        event_store.append(event)
+    PostgresProjectionStore(
+        memory_environment.dsn,
+        deployment_namespace=memory_environment.namespace,
+    ).save_session(rebuild_session(list(target.events)))
+
+    materialized = PostgresContextMaterializationStore(
+        memory_environment.dsn,
+        deployment_namespace=memory_environment.namespace,
+    ).materialize(
+        ContextMaterializationRequest(
+            scope=OpaqueAuthorityScope(
+                authority_issuer="issuer",
+                namespace_id="business-scope",
+                allowed_session_ids=(str(target.session.session_id),),
+            ),
+            session_id=target.session.session_id,
+            expected_session_revision=2,
+            expected_active_capsule_id=None,
+            history_limit=20,
+            as_of=NOW + timedelta(minutes=2),
+            memory_query=MemoryQuery(
+                repo_id="workspace-a",
+                user_id="user-7",
+                visibility=MemoryVisibility.USER,
+                text_query="检查 PostgreSQL 记忆链路",
+                statuses=(MemoryStatus.CONFIRMED,),
+                limit=8,
+            ),
+        )
+    )
+
+    assert [entry.record.memory_id for entry in materialized.memories] == [record.memory_id]
 
 
 def test_worker_receipt_lookup_is_read_only_and_bound_to_its_session(

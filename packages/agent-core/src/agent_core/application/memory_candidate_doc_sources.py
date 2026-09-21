@@ -108,7 +108,7 @@ def _doc_candidate(
         text=text,
         confidence=confidence,
         status=MemoryStatus.CANDIDATE,
-        visibility=MemoryVisibility.REPO,
+        visibility=(MemoryVisibility.USER if user_id is not None else MemoryVisibility.REPO),
         tenant_id=tenant_id,
         user_id=user_id,
         repo_id=repo_id,

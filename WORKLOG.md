@@ -8,10 +8,14 @@ and extraction checkpoints, recovery outcome counts, and additive Cloud memory
 runtime status. The task registry is in `Review`; PostgreSQL remains the sole
 authority and Redis Agent Memory remains disabled.
 
-Validation closed with `71` focused tests, `45` real PostgreSQL tests, and the
-full repository at `4593 passed, 897 skipped`. File-size, Ruff, strict Mypy over
-`973` sources and eval `30/30` passed. Fresh isolated API/Worker Compose images
-were rebuilt healthy and the smoke runner emitted
+Review reopened and corrected Host visibility parity, exact forget semantics,
+source-specific automatic expiry, frozen-principal dashboard/review scope, and
+the older-relevant PostgreSQL recall window. Validation closed with `180 passed,
+2 skipped` focused tests and `38/38` real PostgreSQL governed/context tests. The
+PostgreSQL group includes one composed cross-session write-confirm-recall case.
+The full repository passes `4598 passed, 899 skipped`; file-size, Ruff, strict
+Mypy over `973` sources and eval `30/30` passed. Fresh isolated API/Worker
+Compose images were rebuilt healthy and the smoke runner emitted
 `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`.
 
 The declared local implementation plan is `100%` complete. Merge, push, Trench

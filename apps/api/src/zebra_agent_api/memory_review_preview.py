@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agent_core.domain.identifiers import SessionId
 from agent_core.domain.memories import MemoryVisibility
 from agent_storage import ControlPlaneStores
 
@@ -28,6 +29,7 @@ def _preview_memory_queue(
     payload: dict[str, object],
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
+    expected_source_session_id: SessionId | None = None,
 ) -> ApiResponse:
     parsed = parse_queue_sweep_preview_payload(payload)
     if isinstance(parsed, ApiResponse):
@@ -37,6 +39,7 @@ def _preview_memory_queue(
         stores=stores,
         expected_visibility=expected_visibility,
         expected_scope_id=expected_scope_id,
+        expected_source_session_id=expected_source_session_id,
     )
     filtered_records = _filter_preview_records(
         all_records,

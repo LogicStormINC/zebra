@@ -358,6 +358,42 @@ def test_procedure_refresh_does_not_expire_confirmed_preference() -> None:
     assert len(result.records) == 1
     assert any(record.memory_type is MemoryType.PROCEDURE for record in result.records)
     assert store.records[0].status is MemoryStatus.CONFIRMED
+
+
+def test_procedure_refresh_does_not_expire_explicit_user_procedure() -> None:
+    session = _completed_session()
+    confirmed = _memory_record(
+        session,
+        memory_type=MemoryType.PROCEDURE,
+        text="发布必须先审核",
+        status=MemoryStatus.CONFIRMED,
+    )
+    store = _InMemoryMemoryStore(records=[confirmed])
+
+    result = MemoryCandidateExtractionService(store).extract(
+        session=session,
+        events=[
+            _tool_event(
+                session=session,
+                sequence=4,
+                tool_name="tests.run",
+                metadata={
+                    "preset": "smoke",
+                    "command": ["make", "check"],
+                    "cwd": ".",
+                    "exit_code": 0,
+                    "stderr": "",
+                    "timed_out": False,
+                },
+            )
+        ],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    assert all(event.payload.get("status") != "expired" for event in result.events)
+    retained = next(record for record in store.records if record.memory_id == confirmed.memory_id)
+    assert retained.status is MemoryStatus.CONFIRMED
     assert not any(event.event_type is EventType.MEMORY_REVIEW_RECORDED for event in result.events)
 
 
@@ -367,7 +403,11 @@ def test_each_refresh_target_keeps_its_own_bounded_legacy_query() -> None:
         _memory_record(
             session,
             memory_type=memory_type,
-            text=f"stale {memory_type.value} {index}",
+            text=(
+                f"Use the repo default commands: `stale-{index}`."
+                if memory_type is MemoryType.PROJECT_RULE
+                else f"Run `stale-{index}` from `.`."
+            ),
             status=MemoryStatus.CONFIRMED,
         )
         for memory_type in (MemoryType.PROJECT_RULE, MemoryType.PROCEDURE)
@@ -496,6 +536,67 @@ def test_explicit_forget_deletes_matching_confirmed_memory() -> None:
     deleted = next(record for record in store.records if record.memory_id == confirmed.memory_id)
     assert deleted.status is MemoryStatus.DELETED
     assert result.events[0].payload["status"] == "deleted"
+
+
+def test_explicit_forget_does_not_delete_partial_or_retained_memory() -> None:
+    session = _completed_session()
+    confirmed = _memory_record(
+        session,
+        memory_type=MemoryType.PREFERENCE,
+        text="中文",
+        status=MemoryStatus.CONFIRMED,
+    )
+    store = _InMemoryMemoryStore(records=[confirmed])
+    event = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=4,
+        event_type=EventType.USER_MESSAGE_RECEIVED,
+        actor=EventActor.USER,
+        payload={"content": "忘记英文回复，保留中文"},
+        created_at=_now(),
+    )
+
+    result = MemoryCandidateExtractionService(store).extract(
+        session=session,
+        events=[event],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+    )
+
+    assert result.events == ()
+    retained = next(record for record in store.records if record.memory_id == confirmed.memory_id)
+    assert retained.status is MemoryStatus.CONFIRMED
+
+
+def test_host_tool_candidate_uses_user_visibility() -> None:
+    session = _completed_session()
+    result = MemoryCandidateExtractionService(_InMemoryMemoryStore()).extract(
+        session=session,
+        events=[
+            _tool_event(
+                session=session,
+                sequence=4,
+                tool_name="tests.run",
+                metadata={
+                    "preset": "smoke",
+                    "command": ["make", "check"],
+                    "cwd": ".",
+                    "exit_code": 0,
+                    "stderr": "",
+                    "timed_out": False,
+                },
+            )
+        ],
+        next_sequence=5,
+        command=MemoryCandidateExtractionCommand(
+            repo_id="workspace-a",
+            user_id="user-7",
+            tenant_id="tenant-a",
+            extracted_at=_now(),
+        ),
+    )
+
+    assert result.records[0].visibility is MemoryVisibility.USER
 
 
 class _InMemoryMemoryStore:

@@ -18,13 +18,10 @@ Branch: `codex/cloud-memory-closure-01`, based on
 Model and reasoning-effort settings remain unchanged. Redis Agent Memory stays
 disabled while PostgreSQL remains the authoritative store.
 
-Closure evidence: focused Memory/Worker/API suites passed `71`; real PostgreSQL
-Context and governed-Memory suites passed `45`; the complete repository passed
-`4593 passed, 897 skipped`. `make check` passed file-size, Ruff, strict Mypy over
-`973` source files and deterministic eval `30/30`. The isolated API/Worker
-Compose smoke rebuilt both images, reached healthy state and emitted
-`ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`. Approved-plan implementation is
-`100%`; no remote deployment or model/reasoning setting change is claimed.
+Review follow-up closed five reproduced defects: Host visibility parity, safe
+forget semantics, source-specific expiry, session metric scope parity, and older
+relevant PostgreSQL recall. A real PostgreSQL acceptance now proves a confirmed
+USER Memory written by one Session is automatically recalled by a later Session.
 
 ## Prior task — CLOUD-AGENT-PARITY-01 General capability and quality closure (2026-09-20)
 

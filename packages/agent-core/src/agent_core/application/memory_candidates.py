@@ -242,7 +242,7 @@ def _candidate_records_and_refresh_targets(
     created_at: datetime,
 ) -> tuple[
     tuple[MemoryRecord, ...],
-    tuple[tuple[tuple[MemoryType, ...], str], ...],
+    tuple[tuple[str, tuple[MemoryType, ...], str], ...],
 ]:
     records: list[MemoryRecord] = []
     seen_keys: set[tuple[str, str, tuple[str, ...], str | None, str]] = set()
@@ -275,11 +275,11 @@ def _candidate_records_and_refresh_targets(
 
 def _refresh_targets(
     events: list[SessionEvent],
-) -> tuple[tuple[tuple[MemoryType, ...], str], ...]:
-    targets: dict[str, tuple[tuple[MemoryType, ...], str]] = {}
+) -> tuple[tuple[str, tuple[MemoryType, ...], str], ...]:
+    targets: dict[str, tuple[str, tuple[MemoryType, ...], str]] = {}
     for event in events:
         for target in refresh_targets_from_session_event(event):
-            targets[target.key] = (target.memory_types, target.reason)
+            targets[target.key] = (target.key, target.memory_types, target.reason)
     return tuple(targets.values())
 
 
@@ -288,7 +288,7 @@ def _confirmed_records_for_refresh(
     command: MemoryCandidateExtractionCommand,
     events: list[SessionEvent],
     memory_store: MemoryStorePort,
-    refresh_targets: tuple[tuple[tuple[MemoryType, ...], str], ...],
+    refresh_targets: tuple[tuple[str, tuple[MemoryType, ...], str], ...],
 ) -> tuple[MemoryRecord, ...]:
     confirmed: dict[MemoryId, MemoryRecord] = {}
     has_forget = any(
@@ -304,7 +304,7 @@ def _confirmed_records_for_refresh(
         # extraction retains the narrower legacy refresh reads.
         for record in memory_store.list(_confirmed_scope_query(command, limit=500)):
             confirmed[record.memory_id] = record
-    for memory_types, _ in refresh_targets:
+    for _, memory_types, _ in refresh_targets:
         eligible_types = tuple(
             memory_type
             for memory_type in memory_types
@@ -320,7 +320,9 @@ def _confirmed_records_for_refresh(
                 authority_issuer=command.authority_issuer,
                 namespace_id=command.namespace_id,
                 definition_id=command.definition_id,
-                visibility=MemoryVisibility.REPO,
+                visibility=(
+                    MemoryVisibility.USER if command.user_id is not None else MemoryVisibility.REPO
+                ),
                 memory_types=eligible_types,
                 statuses=(MemoryStatus.CONFIRMED,),
                 limit=100,
@@ -368,11 +370,11 @@ def _stale_confirmed_repo_memories(
     current_candidates: tuple[MemoryRecord, ...],
     confirmed_records: tuple[MemoryRecord, ...],
     created_at: datetime,
-    refresh_targets: tuple[tuple[tuple[MemoryType, ...], str], ...],
+    refresh_targets: tuple[tuple[str, tuple[MemoryType, ...], str], ...],
 ) -> tuple[tuple[MemoryRecord, str], ...]:
     current_texts_by_type = _current_candidate_texts_by_type(current_candidates)
     invalidations: dict[str, tuple[MemoryRecord, str]] = {}
-    for memory_types, reason in refresh_targets:
+    for refresh_target_key, memory_types, reason in refresh_targets:
         eligible_types = tuple(
             memory_type
             for memory_type in memory_types
@@ -382,6 +384,8 @@ def _stale_confirmed_repo_memories(
             continue
         for record in confirmed_records:
             if record.memory_type not in eligible_types:
+                continue
+            if not _refresh_target_applies(record, refresh_target_key):
                 continue
             current_texts = current_texts_by_type.get(record.memory_type, set())
             if _normalize_memory_text(record.text) in current_texts:
@@ -411,6 +415,19 @@ def _event_payload_for_lifecycle(record: MemoryRecord, reason: str) -> dict[str,
     }
 
 
+def _refresh_target_applies(record: MemoryRecord, refresh_target_key: str) -> bool:
+    if refresh_target_key == "procedure:repo_workflow":
+        return record.text.startswith(("Run `", "Run validation preset "))
+    if refresh_target_key == "governance:AGENTS.md":
+        return record.text.startswith(
+            (
+                "Use the repo default commands:",
+                "Workspace packages may depend on `agent-core`",
+            )
+        )
+    return False
+
+
 def _forgotten_confirmed_memories(
     *,
     events: list[SessionEvent],
@@ -431,10 +448,7 @@ def _forgotten_confirmed_memories(
         normalized_target = _normalize_memory_text(target).casefold()
         for record in confirmed_records:
             normalized_text = _normalize_memory_text(record.text).casefold()
-            if (
-                normalized_target not in normalized_text
-                and normalized_text not in normalized_target
-            ):
+            if normalized_target != normalized_text:
                 continue
             forgotten[str(record.memory_id)] = (
                 record.model_copy(

@@ -50,6 +50,7 @@ def _review_memory(
     decision: str,
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
+    expected_source_session_id: SessionId | None = None,
 ) -> ApiResponse:
     parsed = parse_approval_decision_payload(
         payload,
@@ -59,7 +60,14 @@ def _review_memory(
         return parsed
     memory_store = stores.memories
     record = memory_store.get(MemoryId(UUID(memory_id)))
-    if record is None or not _scope_matches(record, expected_visibility, expected_scope_id):
+    if (
+        record is None
+        or not _scope_matches(record, expected_visibility, expected_scope_id)
+        or (
+            expected_source_session_id is not None
+            and record.source_session_id != expected_source_session_id
+        )
+    ):
         return _not_found_response(
             memory_id=memory_id,
             visibility=expected_visibility,
@@ -198,6 +206,7 @@ def _review_memory_bulk(
     payload: dict[str, object],
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
+    expected_source_session_id: SessionId | None = None,
 ) -> ApiResponse:
     parsed = parse_bulk_memory_review_payload(payload)
     if isinstance(parsed, ApiResponse):
@@ -215,6 +224,7 @@ def _review_memory_bulk(
         reason=parsed["reason"],
         expected_visibility=expected_visibility,
         expected_scope_id=expected_scope_id,
+        expected_source_session_id=expected_source_session_id,
     )
 
 
@@ -225,6 +235,7 @@ def _review_memory_queue(
     payload: dict[str, object],
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
+    expected_source_session_id: SessionId | None = None,
 ) -> ApiResponse:
     parsed = parse_approval_decision_payload(
         payload,
@@ -245,6 +256,7 @@ def _review_memory_queue(
         stores=stores,
         expected_visibility=expected_visibility,
         expected_scope_id=expected_scope_id,
+        expected_source_session_id=expected_source_session_id,
     )
     response = _review_memory_ids(
         database_path=database_path,
@@ -256,6 +268,7 @@ def _review_memory_queue(
         reason=parsed["reason"],
         expected_visibility=expected_visibility,
         expected_scope_id=expected_scope_id,
+        expected_source_session_id=expected_source_session_id,
     )
     response.body["status"] = "ok"
     response.body["queue_sweep"] = True
@@ -274,6 +287,7 @@ def _review_memory_ids(
     reason: str,
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
+    expected_source_session_id: SessionId | None = None,
 ) -> ApiResponse:
     shared_payload = {"operator": operator, "reason": reason}
     seen_memory_ids: set[str] = set()
@@ -317,6 +331,7 @@ def _review_memory_ids(
             decision=decision,
             expected_visibility=expected_visibility,
             expected_scope_id=expected_scope_id,
+            expected_source_session_id=expected_source_session_id,
         )
         if response.status_code == 200:
             results.append({"outcome": "applied", **response.body})
@@ -366,6 +381,7 @@ def _queued_memory_ids(
     stores: ControlPlaneStores,
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
+    expected_source_session_id: SessionId | None = None,
 ) -> list[str]:
     return [
         str(record.memory_id)
@@ -374,6 +390,7 @@ def _queued_memory_ids(
             stores=stores,
             expected_visibility=expected_visibility,
             expected_scope_id=expected_scope_id,
+            expected_source_session_id=expected_source_session_id,
         )
     ]
 
@@ -384,6 +401,7 @@ def _queued_memory_records(
     stores: ControlPlaneStores,
     expected_visibility: MemoryVisibility,
     expected_scope_id: str,
+    expected_source_session_id: SessionId | None = None,
 ) -> list[MemoryRecord]:
     memory_store = stores.memories
     if expected_visibility is MemoryVisibility.REPO:
@@ -408,6 +426,7 @@ def _queued_memory_records(
         return memory_store.list(
             MemoryQuery(
                 user_id=expected_scope_id,
+                source_session_id=expected_source_session_id,
                 visibility=MemoryVisibility.USER,
                 statuses=(MemoryStatus.CANDIDATE,),
                 limit=500,
@@ -416,6 +435,7 @@ def _queued_memory_records(
     return memory_store.list(
         MemoryQuery(
             tenant_id=expected_scope_id,
+            source_session_id=expected_source_session_id,
             visibility=MemoryVisibility.TENANT,
             statuses=(MemoryStatus.CANDIDATE,),
             limit=500,

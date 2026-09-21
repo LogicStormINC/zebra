@@ -1,11 +1,39 @@
 from __future__ import annotations
 
 from pathlib import Path
+from uuid import UUID
 
+from agent_core.application import governed_memory_scope_from_events
+from agent_core.domain.identifiers import SessionId
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.session_context import session_workspace_root
 from zebra_agent_api.session_read import SessionReadApi
+
+
+def _scoped_memory_payload(
+    stores: ControlPlaneStores,
+    session_id: str,
+    payload: dict[str, object],
+) -> dict[str, object]:
+    try:
+        session_key = SessionId(UUID(session_id))
+    except ValueError:
+        return payload
+    events = list(stores.events.list_for_session(session_key))
+    workspace_root = session_workspace_root(events)
+    if workspace_root is None:
+        return payload
+    scope = governed_memory_scope_from_events(
+        events,
+        fallback_repo_id=str(workspace_root),
+    )
+    if scope is None or scope.user_id is None:
+        return payload
+    # Session-scoped Cloud metrics are always bound to the frozen Host
+    # principal. A caller-provided user_id must not widen or switch identity.
+    return {**payload, "user_id": scope.user_id, "tenant_id": None}
 
 
 class ApiMemoryReadMixin:
@@ -19,7 +47,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_operations_overview(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_review_governance_signals(
@@ -29,7 +57,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_review_governance_signals(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_backlog_aging_signals(
@@ -39,7 +67,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_backlog_aging_signals(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_review_velocity_signals(
@@ -49,7 +77,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_review_velocity_signals(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_backlog_pressure_signals(
@@ -59,7 +87,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_backlog_pressure_signals(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_pressure_action_hints(
@@ -69,7 +97,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_pressure_action_hints(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_pressure_escalation_recommendations(
@@ -81,7 +109,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_pressure_escalation_recommendations(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_escalation_follow_up_windows(
@@ -93,7 +121,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_escalation_follow_up_windows(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_follow_up_overdue_flags(
@@ -103,7 +131,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_follow_up_overdue_flags(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_age_buckets(
@@ -113,7 +141,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_overdue_age_buckets(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_type_rollups(
@@ -123,7 +151,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_overdue_type_rollups(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_visibility_rollups(
@@ -135,7 +163,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_visibility_rollups(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_trend_signals(
@@ -145,7 +173,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_overdue_trend_signals(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_intervention_hints(
@@ -157,7 +185,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_intervention_hints(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_escalation_lanes(
@@ -167,7 +195,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_overdue_escalation_lanes(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_recovery_paths(
@@ -177,7 +205,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_overdue_recovery_paths(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_resolution_checkpoints(
@@ -189,7 +217,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_resolution_checkpoints(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_resolution_outcomes(
@@ -201,7 +229,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_resolution_outcomes(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_closure_decisions(
@@ -211,7 +239,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_overdue_closure_decisions(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_archive_recommendations(
@@ -223,7 +251,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_archive_recommendations(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_guidance(
@@ -235,7 +263,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_guidance(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_windows(
@@ -245,7 +273,7 @@ class ApiMemoryReadMixin:
     ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_memory_overdue_retention_windows(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breaches(
@@ -257,7 +285,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breaches(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breach_aging(
@@ -269,7 +297,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breach_aging(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breach_actions(
@@ -281,7 +309,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breach_actions(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breach_lanes(
@@ -293,7 +321,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breach_lanes(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breach_owner_targets(
@@ -305,7 +333,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breach_owner_targets(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breach_follow_through_modes(
@@ -317,7 +345,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breach_follow_through_modes(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breach_follow_through_outcomes(
@@ -329,7 +357,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breach_follow_through_outcomes(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breach_follow_through_completion_states(
@@ -341,7 +369,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breach_follow_through_completion_states(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breach_follow_through_verification_states(
@@ -353,7 +381,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breach_follow_through_verification_states(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_memory_overdue_retention_breach_follow_through_verification_outcomes(
@@ -365,7 +393,7 @@ class ApiMemoryReadMixin:
             self.database_path, self.stores
         ).get_memory_overdue_retention_breach_follow_through_verification_outcomes(
             session_id,
-            payload,
+            _scoped_memory_payload(self.stores, session_id, payload),
         )
 
     def get_user_memory(self, user_id: str) -> ApiResponse:

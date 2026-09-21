@@ -3,6 +3,11 @@ from pathlib import Path
 from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.domain.host_authority import (
+    HostContextEnvelope,
+    HostResourceRef,
+    HostTechnicalLimits,
+)
 from agent_core.domain.identifiers import MemoryId, SessionId
 from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryType, MemoryVisibility
 from agent_storage import SQLiteEventStore, SQLiteMemoryStore, SQLiteProjectionStore
@@ -86,12 +91,62 @@ def test_route_adapter_handles_memory_operations_overview(tmp_path: Path) -> Non
     assert response.body["scopes"][1]["scope_kind"] == "user"
 
 
-def _seed_session(database_path: Path, workspace_root: Path) -> SessionId:
+def test_cloud_memory_overview_is_bound_to_frozen_host_principal(tmp_path: Path) -> None:
+    database_path = tmp_path / "memory.sqlite"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    context = HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id="trench",
+        namespace_id="tenant-a",
+        workspace_ref="workspace-a",
+        resource_refs=(HostResourceRef(type="principal", id="user-7"),),
+        scopes=("agent.run",),
+        limits=HostTechnicalLimits(
+            max_runtime_seconds=300,
+            max_model_tokens=100_000,
+            max_artifact_bytes=10_000_000,
+        ),
+        origin="https://trench.example.test",
+        policy_version="v1",
+    )
+    session_id = _seed_session(database_path, workspace, host_context=context)
+    SQLiteMemoryStore(database_path).upsert(
+        _memory_record(
+            "00000000-0000-0000-0000-000000000264",
+            session_id,
+            visibility=MemoryVisibility.USER,
+            memory_type=MemoryType.PREFERENCE,
+            text="Host principal pending memory.",
+            user_id="user-7",
+            updated_at=datetime(2026, 7, 7, 10, 0, tzinfo=UTC),
+        )
+    )
+
+    response = create_app(database_path).get_memory_operations_overview(
+        str(session_id),
+        {"user_id": "attacker-selected-user", "tenant_id": "attacker-tenant"},
+    )
+
+    assert response.status_code == 200
+    assert response.body["user_id"] == "user-7"
+    assert response.body["tenant_id"] is None
+    assert response.body["scope_count"] == 2
+    assert response.body["total_pending_count"] == 1
+
+
+def _seed_session(
+    database_path: Path,
+    workspace_root: Path,
+    *,
+    host_context: HostContextEnvelope | None = None,
+) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="Memory operations overview",
             user_input="Inspect memories.",
             workspace_root=workspace_root.resolve(),
+            host_context=host_context,
         )
     )
     event_store = SQLiteEventStore(database_path)

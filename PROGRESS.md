@@ -3425,11 +3425,18 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
 - Added bounded Chinese-capable recall ranking, durable selection and extraction
   checkpoints, recovery outcome counts, and additive Cloud runtime status on the
   existing session-memory API without changing local response contracts.
-- Real PostgreSQL tests prove relevant Chinese recall, same-workspace
-  cross-principal isolation, governed writes/reviews/scans and native storage.
-  Focused suites pass `71`; PostgreSQL suites pass `45`; full repository passes
-  `4593 passed, 897 skipped`. File-size, Ruff, Mypy over `973` sources and eval
-  `30/30` pass. Isolated API/Worker Compose images rebuilt healthy and emitted
+- Review follow-up corrected five defects hidden by the original closure claim:
+  Host tool/doc candidates now use the same USER scope as Host recall; forget is
+  exact rather than substring-destructive; validation events expire only
+  auto-derived procedures; session metrics/reviews derive the frozen principal
+  and source Session; and PostgreSQL ranks up to 500 authority-filtered candidates
+  instead of truncating to the newest 80 before relevance ranking.
+- Focused regressions pass `180 passed, 2 skipped`. The real PostgreSQL
+  governed/context group passes `38/38`, including a composed write-confirm in
+  one Session and automatic scoped recall in a later Session, older relevant
+  recall and cross-principal isolation. Full repository passes `4598 passed, 899
+  skipped`; file-size, Ruff, Mypy over `973` sources and eval `30/30` pass.
+  Isolated API/Worker Compose images rebuilt healthy and emitted
   `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`.
 - Declared local implementation is `100%`. Merge, push, Trench production rollout
   and remote deployment are separate gates and are not claimed. Model and

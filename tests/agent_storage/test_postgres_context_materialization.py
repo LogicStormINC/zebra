@@ -362,6 +362,55 @@ def test_materialization_ranks_chinese_memory_and_isolates_host_principals(
     assert [entry.record.memory_id for entry in result.memories] == [expected.record.memory_id]
 
 
+def test_materialization_keeps_older_relevant_memory_beyond_recent_window(
+    postgres_dsn: str,
+    deployment_namespace: str,
+) -> None:
+    session_id, capsule, _ = _seed_sources(postgres_dsn, deployment_namespace)
+    expected = _memory(
+        30,
+        repo_id="workspace-a",
+        user_id="user-7",
+        visibility=MemoryVisibility.USER,
+        memory_type=MemoryType.ARCHITECTURE_FACT,
+        text="PostgreSQL 是权威记忆存储",
+        updated_at=_at(-10),
+    )
+    _insert_memory(postgres_dsn, deployment_namespace, expected)
+    for index in range(80):
+        _insert_memory(
+            postgres_dsn,
+            deployment_namespace,
+            _memory(
+                100 + index,
+                repo_id="workspace-a",
+                user_id="user-7",
+                visibility=MemoryVisibility.USER,
+                memory_type=MemoryType.EPISODIC,
+                text=f"前端截图流程 {index}",
+                updated_at=_at(-1),
+            ),
+        )
+    request = replace(
+        _request(session_id, revision=5, capsule_id=capsule.capsule_id),
+        memory_query=MemoryQuery(
+            repo_id="workspace-a",
+            user_id="user-7",
+            visibility=MemoryVisibility.USER,
+            text_query="检查 PostgreSQL 记忆链路",
+            statuses=(MemoryStatus.CONFIRMED,),
+            limit=8,
+        ),
+    )
+
+    result = PostgresContextMaterializationStore(
+        postgres_dsn,
+        deployment_namespace=deployment_namespace,
+    ).materialize(request)
+
+    assert [entry.record.memory_id for entry in result.memories] == [expected.record.memory_id]
+
+
 def _request(
     session_id: UUID,
     *,
@@ -534,6 +583,7 @@ def _memory(
     visibility: MemoryVisibility = MemoryVisibility.REPO,
     memory_type: MemoryType = MemoryType.PROJECT_RULE,
     text: str | None = None,
+    updated_at: datetime | None = None,
 ) -> GovernedMemoryEntry:
     record = MemoryRecord(
         memory_id=MemoryId(UUID(int=revision + 100)),
@@ -545,8 +595,8 @@ def _memory(
         user_id=user_id,
         repo_id=repo_id,
         expires_at=expires_at,
-        created_at=_at(-2),
-        updated_at=_at(-1),
+        created_at=updated_at or _at(-2),
+        updated_at=updated_at or _at(-1),
     )
     return GovernedMemoryEntry(
         deployment_namespace="placeholder",

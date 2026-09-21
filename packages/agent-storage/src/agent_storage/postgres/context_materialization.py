@@ -62,7 +62,7 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
         candidate_query = query.model_copy(
             update={
                 "text_query": None,
-                "limit": min(500, max(50, query.limit * 10)),
+                "limit": 500,
             }
         )
         candidates = query_authority_entries(

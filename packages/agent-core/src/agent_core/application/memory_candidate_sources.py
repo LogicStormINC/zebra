@@ -90,7 +90,7 @@ def candidates_from_session_event(
             ),
             confidence=0.9 if tool_name == "tests.run" else 0.8,
             status=MemoryStatus.CANDIDATE,
-            visibility=MemoryVisibility.REPO,
+            visibility=(MemoryVisibility.USER if user_id is not None else MemoryVisibility.REPO),
             tenant_id=tenant_id,
             user_id=user_id,
             repo_id=repo_id,

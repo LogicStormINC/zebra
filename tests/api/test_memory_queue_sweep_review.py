@@ -4,6 +4,11 @@ from uuid import UUID
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.host_authority import (
+    HostContextEnvelope,
+    HostResourceRef,
+    HostTechnicalLimits,
+)
 from agent_core.domain.identifiers import MemoryId, SessionId
 from agent_core.domain.memories import MemoryRecord, MemoryStatus, MemoryType, MemoryVisibility
 from agent_storage import SQLiteEventStore, SQLiteMemoryStore, SQLiteProjectionStore
@@ -107,17 +112,68 @@ def test_route_adapter_handles_user_memory_review_queue(tmp_path: Path) -> None:
     assert response.body["results"][0]["memory_status"] == "expired"
 
 
+def test_cloud_session_queue_review_is_principal_and_session_bound(tmp_path: Path) -> None:
+    database_path = tmp_path / "memory.sqlite"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    context = _host_context("user-7")
+    session_id = _seed_completed_session(
+        database_path,
+        workspace,
+        title="cloud-queue-a",
+        host_context=context,
+    )
+    other_session_id = _seed_completed_session(
+        database_path,
+        workspace,
+        title="cloud-queue-b",
+        host_context=context,
+    )
+    current = _candidate_record(
+        memory_id="00000000-0000-0000-0000-000000000234",
+        session_id=session_id,
+        visibility=MemoryVisibility.USER,
+        user_id="user-7",
+        memory_type=MemoryType.PREFERENCE,
+        text="Current Cloud candidate.",
+    )
+    other = _candidate_record(
+        memory_id="00000000-0000-0000-0000-000000000235",
+        session_id=other_session_id,
+        visibility=MemoryVisibility.USER,
+        user_id="user-7",
+        memory_type=MemoryType.PREFERENCE,
+        text="Other Cloud session candidate.",
+    )
+    store = SQLiteMemoryStore(database_path)
+    store.upsert(current)
+    store.upsert(other)
+
+    response = create_app(database_path).review_session_memory_queue(
+        str(session_id),
+        {"decision": "confirm", "operator": "alice", "reason": "queue sweep"},
+    )
+
+    assert response.status_code == 200
+    assert response.body["user_id"] == "user-7"
+    assert response.body["queued_count"] == 1
+    assert store.get(current.memory_id).status is MemoryStatus.CONFIRMED  # type: ignore[union-attr]
+    assert store.get(other.memory_id).status is MemoryStatus.CANDIDATE  # type: ignore[union-attr]
+
+
 def _seed_completed_session(
     database_path: Path,
     workspace_root: Path,
     *,
     title: str,
+    host_context: HostContextEnvelope | None = None,
 ) -> SessionId:
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title=title,
             user_input="Inspect memories.",
             workspace_root=workspace_root.resolve(),
+            host_context=host_context,
         )
     )
     event_store = SQLiteEventStore(database_path)
@@ -138,6 +194,24 @@ def _seed_completed_session(
     )
     SQLiteProjectionStore(database_path).save_session(completed)
     return completed.session_id
+
+
+def _host_context(principal: str) -> HostContextEnvelope:
+    return HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id="trench",
+        namespace_id="tenant-a",
+        workspace_ref="workspace-a",
+        resource_refs=(HostResourceRef(type="principal", id=principal),),
+        scopes=("agent.run",),
+        limits=HostTechnicalLimits(
+            max_runtime_seconds=300,
+            max_model_tokens=100_000,
+            max_artifact_bytes=10_000_000,
+        ),
+        origin="https://trench.example.test",
+        policy_version="v1",
+    )
 
 
 def _candidate_record(

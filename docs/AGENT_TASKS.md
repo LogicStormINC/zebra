@@ -46,10 +46,14 @@ does not authorize production code, migrations or activation of its successor.
   `PROGRESS.md`, `findings.md`, `WORKLOG.md`, and `task_plan.md`. Redis Agent
   Memory remains disabled; no model or reasoning-effort setting changes, no
   Trench business-data write, and no production deployment are included.
-  Closure evidence: focused suites `71`, real PostgreSQL suites `45`, full
-  repository `4593 passed, 897 skipped`, strict checks and eval `30/30`; isolated
-  API/Worker Compose smoke rebuilt healthy images and passed. Implementation of
-  the declared local plan is `100%`; merge and deployment remain separate gates.
+  Review follow-up fixed visibility mismatch, unsafe forget matching, over-broad
+  procedure expiry, stale session-level metric scopes, and the recall candidate
+  cutoff that could exclude the only relevant older Memory. Focused regressions
+  pass `180 passed, 2 skipped`; the real PostgreSQL governed/context group passes
+  `38/38`, including confirmed USER Memory write in one Session and recall in a
+  later Session. Full repository and Compose evidence are recorded in
+  `PROGRESS.md`; local implementation is `100%`. Merge, push and deployment are
+  separate gates and are not claimed.
 
 - `CLOUD-REMEDIATION-R00`: Review, owned by Luke Ding (Codex), current
   `cloud-agent-trench` checkout per user instruction. Scope: establish the

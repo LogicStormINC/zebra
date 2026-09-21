@@ -1629,3 +1629,17 @@ Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
 - PostgreSQL remains the authoritative memory and Event chain. A separate Redis
   Agent Memory authority would add split-brain and deletion-consistency risk, so
   Redis remains unnecessary for this closure and stays disabled.
+- The first closure review exposed five correctness gaps despite green broad
+  tests. Host extraction and recall used different visibility, substring forget
+  could remove explicitly retained text, any validation event could expire an
+  explicit user procedure, session dashboards/reviews accepted stale caller
+  scope, and newest-first preselection hid older relevant memory.
+- The corrected boundary derives Host USER scope from frozen authority for both
+  extraction and reads, binds review operations to principal plus source Session,
+  accepts only exact normalized forget targets, and limits automatic invalidation
+  to recognizably auto-derived records. PostgreSQL preselection remains bounded
+  at 500 authority-filtered rows before deterministic relevance ranking.
+- A real PostgreSQL composed test now writes and confirms a USER Memory from one
+  Session, creates a later Session in the same namespace, and proves context
+  materialization recalls only the matching workspace/principal record. This is
+  stronger evidence than separate storage and recall tests.
