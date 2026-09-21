@@ -293,6 +293,7 @@ def _confirmed_memory(
     repo_id: str,
     memory_type: MemoryType,
     text: str,
+    source_sequence: int = 1,
 ) -> MemoryRecord:
     return MemoryRecord(
         memory_id=MemoryId(UUID("00000000-0000-0000-0000-000000000140")),
@@ -303,8 +304,8 @@ def _confirmed_memory(
         visibility=MemoryVisibility.REPO,
         repo_id=repo_id,
         source_session_id=session_id,
-        source_event_start=1,
-        source_event_end=1,
+        source_event_start=source_sequence,
+        source_event_end=source_sequence,
         created_at=_created_at(),
         updated_at=_created_at(),
     )

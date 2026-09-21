@@ -118,8 +118,23 @@ def test_cloud_memory_overview_is_bound_to_frozen_host_principal(tmp_path: Path)
             visibility=MemoryVisibility.USER,
             memory_type=MemoryType.PREFERENCE,
             text="Host principal pending memory.",
+            repo_id="workspace-a",
             user_id="user-7",
+            tenant_id="tenant-a",
             updated_at=datetime(2026, 7, 7, 10, 0, tzinfo=UTC),
+        )
+    )
+    SQLiteMemoryStore(database_path).upsert(
+        _memory_record(
+            "00000000-0000-0000-0000-000000000265",
+            session_id,
+            visibility=MemoryVisibility.USER,
+            memory_type=MemoryType.PREFERENCE,
+            text="Same user in another authority scope.",
+            repo_id="workspace-b",
+            user_id="user-7",
+            tenant_id="tenant-b",
+            updated_at=datetime(2026, 7, 7, 10, 1, tzinfo=UTC),
         )
     )
 
@@ -129,10 +144,44 @@ def test_cloud_memory_overview_is_bound_to_frozen_host_principal(tmp_path: Path)
     )
 
     assert response.status_code == 200
+    assert response.body["repo_id"] == "workspace-a"
     assert response.body["user_id"] == "user-7"
-    assert response.body["tenant_id"] is None
-    assert response.body["scope_count"] == 2
+    assert response.body["tenant_id"] == "tenant-a"
+    assert response.body["scope_count"] == 3
     assert response.body["total_pending_count"] == 1
+    scopes = response.body["scopes"]
+    assert isinstance(scopes, list)
+    assert scopes[0]["scope_id"] == "workspace-a"
+
+
+def test_cloud_memory_overview_fails_closed_without_one_principal(tmp_path: Path) -> None:
+    database_path = tmp_path / "memory.sqlite"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    context = HostContextEnvelope(
+        grant_id="grant-1",
+        host_app_id="trench",
+        namespace_id="tenant-a",
+        workspace_ref="workspace-a",
+        resource_refs=(HostResourceRef(type="workspace", id="workspace-a"),),
+        scopes=("agent.run",),
+        limits=HostTechnicalLimits(
+            max_runtime_seconds=300,
+            max_model_tokens=100_000,
+            max_artifact_bytes=10_000_000,
+        ),
+        origin="https://trench.example.test",
+        policy_version="v1",
+    )
+    session_id = _seed_session(database_path, workspace, host_context=context)
+
+    response = create_app(database_path).get_memory_operations_overview(
+        str(session_id),
+        {"user_id": "attacker-selected-user", "tenant_id": "attacker-tenant"},
+    )
+
+    assert response.status_code == 409
+    assert response.body["status"] == "memory_unavailable"
 
 
 def _seed_session(

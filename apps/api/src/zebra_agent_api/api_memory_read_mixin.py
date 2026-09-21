@@ -1,39 +1,20 @@
 from __future__ import annotations
 
 from pathlib import Path
-from uuid import UUID
 
-from agent_core.application import governed_memory_scope_from_events
-from agent_core.domain.identifiers import SessionId
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.responses import ApiResponse
-from zebra_agent_api.session_context import session_workspace_root
-from zebra_agent_api.session_read import SessionReadApi
+from zebra_agent_api.session_memory_authority import (
+    SessionReadApi,
+    scoped_memory_payload,
+)
 
 
 def _scoped_memory_payload(
-    stores: ControlPlaneStores,
-    session_id: str,
-    payload: dict[str, object],
+    stores: ControlPlaneStores, session_id: str, payload: dict[str, object]
 ) -> dict[str, object]:
-    try:
-        session_key = SessionId(UUID(session_id))
-    except ValueError:
-        return payload
-    events = list(stores.events.list_for_session(session_key))
-    workspace_root = session_workspace_root(events)
-    if workspace_root is None:
-        return payload
-    scope = governed_memory_scope_from_events(
-        events,
-        fallback_repo_id=str(workspace_root),
-    )
-    if scope is None or scope.user_id is None:
-        return payload
-    # Session-scoped Cloud metrics are always bound to the frozen Host
-    # principal. A caller-provided user_id must not widen or switch identity.
-    return {**payload, "user_id": scope.user_id, "tenant_id": None}
+    return scoped_memory_payload(stores, session_id, payload)
 
 
 class ApiMemoryReadMixin:

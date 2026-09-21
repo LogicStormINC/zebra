@@ -214,6 +214,18 @@ def test_expires_stale_confirmed_doc_memory_after_agents_refresh() -> None:
         events=[
             _tool_event(
                 session=session,
+                sequence=2,
+                tool_name="files.read",
+                output="""# Zebra Agent Repository Rules
+## Local Commands
+- `make sync`
+- `make test`
+- `make check`
+""",
+                metadata={"path": "AGENTS.md", "byte_count": 100, "truncated": False},
+            ),
+            _tool_event(
+                session=session,
                 sequence=4,
                 tool_name="files.read",
                 output="""# Zebra Agent Repository Rules
@@ -231,7 +243,11 @@ def test_expires_stale_confirmed_doc_memory_after_agents_refresh() -> None:
             )
         ],
         next_sequence=5,
-        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+        command=MemoryCandidateExtractionCommand(
+            repo_id="zebra-agent",
+            extracted_at=_now(),
+            since_sequence=2,
+        ),
     )
 
     expired = [
@@ -292,6 +308,12 @@ def test_expires_stale_confirmed_procedure_memory_after_procedure_refresh() -> N
         events=[
             _tool_event(
                 session=session,
+                sequence=2,
+                tool_name="command.run",
+                metadata={"command": ["make", "test"], "cwd": "."},
+            ),
+            _tool_event(
+                session=session,
                 sequence=4,
                 tool_name="tests.run",
                 metadata={
@@ -305,7 +327,11 @@ def test_expires_stale_confirmed_procedure_memory_after_procedure_refresh() -> N
             )
         ],
         next_sequence=5,
-        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+        command=MemoryCandidateExtractionCommand(
+            repo_id="zebra-agent",
+            extracted_at=_now(),
+            since_sequence=2,
+        ),
     )
 
     expired = [
@@ -365,7 +391,7 @@ def test_procedure_refresh_does_not_expire_explicit_user_procedure() -> None:
     confirmed = _memory_record(
         session,
         memory_type=MemoryType.PROCEDURE,
-        text="发布必须先审核",
+        text="Run `release-check` before publishing.",
         status=MemoryStatus.CONFIRMED,
     )
     store = _InMemoryMemoryStore(records=[confirmed])
@@ -373,6 +399,14 @@ def test_procedure_refresh_does_not_expire_explicit_user_procedure() -> None:
     result = MemoryCandidateExtractionService(store).extract(
         session=session,
         events=[
+            SessionEvent.create(
+                session_id=session.session_id,
+                sequence=2,
+                event_type=EventType.USER_MESSAGE_RECEIVED,
+                actor=EventActor.USER,
+                payload={"content": "Procedure: Run `release-check` before publishing."},
+                created_at=_now(),
+            ),
             _tool_event(
                 session=session,
                 sequence=4,
@@ -388,61 +422,17 @@ def test_procedure_refresh_does_not_expire_explicit_user_procedure() -> None:
             )
         ],
         next_sequence=5,
-        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
+        command=MemoryCandidateExtractionCommand(
+            repo_id="zebra-agent",
+            extracted_at=_now(),
+            since_sequence=2,
+        ),
     )
 
     assert all(event.payload.get("status") != "expired" for event in result.events)
     retained = next(record for record in store.records if record.memory_id == confirmed.memory_id)
     assert retained.status is MemoryStatus.CONFIRMED
     assert not any(event.event_type is EventType.MEMORY_REVIEW_RECORDED for event in result.events)
-
-
-def test_each_refresh_target_keeps_its_own_bounded_legacy_query() -> None:
-    session = _completed_session()
-    records = [
-        _memory_record(
-            session,
-            memory_type=memory_type,
-            text=(
-                f"Use the repo default commands: `stale-{index}`."
-                if memory_type is MemoryType.PROJECT_RULE
-                else f"Run `stale-{index}` from `.`."
-            ),
-            status=MemoryStatus.CONFIRMED,
-        )
-        for memory_type in (MemoryType.PROJECT_RULE, MemoryType.PROCEDURE)
-        for index in range(120)
-    ]
-    store = _InMemoryMemoryStore(records=records)
-
-    MemoryCandidateExtractionService(store).extract(
-        session=session,
-        events=[
-            _tool_event(
-                session=session,
-                sequence=4,
-                tool_name="files.read",
-                output="# no extracted governance facts",
-                metadata={"path": "AGENTS.md", "byte_count": 31, "truncated": False},
-            ),
-            _tool_event(
-                session=session,
-                sequence=5,
-                tool_name="tests.run",
-                metadata={"command": ["make", "check"], "cwd": ".", "preset": "smoke"},
-            ),
-        ],
-        next_sequence=6,
-        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
-    )
-
-    assert [query.limit for query in store.queries] == [100, 100]
-    assert [set(query.memory_types) for query in store.queries] == [
-        {MemoryType.PROJECT_RULE, MemoryType.ARCHITECTURE_FACT},
-        {MemoryType.PROCEDURE},
-    ]
-    assert sum(record.status is MemoryStatus.EXPIRED for record in store.records) == 200
-    assert sum(record.status is MemoryStatus.CONFIRMED for record in store.records) == 40
 
 
 def test_memory_candidate_extraction_skips_sensitive_or_failed_commands() -> None:
@@ -674,6 +664,7 @@ def _memory_record(
     memory_type: MemoryType,
     text: str,
     status: MemoryStatus,
+    source_sequence: int = 2,
 ) -> MemoryRecord:
     return MemoryRecord(
         memory_id=new_memory_id(),
@@ -684,8 +675,8 @@ def _memory_record(
         visibility=MemoryVisibility.REPO,
         repo_id="zebra-agent",
         source_session_id=session.session_id,
-        source_event_start=2,
-        source_event_end=2,
+        source_event_start=source_sequence,
+        source_event_end=source_sequence,
         created_at=_now(),
         updated_at=_now(),
     )

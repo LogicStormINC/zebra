@@ -48,10 +48,13 @@ does not authorize production code, migrations or activation of its successor.
   Trench business-data write, and no production deployment are included.
   Review follow-up fixed visibility mismatch, unsafe forget matching, over-broad
   procedure expiry, stale session-level metric scopes, and the recall candidate
-  cutoff that could exclude the only relevant older Memory. Focused regressions
-  pass `180 passed, 2 skipped`; the real PostgreSQL governed/context group passes
-  `38/38`, including confirmed USER Memory write in one Session and recall in a
-  later Session. Full repository and Compose evidence are recorded in
+  cutoff that could exclude the only relevant older Memory. Second-review fixes
+  freeze every Host scope coordinate for session reads, fail closed without one
+  principal, require exact source-event provenance for automatic expiry, and rank
+  PostgreSQL relevance before the bounded cutoff. Focused regressions pass
+  `49/49`; the real PostgreSQL governed/context group passes `38/38`, including
+  confirmed USER Memory write in one Session and recall in a later Session plus a
+  relevant record behind 600 newer rows. Full repository and Compose evidence are recorded in
   `PROGRESS.md`; local implementation is `100%`. Merge, push and deployment are
   separate gates and are not claimed.
 

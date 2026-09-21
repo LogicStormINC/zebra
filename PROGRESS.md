@@ -3431,11 +3431,16 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   auto-derived procedures; session metrics/reviews derive the frozen principal
   and source Session; and PostgreSQL ranks up to 500 authority-filtered candidates
   instead of truncating to the newest 80 before relevance ranking.
-- Focused regressions pass `180 passed, 2 skipped`. The real PostgreSQL
+- Second-review closure freezes the complete Host workspace/principal/tenant/
+  Definition scope for all session Memory APIs, rejects Host reads without one
+  principal, verifies automatic expiry against the exact source tool event, and
+  moves PostgreSQL feature relevance ahead of the row cutoff with a bounded
+  stable-fact lane. A record behind 600 newer distractors is recalled.
+- Focused regressions pass `49/49`. The real PostgreSQL
   governed/context group passes `38/38`, including a composed write-confirm in
   one Session and automatic scoped recall in a later Session, older relevant
-  recall and cross-principal isolation. Full repository passes `4598 passed, 899
-  skipped`; file-size, Ruff, Mypy over `973` sources and eval `30/30` pass.
+  recall and cross-principal isolation. Full repository passes `4599 passed, 899
+  skipped`; file-size, Ruff, Mypy over `975` sources and eval `30/30` pass.
   Isolated API/Worker Compose images rebuilt healthy and emitted
   `ZEBRA_APPLICATION_COMPOSE_TEST_RESULT=PASS`.
 - Declared local implementation is `100%`. Merge, push, Trench production rollout

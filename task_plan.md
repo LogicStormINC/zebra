@@ -22,6 +22,11 @@ Review follow-up closed five reproduced defects: Host visibility parity, safe
 forget semantics, source-specific expiry, session metric scope parity, and older
 relevant PostgreSQL recall. A real PostgreSQL acceptance now proves a confirmed
 USER Memory written by one Session is automatically recalled by a later Session.
+The second review closed four deeper boundary defects: every session Memory read
+now freezes the complete Host workspace/principal/tenant/Definition scope and
+fails closed without one principal; automatic expiry requires reconstructable
+tool-event provenance; and PostgreSQL applies relevance before its bounded row
+cutoff while retaining a stable preference/project-rule lane.
 
 ## Prior task — CLOUD-AGENT-PARITY-01 General capability and quality closure (2026-09-20)
 

@@ -24,7 +24,7 @@ from agent_core.application.memory_inventory import (
     serialize_memory_inventory,
     serialize_scoped_memory_inventory,
 )
-from agent_core.application.memory_ranking import rank_governed_memories
+from agent_core.application.memory_ranking import memory_text_features, rank_governed_memories
 from agent_core.application.memory_reviews import (
     MemoryReviewAction,
     MemoryReviewCommand,
@@ -94,6 +94,7 @@ __all__ = [
     "governed_memory_scope",
     "governed_memory_scope_from_events",
     "rank_governed_memories",
+    "memory_text_features",
     "memory_review_scope_query",
     "SessionBootstrapCommand",
     "SessionBootstrapService",

@@ -143,6 +143,7 @@ def query_authority_entries(
     query: MemoryQuery,
     *,
     as_of: datetime,
+    relevance_features: tuple[str, ...] = (),
 ) -> list[GovernedMemoryEntry]:
     """Read confirmed, currently eligible authority rows in the caller's transaction."""
 
@@ -152,6 +153,7 @@ def query_authority_entries(
         query,
         extra_clauses=("(expires_at IS NULL OR expires_at > %s)",),
         extra_parameters=(as_of,),
+        relevance_features=relevance_features,
     )
     entries: list[GovernedMemoryEntry] = []
     for row in rows:
@@ -168,6 +170,7 @@ def _query_rows(
     *,
     extra_clauses: tuple[str, ...] = (),
     extra_parameters: tuple[object, ...] = (),
+    relevance_features: tuple[str, ...] = (),
 ) -> list[dict[str, Any]]:
     clauses = ["deployment_namespace = %s", "status != 'deleted'"]
     where_parameters: list[object] = [namespace]
@@ -202,6 +205,18 @@ def _query_rows(
         where_parameters.append(query.text_query)
         rank = ", ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank"
         rank_parameters.append(query.text_query)
+        order = "rank DESC, updated_at DESC, created_at DESC, memory_id ASC"
+    elif relevance_features:
+        predicates = ["POSITION(%s IN LOWER(COALESCE(text, ''))) > 0"] * len(
+            relevance_features
+        )
+        clauses.append(f"({' OR '.join(predicates)})")
+        where_parameters.extend(feature.casefold() for feature in relevance_features)
+        score_terms = [
+            "CASE WHEN POSITION(%s IN LOWER(COALESCE(text, ''))) > 0 THEN 1 ELSE 0 END"
+        ] * len(relevance_features)
+        rank = f", ({' + '.join(score_terms)}) AS rank"
+        rank_parameters.extend(feature.casefold() for feature in relevance_features)
         order = "rank DESC, updated_at DESC, created_at DESC, memory_id ASC"
     rows = connection.execute(
         f"""

@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 
+from agent_core.application.memory_candidate_provenance import refresh_target_applies
 from agent_core.application.memory_candidate_sources import (
     candidate_key,
     candidates_from_session_event,
@@ -109,6 +110,7 @@ class MemoryCandidateExtractionPlanner:
             confirmed_records=confirmed_records,
             created_at=command.extracted_at or session.updated_at,
             refresh_targets=refresh_targets,
+            source_events=events,
         )
         forgotten = _forgotten_confirmed_memories(
             events=events,
@@ -371,6 +373,7 @@ def _stale_confirmed_repo_memories(
     confirmed_records: tuple[MemoryRecord, ...],
     created_at: datetime,
     refresh_targets: tuple[tuple[str, tuple[MemoryType, ...], str], ...],
+    source_events: list[SessionEvent],
 ) -> tuple[tuple[MemoryRecord, str], ...]:
     current_texts_by_type = _current_candidate_texts_by_type(current_candidates)
     invalidations: dict[str, tuple[MemoryRecord, str]] = {}
@@ -385,7 +388,7 @@ def _stale_confirmed_repo_memories(
         for record in confirmed_records:
             if record.memory_type not in eligible_types:
                 continue
-            if not _refresh_target_applies(record, refresh_target_key):
+            if not refresh_target_applies(record, refresh_target_key, source_events):
                 continue
             current_texts = current_texts_by_type.get(record.memory_type, set())
             if _normalize_memory_text(record.text) in current_texts:
@@ -413,19 +416,6 @@ def _event_payload_for_lifecycle(record: MemoryRecord, reason: str) -> dict[str,
         "superseded_memory_ids": [],
         "duplicate_of_memory_id": None,
     }
-
-
-def _refresh_target_applies(record: MemoryRecord, refresh_target_key: str) -> bool:
-    if refresh_target_key == "procedure:repo_workflow":
-        return record.text.startswith(("Run `", "Run validation preset "))
-    if refresh_target_key == "governance:AGENTS.md":
-        return record.text.startswith(
-            (
-                "Use the repo default commands:",
-                "Workspace packages may depend on `agent-core`",
-            )
-        )
-    return False
 
 
 def _forgotten_confirmed_memories(

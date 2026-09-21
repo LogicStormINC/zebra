@@ -362,7 +362,7 @@ def test_materialization_ranks_chinese_memory_and_isolates_host_principals(
     assert [entry.record.memory_id for entry in result.memories] == [expected.record.memory_id]
 
 
-def test_materialization_keeps_older_relevant_memory_beyond_recent_window(
+def test_materialization_keeps_older_relevant_memory_beyond_500_recent_rows(
     postgres_dsn: str,
     deployment_namespace: str,
 ) -> None:
@@ -377,7 +377,7 @@ def test_materialization_keeps_older_relevant_memory_beyond_recent_window(
         updated_at=_at(-10),
     )
     _insert_memory(postgres_dsn, deployment_namespace, expected)
-    for index in range(80):
+    for index in range(600):
         _insert_memory(
             postgres_dsn,
             deployment_namespace,

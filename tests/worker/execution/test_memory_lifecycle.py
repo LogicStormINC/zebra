@@ -1,6 +1,8 @@
 from pathlib import Path
+from uuid import uuid4
 
-from agent_core.domain.events import EventType
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId
 from agent_core.domain.memories import (
     MemoryQuery,
     MemoryStatus,
@@ -8,6 +10,7 @@ from agent_core.domain.memories import (
 )
 from agent_core.domain.sessions import SessionStatus
 from agent_storage import (
+    SQLiteEventStore,
     SQLiteMemoryStore,
 )
 from worker_execution_support import (
@@ -170,12 +173,23 @@ def test_worker_execution_service_expires_stale_confirmed_doc_memory_after_agent
         encoding="utf-8",
     )
     session_id = _seed_ready_session(database_path, tmp_path)
+    source_sequence = _append_tool_result(
+        database_path,
+        session_id,
+        tool_name="files.read",
+        output=(tmp_path / "AGENTS.md").read_text(encoding="utf-8").replace(
+            "- `make check`\n",
+            "- `make test`\n- `make check`\n",
+        ),
+        metadata={"path": "AGENTS.md", "truncated": False},
+    )
     SQLiteMemoryStore(database_path).upsert(
         _confirmed_memory(
             session_id=session_id,
             repo_id=str(tmp_path.resolve()),
             memory_type=MemoryType.PROJECT_RULE,
             text="Use the repo default commands: `make sync`, `make test`, `make check`.",
+            source_sequence=source_sequence,
         )
     )
 
@@ -196,12 +210,16 @@ def test_worker_execution_service_expires_stale_confirmed_doc_memory_after_agent
 
     assert result.session.status is SessionStatus.COMPLETED
     assert any(record.memory_type is MemoryType.PROJECT_RULE for record in records)
+    lifecycle_events = [
+        event
+        for event in SQLiteEventStore(database_path).list_for_session(session_id)
+        if event.event_type is EventType.MEMORY_REVIEW_RECORDED
+    ]
     assert any(
-        event.event_type is EventType.MEMORY_REVIEW_RECORDED
-        and event.payload["status"] == "expired"
+        event.payload["status"] == "expired"
         and event.payload["reason"] == "stale after AGENTS.md refresh"
-        for event in result.events
-    )
+        for event in lifecycle_events
+    ), [event.payload for event in lifecycle_events]
 
 def test_worker_execution_service_expires_stale_confirmed_procedure_after_refresh(
     tmp_path: Path,
@@ -210,12 +228,26 @@ def test_worker_execution_service_expires_stale_confirmed_procedure_after_refres
     database_path = tmp_path / "worker.db"
     (tmp_path / "Makefile").write_text("check:\n\t@echo validated\n", encoding="utf-8")
     session_id = _seed_ready_session(database_path, tmp_path)
+    source_sequence = _append_tool_result(
+        database_path,
+        session_id,
+        tool_name="command.run",
+        output="ok",
+        metadata={
+            "command": ["make", "test"],
+            "cwd": ".",
+            "exit_code": 0,
+            "stderr": "",
+            "timed_out": False,
+        },
+    )
     SQLiteMemoryStore(database_path).upsert(
         _confirmed_memory(
             session_id=session_id,
             repo_id=str(tmp_path.resolve()),
             memory_type=MemoryType.PROCEDURE,
             text="Run `make test` from `.`.",
+            source_sequence=source_sequence,
         )
     )
 
@@ -236,12 +268,92 @@ def test_worker_execution_service_expires_stale_confirmed_procedure_after_refres
 
     assert result.session.status is SessionStatus.COMPLETED
     assert any(record.memory_type is MemoryType.PROCEDURE for record in records)
+    lifecycle_events = [
+        event
+        for event in SQLiteEventStore(database_path).list_for_session(session_id)
+        if event.event_type is EventType.MEMORY_REVIEW_RECORDED
+    ]
     assert any(
-        event.event_type is EventType.MEMORY_REVIEW_RECORDED
-        and event.payload["status"] == "expired"
+        event.payload["status"] == "expired"
         and event.payload["reason"] == "stale after procedure refresh"
-        for event in result.events
+        for event in lifecycle_events
+    ), [event.payload for event in lifecycle_events]
+
+
+def _append_tool_result(
+    database_path: Path,
+    session_id: SessionId,
+    *,
+    tool_name: str,
+    output: str,
+    metadata: dict[str, object],
+) -> int:
+    store = SQLiteEventStore(database_path)
+    sequence = max(event.sequence for event in store.list_for_session(session_id)) + 1
+    store.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=sequence,
+            event_type=EventType.TOOL_EXECUTION_COMPLETED,
+            actor=EventActor.TOOL,
+            payload={
+                "attempt_number": 1,
+                "tool_name": tool_name,
+                "status": "executed",
+                "output": output,
+                "metadata": metadata,
+            },
+            created_at=_created_at(),
+        )
     )
+    close_sequence = sequence + 1
+    store.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=close_sequence,
+            event_type=EventType.TURN_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={
+                "turn_id": str(uuid4()),
+                "turn_index": 0,
+                "summary": "Prior memory source captured.",
+                "closes_segment": False,
+                "attempt_number": 1,
+                "metadata": {},
+            },
+            created_at=_created_at(),
+        )
+    )
+    store.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=close_sequence + 1,
+            event_type=EventType.MEMORY_EXTRACTION_COMPLETED,
+            actor=EventActor.HARNESS,
+            payload={
+                "completion_revision": close_sequence,
+                "candidate_count": 1,
+                "lifecycle_count": 0,
+                "outcome": "committed",
+            },
+            created_at=_created_at(),
+        )
+    )
+    store.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=close_sequence + 2,
+            event_type=EventType.USER_MESSAGE_RECEIVED,
+            actor=EventActor.USER,
+            payload={
+                "content": "Refresh the repository evidence.",
+                "turn_id": str(uuid4()),
+                "turn_index": 1,
+            },
+            created_at=_created_at(),
+        )
+    )
+    return sequence
 
 def test_worker_execution_service_promotes_preference_from_explicit_user_message(
     tmp_path: Path,

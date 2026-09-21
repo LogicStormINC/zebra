@@ -1637,8 +1637,13 @@ Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
 - The corrected boundary derives Host USER scope from frozen authority for both
   extraction and reads, binds review operations to principal plus source Session,
   accepts only exact normalized forget targets, and limits automatic invalidation
-  to recognizably auto-derived records. PostgreSQL preselection remains bounded
-  at 500 authority-filtered rows before deterministic relevance ranking.
+  to records reproducible from their exact source tool event. Session Memory APIs
+  replace all caller-provided workspace, principal, tenant and Definition filters
+  with the frozen Host scope and fail closed when a Host principal is missing.
+- PostgreSQL text features are applied inside the authority-filtered query before
+  the bounded row cutoff, so a relevant record older than 500 recent distractors
+  remains recallable. A separately bounded preference/project-rule lane preserves
+  durable stable facts, followed by the existing deterministic in-process rank.
 - A real PostgreSQL composed test now writes and confirms a USER Memory from one
   Session, creates a later Session in the same namespace, and proves context
   materialization recalls only the matching workspace/principal record. This is

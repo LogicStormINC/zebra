@@ -2,12 +2,13 @@
 
 from typing import Any
 
-from agent_core.application import rank_governed_memories
+from agent_core.application import memory_text_features, rank_governed_memories
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.context_materialization import (
     ContextMaterialization,
     ContextMaterializationRequest,
 )
+from agent_core.domain.memories import MemoryType
 from agent_core.domain.session_history import SessionHistoryMessage
 from agent_core.ports.context_materialization import ContextMaterializationPort
 
@@ -59,18 +60,35 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
         query = request.memory_query
         if query is None:
             return ()
-        candidate_query = query.model_copy(
-            update={
-                "text_query": None,
-                "limit": 500,
-            }
-        )
-        candidates = query_authority_entries(
-            connection,
-            self._database.deployment_namespace,
-            candidate_query,
-            as_of=request.as_of,
-        )
+        base_query = query.model_copy(update={"text_query": None, "limit": 500})
+        if query.text_query is None:
+            candidates = query_authority_entries(
+                connection,
+                self._database.deployment_namespace,
+                base_query,
+                as_of=request.as_of,
+            )
+        else:
+            relevant = query_authority_entries(
+                connection,
+                self._database.deployment_namespace,
+                base_query,
+                as_of=request.as_of,
+                relevance_features=memory_text_features(query.text_query, limit=64),
+            )
+            stable = query_authority_entries(
+                connection,
+                self._database.deployment_namespace,
+                base_query.model_copy(
+                    update={
+                        "memory_types": (MemoryType.PREFERENCE, MemoryType.PROJECT_RULE),
+                    }
+                ),
+                as_of=request.as_of,
+            )
+            candidates = list(
+                {entry.record.memory_id: entry for entry in (*relevant, *stable)}.values()
+            )
         return rank_governed_memories(
             candidates,
             query_text=query.text_query,

@@ -17,10 +17,10 @@ def rank_governed_memories(
     query_text: str | None,
     limit: int,
 ) -> tuple[GovernedMemoryEntry, ...]:
-    query = _features(query_text or "")
+    query = frozenset(memory_text_features(query_text or ""))
     ranked: list[tuple[float, float, str, GovernedMemoryEntry]] = []
     for entry in entries:
-        text = _features(entry.record.text)
+        text = frozenset(memory_text_features(entry.record.text))
         always = entry.record.memory_type in _ALWAYS_RECALL
         overlap = len(query & text)
         if not always and query and overlap == 0:
@@ -42,10 +42,11 @@ def rank_governed_memories(
     return tuple(item[3] for item in ranked[:limit])
 
 
-def _features(text: str) -> frozenset[str]:
+def memory_text_features(text: str, *, limit: int | None = None) -> tuple[str, ...]:
     lowered = text.casefold()
     features = set(_LATIN_TOKEN.findall(lowered))
     for run in _CJK_RUN.findall(lowered):
         features.update(run)
         features.update(run[index : index + 2] for index in range(len(run) - 1))
-    return frozenset(features)
+    ordered = tuple(sorted(features, key=lambda item: (-len(item), item)))
+    return ordered if limit is None else ordered[:limit]
