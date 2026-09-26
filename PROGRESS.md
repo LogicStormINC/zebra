@@ -1,5 +1,17 @@
 # Zebra Agent Project Status
 
+2026-09-27 CLIENT-REACT-HITL-01 (durable React interrupt projection): the public
+React package now accepts a `ZebraHitlSource` external-store projection in
+addition to its existing controlled props. A remounted page synchronously reads
+the durable open Approval/Clarification, while live projection changes notify
+the same hooks. Observer replies and callbacks captured under an older
+controller fence fail before Host submission; duplicate decisions remain
+coalesced, idempotency keys stay deterministic, and choice-free clarification
+supports typed text. HITL tests pass 3/3, the SDK suite passes 30/30, the full
+package/React 18/19/Vite/Next/Chromium/WebKit gate passes, and existing
+API/Worker approval/clarification recovery tests pass 31/31. The task is in
+Review; no npm publication, push or deployment is claimed.
+
 2026-09-27 REACT-CONVERSATION-02 (ZCode-style conversation organization): the
 public React surface now groups every durable request as one Turn containing the
 user prompt, public work segments, final answer and artifacts. Live work remains
