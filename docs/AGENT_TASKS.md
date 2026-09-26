@@ -7109,14 +7109,16 @@ State Snapshot（当前这些字段只是 Command Payload）。
 
 ### CLIENT-CONTEXT-01 - Client State Context Injection
 
-- Status: `In Progress`
-- Implemented evidence: bounded/redacted ClientState domain and context
-  rendering are covered, and runtime Client State is now budget-prioritized so
-  it cannot be silently displaced by workspace snippets.
-- Remaining acceptance: persist the snapshot produced at AG-UI admission,
-  load it from the Worker recovery composition, pass it into
-  `recover_task_execution`, and add restart coverage in
-  `tests/worker/test_client_state_recovery.py`.
+- Status: `Review`
+- Owner: `Codex`
+- Branch: `codex/client-state-recovery-01`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
+- Review evidence: the bounded/redacted snapshot admitted by AG-UI is persisted
+  in `SESSION_COMMAND_ACCEPTED`, recovered by the Worker composition and passed
+  into task context. Reopening the durable SQLite Event Store proves restart
+  recovery, including an explicit empty snapshot superseding older UI state
+  instead of reviving it. Focused recovery/context/projection tests pass 11/11;
+  repository `make check` passes Ruff, Mypy over 982 sources and eval 30/30.
 - Suggested role: `CONTEXT / RUNTIME`
 - Depends on: `CLIENT-AGUI-ADMISSION-01`
 - Owned paths:

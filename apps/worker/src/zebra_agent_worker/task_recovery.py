@@ -58,7 +58,7 @@ def recover_client_state_evidence(
         if not isinstance(client, dict):
             continue
         state = client.get("state_snapshot")
-        if not isinstance(state, dict) or not state:
+        if not isinstance(state, dict):
             continue
         client_session_id = client.get("client_session_id")
         frontend_app_id = client.get("frontend_app_id")
