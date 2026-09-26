@@ -146,6 +146,7 @@ def run_local_harness(
                     web_search_endpoint=web_search_endpoint,
                     trusted_local=trusted_local,
                     web_pipeline_v2=web_pipeline_v2,
+                    workspace_root=workspace_root.resolve(strict=False),
                 ),
                 tool_gateway,
                 model_step=HarnessModelStep(

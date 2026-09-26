@@ -10,6 +10,12 @@
     "api_image": "registry.example/trench-api@sha256:0000000000000000000000000000000000000000000000000000000000000000",
     "frontend_image": "registry.example/trench-web@sha256:0000000000000000000000000000000000000000000000000000000000000000"
   },
+  "component_packages": {
+    "@zebra-agent/contracts": "0.1.0",
+    "@zebra-agent/ui-contracts": "0.1.0",
+    "@zebra-agent/client-core": "0.1.0",
+    "@zebra-agent/react": "0.1.0"
+  },
   "database": {
     "zebra_schema": 1,
     "trench_revision": "replace-with-alembic-revision",

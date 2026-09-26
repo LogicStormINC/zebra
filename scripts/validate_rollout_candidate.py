@@ -9,11 +9,22 @@ import re
 from pathlib import Path
 from typing import Any
 
+ROOT = Path(__file__).parents[1]
 COMMIT_RE = re.compile(r"[0-9a-f]{40}")
 DIGEST_RE = re.compile(r"[0-9a-f]{64}")
 IMAGE_RE = re.compile(r"[^\s@]+@sha256:[0-9a-f]{64}")
+VERSION_RE = re.compile(
+    r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\."
+    r"(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?"
+)
 PHASES = (("internal", 0), ("canary", 5), ("full", 100))
 CAPABILITY_STATES = {"enabled", "not_enabled"}
+COMPONENT_PACKAGES = {
+    "@zebra-agent/client-core",
+    "@zebra-agent/contracts",
+    "@zebra-agent/react",
+    "@zebra-agent/ui-contracts",
+}
 
 
 def _read(path: Path) -> dict[str, Any]:
@@ -32,6 +43,17 @@ def _file_digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _source_component_versions() -> dict[str, str]:
+    packages = ROOT / "sdks/typescript/packages"
+    versions: dict[str, str] = {}
+    for package in sorted(packages.glob("*/package.json")):
+        payload = _read(package)
+        name, version = payload.get("name"), payload.get("version")
+        if isinstance(name, str) and name in COMPONENT_PACKAGES and isinstance(version, str):
+            versions[name] = version
+    return versions
+
+
 def _require_keys(value: dict[str, Any], keys: set[str], label: str) -> None:
     missing = keys - value.keys()
     unknown = value.keys() - keys
@@ -42,6 +64,15 @@ def _require_keys(value: dict[str, Any], keys: set[str], label: str) -> None:
 def _require_image(value: object, label: str) -> None:
     if not isinstance(value, str) or IMAGE_RE.fullmatch(value) is None:
         raise ValueError(f"{label} must be pinned by sha256 digest")
+    if value.rsplit(":", 1)[-1] == "0" * 64:
+        raise ValueError(f"{label} must not use a placeholder digest")
+
+
+def _require_real_digest(value: object, label: str) -> None:
+    if not isinstance(value, str) or DIGEST_RE.fullmatch(value) is None:
+        raise ValueError(f"{label} must be a sha256 digest")
+    if value == "0" * 64:
+        raise ValueError(f"{label} must not use a placeholder digest")
 
 
 def validate_candidate(
@@ -49,6 +80,7 @@ def validate_candidate(
     release_manifest: dict[str, Any],
     *,
     release_manifest_digest: str | None = None,
+    source_component_versions: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     _require_keys(
         candidate,
@@ -57,6 +89,7 @@ def validate_candidate(
             "candidate_id",
             "zebra",
             "trench",
+            "component_packages",
             "database",
             "protocols",
             "config_digests",
@@ -70,18 +103,18 @@ def validate_candidate(
     )
     if candidate["schema_version"] != "zebra.cloud-rollout-candidate.v1":
         raise ValueError("unsupported rollout candidate schema")
-    if not isinstance(candidate["candidate_id"], str) or not candidate["candidate_id"].strip():
+    if (
+        not isinstance(candidate["candidate_id"], str)
+        or not candidate["candidate_id"].strip()
+        or candidate["candidate_id"].startswith("replace-with-")
+    ):
         raise ValueError("candidate_id must be non-empty")
     if release_manifest.get("schema_version") != "zebra.cloud-release-manifest.v1":
         raise ValueError("unsupported release manifest schema")
     if release_manifest.get("status") != "PASS":
         raise ValueError("release manifest must have PASS status")
     expected_release_digest = candidate["release_manifest_sha256"]
-    if (
-        not isinstance(expected_release_digest, str)
-        or DIGEST_RE.fullmatch(expected_release_digest) is None
-    ):
-        raise ValueError("release_manifest_sha256 must be a sha256 digest")
+    _require_real_digest(expected_release_digest, "release_manifest_sha256")
     actual_release_digest = release_manifest_digest or _canonical_digest(release_manifest)
     if expected_release_digest != actual_release_digest:
         raise ValueError("release manifest digest mismatch")
@@ -94,13 +127,32 @@ def validate_candidate(
     _require_keys(trench, {"commit", "api_image", "frontend_image"}, "trench")
     if COMMIT_RE.fullmatch(str(zebra["commit"])) is None:
         raise ValueError("zebra.commit must be a full lowercase commit SHA")
+    if zebra["commit"] == "0" * 40:
+        raise ValueError("zebra.commit must not use a placeholder SHA")
     if zebra["commit"] != release_manifest.get("candidate_sha"):
         raise ValueError("zebra.commit does not match release candidate SHA")
     if COMMIT_RE.fullmatch(str(trench["commit"])) is None:
         raise ValueError("trench.commit must be a full lowercase commit SHA")
+    if trench["commit"] == "0" * 40:
+        raise ValueError("trench.commit must not use a placeholder SHA")
     _require_image(zebra["image"], "zebra.image")
     _require_image(trench["api_image"], "trench.api_image")
     _require_image(trench["frontend_image"], "trench.frontend_image")
+
+    component_packages = candidate["component_packages"]
+    if (
+        not isinstance(component_packages, dict)
+        or set(component_packages) != COMPONENT_PACKAGES
+    ):
+        raise ValueError("component_packages must freeze all public Zebra React SDK packages")
+    if any(
+        not isinstance(version, str) or VERSION_RE.fullmatch(version) is None
+        for version in component_packages.values()
+    ):
+        raise ValueError("component package versions must be exact semantic versions")
+    source_versions = source_component_versions or _source_component_versions()
+    if component_packages != source_versions:
+        raise ValueError("component package versions do not match source packages")
 
     database = candidate["database"]
     if not isinstance(database, dict):
@@ -151,11 +203,8 @@ def validate_candidate(
     digests = candidate["config_digests"]
     if not isinstance(digests, dict) or set(digests) != {"zebra", "trench"}:
         raise ValueError("config_digests must contain only zebra and trench")
-    if any(
-        not isinstance(value, str) or DIGEST_RE.fullmatch(value) is None
-        for value in digests.values()
-    ):
-        raise ValueError("config digests must be sha256 values")
+    for key, value in digests.items():
+        _require_real_digest(value, f"config_digests.{key}")
     artifact_refs = candidate["test_artifact_refs"]
     if not isinstance(artifact_refs, list) or not artifact_refs or any(
         not isinstance(value, str) or not value.strip() for value in artifact_refs
@@ -216,6 +265,7 @@ def validate_candidate(
         "release_manifest_sha256": actual_release_digest,
         "zebra_commit": zebra["commit"],
         "trench_commit": trench["commit"],
+        "component_packages": dict(sorted(component_packages.items())),
         "status": "PASS",
     }
 

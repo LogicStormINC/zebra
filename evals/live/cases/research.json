@@ -1,0 +1,282 @@
+[
+  {
+    "case_id": "research-current-official",
+    "category": "research",
+    "split": "development",
+    "title": "Research a current dependency change",
+    "prompt": "Using current primary sources, summarize the supplied dependency change that affects Zebra, include dates, and cite every material claim.",
+    "fixture": {
+      "fixture_id": "research.current-official.v1",
+      "inputs": {
+        "scenario": "dependency name, version constraint, and official-source policy",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.current-official.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "research-conflicting-sources",
+    "category": "research",
+    "split": "development",
+    "title": "Reconcile conflicting current sources",
+    "prompt": "Research the disputed technical claim using primary sources, explain the disagreement, and give a dated conclusion with uncertainty.",
+    "fixture": {
+      "fixture_id": "research.conflicting-sources.v1",
+      "inputs": {
+        "scenario": "claim, source shortlist, date boundary, and acceptance criteria",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.conflicting-sources.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "research-api-change",
+    "category": "research",
+    "split": "development",
+    "title": "Verify an API deprecation",
+    "prompt": "Determine whether the specified API is deprecated, the effective timeline, and the supported migration path.",
+    "fixture": {
+      "fixture_id": "research.api-change.v1",
+      "inputs": {
+        "scenario": "API symbol, current integration shape, and official documentation domains",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.api-change.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "research-security-advisory",
+    "category": "research",
+    "split": "development",
+    "title": "Assess a security advisory",
+    "prompt": "Verify the supplied advisory, affected versions, exploit conditions, and applicable remediation using authoritative sources.",
+    "fixture": {
+      "fixture_id": "research.security-advisory.v1",
+      "inputs": {
+        "scenario": "package versions, advisory identifier, and deployment context",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.security-advisory.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "research-library-compatibility",
+    "category": "research",
+    "split": "development",
+    "title": "Check framework compatibility",
+    "prompt": "Establish whether the supplied library and framework versions are compatible and identify documented caveats.",
+    "fixture": {
+      "fixture_id": "research.library-compatibility.v1",
+      "inputs": {
+        "scenario": "package versions, runtime target, and build mode",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.library-compatibility.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "research-protocol-standard",
+    "category": "research",
+    "split": "development",
+    "title": "Resolve protocol requirements",
+    "prompt": "Research the normative requirements for the supplied protocol behavior and separate MUST requirements from guidance.",
+    "fixture": {
+      "fixture_id": "research.protocol-standard.v1",
+      "inputs": {
+        "scenario": "protocol version, disputed behavior, and standards sources",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.protocol-standard.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "research-vendor-claim",
+    "category": "research",
+    "split": "holdout",
+    "title": "Validate a vendor performance claim",
+    "prompt": "Assess whether the vendor performance claim is supported, reproducible, and applicable to the supplied workload.",
+    "fixture": {
+      "fixture_id": "research.vendor-claim.v1",
+      "inputs": {
+        "scenario": "vendor claim, benchmark conditions, and target workload",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.vendor-claim.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "research-policy-current",
+    "category": "research",
+    "split": "holdout",
+    "title": "Research a current service policy",
+    "prompt": "Find the current official policy governing the supplied service behavior, including effective date and exceptions.",
+    "fixture": {
+      "fixture_id": "research.policy-current.v1",
+      "inputs": {
+        "scenario": "service, jurisdiction, date, and policy question",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.policy-current.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "research-benchmark-reproduction",
+    "category": "research",
+    "split": "holdout",
+    "title": "Design a reproducible comparison",
+    "prompt": "Research official benchmark methodology and produce a reproducible comparison plan without reporting unrun results.",
+    "fixture": {
+      "fixture_id": "research.benchmark-reproduction.v1",
+      "inputs": {
+        "scenario": "two products, workload constraints, and permitted sources",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.benchmark-reproduction.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "research-release-regression",
+    "category": "research",
+    "split": "holdout",
+    "title": "Investigate a reported release regression",
+    "prompt": "Determine whether the reported regression is confirmed, which releases are affected, and the official workaround.",
+    "fixture": {
+      "fixture_id": "research.release-regression.v1",
+      "inputs": {
+        "scenario": "component, versions, symptom, and primary issue trackers",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "research.release-regression.v1",
+      "evidence": [
+        "runner.capture",
+        "research.sources"
+      ],
+      "assertions": [
+        "Only sources allowed by the fixture are used",
+        "Every material claim has a dated claim-level citation",
+        "Conflicts and remaining uncertainty are explicitly resolved or bounded"
+      ]
+    },
+    "repetitions": 3
+  }
+]

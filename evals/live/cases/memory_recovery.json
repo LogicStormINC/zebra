@@ -1,0 +1,282 @@
+[
+  {
+    "case_id": "memory-recovery-cross-session-preference",
+    "category": "memory_recovery",
+    "split": "development",
+    "title": "Recall a governed cross-session preference",
+    "prompt": "Store the confirmed preference in session one and apply it in a new session with its memory receipt.",
+    "fixture": {
+      "fixture_id": "memory_recovery.cross-session-preference.v3",
+      "inputs": {
+        "scenario": "two sessions, confirmed preference, and tenant scope",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.cross-session-preference.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "memory-recovery-interrupted-task",
+    "category": "memory_recovery",
+    "split": "development",
+    "title": "Resume an interrupted task without replay",
+    "prompt": "Resume from durable events, avoid repeating the committed write, and complete the remaining postcondition.",
+    "fixture": {
+      "fixture_id": "memory_recovery.interrupted-task.v3",
+      "inputs": {
+        "scenario": "interrupted session, event history, and committed write receipt",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.interrupted-task.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "memory-recovery-preference-reversal",
+    "category": "memory_recovery",
+    "split": "development",
+    "title": "Honor a later preference reversal",
+    "prompt": "Apply the latest confirmed preference and suppress the superseded value across a new session.",
+    "fixture": {
+      "fixture_id": "memory_recovery.preference-reversal.v3",
+      "inputs": {
+        "scenario": "two dated preference decisions and a fresh session",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.preference-reversal.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "memory-recovery-tenant-isolation",
+    "category": "memory_recovery",
+    "split": "development",
+    "title": "Preserve memory tenant isolation",
+    "prompt": "Recall the correct tenant memory while proving similarly worded memory from another tenant is not used.",
+    "fixture": {
+      "fixture_id": "memory_recovery.tenant-isolation.v3",
+      "inputs": {
+        "scenario": "two tenant scopes, overlapping facts, and target session",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.tenant-isolation.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "memory-recovery-deletion-suppression",
+    "category": "memory_recovery",
+    "split": "development",
+    "title": "Respect deleted memory",
+    "prompt": "Answer after a governed deletion without resurfacing the deleted fact from summaries or retrieval.",
+    "fixture": {
+      "fixture_id": "memory_recovery.deletion-suppression.v3",
+      "inputs": {
+        "scenario": "memory receipt, deletion receipt, and new query",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.deletion-suppression.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "memory-recovery-compaction-constraints",
+    "category": "memory_recovery",
+    "split": "development",
+    "title": "Preserve constraints through compaction",
+    "prompt": "Continue after compaction while retaining the goal, hard constraints, completed actions, and denied approach.",
+    "fixture": {
+      "fixture_id": "memory_recovery.compaction-constraints.v3",
+      "inputs": {
+        "scenario": "long session history, compaction event, and continuation request",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.compaction-constraints.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "memory-recovery-postwrite-reconcile",
+    "category": "memory_recovery",
+    "split": "holdout",
+    "title": "Recover after an external write",
+    "prompt": "Resume after failure following an external write by reconciling first and avoiding duplicate effects.",
+    "fixture": {
+      "fixture_id": "memory_recovery.postwrite-reconcile.v3",
+      "inputs": {
+        "scenario": "durable events, external receipt, and unknown completion event",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.postwrite-reconcile.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "memory-recovery-approval-continuation",
+    "category": "memory_recovery",
+    "split": "holdout",
+    "title": "Resume an approved action",
+    "prompt": "Continue the same task after approval without replacing its authority or replaying completed reads.",
+    "fixture": {
+      "fixture_id": "memory_recovery.approval-continuation.v3",
+      "inputs": {
+        "scenario": "approval request, approval receipt, and pending effect",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.approval-continuation.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "memory-recovery-artifact-resume",
+    "category": "memory_recovery",
+    "split": "holdout",
+    "title": "Recover an artifact handoff",
+    "prompt": "Resume a task with an existing artifact reference and complete delivery without recreating the artifact.",
+    "fixture": {
+      "fixture_id": "memory_recovery.artifact-resume.v3",
+      "inputs": {
+        "scenario": "artifact receipt, interrupted session, and delivery target",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.artifact-resume.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "memory-recovery-context-noise",
+    "category": "memory_recovery",
+    "split": "holdout",
+    "title": "Ignore irrelevant remembered context",
+    "prompt": "Complete the task using relevant governed memory while excluding unrelated high-similarity memories.",
+    "fixture": {
+      "fixture_id": "memory_recovery.context-noise.v3",
+      "inputs": {
+        "scenario": "target goal, relevant memory, distractor memories, and scope",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "memory_recovery.context-noise.v3",
+      "evidence": [
+        "runner.capture",
+        "memory.receipt"
+      ],
+      "assertions": [
+        "The correct durable memory or task state is used",
+        "No cross-tenant data or committed effect is replayed",
+        "The final state is supported by durable memory, event, or artifact receipts"
+      ]
+    },
+    "repetitions": 3
+  }
+]

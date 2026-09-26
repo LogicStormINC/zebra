@@ -3,7 +3,7 @@ import {
   ZebraAgentProvider,
   useZebraAction,
   useZebraReadable,
-} from "@zebra-agent/react/src/main.ts";
+} from "@zebra-agent/react";
 
 function EventPage(props: { eventId: string }) {
   useZebraReadable("app.ui.route", { route: `/events/${props.eventId}` });

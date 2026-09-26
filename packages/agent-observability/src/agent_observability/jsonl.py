@@ -8,6 +8,7 @@ from agent_core.domain.events import EventType
 
 from agent_observability.models import (
     AuditRecord,
+    CacheBoundary,
     CostSummary,
     ProviderModelCallTrace,
     TraceRecord,
@@ -128,6 +129,9 @@ def _model_call_from_json(value: object) -> ProviderModelCallTrace:
         ),
         normalized_error=_read_optional_str(value, "normalized_error"),
         system_fingerprint=_read_optional_str(value, "system_fingerprint"),
+        cache_boundary=CacheBoundary(
+            _read_optional_str(value, "cache_boundary") or CacheBoundary.UNKNOWN
+        ),
     )
 
 

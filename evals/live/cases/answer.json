@@ -1,0 +1,282 @@
+[
+  {
+    "case_id": "answer-authority-boundary",
+    "category": "answer",
+    "split": "development",
+    "title": "Explain cloud authority boundaries",
+    "prompt": "Inspect the supplied architecture evidence and identify the authoritative stores for sessions, artifacts, and governed memory. Cite evidence and separate facts from inference.",
+    "fixture": {
+      "fixture_id": "answer.authority-boundary.v1",
+      "inputs": {
+        "scenario": "architecture snapshot with conflicting cache and database descriptions",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.authority-boundary.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "answer-failure-diagnosis",
+    "category": "answer",
+    "split": "development",
+    "title": "Diagnose a wrapped execution failure",
+    "prompt": "Use the supplied event export and worker log excerpt to identify the root cause, distinguish symptoms, and propose the smallest safe recovery.",
+    "fixture": {
+      "fixture_id": "answer.failure-diagnosis.v1",
+      "inputs": {
+        "scenario": "durable event export plus nested worker and provider errors",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.failure-diagnosis.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "answer-permission-explanation",
+    "category": "answer",
+    "split": "development",
+    "title": "Explain a denied tool operation",
+    "prompt": "Explain why the supplied tool request was denied, which policy boundary applied, and the least-privilege next action.",
+    "fixture": {
+      "fixture_id": "answer.permission-explanation.v1",
+      "inputs": {
+        "scenario": "tool request, policy decision, and approval state",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.permission-explanation.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "answer-architecture-tradeoff",
+    "category": "answer",
+    "split": "development",
+    "title": "Evaluate a storage tradeoff",
+    "prompt": "Compare the two supplied persistence designs against durability, replay, isolation, and operational cost without inventing requirements.",
+    "fixture": {
+      "fixture_id": "answer.architecture-tradeoff.v1",
+      "inputs": {
+        "scenario": "two architecture proposals and fixed product constraints",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.architecture-tradeoff.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "answer-log-evidence",
+    "category": "answer",
+    "split": "development",
+    "title": "Answer from partial logs",
+    "prompt": "Answer the incident question using only the supplied partial logs and explicitly identify what cannot be concluded.",
+    "fixture": {
+      "fixture_id": "answer.log-evidence.v1",
+      "inputs": {
+        "scenario": "bounded API, worker, and database log excerpts",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.log-evidence.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "answer-migration-risk",
+    "category": "answer",
+    "split": "development",
+    "title": "Assess migration risk",
+    "prompt": "Assess the supplied schema migration for compatibility, rollback, lock, and data-loss risk and prioritize mitigations.",
+    "fixture": {
+      "fixture_id": "answer.migration-risk.v1",
+      "inputs": {
+        "scenario": "migration SQL, table shape, traffic assumptions, and rollback rules",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.migration-risk.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "answer-incident-timeline",
+    "category": "answer",
+    "split": "holdout",
+    "title": "Reconstruct an incident timeline",
+    "prompt": "Reconstruct the event sequence from out-of-order evidence and distinguish observed timestamps from inferred ordering.",
+    "fixture": {
+      "fixture_id": "answer.incident-timeline.v1",
+      "inputs": {
+        "scenario": "out-of-order audit, queue, and application timestamps",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.incident-timeline.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "answer-config-precedence",
+    "category": "answer",
+    "split": "holdout",
+    "title": "Resolve configuration precedence",
+    "prompt": "Determine the effective configuration from the supplied defaults, environment, tenant override, and request override.",
+    "fixture": {
+      "fixture_id": "answer.config-precedence.v1",
+      "inputs": {
+        "scenario": "four configuration layers with explicit precedence rules",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.config-precedence.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "answer-data-authority",
+    "category": "answer",
+    "split": "holdout",
+    "title": "Identify a stale read boundary",
+    "prompt": "Explain why two supplied views disagree and which one is authoritative for the requested decision.",
+    "fixture": {
+      "fixture_id": "answer.data-authority.v1",
+      "inputs": {
+        "scenario": "projection snapshot, source-of-truth rows, and freshness markers",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.data-authority.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "answer-user-recovery",
+    "category": "answer",
+    "split": "holdout",
+    "title": "Write a safe recovery response",
+    "prompt": "Produce a user-facing recovery explanation that is actionable, accurate, and does not expose sensitive diagnostics.",
+    "fixture": {
+      "fixture_id": "answer.user-recovery.v1",
+      "inputs": {
+        "scenario": "sanitized diagnostic record and allowed recovery actions",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "answer.user-recovery.v1",
+      "evidence": [
+        "runner.capture",
+        "answer.evidence"
+      ],
+      "assertions": [
+        "The response directly answers the requested question",
+        "Every factual conclusion is tied to supplied evidence",
+        "Inference and unresolved uncertainty are explicitly separated"
+      ]
+    },
+    "repetitions": 3
+  }
+]

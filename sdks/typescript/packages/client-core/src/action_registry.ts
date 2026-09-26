@@ -1,4 +1,4 @@
-import { CLIENT_SDK_ERRORS } from "../../contracts/src/index.ts";
+import { CLIENT_SDK_ERRORS } from "@zebra-agent/contracts";
 import { ClientRuntimeError } from "./errors.ts";
 
 export type ClientActionHandler = (

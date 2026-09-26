@@ -1,7 +1,9 @@
 from agent_observability import (
+    CacheBoundary,
     CostSummary,
     ProviderModelCallTrace,
     TraceRecord,
+    summarize_cache_boundaries,
     summarize_model_profiles,
 )
 
@@ -51,6 +53,48 @@ def test_summarize_model_profiles_supports_offline_flash_pro_comparison() -> Non
     assert pro.finish_reasons == (("stop", 1),)
 
 
+def test_cache_summary_keeps_boundary_rates_separate() -> None:
+    trace = TraceRecord(
+        session_id="session-cache",
+        event_count=2,
+        tool_result_count=0,
+        cost=CostSummary(),
+        audit=(),
+        model_calls=(
+            _call(
+                "profile",
+                latency_ms=200,
+                input_tokens=100,
+                output_tokens=10,
+                reasoning_tokens=0,
+                cache_hit_tokens=0,
+                cache_miss_tokens=100,
+                cost_usd=0.0,
+                cache_boundary=CacheBoundary.COLD_START,
+            ),
+            _call(
+                "profile",
+                latency_ms=80,
+                input_tokens=100,
+                output_tokens=10,
+                reasoning_tokens=0,
+                cache_hit_tokens=90,
+                cache_miss_tokens=10,
+                cost_usd=0.0,
+                cache_boundary=CacheBoundary.WARM_LOOP,
+            ),
+        ),
+    )
+
+    cold, warm = summarize_cache_boundaries((trace,))
+
+    assert cold.boundary is CacheBoundary.COLD_START
+    assert cold.cache_token_hit_rate == 0.0
+    assert warm.boundary is CacheBoundary.WARM_LOOP
+    assert warm.cache_token_hit_rate == 0.9
+    assert warm.average_latency_ms == 80
+
+
 def _call(
     profile_id: str,
     *,
@@ -62,6 +106,7 @@ def _call(
     cache_miss_tokens: int,
     cost_usd: float,
     response_repair_count: int = 0,
+    cache_boundary: CacheBoundary = CacheBoundary.UNKNOWN,
 ) -> ProviderModelCallTrace:
     return ProviderModelCallTrace(
         sequence=1,
@@ -78,4 +123,5 @@ def _call(
         normalized_error=(
             "invalid_tool_arguments_json" if response_repair_count else None
         ),
+        cache_boundary=cache_boundary,
     )

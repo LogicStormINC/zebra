@@ -1,4 +1,126 @@
-# Current task — CLOUD-MEMORY-CLOSURE-01 PostgreSQL governed-Memory closure (2026-09-21)
+# Active task — CLOUD-PLAN-ACCEPTANCE-02 strict 100-point closure (2026-09-26)
+
+1. `completed` — close SDK supply-chain gaps: pinned toolchain, package audit,
+   tree-shaking proof and CI integration.
+2. `completed` — add real-browser React and Trench acceptance for responsive,
+   IME, attachment, session-transition, scroll, collapse and recovery flows.
+3. `completed` — materialize executable fixtures, a real Zebra runner and
+   independent verifiers; complete the current-version 180-attempt matrix.
+4. `completed_local` — execute real-model Memory/result matrices and cache
+   boundary reports; recovery/compaction cache percentages remain unmeasured.
+5. `blocked_external` — local `runsc` is absent and the remote host rejects the
+   available SSH credential, so one-digest gVisor/canary/rollback proof cannot run.
+6. `completed_local` — rerun Zebra/Trench/SDK/browser/PostgreSQL gates and report
+   implementation, strict acceptance, real-task and production evidence separately.
+
+Detailed plan:
+`docs/Zebra_Cloud_Agent_100分严格验收闭环计划_v1.0.md`.
+
+Errors encountered:
+
+- Ruby 2.6 `YAML.load_file(..., aliases: true)` rejected the unsupported keyword;
+  use the compatible `YAML.load_file(path)` parser for workflow syntax checks.
+- The first browser-matrix preparation used a repository-root path while the
+  command already ran inside `sdks/typescript`; use SDK-relative paths there.
+- The first Chromium focus assertion clicked an external lifecycle-control
+  button, which correctly moved browser focus. Advance lifecycle state through
+  a programmatic fixture action after attachment selection instead.
+- Vite browser acceptance passed, but the first Next server command forwarded
+  an extra `--` and never bound. Invoke `pnpm exec next start -H/-p` directly
+  and retain child output for readiness diagnostics.
+- The first Trench browser assertion assumed a fixed conversation id, but the
+  product intentionally creates a random durable id. Assert the id captured
+  from the real create-conversation request instead.
+- The first live-eval reporting shell used `status`, which is a read-only zsh
+  parameter. Use a task-specific exit variable for report commands.
+- The 12-case real-model pilot exposed three truthful delivery-gate blocks:
+  file and package deliverables retain publication requirements, while local
+  memory-recovery fixtures now require an explicit write/read-back proof so
+  they do not accidentally enter the artifact-publication path.
+- The first browser scroll assertion sampled immediately after requesting
+  smooth scrolling. Wait for the browser to settle at the bottom instead of
+  changing production behavior to make an asynchronous animation synchronous.
+- The first terminal-collapse and touch-target browser assertions sampled the
+  React effect synchronously and included fixture-only navigation controls.
+  Wait for the observable collapsed state and scope target sizing to the
+  published `.zebra-agent-chat` surface.
+- Failed commands originally exposed only `status=failed` to the model. Project
+  bounded `stderr`, `exit_code`, timeout and failure reason so retries can correct
+  the cause instead of repeating blind calls.
+- Standard Git diff headers were validated after stripping `a/` and `b/` but the
+  unnormalized patch was applied with `-p0`. Normalize once before both validation
+  and execution, and reject hunk headers whose declared line counts do not match.
+- The local policy rejected an absolute `command.run.cwd` even when it was the
+  exact authorized workspace. Supply the workspace root to policy, allow only
+  contained absolute cwd values, and retain the tool-level containment check.
+- English `Create ... scheduled job` was classified as CREATE and invented an
+  Artifact obligation. Scheduling is an OPERATE task and still requires fresh
+  postcondition verification, not an unrelated file publication.
+
+# Prior task — CLOUD-PLAN-CLOSURE-01 end-to-end plan closure (2026-09-26)
+
+1. `completed` — Trench consumes the packaged React surface from reproducible vendored tarballs; the duplicate Composer implementation and source alias are gone.
+2. `completed_implementation` — the fixed corpus contains 60 cases / 180 planned attempts and an independently verified runner/report path; the real campaign remains `0/180` until isolated fixtures, authority-backed verifiers and credentials are supplied.
+3. `completed` — real package tarballs pass React 18 and 19 in Vite plus Next SSR/RSC consumers.
+4. `partially_completed` — real PostgreSQL fault, Memory and application Compose gates pass; the no-gVisor composition tier passes fail-closed, while the seven gVisor execution scenarios and remote canary/rollback remain externally blocked.
+5. `completed` — Zebra and Trench focused/full gates are reconciled, with implementation, local acceptance, real-task and production evidence reported separately.
+
+# Prior task — CLOUD-RELIABILITY-02 reliability and release closure (2026-09-26)
+
+1. `completed` — fail closed on missing/duplicate/out-of-order durable Task events and prove exact cursor recovery.
+2. `completed` — replace an invalid persisted browser cursor with the authoritative Task tail, refresh pending effects, and stop reconnect loops when login/session authority expires.
+3. `completed` — freeze exact source-matching React package versions with Zebra/Trench commits, image digests, migrations, protocols and configuration.
+4. `completed` — bind the remaining reliability scenarios to candidate/rehearsal evidence without converting unavailable production evidence into PASS.
+5. `completed` — run focused SDK/API/release suites and full repository gates, then report local, acceptance and production completion separately.
+
+# Prior task — MEMORY-CONTEXT-02 memory, compaction and cache closure (2026-09-22)
+
+1. `completed` — preserve completed actions, pending actions, rejected approaches and permission boundaries in durable Context Capsules and all recovery materialization paths.
+2. `completed` — prove synonym recall, preference reversal, temporary-preference rejection, cross-project isolation, deletion suppression and irrelevant-memory bounds.
+3. `completed` — segment cache evidence into cold start, warm loop, recovery, compaction and child wakeup without changing prompts, model or reasoning settings.
+4. `completed` — run focused suites, full repository gates and record evidence-backed implementation coverage.
+
+# Prior task — AGENT-QUALITY-04 result-level acceptance (2026-09-22)
+
+1. `completed` — strengthen the typed acceptance contract with explicit response bounds and Host-verifiable goal terms without turning keyword classification into authority.
+2. `completed` — make task-type outcomes require matching result evidence rather than treating any mutation or HTTP/tool success as completion.
+3. `completed` — preserve recoverable parameter/read failures for correction while stopping evidence-free repeated actions and reconciling unknown writes.
+4. `completed` — add deterministic result-level regressions for answer, research, change, create and operate tasks.
+5. `completed` — rerun the failed real-model constraint smoke, focused suites and full repository gates, then record honest evidence.
+
+# Prior task — AGENT-LIVE-EVAL-01 representative real-task evaluation (2026-09-22)
+
+1. `completed` — define a live-eval case and attempt contract that cannot mix deterministic replay with real-model evidence.
+2. `completed` — add 12 representative tasks across answer, research, code, file, operation and memory/recovery, split into development and holdout sets.
+3. `completed` — aggregate first/final success, intervention, false-completion, recovery, citation, repeated-tool, latency and cost metrics only when 3 repetitions are complete.
+4. `completed` — add a safe CLI report entry and deterministic contract tests.
+5. `completed` — run the available real-model smoke, repository gates and record honest executed versus pending evidence.
+
+# Prior task — REACT-UX-01 React task lifecycle experience (2026-09-22)
+
+1. `completed` — define one typed public lifecycle contract for local submit, server acceptance, queue, execution, user wait, reconciliation, disconnect and distinct terminal outcomes.
+2. `completed` — render lifecycle and recovery controls without exposing private reasoning or raw errors.
+3. `completed` — prove reconnect, resume and retry remain distinct and unsafe unknown writes cannot be blindly replayed.
+4. `completed` — prove new-session to active-chat rerenders retain the same controlled Composer node, input, attachments and focus boundary.
+5. `completed` — run package, external-consumer and repository gates; document the S2 evidence and remaining Host-adapter boundary.
+
+# Prior task — REACT-UI-01 React Agent composer foundation (2026-09-22)
+
+1. `completed` — trace the Trench composer and identify its reusable behavior and Host-only dependencies.
+2. `completed` — implement the finite public `AgentChat`, Composer, message, activity, approval, clarification, Artifact and Memory setting surfaces with explicit CSS variables.
+3. `completed` — add interaction regressions for IME, submit/pause/continue, activity collapse, interrupts, resources, attachment removal and disabled state.
+4. `completed` — build, pack and verify ESM/CJS/types/styles in isolated Vite and Next React consumers.
+5. `completed` — review package API, run SDK and repository gates, and establish the stable Host-adapter boundary for later Trench migration.
+
+# Prior task — REACT-PKG-01 TSDX package and consumer boundary (2026-09-21)
+
+1. `completed` — save the complete Cloud Agent + React optimization plan under `docs/` and claim the task with explicit owned paths.
+2. `completed` — validate TSDX 2.x against the existing pnpm workspace and correct the four SDK package boundaries.
+3. `completed` — build and pack every SDK package; inspect exports, declarations and package contents.
+4. `completed` — install the real tarballs into isolated Vite and Next.js React consumers and run production builds without source aliases.
+5. `completed` — run SDK tests/type checks, document evidence and review the slice before component migration.
+
+# Prior task — CLOUD-MEMORY-CLOSURE-01 PostgreSQL governed-Memory closure (2026-09-21)
 
 Branch: `codex/cloud-memory-closure-01`, based on
 `cloud-agent-trench@3fe23bbd`.
@@ -231,3 +353,19 @@ production activation remain separate. No commit or activation requested here.
 
 下一步：等 Trench 侧提交清场后，按 `docs/Zebra_Trench对接实施方案_v1.0.md`
 P1→P3 顺序拉栈、填配置、跑 runner。
+
+## Current task — CLOUD-MEMORY-PROFILE-01 (2026-09-21)
+
+1. `completed` — derive an inspectable user profile only from confirmed governed Memory.
+2. `completed` — capture explicit background/goal self-statements as review-only candidates.
+3. `completed` — balance bounded recall across preferences and task-relevant Memory types.
+4. `completed` — expose principal-bound profile reads and exact governed deletion.
+5. `completed` — enforce typed CHANGE/CREATE/OPERATE outcomes before answer commit.
+6. `completed` — prove focused, API, real PostgreSQL, file-size, lint, type and eval gates.
+7. `completed` — run the full suite and classify the sole live-provider-only failure.
+8. `completed` — complete the real Trench Host surface with edit, source,
+   scope and actual-recall transparency while keeping PostgreSQL authoritative.
+9. `completed` — prove direct replacement, deletion suppression, cross-session
+   recall and browser-visible governance in the composed local stack.
+10. `completed` — review and harden fail-closed Host authority, PostgreSQL lock
+    ordering, bounded source enrichment, blank input and overlapping UI requests.

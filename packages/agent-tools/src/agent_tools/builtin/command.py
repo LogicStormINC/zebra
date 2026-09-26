@@ -91,7 +91,12 @@ class CommandRunTool:
         if not normalized_cwd:
             raise ToolArgumentError("command.run requires 'cwd' to be a non-blank string")
         try:
-            return self._workspace.resolve_path(normalized_cwd)
+            candidate = Path(normalized_cwd)
+            if not candidate.is_absolute():
+                return self._workspace.resolve_path(candidate)
+            resolved = candidate.resolve(strict=False)
+            resolved.relative_to(self._workspace.root_path)
+            return resolved
         except ValueError as exc:
             raise ToolArgumentError("command.run 'cwd' must stay within the workspace") from exc
 

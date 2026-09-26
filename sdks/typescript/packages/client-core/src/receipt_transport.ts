@@ -1,4 +1,4 @@
-import type { ReceiptSubmission } from "../../contracts/src/index.ts";
+import type { ReceiptSubmission } from "@zebra-agent/contracts";
 import { scrubResult } from "./result_security.ts";
 
 export function normalizeReceipt(receipt: ReceiptSubmission): ReceiptSubmission {

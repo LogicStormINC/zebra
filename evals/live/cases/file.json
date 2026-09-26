@@ -1,0 +1,282 @@
+[
+  {
+    "case_id": "file-markdown-report",
+    "category": "file",
+    "split": "development",
+    "title": "Produce an evidence-backed Markdown artifact",
+    "prompt": "Create the requested audit report with severity-ordered findings, exact references, and a separately labeled remediation plan.",
+    "fixture": {
+      "fixture_id": "file.markdown-report.v1",
+      "inputs": {
+        "scenario": "evidence bundle, report template, and severity rubric",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.markdown-report.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "file-csv-transform",
+    "category": "file",
+    "split": "development",
+    "title": "Transform and validate a CSV artifact",
+    "prompt": "Apply the supplied mapping, preserve all source rows, report rejected records, and verify output counts and columns.",
+    "fixture": {
+      "fixture_id": "file.csv-transform.v1",
+      "inputs": {
+        "scenario": "source CSV, schema mapping, and rejection policy",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.csv-transform.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "file-json-normalize",
+    "category": "file",
+    "split": "development",
+    "title": "Normalize a JSON dataset",
+    "prompt": "Normalize the supplied records to the target schema without dropping unknown source fields and produce a validation summary.",
+    "fixture": {
+      "fixture_id": "file.json-normalize.v1",
+      "inputs": {
+        "scenario": "JSON input, target schema, and preservation rules",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.json-normalize.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "file-spreadsheet-summary",
+    "category": "file",
+    "split": "development",
+    "title": "Build a reconciled spreadsheet summary",
+    "prompt": "Produce the requested summary workbook and reconcile every aggregate to the supplied row-level data.",
+    "fixture": {
+      "fixture_id": "file.spreadsheet-summary.v1",
+      "inputs": {
+        "scenario": "tabular source, aggregation definitions, and workbook layout",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.spreadsheet-summary.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "file-patch-delivery",
+    "category": "file",
+    "split": "development",
+    "title": "Create a reviewable patch artifact",
+    "prompt": "Produce a patch limited to owned paths with a manifest of changed files and validation evidence.",
+    "fixture": {
+      "fixture_id": "file.patch-delivery.v1",
+      "inputs": {
+        "scenario": "repository snapshot, owned paths, and acceptance commands",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.patch-delivery.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "file-archive-manifest",
+    "category": "file",
+    "split": "development",
+    "title": "Package an artifact with a manifest",
+    "prompt": "Create the requested archive with deterministic paths, checksums, and no unlisted files.",
+    "fixture": {
+      "fixture_id": "file.archive-manifest.v1",
+      "inputs": {
+        "scenario": "input tree, inclusion rules, and archive format",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.archive-manifest.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "file-document-extract",
+    "category": "file",
+    "split": "holdout",
+    "title": "Extract structured facts from a document",
+    "prompt": "Extract the requested fields with page references and mark unreadable or absent values instead of guessing.",
+    "fixture": {
+      "fixture_id": "file.document-extract.v1",
+      "inputs": {
+        "scenario": "document artifact, extraction schema, and citation format",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.document-extract.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "file-config-bundle",
+    "category": "file",
+    "split": "holdout",
+    "title": "Generate a validated configuration bundle",
+    "prompt": "Produce environment-specific configuration files without secrets and validate required keys and precedence.",
+    "fixture": {
+      "fixture_id": "file.config-bundle.v1",
+      "inputs": {
+        "scenario": "configuration template, environment values, and secret placeholders",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.config-bundle.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "file-release-evidence",
+    "category": "file",
+    "split": "holdout",
+    "title": "Assemble a release evidence bundle",
+    "prompt": "Assemble test, version, migration, and rollback evidence into the required directory and index.",
+    "fixture": {
+      "fixture_id": "file.release-evidence.v1",
+      "inputs": {
+        "scenario": "release candidate metadata and evidence inventory",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.release-evidence.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "file-data-export",
+    "category": "file",
+    "split": "holdout",
+    "title": "Create a bounded data export",
+    "prompt": "Export only the authorized records, preserve stable ordering, and include counts and integrity metadata.",
+    "fixture": {
+      "fixture_id": "file.data-export.v1",
+      "inputs": {
+        "scenario": "query scope, authorization boundary, and export schema",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "file.data-export.v1",
+      "evidence": [
+        "runner.capture",
+        "artifact.validation"
+      ],
+      "assertions": [
+        "The requested artifact exists and is independently readable",
+        "Artifact content and schema satisfy the fixture contract",
+        "Counts, provenance, and rejected or missing data are reconciled"
+      ]
+    },
+    "repetitions": 3
+  }
+]

@@ -1,5 +1,144 @@
 # Zebra Agent Project Status
 
+2026-09-26 CLOUD-PLAN-ACCEPTANCE-02 (current-version strict closure): the fixed
+live-eval catalog now materializes isolated fixtures and records independently
+verified real Zebra runs. The selected current-version matrix is complete at
+`180/180`: first-attempt success `95%`, final success `100%`, false completion
+`0%`, citation support `100%`, recovery success `100%`, human intervention `0%`,
+average first public feedback `428ms` and total duration `9.512s`. Shared fixes
+expose bounded failed-command diagnostics to the model, normalize standard Git
+patch paths, reject mismatched hunk counts before partial writes, allow only
+workspace-contained absolute command cwd values, isolate fixture Git roots and
+classify scheduled jobs as operations. SDK/React, Trench browser/build, real
+PostgreSQL/MinIO and repository gates pass; final Zebra is `4668 passed, 897
+skipped`, with file-size, Ruff, strict Mypy over `982` sources and eval `30/30`.
+Local implementation is complete; strict evidence is `86/100`. Production is
+still `0%`: no local `runsc`, no accepted remote SSH authority, and therefore no
+same-digest gVisor, immutable candidate, canary or rollback proof. Model and
+reasoning settings are unchanged; PostgreSQL remains authoritative.
+
+2026-09-26 CLOUD-PLAN-CLOSURE-01 (local implementation closure): Trench now
+imports `AgentComposer` from reproducible vendored `@zebra-agent/react` tarballs
+and the duplicate Host component is deleted. Exact package tarballs pass React
+18/19 with Vite and Next 15.5.18 SSR/RSC; SDK tests pass `24/24`. The live-eval
+contract now fixes 60 cases (10 per category), 36 development / 24 holdout and
+three independent repetitions, producing an exact 180-attempt plan. It rejects
+self-reported tiers, reused execution identities, tampered capture/verifier
+payloads and incomplete metrics; no attempt was fabricated, so the real-model
+campaign remains `0/180`. Real PostgreSQL gates pass `39`, `8` and `27` cases;
+application Compose passes; the Effect composition tier passes and preserves a
+retryable READY Session when gVisor is unavailable. Deterministic attachment,
+MCP and other configuration defects still terminate fail-closed. Zebra `make
+check` passes file size, Ruff, strict Mypy over `982` sources and eval `30/30`;
+the final full suite passes `4655` with `897` skips. Trench passes `107/107`,
+production build and offline frozen install. Local implementation is `100/100`.
+Production remains `0%`: no local `runsc`, remote SSH/HTTP time out, and no
+immutable candidate, canary, rollback, commit, push or deployment is claimed.
+
+2026-09-26 CLOUD-RELIABILITY-02 (local reliability/release closure): canonical
+Task projection now rejects missing sequences in addition to duplicate and
+out-of-order events. An invalid persisted browser cursor no longer causes an
+infinite loop or unsafe full replay: the API returns the exact authoritative
+Task-tail cursor, the HTTP route now actually forwards the standard
+`Last-Event-ID` header, client-core persists the replacement, re-reads
+authoritative pending effects to close the race, and resumes from that point. Expired login or Client
+Session responses (`401/403/410`) stop reconnecting. The immutable candidate
+now freezes all four React SDK package versions and rejects versions that do not
+match source package metadata; rehearsal evidence explicitly covers stream
+integrity, cursor/login expiry, multi-session concurrency and failures before a
+Tool call, after an external write and before terminal completion. Focused
+Python reliability coverage passes `95` with `27` PostgreSQL-dependent skips;
+TypeScript/React passes `24/24`. `make check` passes file-size, Ruff, strict
+Mypy over `980` sources and eval `30/30`; the complete suite passes `4643`, with
+`897` environment-dependent skips. Docker and a local PostgreSQL test DSN were
+unavailable, and no immutable clean-SHA image set or production host rehearsal
+was supplied, so real dependency and production gates remain unexecuted. Under
+the frozen delivery weights, S6 local implementation is `100%` and total local
+implementation advances from `71%` to `91%`; production release remains `0%`.
+No model/reasoning setting, commit, push or deployment changed.
+
+2026-09-22 MEMORY-CONTEXT-02 (local memory/context/cache closure): durable
+Context Capsule and Handoff v1.1 now keep completed actions, pending actions,
+rejected approaches and permission boundaries as separate typed facts through
+manual/Worker compaction, materialization, recovery and cross-session handoff.
+Permission omissions fail closed. Governed recall now bridges bounded common
+Chinese/English paraphrases while removing single-character CJK noise; the
+existing authority lifecycle still owns preference correction, temporary
+context rejection, deletion suppression and scope isolation. Observability now
+reports cold start, warm loop, recovery, compaction and child wakeup cache
+metrics separately using raw hit/miss tokens, rate and latency. Focused closure
+passes `156/156`; `make check` passes over `980` typed sources and eval `30/30`;
+the complete suite passes `4640`, with `897` environment-dependent skips. Real
+PostgreSQL execution was unavailable locally and is not claimed. Under the
+frozen delivery weights, local implementation advances from `61%` to `71%`;
+production release remains separate. Model/reasoning settings are unchanged,
+PostgreSQL remains authoritative, and no commit, push or deployment occurred.
+
+2026-09-22 AGENT-LIVE-EVAL-01 (local evaluation contract): Zebra now has 12
+fixed representative tasks across answer, research, code, file, operation and
+memory/recovery, split `8/4` between development and holdout and fixed at three
+repetitions. The report keeps real-dependency and real-model evidence separate,
+rejects duplicate/out-of-range attempts, and emits no success, latency,
+intervention, citation, recovery or cost metrics until all 36 attempts exist.
+Provider cost may remain unavailable without being treated as zero. The first
+real DeepSeek smoke proved the distinction between runtime and product success:
+the read-only Harness completed in 34.27 seconds with 9 model calls and 20 tools,
+but the externally checked answer was 703 characters against a 180-character
+limit and therefore failed the task postcondition. The complete 36-run campaign
+has not been executed, so no product success rate is claimed. Model and
+reasoning settings were unchanged; no commit, push, publication or deployment
+is included. The repository passes `make check` and `4621 passed, 897 skipped`.
+
+2026-09-22 REACT-UX-01 (local lifecycle boundary): `@zebra-agent/react` now
+exports a typed `AgentRunStatus` integrated with `AgentChat`. Local submission,
+server acceptance, queueing, execution, user wait, pause, reconciliation,
+disconnection and terminal state are no longer collapsed into one loading or
+error state. `completed`, `partial`, `blocked`, `failed` and `cancelled` remain
+distinct. Reconnect, continue-current-task and retry-original-request are
+separate Host callbacks; reconciliation suppresses blind replay. The public
+contract accepts only a Host-approved safe message and opaque diagnostic ID,
+not raw errors or private reasoning. Empty-to-active rerenders retain the same
+controlled Composer DOM node, value, attachment and focus, while durable
+terminal state collapses stale running activity. SDK tests pass `22/22`; exact
+tarballs pass Vite 6.4.3 and Next.js 15.5.18 production builds without Node
+built-ins, and browser acceptance confirms the lifecycle card and collapsed
+work log. Full Zebra remains `4614 passed, 897 skipped`; file-size, Ruff,
+strict Mypy over 978 sources and deterministic eval `30/30` pass. Trench
+mapping, npm publication and production deployment are not claimed.
+
+2026-09-22 REACT-UI-01 (local React component boundary): the existing
+`@zebra-agent/react` package now exports a host-neutral controlled `AgentChat`,
+Composer, message list, public activity group, approval, clarification,
+Artifact and Memory-setting surface with explicit scoped styles. The Host
+retains routing, state, credentials and execution side effects; the package
+owns only interaction and presentation. Attachments, suggestions, queue state,
+submit/pause/continue, capability/model/reasoning controls and truthful
+context/cache metrics are covered without Ant Design, Tailwind, Trench imports
+or another runtime.
+Deterministic interaction coverage includes Enter, IME suppression and action
+state transitions. Final tarballs passed Vite 6.4.3 and Next.js 15.5.18 React
+19 production builds with no source aliases or Node built-ins; real-browser
+narrow-layout, keyboard, activity-collapse and no-overlap acceptance passed.
+SDK tests are `19/19`; full Zebra
+remains `4614 passed, 897 skipped`, with file-size, Ruff, strict Mypy over 978
+sources and deterministic eval `30/30` green. The API is ready for a separate
+Trench Host-adapter migration; no npm publication, commit, push or deployment is
+claimed.
+
+2026-09-21 REACT-PKG-01 (local package boundary): the full Cloud Agent + React
+optimization plan is now durable under `docs/`. The existing four TypeScript
+packages use explicit package dependencies rather than sibling `src` imports,
+and TSDX 2.0.0 now builds ESM, CJS and declaration artifacts for each package.
+The build pins bunchee 6.4.0 because the TSDX release invokes its dev-only CLI
+without shipping it as a runtime dependency. Package tarballs contain only
+`dist` plus metadata and have no repository path leakage. An isolated TypeScript
+consumer passed ESM, CJS and server-render checks; Vite 6.4.3 and Next.js 15.5.18
+React 19 production builds consumed the same tarballs without source aliases.
+SDK strict type-check and `17/17` tests pass. The packages remain private and no
+npm publication, Trench component migration or production deployment is claimed.
+The complete Zebra suite also passes `4614 passed, 897 skipped`; `make check`
+passes file-size, Ruff, strict Mypy over 978 sources and deterministic eval 30/30.
+
 2026-09-21 CLOUD-CAPABILITY-UI-01 (adaptive budget regression closure): the
 capability-mode adapter no longer reintroduces fixed `10/16`, `16/32` or `24/64`
 model/tool ceilings into interactive Tasks. Exploration, research and expert
@@ -3446,3 +3585,84 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
 - Declared local implementation is `100%`. Merge, push, Trench production rollout
   and remote deployment are separate gates and are not claimed. Model and
   reasoning-effort settings are unchanged.
+
+## 2026-09-21 - CLOUD-MEMORY-PROFILE-01 governed profile and outcome closure
+
+- Confirmed PostgreSQL governed Memory now projects a source-visible user profile
+  with preference, background and long-term goal sections. Natural Chinese and
+  English self-statements create low-confidence EPISODIC candidates only; they
+  never become profile facts without the existing review/confirmation boundary.
+- Added principal-bound profile reads and exact user/tenant Memory deletion.
+  Deletion reuses the governed administrative review transaction, advances the
+  source Session Event stream and stores a content-free PostgreSQL tombstone.
+- Recall keeps a bounded stable-preference lane of two entries, requires project
+  rules to be query-relevant and gives each relevant Memory type one slot before
+  score-based filling. PostgreSQL remains authoritative; Redis Agent Memory is
+  still disabled.
+- CHANGE, CREATE and OPERATE task contracts now require mutation, artifact or
+  operation evidence as appropriate. Finalization suspends with
+  `acceptance_outcomes_required` instead of committing a plausible but unproven
+  answer. The deterministic release fixture now declares mutation semantics for
+  mutation scenarios.
+- Validation: focused Core/API/Worker coverage `873 passed`; principal/tenant API
+  contract `21 passed`; real PostgreSQL governed Memory `25 passed`; file-size,
+  Ruff, strict Mypy over `976` sources and Harness eval `30/30` pass. The full
+  deterministic suite reached `4611 passed, 896 skipped`; its only failure was a
+  credentials-enabled live DeepSeek smoke whose response supplied zero reasoning
+  tokens, outside this change's deterministic boundary.
+- Local code, API contracts and real PostgreSQL acceptance are complete. The
+  generic platform-web remains a mock operator console and was not given a fake
+  profile screen; Host product UI integration, live-model A/B, push and production
+  deployment remain separate acceptance gates. Model and reasoning strength were
+  not changed.
+
+### 2026-09-21 - Host memory governance completion
+
+- Trench now receives content-free `zebra.memory_context` metadata and shows a
+  per-answer receipt only when confirmed Memory actually participated in context.
+- Confirmed user Memory supports atomic PostgreSQL correction: the old revision
+  becomes superseded, the replacement becomes confirmed, and candidate/review
+  Events remain auditable. Delete remains a content-free tombstone and is absent
+  from subsequent confirmed reads.
+- The Host settings surface shows personal scope, source conversation metadata
+  when a retained Task binding exists, deterministic confidence bands, and
+  edit/delete controls without exposing Host Grants to the browser.
+- Final validation: focused Zebra Memory/API/AG-UI `64 passed`; PostgreSQL
+  correction/delete/cross-Session proof passed; complete repository `4613 passed,
+  897 skipped`; `make check` passed file-size, Ruff, strict Mypy over `978`
+  sources and eval `30/30`. Rebuilt local API/Worker are healthy, `/health` is
+  `200`, and the logged-in Trench Memory page loads its real `0/0` account state.
+  Redis Agent Memory remains disabled; model and reasoning settings are unchanged.
+
+### 2026-09-21 - Final review and hardening
+
+- Closed four review defects: Host Memory authority is fail-closed for missing
+  principal/namespace keys; replacement transactions use scope-first lock order;
+  Trench source enrichment is restricted to the bounded response's Session ids;
+  and frontend/BFF mutation races and blank corrections are rejected.
+- Final evidence: focused Zebra `26`, real PostgreSQL `6`, Trench API `19`, and
+  Trench UI `11` pass. Full Zebra passes `4614 passed, 897 skipped`; Zebra
+  `make check` passes over `978` typed sources and eval `30/30`. Trench
+  `make check` passes `139 + 74 + 99` tests, production builds, migrations and
+  diff checks. No commit, push or remote deployment is included.
+
+### 2026-09-22 - AGENT-QUALITY-04 result-level acceptance
+
+- Completion now enforces Host-overridable maximum response length and required
+  answer terms, and informational questions no longer become mutation tasks by
+  keyword accident. Change and operation outcomes require matching mutation
+  evidence instead of accepting any successful write.
+- Repository file evidence is typed at the tool boundary: reads and searches
+  emit explicit file refs; directory paths are not citable. Objective quality
+  revisions continue only while a deterministic deficit shrinks and preserve an
+  exact evidence ref while shortening, avoiding both fixed global budgets and
+  unbounded no-progress loops.
+- Real DeepSeek read-only acceptance Session
+  `3cf72f5e-0970-4c71-abd9-43ae30fb31e3` reached `answer_committed/complete` with
+  a 150-character Chinese answer, exact file evidence, 12 model responses and 16
+  successful tools. Focused tests pass `58/58`; `make check` and the complete
+  `4633 passed, 897 skipped` suite pass.
+- S4 local implementation is complete and in Review. Under the frozen 100-point
+  delivery model, local plan implementation advances from `41%` to `61%`.
+  Complete `12x3` live-eval execution, production release and remote deployment
+  remain separate gates and are not claimed. Model/reasoning settings are unchanged.

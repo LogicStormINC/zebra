@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCall
@@ -98,6 +99,7 @@ class LocalPolicyEngine:
     additional_read_only_tools: frozenset[str] = frozenset()
     additional_write_tools: frozenset[str] = frozenset()
     additional_approval_tools: frozenset[str] = frozenset()
+    workspace_root: Path | None = None
 
     def __post_init__(self) -> None:
         for label, names in (
@@ -120,10 +122,12 @@ class LocalPolicyEngine:
             for right in declared_sets[index + 1 :]
         ):
             raise ValueError("additional tool policy sets must be disjoint")
+        if self.workspace_root is not None and not self.workspace_root.is_absolute():
+            raise ValueError("workspace_root must be absolute when provided")
 
     def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
         tool_name = tool_call.name
-        path_risk_reason = _path_risk_reason(tool_call)
+        path_risk_reason = _path_risk_reason(tool_call, workspace_root=self.workspace_root)
         if path_risk_reason is not None:
             return _deny(self.profile, path_risk_reason)
         egress = classify_tool_egress(
@@ -290,18 +294,44 @@ def _command_risk_reason(tool_call: ToolCall) -> str | None:
     return None
 
 
-def _path_risk_reason(tool_call: ToolCall) -> str | None:
+def _path_risk_reason(tool_call: ToolCall, *, workspace_root: Path | None) -> str | None:
     for argument_name in PATH_ARGUMENTS_BY_TOOL.get(tool_call.name, ()):
         raw_path = tool_call.arguments.get(argument_name)
         if raw_path is None:
             continue
         if not isinstance(raw_path, str):
             return f"{tool_call.name} path argument {argument_name} must be a string"
+        if _is_authorized_absolute_cwd(
+            tool_call.name,
+            argument_name,
+            raw_path,
+            workspace_root=workspace_root,
+        ):
+            continue
         if _is_unsafe_relative_path(raw_path):
             return f"{tool_call.name} path argument {argument_name} escapes workspace"
     if tool_call.name == "patch.apply":
         return _patch_path_risk_reason(tool_call)
     return None
+
+
+def _is_authorized_absolute_cwd(
+    tool_name: str,
+    argument_name: str,
+    raw_path: str,
+    *,
+    workspace_root: Path | None,
+) -> bool:
+    if tool_name != "command.run" or argument_name != "cwd" or workspace_root is None:
+        return False
+    candidate = Path(raw_path.strip())
+    if not candidate.is_absolute():
+        return False
+    try:
+        candidate.resolve(strict=False).relative_to(workspace_root.resolve(strict=False))
+    except ValueError:
+        return False
+    return True
 
 
 def _patch_path_risk_reason(tool_call: ToolCall) -> str | None:

@@ -1,0 +1,282 @@
+[
+  {
+    "case_id": "operation-idempotent-write",
+    "category": "operation",
+    "split": "development",
+    "title": "Perform an authorized idempotent write",
+    "prompt": "Perform the authorized write exactly once, tolerate a transport retry, and reconcile final state before reporting success.",
+    "fixture": {
+      "fixture_id": "operation.idempotent-write.v1",
+      "inputs": {
+        "scenario": "mock service endpoint, authority grant, and idempotency key",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.idempotent-write.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "operation-deploy-health",
+    "category": "operation",
+    "split": "development",
+    "title": "Deploy a fixture and prove health",
+    "prompt": "Deploy the supplied fixture and verify terminal job state, process health, and the live business endpoint.",
+    "fixture": {
+      "fixture_id": "operation.deploy-health.v1",
+      "inputs": {
+        "scenario": "isolated target, deployment artifact, and health contract",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.deploy-health.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "operation-rollback",
+    "category": "operation",
+    "split": "development",
+    "title": "Execute and verify a rollback",
+    "prompt": "Roll back the supplied candidate and prove the previous version and data contract are restored.",
+    "fixture": {
+      "fixture_id": "operation.rollback.v1",
+      "inputs": {
+        "scenario": "candidate deployment, previous digest, and rollback procedure",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.rollback.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "operation-database-migration",
+    "category": "operation",
+    "split": "development",
+    "title": "Apply a guarded database migration",
+    "prompt": "Apply the authorized migration with prechecks, verify schema and data postconditions, and record the receipt.",
+    "fixture": {
+      "fixture_id": "operation.database-migration.v1",
+      "inputs": {
+        "scenario": "isolated database, migration artifact, and safety thresholds",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.database-migration.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "operation-credential-rotation",
+    "category": "operation",
+    "split": "development",
+    "title": "Rotate a scoped credential",
+    "prompt": "Rotate the authorized credential without exposing it and verify both revocation and new access.",
+    "fixture": {
+      "fixture_id": "operation.credential-rotation.v1",
+      "inputs": {
+        "scenario": "credential reference, target service, and rotation policy",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.credential-rotation.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "operation-queue-recovery",
+    "category": "operation",
+    "split": "development",
+    "title": "Recover a stalled queue consumer",
+    "prompt": "Diagnose and recover the supplied stalled consumer without duplicating acknowledged work.",
+    "fixture": {
+      "fixture_id": "operation.queue-recovery.v1",
+      "inputs": {
+        "scenario": "queue fixture, consumer state, and durable receipts",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.queue-recovery.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "operation-partial-reconcile",
+    "category": "operation",
+    "split": "holdout",
+    "title": "Reconcile an unknown write outcome",
+    "prompt": "Determine whether the interrupted write committed before deciding whether to retry.",
+    "fixture": {
+      "fixture_id": "operation.partial-reconcile.v1",
+      "inputs": {
+        "scenario": "write request, timeout evidence, and authoritative target state",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.partial-reconcile.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "operation-canary",
+    "category": "operation",
+    "split": "holdout",
+    "title": "Run a bounded canary rollout",
+    "prompt": "Deploy the candidate to the specified canary scope, evaluate gates, and stop or advance according to policy.",
+    "fixture": {
+      "fixture_id": "operation.canary.v1",
+      "inputs": {
+        "scenario": "candidate digest, canary cohort, and gate thresholds",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.canary.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "operation-artifact-publish",
+    "category": "operation",
+    "split": "holdout",
+    "title": "Publish and retrieve an artifact",
+    "prompt": "Publish the authorized artifact, then independently retrieve and checksum it before success.",
+    "fixture": {
+      "fixture_id": "operation.artifact-publish.v1",
+      "inputs": {
+        "scenario": "artifact file, destination scope, and expected checksum",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.artifact-publish.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "operation-scheduled-job",
+    "category": "operation",
+    "split": "holdout",
+    "title": "Create an idempotent scheduled job",
+    "prompt": "Create the requested schedule exactly once and verify persisted cadence, target, and enabled state.",
+    "fixture": {
+      "fixture_id": "operation.scheduled-job.v1",
+      "inputs": {
+        "scenario": "schedule request, target identity, and idempotency key",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "operation.scheduled-job.v1",
+      "evidence": [
+        "runner.capture",
+        "operation.receipt"
+      ],
+      "assertions": [
+        "The operation stays within the supplied authority",
+        "Success is based on independently observed terminal state",
+        "Retries, unknown outcomes, and external effects are reconciled without duplication"
+      ]
+    },
+    "repetitions": 3
+  }
+]

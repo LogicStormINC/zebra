@@ -4,12 +4,16 @@ from uuid import uuid4
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.verification_evidence import VerificationResourceRef
 from agent_core.harness.evidence_ledger import EvidenceLedger
-from agent_core.harness.final_completion import _contract_verification_satisfied
+from agent_core.harness.final_completion import (
+    _contract_verification_satisfied,
+    _quality_revision_feedback,
+)
 from agent_core.harness.models import SkillReadRequirement
 from agent_core.harness.quality_gates import evaluate_answer, missing_selected_skills
 from agent_core.harness.task_contracts import (
     AgentTaskType,
     TaskAcceptanceContract,
+    infer_task_contract,
     parse_task_contract,
 )
 from agent_core.harness.tool_freshness import (
@@ -68,6 +72,43 @@ def test_analysis_word_alone_does_not_force_a_long_form_answer() -> None:
     assert evaluate_answer("分析一下原因", "根因是配置缺失。建议补齐配置后重试。").passed
 
 
+def test_explicit_maximum_length_is_inferred_and_enforced() -> None:
+    chinese = infer_task_contract("请在不超过180字内回答")
+    english = infer_task_contract("Answer in no more than 180 Chinese characters")
+
+    assert chinese.max_characters == 180
+    assert english.max_characters == 180
+    too_long = evaluate_answer("请在不超过5字内回答", "这个回答明显太长")
+    assert too_long.reason == "deliverable_too_long"
+    assert too_long.missing_requirements == ("maximum_length:5_characters",)
+
+
+def test_information_request_does_not_become_mutation_authority() -> None:
+    assert infer_task_contract("解释如何部署这个服务").task_type is AgentTaskType.ANSWER
+    assert infer_task_contract("Please explain how to deploy it").task_type is AgentTaskType.ANSWER
+    assert infer_task_contract("请部署这个服务").task_type is AgentTaskType.OPERATE
+
+
+def test_host_contract_can_require_goal_terms_and_response_bound() -> None:
+    contract = parse_task_contract(
+        {
+            "taskType": "answer",
+            "requiredAnswerTerms": ["PostgreSQL", "Event Store"],
+            "maxCharacters": 80,
+        },
+        fallback_goal="Explain the authority boundary.",
+    )
+
+    missing = evaluate_answer("Explain it.", "PostgreSQL is authoritative.", contract=contract)
+    assert missing.reason == "deliverable_missed_goal"
+    assert missing.missing_requirements == ("required_answer_term:Event Store",)
+    assert evaluate_answer(
+        "Explain it.",
+        "PostgreSQL stores the authoritative Event Store.",
+        contract=contract,
+    ).passed
+
+
 def test_english_markers_require_word_boundaries() -> None:
     assert evaluate_answer("NEW CONCURRENT FOLLOW-UP", "NEW TURN ANSWER").passed
 
@@ -93,6 +134,21 @@ def test_current_analysis_requires_collected_and_matching_source_reference() -> 
         evidence=ledger,
     )
     assert cited.passed
+
+
+def test_length_revision_feedback_preserves_a_matching_local_reference() -> None:
+    path = "packages/agent-storage/src/agent_storage/composition.py"
+    answer = f"{'x' * 200} `{path}`"
+
+    feedback = _quality_revision_feedback(
+        answer=answer,
+        reason="deliverable_too_long",
+        missing_requirements=("maximum_length:180_characters",),
+        evidence=EvidenceLedger(successful_tool_results=1, evidence_refs=(path,)),
+    )
+
+    assert "remove nonessential prose and duplicate references" in feedback
+    assert f"Keep this exact collected reference unchanged: {path}." in feedback
 
 
 def test_citation_gate_rejects_invented_and_annotation_extended_urls() -> None:
@@ -157,6 +213,35 @@ def test_explicit_artifact_contract_requires_a_real_artifact_reference() -> None
     assert evaluate_answer("Create it.", "Created.", contract=contract, evidence=ledger).passed
 
 
+def test_inferred_task_contracts_require_type_specific_delivery_outcomes() -> None:
+    change = infer_task_contract("修复配置并验证")
+    create = infer_task_contract("创建一份报告文件")
+    operate = infer_task_contract("部署当前版本")
+
+    assert change.required_outcomes == (
+        "answer_present",
+        "evidence_collected",
+        "change_applied",
+        "result_verified",
+    )
+    assert create.required_outcomes == ("answer_present", "artifact_produced")
+    assert create.require_artifact
+    assert operate.required_outcomes == (
+        "answer_present",
+        "evidence_collected",
+        "operation_completed",
+        "result_verified",
+    )
+
+
+def test_scheduled_job_is_an_operation_not_an_artifact_creation() -> None:
+    contract = infer_task_contract("Create the requested scheduled job exactly once and verify it")
+
+    assert contract.task_type is AgentTaskType.OPERATE
+    assert contract.require_verification
+    assert not contract.require_artifact
+
+
 def test_task_contract_verification_needs_runtime_proof() -> None:
     assert not _contract_verification_satisfied({}, read_only_tools=frozenset())
     assert _contract_verification_satisfied(
@@ -172,16 +257,22 @@ def test_task_contract_verification_needs_runtime_proof() -> None:
 def test_resource_scoped_mutation_requires_matching_fresh_read() -> None:
     now = datetime.now(UTC)
     mutation = ToolCall(
-        tool_call_id=uuid4(), name="sources.resume",
-        arguments={"source_id": "src_a"}, created_at=now,
+        tool_call_id=uuid4(),
+        name="sources.resume",
+        arguments={"source_id": "src_a"},
+        created_at=now,
     )
     read_a = ToolCall(
-        tool_call_id=uuid4(), name="sources.get_status",
-        arguments={"source_id": "src_a"}, created_at=now,
+        tool_call_id=uuid4(),
+        name="sources.get_status",
+        arguments={"source_id": "src_a"},
+        created_at=now,
     )
     read_b = ToolCall(
-        tool_call_id=uuid4(), name="sources.get_status",
-        arguments={"source_id": "src_b"}, created_at=now,
+        tool_call_id=uuid4(),
+        name="sources.get_status",
+        arguments={"source_id": "src_b"},
+        created_at=now,
     )
     result = ToolResult(
         tool_call_id=mutation.tool_call_id,
@@ -189,7 +280,10 @@ def test_resource_scoped_mutation_requires_matching_fresh_read() -> None:
         output="ok",
     )
     metadata = record_tool_freshness(
-        {}, mutation, result, read_only_tools=frozenset({"sources.get_status"}),
+        {},
+        mutation,
+        result,
+        read_only_tools=frozenset({"sources.get_status"}),
         mutation_tools=frozenset({"sources.resume"}),
     )
     read_tools = frozenset({"sources.get_status"})
@@ -249,9 +343,7 @@ def test_explicit_resource_identity_prevents_cross_namespace_verification() -> N
         arguments={"source_id": "same-id"},
         created_at=now,
     )
-    read = mutation.model_copy(
-        update={"tool_call_id": uuid4(), "name": "sources.get_status"}
-    )
+    read = mutation.model_copy(update={"tool_call_id": uuid4(), "name": "sources.get_status"})
     resource_a = VerificationResourceRef(
         authority_issuer="https://issuer.example.com",
         namespace_id="tenant-a",

@@ -30,6 +30,125 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLOUD-PLAN-ACCEPTANCE-02`: Review with external release blocked, owned by Codex on the user-requested
+  `cloud-agent-trench` integration branch. Scope: execute
+  `Zebra_Cloud_Agent_100分严格验收闭环计划_v1.0.md` and replace the prior local
+  implementation score with strict evidence. Owned Zebra paths:
+  `sdks/typescript/**`, focused `.github/workflows/**`, `evals/live/**`,
+  `packages/agent-observability/**`, `scripts/live_eval_*`, focused browser and
+  acceptance tests, rollout candidate/rehearsal configuration and validators,
+  `apps/worker/src/zebra_agent_worker/child_wakeup_continuation.py`,
+  `apps/worker/src/zebra_agent_worker/continuation_dispatch.py`,
+  `tests/worker/test_child_wakeup_continuation.py`,
+  `tests/agent_storage/test_postgres_default_chain_e2e.py`,
+  `packages/agent-core/src/agent_core/harness/model_step_support.py`,
+  `tests/agent_core/test_model_tool_observation.py`, plus
+  `packages/agent-tools/src/agent_tools/builtin/patch.py`,
+  `packages/agent-tools/src/agent_tools/builtin/command.py`,
+  `packages/agent-security/src/agent_security/policy.py`,
+  `tests/agent_tools/test_patch_apply_tool.py`,
+  `tests/agent_tools/test_command_run_tool.py`,
+  `tests/agent_security/test_policy_profiles.py`, plus
+  task/progress/worklog/findings documents. The Worker paths cover the
+  PostgreSQL composition regression discovered by this acceptance run: a
+  durable child wakeup must pair its frozen delegation with terminal child
+  evidence before the next provider request, remove the stale pre-4-call child
+  budget assertion, and keep blank-only tool output as a valid
+  structured observation. Paired Trench ownership is
+  limited to `toc-frontend` package, Host adapter, browser fixtures/tests and its
+  task/progress records. Constraints: preserve unrelated dirty changes; keep
+  model and reasoning settings unchanged; PostgreSQL remains authoritative;
+  never fabricate real-model, browser, gVisor, canary or rollback evidence.
+
+- `CLOUD-PLAN-CLOSURE-01`: Review with external acceptance blocked, owned by Codex on the user-requested
+  `cloud-agent-trench` integration branch. Scope: close the remaining exits in
+  `Zebra_Cloud_Agent与React组件库优化实施方案_v1.0.md` without converting local
+  tests into production evidence. Owned Zebra paths: `evals/live/**`,
+  `packages/agent-observability/**`, `scripts/live_eval_*`, `sdks/typescript/**`,
+  focused tests, the plan/task/progress/worklog/findings documents and existing
+  rollout validators/configuration. The paired Trench slice owns only its
+  `toc-frontend` package/Host adapter, tests and task record. Constraints:
+  preserve both dirty integration worktrees; consume package artifacts rather
+  than source aliases; never fabricate live attempts, PostgreSQL, canary or
+  rollback evidence; keep model/reasoning settings and PostgreSQL authority
+  unchanged. Review evidence: Trench now consumes reproducible package tarballs
+  and has no second Composer implementation; React 18/19 pass Vite and Next
+  SSR/RSC builds; the live corpus has 60 cases and an exact 180-attempt plan
+  with independent verifier attestation and incomplete-metric suppression.
+  Real PostgreSQL gates pass `39`, `8`, and `27` cases, application Compose
+  passes, and Effect composition fail-closes with a retryable READY Session.
+  `make check` passes over `982` typed sources and eval `30/30`; the final full
+  suite passes `4655`, with `897` environment-gated skips. Trench passes
+  `107/107`, lint with three pre-existing image warnings, production build and
+  an offline frozen install. External status: Docker has no `runsc`; all seven
+  gVisor execution scenarios are skipped, the real-model campaign is `0/180`,
+  and remote SSH plus ports `18080/18081` time out. No immutable candidate,
+  canary, rollback, commit, push or deployment is claimed.
+
+- `CLOUD-RELIABILITY-02`: Review, owned by Codex on the user-requested
+  `cloud-agent-trench` integration branch. Scope: close the S6 reliability and
+  immutable-candidate boundary by rejecting incomplete Task streams, recovering
+  expired browser cursors from durable authority, terminating expired login or
+  Client Session reconnect loops, freezing the four React SDK package versions,
+  and binding cursor/auth/concurrency/failure-point evidence into the existing
+  R14 candidate and rehearsal validators. Owned paths:
+  `packages/agent-integrations/src/agent_integrations/ag_ui/task_stream.py`,
+  `apps/api/src/zebra_agent_api/ag_ui_stream.py`,
+  `apps/api/src/zebra_agent_api/http.py`,
+  `sdks/typescript/packages/client-core`, focused AG-UI/SDK tests,
+  `scripts/validate_rollout_*`, `configs/cloud_rollout_candidate.example.json`,
+  focused rollout validator tests, `docs/CLOUD-ROLLOUT-R14.md`, this registry,
+  `PROGRESS.md`, `findings.md`, `WORKLOG.md`, and `task_plan.md`. Existing release
+  gates, Effect reconciliation and PostgreSQL authority are reused; model and
+  reasoning settings, production deployment and unavailable external evidence
+  are out of scope. Review evidence: Task projection now rejects gaps as well as
+  duplicates and out-of-order rows. Invalid browser cursors are replaced with
+  the server's exact canonical tail before reconnect; the HTTP route forwards
+  the SDK's standard `Last-Event-ID` header, and pending effects are read
+  again to close the recovery race, while `401/403/410` stops reconnecting.
+  Candidate validation freezes all four source-matching `0.1.0` package versions,
+  and rehearsal validation requires explicit stream, cursor, login, concurrency
+  and three failure-point scenarios. Focused Python reliability coverage passes
+  `95` with `27` real-PostgreSQL skips; TypeScript/React passes `24/24`.
+  `make check` passes file size, Ruff, strict Mypy over `980` source files and
+  eval `30/30`; the full suite passes `4643`, with `897` environment-dependent
+  skips. Docker/PostgreSQL and the production host were unavailable, so no real
+  candidate, rehearsal, rollout, commit, push or deployment is claimed.
+
+- `CLOUD-MEMORY-PROFILE-01`: Review, owned by Codex on
+  `cloud-agent-trench`. Scope: turn confirmed governed Memory into a bounded
+  user-profile view, capture source-bound natural user background and goal
+  candidates without auto-confirming inferred facts, allocate Cloud recall
+  across stable preferences and task-relevant memories, expose profile/read and
+  delete/edit controls through the existing Memory API, project actual recall
+  evidence to Host clients, and strengthen task-type
+  completion evidence without changing model or reasoning settings. Owned paths:
+  `packages/agent-core/src/agent_core/application/memory_*`, narrowly required
+  Harness acceptance contracts and gates, Worker Context materialization,
+  existing API Memory routes/read/control and principal/tenant guard surfaces,
+  governed PostgreSQL replacement transactions and AG-UI projection,
+  deterministic Harness and schedule-authority test fixtures needed by the full
+  release gate, focused Core/Worker/API
+  tests, this registry, `PROGRESS.md`, `findings.md`, `WORKLOG.md`, and
+  `task_plan.md`. PostgreSQL remains authoritative; Redis Agent Memory remains
+  optional and disabled; no production deployment is included.
+  Implementation exposes only confirmed governed Memory as profile state;
+  inferred background/goal statements stay review-only. Exact deletion writes
+  a textless tombstone, recall reserves at most two preference slots and balances
+  the remainder by relevant Memory type, and CHANGE/CREATE/OPERATE Tasks cannot
+  commit an answer while their typed outcomes remain unproven. Focused
+  Memory/API/AG-UI suites pass `64`; real PostgreSQL replacement, deletion
+  suppression and cross-Session recall pass, including exclusive current-revision
+  reads after correction. `make check` passes file-size, Ruff, strict Mypy over
+  `978` source files and deterministic Harness eval `30/30`. Full repository
+  coverage is `4613 passed, 897 skipped`. Isolated API/Worker images were rebuilt
+  and both are healthy; `/health` returns the cloud/gVisor runtime profile. The
+  logged-in Trench Memory page reads the authoritative empty profile without 502
+  or synthetic data. Final review additionally closes missing-authority fail-open
+  access, replacement lock ordering, bounded Host source enrichment and duplicate
+  frontend writes. Full coverage is now `4614 passed, 897 skipped`; both repository
+  gates pass. No model setting, push or remote deployment is claimed.
+
 - `CLOUD-MEMORY-CLOSURE-01`: Review, owned by Codex on
   `codex/cloud-memory-closure-01`, based on `cloud-agent-trench@3fe23bbd`.
   Scope: close the PostgreSQL governed-Memory runtime loop for generic Cloud
@@ -29204,3 +29323,221 @@ browser Cookie or Host Grant.
   passes type-check and `15/15`; Trench passes its complete repository gate.
   Browser conversation `conv_1789910351988_0397a0` proves a direct short answer
   completes with one committed response, one model call and no unrelated Skill.
+
+### REACT-PKG-01 - TSDX package and consumer boundary
+
+- Status: Review
+- Owner: Codex
+- Branch: `cloud-agent-trench`
+- Depends on: `CLOUD-AGENT-PARITY-01`
+- Owned paths: `sdks/typescript/**`,
+  `docs/Zebra_Cloud_Agent与React组件库优化实施方案_v1.0.md`,
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `WORKLOG.md`, `findings.md`
+- Goal: turn the existing Zebra TypeScript packages into real TSDX-built package
+  artifacts and prove that React consumers no longer rely on Trench or sibling
+  source-path imports.
+- Constraints: extend the existing `@zebra-agent/react`; keep pnpm as the
+  workspace package manager; do not publish to npm; do not change model or
+  reasoning settings; do not modify Cloud execution or governed Memory code.
+- Acceptance: all four existing packages build to declared exports, current SDK
+  tests pass, packed artifacts contain no repository source-path dependency, and
+  isolated React consumers compile from package artifacts without path aliases.
+- Review evidence: TSDX 2.0.0 with explicitly pinned bunchee 6.4.0 produced ESM,
+  CJS and declarations for all four packages. Package tarballs contain only
+  `dist` and metadata; pnpm rewrote workspace ranges to `0.1.0`, and no built
+  file contains an absolute or sibling-source path. A clean external TypeScript
+  consumer passed ESM, CJS and SSR checks. Vite 6.4.3 and Next.js 15.5.18 React
+  19 production builds consumed the tarballs without path aliases. SDK strict
+  type-check and `17/17` tests pass. Full Zebra remains `4614 passed, 897 skipped`;
+  file-size, Ruff, strict Mypy and deterministic eval `30/30` pass. No npm
+  publication or production rollout.
+
+### REACT-UI-01 - React Agent composer foundation
+
+- Status: Review
+- Owner: Codex
+- Branch: `cloud-agent-trench`
+- Depends on: `REACT-PKG-01`
+- Owned paths: `sdks/typescript/packages/react/**`,
+  `sdks/typescript/packages/ui-contracts/**`, `sdks/typescript/examples/**`,
+  `sdks/typescript/package.json`, `sdks/typescript/pnpm-lock.yaml`,
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `WORKLOG.md`, `findings.md`
+- Goal: deliver the finite host-neutral React AgentChat component surface from
+  the existing package without Ant Design, Tailwind, Trench imports or a second
+  runtime/provider.
+- Constraints: explicit CSS artifact and variables; controlled component API;
+  preserve IME submission, attachments, queue, pause/continue, model/capability/
+  reasoning selectors and truthful runtime metrics; do not migrate Trench until
+  the packaged API passes interaction and external consumer checks.
+- Acceptance: keyboard and button behavior, attachment handling and execution
+  controls have deterministic tests; ESM/CJS/types/styles package exports build;
+  external Vite and Next consumers compile from a tarball; existing SDK and
+  repository gates remain green.
+- Review evidence: `AgentChat`, `AgentComposer`, `AgentMessageList`,
+  `AgentActivityGroup`, `AgentApproval`, `AgentClarification`, `AgentArtifacts`
+  and `AgentMemorySettings` form a finite controlled surface with no Ant Design,
+  Tailwind, Trench or API dependency. The Host owns routing, state and side
+  effects; the package renders typed contracts through scoped CSS variables.
+  Deterministic tests cover normal Enter, IME Enter suppression, action-state
+  transitions, attachment removal and the single accessible file-picker entry.
+  Final tarballs expose ESM, CJS, declarations, README and explicit CSS; Vite
+  6.4.3 and Next.js 15.5.18 production builds consume them without aliases or
+  Node built-ins. Browser acceptance confirmed narrow layout and Enter submit.
+  SDK tests pass `19/19`; Zebra passes `4614 passed, 897 skipped`, file-size,
+  Ruff, strict Mypy over 978 sources and deterministic eval `30/30`. Trench
+  migration, npm publication, commit, push and deployment are not part of this
+  slice.
+
+### REACT-UX-01 - React task lifecycle experience
+
+- Status: Review
+- Owner: Codex
+- Branch: `cloud-agent-trench`
+- Depends on: `REACT-UI-01`
+- Owned paths: `sdks/typescript/packages/react/**`,
+  `sdks/typescript/packages/ui-contracts/**`, `sdks/typescript/examples/**`,
+  `sdks/typescript/package.json`, `sdks/typescript/pnpm-lock.yaml`,
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `WORKLOG.md`, `findings.md`
+- Goal: give every React Host one truthful task lifecycle surface that keeps
+  local submission, server acceptance, queueing, execution, user interrupts,
+  reconciliation, disconnection and terminal outcomes visibly distinct.
+- Constraints: use public durable state only; never render private chain of
+  thought or raw stack traces; reconnect, resume and retry remain separate Host
+  actions; an uncertain write is reconciled before any replay; reuse the same
+  controlled Composer between empty and active chat states.
+- Acceptance: the complete state matrix and action guards have deterministic
+  tests; terminal outcomes remain distinct; diagnostics expose only an opaque
+  ID; rerendering a new conversation into an active one preserves the Composer
+  DOM boundary; external package consumers and repository gates remain green.
+- Review evidence: `AgentRunState` is a discriminated public contract covering
+  local submit, accepted, queued, running, waiting, paused, reconciling,
+  disconnected and terminal phases. `AgentRunStatus` renders all five terminal
+  outcomes separately, exposes only `safeMessage` and an opaque diagnostic ID,
+  and keeps reconnect/resume/retry as distinct callbacks. It refuses retry in
+  reconciliation and suppresses stale running activity when a durable terminal
+  outcome exists. DOM regressions prove the same Composer node, input,
+  attachment and focus survive empty-to-active rerenders. SDK tests pass
+  `22/22`; exact tarballs pass Vite 6.4.3 and Next.js 15.5.18 production builds
+  without source aliases or Node built-ins, and browser acceptance confirms the
+  terminal status/actions and collapsed work log. Zebra passes `4614 passed,
+  897 skipped`, file-size, Ruff, strict Mypy over 978 sources and deterministic
+  eval `30/30`. Trench mapping, npm publish, commit, push and deployment remain
+  separate.
+
+### AGENT-LIVE-EVAL-01 - Representative real-task evaluation
+
+- Status: Review
+- Owner: Codex
+- Branch: `cloud-agent-trench`
+- Depends on: `REACT-UX-01`
+- Owned paths: `evals/live/**`, `packages/agent-observability/**`,
+  `scripts/live_eval_report.py`, `tests/agent_observability/**`,
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `WORKLOG.md`, `findings.md`
+- Goal: establish the first 12 fixed real tasks and an evidence model that
+  reports product success separately from deterministic protocol checks.
+- Constraints: six task categories, development/holdout split, three real-model
+  repetitions per case; incomplete coverage cannot emit success-rate metrics;
+  external postconditions—not model self-report—determine success; do not alter
+  model or reasoning settings.
+- Acceptance: manifests are schema-checked; attempts identify their evidence
+  tier; reports calculate first/final success, intervention, false completion,
+  recovery, citation support, repeated tools, latency and cost; 12x3 coverage is
+  required before the report is complete; a real-model smoke is recorded
+  separately from the complete suite.
+- Review evidence: 12 schema-checked manifests cover six categories with an
+  `8/4` development/holdout split and exactly three repetitions. Seven focused
+  tests prove incomplete-report suppression, tier isolation, repetition order,
+  duplicate/unknown rejection and missing provider-cost handling. A real
+  DeepSeek read-only smoke completed the Harness but failed its external length
+  postcondition (`703 > 180` characters), so no product success rate is
+  published. Complete `12x3` real-model execution remains a separate evidence
+  campaign, not an implementation claim. Repository closure passes `make check`
+  and `4621 passed, 897 skipped`; no model or reasoning setting changed.
+
+### AGENT-QUALITY-04 - Result-level acceptance
+
+- Status: Review
+- Owner: Codex
+- Branch: `cloud-agent-trench`
+- Depends on: `AGENT-LIVE-EVAL-01`
+- Owned paths: `packages/agent-core/src/agent_core/harness/**`,
+  `packages/agent-tools/src/agent_tools/builtin/files.py`,
+  `packages/agent-tools/src/agent_tools/builtin/search.py`,
+  `tests/agent_core/test_quality_gates.py`,
+  `tests/agent_core/test_sequential_tool_loop.py`,
+  `tests/agent_core/test_evidence_ledger.py`,
+  `tests/agent_tools/test_file_read_tool.py`,
+  `tests/agent_tools/test_workspace_search_tool.py`,
+  `tests/api/test_api_app.py`, `tests/cli/run/test_worker_execution.py`, `evals/live/**`,
+  `docs/AGENT_TASKS.md`, `task_plan.md`, `PROGRESS.md`, `WORKLOG.md`, `findings.md`
+- Goal: make terminal success depend on the requested result and its external
+  evidence, not on model self-report, a successful transport, or any unrelated
+  mutation.
+- Constraints: inferred task type is advisory and never grants mutation
+  authority; Host contracts remain authoritative; response length/required-term
+  constraints are deterministic; no uniform model/tool call ceiling; no model
+  or reasoning-setting changes.
+- Acceptance: explicit response bounds and required goal terms block false
+  completion; research retains exact-source citation checks; change/create/
+  operate outcomes require matching proof; recoverable failures remain
+  correctable; unknown writes remain reconciliation-first; repeated actions
+  without new evidence stop; the failed real-model constraint smoke is rerun.
+- Review evidence: typed contracts now enforce explicit maximum length and
+  required answer terms; informational wording cannot infer mutation authority;
+  task-type mutation outcomes are matched rather than interchangeable. Local
+  file reads/searches expose explicit repository-relative evidence refs while
+  directory roots do not count as citations. Measurable answer defects revise
+  while their deterministic score improves and stop on regression, without a
+  uniform model/tool budget. Focused acceptance/tool/API/CLI coverage passes
+  `58/58`. A real DeepSeek read-only run (`3cf72f5e-0970-4c71-abd9-43ae30fb31e3`)
+  committed a `150`-character answer with exact file evidence after three
+  improving revisions, `12` model responses and `16` successful tools. `make
+  check` passes file-size, Ruff, Mypy over `979` sources and eval `30/30`; the
+  complete repository passes `4633 passed, 897 skipped`. No model/reasoning
+  setting, commit, push or deployment changed.
+
+### MEMORY-CONTEXT-02 - Memory, compaction and cache closure
+
+- Status: Review
+- Owner: Codex
+- Branch: `cloud-agent-trench`
+- Depends on: `AGENT-QUALITY-04`
+- Owned paths: `packages/agent-core/src/agent_core/domain/context_capsule.py`,
+  `packages/agent-core/src/agent_core/domain/session_handoff.py`,
+  `packages/agent-core/src/agent_core/application/memory_ranking.py`,
+  `packages/agent-context/**`, `packages/agent-observability/**`,
+  `apps/api/src/zebra_agent_api/session_context_*.py`,
+  `apps/api/src/zebra_agent_api/session_handoff.py`,
+  `apps/worker/src/zebra_agent_worker/context_lifecycle.py`,
+  `apps/worker/src/zebra_agent_worker/task_recovery.py`,
+  `tests/agent_core/test_memory_ranking.py`, `tests/agent_context/**`,
+  `tests/agent_core/test_session_handoff.py`,
+  `tests/agent_observability/**`, `tests/api/test_session_context_control.py`,
+  `tests/worker/test_worker_context_lifecycle.py`, `docs/AGENT_TASKS.md`,
+  `task_plan.md`, `PROGRESS.md`, `WORKLOG.md`, `findings.md`
+- Goal: preserve task truth through long-session compaction, make governed
+  Memory recall robust to ordinary paraphrases without weakening authority or
+  isolation, and expose cache behavior by execution boundary rather than one
+  misleading aggregate percentage.
+- Constraints: PostgreSQL remains the authoritative cloud Memory and Event
+  store; Redis is optional acceleration only; user-confirmed Memory lifecycle
+  remains authoritative; no private reasoning is persisted; no prompt, model or
+  reasoning-effort change; no universal cache-hit target.
+- Acceptance: durable Capsules and recovery materialization retain completed,
+  pending, rejected and permission facts; deterministic tests cover synonym
+  recall, preference reversal, temporary context, project isolation, deletion
+  suppression and irrelevant-memory bounds; cache reports distinguish cold,
+  warm, recovery, compaction and child-wakeup calls; focused and full gates pass.
+- Review evidence: additive Capsule and Handoff v1.1 fields retain completed,
+  pending, rejected and permission facts through durable event compaction,
+  materialization, Worker recovery and cross-session handoff. Validation fails
+  closed if a required permission boundary disappears. Shared recall features
+  now support bounded common paraphrases and remove noisy one-character CJK
+  matches; existing governed lifecycle tests still cover correction, temporary
+  context rejection, deletion and scope isolation. Cache traces classify cold,
+  warm, recovery, compaction and child-wakeup calls and report raw hit/miss
+  tokens, rate and latency separately. Focused closure passes `156/156`; `make
+  check` passes file-size, Ruff, strict Mypy over `980` sources and eval `30/30`;
+  the full suite passes `4640`, with `897` environment-dependent skips. Real
+  PostgreSQL tests were unavailable locally and are not claimed. No model,
+  reasoning, Redis authority, commit, push, publication or deployment changed.

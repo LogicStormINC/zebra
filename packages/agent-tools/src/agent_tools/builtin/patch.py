@@ -1,3 +1,4 @@
+import re
 from pathlib import Path, PurePosixPath
 from tempfile import NamedTemporaryFile
 
@@ -28,8 +29,21 @@ class PatchApplyTool:
         return patch_apply_contract
 
     def handle(self, tool_call: ToolCall) -> ToolResult:
-        patch_text = self._read_patch_argument(tool_call)
+        patch_text = self._normalize_patch_headers(self._read_patch_argument(tool_call))
         self._validate_patch_paths(patch_text)
+        hunk_error = self._hunk_count_error(patch_text)
+        if hunk_error is not None:
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.FAILED,
+                output="",
+                metadata={
+                    "exit_code": None,
+                    "stderr": hunk_error,
+                    "timed_out": False,
+                    "failure_reason": "invalid_hunk_counts",
+                },
+            )
 
         self._workspace.ensure()
         with NamedTemporaryFile(
@@ -81,6 +95,40 @@ class PatchApplyTool:
                     ) from exc
 
     @staticmethod
+    def _hunk_count_error(patch_text: str) -> str | None:
+        expected: tuple[int, int] | None = None
+        observed_old = observed_new = 0
+
+        def mismatch() -> bool:
+            return expected is not None and expected != (observed_old, observed_new)
+
+        for line in patch_text.splitlines():
+            if line.startswith("@@"):
+                if mismatch():
+                    return "patch.apply hunk line counts do not match the header"
+                match = re.match(r"^@@ -\d+(?:,(\d+))? \+\d+(?:,(\d+))? @@", line)
+                if match is None:
+                    return "patch.apply hunk header is malformed"
+                old_count, new_count = (
+                    int(value) if value is not None else 1 for value in match.groups()
+                )
+                expected = (old_count, new_count)
+                observed_old = observed_new = 0
+                continue
+            if expected is None or line.startswith("\\ No newline at end of file"):
+                continue
+            if line.startswith(" "):
+                observed_old += 1
+                observed_new += 1
+            elif line.startswith("-"):
+                observed_old += 1
+            elif line.startswith("+"):
+                observed_new += 1
+        if mismatch():
+            return "patch.apply hunk line counts do not match the header"
+        return None
+
+    @staticmethod
     def _normalize_patch_path(raw_path: str) -> str:
         path_token = raw_path.split("\t", maxsplit=1)[0].strip()
         if path_token.startswith("a/") or path_token.startswith("b/"):
@@ -89,6 +137,19 @@ class PatchApplyTool:
         if normalized.is_absolute():
             raise ToolArgumentError("patch.apply does not allow absolute paths")
         return normalized.as_posix()
+
+    @classmethod
+    def _normalize_patch_headers(cls, patch_text: str) -> str:
+        lines = []
+        for line in patch_text.splitlines():
+            if line.startswith("--- ") or line.startswith("+++ "):
+                prefix, raw_path = line[:4], line[4:]
+                path_token, separator, suffix = raw_path.partition("\t")
+                if path_token.strip() != "/dev/null":
+                    path_token = cls._normalize_patch_path(path_token)
+                line = prefix + path_token + (separator + suffix if separator else "")
+            lines.append(line)
+        return "\n".join(lines) + "\n"
 
     @staticmethod
     def _read_patch_argument(tool_call: ToolCall) -> str:

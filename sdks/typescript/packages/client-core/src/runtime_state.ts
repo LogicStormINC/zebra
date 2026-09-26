@@ -1,4 +1,4 @@
-import type { ReceiptSubmission } from "../../contracts/src/index.ts";
+import type { ReceiptSubmission } from "@zebra-agent/contracts";
 
 export interface ClientRuntimeState {
   executedEffects: Set<string>;

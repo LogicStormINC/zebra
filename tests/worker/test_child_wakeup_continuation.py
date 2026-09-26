@@ -7,6 +7,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.parent_continuation import ChildTerminalStatus
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
+from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_storage.postgres.subagent_delegation import canonical_child_terminal_summary
 from zebra_agent_worker.child_wakeup import child_terminal_status
 from zebra_agent_worker.child_wakeup_continuation import (
@@ -14,7 +15,10 @@ from zebra_agent_worker.child_wakeup_continuation import (
     ChildWakeupContinuation,
     recover_child_wakeup_continuation,
 )
-from zebra_agent_worker.continuation_dispatch import child_wakeup_evidence_conversation
+from zebra_agent_worker.continuation_dispatch import (
+    child_wakeup_evidence_conversation,
+    child_wakeup_tool_results,
+)
 
 
 def test_child_wakeup_recovery_preserves_parent_budget_counters() -> None:
@@ -222,3 +226,96 @@ def test_child_wakeup_replays_terminal_children_as_fresh_user_evidence() -> None
     assert "Verified evidence." in messages[-1].content
     assert messages[-1].metadata["durable_child_evidence"] is True
     assert messages[-1].tool_call_id is None
+
+
+def test_child_wakeup_preserves_provider_safe_delegation_for_terminal_results() -> None:
+    parent = new_session_id()
+    child = str(uuid4())
+    delegated_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="agent.research",
+        arguments={"objective": "Research"},
+        created_at=datetime.now(UTC),
+        provider_call_id="call-delegated",
+    )
+    now = delegated_call.created_at
+    conversation = [
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.USER,
+            content="Research this.",
+            created_at=now,
+        ).model_dump(mode="json"),
+        SessionMessage(
+            message_id=new_message_id(),
+            role=MessageRole.ASSISTANT,
+            content="I will delegate the bounded research.",
+            created_at=now,
+            tool_calls=(delegated_call,),
+        ).model_dump(mode="json"),
+    ]
+    events = [
+        SessionEvent.create(
+            session_id=parent,
+            sequence=0,
+            event_type=EventType.SUBAGENT_DELEGATED,
+            actor=EventActor.HARNESS,
+            payload={
+                "attempt_number": 1,
+                "child_task_id": child,
+                "tool_name": delegated_call.name,
+                "tool_call_id": str(delegated_call.tool_call_id),
+                "provider_call_id": delegated_call.provider_call_id,
+                "arguments": delegated_call.arguments,
+                "assistant_message": "Delegating research.",
+                "conversation": conversation,
+                "model_calls_used": 1,
+                "tool_calls_executed": 0,
+            },
+            created_at=now,
+        ),
+        SessionEvent.create(
+            session_id=parent,
+            sequence=1,
+            event_type=EventType.SESSION_COMMAND_ACCEPTED,
+            actor=EventActor.HARNESS,
+            payload={
+                "command_id": str(uuid4()),
+                "session_id": str(parent),
+                "kind": "resume",
+                "expected_revision": 0,
+                "idempotency_key": f"child-wakeup:{parent}",
+                "payload": {
+                    "child_results": [
+                        {
+                            "child_task_id": child,
+                            "status": "completed",
+                            "summary": "Verified evidence.",
+                        }
+                    ]
+                },
+                "fingerprint": "c" * 64,
+            },
+            created_at=now,
+        ),
+    ]
+
+    recovered = recover_child_wakeup_continuation(events)
+
+    assert recovered is not None
+    messages = list(recovered.conversation)
+    for call, result in zip(
+        recovered.tool_calls, child_wakeup_tool_results(recovered), strict=True
+    ):
+        messages.append(
+            SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.TOOL,
+                content=result.output,
+                created_at=now,
+                tool_call_id=call.provider_call_id or str(call.tool_call_id),
+            )
+        )
+    validate_tool_call_pairing(messages)
+    assert any(message.tool_calls for message in messages)
+    assert recovered.metadata is None

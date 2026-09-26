@@ -1,0 +1,282 @@
+[
+  {
+    "case_id": "code-python-shared-root",
+    "category": "code",
+    "split": "development",
+    "title": "Fix a shared Python root cause",
+    "prompt": "Trace every caller of the failing shared function, implement the smallest root-cause fix, preserve unrelated changes, and add a focused regression test.",
+    "fixture": {
+      "fixture_id": "code.python-shared-root.v1",
+      "inputs": {
+        "scenario": "dirty Python repository, failing test, and owned paths",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.python-shared-root.v1",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "code-typescript-contract",
+    "category": "code",
+    "split": "development",
+    "title": "Repair a TypeScript compatibility contract",
+    "prompt": "Repair the supplied TypeScript client contract without changing legacy public shapes and verify type and package entry behavior.",
+    "fixture": {
+      "fixture_id": "code.typescript-contract.v1",
+      "inputs": {
+        "scenario": "TypeScript package, consumer fixture, and public API snapshot",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.typescript-contract.v1",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "code-state-machine",
+    "category": "code",
+    "split": "development",
+    "title": "Repair an illegal state transition",
+    "prompt": "Fix the state-machine path that permits an illegal terminal transition and add regression coverage for sibling callers.",
+    "fixture": {
+      "fixture_id": "code.state-machine.v1",
+      "inputs": {
+        "scenario": "state transition table, failing sequence, and event fixtures",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.state-machine.v1",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "code-idempotency",
+    "category": "code",
+    "split": "development",
+    "title": "Fix duplicate side effects",
+    "prompt": "Eliminate duplicate external writes after retry while preserving successful replay and leave deterministic tests.",
+    "fixture": {
+      "fixture_id": "code.idempotency.v1",
+      "inputs": {
+        "scenario": "idempotency key flow, transport failure fixture, and write ledger",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.idempotency.v1",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "code-concurrency-race",
+    "category": "code",
+    "split": "development",
+    "title": "Fix a concurrency race",
+    "prompt": "Repair the supplied race without global serialization and prove both participants settle correctly.",
+    "fixture": {
+      "fixture_id": "code.concurrency-race.v1",
+      "inputs": {
+        "scenario": "concurrent schedule, shared resource, and deterministic barrier",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.concurrency-race.v1",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "code-migration-compat",
+    "category": "code",
+    "split": "development",
+    "title": "Make a migration backward compatible",
+    "prompt": "Adjust the migration and runtime access path so old and new workers can overlap safely.",
+    "fixture": {
+      "fixture_id": "code.migration-compat.v1",
+      "inputs": {
+        "scenario": "schema before/after, rolling deployment order, and query set",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.migration-compat.v1",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "code-api-auth",
+    "category": "code",
+    "split": "holdout",
+    "title": "Repair an authorization boundary",
+    "prompt": "Fix the endpoint that accepts mismatched authority while preserving valid tenant-scoped requests.",
+    "fixture": {
+      "fixture_id": "code.api-auth.v1",
+      "inputs": {
+        "scenario": "HTTP route, authority fixtures, and negative request matrix",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.api-auth.v1",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "code-event-ordering",
+    "category": "code",
+    "split": "holdout",
+    "title": "Reject invalid event ordering",
+    "prompt": "Repair event validation so missing, duplicate, and out-of-order events fail closed.",
+    "fixture": {
+      "fixture_id": "code.event-ordering.v1",
+      "inputs": {
+        "scenario": "event stream fixture and canonical ordering contract",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.event-ordering.v1",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "code-cache-key",
+    "category": "code",
+    "split": "holdout",
+    "title": "Correct a cache identity bug",
+    "prompt": "Fix the cache key collision without lowering reuse for equivalent requests and add regression cases.",
+    "fixture": {
+      "fixture_id": "code.cache-key.v1",
+      "inputs": {
+        "scenario": "two colliding requests, stable-prefix rules, and expected cache boundaries",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.cache-key.v1",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  },
+  {
+    "case_id": "code-package-boundary",
+    "category": "code",
+    "split": "holdout",
+    "title": "Remove a package-layer violation",
+    "prompt": "Move the dependency in the smallest way that restores package direction without duplicating domain logic.",
+    "fixture": {
+      "fixture_id": "code.package-boundary.v2",
+      "inputs": {
+        "scenario": "import graph, owned package paths, and public contract",
+        "environment": "isolated live-eval workspace allocated for this attempt",
+        "constraints": "use only the supplied authority, evidence, and owned resources"
+      }
+    },
+    "postcondition": {
+      "verifier": "code.package-boundary.v2",
+      "evidence": [
+        "runner.capture",
+        "code.validation"
+      ],
+      "assertions": [
+        "The resulting diff addresses the shared root cause within owned paths",
+        "Focused regression checks pass against the changed behavior",
+        "Unrelated working-tree changes and public compatibility are preserved"
+      ]
+    },
+    "repetitions": 3
+  }
+]

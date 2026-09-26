@@ -1,13 +1,25 @@
 {
   "name": "@zebra-agent/typescript-sdk",
   "private": true,
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=22.18.0 <25"
+  },
   "scripts": {
-    "check": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test packages/client-core/tests/client-core.test.ts packages/react/tests/provider.test.ts"
+    "build": "pnpm --filter @zebra-agent/contracts build && pnpm --filter @zebra-agent/ui-contracts build && pnpm --filter @zebra-agent/client-core build && pnpm --filter @zebra-agent/react build",
+    "check": "pnpm build && tsc --noEmit",
+    "test": "pnpm build && tsx --test packages/client-core/tests/client-core.test.ts packages/react/tests/provider.test.ts packages/react/tests/composer.test.tsx packages/react/tests/surfaces.test.tsx packages/react/tests/lifecycle.test.tsx packages/react/tests/package-entry.test.mjs",
+    "test:browser": "node scripts/react-browser-matrix.mjs",
+    "test:consumers": "node scripts/react-consumer-matrix.mjs",
+    "test:package": "node scripts/package-audit.mjs",
+    "verify": "pnpm check && pnpm test && pnpm test:package && pnpm test:consumers && pnpm test:browser"
   },
   "devDependencies": {
-    "@types/node": "^24.13.3",
+    "@playwright/test": "1.61.1",
+    "@types/node": "22.20.4",
+    "bunchee": "6.4.0",
+    "tsdx": "2.0.0",
+    "tsx": "4.23.15",
     "typescript": "^5.9.3"
   }
 }

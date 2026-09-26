@@ -11,7 +11,7 @@ import {
   type ClientEffectWire,
   type ReceiptSubmission,
   type RuntimeClientConfig,
-} from "../../contracts/src/index.ts";
+} from "@zebra-agent/contracts";
 import { ClientRuntimeStateStore } from "./runtime_state.ts";
 import { consumeClientEffectStream } from "./sse_stream.ts";
 import { normalizeReceipt, submitClientReceipt } from "./receipt_transport.ts";
@@ -260,10 +260,11 @@ export class ZebraClientRuntime {
         stopped: () => this.stopped,
         signal: this.abortController.signal,
         initialEventId: this.lastEventId,
-        onCursor: (eventId) => {
-          this.lastEventId = eventId;
-          this.persistState();
+        onCursor: (eventId) => { this.lastEventId = eventId; this.persistState(); },
+        onCursorRecovered: async () => {
+          for (const effect of await this.listPendingEffects()) await this.runEffect(effect);
         },
+        onTerminalRejection: () => this.stop(),
         onEffect: (effect) => this.runEffect(effect),
       });
     }
@@ -488,9 +489,7 @@ export class ZebraClientRuntime {
       // The bounded lease remains the crash-safe fallback.
     }
   }
-
 }
-
 function browserSessionStorage(): Storage | undefined {
   try {
     return typeof sessionStorage === "undefined" ? undefined : sessionStorage;

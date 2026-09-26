@@ -9,6 +9,7 @@ from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCallStatus, ToolResult
+from agent_core.harness.evidence_ledger import record_tool_evidence
 from agent_core.harness.models import HarnessAttemptResult, HarnessContext
 
 from zebra_agent_worker.approved_continuation import ApprovedContinuation
@@ -45,22 +46,32 @@ def run_continuation(
             assistant_message=client_effect.assistant_message,
         )
     if child_wakeup is not None:
+        tool_results = child_wakeup_tool_results(child_wakeup)
+        replay_tool_calls = _has_frozen_delegation_calls(child_wakeup)
+        metadata = {
+            **(child_wakeup.metadata or {}),
+            "child_wakeup_continuation": True,
+        }
+        if not replay_tool_calls:
+            for result in tool_results:
+                metadata = record_tool_evidence(metadata, result)
         return orchestrator.continue_completed_tools(
             context,
             completion=child_wakeup_completion(child_wakeup),
-            # A durable wakeup is a fresh provider request: private DeepSeek
-            # reasoning is intentionally not persisted, so replay child joins
-            # as user-visible evidence instead of orphan provider tool results.
-            tool_calls=(),
-            tool_results=(),
-            conversation=child_wakeup_evidence_conversation(child_wakeup),
+            # Provider-safe frozen calls receive their real terminal results.
+            # If private reasoning was intentionally not persisted, the call
+            # was rebased and the same result is carried as fresh user evidence.
+            tool_calls=child_wakeup.tool_calls if replay_tool_calls else (),
+            tool_results=tool_results if replay_tool_calls else (),
+            conversation=(
+                child_wakeup.conversation
+                if replay_tool_calls
+                else child_wakeup_evidence_conversation(child_wakeup)
+            ),
             model_calls_used=child_wakeup.model_calls_used,
             tool_calls_executed=child_wakeup.tool_calls_executed,
             assistant_message=child_wakeup.assistant_message,
-            metadata={
-                **(child_wakeup.metadata or {}),
-                "child_wakeup_continuation": True,
-            },
+            metadata=metadata,
         )
     if continuation is not None and continuation.completed_output is not None:
         return orchestrator.continue_completed_tool(
@@ -137,6 +148,23 @@ def child_wakeup_evidence_conversation(
             )
         )
     return tuple(messages)
+
+
+def _has_frozen_delegation_calls(child_wakeup: ChildWakeupContinuation) -> bool:
+    expected = {
+        call.provider_call_id or str(call.tool_call_id)
+        for call in child_wakeup.tool_calls
+    }
+    present = {
+        call.provider_call_id or str(call.tool_call_id)
+        for message in child_wakeup.conversation
+        if message.role is MessageRole.ASSISTANT
+        for call in message.tool_calls
+    }
+    overlap = present & expected
+    if overlap and overlap != expected:
+        raise ValueError("child wakeup conversation contains a partial delegation batch")
+    return expected <= present
 
 
 def child_wakeup_completion(child_wakeup: ChildWakeupContinuation) -> ModelCompletion:

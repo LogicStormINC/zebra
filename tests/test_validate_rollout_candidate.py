@@ -38,6 +38,12 @@ def _fixtures() -> tuple[dict[str, object], dict[str, object]]:
             "api_image": image,
             "frontend_image": image,
         },
+        "component_packages": {
+            "@zebra-agent/contracts": "0.1.0",
+            "@zebra-agent/ui-contracts": "0.1.0",
+            "@zebra-agent/client-core": "0.1.0",
+            "@zebra-agent/react": "0.1.0",
+        },
         "database": {
             "zebra_schema": 58,
             "trench_revision": "3c4d5e6f7081",
@@ -82,6 +88,7 @@ def test_valid_candidate_is_attested() -> None:
 
     assert result["status"] == "PASS"
     assert result["zebra_commit"] == "a" * 40
+    assert result["component_packages"]["@zebra-agent/react"] == "0.1.0"
     assert len(result["candidate_sha256"]) == 64
 
 
@@ -123,7 +130,7 @@ def test_cli_binds_exact_release_manifest_file(tmp_path: Path) -> None:
         (lambda candidate, release: release.update(status="FAIL"), "must have PASS"),
         (
             lambda candidate, release: candidate.update(release_manifest_sha256="0" * 64),
-            "digest mismatch",
+            "placeholder digest",
         ),
         (
             lambda candidate, release: candidate["zebra"].update(image="registry/app:latest"),
@@ -138,6 +145,34 @@ def test_cli_binds_exact_release_manifest_file(tmp_path: Path) -> None:
                 database_forward_compatible=False
             ),
             "must not require a database down migration",
+        ),
+        (
+            lambda candidate, release: candidate["component_packages"].update(
+                {"@zebra-agent/react": "latest"}
+            ),
+            "exact semantic versions",
+        ),
+        (
+            lambda candidate, release: candidate["component_packages"].update(
+                {"@zebra-agent/react": "0.2.0"}
+            ),
+            "do not match source packages",
+        ),
+        (
+            lambda candidate, release: candidate["zebra"].update(commit="0" * 40),
+            "placeholder SHA",
+        ),
+        (
+            lambda candidate, release: candidate["trench"].update(
+                api_image="registry/app@sha256:" + "0" * 64
+            ),
+            "placeholder digest",
+        ),
+        (
+            lambda candidate, release: candidate["config_digests"].update(
+                zebra="0" * 64
+            ),
+            "placeholder digest",
         ),
     ],
 )

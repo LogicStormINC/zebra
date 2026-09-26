@@ -1,6 +1,16 @@
 from dataclasses import dataclass
+from enum import StrEnum
 
 from agent_core.domain.events import EventType, SessionEvent
+
+
+class CacheBoundary(StrEnum):
+    COLD_START = "cold_start"
+    WARM_LOOP = "warm_loop"
+    RECOVERY = "recovery"
+    COMPACTION = "compaction"
+    CHILD_WAKEUP = "child_wakeup"
+    UNKNOWN = "unknown"
 
 
 @dataclass(frozen=True)
@@ -67,6 +77,7 @@ class ProviderModelCallTrace:
     response_repair_count: int = 0
     normalized_error: str | None = None
     system_fingerprint: str | None = None
+    cache_boundary: CacheBoundary = CacheBoundary.UNKNOWN
 
     def __post_init__(self) -> None:
         if self.sequence < 0 or self.retry_count < 0 or self.response_repair_count < 0:
@@ -157,11 +168,7 @@ def build_trace_record(events: tuple[SessionEvent, ...]) -> TraceRecord:
         tool_result_count=_tool_result_count(events),
         cost=_cost_summary(events),
         audit=tuple(_audit_record(event) for event in events),
-        model_calls=tuple(
-            _model_call_trace(event)
-            for event in events
-            if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
-        ),
+        model_calls=_model_call_traces(events),
     )
 
 
@@ -193,7 +200,59 @@ def _cost_summary(events: tuple[SessionEvent, ...]) -> CostSummary:
     )
 
 
-def _model_call_trace(event: SessionEvent) -> ProviderModelCallTrace:
+def _model_call_traces(
+    events: tuple[SessionEvent, ...],
+) -> tuple[ProviderModelCallTrace, ...]:
+    calls: list[ProviderModelCallTrace] = []
+    boundary_start = 0
+    for index, event in enumerate(events):
+        if event.event_type is not EventType.MODEL_RESPONSE_RECEIVED:
+            continue
+        boundary_events = events[boundary_start:index]
+        calls.append(
+            _model_call_trace(
+                event,
+                boundary=_cache_boundary(boundary_events, first_call=not calls),
+            )
+        )
+        boundary_start = index + 1
+    return tuple(calls)
+
+
+def _cache_boundary(
+    events: tuple[SessionEvent, ...], *, first_call: bool
+) -> CacheBoundary:
+    if any(event.event_type is EventType.CONTEXT_COMPACTED for event in events):
+        return CacheBoundary.COMPACTION
+    if any(_is_child_wakeup(event) for event in events):
+        return CacheBoundary.CHILD_WAKEUP
+    if any(
+        event.event_type
+        in {EventType.SESSION_RESUMED, EventType.CONTEXT_CONTINUATION_SELECTED}
+        for event in events
+    ):
+        return CacheBoundary.RECOVERY
+    return CacheBoundary.COLD_START if first_call else CacheBoundary.WARM_LOOP
+
+
+def _is_child_wakeup(event: SessionEvent) -> bool:
+    if event.event_type in {
+        EventType.SUBAGENT_COMPLETED,
+        EventType.SUBAGENT_FAILED,
+        EventType.SUBAGENT_CANCELLED,
+    }:
+        return True
+    reason = event.payload.get("reason")
+    return (
+        event.event_type is EventType.SESSION_RESUMED
+        and isinstance(reason, str)
+        and "child" in reason.casefold()
+    )
+
+
+def _model_call_trace(
+    event: SessionEvent, *, boundary: CacheBoundary
+) -> ProviderModelCallTrace:
     return ProviderModelCallTrace(
         sequence=event.sequence,
         profile_id=_str_payload(event, "profile_id"),
@@ -226,6 +285,7 @@ def _model_call_trace(event: SessionEvent) -> ProviderModelCallTrace:
         response_repair_count=_int_payload(event, "response_repair_count"),
         normalized_error=_str_payload(event, "normalized_error"),
         system_fingerprint=_str_payload(event, "system_fingerprint"),
+        cache_boundary=boundary,
     )
 
 

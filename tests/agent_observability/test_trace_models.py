@@ -5,6 +5,7 @@ from agent_core.contracts.events import EventPayloadValidationError, validate_ev
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, new_session_id
 from agent_observability import (
+    CacheBoundary,
     CostSummary,
     ProviderModelCallTrace,
     build_trace_record,
@@ -118,6 +119,59 @@ def test_build_trace_record_summarizes_events_tools_and_cost() -> None:
     assert trace.model_calls[0].request_hash == "request-hash"
     assert trace.model_calls[0].message_prefix_hashes == ("first", "second")
     assert [record.sequence for record in trace.audit] == [0, 1, 2]
+
+
+def test_trace_classifies_cache_metrics_by_execution_boundary() -> None:
+    session_id = new_session_id()
+    markers = (
+        _event(
+            EventType.SESSION_CREATED,
+            sequence=0,
+            payload={"title": "cache"},
+            session_id=session_id,
+        ),
+        _event(EventType.MODEL_RESPONSE_RECEIVED, sequence=1, payload={}, session_id=session_id),
+        _event(EventType.MODEL_RESPONSE_RECEIVED, sequence=2, payload={}, session_id=session_id),
+        _event(
+            EventType.CONTEXT_COMPACTED,
+            sequence=3,
+            payload={
+                "attempt_number": 1,
+                "before_tokens": 100,
+                "after_tokens": 50,
+                "removed_message_count": 2,
+                "retained_message_count": 2,
+                "within_budget": True,
+                "provenance": "test",
+            },
+            session_id=session_id,
+        ),
+        _event(EventType.MODEL_RESPONSE_RECEIVED, sequence=4, payload={}, session_id=session_id),
+        _event(
+            EventType.SESSION_RESUMED,
+            sequence=5,
+            payload={"reason": "worker recovery"},
+            session_id=session_id,
+        ),
+        _event(EventType.MODEL_RESPONSE_RECEIVED, sequence=6, payload={}, session_id=session_id),
+        _event(
+            EventType.SESSION_RESUMED,
+            sequence=7,
+            payload={"reason": "waiting_children_completed"},
+            session_id=session_id,
+        ),
+        _event(EventType.MODEL_RESPONSE_RECEIVED, sequence=8, payload={}, session_id=session_id),
+    )
+
+    trace = build_trace_record(markers)
+
+    assert tuple(call.cache_boundary for call in trace.model_calls) == (
+        CacheBoundary.COLD_START,
+        CacheBoundary.WARM_LOOP,
+        CacheBoundary.COMPACTION,
+        CacheBoundary.RECOVERY,
+        CacheBoundary.CHILD_WAKEUP,
+    )
 
 
 def test_first_message_divergence_uses_only_privacy_safe_hashes() -> None:

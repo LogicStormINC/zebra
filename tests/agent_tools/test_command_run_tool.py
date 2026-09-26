@@ -134,3 +134,27 @@ def test_command_run_tool_rejects_cwd_outside_workspace(tmp_path: Path) -> None:
                 }
             )
         )
+
+
+def test_command_run_tool_accepts_absolute_cwd_inside_workspace(tmp_path: Path) -> None:
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    workspace = LocalWorkspace(tmp_path)
+    runtime = LocalRuntime()
+    registry = ToolRegistry()
+    runner = CommandRunTool(runtime, workspace)
+    registry.register(runner.contract, runner.handle)
+    executor = ToolExecutor(registry)
+
+    result = executor.execute(
+        _tool_call(
+            {
+                "command": (sys.executable, "-c", "from pathlib import Path; print(Path.cwd())"),
+                "cwd": str(nested),
+            }
+        )
+    )
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.output.strip() == str(nested)
+    assert result.metadata["cwd"] == "nested"

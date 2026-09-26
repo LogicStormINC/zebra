@@ -1,4 +1,4 @@
-import type { ClientEffectWire } from "../../contracts/src/index.ts";
+import type { ClientEffectWire } from "@zebra-agent/contracts";
 
 export async function consumeClientEffectStream(options: {
   fetchImpl: typeof fetch;
@@ -7,7 +7,9 @@ export async function consumeClientEffectStream(options: {
   stopped: () => boolean;
   signal: AbortSignal;
   initialEventId?: string | null;
-  onCursor?: (eventId: string) => void;
+  onCursor?: (eventId: string | null) => void;
+  onCursorRecovered?: () => Promise<void>;
+  onTerminalRejection?: () => void;
   onEffect: (effect: ClientEffectWire) => Promise<void>;
 }): Promise<void> {
   let lastEventId: string | null = options.initialEventId ?? null;
@@ -20,12 +22,43 @@ export async function consumeClientEffectStream(options: {
         headers,
         signal: options.signal,
       });
+      if ([401, 403, 410].includes(response.status)) {
+        options.onTerminalRejection?.();
+        return;
+      }
+      if (response.status === 400 && lastEventId !== null) {
+        const replacement = await invalidCursorReplacement(response);
+        if (replacement !== null) {
+          lastEventId = replacement;
+          options.onCursor?.(replacement);
+          await options.onCursorRecovered?.();
+          continue;
+        }
+        options.onTerminalRejection?.();
+        return;
+      }
       if (!response.ok || response.body === null) throw new Error("SSE unavailable");
       lastEventId = await readSse(response.body, options, lastEventId);
     } catch {
       if (options.signal.aborted || options.stopped()) return;
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
+  }
+}
+
+async function invalidCursorReplacement(response: Response): Promise<string | null> {
+  try {
+    const payload = (await response.json()) as {
+      code?: unknown;
+      recovery_cursor?: unknown;
+    };
+    return payload.code === "invalid_cursor" &&
+      typeof payload.recovery_cursor === "string" &&
+      payload.recovery_cursor.length > 0
+      ? payload.recovery_cursor
+      : null;
+  } catch {
+    return null;
   }
 }
 

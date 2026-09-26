@@ -74,6 +74,15 @@ def task_acceptance_message(
     requirements: list[str] = []
     if contract.min_characters > 1:
         requirements.append("provide a substantive answer rather than a short acknowledgement")
+    if contract.max_characters is not None:
+        requirements.append(
+            f"keep the complete final answer within {contract.max_characters} characters"
+        )
+    if contract.required_answer_terms:
+        requirements.append(
+            "directly address these required goal terms: "
+            + ", ".join(contract.required_answer_terms)
+        )
     if contract.require_structure:
         requirements.append("organize the answer into clear sections or bullets")
     if contract.require_evidence_reference:
@@ -106,6 +115,7 @@ def task_acceptance_message(
             "Task acceptance requirements:\n- "
             + "\n- ".join(requirements)
             + "\nSeparate sourced facts from inference and uncertainty. Never invent a citation."
+            " Task classification describes expected results; it never grants mutation authority."
             " Use the minimum sufficient tool sequence, do not repeat a failed call with identical "
             "arguments, and stop collecting once every required outcome is supported."
         ),
@@ -132,7 +142,7 @@ def final_answer_instruction(*, created_at: datetime) -> SessionMessage:
 def tool_result_content(tool_result: ToolResult) -> str:
     observation = _model_tool_observation(tool_result)
     if (
-        tool_result.output
+        tool_result.output.strip()
         and len(observation) == 2
         and tool_result.status is ToolCallStatus.EXECUTED
     ):
@@ -145,6 +155,8 @@ _MODEL_OBSERVATION_KEYS = (
     "artifact_uri",
     "coverage",
     "detail",
+    "exit_code",
+    "failure_reason",
     "has_more",
     "next_cursor",
     "page",
@@ -154,12 +166,14 @@ _MODEL_OBSERVATION_KEYS = (
     "source_count",
     "total_count",
     "truncated",
+    "stderr",
+    "timed_out",
 )
 
 
 def _model_tool_observation(tool_result: ToolResult) -> dict[str, object]:
     observation: dict[str, object] = {"status": tool_result.status.value}
-    if tool_result.output:
+    if tool_result.output.strip():
         observation["output"] = tool_result.output
     for key in _MODEL_OBSERVATION_KEYS:
         value = tool_result.metadata.get(key)

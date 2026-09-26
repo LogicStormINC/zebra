@@ -51,3 +51,35 @@ def test_plain_success_output_remains_provider_compatible() -> None:
     )
 
     assert tool_result_content(result) == "plain output"
+
+
+def test_blank_only_success_output_remains_a_valid_observation() -> None:
+    result = ToolResult(
+        tool_call_id=new_tool_call_id(),
+        status=ToolCallStatus.EXECUTED,
+        output="\n",
+    )
+
+    assert json.loads(tool_result_content(result)) == {"status": "executed"}
+
+
+def test_failed_command_exposes_bounded_diagnostic_metadata_to_the_model() -> None:
+    result = ToolResult(
+        tool_call_id=new_tool_call_id(),
+        status=ToolCallStatus.FAILED,
+        output="",
+        metadata={
+            "exit_code": 1,
+            "failure_reason": "command_failed",
+            "stderr": "AssertionError: expected one write",
+            "timed_out": False,
+        },
+    )
+
+    assert json.loads(tool_result_content(result)) == {
+        "exit_code": 1,
+        "failure_reason": "command_failed",
+        "status": "failed",
+        "stderr": "AssertionError: expected one write",
+        "timed_out": False,
+    }

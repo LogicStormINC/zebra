@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 
-from agent_observability.models import ProviderModelCallTrace, TraceRecord
+from agent_observability.models import CacheBoundary, ProviderModelCallTrace, TraceRecord
 
 
 @dataclass(frozen=True)
@@ -22,6 +22,17 @@ class ModelProfileSummary:
     finish_reasons: tuple[tuple[str, int], ...]
 
 
+@dataclass(frozen=True)
+class CacheBoundarySummary:
+    boundary: CacheBoundary
+    call_count: int
+    input_tokens: int
+    prompt_cache_hit_tokens: int
+    prompt_cache_miss_tokens: int
+    cache_token_hit_rate: float | None
+    average_latency_ms: float | None
+
+
 def summarize_model_profiles(
     traces: tuple[TraceRecord, ...],
 ) -> tuple[ModelProfileSummary, ...]:
@@ -30,6 +41,38 @@ def summarize_model_profiles(
         for call in trace.model_calls:
             grouped[call.profile_id or "unprofiled"].append(call)
     return tuple(_summarize(profile_id, grouped[profile_id]) for profile_id in sorted(grouped))
+
+
+def summarize_cache_boundaries(
+    traces: tuple[TraceRecord, ...],
+) -> tuple[CacheBoundarySummary, ...]:
+    grouped: dict[CacheBoundary, list[ProviderModelCallTrace]] = defaultdict(list)
+    for trace in traces:
+        for call in trace.model_calls:
+            grouped[call.cache_boundary].append(call)
+    return tuple(
+        _summarize_boundary(boundary, grouped[boundary])
+        for boundary in CacheBoundary
+        if boundary in grouped
+    )
+
+
+def _summarize_boundary(
+    boundary: CacheBoundary,
+    calls: list[ProviderModelCallTrace],
+) -> CacheBoundarySummary:
+    hits = sum(call.prompt_cache_hit_tokens or 0 for call in calls)
+    misses = sum(call.prompt_cache_miss_tokens or 0 for call in calls)
+    latencies = [call.latency_ms for call in calls if call.latency_ms is not None]
+    return CacheBoundarySummary(
+        boundary=boundary,
+        call_count=len(calls),
+        input_tokens=sum(call.input_tokens or 0 for call in calls),
+        prompt_cache_hit_tokens=hits,
+        prompt_cache_miss_tokens=misses,
+        cache_token_hit_rate=hits / (hits + misses) if hits + misses else None,
+        average_latency_ms=(sum(latencies) / len(latencies) if latencies else None),
+    )
 
 
 def _summarize(

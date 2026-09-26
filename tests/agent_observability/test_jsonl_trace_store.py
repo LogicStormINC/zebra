@@ -4,6 +4,7 @@ import pytest
 from agent_core.domain.events import EventType
 from agent_observability import (
     AuditRecord,
+    CacheBoundary,
     CostSummary,
     JsonlTraceStore,
     ProviderModelCallTrace,
@@ -54,6 +55,7 @@ def _trace(session_id: str = "session-1") -> TraceRecord:
                 prompt_cache_hit_tokens=8,
                 prompt_cache_miss_tokens=2,
                 cost_usd=0.02,
+                cache_boundary=CacheBoundary.WARM_LOOP,
             ),
         ),
     )
@@ -75,6 +77,7 @@ def test_jsonl_trace_store_appends_and_lists_traces(tmp_path: Path) -> None:
     assert traces[0].model_calls[0].message_prefix_hashes == ("first", "second")
     assert traces[0].model_calls[0].reasoning_tokens == 2
     assert traces[0].model_calls[0].cost_usd == 0.02
+    assert traces[0].model_calls[0].cache_boundary is CacheBoundary.WARM_LOOP
 
 
 def test_jsonl_trace_store_lists_empty_when_file_is_missing(tmp_path: Path) -> None:

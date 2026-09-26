@@ -442,3 +442,86 @@ test("SSE reconnect sends Last-Event-ID and executes only client effects", async
     "cursor-1",
   );
 });
+
+test("invalid persisted SSE cursor adopts the authoritative tail before replay", async () => {
+  const clientSessionId = "11111111-1111-4111-8111-111111111111";
+  const key = `zebra:client-runtime:${clientSessionId}`;
+  const stored = new Map<string, string>([
+    [key, JSON.stringify({ lastEventId: "expired-cursor" })],
+  ]);
+  const storage = {
+    getItem: (item: string) => stored.get(item) ?? null,
+    setItem: (item: string, value: string) => stored.set(item, value),
+  } as unknown as Storage;
+  const streamHeaders: Array<Record<string, string>> = [];
+  let pendingReads = 0;
+  let resolveReplay!: () => void;
+  const replayStarted = new Promise<void>((resolve) => {
+    resolveReplay = resolve;
+  });
+  const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (url.endsWith("/effects")) {
+      pendingReads += 1;
+      return new Response('{"effects":[]}');
+    }
+    if (url.endsWith("/stream")) {
+      streamHeaders.push(init?.headers as Record<string, string>);
+      if (streamHeaders.length === 1) {
+        return new Response(
+          '{"code":"invalid_cursor","recovery_cursor":"authoritative-tail"}',
+          {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+      resolveReplay();
+      return new Response(": keepalive\n\n");
+    }
+    return new Response("{}");
+  }) as unknown as typeof fetch;
+  const runtime = ZebraClientRuntime.fromConfig({
+    baseUrl: "https://bff.example",
+    clientSessionId,
+    sessionCredential: `${clientSessionId}:session-secret-value`,
+    streamUrl: "https://bff.example/agui/threads/task/runs/run/stream",
+    storage,
+    fetchImpl,
+  });
+
+  await runtime.start();
+  await replayStarted;
+  runtime.stop();
+
+  assert.equal(streamHeaders[0]?.["Last-Event-ID"], "expired-cursor");
+  assert.equal(streamHeaders[1]?.["Last-Event-ID"], "authoritative-tail");
+  assert.equal(pendingReads, 2);
+  assert.match(stored.get(key) ?? "", /"lastEventId":"authoritative-tail"/);
+});
+
+test("expired stream authority stops reconnecting", async () => {
+  let streamCalls = 0;
+  const fetchImpl = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith("/effects")) return new Response('{"effects":[]}');
+    if (url.endsWith("/stream")) {
+      streamCalls += 1;
+      return new Response('{"code":"authority_expired"}', { status: 401 });
+    }
+    return new Response("{}");
+  }) as unknown as typeof fetch;
+  const runtime = ZebraClientRuntime.fromConfig({
+    baseUrl: "https://bff.example",
+    clientSessionId: "11111111-1111-4111-8111-111111111111",
+    sessionCredential: "11111111-1111-4111-8111-111111111111:session-secret-value",
+    streamUrl: "https://bff.example/agui/threads/task/runs/run/stream",
+    fetchImpl,
+  });
+
+  await runtime.start();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(runtime.isStopped, true);
+  assert.equal(streamCalls, 1);
+});

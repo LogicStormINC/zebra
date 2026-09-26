@@ -15,10 +15,11 @@ Create these outside Git under `.artifacts/cloud-evidence/`:
 4. Raw evidence for every G2/G3 scenario, with no credentials or business data.
 5. `rollout-rehearsal.json` and its machine-validated verdict.
 
-The candidate pins full Zebra and Trench commits, content-addressed images,
-database revisions, protocol read/write sets, config digests, capabilities and
-the exact release-manifest file SHA-256. The resulting candidate SHA-256 is a
-canonical JSON digest, so formatting changes do not create a different release.
+The candidate pins full Zebra and Trench commits, all four public React SDK
+package versions, content-addressed images, database revisions, protocol
+read/write sets, config digests, capabilities and the exact release-manifest
+file SHA-256. The resulting candidate SHA-256 is a canonical JSON digest, so
+formatting changes do not create a different release.
 
 Never put passwords, bearer tokens, HostGrants, database URLs, cookies or raw
 business payloads in these artifacts.
@@ -75,6 +76,13 @@ the candidate digest, revision, terminal status and business receipt state.
 | `timeout-recovery` | Unknown write reconciles by receipt; it is not blindly replayed. |
 | `authority-revocation` | Revoked or expired authority fails closed. |
 | `page-disconnect` | Refresh/disconnect cannot revive an in-flight action. |
+| `event-stream-integrity` | Duplicate, out-of-order or missing durable Task events fail closed. |
+| `cursor-expiry-recovery` | An invalid saved cursor is cleared once and replay resumes from durable authority. |
+| `login-expiry` | Expired login or Client Session authority terminates reconnect without spinning. |
+| `multi-session-concurrency` | Concurrent sessions retain independent ordered event streams and effects. |
+| `pre-tool-call-failure` | Failure before a Tool call creates no external effect and remains recoverable. |
+| `post-write-reconciliation` | Failure after an external write reconciles by receipt and never blindly replays. |
+| `pre-completion-recovery` | Failure before terminal event commit resumes without false completion. |
 | `scheduler-wakeup` | Repeated firing produces one side effect. |
 | `memory-delete` | Deleted memory is not recalled and cleanup is recorded. |
 | `gvisor-execution-cleanup` | Target engine uses `runsc`; process/workspace cleanup is proved. |

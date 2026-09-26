@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Zebra React bindings: provider + standard hooks (ADR-CLIENT-01).
  *
@@ -23,8 +25,29 @@ import {
   ClientRuntimeError,
   ZebraClientRuntime,
   type ClientActionHandler,
-} from "../../client-core/src/index.ts";
-import type { RuntimeClientConfig } from "../../contracts/src/index.ts";
+} from "@zebra-agent/client-core";
+import type { RuntimeClientConfig } from "@zebra-agent/contracts";
+
+export { ZebraHitlProvider, useZebraApproval, useZebraClarification } from "./hitl/index.ts";
+export type { ApprovalRequestWire, ClarificationRequestWire } from "./hitl/index.ts";
+export { AgentComposer } from "./components/agent-composer.tsx";
+export type {
+  AgentComposerLabels,
+  AgentComposerProps,
+  AgentComposerSuggestion,
+} from "./components/agent-composer.tsx";
+export { AgentMessageList } from "./components/agent-message-list.tsx";
+export type { AgentMessageListLabels, AgentMessageListProps } from "./components/agent-message-list.tsx";
+export { AgentActivityGroup } from "./components/agent-activity-group.tsx";
+export type { AgentActivityGroupLabels, AgentActivityGroupProps } from "./components/agent-activity-group.tsx";
+export { AgentApproval, AgentClarification } from "./components/agent-interrupts.tsx";
+export type { AgentApprovalProps, AgentClarificationProps } from "./components/agent-interrupts.tsx";
+export { AgentArtifacts, AgentMemorySettings } from "./components/agent-resources.tsx";
+export type { AgentArtifactsProps, AgentMemorySettingsProps } from "./components/agent-resources.tsx";
+export { AgentChat } from "./components/agent-chat.tsx";
+export type { AgentChatProps } from "./components/agent-chat.tsx";
+export { AgentRunStatus } from "./components/agent-run-status.tsx";
+export type { AgentRunStatusLabelOverrides, AgentRunStatusLabels, AgentRunStatusProps } from "./components/agent-run-status.tsx";
 
 export interface ZebraAgentProviderProps {
   config: RuntimeClientConfig;
