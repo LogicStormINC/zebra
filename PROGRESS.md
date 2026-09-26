@@ -1,5 +1,20 @@
 # Zebra Agent Project Status
 
+2026-09-27 CLIENT-CONFORMANCE-01 (real-process Client recovery closure): the
+multi-frontend suite now freezes old Run capabilities across Profile growth and
+proves child Tasks do not inherit a parent browser-control channel. A repeatable
+fault drill uses real PostgreSQL plus separate API, Chromium and Worker
+processes: the browser executes one Client Effect, five Receipt attempts fail,
+the API restarts, Redis is cleared, and the same browser profile reconnects.
+The UI handler executes zero additional times, the retained Receipt commits and
+replays idempotently, and a fresh Worker reconstructs the continuation solely
+from PostgreSQL. The drill found and fixed an unbound `window.fetch` receiver
+that raised `Illegal invocation` only in Chromium. Focused Client tests pass
+16/16; SDK verify passes 30/30, package/React 18/19/Vite/Next/Chromium/WebKit;
+`make check` passes over 982 typed sources and eval 30/30; the complete
+repository passes 4671 with 897 environment-gated skips. The task is in Review;
+Trench Pilot and production release remain separate gates.
+
 2026-09-27 CLIENT-CONTEXT-01 (durable Client State recovery closure): the AG-UI
 admitted, redacted Client State snapshot is confirmed on the durable accepted
 command and is recovered by the Worker composition after reopening the Event
