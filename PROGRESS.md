@@ -1,5 +1,14 @@
 # Zebra Agent Project Status
 
+2026-09-27 CLIENT-CONTEXT-01 (durable Client State recovery closure): the AG-UI
+admitted, redacted Client State snapshot is confirmed on the durable accepted
+command and is recovered by the Worker composition after reopening the Event
+Store. Recovery now treats an explicit empty snapshot as the latest authority;
+it no longer skips that snapshot and revives stale state from an older page.
+The focused recovery/context/projection matrix passes 11/11. Repository
+`make check` passes the file-size gate, Ruff, Mypy over 982 sources and eval
+30/30. The task is in Review; no commit, push or deployment is claimed.
+
 2026-09-27 REACT-CONVERSATION-02 (ZCode-style conversation organization): the
 public React surface now groups every durable request as one Turn containing the
 user prompt, public work segments, final answer and artifacts. Live work remains
