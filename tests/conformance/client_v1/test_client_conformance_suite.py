@@ -12,6 +12,8 @@ from uuid import uuid4
 
 import pytest
 from agent_core.domain.client_capabilities import (
+    ClientActionContract,
+    ClientActionRisk,
     FrontendCapabilityProfileVersion,
     MountedCapabilitySnapshot,
 )
@@ -142,3 +144,139 @@ def test_business_write_actions_never_publish() -> None:
     for frontend in ("fake-frontend-a", "fake-frontend-b"):
         profile = _load_profile(frontend)
         assert all(action.risk.value != "business_write_forbidden" for action in profile.actions)
+
+
+def test_profile_growth_does_not_expand_an_existing_run() -> None:
+    first = _load_profile("fake-frontend-a")
+    registry = FakeCapabilityRegistry()
+    registry.publish_profile(first)
+    sessions = FakeSessionRegistry()
+    leases = FakeControlLeaseStore()
+    grant = ClientSessionGrant(
+        grant_id=uuid4(),
+        host_app_id="fixture-host",
+        namespace_id="tenant-1",
+        frontend_app_id=first.frontend_app_id,
+        origin="https://fixture.example",
+        user_ref="user-1",
+        profile_digest=first.profile_digest,
+        scopes=("client.action",),
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    session = ClientSession(
+        grant=grant,
+        credential_hash="d" * 64,
+        created_at=datetime.now(UTC),
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    sessions.create_session(session)
+    original_action = next(iter(first.action_names()))
+    sessions.save_mounted_snapshot(
+        MountedCapabilitySnapshot(
+            client_session_id=session.session_id,
+            frontend_app_id=first.frontend_app_id,
+            profile_revision=first.revision,
+            profile_digest=first.profile_digest,
+            mounted_actions=(original_action,),
+            ui_revision=1,
+            mounted_at=datetime.now(UTC),
+        )
+    )
+    from agent_control_plane.client_admission import ClientBindingService
+
+    admission = ClientBindingService(sessions, leases).bind_run(
+        task_id=new_task_id(),
+        run_id="run-1",
+        session_id=session.session_id,
+        task_capability_scope=(original_action, "fixture.ui.new-action"),
+    )
+    frozen_digest = admission.binding.binding_digest
+    registry.publish_profile(
+        first.model_copy(
+            update={
+                "revision": 2,
+                "actions": first.actions
+                + (
+                    ClientActionContract(
+                        name="fixture.ui.new-action",
+                        risk=ClientActionRisk.PRESENTATION,
+                    ),
+                ),
+            }
+        )
+    )
+    persisted = sessions.get_run_binding(
+        admission.binding.task_id,
+        admission.binding.run_id,
+        admission.binding.client_session_id,
+    )
+    assert persisted is not None
+    assert persisted.binding_digest == frozen_digest
+    assert persisted.allowed_actions == (original_action,)
+
+
+def test_child_task_without_its_own_binding_never_inherits_client_control() -> None:
+    profile = _load_profile("fake-frontend-a")
+    action_name = next(iter(profile.action_names()))
+    registry = FakeCapabilityRegistry()
+    registry.publish_profile(profile)
+    sessions = FakeSessionRegistry()
+    leases = FakeControlLeaseStore()
+
+    class Dispatch:
+        def schedule(self, request, *, continuation, session_id):  # pragma: no cover
+            raise AssertionError("conformance composition must not execute an effect")
+
+    platform = AgentPlatformControlPlane(
+        deployment_namespace="conformance",
+        frontend_capabilities=registry,
+        client_sessions=sessions,
+        client_control_leases=leases,
+        client_effects=Dispatch(),
+    )
+    session = ClientSession(
+        grant=ClientSessionGrant(
+            grant_id=uuid4(),
+            host_app_id="fixture-host",
+            namespace_id="tenant-1",
+            frontend_app_id=profile.frontend_app_id,
+            origin="https://fixture.example",
+            user_ref="user-1",
+            profile_digest=profile.profile_digest,
+            scopes=("client.action",),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+        ),
+        credential_hash="d" * 64,
+        created_at=datetime.now(UTC),
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    sessions.create_session(session)
+    sessions.save_mounted_snapshot(
+        MountedCapabilitySnapshot(
+            client_session_id=session.session_id,
+            frontend_app_id=profile.frontend_app_id,
+            profile_revision=profile.revision,
+            profile_digest=profile.profile_digest,
+            mounted_actions=(action_name,),
+            ui_revision=1,
+            mounted_at=datetime.now(UTC),
+        )
+    )
+    from agent_control_plane.client_admission import ClientBindingService
+    from zebra_agent_worker.client_effect_runtime import build_client_gateway_for_task
+
+    root_task_id = new_task_id()
+    ClientBindingService(sessions, leases).bind_run(
+        task_id=root_task_id,
+        run_id="run-1",
+        session_id=session.session_id,
+        task_capability_scope=(action_name,),
+    )
+    assert build_client_gateway_for_task(platform=platform, task_id=root_task_id) is not None
+    assert (
+        build_client_gateway_for_task(
+            platform=platform,
+            task_id=new_task_id(),
+        )
+        is None
+    )

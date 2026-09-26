@@ -7407,15 +7407,27 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-CONFORMANCE-01 - Multi-Frontend Conformance Suite
 
-- Status: `In Progress` — the shared fake-frontend suite exists; real-process
-  API/Worker restart, Redis-loss and browser reconnect drills remain.
-- Remaining evidence: real-process restart, Redis-loss and browser reconnect
-  drills; focused fake-frontend coverage is not that proof.
+- Status: `Review`
+- Owner: `Codex`
+- Branch: `codex/client-conformance-recovery-01`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
+- Review evidence: one executable drill seeds a real PostgreSQL Client Effect,
+  crosses separate API and Worker processes, injects five failed browser Receipt
+  submissions, restarts the API, clears Redis, and reconnects the same Chromium
+  profile. The handler executes once before disconnect and zero times after
+  reconnect; the pending Receipt is accepted once, replays idempotently, and a
+  fresh Worker process recovers the continuation from PostgreSQL. The drill also
+  exposed and fixed Chromium's unbound `window.fetch` receiver failure. The
+  two-frontend/profile-growth/subagent matrix passes 5/5, focused Client tests
+  pass 16/16, SDK verify passes 30/30 plus React 18/19 Vite/Next and
+  Chromium/WebKit, `make check` passes, and the full repository passes 4671
+  with 897 environment-gated skips.
 - Suggested role: `QA / ARCH`
 - Depends on: `CLIENT-REACT-HITL-01`, `CLIENT-EFFECT-RESUME-01`,
   `CLIENT-MGMT-API-01`
 - Owned paths: `tests/conformance/client_v1/**`,
   `sdks/typescript/conformance/**`,
+  `sdks/typescript/packages/client-core/src/index.ts`,
   `tests/architecture/test_client_zero_host_branches.py`,
   `tests/integration/test_client_full_chain.py`
 - 需要两个业务词汇完全不同的测试前端（`fake-frontend-a` /

@@ -137,7 +137,8 @@ export class ZebraClientRuntime {
       );
     }
     return new ZebraClientRuntime({
-      fetchImpl: config.fetchImpl ?? fetch,
+      // Preserve window.fetch's receiver; an object-field call fails in Chromium.
+      fetchImpl: config.fetchImpl ?? ((input, init) => globalThis.fetch(input, init)),
       baseUrl: config.baseUrl,
       clientSessionId: config.clientSessionId,
       sessionCredential: config.sessionCredential,
