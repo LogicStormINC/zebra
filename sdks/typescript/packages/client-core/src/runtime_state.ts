@@ -1,4 +1,34 @@
 import type { ReceiptSubmission } from "@zebra-agent/contracts";
+import { ClientRuntimeError } from "./errors.ts";
+
+/** Tracks the mounted UI revision; effects pin the expected revision. */
+export class UiRevisionClock {
+  private revision: number;
+
+  constructor(initialRevision = 0) {
+    if (!Number.isSafeInteger(initialRevision) || initialRevision < 0) {
+      throw new ClientRuntimeError("invalid_ui_revision", "UI revision must be a non-negative integer");
+    }
+    this.revision = initialRevision;
+  }
+
+  get current(): number {
+    return this.revision;
+  }
+
+  bump(): number {
+    this.revision += 1;
+    return this.revision;
+  }
+}
+
+export function browserSessionStorage(): Storage | undefined {
+  try {
+    return typeof sessionStorage === "undefined" ? undefined : sessionStorage;
+  } catch {
+    return undefined;
+  }
+}
 
 export interface ClientRuntimeState {
   executedEffects: Set<string>;

@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   ClientRuntimeError,
   MountedActionRegistry,
+  UiRevisionClock,
   ZebraClientRuntime,
   canonicalDigest,
   scrubResult,
@@ -36,6 +37,44 @@ test("registry resolves handlers by name only", async () => {
     (error: unknown) =>
       error instanceof ClientRuntimeError && error.code === "action_not_mounted",
   );
+});
+
+test("runtime resumes the Host BFF mounted UI revision", () => {
+  const runtime = ZebraClientRuntime.fromConfig({
+    baseUrl: "https://bff.example",
+    clientSessionId: "11111111-1111-4111-8111-111111111111",
+    sessionCredential: "11111111-1111-4111-8111-111111111111:session-secret-value",
+    initialUiRevision: 42,
+    fetchImpl: fakeFetch([]),
+  });
+  assert.equal(runtime.uiRevision.current, 42);
+  assert.throws(
+    () => new UiRevisionClock(-1),
+    /non-negative integer/,
+  );
+});
+
+test("disconnect preserves the controller lease while stop releases it", async () => {
+  const calls: string[] = [];
+  const config = {
+    baseUrl: "https://bff.example",
+    clientSessionId: "11111111-1111-4111-8111-111111111111",
+    sessionCredential: "11111111-1111-4111-8111-111111111111:session-secret-value",
+    controllerFenceToken: "controller-fence-value",
+    taskId: "22222222-2222-4222-8222-222222222222",
+    runId: "run-1",
+    runBindingId: "33333333-3333-4333-8333-333333333333",
+    clientBindingDigest: BINDING_DIGEST,
+    actionContractDigests: { "app.ui.item.open": ACTION_DIGEST },
+    fetchImpl: fakeFetch(calls),
+  };
+  ZebraClientRuntime.fromConfig(config).disconnect();
+  await Promise.resolve();
+  assert.equal(calls.some((url) => url.endsWith("/release")), false);
+
+  ZebraClientRuntime.fromConfig(config).stop();
+  await Promise.resolve();
+  assert.equal(calls.filter((url) => url.endsWith("/release")).length, 1);
 });
 
 test("same content yields the same canonical digest", async () => {

@@ -6,6 +6,7 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+from agent_control_plane.frontend_profiles import FrontendProfileService
 from agent_core.domain.client_capabilities import (
     ClientActionContract,
     ClientActionRisk,
@@ -300,6 +301,40 @@ def test_publish_and_retrieve_profile_as_operator() -> None:
     assert fetched.body["revision"] == 1
 
 
+def test_retrieve_profile_binding_as_operator() -> None:
+    bundle = _bundle()
+    api = _api(bundle, operator_token="op-token")
+    profile = _profile()
+    assert bundle.frontend_capabilities is not None
+    bundle.frontend_capabilities.publish_profile(profile)
+    binding = FrontendProfileService(bundle.frontend_capabilities).bind(
+        host_app_id="fixture-host",
+        namespace_id="tenant-1",
+        frontend_app_id=profile.frontend_app_id,
+        revision=profile.revision,
+        profile_digest=profile.profile_digest,
+    )
+    fetched = _handle(
+        api,
+        "GET",
+        "/platform/v1/frontend-profile-bindings/fixture-host/tenant-1/fixture-web",
+        headers={"Authorization": "Bearer op-token"},
+    )
+    assert fetched.status_code == 200
+    assert fetched.body["binding_id"] == str(binding.binding_id)
+    assert fetched.body["binding_revision"] == 1
+    assert fetched.body["binding_digest"] == binding.binding_digest
+
+    missing = _handle(
+        api,
+        "GET",
+        "/platform/v1/frontend-profile-bindings/fixture-host/tenant-2/fixture-web",
+        headers={"Authorization": "Bearer op-token"},
+    )
+    assert missing.status_code == 404
+    assert missing.body["code"] == "frontend_profile_binding_not_found"
+
+
 def test_disabled_integration_fails_closed() -> None:
     api = _api(None, operator_token="op-token")
     response = _handle(
@@ -543,8 +578,6 @@ def test_malformed_client_boundaries_return_400_instead_of_raising() -> None:
 
 
 def test_host_authenticated_open_requires_the_namespace_profile_binding() -> None:
-    from agent_control_plane.frontend_profiles import FrontendProfileService
-
     bundle = _bundle()
     profile = _profile()
     registry = bundle.frontend_capabilities

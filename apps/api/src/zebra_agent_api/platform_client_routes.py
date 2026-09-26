@@ -31,6 +31,7 @@ from zebra_agent_api.platform_operator_auth import (
 from zebra_agent_api.responses import ApiResponse
 
 _PREFIX = "/platform/v1/frontend-profiles"
+_BINDING_PREFIX = "/platform/v1/frontend-profile-bindings"
 
 
 def _problem(status: int, code: str, detail: str, path: str) -> ApiResponse:
@@ -56,7 +57,7 @@ def handle_platform_client_route(
     request: RouteRequest,
 ) -> ApiResponse | None:
     if not request.path.startswith(_PREFIX) and not request.path.startswith(
-        "/platform/v1/frontend-profile-bindings"
+        _BINDING_PREFIX
     ):
         return None
     method = request.method.upper()
@@ -104,7 +105,7 @@ def _dispatch(
         )
         publication = service.publish_version(app_id, profile)
         return ApiResponse(201, publication.__dict__)
-    if method == "POST" and path == "/platform/v1/frontend-profile-bindings":
+    if method == "POST" and path == _BINDING_PREFIX:
         binding = service.bind(
             host_app_id=_required(body, "host_app_id"),
             namespace_id=_required(body, "namespace_id"),
@@ -118,6 +119,27 @@ def _dispatch(
             {
                 "binding_id": str(binding.binding_id),
                 "binding_revision": binding.binding_revision,
+            },
+        )
+    if method == "GET" and path.startswith(f"{_BINDING_PREFIX}/"):
+        host_app_id, namespace_id, frontend_app_id = _binding_target(path)
+        current_binding = service.get_binding_for_host(
+            host_app_id=host_app_id,
+            namespace_id=namespace_id,
+            frontend_app_id=frontend_app_id,
+        )
+        if current_binding is None:
+            return _problem(
+                404,
+                "frontend_profile_binding_not_found",
+                "binding not found",
+                path,
+            )
+        return ApiResponse(
+            200,
+            {
+                **current_binding.model_dump(mode="json"),
+                "binding_digest": current_binding.binding_digest,
             },
         )
     if method == "POST" and path.endswith("/deprecate"):
@@ -159,6 +181,13 @@ def _get_target(path: str) -> tuple[str, int | None]:
     if not app_id:
         raise ValueError("frontend app id is required")
     return app_id, revision
+
+
+def _binding_target(path: str) -> tuple[str, str, str]:
+    parts = path.removeprefix(f"{_BINDING_PREFIX}/").split("/")
+    if len(parts) != 3 or any(not part.strip() for part in parts):
+        raise ValueError("host app id, namespace id and frontend app id are required")
+    return parts[0], parts[1], parts[2]
 
 
 def _required(body: dict[str, Any], key: str) -> Any:

@@ -12,7 +12,7 @@ import {
   type ReceiptSubmission,
   type RuntimeClientConfig,
 } from "@zebra-agent/contracts";
-import { ClientRuntimeStateStore } from "./runtime_state.ts";
+import { browserSessionStorage, ClientRuntimeStateStore, UiRevisionClock } from "./runtime_state.ts";
 import { consumeClientEffectStream } from "./sse_stream.ts";
 import { normalizeReceipt, submitClientReceipt } from "./receipt_transport.ts";
 import { MountedActionRegistry } from "./action_registry.ts";
@@ -21,26 +21,13 @@ export { scrubResult } from "./result_security.ts";
 export { canonicalDigest } from "./canonical_digest.ts";
 export { MountedActionRegistry, type ClientActionHandler } from "./action_registry.ts";
 export { ClientRuntimeError } from "./errors.ts";
+export { UiRevisionClock } from "./runtime_state.ts";
 export interface MountOptions {
   frontendAppId: string;
   profileRevision: number;
   profileDigest: string;
   mountedActions: readonly string[];
   mountedReadables?: readonly string[];
-}
-
-/** Tracks the mounted UI revision; effects pin the expected revision. */
-export class UiRevisionClock {
-  private revision = 0;
-
-  get current(): number {
-    return this.revision;
-  }
-
-  bump(): number {
-    this.revision += 1;
-    return this.revision;
-  }
 }
 
 export interface ClientRuntimeDependencies {
@@ -54,6 +41,7 @@ export interface ClientRuntimeDependencies {
   runBindingId?: string | undefined;
   clientBindingDigest?: string | undefined;
   actionContractDigests?: Readonly<Record<string, string>> | undefined;
+  initialUiRevision?: number | undefined;
   streamUrl?: string | undefined;
   storage?: Storage | undefined;
 }
@@ -61,7 +49,7 @@ export interface ClientRuntimeDependencies {
 export class ZebraClientRuntime {
   readonly registry = new MountedActionRegistry();
   readonly readableNames = new Set<string>();
-  readonly uiRevision = new UiRevisionClock();
+  readonly uiRevision: UiRevisionClock;
   private executedEffects: Set<string>;
   private inflightEffects: Set<string>;
   private recoveredInflightEffects: Set<string>;
@@ -71,6 +59,7 @@ export class ZebraClientRuntime {
   private mountedProfileDigest: string | null = null;
   private abortController: AbortController | null = null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
   private queuedMount: MountOptions | null = null;
   private mountFlush: Promise<void> | null = null;
   private deps: ClientRuntimeDependencies;
@@ -78,6 +67,7 @@ export class ZebraClientRuntime {
 
   constructor(deps: ClientRuntimeDependencies) {
     this.deps = deps;
+    this.uiRevision = new UiRevisionClock(deps.initialUiRevision);
     this.stateStore = new ClientRuntimeStateStore(deps.storage, deps.clientSessionId);
     const restored = this.stateStore.load();
     this.executedEffects = restored.executedEffects;
@@ -148,6 +138,7 @@ export class ZebraClientRuntime {
       runBindingId: config.runBindingId,
       clientBindingDigest: config.clientBindingDigest,
       actionContractDigests: config.actionContractDigests,
+      initialUiRevision: config.initialUiRevision,
       streamUrl: config.streamUrl,
       storage: config.storage ?? browserSessionStorage(),
     });
@@ -252,6 +243,11 @@ export class ZebraClientRuntime {
       await this.runEffect(effect);
     }
     this.heartbeatTimer ??= setInterval(() => void this.heartbeat(), 30_000);
+    if (this.deps.streamUrl === undefined && this.pollTimer === null) {
+      // ponytail: durable HTTP polling is the universal fallback; Hosts may
+      // upgrade to the same-origin AG-UI stream without changing handlers.
+      this.pollTimer = setInterval(() => void this.poll(), 1_000);
+    }
     if (this.deps.streamUrl !== undefined && this.abortController === null) {
       this.abortController = new AbortController();
       void consumeClientEffectStream({
@@ -269,6 +265,12 @@ export class ZebraClientRuntime {
         onEffect: (effect) => this.runEffect(effect),
       });
     }
+  }
+
+  /** Fetch and execute the current durable pending set once. */
+  async poll(): Promise<void> {
+    if (this.stopped) return;
+    for (const effect of await this.listPendingEffects()) await this.runEffect(effect);
   }
 
   async heartbeat(): Promise<boolean> {
@@ -408,19 +410,24 @@ export class ZebraClientRuntime {
     return outcome === "accepted";
   }
 
-  stop(): void {
-    if (!this.stopped) void this.releaseController();
+  stop(): void { this.shutdown(true); }
+
+  /** Stop local work while preserving the controller lease for reconnect. */
+  disconnect(): void { this.shutdown(false); }
+
+  private shutdown(releaseController: boolean): void {
+    if (!this.stopped && releaseController) void this.releaseController();
     this.stopped = true;
     this.queuedMount = null;
     this.abortController?.abort();
     this.abortController = null;
     if (this.heartbeatTimer !== null) clearInterval(this.heartbeatTimer);
     this.heartbeatTimer = null;
+    if (this.pollTimer !== null) clearInterval(this.pollTimer);
+    this.pollTimer = null;
   }
 
-  get isStopped(): boolean {
-    return this.stopped;
-  }
+  get isStopped(): boolean { return this.stopped; }
 
   private rememberExecuted(effectId: string): void {
     this.inflightEffects.delete(effectId);
@@ -489,12 +496,5 @@ export class ZebraClientRuntime {
     } catch {
       // The bounded lease remains the crash-safe fallback.
     }
-  }
-}
-function browserSessionStorage(): Storage | undefined {
-  try {
-    return typeof sessionStorage === "undefined" ? undefined : sessionStorage;
-  } catch {
-    return undefined;
   }
 }

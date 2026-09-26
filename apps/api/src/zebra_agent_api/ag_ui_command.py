@@ -7,7 +7,7 @@ from uuid import UUID
 
 from ag_ui.core import RunAgentInput
 from agent_core.contracts import SessionCommandKind
-from agent_core.domain.identifiers import TaskId
+from agent_core.domain.identifiers import ClientSessionId, TaskId
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, ValidationError, field_validator
@@ -232,7 +232,16 @@ def _admit_client_mounts(
         return None
     profile = None
     if isinstance(frontend_app_id, str) and frontend_app_id.strip():
-        profile = capabilities.get_latest_profile(frontend_app_id.strip())
+        sessions = getattr(platform, "client_sessions", None)
+        if _valid_client_session_id(client_session_id):
+            if sessions is not None:
+                session = sessions.get_session(ClientSessionId(UUID(str(client_session_id))))
+                if session is not None and session.grant.frontend_app_id == frontend_app_id.strip():
+                    profile = capabilities.get_profile_by_digest(
+                        frontend_app_id.strip(), session.grant.profile_digest
+                    )
+        else:
+            profile = capabilities.get_latest_profile(frontend_app_id.strip())
     try:
         from agent_control_plane.agui_client_admission import (
             AgUiClientAdmissionError,

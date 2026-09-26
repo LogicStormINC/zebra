@@ -7460,7 +7460,14 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-TRENCH-PILOT-01 - Trench Client Pilot
 
-- Status: `Blocked` — Zebra-side profile fixture delivered (tests/fixtures/trench_frontend_profile.json); the pilot itself needs the Trench repository and BFF
+- Status: `Review`
+- Owner: `Codex`
+- Branches: Zebra `codex/client-trench-pilot-01`; Trench
+  `codex/client-trench-pilot-01`
+- Owned Zebra paths: `tests/fixtures/trench_frontend_profile.json`, generic
+  Client SDK contracts/runtime/tests, AG-UI client admission profile pinning
+  and focused API tests, Client profile management binding read path and
+  focused API tests, Client profile release script, task/progress documentation
 - Suggested role: `PM / QA / TRENCH`
 - Depends on: `CLIENT-CONFORMANCE-01`
 - V1 Readables: `trench.ui.route`, `trench.ui.selected-event`,
@@ -7489,6 +7496,27 @@ PostgreSQL → Parent Session 进入 `waiting_client_effect` → 浏览器 Hook
 输出最终分析。浏览器离线时：Effect 保持 Pending、Task 保持
 `waiting_client_effect`、Worker Lease 已释放；恢复后 Replay 且 Hook
 Handler 只执行一次。
+
+#### 2026-09-27 implementation evidence
+
+- Trench captures the six published readables before Turn admission, opens and
+  durably stores the Client Surface before command submission, and sends the
+  pinned state, UI revision, binding digest and eight action digests to Zebra.
+- The browser uses packaged `@zebra-agent/client-core` as its only Effect
+  executor. Production Chromium executes `trench.ui.timeline.open`, retains the
+  same Receipt across five injected HTTP 503 responses and a page transition,
+  then replays the Receipt without executing the UI handler again or releasing
+  the controller lease. The SDK separates transient disconnect from final
+  release, and the profile publisher is idempotent against the current Binding.
+- The generic real-process drill passes with PostgreSQL authority, API restart,
+  Redis flush, Chromium profile reconnect and Worker continuation recovery.
+  Trench passes 141 API/model tests, 74 pipeline tests, 115 ToC tests, both
+  production builds, migration gates and browser acceptance. Zebra passes 4675
+  tests with 897 environment-gated skips, SDK 32/32 plus package/consumer/browser
+  matrices, file-size/Ruff/Mypy and deterministic eval 30/30.
+- One live Trench + real-model Turn that composes Host read, Research Child and
+  Client Effect remains a production-candidate acceptance item; deterministic
+  component and protocol evidence must not be described as that live proof.
 
 ### CLIENT-PROD-GATE-01 - Client Production Gate
 

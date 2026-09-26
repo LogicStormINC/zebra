@@ -1,5 +1,30 @@
 # Zebra Agent Project Status
 
+2026-09-27 CLIENT-TRENCH-PILOT-01 (first real Host Client integration): Trench
+now captures six bounded Client State readables, creates and persists the
+browser Surface before Agent command admission, and exposes the complete
+eight-action profile through the authenticated BFF. The Host consumes packaged
+`@zebra-agent/client-core`; the previous custom polling/receipt loop and its
+unsafe three-failure Surface reset are removed. The SDK resumes the exact
+server-mounted UI revision, adds durable HTTP polling when no SSE effect
+stream is available, and separates transient `disconnect()` from final
+controller release so navigation cannot invalidate the reconnect fence. AG-UI
+admission resolves the profile version pinned by
+the Client Session rather than the latest release, so profile growth cannot
+break an old Run. Production Chromium proves `trench.ui.timeline.open`, five
+injected Receipt failures, page reconnect, same-Receipt replay and exactly-once
+handler execution without releasing the controller lease. Client State now
+whitelists route query keys and strips
+nested token/secret/password/cookie/authorization fields at both browser and
+API trust boundaries. The operator release script reads the current Binding,
+uses its CAS revision for upgrades and is a no-write replay for an identical
+release. Zebra passes SDK 32/32, full 4675/897, check/eval gates
+and the real PostgreSQL/API/Redis/Chromium/Worker recovery drill; Trench passes
+141 API/model, 74 pipeline, 115 ToC, migration/build and browser gates. The
+slice is in Review. A live real-model Trench Turn and production infrastructure
+gate remain separate evidence, so no deployment or 100% production claim is
+made.
+
 2026-09-27 CLIENT-CONFORMANCE-01 (real-process Client recovery closure): the
 multi-frontend suite now freezes old Run capabilities across Profile growth and
 proves child Tasks do not inherit a parent browser-control channel. A repeatable

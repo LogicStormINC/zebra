@@ -1,7 +1,7 @@
 # Zebra Cloud Agent 与 React 组件库优化实施方案 v1.0
 
-状态：本地实施完成，真实任务与生产发布验收待外部环境
-更新日期：2026-09-26
+状态：本地实施完成，Trench Client Pilot 进入 Review，生产发布验收待外部环境
+更新日期：2026-09-27
 
 ## 1. 目标与边界
 
@@ -156,11 +156,20 @@ S1 与 S3 可在 S0 后并行；S2 依赖稳定组件状态边界；S4 依赖真
 记忆/上下文/效率 10、可靠性发布 20。分别报告本地实施完成率、验收通过率、
 生产发布完成率和真实任务成功率，不将其中任一指标称为“达到 Codex 的百分比”。
 
-截至 2026-09-26，本地实施为 `100/100`：Trench 已消费正式 React 包，60 个
-固定案例及 180 次防伪评测矩阵已落地，React 18/19 消费矩阵和本地 PostgreSQL
-组合验收通过。该数字不代表产品验收：真实模型矩阵仍为 `0/180`，本机无
-`runsc`，远端主机不可达，因此 gVisor 执行层、不可变候选、canary 和 rollback
-仍无证据；生产发布完成率保持 `0%`。
+截至 2026-09-27，本地实施为 `100/100`：Trench 已消费正式 React 包，60 个
+固定案例的 180 次真实模型评测完成，最终成功率 `100%`，且 React 18/19、Vite、
+Next SSR/RSC、本地 PostgreSQL 和 Client real-process recovery 均已验收。严格证据
+仍为 `86/100`，不是 Codex 对标分数：本机无 `runsc`，远端生产候选未完成同 digest
+的 gVisor、不可变镜像、canary、backup-restore 和 rollback 演练，因此生产发布
+完成率保持 `0%`。
+
+Trench Client Pilot 的工程实现已完成：六个 Readable、八个 Action、Client State、
+Profile/Binding digest、SDK durable polling、BFF authority 和 exactly-once Receipt
+replay 均有自动化与 Chromium 证据。临时页面断开不会释放 Controller，终态仍会
+正式释放；Profile 发布脚本重复执行相同版本时零写入，不同版本使用当前 Binding
+revision 做 CAS。当前验收是 `5/6`：尚缺一条真实模型驱动的
+Trench 会话，把 Host event read、Research Child、`timeline.open`、浏览器 Receipt
+和最终回答串成同一个生产候选 Turn；在该证据产生前任务保持 Review。
 
 ## 9. 暂不实施
 

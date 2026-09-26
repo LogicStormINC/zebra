@@ -108,3 +108,48 @@ def test_server_owned_agui_state_without_a_frontend_mount_is_unchanged() -> None
 
     assert _admit_client_mounts(app, command, "/agui/commands") is None
     assert command == original
+
+
+def test_command_uses_the_client_session_pinned_profile_not_latest() -> None:
+    pinned = _profile()
+    latest = pinned.model_copy(
+        update={"revision": 4, "readables": (pinned.readables[0],)}
+    )
+
+    class Profiles:
+        def get_latest_profile(self, _app_id):
+            return latest
+
+        def get_profile_by_digest(self, _app_id, digest):
+            return pinned if digest == pinned.profile_digest else None
+
+    class Sessions:
+        def get_session(self, _session_id):
+            return SimpleNamespace(
+                grant=SimpleNamespace(
+                    frontend_app_id="trench-web", profile_digest=pinned.profile_digest
+                )
+            )
+
+    command = {
+        "input": {
+            "state": {"trench.ui.selection": {"eventId": "event-1"}},
+            "tools": [{"name": "trench.ui.timeline.open"}],
+            "forwardedProps": {
+                "frontendAppId": "trench-web",
+                "clientSessionId": "11111111-1111-4111-8111-111111111111",
+                "uiRevision": 7,
+            },
+        }
+    }
+    app = SimpleNamespace(
+        client_platform=SimpleNamespace(
+            client_sessions=Sessions(), frontend_capabilities=Profiles()
+        )
+    )
+
+    assert _admit_client_mounts(app, command, "/agui/commands") is None
+    assert command["client"]["profile_digest"] == pinned.profile_digest
+    assert command["client"]["state_snapshot"] == {
+        "trench.ui.selection": {"eventId": "event-1"}
+    }

@@ -103,6 +103,19 @@ class FrontendProfileService:
             binding, expected_binding_revision=expected_binding_revision
         )
 
+    def get_binding_for_host(
+        self,
+        *,
+        host_app_id: str,
+        namespace_id: str,
+        frontend_app_id: str,
+    ) -> FrontendCapabilityBinding | None:
+        return self._registry.get_binding_for_host(
+            host_app_id,
+            namespace_id,
+            frontend_app_id,
+        )
+
     def deprecate(self, frontend_app_id: str, revision: int) -> None:
         self._registry.set_lifecycle(frontend_app_id, revision, ProfileLifecycle.DEPRECATED)
 

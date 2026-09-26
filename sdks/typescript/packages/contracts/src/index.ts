@@ -65,6 +65,8 @@ export interface RuntimeClientConfig {
   runBindingId?: string;
   clientBindingDigest?: string;
   actionContractDigests?: Readonly<Record<string, string>>;
+  /** Revision already mounted by a Host BFF before the browser runtime starts. */
+  initialUiRevision?: number;
   /** Authenticated AG-UI stream URL for cursor replay. */
   streamUrl?: string;
   /** Defaults to per-tab sessionStorage when the browser permits it. */
