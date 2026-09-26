@@ -64,6 +64,10 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const errors = collectBrowserErrors(page);
     await page.goto(server.url);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const emptyComposerWidth = await page.locator(".zebra-agent-chat__composer").evaluate((node) => Math.round(node.getBoundingClientRect().width));
+    if (emptyComposerWidth !== 672) throw new Error(`${browserName}: centered draft composer expected 672px, received ${emptyComposerWidth}px`);
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.locator("textarea").fill("中文草稿");
     await page.locator('input[type="file"]').setInputFiles({ name: "资料.txt", mimeType: "text/plain", buffer: Buffer.from("evidence") });
     await page.locator("textarea").focus();
@@ -71,8 +75,38 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     if (await page.locator("textarea").inputValue() !== "中文草稿") throw new Error("draft was lost during lifecycle transition");
     if (!(await page.locator("textarea").evaluate((node) => node === document.activeElement))) throw new Error("composer focus was lost");
     if (!(await page.locator("details").evaluate((node) => node.open))) throw new Error("running activity did not expand");
+    const customTheme = await page.evaluate(() => ({
+      chatBackground: getComputedStyle(document.querySelector(".zebra-agent-chat")).backgroundColor,
+      composerInputToken: getComputedStyle(document.querySelector(".zebra-agent-composer")).getPropertyValue("--zebra-agent-input").trim(),
+    }));
+    if (customTheme.chatBackground !== "rgb(16, 24, 32)") throw new Error(`${browserName}: custom chat surface token was not applied`);
+    if (customTheme.composerInputToken !== "#123456") throw new Error(`${browserName}: nested composer did not inherit custom input token`);
+    await assertComposerDocked(page, browserName, "short active mobile conversation");
+    const expandUserMessage = page.getByRole("button", { name: "Expand message" });
+    await expandUserMessage.waitFor();
+    const collapsedHeight = await page.locator(".zebra-agent-user-input__content").evaluate((node) => getComputedStyle(node).maxHeight);
+    if (collapsedHeight !== "120px") throw new Error(`${browserName}: user message collapsed height expected 120px, received ${collapsedHeight}`);
+    await expandUserMessage.click();
+    await page.getByRole("button", { name: "Collapse message" }).waitFor();
+    await assertComposerDocked(page, browserName, "expanded mobile conversation");
+    const mobileGeometry = await readConversationGeometry(page);
+    assertGeometry(browserName, mobileGeometry, { turnPaddingTop: "40px", contentWidth: 390 });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.waitForTimeout(200);
+    const desktopGeometry = await readConversationGeometry(page);
+    assertGeometry(browserName, desktopGeometry, { turnPaddingTop: "56px", contentWidth: 896 });
+    await assertComposerDocked(page, browserName, "desktop conversation");
+    await page.setViewportSize({ width: 1800, height: 900 });
+    await page.waitForTimeout(200);
+    const wideGeometry = await readConversationGeometry(page);
+    assertGeometry(browserName, wideGeometry, { turnPaddingTop: "56px", contentWidth: 1152 });
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.locator("#complete").click();
     await page.waitForFunction(() => !document.querySelector("details")?.open);
+    const terminalSummaryBorder = await page.locator(".zebra-agent-activity--terminal summary").evaluate((node) => getComputedStyle(node).borderBottomWidth);
+    if (terminalSummaryBorder !== "1px") throw new Error(`${browserName}: completed history divider expected 1px, received ${terminalSummaryBorder}`);
+    const terminalSummaryIcon = await page.locator(".zebra-agent-activity--terminal .zebra-agent-activity__summary-icon").evaluate((node) => getComputedStyle(node).display);
+    if (terminalSummaryIcon !== "none") throw new Error(`${browserName}: completed history icon must be hidden, received ${terminalSummaryIcon}`);
     await page.locator("#disconnected").click();
     await page.getByRole("button", { name: "Reconnect" }).click();
     await page.locator("#paused").click();
@@ -86,7 +120,17 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     await page.locator("textarea").press("Enter");
     if (await page.locator("#submits").textContent() !== "1") throw new Error("Enter did not submit the draft");
     await page.locator("#burst").click();
+    await page.getByText(/Long output 29/).waitFor();
     const viewport = page.locator(".zebra-agent-chat__viewport");
+    await viewport.evaluate((node) => { node.scrollTop = 120; node.dispatchEvent(new Event("scroll")); });
+    const beforeSwitch = await viewport.evaluate((node) => node.scrollTop);
+    await page.locator("#thread-b").click();
+    await page.waitForFunction(() => document.querySelector("#scroll-key")?.textContent === "thread-b");
+    await page.locator("#thread-a").click();
+    await page.waitForFunction(() => document.querySelector("#scroll-key")?.textContent === "thread-a");
+    await page.waitForTimeout(100);
+    const afterSwitch = await viewport.evaluate((node) => node.scrollTop);
+    if (Math.abs(afterSwitch - beforeSwitch) > 2) throw new Error(`conversation scroll position was not restored: ${beforeSwitch} -> ${afterSwitch}`);
     await viewport.evaluate((node) => { node.scrollTop = 0; node.dispatchEvent(new Event("scroll")); });
     await page.locator("#append").click();
     await page.getByRole("button", { name: "View latest output" }).click();
@@ -111,6 +155,60 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
   } finally {
     await server.close();
   }
+}
+
+async function readConversationGeometry(page) {
+  return page.evaluate(() => {
+    const turn = document.querySelector(".zebra-agent-turn");
+    const content = document.querySelector(".zebra-agent-chat__content");
+    const bubble = document.querySelector(".zebra-agent-message--user article");
+    const activity = document.querySelector(".zebra-agent-activity summary");
+    const activityBody = document.querySelector(".zebra-agent-activity ol");
+    const composer = document.querySelector(".zebra-agent-composer");
+    if (!turn || !content || !bubble || !activity || !activityBody || !composer) throw new Error("conversation geometry fixture missing");
+    const turnStyle = getComputedStyle(turn);
+    const bubbleStyle = getComputedStyle(bubble);
+    return {
+      activityBodyBorderLeft: getComputedStyle(activityBody).borderLeftWidth,
+      activityFontSize: getComputedStyle(activity).fontSize,
+      bubblePadding: `${bubbleStyle.paddingTop} ${bubbleStyle.paddingRight}`,
+      bubbleRadius: bubbleStyle.borderRadius,
+      composerRadius: getComputedStyle(composer).borderRadius,
+      contentWidth: Math.round(content.getBoundingClientRect().width),
+      turnGap: turnStyle.gap,
+      turnPaddingTop: turnStyle.paddingTop,
+    };
+  });
+}
+
+function assertGeometry(browserName, actual, expected) {
+  const stable = {
+    activityBodyBorderLeft: "0px",
+    activityFontSize: "14px",
+    bubblePadding: "12px 16px",
+    bubbleRadius: "8px",
+    composerRadius: "16px",
+    turnGap: "20px",
+    ...expected,
+  };
+  for (const [key, value] of Object.entries(stable)) {
+    if (actual[key] !== value) throw new Error(`${browserName}: ${key} expected ${value}, received ${actual[key]}`);
+  }
+}
+
+async function assertComposerDocked(page, browserName, context) {
+  const offset = await page.evaluate(() => {
+    const chat = document.querySelector(".zebra-agent-chat");
+    const viewport = document.querySelector(".zebra-agent-chat__viewport");
+    const composer = document.querySelector(".zebra-agent-chat__composer");
+    if (!chat || !viewport || !composer) throw new Error("composer docking fixture missing");
+    return {
+      composerToViewport: Math.round(viewport.getBoundingClientRect().bottom - composer.getBoundingClientRect().bottom),
+      viewportToChat: Math.round(chat.getBoundingClientRect().bottom - viewport.getBoundingClientRect().bottom),
+    };
+  });
+  if (Math.abs(offset.composerToViewport) > 1) throw new Error(`${browserName}: ${context} composer-to-viewport offset expected 0px, received ${offset.composerToViewport}px`);
+  if (Math.abs(offset.viewportToChat) > 1) throw new Error(`${browserName}: ${context} viewport-to-chat offset expected 0px, received ${offset.viewportToChat}px`);
 }
 
 async function verifyNextHydration(browser, tarballs) {
@@ -151,11 +249,12 @@ import { AgentChat, AgentComposer } from "@zebra-agent/react";
 import "@zebra-agent/react/styles.css";
 
 function App(){
-  const [phase,setPhase]=useState("idle"); const [value,setValue]=useState(""); const [files,setFiles]=useState([]); const [expanded,setExpanded]=useState(false); const [submits,setSubmits]=useState(0); const [actions,setActions]=useState([]); const [messages,setMessages]=useState([]);
+  const [phase,setPhase]=useState("idle"); const [value,setValue]=useState(""); const [files,setFiles]=useState([]); const [submits,setSubmits]=useState(0); const [actions,setActions]=useState([]); const [turns,setTurns]=useState([]); const [scrollKey,setScrollKey]=useState("thread-a");
   const state=phase==="running"?{phase:"running",availableActions:[]}:phase==="completed"?{phase:"terminal",outcome:"completed",availableActions:[]}:phase==="disconnected"?{phase:"disconnected",availableActions:["reconnect"]}:phase==="paused"?{phase:"paused",availableActions:["resume"]}:phase==="failed"?{phase:"terminal",outcome:"failed",availableActions:["retry"]}:{phase:"idle",availableActions:[]};
   const composer=createElement(AgentComposer,{attachments:files,busy:phase==="running",capabilityOptions:[],capabilityValue:"general",canContinue:false,disabled:false,metrics:{cacheHitRate:null,contextLimit:null,contextPercent:null,contextTokens:null},modelOptions:[],modelValue:"default",onCapabilityChange:()=>{},onContinue:()=>{},onFilesSelected:(list)=>setFiles([...list].map((file,index)=>({id:String(index),isImage:false,name:file.name}))),onModelChange:()=>{},onPause:()=>{},onReasoningChange:()=>{},onRemoveAttachment:(id)=>setFiles((items)=>items.filter((item)=>item.id!==id)),onSubmit:()=>setSubmits((count)=>count+1),onSuggestionPick:()=>{},onValueChange:setValue,pausing:false,queueCount:0,reasoningOptions:[],reasoningValue:"high",suggestions:[],value});
-  const visibleMessages=messages.length?messages:phase==="idle"?[]:[{id:"user",role:"user",content:"中文草稿",status:"complete"}];
-  return <><nav><button id="activate" onClick={()=>{setPhase("running");setExpanded(true)}}>Activate</button><button id="complete" onClick={()=>setPhase("completed")}>Complete</button><button id="disconnected" onClick={()=>setPhase("disconnected")}>Disconnect</button><button id="paused" onClick={()=>setPhase("paused")}>Pause state</button><button id="failed" onClick={()=>setPhase("failed")}>Fail state</button><button id="burst" onClick={()=>setMessages(Array.from({length:30},(_,index)=>({id:String(index),role:"assistant",content:"Long output "+index+" "+"x".repeat(180),status:"complete"})))}>Burst</button><button id="append" onClick={()=>setMessages((items)=>[...items,{id:"latest",role:"assistant",content:"Newest output",status:"complete"}])}>Append</button></nav><span id="submits">{submits}</span><span id="actions">{actions.join(",")}</span><AgentChat activities={[{activityId:"tool",kind:"tool",status:phase==="running"?"running":"completed",title:"Inspect"}]} activityExpanded={expanded} composer={composer} messages={visibleMessages} onActivityExpandedChange={setExpanded} runStatus={{state,onReconnect:()=>setActions((v)=>[...v,"reconnect"]),onResume:()=>setActions((v)=>[...v,"resume"]),onRetry:()=>setActions((v)=>[...v,"retry"])}} /></>;
+  const activate=()=>{setPhase("running");setTurns([{id:"live",status:"running",userMessage:{id:"user",role:"user",content:("这是一条用于验证长输入折叠和渐隐效果的中文请求。 ").repeat(24),status:"complete"},workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"running",title:"Inspect"}]}]}])};
+  const complete=()=>{setPhase("completed");setTurns((items)=>items.map((turn)=>turn.id==="live"?{...turn,status:"completed",workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"completed",title:"Inspect"}]}],assistantMessage:{id:"answer",role:"assistant",content:"Done",status:"complete"}}:turn))};
+  return <><nav><button id="activate" onClick={activate}>Activate</button><button id="complete" onClick={complete}>Complete</button><button id="disconnected" onClick={()=>setPhase("disconnected")}>Disconnect</button><button id="paused" onClick={()=>setPhase("paused")}>Pause state</button><button id="failed" onClick={()=>setPhase("failed")}>Fail state</button><button id="burst" onClick={()=>setTurns(Array.from({length:30},(_,index)=>({id:String(index),status:"completed",workSegments:[],assistantMessage:{id:"message-"+index,role:"assistant",content:"Long output "+index+" "+"x".repeat(180),status:"complete"}})))}>Burst</button><button id="append" onClick={()=>setTurns((items)=>[...items,{id:"latest",status:"completed",workSegments:[],assistantMessage:{id:"latest-message",role:"assistant",content:"Newest output",status:"complete"}}])}>Append</button><button id="thread-a" onClick={()=>setScrollKey("thread-a")}>Thread A</button><button id="thread-b" onClick={()=>setScrollKey("thread-b")}>Thread B</button></nav><span id="submits">{submits}</span><span id="actions">{actions.join(",")}</span><span id="scroll-key">{scrollKey}</span><AgentChat composer={composer} runStatus={{state,onReconnect:()=>setActions((v)=>[...v,"reconnect"]),onResume:()=>setActions((v)=>[...v,"resume"]),onRetry:()=>setActions((v)=>[...v,"retry"])}} scrollKey={scrollKey} themeTokens={{input:"#123456",surface:"#101820"}} turns={turns} /></>;
 }
 createRoot(document.getElementById("root")).render(<App/>);
 `;

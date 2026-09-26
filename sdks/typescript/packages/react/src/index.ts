@@ -38,6 +38,8 @@ export type {
 } from "./components/agent-composer.tsx";
 export { AgentMessageList } from "./components/agent-message-list.tsx";
 export type { AgentMessageListLabels, AgentMessageListProps } from "./components/agent-message-list.tsx";
+export { AgentConversationTimeline } from "./components/agent-conversation-timeline.tsx";
+export type { AgentConversationTimelineProps } from "./components/agent-conversation-timeline.tsx";
 export { AgentActivityGroup } from "./components/agent-activity-group.tsx";
 export type { AgentActivityGroupLabels, AgentActivityGroupProps } from "./components/agent-activity-group.tsx";
 export { AgentApproval, AgentClarification } from "./components/agent-interrupts.tsx";
@@ -48,6 +50,8 @@ export { AgentChat } from "./components/agent-chat.tsx";
 export type { AgentChatProps } from "./components/agent-chat.tsx";
 export { AgentRunStatus } from "./components/agent-run-status.tsx";
 export type { AgentRunStatusLabelOverrides, AgentRunStatusLabels, AgentRunStatusProps } from "./components/agent-run-status.tsx";
+export { createAgentThemeStyle } from "./theme.ts";
+export type { AgentThemeTokens } from "./theme.ts";
 
 export interface ZebraAgentProviderProps {
   config: RuntimeClientConfig;

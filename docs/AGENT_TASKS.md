@@ -29424,6 +29424,67 @@ browser Cookie or Host Grant.
   eval `30/30`. Trench mapping, npm publish, commit, push and deployment remain
   separate.
 
+### REACT-CONVERSATION-02 - Turn-based Agent conversation timeline
+
+- Status: Review
+- Owner: Codex
+- Branch: `codex/zcode-conversation-ui`
+- Consumer branch: `codex/trench-durable-turns`
+- Depends on: `REACT-UX-01`
+- Owned paths: `sdks/typescript/packages/react/**`,
+  `sdks/typescript/packages/ui-contracts/**`, `sdks/typescript/examples/**`,
+  `sdks/typescript/scripts/react-browser-matrix.mjs`,
+  `docs/Zebra_ZCode式聊天时间线实施方案_v1.0.md`, `docs/AGENT_TASKS.md`,
+  `task_plan.md`, `PROGRESS.md`, `WORKLOG.md`, and `findings.md`; Trench
+  consumer paths are recorded in that repository's `task_plan.md`.
+- Goal: replace the flat message/activity composition with a host-neutral,
+  Turn-based conversation timeline that matches ZCode's public conversation
+  geometry and interaction hierarchy at the AG-UI surface, while retaining
+  Zebra's own contracts and runtime authority.
+- Constraints: implement against the public Apache-2.0 reference without
+  importing ZCode packages; no new UI dependency; no Cloud Runtime,
+  Memory, model or reasoning-setting changes; preserve the controlled Composer
+  and legacy props during migration.
+- Acceptance: activities render inside their owning Turn in durable order;
+  running work stays open and successful terminal work collapses; failure and
+  blocked states remain diagnosable; the same Composer survives empty-to-active
+  transitions; user scroll ownership is preserved; packaged Vite/Next consumers
+  and the Trench Host browser flow pass. The complete conversation shell also
+  matches ZCode's responsive content widths, centered draft composition,
+  long-user-input folding, icon-only back-to-bottom control and Composer focus
+  treatment without importing its product-only editor or workspace shell.
+- Review evidence: SDK `verify` passes `27/27`, package allowlist/audit,
+  React 18/19 Vite/Next consumers, Chromium/WebKit interactions and Next
+  hydration. Zebra `make check` passes over `978` typed sources and eval
+  `30/30`. Trench `make check`, production Chromium Host acceptance and its
+  `109/109` ToC suite pass. No npm publication, commit, push or deployment is
+  claimed. The base branch's unrelated `test_quality_gates.py` collection
+  mismatch remains outside this task.
+- Pixel-parity follow-up: ZCode `main` and `DESIGN.md` were inspected at the
+  2026-09-27 public Apache-2.0 revision. The React surface now matches its
+  complete conversation geometry at desktop and mobile widths; deterministic
+  coverage is `27/27`, and Chromium/WebKit assert the 672px centered draft,
+  responsive 896px/1152px active columns, 56px/40px Turn rhythm, long-input
+  folding, icon-only live-tail control and 16px Composer. The refreshed Trench
+  React tarball hash is
+  `ed1d124639ed34db55faadc8e0ee616a6dcafc575b9b5123d2dd3c1c023c6d30`;
+  its `109/109` ToC tests, production build, `make check` and Host browser
+  geometry gate pass. Trench's own 1510px Dashboard cap correctly keeps the
+  embedded Host on ZCode's 896px container tier.
+- SendBar regression follow-up: headerless chats now use a one-row grid instead
+  of leaving the absent header's second row empty. The viewport, chat, workspace
+  and window bottoms are asserted at zero offset for short, long, mobile,
+  desktop and cold-reloaded conversations in Chromium; the reusable matrix
+  asserts composer/viewport/chat alignment in both Chromium and WebKit.
+- Theme API follow-up: `AgentChat` and standalone `AgentComposer` now accept the
+  typed `themeTokens` boundary for ten colors, five geometry values and one font
+  family while retaining stylesheet-level `--zebra-agent-*` overrides. Defaults
+  preserve the reviewed ZCode-style surface. Deterministic tests assert token
+  emission; packaged Chromium/WebKit consumers assert nested Composer
+  inheritance. The refreshed Trench tarball SHA-256 is
+  `0829f226ad14c9d3e82661c2477e9b9f3afde6baf92d7cb87b7f07a5d5a56b94`;
+  its production build and browser acceptance pass.
+
 ### AGENT-LIVE-EVAL-01 - Representative real-task evaluation
 
 - Status: Review

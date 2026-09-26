@@ -26,6 +26,15 @@ export type AgentRunPhase =
   | "terminal";
 export type AgentRunOutcome = "completed" | "partial" | "blocked" | "failed" | "cancelled";
 export type AgentRecoveryAction = "reconnect" | "resume" | "retry";
+export type AgentTurnStatus =
+  | "queued"
+  | "running"
+  | "waiting"
+  | "completed"
+  | "partial"
+  | "blocked"
+  | "failed"
+  | "cancelled";
 
 interface AgentRunStateBase {
   /** Opaque support identifier. Raw errors and stack traces do not belong in this contract. */
@@ -74,12 +83,28 @@ export interface AgentActivity {
   durationMs?: number;
 }
 
+export interface AgentWorkSegment {
+  id: string;
+  label?: string;
+  activities: readonly AgentActivity[];
+}
+
 export interface AgentMessage {
   id: string;
   role: AgentMessageRole;
   content: string;
   status: AgentMessageStatus;
   timestampLabel?: string;
+}
+
+/** One durable user request and the public work/output that belongs to it. */
+export interface AgentConversationTurn {
+  id: string;
+  status: AgentTurnStatus;
+  userMessage?: AgentMessage;
+  workSegments: readonly AgentWorkSegment[];
+  assistantMessage?: AgentMessage;
+  artifacts?: readonly AgentArtifact[];
 }
 
 export interface AgentArtifact {

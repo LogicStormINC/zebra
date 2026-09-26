@@ -7,6 +7,7 @@ import { renderToString } from "react-dom/server";
 import {
   AgentComposer,
   AgentChat,
+  AgentConversationTimeline,
   AgentActivityGroup,
   AgentApproval,
   AgentArtifacts,
@@ -14,6 +15,7 @@ import {
   AgentMemorySettings,
   AgentMessageList,
   AgentRunStatus,
+  createAgentThemeStyle,
   ZebraAgentProvider,
   ZebraHitlProvider,
   useZebraApproval,
@@ -26,6 +28,7 @@ test("published ESM and CJS entries expose the same React surface", () => {
   assert.equal(typeof ZebraAgentProvider, "function");
   assert.equal(typeof AgentComposer, "function");
   assert.equal(typeof AgentChat, "function");
+  assert.equal(typeof AgentConversationTimeline, "function");
   assert.equal(typeof AgentActivityGroup, "function");
   assert.equal(typeof AgentApproval, "function");
   assert.equal(typeof AgentArtifacts, "function");
@@ -33,11 +36,14 @@ test("published ESM and CJS entries expose the same React surface", () => {
   assert.equal(typeof AgentMemorySettings, "function");
   assert.equal(typeof AgentMessageList, "function");
   assert.equal(typeof AgentRunStatus, "function");
+  assert.equal(typeof createAgentThemeStyle, "function");
   assert.equal(typeof ZebraHitlProvider, "function");
   assert.equal(typeof commonjs.ZebraAgentProvider, "function");
   assert.equal(typeof commonjs.AgentComposer, "function");
   assert.equal(typeof commonjs.AgentChat, "function");
+  assert.equal(typeof commonjs.AgentConversationTimeline, "function");
   assert.equal(typeof commonjs.AgentRunStatus, "function");
+  assert.equal(typeof commonjs.createAgentThemeStyle, "function");
   assert.equal(typeof commonjs.ZebraHitlProvider, "function");
 });
 

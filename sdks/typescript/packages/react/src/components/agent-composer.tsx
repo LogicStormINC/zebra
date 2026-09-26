@@ -6,6 +6,7 @@ import type {
   AgentComposerMetrics,
   AgentComposerOption,
 } from "@zebra-agent/ui-contracts";
+import { createAgentThemeStyle, type AgentThemeTokens } from "../theme.ts";
 
 export interface AgentComposerSuggestion {
   label: string;
@@ -59,6 +60,7 @@ export interface AgentComposerProps {
   reasoningValue: string;
   suggestions: readonly AgentComposerSuggestion[];
   theme?: "dark" | "light";
+  themeTokens?: Partial<AgentThemeTokens>;
   value: string;
 }
 
@@ -100,7 +102,7 @@ export function AgentComposer(props: AgentComposerProps) {
       : { label: labels.send, onClick: props.onSubmit, symbol: "↑" };
 
   return (
-    <section className={`zebra-agent-composer ${props.className ?? ""}`.trim()} data-theme={props.theme}>
+    <section className={`zebra-agent-composer ${props.className ?? ""}`.trim()} data-theme={props.theme} style={createAgentThemeStyle(props.themeTokens)}>
       <textarea
         aria-label={props.placeholder || labels.send}
         className="zebra-agent-composer__input"
