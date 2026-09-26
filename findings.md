@@ -1921,3 +1921,49 @@ Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
   A CLI real-provider smoke succeeds, but local CLI execution identifies the
   authoritative Task by `session_id`; its event store must supply the model-call
   attestation before it can count as a live-eval attempt.
+
+## REACT-CONVERSATION-02 findings (2026-09-27)
+
+- The reusable boundary is a durable Turn projection, not a copy of ZCode's
+  product shell. Routing, authentication, business Markdown and actions remain
+  Host-owned; the package owns information hierarchy and interaction state.
+- A single controlled Composer element can move between landing and active
+  layouts through CSS without losing draft text, attachments or focus.
+- Hiding a CSS-grid rail at a mobile breakpoint must also collapse the grid to
+  one column. Keeping the two-column template silently placed the Turn body in
+  the hidden rail's 10px column; production browser acceptance caught this.
+- Native `<details>/<summary>` exposes folding semantics without another UI
+  dependency. Successful work folds automatically, while failure and blocking
+  stay open so recovery evidence is not hidden.
+- ZCode's current chat hierarchy is defined more by geometry than ornament:
+  14px operational text, 4px spacing multiples, a max-width conversation column,
+  56px Turn lead-in, 20px section gaps, compact user bubbles and a border only
+  inside expanded reasoning/tool content. Zebra's prior persistent rail was a
+  visual divergence, not an AG-UI requirement, so deletion produced the closer
+  and smaller implementation.
+- ZCode distinguishes a completed assistant-history group from an individual
+  reasoning/tool detail. The history group owns a full-width bottom divider and
+  20px content offset; a left rule belongs to reasoning content, not the entire
+  tool history. Treating both as one visual primitive caused the remaining
+  pixel mismatch.
+- ZCode's draft and active layouts are two states of one Composer, not separate
+  editors: the draft is capped at 672px, while active content uses container
+  tiers of 896px and 1152px with a 150ms width transition. Container queries
+  keep the package host-neutral; Trench's 1510px Dashboard cap naturally leaves
+  its embedded chat on the 896px tier even on a 3024px viewport.
+- Long user prompts need interaction state rather than CSS truncation alone.
+  Measuring the rendered body, clamping it to 120px with a fade mask and exposing
+  an accessible circular toggle preserves the full durable request while keeping
+  the timeline scannable.
+- A conditional grid child requires a conditional grid definition. Keeping
+  `grid-template-rows: auto minmax(0,1fr)` while omitting the header placed the
+  viewport in the auto row and left the flexible row empty; every nested sticky
+  calculation was internally correct but anchored to a 508px viewport. A
+  headerless one-row modifier fixes the shared cause and is safer than Host-only
+  absolute positioning.
+- A reusable visual package needs two theming levels: typed per-instance props
+  for ordinary React consumers and CSS custom properties for design-system
+  integration. Mapping both to one variable contract avoids duplicating style
+  logic and lets nested Composer instances inherit the chat theme naturally.
+  Package defaults remain the reference appearance, so Host customization is
+  opt-in and partial rather than a fork of component CSS.

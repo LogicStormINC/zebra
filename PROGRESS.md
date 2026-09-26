@@ -1,5 +1,49 @@
 # Zebra Agent Project Status
 
+2026-09-27 REACT-CONVERSATION-02 (ZCode-style conversation organization): the
+public React surface now groups every durable request as one Turn containing the
+user prompt, public work segments, final answer and artifacts. Live work remains
+expanded; successful/cancelled work folds; failed/blocked work remains
+diagnosable. `AgentChat` keeps one controlled Composer DOM across the centered
+landing and sticky active dock, remembers scroll position per conversation and
+preserves explicit live-tail ownership. Trench consumes the packaged contract
+through a pure Strategy projection while retaining its business renderers and
+all model/reasoning settings. SDK `verify` passes `27/27`, package audit,
+React 18/19 Vite/Next, Chromium/WebKit and hydration checks; Zebra `make check`
+passes over `978` sources and eval `30/30`; Trench `make check` and production
+Chromium Host acceptance pass. A browser gate exposed and closed a real narrow
+viewport 10px-grid regression. No npm publication, commit, push or deployment
+is claimed. The follow-up AG-UI pixel pass now matches the public ZCode
+conversation shell: a 672px centered draft, responsive 896px/1152px active
+columns, 56px desktop/40px mobile Turn rhythm, long-input folding, icon-only
+live-tail control, 20px flow gaps and a 16px Composer shell with focus feedback.
+The large Zebra rail and `Live` badge were removed. Chromium/WebKit and the
+Trench production browser assert computed geometry and empty/active transitions;
+Trench's 1510px Dashboard cap correctly selects the 896px embedded tier. The unrelated
+base-branch Python quality-gate collection mismatch is recorded separately and
+was not folded into this UI task.
+
+The SendBar follow-up closed the remaining vertical-layout defect. `AgentChat`
+previously reserved two grid rows even when no header was rendered, so the
+viewport shrink-wrapped content in the first row while an empty second row
+consumed the remaining height. Headerless chats now select one `minmax(0,1fr)`
+row, and the stage fills that scroll viewport. Chromium/WebKit assert zero
+composer-to-viewport and viewport-to-chat bottom offsets; Trench additionally
+asserts chat/workspace/shell/window alignment after cold reload. SDK `verify`,
+Zebra `make check`, Trench `make check`, production build and browser acceptance
+all pass; no commit, push, publication or deployment is claimed.
+
+The reusable React surface now also exposes a typed Host theme boundary rather
+than freezing Trench's current colors into the package contract. `AgentChat`
+and standalone `AgentComposer` accept partial `AgentThemeTokens` covering ten
+colors, five geometry values and the font family; equivalent CSS custom
+properties remain available for stylesheet themes. Unspecified values preserve
+the reviewed defaults. Unit/package-entry tests and packaged Chromium/WebKit
+consumers verify both direct application and nested Composer inheritance;
+Trench's production build and Strategy browser acceptance pass with the
+refreshed local artifact. No npm publication, commit, push or deployment is
+claimed.
+
 2026-09-26 CLOUD-PLAN-ACCEPTANCE-02 (current-version strict closure): the fixed
 live-eval catalog now materializes isolated fixtures and records independently
 verified real Zebra runs. The selected current-version matrix is complete at

@@ -4,11 +4,15 @@ React bindings and host-neutral UI primitives for Zebra Cloud Agent.
 
 ## Public component surface
 
-- `AgentChat` composes the message, activity, interrupt, artifact and composer
-  regions without owning routing or conversation data.
+- `AgentChat` composes a Turn timeline, interrupt, resource and sticky composer
+  region without owning routing or conversation data. The same controlled
+  composer node moves from the centered empty state to the active bottom dock.
 - `AgentComposer` provides controlled input, attachment and run controls.
-- `AgentMessageList` and `AgentActivityGroup` render public conversation state;
-  the activity group stays open while running and can collapse after completion.
+- `AgentConversationTimeline` renders each durable user request as one Turn:
+  prompt, public work segments, final answer and artifacts remain together.
+- `AgentMessageList` and `AgentActivityGroup` remain available as lower-level
+  primitives; work stays open while running, collapses on success, and remains
+  open for failed or blocked diagnostics.
 - `AgentRunStatus` keeps local submission, server acceptance, queueing, execution,
   user waits, reconciliation, disconnection and terminal outcomes distinct.
 - `AgentApproval` and `AgentClarification` render explicit human-in-the-loop
@@ -30,10 +34,48 @@ capability/model/reasoning choices and every execution action. The component
 does not call Zebra APIs, store credentials, or create a second Agent runtime.
 
 The default theme is scoped under `.zebra-agent-composer` and
-`.zebra-agent-chat`. Override the
-`--zebra-agent-*` CSS variables on that element to integrate it with a Host.
-Labels are replaceable through `labels`, so product copy and localization stay
-outside the reusable package.
+`.zebra-agent-chat`. Use the typed `themeTokens` prop for per-instance branding:
+
+```tsx
+<AgentChat
+  composer={composer}
+  theme="dark"
+  themeTokens={{
+    accent: "#66ccff",
+    input: "#111827",
+    composerRadius: "18px",
+    contentWidth: "880px",
+    fontFamily: "Inter, system-ui, sans-serif",
+  }}
+  turns={turns}
+/>
+```
+
+`AgentComposer` accepts the same prop when used by itself. Every token value is
+a CSS value string. Unspecified tokens keep the package defaults, so changing a
+brand color does not silently alter the ZCode-style layout.
+
+| Group | Tokens |
+| --- | --- |
+| Color | `surface`, `surfaceRaised`, `input`, `text`, `muted`, `faint`, `border`, `hover`, `accent`, `accentText` |
+| Geometry | `draftWidth`, `contentWidth`, `wideContentWidth`, `composerRadius`, `userBubbleRadius` |
+| Typography | `fontFamily` |
+
+Hosts that theme through stylesheets may set the equivalent
+`--zebra-agent-*` CSS custom properties on either root instead. Labels remain
+replaceable through `labels`, so product copy and localization stay outside the
+reusable package.
+
+## Turn timeline
+
+Pass `AgentChat.turns` when the Host can project its durable session events into
+`AgentConversationTurn[]`. Use a stable `scrollKey` per conversation so the
+surface restores that conversation's reading position. Legacy `messages` and
+`activities` remain supported for incremental adoption, but a Host should not
+pass both representations for the same work.
+
+The package renders public analysis summaries and tool status only. Private
+reasoning, raw tool payloads and credentials do not belong in the Turn contract.
 
 ## Lifecycle and recovery
 

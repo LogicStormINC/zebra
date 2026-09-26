@@ -8,7 +8,7 @@
   "scripts": {
     "build": "pnpm --filter @zebra-agent/contracts build && pnpm --filter @zebra-agent/ui-contracts build && pnpm --filter @zebra-agent/client-core build && pnpm --filter @zebra-agent/react build",
     "check": "pnpm build && tsc --noEmit",
-    "test": "pnpm build && tsx --test packages/client-core/tests/client-core.test.ts packages/react/tests/provider.test.ts packages/react/tests/composer.test.tsx packages/react/tests/surfaces.test.tsx packages/react/tests/lifecycle.test.tsx packages/react/tests/package-entry.test.mjs",
+    "test": "pnpm build && tsx --test packages/client-core/tests/client-core.test.ts packages/react/tests/provider.test.ts packages/react/tests/composer.test.tsx packages/react/tests/surfaces.test.tsx packages/react/tests/lifecycle.test.tsx packages/react/tests/conversation-timeline.test.tsx packages/react/tests/package-entry.test.mjs",
     "test:browser": "node scripts/react-browser-matrix.mjs",
     "test:consumers": "node scripts/react-consumer-matrix.mjs",
     "test:package": "node scripts/package-audit.mjs",

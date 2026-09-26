@@ -119,13 +119,11 @@ test("AgentChat keeps one controlled Composer boundary from empty to active conv
   };
   const composer = createElement(AgentComposer, composerProps);
   const base: AgentChatProps = {
-    activities: [],
-    activityExpanded: false,
     composer,
     emptyState: createElement("p", null, "Ready when you are"),
-    messages: [],
-    onActivityExpandedChange: () => undefined,
     runStatus: { state: { phase: "idle", availableActions: [] } },
+    scrollKey: "draft",
+    turns: [],
   };
 
   await act(async () => root.render(createElement(AgentChat, base)));
@@ -135,7 +133,12 @@ test("AgentChat keeps one controlled Composer boundary from empty to active conv
 
   await act(async () => root.render(createElement(AgentChat, {
     ...base,
-    messages: [{ id: "user-1", role: "user", content: "Keep this draft", status: "complete" }],
+    turns: [{
+      id: "turn-1",
+      status: "running",
+      userMessage: { id: "user-1", role: "user", content: "Keep this draft", status: "complete" },
+      workSegments: [],
+    }],
     runStatus: { state: { phase: "accepted", availableActions: [] } },
   })));
   const active = container.querySelector("textarea") as HTMLTextAreaElement;
@@ -146,11 +149,15 @@ test("AgentChat keeps one controlled Composer boundary from empty to active conv
 
   await act(async () => root.render(createElement(AgentChat, {
     ...base,
-    activities: [{ activityId: "stale", kind: "tool", status: "running", title: "Stale activity" }],
-    messages: [{ id: "user-1", role: "user", content: "Keep this draft", status: "complete" }],
+    turns: [{
+      id: "turn-1",
+      status: "failed",
+      userMessage: { id: "user-1", role: "user", content: "Keep this draft", status: "complete" },
+      workSegments: [{ id: "work-1", activities: [{ activityId: "stale", kind: "tool", status: "failed", title: "Stale activity" }] }],
+    }],
     runStatus: { state: { phase: "terminal", outcome: "failed", availableActions: ["retry"] } },
   })));
-  assert.equal((container.querySelector("details") as HTMLDetailsElement).open, false);
+  assert.equal((container.querySelector("details") as HTMLDetailsElement).open, true);
   assert.match((container.querySelector("details summary") as HTMLElement).textContent ?? "", /Failed/);
 
   await act(async () => root.unmount());

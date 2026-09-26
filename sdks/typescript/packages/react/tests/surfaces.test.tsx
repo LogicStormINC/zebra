@@ -43,10 +43,21 @@ test("AgentChat renders the finite public surfaces and keeps Host actions contro
     onActivityExpandedChange: (expanded) => calls.push(`expanded:${expanded}`),
     onArtifactOpen: (id) => calls.push(`artifact:${id}`),
     onMemoryToggle: (id, enabled) => calls.push(`memory:${id}:${enabled}`),
+    themeTokens: {
+      accent: "#66ccff",
+      composerRadius: "20px",
+      contentWidth: "840px",
+      surface: "#101820",
+    },
   };
   const render = async (props: AgentChatProps) => act(async () => root.render(createElement(AgentChat, props)));
 
   await render(base);
+  const chat = container.querySelector(".zebra-agent-chat") as HTMLElement;
+  assert.equal(chat.style.getPropertyValue("--zebra-agent-accent"), "#66ccff");
+  assert.equal(chat.style.getPropertyValue("--zebra-agent-composer-radius"), "20px");
+  assert.equal(chat.style.getPropertyValue("--zebra-agent-content-width"), "840px");
+  assert.equal(chat.style.getPropertyValue("--zebra-agent-surface"), "#101820");
   assert.match(container.textContent ?? "", /Inspection complete/);
   assert.match(container.textContent ?? "", /deploy\.release/);
   assert.equal((container.querySelector("details") as HTMLDetailsElement).open, false);

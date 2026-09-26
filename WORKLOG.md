@@ -10564,3 +10564,58 @@ actual byte access.
 - Local implementation work is complete. Strict evidence is `86/100`; production
   release remains `0%` because local `runsc` is absent and remote SSH authority is
   unavailable, preventing one-digest gVisor/canary/rollback execution.
+
+# 2026-09-27 — REACT-CONVERSATION-02 ZCode-style timeline
+
+- Implemented host-neutral Turn contracts, a reusable timeline and a single
+  sticky Composer lifecycle without changing Cloud authority or model settings.
+- Migrated Trench's Strategy Host to the packaged surface and removed duplicate
+  progress composition while retaining business content renderers and actions.
+- Added deterministic Turn/collapse/Composer tests and expanded the real-browser
+  package fixture to use the new Turn path.
+- SDK `verify`, Zebra `make check`, Trench `make check` and Trench production
+  Chromium acceptance pass. The browser run found and fixed a mobile grid issue
+  that reduced the Turn body to 10px after its rail was hidden.
+- Zebra full pytest collection is blocked by an unrelated base-branch test that
+  imports an implementation present only in the user's dirty original checkout;
+  the UI worktree did not copy or alter that out-of-scope source. The remaining
+  suite passes `4616`, with `899` environment-gated skips.
+- Re-opened the card for a pixel-level AG-UI pass against ZCode `main` and its
+  public design system. Replaced the large rail with ZCode's content-first Turn
+  geometry, compact inline work summaries, bordered expanded history and a
+  quieter 16px Composer. Added browser computed-style assertions at 390px and
+  1280px, repacked the React tarball into Trench, and repeated the production
+  Host build and Chromium acceptance.
+- A second source comparison corrected the history hierarchy: completed work
+  now uses ZCode's full-width bottom divider and 20px expanded spacing, hides
+  the history icon, and does not reuse reasoning's left rule. Repeated SDK
+  Chromium/WebKit/Next and Trench production-browser gates passed.
+- Completed the surrounding chat shell from the same current ZCode sources:
+  672px centered draft composition, 896px/1152px container tiers, 120px
+  long-user-input folding, icon-only live-tail return, 150ms width transitions
+  and hover/focus Composer treatment. Trench supplies its own faint logo
+  watermark without leaking business branding into the reusable package.
+- Final gates pass: SDK `verify` (`27/27`, package audit, React 18/19 Vite/Next,
+  Chromium/WebKit and hydration), Zebra `make check`, Trench `make check`,
+  `109/109` ToC tests, production build and production Chromium acceptance.
+  Empty and active screenshots were inspected; no publication, commit, push or
+  deployment is claimed.
+- Re-opened the card after visual review found the active SendBar following a
+  short reply instead of the workspace bottom. The first flex-height correction
+  exposed the actual cause: `AgentChat` always reserved a header row, but normal
+  Trench conversations do not render a header, so the viewport occupied the
+  auto-sized first row and left the `1fr` row empty.
+- Added an explicit headerless one-row grid and browser bottom-alignment gates
+  across composer, viewport, chat, workspace, shell and window. Repacked React
+  as `ed1d124639ed34db55faadc8e0ee616a6dcafc575b9b5123d2dd3c1c023c6d30`;
+  SDK `verify`, both repository `make check` gates and final visual inspection
+  pass.
+- Re-opened the card to make the extracted React surface brandable. Added a
+  typed partial token API shared by `AgentChat` and standalone `AgentComposer`,
+  while keeping CSS custom properties as the low-level escape hatch. Tokens
+  cover colors, responsive content widths, Composer/user-bubble radii and font.
+- Added DOM assertions for emitted variables, package-entry coverage for the
+  helper export and packaged Chromium/WebKit inheritance checks. Repacked the
+  Trench artifact as
+  `0829f226ad14c9d3e82661c2477e9b9f3afde6baf92d7cb87b7f07a5d5a56b94`;
+  the Trench production build and Strategy browser acceptance pass.

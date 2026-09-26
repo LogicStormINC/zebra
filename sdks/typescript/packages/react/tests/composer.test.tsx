@@ -35,6 +35,7 @@ test("AgentComposer keeps host actions controlled and switches run actions safel
     reasoningOptions: [{ label: "High", value: "high" }],
     reasoningValue: "high",
     suggestions: [{ label: "Inspect failures", value: "inspect" }],
+    themeTokens: { accent: "#f4b942", composerRadius: "22px", input: "#111827" },
     value: "Investigate the worker",
   };
   const dom = new JSDOM('<!doctype html><div id="root"></div>');
@@ -59,6 +60,10 @@ test("AgentComposer keeps host actions controlled and switches run actions safel
   };
 
   await render(props);
+  const composer = container.querySelector(".zebra-agent-composer") as HTMLElement;
+  assert.equal(composer.style.getPropertyValue("--zebra-agent-accent"), "#f4b942");
+  assert.equal(composer.style.getPropertyValue("--zebra-agent-composer-radius"), "22px");
+  assert.equal(composer.style.getPropertyValue("--zebra-agent-input"), "#111827");
   assert.match(container.textContent ?? "", /2 queued/);
   assert.match(container.textContent ?? "", /brief\.md/);
   assert.equal(container.querySelector('[aria-label="Context capacity 42%"]') !== null, true);

@@ -1,4 +1,35 @@
-# Active task — CLOUD-PLAN-ACCEPTANCE-02 strict 100-point closure (2026-09-26)
+# Active task — REACT-CONVERSATION-02 ZCode-style complete conversation surface (2026-09-26)
+
+1. `completed` — define host-neutral Turn/work-segment contracts and a stable
+   compatibility projection without changing runtime authority.
+2. `completed` — implement the conversation timeline, per-Turn work collapse,
+   live-tail rendering and sticky Composer layout in `@zebra-agent/react`.
+3. `completed` — migrate the Trench strategy Host from `Bubble.List` and embedded
+   progress rendering to the packaged Zebra timeline through a Host adapter.
+4. `completed` — add deterministic interaction, ordering, collapse, scroll and
+   empty-to-active transition regressions.
+5. `completed` — run SDK package/consumer gates and Trench frontend/browser gates,
+   then record evidence and remaining release boundaries.
+6. `in_progress` — align the surrounding conversation shell: responsive active
+   widths, centered draft composition, long user-input folding, icon-only
+   back-to-bottom control and Composer focus/hover treatment.
+
+Evidence: SDK `verify` passes 26 deterministic tests, exact package audit,
+React 18/19 Vite/Next consumers, Chromium/WebKit interaction checks and Next
+hydration. Zebra `make check` passes file size, Ruff, strict Mypy over 978
+sources and eval `30/30`. Trench `make check` passes API `139`, pipeline `74`,
+ToC `109`, lint with three pre-existing image warnings, production builds,
+migration dry-run and diff gate; its production Chromium Host acceptance also
+passes. Zebra's unrelated full Python suite remains blocked at collection by
+the base branch's missing committed `_quality_revision_feedback` implementation;
+that source path is outside this task and modified only in the user's original
+dirty checkout. Running the remaining suite explicitly passes `4616` tests with
+`899` environment-gated skips.
+
+Detailed plan:
+`docs/Zebra_ZCode式聊天时间线实施方案_v1.0.md`.
+
+# Prior task — CLOUD-PLAN-ACCEPTANCE-02 strict 100-point closure (2026-09-26)
 
 1. `completed` — close SDK supply-chain gaps: pinned toolchain, package audit,
    tree-shaking proof and CI integration.
@@ -369,3 +400,26 @@ P1→P3 顺序拉栈、填配置、跑 runner。
    recall and browser-visible governance in the composed local stack.
 10. `completed` — review and harden fail-closed Host authority, PostgreSQL lock
     ordering, bounded source enrichment, blank input and overlapping UI requests.
+# ZCode AG-UI pixel-parity closure (2026-09-27)
+
+- [x] Inspect ZCode's current Apache-2.0 conversation components and design tokens.
+- [x] Match the AG-UI turn, user bubble, reasoning/tool summary, expanded work and composer geometry.
+- [x] Add deterministic DOM/style and browser visual acceptance at desktop and mobile widths.
+- [x] Repack the React artifact into Trench and repeat Host build/browser acceptance.
+- [x] Record final evidence and return `REACT-CONVERSATION-02` to Review.
+
+# ZCode SendBar bottom-dock regression (2026-09-27)
+
+- [x] Re-open `REACT-CONVERSATION-02` and trace the viewport/stage height chain.
+- [x] Make the active stage fill the scroll viewport without changing the centered draft state.
+- [x] Add browser assertions for short, long, mobile and desktop conversations.
+- [x] Repack into Trench and repeat production Host acceptance.
+- [x] Record evidence and return the task to Review.
+
+# React component theme-token API (2026-09-27)
+
+- [x] Re-open `REACT-CONVERSATION-02` and inventory the existing CSS variable boundary.
+- [x] Export typed color and geometry tokens for `AgentChat` and standalone `AgentComposer`.
+- [x] Make all documented tokens affect computed styles without changing defaults.
+- [x] Add deterministic and packaged-browser customization coverage.
+- [x] Repack Trench, repeat Host acceptance and return the task to Review.
