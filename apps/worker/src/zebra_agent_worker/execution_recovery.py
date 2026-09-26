@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime
@@ -19,6 +18,7 @@ from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import (
     ExecutedSession,
+    RetryableWorkerSetupError,
     WorkerExecutionError,
     finalize_worker_setup_failure,
     rebuild_task_index,
@@ -36,8 +36,6 @@ from zebra_agent_worker.task_recovery import (
     recover_task,
 )
 from zebra_agent_worker.workspace_resolution import apply_workspace_resolver
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -213,7 +211,6 @@ def _execute_with_heartbeat(
     started_at: datetime,
     lease_ttl_seconds: int,
 ) -> ExecutedSession:
-    session_id = claimed.lease.session_id
     with LeaseHeartbeat(
         service._claim_service,
         claimed.lease,
@@ -231,11 +228,15 @@ def _execute_with_heartbeat(
                 started_at=started_at,
                 ownership_check=heartbeat.require_owned,
             )
+        except RetryableWorkerSetupError:
+            # Runtime availability is external to the Task. Releasing the
+            # lease while retaining READY lets the same durable command resume
+            # after the sandbox dependency heals.
+            raise
         except WorkerExecutionError as error:
-            logger.exception("Worker execution failed for session %s", session_id)
             heartbeat.require_owned()
             recovery = service._recovery_service.recover_session(
-                session_id,
+                claimed.lease.session_id,
                 worker_lease=resumed.claimed.lease,
             )
             if recovery.session.status not in {SessionStatus.READY, SessionStatus.RUNNING}:
@@ -251,7 +252,7 @@ def _execute_with_heartbeat(
                 event_store=service._event_store,
                 error=error,
             )
-            rebuild_task_index(service._task_index_store, session_id)
+            rebuild_task_index(service._task_index_store, claimed.lease.session_id)
             return failed
 
 

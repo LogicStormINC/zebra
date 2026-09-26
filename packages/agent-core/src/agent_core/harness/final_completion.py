@@ -102,9 +102,18 @@ def finalize_without_tools(
         evidence=ledger,
         contract=context.task.acceptance_contract,
     )
+    quality_revision_count = _quality_revision_count(metadata)
+    quality_revision_score = _quality_revision_score(
+        answer=completion.assistant_message.content,
+        missing_requirements=quality.missing_requirements,
+    )
     if (
         not quality.passed
-        and metadata.get("quality_revision_prompted") is not True
+        and _quality_revision_allowed(
+            missing_requirements=quality.missing_requirements,
+            metadata=metadata,
+            score=quality_revision_score,
+        )
         and (
             context.task.max_model_calls is None or model_calls_used < context.task.max_model_calls
         )
@@ -121,11 +130,12 @@ def finalize_without_tools(
         )
         messages.append(
             _runtime_feedback_message(
-                "The candidate answer did not satisfy the task acceptance contract. "
-                f"Reason: {quality.reason}. Missing requirements: "
-                f"{', '.join(quality.missing_requirements) or 'unspecified'}. "
-                "Revise the candidate directly, preserving valid content and adding only "
-                "the missing detail, structure, or evidence. Do not claim unsupported facts.",
+                _quality_revision_feedback(
+                    answer=completion.assistant_message.content,
+                    reason=quality.reason,
+                    missing_requirements=quality.missing_requirements,
+                    evidence=ledger,
+                ),
                 context,
             )
         )
@@ -139,6 +149,8 @@ def finalize_without_tools(
             metadata={
                 **metadata,
                 "quality_revision_prompted": True,
+                "quality_revision_count": quality_revision_count + 1,
+                "quality_revision_score": quality_revision_score,
                 "quality_reason": quality.reason,
             },
             fallback_message=completion.assistant_message.content,
@@ -247,15 +259,43 @@ def finalize_without_tools(
                 ),
             },
         )
+    satisfied = _satisfied_outcomes(
+        context,
+        metadata=metadata,
+        ledger=ledger,
+        read_only_tools=read_only_tools,
+    )
+    required = (
+        ()
+        if context.task.acceptance_contract is None
+        else context.task.acceptance_contract.required_outcomes
+    )
+    unmet = tuple(outcome for outcome in required if outcome not in satisfied)
+    if unmet:
+        return build_attempt_result(
+            outcome=HarnessAttemptOutcome.SUSPENDED,
+            summary="task acceptance outcomes remain unproven",
+            assistant_message=completion.assistant_message.content,
+            model_calls_used=model_calls_used,
+            tool_calls_executed=tool_calls_executed,
+            emitted_events=emitted_events,
+            metadata={
+                **metadata,
+                "stop_reason": "acceptance_outcomes_required",
+                "delivery_assessment": _delivery_assessment(
+                    "partial",
+                    satisfied=satisfied,
+                    unmet=unmet,
+                    contract=context.task.acceptance_contract,
+                    evidence_refs=ledger.evidence_refs,
+                    artifact_refs=ledger.artifact_refs,
+                ),
+            },
+        )
     delivery = _delivery_assessment(
         "complete",
         contract=context.task.acceptance_contract,
-        satisfied=_satisfied_outcomes(
-            context,
-            metadata=metadata,
-            ledger=ledger,
-            read_only_tools=read_only_tools,
-        ),
+        satisfied=satisfied,
         evidence_refs=ledger.evidence_refs,
         artifact_refs=ledger.artifact_refs,
     )
@@ -288,6 +328,86 @@ def _runtime_feedback_message(content: str, context: HarnessContext) -> SessionM
         content=content,
         created_at=context.attempt.started_at,
         metadata={"runtime_feedback": True},
+    )
+
+
+def _quality_revision_count(metadata: dict[str, object]) -> int:
+    value = metadata.get("quality_revision_count", 0)
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+
+
+def _quality_revision_allowed(
+    *,
+    missing_requirements: tuple[str, ...],
+    metadata: dict[str, object],
+    score: int,
+) -> bool:
+    measurable = all(
+        item.startswith(("maximum_length:", "required_answer_term:"))
+        or item == "citation_matching_collected_evidence"
+        for item in missing_requirements
+    )
+    if not missing_requirements or not measurable:
+        return _quality_revision_count(metadata) < 1
+    previous = metadata.get("quality_revision_score")
+    return not isinstance(previous, int) or isinstance(previous, bool) or score < previous
+
+
+def _quality_revision_score(
+    *, answer: str, missing_requirements: tuple[str, ...]
+) -> int:
+    score = 0
+    for item in missing_requirements:
+        if item.startswith("maximum_length:"):
+            raw = item.removeprefix("maximum_length:").removesuffix("_characters")
+            limit = int(raw) if raw.isdigit() else 0
+            score += max(0, len(answer.strip()) - limit)
+        else:
+            score += 10_000
+    return score
+
+
+def _quality_revision_feedback(
+    *,
+    answer: str,
+    reason: str,
+    missing_requirements: tuple[str, ...],
+    evidence: EvidenceLedger,
+) -> str:
+    missing = ", ".join(missing_requirements) or "unspecified"
+    instructions: list[str] = []
+    maximum = next(
+        (item for item in missing_requirements if item.startswith("maximum_length:")),
+        None,
+    )
+    if maximum is not None:
+        limit = maximum.removeprefix("maximum_length:").removesuffix("_characters")
+        cited = sorted(evidence.cited_refs(answer), key=len)
+        citation_guard = (
+            f" Keep this exact collected reference unchanged: {cited[0]}."
+            if cited
+            else ""
+        )
+        instructions.append(
+            f"The current candidate is {len(answer.strip())} characters. Rewrite the whole "
+            f"answer at or below {limit} characters; remove nonessential prose and duplicate "
+            f"references while retaining the requested facts.{citation_guard}"
+        )
+    if "citation_matching_collected_evidence" in missing_requirements:
+        refs = ", ".join(evidence.evidence_refs[:6]) or "none"
+        instructions.append(
+            "Cite one or more exact collected references verbatim. Available references: "
+            f"{refs}."
+        )
+    if not instructions:
+        instructions.append(
+            "Revise the candidate directly, preserving valid content and adding only the "
+            "missing detail, structure, or evidence."
+        )
+    return (
+        "The candidate answer did not satisfy the task acceptance contract. "
+        f"Reason: {reason}. Missing requirements: {missing}. "
+        f"{' '.join(instructions)} Do not claim unsupported facts."
     )
 
 
@@ -349,11 +469,21 @@ def _satisfied_outcomes(
     read_only_tools: frozenset[str],
 ) -> tuple[str, ...]:
     satisfied = ["answer_present", "task_acceptance_contract", "verification_freshness"]
+    contract = context.task.acceptance_contract
     if ledger.has_evidence:
         satisfied.append("evidence_collected")
     if ledger.artifact_refs:
         satisfied.append("artifact_produced")
-    contract = context.task.acceptance_contract
+    mutation_epoch = metadata.get("mutation_epoch")
+    if (
+        isinstance(mutation_epoch, int)
+        and not isinstance(mutation_epoch, bool)
+        and mutation_epoch > 0
+    ):
+        if contract is not None and contract.task_type.value == "change":
+            satisfied.append("change_applied")
+        if contract is not None and contract.task_type.value == "operate":
+            satisfied.append("operation_completed")
     if (
         contract is not None
         and contract.require_verification

@@ -89,6 +89,14 @@ def test_agui_stream_replays_official_events_with_exact_cursor_ids(tmp_path: Pat
     assert "TEXT_MESSAGE_END" in tail.text
     assert "RUN_FINISHED" in tail.text
 
+    header_tail = client.get(
+        _stream_path(session_id, "run-1"),
+        headers={"Last-Event-ID": cursor},
+    )
+    assert header_tail.status_code == 200
+    assert "RUN_STARTED" not in header_tail.text
+    assert "RUN_FINISHED" in header_tail.text
+
 
 def test_agui_stream_rejects_malformed_or_cross_run_cursor(tmp_path: Path) -> None:
     database_path, session_id, next_sequence = _seed_ready_session(tmp_path)
@@ -116,6 +124,10 @@ def test_agui_stream_rejects_malformed_or_cross_run_cursor(tmp_path: Path) -> No
     assert malformed.json()["code"] == "invalid_cursor"
     assert cross_run.status_code == 400
     assert cross_run.json()["code"] == "invalid_cursor"
+    assert "recovery_cursor" not in malformed.json()
+    assert AgUiCursor.decode(cross_run.json()["recovery_cursor"]).event_id == str(
+        event.event_id
+    )
 
 
 def test_agui_stream_closes_conversation_run_after_turn_completion(tmp_path: Path) -> None:

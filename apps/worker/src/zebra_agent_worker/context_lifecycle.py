@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from agent_context.capsule_facts import capsule_permission_boundaries
 from agent_core.domain.context_capsule import (
     ContextCapsule,
     ContextCapsuleValidationContext,
@@ -96,6 +97,7 @@ def persist_context_compaction(
                     ),
                     protected_user_constraints=frozenset(capsule.protected_user_constraints),
                     approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
+                    permission_boundaries=frozenset(capsule.permission_boundaries),
                     readable_artifact_refs=readable_refs,
                 ),
                 expected_active_capsule_id=active.capsule.capsule_id if active else None,
@@ -116,6 +118,7 @@ def persist_context_compaction(
                 unresolved_tool_call_ids=frozenset(tool.call_id for tool in capsule.pending_tools),
                 protected_user_constraints=frozenset(capsule.protected_user_constraints),
                 approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
+                permission_boundaries=frozenset(capsule.permission_boundaries),
                 readable_artifact_refs=readable_refs,
             ),
             sequence=recorder.next_sequence,
@@ -192,22 +195,13 @@ def _durable_capsule(
         start_sequence=events[0].sequence,
         end_sequence=events[-1].sequence,
     )
-    approvals = tuple(
-        _approval_state(event)
-        for event in events
-        if event.event_type
-        in {
-            EventType.POLICY_DECISION_MADE,
-            EventType.APPROVAL_REQUESTED,
-            EventType.APPROVAL_GRANTED,
-            EventType.APPROVAL_REJECTED,
-        }
-    )
+    approvals = capsule_permission_boundaries(events)
     return capsule.model_copy(
         update={
             "source_event_range": event_range,
             "protected_user_constraints": capsule.constraints,
             "approvals_and_policy_state": approvals,
+            "permission_boundaries": approvals,
         }
     )
 
@@ -217,11 +211,6 @@ def _is_readable(uri: str) -> bool:
     if parsed.scheme != "file":
         return False
     return Path(unquote(parsed.path)).is_file()
-
-
-def _approval_state(event: SessionEvent) -> str:
-    detail = event.payload.get("decision", event.payload.get("reason", "recorded"))
-    return f"{event.event_type.value}:{detail}"
 
 
 def _payload_text(payload: dict[str, object], key: str) -> str | None:

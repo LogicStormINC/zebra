@@ -8,6 +8,7 @@ from agent_core.domain.governed_memories import (
     GovernedMemoryTombstone,
 )
 from agent_core.domain.governed_memory_operations import (
+    AdministrativeMemoryReplacementRequest,
     AdministrativeMemoryReviewRequest,
     WorkerMemoryMutationPlan,
 )
@@ -114,6 +115,13 @@ class GovernedMemoryStorePort(Protocol):
     def commit_administrative_review(
         self,
         request: AdministrativeMemoryReviewRequest,
+        *,
+        authority: AdministrativeMutationCAS,
+    ) -> GovernedMemoryCommitResult: ...
+
+    def commit_administrative_replacement(
+        self,
+        request: AdministrativeMemoryReplacementRequest,
         *,
         authority: AdministrativeMutationCAS,
     ) -> GovernedMemoryCommitResult: ...

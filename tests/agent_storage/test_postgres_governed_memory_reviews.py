@@ -15,12 +15,14 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.governed_memories import (
     GovernedMemoryConflictError,
+    GovernedMemoryCreate,
     GovernedMemoryEntry,
     GovernedMemoryManagementContext,
     canonical_governed_memory_content_hash,
     canonical_governed_memory_creation_key,
 )
 from agent_core.domain.governed_memory_operations import (
+    AdministrativeMemoryReplacementRequest,
     AdministrativeMemoryReviewRequest,
     GovernedMemoryReviewAction,
 )
@@ -28,6 +30,7 @@ from agent_core.domain.governed_memory_receipts import GovernedMemoryCommitResul
 from agent_core.domain.identifiers import MemoryId, SessionId, new_session_id
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.memories import (
+    MemoryQuery,
     MemoryRecord,
     MemoryStatus,
     MemoryType,
@@ -123,6 +126,100 @@ def test_admin_confirm_atomically_supersedes_current_scope_authority(
     ).get_workspace(review_environment.session_id)
     assert session is not None and session.current_sequence == 2
     assert workspace is not None and workspace.current_sequence == 2
+
+
+def test_admin_delete_replaces_confirmed_content_with_tombstone(
+    review_environment: _ReviewEnvironment,
+) -> None:
+    old, _ = _insert_review_records(review_environment, candidates=0)
+    _release_worker(review_environment)
+
+    committed = review_environment.store.commit_administrative_review(
+        _request(
+            review_environment,
+            old,
+            operation_id="memory:review-delete",
+            action=GovernedMemoryReviewAction.DELETE,
+            expected_revision=2,
+        ),
+        authority=_admin_authority(review_environment),
+    )
+
+    with psycopg.connect(review_environment.dsn) as connection:
+        row = connection.execute(
+            """
+            SELECT status, text, revision FROM governed_memory_records
+            WHERE deployment_namespace = %s AND memory_id = %s
+            """,
+            (review_environment.namespace, old.memory_id),
+        ).fetchone()
+    assert row == ("deleted", None, 3)
+    assert committed.receipt.memories[0].status is MemoryStatus.DELETED
+    assert review_environment.store.get(old.memory_id) is None
+    assert review_environment.store.list(
+        MemoryQuery(
+            repo_id=old.repo_id,
+            user_id=old.user_id,
+            visibility=old.visibility,
+            statuses=(MemoryStatus.CONFIRMED,),
+        )
+    ) == []
+
+
+def test_admin_replacement_atomically_preserves_version_history(
+    review_environment: _ReviewEnvironment,
+) -> None:
+    old, _ = _insert_review_records(review_environment, candidates=0)
+    _release_worker(review_environment)
+    corrected = old.model_copy(
+        update={
+            "memory_id": MemoryId(uuid4()),
+            "text": "Use the corrected deployment procedure.",
+            "confidence": 1.0,
+            "status": MemoryStatus.CANDIDATE,
+            "created_at": NOW + timedelta(minutes=1),
+            "updated_at": NOW + timedelta(minutes=1),
+        }
+    )
+
+    committed = review_environment.store.commit_administrative_replacement(
+        AdministrativeMemoryReplacementRequest.create(
+            deployment_namespace=review_environment.namespace,
+            operation_id="memory:replace-confirmed",
+            session_id=review_environment.session_id,
+            expected_stream_revision=1,
+            memory_id=old.memory_id,
+            expected_revision=2,
+            replacement=GovernedMemoryCreate.from_candidate(corrected),
+            operator="memory-reviewer",
+            reason="user corrected the remembered procedure",
+            created_at=NOW + timedelta(minutes=1),
+        ),
+        authority=_admin_authority(review_environment),
+    )
+
+    old_authority = _authority_record(review_environment, old.memory_id)
+    corrected_authority = _authority_record(review_environment, corrected.memory_id)
+    assert old_authority.record.status is MemoryStatus.SUPERSEDED
+    assert old_authority.record.superseded_by == corrected.memory_id
+    assert corrected_authority.record.status is MemoryStatus.CONFIRMED
+    assert corrected_authority.record.text == "Use the corrected deployment procedure."
+    assert [
+        item.memory_id
+        for item in review_environment.store.list(
+            MemoryQuery(
+                repo_id=old.repo_id,
+                user_id=old.user_id,
+                visibility=old.visibility,
+                statuses=(MemoryStatus.CONFIRMED,),
+            )
+        )
+    ] == [corrected.memory_id]
+    assert committed.receipt.event_sequences == (2, 3)
+    assert [event.event_type for event in _events(review_environment)[-2:]] == [
+        EventType.MEMORY_CANDIDATE_EXTRACTED,
+        EventType.MEMORY_REVIEW_RECORDED,
+    ]
 
 
 def test_concurrent_reviewers_have_one_old_cas_winner(
@@ -356,6 +453,8 @@ def _request(
     candidate: MemoryRecord,
     *,
     operation_id: str,
+    action: GovernedMemoryReviewAction = GovernedMemoryReviewAction.CONFIRM,
+    expected_revision: int = 1,
 ) -> AdministrativeMemoryReviewRequest:
     return AdministrativeMemoryReviewRequest.create(
         deployment_namespace=environment.namespace,
@@ -363,8 +462,8 @@ def _request(
         session_id=environment.session_id,
         expected_stream_revision=1,
         memory_id=candidate.memory_id,
-        expected_revision=1,
-        action=GovernedMemoryReviewAction.CONFIRM,
+        expected_revision=expected_revision,
+        action=action,
         operator="memory-reviewer",
         reason="verified replacement procedure",
         created_at=NOW + timedelta(minutes=1),

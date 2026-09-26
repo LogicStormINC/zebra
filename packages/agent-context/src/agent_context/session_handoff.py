@@ -51,8 +51,18 @@ def build_handoff_envelope(request: HandoffEnvelopeBuildInput) -> SessionHandoff
         decisions_and_rationale=(
             () if capsule is None else capsule.decisions_and_rationale or capsule.decisions
         ),
-        completed_work=request.completed_work,
-        pending_work=request.pending_work,
+        completed_work=(
+            request.completed_work
+            if request.completed_work
+            else () if capsule is None else capsule.completed_actions
+        ),
+        pending_work=(
+            request.pending_work
+            if request.pending_work
+            else () if capsule is None else capsule.pending_actions
+        ),
+        rejected_approaches=(() if capsule is None else capsule.rejected_approaches),
+        permission_boundaries=(() if capsule is None else capsule.permission_boundaries),
         immediate_next=request.immediate_next,
         touched_files=() if capsule is None else capsule.touched_files,
         validation_results=() if capsule is None else capsule.tests,
@@ -83,6 +93,8 @@ def handoff_runtime_evidence(envelope: SessionHandoffEnvelope) -> RuntimeEvidenc
         *(f"Decision: {item}" for item in envelope.decisions_and_rationale),
         *(f"Completed: {item}" for item in envelope.completed_work),
         *(f"Pending: {item}" for item in envelope.pending_work),
+        *(f"Rejected approach: {item}" for item in envelope.rejected_approaches),
+        *(f"Permission boundary: {item}" for item in envelope.permission_boundaries),
         *(f"Touched file: {item}" for item in envelope.touched_files),
         *(f"Validation: {item}" for item in envelope.validation_results),
         *(f"Known failure: {item}" for item in envelope.known_failures),

@@ -220,10 +220,13 @@ def create_http_app(
             if denied is not None:
                 return JSONResponse(status_code=denied.status_code, content=denied.body)
             host_context = getattr(request.state, "host_context", None)
+            stream_query = dict(request.query_params)
+            if last_event_id := request.headers.get("Last-Event-ID"):
+                stream_query.setdefault("last_event_id", last_event_id)
             agui_stream = prepare_agui_stream(
                 api.stores,
                 request.url.path,
-                request.query_params,
+                stream_query,
                 live_event_fanout=api.live_event_fanout,
                 deployment_namespace=_deployment_namespace(api),
                 authorization_expires_at=getattr(host_context, "expires_at", None),

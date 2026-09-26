@@ -153,6 +153,7 @@ def test_cli_run_command_execute_runs_file_read_tool(
                     "output": "workspace readme\n",
                     "metadata": {
                         "path": "README.md",
+                        "evidence_refs": ["README.md"],
                         "byte_count": 17,
                         "truncated": False,
                     },

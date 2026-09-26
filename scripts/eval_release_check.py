@@ -13,7 +13,7 @@ from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessLoop, HarnessTask, SingleAttemptOrchestrator
-from agent_core.harness.task_contracts import infer_task_contract
+from agent_core.harness.task_contracts import AgentTaskType, infer_task_contract
 from agent_observability import (
     EvalCase,
     LocalEvalRunner,
@@ -178,6 +178,12 @@ class _AllowAllPolicy:
 class _EvalToolGateway:
     def __init__(self, case: EvalCase) -> None:
         self._case = case
+        task_type = infer_task_contract(case.prompt).task_type
+        self.mutation_tools = (
+            ("eval.observe",)
+            if task_type in {AgentTaskType.CHANGE, AgentTaskType.OPERATE}
+            else ()
+        )
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
         metadata: dict[str, object] = {

@@ -5,6 +5,7 @@ from pathlib import Path
 from agent_core.application import MemoryReviewAction
 from agent_storage import ControlPlaneStores
 
+from zebra_agent_api.memory_replacement import replace_user_memory
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_memory_control import (
     preview_session_memory_queue,
@@ -25,6 +26,19 @@ from zebra_agent_api.session_memory_control import (
 class ApiMemoryControlMixin:
     database_path: Path
     stores: ControlPlaneStores
+
+    def replace_user_memory(
+        self,
+        user_id: str,
+        memory_id: str,
+        payload: dict[str, object],
+    ) -> ApiResponse:
+        return replace_user_memory(
+            stores=self.stores,
+            user_id=user_id,
+            memory_id=memory_id,
+            payload=payload,
+        )
 
     def confirm_session_memory(
         self,
@@ -126,6 +140,22 @@ class ApiMemoryControlMixin:
             decision="expire",
         )
 
+    def delete_user_memory(
+        self,
+        user_id: str,
+        memory_id: str,
+        payload: dict[str, object],
+    ) -> ApiResponse:
+        return review_user_memory(
+            database_path=self.database_path,
+            stores=self.stores,
+            user_id=user_id,
+            memory_id=memory_id,
+            payload=payload,
+            action=MemoryReviewAction.DELETE,
+            decision="delete",
+        )
+
     def bulk_review_user_memory(
         self,
         user_id: str,
@@ -192,6 +222,22 @@ class ApiMemoryControlMixin:
             payload=payload,
             action=MemoryReviewAction.EXPIRE,
             decision="expire",
+        )
+
+    def delete_tenant_memory(
+        self,
+        tenant_id: str,
+        memory_id: str,
+        payload: dict[str, object],
+    ) -> ApiResponse:
+        return review_tenant_memory(
+            database_path=self.database_path,
+            stores=self.stores,
+            tenant_id=tenant_id,
+            memory_id=memory_id,
+            payload=payload,
+            action=MemoryReviewAction.DELETE,
+            decision="delete",
         )
 
     def bulk_review_tenant_memory(

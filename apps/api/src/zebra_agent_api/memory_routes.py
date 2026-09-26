@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.tenant_guard import (
+    memory_scope_denied,
     tenant_forbidden_response,
-    tenant_memory_denied,
 )
 
 if TYPE_CHECKING:
@@ -15,9 +15,7 @@ if TYPE_CHECKING:
     from zebra_agent_api.routes import RouteRequest
 
 
-def handle_memory_route(
-    app: ZebraAgentApi, request: RouteRequest
-) -> ApiResponse | None:
+def handle_memory_route(app: ZebraAgentApi, request: RouteRequest) -> ApiResponse | None:
     if not request.path.startswith(("/users/", "/tenants/")):
         return None
     method = request.method.upper()
@@ -28,19 +26,32 @@ def handle_memory_route(
     )
     if not parts:
         return None
-    if tenant_memory_denied(request.host_context, parts[0]):
-        return tenant_forbidden_response(parts[0])
     scope = "user" if request.path.startswith("/users/") else "tenant"
+    if memory_scope_denied(request.host_context, scope=scope, resource_id=parts[0]):
+        return tenant_forbidden_response(parts[0])
     if method == "GET":
         return _handle_get(app, scope, parts)
     if method == "POST":
         return _handle_post(app, scope, parts, request.body or {})
+    if method == "PATCH":
+        return _handle_patch(app, scope, parts, request.body or {})
+    if method == "DELETE":
+        return _handle_delete(app, scope, parts, request.body or {})
     return None
 
 
-def _handle_get(
-    app: ZebraAgentApi, scope: str, parts: tuple[str, ...]
+def _handle_patch(
+    app: ZebraAgentApi,
+    scope: str,
+    parts: tuple[str, ...],
+    body: dict[str, object],
 ) -> ApiResponse | None:
+    if scope == "user" and len(parts) == 3 and parts[1] == "memory":
+        return app.replace_user_memory(parts[0], parts[2], body)
+    return None
+
+
+def _handle_get(app: ZebraAgentApi, scope: str, parts: tuple[str, ...]) -> ApiResponse | None:
     if len(parts) == 2 and parts[1] == "memory":
         return app.get_user_memory(parts[0]) if scope == "user" else app.get_tenant_memory(parts[0])
     if len(parts) == 3 and parts[1] == "memory" and parts[2] == "queue":
@@ -55,7 +66,24 @@ def _handle_get(
             if scope == "user"
             else app.get_tenant_memory_queue_summary(parts[0])
         )
+    if len(parts) == 3 and parts[1] == "memory" and parts[2] == "profile":
+        return app.get_user_memory_profile(parts[0]) if scope == "user" else None
     return None
+
+
+def _handle_delete(
+    app: ZebraAgentApi,
+    scope: str,
+    parts: tuple[str, ...],
+    body: dict[str, object],
+) -> ApiResponse | None:
+    if len(parts) != 3 or parts[1] != "memory":
+        return None
+    return (
+        app.delete_user_memory(parts[0], parts[2], body)
+        if scope == "user"
+        else app.delete_tenant_memory(parts[0], parts[2], body)
+    )
 
 
 def _handle_post(

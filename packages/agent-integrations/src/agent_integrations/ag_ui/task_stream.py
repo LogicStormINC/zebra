@@ -122,8 +122,8 @@ def _validate_task_ordering(events: tuple[TaskEvent, ...]) -> None:
             or entry.segment_sequence != entry.event.sequence
         ):
             raise AgUiProjectionError("Task index does not match its canonical Event")
-        if entry.task_sequence <= previous:
-            raise AgUiProjectionError("task events must have increasing task_sequence")
+        if entry.task_sequence != previous + 1:
+            raise AgUiProjectionError("task events must have contiguous task_sequence")
         event_id = str(entry.event.event_id)
         if event_id in seen:
             raise AgUiProjectionError("task events must be unique per Task")

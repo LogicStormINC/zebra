@@ -38,6 +38,7 @@ def test_content_search_returns_ordered_bounded_evidence(tmp_path: Path) -> None
     ]
     assert result.metadata["match_count"] == 2
     assert result.metadata["returned_count"] == 2
+    assert result.metadata["evidence_refs"] == ["a.txt", "b.txt"]
     assert result.metadata["truncated"] is False
     assert result.metadata["next_offset"] is None
 
@@ -64,6 +65,7 @@ def test_filename_search_supports_root_glob_and_pagination(tmp_path: Path) -> No
     assert result.output == "src/beta_alpha.py"
     assert result.metadata["path"] == "src"
     assert result.metadata["match_count"] == 2
+    assert result.metadata["evidence_refs"] == ["src/beta_alpha.py"]
     assert result.metadata["next_offset"] is None
 
 

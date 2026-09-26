@@ -163,7 +163,9 @@ def test_schedule_exchange_mints_and_verifies_fresh_narrowed_authority() -> None
         ),
         PyJwtHostGrantDecoder(StaticJwks(key, broker.key_id)),
         client=client,
-        now=lambda: NOW,
+        # Keep exchange signing and grant verification aligned even when this
+        # module was collected long before the test runs in the full suite.
+        now=lambda: datetime.now(UTC),
     )
     binding, firing = authority_fixture()
 

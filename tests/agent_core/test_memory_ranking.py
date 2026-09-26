@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from agent_core.application import rank_governed_memories
+from agent_core.application import memory_text_features, rank_governed_memories
 from agent_core.domain.governed_memories import (
     GovernedMemoryEntry,
     canonical_governed_memory_content_hash,
@@ -57,3 +57,34 @@ def test_ranking_keeps_preferences_and_selects_relevant_chinese_memory() -> None
     assert preference in ranked
     assert relevant in ranked
     assert irrelevant not in ranked
+
+
+def test_ranking_bounds_stable_preferences_and_preserves_relevant_type_diversity() -> None:
+    preferences = tuple(_entry(MemoryType.PREFERENCE, f"偏好 {index}") for index in range(4))
+    architecture = _entry(MemoryType.ARCHITECTURE_FACT, "Agent 使用 PostgreSQL 存储")
+    procedure = _entry(MemoryType.PROCEDURE, "Agent 发布前验证 PostgreSQL")
+
+    ranked = rank_governed_memories(
+        (*preferences, architecture, procedure),
+        query_text="Agent PostgreSQL",
+        limit=4,
+    )
+
+    assert sum(item.record.memory_type is MemoryType.PREFERENCE for item in ranked) == 2
+    assert architecture in ranked
+    assert procedure in ranked
+
+
+def test_ranking_recalls_common_paraphrases_without_single_character_noise() -> None:
+    paraphrase = _entry(MemoryType.PROCEDURE, "回复尽量简洁")
+    single_character_noise = _entry(MemoryType.ARCHITECTURE_FACT, "回滚发布后检查服务")
+
+    ranked = rank_governed_memories(
+        (single_character_noise, paraphrase),
+        query_text="回答保持简短",
+        limit=4,
+    )
+
+    assert ranked == (paraphrase,)
+    assert "回复" in memory_text_features("回答保持简短")
+    assert "回" not in memory_text_features("回答保持简短")

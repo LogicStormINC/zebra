@@ -1,4 +1,5 @@
 import os
+import re
 from collections.abc import Iterator
 from fnmatch import fnmatch
 from pathlib import Path
@@ -110,6 +111,7 @@ class WorkspaceSearchTool:
                 "glob": glob,
                 "match_count": len(matches),
                 "returned_count": returned_count,
+                "evidence_refs": _evidence_paths(page, mode=mode),
                 "scanned_files": scanned_files,
                 "offset": offset,
                 "truncated": has_more or output_truncated,
@@ -156,6 +158,18 @@ class WorkspaceSearchTool:
                 )
             )
         return matches, scanned_files, scan_truncated
+
+
+def _evidence_paths(page: list[str], *, mode: str) -> list[str]:
+    paths: dict[str, None] = {}
+    for item in page:
+        if mode == "files":
+            paths[item] = None
+            continue
+        match = re.match(r"^(.+?):\d+:\d+:", item)
+        if match is not None:
+            paths[match.group(1)] = None
+    return list(paths)
 
 
 def _workspace_files(root: Path) -> Iterator[Path]:

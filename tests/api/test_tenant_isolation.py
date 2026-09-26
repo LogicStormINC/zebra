@@ -37,6 +37,13 @@ def _host_context(namespace_id: str) -> HostContextEnvelope:
 
 TENANT_A = _host_context("tenant-a")
 TENANT_B = _host_context("tenant-b")
+TENANT_A_WITHOUT_PRINCIPAL = TENANT_A.model_copy(
+    update={
+        "resource_refs": tuple(
+            ref for ref in TENANT_A.resource_refs if ref.resource_type != "principal"
+        )
+    }
+)
 
 
 def _adapter(tmp_path: Path) -> tuple[RouteAdapter, object]:
@@ -73,9 +80,7 @@ def _create_session(
 
 
 def _get(adapter: RouteAdapter, path: str, host_context: object) -> ApiResponse:
-    return adapter.handle(
-        RouteRequest(method="GET", path=path, host_context=host_context)
-    )
+    return adapter.handle(RouteRequest(method="GET", path=path, host_context=host_context))
 
 
 def test_session_read_is_tenant_scoped(tmp_path: Path) -> None:
@@ -146,9 +151,7 @@ def test_approval_routes_are_tenant_scoped(tmp_path: Path) -> None:
     assert denied.status_code == 404
     listed = _get(adapter, "/approvals", TENANT_B)
     assert listed.status_code == 200
-    assert all(
-        entry.get("session_id") != session_id for entry in listed.body["approvals"]
-    )
+    assert all(entry.get("session_id") != session_id for entry in listed.body["approvals"])
 
 
 def test_task_routes_are_tenant_scoped(tmp_path: Path) -> None:
@@ -170,23 +173,36 @@ def test_unnamespaced_sessions_are_hidden_from_host_tenants(tmp_path: Path) -> N
     assert _get(adapter, f"/sessions/{session_id}", TENANT_B).status_code == 404
     assert _get(adapter, f"/sessions/{session_id}", TENANT_A).status_code == 404
     listed = _get(adapter, "/sessions", TENANT_B)
-    assert not any(
-        item["session_id"] == session_id for item in listed.body["sessions"]
-    )
+    assert not any(item["session_id"] == session_id for item in listed.body["sessions"])
 
 
 def test_tenant_memory_routes_are_tenant_scoped(tmp_path: Path) -> None:
     adapter, _app = _adapter(tmp_path)
     denied_user = _get(adapter, "/users/user-1/memory", TENANT_B)
     assert denied_user.status_code == 404
-    allowed_user = _get(adapter, "/users/user-1/memory", TENANT_A)
-    assert allowed_user.status_code in (200, 404)
+    allowed_user = _get(adapter, "/users/user-tenant-a/memory", TENANT_A)
+    assert allowed_user.status_code == 200
+    allowed_profile = _get(adapter, "/users/user-tenant-a/memory/profile", TENANT_A)
+    assert allowed_profile.status_code == 200
+    assert allowed_profile.body["derived_from"] == "confirmed_governed_memory"
     denied_tenant = _get(adapter, "/tenants/tenant-b/memory", TENANT_A)
     assert denied_tenant.status_code == 404
     own_tenant = _get(adapter, "/tenants/tenant-a/memory", TENANT_A)
     assert own_tenant.status_code in (200, 404)
     unscoped = _get(adapter, "/tenants/tenant-z/memory", None)
     assert unscoped.status_code in (200, 404)
+
+
+def test_host_memory_routes_fail_closed_without_one_principal(tmp_path: Path) -> None:
+    adapter, _app = _adapter(tmp_path)
+
+    denied_user = _get(
+        adapter,
+        "/users/user-tenant-a/memory/profile",
+        TENANT_A_WITHOUT_PRINCIPAL,
+    )
+
+    assert denied_user.status_code == 404
 
 
 def test_user_memory_mutations_are_tenant_scoped(tmp_path: Path) -> None:

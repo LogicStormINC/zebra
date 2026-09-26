@@ -372,6 +372,35 @@ def test_model_usage_is_projected_as_a_public_custom_event() -> None:
     }
 
 
+def test_selected_memory_is_projected_without_memory_content() -> None:
+    session_id = new_session_id()
+    events = (
+        _event(
+            session_id,
+            0,
+            EventType.MEMORY_CONTEXT_SELECTED,
+            {
+                "selected_count": 2,
+                "memory_ids": ["memory-1", "memory-2"],
+                "query_has_text": True,
+                "mode": "continue",
+            },
+        ),
+    )
+
+    projection = AgUiProjector().project(events, _identity(session_id))
+    selected = next(
+        event
+        for event in projection.events
+        if isinstance(event, CustomEvent) and event.name == "zebra.memory_context"
+    )
+
+    assert selected.value == {
+        "memory_ids": ["memory-1", "memory-2"],
+        "selected_count": 2,
+    }
+
+
 def test_durable_subagent_lifecycle_is_projected_without_child_summary() -> None:
     session_id = new_session_id()
     child_task_id = str(uuid4())

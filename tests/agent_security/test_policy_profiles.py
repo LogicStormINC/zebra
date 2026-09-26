@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from agent_core.domain.identifiers import new_tool_call_id
@@ -598,6 +599,41 @@ def test_absolute_cwd_is_denied_for_command_run_before_profile_allowance() -> No
         _tool_call(
             "command.run",
             {"command": ["python", "-m", "pytest"], "cwd": "/tmp/outside"},
+        )
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert "escapes workspace" in decision.reason
+
+
+def test_absolute_cwd_inside_known_workspace_reaches_profile_decision(tmp_path: Path) -> None:
+    workspace = tmp_path.resolve()
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.FULL_ACCESS,
+        workspace_root=workspace,
+    )
+
+    decision = engine.evaluate_tool_call(
+        _tool_call(
+            "command.run",
+            {"command": ["python", "-m", "pytest"], "cwd": str(workspace / "src")},
+        )
+    )
+
+    assert decision.decision is PolicyDecisionType.ALLOW
+
+
+def test_absolute_cwd_outside_known_workspace_is_denied(tmp_path: Path) -> None:
+    workspace = (tmp_path / "workspace").resolve()
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.FULL_ACCESS,
+        workspace_root=workspace,
+    )
+
+    decision = engine.evaluate_tool_call(
+        _tool_call(
+            "command.run",
+            {"command": ["python", "-m", "pytest"], "cwd": str(tmp_path / "outside")},
         )
     )
 

@@ -49,11 +49,15 @@ def _materialization(
             acceptance_criteria=("child cites evidence",),
             constraints=("read only",),
             decisions=("PostgreSQL is authoritative",),
+            completed_actions=("authority audit passed",),
+            pending_actions=("run recovery acceptance",),
+            rejected_approaches=("use Redis as authority",),
             touched_files=("README.md",),
             tests=("make check passed",),
             errors=("one prior timeout",),
             artifact_refs=("artifact://evidence/1",),
             open_questions=("which Trench endpoint",),
+            permission_boundaries=("production writes require approval",),
             immediate_next="inspect the deployment runbook",
             source_hash="a" * 64,
             confidence=1.0,
@@ -141,6 +145,22 @@ def test_builder_implements_all_four_bounded_modes() -> None:
         "memory",
     }
     assert resumed.checksum == resumed.expected_checksum()
+
+
+def test_materialized_capsule_keeps_work_and_permission_boundaries() -> None:
+    snapshot = delegated_context_from_materialization(
+        _materialization(), ContextInheritanceMode.CAPSULE, created_at=NOW
+    )
+
+    assert snapshot is not None
+    content = snapshot.items[0].content
+    for expected in (
+        "Completed actions:\n- authority audit passed",
+        "Pending actions:\n- run recovery acceptance",
+        "Rejected approaches:\n- use Redis as authority",
+        "Permission boundaries:\n- production writes require approval",
+    ):
+        assert expected in content
 
 
 def test_capsule_mode_never_silently_degrades_to_history() -> None:

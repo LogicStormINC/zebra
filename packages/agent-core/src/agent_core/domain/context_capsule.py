@@ -40,6 +40,7 @@ class ContextCapsuleValidationContext(BaseModel):
     unresolved_tool_call_ids: frozenset[str] = frozenset()
     protected_user_constraints: frozenset[str] = frozenset()
     approval_and_policy_state: frozenset[str] = frozenset()
+    permission_boundaries: frozenset[str] = frozenset()
     readable_artifact_refs: frozenset[str] = frozenset()
 
 
@@ -59,7 +60,7 @@ class ContextCapsule(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     capsule_id: str
-    version: str = "1.0"
+    version: str = "1.1"
     objective: str
     scope: tuple[str, ...] = ()
     acceptance_criteria: tuple[str, ...] = ()
@@ -68,12 +69,16 @@ class ContextCapsule(BaseModel):
     decisions: tuple[str, ...] = ()
     decisions_and_rationale: tuple[str, ...] = ()
     plan: tuple[str, ...] = ()
+    completed_actions: tuple[str, ...] = ()
+    pending_actions: tuple[str, ...] = ()
+    rejected_approaches: tuple[str, ...] = ()
     touched_files: tuple[str, ...] = ()
     tests: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
     pending_tools: tuple[PendingToolState, ...] = ()
     artifact_refs: tuple[str, ...] = ()
     approvals_and_policy_state: tuple[str, ...] = ()
+    permission_boundaries: tuple[str, ...] = ()
     open_questions: tuple[str, ...] = ()
     recent_exact_tail_refs: tuple[str, ...] = ()
     immediate_next: str
@@ -154,6 +159,8 @@ def validate_context_capsule(
         failures.append("protected user constraints were omitted")
     if not context.approval_and_policy_state.issubset(capsule.approvals_and_policy_state):
         failures.append("approval or policy state was omitted")
+    if not context.permission_boundaries.issubset(capsule.permission_boundaries):
+        failures.append("permission boundaries were omitted")
     referenced_artifacts = set(capsule.artifact_refs) | set(capsule.recent_exact_tail_refs)
     unreadable = referenced_artifacts - set(context.readable_artifact_refs)
     if unreadable:

@@ -25,6 +25,7 @@ _SINGLE_ACTIVE_MEMORY_TYPES = frozenset(
 class MemoryReviewAction(StrEnum):
     CONFIRM = "confirm"
     EXPIRE = "expire"
+    DELETE = "delete"
 
 
 @dataclass(frozen=True)
@@ -83,15 +84,20 @@ class MemoryReviewService:
     ) -> MemoryReviewResult:
         if record.source_session_id != session.session_id:
             raise ValueError("memory review requires the source session to match")
-        if record.status is not MemoryStatus.CANDIDATE:
+        if (
+            command.action is not MemoryReviewAction.DELETE
+            and record.status is not MemoryStatus.CANDIDATE
+        ):
             raise ValueError("memory review requires a candidate memory")
+        if record.status is MemoryStatus.DELETED:
+            raise ValueError("deleted memory cannot be reviewed")
         if next_sequence != session.current_sequence + 1:
             raise ValueError("memory review sequence must follow current session")
-        next_status = (
-            MemoryStatus.CONFIRMED
-            if command.action is MemoryReviewAction.CONFIRM
-            else MemoryStatus.EXPIRED
-        )
+        next_status = {
+            MemoryReviewAction.CONFIRM: MemoryStatus.CONFIRMED,
+            MemoryReviewAction.EXPIRE: MemoryStatus.EXPIRED,
+            MemoryReviewAction.DELETE: MemoryStatus.DELETED,
+        }[command.action]
         reviewed_at = command.created_at or datetime.now(session.updated_at.tzinfo)
         duplicate_of = (
             _duplicate_confirmed_record(record, existing_records)

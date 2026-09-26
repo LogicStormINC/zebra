@@ -65,6 +65,12 @@ from agent_core.application.turn_projection import (
     latest_completed_turn,
     project_turns,
 )
+from agent_core.application.user_profile_memory import (
+    UserProfileCandidate,
+    UserProfileItem,
+    confirmed_user_profile,
+    user_profile_candidates,
+)
 
 __all__ = [
     "ApprovalDecisionAction",
@@ -112,4 +118,8 @@ __all__ = [
     "is_human_message",
     "latest_completed_turn",
     "project_turns",
+    "UserProfileCandidate",
+    "UserProfileItem",
+    "confirmed_user_profile",
+    "user_profile_candidates",
 ]

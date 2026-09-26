@@ -15,10 +15,14 @@ def test_compact_conversation_preserves_required_sections() -> None:
             acceptance_criteria=("tests pass", "docs updated"),
             confirmed_constraints=("stay in agent-context",),
             current_plan=("add compaction module", "add tests"),
+            completed_actions=("traced the durable event path",),
+            pending_actions=("run the full gate",),
+            rejected_approaches=("persist private reasoning",),
             modified_files=("packages/agent-context/src/agent_context/compaction.py",),
             failed_attempts=("initial truncation was too aggressive",),
             unresolved_tests=("none",),
             approvals=("not required",),
+            permission_boundaries=("production writes require approval",),
             artifact_refs=("artifact://diff/123",),
             max_tokens=200,
         )
@@ -29,6 +33,10 @@ def test_compact_conversation_preserves_required_sections() -> None:
     assert "Acceptance:" in item.content
     assert "Modified Files:" in item.content
     assert "Artifacts:" in item.content
+    assert "Completed Actions:" in item.content
+    assert "Pending Actions:" in item.content
+    assert "Rejected Approaches:" in item.content
+    assert "Permission Boundaries:" in item.content
 
 
 def test_compact_tool_outputs_summarizes_multiple_evidences() -> None:

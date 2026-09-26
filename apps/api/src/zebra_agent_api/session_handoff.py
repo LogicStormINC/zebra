@@ -201,6 +201,7 @@ class SessionHandoffApi:
             expected_source_event_hash=envelope.source_event_hash,
             expected_workspace_revision=facts.workspace_revision,
             protected_user_constraints=frozenset(envelope.protected_user_constraints),
+            permission_boundaries=frozenset(envelope.permission_boundaries),
             readable_artifact_refs=frozenset(envelope.artifact_refs),
             source_authority=frozenset({facts.authority_revision}),
             target_authority=frozenset({facts.authority_revision}),

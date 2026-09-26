@@ -1,3 +1,5 @@
+import runpy
+import subprocess
 from pathlib import Path
 
 RUNNER = Path(__file__).with_name("run_default_e2e.py")
@@ -43,6 +45,18 @@ def test_worker_fail_closed_asserts_zero_side_effects() -> None:
     assert "_find_sqlite" in source
     assert "OCI engine does not advertise runtime runsc" in source
     assert "workspace quota requires the workspace root to be a dedicated mount point" in source
+
+
+def test_worker_fail_closed_accepts_daemon_zero_exit_with_retryable_reason() -> None:
+    fail_closed_reason = runpy.run_path(str(RUNNER))["_fail_closed_reason"]
+    completed = subprocess.CompletedProcess(
+        args=("zebra-agent-worker",),
+        returncode=0,
+        stdout=b"",
+        stderr="worker session skipped: OCI engine does not advertise runtime runsc",
+    )
+
+    assert fail_closed_reason(completed) == "OCI engine does not advertise runtime runsc"
 
 
 def test_durable_verifier_uses_only_authoritative_postgres_paths() -> None:

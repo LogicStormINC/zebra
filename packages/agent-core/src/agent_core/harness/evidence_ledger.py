@@ -58,7 +58,7 @@ def evidence_ledger(
             continue
         successful += 1
         payload = event.payload
-        _collect_refs(payload.get("metadata"), refs, artifacts)
+        _collect_metadata_refs(payload.get("metadata"), refs, artifacts)
         output = payload.get("output")
         if isinstance(output, str) and output:
             try:
@@ -84,7 +84,7 @@ def record_tool_evidence(
     failed = _non_negative_int(metadata.get("evidence_failed_tool_results"))
     if result.status is ToolCallStatus.EXECUTED:
         successful += 1
-        _collect_refs(result.metadata, refs, artifacts)
+        _collect_metadata_refs(result.metadata, refs, artifacts)
         if result.output:
             try:
                 parsed = json.loads(result.output)
@@ -117,7 +117,9 @@ def _string_sequence(value: object) -> tuple[str, ...]:
     if not isinstance(value, list | tuple):
         return ()
     return tuple(
-        item for item in value[:128] if isinstance(item, str) and _safe_reference(item)
+        item
+        for item in value[:128]
+        if isinstance(item, str) and (_safe_reference(item) or _safe_local_reference(item))
     )
 
 
@@ -141,5 +143,20 @@ def _collect_refs(value: object, refs: set[str], artifacts: set[str]) -> None:
             _collect_refs(item, refs, artifacts)
 
 
+def _collect_metadata_refs(
+    value: object, refs: set[str], artifacts: set[str]
+) -> None:
+    _collect_refs(value, refs, artifacts)
+    if not isinstance(value, Mapping):
+        return
+    refs.update(_string_sequence(value.get("evidence_refs")))
+
+
 def _safe_reference(value: str) -> bool:
     return len(value) <= 2_048 and value.startswith(("https://", "http://", "artifact://"))
+
+
+def _safe_local_reference(value: str) -> bool:
+    if not value or len(value) > 2_048 or value.startswith(("/", "~")):
+        return False
+    return all(part not in {"", ".", ".."} for part in value.split("/"))

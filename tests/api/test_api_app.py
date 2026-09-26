@@ -505,6 +505,7 @@ def test_api_create_session_execute_runs_builtin_tool(
                     "output": "api readme\n",
                     "metadata": {
                         "path": "README.md",
+                        "evidence_refs": ["README.md"],
                         "byte_count": 11,
                         "truncated": False,
                     },

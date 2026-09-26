@@ -6,6 +6,10 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 
+from agent_context.capsule_facts import (
+    capsule_permission_boundaries,
+    capsule_work_facts,
+)
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.context_capsule import (
     ContextCapsule,
@@ -197,6 +201,7 @@ class SessionContextControlApi:
                 unresolved_tool_call_ids=frozenset(tool.call_id for tool in capsule.pending_tools),
                 protected_user_constraints=frozenset(capsule.protected_user_constraints),
                 approval_and_policy_state=frozenset(capsule.approvals_and_policy_state),
+                permission_boundaries=frozenset(capsule.permission_boundaries),
                 readable_artifact_refs=frozenset(capsule.referenced_artifact_refs),
             ),
             sequence=event.sequence,
@@ -368,12 +373,7 @@ def _capsule_from_events(
         if event.event_type is EventType.MODEL_RESPONSE_RECEIVED
         and isinstance(event.payload.get("assistant_message"), str)
     )[-8:]
-    plans = tuple(
-        str(event.payload.get("summary", ""))[:1_000]
-        for event in events
-        if event.event_type in {EventType.PLAN_PROPOSED, EventType.PLAN_UPDATED}
-        and str(event.payload.get("summary", "")).strip()
-    )[-8:]
+    work = capsule_work_facts(events)
     tests = tuple(
         str(event.payload.get("summary", ""))[:1_000]
         for event in events
@@ -406,30 +406,30 @@ def _capsule_from_events(
         start_sequence=events[0].sequence,
         end_sequence=events[-1].sequence,
     )
-    approvals = tuple(
-        _approval_state(event)
-        for event in events
-        if event.event_type
-        in {
-            EventType.POLICY_DECISION_MADE,
-            EventType.APPROVAL_REQUESTED,
-            EventType.APPROVAL_GRANTED,
-            EventType.APPROVAL_REJECTED,
-        }
-    )
+    permissions = capsule_permission_boundaries(events)
     return ContextCapsule(
         capsule_id=f"ctxcap-{source_hash[:24]}",
         objective=objective,
         constraints=(objective,) + ((f"Compaction focus: {focus}",) if focus else ()),
         protected_user_constraints=(objective,),
         decisions=decisions,
-        plan=plans,
+        plan=work.plan,
+        completed_actions=work.completed_actions,
+        pending_actions=work.pending_actions,
+        rejected_approaches=work.rejected_approaches,
         tests=tests,
         errors=errors,
         pending_tools=(pending,) if pending is not None else (),
         artifact_refs=artifact_refs,
-        approvals_and_policy_state=approvals,
-        immediate_next=plans[-1] if plans else decisions[-1] if decisions else objective,
+        approvals_and_policy_state=permissions,
+        permission_boundaries=permissions,
+        immediate_next=(
+            work.pending_actions[0]
+            if work.pending_actions
+            else decisions[-1]
+            if decisions
+            else objective
+        ),
         source_event_range=source_range,
         source_hash=source_hash,
         confidence=0.85,
@@ -461,11 +461,6 @@ def _latest_attempt(events: list[SessionEvent]) -> int:
         if isinstance(value, int) and not isinstance(value, bool) and value > 0:
             return value
     return 1
-
-
-def _approval_state(event: SessionEvent) -> str:
-    detail = event.payload.get("decision", event.payload.get("reason", "recorded"))
-    return f"{event.event_type.value}:{detail}"
 
 
 def _optional_focus(value: object) -> str | None | ApiResponse:

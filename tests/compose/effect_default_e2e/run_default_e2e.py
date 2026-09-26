@@ -267,6 +267,9 @@ class Runner:
         second = self._run_worker_cycle()
         second_reason = _fail_closed_reason(second)
         effects_second = self.uv_json(str(RUNNER_DIR / "verify_durable.py"), "effect-outbox-count")
+        status_second = self.uv_json(
+            str(RUNNER_DIR / "verify_durable.py"), "session-status", session_id
+        )
         sqlite_files = _find_sqlite(self.run_root)
         tool_events = [
             entry
@@ -276,17 +279,18 @@ class Runner:
         self.record(
             "worker_fail_closed",
             bool(first_reason)
-            and bool(second_reason)
             and effects_first["effect_outbox_rows"] == 0
             and effects_second["effect_outbox_rows"] == 0
             and status_first["status"] == "ready"
+            and status_second["status"] == "ready"
             and not tool_events
             and not sqlite_files,
             {
                 "first_reason": first_reason,
                 "second_reason": second_reason,
                 "effect_outbox_rows": effects_second["effect_outbox_rows"],
-                "session_status": status_first["status"],
+                "session_status_first": status_first["status"],
+                "session_status_second": status_second["status"],
                 "tool_events": tool_events,
                 "sqlite_files": sqlite_files,
             },
@@ -392,14 +396,17 @@ class Runner:
 
 
 def _fail_closed_reason(completed: subprocess.CompletedProcess[bytes]) -> str | None:
-    if completed.returncode == 0:
-        return None
     for known in (
         "workspace quota requires the workspace root to be a dedicated mount point",
         "OCI engine does not advertise runtime runsc",
     ):
         if known in completed.stderr:
             return known
+    # The long-running Worker catches a retryable setup failure so one bad
+    # Session does not terminate the process. Its exit code can therefore be
+    # zero even though the per-Session fail-closed reason is present on stderr.
+    if completed.returncode == 0:
+        return None
     return completed.stderr.strip().splitlines()[-1] if completed.stderr.strip() else "unknown"
 
 

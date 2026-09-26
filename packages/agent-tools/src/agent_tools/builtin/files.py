@@ -52,6 +52,7 @@ class FileReadTool:
             output=visible,
             metadata={
                 "path": str(Path(relative_path)),
+                "evidence_refs": [str(Path(relative_path))],
                 "byte_count": len(content),
                 "truncated": truncated,
             },

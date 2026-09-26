@@ -21,6 +21,7 @@ def test_context_capsule_validator_protects_durable_state() -> None:
         unresolved_tool_call_ids=frozenset({"call-1"}),
         protected_user_constraints=frozenset({"do not push"}),
         approval_and_policy_state=frozenset({"write:approved"}),
+        permission_boundaries=frozenset({"production:approval_required"}),
         readable_artifact_refs=frozenset({"artifact://evidence"}),
     )
 
@@ -30,6 +31,8 @@ def test_context_capsule_validator_protects_durable_state() -> None:
         validate_context_capsule(
             capsule.model_copy(update={"protected_user_constraints": ()}), context
         )
+    with pytest.raises(ContextCapsuleValidationError, match="permission boundaries"):
+        validate_context_capsule(capsule.model_copy(update={"permission_boundaries": ()}), context)
 
 
 def test_context_capsule_validator_uses_recent_exact_tail_refs() -> None:
@@ -42,6 +45,7 @@ def test_context_capsule_validator_uses_recent_exact_tail_refs() -> None:
         unresolved_tool_call_ids=frozenset({"call-1"}),
         protected_user_constraints=frozenset({"do not push"}),
         approval_and_policy_state=frozenset({"write:approved"}),
+        permission_boundaries=frozenset({"production:approval_required"}),
         readable_artifact_refs=frozenset(
             {"artifact://evidence", "event://session/1", "artifact://recent"}
         ),
@@ -66,6 +70,7 @@ def test_context_capsule_validator_normalizes_artifact_refs_for_readability_chec
         unresolved_tool_call_ids=frozenset({"call-1"}),
         protected_user_constraints=frozenset({"do not push"}),
         approval_and_policy_state=frozenset({"write:approved"}),
+        permission_boundaries=frozenset({"production:approval_required"}),
         readable_artifact_refs=frozenset(
             {
                 "artifact://evidence",
@@ -94,6 +99,7 @@ def _capsule() -> ContextCapsule:
         objective="Finish compaction",
         protected_user_constraints=("do not push",),
         approvals_and_policy_state=("write:approved",),
+        permission_boundaries=("production:approval_required",),
         pending_tools=(PendingToolState(call_id="call-1", name="command"),),
         artifact_refs=("artifact://evidence",),
         immediate_next="Run tests",

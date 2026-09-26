@@ -148,6 +148,23 @@ class AgUiProjector:
             return subagent_events
         if event.event_type is EventType.ANSWER_COMMITTED:
             return (project_answer_committed(payload, timestamp=timestamp),)
+        if event.event_type is EventType.MEMORY_CONTEXT_SELECTED:
+            memory_ids = payload.get("memory_ids")
+            if not isinstance(memory_ids, list) or any(
+                not isinstance(memory_id, str) or not memory_id.strip()
+                for memory_id in memory_ids
+            ):
+                raise AgUiProjectionError("selected Memory ids must be non-blank strings")
+            return (
+                CustomEvent(
+                    timestamp=timestamp,
+                    name="zebra.memory_context",
+                    value={
+                        "memory_ids": memory_ids,
+                        "selected_count": payload.get("selected_count", len(memory_ids)),
+                    },
+                ),
+            )
         if event.event_type is EventType.MODEL_RESPONSE_DELTA:
             model_call_id = _required_payload_text(payload, "model_call_id")
             delta = _required_payload_text(payload, "content_delta", allow_empty=True)

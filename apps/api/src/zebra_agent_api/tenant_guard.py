@@ -193,3 +193,18 @@ def tenant_memory_denied(
     if namespace is None:
         return False
     return namespace != resource_tenant
+
+
+def memory_scope_denied(
+    host_context: HostContextEnvelope | None,
+    *,
+    scope: str,
+    resource_id: str,
+) -> bool:
+    """Bind USER Memory to the principal and TENANT Memory to the namespace."""
+    authority_id = (
+        _principal_ref(host_context) if scope == "user" else tenant_namespace(host_context)
+    )
+    # Internal/operator calls have no Host envelope. Once a Host envelope exists,
+    # a missing or ambiguous authority key must fail closed just like Task access.
+    return host_context is not None and authority_id != resource_id

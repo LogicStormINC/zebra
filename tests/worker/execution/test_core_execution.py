@@ -3,6 +3,7 @@ from dataclasses import replace
 from pathlib import Path
 from threading import Event, Thread
 
+import pytest
 from agent_core.application.mock_model import ScriptedModelGateway
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id
@@ -11,7 +12,11 @@ from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.modeling import ModelCompletion, ModelTextDelta, ModelToolDefinition
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tool_runs import ToolRunRecord
-from agent_core.ports.runtime import EffectiveRuntimeAuthority, RuntimeClass
+from agent_core.ports.runtime import (
+    EffectiveRuntimeAuthority,
+    RuntimeCapabilityError,
+    RuntimeClass,
+)
 from agent_runtime import LocalRuntime
 from agent_security import LocalPolicyEngine, NetworkProfile
 from agent_storage import (
@@ -19,6 +24,7 @@ from agent_storage import (
     SQLiteEventStore,
     SQLiteLeaseStore,
     SQLiteModelCallStore,
+    SQLiteProjectionStore,
     SQLiteToolRunStore,
     SQLiteWorkspaceProjectionStore,
 )
@@ -34,6 +40,8 @@ from worker_execution_support import (
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.control import SessionControlService
+from zebra_agent_worker.execution import RetryableWorkerSetupError
+from zebra_agent_worker.recovery import SessionRecoveryService
 
 
 def test_worker_execution_service_completes_ready_session(
@@ -60,6 +68,44 @@ def test_worker_execution_service_completes_ready_session(
     model_calls = SQLiteModelCallStore(database_path).list_for_session(session_id)
     assert len(model_calls) == 1
     assert isinstance(model_calls[0], ModelCallRecord)
+
+
+def test_worker_setup_failure_keeps_session_ready_for_retry(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    database_path = tmp_path / "worker.db"
+    session_id = _seed_ready_session(database_path, tmp_path)
+
+    def unavailable_runtime(*_args, **_kwargs):
+        raise RuntimeCapabilityError("sandbox runtime is unavailable")
+
+    monkeypatch.setattr(
+        "zebra_agent_worker.runtime_setup.build_runtime",
+        unavailable_runtime,
+    )
+    monkeypatch.setattr(
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda settings: _assistant_only_gateway(settings=settings),
+    )
+
+    with pytest.raises(RetryableWorkerSetupError, match="sandbox runtime is unavailable"):
+        _build_execution_service(database_path).execute_session(
+            session_id,
+            worker_id="worker-retryable-setup",
+            executed_at=_created_at(),
+        )
+
+    events = SQLiteEventStore(database_path).list_for_session(session_id)
+    recovered = SessionRecoveryService(
+        SQLiteEventStore(database_path),
+        SQLiteProjectionStore(database_path),
+        SQLiteWorkspaceProjectionStore(database_path),
+    ).recover_session(session_id)
+    assert recovered.session.status is SessionStatus.READY
+    assert EventType.HARNESS_ATTEMPT_STARTED not in {event.event_type for event in events}
+    assert EventType.SESSION_FAILED not in {event.event_type for event in events}
+    assert SQLiteLeaseStore(database_path).get(session_id) is None
 
 
 def test_worker_execution_keeps_recovered_lease_during_long_model_call(

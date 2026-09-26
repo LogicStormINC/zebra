@@ -106,6 +106,11 @@ class TestTaskProjector:
         else:
             raise AssertionError("task events must be ordered")
 
+    def test_missing_task_event_is_rejected(self) -> None:
+        stream = _two_segment_stream()
+        with pytest.raises(AgUiProjectionError, match="contiguous"):
+            AgUiTaskProjector().project_task([stream[0], stream[2]], IDENTITY)
+
     def test_empty_stream_has_no_cursor(self) -> None:
         projection = AgUiTaskProjector().project_task([], IDENTITY)
         assert projection.next_cursor is None

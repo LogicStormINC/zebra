@@ -109,21 +109,25 @@ def prepare_agui_stream(
     cursor, error = _query_cursor(query, path)
     if error is not None:
         return error
+    recovery_cursor: str | None = None
     try:
         view = canonical_task_view(stores, thread_id)
+        projector = AgUiTaskProjector()
+        canonical = projector.project_task(view, identity)
+        if canonical.next_cursor is not None:
+            recovery_cursor = canonical.next_cursor.encode()
         if (
             command_outcome is not None
             and cursor is not None
             and bind_task_run(view, run_id).anchor is None
         ):
             raise AgUiProjectionError("cursor has no canonical run anchor")
-        AgUiTaskProjector().project_task(
-            view,
-            identity,
-            after=cursor,
-        )
+        projector.project_task(view, identity, after=cursor)
     except AgUiProjectionError:
-        return _problem(400, "invalid_cursor", "cursor is not valid for this Task/run", path)
+        response = _problem(400, "invalid_cursor", "cursor is not valid for this Task/run", path)
+        if recovery_cursor is not None:
+            response.body["recovery_cursor"] = recovery_cursor
+        return response
     return AgUiStreamContext(
         stores,
         thread_id,

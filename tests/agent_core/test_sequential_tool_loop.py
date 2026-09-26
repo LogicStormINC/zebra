@@ -15,6 +15,7 @@ from agent_core.harness import (
     HarnessTask,
     SingleAttemptOrchestrator,
 )
+from agent_core.harness.task_contracts import AgentTaskType, TaskAcceptanceContract
 
 NOW = datetime(2026, 7, 14, 8, 0, tzinfo=UTC)
 TOOLS = (
@@ -55,6 +56,10 @@ class SequenceToolGateway:
 
 class EvidenceToolGateway(SequenceToolGateway):
     read_only_tools = frozenset({"files.read"})
+    mutation_tools = frozenset({"tests.run"})
+
+
+class MutationOnlyToolGateway(SequenceToolGateway):
     mutation_tools = frozenset({"tests.run"})
 
 
@@ -229,9 +234,7 @@ def test_selected_skill_cannot_complete_when_skill_tools_are_unavailable() -> No
     )
 
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
-    assert result.attempt_result.metadata["stop_reason"] == (
-        "selected_skill_tools_unavailable"
-    )
+    assert result.attempt_result.metadata["stop_reason"] == ("selected_skill_tools_unavailable")
     assert result.events[-1].event_type is EventType.SESSION_FAILED
 
 
@@ -294,6 +297,7 @@ def test_failed_research_returns_to_model_and_uses_web_fallback() -> None:
         message.role is MessageRole.TOOL and "no workspace evidence" in message.content
         for message in gateway.requests[1]
     )
+
 
 def test_bounded_loop_returns_one_repeated_read_to_model_without_reexecution() -> None:
     first = _tool_call("files.read", {"path": "same.txt"}, "call_one")
@@ -424,11 +428,66 @@ def test_quality_revision_receives_the_candidate_and_specific_defects() -> None:
         for message in revision_messages
     )
     feedback = next(
-        message for message in revision_messages
-        if message.metadata.get("runtime_feedback") is True
+        message for message in revision_messages if message.metadata.get("runtime_feedback") is True
     )
     assert "minimum_detail:160_characters" in feedback.content
     assert result.attempt_result.metadata["delivery_assessment"]["status"] == "complete"
+
+
+def test_objective_quality_constraint_keeps_revising_while_gap_shrinks() -> None:
+    gateway = _gateway(
+        _completion("x" * 30),
+        _completion("y" * 25),
+        _completion("权威存储是 PostgreSQL。"),
+    )
+
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Bounded answer",
+            user_input="请用不超过 20 字回答权威存储是什么",
+            max_model_calls=3,
+        ),
+        SingleAttemptOrchestrator(
+            gateway,
+            AllowAllPolicy(),
+            SequenceToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.attempt_result.metadata["quality_revision_count"] == 2
+    assert result.run_result.model_calls_used == 3
+    first_feedback = next(
+        message
+        for message in gateway.requests[1]
+        if message.metadata.get("runtime_feedback") is True
+    )
+    assert "current candidate is" in first_feedback.content
+    assert "at or below 20 characters" in first_feedback.content
+
+
+def test_objective_quality_revision_stops_when_gap_does_not_shrink() -> None:
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Stalled bounded answer",
+            user_input="请用不超过 20 字回答权威存储是什么",
+        ),
+        SingleAttemptOrchestrator(
+            _gateway(_completion("x" * 30), _completion("y" * 30)),
+            AllowAllPolicy(),
+            SequenceToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.metadata["quality_revision_count"] == 1
+    assert result.run_result.model_calls_used == 2
 
 
 def test_failed_quality_gate_suspends_instead_of_claiming_completion() -> None:
@@ -452,6 +511,95 @@ def test_failed_quality_gate_suspends_instead_of_claiming_completion() -> None:
     assert result.run_result.stop_reason is HarnessStopReason.DELIVERY_REQUIREMENTS_UNMET
     assert result.attempt_result.metadata["delivery_assessment"]["status"] == "blocked"
     assert not any(event.event_type is EventType.ANSWER_COMMITTED for event in result.events)
+
+
+def test_required_delivery_outcome_blocks_false_completion() -> None:
+    contract = TaskAcceptanceContract(
+        task_type=AgentTaskType.CHANGE,
+        goal="Change the setting.",
+        required_outcomes=("answer_present", "change_applied"),
+    )
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Unproven change",
+            user_input="Change the setting.",
+            acceptance_contract=contract,
+            max_model_calls=1,
+        ),
+        SingleAttemptOrchestrator(
+            _gateway(_completion("The setting is changed.")),
+            AllowAllPolicy(),
+            EvidenceToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.metadata["stop_reason"] == "acceptance_outcomes_required"
+    delivery = result.attempt_result.metadata["delivery_assessment"]
+    assert delivery["status"] == "partial"
+    assert delivery["unmet"] == ["change_applied"]
+    assert not any(event.event_type is EventType.ANSWER_COMMITTED for event in result.events)
+
+
+def test_mutation_only_satisfies_the_matching_task_type_outcome() -> None:
+    mutation = _tool_call("tests.run", {"preset": "mutate"}, "call_mutate")
+    operate = TaskAcceptanceContract(
+        task_type=AgentTaskType.OPERATE,
+        goal="Deploy it.",
+        required_outcomes=("answer_present", "operation_completed"),
+    )
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Operate",
+            user_input="Deploy it.",
+            acceptance_contract=operate,
+            max_model_calls=2,
+        ),
+        SingleAttemptOrchestrator(
+            _gateway(_completion("Deploy it.", mutation), _completion("Deployed.")),
+            AllowAllPolicy(),
+            MutationOnlyToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    satisfied = result.attempt_result.metadata["delivery_assessment"]["satisfied"]
+    assert "operation_completed" in satisfied
+    assert "change_applied" not in satisfied
+
+
+def test_unrelated_mutation_cannot_satisfy_a_change_outcome() -> None:
+    mutation = _tool_call("tests.run", {"preset": "mutate"}, "call_mutate")
+    contract = TaskAcceptanceContract(
+        task_type=AgentTaskType.ANSWER,
+        goal="Explain it.",
+        required_outcomes=("answer_present", "change_applied"),
+    )
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Unrelated mutation",
+            user_input="Explain it.",
+            acceptance_contract=contract,
+            max_model_calls=2,
+        ),
+        SingleAttemptOrchestrator(
+            _gateway(_completion("Check it.", mutation), _completion("Explained.")),
+            AllowAllPolicy(),
+            MutationOnlyToolGateway(),
+            model_step=HarnessModelStep(available_tools=TOOLS),
+            synthesize_tool_results=True,
+        ).run,
+        created_at=NOW,
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.metadata["stop_reason"] == "acceptance_outcomes_required"
 
 
 def test_final_permitted_model_call_can_still_use_a_tool_before_suspending() -> None:

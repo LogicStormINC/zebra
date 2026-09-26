@@ -388,6 +388,9 @@ class ApiMemoryReadMixin:
             user_id
         )
 
+    def get_user_memory_profile(self, user_id: str) -> ApiResponse:
+        return SessionReadApi(self.database_path, self.stores).get_user_memory_profile(user_id)
+
     def get_tenant_memory(self, tenant_id: str) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_tenant_memory(tenant_id)
 

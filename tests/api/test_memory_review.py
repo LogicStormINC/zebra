@@ -68,6 +68,41 @@ def test_api_expire_session_memory_records_review(tmp_path: Path) -> None:
     assert response.body["duplicate_of_memory_id"] is None
 
 
+def test_api_user_profile_is_derived_from_confirmed_memory_and_can_delete_item(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    session_id = _seed_completed_session(database_path, workspace)
+    record = _candidate_record(session_id, str(workspace.resolve())).model_copy(
+        update={
+            "memory_type": MemoryType.EPISODIC,
+            "text": "User background: 云平台负责人",
+            "status": MemoryStatus.CONFIRMED,
+            "visibility": MemoryVisibility.USER,
+            "user_id": "user-7",
+        }
+    )
+    SQLiteMemoryStore(database_path).upsert(record)
+    app = create_app(database_path)
+
+    profile = app.get_user_memory_profile("user-7")
+    deleted = app.delete_user_memory(
+        "user-7",
+        str(record.memory_id),
+        {"operator": "user-7", "reason": "remove stale profile item"},
+    )
+    refreshed = app.get_user_memory_profile("user-7")
+
+    assert profile.status_code == 200
+    assert profile.body["profile"]["background"][0]["text"] == "云平台负责人"
+    assert profile.body["derived_from"] == "confirmed_governed_memory"
+    assert deleted.status_code == 200
+    assert deleted.body["memory_status"] == "deleted"
+    assert refreshed.body["memory_count"] == 0
+
+
 def test_api_memory_review_rejects_non_candidate_record(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     workspace = tmp_path / "workspace"

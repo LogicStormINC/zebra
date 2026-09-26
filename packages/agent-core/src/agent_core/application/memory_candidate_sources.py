@@ -12,6 +12,7 @@ from agent_core.application.memory_directives import (
     MemoryDirectiveAction,
     explicit_memory_directive,
 )
+from agent_core.application.user_profile_memory import user_profile_candidates
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import new_memory_id
 from agent_core.domain.memories import (
@@ -214,24 +215,66 @@ def _preference_candidates_from_user_message(
     if not isinstance(content, str):
         return ()
     directive = explicit_memory_directive(content)
-    if directive is None or directive.action is not MemoryDirectiveAction.REMEMBER:
+    if directive is None:
+        if user_id is None:
+            return ()
+        inferred = user_profile_candidates(content)
+        return tuple(
+            _user_memory_candidate(
+                event,
+                text=item.text,
+                memory_type=MemoryType.EPISODIC,
+                confidence=0.55,
+                repo_id=repo_id,
+                user_id=user_id,
+                tenant_id=tenant_id,
+                created_at=created_at,
+            )
+            for item in inferred
+        )
+    if directive.action is not MemoryDirectiveAction.REMEMBER:
         return ()
     visibility = MemoryVisibility.USER if user_id is not None else MemoryVisibility.REPO
     return (
-        MemoryRecord(
-            memory_id=new_memory_id(),
-            memory_type=directive.memory_type,
+        _user_memory_candidate(
+            event,
             text=directive.text,
+            memory_type=directive.memory_type,
             confidence=0.7,
-            status=MemoryStatus.CANDIDATE,
-            visibility=visibility,
-            tenant_id=tenant_id,
-            user_id=user_id,
             repo_id=repo_id,
-            source_session_id=event.session_id,
-            source_event_start=event.sequence,
-            source_event_end=event.sequence,
+            user_id=user_id,
+            tenant_id=tenant_id,
             created_at=created_at,
-            updated_at=created_at,
+            visibility=visibility,
         ),
+    )
+
+
+def _user_memory_candidate(
+    event: SessionEvent,
+    *,
+    text: str,
+    memory_type: MemoryType,
+    confidence: float,
+    repo_id: str,
+    user_id: str | None,
+    tenant_id: str | None,
+    created_at: datetime,
+    visibility: MemoryVisibility = MemoryVisibility.USER,
+) -> MemoryRecord:
+    return MemoryRecord(
+        memory_id=new_memory_id(),
+        memory_type=memory_type,
+        text=text,
+        confidence=confidence,
+        status=MemoryStatus.CANDIDATE,
+        visibility=visibility,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        repo_id=repo_id,
+        source_session_id=event.session_id,
+        source_event_start=event.sequence,
+        source_event_end=event.sequence,
+        created_at=created_at,
+        updated_at=created_at,
     )

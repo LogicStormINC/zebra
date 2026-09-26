@@ -72,13 +72,13 @@ def explicit_memory_directive(content: str) -> MemoryDirective | None:
         return None
     for pattern in _FORGET_PATTERNS:
         if match := pattern.fullmatch(text):
-            target = _safe_text(match.group(1))
+            target = safe_memory_text(match.group(1))
             if target is None or target.casefold() in _BROAD_FORGET_TARGETS:
                 return None
             return MemoryDirective(MemoryDirectiveAction.FORGET, target)
     for memory_type, pattern in _TYPED_PATTERNS:
         if match := pattern.fullmatch(text):
-            remembered = _safe_text(match.group(1))
+            remembered = safe_memory_text(match.group(1))
             return (
                 None
                 if remembered is None
@@ -86,7 +86,7 @@ def explicit_memory_directive(content: str) -> MemoryDirective | None:
             )
     for pattern in _REMEMBER_PATTERNS:
         if match := pattern.fullmatch(text):
-            remembered = _safe_text(match.group(1))
+            remembered = safe_memory_text(match.group(1))
             return (
                 None
                 if remembered is None
@@ -95,7 +95,7 @@ def explicit_memory_directive(content: str) -> MemoryDirective | None:
     return None
 
 
-def _safe_text(value: str) -> str | None:
+def safe_memory_text(value: str) -> str | None:
     text = value.strip()
     if len(text) < 2 or len(text) > 2000:
         return None

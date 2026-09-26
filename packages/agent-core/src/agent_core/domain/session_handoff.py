@@ -14,7 +14,7 @@ from agent_core.domain.sessions import SessionStatus
 # ponytail: one bounded integer protects pathological lineage; move to retention policy
 # when distributed Task storage lands.
 DEFAULT_MAX_HANDOFF_STAGE = 128
-HANDOFF_ENVELOPE_VERSION = "1.0"
+HANDOFF_ENVELOPE_VERSION = "1.1"
 
 
 class HandoffReason(StrEnum):
@@ -185,6 +185,8 @@ class SessionHandoffEnvelope(BaseModel):
     decisions_and_rationale: tuple[str, ...] = ()
     completed_work: tuple[str, ...] = ()
     pending_work: tuple[str, ...] = ()
+    rejected_approaches: tuple[str, ...] = ()
+    permission_boundaries: tuple[str, ...] = ()
     immediate_next: str
     touched_files: tuple[str, ...] = ()
     validation_results: tuple[str, ...] = ()
@@ -250,6 +252,7 @@ class SessionHandoffValidationContext(BaseModel):
     expected_source_event_hash: str
     expected_workspace_revision: WorkspaceBindingRevision
     protected_user_constraints: frozenset[str] = frozenset()
+    permission_boundaries: frozenset[str] = frozenset()
     readable_artifact_refs: frozenset[str] = frozenset()
     source_authority: frozenset[str] = frozenset()
     target_authority: frozenset[str] = frozenset()
@@ -298,6 +301,8 @@ def validate_session_handoff(
         failures.append("handoff_checksum_mismatch")
     if not context.protected_user_constraints.issubset(envelope.protected_user_constraints):
         failures.append("handoff_protected_constraints_omitted")
+    if not context.permission_boundaries.issubset(envelope.permission_boundaries):
+        failures.append("handoff_permission_boundaries_omitted")
     if not set(envelope.artifact_refs).issubset(context.readable_artifact_refs):
         failures.append("handoff_artifact_unreadable")
     if not context.target_authority.issubset(context.source_authority):

@@ -34,6 +34,7 @@ def test_file_read_tool_reads_file_within_workspace(tmp_path: Path) -> None:
     assert result.output == "hello workspace"
     assert result.metadata == {
         "path": "notes/todo.txt",
+        "evidence_refs": ["notes/todo.txt"],
         "byte_count": 15,
         "truncated": False,
     }
@@ -67,6 +68,7 @@ def test_file_read_tool_truncates_large_output(tmp_path: Path) -> None:
     assert result.output == "abcd"
     assert result.metadata == {
         "path": "large.txt",
+        "evidence_refs": ["large.txt"],
         "byte_count": 10,
         "truncated": True,
     }

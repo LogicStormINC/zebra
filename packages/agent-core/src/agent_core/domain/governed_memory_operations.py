@@ -31,6 +31,7 @@ class GovernedMemoryOperationKind(StrEnum):
 class GovernedMemoryReviewAction(StrEnum):
     CONFIRM = "confirm"
     EXPIRE = "expire"
+    DELETE = "delete"
 
 
 def _text(value: str, *, field_name: str) -> str:
@@ -311,4 +312,116 @@ class AdministrativeMemoryReviewRequest(BaseModel):
         )
         if self.request_digest != expected_digest:
             raise GovernedMemoryConflictError("administrative review digest mismatch")
+        return self
+
+
+def canonical_administrative_memory_replacement_hash(
+    *, deployment_namespace: str, request: AdministrativeMemoryReplacementRequest
+) -> str:
+    return _hash(
+        {
+            "deployment_namespace": _text(deployment_namespace, field_name="deployment_namespace"),
+            "replacement": request.model_dump(
+                mode="json", exclude={"request_digest", "created_at"}
+            ),
+        }
+    )
+
+
+class AdministrativeMemoryReplacementRequest(BaseModel):
+    """Atomically replace one confirmed Memory while retaining immutable provenance."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    operation_id: str = Field(max_length=255)
+    request_digest: str
+    session_id: SessionId
+    expected_stream_revision: int = Field(ge=-1)
+    memory_id: MemoryId
+    expected_revision: int = Field(ge=1)
+    replacement: GovernedMemoryCreate
+    operator: str = Field(max_length=255)
+    reason: str = Field(max_length=2000)
+    actor: EventActor = EventActor.USER
+    created_at: datetime
+
+    @field_validator("operation_id", "operator", "reason")
+    @classmethod
+    def require_canonical_text(cls, value: str, info: ValidationInfo) -> str:
+        return _text(value, field_name=info.field_name or "text")
+
+    @field_validator("request_digest")
+    @classmethod
+    def require_request_digest(cls, value: str) -> str:
+        return _digest(value, field_name="request_digest")
+
+    @model_validator(mode="after")
+    def require_replacement_provenance(self) -> Self:
+        record = self.replacement.record
+        if record.memory_id == self.memory_id:
+            raise ValueError("replacement Memory requires a new identity")
+        if record.source_session_id != self.session_id:
+            raise ValueError("replacement Memory must use the review Session")
+        if record.source_event_start is None or record.source_event_end is None:
+            raise ValueError("replacement Memory must retain source Event provenance")
+        if self.created_at.tzinfo is None:
+            raise ValueError("created_at must be timezone-aware")
+        return self
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        deployment_namespace: str,
+        operation_id: str,
+        session_id: SessionId,
+        expected_stream_revision: int,
+        memory_id: MemoryId,
+        expected_revision: int,
+        replacement: GovernedMemoryCreate,
+        operator: str,
+        reason: str,
+        created_at: datetime,
+        actor: EventActor = EventActor.USER,
+    ) -> AdministrativeMemoryReplacementRequest:
+        request = cls(
+            operation_id=operation_id,
+            request_digest="0" * 64,
+            session_id=session_id,
+            expected_stream_revision=expected_stream_revision,
+            memory_id=memory_id,
+            expected_revision=expected_revision,
+            replacement=replacement,
+            operator=operator,
+            reason=reason,
+            actor=actor,
+            created_at=created_at,
+        )
+        return request.model_copy(
+            update={
+                "request_digest": canonical_administrative_memory_replacement_hash(
+                    deployment_namespace=deployment_namespace,
+                    request=request,
+                )
+            }
+        )
+
+    def validate_for(
+        self,
+        deployment_namespace: str,
+        authority: AdministrativeMutationCAS,
+    ) -> Self:
+        if deployment_namespace != authority.deployment_namespace:
+            raise GovernedMemoryConflictError("replacement namespace does not match authority")
+        if self.session_id != authority.session_id or (
+            self.expected_stream_revision != authority.expected_stream_revision
+        ):
+            raise GovernedMemoryConflictError("replacement does not match authority CAS")
+        self.replacement.validate_canonical()
+        expected = canonical_administrative_memory_replacement_hash(
+            deployment_namespace=deployment_namespace,
+            request=self,
+        )
+        if self.request_digest != expected:
+            raise GovernedMemoryConflictError("replacement digest mismatch")
         return self

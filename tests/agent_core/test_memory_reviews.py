@@ -83,6 +83,26 @@ def test_memory_review_service_expires_candidate_memory() -> None:
     assert result.event.payload["duplicate_of_memory_id"] is None
 
 
+def test_memory_review_service_deletes_confirmed_memory() -> None:
+    session = _completed_session()
+    record = _candidate_record(session).model_copy(update={"status": MemoryStatus.CONFIRMED})
+
+    result = MemoryReviewService().review(
+        session=session,
+        record=record,
+        next_sequence=4,
+        command=MemoryReviewCommand(
+            action=MemoryReviewAction.DELETE,
+            operator="alice",
+            reason="user removed profile item",
+        ),
+    )
+
+    assert result.record.status is MemoryStatus.DELETED
+    assert result.event.payload["previous_status"] == "confirmed"
+    assert result.event.payload["status"] == "deleted"
+
+
 def test_memory_review_service_supersedes_prior_confirmed_memory_on_confirm() -> None:
     session = _completed_session()
     reviewed_at = datetime(2026, 7, 2, 11, 1, tzinfo=UTC)

@@ -76,11 +76,14 @@ def evaluate_answer(
     missing: list[str] = []
     if len(stripped) < contract.min_characters:
         missing.append(f"minimum_detail:{contract.min_characters}_characters")
+    if contract.max_characters is not None and len(stripped) > contract.max_characters:
+        missing.append(f"maximum_length:{contract.max_characters}_characters")
+    for term in contract.required_answer_terms:
+        if term.casefold() not in stripped.casefold():
+            missing.append(f"required_answer_term:{term}")
     lines = answer.splitlines()
     structured = sum(
-        1
-        for line in lines
-        if line.lstrip().startswith(("#", "-", "*", "1.", "一、", "二、"))
+        1 for line in lines if line.lstrip().startswith(("#", "-", "*", "1.", "一、", "二、"))
     )
     if contract.require_structure and (len(lines) < 3 or structured == 0):
         missing.append("requested_structure")
@@ -97,6 +100,10 @@ def evaluate_answer(
         reason = (
             "deliverable_too_shallow"
             if missing[0].startswith("minimum_detail")
+            else "deliverable_too_long"
+            if missing[0].startswith("maximum_length")
+            else "deliverable_missed_goal"
+            if missing[0].startswith("required_answer_term")
             else "deliverable_not_structured"
             if missing[0] == "requested_structure"
             else "deliverable_missing_evidence"
@@ -114,7 +121,6 @@ def _unsupported_urls(answer: str, evidence_refs: tuple[str, ...]) -> tuple[str,
 
     supported = set(evidence_refs)
     candidates = {
-        match.group(0).rstrip(_TRAILING_URL_PUNCTUATION)
-        for match in _URL_PATTERN.finditer(answer)
+        match.group(0).rstrip(_TRAILING_URL_PUNCTUATION) for match in _URL_PATTERN.finditer(answer)
     }
     return tuple(sorted(candidate for candidate in candidates if candidate not in supported))

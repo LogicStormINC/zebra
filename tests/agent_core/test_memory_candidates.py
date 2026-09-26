@@ -240,7 +240,7 @@ def test_expires_stale_confirmed_doc_memory_after_agents_refresh() -> None:
                     "byte_count": 100,
                     "truncated": False,
                 },
-            )
+            ),
         ],
         next_sequence=5,
         command=MemoryCandidateExtractionCommand(
@@ -324,7 +324,7 @@ def test_expires_stale_confirmed_procedure_memory_after_procedure_refresh() -> N
                     "stderr": "",
                     "timed_out": False,
                 },
-            )
+            ),
         ],
         next_sequence=5,
         command=MemoryCandidateExtractionCommand(
@@ -419,7 +419,7 @@ def test_procedure_refresh_does_not_expire_explicit_user_procedure() -> None:
                     "stderr": "",
                     "timed_out": False,
                 },
-            )
+            ),
         ],
         next_sequence=5,
         command=MemoryCandidateExtractionCommand(

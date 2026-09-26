@@ -16,6 +16,7 @@ from agent_core.domain.governed_memories import (
     GovernedMemoryTombstone,
 )
 from agent_core.domain.governed_memory_operations import (
+    AdministrativeMemoryReplacementRequest,
     AdministrativeMemoryReviewRequest,
     GovernedMemoryOperationKind,
     WorkerMemoryMutationPlan,
@@ -34,12 +35,12 @@ from agent_core.ports.governed_memory_store import (
 
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.governed_memory_receipt_reads import read_operation_receipt
+from agent_storage.postgres.governed_memory_replacements import (
+    commit_administrative_replacement,
+)
 from agent_storage.postgres.governed_memory_rows import authority_from_row, query_records
 from agent_storage.postgres.governed_memory_transaction_support import _lock_session
-from agent_storage.postgres.governed_memory_transactions import (
-    commit_administrative,
-    commit_worker,
-)
+from agent_storage.postgres.governed_memory_transactions import commit_administrative, commit_worker
 from agent_storage.postgres.leases import assert_current_lease_fence
 
 _SNAPSHOT_TTL = timedelta(minutes=30)
@@ -153,6 +154,21 @@ class PostgresGovernedMemoryStore(GovernedMemoryStorePort):
     ) -> GovernedMemoryCommitResult:
         with self._database.connect() as connection:
             return commit_administrative(
+                connection,
+                self._database.deployment_namespace,
+                request,
+                authority,
+                delivery_scope=self._delivery_scope,
+            )
+
+    def commit_administrative_replacement(
+        self,
+        request: AdministrativeMemoryReplacementRequest,
+        *,
+        authority: AdministrativeMutationCAS,
+    ) -> GovernedMemoryCommitResult:
+        with self._database.connect() as connection:
+            return commit_administrative_replacement(
                 connection,
                 self._database.deployment_namespace,
                 request,

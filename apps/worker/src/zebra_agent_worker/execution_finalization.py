@@ -34,6 +34,10 @@ from zebra_agent_worker.execution_events import (
 class WorkerExecutionError(ValueError): ...
 
 
+class RetryableWorkerSetupError(WorkerExecutionError):
+    """Transient runtime setup failure that must leave the Session resumable."""
+
+
 @dataclass(frozen=True)
 class ExecutedSession:
     session: Session
@@ -402,7 +406,7 @@ def finalize_worker_setup_failure(
     event_store: EventStorePort,
     error: WorkerExecutionError,
 ) -> ExecutedSession:
-    """Durably close a command whose Worker setup failed before model execution."""
+    """Durably close a deterministic setup failure before model execution."""
 
     result = HarnessAttemptResult(
         outcome=HarnessAttemptOutcome.FAILED,

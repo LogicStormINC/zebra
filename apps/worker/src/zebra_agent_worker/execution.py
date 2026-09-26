@@ -13,6 +13,7 @@ from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import EffectDispatchPort, WorkerProjectionTransactionPort
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
+from agent_core.ports.runtime import RuntimeCapabilityError
 from agent_integrations import build_model_gateway
 from agent_runtime.workspace_runtime_resolver import WorkspaceRuntimeResolver
 from agent_security import LocalPolicyEngine, PolicyProfile, resolve_effective_network_profile
@@ -44,7 +45,10 @@ from zebra_agent_worker.execution_errors import (
     sequence_race_guard,
 )
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder, ExecutionInterrupted
-from zebra_agent_worker.execution_finalization import WorkerExecutionError
+from zebra_agent_worker.execution_finalization import (
+    RetryableWorkerSetupError,
+    WorkerExecutionError,
+)
 from zebra_agent_worker.execution_recovery import (
     persist_runtime_cleanup_failure,
     recover_execution_inputs,
@@ -356,6 +360,8 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 raise WorkerExecutionError(
                     f"{exc}; runtime cleanup failed: {cleanup_error}"
                 ) from cleanup_error
+            if isinstance(exc, RuntimeCapabilityError):
+                raise RetryableWorkerSetupError(str(exc)) from exc
             raise WorkerExecutionError(str(exc)) from exc
         release_gateway = GatewayRelease(tool_gateway, authority_recorder, started_at=started_at)
         try:

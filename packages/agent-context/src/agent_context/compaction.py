@@ -25,10 +25,14 @@ class ConversationCompactionRequest:
     acceptance_criteria: tuple[str, ...] = ()
     confirmed_constraints: tuple[str, ...] = ()
     current_plan: tuple[str, ...] = ()
+    completed_actions: tuple[str, ...] = ()
+    pending_actions: tuple[str, ...] = ()
+    rejected_approaches: tuple[str, ...] = ()
     modified_files: tuple[str, ...] = ()
     failed_attempts: tuple[str, ...] = ()
     unresolved_tests: tuple[str, ...] = ()
     approvals: tuple[str, ...] = ()
+    permission_boundaries: tuple[str, ...] = ()
     artifact_refs: tuple[str, ...] = ()
     max_tokens: int = 240
 
@@ -57,10 +61,14 @@ def compact_conversation(
         _section("Acceptance", request.acceptance_criteria),
         _section("Constraints", request.confirmed_constraints),
         _section("Plan", request.current_plan),
+        _section("Completed Actions", request.completed_actions),
+        _section("Pending Actions", request.pending_actions),
+        _section("Rejected Approaches", request.rejected_approaches),
         _section("Modified Files", request.modified_files),
         _section("Failed Attempts", request.failed_attempts),
         _section("Unresolved Tests", request.unresolved_tests),
         _section("Approvals", request.approvals),
+        _section("Permission Boundaries", request.permission_boundaries),
         _section("Artifacts", request.artifact_refs),
     ]
     content = _truncate("\n\n".join(section for section in sections if section), request.max_tokens)
