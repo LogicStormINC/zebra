@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useRef,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -22,10 +23,28 @@ export interface ClarificationRequestWire {
   choices: string[];
 }
 
+export interface ZebraHitlSnapshot {
+  approval: ApprovalRequestWire | null;
+  clarification: ClarificationRequestWire | null;
+}
+
+/**
+ * Durable AG-UI projection exposed by a Host adapter.
+ *
+ * `getSnapshot` must be referentially stable until the projection changes.
+ * A newly mounted provider reads it immediately, so a browser refresh renders
+ * an already-open interrupt before any new live event arrives.
+ */
+export interface ZebraHitlSource {
+  getSnapshot: () => ZebraHitlSnapshot;
+  subscribe: (onStoreChange: () => void) => () => void;
+}
+
 interface HitlContextValue {
   approval: ApprovalRequestWire | null;
   clarification: ClarificationRequestWire | null;
   controller: boolean;
+  assertCurrentFence: () => void;
   decide: (
     decision: "approve" | "reject",
     onIdempotencyKey: string,
@@ -39,12 +58,34 @@ export function ZebraHitlProvider(props: {
   children: ReactNode;
   approval?: ApprovalRequestWire | null;
   clarification?: ClarificationRequestWire | null;
+  source?: ZebraHitlSource;
   controller: boolean;
+  controllerFenceToken?: string;
   onDecide: (decision: "approve" | "reject", key: string) => Promise<void>;
   onRespond: (choice: string, key: string) => Promise<void>;
 }) {
-  const approval = props.approval ?? null;
-  const clarification = props.clarification ?? null;
+  const controlled = useRef<ZebraHitlSnapshot>({ approval: null, clarification: null });
+  controlled.current = {
+    approval: props.approval ?? null,
+    clarification: props.clarification ?? null,
+  };
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => props.source?.subscribe(onStoreChange) ?? (() => {}),
+    [props.source],
+  );
+  const getSnapshot = useCallback(
+    () => props.source?.getSnapshot() ?? controlled.current,
+    [props.source],
+  );
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const currentFence = useRef(props.controllerFenceToken);
+  currentFence.current = props.controllerFenceToken;
+  const renderedFence = props.controllerFenceToken;
+  const assertCurrentFence = useCallback(() => {
+    if (renderedFence !== undefined && currentFence.current !== renderedFence) {
+      throw new Error("controller fence is stale");
+    }
+  }, [renderedFence]);
   const decide = useCallback(
     async (decision: "approve" | "reject", key: string) => {
       await props.onDecide(decision, key);
@@ -59,7 +100,16 @@ export function ZebraHitlProvider(props: {
   );
   return createElement(
     HitlContext.Provider,
-    { value: { approval, clarification, controller: props.controller, decide, respond } },
+    {
+      value: {
+        approval: snapshot.approval,
+        clarification: snapshot.clarification,
+        controller: props.controller,
+        assertCurrentFence,
+        decide,
+        respond,
+      },
+    },
     props.children,
   );
 }
@@ -80,6 +130,7 @@ export function useZebraApproval(): {
   const decide = useCallback(
     async (decision: "approve" | "reject") => {
       if (!context.controller) throw new Error("observer cannot decide approvals");
+      context.assertCurrentFence();
       if (context.approval === null) throw new Error("no active approval request");
       if (decided.current) return; // duplicate click: one decision only
       decided.current = true;
@@ -113,10 +164,14 @@ export function useZebraClarification(): {
   const respond = useCallback(
     async (choice: string) => {
       if (!context.controller) throw new Error("observer cannot answer clarifications");
+      context.assertCurrentFence();
       if (context.clarification === null) {
         throw new Error("no active clarification request");
       }
-      if (!context.clarification.choices.includes(choice)) {
+      if (
+        context.clarification.choices.length > 0 &&
+        !context.clarification.choices.includes(choice)
+      ) {
         throw new Error("clarification choice is outside the request contract");
       }
       if (responded.current) return;

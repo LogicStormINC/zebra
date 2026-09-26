@@ -29,7 +29,12 @@ import {
 import type { RuntimeClientConfig } from "@zebra-agent/contracts";
 
 export { ZebraHitlProvider, useZebraApproval, useZebraClarification } from "./hitl/index.ts";
-export type { ApprovalRequestWire, ClarificationRequestWire } from "./hitl/index.ts";
+export type {
+  ApprovalRequestWire,
+  ClarificationRequestWire,
+  ZebraHitlSnapshot,
+  ZebraHitlSource,
+} from "./hitl/index.ts";
 export { AgentComposer } from "./components/agent-composer.tsx";
 export type {
   AgentComposerLabels,

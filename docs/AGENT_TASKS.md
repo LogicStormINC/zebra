@@ -7367,14 +7367,24 @@ State Snapshot、State Delta、Tool Call 和 Interrupt 投影，在其纯投影�
 
 ### CLIENT-REACT-HITL-01 - React HITL Hooks
 
-- Status: `In Progress` — controlled hooks exist; durable interrupt subscription,
-  observer/fence enforcement and refresh replay remain unproven in React.
-- Remaining evidence: AG-UI interrupt subscription, refresh replay and
-  controller enforcement in a React runtime.
+- Status: `Review`
+- Owner: `Codex`
+- Branch: `codex/react-hitl-recovery-01`
+- Worktree: `/Users/lukeding/Desktop/playground/2026/product/zebra-agent`
+- Review evidence: `ZebraHitlSource` exposes a referentially stable durable
+  AG-UI projection through React's external-store contract, so a remounted page
+  reads the currently open interrupt before another live event arrives. Hooks
+  reject observers and callbacks captured under an older controller fence,
+  coalesce duplicate decisions, preserve deterministic idempotency keys and
+  support choice-free clarification text. React HITL tests pass 3/3, the SDK
+  suite passes 30/30, package/React 18/19/Vite/Next/browser verification passes,
+  and the existing API/Worker approval and clarification recovery matrix passes
+  31/31.
 - Suggested role: `SDK`
 - Depends on: `CLIENT-REACT-HOOKS-01`
 - Owned paths: `sdks/typescript/packages/react/src/hitl/**`,
-  `sdks/typescript/packages/react/tests/hitl/**`,
+  `sdks/typescript/packages/react/src/index.ts`,
+  `sdks/typescript/packages/react/tests/hitl/**`, `sdks/typescript/package.json`,
   `tests/integration/test_react_hitl_resume.py`
 - API: `useZebraApproval()`, `useZebraClarification()`
 - 禁止修改: Approval Domain, Clarification Domain, Worker Approval
