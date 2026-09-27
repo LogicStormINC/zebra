@@ -8,6 +8,11 @@ from zebra_agent_worker.approved_continuation import ApprovedContinuation
 from zebra_agent_worker.child_wakeup_continuation import ChildWakeupContinuation
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.clarification_continuation import ClarificationContinuation
+from zebra_agent_worker.client_effect_continuation import (
+    has_trusted_client_effect_resume,
+    is_waiting_client_effect_suspension,
+    pending_client_effect_ids,
+)
 from zebra_agent_worker.control import SessionControlError, SessionControlService
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import WorkerExecutionError
@@ -127,36 +132,80 @@ def restore_suspended_session_claim(
     SESSION_RESUMED and re-entering normal execution. Snapshot-based
     suspensions keep the fail-closed cloud refusal.
     """
-    if claimed.recovery.session.status is not SessionStatus.SUSPENDED:
-        return claimed
     if cloud_deployment:
         if event_store is None:
             raise WorkerExecutionError(
                 "cloud suspended-session restoration requires the event store"
             )
         events = event_store.list_for_session(claimed.lease.session_id)
-        if not _is_waiting_children_suspension(events):
+        if (
+            claimed.recovery.session.status is SessionStatus.SUSPENDED
+            and _is_waiting_children_suspension(events)
+        ):
+            if not _has_trusted_child_wakeup(events):
+                # A USER resume command cannot substitute for the durable
+                # wakeup — without it the parent would re-run from scratch and
+                # the delegated results would be lost.
+                raise WorkerExecutionError(
+                    "waiting_children suspension requires the harness wakeup to resume"
+                )
+            resume_reason = "waiting_children_resolved"
+        elif (
+            claimed.recovery.session.status
+            in {
+                SessionStatus.RUNNING,
+                SessionStatus.SUSPENDED,
+                SessionStatus.WAITING_CLIENT_EFFECT,
+            }
+            and is_waiting_client_effect_suspension(events)
+        ):
+            if not has_trusted_client_effect_resume(events):
+                raise WorkerExecutionError(
+                    "waiting_client_effect suspension requires a trusted receipt to resume"
+                )
+            resume_reason = "waiting_client_effect_resolved"
+        elif claimed.recovery.session.status is not SessionStatus.SUSPENDED:
+            return claimed
+        else:
             raise WorkerExecutionError(
                 "cloud suspended-session restoration is not supported by the default Worker"
             )
-        if not _has_trusted_child_wakeup(events):
-            # A USER resume command cannot substitute for the durable
-            # wakeup — without it the parent would re-run from scratch and
-            # the delegated results would be lost.
-            raise WorkerExecutionError(
-                "waiting_children suspension requires the harness wakeup to resume"
+        next_sequence = claimed.recovery.session.current_sequence + 1
+        if (
+            resume_reason == "waiting_client_effect_resolved"
+            and claimed.recovery.session.status is SessionStatus.RUNNING
+        ):
+            # A browser can acknowledge the scheduled effect before the
+            # original attempt appends its wait marker. Preserve the canonical
+            # state transition instead of weakening running -> ready.
+            event_store.append(
+                SessionEvent.create(
+                    session_id=claimed.lease.session_id,
+                    sequence=next_sequence,
+                    event_type=EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
+                    actor=EventActor.HARNESS,
+                    payload={
+                        "reason": "waiting_client_effect",
+                        "client_effect_ids": list(pending_client_effect_ids(events)),
+                        "metadata": {"recovered_receipt_race": True},
+                    },
+                    created_at=started_at,
+                )
             )
+            next_sequence += 1
         event_store.append(
             SessionEvent.create(
                 session_id=claimed.lease.session_id,
-                sequence=claimed.recovery.session.current_sequence + 1,
+                sequence=next_sequence,
                 event_type=EventType.SESSION_RESUMED,
                 actor=EventActor.HARNESS,
-                payload={"reason": "waiting_children_resolved"},
+                payload={"reason": resume_reason},
                 created_at=started_at,
             )
         )
         return _recovered_claim(claimed, recovery_service)
+    if claimed.recovery.session.status is not SessionStatus.SUSPENDED:
+        return claimed
     try:
         restored = control_service.restore_suspended_workspace(
             claimed.lease.session_id,

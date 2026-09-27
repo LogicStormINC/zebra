@@ -423,3 +423,15 @@ P1→P3 顺序拉栈、填配置、跑 runner。
 - [x] Make all documented tokens affect computed styles without changing defaults.
 - [x] Add deterministic and packaged-browser customization coverage.
 - [x] Repack Trench, repeat Host acceptance and return the task to Review.
+
+# CLIENT-TRENCH-LIVE-01 durable Client pilot (2026-09-27)
+
+- [x] Recover Research Child wakeups and suppress superseded continuation markers.
+- [x] Freeze and resume Client effects through durable Receipt authority.
+- [x] Enforce Client policy, exact profile readiness and terminal cancellation.
+- [x] Harden Worker setup diagnostics and Docker/model health probes.
+- [x] Complete one real-model same-Turn Host read, Research Child, browser action,
+  succeeded Receipt and resumed final answer.
+- [x] Pass focused tests, full Zebra gates and full Trench gates.
+- [ ] Execute Linux gVisor, one-digest production canary and rollback rehearsal
+  on the authorized production host before release approval.

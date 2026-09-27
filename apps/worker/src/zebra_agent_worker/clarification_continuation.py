@@ -6,6 +6,8 @@ from agent_core.domain.identifiers import ToolCallId
 from agent_core.domain.messages import SessionMessage
 from agent_core.domain.tools import ToolCall
 
+from zebra_agent_worker.continuation_boundaries import has_later_attempt_result_boundary
+
 
 class ClarificationContinuationError(ValueError):
     """Raised when a clarification continuation cannot be resumed safely."""
@@ -27,12 +29,12 @@ def recover_clarification_continuation(
 ) -> ClarificationContinuation | None:
     requested: SessionEvent | None = None
     responded: SessionEvent | None = None
-    continuation_started = False
-    for event in events:
+    continuation_started_index: int | None = None
+    for index, event in enumerate(events):
         if event.event_type is EventType.CLARIFICATION_REQUESTED:
             requested = event
             responded = None
-            continuation_started = False
+            continuation_started_index = None
         elif requested is not None and event.event_type is EventType.CLARIFICATION_RESPONDED:
             responded = event
         elif (
@@ -40,10 +42,14 @@ def recover_clarification_continuation(
             and event.event_type is EventType.HARNESS_ATTEMPT_STARTED
             and event.payload.get("clarification_continuation") is True
         ):
-            continuation_started = True
+            continuation_started_index = index
     if requested is None or responded is None:
         return None
-    if continuation_started:
+    if continuation_started_index is not None and has_later_attempt_result_boundary(
+        events, after_index=continuation_started_index
+    ):
+        return None
+    if continuation_started_index is not None:
         raise ClarificationContinuationError(
             "clarification continuation has uncertain prior model-call state"
         )

@@ -30,6 +30,29 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLIENT-TRENCH-LIVE-01`: Review, owned by Codex on
+  `codex/trench-client-live-closure-01`. Scope: close the final Trench Client
+  pilot with one real-model same-Turn proof covering Host read, Research Child,
+  `timeline.open`, a real browser Receipt and the resumed final answer. Owned
+  Zebra paths: `docker/compose.application.yml`,
+  `docker/.env.application.example`, `docker/trench-acceptance/bootstrap.sh`,
+  the narrowly related Platform Client HTTP/auth routes and frontend profile
+  service contract, the Worker runtime setup diagnostics, durable child-wakeup
+  continuation state and its focused regressions,
+  focused Compose/config tests, a narrowly named live acceptance runner under
+  `tests/compose/`, and task/progress/worklog/plan documents. Paired Trench
+  ownership is limited to current Client configuration, the existing strategy
+  browser acceptance entry point or one narrowly named live runner, focused
+  tests and `task_plan.md`. Constraints: preserve the current model and
+  reasoning settings, PostgreSQL authority and unrelated local artifacts;
+  never bypass TLS or fabricate model, child, browser Receipt or final-answer
+  evidence. Linux gVisor/canary/rollback remain a separate production gate.
+  Local acceptance closed on 2026-09-27 with Turn
+  `0aa25e03-1436-48eb-9672-238e91198bba`: the same durable Turn completed a
+  Host read, a real Research Child, `timeline.open`, a succeeded browser
+  Receipt and the resumed final answer. Full repository gates pass; production
+  gVisor/canary/rollback evidence is still required before `Done`.
+
 - `CLOUD-PLAN-ACCEPTANCE-02`: Review with external release blocked, owned by Codex on the user-requested
   `cloud-agent-trench` integration branch. Scope: execute
   `Zebra_Cloud_Agent_100分严格验收闭环计划_v1.0.md` and replace the prior local

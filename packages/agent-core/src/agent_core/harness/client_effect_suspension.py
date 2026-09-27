@@ -9,7 +9,7 @@ injected through the completed-tool continuation.
 """
 
 from agent_core.domain.events import EventType
-from agent_core.domain.messages import SessionMessage
+from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall
 from agent_core.harness.attempt_result import build_attempt_result
@@ -40,6 +40,18 @@ def client_effect_suspension_result(
     if not deferred:
         return None
     effect_ids = [effect_id for _, effect_id in deferred]
+    frozen_conversation = _conversation_before_deferred_results(messages, deferred)
+    continuations = {
+        effect_id: {
+            "assistant_message": completion.assistant_message.content,
+            "conversation": [
+                message.model_dump(mode="json") for message in frozen_conversation
+            ],
+            "model_calls_used": model_calls_used,
+            "tool_calls_executed": tool_calls_executed,
+        }
+        for _, effect_id in deferred
+    }
     for draft in emitted_events:
         if draft.event_type is not EventType.CLIENT_EFFECT_SCHEDULED:
             continue
@@ -65,6 +77,7 @@ def client_effect_suspension_result(
             **metadata,
             "stop_reason": "waiting_client_effect",
             "client_effect_ids": effect_ids,
+            "client_effect_continuations": continuations,
         },
     )
 
@@ -92,3 +105,21 @@ def _deferred_effects(
         seen.add(tool_call_id)
         deferred.append((by_id[tool_call_id], effect_id.strip()))
     return deferred
+
+
+def _conversation_before_deferred_results(
+    messages: list[SessionMessage],
+    deferred: list[tuple[ToolCall, str]],
+) -> tuple[SessionMessage, ...]:
+    call_ids = {
+        call.provider_call_id or str(call.tool_call_id)
+        for call, _ in deferred
+    }
+    end = len(messages)
+    while (
+        end
+        and messages[end - 1].role is MessageRole.TOOL
+        and messages[end - 1].tool_call_id in call_ids
+    ):
+        end -= 1
+    return tuple(messages[:end])

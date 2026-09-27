@@ -55,13 +55,17 @@ services:
     build:
       <<: *zebra-application-build
       target: api
-    environment: *zebra-cloud-environment
+    environment:
+      <<: *zebra-cloud-environment
+      SSL_CERT_FILE: ${ZEBRA_API_SSL_CERT_FILE:-${SSL_CERT_FILE:-/etc/ssl/certs/ca-certificates.crt}}
+      ZEBRA_CLIENT_INTEGRATION_ENABLED: ${ZEBRA_CLIENT_INTEGRATION_ENABLED:-false}
+      ZEBRA_PLATFORM_OPERATOR_TOKEN: ${ZEBRA_PLATFORM_OPERATOR_TOKEN:-}
     restart: unless-stopped
     init: true
     read_only: true
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
-      - ${ZEBRA_ACCEPTANCE_CA_FILE:-./trench-acceptance/secrets/ca.crt}:/etc/ssl/certs/zebra-acceptance-ca.crt:ro
+      - ${ZEBRA_ACCEPTANCE_CA_BUNDLE_FILE:-./trench-acceptance/secrets/ca-bundle.crt}:/etc/ssl/certs/zebra-acceptance-ca-bundle.crt:ro
       - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
@@ -94,6 +98,8 @@ services:
         ZEBRA_DOCKER_CLI_IMAGE: ${ZEBRA_WORKER_DOCKER_CLI_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/docker:27-cli}
     environment:
       <<: *zebra-cloud-environment
+      SSL_CERT_FILE: ${ZEBRA_WORKER_SSL_CERT_FILE:-${SSL_CERT_FILE:-/etc/ssl/certs/ca-certificates.crt}}
+      ZEBRA_CLIENT_INTEGRATION_ENABLED: ${ZEBRA_CLIENT_INTEGRATION_ENABLED:-false}
       ZEBRA_WORKER_ID: ${ZEBRA_WORKER_ID:-zebra-cloud-worker}
       DOCKER_HOST: ${DOCKER_HOST:-}
     restart: unless-stopped
@@ -108,11 +114,11 @@ services:
     read_only: true
     volumes:
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
-      - ${ZEBRA_ACCEPTANCE_CA_FILE:-./trench-acceptance/secrets/ca.crt}:/etc/ssl/certs/zebra-acceptance-ca.crt:ro
+      - ${ZEBRA_ACCEPTANCE_CA_BUNDLE_FILE:-./trench-acceptance/secrets/ca-bundle.crt}:/etc/ssl/certs/zebra-acceptance-ca-bundle.crt:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}:${ZEBRA_WORKSPACE_VOLUME_ROOT:-/var/lib/zebra/workspaces}
     group_add:
-      - ${ZEBRA_DOCKER_SOCKET_GID:-984}
+      - ${ZEBRA_DOCKER_SOCKET_GID:?set ZEBRA_DOCKER_SOCKET_GID from the mounted docker socket}
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -120,7 +126,12 @@ services:
       zebra-migrate:
         condition: service_completed_successfully
     healthcheck:
-      test: [CMD-SHELL, kill -0 1]
+      test:
+        - CMD-SHELL
+        - >-
+          /app/.venv/bin/python -c "import os; from zebra_agent_config import load_settings; s=load_settings(); assert os.environ.get(s.model.api_key_env)" &&
+          docker version --format '{{.Server.Version}}' >/dev/null &&
+          kill -0 1
       interval: 10s
       timeout: 3s
       retries: 3

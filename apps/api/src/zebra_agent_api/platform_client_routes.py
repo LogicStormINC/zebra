@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 from typing import Any
 
 from agent_control_plane.frontend_profiles import (
+    FrontendProfileNotFoundError,
     FrontendProfileService,
     FrontendProfileServiceError,
 )
@@ -76,6 +77,8 @@ def handle_platform_client_route(
     body = request.body or {}
     try:
         return _dispatch(service, method, request.path, body)
+    except FrontendProfileNotFoundError as exc:
+        return _problem(404, "frontend_profile_not_found", str(exc), request.path)
     except FrontendProfileServiceError as exc:
         return _problem(409, "frontend_profile_conflict", str(exc), request.path)
     except ClientCapabilityError as exc:

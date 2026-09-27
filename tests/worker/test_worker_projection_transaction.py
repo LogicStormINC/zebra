@@ -443,3 +443,62 @@ def test_accept_persisted_event_uses_fenced_indexing_and_advances_projections() 
     projection_store.save_session.assert_not_called()
     workspace_store.save_workspace.assert_not_called()
     assert recorder.session.current_sequence == completed.sequence
+
+
+def test_prepare_projects_externally_persisted_cloud_tail_before_next_event() -> None:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title="Fenced external tail",
+            user_input="continue",
+            workspace_root=Path("/tmp/fenced-external-tail"),
+        )
+    )
+    workspace = rebuild_workspace(list(bootstrap.events))
+    external = SessionEvent.create(
+        session_id=bootstrap.session.session_id,
+        sequence=bootstrap.session.current_sequence + 1,
+        event_type=EventType.SESSION_TITLE_UPDATED,
+        actor=EventActor.HARNESS,
+        payload={"title": "External"},
+    )
+    external_session = apply_session_event(bootstrap.session, external)
+    external_workspace = apply_workspace_event(workspace, external)
+    event_store = Mock()
+    event_store.read_since.return_value = [external]
+    transaction = Mock()
+    transaction.project_persisted_worker_event.return_value = WorkerProjectionCommitResult(
+        event=external,
+        session=external_session,
+        workspace=external_workspace,
+    )
+    authority = WorkerMutationAuthority(
+        deployment_namespace="cloud-a",
+        session_id=bootstrap.session.session_id,
+        lease_fence=LeaseFence(
+            control_plane_epoch=uuid4(),
+            fencing_token=9,
+            owner_instance_id="worker-a",
+        ),
+        expected_stream_revision=bootstrap.session.current_sequence,
+    )
+    recorder = DurableHarnessEventRecorder(
+        session=bootstrap.session,
+        workspace=workspace,
+        event_store=event_store,
+        projection_store=Mock(),
+        workspace_store=Mock(),
+        model_call_indexer=ModelCallIndexer(Mock()),
+        tool_run_indexer=ToolRunIndexer(Mock(), None),
+        worker_projection_transaction=transaction,
+        worker_mutation_authority=authority,
+    )
+
+    prepared = recorder.prepare(
+        EventType.MODEL_REQUEST_STARTED,
+        EventActor.HARNESS,
+        {"attempt_number": 1, "model_call_id": str(uuid4())},
+    )
+
+    assert prepared.sequence == external.sequence + 1
+    assert recorder.session == external_session
+    transaction.project_persisted_worker_event.assert_called_once()

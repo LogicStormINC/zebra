@@ -153,6 +153,12 @@ def test_client_tool_call_suspends_and_receipt_resumes() -> None:
     assert EventType.CLIENT_EFFECT_SCHEDULED in kinds
     assert EventType.TOOL_EXECUTION_COMPLETED not in kinds
     assert len(dispatch.effects) == 1
+    frozen = attempt.metadata["client_effect_continuations"]
+    continuation = frozen[str(dispatch.effects[0].effect_id)]
+    assert continuation["assistant_message"] == "Opening the item timeline."
+    assert continuation["model_calls_used"] == 1
+    assert continuation["tool_calls_executed"] == 1
+    assert continuation["conversation"][-1]["role"] == "assistant"
 
     # The browser receipt lands as a durable HARNESS resume command.
     effect = dispatch.effects[0]

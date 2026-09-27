@@ -19,6 +19,7 @@ from agent_core.harness import (
     HarnessTask,
     SingleAttemptOrchestrator,
 )
+from agent_core.harness.attempt_result import action_fingerprint
 
 CREATED_AT = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
 EFFECT_ID = "0e4a6f8c-1111-4222-8333-444455556666"
@@ -217,3 +218,60 @@ def test_receipt_resumes_the_original_tool_call() -> None:
     )
 
     assert resumed.outcome is HarnessAttemptOutcome.COMPLETED
+
+
+def test_rebased_continuation_keeps_durable_repeat_guard() -> None:
+    completed_call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="files.read",
+        arguments={"path": "README.md"},
+        created_at=CREATED_AT,
+    )
+    repeated_call = completed_call.model_copy(
+        update={"tool_call_id": new_tool_call_id()}
+    )
+    gateway = DeferredClientGateway(repeated_call.tool_call_id, repeated_call.name)
+    orchestrator = SingleAttemptOrchestrator(
+        ScriptedModelGateway(
+            responses=(
+                ScriptedModelResponse(completion=_completion_with_call(repeated_call)),
+                ScriptedModelResponse(completion=_final_completion()),
+            )
+        ),
+        AllowAllPolicyEngine(),
+        gateway,
+    )
+    context = HarnessContext(
+        task=HarnessTask(title="Resume", user_input="Read once, then finish."),
+        session=Session.create(title="resume", created_at=CREATED_AT),
+        attempt=HarnessAttempt(number=1, started_at=CREATED_AT),
+    )
+
+    resumed = orchestrator.continue_completed_tools(
+        context,
+        completion=_completion_with_call(completed_call),
+        tool_calls=(),
+        tool_results=(),
+        conversation=(
+            SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.USER,
+                content="Durable evidence says README was already read.",
+                created_at=CREATED_AT,
+            ),
+        ),
+        model_calls_used=1,
+        tool_calls_executed=1,
+        assistant_message="README read.",
+        metadata={
+            "durable_action_fingerprints": [action_fingerprint(completed_call)]
+        },
+    )
+
+    assert resumed.outcome is HarnessAttemptOutcome.COMPLETED
+    assert gateway.calls == []
+    assert any(
+        event.event_type is EventType.TOOL_EXECUTION_FAILED
+        and event.payload["metadata"]["reason"] == "repeated_tool_call"
+        for event in resumed.emitted_events
+    )

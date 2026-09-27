@@ -24,7 +24,10 @@ from agent_core.harness.orchestration_events import (
     model_response_event,
 )
 from agent_core.harness.selection import ToolCallSelectionStrategy
-from agent_core.harness.sequential_support import executed_action_fingerprints
+from agent_core.harness.sequential_support import (
+    durable_action_fingerprints,
+    executed_action_fingerprints,
+)
 from agent_core.harness.tool_batch import ToolBatchExecutor
 from agent_core.harness.tool_resolution import (
     ToolCallResolver,
@@ -199,13 +202,15 @@ class SequentialToolLoop:
                 created_at=context.attempt.started_at,
             )
             updated_metadata = record_tool_evidence(updated_metadata, tool_result)
+        fingerprints = executed_action_fingerprints(messages)
+        fingerprints.update(durable_action_fingerprints(updated_metadata))
         return self._request_next_completion(
             context,
             messages=messages,
             emitted_events=HarnessEventBuffer(self._event_sink),
             model_calls_used=model_calls_used,
             tool_calls_executed=tool_calls_executed,
-            fingerprints=executed_action_fingerprints(messages),
+            fingerprints=fingerprints,
             metadata=updated_metadata,
             fallback_message=assistant_message,
         )

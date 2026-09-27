@@ -399,6 +399,10 @@ def _authorize_request(
         return None
     if request.url.path == "/health":
         return None
+    if request.url.path.startswith("/platform/v1/frontend-profile"):
+        # Platform management has its own operator-only authorizer. Treating
+        # that bearer as a Host Grant makes the cloud route unreachable.
+        return None
     if settings.deployment != "local":
         return _authorize_host_request(
             request,

@@ -7,6 +7,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.parent_continuation import ChildTerminalStatus
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
+from agent_core.harness.attempt_result import action_fingerprint
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
 from agent_storage.postgres.subagent_delegation import canonical_child_terminal_summary
 from zebra_agent_worker.child_wakeup import child_terminal_status
@@ -79,6 +80,75 @@ def test_child_wakeup_recovery_preserves_parent_budget_counters() -> None:
     assert recovered is not None
     assert recovered.model_calls_used == 7
     assert recovered.tool_calls_executed == 11
+
+
+def test_child_wakeup_is_consumed_after_later_client_effect_wait() -> None:
+    parent = new_session_id()
+    child = str(uuid4())
+    tool_call = str(uuid4())
+    now = datetime.now(UTC)
+    events = [
+        SessionEvent.create(
+            session_id=parent,
+            sequence=0,
+            event_type=EventType.SUBAGENT_DELEGATED,
+            actor=EventActor.HARNESS,
+            payload={
+                "child_task_id": child,
+                "tool_name": "agent.research",
+                "tool_call_id": tool_call,
+                "arguments": {"objective": "Collect evidence"},
+                "assistant_message": "Delegating research.",
+                "conversation": [],
+                "attempt_number": 1,
+                "model_calls_used": 2,
+                "tool_calls_executed": 1,
+            },
+            created_at=now,
+        ),
+        SessionEvent.create(
+            session_id=parent,
+            sequence=1,
+            event_type=EventType.SESSION_COMMAND_ACCEPTED,
+            actor=EventActor.HARNESS,
+            payload={
+                "command_id": str(uuid4()),
+                "session_id": str(parent),
+                "kind": "resume",
+                "expected_revision": 0,
+                "idempotency_key": f"child-wakeup:{parent}",
+                "payload": {
+                    "child_results": [
+                        {
+                            "child_task_id": child,
+                            "status": "completed",
+                            "summary": "Evidence collected.",
+                        }
+                    ]
+                },
+                "fingerprint": "d" * 64,
+            },
+            created_at=now,
+        ),
+        SessionEvent.create(
+            session_id=parent,
+            sequence=2,
+            event_type=EventType.HARNESS_ATTEMPT_STARTED,
+            actor=EventActor.HARNESS,
+            payload={"child_wakeup_continuation": True},
+            created_at=now,
+        ),
+        SessionEvent.create(
+            session_id=parent,
+            sequence=3,
+            event_type=EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
+            actor=EventActor.HARNESS,
+            payload={"reason": "waiting_client_effect"},
+            created_at=now,
+        ),
+    ]
+
+    assert recover_child_wakeup_continuation(events) is None
 
 
 def test_suspended_child_is_verified_as_failed_terminal_result() -> None:
@@ -184,6 +254,17 @@ def test_child_wakeup_rebases_missing_private_reasoning_as_fresh_evidence() -> N
     assert all(message.tool_call_id is None for message in recovered.conversation)
     assert recovered.metadata == {
         "cache_boundary_reason": "private_reasoning_not_durable",
+        "durable_action_fingerprints": [
+            action_fingerprint(
+                ToolCall(
+                    tool_call_id=research_call_id,
+                    name="events.search_history",
+                    arguments={"query": "market"},
+                    created_at=now,
+                    provider_call_id=provider_call_id,
+                )
+            )
+        ],
         "exact_prefix_message_count": 1,
         "rebased_message_count": 2,
     }
@@ -222,10 +303,16 @@ def test_child_wakeup_replays_terminal_children_as_fresh_user_evidence() -> None
 
     messages = child_wakeup_evidence_conversation(wakeup)
 
-    assert [message.role for message in messages] == [MessageRole.USER, MessageRole.USER]
-    assert "Verified evidence." in messages[-1].content
-    assert messages[-1].metadata["durable_child_evidence"] is True
-    assert messages[-1].tool_call_id is None
+    assert [message.role for message in messages] == [
+        MessageRole.USER,
+        MessageRole.USER,
+        MessageRole.USER,
+    ]
+    assert "Verified evidence." in messages[-2].content
+    assert messages[-2].metadata["durable_child_evidence"] is True
+    assert messages[-2].tool_call_id is None
+    assert "Continue from immediately after these results" in messages[-1].content
+    assert messages[-1].metadata["durable_continuation_boundary"] is True
 
 
 def test_child_wakeup_preserves_provider_safe_delegation_for_terminal_results() -> None:

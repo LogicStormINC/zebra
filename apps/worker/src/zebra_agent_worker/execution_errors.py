@@ -6,6 +6,7 @@ size limit (AGENTS.md hard limit: 500 lines for source files).
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
 
@@ -14,6 +15,18 @@ from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_integrations.model_errors import ModelProviderError
+
+logger = logging.getLogger(__name__)
+
+
+def log_worker_failure(kind: str, stage: str, session_id: object, exc: BaseException) -> None:
+    logger.exception(
+        "%s stage=%s session=%s error_type=%s",
+        kind,
+        stage,
+        session_id,
+        type(exc).__name__,
+    )
 
 
 def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> HarnessAttemptResult:

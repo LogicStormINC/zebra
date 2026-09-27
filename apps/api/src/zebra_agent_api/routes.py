@@ -50,6 +50,9 @@ class RouteAdapter:
             return self.app.get_mcp_capabilities()
         if method == "GET" and request.path == "/capabilities/mcp/prompts":
             return self.app.get_mcp_prompts()
+        platform_client_response = handle_platform_client_route(self.app, request)
+        if platform_client_response is not None:
+            return platform_client_response
         tenant_response = tenant_scope_response(self.app, request)
         if tenant_response is not None:
             return tenant_response
@@ -95,10 +98,9 @@ class RouteAdapter:
         agent_definition_response = handle_agent_definition_route(self.app, request)
         if agent_definition_response is not None:
             return agent_definition_response
-        for dispatcher in (handle_platform_client_route, handle_client_runtime_route):
-            client_response = dispatcher(self.app, request)
-            if client_response is not None:
-                return client_response
+        client_response = handle_client_runtime_route(self.app, request)
+        if client_response is not None:
+            return client_response
         if request.path.startswith("/sessions/") and _is_hidden_internal_segment(
             self.app, request.path
         ):

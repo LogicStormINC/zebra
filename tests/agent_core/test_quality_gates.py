@@ -83,10 +83,37 @@ def test_explicit_maximum_length_is_inferred_and_enforced() -> None:
     assert too_long.missing_requirements == ("maximum_length:5_characters",)
 
 
+def test_bounded_paragraph_summary_overrides_report_structure_heuristic() -> None:
+    contract = infer_task_contract("输出一段供验收报告引用的中文摘要，不超过 200 字")
+
+    assert contract.max_characters == 200
+    assert not contract.require_structure
+
+
+def test_verified_empty_research_does_not_require_an_impossible_citation() -> None:
+    prompt = "请检索当前结果并输出一段 200 字以内摘要"
+    ledger = EvidenceLedger(successful_tool_results=3)
+
+    result = evaluate_answer(
+        prompt,
+        "三次查询均返回空结果，当前没有可引用链接。",
+        evidence=ledger,
+    )
+    assert result.passed
+
+
 def test_information_request_does_not_become_mutation_authority() -> None:
     assert infer_task_contract("解释如何部署这个服务").task_type is AgentTaskType.ANSWER
     assert infer_task_contract("Please explain how to deploy it").task_type is AgentTaskType.ANSWER
     assert infer_task_contract("请部署这个服务").task_type is AgentTaskType.OPERATE
+
+
+def test_describing_prior_execution_does_not_become_an_operation() -> None:
+    summary = infer_task_contract("汇总实际执行过的人工智能检索结果")
+
+    assert summary.task_type is AgentTaskType.RESEARCH
+    assert not summary.require_verification
+    assert infer_task_contract("执行一次集成验收").task_type is AgentTaskType.OPERATE
 
 
 def test_host_contract_can_require_goal_terms_and_response_bound() -> None:

@@ -104,3 +104,24 @@ def test_stale_idempotent_canonical_does_not_rollback_projection(tmp_path: Path)
     stored = stores.events.list_for_session(session_id)
     assert [event.sequence for event in stored] == [0, 1, 2, 3, 4]
     assert len([event for event in stored if event.idempotency_key == "stale-canonical"]) == 1
+
+
+def test_project_persisted_tail_advances_primary_projection(tmp_path: Path) -> None:
+    stores, recorder, session_id = _recorder(tmp_path)
+    stores.events.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=recorder.next_sequence,
+            event_type=EventType.SESSION_TITLE_UPDATED,
+            actor=EventActor.HARNESS,
+            payload={"title": "Externally committed"},
+        )
+    )
+
+    recorder.project_persisted_tail()
+
+    assert recorder.session.current_sequence == 3
+    assert recorder.session.title == "Externally committed"
+    projected = stores.sessions.get_session(session_id)
+    assert projected is not None
+    assert projected.current_sequence == 3

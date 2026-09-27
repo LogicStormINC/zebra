@@ -33,6 +33,18 @@ QUEUE = "zebra.session.command.ready.q"
 SHADOW_QUEUE = "zebra.session.command.ready.shadow.q"
 
 
+def _safe_trace(exc: Exception) -> str:
+    """Keep actionable frame locations without logging source lines or values."""
+
+    frames: list[str] = []
+    traceback = exc.__traceback__
+    while traceback is not None:
+        code = traceback.tb_frame.f_code
+        frames.append(f"{code.co_filename.rsplit('/', 1)[-1]}:{traceback.tb_lineno}:{code.co_name}")
+        traceback = traceback.tb_next
+    return " <- ".join(frames[-8:]) or "unavailable"
+
+
 class CommandWorkerProcess:
     def __init__(
         self,
@@ -185,10 +197,14 @@ class CommandWorkerProcess:
                 running += 1
             try:
                 result = self._execute(lease, lease_ttl_seconds=ttl)
-            except Exception:
+            except Exception as exc:
                 with execution_lock:
                     failed.append(str(lease.session_id))
-                logger.warning("command_execution_failed")
+                logger.warning(
+                    "command_execution_failed error_type=%s trace=%s",
+                    type(exc).__name__,
+                    _safe_trace(exc),
+                )
                 raise
             else:
                 with execution_lock:
@@ -281,8 +297,12 @@ class CommandWorkerProcess:
             while not stop.is_set():
                 try:
                     await action()
-                except Exception:
-                    logger.warning("command_background_tick_failed")
+                except Exception as exc:
+                    logger.warning(
+                        "command_background_tick_failed error_type=%s trace=%s",
+                        type(exc).__name__,
+                        _safe_trace(exc),
+                    )
                     delay = min(30.0, delay * 2)
                 else:
                     delay = config.tick_seconds

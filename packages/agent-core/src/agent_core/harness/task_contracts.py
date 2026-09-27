@@ -43,7 +43,12 @@ class TaskAcceptanceContract:
 
 def infer_task_contract(user_input: str) -> TaskAcceptanceContract:
     lowered = user_input.lower()
-    brief = _contains_any(lowered, ("简短", "简洁", "一句话", "brief", "concise"))
+    max_characters = _inferred_max_characters(lowered)
+    brief = _contains_any(lowered, ("简短", "简洁", "一句话", "brief", "concise")) or (
+        max_characters is not None
+        and max_characters <= 500
+        and _contains_any(lowered, ("一段", "摘要", "paragraph", "summary"))
+    )
     deliverable = _contains_any(
         lowered,
         ("报告", "文章", "研判", "markdown", "详细", "完整", "方案", "计划", "detailed"),
@@ -76,7 +81,6 @@ def infer_task_contract(user_input: str) -> TaskAcceptanceContract:
         lowered, ("分析", "研判", "比较", "变化", "趋势", "影响", "analysis", "compare")
     )
     task_type = _task_type(lowered)
-    max_characters = _inferred_max_characters(lowered)
     min_characters = 1 if brief else 160 if deliverable or (current and analytical) else 1
     if max_characters is not None:
         min_characters = min(min_characters, max_characters)
@@ -200,14 +204,13 @@ def _task_type(text: str) -> AgentTaskType:
             "please create",
         ),
     )
-    if (not information_request or explicit_action) and _contains_any(
+    operational_request = _contains_any(
         text,
         (
             "部署",
             "发布",
             "提交",
             "发送",
-            "执行",
             "调度",
             "定时任务",
             "deploy",
@@ -216,7 +219,8 @@ def _task_type(text: str) -> AgentTaskType:
             "schedule",
             "scheduled job",
         ),
-    ):
+    ) or _explicit_execute_request(text)
+    if (not information_request or explicit_action) and operational_request:
         return AgentTaskType.OPERATE
     if (not information_request or explicit_action) and _contains_any(
         text,
@@ -241,6 +245,16 @@ def _contains_any(text: str, markers: tuple[str, ...]) -> bool:
         else re.search(rf"(?<![a-z0-9_]){re.escape(marker)}(?![a-z0-9_])", text) is not None
         for marker in markers
     )
+
+
+def _explicit_execute_request(text: str) -> bool:
+    """Distinguish an execution command from prose describing prior execution."""
+
+    return re.search(
+        r"(?:^|[，。；：!?！？\n])\s*(?:请|请帮我|帮我|现在|立即|开始)?执行"
+        r"(?:一次|一下|以下|这个|该|上述|命令|任务|操作|计划|方案|测试|验收|查询|调用|\s|$)",
+        text,
+    ) is not None
 
 
 def _bounded_text(value: object, fallback: str, *, limit: int) -> str:

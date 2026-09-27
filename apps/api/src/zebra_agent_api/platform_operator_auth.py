@@ -25,7 +25,8 @@ class StaticTokenPlatformOperatorAuthorizer:
     def authorize(self, headers: dict[str, str] | None) -> str | None:
         if not self._token:
             return None
-        header = (headers or {}).get("Authorization") or ""
+        values = headers or {}
+        header = values.get("Authorization") or values.get("authorization") or ""
         if not header.startswith("Bearer "):
             return None
         if header.removeprefix("Bearer ").strip() == self._token:

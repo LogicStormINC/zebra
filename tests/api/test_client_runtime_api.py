@@ -301,6 +301,17 @@ def test_publish_and_retrieve_profile_as_operator() -> None:
     assert fetched.body["revision"] == 1
 
 
+def test_missing_profile_returns_not_found_for_idempotent_publisher() -> None:
+    response = _handle(
+        _api(_bundle(), operator_token="op-token"),
+        "GET",
+        "/platform/v1/frontend-profiles/fixture-web/revisions/1",
+        headers={"Authorization": "Bearer op-token"},
+    )
+    assert response.status_code == 404
+    assert response.body["code"] == "frontend_profile_not_found"
+
+
 def test_retrieve_profile_binding_as_operator() -> None:
     bundle = _bundle()
     api = _api(bundle, operator_token="op-token")

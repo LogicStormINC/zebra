@@ -24,6 +24,7 @@ from zebra_agent_worker.client_tool_gateway import (
     ClientGatewayContext,
     ClientToolGateway,
 )
+from zebra_agent_worker.tool_gateway_runtime import WorkerToolGateway
 
 NOW = datetime.now(UTC)
 
@@ -130,3 +131,34 @@ def test_model_tools_mirror_the_allowed_actions() -> None:
     assert [tool.name for tool in gateway.model_tools] == ["app.ui.item.open"]
     assert gateway.model_tools[0].parameters["required"] == ["itemId"]
     assert gateway.parallel_safe_tools == frozenset()
+    assert gateway.authorized_policy_tools == frozenset({"app.ui.item.open"})
+    assert gateway.approval_required_tools == frozenset()
+    worker_gateway = WorkerToolGateway(local=object(), client=gateway)  # type: ignore[arg-type]
+    assert worker_gateway.authorized_write_tools == frozenset({"app.ui.item.open"})
+    assert worker_gateway.approval_required_tools == frozenset()
+
+
+def test_user_interaction_action_requires_policy_approval() -> None:
+    _, dispatch = _gateway()
+    interaction = ClientActionContract(
+        name="app.ui.confirm.open",
+        description="Open a confirmation prompt",
+        parameters={"type": "object", "additionalProperties": False},
+        risk=ClientActionRisk.USER_INTERACTION,
+    )
+    gateway = ClientToolGateway(
+        context=ClientGatewayContext(
+            binding=_binding((interaction.name,)),
+            fence_hash="d" * 64,
+            session_id=new_session_id(),
+            ui_revision=4,
+            action_contracts={interaction.name: interaction},
+        ),
+        dispatch=dispatch,
+    )
+
+    assert gateway.authorized_policy_tools == frozenset()
+    assert gateway.approval_required_tools == frozenset({interaction.name})
+    worker_gateway = WorkerToolGateway(local=object(), client=gateway)  # type: ignore[arg-type]
+    assert worker_gateway.authorized_write_tools == frozenset()
+    assert worker_gateway.approval_required_tools == frozenset({interaction.name})

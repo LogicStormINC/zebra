@@ -8,20 +8,42 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 
 
 def is_waiting_client_effect_suspension(events: list[SessionEvent]) -> bool:
-    """True when the stream's live epoch waits on a browser effect."""
+    """True when the live epoch has an unresolved browser-effect continuation.
 
-    waiting = False
+    ``CLIENT_EFFECT_SCHEDULED`` is deliberately sufficient here.  A fast
+    browser can return its receipt before finalization appends
+    ``SESSION_WAITING_FOR_CLIENT_EFFECT``; recovery must close that race rather
+    than strand the already accepted receipt.
+    """
+
+    return bool(pending_client_effect_ids(events))
+
+
+def pending_client_effect_ids(events: list[SessionEvent]) -> tuple[str, ...]:
+    """Return the bounded effect ids belonging to the unresolved live epoch."""
+
+    pending: list[str] = []
     for event in events:
-        if event.event_type is EventType.SESSION_WAITING_FOR_CLIENT_EFFECT:
-            waiting = True
-        if event.event_type in (
+        if event.event_type is EventType.CLIENT_EFFECT_SCHEDULED:
+            effect_id = event.payload.get("client_effect_id")
+            if isinstance(effect_id, str) and effect_id and effect_id not in pending:
+                pending.append(effect_id)
+        elif event.event_type is EventType.SESSION_WAITING_FOR_CLIENT_EFFECT:
+            effect_ids = event.payload.get("client_effect_ids")
+            if isinstance(effect_ids, list):
+                pending = [
+                    item
+                    for item in effect_ids
+                    if isinstance(item, str) and item.strip()
+                ][:32]
+        elif event.event_type in (
             EventType.SESSION_RESUMED,
             EventType.SESSION_COMPLETED,
             EventType.SESSION_FAILED,
             EventType.SESSION_CANCELLED,
         ):
-            waiting = False
-    return waiting
+            pending = []
+    return tuple(pending[:32])
 
 
 def has_trusted_client_effect_resume(events: list[SessionEvent]) -> bool:

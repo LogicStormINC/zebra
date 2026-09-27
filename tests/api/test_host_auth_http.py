@@ -39,7 +39,9 @@ def _local_settings(*, auth_token: str | None = None) -> ZebraAgentSettings:
     )
 
 
-def _cloud_settings(database_url: str) -> ZebraAgentSettings:
+def _cloud_settings(
+    database_url: str, *, platform_operator_token: str | None = None
+) -> ZebraAgentSettings:
     return ZebraAgentSettings(
         profile="cloud",
         database_url=database_url,
@@ -55,6 +57,7 @@ def _cloud_settings(database_url: str) -> ZebraAgentSettings:
             image="registry.example/zebra@sha256:" + "a" * 64,
             require_workspace_quota=True,
         ),
+        platform_operator_token=platform_operator_token,
     )
 
 
@@ -106,6 +109,33 @@ def test_cloud_missing_grant_and_authorizer_fail_closed_before_route(tmp_path: P
         "status": "unavailable",
         "reason": "host_grant_authorizer_unconfigured",
     }
+
+
+def test_cloud_platform_operator_route_does_not_consume_token_as_host_grant(
+    tmp_path: Path,
+) -> None:
+    authorizer = _FakeHostAuthorizer()
+    database_path = tmp_path / "sessions.sqlite"
+    client = TestClient(
+        create_http_app(
+            database_path,
+            settings=_cloud_settings(
+                "postgresql://zebra@example/zebra",
+                platform_operator_token="operator-token",
+            ),
+            stores=sqlite_control_plane_stores(database_path),
+            host_grant_authorizer=authorizer,
+        )
+    )
+
+    response = client.get(
+        "/platform/v1/frontend-profiles/trench-web/revisions/1",
+        headers={"Authorization": "Bearer operator-token"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["code"] == "client_integration_disabled"
+    assert authorizer.calls == []
 
 
 def test_cloud_origin_and_scope_are_rejected_before_business_handler(tmp_path: Path) -> None:

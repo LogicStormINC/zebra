@@ -3771,3 +3771,27 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   delivery model, local plan implementation advances from `41%` to `61%`.
   Complete `12x3` live-eval execution, production release and remote deployment
   remain separate gates and are not claimed. Model/reasoning settings are unchanged.
+
+### 2026-09-27 - CLIENT-TRENCH-LIVE-01 local pilot closure
+
+- Closed the durable Client continuation chain across Host read, Research Child,
+  browser effect scheduling, Receipt recovery and final-answer resume. Recovery
+  now ignores superseded continuation markers after a later durable attempt
+  boundary and handles the receipt-before-wait race without replaying effects.
+- Hardened worker setup diagnostics, PostgreSQL projection synchronization,
+  command classification, cancellation terminalization and Client profile
+  readiness. Worker health now verifies model credentials and Docker runtime
+  access instead of reporting healthy from process liveness alone.
+- Real-model browser acceptance completed Turn
+  `0aa25e03-1436-48eb-9672-238e91198bba`, conversation
+  `conv_1790475335815_35ccbe`, run
+  `85dc2ab3-a469-4db5-8291-533f7966b4e1`. The final browser effect opened
+  `/dashboard/timeline?entityId=artificial-intelligence`, persisted a succeeded
+  Receipt and resumed the same Turn to a committed answer.
+- Final local gates pass: `make check` covers file size, Ruff, Mypy over `983`
+  sources and eval `30/30`; `make test` passes `4689`, with `897`
+  environment-gated skips. The composed Worker is healthy with a configured
+  model credential and Docker daemon access.
+- The local pilot implementation is complete and the card is in Review. Linux
+  gVisor, one-digest production canary and rollback rehearsal remain external
+  release evidence; no production deployment, commit or push is claimed.

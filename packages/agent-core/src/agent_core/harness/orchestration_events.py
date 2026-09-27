@@ -10,6 +10,7 @@ _CONTINUATION_METADATA_KEYS = frozenset(
     {
         "conversation_compaction_count",
         "conversation_tokens_after_compaction",
+        "durable_action_fingerprints",
         "mutation_epoch",
         "mutation_resources",
         "plan_metadata",

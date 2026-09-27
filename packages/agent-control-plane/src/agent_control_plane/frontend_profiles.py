@@ -25,6 +25,10 @@ class FrontendProfileServiceError(ValueError):
     pass
 
 
+class FrontendProfileNotFoundError(FrontendProfileServiceError):
+    pass
+
+
 @dataclass(frozen=True)
 class ProfilePublication:
     frontend_app_id: str
@@ -129,7 +133,7 @@ class FrontendProfileService:
             else self._registry.get_latest_profile(frontend_app_id)
         )
         if profile is None:
-            raise FrontendProfileServiceError("profile not found")
+            raise FrontendProfileNotFoundError("profile not found")
         return ProfilePublication(
             frontend_app_id=profile.frontend_app_id,
             revision=profile.revision,

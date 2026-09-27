@@ -42,6 +42,7 @@ from zebra_agent_worker.execution_entrypoints import SessionExecutionEntrypoints
 from zebra_agent_worker.execution_errors import (
     error_metadata,
     exception_attempt_result,
+    log_worker_failure,
     sequence_race_guard,
 )
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder, ExecutionInterrupted
@@ -262,15 +263,15 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         except ExecutionInterrupted:
             return execution_preflight._superseded_by_control_event(authority_recorder)
         except (RuntimeError, ValueError) as exc:
+            log_worker_failure("worker_setup_failed", "context_prepare", session_id, exc)
             raise WorkerExecutionError(str(exc)) from exc
+        setup_stage = "runtime_instance_binding"
         try:
-            compatible_runtime_session_ids: tuple[str, ...] = ()
-            if self._task_index_store is not None:
-                indexed_task = self._task_index_store.ensure_for_session(session_id)
-                compatible_runtime_session_ids = tuple(
-                    str(segment.session_id)
-                    for segment in self._task_index_store.segments(indexed_task.task_id)
-                )
+            compatible_ids = runtime_setup.runtime_session_ids(self._task_index_store, session_id)
+            bound_instance_factory = runtime_setup.bind_instance_factory(
+                self._runtime_instance_factory, claimed.lease, session_events, task_binding
+            )
+            setup_stage = "runtime_provision"
             runtime, prepared_runtime = runtime_setup.build_prepared_runtime(
                 self._settings,
                 self._database_path,
@@ -280,12 +281,11 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 attempt_number=1,
                 artifact_store=self._artifact_payload_store,
                 created_at=started_at,
-                instance_factory=runtime_setup.bind_instance_factory(
-                    self._runtime_instance_factory, claimed.lease, session_events, task_binding
-                ),
-                compatible_session_ids=compatible_runtime_session_ids,
+                instance_factory=bound_instance_factory,
+                compatible_session_ids=compatible_ids,
             )
             runtime_handle = prepared_runtime.handle
+            setup_stage = "runtime_authority"
             authority = runtime_handle.authority
             runtime_setup.require_matching_runtime_authority(
                 runtime_handle,
@@ -308,6 +308,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                     ),
                     lease=claimed.lease,
                 )
+            setup_stage = "tool_gateway"
             local_tool_gateway = execution_gateway.build_execution_tool_gateway(
                 self,
                 task=task,
@@ -349,6 +350,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 )
             return execution_preflight._superseded_by_control_event(authority_recorder)
         except Exception as exc:
+            log_worker_failure("worker_setup_failed", setup_stage, session_id, exc)
             cleanup_error = runtime_setup.destroy_runtime(runtime, runtime_handle)
             if cleanup_error is not None:
                 persist_runtime_cleanup_failure(
@@ -377,6 +379,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 session=claimed.recovery.session,
                 attempt=core_harness.HarnessAttempt(number=1, started_at=started_at),
             )
+            setup_stage = "continuation_recovery"
             with sequence_race_guard("continuation start lost a sequence race"):
                 claimed, continuations = execution_continuations.recover_and_start_continuations(
                     claimed,
@@ -398,6 +401,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 session=claimed.recovery.session,
                 attempt=context.attempt,
             )
+            setup_stage = "continuation_recorder"
             recorder = self._projection_recorder_factory.build(
                 session=claimed.recovery.session,
                 workspace=claimed.recovery.workspace,
@@ -418,6 +422,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 session=recorder.session,
                 attempt=context.attempt,
             )
+            setup_stage = "orchestrator_build"
             orchestrator = execution_context.build_worker_orchestrator(
                 model_gateway=model_gateway,
                 tool_gateway=tool_gateway,
@@ -441,8 +446,10 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 provider_continuation=provider_continuation,
                 invocation_policy=task.model_invocation_policy,
             )
+            setup_stage = "client_effect_recovery"
             client_wakeup = recover_client_effect_wakeup(session_events)
             try:
+                setup_stage = "continuation_run"
                 attempt_result = run_continuation(
                     orchestrator,
                     context,
@@ -486,6 +493,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             release_gateway()
             return execution_preflight._superseded_by_control_event(release_gateway.recorder)
         except BaseException as exc:
+            log_worker_failure("worker_execution_failed", setup_stage, session_id, exc)
             if (cleanup_error := release_gateway()) is not None:
                 exc.add_note(f"tool gateway cleanup failed: {type(cleanup_error).__name__}")
             raise

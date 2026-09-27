@@ -31,6 +31,7 @@ def finish_execution(
     started_at: datetime,
     interaction_mode: InteractionMode,
 ) -> ExecutedSession:
+    recorder.project_persisted_tail()
     events = finalize_execution(
         recorder=recorder,
         attempt_result=attempt_result,

@@ -239,6 +239,9 @@ def _finalize_execution(
                     "assistant_message": attempt_result.metadata.get(
                         "assistant_message"
                     ),
+                    "continuations": attempt_result.metadata.get(
+                        "client_effect_continuations", {}
+                    ),
                 },
             },
         )

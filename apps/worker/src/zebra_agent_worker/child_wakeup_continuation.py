@@ -21,6 +21,9 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import ToolCallId, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.tools import ToolCall
+from agent_core.harness.sequential_support import executed_action_fingerprints
+
+from zebra_agent_worker.continuation_boundaries import has_later_attempt_result_boundary
 
 
 class ChildWakeupContinuationError(ValueError):
@@ -86,8 +89,10 @@ def recover_child_wakeup_continuation(
         return None
     last_delegated_index = delegated_indexes[-1]
     wakeup: SessionEvent | None = None
-    continuation_started = False
-    for event in events[last_delegated_index + 1 :]:
+    continuation_started_index: int | None = None
+    for index, event in enumerate(
+        events[last_delegated_index + 1 :], start=last_delegated_index + 1
+    ):
         if _is_child_wakeup_command(event):
             wakeup = event
         elif (
@@ -95,10 +100,14 @@ def recover_child_wakeup_continuation(
             and event.event_type is EventType.HARNESS_ATTEMPT_STARTED
             and event.payload.get("child_wakeup_continuation") is True
         ):
-            continuation_started = True
+            continuation_started_index = index
     if wakeup is None:
         return None
-    if continuation_started:
+    if continuation_started_index is not None and has_later_attempt_result_boundary(
+        events, after_index=continuation_started_index
+    ):
+        return None
+    if continuation_started_index is not None:
         raise ChildWakeupContinuationError(
             "child wakeup continuation has uncertain prior model-call state"
         )
@@ -127,6 +136,19 @@ def recover_child_wakeup_continuation(
         },
     )
     metadata = _continuation_metadata(epoch[-1].payload.get("continuation_metadata")) or {}
+    raw_durable_fingerprints = metadata.get("durable_action_fingerprints")
+    durable_fingerprints = (
+        {
+            item
+            for item in raw_durable_fingerprints[:64]
+            if isinstance(item, str) and 0 < len(item) <= 2_048
+        }
+        if isinstance(raw_durable_fingerprints, list | tuple)
+        else set()
+    )
+    durable_fingerprints.update(conversation.action_fingerprints)
+    if durable_fingerprints:
+        metadata["durable_action_fingerprints"] = sorted(durable_fingerprints)[:64]
     if conversation.rebased_message_count:
         metadata.update(
             {
@@ -213,6 +235,7 @@ class _RecoveredConversation:
     messages: tuple[SessionMessage, ...]
     exact_prefix_message_count: int
     rebased_message_count: int
+    action_fingerprints: tuple[str, ...]
 
 
 def _conversation_without_stubs(
@@ -233,6 +256,9 @@ def _conversation_without_stubs(
         messages = tuple(SessionMessage.model_validate(item) for item in value)
     except ValueError as exc:
         raise ChildWakeupContinuationError("delegated conversation is invalid") from exc
+    action_fingerprints = tuple(
+        sorted(executed_action_fingerprints(list(messages)))[:64]
+    )
     messages = tuple(
         message
         for message in messages
@@ -253,6 +279,7 @@ def _conversation_without_stubs(
             messages=messages,
             exact_prefix_message_count=len(messages),
             rebased_message_count=0,
+            action_fingerprints=action_fingerprints,
         )
     rebased: list[SessionMessage] = []
     exact_prefix_message_count = 0
@@ -298,6 +325,7 @@ def _conversation_without_stubs(
         messages=tuple(rebased),
         exact_prefix_message_count=exact_prefix_message_count,
         rebased_message_count=rebased_message_count,
+        action_fingerprints=action_fingerprints,
     )
 
 

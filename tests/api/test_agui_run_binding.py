@@ -96,6 +96,31 @@ def test_internal_child_wakeup_continues_original_run_through_terminal() -> None
     assert any(event.type == "RUN_ERROR" for event in projection.events)
 
 
+def test_internal_client_effect_resume_continues_original_run_through_terminal() -> None:
+    wakeup = _entry(
+        2,
+        event_type=EventType.SESSION_COMMAND_ACCEPTED,
+        payload={
+            "kind": "resume",
+            "idempotency_key": "client-effect-resume:effect-1",
+            "payload": {"client_effect_result": {"status": "succeeded"}},
+        },
+    )
+    wakeup = replace(wakeup, event=wakeup.event.model_copy(update={"actor": EventActor.HARNESS}))
+    terminal = _entry(3, event_type=EventType.TURN_COMPLETED, payload={})
+    events = [_entry(0, "run"), _entry(1), wakeup, terminal]
+
+    binding = bind_task_run(events, "run-1")
+
+    assert binding.stop is None
+    assert binding.includes(terminal)
+    assert _has_run_terminal_event(events, "run-1")
+    assert any(
+        event.type == "RUN_FINISHED"
+        for event in AgUiTaskProjector().project_task(events, IDENTITY).events
+    )
+
+
 def test_unrelated_segment_terminal_cannot_end_run_but_paired_handoff_can():
     committed = _entry(
         1,

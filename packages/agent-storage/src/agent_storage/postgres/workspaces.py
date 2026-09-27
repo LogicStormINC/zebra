@@ -228,7 +228,8 @@ class PostgresWorkspaceProjectionStore(
             return current_session, current_workspace, True
         if current_session.current_sequence != event.sequence - 1:
             raise PostgresWorkspaceProjectionConflictError(
-                "session projection does not precede the canonical Event"
+                "session projection does not precede the canonical Event "
+                f"(projection={current_session.current_sequence}, event={event.sequence})"
             )
         expected_session = apply_session_event(current_session, event)
         if session != expected_session:

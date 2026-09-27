@@ -18,6 +18,7 @@ from agent_control_plane.client_effects import (
 )
 from agent_core.domain.client_capabilities import (
     ClientActionContract,
+    ClientActionRisk,
     canonical_client_capability_digest,
 )
 from agent_core.domain.client_run_bindings import ClientRunBinding
@@ -78,12 +79,28 @@ class ClientToolGateway:
     def parallel_safe_tools(self) -> frozenset[str]:
         return frozenset()
 
+    @property
+    def authorized_policy_tools(self) -> frozenset[str]:
+        """Binding-authorized UI effects that do not require human approval."""
+
+        return frozenset(
+            name
+            for name in self._context.binding.allowed_actions
+            if self._contract(name).risk is not ClientActionRisk.USER_INTERACTION
+        )
+
+    @property
+    def approval_required_tools(self) -> frozenset[str]:
+        return frozenset(
+            name
+            for name in self._context.binding.allowed_actions
+            if self._contract(name).risk is ClientActionRisk.USER_INTERACTION
+        )
+
     def execute(self, tool_call: ToolCall) -> ToolResult:
         binding = self._context.binding
         binding.ensure_allows(tool_call.name)
-        contract = self._context.action_contracts.get(tool_call.name)
-        if contract is None:
-            raise ClientToolGatewayError(f"published action contract missing for {tool_call.name}")
+        contract = self._contract(tool_call.name)
         request = build_client_effect_request(
             binding=binding,
             tool_call_id=tool_call.tool_call_id,
@@ -126,6 +143,12 @@ class ClientToolGateway:
                 "client_effect_scheduled": outcome.created,
             },
         )
+
+    def _contract(self, name: str) -> ClientActionContract:
+        contract = self._context.action_contracts.get(name)
+        if contract is None:
+            raise ClientToolGatewayError(f"published action contract missing for {name}")
+        return contract
 
 
 def compose_client_tool_gateway(

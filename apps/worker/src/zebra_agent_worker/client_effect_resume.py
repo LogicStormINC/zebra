@@ -38,12 +38,22 @@ def recover_client_effect_wakeup(
     """Rebuild the wakeup when a trusted HARNESS resume carries the result."""
 
     scheduled: dict[str, dict[str, object]] = {}
+    continuations: dict[str, dict[str, object]] = {}
     resume_payload: dict[str, object] | None = None
     for event in events:
         if event.event_type is EventType.CLIENT_EFFECT_SCHEDULED:
             effect_id = str(event.payload.get("client_effect_id", ""))
             if effect_id:
                 scheduled[effect_id] = dict(event.payload)
+        if event.event_type is EventType.SESSION_WAITING_FOR_CLIENT_EFFECT:
+            metadata = event.payload.get("metadata")
+            raw_continuations = (
+                metadata.get("continuations") if isinstance(metadata, dict) else None
+            )
+            if isinstance(raw_continuations, dict):
+                for key, value in raw_continuations.items():
+                    if isinstance(key, str) and isinstance(value, dict):
+                        continuations[key] = dict(value)
         if (
             event.event_type is EventType.SESSION_COMMAND_ACCEPTED
             and event.actor is EventActor.HARNESS
@@ -62,23 +72,27 @@ def recover_client_effect_wakeup(
         raise ClientEffectWakeupError(
             "resume references a client effect never scheduled on this stream"
         )
-    tool_call = ToolCall(
+    continuation = continuations.get(effect_id, scheduled_payload)
+    fallback_call = ToolCall(
         tool_call_id=new_tool_call_id(),
         name=str(raw_result.get("action_name") or scheduled_payload.get("tool_name")),
         arguments={},
         created_at=datetime.now(UTC),
     )
     frozen_call = str(scheduled_payload.get("tool_call_id", ""))
-    conversation = _conversation(scheduled_payload.get("conversation"))
+    conversation = _conversation(continuation.get("conversation"))
+    tool_call = _frozen_tool_call(conversation, frozen_call) or _with_identity(
+        fallback_call, frozen_call
+    )
     return ClientEffectWakeup(
         effect_id=effect_id,
-        tool_call=_with_identity(tool_call, frozen_call),
+        tool_call=tool_call,
         status=str(raw_result.get("status", "failed")),
         result_payload=_as_dict(raw_result.get("result")),
-        assistant_message=str(scheduled_payload.get("assistant_message") or ""),
+        assistant_message=str(continuation.get("assistant_message") or ""),
         conversation=conversation,
-        model_calls_used=_as_int(scheduled_payload.get("model_calls_used")),
-        tool_calls_executed=_as_int(scheduled_payload.get("tool_calls_executed")),
+        model_calls_used=_as_int(continuation.get("model_calls_used")),
+        tool_calls_executed=_as_int(continuation.get("tool_calls_executed")),
     )
 
 
@@ -148,3 +162,15 @@ def _with_identity(tool_call: ToolCall, frozen_call: str) -> ToolCall:
     return tool_call.model_copy(
         update={"tool_call_id": ToolCallId(UUID(frozen_call))}
     )
+
+
+def _frozen_tool_call(
+    conversation: tuple[SessionMessage, ...], frozen_call: str
+) -> ToolCall | None:
+    for message in reversed(conversation):
+        if message.role is not MessageRole.ASSISTANT:
+            continue
+        for call in message.tool_calls:
+            if str(call.tool_call_id) == frozen_call:
+                return call
+    return None

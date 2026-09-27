@@ -5,6 +5,7 @@ from pathlib import Path
 
 from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
 from agent_core.domain.identifiers import ArtifactId, SessionId
+from agent_core.ports.agent_tasks import AgentTaskPort
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_runtime import SetupPhasePlan, SetupPhaseRunner
@@ -32,6 +33,15 @@ class PreparedRuntime:
     handle: RuntimeHandle
     setup_artifact_id: ArtifactId | None = None
     compatible_authority_digests: tuple[str, ...] = ()
+
+
+def runtime_session_ids(
+    task_store: AgentTaskPort | None, session_id: SessionId
+) -> tuple[str, ...]:
+    if task_store is None:
+        return ()
+    task = task_store.ensure_for_session(session_id)
+    return tuple(str(item.session_id) for item in task_store.segments(task.task_id))
 
 
 def build_prepared_runtime(

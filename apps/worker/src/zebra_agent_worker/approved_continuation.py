@@ -7,6 +7,8 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall
 
+from zebra_agent_worker.continuation_boundaries import has_later_attempt_result_boundary
+
 
 class ApprovedContinuationError(ValueError):
     """Raised when an approved call cannot be resumed safely."""
@@ -33,12 +35,14 @@ def recover_approved_continuation(
     granted: SessionEvent | None = None
     execution_started = False
     completed: SessionEvent | None = None
-    for event in events:
+    completed_index: int | None = None
+    for index, event in enumerate(events):
         if event.event_type is EventType.APPROVAL_REQUESTED:
             requested = event
             granted = None
             execution_started = False
             completed = None
+            completed_index = None
         elif requested is not None and event.event_type is EventType.APPROVAL_GRANTED:
             granted = event
         elif granted is not None and event.event_type is EventType.TOOL_EXECUTION_STARTED:
@@ -52,12 +56,17 @@ def recover_approved_continuation(
             and event.payload.get("status") in {"executed", "failed"}
         ):
             completed = event
+            completed_index = index
     if requested is None or granted is None:
         return None
     if execution_started and completed is None:
         raise ApprovedContinuationError(
             "approved tool continuation has uncertain prior execution state"
         )
+    if completed_index is not None and has_later_attempt_result_boundary(
+        events, after_index=completed_index
+    ):
+        return None
     tool_call_id = _required_string(requested.payload, "tool_call_id")
     fingerprint = _required_string(requested.payload, "call_fingerprint")
     if granted.payload.get("tool_call_id") != tool_call_id or (

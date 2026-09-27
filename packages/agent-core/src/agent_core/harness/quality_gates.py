@@ -90,7 +90,11 @@ def evaluate_answer(
     ledger = evidence or EvidenceLedger()
     if contract.require_evidence_reference and not ledger.has_evidence:
         missing.append("verified_evidence")
-    elif contract.require_matching_citation and not ledger.cited_refs(stripped):
+    elif (
+        contract.require_matching_citation
+        and ledger.evidence_refs
+        and not ledger.cited_refs(stripped)
+    ):
         missing.append("citation_matching_collected_evidence")
     if contract.require_artifact and not ledger.artifact_refs:
         missing.append("required_artifact")

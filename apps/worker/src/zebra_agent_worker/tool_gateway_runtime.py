@@ -1,5 +1,3 @@
-"""Worker-local tool gateway composition."""
-
 from dataclasses import dataclass
 
 from agent_core.domain.context_materialization import ContextMaterialization
@@ -145,20 +143,23 @@ class WorkerToolGateway:
     @property
     def authorized_write_tools(self) -> frozenset[str]:
         management_write = self.management_names & WRITE_NAMES
+        client_tools = self.client.authorized_policy_tools if self.client else frozenset()
         if self.host_manifest is None or self.host_context is None:
-            return management_write
+            return management_write | client_tools
         granted_scopes = frozenset(self.host_context.scopes)
-        return management_write | frozenset(
+        host_tools = frozenset(
             tool.name
             for tool in _available_host_tools(self.host_manifest, self.host_context)
             if tool.risk is ToolRisk.WRITE and frozenset(tool.scopes) <= granted_scopes
         )
+        return management_write | client_tools | host_tools
 
     @property
     def approval_tools(self) -> frozenset[str]:
+        client_tools = self.client.approval_required_tools if self.client else frozenset()
         if self.host_manifest is None:
-            return frozenset()
-        return frozenset(
+            return client_tools
+        return client_tools | frozenset(
             tool.name
             for tool in _available_host_tools(self.host_manifest, self.host_context)
             if tool.risk is not ToolRisk.READ

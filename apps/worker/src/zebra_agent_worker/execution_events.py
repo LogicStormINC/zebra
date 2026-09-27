@@ -106,7 +106,7 @@ class DurableHarnessEventRecorder:
         try:
             return self.append_event(event)
         except ValueError:
-            self._refresh_external_events()
+            self._synchronize_external_events()
             self._raise_if_interrupted()
             raise
 
@@ -119,7 +119,7 @@ class DurableHarnessEventRecorder:
         created_at: datetime | None = None,
     ) -> SessionEvent:
         self._ownership_check()
-        self._refresh_external_events()
+        self._synchronize_external_events()
         self._raise_if_interrupted()
         model_call_id = payload.get("model_call_id")
         correlation_id = _correlation_id(model_call_id)
@@ -277,6 +277,27 @@ class DurableHarnessEventRecorder:
         """
         self._ownership_check()
         self._refresh_external_events()
+
+    def project_persisted_tail(self) -> None:
+        """Project events atomically persisted by an execution-side adapter.
+
+        Client-effect scheduling and receipt acceptance deliberately commit
+        their own durable rows and Events together.  Before finalization the
+        Worker must advance the primary projections across that canonical tail
+        or its next fenced Event would skip revisions.
+        """
+
+        for event in self._event_store.read_since(
+            self._session.session_id,
+            self._session.current_sequence,
+        ):
+            self.accept_persisted_event(event)
+
+    def _synchronize_external_events(self) -> None:
+        if self._worker_projection_transaction is None:
+            self._refresh_external_events()
+            return
+        self.project_persisted_tail()
 
     def _refresh_external_events(self) -> None:
         for event in self._event_store.read_since(

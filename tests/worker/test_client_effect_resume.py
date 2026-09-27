@@ -11,7 +11,7 @@ from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelUsage
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
 from agent_core.domain.sessions import Session
-from agent_core.domain.tools import ToolCallStatus
+from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_core.harness import (
     HarnessAttempt,
     HarnessAttemptOutcome,
@@ -63,7 +63,45 @@ def _stream() -> list[SessionEvent]:
             1,
             EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
             EventActor.HARNESS,
-            {"reason": "waiting_client_effect", "client_effect_ids": ["e-1"]},
+            {
+                "reason": "waiting_client_effect",
+                "client_effect_ids": ["e-1"],
+                "metadata": {
+                    "continuations": {
+                        "e-1": {
+                            "assistant_message": "Opening the item.",
+                            "model_calls_used": 1,
+                            "tool_calls_executed": 1,
+                            "conversation": [
+                                SessionMessage(
+                                    message_id=new_message_id(),
+                                    role=MessageRole.USER,
+                                    content="Open the item.",
+                                    created_at=NOW,
+                                ).model_dump(mode="json"),
+                                SessionMessage(
+                                    message_id=new_message_id(),
+                                    role=MessageRole.ASSISTANT,
+                                    content="Opening the item.",
+                                    created_at=NOW,
+                                    tool_calls=(
+                                        ToolCall(
+                                            tool_call_id="11111111-2222-3333-4444-555555555555",
+                                            name="app.ui.item.open",
+                                            arguments={},
+                                            created_at=NOW,
+                                            provider_call_id="call_browser_1",
+                                            provider_tool_name="app__ui__item__open",
+                                            provider_arguments={},
+                                        ),
+                                    ),
+                                    metadata={"provider_reasoning_required": True},
+                                ).model_dump(mode="json"),
+                            ],
+                        }
+                    }
+                },
+            },
         ),
         _event(
             2,
@@ -106,8 +144,16 @@ def test_wakeup_restores_the_original_tool_identity() -> None:
     wakeup = recover_client_effect_wakeup(_stream())
     assert wakeup is not None
     assert str(wakeup.tool_call.tool_call_id) == "11111111-2222-3333-4444-555555555555"
+    assert wakeup.tool_call.provider_call_id == "call_browser_1"
     assert wakeup.tool_call.name == "app.ui.item.open"
     assert wakeup.status == "succeeded"
+    assert wakeup.assistant_message == "Opening the item."
+    assert wakeup.model_calls_used == 1
+    assert wakeup.tool_calls_executed == 1
+    assert [message.content for message in wakeup.conversation] == [
+        "Open the item.",
+        "Opening the item.",
+    ]
     result = client_effect_wakeup_tool_result(wakeup)
     assert result.status is ToolCallStatus.EXECUTED
     assert result.metadata["client_effect_id"] == "e-1"
@@ -181,3 +227,5 @@ def test_run_continuation_resumes_without_reexecution() -> None:
         client_effect=wakeup,
     )
     assert resumed.outcome is HarnessAttemptOutcome.COMPLETED
+    assert resumed.metadata["client_effect_rebased"] is True
+    assert resumed.metadata["durable_action_fingerprints"]

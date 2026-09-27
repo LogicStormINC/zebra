@@ -10619,3 +10619,21 @@ actual byte access.
   Trench artifact as
   `0829f226ad14c9d3e82661c2477e9b9f3afde6baf92d7cb87b7f07a5d5a56b94`;
   the Trench production build and Strategy browser acceptance pass.
+
+# 2026-09-27 — CLIENT-TRENCH-LIVE-01
+
+- Reproduced and repaired the durable continuation failures behind stalled or
+  prematurely failed Trench Turns, including child wakeup, Client Receipt races,
+  provider-safe resume and stale continuation boundaries.
+- Added fail-closed Client policy/readiness, cancellation terminalization,
+  projection ordering and stage-safe Worker diagnostics. Recreated the Worker
+  with Docker socket authority and model configuration; health is green.
+- Completed real-model/browser acceptance for Turn
+  `0aa25e03-1436-48eb-9672-238e91198bba`; the Host read, Research Child,
+  `timeline.open`, succeeded Receipt and final answer are all durable evidence.
+- Final validation: Zebra `4689 passed, 897 skipped`; file-size, Ruff, Mypy
+  (`983` sources) and eval `30/30` pass. Trench full checks pass `141` API/model,
+  `74` pipeline and `115` ToC tests, both production builds and migrations;
+  focused readiness coverage adds `11 passed`.
+- Task moved to Review. Production gVisor/canary/rollback remains blocked on an
+  authorized Linux release environment. No commit, push or deployment performed.
