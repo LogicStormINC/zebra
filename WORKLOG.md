@@ -10669,3 +10669,17 @@ actual byte access.
   those compatibility contracts unchanged and scopes media metadata to detail.
 - Passed focused, full repository, package consumer and real browser gates. The
   task is ready for review; merge, npm publication and deployment were not run.
+
+## 2026-09-28 — REACT-PRESENT-01
+
+- Claimed `REACT-PRESENT-01` on `codex/rich-presentation-01` in an isolated
+  worktree and traced the existing Artifact, AG-UI and React content-part path.
+- Implemented and registered `content.present`, requiring canonical
+  `artifact://UUID` references that resolve to available current-Session
+  Artifacts. Added explicit image/video/chart/file metadata, MIME guards,
+  bounded cardinality and safe failure results.
+- Added ordered AG-UI V2 projection and preserved legacy single-part V1 replay.
+  Added tool, profile, policy, runtime-composition and projection regressions.
+- Evidence: focused `77/77`; `make check` green; full `4711 passed, 901
+  skipped`; React renderer/package build and focused tests `10/10` on Node 24.
+  No merge, push, publication, Trench packaging or deployment was performed.

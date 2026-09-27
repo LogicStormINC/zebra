@@ -1,4 +1,36 @@
-# Active task — CTX-OBS-02 six-category context observability (2026-09-27)
+# Active task — REACT-PRESENT-01 governed rich presentation (2026-09-28)
+
+Branch: `codex/rich-presentation-01`; isolated worktree:
+`/Users/lukeding/.codex/worktrees/rich-presentation-01/zebra-agent`.
+
+1. `completed` — add a bounded `content.present` typed tool that validates
+   current-Session Artifact references and explicit image/video/chart/file
+   presentation metadata.
+2. `completed` — register the tool in eligible profiles without changing model or
+   reasoning settings; keep it unavailable when Artifact reads are unavailable.
+3. `completed` — project ordered V2 content parts over replayable AG-UI custom
+   events while retaining legacy `files.publish` MIME inference.
+4. `completed` — add deterministic tool, runtime and AG-UI regressions for
+   authorization, schemas, ordering and graceful failures.
+5. `completed_local` — run focused tests and repository gates; record provider-generation,
+   package publication, paired Host and deployment boundaries separately.
+
+Key decisions: the model chooses a typed presentation intent but never supplies
+raw HTML or remote URLs; code validates every opaque Artifact reference against
+the current Session; standard media stays on the native Content Part path while
+interactive MCP Apps remain a separate capability.
+
+Local closure: focused Python `77/77`; `make check` passes file size, Ruff,
+strict Mypy over `985` source files and deterministic eval `30/30`; `make test`
+passes `4711`, with `901` environment-gated skips. Existing React image/video/
+file and optional chart renderers build and pass `10/10` focused tests on Node
+24. The initial pytest collection failure was only an unsynchronized isolated
+worktree and passed after `make sync`. The first pnpm install returned the
+repository's ignored-build-script policy signal; the supported `--ignore-scripts`
+install, package builds and tests pass. Merge, npm publication, paired Host
+packaging, provider-specific generation and deployment remain separate gates.
+
+# Prior task — CTX-OBS-02 six-category context observability (2026-09-27)
 
 Branch: `codex/context-breakdown-v2`; isolated worktree:
 `/Users/lukeding/.codex/worktrees/context-breakdown-v2/zebra-agent`.

@@ -114,6 +114,7 @@ class EffectPayloadCoordinatorLike(Protocol):
 READ_ONLY_TOOLS = frozenset(
     {
         "artifacts.read",
+        "content.present",
         "files.read",
         "files.search",
         "files.list",

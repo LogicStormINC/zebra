@@ -2004,3 +2004,21 @@ Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
 - Sandboxed MCP Apps are a platform capability, not an implicit Trench feature.
   Trench intentionally shows the package fallback until that Host supplies an
   approved `ui://` resource resolver and explicit capability allowlist.
+
+## REACT-PRESENT-01 findings (2026-09-28)
+
+- Rendering support and Agent presentation intent are different boundaries.
+  Existing React components could display rich parts, but MIME inference from
+  `files.publish` could not express order, accessibility text, posters,
+  captions, chart data or fallbacks. A small typed presentation tool closes
+  that gap without adding another renderer or provider dependency.
+- Presentation is a read-only reference operation. It must validate every
+  primary and secondary Artifact against the current Session but must not load
+  payload bytes into the Harness or durable Event stream.
+- Keeping V2 explicit parts beside the V1 inferred projection avoids rewriting
+  historical events. The AG-UI projector validates the complete bounded shape
+  before emission so corrupt or untrusted metadata fails closed.
+- Standard image/video/chart/file content belongs in native content parts.
+  Interactive custom applications remain on the separately sandboxed MCP Apps
+  path; provider-specific creation/import tools remain a follow-up rather than
+  being hidden inside presentation.

@@ -30,7 +30,7 @@ from agent_core.domain.events import EventType, SessionEvent
 from agent_integrations.ag_ui.answer_commit_projection import project_answer_committed
 from agent_integrations.ag_ui.client_effect_projection import project_client_effect
 from agent_integrations.ag_ui.client_state_projection import project_client_state
-from agent_integrations.ag_ui.content_parts import project_content_part
+from agent_integrations.ag_ui.content_parts import project_content_parts
 from agent_integrations.ag_ui.contracts import (
     AgUiCursor,
     AgUiProjection,
@@ -152,8 +152,7 @@ class AgUiProjector:
         if event.event_type is EventType.MEMORY_CONTEXT_SELECTED:
             memory_ids = payload.get("memory_ids")
             if not isinstance(memory_ids, list) or any(
-                not isinstance(memory_id, str) or not memory_id.strip()
-                for memory_id in memory_ids
+                not isinstance(memory_id, str) or not memory_id.strip() for memory_id in memory_ids
             ):
                 raise AgUiProjectionError("selected Memory ids must be non-blank strings")
             return (
@@ -262,13 +261,12 @@ class AgUiProjector:
                     role="tool",
                 ),
             ]
-            content_part = project_content_part(
+            content_parts = project_content_parts(
                 payload,
                 tool_call_id=call_id,
                 timestamp=timestamp,
             )
-            if content_part is not None:
-                output_events.append(content_part)
+            output_events.extend(content_parts)
             return tuple(output_events)
         if event.event_type is EventType.TASK_PREPARED:
             return (

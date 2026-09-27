@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from agent_tools.builtin.listing import WorkspaceListTool, files_list_contract
     from agent_tools.builtin.patch import PatchApplyTool, patch_apply_contract
     from agent_tools.builtin.plan import PlanTool, plan_contract
+    from agent_tools.builtin.present import ContentPresentTool, content_present_contract
     from agent_tools.builtin.search import WorkspaceSearchTool, files_search_contract
     from agent_tools.builtin.tests import TestsRunTool, tests_run_contract
     from agent_tools.contracts import (
@@ -75,6 +76,7 @@ if TYPE_CHECKING:
 __all__ = [
     "ArtifactReadTool",
     "CommandRunTool",
+    "ContentPresentTool",
     "EffectGuardedToolGateway",
     "FencedEffectToolGateway",
     "ClarifyTool",
@@ -120,6 +122,7 @@ __all__ = [
     "build_mcp_proxy_request",
     "artifact_read_contract",
     "command_run_contract",
+    "content_present_contract",
     "effect_identity",
     "clarify_contract",
     "file_read_contract",
@@ -142,6 +145,11 @@ _EXPORTS = {
     "artifact_read_contract": (
         "agent_tools.builtin.artifacts",
         "artifact_read_contract",
+    ),
+    "ContentPresentTool": ("agent_tools.builtin.present", "ContentPresentTool"),
+    "content_present_contract": (
+        "agent_tools.builtin.present",
+        "content_present_contract",
     ),
     "EffectGuardedToolGateway": (
         "agent_tools.effect_guard",

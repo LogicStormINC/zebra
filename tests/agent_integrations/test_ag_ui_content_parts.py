@@ -87,3 +87,96 @@ def test_published_media_and_chart_project_typed_content_parts() -> None:
     assert parts[1]["title"] == "demo.mp4"
     assert parts[2]["specType"] == "vega-lite"
     assert parts[2]["specVersion"] == "6"
+
+
+def test_explicit_v2_parts_preserve_order_and_drop_untrusted_shape() -> None:
+    session_id = new_session_id()
+    call_id = "present-1"
+    image_id = "00000000-0000-4000-8000-000000000101"
+    chart_id = "00000000-0000-4000-8000-000000000102"
+    events = (
+        _event(
+            session_id,
+            1,
+            EventType.TOOL_CALL_PROPOSED,
+            {
+                "attempt_number": 1,
+                "tool_name": "content.present",
+                "tool_call_id": call_id,
+                "arguments": {},
+            },
+        ),
+        _event(
+            session_id,
+            2,
+            EventType.TOOL_EXECUTION_COMPLETED,
+            {
+                "attempt_number": 1,
+                "tool_name": "content.present",
+                "tool_call_id": call_id,
+                "status": "executed",
+                "output": "Presented 2 rich content part(s).",
+                "metadata": {
+                    "delivery": True,
+                    "schema_version": "2",
+                    "content_parts": [
+                        {
+                            "id": f"content:{call_id}:0:{image_id}",
+                            "type": "image",
+                            "state": "ready",
+                            "artifactId": image_id,
+                            "mimeType": "image/png",
+                            "alt": "Evidence",
+                        },
+                        {
+                            "id": f"content:{call_id}:1:{chart_id}",
+                            "type": "chart",
+                            "state": "ready",
+                            "specType": "vega-lite",
+                            "specVersion": "6",
+                            "specArtifactId": chart_id,
+                            "title": "Trend",
+                            "description": "Daily values",
+                        },
+                    ],
+                },
+            },
+        ),
+    )
+
+    projection = AgUiProjector().project(
+        events,
+        AgUiRunIdentity(session_id=session_id, thread_id="task-1", run_id="segment-1"),
+    )
+    content = [
+        event.value
+        for event in projection.events
+        if isinstance(event, CustomEvent) and event.name == "zebra.content_part"
+    ]
+
+    assert [item["part"]["type"] for item in content] == ["image", "chart"]
+    assert [item["index"] for item in content] == [0, 1]
+    assert all(item["schema_version"] == "2" for item in content)
+
+    malformed = list(events)
+    malformed[1] = _event(
+        session_id,
+        2,
+        EventType.TOOL_EXECUTION_COMPLETED,
+        {
+            **events[1].payload,
+            "metadata": {
+                "delivery": True,
+                "schema_version": "2",
+                "content_parts": [{"type": "image", "url": "https://unsafe.test/x.png"}],
+            },
+        },
+    )
+    rejected = AgUiProjector().project(
+        tuple(malformed),
+        AgUiRunIdentity(session_id=session_id, thread_id="task-1", run_id="segment-1"),
+    )
+    assert not any(
+        isinstance(event, CustomEvent) and event.name == "zebra.content_part"
+        for event in rejected.events
+    )

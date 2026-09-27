@@ -30,6 +30,30 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `REACT-PRESENT-01`: Review, owned by Codex on
+  `codex/rich-presentation-01`. Scope: let the Agent deliberately present
+  Artifact-backed image, video, chart and file parts according to Host
+  capabilities instead of relying only on MIME inference from
+  `files.publish`; preserve the existing rich-content contract, Artifact
+  authority and historical replay. Owned paths: the narrowly related typed
+  presentation tool under `packages/agent-tools/**`, tool-profile/runtime
+  registration under `packages/agent-core/**` and `packages/agent-runtime/**`,
+  the read-only policy allowlist under `packages/agent-security/**`,
+  AG-UI content-part projection under `packages/agent-integrations/**`, focused
+  tests, this registry, `task_plan.md`, `PROGRESS.md`, `WORKLOG.md` and
+  `findings.md`. Constraints: no arbitrary HTML, JavaScript, iframe or remote
+  media URL; every media reference must resolve to an Artifact in the current
+  Session; legacy `files.publish` projection remains readable; model and
+  reasoning settings remain unchanged. Acceptance requires bounded typed
+  arguments, current-Session authorization, multi-part ordering, image/video/
+  chart/file projection, deterministic replay, failure isolation and focused
+  plus repository gates. Provider-specific image/video generation, npm
+  publication, paired Host packaging and deployment are separate follow-ups.
+  Local evidence: focused Python `77/77`, full repository `4711 passed, 901
+  skipped`, file-size/Ruff/Mypy (`985` sources)/eval (`30/30`), and existing
+  React media/chart renderers `10/10` on Node 24. No merge, npm publication,
+  paired Host update, provider generation or deployment is claimed.
+
 - `CTX-OBS-02`: Review, owned by Codex on
   `codex/context-breakdown-v2`. Scope: replace the coarse context-usage
   estimate with a replayable six-category breakdown covering messages,

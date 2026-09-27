@@ -64,6 +64,7 @@ READ_ONLY_TOOLS = frozenset(
         "agent.research",
         "agent.tools.describe",
         "agent.tools.search",
+        "content.present",
         "files.list",
         "files.publish",
         "files.read",

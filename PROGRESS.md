@@ -3886,3 +3886,22 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   Trench `make check` passes `143` API/model, `74` pipeline and `123` ToC tests,
   lint with three pre-existing dashboard image warnings, both production
   builds, migrations and diff checks.
+
+### 2026-09-28 - REACT-PRESENT-01 governed rich presentation intent
+
+- Added the read-only `content.present` tool so the Harness can deliberately
+  compose ordered image, video, Vega-Lite chart and file parts from existing
+  current-Session Artifacts. The model chooses presentation intent; code owns
+  Artifact authority, MIME allowlists, bounds and the final typed shape.
+- The tool is registered only when an Artifact reader and current Session are
+  available, and is enabled in General, Coding, Research and Research
+  Coordinator profiles without changing model or reasoning settings.
+- AG-UI now projects bounded V2 multi-part events in order while retaining the
+  existing V1 `files.publish` MIME projection for historical replay. Arbitrary
+  remote URLs, HTML, JavaScript and cross-Session Artifact references remain
+  rejected.
+- Local evidence passes: focused Python `77/77`; full repository `4711 passed,
+  901 skipped`; file-size, Ruff, Mypy over `985` sources and eval `30/30`; and
+  existing React media/chart package builds plus `10/10` focused renderer tests
+  on Node 24. Provider generation/import, npm publication, Host packaging,
+  merge and deployment are separate gates.
