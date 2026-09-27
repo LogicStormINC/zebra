@@ -66,9 +66,11 @@ from agent_core.application.turn_projection import (
     project_turns,
 )
 from agent_core.application.user_profile_memory import (
+    MemoryCandidateDecision,
     UserProfileCandidate,
     UserProfileItem,
     confirmed_user_profile,
+    dynamic_memory_subject,
     user_profile_candidates,
 )
 
@@ -86,6 +88,7 @@ __all__ = [
     "MemoryCandidateExtractionPlanner",
     "MemoryCandidateExtractionResult",
     "MemoryCandidateExtractionService",
+    "MemoryCandidateDecision",
     "MemoryCandidatePromotionPlan",
     "MemoryCandidatePromotionPlanner",
     "MemoryCandidatePromotionResult",
@@ -121,5 +124,6 @@ __all__ = [
     "UserProfileCandidate",
     "UserProfileItem",
     "confirmed_user_profile",
+    "dynamic_memory_subject",
     "user_profile_candidates",
 ]

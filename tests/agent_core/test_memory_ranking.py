@@ -59,6 +59,17 @@ def test_ranking_keeps_preferences_and_selects_relevant_chinese_memory() -> None
     assert irrelevant not in ranked
 
 
+def test_ranking_recalls_portfolio_fact_across_chinese_and_english_terms() -> None:
+    holding = _entry(
+        MemoryType.EPISODIC,
+        "Portfolio position [腾讯]: 500 股, 成本320港币",
+    )
+
+    ranked = rank_governed_memories((holding,), query_text="分析一下我的持仓风险", limit=8)
+
+    assert ranked == (holding,)
+
+
 def test_ranking_bounds_stable_preferences_and_preserves_relevant_type_diversity() -> None:
     preferences = tuple(_entry(MemoryType.PREFERENCE, f"偏好 {index}") for index in range(4))
     architecture = _entry(MemoryType.ARCHITECTURE_FACT, "Agent 使用 PostgreSQL 存储")

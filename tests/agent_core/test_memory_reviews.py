@@ -174,6 +174,50 @@ def test_memory_review_service_keeps_prior_preferences_when_confirming_preferenc
     assert result.event.payload["duplicate_of_memory_id"] is None
 
 
+def test_memory_review_supersedes_only_the_same_portfolio_subject() -> None:
+    session = _completed_session()
+    record = _candidate_record(session).model_copy(
+        update={
+            "memory_type": MemoryType.EPISODIC,
+            "text": "Portfolio position [腾讯]: 300 股, 成本305港币",
+        }
+    )
+    prior_tencent = _candidate_record(session).model_copy(
+        update={
+            "memory_id": MemoryId(UUID("00000000-0000-0000-0000-000000000125")),
+            "memory_type": MemoryType.EPISODIC,
+            "text": "Portfolio position [腾讯]: 500 股, 成本320港币",
+            "status": MemoryStatus.CONFIRMED,
+        }
+    )
+    prior_apple = _candidate_record(session).model_copy(
+        update={
+            "memory_id": MemoryId(UUID("00000000-0000-0000-0000-000000000126")),
+            "memory_type": MemoryType.EPISODIC,
+            "text": "Portfolio position [AAPL]: 100 shares, cost $180",
+            "status": MemoryStatus.CONFIRMED,
+        }
+    )
+
+    result = MemoryReviewService().review(
+        session=session,
+        record=record,
+        next_sequence=4,
+        command=MemoryReviewCommand(
+            action=MemoryReviewAction.CONFIRM,
+            operator="alice",
+            reason="updated holding",
+            created_at=datetime(2026, 9, 27, tzinfo=UTC),
+        ),
+        existing_records=(prior_tencent, prior_apple),
+    )
+
+    assert [item.memory_id for item in result.superseded_records] == [
+        prior_tencent.memory_id
+    ]
+    assert result.superseded_records[0].superseded_by == record.memory_id
+
+
 def test_memory_review_service_expires_duplicate_confirm_against_existing_confirmed() -> None:
     session = _completed_session()
     reviewed_at = datetime(2026, 7, 2, 11, 1, tzinfo=UTC)

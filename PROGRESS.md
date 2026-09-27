@@ -1,5 +1,24 @@
 # Zebra Agent Project Status
 
+2026-09-27 CLOUD-MEMORY-AUTONOMY-01 (natural cross-Session Memory): natural
+Chinese user self-statements now enter the existing governed Memory chain
+without requiring “请记住”. Stable, non-sensitive response preferences reuse the
+deterministic auto-promotion policy; background, goals, interests and portfolio
+positions remain review-only. Portfolio records carry their asset subject in a
+canonical form, preserve existing source/timestamp provenance and supersede only
+an older confirmed position for the same asset. Confirmed interests and holdings
+are exposed through the profile API, while relevance synonyms support later
+Chinese or English recall. Trench's Memory page exposes the new categories,
+warns that holdings are dated and not broker-synced, and preserves canonical
+identity during edits. Focused Zebra coverage passes `49`; the broader
+Memory/API/Worker/AG-UI group passes `180`; `make check` passes file-size, Ruff,
+strict Mypy over `983` sources and eval `30/30`; the full suite passes `4694`
+with `901` environment-gated skips. Trench's continuous `make check` passes
+API/model `142`, pipeline `74`, ToC `121`, both production builds, migration
+heads and offline upgrade, with three pre-existing image warnings. The task is
+in Review. Commit, push, deployment, live PostgreSQL and production acceptance
+remain separate evidence.
+
 2026-09-27 CLIENT-TRENCH-PILOT-01 (first real Host Client integration): Trench
 now captures six bounded Client State readables, creates and persists the
 browser Surface before Agent command admission, and exposes the complete

@@ -223,8 +223,8 @@ def _preference_candidates_from_user_message(
             _user_memory_candidate(
                 event,
                 text=item.text,
-                memory_type=MemoryType.EPISODIC,
-                confidence=0.55,
+                memory_type=item.memory_type,
+                confidence=item.confidence,
                 repo_id=repo_id,
                 user_id=user_id,
                 tenant_id=tenant_id,

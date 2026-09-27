@@ -27,6 +27,19 @@ Branch: `codex/react-media-content-01`; isolated worktree:
 Detailed decision:
 `docs/ADR-CLIENT-02_Durable多媒体内容面.md`.
 
+# Prior task — CLOUD-MEMORY-AUTONOMY-01 natural cross-session Memory (2026-09-27)
+
+1. `completed` — classify source-bound natural self-statements with a deterministic,
+   credential-safe policy.
+2. `completed` — auto-confirm stable preferences while keeping background, goals,
+   interests and volatile portfolio facts behind review.
+3. `completed` — preserve PostgreSQL governed Memory as authority and identify
+   dynamic positions by canonical subject without adding a parallel store.
+4. `completed` — supersede only an older position for the same asset and prove
+   cross-language relevant recall plus profile projection.
+5. `completed` — finish repository gates and record final evidence. Commit,
+   push, deployment and production acceptance remain separate actions.
+
 # Prior task — REACT-CONVERSATION-02 ZCode-style complete conversation surface (2026-09-26)
 
 1. `completed` — define host-neutral Turn/work-segment contracts and a stable
