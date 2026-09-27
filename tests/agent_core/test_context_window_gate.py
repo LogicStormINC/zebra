@@ -15,6 +15,7 @@ from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
     ModelToolDefinition,
+    ModelToolOrigin,
     ModelUsage,
 )
 from agent_core.harness.context_window import ContextWindowExceededError, plan_context_window
@@ -323,6 +324,56 @@ def test_provider_token_counter_and_profile_are_attached_to_completion() -> None
     assert completion.call_metadata.token_breakdown["messages"] > 0
     assert completion.call_metadata.token_breakdown["system"] >= 0
     assert completion.call_metadata.token_breakdown["tools"] >= 0
+    assert completion.call_metadata.token_breakdown_v2 is not None
+    assert completion.call_metadata.token_breakdown_v2.total_tokens == 125
+    assert completion.call_metadata.token_breakdown_v2.provider_input_tokens == 125
+    assert completion.call_metadata.token_breakdown_v2.estimate_error == 2
+
+
+def test_detailed_breakdown_classifies_skills_and_mcp_then_reconciles_total() -> None:
+    system = _message(MessageRole.SYSTEM, "system policy")
+    skill = SessionMessage(
+        message_id=new_message_id(),
+        role=MessageRole.TOOL,
+        content="loaded skill guidance",
+        created_at=NOW,
+        tool_call_id="skill-call",
+        metadata={"context_segment": "skills"},
+    )
+    tools = (
+        ModelToolDefinition(
+            name="files.read",
+            description="Read files.",
+            parameters={"type": "object", "properties": {}},
+        ),
+        ModelToolDefinition(
+            name="mcp.github.search",
+            description="Search GitHub.",
+            parameters={"type": "object", "properties": {}},
+            origin=ModelToolOrigin.MCP,
+            source_id="github",
+        ),
+    )
+    plan = plan_context_window(
+        (system, skill, _message(MessageRole.USER, "inspect")),
+        tools,
+        ModelContextWindow(),
+        token_counter=lambda _messages, _tools: 1_000,
+    )
+
+    assert plan.token_breakdown_v2 is not None
+    categories = plan.token_breakdown_v2.categories
+    assert tuple(categories) == (
+        "messages",
+        "system_tools",
+        "skills",
+        "system_prompt",
+        "mcp_tools",
+        "other",
+    )
+    assert sum(categories.values()) == 1_000
+    assert all(categories[key] > 0 for key in categories if key != "other")
+    assert categories["other"] == 0
 
 
 def test_context_error_exposes_typed_diagnostics() -> None:

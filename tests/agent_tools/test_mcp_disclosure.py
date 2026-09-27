@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 from agent_core.domain.identifiers import new_tool_call_id
-from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.modeling import ModelToolDefinition, ModelToolOrigin
 from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_tools.mcp_disclosure import (
     MCP_TOOL_CALL_NAME,
@@ -31,6 +31,7 @@ def test_oversized_catalog_exposes_only_call_bridge() -> None:
 
     assert catalog.activated
     assert [tool.name for tool in catalog.model_tools] == [MCP_TOOL_CALL_NAME]
+    assert catalog.model_tools[0].origin is ModelToolOrigin.MCP
     with pytest.raises(ValueError, match="deferred MCP tools"):
         catalog.resolve(_call("mcp.fixture.echo", {"value": "blocked"}))
 

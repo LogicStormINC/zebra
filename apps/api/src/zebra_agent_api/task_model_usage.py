@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
+from agent_core.contracts.model_events import ModelTokenBreakdownV2Payload
 from agent_core.domain.events import EventType
 from agent_core.ports.agent_tasks import TaskEvent
 
@@ -32,6 +33,9 @@ def summarize_task_model_usage(events: Iterable[TaskEvent]) -> dict[str, object]
     breakdown = _bounded_breakdown(_latest(calls, "token_breakdown"))
     if breakdown:
         summary["token_breakdown"] = breakdown
+    detailed = _bounded_breakdown_v2(_latest(calls, "token_breakdown_v2"))
+    if detailed is not None:
+        summary["token_breakdown_v2"] = detailed
     model = _latest(calls, "resolved_model") or _latest(calls, "model_name")
     if isinstance(model, str) and model.strip():
         summary["model"] = model.strip()
@@ -68,3 +72,11 @@ def _bounded_breakdown(value: object) -> dict[str, int]:
         for key in ("messages", "system", "tools")
         if value.get(key) is not None
     }
+
+
+def _bounded_breakdown_v2(value: object) -> dict[str, object] | None:
+    try:
+        breakdown = ModelTokenBreakdownV2Payload.model_validate(value)
+    except (TypeError, ValueError):
+        return None
+    return breakdown.model_dump(mode="json", exclude_none=True)

@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from agent_core.domain.mcp import normalize_mcp_allowlist
-from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.modeling import ModelToolDefinition, ModelToolOrigin
 from agent_tools import McpProxyRequest, McpProxyResponse
 
 from agent_runtime.mcp_protocol import McpProtocolError, McpServerSpec, StdioMcpSession
@@ -173,6 +173,8 @@ def _parse_tool(
             name=f"mcp.{server_name}.{remote_alias or remote_name}",
             description=f"Untrusted external MCP capability. {description}",
             parameters=schema,
+            origin=ModelToolOrigin.MCP,
+            source_id=server_name,
         ),
     )
 

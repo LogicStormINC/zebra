@@ -5,6 +5,15 @@ from enum import StrEnum
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.tools import ToolCall
 
+CONTEXT_TOKEN_CATEGORIES = (
+    "messages",
+    "system_tools",
+    "skills",
+    "system_prompt",
+    "mcp_tools",
+    "other",
+)
+
 
 @dataclass(frozen=True)
 class ModelUsage:
@@ -41,11 +50,21 @@ class ModelTextDelta:
             raise ValueError("model text delta content must not be empty")
 
 
+class ModelToolOrigin(StrEnum):
+    SYSTEM = "system"
+    HOST = "host"
+    CLIENT = "client"
+    MANAGEMENT = "management"
+    MCP = "mcp"
+
+
 @dataclass(frozen=True)
 class ModelToolDefinition:
     name: str
     description: str
     parameters: Mapping[str, object]
+    origin: ModelToolOrigin = ModelToolOrigin.SYSTEM
+    source_id: str | None = None
 
     def __post_init__(self) -> None:
         if not self.name.strip():
@@ -56,6 +75,52 @@ class ModelToolDefinition:
             raise ValueError("model tool parameters must be an object JSON schema")
         if not isinstance(self.parameters.get("properties"), Mapping):
             raise ValueError("model tool parameters must define object properties")
+        if self.source_id is not None and not self.source_id.strip():
+            raise ValueError("model tool source_id must not be blank when set")
+
+
+@dataclass(frozen=True)
+class ModelTokenBreakdown:
+    categories: Mapping[str, int]
+    basis: str
+    estimate_method: str
+    raw_estimated_total: int
+    provider_input_tokens: int | None = None
+    estimate_error: int | None = None
+    schema_version: int = 2
+
+    def __post_init__(self) -> None:
+        if self.schema_version != 2:
+            raise ValueError("model token breakdown schema_version must be 2")
+        if set(self.categories) != set(CONTEXT_TOKEN_CATEGORIES):
+            raise ValueError("model token breakdown must contain every context category")
+        if any(value < 0 for value in self.categories.values()):
+            raise ValueError("model token breakdown categories must not be negative")
+        if not self.basis.strip() or not self.estimate_method.strip():
+            raise ValueError("model token breakdown basis and estimate_method must not be blank")
+        if self.raw_estimated_total < 0:
+            raise ValueError("raw_estimated_total must not be negative")
+        if self.provider_input_tokens is not None and self.provider_input_tokens < 0:
+            raise ValueError("provider_input_tokens must not be negative")
+
+    @property
+    def total_tokens(self) -> int:
+        return sum(self.categories.values())
+
+    def as_payload(self) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "schema_version": self.schema_version,
+            "basis": self.basis,
+            "estimate_method": self.estimate_method,
+            "total_tokens": self.total_tokens,
+            "categories": dict(self.categories),
+            "raw_estimated_total": self.raw_estimated_total,
+        }
+        if self.provider_input_tokens is not None:
+            payload["provider_input_tokens"] = self.provider_input_tokens
+        if self.estimate_error is not None:
+            payload["estimate_error"] = self.estimate_error
+        return payload
 
 
 class ModelRole(StrEnum):
@@ -115,6 +180,7 @@ class ModelCallMetadata:
     input_token_limit: int | None = None
     token_estimate_method: str | None = None
     token_breakdown: Mapping[str, int] | None = None
+    token_breakdown_v2: ModelTokenBreakdown | None = None
     profile_id: str | None = None
     profile_version_observed_at: str | None = None
     requested_model: str | None = None

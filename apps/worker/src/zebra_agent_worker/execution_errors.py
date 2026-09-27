@@ -113,6 +113,11 @@ def error_metadata(
                 "input_token_limit": exc.plan.input_token_limit,
                 "context_profile": exc.plan.profile_name,
                 "token_breakdown": exc.plan.token_breakdown,
+                **(
+                    {"token_breakdown_v2": exc.plan.token_breakdown_v2.as_payload()}
+                    if exc.plan.token_breakdown_v2 is not None
+                    else {}
+                ),
                 "attempted_strategies": list(exc.plan.attempted_strategies),
             }
         )

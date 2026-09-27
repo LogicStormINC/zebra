@@ -5,7 +5,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.modeling import ModelToolDefinition, ModelToolOrigin
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 
 from agent_tools.contracts import ToolContract
@@ -61,6 +61,8 @@ mcp_tool_call_definition = ModelToolDefinition(
         "required": ["name", "arguments"],
         "additionalProperties": False,
     },
+    origin=ModelToolOrigin.MCP,
+    source_id="mcp-disclosure",
 )
 
 

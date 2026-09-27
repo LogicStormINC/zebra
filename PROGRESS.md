@@ -1,5 +1,24 @@
 # Zebra Agent Project Status
 
+2026-09-27 CTX-OBS-02 (six-category context observability): every model call now
+retains a typed V2 breakdown for messages, system tools, Skills, system prompts,
+MCP tools and unattributed remainder while dual-writing the replay-compatible
+three-category field. Tool origin and system-message provenance are classified
+before invocation; category estimates are deterministically reconciled to the
+provider input-token total without exposing prompt, Skill, credential or tool
+payload text. The bounded Task summary and AG-UI custom event validate the exact
+six-key schema and reject malformed totals. The host-neutral React Composer
+renders dynamic categories, host colors, accounting basis, estimate method,
+historical fallback and a responsive scrollable tooltip. Zebra focused tests
+pass `77`; `make check` passes file-size, Ruff, strict Mypy over `984` sources
+and eval `30/30`; the full suite passes `4700` with `901` environment-gated
+skips. Under the required Node 24 runtime, the SDK passes `42` tests, package
+audit, React 18/19 Vite/Next consumers and Chromium/WebKit browser matrices.
+Paired Trench passes `127` tests, production build and production-browser
+acceptance for all six labels and measurement metadata. The task is in Review;
+merge, publication, deployment and a real-provider production Turn remain
+separate evidence.
+
 2026-09-27 CLOUD-MEMORY-AUTONOMY-01 (natural cross-Session Memory): natural
 Chinese user self-statements now enter the existing governed Memory chain
 without requiring “请记住”. Stable, non-sensitive response preferences reuse the

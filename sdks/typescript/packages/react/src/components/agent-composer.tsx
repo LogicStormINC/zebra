@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, type KeyboardEvent } from "react";
+import React, { useId, useRef, type CSSProperties, type KeyboardEvent } from "react";
 import type {
   AgentComposerAttachment,
   AgentComposerMetrics,
@@ -19,6 +19,9 @@ export interface AgentComposerLabels {
   capability: string;
   contextCapacity: string;
   contextComposition: string;
+  contextCompositionUnavailable?: string;
+  contextBreakdownBasis?: string;
+  contextEstimateMethod?: string;
   contextUnavailable: string;
   continue: string;
   model: string;
@@ -29,6 +32,11 @@ export interface AgentComposerLabels {
   removeAttachment: (name: string) => string;
   send: string;
 }
+
+type ResolvedAgentComposerLabels = AgentComposerLabels & Required<Pick<
+  AgentComposerLabels,
+  "contextCompositionUnavailable" | "contextBreakdownBasis" | "contextEstimateMethod"
+>>;
 
 export interface AgentComposerProps {
   acceptedFileTypes?: string;
@@ -65,12 +73,15 @@ export interface AgentComposerProps {
   value: string;
 }
 
-const DEFAULT_LABELS: AgentComposerLabels = {
+const DEFAULT_LABELS: ResolvedAgentComposerLabels = {
   addAttachment: "Add attachment",
   cacheHitRate: "Average cache hit rate",
   capability: "Capability",
   contextCapacity: "Context capacity",
   contextComposition: "Estimated composition",
+  contextCompositionUnavailable: "Composition was not recorded for this call",
+  contextBreakdownBasis: "Accounting basis",
+  contextEstimateMethod: "Estimate method",
   contextUnavailable: "No model usage yet",
   continue: "Continue",
   model: "Model",
@@ -84,7 +95,13 @@ const DEFAULT_LABELS: AgentComposerLabels = {
 
 export function AgentComposer(props: AgentComposerProps) {
   const fileInput = useRef<HTMLInputElement>(null);
-  const labels = { ...DEFAULT_LABELS, ...props.labels };
+  const labels: ResolvedAgentComposerLabels = {
+    ...DEFAULT_LABELS,
+    ...props.labels,
+    contextCompositionUnavailable: props.labels?.contextCompositionUnavailable ?? DEFAULT_LABELS.contextCompositionUnavailable,
+    contextBreakdownBasis: props.labels?.contextBreakdownBasis ?? DEFAULT_LABELS.contextBreakdownBasis,
+    contextEstimateMethod: props.labels?.contextEstimateMethod ?? DEFAULT_LABELS.contextEstimateMethod,
+  };
   const maxAttachments = props.maxAttachments ?? 4;
   const submitDisabled = props.disabled || props.pausing ||
     (!props.busy && !props.canContinue && !props.value.trim());
@@ -251,17 +268,24 @@ function SelectionControl({
 }
 
 function ContextUsage({ labels, metrics }: {
-  labels: AgentComposerLabels;
+  labels: ResolvedAgentComposerLabels;
   metrics: AgentComposerMetrics;
 }) {
-  const percent = Math.max(0, Math.min(100, Math.round((metrics.contextPercent ?? 0) * 100)));
+  const panelId = useId();
+  const contextRatio = Number.isFinite(metrics.contextPercent) ? metrics.contextPercent ?? 0 : 0;
+  const percent = Math.max(0, Math.min(100, Math.round(contextRatio * 100)));
   const hasUsage = metrics.contextPercent !== null;
-  const cache = metrics.cacheHitRate === null ? "—" : `${(metrics.cacheHitRate * 100).toFixed(1)}%`;
-  const parts = (metrics.contextBreakdown ?? []).filter((item) => item.tokens >= 0);
+  const cache = metrics.cacheHitRate === null || !Number.isFinite(metrics.cacheHitRate)
+    ? "—"
+    : `${(metrics.cacheHitRate * 100).toFixed(1)}%`;
+  const parts = (metrics.contextBreakdown ?? []).filter((item) => Number.isFinite(item.tokens) && item.tokens >= 0);
   const partTotal = parts.reduce((total, item) => total + item.tokens, 0);
+  const basis = metrics.contextBreakdownBasis?.trim();
+  const estimateMethod = metrics.contextEstimateMethod?.trim();
   return (
-    <span className="zebra-agent-composer__usage">
+    <div className="zebra-agent-composer__usage">
       <button
+        aria-describedby={panelId}
         aria-label={hasUsage ? `${labels.contextCapacity} ${percent}%` : labels.contextUnavailable}
         className="zebra-agent-composer__usage-ring"
         style={{ "--zebra-agent-context-percent": `${percent}%` } as React.CSSProperties}
@@ -269,36 +293,51 @@ function ContextUsage({ labels, metrics }: {
       >
         <span />
       </button>
-      <span className="zebra-agent-composer__usage-panel" role="tooltip">
-        <span className="zebra-agent-composer__usage-line">
+      <div className="zebra-agent-composer__usage-panel" id={panelId} role="tooltip">
+        <div className="zebra-agent-composer__usage-line">
           <strong>{labels.contextCapacity}</strong>
           <code>{hasUsage ? `${formatTokenCount(metrics.contextTokens)} / ${formatTokenCount(metrics.contextLimit)} · ${percent}%` : labels.contextUnavailable}</code>
-        </span>
+        </div>
         <span className="zebra-agent-composer__meter"><span style={{ width: `${percent}%` }} /></span>
-        {parts.length && partTotal > 0 ? (
+        {hasUsage ? (
           <>
             <span className="zebra-agent-composer__usage-section-label">{labels.contextComposition}</span>
-            <span className="zebra-agent-composer__usage-breakdown" aria-label={labels.contextComposition}>
-              {parts.map((item, index) => {
-                const partPercent = item.tokens / partTotal * 100;
-                return (
-                  <span className="zebra-agent-composer__usage-part" key={item.id}>
-                    <span className="zebra-agent-composer__usage-part-label">
-                      <i aria-hidden="true" style={{ opacity: Math.max(0.4, 1 - index * 0.2) }} />
-                      {item.label}
-                    </span>
-                    <code>{formatTokenCount(item.tokens)} · {partPercent < 0.05 ? "<0.1" : partPercent.toFixed(1)}%</code>
-                  </span>
-                );
-              })}
-            </span>
+            {parts.length && partTotal > 0 ? (
+              <div className="zebra-agent-composer__usage-breakdown" aria-label={labels.contextComposition} role="list">
+                {parts.map((item, index) => {
+                  const partPercent = item.tokens / partTotal * 100;
+                  const markerStyle = item.color
+                    ? { "--zebra-agent-context-category-color": item.color } as CSSProperties
+                    : { opacity: Math.max(0.4, 1 - index * 0.12) };
+                  return (
+                    <div className="zebra-agent-composer__usage-part" key={item.id} role="listitem">
+                      <span className="zebra-agent-composer__usage-part-label">
+                        <i aria-hidden="true" style={markerStyle} />
+                        {item.label}
+                      </span>
+                      <code>{formatTokenCount(item.tokens)} · {partPercent < 0.05 ? "<0.1" : partPercent.toFixed(1)}%</code>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : <span className="zebra-agent-composer__usage-empty">{labels.contextCompositionUnavailable}</span>}
+            {basis ? (
+              <div className="zebra-agent-composer__usage-line zebra-agent-composer__usage-meta">
+                <span>{labels.contextBreakdownBasis}</span><code>{basis}</code>
+              </div>
+            ) : null}
+            {estimateMethod ? (
+              <div className="zebra-agent-composer__usage-line zebra-agent-composer__usage-meta">
+                <span>{labels.contextEstimateMethod}</span><code>{estimateMethod}</code>
+              </div>
+            ) : null}
           </>
         ) : null}
-        <span className="zebra-agent-composer__usage-line">
+        <div className="zebra-agent-composer__usage-line zebra-agent-composer__usage-cache">
           <span>{labels.cacheHitRate}</span><strong>{cache}</strong>
-        </span>
-      </span>
-    </span>
+        </div>
+      </div>
+    </div>
   );
 }
 

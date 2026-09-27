@@ -18,6 +18,7 @@ from agent_core.domain.identifiers import (
     new_task_id,
     new_tool_call_id,
 )
+from agent_core.domain.modeling import ModelToolOrigin
 from agent_core.domain.tools import ToolCall, ToolCallStatus
 from agent_core.ports.client_effect_dispatch import ClientEffectScheduleOutcome
 from zebra_agent_worker.client_tool_gateway import (
@@ -130,6 +131,8 @@ def test_model_tools_mirror_the_allowed_actions() -> None:
     gateway, _ = _gateway()
     assert [tool.name for tool in gateway.model_tools] == ["app.ui.item.open"]
     assert gateway.model_tools[0].parameters["required"] == ["itemId"]
+    assert gateway.model_tools[0].origin is ModelToolOrigin.CLIENT
+    assert gateway.model_tools[0].source_id == "app.ui.item.open"
     assert gateway.parallel_safe_tools == frozenset()
     assert gateway.authorized_policy_tools == frozenset({"app.ui.item.open"})
     assert gateway.approval_required_tools == frozenset()

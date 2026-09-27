@@ -13,7 +13,9 @@ from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.modeling import (
     ModelCallMetadata,
     ModelCompletion,
+    ModelTokenBreakdown,
     ModelToolDefinition,
+    ModelToolOrigin,
     ModelUsage,
 )
 from agent_core.domain.tool_runs import ToolRunRecord
@@ -87,7 +89,9 @@ __all__ = [
     "VerifierResult",
     "build_retry_plan_hint",
     "ModelCompletion",
+    "ModelTokenBreakdown",
     "ModelToolDefinition",
+    "ModelToolOrigin",
     "ModelUsage",
     "ScriptedModelGateway",
     "ScriptedModelResponse",

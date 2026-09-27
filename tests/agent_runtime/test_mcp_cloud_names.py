@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 from agent_core.domain.mcp import normalize_mcp_allowlist
+from agent_core.domain.modeling import ModelToolOrigin
 from agent_runtime.mcp_catalog_discovery import _parse_cloud_tool, discover_mcp_tool_catalog
 from agent_runtime.mcp_protocol import McpProtocolError
 from agent_runtime.mcp_stdio import _parse_tool
@@ -24,6 +25,12 @@ def test_cloud_preserves_remote_names_and_local_rules(name, network):
     assert parsed == _parse_cloud_tool("discovery", fixtures.tool(name))
     with pytest.raises(McpProtocolError, match="unsupported tool name"):
         _parse_tool("discovery", fixtures.tool(name))
+
+
+def test_local_stdio_tool_records_mcp_provenance():
+    parsed = _parse_tool("discovery", fixtures.tool("search"))
+    assert parsed.definition.origin is ModelToolOrigin.MCP
+    assert parsed.definition.source_id == "discovery"
 
 
 @pytest.mark.parametrize("name", ["", " x", "x ", "x\n", "x\x00", "x" * 513, None, 7])

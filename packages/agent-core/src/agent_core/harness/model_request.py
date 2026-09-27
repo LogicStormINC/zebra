@@ -12,7 +12,11 @@ from agent_core.domain.modeling import (
     ModelTextDelta,
     ModelToolDefinition,
 )
-from agent_core.harness.context_window import ContextWindowPlan, plan_context_window
+from agent_core.harness.context_window import (
+    ContextWindowPlan,
+    plan_context_window,
+    reconcile_context_breakdown,
+)
 from agent_core.ports.model_gateway import (
     ModelContextWindowPort,
     ModelGatewayPort,
@@ -71,6 +75,9 @@ def with_context_plan(
             input_token_limit=plan.input_token_limit,
             token_estimate_method=plan.estimate_method,
             token_breakdown=dict(plan.token_breakdown),
+            token_breakdown_v2=reconcile_context_breakdown(
+                plan, completion.call_metadata.usage.input_tokens
+            ),
         ),
     )
 

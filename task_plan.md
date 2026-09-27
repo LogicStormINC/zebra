@@ -1,4 +1,39 @@
-# Active task — REACT-MEDIA-01 durable rich-content surface (2026-09-27)
+# Active task — CTX-OBS-02 six-category context observability (2026-09-27)
+
+Branch: `codex/context-breakdown-v2`; isolated worktree:
+`/Users/lukeding/.codex/worktrees/context-breakdown-v2/zebra-agent`.
+
+1. `completed` — add typed message/tool provenance and a deterministic V2
+   token-breakdown model without changing model payloads or limits.
+2. `completed` — dual-write V1/V2 usage into durable model request/response
+   events, API summaries and bounded AG-UI projections.
+3. `completed` — make the shared React Composer render dynamic categories,
+   measurement basis and historical fallback accessibly and responsively.
+4. `completed` — update Trench's Host adapter, Chinese labels and packed package
+   without disturbing its current full-content/media work.
+5. `completed_local` — run focused, repository, SDK, Host build and browser/runtime
+   acceptance; record merge, deployment and live-call boundaries separately.
+
+Key decisions: the provider input total is authoritative; category values are
+deterministically reconciled to that total; old events remain readable; no
+historical categories or prompt contents are fabricated.
+
+Errors encountered:
+
+- The first isolated-worktree pytest collection could not import workspace
+  packages because `make sync` had not yet run; synchronize the worktree before
+  repeating the focused gate. Ruff also identified and then corrected one
+  import-order issue in `task_model_usage.py`.
+- The first SDK build used the host's global legacy TSDX because the isolated
+  worktree had no Node modules; install the frozen SDK workspace first.
+- The first complete SDK verification ran under unsupported Node 20 and failed
+  an unrelated chart DOM test; the required Node 24 runtime passes all 42 SDK
+  tests, package audit, React 18/19 Vite/Next consumers and browser matrices.
+- Local implementation and paired Host acceptance are closed. Merge, package
+  publication, deployment and one real-provider production Turn are explicitly
+  not inferred from local tests.
+
+# Prior task — REACT-MEDIA-01 durable rich-content surface (2026-09-27)
 
 Branch: `codex/react-media-content-01`; isolated worktree:
 `/Users/lukeding/.codex/worktrees/media-content-blocks/zebra-agent`.

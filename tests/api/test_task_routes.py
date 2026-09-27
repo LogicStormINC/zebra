@@ -78,6 +78,23 @@ def test_task_read_projects_bounded_task_model_usage(tmp_path: Path) -> None:
                 "resolved_model": "deepseek/flash",
                 "reasoning_effort": "high",
                 "token_breakdown": {"messages": 7_800, "system": 2_100, "tools": 600},
+                "token_breakdown_v2": {
+                    "schema_version": 2,
+                    "basis": "reconciled_provider_total",
+                    "estimate_method": "provider",
+                    "total_tokens": 8_000,
+                    "categories": {
+                        "messages": 5_500,
+                        "system_tools": 500,
+                        "skills": 300,
+                        "system_prompt": 1_200,
+                        "mcp_tools": 400,
+                        "other": 100,
+                    },
+                    "raw_estimated_total": 7_900,
+                    "provider_input_tokens": 8_000,
+                    "estimate_error": 100,
+                },
                 "provider": "private-provider",
                 "stable_prefix_hash": "private-hash",
             },
@@ -115,6 +132,23 @@ def test_task_read_projects_bounded_task_model_usage(tmp_path: Path) -> None:
         "model_call_count": 2,
         "reasoning_effort": "high",
         "token_breakdown": {"messages": 7_800, "system": 2_100, "tools": 600},
+        "token_breakdown_v2": {
+            "schema_version": 2,
+            "basis": "reconciled_provider_total",
+            "estimate_method": "provider",
+            "total_tokens": 8_000,
+            "categories": {
+                "messages": 5_500,
+                "system_tools": 500,
+                "skills": 300,
+                "system_prompt": 1_200,
+                "mcp_tools": 400,
+                "other": 100,
+            },
+            "raw_estimated_total": 7_900,
+            "provider_input_tokens": 8_000,
+            "estimate_error": 100,
+        },
     }
     assert "provider" not in read.body["model_usage"]
     assert "stable_prefix_hash" not in read.body["model_usage"]

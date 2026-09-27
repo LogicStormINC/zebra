@@ -1,4 +1,39 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from agent_core.domain.modeling import CONTEXT_TOKEN_CATEGORIES
+
+
+class ModelTokenBreakdownV2Payload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal[2]
+    basis: str
+    estimate_method: str
+    total_tokens: int = Field(ge=0)
+    categories: dict[str, int]
+    raw_estimated_total: int = Field(ge=0)
+    provider_input_tokens: int | None = Field(default=None, ge=0)
+    estimate_error: int | None = None
+
+    @field_validator("basis", "estimate_method")
+    @classmethod
+    def ensure_text_not_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("token breakdown text fields must not be blank")
+        return value
+
+    @model_validator(mode="after")
+    def ensure_categories_match_total(self) -> "ModelTokenBreakdownV2Payload":
+        if set(self.categories) != set(CONTEXT_TOKEN_CATEGORIES):
+            raise ValueError("token breakdown v2 must contain every context category")
+        if any(value < 0 for value in self.categories.values()):
+            raise ValueError("token breakdown v2 categories must not be negative")
+        if sum(self.categories.values()) != self.total_tokens:
+            raise ValueError("token breakdown v2 categories must equal total_tokens")
+        return self
 
 
 class ModelRequestStartedPayload(BaseModel):
@@ -12,6 +47,7 @@ class ModelRequestStartedPayload(BaseModel):
     model_profile: str | None = None
     token_estimate_method: str | None = None
     token_breakdown: dict[str, int] | None = None
+    token_breakdown_v2: ModelTokenBreakdownV2Payload | None = None
     reserves: dict[str, int] | None = None
 
     @field_validator("model_call_id", "model_profile", "token_estimate_method")
@@ -89,6 +125,7 @@ class ModelResponseReceivedPayload(BaseModel):
     input_token_limit: int | None = Field(default=None, ge=0)
     token_estimate_method: str | None = None
     token_breakdown: dict[str, int] | None = None
+    token_breakdown_v2: ModelTokenBreakdownV2Payload | None = None
     input_token_estimate_error: int | None = None
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)

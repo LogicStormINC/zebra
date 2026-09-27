@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from ag_ui.core import CustomEvent
+from agent_core.contracts.model_events import ModelTokenBreakdownV2Payload
 
 
 def project_model_usage(payload: Mapping[str, Any], *, timestamp: int) -> CustomEvent | None:
@@ -31,6 +32,16 @@ def project_model_usage(payload: Mapping[str, Any], *, timestamp: int) -> Custom
         }
         if bounded:
             value["token_breakdown"] = bounded
+    try:
+        detailed = ModelTokenBreakdownV2Payload.model_validate(
+            payload.get("token_breakdown_v2")
+        )
+    except (TypeError, ValueError):
+        detailed = None
+    if detailed is not None:
+        value["token_breakdown_v2"] = detailed.model_dump(
+            mode="json", exclude_none=True
+        )
     if not value:
         return None
     return CustomEvent(timestamp=timestamp, name="zebra.model_usage", value=value)

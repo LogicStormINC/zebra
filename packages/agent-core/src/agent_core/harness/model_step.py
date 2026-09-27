@@ -13,7 +13,10 @@ from agent_core.domain.modeling import (
 )
 from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness.context_recovery import prepare_bounded_conversation
-from agent_core.harness.context_window import ContextWindowExceededError
+from agent_core.harness.context_window import (
+    ContextWindowExceededError,
+    context_breakdown_v2_payload,
+)
 from agent_core.harness.hooks import CompactionHook
 from agent_core.harness.image_messages import image_data_urls
 from agent_core.harness.model_request import (
@@ -27,10 +30,11 @@ from agent_core.harness.model_step_support import (
     MODEL_NATIVE_DELEGATION_GUIDANCE,
     MODEL_REQUIRED_DELEGATION_DIRECTIVE,
     ZEBRA_AGENT_IDENTITY_DIRECTIVE,
+    context_message_metadata,
     final_answer_instruction,
     selected_skill_message,
     task_acceptance_message,
-    tool_result_content,
+    tool_result_message,
 )
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
@@ -201,6 +205,7 @@ class HarnessModelStep:
                     "model_profile": plan.profile_name,
                     "token_estimate_method": plan.estimate_method,
                     "token_breakdown": plan.token_breakdown,
+                    **context_breakdown_v2_payload(plan),
                     "reserves": {
                         "output": window.max_output_tokens,
                         "reasoning": window.reasoning_reserve_tokens,
@@ -327,19 +332,7 @@ class HarnessModelStep:
         tool_result: ToolResult,
         created_at: datetime,
     ) -> None:
-        messages.append(
-            SessionMessage(
-                message_id=new_message_id(),
-                role=MessageRole.TOOL,
-                content=tool_result_content(tool_result),
-                created_at=created_at,
-                tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
-                metadata={
-                    **tool_result.metadata,
-                    "tool_status": tool_result.status.value,
-                },
-            )
-        )
+        messages.append(tool_result_message(tool_call, tool_result, created_at=created_at))
 
     def request_tool_result_completion(
         self,
@@ -411,6 +404,7 @@ class HarnessModelStep:
                         role=MessageRole.SYSTEM,
                         content=system_prompt,
                         created_at=created_at,
+                        metadata=context_message_metadata("context_compiler"),
                     )
                 )
         if any(tool.name == "agent.research" for tool in self._available_tools):
@@ -430,6 +424,7 @@ class HarnessModelStep:
                         role=MessageRole.SYSTEM,
                         content=delegation_guidance,
                         created_at=created_at,
+                        metadata=context_message_metadata("delegation"),
                     )
                 )
         skill_message = selected_skill_message(
@@ -455,11 +450,23 @@ class HarnessModelStep:
                         + [f"- [{s.status.value}] {s.step_id}: {s.content}" for s in active_steps]
                     ),
                     created_at=created_at,
+                    metadata=context_message_metadata("task_plan"),
                 )
             )
-        if messages:
+        if messages and messages[0].metadata.get("context_segment") != "skills":
             messages[0] = messages[0].model_copy(
                 update={"content": f"{identity_directive}\n\n{messages[0].content}"}
+            )
+        elif messages:
+            messages.insert(
+                0,
+                SessionMessage(
+                    message_id=new_message_id(),
+                    role=MessageRole.SYSTEM,
+                    content=identity_directive,
+                    created_at=created_at,
+                    metadata=context_message_metadata("identity"),
+                ),
             )
         else:
             messages.append(
@@ -468,6 +475,7 @@ class HarnessModelStep:
                     role=MessageRole.SYSTEM,
                     content=identity_directive,
                     created_at=created_at,
+                    metadata=context_message_metadata("identity"),
                 )
             )
         messages.extend(task.conversation_history)

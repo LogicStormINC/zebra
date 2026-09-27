@@ -1,7 +1,7 @@
 """Grant-aware Host tool visibility for Worker model requests."""
 
 from agent_core.domain.host_authority import HostContextEnvelope
-from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.modeling import ModelToolDefinition, ModelToolOrigin
 from agent_integrations.host_tools import HostToolManifest
 from agent_tools.contracts import ToolContract
 
@@ -43,6 +43,8 @@ def host_model_tools(
                 "required": list(tool.required_arguments),
                 "additionalProperties": False,
             },
+            origin=ModelToolOrigin.HOST,
+            source_id=tool.name,
         )
         for tool in available_host_tools(manifest, context)
     )

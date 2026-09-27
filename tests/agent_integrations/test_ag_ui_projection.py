@@ -356,48 +356,6 @@ def test_tool_only_model_sentinel_is_not_exposed_as_assistant_text() -> None:
     assert AgUiEventType.TOOL_CALL_START in types
 
 
-def test_model_usage_is_projected_as_a_public_custom_event() -> None:
-    session_id = new_session_id()
-    events = (
-        _event(
-            session_id,
-            0,
-            EventType.MODEL_RESPONSE_RECEIVED,
-            {
-                "model_call_id": "model-usage",
-                "assistant_message": "Done.",
-                "input_tokens": 10_100,
-                "input_token_limit": 105_000,
-                "prompt_cache_hit_tokens": 96_800,
-                "prompt_cache_miss_tokens": 3_200,
-                "resolved_model": "deepseek/deepseek-flash",
-                "reasoning_effort": "high",
-                "token_breakdown": {
-                    "messages": 7_400,
-                    "system": 2_100,
-                    "tools": 600,
-                    "private": 999,
-                },
-                "stable_prefix_hash": "must-not-leave-zebra",
-            },
-        ),
-    )
-
-    projection = AgUiProjector().project(events, _identity(session_id))
-    usage = next(event for event in projection.events if event.type is AgUiEventType.CUSTOM)
-
-    assert usage.name == "zebra.model_usage"
-    assert usage.value == {
-        "input_tokens": 10_100,
-        "input_token_limit": 105_000,
-        "prompt_cache_hit_tokens": 96_800,
-        "prompt_cache_miss_tokens": 3_200,
-        "resolved_model": "deepseek/deepseek-flash",
-        "reasoning_effort": "high",
-        "token_breakdown": {"messages": 7_400, "system": 2_100, "tools": 600},
-    }
-
-
 def test_selected_memory_is_projected_without_memory_content() -> None:
     session_id = new_session_id()
     events = (

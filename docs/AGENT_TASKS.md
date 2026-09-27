@@ -30,6 +30,26 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CTX-OBS-02`: Review, owned by Codex on
+  `codex/context-breakdown-v2`. Scope: replace the coarse context-usage
+  estimate with a replayable six-category breakdown covering messages,
+  system tools, Skills, system prompts, MCP tools and unattributed remainder;
+  preserve the provider total as authority; expose only bounded numeric usage
+  over API/AG-UI; and keep historical events readable. Owned paths:
+  `packages/agent-core/**`, narrowly related tool provenance under
+  `packages/agent-tools/**`, `packages/agent-runtime/**`, `apps/worker/**`,
+  `packages/agent-integrations/**`, `apps/api/**`, focused tests,
+  `sdks/typescript/packages/react/**`, and task/progress documents. Paired
+  Trench ownership is limited to Strategy usage types/mapping, packaged React
+  artifact, focused tests and task records. Constraints: no prompt, Skill or
+  credential text may enter public metrics; model/reasoning settings and
+  context limits remain unchanged; historical totals are never fabricated
+  into categories. Acceptance requires category totals to equal the displayed
+  input total, V1 replay compatibility, SDK and Host tests/builds, and one
+  fresh-call browser proof after runtime restart. Implementation and local
+  package/Host acceptance are complete; merge, deployment and a real-provider
+  production Turn remain separate release evidence.
+
 - `REACT-MEDIA-01`: Review, owned by Codex on
   `codex/react-media-content-01`. Scope: add a durable, host-neutral rich-content
   surface for Zebra conversations: typed text/image/video/chart/file/app parts,

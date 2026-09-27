@@ -7,7 +7,7 @@ from datetime import datetime
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelToolDefinition
-from agent_core.domain.tools import ToolCallStatus, ToolResult
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.task_contracts import TaskAcceptanceContract, infer_task_contract
 
 MODEL_NATIVE_DELEGATION_GUIDANCE = (
@@ -40,6 +40,30 @@ ZEBRA_AGENT_IDENTITY_DIRECTIVE = (
 )
 
 
+def context_message_metadata(source: str, *, segment: str = "system_prompt") -> dict[str, object]:
+    return {"context_segment": segment, "context_source": source}
+
+
+def tool_result_message(
+    tool_call: ToolCall,
+    tool_result: ToolResult,
+    *,
+    created_at: datetime,
+) -> SessionMessage:
+    return SessionMessage(
+        message_id=new_message_id(),
+        role=MessageRole.TOOL,
+        content=tool_result_content(tool_result),
+        created_at=created_at,
+        tool_call_id=tool_call.provider_call_id or str(tool_call.tool_call_id),
+        metadata={
+            **tool_result.metadata,
+            "tool_status": tool_result.status.value,
+            "context_segment": "skills" if tool_call.name == "skills.read" else "messages",
+        },
+    )
+
+
 def selected_skill_message(
     skill_components: tuple[str, ...],
     available_tools: Sequence[ModelToolDefinition],
@@ -61,6 +85,7 @@ def selected_skill_message(
             "unless it was read."
         ),
         created_at=created_at,
+        metadata={"context_segment": "skills", "context_source": "selected_skills"},
     )
 
 
@@ -120,6 +145,7 @@ def task_acceptance_message(
             "arguments, and stop collecting once every required outcome is supported."
         ),
         created_at=created_at,
+        metadata={"context_segment": "system_prompt", "context_source": "acceptance"},
     )
 
 

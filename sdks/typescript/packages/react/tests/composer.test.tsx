@@ -19,10 +19,12 @@ test("AgentComposer keeps host actions controlled and switches run actions safel
     metrics: {
       cacheHitRate: 0.875,
       contextBreakdown: [
-        { id: "messages", label: "Messages", tokens: 24_000 },
+        { color: "#4f9cff", id: "messages", label: "Messages", tokens: 24_000 },
         { id: "system", label: "System prompt", tokens: 12_000 },
         { id: "tools", label: "Tools", tokens: 6_000 },
       ],
+      contextBreakdownBasis: "Reconciled provider total",
+      contextEstimateMethod: "Provider tokenizer",
       contextLimit: 100_000,
       contextPercent: 0.42,
       contextTokens: 42_000,
@@ -79,6 +81,31 @@ test("AgentComposer keeps host actions controlled and switches run actions safel
   assert.equal(container.querySelector('[aria-label="Context capacity 42%"]') !== null, true);
   assert.match(container.textContent ?? "", /Messages24\.0k · 57\.1%/);
   assert.match(container.textContent ?? "", /System prompt12\.0k · 28\.6%/);
+  assert.match(container.textContent ?? "", /Accounting basisReconciled provider total/);
+  assert.match(container.textContent ?? "", /Estimate methodProvider tokenizer/);
+  const usageButton = container.querySelector('[aria-label="Context capacity 42%"]');
+  assert.ok(usageButton);
+  const describedBy = usageButton.getAttribute("aria-describedby");
+  assert.ok(describedBy);
+  assert.equal(dom.window.document.getElementById(describedBy)?.getAttribute("role"), "tooltip");
+  const categoryMarker = container.querySelector(".zebra-agent-composer__usage-part-label i") as HTMLElement;
+  assert.equal(categoryMarker.style.getPropertyValue("--zebra-agent-context-category-color"), "#4f9cff");
+
+  await render({
+    ...props,
+    labels: { contextCompositionUnavailable: "Breakdown unavailable" },
+    metrics: {
+      ...props.metrics,
+      contextBreakdown: undefined,
+      contextBreakdownBasis: undefined,
+      contextEstimateMethod: undefined,
+    },
+  });
+  assert.doesNotMatch(container.textContent ?? "", /Accounting basis|Estimate method/);
+  assert.match(container.textContent ?? "", /Breakdown unavailable/);
+
+  await render({ ...props, metrics: { ...props.metrics, contextBreakdown: undefined } });
+  assert.match(container.textContent ?? "", /Composition was not recorded for this call/);
   assert.equal(container.querySelectorAll('[aria-label="Add attachment"]').length, 1);
 
   await act(async () => {

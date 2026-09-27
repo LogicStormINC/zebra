@@ -234,12 +234,18 @@ export interface AgentMemorySetting {
 export interface AgentComposerMetrics {
   cacheHitRate: number | null;
   contextBreakdown?: readonly AgentComposerMetricPart[];
+  /** Human-readable accounting basis supplied by the host (for example, "Provider total"). */
+  contextBreakdownBasis?: string | null;
+  /** Human-readable estimation method supplied by the host. */
+  contextEstimateMethod?: string | null;
   contextLimit: number | null;
   contextPercent: number | null;
   contextTokens: number | null;
 }
 
 export interface AgentComposerMetricPart {
+  /** Optional host-controlled CSS color for this category marker. */
+  color?: string;
   id: string;
   label: string;
   tokens: number;

@@ -23,7 +23,7 @@ from agent_core.domain.client_capabilities import (
 )
 from agent_core.domain.client_run_bindings import ClientRunBinding
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.modeling import ModelToolDefinition
+from agent_core.domain.modeling import ModelToolDefinition, ModelToolOrigin
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.client_effect_dispatch import ClientEffectDispatchPort
 
@@ -71,6 +71,8 @@ class ClientToolGateway:
                     name=name,
                     description=contract.description,
                     parameters=contract.parameters,
+                    origin=ModelToolOrigin.CLIENT,
+                    source_id=name,
                 )
             )
         return tuple(tools)
