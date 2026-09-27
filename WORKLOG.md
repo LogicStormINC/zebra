@@ -1,5 +1,26 @@
 # Progress Log
 
+## 2026-09-27 - CLOUD-MEMORY-AUTONOMY-01 natural cross-session Memory
+
+- Claimed the task on `codex/autonomous-memory-decision-01` in an isolated
+  worktree so the active product checkout remained untouched.
+- Added bounded natural extraction for stable preferences, background, goals,
+  interests and portfolio positions. Sensitive markers remain rejected;
+  temporary statements are ignored; at most eight facts are derived per user
+  message.
+- Reused governed PostgreSQL Memory. Stable preferences follow the existing
+  auto-promotion policy; inferred and volatile facts remain candidates until the
+  user confirms them.
+- Added same-asset portfolio supersession, Chinese/English recall synonyms and
+  confirmed profile projection for interests and portfolio records.
+- Focused Zebra coverage passes `49`; the broader Memory/API/Worker/AG-UI group
+  passes `180`; `make check` passes file-size, Ruff, strict Mypy over `983`
+  sources and eval `30/30`; `make test` passes `4694` with `901`
+  environment-gated skips. Trench's continuous `make check` passes API/model
+  `142`, pipeline `74`, ToC `121`, both production builds, migration heads and
+  offline upgrade, with three pre-existing image warnings. No commit, push,
+  deployment or live-production acceptance was performed.
+
 ## 2026-09-26 - CLOUD-PLAN-CLOSURE-01 local implementation closure
 
 - Migrated the Trench Strategy Composer to vendored package tarballs generated

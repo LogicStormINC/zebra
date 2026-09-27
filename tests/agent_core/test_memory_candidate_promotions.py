@@ -82,6 +82,75 @@ def test_conflicting_confirmed_memory_stays_candidate() -> None:
     assert store.get(extraction.records[0].memory_id).status is MemoryStatus.CANDIDATE
 
 
+def test_natural_durable_preference_auto_promotes_but_portfolio_stays_review_only() -> None:
+    session = _completed_session()
+    preference_event = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=4,
+        event_type=EventType.USER_MESSAGE_RECEIVED,
+        actor=EventActor.USER,
+        payload={"content": "我习惯先看结论再看证据"},
+        created_at=NOW,
+    )
+    store = _MemoryStore()
+    extraction = MemoryCandidateExtractionService(store).extract(
+        session=session,
+        events=[preference_event],
+        next_sequence=session.current_sequence + 1,
+        command=MemoryCandidateExtractionCommand(
+            repo_id="zebra-agent",
+            user_id="user-7",
+            extracted_at=NOW,
+        ),
+    )
+    projected = session.model_copy(
+        update={"current_sequence": session.current_sequence + len(extraction.events)}
+    )
+
+    promoted = MemoryCandidatePromotionService(store).promote(
+        session=projected,
+        source_events=[preference_event],
+        candidates=extraction.records,
+        promoted_at=NOW,
+    )
+
+    assert [record.text for record in promoted.records] == ["先看结论再看证据"]
+    assert promoted.records[0].status is MemoryStatus.CONFIRMED
+
+    portfolio_event = SessionEvent.create(
+        session_id=session.session_id,
+        sequence=4,
+        event_type=EventType.USER_MESSAGE_RECEIVED,
+        actor=EventActor.USER,
+        payload={"content": "我现在持有腾讯500股，成本320港币"},
+        created_at=NOW,
+    )
+    portfolio_store = _MemoryStore()
+    portfolio = MemoryCandidateExtractionService(portfolio_store).extract(
+        session=session,
+        events=[portfolio_event],
+        next_sequence=session.current_sequence + 1,
+        command=MemoryCandidateExtractionCommand(
+            repo_id="zebra-agent",
+            user_id="user-7",
+            extracted_at=NOW,
+        ),
+    )
+    portfolio_projected = session.model_copy(
+        update={"current_sequence": session.current_sequence + len(portfolio.events)}
+    )
+
+    not_promoted = MemoryCandidatePromotionService(portfolio_store).promote(
+        session=portfolio_projected,
+        source_events=[portfolio_event],
+        candidates=portfolio.records,
+        promoted_at=NOW,
+    )
+
+    assert not_promoted.records == ()
+    assert portfolio_store.get(portfolio.records[0].memory_id).status is MemoryStatus.CANDIDATE
+
+
 @pytest.mark.parametrize(
     ("memory_type", "text"),
     [

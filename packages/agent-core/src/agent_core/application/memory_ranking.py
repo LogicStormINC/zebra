@@ -16,6 +16,8 @@ _SYNONYM_GROUPS = (
     ("删除", "移除", "清除", "delete", "remove", "erase"),
     ("仓库", "代码库", "repo", "repository"),
     ("数据库", "数据存储", "database", "datastore"),
+    ("持仓", "仓位", "股票", "portfolio", "position", "holding"),
+    ("关注", "兴趣", "感兴趣", "interest", "follow"),
 )
 
 

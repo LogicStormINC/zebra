@@ -155,6 +155,7 @@ does not authorize production code, migrations or activation of its successor.
   tests, this registry, `PROGRESS.md`, `findings.md`, `WORKLOG.md`, and
   `task_plan.md`. PostgreSQL remains authoritative; Redis Agent Memory remains
   optional and disabled; no production deployment is included.
+
   Implementation exposes only confirmed governed Memory as profile state;
   inferred background/goal statements stay review-only. Exact deletion writes
   a textless tombstone, recall reserves at most two preference slots and balances
@@ -171,6 +172,26 @@ does not authorize production code, migrations or activation of its successor.
   access, replacement lock ordering, bounded Host source enrichment and duplicate
   frontend writes. Full coverage is now `4614 passed, 897 skipped`; both repository
   gates pass. No model setting, push or remote deployment is claimed.
+
+- `CLOUD-MEMORY-AUTONOMY-01`: Review, owned by Codex on
+  `codex/autonomous-memory-decision-01`. Scope: broaden source-bound user Memory
+  extraction beyond explicit “remember” directives, classify durable natural
+  self-statements through a deterministic safety policy, represent volatile
+  financial facts as review-only candidates with existing observation
+  provenance, and preserve PostgreSQL authority, confirmation, correction,
+  deletion and cross-Session recall. Owned paths:
+  `packages/agent-core/src/agent_core/application/user_profile_memory.py`,
+  narrowly required `memory_candidate_*`, `memory_reviews.py`, profile API,
+  focused Core/API/Worker tests, this registry, `PROGRESS.md`, `findings.md`,
+  `WORKLOG.md`, and `task_plan.md`. Credentials remain forbidden, inferred or
+  volatile facts do not auto-confirm, Redis remains non-authoritative, and
+  model/reasoning settings are out of scope. Review evidence: focused
+  coverage passes `49`, broader Memory/API/Worker/AG-UI coverage passes `180`,
+  `make check` passes file-size, Ruff, strict Mypy over `983` sources and eval
+  `30/30`; the full suite passes `4694` with `901` environment-gated skips.
+  Trench's complete gate passes API/model `142`, pipeline `74`, ToC `121`, both
+  production builds and migrations. No commit, push, deployment or production
+  acceptance is claimed.
 
 - `CLOUD-MEMORY-CLOSURE-01`: Review, owned by Codex on
   `codex/cloud-memory-closure-01`, based on `cloud-agent-trench@3fe23bbd`.

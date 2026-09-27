@@ -1,5 +1,25 @@
 # Findings
 
+## CLOUD-MEMORY-AUTONOMY-01 - 2026-09-27
+
+- The existing PostgreSQL governed-Memory chain already has source provenance,
+  review state, correction, deletion, supersession and cross-Session recall.
+  A second memory database or Redis authority is unnecessary for natural user
+  facts.
+- Explicit “remember” directives already become preference candidates. Natural
+  extraction therefore belongs at the shared user-message candidate source,
+  not in the Trench UI or a Host-specific prompt.
+- Stable non-sensitive response preferences can reuse the existing preference
+  promotion policy. Background, goals, interests and portfolio positions remain
+  review-only because inference or time variance makes silent activation unsafe.
+- Portfolio replacement needs a stable subject. A bounded canonical form
+  (`Portfolio position [asset]: ...`) supplies that identity while existing
+  timestamps and source Session/Event fields retain observation provenance;
+  no schema migration is required for this slice.
+- Memory finalization is an asynchronous tail after the durable Turn close.
+  Emitting an immediate AG-UI “remembered” receipt would race PostgreSQL commit,
+  so authoritative candidate/profile state stays on the Memory management page.
+
 ## CLOUD-PLAN-ACCEPTANCE-02 - 2026-09-26
 
 - The previous `100/100` described local framework presence, not the plan's

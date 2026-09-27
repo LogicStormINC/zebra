@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
+from agent_core.application.user_profile_memory import dynamic_memory_subject
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.memories import (
     MemoryQuery,
@@ -155,7 +156,9 @@ def memory_review_scope_query(record: MemoryRecord) -> MemoryQuery:
         memory_types=(record.memory_type,),
         statuses=(MemoryStatus.CONFIRMED,),
         visibility=record.visibility,
-        limit=50,
+        # Dynamic facts can sit behind many unrelated episodic entries; review
+        # must see the complete bounded authority window before superseding.
+        limit=500,
     )
 
 
@@ -164,7 +167,8 @@ def _supersede_records(
     existing_records: tuple[MemoryRecord, ...],
     reviewed_at: datetime,
 ) -> tuple[MemoryRecord, ...]:
-    if record.memory_type not in _SINGLE_ACTIVE_MEMORY_TYPES:
+    dynamic_subject = dynamic_memory_subject(record.text)
+    if record.memory_type not in _SINGLE_ACTIVE_MEMORY_TYPES and dynamic_subject is None:
         return ()
     superseded: list[MemoryRecord] = []
     for existing in existing_records:
@@ -175,6 +179,8 @@ def _supersede_records(
         if existing.memory_type is not record.memory_type:
             continue
         if not _same_scope(existing, record):
+            continue
+        if dynamic_subject is not None and dynamic_memory_subject(existing.text) != dynamic_subject:
             continue
         superseded.append(
             existing.model_copy(

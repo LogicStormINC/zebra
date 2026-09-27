@@ -75,7 +75,7 @@ class ScopedMemoryReadMixin:
         items = confirmed_user_profile(records)
         sections = {
             category: [asdict(item) for item in items if item.category == category]
-            for category in ("preference", "background", "goal")
+            for category in ("preference", "background", "goal", "interest", "portfolio")
         }
         return ApiResponse(
             status_code=200,
