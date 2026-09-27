@@ -8,6 +8,7 @@ import {
   AgentComposer,
   AgentChat,
   AgentConversationTimeline,
+  AgentContentRenderer,
   AgentActivityGroup,
   AgentApproval,
   AgentArtifacts,
@@ -29,6 +30,7 @@ test("published ESM and CJS entries expose the same React surface", () => {
   assert.equal(typeof AgentComposer, "function");
   assert.equal(typeof AgentChat, "function");
   assert.equal(typeof AgentConversationTimeline, "function");
+  assert.equal(typeof AgentContentRenderer, "function");
   assert.equal(typeof AgentActivityGroup, "function");
   assert.equal(typeof AgentApproval, "function");
   assert.equal(typeof AgentArtifacts, "function");
@@ -42,6 +44,7 @@ test("published ESM and CJS entries expose the same React surface", () => {
   assert.equal(typeof commonjs.AgentComposer, "function");
   assert.equal(typeof commonjs.AgentChat, "function");
   assert.equal(typeof commonjs.AgentConversationTimeline, "function");
+  assert.equal(typeof commonjs.AgentContentRenderer, "function");
   assert.equal(typeof commonjs.AgentRunStatus, "function");
   assert.equal(typeof commonjs.createAgentThemeStyle, "function");
   assert.equal(typeof commonjs.ZebraHitlProvider, "function");

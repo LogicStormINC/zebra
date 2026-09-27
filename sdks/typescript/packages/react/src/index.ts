@@ -43,6 +43,19 @@ export type {
 } from "./components/agent-composer.tsx";
 export { AgentMessageList } from "./components/agent-message-list.tsx";
 export type { AgentMessageListLabels, AgentMessageListProps } from "./components/agent-message-list.tsx";
+export { AgentContentRenderer } from "./components/agent-content.tsx";
+export type {
+  AgentContentLabels,
+  AgentContentRendererContext,
+  AgentContentRendererProps,
+  AgentPartRenderer,
+  AgentPartRendererProps,
+  AgentRendererRegistry,
+} from "./components/agent-content.tsx";
+export { AgentImageBlock, AgentVideoBlock } from "./components/agent-media.tsx";
+export type { AgentArtifactResolver, AgentMediaLabels } from "./components/agent-media.tsx";
+export { AgentAppBlock } from "./components/agent-app.tsx";
+export type { AgentAppBlockProps, AgentAppMessage, AgentAppResourceResolver } from "./components/agent-app.tsx";
 export { AgentConversationTimeline } from "./components/agent-conversation-timeline.tsx";
 export type { AgentConversationTimelineProps } from "./components/agent-conversation-timeline.tsx";
 export { AgentActivityGroup } from "./components/agent-activity-group.tsx";

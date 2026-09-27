@@ -19,6 +19,12 @@ const packageSpecs = {
     "package/styles.css",
     "package/styles/surfaces.css",
   ],
+  "react-charts": [
+    "package/package.json",
+    "package/dist/index.js",
+    "package/dist/index.cjs",
+    "package/dist/index.d.ts",
+  ],
 };
 
 await run("pnpm", ["build"], sdkRoot);

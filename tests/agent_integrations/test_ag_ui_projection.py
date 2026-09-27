@@ -246,6 +246,25 @@ def test_user_file_tool_result_preserves_download_metadata_for_host_projection()
         "status": "executed",
         "type": "zebra.user_file.v1",
     }
+    rich = next(
+        event
+        for event in projection.events
+        if isinstance(event, CustomEvent) and event.name == "zebra.content_part"
+    )
+    assert rich.value == {
+        "part": {
+            "artifactId": "5e23c02e-ca10-4851-b575-a3080a4b8f34",
+            "fileName": "result.md",
+            "id": "content:tool-file-1:5e23c02e-ca10-4851-b575-a3080a4b8f34",
+            "mimeType": "text/markdown",
+            "name": "result.md",
+            "sizeBytes": 2,
+            "state": "ready",
+            "type": "file",
+        },
+        "schema_version": "1",
+        "tool_call_id": "tool-file-1",
+    }
 
 
 def test_failed_tool_result_preserves_status_and_safe_diagnostics() -> None:

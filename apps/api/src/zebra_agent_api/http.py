@@ -299,7 +299,15 @@ def create_http_app(
             )
         return JSONResponse(status_code=response.status_code, content=response.body)
 
+    async def handle_artifact_preview_head(
+        request: Request, task_id: str, artifact_id: str,
+    ) -> Response:
+        _ = task_id, artifact_id
+        return await handle(request)
+
     app.add_api_route("/", handle, methods=HTTP_METHODS, response_model=None)
+    app.add_api_route("/tasks/{task_id}/artifacts/{artifact_id}/preview",
+                      handle_artifact_preview_head, methods=["HEAD"], response_model=None)
     app.add_api_route(
         "/v1/extensions", handle, methods=["HEAD", "TRACE", "CONNECT"], response_model=None
     )

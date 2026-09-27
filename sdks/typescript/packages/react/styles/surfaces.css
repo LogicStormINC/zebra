@@ -81,6 +81,39 @@
 .zebra-agent-message__meta strong { color: var(--zebra-agent-muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
 .zebra-agent-message__content { max-width: 100%; min-width: 0; overflow-wrap: anywhere; color: var(--zebra-agent-text); font-size: 14px; line-height: 1.62; white-space: pre-wrap; }
 .zebra-agent-message__content > * { max-width: 100%; min-width: 0; }
+.zebra-agent-content { display: grid; max-width: 100%; min-width: 0; gap: 16px; }
+.zebra-agent-content__text { max-width: 100%; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.zebra-agent-content__error, .zebra-agent-content__unsupported, .zebra-agent-app-fallback, .zebra-agent-media-placeholder { display: grid; min-height: 72px; place-items: center; border: 1px dashed var(--zebra-agent-border); border-radius: 10px; background: color-mix(in srgb, var(--zebra-agent-surface-raised) 60%, transparent); color: var(--zebra-agent-muted); padding: 16px; text-align: center; }
+.zebra-agent-content__error, .zebra-agent-media-placeholder--failed { color: #f09a91; }
+.zebra-agent-media { display: grid; max-width: 100%; min-width: 0; gap: 8px; margin: 0; }
+.zebra-agent-media img, .zebra-agent-media video { display: block; width: auto; max-width: 100%; max-height: min(68vh, 720px); border: 1px solid var(--zebra-agent-border); border-radius: 12px; background: var(--zebra-agent-surface-raised); object-fit: contain; }
+.zebra-agent-media__image-button { display: block; width: fit-content; max-width: 100%; border: 0; background: transparent; cursor: zoom-in; padding: 0; }
+.zebra-agent-media__image-button:focus-visible { border-radius: 12px; outline: 2px solid var(--zebra-agent-accent); outline-offset: 3px; }
+.zebra-agent-media figcaption { display: flex; min-width: 0; flex-wrap: wrap; gap: 6px 12px; color: var(--zebra-agent-muted); font-size: 12px; }
+.zebra-agent-media figcaption strong { color: var(--zebra-agent-text); }
+.zebra-agent-media-dialog { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: rgba(0,0,0,.82); padding: 48px; }
+.zebra-agent-media-dialog img { width: auto; max-width: 100%; max-height: 100%; border: 0; border-radius: 8px; }
+.zebra-agent-media-dialog__close { position: absolute; top: 18px; right: 18px; display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid rgba(255,255,255,.24); border-radius: 50%; background: rgba(20,20,20,.82); color: #fff; cursor: pointer; font: 22px/1 inherit; }
+.zebra-agent-file { display: flex; max-width: 100%; min-width: 0; align-items: center; gap: 10px; border: 1px solid var(--zebra-agent-border); border-radius: 10px; background: color-mix(in srgb, var(--zebra-agent-surface-raised) 72%, transparent); padding: 12px; }
+.zebra-agent-file__icon { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border-radius: 8px; background: var(--zebra-agent-hover); color: var(--zebra-agent-muted); }
+.zebra-agent-file__main { display: grid; min-width: 0; flex: 1; gap: 2px; }
+.zebra-agent-file__main strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zebra-agent-file__main small { color: var(--zebra-agent-muted); }
+.zebra-agent-file a { color: var(--zebra-agent-text); text-underline-offset: 3px; }
+.zebra-agent-app { display: grid; max-width: 100%; min-width: 0; gap: 10px; border: 1px solid var(--zebra-agent-border); border-radius: 12px; overflow: hidden; background: var(--zebra-agent-surface-raised); }
+.zebra-agent-app header { display: flex; min-width: 0; flex-wrap: wrap; gap: 4px 10px; padding: 12px 14px 0; }
+.zebra-agent-app header span { color: var(--zebra-agent-muted); }
+.zebra-agent-app iframe { display: block; width: 100%; min-height: 360px; border: 0; background: transparent; }
+.zebra-agent-chart { display: grid; max-width: 100%; min-width: 0; gap: 12px; margin: 0; overflow: hidden; }
+.zebra-agent-chart figcaption, .zebra-agent-chart--fallback { display: grid; gap: 3px; }
+.zebra-agent-chart figcaption span, .zebra-agent-chart--fallback span, .zebra-agent-chart--fallback small { color: var(--zebra-agent-muted); }
+.zebra-agent-chart__canvas { max-width: 100%; min-width: 0; overflow-x: auto; }
+.zebra-agent-chart__canvas svg, .zebra-agent-chart__canvas canvas { display: block; max-width: 100%; height: auto; }
+.zebra-agent-chart details summary { width: fit-content; cursor: pointer; color: var(--zebra-agent-muted); font-size: 12px; }
+.zebra-agent-chart__table-scroll { max-width: 100%; overflow-x: auto; }
+.zebra-agent-chart table { width: 100%; min-width: 360px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+.zebra-agent-chart th, .zebra-agent-chart td { border-bottom: 1px solid var(--zebra-agent-border); overflow-wrap: anywhere; padding: 8px; text-align: left; vertical-align: top; }
+.zebra-agent-chart th { color: var(--zebra-agent-muted); font-weight: 600; }
 .zebra-agent-message__status { border-radius: 999px; background: rgba(255,255,255,.06); padding: 2px 7px; }
 .zebra-agent-message__status--failed { color: #f09a91; }
 .zebra-agent-user-input { position: relative; min-width: 0; }
@@ -182,6 +215,9 @@
   .zebra-agent-resources li { align-items: flex-start; flex-wrap: wrap; }
   .zebra-agent-run-status { align-items: flex-start; flex-wrap: wrap; }
   .zebra-agent-run-status__actions { width: 100%; justify-content: flex-start; padding-left: 19px; }
+  .zebra-agent-media-dialog { padding: 48px 12px 12px; }
+  .zebra-agent-file { align-items: flex-start; flex-wrap: wrap; }
+  .zebra-agent-app iframe { min-height: 300px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

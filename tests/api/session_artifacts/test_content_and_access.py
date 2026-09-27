@@ -319,3 +319,73 @@ def test_http_download_requires_explicit_host_artifact_scope() -> None:
 
     assert response is not None
     assert response.status_code == 403
+
+
+def test_http_preview_supports_head_and_single_byte_range(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    _seed_workspace_policy(database_path, session.session_id, PolicyProfile.FULL_ACCESS.value)
+    _seed_payload_backed_tool_artifact(
+        database_path,
+        session.session_id,
+        mime_type="video/mp4",
+        payload=b"0123456789",
+        file_name="demo.mp4",
+    )
+    client = TestClient(create_http_app(database_path))
+    path = f"/tasks/{session.session_id}/artifacts/tool-run:5/preview"
+
+    head = client.head(path)
+    ranged = client.get(path, headers={"Range": "bytes=2-5"})
+
+    assert head.status_code == 200
+    assert head.content == b""
+    assert head.headers["content-length"] == "10"
+    assert head.headers["accept-ranges"] == "bytes"
+    assert head.headers["content-disposition"].startswith("inline;")
+    assert ranged.status_code == 206
+    assert ranged.content == b"2345"
+    assert ranged.headers["content-range"] == "bytes 2-5/10"
+    assert ranged.headers["content-length"] == "4"
+    assert ranged.headers["content-security-policy"] == "default-src 'none'; sandbox"
+
+
+def test_http_preview_rejects_unsafe_mime_and_multiple_ranges(tmp_path: Path) -> None:
+    database_path = tmp_path / "sessions.sqlite"
+    session = _seed_session(database_path)
+    _seed_workspace_policy(database_path, session.session_id, PolicyProfile.FULL_ACCESS.value)
+    _seed_payload_backed_tool_artifact(
+        database_path,
+        session.session_id,
+        mime_type="image/svg+xml",
+        payload=b"<svg><script>alert(1)</script></svg>",
+        file_name="unsafe.svg",
+    )
+    client = TestClient(create_http_app(database_path))
+    path = f"/tasks/{session.session_id}/artifacts/tool-run:5/preview"
+
+    unsupported = client.get(path)
+    assert unsupported.status_code == 415
+    assert unsupported.json()["status"] == "artifact_preview_unsupported"
+
+    safe_database = tmp_path / "safe.sqlite"
+    safe_session = _seed_session(safe_database)
+    _seed_workspace_policy(
+        safe_database,
+        safe_session.session_id,
+        PolicyProfile.FULL_ACCESS.value,
+    )
+    _seed_payload_backed_tool_artifact(
+        safe_database,
+        safe_session.session_id,
+        mime_type="image/png",
+        payload=b"png-bytes",
+        file_name="safe.png",
+    )
+    safe_client = TestClient(create_http_app(safe_database))
+    invalid = safe_client.get(
+        f"/tasks/{safe_session.session_id}/artifacts/tool-run:5/preview",
+        headers={"Range": "bytes=0-1,3-4"},
+    )
+    assert invalid.status_code == 416
+    assert invalid.headers["content-range"] == "bytes */9"

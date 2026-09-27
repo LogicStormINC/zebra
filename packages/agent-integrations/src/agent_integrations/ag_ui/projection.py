@@ -30,6 +30,7 @@ from agent_core.domain.events import EventType, SessionEvent
 from agent_integrations.ag_ui.answer_commit_projection import project_answer_committed
 from agent_integrations.ag_ui.client_effect_projection import project_client_effect
 from agent_integrations.ag_ui.client_state_projection import project_client_state
+from agent_integrations.ag_ui.content_parts import project_content_part
 from agent_integrations.ag_ui.contracts import (
     AgUiCursor,
     AgUiProjection,
@@ -251,7 +252,7 @@ class AgUiProjector:
             tool_output = _required_payload_text(payload, "output", allow_empty=True)
             result_id = f"tool-result:{call_id}"
             state.tool_calls.remove(call_id)
-            return (
+            output_events: list[Event] = [
                 ToolCallEndEvent(timestamp=timestamp, tool_call_id=call_id),
                 ToolCallResultEvent(
                     timestamp=timestamp,
@@ -260,7 +261,15 @@ class AgUiProjector:
                     content=tool_result_content(payload, tool_output),
                     role="tool",
                 ),
+            ]
+            content_part = project_content_part(
+                payload,
+                tool_call_id=call_id,
+                timestamp=timestamp,
             )
+            if content_part is not None:
+                output_events.append(content_part)
+            return tuple(output_events)
         if event.event_type is EventType.TASK_PREPARED:
             return (
                 StateSnapshotEvent(

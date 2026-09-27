@@ -92,7 +92,11 @@ class SessionArtifactReadMixin:
                 ),
             )
             return response
-        projection = self._serialize_artifact(artifact, access=access)
+        projection = self._serialize_artifact(
+            artifact,
+            access=access,
+            include_delivery_metadata=True,
+        )
         response = ApiResponse(
             status_code=200,
             body={
@@ -299,6 +303,7 @@ class SessionArtifactReadMixin:
         artifact: SessionArtifact,
         *,
         access: ArtifactAccessContext | None = None,
+        include_delivery_metadata: bool = False,
     ) -> dict[str, object]:
         resolved_access = access or classify_session_artifact_access(
             stores=self.stores,
@@ -312,7 +317,9 @@ class SessionArtifactReadMixin:
             lifecycle=lifecycle,
             retrieval=serialize_read_retrieval(artifact.uri, inspection),
         )
-        if inspection is not None and inspection.file_name is not None:
+        if inspection is not None and (
+            include_delivery_metadata or inspection.file_name is not None
+        ):
             projection["delivery"] = {
                 "file_name": inspection.file_name,
                 "mime_type": inspection.mime_type,

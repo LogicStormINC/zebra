@@ -14,6 +14,7 @@ const packages = {
   "@zebra-agent/ui-contracts": "ui-contracts",
   "@zebra-agent/client-core": "client-core",
   "@zebra-agent/react": "react",
+  "@zebra-agent/react-charts": "react-charts",
 };
 const reactVersions = [
   {
@@ -90,7 +91,8 @@ async function verifyViteConsumer(version, tarballs) {
     "src/main.ts": `
 import { createElement, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { AgentRunStatus } from "@zebra-agent/react";
+import { AgentContentRenderer, AgentRunStatus } from "@zebra-agent/react";
+import { AgentVegaLiteRenderer } from "@zebra-agent/react-charts";
 import "@zebra-agent/react/styles.css";
 
 const root = document.getElementById("root");
@@ -100,6 +102,10 @@ createRoot(root).render(createElement(
   null,
   createElement(AgentRunStatus, {
     state: { phase: "terminal", outcome: "completed", availableActions: [] },
+  }),
+  createElement(AgentContentRenderer, {
+    message: { id: "chart", role: "assistant", content: "", status: "complete", parts: [{ id: "part", state: "ready", type: "chart", specType: "vega-lite", specVersion: "6", spec: { mark: "bar", data: { values: [{ x: "A", y: 1 }] }, encoding: { x: { field: "x" }, y: { field: "y", type: "quantitative" } } }, title: "Chart", description: "Consumer chart" }] },
+    renderers: { chart: AgentVegaLiteRenderer },
   }),
 ));
 `,
@@ -160,8 +166,10 @@ export default function Layout({ children }: { children: ReactNode }) {
 `,
     "app/page.tsx": `
 import { AgentRunStatus } from "@zebra-agent/react";
+import { AgentVegaLiteRenderer } from "@zebra-agent/react-charts";
 
 export default function RscPage() {
+  void AgentVegaLiteRenderer;
   return <main>
     <h1>RSC consumer</h1>
     <AgentRunStatus state={{ phase: "terminal", outcome: "completed", availableActions: [] }} />

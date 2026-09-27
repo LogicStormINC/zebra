@@ -30,6 +30,37 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `REACT-MEDIA-01`: Review, owned by Codex on
+  `codex/react-media-content-01`. Scope: add a durable, host-neutral rich-content
+  surface for Zebra conversations: typed text/image/video/chart/file/app parts,
+  Artifact-backed AG-UI projection, safe inline preview with HTTP Range support,
+  renderer registration, themeable React media components, an optional
+  Vega-Lite package, and a sandboxed MCP Apps host boundary. Owned Zebra paths:
+  `sdks/typescript/**`, the narrowly related Artifact HTTP adapter and AG-UI
+  projection under `apps/api/**` and `packages/agent-integrations/**`, focused
+  API/integration tests, `docs/ADR-CLIENT-02_*`, this registry, `task_plan.md`,
+  `PROGRESS.md`, `WORKLOG.md`, and `findings.md`. Paired Trench ownership is
+  limited to its packaged SDK artifacts, Strategy projection/render adapter,
+  BFF Artifact proxy, focused tests and task records. Constraints: PostgreSQL
+  Event/Artifact authority remains unchanged; events carry opaque Artifact
+  references rather than binary payloads; raw HTML/JavaScript and arbitrary
+  iframe URLs are forbidden; legacy string messages remain readable; model and
+  reasoning settings are unchanged; npm publication and production deployment
+  are separate gates. Acceptance requires deterministic replay, authorization
+  isolation, responsive and accessible image/video/chart rendering, byte-range
+  video seeking, chart/table fallback, sandbox/CSP enforcement, React 18/19
+  Vite/Next package consumers, and a real Trench browser flow using packed
+  artifacts.
+
+  Local implementation evidence: typed content replay, Artifact preview,
+  image/video/file/app renderers, optional Vega-Lite package and the paired
+  Trench Host adapter are complete. SDK `verify` passes on Node 24/pnpm 10,
+  including React 18/19 Vite/Next consumers and Chromium/WebKit; Zebra
+  `make check` and `make test` pass (`4688 passed`, `901 skipped`). Trench
+  `make check`, `123` ToC tests, production build and production Chromium
+  image/chart replay pass. npm publication, branch merge and production
+  deployment remain separate gates.
+
 - `CLIENT-TRENCH-LIVE-01`: Review, owned by Codex on
   `codex/trench-client-live-closure-01`. Scope: close the final Trench Client
   pilot with one real-model same-Turn proof covering Host read, Research Child,

@@ -2,6 +2,7 @@
 
 import React, { type ReactNode, useEffect, useRef, useState } from "react";
 import type { AgentMessage } from "@zebra-agent/ui-contracts";
+import { AgentContentRenderer, type AgentContentRendererProps } from "./agent-content.tsx";
 
 export interface AgentMessageListLabels {
   assistant: string;
@@ -19,12 +20,14 @@ export interface AgentMessageListProps {
   className?: string;
   labels?: Partial<AgentMessageListLabels> | undefined;
   messages: readonly AgentMessage[];
+  contentRenderer?: Omit<AgentContentRendererProps, "message"> | undefined;
   renderContent?: ((message: AgentMessage) => ReactNode) | undefined;
 }
 
 interface AgentMessageItemProps {
   labels: AgentMessageListLabels;
   message: AgentMessage;
+  contentRenderer?: AgentMessageListProps["contentRenderer"];
   renderContent?: AgentMessageListProps["renderContent"];
 }
 
@@ -48,7 +51,7 @@ export function AgentMessageList(props: AgentMessageListProps) {
   return (
     <ol aria-live="polite" aria-relevant="additions text" className={`zebra-agent-message-list ${props.className ?? ""}`.trim()} role="log">
       {props.messages.map((message) => (
-        <AgentMessageItem key={message.id} labels={labels} message={message} renderContent={props.renderContent} />
+        <AgentMessageItem contentRenderer={props.contentRenderer} key={message.id} labels={labels} message={message} renderContent={props.renderContent} />
       ))}
     </ol>
   );
@@ -72,17 +75,27 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
           </header>
         ) : null}
         {message.role === "user" ? (
-          <AgentUserMessageBody contentKey={`${message.id}:${message.content}`} labels={labels}>
-            {props.renderContent ? props.renderContent(message) : message.content}
+          <AgentUserMessageBody contentKey={messageContentKey(message)} labels={labels}>
+            {renderMessageContent(props)}
           </AgentUserMessageBody>
         ) : (
           <div className="zebra-agent-message__content">
-            {props.renderContent ? props.renderContent(message) : message.content}
+            {renderMessageContent(props)}
           </div>
         )}
       </article>
     </li>
   );
+}
+
+function renderMessageContent(props: AgentMessageItemProps) {
+  if (props.renderContent) return props.renderContent(props.message);
+  return <AgentContentRenderer {...props.contentRenderer} message={props.message} />;
+}
+
+function messageContentKey(message: AgentMessage) {
+  const parts = message.parts?.map((part) => `${part.id}:${part.state}`).join("|") ?? "";
+  return `${message.id}:${message.content}:${parts}`;
 }
 
 const collapsedUserMessageHeight = 120;

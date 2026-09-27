@@ -19,6 +19,7 @@ export interface AgentChatProps {
   className?: string;
   clarification?: AgentClarificationProps;
   composer: ReactNode;
+  contentRenderer?: AgentMessageListProps["contentRenderer"];
   emptyState?: ReactNode;
   header?: ReactNode;
   memorySettings?: readonly AgentMemorySetting[];
@@ -103,6 +104,7 @@ export function AgentChat(props: AgentChatProps) {
             ) : props.turns ? (
               <AgentConversationTimeline
                 {...(props.activityLabels ? { activityLabels: props.activityLabels } : {})}
+                {...(props.contentRenderer ? { contentRenderer: props.contentRenderer } : {})}
                 {...(props.messageLabels ? { messageLabels: props.messageLabels } : {})}
                 {...(props.onArtifactOpen ? { onArtifactOpen: props.onArtifactOpen } : {})}
                 {...(props.renderMessageContent ? { renderMessageContent: props.renderMessageContent } : {})}
@@ -111,7 +113,7 @@ export function AgentChat(props: AgentChatProps) {
               />
             ) : (
               <>
-                <AgentMessageList labels={props.messageLabels} messages={messages} renderContent={props.renderMessageContent} />
+                <AgentMessageList contentRenderer={props.contentRenderer} labels={props.messageLabels} messages={messages} renderContent={props.renderMessageContent} />
                 <AgentActivityGroup
                   activities={activities}
                   expanded={props.activityExpanded ?? false}

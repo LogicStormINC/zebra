@@ -12,6 +12,8 @@ export type AgentActivityStatus =
   | "cancelled";
 export type AgentMessageRole = "user" | "assistant" | "system";
 export type AgentMessageStatus = "sending" | "streaming" | "complete" | "failed";
+export type AgentContentState = "processing" | "ready" | "failed";
+export type AgentArtifactPurpose = "preview" | "download" | "poster" | "captions" | "data";
 export type AgentArtifactStatus = "ready" | "processing" | "failed";
 export type AgentRunPhase =
   | "idle"
@@ -92,9 +94,114 @@ export interface AgentWorkSegment {
 export interface AgentMessage {
   id: string;
   role: AgentMessageRole;
+  /** Legacy plain/Markdown content. New rich messages should also provide ordered parts. */
   content: string;
+  parts?: readonly AgentContentPart[];
   status: AgentMessageStatus;
   timestampLabel?: string;
+}
+
+export interface AgentContentPartBase {
+  id: string;
+  state: AgentContentState;
+}
+
+export interface AgentTextPart extends AgentContentPartBase {
+  type: "text";
+  format: "markdown" | "plain";
+  text: string;
+}
+
+export interface AgentArtifactPartBase extends AgentContentPartBase {
+  artifactId: string;
+  fileName?: string;
+  mimeType: string;
+  sizeBytes?: number;
+}
+
+export interface AgentImagePart extends AgentArtifactPartBase {
+  type: "image";
+  alt: string;
+  height?: number;
+  thumbnailArtifactId?: string;
+  width?: number;
+}
+
+export interface AgentVideoPart extends AgentArtifactPartBase {
+  type: "video";
+  captionsArtifactId?: string;
+  description?: string;
+  durationMs?: number;
+  height?: number;
+  posterArtifactId?: string;
+  title: string;
+  transcriptArtifactId?: string;
+  width?: number;
+}
+
+export type AgentJsonValue =
+  | boolean
+  | number
+  | string
+  | null
+  | readonly AgentJsonValue[]
+  | { readonly [key: string]: AgentJsonValue };
+
+export interface AgentChartPart extends AgentContentPartBase {
+  type: "chart";
+  specType: "vega-lite";
+  specVersion: string;
+  spec?: AgentJsonValue;
+  specArtifactId?: string;
+  dataArtifactId?: string;
+  fallbackImageArtifactId?: string;
+  fallbackTableArtifactId?: string;
+  table?: AgentChartTable;
+  title: string;
+  description: string;
+}
+
+export interface AgentChartTable {
+  columns: readonly string[];
+  rows: readonly (readonly AgentJsonValue[])[];
+}
+
+export interface AgentFilePart extends AgentArtifactPartBase {
+  type: "file";
+  description?: string;
+  name: string;
+}
+
+export interface AgentAppPart extends AgentContentPartBase {
+  type: "app";
+  resourceUri: `ui://${string}`;
+  title: string;
+  description?: string;
+  fallbackArtifactId?: string;
+  requestedCapabilities?: readonly string[];
+}
+
+export type AgentContentPart =
+  | AgentTextPart
+  | AgentImagePart
+  | AgentVideoPart
+  | AgentChartPart
+  | AgentFilePart
+  | AgentAppPart;
+
+export interface AgentArtifactAccess {
+  artifactId: string;
+  expiresAtMs?: number;
+  mimeType: string;
+  url: string;
+}
+
+export interface AgentAppResource {
+  allowedOrigin: string;
+  capabilities: readonly string[];
+  resourceUri: `ui://${string}`;
+  url: string;
+  version: "2025-11-21";
 }
 
 /** One durable user request and the public work/output that belongs to it. */

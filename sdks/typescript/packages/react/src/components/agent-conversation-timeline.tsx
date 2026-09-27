@@ -18,6 +18,7 @@ import { AgentArtifacts } from "./agent-resources.tsx";
 export interface AgentConversationTimelineProps {
   activityLabels?: AgentActivityGroupProps["labels"];
   className?: string;
+  contentRenderer?: AgentMessageListProps["contentRenderer"];
   messageLabels?: AgentMessageListProps["labels"];
   onArtifactOpen?: (id: string) => void;
   renderMessageContent?: AgentMessageListProps["renderContent"];
@@ -39,6 +40,7 @@ export function AgentConversationTimeline(props: AgentConversationTimelineProps)
             {turn.userMessage ? (
               <ol className="zebra-agent-message-list zebra-agent-turn__messages">
                 <AgentMessageItem
+                  contentRenderer={props.contentRenderer}
                   labels={labels}
                   message={turn.userMessage}
                   renderContent={props.renderMessageContent}
@@ -56,6 +58,7 @@ export function AgentConversationTimeline(props: AgentConversationTimelineProps)
             {turn.assistantMessage ? (
               <ol className="zebra-agent-message-list zebra-agent-turn__messages">
                 <AgentMessageItem
+                  contentRenderer={props.contentRenderer}
                   labels={labels}
                   message={turn.assistantMessage}
                   renderContent={props.renderMessageContent}

@@ -3822,3 +3822,25 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
 - Focused Core/API projection tests pass `34/34`; SDK deterministic tests,
   package audit, React 18/19 Vite/Next consumers, Chromium/WebKit interactions
   and Next hydration pass. Trench Host integration remains a separate gate.
+### 2026-09-27 - REACT-MEDIA-01 durable multimedia surface
+
+- Added ordered, replayable `text/image/video/chart/file/app` parts while
+  retaining legacy string messages. Published media remains in the Artifact
+  Store; AG-UI carries only bounded metadata and opaque IDs.
+- Added host-neutral image, video and file renderers, a constrained optional
+  Vega-Lite package, and a fail-closed MCP Apps iframe boundary. The chart
+  dependency is dynamically loaded and does not enter the base React bundle.
+- Added authorized preview/download routes with safe inline MIME allowlists,
+  HEAD, single-byte Range, ETag, CSP and private no-store behavior. The current
+  storage Port still reads an object before slicing; true object-store range
+  reads remain a future Port optimization, not a missing frontend contract.
+- Trench consumes packed SDK artifacts through its same-origin BFF, durably
+  persists content parts and renders image/chart output in a production
+  Chromium acceptance run. No npm publication or production deployment is
+  claimed.
+- Final local evidence: SDK `verify` passes on Node 24/pnpm 10 with 40 unit
+  tests, package audit, React 18/19 Vite/Next consumers and Chromium/WebKit;
+  Zebra `make check` and `make test` pass (`4688 passed`, `901 skipped`).
+  Trench `make check` passes `143` API/model, `74` pipeline and `123` ToC tests,
+  lint with three pre-existing dashboard image warnings, both production
+  builds, migrations and diff checks.

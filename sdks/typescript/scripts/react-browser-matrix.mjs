@@ -38,6 +38,7 @@ async function packPackages() {
     "@zebra-agent/ui-contracts": "ui-contracts",
     "@zebra-agent/client-core": "client-core",
     "@zebra-agent/react": "react",
+    "@zebra-agent/react-charts": "react-charts",
   };
   const tarballs = {};
   for (const [name, directory] of Object.entries(packages)) {
@@ -72,9 +73,11 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     await page.locator('input[type="file"]').setInputFiles({ name: "资料.txt", mimeType: "text/plain", buffer: Buffer.from("evidence") });
     await page.locator("textarea").focus();
     await page.locator("#activate").evaluate((node) => node.click());
+    await page.getByRole("img", { name: "Generated preview" }).waitFor();
+    await page.locator(".zebra-agent-chart__canvas svg.marks").waitFor();
     if (await page.locator("textarea").inputValue() !== "中文草稿") throw new Error("draft was lost during lifecycle transition");
     if (!(await page.locator("textarea").evaluate((node) => node === document.activeElement))) throw new Error("composer focus was lost");
-    if (!(await page.locator("details").evaluate((node) => node.open))) throw new Error("running activity did not expand");
+    if (!(await page.locator("details.zebra-agent-activity").evaluate((node) => node.open))) throw new Error("running activity did not expand");
     await page.locator(".zebra-agent-composer__usage-ring").hover();
     await page.getByText("Estimated composition", { exact: true }).waitFor();
     await page.getByText("Messages", { exact: true }).waitFor();
@@ -115,7 +118,7 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     await assertConversationContentContained(page, browserName, "wide conversation");
     await page.setViewportSize({ width: 390, height: 844 });
     await page.locator("#complete").click();
-    await page.waitForFunction(() => !document.querySelector("details")?.open);
+    await page.waitForFunction(() => !document.querySelector("details.zebra-agent-activity")?.open);
     const terminalSummaryBorder = await page.locator(".zebra-agent-activity--terminal summary").evaluate((node) => getComputedStyle(node).borderBottomWidth);
     if (terminalSummaryBorder !== "1px") throw new Error(`${browserName}: completed history divider expected 1px, received ${terminalSummaryBorder}`);
     const terminalSummaryIcon = await page.locator(".zebra-agent-activity--terminal .zebra-agent-activity__summary-icon").evaluate((node) => getComputedStyle(node).display);
@@ -271,16 +274,19 @@ function viteFixtureSource() {
   return `
 import { createElement, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { AgentChat, AgentComposer } from "@zebra-agent/react";
+import { AgentChat, AgentComposer, AgentContentRenderer } from "@zebra-agent/react";
+import { AgentVegaLiteRenderer } from "@zebra-agent/react-charts";
 import "@zebra-agent/react/styles.css";
 
 function App(){
   const [phase,setPhase]=useState("idle"); const [value,setValue]=useState(""); const [files,setFiles]=useState([]); const [submits,setSubmits]=useState(0); const [actions,setActions]=useState([]); const [turns,setTurns]=useState([]); const [scrollKey,setScrollKey]=useState("thread-a");
   const state=phase==="running"?{phase:"running",availableActions:[]}:phase==="completed"?{phase:"terminal",outcome:"completed",availableActions:[]}:phase==="disconnected"?{phase:"disconnected",availableActions:["reconnect"]}:phase==="paused"?{phase:"paused",availableActions:["resume"]}:phase==="failed"?{phase:"terminal",outcome:"failed",availableActions:["retry"]}:{phase:"idle",availableActions:[]};
   const composer=createElement(AgentComposer,{attachments:files,busy:phase==="running",capabilityOptions:[],capabilityValue:"general",canContinue:false,disabled:false,metrics:{cacheHitRate:.984,contextBreakdown:[{id:"messages",label:"Messages",tokens:8200},{id:"system",label:"System prompt",tokens:4100},{id:"tools",label:"Tool definitions",tokens:1800}],contextLimit:100000,contextPercent:.141,contextTokens:14100},modelOptions:[],modelValue:"default",onCapabilityChange:()=>{},onContinue:()=>{},onFilesSelected:(list)=>setFiles([...list].map((file,index)=>({id:String(index),isImage:false,name:file.name}))),onModelChange:()=>{},onPause:()=>{},onReasoningChange:()=>{},onRemoveAttachment:(id)=>setFiles((items)=>items.filter((item)=>item.id!==id)),onSubmit:()=>setSubmits((count)=>count+1),onSuggestionPick:()=>{},onValueChange:setValue,pausing:false,queueCount:0,reasoningOptions:[],reasoningValue:"high",suggestions:[],value});
-  const activate=()=>{setPhase("running");setTurns([{id:"live",status:"running",userMessage:{id:"user",role:"user",content:("这是一条用于验证长输入折叠和渐隐效果的中文请求。 ").repeat(24),status:"complete"},workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"running",title:"Inspect"}]}]}])};
+  const resolveArtifact=(artifactId:string)=>({artifactId,mimeType:"image/png",url:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="});
+  const renderContent=(message:any)=>createElement(AgentContentRenderer,{message,renderers:{chart:AgentVegaLiteRenderer},resolveArtifact});
+  const activate=()=>{setPhase("running");setTurns([{id:"live",status:"running",userMessage:{id:"user",role:"user",content:("这是一条用于验证长输入折叠和渐隐效果的中文请求。 ").repeat(24),status:"complete"},workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"running",title:"Inspect"}]}],assistantMessage:{id:"media",role:"assistant",content:"",status:"complete",parts:[{id:"image",type:"image",state:"ready",artifactId:"image-1",mimeType:"image/png",alt:"Generated preview"},{id:"chart",type:"chart",state:"ready",specType:"vega-lite",specVersion:"6",spec:{mark:"bar",data:{values:[{label:"A",value:2},{label:"B",value:5}]},encoding:{x:{field:"label"},y:{field:"value",type:"quantitative"}}},title:"Generated chart",description:"A browser-rendered chart"}]}}])};
   const complete=()=>{setPhase("completed");setTurns((items)=>items.map((turn)=>turn.id==="live"?{...turn,status:"completed",workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"completed",title:"Inspect"}]}],assistantMessage:{id:"answer",role:"assistant",content:"Done",status:"complete"}}:turn))};
-  return <><nav><button id="activate" onClick={activate}>Activate</button><button id="complete" onClick={complete}>Complete</button><button id="disconnected" onClick={()=>setPhase("disconnected")}>Disconnect</button><button id="paused" onClick={()=>setPhase("paused")}>Pause state</button><button id="failed" onClick={()=>setPhase("failed")}>Fail state</button><button id="burst" onClick={()=>setTurns(Array.from({length:30},(_,index)=>({id:String(index),status:"completed",workSegments:[],assistantMessage:{id:"message-"+index,role:"assistant",content:"Long output "+index+" "+"x".repeat(180),status:"complete"}})))}>Burst</button><button id="append" onClick={()=>setTurns((items)=>[...items,{id:"latest",status:"completed",workSegments:[],assistantMessage:{id:"latest-message",role:"assistant",content:"Newest output",status:"complete"}}])}>Append</button><button id="thread-a" onClick={()=>setScrollKey("thread-a")}>Thread A</button><button id="thread-b" onClick={()=>setScrollKey("thread-b")}>Thread B</button></nav><span id="submits">{submits}</span><span id="actions">{actions.join(",")}</span><span id="scroll-key">{scrollKey}</span><AgentChat composer={composer} runStatus={{state,onReconnect:()=>setActions((v)=>[...v,"reconnect"]),onResume:()=>setActions((v)=>[...v,"resume"]),onRetry:()=>setActions((v)=>[...v,"retry"])}} scrollKey={scrollKey} themeTokens={{input:"#123456",surface:"#101820"}} turns={turns} /></>;
+  return <><nav><button id="activate" onClick={activate}>Activate</button><button id="complete" onClick={complete}>Complete</button><button id="disconnected" onClick={()=>setPhase("disconnected")}>Disconnect</button><button id="paused" onClick={()=>setPhase("paused")}>Pause state</button><button id="failed" onClick={()=>setPhase("failed")}>Fail state</button><button id="burst" onClick={()=>setTurns(Array.from({length:30},(_,index)=>({id:String(index),status:"completed",workSegments:[],assistantMessage:{id:"message-"+index,role:"assistant",content:"Long output "+index+" "+"x".repeat(180),status:"complete"}})))}>Burst</button><button id="append" onClick={()=>setTurns((items)=>[...items,{id:"latest",status:"completed",workSegments:[],assistantMessage:{id:"latest-message",role:"assistant",content:"Newest output",status:"complete"}}])}>Append</button><button id="thread-a" onClick={()=>setScrollKey("thread-a")}>Thread A</button><button id="thread-b" onClick={()=>setScrollKey("thread-b")}>Thread B</button></nav><span id="submits">{submits}</span><span id="actions">{actions.join(",")}</span><span id="scroll-key">{scrollKey}</span><AgentChat composer={composer} renderMessageContent={renderContent} runStatus={{state,onReconnect:()=>setActions((v)=>[...v,"reconnect"]),onResume:()=>setActions((v)=>[...v,"resume"]),onRetry:()=>setActions((v)=>[...v,"retry"])}} scrollKey={scrollKey} themeTokens={{input:"#123456",surface:"#101820"}} turns={turns} /></>;
 }
 createRoot(document.getElementById("root")).render(<App/>);
 `;

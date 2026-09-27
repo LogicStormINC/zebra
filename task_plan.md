@@ -1,4 +1,33 @@
-# Active task — REACT-CONVERSATION-02 ZCode-style complete conversation surface (2026-09-26)
+# Active task — REACT-MEDIA-01 durable rich-content surface (2026-09-27)
+
+Branch: `codex/react-media-content-01`; isolated worktree:
+`/Users/lukeding/.codex/worktrees/media-content-blocks/zebra-agent`.
+
+1. `completed` — freeze the typed content-part, Artifact preview, AG-UI custom
+   event and sandbox security contracts in ADR-CLIENT-02 while preserving legacy
+   string messages.
+2. `completed` — implement host-neutral image, video, file and fallback renderers,
+   renderer registration, responsive styles, accessibility and deterministic
+   React tests.
+3. `completed` — add the optional Vega-Lite chart package with schema/version and
+   resource guards, lazy loading, cleanup, data-table/static fallbacks and real
+   package-consumer checks.
+4. `completed` — project published media Artifacts over replayable AG-UI events and
+   expose authorized inline preview/HEAD/Range responses without putting binary
+   data in durable events.
+5. `completed` — add the sandboxed MCP Apps host boundary with explicit capability
+   negotiation, origin/CSP controls, postMessage validation and static fallback.
+6. `completed` — consume packed packages in Trench, map existing file deliveries to
+   typed parts, add BFF preview proxy and verify image/video/chart rendering in a
+   production browser build.
+7. `completed` — run focused, SDK package, React 18/19 Vite/Next, browser, Python
+   repository and paired Trench gates; review the implementation against every
+   acceptance item and record any external publication/deployment boundary.
+
+Detailed decision:
+`docs/ADR-CLIENT-02_Durable多媒体内容面.md`.
+
+# Prior task — REACT-CONVERSATION-02 ZCode-style complete conversation surface (2026-09-26)
 
 1. `completed` — define host-neutral Turn/work-segment contracts and a stable
    compatibility projection without changing runtime authority.

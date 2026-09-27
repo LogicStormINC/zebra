@@ -10637,3 +10637,14 @@ actual byte access.
   focused readiness coverage adds `11 passed`.
 - Task moved to Review. Production gVisor/canary/rollback remains blocked on an
   authorized Linux release environment. No commit, push or deployment performed.
+## 2026-09-27 — REACT-MEDIA-01
+
+- Froze ADR-CLIENT-02 and implemented typed rich-content contracts, React
+  renderers, Vega-Lite isolation, MCP Apps sandboxing and AG-UI projection.
+- Implemented Artifact preview/HEAD/Range and paired Trench BFF authorization,
+  durable metadata persistence and Host rendering from vendored tarballs.
+- Full review caught and removed two over-broad changes: global CORS header
+  exposure and Artifact-list delivery expansion. The final implementation keeps
+  those compatibility contracts unchanged and scopes media metadata to detail.
+- Passed focused, full repository, package consumer and real browser gates. The
+  task is ready for review; merge, npm publication and deployment were not run.

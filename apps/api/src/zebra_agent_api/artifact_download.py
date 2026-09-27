@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 from urllib.parse import quote
 
 from agent_core.domain.host_authority import HostContextEnvelope
@@ -11,6 +12,28 @@ from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
+
+_INLINE_MIME_TYPES = frozenset(
+    {
+        "application/json",
+        "application/vnd.vegalite+json",
+        "application/vnd.vegalite.v6+json",
+        "audio/mp4",
+        "audio/mpeg",
+        "audio/ogg",
+        "audio/wav",
+        "audio/webm",
+        "image/avif",
+        "image/gif",
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "text/vtt",
+        "video/mp4",
+        "video/ogg",
+        "video/webm",
+    }
+)
 
 
 async def artifact_download_response(
@@ -29,7 +52,7 @@ async def artifact_download_response(
                 status_code=403,
                 content={"status": "forbidden", "reason": "artifact_read_not_granted"},
             )
-    task_id, public_id = parsed
+    task_id, public_id, disposition = parsed
     artifact_id, lookup_error = await _resolve_artifact_id(
         adapter,
         request,
@@ -65,6 +88,11 @@ async def artifact_download_response(
     delivery = artifact.get("delivery") if isinstance(artifact, dict) else None
     file_name = _delivery_text(delivery, "file_name") or f"artifact-{public_id}.bin"
     mime_type = _delivery_text(delivery, "mime_type") or "application/octet-stream"
+    if disposition == "inline" and mime_type.lower() not in _INLINE_MIME_TYPES:
+        return JSONResponse(
+            status_code=415,
+            content={"status": "artifact_preview_unsupported", "mime_type": mime_type},
+        )
     encoded = content.body.get("content_base64")
     if not isinstance(encoded, str):
         return _unavailable()
@@ -72,14 +100,33 @@ async def artifact_download_response(
         payload = base64.b64decode(encoded, validate=True)
     except ValueError:
         return _unavailable()
+    content_range = _requested_range(request, len(payload)) if disposition == "inline" else None
+    if isinstance(content_range, JSONResponse):
+        return content_range
+    selected = payload
+    status_code = 200
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "private, no-store",
+        "Content-Disposition": (
+            f"{disposition}; filename*=UTF-8''{quote(file_name)}"
+        ),
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+        "ETag": f'"{hashlib.sha256(payload).hexdigest()}"',
+        "X-Content-Type-Options": "nosniff",
+    }
+    if content_range is not None:
+        start, end = content_range
+        selected = payload[start : end + 1]
+        status_code = 206
+        headers["Content-Range"] = f"bytes {start}-{end}/{len(payload)}"
+    body = b"" if request.method.upper() == "HEAD" else selected
+    headers["Content-Length"] = str(len(selected))
     return Response(
-        content=payload,
+        content=body,
         media_type=mime_type,
-        headers={
-            "Cache-Control": "private, no-store",
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(file_name)}",
-            "X-Content-Type-Options": "nosniff",
-        },
+        headers=headers,
+        status_code=status_code,
     )
 
 
@@ -134,17 +181,54 @@ def _delivery_text(delivery: object, field: str) -> str | None:
     return value if isinstance(value, str) else None
 
 
-def _artifact_download_request(request: Request) -> tuple[str, str] | None:
+def _artifact_download_request(request: Request) -> tuple[str, str, str] | None:
     parts = tuple(part for part in request.url.path.split("/") if part)
     if (
-        request.method.upper() == "GET"
+        request.method.upper() in {"GET", "HEAD"}
         and len(parts) == 5
         and parts[0] == "tasks"
         and parts[2] == "artifacts"
-        and parts[4] == "download"
+        and parts[4] in {"download", "preview"}
     ):
-        return parts[1], parts[3]
+        if request.method.upper() == "HEAD" and parts[4] != "preview":
+            return None
+        return parts[1], parts[3], "inline" if parts[4] == "preview" else "attachment"
     return None
+
+
+def _requested_range(request: Request, size: int) -> tuple[int, int] | JSONResponse | None:
+    if request.method.upper() == "HEAD":
+        return None
+    header = request.headers.get("range")
+    if header is None:
+        return None
+    if not header.startswith("bytes=") or "," in header or size == 0:
+        return _range_not_satisfiable(size)
+    value = header.removeprefix("bytes=")
+    if "-" not in value:
+        return _range_not_satisfiable(size)
+    start_text, end_text = value.split("-", maxsplit=1)
+    try:
+        if not start_text:
+            suffix = int(end_text)
+            if suffix <= 0:
+                return _range_not_satisfiable(size)
+            return max(0, size - suffix), size - 1
+        start = int(start_text)
+        end = int(end_text) if end_text else size - 1
+    except ValueError:
+        return _range_not_satisfiable(size)
+    if start < 0 or start >= size or end < start:
+        return _range_not_satisfiable(size)
+    return start, min(end, size - 1)
+
+
+def _range_not_satisfiable(size: int) -> JSONResponse:
+    return JSONResponse(
+        status_code=416,
+        content={"status": "range_not_satisfiable"},
+        headers={"Accept-Ranges": "bytes", "Content-Range": f"bytes */{size}"},
+    )
 
 
 def _unavailable() -> JSONResponse:

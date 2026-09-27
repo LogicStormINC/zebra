@@ -1967,3 +1967,20 @@ Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
   logic and lets nested Composer instances inherit the chat theme naturally.
   Package defaults remain the reference appearance, so Host customization is
   opt-in and partial rather than a fork of component CSS.
+## REACT-MEDIA-01 findings (2026-09-27)
+
+- Durable events should identify media, not transport it. Opaque Artifact IDs
+  keep replay small, authorization current and Host URL policy replaceable.
+- A renderer registry plus an optional chart package preserves the small base
+  React surface. Vega is a large dynamic chunk, but Trench's shared first-load
+  bundle remains 103 kB and the chart code loads only for chart content.
+- Secondary media references (thumbnail, poster, captions, transcript and chart
+  fallbacks) require the same scoped BFF validation as primary artifacts.
+- Resolving a full-size image only after the lightbox opens avoids generating
+  unused preview authority during ordinary timeline rendering.
+- Endpoint-specific Range behavior is safer than broadening global CORS or
+  Artifact list contracts. The Trench BFF is same-origin and forwards only
+  bounded safe response headers.
+- Sandboxed MCP Apps are a platform capability, not an implicit Trench feature.
+  Trench intentionally shows the package fallback until that Host supplies an
+  approved `ui://` resource resolver and explicit capability allowlist.
