@@ -3854,9 +3854,10 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   estimates now propagate through durable response Events and bounded model-
   usage summaries into the shared React Composer. The popover shows total
   occupancy, category counts and percentages, and measured cache hit rate.
-- Older conversations degrade to the existing total-only summary. Skill and MCP
-  rows are intentionally absent because the runtime does not yet account for
-  them independently; no UI-only estimates were introduced.
+- Older conversations keep their total and cache summary and now explicitly say
+  that composition was not recorded, instead of silently hiding the section.
+  Skill and MCP rows are intentionally absent because the runtime does not yet
+  account for them independently; no UI-only estimates were introduced.
 - Focused Core/API projection tests pass `34/34`; SDK deterministic tests,
   package audit, React 18/19 Vite/Next consumers, Chromium/WebKit interactions
   and Next hydration pass. Trench Host integration remains a separate gate.
