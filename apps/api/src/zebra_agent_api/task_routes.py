@@ -122,7 +122,11 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
         return route_active_task(
             app.stores,
             parts[0],
-            lambda active: app.get_session_artifact_content(active, parts[2]),
+            lambda active: app.get_session_artifact_content(
+                active,
+                parts[2],
+                byte_range=_artifact_content_range(request.query),
+            ),
         )
     if method == "GET" and len(parts) == 2 and parts[1] == "delivery-audit":
         return route_active_task(app.stores, parts[0], app.get_session_delivery_audit)
@@ -153,6 +157,16 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
             lambda active: app.prune_session_artifact(active, parts[2]),
         )
     return None
+
+
+def _artifact_content_range(query: dict[str, str] | None) -> tuple[int, int] | None:
+    if not query or "range_start" not in query or "range_end" not in query:
+        return None
+    try:
+        start, end = int(query["range_start"]), int(query["range_end"])
+    except ValueError:
+        return None
+    return (start, end) if start >= 0 and end >= start else None
 
 
 def _parts(path: str, prefix: str) -> tuple[str, ...]:

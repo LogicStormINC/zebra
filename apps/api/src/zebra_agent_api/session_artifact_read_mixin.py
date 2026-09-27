@@ -130,7 +130,13 @@ class SessionArtifactReadMixin:
         )
         return response
 
-    def get_session_artifact_content(self, session_id: str, artifact_id: str) -> ApiResponse:
+    def get_session_artifact_content(
+        self,
+        session_id: str,
+        artifact_id: str,
+        *,
+        byte_range: tuple[int, int] | None = None,
+    ) -> ApiResponse:
         artifact = self._resolve_session_artifact(session_id, artifact_id)
         if isinstance(artifact, ApiResponse):
             return artifact
@@ -175,9 +181,16 @@ class SessionArtifactReadMixin:
         assert artifact.uri is not None
         assert inspection is not None
         try:
-            payload = payload_reader(self.stores).read_payload_bytes(
-                artifact.session_id,
-                artifact.uri,
+            reader = payload_reader(self.stores)
+            payload = (
+                reader.read_payload_range(
+                    artifact.session_id,
+                    artifact.uri,
+                    byte_range[0],
+                    byte_range[1],
+                )
+                if byte_range is not None
+                else reader.read_payload_bytes(artifact.session_id, artifact.uri)
             )
         except ArtifactPayloadReadPrunedError:
             return self._artifact_content_unavailable(
@@ -211,18 +224,18 @@ class SessionArtifactReadMixin:
                 reason="artifact_payload_unavailable",
                 retrieval_status="payload_unavailable",
             )
-        response = ApiResponse(
-            status_code=200,
-            body={
-                "session_id": session_id,
-                "artifact_id": artifact.artifact_id,
-                "status": "ok",
-                "access": serialize_artifact_access(access),
-                "encoding": "base64",
-                "content_base64": base64.b64encode(payload).decode("ascii"),
-                "size_bytes": len(payload),
-            },
-        )
+        body: dict[str, object] = {
+            "session_id": session_id,
+            "artifact_id": artifact.artifact_id,
+            "status": "ok",
+            "access": serialize_artifact_access(access),
+            "encoding": "base64",
+            "content_base64": base64.b64encode(payload).decode("ascii"),
+            "size_bytes": len(payload),
+        }
+        if byte_range is not None:
+            body["total_size_bytes"] = inspection.size_bytes
+        response = ApiResponse(status_code=200, body=body)
         record_delivery_audit(
             store=self.stores.delivery_audit,
             session_id=session_id,

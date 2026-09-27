@@ -70,14 +70,22 @@ class _FakeS3Client:
     def get_object(self, **kwargs: object) -> Mapping[str, object]:
         self._record("get_object", kwargs)
         item = self._item(kwargs)
-        self.last_body = _Body(cast(bytes, item["Body"]))
-        return {
-            "Body": self.last_body,
-            "ContentLength": len(cast(bytes, item["Body"])),
+        payload = cast(bytes, item["Body"])
+        response: dict[str, object] = {
             "Metadata": item["Metadata"],
             "VersionId": item["VersionId"],
             "LastModified": item["LastModified"],
         }
+        if byte_range := kwargs.get("Range"):
+            start_text, end_text = cast(str, byte_range).removeprefix("bytes=").split("-")
+            start, end = int(start_text), int(end_text)
+            selected = payload[start : end + 1]
+            response["ContentRange"] = f"bytes {start}-{end}/{len(payload)}"
+        else:
+            selected = payload
+        self.last_body = _Body(selected)
+        response.update({"Body": self.last_body, "ContentLength": len(selected)})
+        return response
 
     def delete_object(self, **kwargs: object) -> Mapping[str, object]:
         self._record("delete_object", kwargs)
@@ -237,6 +245,25 @@ def test_read_uses_verified_version_closes_body_and_checks_bytes() -> None:
     client.objects[key]["Body"] = "x" * expectation.size_bytes
     with pytest.raises(ArtifactObjectUnavailableError):
         store.read_verified(expectation)
+    assert client.last_body is not None and client.last_body.closed
+
+
+def test_range_read_uses_pinned_version_and_provider_range() -> None:
+    client = _FakeS3Client()
+    store = S3ArtifactObjectStore(client, bucket="artifacts")
+    expectation = _expectation()
+    receipt = store.put_if_absent(_request(expectation))
+
+    assert store.read_version_range_verified(
+        expectation, receipt.object_version, 2, 8
+    ) == PAYLOAD[2:9]
+    get_call = next(
+        kwargs
+        for method, kwargs in reversed(client.calls)
+        if method == "get_object"
+    )
+    assert get_call["Range"] == "bytes=2-8"
+    assert get_call["VersionId"] == receipt.object_version
     assert client.last_body is not None and client.last_body.closed
 
 

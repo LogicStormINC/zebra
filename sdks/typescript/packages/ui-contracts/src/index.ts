@@ -130,6 +130,7 @@ export interface AgentImagePart extends AgentArtifactPartBase {
 export interface AgentVideoPart extends AgentArtifactPartBase {
   type: "video";
   captionsArtifactId?: string;
+  captionsLanguage?: string;
   description?: string;
   durationMs?: number;
   height?: number;

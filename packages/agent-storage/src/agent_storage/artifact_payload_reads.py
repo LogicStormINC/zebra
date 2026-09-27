@@ -85,6 +85,16 @@ class LocalArtifactPayloadReader(ArtifactPayloadReadPort):
             raise ArtifactPayloadReadPrunedError("artifact payload has been pruned")
         return self._store.read_payload_bytes(inspection.artifact_id)
 
+    def read_payload_range(
+        self,
+        session_id: SessionId,
+        uri: str,
+        start: int,
+        end: int,
+    ) -> bytes:
+        _validate_range(start, end)
+        return self.read_payload_bytes(session_id, uri)[start : end + 1]
+
     def controls(self, store: ArtifactPayloadStorePort) -> bool:
         return self._store is store
 
@@ -184,6 +194,34 @@ class CloudArtifactPayloadReader(ArtifactPayloadReadPort):
             record.object_receipt.object_version,
         )
 
+    def read_payload_range(
+        self,
+        session_id: SessionId,
+        uri: str,
+        start: int,
+        end: int,
+    ) -> bytes:
+        _validate_range(start, end)
+        artifact_id = _cloud_artifact_id(uri)
+        if artifact_id is None:
+            raise FileNotFoundError("artifact payload URI is not canonical")
+        record = self._get_record(session_id, artifact_id)
+        if record is None:
+            raise FileNotFoundError("artifact payload metadata was not found")
+        if record.lifecycle_status is CloudArtifactPayloadLifecycleStatus.PRUNED:
+            raise ArtifactPayloadReadPrunedError("artifact payload has been pruned")
+        if record.lifecycle_status is not CloudArtifactPayloadLifecycleStatus.FINALIZED:
+            raise ArtifactPayloadReadUnavailableError("artifact payload is not finalized")
+        assert record.object_receipt is not None
+        if end >= record.reservation.size_bytes:
+            raise ValueError("artifact payload range exceeds object size")
+        return self._objects.read_version_range_verified(
+            record.object_receipt.expectation,
+            record.object_receipt.object_version,
+            start,
+            end,
+        )
+
     def _get_record(
         self,
         session_id: SessionId,
@@ -221,3 +259,8 @@ def _cloud_artifact_id(uri: str) -> ArtifactId | None:
     if artifact_id is None or uri != f"artifact://{artifact_id}":
         return None
     return artifact_id
+
+
+def _validate_range(start: int, end: int) -> None:
+    if start < 0 or end < start:
+        raise ValueError("artifact payload range is invalid")

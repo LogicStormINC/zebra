@@ -3831,16 +3831,19 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   Vega-Lite package, and a fail-closed MCP Apps iframe boundary. The chart
   dependency is dynamically loaded and does not enter the base React bundle.
 - Added authorized preview/download routes with safe inline MIME allowlists,
-  HEAD, single-byte Range, ETag, CSP and private no-store behavior. The current
-  storage Port still reads an object before slicing; true object-store range
-  reads remain a future Port optimization, not a missing frontend contract.
+  metadata-only HEAD, single-byte Range, immutable ETag, CSP and private no-store
+  behavior. Cloud Artifact reads now pin the verified object version and issue a
+  native S3-compatible Range request; local SQLite keeps a compatibility slice.
+- Closed the media review gaps: chart data/image/table Artifact fallbacks are
+  active, transient chart errors recover, failed full-size images terminate
+  visibly, image dialogs restore focus, and caption language is explicit.
 - Trench consumes packed SDK artifacts through its same-origin BFF, durably
   persists content parts and renders image/chart output in a production
   Chromium acceptance run. No npm publication or production deployment is
   claimed.
-- Final local evidence: SDK `verify` passes on Node 24/pnpm 10 with 40 unit
+- Final local evidence: SDK `verify` passes on Node 24/pnpm 10 with 42 unit
   tests, package audit, React 18/19 Vite/Next consumers and Chromium/WebKit;
-  Zebra `make check` and `make test` pass (`4688 passed`, `901 skipped`).
+  Zebra `make check` and `make test` pass (`4689 passed`, `901 skipped`).
   Trench `make check` passes `143` API/model, `74` pipeline and `123` ToC tests,
   lint with three pre-existing dashboard image warnings, both production
   builds, migrations and diff checks.

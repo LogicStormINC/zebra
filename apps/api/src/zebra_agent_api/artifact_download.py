@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import hashlib
 from urllib.parse import quote
 
 from agent_core.domain.host_authority import HostContextEnvelope
@@ -64,16 +63,6 @@ async def artifact_download_response(
         return lookup_error
     if artifact_id is None:
         return JSONResponse(status_code=404, content={"status": "not_found"})
-    content = await asyncio.to_thread(
-        adapter.handle,
-        _route_request(
-            request,
-            f"/tasks/{task_id}/artifacts/{artifact_id}/content",
-            host_context,
-        ),
-    )
-    if content.status_code != 200:
-        return JSONResponse(status_code=content.status_code, content=content.body)
     detail = await asyncio.to_thread(
         adapter.handle,
         _route_request(
@@ -88,22 +77,17 @@ async def artifact_download_response(
     delivery = artifact.get("delivery") if isinstance(artifact, dict) else None
     file_name = _delivery_text(delivery, "file_name") or f"artifact-{public_id}.bin"
     mime_type = _delivery_text(delivery, "mime_type") or "application/octet-stream"
+    size_bytes = delivery.get("size_bytes") if isinstance(delivery, dict) else None
+    if not isinstance(size_bytes, int) or isinstance(size_bytes, bool) or size_bytes < 0:
+        return _unavailable()
     if disposition == "inline" and mime_type.lower() not in _INLINE_MIME_TYPES:
         return JSONResponse(
             status_code=415,
             content={"status": "artifact_preview_unsupported", "mime_type": mime_type},
         )
-    encoded = content.body.get("content_base64")
-    if not isinstance(encoded, str):
-        return _unavailable()
-    try:
-        payload = base64.b64decode(encoded, validate=True)
-    except ValueError:
-        return _unavailable()
-    content_range = _requested_range(request, len(payload)) if disposition == "inline" else None
+    content_range = _requested_range(request, size_bytes) if disposition == "inline" else None
     if isinstance(content_range, JSONResponse):
         return content_range
-    selected = payload
     status_code = 200
     headers = {
         "Accept-Ranges": "bytes",
@@ -112,16 +96,43 @@ async def artifact_download_response(
             f"{disposition}; filename*=UTF-8''{quote(file_name)}"
         ),
         "Content-Security-Policy": "default-src 'none'; sandbox",
-        "ETag": f'"{hashlib.sha256(payload).hexdigest()}"',
+        "ETag": f'"{artifact_id}"',
         "X-Content-Type-Options": "nosniff",
     }
+    selected_size = size_bytes
     if content_range is not None:
         start, end = content_range
-        selected = payload[start : end + 1]
+        selected_size = end - start + 1
         status_code = 206
-        headers["Content-Range"] = f"bytes {start}-{end}/{len(payload)}"
-    body = b"" if request.method.upper() == "HEAD" else selected
-    headers["Content-Length"] = str(len(selected))
+        headers["Content-Range"] = f"bytes {start}-{end}/{size_bytes}"
+    headers["Content-Length"] = str(selected_size)
+    body = b""
+    if request.method.upper() != "HEAD":
+        query = (
+            {"range_start": str(content_range[0]), "range_end": str(content_range[1])}
+            if content_range is not None
+            else None
+        )
+        content = await asyncio.to_thread(
+            adapter.handle,
+            _route_request(
+                request,
+                f"/tasks/{task_id}/artifacts/{artifact_id}/content",
+                host_context,
+                query=query,
+            ),
+        )
+        if content.status_code != 200:
+            return JSONResponse(status_code=content.status_code, content=content.body)
+        encoded = content.body.get("content_base64")
+        if not isinstance(encoded, str):
+            return _unavailable()
+        try:
+            body = base64.b64decode(encoded, validate=True)
+        except ValueError:
+            return _unavailable()
+        if len(body) != selected_size:
+            return _unavailable()
     return Response(
         content=body,
         media_type=mime_type,
@@ -163,12 +174,14 @@ def _route_request(
     request: Request,
     path: str,
     host_context: HostContextEnvelope | None,
+    *,
+    query: dict[str, str] | None = None,
 ) -> RouteRequest:
     return RouteRequest(
         method="GET",
         path=path,
         headers=dict(request.headers),
-        query={},
+        query=query or {},
         body=None,
         host_context=host_context,
     )

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import type { Result as VegaEmbedResult } from "vega-embed";
-import type { AgentChartPart, AgentChartTable, AgentJsonValue } from "@zebra-agent/ui-contracts";
+import type { AgentArtifactAccess, AgentChartPart, AgentChartTable, AgentJsonValue } from "@zebra-agent/ui-contracts";
 import type { AgentPartRendererProps } from "@zebra-agent/react";
 
 export interface AgentVegaLiteRendererOptions {
@@ -33,7 +33,8 @@ function VegaLiteChart({ context, maxInlineDataRows, maxSpecBytes, part }: {
     if (part.state !== "ready" || !container.current) return;
     let active = true;
     let result: VegaEmbedResult | undefined;
-    void loadSpec(part, context.resolveArtifact).then(async (spec) => {
+    setError(undefined);
+    void loadSpec(part, context.resolveArtifact, maxSpecBytes).then(async (spec) => {
       validateVegaLiteSpec(spec, { maxInlineDataRows, maxSpecBytes, specVersion: part.specVersion });
       const { default: embed } = await import("vega-embed");
       if (!active || !container.current) return;
@@ -52,13 +53,45 @@ function VegaLiteChart({ context, maxInlineDataRows, maxSpecBytes, part }: {
     };
   }, [context.resolveArtifact, maxInlineDataRows, maxSpecBytes, part]);
   if (part.state === "processing") return <ChartFallback description={part.description} label={context.labels.loading} table={part.table} title={part.title} />;
-  if (part.state === "failed" || error) return <ChartFallback description={part.description} label={context.labels.failed} table={part.table} title={part.title} />;
+  if (part.state === "failed" || error) return <ArtifactChartFallback context={context} maxRows={maxInlineDataRows} maxSpecBytes={maxSpecBytes} part={part} />;
   return (
     <figure className="zebra-agent-chart">
       <figcaption><strong>{part.title}</strong><span>{part.description}</span></figcaption>
       <div aria-label={part.description} className="zebra-agent-chart__canvas" ref={container} role="img" />
       {part.table ? <details><summary>View chart data</summary><AgentChartDataTable table={part.table} /></details> : null}
     </figure>
+  );
+}
+
+function ArtifactChartFallback({ context, maxRows, maxSpecBytes, part }: {
+  context: AgentPartRendererProps["context"];
+  maxRows: number;
+  maxSpecBytes: number;
+  part: AgentChartPart;
+}) {
+  const [image, setImage] = useState<AgentArtifactAccess>();
+  const [table, setTable] = useState<AgentChartTable | undefined>(part.table);
+  useEffect(() => {
+    let active = true;
+    setImage(undefined);
+    setTable(part.table);
+    if (part.fallbackImageArtifactId && context.resolveArtifact) {
+      void Promise.resolve(context.resolveArtifact(part.fallbackImageArtifactId, "preview"))
+        .then((access) => { if (active) setImage(access); }, () => undefined);
+    }
+    if (!part.table && part.fallbackTableArtifactId && context.resolveArtifact) {
+      void Promise.resolve(context.resolveArtifact(part.fallbackTableArtifactId, "data"))
+        .then((access) => fetchJson(access, maxSpecBytes))
+        .then((value) => { if (active) setTable(parseTable(value, maxRows)); }, () => undefined);
+    }
+    return () => { active = false; };
+  }, [context.resolveArtifact, maxRows, maxSpecBytes, part]);
+  return (
+    <section className="zebra-agent-chart zebra-agent-chart--fallback" role="status">
+      <strong>{part.title}</strong><span>{part.description}</span><small>{context.labels.failed}</small>
+      {image ? <img alt={part.description} src={image.url} /> : null}
+      {table ? <AgentChartDataTable table={table} /> : null}
+    </section>
   );
 }
 
@@ -74,13 +107,36 @@ export function AgentChartDataTable({ table }: { table: AgentChartTable }) {
   );
 }
 
-async function loadSpec(part: AgentChartPart, resolver: AgentPartRendererProps["context"]["resolveArtifact"]): Promise<AgentJsonValue> {
-  if (part.spec) return part.spec;
-  if (!part.specArtifactId || !resolver) throw new Error("chart_spec_unavailable");
-  const access = await resolver(part.specArtifactId, "data");
+async function loadSpec(part: AgentChartPart, resolver: AgentPartRendererProps["context"]["resolveArtifact"], maxBytes: number): Promise<AgentJsonValue> {
+  let spec = part.spec;
+  if (!spec) {
+    if (!part.specArtifactId || !resolver) throw new Error("chart_spec_unavailable");
+    spec = await fetchJson(await resolver(part.specArtifactId, "data"), maxBytes);
+  }
+  if (!part.dataArtifactId) return spec;
+  if (!resolver || !spec || Array.isArray(spec) || typeof spec !== "object") throw new Error("chart_data_unavailable");
+  const values = await fetchJson(await resolver(part.dataArtifactId, "data"), maxBytes);
+  return { ...spec, data: { values } };
+}
+
+async function fetchJson(access: AgentArtifactAccess, maxBytes: number): Promise<AgentJsonValue> {
   const response = await fetch(access.url, { credentials: "same-origin" });
-  if (!response.ok) throw new Error("chart_spec_unavailable");
-  return await response.json() as AgentJsonValue;
+  if (!response.ok) throw new Error("chart_artifact_unavailable");
+  const declared = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maxBytes) throw new Error("chart_spec_too_large");
+  const source = await response.text();
+  if (new TextEncoder().encode(source).byteLength > maxBytes) throw new Error("chart_spec_too_large");
+  return JSON.parse(source) as AgentJsonValue;
+}
+
+function parseTable(value: AgentJsonValue, maxRows: number): AgentChartTable {
+  if (!value || Array.isArray(value) || typeof value !== "object") throw new Error("chart_table_invalid");
+  const columns = value.columns;
+  const rows = value.rows;
+  if (!Array.isArray(columns) || !columns.every((item) => typeof item === "string") || !Array.isArray(rows) || rows.length > maxRows || !rows.every(Array.isArray)) {
+    throw new Error("chart_table_invalid");
+  }
+  return { columns, rows } as AgentChartTable;
 }
 
 export function validateVegaLiteSpec(spec: AgentJsonValue, options: { maxInlineDataRows: number; maxSpecBytes: number; specVersion: string }) {

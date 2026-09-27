@@ -47,7 +47,7 @@ test("image, video and file parts resolve opaque Artifact ids", async () => {
       content: "",
       parts: [
         { id: "image", type: "image", state: "ready", artifactId: "image-1", thumbnailArtifactId: "image-thumb-1", mimeType: "image/png", alt: "Build chart", width: 640, height: 360 },
-        { id: "video", type: "video", state: "ready", artifactId: "video-1", mimeType: "video/mp4", title: "Demo" },
+        { id: "video", type: "video", state: "ready", artifactId: "video-1", captionsArtifactId: "captions-1", captionsLanguage: "zh-CN", mimeType: "video/mp4", title: "Demo" },
         { id: "file", type: "file", state: "ready", artifactId: "file-1", mimeType: "text/csv", name: "result.csv" },
       ],
     }),
@@ -63,15 +63,42 @@ test("image, video and file parts resolve opaque Artifact ids", async () => {
   assert.equal(image?.getAttribute("alt"), "Build chart");
   assert.equal(video?.querySelector("source")?.getAttribute("type"), "video/mp4");
   assert.equal(video?.getAttribute("preload"), "metadata");
+  assert.equal(video?.querySelector("track")?.getAttribute("srclang"), "zh-CN");
   assert.equal(download?.getAttribute("href"), "https://media.example/file-1");
   assert.ok(resolved.includes("image-thumb-1:preview"));
   assert.ok(!resolved.includes("image-1:preview"));
   assert.ok(resolved.includes("video-1:preview"));
+  assert.ok(resolved.includes("captions-1:captions"));
   assert.ok(resolved.includes("file-1:download"));
   await act(async () => {
     mounted.container.querySelector<HTMLButtonElement>(".zebra-agent-media__image-button")?.click();
   });
   assert.ok(resolved.includes("image-1:preview"));
+  await act(async () => mounted.root.unmount());
+  mounted.dom.window.close();
+});
+
+test("image dialog reports full-size failures and restores focus", async () => {
+  const mounted = await mount({
+    message: message({
+      content: "",
+      parts: [{ id: "image", type: "image", state: "ready", artifactId: "full", thumbnailArtifactId: "thumb", mimeType: "image/png", alt: "Evidence" }],
+    }),
+    resolveArtifact: async (artifactId) => {
+      if (artifactId === "full") throw new Error("expired");
+      return { artifactId, mimeType: "image/png", url: `https://media.example/${artifactId}` };
+    },
+  });
+  await act(async () => undefined);
+  const trigger = mounted.container.querySelector<HTMLButtonElement>(".zebra-agent-media__image-button");
+  assert.ok(trigger);
+  await act(async () => trigger.click());
+  await act(async () => undefined);
+  const close = mounted.container.querySelector<HTMLButtonElement>(".zebra-agent-media-dialog__close");
+  assert.equal(mounted.dom.window.document.activeElement, close);
+  assert.match(mounted.container.querySelector('[role="alert"]')?.textContent ?? "", /failed/i);
+  await act(async () => close?.click());
+  assert.equal(mounted.dom.window.document.activeElement, trigger);
   await act(async () => mounted.root.unmount());
   mounted.dom.window.close();
 });

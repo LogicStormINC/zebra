@@ -345,7 +345,11 @@ class RouteAdapter:
             if len(parts) == 3 and parts[1] == "artifacts":
                 return self.app.get_session_artifact_detail(parts[0], parts[2])
             if len(parts) == 4 and parts[1] == "artifacts" and parts[3] == "content":
-                return self.app.get_session_artifact_content(parts[0], parts[2])
+                return self.app.get_session_artifact_content(
+                    parts[0],
+                    parts[2],
+                    byte_range=_artifact_content_range(request.query),
+                )
             if len(parts) == 2 and parts[1] == "delivery-audit":
                 return self.app.get_session_delivery_audit(parts[0])
             return _not_found(request)
@@ -372,6 +376,16 @@ def _session_path_parts(path: str) -> tuple[str, ...]:
     if not suffix:
         return ()
     return tuple(part for part in suffix.split("/") if part)
+
+
+def _artifact_content_range(query: dict[str, str] | None) -> tuple[int, int] | None:
+    if not query or "range_start" not in query or "range_end" not in query:
+        return None
+    try:
+        start, end = int(query["range_start"]), int(query["range_end"])
+    except ValueError:
+        return None
+    return (start, end) if start >= 0 and end >= start else None
 
 
 def _approval_path_parts(path: str) -> tuple[str, ...]:

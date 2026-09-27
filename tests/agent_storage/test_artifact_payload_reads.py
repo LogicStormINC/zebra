@@ -56,6 +56,7 @@ class ObjectStub:
         self.status = status
         self.object_version = object_version
         self.read_count = 0
+        self.ranges: list[tuple[int, int]] = []
 
     def verify(self, expectation: ArtifactObjectExpectation) -> ArtifactObjectVerification:
         return ArtifactObjectVerification(
@@ -80,6 +81,17 @@ class ObjectStub:
         self.read_count += 1
         assert object_version == "v1"
         return PAYLOAD
+
+    def read_version_range_verified(
+        self,
+        expectation: ArtifactObjectExpectation,
+        object_version: str,
+        start: int,
+        end: int,
+    ) -> bytes:
+        assert object_version == "v1"
+        self.ranges.append((start, end))
+        return PAYLOAD[start : end + 1]
 
 
 @pytest.mark.parametrize(
@@ -127,6 +139,8 @@ def test_cloud_reader_requires_session_scope_and_finalized_state_for_bytes() -> 
 
     assert reader.read_payload_bytes(finalized.session_id, finalized.uri) == PAYLOAD
     assert objects.read_count == 1
+    assert reader.read_payload_range(finalized.session_id, finalized.uri, 2, 5) == b"test"
+    assert objects.ranges == [(2, 5)]
     with pytest.raises(FileNotFoundError, match="metadata was not found"):
         reader.read_payload_bytes(new_session_id(), finalized.uri)
 

@@ -56,7 +56,10 @@ does not authorize production code, migrations or activation of its successor.
   image/video/file/app renderers, optional Vega-Lite package and the paired
   Trench Host adapter are complete. SDK `verify` passes on Node 24/pnpm 10,
   including React 18/19 Vite/Next consumers and Chromium/WebKit; Zebra
-  `make check` and `make test` pass (`4688 passed`, `901 skipped`). Trench
+  `make check` and `make test` pass (`4689 passed`, `901 skipped`). Review fixes
+  additionally prove native cloud object Range reads, metadata-only HEAD,
+  Artifact-backed chart fallbacks, recoverable media failures, focus restoration
+  and caption language. Trench
   `make check`, `123` ToC tests, production build and production Chromium
   image/chart replay pass. npm publication, branch merge and production
   deployment remain separate gates.

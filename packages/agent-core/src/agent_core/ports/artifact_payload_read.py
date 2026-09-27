@@ -89,6 +89,14 @@ class ArtifactPayloadReadPort(Protocol):
         uri: str,
     ) -> bytes: ...
 
+    def read_payload_range(
+        self,
+        session_id: SessionId,
+        uri: str,
+        start: int,
+        end: int,
+    ) -> bytes: ...
+
 
 class ArtifactPayloadObjectReadPort(Protocol):
     def verify(self, expectation: ArtifactObjectExpectation) -> ArtifactObjectVerification: ...
@@ -97,4 +105,12 @@ class ArtifactPayloadObjectReadPort(Protocol):
         self,
         expectation: ArtifactObjectExpectation,
         object_version: str,
+    ) -> bytes: ...
+
+    def read_version_range_verified(
+        self,
+        expectation: ArtifactObjectExpectation,
+        object_version: str,
+        start: int,
+        end: int,
     ) -> bytes: ...

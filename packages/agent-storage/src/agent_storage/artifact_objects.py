@@ -189,6 +189,48 @@ class S3ArtifactObjectStore:
             raise ArtifactObjectIntegrityError("artifact object bytes do not match expectation")
         return payload
 
+    def read_version_range_verified(
+        self,
+        expectation: ArtifactObjectExpectation,
+        object_version: str,
+        start: int,
+        end: int,
+    ) -> bytes:
+        if start < 0 or end < start or end >= expectation.size_bytes:
+            raise ValueError("artifact object range is invalid")
+        verification = self.verify(expectation)
+        receipt = verification.receipt
+        if (
+            verification.status is not ArtifactObjectVerificationStatus.VERIFIED
+            or receipt is None
+            or receipt.object_version != object_version
+        ):
+            raise ArtifactObjectIntegrityError("artifact object version does not match range")
+        try:
+            response = self._client.get_object(
+                Bucket=self._bucket,
+                Key=self._key(expectation),
+                VersionId=object_version,
+                Range=f"bytes={start}-{end}",
+            )
+        except ClientError as error:
+            if is_not_found(error):
+                raise ArtifactObjectNotFoundError(
+                    "artifact object version was not found"
+                ) from error
+            raise unavailable("artifact object range read failed", error) from error
+        except BotoCoreError as error:
+            raise unavailable("artifact object range read failed", error) from error
+        expected_length = end - start + 1
+        if (
+            response.get("ContentLength") != expected_length
+            or response.get("ContentRange") != f"bytes {start}-{end}/{expectation.size_bytes}"
+            or response.get("VersionId") != object_version
+        ):
+            _close_response_body(response)
+            raise ArtifactObjectIntegrityError("artifact object range evidence is invalid")
+        return _read_response_body(response, expected_length=expected_length)
+
     def delete_if_version(
         self,
         request: ArtifactObjectDeleteRequest,
@@ -305,6 +347,29 @@ def _close_response_body(response: Mapping[str, object]) -> None:
         close()
     except Exception as error:
         raise ArtifactObjectUnavailableError("artifact object body close failed") from error
+
+
+def _read_response_body(response: Mapping[str, object], *, expected_length: int) -> bytes:
+    raw_body = response.get("Body")
+    read = getattr(raw_body, "read", None)
+    close = getattr(raw_body, "close", None)
+    if not callable(read) or not callable(close):
+        raise ArtifactObjectUnavailableError("artifact object response has no body")
+    body = cast(_ReadableBody, raw_body)
+    try:
+        payload = body.read()
+    except Exception as error:
+        raise ArtifactObjectUnavailableError("artifact object body read failed") from error
+    finally:
+        try:
+            body.close()
+        except Exception as error:
+            raise ArtifactObjectUnavailableError(
+                "artifact object body close failed"
+            ) from error
+    if not isinstance(payload, bytes) or len(payload) != expected_length:
+        raise ArtifactObjectIntegrityError("artifact object range bytes are invalid")
+    return payload
 
 
 def _canonical_text(value: str, *, field_name: str) -> str:

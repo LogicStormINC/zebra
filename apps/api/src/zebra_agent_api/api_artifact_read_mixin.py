@@ -22,10 +22,17 @@ class ApiArtifactReadMixin:
             artifact_id,
         )
 
-    def get_session_artifact_content(self, session_id: str, artifact_id: str) -> ApiResponse:
+    def get_session_artifact_content(
+        self,
+        session_id: str,
+        artifact_id: str,
+        *,
+        byte_range: tuple[int, int] | None = None,
+    ) -> ApiResponse:
         return SessionReadApi(self.database_path, self.stores).get_session_artifact_content(
             session_id,
             artifact_id,
+            byte_range=byte_range,
         )
 
     def prune_session_artifact(self, session_id: str, artifact_id: str) -> ApiResponse:

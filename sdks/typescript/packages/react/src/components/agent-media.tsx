@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type {
   AgentArtifactAccess,
   AgentArtifactPurpose,
@@ -31,14 +31,24 @@ export function AgentImageBlock({ labels, part, resolveArtifact }: MediaBlockPro
   const sourceId = part.thumbnailArtifactId ?? part.artifactId;
   const thumbnail = useArtifactAccess(resolveArtifact, sourceId, "preview", part.state);
   const [open, setOpen] = useState(false);
+  const openButton = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   const full = useArtifactAccess(resolveArtifact, open ? part.artifactId : undefined, "preview", part.state);
   useEffect(() => {
     if (!open) return;
+    closeButton.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
+      if (event.key === "Tab") {
+        event.preventDefault();
+        closeButton.current?.focus();
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      openButton.current?.focus();
+    };
   }, [open]);
   if (part.state === "processing" || thumbnail.status === "loading") {
     return <AgentMediaPlaceholder label={labels.loading} />;
@@ -52,6 +62,7 @@ export function AgentImageBlock({ labels, part, resolveArtifact }: MediaBlockPro
         aria-label={labels.openImage}
         className="zebra-agent-media__image-button"
         onClick={() => setOpen(true)}
+        ref={openButton}
         type="button"
       >
         <img
@@ -65,9 +76,9 @@ export function AgentImageBlock({ labels, part, resolveArtifact }: MediaBlockPro
       </button>
       {part.fileName ? <figcaption>{part.fileName}</figcaption> : null}
       {open ? (
-        <div aria-label={part.alt} aria-modal="true" className="zebra-agent-media-dialog" role="dialog">
-          <button aria-label={labels.close} className="zebra-agent-media-dialog__close" onClick={() => setOpen(false)} type="button">×</button>
-          {full.access ? <img alt={part.alt} src={full.access.url} /> : <AgentMediaPlaceholder label={labels.loading} />}
+        <div aria-label={part.alt} aria-modal="true" className="zebra-agent-media-dialog" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }} role="dialog">
+          <button aria-label={labels.close} className="zebra-agent-media-dialog__close" onClick={() => setOpen(false)} ref={closeButton} type="button">×</button>
+          {full.access ? <img alt={part.alt} src={full.access.url} /> : <AgentMediaPlaceholder failed={full.status === "failed"} label={full.status === "failed" ? labels.failed : labels.loading} />}
         </div>
       ) : null}
     </figure>
@@ -95,7 +106,7 @@ export function AgentVideoBlock({ labels, part, resolveArtifact }: MediaBlockPro
         width={part.width}
       >
         <source src={video.access.url} type={part.mimeType} />
-        {captions.access ? <track default kind="captions" src={captions.access.url} srcLang="en" /> : null}
+        {captions.access ? <track default kind="captions" src={captions.access.url} srcLang={part.captionsLanguage ?? "und"} /> : null}
         {labels.unavailable}
       </video>
       <figcaption><strong>{part.title}</strong>{part.description ? <span>{part.description}</span> : null}</figcaption>

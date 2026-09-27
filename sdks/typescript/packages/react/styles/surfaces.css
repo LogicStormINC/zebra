@@ -107,6 +107,7 @@
 .zebra-agent-chart { display: grid; max-width: 100%; min-width: 0; gap: 12px; margin: 0; overflow: hidden; }
 .zebra-agent-chart figcaption, .zebra-agent-chart--fallback { display: grid; gap: 3px; }
 .zebra-agent-chart figcaption span, .zebra-agent-chart--fallback span, .zebra-agent-chart--fallback small { color: var(--zebra-agent-muted); }
+.zebra-agent-chart--fallback > img { display: block; width: auto; max-width: 100%; height: auto; max-height: 480px; border-radius: var(--zebra-agent-radius); object-fit: contain; }
 .zebra-agent-chart__canvas { max-width: 100%; min-width: 0; overflow-x: auto; }
 .zebra-agent-chart__canvas svg, .zebra-agent-chart__canvas canvas { display: block; max-width: 100%; height: auto; }
 .zebra-agent-chart details summary { width: fit-content; cursor: pointer; color: var(--zebra-agent-muted); font-size: 12px; }
