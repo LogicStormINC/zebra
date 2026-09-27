@@ -20,6 +20,17 @@ def project_model_usage(payload: Mapping[str, Any], *, timestamp: int) -> Custom
         )
         if key in payload and payload[key] is not None
     }
+    breakdown = payload.get("token_breakdown")
+    if isinstance(breakdown, Mapping):
+        bounded = {
+            key: int(item)
+            for key in ("messages", "system", "tools")
+            if not isinstance((item := breakdown.get(key)), bool)
+            and isinstance(item, int | float)
+            and item >= 0
+        }
+        if bounded:
+            value["token_breakdown"] = bounded
     if not value:
         return None
     return CustomEvent(timestamp=timestamp, name="zebra.model_usage", value=value)

@@ -353,6 +353,12 @@ def test_model_usage_is_projected_as_a_public_custom_event() -> None:
                 "prompt_cache_miss_tokens": 3_200,
                 "resolved_model": "deepseek/deepseek-flash",
                 "reasoning_effort": "high",
+                "token_breakdown": {
+                    "messages": 7_400,
+                    "system": 2_100,
+                    "tools": 600,
+                    "private": 999,
+                },
                 "stable_prefix_hash": "must-not-leave-zebra",
             },
         ),
@@ -369,6 +375,7 @@ def test_model_usage_is_projected_as_a_public_custom_event() -> None:
         "prompt_cache_miss_tokens": 3_200,
         "resolved_model": "deepseek/deepseek-flash",
         "reasoning_effort": "high",
+        "token_breakdown": {"messages": 7_400, "system": 2_100, "tools": 600},
     }
 
 

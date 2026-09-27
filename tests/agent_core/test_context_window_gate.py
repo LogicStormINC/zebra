@@ -319,6 +319,10 @@ def test_provider_token_counter_and_profile_are_attached_to_completion() -> None
     assert completion.call_metadata.estimated_input_tokens == 123
     assert completion.call_metadata.input_token_limit == 800
     assert completion.call_metadata.token_estimate_method == "provider"
+    assert completion.call_metadata.token_breakdown is not None
+    assert completion.call_metadata.token_breakdown["messages"] > 0
+    assert completion.call_metadata.token_breakdown["system"] >= 0
+    assert completion.call_metadata.token_breakdown["tools"] >= 0
 
 
 def test_context_error_exposes_typed_diagnostics() -> None:

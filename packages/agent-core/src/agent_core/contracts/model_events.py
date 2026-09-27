@@ -88,6 +88,7 @@ class ModelResponseReceivedPayload(BaseModel):
     estimated_input_tokens: int | None = Field(default=None, ge=0)
     input_token_limit: int | None = Field(default=None, ge=0)
     token_estimate_method: str | None = None
+    token_breakdown: dict[str, int] | None = None
     input_token_estimate_error: int | None = None
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
@@ -105,3 +106,12 @@ class ModelResponseReceivedPayload(BaseModel):
     normalized_error: str | None = None
     cache_hit: bool | None = None
     cost_usd: float | None = Field(default=None, ge=0)
+
+    @field_validator("token_breakdown")
+    @classmethod
+    def ensure_response_token_breakdown_non_negative(
+        cls, value: dict[str, int] | None
+    ) -> dict[str, int] | None:
+        if value is not None and any(not key.strip() or count < 0 for key, count in value.items()):
+            raise ValueError("token breakdown values must be named and non-negative")
+        return value

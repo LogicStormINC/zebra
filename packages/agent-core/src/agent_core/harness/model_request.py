@@ -70,6 +70,7 @@ def with_context_plan(
             estimated_input_tokens=plan.estimated_input_tokens,
             input_token_limit=plan.input_token_limit,
             token_estimate_method=plan.estimate_method,
+            token_breakdown=dict(plan.token_breakdown),
         ),
     )
 

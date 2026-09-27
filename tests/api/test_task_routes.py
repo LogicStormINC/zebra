@@ -77,6 +77,7 @@ def test_task_read_projects_bounded_task_model_usage(tmp_path: Path) -> None:
                 "prompt_cache_miss_tokens": 10,
                 "resolved_model": "deepseek/flash",
                 "reasoning_effort": "high",
+                "token_breakdown": {"messages": 7_800, "system": 2_100, "tools": 600},
                 "provider": "private-provider",
                 "stable_prefix_hash": "private-hash",
             },
@@ -113,6 +114,7 @@ def test_task_read_projects_bounded_task_model_usage(tmp_path: Path) -> None:
         "model": "deepseek/flash",
         "model_call_count": 2,
         "reasoning_effort": "high",
+        "token_breakdown": {"messages": 7_800, "system": 2_100, "tools": 600},
     }
     assert "provider" not in read.body["model_usage"]
     assert "stable_prefix_hash" not in read.body["model_usage"]

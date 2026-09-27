@@ -105,6 +105,20 @@ Trench's production build and Strategy browser acceptance pass with the
 refreshed local artifact. No npm publication, commit, push or deployment is
 claimed.
 
+The Composer backdrop follow-up removes the package-owned sticky-dock gradient
+that became a black rectangular band when a Host used a darker `surface` token
+than its page background. The dock is now transparent; the actual Composer
+retains its Host-controlled input surface, border and focus treatment. The
+packaged Chromium/WebKit matrix and Trench production browser acceptance guard
+both `background-color: transparent` and `background-image: none`.
+
+The conversation-width follow-up closes the remaining intrinsic-sizing leak:
+the package now applies `min-width: 0`/`max-width: 100%` through the complete
+chat-to-message chain, while the Trench Host constrains Markdown tables and
+long text to the conversation column. Packaged Chromium/WebKit checks and the
+Trench production browser fixture reject any message node that escapes the
+content boundary, including long prose, URLs and multi-column tables.
+
 2026-09-26 CLOUD-PLAN-ACCEPTANCE-02 (current-version strict closure): the fixed
 live-eval catalog now materializes isolated fixtures and records independently
 verified real Zebra runs. The selected current-version matrix is complete at
@@ -3795,3 +3809,16 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
 - The local pilot implementation is complete and the card is in Review. Linux
   gVisor, one-digest production canary and rollback rehearsal remain external
   release evidence; no production deployment, commit or push is claimed.
+
+### 2026-09-27 - Composer context composition observability
+
+- The Context Window planner's real message, system-prompt and tool-definition
+  estimates now propagate through durable response Events and bounded model-
+  usage summaries into the shared React Composer. The popover shows total
+  occupancy, category counts and percentages, and measured cache hit rate.
+- Older conversations degrade to the existing total-only summary. Skill and MCP
+  rows are intentionally absent because the runtime does not yet account for
+  them independently; no UI-only estimates were introduced.
+- Focused Core/API projection tests pass `34/34`; SDK deterministic tests,
+  package audit, React 18/19 Vite/Next consumers, Chromium/WebKit interactions
+  and Next hydration pass. Trench Host integration remains a separate gate.

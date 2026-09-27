@@ -29,6 +29,9 @@ def summarize_task_model_usage(events: Iterable[TaskEvent]) -> dict[str, object]
     _copy_latest(summary, calls, "input_tokens")
     _copy_latest(summary, calls, "input_token_limit")
     _copy_latest(summary, calls, "reasoning_effort")
+    breakdown = _bounded_breakdown(_latest(calls, "token_breakdown"))
+    if breakdown:
+        summary["token_breakdown"] = breakdown
     model = _latest(calls, "resolved_model") or _latest(calls, "model_name")
     if isinstance(model, str) and model.strip():
         summary["model"] = model.strip()
@@ -55,3 +58,13 @@ def _non_negative(value: object) -> int:
     if isinstance(value, bool) or not isinstance(value, int | float) or value < 0:
         return 0
     return int(value)
+
+
+def _bounded_breakdown(value: object) -> dict[str, int]:
+    if not isinstance(value, Mapping):
+        return {}
+    return {
+        key: _non_negative(value.get(key))
+        for key in ("messages", "system", "tools")
+        if value.get(key) is not None
+    }

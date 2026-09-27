@@ -29557,8 +29557,32 @@ browser Cookie or Host Grant.
   preserve the reviewed ZCode-style surface. Deterministic tests assert token
   emission; packaged Chromium/WebKit consumers assert nested Composer
   inheritance. The refreshed Trench tarball SHA-256 is
-  `0829f226ad14c9d3e82661c2477e9b9f3afde6baf92d7cb87b7f07a5d5a56b94`;
+  `35d4c27a3800d266839723670c337989217292b6219e2133192b37252b147e0f`;
   its production build and browser acceptance pass.
+- Composer backdrop follow-up: the sticky Composer dock no longer paints a
+  package-owned surface gradient behind the Host-owned input surface. The dock
+  stays transparent in dark and light themes, while `AgentComposer` retains its
+  independently themeable input, border and focus treatment. Packaged
+  Chromium/WebKit consumers and the Trench production browser assert that no
+  opaque color or background image can recreate the black rectangular band.
+- Conversation width follow-up: every package-owned chat, timeline, Turn,
+  message-list, message, article and content boundary now permits flex/grid
+  shrinking and caps descendants at the content column. Trench additionally
+  constrains rendered Markdown and uses fixed-layout, wrapping tables. Browser
+  acceptance covers long Chinese prose, a long URL and a three-column table at
+  narrow, desktop and wide viewports without clipped or escaped content.
+- Context composition follow-up: the existing Context Window planner's real
+  `messages` / `system` / `tools` token breakdown now survives model response
+  events, bounded API model-usage projection and the Host contract. The shared
+  Composer displays total occupancy, per-category token counts and percentages,
+  plus the measured cache-hit rate; historical Turns without breakdown data
+  retain the compact summary. No synthetic Skill or MCP category is inferred.
+  This follow-up explicitly extends owned paths to the touched model event,
+  response projection and focused contract tests. SDK deterministic/package/
+  consumer/browser gates pass, including mobile viewport containment. Refreshed
+  React and UI-contract tarball SHA-256 values are respectively
+  `076ee7df181f62199058eaa462cbe9f3185f7cff191a0e4f5c9ac9e45a48494d` and
+  `1ae4a0814a85f83c2e08049b15950ba9bddd54fe8d1a005b4784dec76f4ff580`.
 
 ### AGENT-LIVE-EVAL-01 - Representative real-task evaluation
 

@@ -87,6 +87,8 @@ def model_response_event(
         payload["estimated_input_tokens"] = estimated
         payload["input_token_limit"] = completion.call_metadata.input_token_limit
         payload["token_estimate_method"] = completion.call_metadata.token_estimate_method
+        if completion.call_metadata.token_breakdown is not None:
+            payload["token_breakdown"] = dict(completion.call_metadata.token_breakdown)
         if completion.call_metadata.usage.input_tokens is not None:
             payload["input_token_estimate_error"] = (
                 completion.call_metadata.usage.input_tokens - estimated

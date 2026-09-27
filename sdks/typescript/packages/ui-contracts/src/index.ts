@@ -125,9 +125,16 @@ export interface AgentMemorySetting {
 
 export interface AgentComposerMetrics {
   cacheHitRate: number | null;
+  contextBreakdown?: readonly AgentComposerMetricPart[];
   contextLimit: number | null;
   contextPercent: number | null;
   contextTokens: number | null;
+}
+
+export interface AgentComposerMetricPart {
+  id: string;
+  label: string;
+  tokens: number;
 }
 
 export interface AgentComposerOption<T extends string = string> {

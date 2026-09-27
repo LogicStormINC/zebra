@@ -16,7 +16,17 @@ test("AgentComposer keeps host actions controlled and switches run actions safel
     capabilityValue: "research",
     canContinue: false,
     disabled: false,
-    metrics: { cacheHitRate: 0.875, contextLimit: 100_000, contextPercent: 0.42, contextTokens: 42_000 },
+    metrics: {
+      cacheHitRate: 0.875,
+      contextBreakdown: [
+        { id: "messages", label: "Messages", tokens: 24_000 },
+        { id: "system", label: "System prompt", tokens: 12_000 },
+        { id: "tools", label: "Tools", tokens: 6_000 },
+      ],
+      contextLimit: 100_000,
+      contextPercent: 0.42,
+      contextTokens: 42_000,
+    },
     modelOptions: [{ label: "DeepSeek Flash", value: "deepseek-flash" }],
     modelValue: "deepseek-flash",
     onCapabilityChange: (value) => calls.push(`capability:${value}`),
@@ -67,6 +77,8 @@ test("AgentComposer keeps host actions controlled and switches run actions safel
   assert.match(container.textContent ?? "", /2 queued/);
   assert.match(container.textContent ?? "", /brief\.md/);
   assert.equal(container.querySelector('[aria-label="Context capacity 42%"]') !== null, true);
+  assert.match(container.textContent ?? "", /Messages24\.0k · 57\.1%/);
+  assert.match(container.textContent ?? "", /System prompt12\.0k · 28\.6%/);
   assert.equal(container.querySelectorAll('[aria-label="Add attachment"]').length, 1);
 
   await act(async () => {

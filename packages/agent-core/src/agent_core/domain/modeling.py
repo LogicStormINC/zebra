@@ -114,6 +114,7 @@ class ModelCallMetadata:
     estimated_input_tokens: int | None = None
     input_token_limit: int | None = None
     token_estimate_method: str | None = None
+    token_breakdown: Mapping[str, int] | None = None
     profile_id: str | None = None
     profile_version_observed_at: str | None = None
     requested_model: str | None = None
@@ -187,6 +188,11 @@ class ModelCallMetadata:
             value = getattr(self, field_name)
             if value is not None and value < 0:
                 raise ValueError(f"{field_name} must not be negative")
+        if self.token_breakdown is not None and any(
+            not key.strip() or isinstance(value, bool) or value < 0
+            for key, value in self.token_breakdown.items()
+        ):
+            raise ValueError("token_breakdown must contain named non-negative counts")
 
 
 @dataclass(frozen=True)

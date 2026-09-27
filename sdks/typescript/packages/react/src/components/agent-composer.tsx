@@ -18,6 +18,7 @@ export interface AgentComposerLabels {
   cacheHitRate: string;
   capability: string;
   contextCapacity: string;
+  contextComposition: string;
   contextUnavailable: string;
   continue: string;
   model: string;
@@ -69,6 +70,7 @@ const DEFAULT_LABELS: AgentComposerLabels = {
   cacheHitRate: "Average cache hit rate",
   capability: "Capability",
   contextCapacity: "Context capacity",
+  contextComposition: "Estimated composition",
   contextUnavailable: "No model usage yet",
   continue: "Continue",
   model: "Model",
@@ -255,6 +257,8 @@ function ContextUsage({ labels, metrics }: {
   const percent = Math.max(0, Math.min(100, Math.round((metrics.contextPercent ?? 0) * 100)));
   const hasUsage = metrics.contextPercent !== null;
   const cache = metrics.cacheHitRate === null ? "—" : `${(metrics.cacheHitRate * 100).toFixed(1)}%`;
+  const parts = (metrics.contextBreakdown ?? []).filter((item) => item.tokens >= 0);
+  const partTotal = parts.reduce((total, item) => total + item.tokens, 0);
   return (
     <span className="zebra-agent-composer__usage">
       <button
@@ -271,6 +275,25 @@ function ContextUsage({ labels, metrics }: {
           <code>{hasUsage ? `${formatTokenCount(metrics.contextTokens)} / ${formatTokenCount(metrics.contextLimit)} · ${percent}%` : labels.contextUnavailable}</code>
         </span>
         <span className="zebra-agent-composer__meter"><span style={{ width: `${percent}%` }} /></span>
+        {parts.length && partTotal > 0 ? (
+          <>
+            <span className="zebra-agent-composer__usage-section-label">{labels.contextComposition}</span>
+            <span className="zebra-agent-composer__usage-breakdown" aria-label={labels.contextComposition}>
+              {parts.map((item, index) => {
+                const partPercent = item.tokens / partTotal * 100;
+                return (
+                  <span className="zebra-agent-composer__usage-part" key={item.id}>
+                    <span className="zebra-agent-composer__usage-part-label">
+                      <i aria-hidden="true" style={{ opacity: Math.max(0.4, 1 - index * 0.2) }} />
+                      {item.label}
+                    </span>
+                    <code>{formatTokenCount(item.tokens)} · {partPercent < 0.05 ? "<0.1" : partPercent.toFixed(1)}%</code>
+                  </span>
+                );
+              })}
+            </span>
+          </>
+        ) : null}
         <span className="zebra-agent-composer__usage-line">
           <span>{labels.cacheHitRate}</span><strong>{cache}</strong>
         </span>

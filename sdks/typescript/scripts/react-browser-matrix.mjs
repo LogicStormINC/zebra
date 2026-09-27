@@ -75,11 +75,23 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     if (await page.locator("textarea").inputValue() !== "中文草稿") throw new Error("draft was lost during lifecycle transition");
     if (!(await page.locator("textarea").evaluate((node) => node === document.activeElement))) throw new Error("composer focus was lost");
     if (!(await page.locator("details").evaluate((node) => node.open))) throw new Error("running activity did not expand");
+    await page.locator(".zebra-agent-composer__usage-ring").hover();
+    await page.getByText("Estimated composition", { exact: true }).waitFor();
+    await page.getByText("Messages", { exact: true }).waitFor();
+    const usagePanelContained = await page.locator(".zebra-agent-composer__usage-panel").evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      return rect.left >= 0 && rect.right <= window.innerWidth;
+    });
+    if (!usagePanelContained) throw new Error(`${browserName}: context usage panel escaped the viewport`);
     const customTheme = await page.evaluate(() => ({
       chatBackground: getComputedStyle(document.querySelector(".zebra-agent-chat")).backgroundColor,
+      composerDockBackground: getComputedStyle(document.querySelector(".zebra-agent-chat__composer")).backgroundColor,
+      composerDockImage: getComputedStyle(document.querySelector(".zebra-agent-chat__composer")).backgroundImage,
       composerInputToken: getComputedStyle(document.querySelector(".zebra-agent-composer")).getPropertyValue("--zebra-agent-input").trim(),
     }));
     if (customTheme.chatBackground !== "rgb(16, 24, 32)") throw new Error(`${browserName}: custom chat surface token was not applied`);
+    if (customTheme.composerDockBackground !== "rgba(0, 0, 0, 0)") throw new Error(`${browserName}: composer dock must not paint an opaque backdrop`);
+    if (customTheme.composerDockImage !== "none") throw new Error(`${browserName}: composer dock must not paint a background image`);
     if (customTheme.composerInputToken !== "#123456") throw new Error(`${browserName}: nested composer did not inherit custom input token`);
     await assertComposerDocked(page, browserName, "short active mobile conversation");
     const expandUserMessage = page.getByRole("button", { name: "Expand message" });
@@ -100,6 +112,7 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     await page.waitForTimeout(200);
     const wideGeometry = await readConversationGeometry(page);
     assertGeometry(browserName, wideGeometry, { turnPaddingTop: "56px", contentWidth: 1152 });
+    await assertConversationContentContained(page, browserName, "wide conversation");
     await page.setViewportSize({ width: 390, height: 844 });
     await page.locator("#complete").click();
     await page.waitForFunction(() => !document.querySelector("details")?.open);
@@ -121,6 +134,7 @@ async function verifyViteInteractions(browser, tarballs, browserName) {
     if (await page.locator("#submits").textContent() !== "1") throw new Error("Enter did not submit the draft");
     await page.locator("#burst").click();
     await page.getByText(/Long output 29/).waitFor();
+    await assertConversationContentContained(page, browserName, "long output conversation");
     const viewport = page.locator(".zebra-agent-chat__viewport");
     await viewport.evaluate((node) => { node.scrollTop = 120; node.dispatchEvent(new Event("scroll")); });
     const beforeSwitch = await viewport.evaluate((node) => node.scrollTop);
@@ -179,6 +193,18 @@ async function readConversationGeometry(page) {
       turnPaddingTop: turnStyle.paddingTop,
     };
   });
+}
+
+async function assertConversationContentContained(page, browserName, context) {
+  const overflow = await page.evaluate(() => {
+    const content = document.querySelector(".zebra-agent-chat__content");
+    if (!(content instanceof HTMLElement)) throw new Error("conversation content missing");
+    const right = content.getBoundingClientRect().right;
+    return [...content.querySelectorAll(".zebra-agent-timeline,.zebra-agent-turn,.zebra-agent-message-list,.zebra-agent-message,.zebra-agent-message article,.zebra-agent-message__content")]
+      .filter((node) => node instanceof HTMLElement && node.getBoundingClientRect().right > right + 1)
+      .map((node) => `${node.className}:${Math.round(node.getBoundingClientRect().right - right)}px`);
+  });
+  if (overflow.length) throw new Error(`${browserName}: ${context} escaped the content width: ${overflow.join(", ")}`);
 }
 
 function assertGeometry(browserName, actual, expected) {
@@ -251,7 +277,7 @@ import "@zebra-agent/react/styles.css";
 function App(){
   const [phase,setPhase]=useState("idle"); const [value,setValue]=useState(""); const [files,setFiles]=useState([]); const [submits,setSubmits]=useState(0); const [actions,setActions]=useState([]); const [turns,setTurns]=useState([]); const [scrollKey,setScrollKey]=useState("thread-a");
   const state=phase==="running"?{phase:"running",availableActions:[]}:phase==="completed"?{phase:"terminal",outcome:"completed",availableActions:[]}:phase==="disconnected"?{phase:"disconnected",availableActions:["reconnect"]}:phase==="paused"?{phase:"paused",availableActions:["resume"]}:phase==="failed"?{phase:"terminal",outcome:"failed",availableActions:["retry"]}:{phase:"idle",availableActions:[]};
-  const composer=createElement(AgentComposer,{attachments:files,busy:phase==="running",capabilityOptions:[],capabilityValue:"general",canContinue:false,disabled:false,metrics:{cacheHitRate:null,contextLimit:null,contextPercent:null,contextTokens:null},modelOptions:[],modelValue:"default",onCapabilityChange:()=>{},onContinue:()=>{},onFilesSelected:(list)=>setFiles([...list].map((file,index)=>({id:String(index),isImage:false,name:file.name}))),onModelChange:()=>{},onPause:()=>{},onReasoningChange:()=>{},onRemoveAttachment:(id)=>setFiles((items)=>items.filter((item)=>item.id!==id)),onSubmit:()=>setSubmits((count)=>count+1),onSuggestionPick:()=>{},onValueChange:setValue,pausing:false,queueCount:0,reasoningOptions:[],reasoningValue:"high",suggestions:[],value});
+  const composer=createElement(AgentComposer,{attachments:files,busy:phase==="running",capabilityOptions:[],capabilityValue:"general",canContinue:false,disabled:false,metrics:{cacheHitRate:.984,contextBreakdown:[{id:"messages",label:"Messages",tokens:8200},{id:"system",label:"System prompt",tokens:4100},{id:"tools",label:"Tool definitions",tokens:1800}],contextLimit:100000,contextPercent:.141,contextTokens:14100},modelOptions:[],modelValue:"default",onCapabilityChange:()=>{},onContinue:()=>{},onFilesSelected:(list)=>setFiles([...list].map((file,index)=>({id:String(index),isImage:false,name:file.name}))),onModelChange:()=>{},onPause:()=>{},onReasoningChange:()=>{},onRemoveAttachment:(id)=>setFiles((items)=>items.filter((item)=>item.id!==id)),onSubmit:()=>setSubmits((count)=>count+1),onSuggestionPick:()=>{},onValueChange:setValue,pausing:false,queueCount:0,reasoningOptions:[],reasoningValue:"high",suggestions:[],value});
   const activate=()=>{setPhase("running");setTurns([{id:"live",status:"running",userMessage:{id:"user",role:"user",content:("这是一条用于验证长输入折叠和渐隐效果的中文请求。 ").repeat(24),status:"complete"},workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"running",title:"Inspect"}]}]}])};
   const complete=()=>{setPhase("completed");setTurns((items)=>items.map((turn)=>turn.id==="live"?{...turn,status:"completed",workSegments:[{id:"work",activities:[{activityId:"tool",kind:"tool",status:"completed",title:"Inspect"}]}],assistantMessage:{id:"answer",role:"assistant",content:"Done",status:"complete"}}:turn))};
   return <><nav><button id="activate" onClick={activate}>Activate</button><button id="complete" onClick={complete}>Complete</button><button id="disconnected" onClick={()=>setPhase("disconnected")}>Disconnect</button><button id="paused" onClick={()=>setPhase("paused")}>Pause state</button><button id="failed" onClick={()=>setPhase("failed")}>Fail state</button><button id="burst" onClick={()=>setTurns(Array.from({length:30},(_,index)=>({id:String(index),status:"completed",workSegments:[],assistantMessage:{id:"message-"+index,role:"assistant",content:"Long output "+index+" "+"x".repeat(180),status:"complete"}})))}>Burst</button><button id="append" onClick={()=>setTurns((items)=>[...items,{id:"latest",status:"completed",workSegments:[],assistantMessage:{id:"latest-message",role:"assistant",content:"Newest output",status:"complete"}}])}>Append</button><button id="thread-a" onClick={()=>setScrollKey("thread-a")}>Thread A</button><button id="thread-b" onClick={()=>setScrollKey("thread-b")}>Thread B</button></nav><span id="submits">{submits}</span><span id="actions">{actions.join(",")}</span><span id="scroll-key">{scrollKey}</span><AgentChat composer={composer} runStatus={{state,onReconnect:()=>setActions((v)=>[...v,"reconnect"]),onResume:()=>setActions((v)=>[...v,"resume"]),onRetry:()=>setActions((v)=>[...v,"retry"])}} scrollKey={scrollKey} themeTokens={{input:"#123456",surface:"#101820"}} turns={turns} /></>;
