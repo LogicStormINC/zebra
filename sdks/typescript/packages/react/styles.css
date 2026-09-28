@@ -1,5 +1,16 @@
 @import "./styles/surfaces.css";
 
+.zebra-agent-asset-preview { min-height: 12rem; min-width: 0; }
+.zebra-agent-asset-preview__audio { width: min(100%, 40rem); }
+.zebra-agent-asset-preview__frame { border: 0; height: min(72vh, 900px); width: 100%; }
+.zebra-agent-asset-preview__code { background: var(--zebra-agent-surface-muted, rgba(127,127,127,.08)); font-family: var(--zebra-agent-font-mono, ui-monospace, monospace); line-height: 1.65; margin: 0; max-height: 72vh; overflow: auto; padding: 1rem; white-space: pre-wrap; }
+.zebra-agent-asset-preview__notice { color: var(--zebra-agent-text-muted, inherit); display: grid; min-height: 12rem; place-items: center; }
+.zebra-agent-asset-preview__table-wrap { max-height: 72vh; overflow: auto; }
+.zebra-agent-asset-preview__table-wrap table { border-collapse: collapse; min-width: 100%; }
+.zebra-agent-asset-preview__table-wrap :where(th,td) { border: 1px solid var(--zebra-agent-border, currentColor); padding: .5rem .75rem; text-align: start; white-space: nowrap; }
+.zebra-agent-asset-preview__table-wrap th { background: var(--zebra-agent-surface-muted, rgba(127,127,127,.08)); position: sticky; top: 0; }
+.zebra-agent-asset-preview__table-wrap p { color: var(--zebra-agent-text-muted, inherit); font-size: .75rem; }
+
 .zebra-agent-composer {
   box-sizing: border-box;
   width: 100%;

@@ -54,6 +54,8 @@ export type {
 } from "./components/agent-content.tsx";
 export { AgentImageBlock, AgentVideoBlock } from "./components/agent-media.tsx";
 export type { AgentArtifactResolver, AgentMediaLabels } from "./components/agent-media.tsx";
+export { AgentAssetPreview } from "./components/agent-asset-preview.tsx";
+export type { AgentAssetPreviewProps, AgentPreviewAsset } from "./components/agent-asset-preview.tsx";
 export { AgentAppBlock } from "./components/agent-app.tsx";
 export type { AgentAppBlockProps, AgentAppMessage, AgentAppResourceResolver } from "./components/agent-app.tsx";
 export { AgentConversationTimeline } from "./components/agent-conversation-timeline.tsx";

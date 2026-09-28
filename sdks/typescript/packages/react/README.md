@@ -19,6 +19,10 @@ React bindings and host-neutral UI primitives for Zebra Cloud Agent.
   decisions.
 - `AgentArtifacts` and `AgentMemorySettings` expose Host-controlled resources
   without embedding download credentials or memory storage logic.
+- `AgentAssetPreview` provides bounded previews for Artifact-backed image,
+  video, audio, PDF, Markdown, text, JSON, CSV/TSV and Vega-Lite files. The Host
+  supplies Markdown/LaTeX and chart renderers, so framework-specific engines
+  and product themes stay outside the base package. Sandboxed HTML is opt-in.
 
 ## Composer
 
