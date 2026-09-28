@@ -4,6 +4,7 @@ from typing import Any
 
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.governed_memories import GovernedMemoryConflictError, GovernedMemoryEntry
+from agent_core.domain.governed_memory_creation import AdministrativeMemoryCreationRequest
 from agent_core.domain.governed_memory_operations import (
     AdministrativeMemoryReplacementRequest,
     GovernedMemoryOperationKind,
@@ -30,6 +31,104 @@ from agent_storage.postgres.governed_memory_transactions import (
     _save_projections,
 )
 from agent_storage.postgres.leases import lock_session_lease_boundary
+
+
+def commit_administrative_creation(
+    connection: Any,
+    namespace: str,
+    request: AdministrativeMemoryCreationRequest,
+    authority: AdministrativeMutationCAS,
+    *,
+    delivery_scope: MemoryDeliveryScope | None = None,
+) -> GovernedMemoryCommitResult:
+    request.validate_for(namespace, authority)
+    _lock_operation(connection, namespace, request.operation_id)
+    replay = _operation_replay(
+        connection,
+        namespace,
+        request.operation_id,
+        GovernedMemoryOperationKind.ADMINISTRATIVE_REVIEW,
+        request.request_digest,
+        request.session_id,
+    )
+    if replay is not None:
+        return replay
+    lock_session_lease_boundary(connection, namespace, request.session_id)
+    active = connection.execute(
+        """
+        SELECT 1 FROM worker_leases
+        WHERE deployment_namespace = %s AND session_id = %s
+          AND released_at IS NULL AND expires_at > transaction_timestamp()
+        """,
+        (namespace, request.session_id),
+    ).fetchone()
+    if active is not None:
+        raise GovernedMemoryConflictError("administrative Memory creation has an active Lease")
+    session = _lock_session(
+        connection, namespace, request.session_id, request.expected_stream_revision
+    )
+    _lock_scopes(connection, namespace, (request.memory.record,))
+    events = _creation_events(request, request.memory.record)
+    canonical_events = _append_events(
+        connection, namespace, events, request.expected_stream_revision
+    )
+    created = _create_or_get(connection, namespace, request.memory)
+    if created.record.status is not MemoryStatus.CANDIDATE or created.revision != 1:
+        raise GovernedMemoryConflictError("created Memory candidate was already mutated")
+    confirmed = _replace_record(
+        connection,
+        namespace,
+        created.record.model_copy(
+            update={"status": MemoryStatus.CONFIRMED, "updated_at": request.created_at}
+        ),
+        created.revision,
+    )
+    stored_session = _save_projections(connection, namespace, session, canonical_events)
+    changed = (confirmed,)
+    _enqueue_authority_delivery(connection, namespace, delivery_scope, changed)
+    return _store_receipt(
+        connection,
+        namespace,
+        operation_id=request.operation_id,
+        operation_kind=GovernedMemoryOperationKind.ADMINISTRATIVE_REVIEW,
+        request_digest=request.request_digest,
+        records=changed,
+        events=canonical_events,
+        projection_revision=stored_session.current_sequence,
+    )
+
+
+def _creation_events(
+    request: AdministrativeMemoryCreationRequest,
+    record: MemoryRecord,
+) -> tuple[SessionEvent, SessionEvent]:
+    return (
+        SessionEvent.create(
+            session_id=request.session_id,
+            sequence=request.expected_stream_revision + 1,
+            event_type=EventType.MEMORY_CANDIDATE_EXTRACTED,
+            actor=request.actor,
+            payload=_candidate_event_payload(record),
+            created_at=request.created_at,
+        ),
+        SessionEvent.create(
+            session_id=request.session_id,
+            sequence=request.expected_stream_revision + 2,
+            event_type=EventType.MEMORY_REVIEW_RECORDED,
+            actor=request.actor,
+            payload={
+                "memory_id": str(record.memory_id),
+                "memory_type": record.memory_type.value,
+                "previous_status": MemoryStatus.CANDIDATE.value,
+                "status": MemoryStatus.CONFIRMED.value,
+                "operator": request.operator,
+                "reason": request.reason,
+                "superseded_memory_ids": [],
+                "duplicate_of_memory_id": None,
+            },
+            created_at=request.created_at,
+        ),
+    )
 
 
 def commit_administrative_replacement(

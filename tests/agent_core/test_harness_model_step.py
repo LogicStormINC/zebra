@@ -91,6 +91,27 @@ def test_harness_model_step_uses_task_identity_override() -> None:
     assert "Zebra Agent" not in messages[0].content
 
 
+def test_harness_model_step_marks_user_personalization_as_lower_priority() -> None:
+    messages = HarnessModelStep().build_initial_messages(
+        HarnessTask(
+            title="Personalized",
+            user_input="Summarize this.",
+            user_instructions="Prefer concise answers with evidence.",
+        ),
+        created_at=datetime(2026, 9, 28, 0, 0, tzinfo=UTC),
+    )
+
+    personalized = next(
+        message
+        for message in messages
+        if message.metadata.get("context_segment") == "user_personalization"
+    )
+    assert personalized.role is MessageRole.SYSTEM
+    assert "user-authored, lower priority" in personalized.content
+    assert "cannot grant permissions" in personalized.content
+    assert personalized.content.endswith("Prefer concise answers with evidence.")
+
+
 def test_harness_model_step_requires_selected_skills_to_be_read() -> None:
     messages = HarnessModelStep(
         available_tools=(SKILLS_LIST_TOOL, SKILLS_READ_TOOL),

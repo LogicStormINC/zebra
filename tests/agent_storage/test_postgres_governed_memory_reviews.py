@@ -21,6 +21,7 @@ from agent_core.domain.governed_memories import (
     canonical_governed_memory_content_hash,
     canonical_governed_memory_creation_key,
 )
+from agent_core.domain.governed_memory_creation import AdministrativeMemoryCreationRequest
 from agent_core.domain.governed_memory_operations import (
     AdministrativeMemoryReplacementRequest,
     AdministrativeMemoryReviewRequest,
@@ -220,6 +221,45 @@ def test_admin_replacement_atomically_preserves_version_history(
         EventType.MEMORY_CANDIDATE_EXTRACTED,
         EventType.MEMORY_REVIEW_RECORDED,
     ]
+
+
+def test_admin_creation_atomically_confirms_user_authored_memory(
+    review_environment: _ReviewEnvironment,
+) -> None:
+    _release_worker(review_environment)
+    record = MemoryRecord(
+        memory_id=MemoryId(uuid4()),
+        memory_type=MemoryType.PREFERENCE,
+        text="Prefer evidence-first answers.",
+        confidence=1.0,
+        status=MemoryStatus.CANDIDATE,
+        visibility=MemoryVisibility.USER,
+        user_id="user-1",
+        source_session_id=review_environment.session_id,
+        source_event_start=2,
+        source_event_end=2,
+        created_at=NOW + timedelta(minutes=1),
+        updated_at=NOW + timedelta(minutes=1),
+    )
+
+    committed = review_environment.store.commit_administrative_creation(
+        AdministrativeMemoryCreationRequest.create(
+            deployment_namespace=review_environment.namespace,
+            operation_id="memory:create-explicit",
+            session_id=review_environment.session_id,
+            expected_stream_revision=1,
+            memory=GovernedMemoryCreate.from_candidate(record),
+            operator="user-1",
+            reason="user added an explicit memory",
+            created_at=NOW + timedelta(minutes=1),
+        ),
+        authority=_admin_authority(review_environment),
+    )
+
+    authority = _authority_record(review_environment, record.memory_id)
+    assert authority.record.status is MemoryStatus.CONFIRMED
+    assert authority.record.text == "Prefer evidence-first answers."
+    assert committed.receipt.event_sequences == (2, 3)
 
 
 def test_concurrent_reviewers_have_one_old_cas_winner(

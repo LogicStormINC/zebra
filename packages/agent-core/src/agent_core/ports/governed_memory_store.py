@@ -7,6 +7,7 @@ from agent_core.domain.governed_memories import (
     GovernedMemoryManagementContext,
     GovernedMemoryTombstone,
 )
+from agent_core.domain.governed_memory_creation import AdministrativeMemoryCreationRequest
 from agent_core.domain.governed_memory_operations import (
     AdministrativeMemoryReplacementRequest,
     AdministrativeMemoryReviewRequest,
@@ -115,6 +116,13 @@ class GovernedMemoryStorePort(Protocol):
     def commit_administrative_review(
         self,
         request: AdministrativeMemoryReviewRequest,
+        *,
+        authority: AdministrativeMutationCAS,
+    ) -> GovernedMemoryCommitResult: ...
+
+    def commit_administrative_creation(
+        self,
+        request: AdministrativeMemoryCreationRequest,
         *,
         authority: AdministrativeMutationCAS,
     ) -> GovernedMemoryCommitResult: ...

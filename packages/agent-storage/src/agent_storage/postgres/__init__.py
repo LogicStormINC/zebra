@@ -131,6 +131,7 @@ from agent_storage.postgres.session_history import PostgresSessionHistory
 from agent_storage.postgres.task_schedule_firings import PostgresTaskScheduleFiringStore
 from agent_storage.postgres.task_schedule_rows import TaskScheduleStorageIntegrityError
 from agent_storage.postgres.task_schedules import PostgresTaskScheduleStore
+from agent_storage.postgres.user_personalization import PostgresUserPersonalizationStore
 from agent_storage.postgres.workspace_control import (
     PostgresWorkspaceControlStore,
 )
@@ -202,6 +203,7 @@ __all__ = [
     "PostgresWorkspaceProjectionStore",
     "PostgresProviderContinuationConflictError",
     "PostgresProviderContinuationStore",
+    "PostgresUserPersonalizationStore",
     "apply_postgres_migrations",
     "CutoverConflictError",
     "DeliveryAuditMigrationError",

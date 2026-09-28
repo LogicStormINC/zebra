@@ -9,7 +9,7 @@ from agent_context import (
 from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.identifiers import SessionId
 from agent_core.harness import HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
-from agent_core.ports import MemoryReadPort
+from agent_core.ports import MemoryReadPort, UserPersonalizationStorePort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 from agent_storage import list_confirmed_repo_memories
 
@@ -97,6 +97,7 @@ def harness_task_for_recovered(
     network_profile: Any,
     tool_gateway: Any,
     memory_store: MemoryReadPort,
+    personalization_store: UserPersonalizationStorePort | None = None,
     materialization: ContextMaterialization | None = None,
 ) -> HarnessTask:
     runtime_evidence = _without_materialized_capsule(
@@ -145,8 +146,26 @@ def harness_task_for_recovered(
         identity_directive=(
             HOST_EMBEDDED_AGENT_IDENTITY_DIRECTIVE if task.host_context is not None else None
         ),
+        user_instructions=_user_instructions(task, personalization_store),
         acceptance_contract=task.acceptance_contract,
     )
+
+
+def _user_instructions(
+    task: RecoveredTask,
+    store: UserPersonalizationStorePort | None,
+) -> str | None:
+    if store is None or task.host_context is None:
+        return None
+    principals = tuple(
+        ref.resource_id
+        for ref in task.host_context.resource_refs
+        if ref.resource_type == "principal"
+    )
+    if len(principals) != 1:
+        return None
+    record = store.get(principals[0])
+    return None if record is None else record.instructions
 
 
 def _without_materialized_capsule(

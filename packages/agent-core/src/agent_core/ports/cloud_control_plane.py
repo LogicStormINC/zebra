@@ -18,6 +18,7 @@ from agent_core.ports.provider_continuation_cloud import CloudProviderContinuati
 from agent_core.ports.session_artifact_read import SessionArtifactReadPort
 from agent_core.ports.session_handoff import SessionHandoffPort
 from agent_core.ports.session_history import SessionHistoryPort
+from agent_core.ports.user_personalization import UserPersonalizationStorePort
 from agent_core.ports.workspace_projection_store import WorkspaceProjectionStorePort
 
 
@@ -45,6 +46,7 @@ class CloudControlPlane:
     provider_continuations: CloudProviderContinuationStorePort
     session_history: SessionHistoryPort
     delivery_audit: DeliveryAuditStorePort
+    personalization: UserPersonalizationStorePort | None = None
 
     def __post_init__(self) -> None:
         namespace = self.deployment_namespace

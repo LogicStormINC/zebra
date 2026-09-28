@@ -22,7 +22,6 @@ from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 import zebra_agent_worker.authority_types as authority_types
 import zebra_agent_worker.execution_context as execution_context
 import zebra_agent_worker.execution_continuations as execution_continuations
-import zebra_agent_worker.execution_finalization as execution_finalization
 import zebra_agent_worker.execution_preflight as execution_preflight
 import zebra_agent_worker.execution_tool_gateway as execution_gateway
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
@@ -47,6 +46,7 @@ from zebra_agent_worker.execution_errors import (
 )
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder, ExecutionInterrupted
 from zebra_agent_worker.execution_finalization import (
+    ExecutedSession,
     RetryableWorkerSetupError,
     WorkerExecutionError,
 )
@@ -112,13 +112,13 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             deployment_namespace,
             stores,
         )
-        self._database_path = database_path
+        self._database_path, self._settings = database_path, settings or zebra_agent_config.load_settings()  # noqa: E501
         self._runtime_instance_factory = runtime_instance_factory
         self._client_runtime, self._model_http_client = client_runtime, model_http_client
         self._claim_service, self._resume_service = claim_service, resume_service
-        self._settings = settings or zebra_agent_config.load_settings()
         storage = resolve_execution_storage(database_path, stores)
         active_stores = storage.stores
+        self._personalization_store = getattr(active_stores, "personalization", None)
         self._task_index_store = getattr(active_stores, "tasks", None)
         self._event_store, self._projection_store = active_stores.events, active_stores.sessions
         self._workspace_store = active_stores.workspaces
@@ -190,7 +190,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         *,
         started_at: datetime,
         ownership_check: Callable[[], None],
-    ) -> execution_finalization.ExecutedSession:
+    ) -> ExecutedSession:
         session_id = claimed.lease.session_id
         cloud_artifacts = provider_runtime.artifact_for(self._cloud_artifact_factory, session_id)
         with sequence_race_guard("execution inputs lost a sequence race"):
@@ -374,6 +374,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                     network_profile=effective_network_profile,
                     tool_gateway=tool_gateway,
                     memory_store=self._memory_store,
+                    personalization_store=self._personalization_store,
                     materialization=materialized_context,
                 ),
                 session=claimed.recovery.session,

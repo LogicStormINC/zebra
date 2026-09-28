@@ -15,6 +15,7 @@ from agent_core.domain.governed_memories import (
     GovernedMemoryManagementContext,
     GovernedMemoryTombstone,
 )
+from agent_core.domain.governed_memory_creation import AdministrativeMemoryCreationRequest
 from agent_core.domain.governed_memory_operations import (
     AdministrativeMemoryReplacementRequest,
     AdministrativeMemoryReviewRequest,
@@ -36,6 +37,7 @@ from agent_core.ports.governed_memory_store import (
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.governed_memory_receipt_reads import read_operation_receipt
 from agent_storage.postgres.governed_memory_replacements import (
+    commit_administrative_creation,
     commit_administrative_replacement,
 )
 from agent_storage.postgres.governed_memory_rows import authority_from_row, query_records
@@ -154,6 +156,21 @@ class PostgresGovernedMemoryStore(GovernedMemoryStorePort):
     ) -> GovernedMemoryCommitResult:
         with self._database.connect() as connection:
             return commit_administrative(
+                connection,
+                self._database.deployment_namespace,
+                request,
+                authority,
+                delivery_scope=self._delivery_scope,
+            )
+
+    def commit_administrative_creation(
+        self,
+        request: AdministrativeMemoryCreationRequest,
+        *,
+        authority: AdministrativeMutationCAS,
+    ) -> GovernedMemoryCommitResult:
+        with self._database.connect() as connection:
+            return commit_administrative_creation(
                 connection,
                 self._database.deployment_namespace,
                 request,

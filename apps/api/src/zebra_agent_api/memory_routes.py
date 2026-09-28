@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.tenant_guard import (
     memory_scope_denied,
+    task_access_response,
     tenant_forbidden_response,
 )
 
@@ -32,7 +33,7 @@ def handle_memory_route(app: ZebraAgentApi, request: RouteRequest) -> ApiRespons
     if method == "GET":
         return _handle_get(app, scope, parts)
     if method == "POST":
-        return _handle_post(app, scope, parts, request.body or {})
+        return _handle_post(app, request, scope, parts, request.body or {})
     if method == "PATCH":
         return _handle_patch(app, scope, parts, request.body or {})
     if method == "DELETE":
@@ -88,10 +89,18 @@ def _handle_delete(
 
 def _handle_post(
     app: ZebraAgentApi,
+    request: RouteRequest,
     scope: str,
     parts: tuple[str, ...],
     body: dict[str, object],
 ) -> ApiResponse | None:
+    if scope == "user" and len(parts) == 2 and parts[1] == "memory":
+        source_task_id = body.get("source_task_id")
+        if isinstance(source_task_id, str) and request.host_context is not None:
+            denied = task_access_response(app, source_task_id, request.host_context)
+            if denied is not None:
+                return denied
+        return app.create_user_memory(parts[0], body)
     if len(parts) == 3 and parts[1] == "memory" and parts[2] == "review-queue-preview":
         return (
             app.preview_user_memory_queue(parts[0], body)

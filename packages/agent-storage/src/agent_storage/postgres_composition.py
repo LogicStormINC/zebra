@@ -31,6 +31,7 @@ from agent_storage.postgres import (
     PostgresSessionArtifactReadStore,
     PostgresSessionHandoffStore,
     PostgresSessionHistory,
+    PostgresUserPersonalizationStore,
     PostgresWorkspaceProjectionStore,
 )
 from agent_storage.postgres_model_tool_compat import (
@@ -134,4 +135,7 @@ def postgres_control_plane_stores(
             scope=history_scope,
         ),
         delivery_audit=PostgresDeliveryAuditStore(dsn, deployment_namespace=deployment_namespace),
+        personalization=PostgresUserPersonalizationStore(
+            dsn, deployment_namespace=deployment_namespace
+        ),
     )

@@ -84,6 +84,7 @@ class HarnessTask:
     conversation_history: tuple[SessionMessage, ...] = ()
     task_plan: SessionPlan = field(default_factory=SessionPlan)
     identity_directive: str | None = None
+    user_instructions: str | None = None
     acceptance_contract: TaskAcceptanceContract | None = None
 
     def __post_init__(self) -> None:
@@ -103,6 +104,11 @@ class HarnessTask:
             raise ValueError("harness task context_token_budget must be positive")
         if self.identity_directive is not None and not self.identity_directive.strip():
             raise ValueError("harness task identity_directive must not be blank when set")
+        if self.user_instructions is not None:
+            if not self.user_instructions.strip():
+                raise ValueError("harness task user_instructions must not be blank when set")
+            if len(self.user_instructions) > 12_000:
+                raise ValueError("harness task user_instructions must not exceed 12000 characters")
         object.__setattr__(self, "mcp_allowlist", normalize_mcp_allowlist(self.mcp_allowlist))
         object.__setattr__(
             self, "skill_components", normalize_skill_components(self.skill_components)

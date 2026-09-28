@@ -21,6 +21,7 @@ from agent_core.domain.host_authority import (
 from agent_core.domain.memories import MemoryQuery, MemoryRecord, MemoryVisibility
 from agent_core.domain.session_history import SessionHistoryMessage
 from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.domain.user_personalization import UserPersonalization
 from agent_core.ports.context_compiler import RuntimeEvidenceInput
 from agent_security import parse_network_profile
 from zebra_agent_worker.context_materialization import materialize_worker_context
@@ -327,6 +328,45 @@ def test_trench_host_uses_trench_product_identity(tmp_path: Path) -> None:
     assert "underlying agent runtime" in harness_task.identity_directive
     assert "exhaust safe in-scope alternatives" in harness_task.identity_directive
     assert "reports and articles need developed structure" in harness_task.identity_directive
+
+
+def test_cloud_harness_loads_current_principal_personalization(tmp_path: Path) -> None:
+    task = replace(
+        _task(tmp_path),
+        host_context=HostContextEnvelope(
+            grant_id="grant-1",
+            host_app_id="trench",
+            namespace_id="tenant-a",
+            workspace_ref="workspace-a",
+            resource_refs=(HostResourceRef(type="principal", id="user-7"),),
+            scopes=("agent.run",),
+            limits=HostTechnicalLimits(
+                max_runtime_seconds=300,
+                max_model_tokens=100_000,
+                max_artifact_bytes=1_048_576,
+            ),
+            origin="https://trench.example.test",
+            policy_version="1",
+        ),
+    )
+    record = UserPersonalization(
+        user_id="user-7",
+        instructions="Prefer concise Chinese answers.",
+        revision=3,
+        updated_at=NOW,
+        operator="user-7",
+    )
+    personalization = SimpleNamespace(get=lambda user_id: record if user_id == "user-7" else None)
+
+    harness_task = harness_task_for_recovered(
+        task,
+        network_profile=task.network_profile,
+        tool_gateway=SimpleNamespace(effective_mcp_tools=(), effective_skill_components=()),
+        memory_store=_RecordingMemoryStore(),
+        personalization_store=personalization,
+    )
+
+    assert harness_task.user_instructions == "Prefer concise Chinese answers."
 
 
 def test_automation_handoff_seed_does_not_count_as_conversation_history(

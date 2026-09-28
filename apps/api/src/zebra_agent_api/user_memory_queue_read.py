@@ -44,6 +44,7 @@ def read_user_memory_inventory(
             user_id=user_id,
             visibility=MemoryVisibility.USER,
             statuses=_INVENTORY_STATUSES,
+            limit=500,
         ),
     )
 
@@ -61,6 +62,7 @@ def read_user_memory_queue(
             user_id=user_id,
             visibility=MemoryVisibility.USER,
             statuses=_QUEUE_STATUSES,
+            limit=500,
         ),
     )
 

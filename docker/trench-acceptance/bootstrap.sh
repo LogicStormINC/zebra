@@ -7,13 +7,31 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 secrets="$here/secrets"
+container_gid="${ZEBRA_RUNTIME_GID:-65532}"
 mkdir -p "$secrets"
-chmod 700 "$secrets"
+
+set_container_group() {
+  if chgrp "$container_gid" "$@" 2>/dev/null; then
+    return
+  fi
+  if command -v sudo >/dev/null && sudo -n true 2>/dev/null; then
+    sudo -n chgrp "$container_gid" "$@"
+    return
+  fi
+  echo "unable to grant container group $container_gid access to: $*" >&2
+  echo "rerun with passwordless sudo or as root" >&2
+  exit 1
+}
+
+set_container_group "$secrets"
+chmod 750 "$secrets"
 
 if [[ ! -f "$secrets/trench-host-grant-v1.pem" ]]; then
   (cd "$here/../.." && uv run python -m zebra_host_grant_broker.keys "$secrets" trench-host-grant-v1)
   echo "generated broker keypair in $secrets"
 fi
+set_container_group "$secrets/trench-host-grant-v1.pem"
+chmod 640 "$secrets/trench-host-grant-v1.pem"
 
 ca_refreshed=false
 if [[ ! -f "$secrets/ca.crt" || ! -f "$secrets/ca.key" ]] \
@@ -38,10 +56,18 @@ if [[ "$ca_refreshed" == true || ! -f "$secrets/tls.crt" || ! -f "$secrets/tls.k
   echo "generated local acceptance certificate in $secrets"
 fi
 
-# HTTPX honors SSL_CERT_FILE as one complete trust store.  Keep the public
+# HTTPX honors SSL_CERT_FILE as one complete trust store. Keep the public
 # roots required by model providers and append the private acceptance CA used
-# by the Host and Grant Broker endpoints.
-(cd "$here/../.." && uv run python - "$secrets/ca.crt" "$secrets/ca-bundle.crt" <<'PY'
+# by the Host and Grant Broker endpoints. Prefer certifi when the project
+# runner is available; deployment hosts only need the system CA bundle.
+if [[ -d "$secrets/ca-bundle.crt" ]]; then
+  rmdir "$secrets/ca-bundle.crt" 2>/dev/null || {
+    echo "$secrets/ca-bundle.crt must be a file, not a non-empty directory" >&2
+    exit 1
+  }
+fi
+if command -v uv >/dev/null; then
+  (cd "$here/../.." && uv run python - "$secrets/ca.crt" "$secrets/ca-bundle.crt" <<'PY'
 from pathlib import Path
 import sys
 
@@ -51,7 +77,18 @@ private_ca = Path(sys.argv[1]).read_bytes().rstrip() + b"\n"
 public_roots = Path(certifi.where()).read_bytes().rstrip() + b"\n"
 Path(sys.argv[2]).write_bytes(public_roots + private_ca)
 PY
-)
-chmod 600 "$secrets/ca-bundle.crt"
+  )
+else
+  system_ca_bundle=/etc/ssl/certs/ca-certificates.crt
+  if [[ ! -f "$system_ca_bundle" ]]; then
+    echo "uv is unavailable and no system CA bundle exists at $system_ca_bundle" >&2
+    exit 1
+  fi
+  cp "$system_ca_bundle" "$secrets/ca-bundle.crt"
+  printf '\n' >> "$secrets/ca-bundle.crt"
+  cat "$secrets/ca.crt" >> "$secrets/ca-bundle.crt"
+fi
+set_container_group "$secrets/ca-bundle.crt"
+chmod 640 "$secrets/ca-bundle.crt"
 
 echo "bootstrap complete; CA certificate for callers: $secrets/ca.crt"

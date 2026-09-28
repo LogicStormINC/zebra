@@ -30,6 +30,21 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `REACT-DOCUMENT-01`: Review, owned by Codex on
+  `cloud-agent-trench` through focused commit `989af16e`. Scope: add a
+  host-neutral Asset preview surface for Markdown, text, JSON, CSV/TSV, image,
+  video, audio, PDF, optional sandboxed HTML and host-rendered Vega-Lite
+  content. Owned Zebra paths: `sdks/typescript/packages/react/**`, SDK test
+  wiring, this registry and `PROGRESS.md`. Paired Trench ownership is limited
+  to the report renderer, Asset preview Host adapter, Asset API preview path
+  and focused tests. Constraints: Markdown/LaTeX and charts remain Host render
+  slots; HTML is disabled unless the Host explicitly opts in; Artifact
+  authority and model settings remain unchanged. Local evidence: SDK
+  build/type-check, serialized `45/45` tests, focused preview tests `3/3` and
+  package audit pass on Node 24. The paired Trench Host passes Asset API `6/6`,
+  frontend `159/159`, lint and production build. npm publication, push and
+  deployment are separate gates.
+
 - `REACT-PRESENT-01`: Review, owned by Codex on
   `codex/rich-presentation-01`. Scope: let the Agent deliberately present
   Artifact-backed image, video, chart and file parts according to Host
@@ -248,8 +263,52 @@ does not authorize production code, migrations or activation of its successor.
   logged-in Trench Memory page reads the authoritative empty profile without 502
   or synthetic data. Final review additionally closes missing-authority fail-open
   access, replacement lock ordering, bounded Host source enrichment and duplicate
-  frontend writes. Full coverage is now `4614 passed, 897 skipped`; both repository
+  frontend writes. A follow-up now exposes the same authority as a flat Host
+  inventory and lets users add explicit Memory through an owned Task. Creation atomically
+  records candidate/confirmation Events, the confirmed record, projections and
+  delivery receipt; Trench still stores no shadow Memory copy. Full coverage is
+  now `4614 passed, 897 skipped`; both repository
   gates pass. No model setting, push or remote deployment is claimed.
+  A second focused follow-up adds one user-scoped standing-instructions record
+  with revision CAS under the same PostgreSQL authority. The signed Host API
+  reads, updates and clears it; the Worker resolves exactly one principal and
+  injects the current value into every new Harness turn as explicitly
+  lower-priority user-authored guidance. It cannot grant permissions or
+  override security, Host authority, workspace rules, the current request or
+  verified tool results. Trench exposes the control in AI settings without a
+  shadow copy. Local execution remains unchanged when no cloud personalization
+  store or Host principal exists. Zebra `make check`, the full `4723 passed,
+  899 skipped` suite and the real PostgreSQL `7 passed` migration/CAS slice are
+  green; Trench `make check` is green with `145` API/model, `78` pipeline and
+  `147` ToC tests plus both production builds. Browser acceptance, commit/push
+  and deployment remain separate gates.
+
+- `TRN-SETTINGS-PRODUCT-01`: Review, owned by Codex on the existing
+  Trench `codex/strategy-answer-actions` branch per the user's continuation
+  request. Scope: replace the developer-facing settings inventory with a
+  user-facing product information architecture; split personalization from
+  Agent capabilities; consolidate Integration, Skill and MCP management;
+  rename the misleading Plan surface to startup/navigation; remove roadmap,
+  internal API and unavailable-provider copy; and reuse the existing profile,
+  Zebra personalization, Memory, extension and local preference authorities.
+  Owned Trench paths: `toc-frontend/src/components/product/dashboard-*-settings*`,
+  `dashboard-account-dialog*`, narrowly required shared settings components,
+  preference tests and styles. No model/reasoning change, new backend authority,
+  deployment, merge or push is included. The delivered information architecture
+  groups Account, Appearance and Notifications under Personal; Personalization,
+  Memory, Capabilities and Tools & Connections under Agent; and startup/data
+  controls under Workspace. Skill and MCP retain their complete management
+  surfaces as explicit tabs under Tools & Connections. Trench's full frontend
+  suite passes `151/151`, the production build passes, focused ESLint is clean,
+  and browser acceptance covers Account, Appearance, Capabilities, Skill, MCP
+  and About.
+  A visual follow-up adds six persisted surface palettes and five bundled font
+  choices (the existing FangYuan plus four user-supplied WOFF2 subsets). Palette
+  variables now reach the dashboard shell, Session rail, selected navigation,
+  settings surfaces and content selection states. Legacy appearance records
+  migrate to Ink/FangYuan without losing unrelated preferences. Trench's full
+  frontend suite now passes `154/154`; production build, focused ESLint, diff
+  checks and browser switching/restoration acceptance are green.
 
 - `CLOUD-MEMORY-AUTONOMY-01`: Review, owned by Codex on
   `codex/autonomous-memory-decision-01`. Scope: broaden source-bound user Memory

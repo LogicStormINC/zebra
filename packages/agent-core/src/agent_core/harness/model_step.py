@@ -35,6 +35,7 @@ from agent_core.harness.model_step_support import (
     selected_skill_message,
     task_acceptance_message,
     tool_result_message,
+    user_personalization_message,
 )
 from agent_core.harness.models import HarnessEventDraft, HarnessTask
 from agent_core.harness.protocol_invariants import validate_tool_call_pairing
@@ -407,6 +408,10 @@ class HarnessModelStep:
                         metadata=context_message_metadata("context_compiler"),
                     )
                 )
+        if task.user_instructions is not None:
+            messages.append(
+                user_personalization_message(task.user_instructions, created_at=created_at)
+            )
         if any(tool.name == "agent.research" for tool in self._available_tools):
             delegation_guidance = (
                 MODEL_REQUIRED_DELEGATION_DIRECTIVE

@@ -1,5 +1,31 @@
 # Zebra Agent Project Status
 
+2026-09-28 TRN-SETTINGS-PRODUCT-01 (Trench product settings): the settings
+center now uses a grouped user-facing information architecture instead of a
+flat developer inventory. Personalization is separate from Agent capabilities;
+startup/navigation replaces the roadmap-like Plan surface; internal API,
+pipeline and unavailable-provider copy is removed. Existing profile, Memory,
+personalization and local-preference authorities remain unchanged. Skill and
+MCP management are preserved as first-class tabs under Tools & Connections,
+including search/enable/reload behavior and MCP add/configure/list behavior.
+Trench's frontend suite passes `151/151`, the production build passes, focused
+ESLint is clean, and browser acceptance covers the core pages plus both
+extension managers. No model/reasoning change, backend authority, merge, push
+or deployment is claimed.
+
+2026-09-28 TRN-SETTINGS-PRODUCT-01 appearance follow-up: Trench now offers six
+persisted palettes (Ink, Graphite, Forest, Ocean, Amber and Clay) that compose
+with system/light/dark mode and propagate through shared theme variables into
+the dashboard shell, conversation rail, active navigation and settings
+surfaces. Four user-supplied local WOFF2 subsets (DongFang DaKai, DaoLi,
+ShuHei and LingDong) join the existing FangYuan fallback as selectable bundled
+fonts; no CDN or runtime download is required. Invalid and legacy values safely
+normalize to Ink/FangYuan. The frontend suite passes `154/154`, production build
+and focused lint pass, and browser acceptance proves immediate palette/font
+switching followed by restoration to the previous defaults. The supplied font
+archives contain no bundled license text, so license provenance remains a
+release-documentation follow-up rather than an implementation claim.
+
 2026-09-27 CTX-OBS-02 (six-category context observability): every model call now
 retains a typed V2 breakdown for messages, system tools, Skills, system prompts,
 MCP tools and unattributed remainder while dual-writing the replay-compatible
@@ -3905,3 +3931,55 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   existing React media/chart package builds plus `10/10` focused renderer tests
   on Node 24. Provider generation/import, npm publication, Host packaging,
   merge and deployment are separate gates.
+
+### 2026-09-28 - REACT-DOCUMENT-01 host-neutral Asset preview
+
+- Added `AgentAssetPreview` to the reusable React package for bounded image,
+  video, audio, PDF, Markdown, text, JSON, CSV/TSV and Vega-Lite previews.
+  Markdown/LaTeX and chart engines remain explicit Host render slots; HTML
+  preview is disabled unless the Host opts into a sandboxed frame.
+- The paired Trench Host exposes the existing authorized preview route in its
+  Asset index, renders reports and completed assistant answers through one
+  Markdown/GFM/KaTeX surface, and opens generated files in a responsive preview
+  sheet while retaining download fallback.
+- Local evidence passes on Node 24: SDK build/type-check, serialized `45/45`
+  tests, package audit, Trench Asset API `6/6`, frontend `159/159`, lint and
+  production build. Zebra code is integrated on `cloud-agent-trench@989af16e`;
+  npm publication, push, deployment and authenticated browser acceptance are
+  separate gates.
+
+### 2026-09-28 - user-managed flat Memory inventory
+
+- Trench Memory settings now presents one chronological list instead of
+  preference/background/goal/interest/portfolio sections. Review candidates
+  remain visually separate because they are not yet effective Memory.
+- Users can add explicit Memory from the settings surface. Trench resolves the
+  current user's latest retained Zebra Task and forwards the request through the
+  signed Host boundary; it does not persist a shadow copy.
+- Zebra writes the item through a governed PostgreSQL transaction that
+  atomically creates and confirms the record, appends candidate/review Events,
+  advances Session projections, stores the operation receipt and enqueues the
+  existing delivery path. Edit remains immutable replacement and delete remains
+  a tombstone.
+- The inventory read limit is aligned with the existing bounded profile maximum
+  of 500 records. Redis remains optional and disabled; PostgreSQL remains the
+  authority. No model or reasoning setting changed.
+
+### 2026-09-28 - user personalization instructions
+
+- Added one namespace- and user-scoped PostgreSQL standing-instructions record
+  with revision CAS, plus signed Host GET/PUT/DELETE routes. Trench remains a
+  client and stores no shadow configuration.
+- Cloud Workers resolve the single Host principal at the start of every turn
+  and inject the current value into the Harness system context. The wrapper
+  explicitly keeps platform security, Host authority, project rules, current
+  user requests and verified tool results at higher priority.
+- The Trench AI settings surface now supports read, edit, save, clear,
+  character bounds, conflict-safe revisions and honest read/write errors in
+  the existing monochrome visual system. Local runs without a cloud store or
+  Host principal remain unchanged. No model or reasoning setting changed.
+- Local evidence: Zebra `make check` passed, its full suite reports `4723
+  passed, 899 skipped`, and the real PostgreSQL migration/CAS slice reports
+  `7 passed`. Trench `make check` passed with `145` API/model tests, `78`
+  cleaning/pipeline tests, `147` ToC tests and both production builds. Browser
+  acceptance, commit/push and deployment remain separate gates.

@@ -61,6 +61,7 @@ from zebra_agent_api.api_artifact_read_mixin import ApiArtifactReadMixin
 from zebra_agent_api.api_command_mixin import ApiCommandMixin
 from zebra_agent_api.api_memory_control_mixin import ApiMemoryControlMixin
 from zebra_agent_api.api_memory_read_mixin import ApiMemoryReadMixin
+from zebra_agent_api.api_personalization_mixin import ApiPersonalizationMixin
 from zebra_agent_api.api_scm_mixin import ApiScmMixin
 from zebra_agent_api.api_session_handoff_mixin import ApiSessionHandoffMixin
 from zebra_agent_api.api_session_read_mixin import ApiSessionReadMixin
@@ -115,6 +116,7 @@ class ZebraAgentApi(
     ApiMemoryReadMixin,
     ApiArtifactReadMixin,
     ApiMemoryControlMixin,
+    ApiPersonalizationMixin,
     ApiScmMixin,
     ApiApprovalControlMixin,
     ApiSkillsAdminMixin,

@@ -17,6 +17,7 @@ from zebra_agent_api.client_runtime_routes import handle_client_runtime_route
 from zebra_agent_api.extension_task_selection import validate_task_skill_selection
 from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
 from zebra_agent_api.memory_routes import handle_memory_route
+from zebra_agent_api.personalization_routes import handle_personalization_route
 from zebra_agent_api.platform_client_routes import handle_platform_client_route
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.task_routes import handle_task_route
@@ -117,6 +118,9 @@ class RouteAdapter:
             parts = _approval_path_parts(request.path)
             if len(parts) == 1:
                 return self.app.get_approval(parts[0])
+        personalization_response = handle_personalization_route(self.app, request)
+        if personalization_response is not None:
+            return personalization_response
         memory_response = handle_memory_route(self.app, request)
         if memory_response is not None:
             return memory_response

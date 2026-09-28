@@ -5,6 +5,7 @@ from pathlib import Path
 from agent_core.application import MemoryReviewAction
 from agent_storage import ControlPlaneStores
 
+from zebra_agent_api.memory_creation import create_user_memory
 from zebra_agent_api.memory_replacement import replace_user_memory
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_memory_control import (
@@ -26,6 +27,13 @@ from zebra_agent_api.session_memory_control import (
 class ApiMemoryControlMixin:
     database_path: Path
     stores: ControlPlaneStores
+
+    def create_user_memory(
+        self,
+        user_id: str,
+        payload: dict[str, object],
+    ) -> ApiResponse:
+        return create_user_memory(stores=self.stores, user_id=user_id, payload=payload)
 
     def replace_user_memory(
         self,

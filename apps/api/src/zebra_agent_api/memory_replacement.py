@@ -146,7 +146,17 @@ def _replacement_text(memory_type: MemoryType, old_text: str, text: str) -> str 
     if memory_type is MemoryType.PREFERENCE:
         return text
     if memory_type is MemoryType.EPISODIC:
-        for prefix in ("User background: ", "User goal: "):
+        for prefix in ("User background: ", "User goal: ", "User interest: "):
             if old_text.startswith(prefix):
                 return f"{prefix}{text}"
+        if old_text.startswith("Portfolio position ["):
+            separator = text.find("：")
+            if separator < 1:
+                separator = text.find(":")
+            if separator > 0:
+                subject = text[:separator].strip()
+                position = text[separator + 1 :].strip()
+                return f"Portfolio position [{subject}]: {position}"
+            subject = old_text.removeprefix("Portfolio position [").split("]: ", 1)[0]
+            return f"Portfolio position [{subject}]: {text}"
     return None

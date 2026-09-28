@@ -171,6 +171,10 @@ from agent_core.ports.task_schedules import (
 )
 from agent_core.ports.tool_gateway import ToolGatewayPort
 from agent_core.ports.tool_run_store import ToolRunStorePort
+from agent_core.ports.user_personalization import (
+    UserPersonalizationConflictError,
+    UserPersonalizationStorePort,
+)
 from agent_core.ports.workspace import WorkspacePort
 from agent_core.ports.workspace_control import (
     WorkspaceOperationReceipt,
@@ -314,6 +318,8 @@ __all__ = [
     "ToolGatewayPort",
     "ToolRunStorePort",
     "TaskEvent",
+    "UserPersonalizationConflictError",
+    "UserPersonalizationStorePort",
     "WorkspaceProjectionStorePort",
     "WorkspacePort",
     "WorkerMutationAuthority",

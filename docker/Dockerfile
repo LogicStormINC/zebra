@@ -28,7 +28,8 @@ RUN case "$ZEBRA_INSTALL_RABBITMQ" in \
       false) uv sync --frozen --all-packages --no-dev ;; \
       *) exit 2 ;; \
     esac \
-    && useradd --system --create-home --uid 65532 --shell /usr/sbin/nologin zebra \
+    && groupadd --gid 65532 zebra \
+    && useradd --system --create-home --uid 65532 --gid 65532 --shell /usr/sbin/nologin zebra \
     && chown -R zebra:zebra /app
 
 USER zebra

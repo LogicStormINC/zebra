@@ -155,9 +155,11 @@ def test_lifecycle_mutation_requires_revision_and_allowed_transition() -> None:
 def test_worker_and_administrative_authority_are_separate_port_inputs() -> None:
     worker_method = get_type_hints(GovernedMemoryStorePort.commit_worker_candidates)
     admin_method = get_type_hints(GovernedMemoryStorePort.commit_administrative_review)
+    creation_method = get_type_hints(GovernedMemoryStorePort.commit_administrative_creation)
 
     assert worker_method["authority"] is WorkerMutationAuthority
     assert admin_method["authority"] is AdministrativeMutationCAS
+    assert creation_method["authority"] is AdministrativeMutationCAS
 
 
 def test_administrative_review_requires_explicit_revision_and_audit() -> None:
