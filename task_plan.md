@@ -1,4 +1,27 @@
-# Active task — REACT-PRESENT-01 governed rich presentation (2026-09-28)
+# Active task — HOST-MEDIA-IMPORT-01 governed historical media (2026-09-29)
+
+Branch: `cloud-agent-trench`; working directly in the user's requested checkout.
+
+1. `completed` — trace the response, Host Tool, Artifact, AG-UI and React
+   rendering path and isolate the missing authority transition.
+2. `completed` — add an entitled Trench historical image/video selector that
+   returns a narrow import envelope rather than exposing presentation authority.
+3. `completed` — validate, bounded-download and publish Host media through the
+   existing Zebra Artifact coordinator; return a current-Session
+   `artifact://` URI.
+4. `completed` — retain existing `content.present` and ordered AG-UI content
+   parts; add focused Host/Worker/Artifact regressions.
+5. `completed` — run focused and full Zebra/Trench gates and prove one real
+   historical image in the browser.
+
+Key decision: rich rendering stays a native Zebra capability. Trench only
+selects media within its authority scope; it does not bypass Artifact authority
+or duplicate the renderer. Image browser acceptance is complete. Video shares
+the same MIME-bounded path and deterministic coverage but has no separate real
+source browser proof in this slice. No commit, push, merge or deployment was
+performed.
+
+# Previous task — REACT-PRESENT-01 governed rich presentation (2026-09-28)
 
 Branch: `codex/rich-presentation-01`; isolated worktree:
 `/Users/lukeding/.codex/worktrees/rich-presentation-01/zebra-agent`.

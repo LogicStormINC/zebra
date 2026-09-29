@@ -1,5 +1,7 @@
+import json
 from datetime import UTC, datetime
 
+import httpx
 import pytest
 from agent_core.domain.host_authority import (
     HostContextEnvelope,
@@ -10,6 +12,7 @@ from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.runtime import RuntimeHandle
 from agent_integrations.host_tools import HostToolManifest
+from zebra_agent_worker.host_media_artifacts import HostMediaArtifactImporter
 from zebra_agent_worker.tool_gateway_runtime import WorkerToolGateway
 
 
@@ -262,3 +265,75 @@ def test_worker_gateway_destroys_owned_runtime_handle_once() -> None:
     gateway.close()
 
     assert runtime.destroyed == [handle]
+
+
+def test_worker_gateway_materializes_explicit_host_media_envelope() -> None:
+    manifest = HostToolManifest.from_payload(
+        {
+            "workloadIdentity": "zebra-worker",
+            "tools": [
+                {
+                    "name": "media.import_historical",
+                    "description": "Import one entitled event image",
+                    "executionLocation": "host",
+                    "scopes": ["history.read"],
+                    "risk": "read",
+                    "requiredArguments": ["event_id"],
+                    "argumentProperties": {"event_id": {"type": "string"}},
+                }
+            ],
+        }
+    )
+
+    class MediaHost(_Host):
+        def invoke(self, tool_call, context, *, idempotency_key, required_resource, manifest):
+            del context, idempotency_key, required_resource, manifest
+            return ToolResult(
+                tool_call_id=tool_call.tool_call_id,
+                status=ToolCallStatus.EXECUTED,
+                output=json.dumps(
+                    {
+                        "zebra_artifact_import": {
+                            "url": "https://media.example.com/photo.jpg",
+                            "media_kind": "image",
+                            "display_name": "photo",
+                            "alt": "Photo",
+                        }
+                    }
+                ),
+            )
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                200,
+                headers={"content-type": "image/jpeg"},
+                content=b"jpeg",
+                request=request,
+            )
+        )
+    )
+    gateway = WorkerToolGateway(
+        local=_Local(),
+        host=MediaHost(),
+        host_context=_context(scopes=("history.read",)),
+        host_manifest=manifest,
+        host_media_importer=HostMediaArtifactImporter(
+            lambda *_args: "artifact://00000000-0000-0000-0000-000000000001",
+            max_bytes=64,
+            resolver=lambda _host: ("93.184.216.34",),
+            client=client,
+        ),
+    )
+    call = ToolCall(
+        tool_call_id=new_tool_call_id(),
+        name="media.import_historical",
+        arguments={"event_id": "evt-1"},
+        created_at=datetime.now(UTC),
+    )
+
+    result = gateway.execute(call)
+
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.metadata["artifact_uri"].startswith("artifact://")
+    client.close()

@@ -1,5 +1,15 @@
 # Zebra Agent Project Status
 
+2026-09-29 HOST-MEDIA-IMPORT-01: authority-scoped historical Host media can now
+cross into Zebra's current-Session Artifact domain without accepting arbitrary
+model-supplied URLs. The Trench adapter selects an entitled event attachment;
+the Worker validates and bounded-downloads image/video content, publishes it
+through the existing Artifact coordinator, and returns an `artifact://` URI for
+the existing `content.present` and AG-UI path. A real browser Turn rendered the
+imported JPEG inline with preview/download actions. Zebra focused tests and
+`make check` pass; paired Trench focused and full checks pass. The task is in
+Review; no commit, push, merge or deployment is claimed.
+
 2026-09-28 TRN-SETTINGS-PRODUCT-01 (Trench product settings): the settings
 center now uses a grouped user-facing information architecture instead of a
 flat developer inventory. Personalization is separate from Agent capabilities;

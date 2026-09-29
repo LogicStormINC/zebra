@@ -29814,6 +29814,39 @@ browser Cookie or Host Grant.
   complete repository passes `4633 passed, 897 skipped`. No model/reasoning
   setting, commit, push or deployment changed.
 
+### HOST-MEDIA-IMPORT-01 - Governed Host media presentation
+
+- Status: Review
+- Owner: Codex
+- Branch: `cloud-agent-trench`
+- Depends on: `REACT-PRESENT-01`
+- Owned paths: `apps/worker/src/zebra_agent_worker/host_media_artifacts.py`,
+  `apps/worker/src/zebra_agent_worker/host_gateway_resolution.py`,
+  `apps/worker/src/zebra_agent_worker/tool_gateway_runtime.py`, focused Worker
+  tests, the paired Trench Host media Tool contract/handler/tests, this registry,
+  `PROGRESS.md`, `findings.md`, `WORKLOG.md`, and `task_plan.md`.
+- Goal: turn media selected from an authority-scoped Host Tool result into a
+  current-Session Artifact that `content.present` can project as typed AG-UI
+  image or video content.
+- Constraints: no arbitrary model-supplied remote URL, no direct hotlink in the
+  final presentation contract, HTTPS/public-address/MIME/size bounds fail
+  closed, PostgreSQL and the Artifact Store remain authoritative, and Trench
+  remains a Host adapter rather than a dependency of Zebra Core.
+- Acceptance: an entitled Trench historical event can select one bounded image
+  or video; Zebra imports only the explicit Host envelope, records a managed
+  `artifact://` URI, and existing `content.present` emits ordered
+  `content_parts`; focused Host, Worker, Artifact and AG-UI tests pass.
+- Evidence: a real browser Turn `ca7c57d4-2b33-48a1-829d-568f25e11d1e`
+  selected a historical Trench image, imported a `124024` byte JPEG as
+  `artifact://f8f03b85-9a1d-460c-940f-8f6f2ce2c6d4`, called
+  `content.present`, and rendered the image plus preview/download actions in
+  the conversation. Zebra focused coverage passes `19/19` and `make check`
+  passes file-size, Ruff, strict Mypy over `996` sources and eval `30/30`.
+  Paired Trench focused coverage passes `74/74`; its complete `make check`
+  passes API/model `162`, pipeline `79`, ToC `162`, lint, both production
+  builds, migrations and diff checks. No commit, push, merge or deployment was
+  performed.
+
 ### MEMORY-CONTEXT-02 - Memory, compaction and cache closure
 
 - Status: Review

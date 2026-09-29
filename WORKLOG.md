@@ -1,5 +1,23 @@
 # Progress Log
 
+## 2026-09-29 - HOST-MEDIA-IMPORT-01 governed historical media
+
+- Traced the missing rich reply to the authority boundary rather than the React
+  renderer: Trench returned historical external URLs while `content.present`
+  correctly accepted only current-Session Artifacts.
+- Added the paired `media.import_historical` Host Tool and a generic Zebra
+  Worker import-envelope resolver. Downloads are HTTPS, DNS, MIME, redirect and
+  size bounded, then published through the existing Artifact coordinator.
+- Preserved cloud policy while supporting the composed local stack: only an
+  explicit trusted-local runtime may resolve Clash/Mihomo Fake-IP answers; real
+  private addresses remain denied.
+- Rebuilt the Worker and completed a real browser Turn. The Agent imported a
+  `124024` byte JPEG, presented it as an ordered image content part and exposed
+  inline preview/download controls.
+- Validation: Zebra focused `19/19` and `make check` green; paired Trench
+  focused `74/74` and full `make check` green. No commit, push, merge or
+  deployment was performed.
+
 ## 2026-09-27 - CLOUD-MEMORY-AUTONOMY-01 natural cross-session Memory
 
 - Claimed the task on `codex/autonomous-memory-decision-01` in an isolated

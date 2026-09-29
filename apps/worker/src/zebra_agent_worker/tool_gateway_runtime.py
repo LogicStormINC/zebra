@@ -5,7 +5,13 @@ from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.host_effect_receipts import HostEffectReceipt
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.modeling import ModelToolDefinition
-from agent_core.domain.tools import ToolCall, ToolIdempotency, ToolResult, ToolRisk
+from agent_core.domain.tools import (
+    ToolCall,
+    ToolCallStatus,
+    ToolIdempotency,
+    ToolResult,
+    ToolRisk,
+)
 from agent_core.harness.models import SkillReadRequirement
 from agent_core.ports import (
     ArtifactPayloadReadPort,
@@ -14,7 +20,6 @@ from agent_core.ports import (
     SessionHistoryPort,
 )
 from agent_core.ports.host_connector_registry import HostConnectorRegistryPort
-from agent_core.ports.host_credential_resolver import HostWorkloadCredentialResolverPort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_integrations.host_credentials import ConfiguredHmacHostCredentialResolver
 from agent_integrations.host_tools import (
@@ -37,6 +42,15 @@ from agent_tools.skills_scope import build_scoped_skill_roots
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
+from zebra_agent_worker.host_gateway_resolution import (
+    NO_MANIFEST_DIGEST,
+    frozen_or_discovered_manifest,
+    resolve_pinned_gateway,
+)
+from zebra_agent_worker.host_media_artifacts import (
+    HostMediaArtifactImporter,
+    has_host_media_envelope,
+)
 from zebra_agent_worker.resource_binding import resolve_required_resource
 from zebra_agent_worker.task_recovery import RecoveredTask
 from zebra_agent_worker.tool_gateway_reachability import (
@@ -62,6 +76,7 @@ class WorkerToolGateway:
     management: ExtensionManagementTools | None = None
     management_names: frozenset[str] = frozenset()
     resource_authority_issuer: str | None = None
+    host_media_importer: HostMediaArtifactImporter | None = None
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
@@ -218,6 +233,16 @@ class WorkerToolGateway:
             required_resource=required_resource,
             manifest=self.host_manifest,
         )
+        if result.status is ToolCallStatus.EXECUTED and has_host_media_envelope(result):
+            if self.host_media_importer is None:
+                return result.model_copy(
+                    update={
+                        "status": ToolCallStatus.FAILED,
+                        "output": "Host media import is unavailable for this Session.",
+                        "metadata": {**result.metadata, "reason": "artifact_publish_unavailable"},
+                    }
+                )
+            result = self.host_media_importer.materialize(result)
         if required_resource is None or self.resource_authority_issuer is None:
             return result
         from agent_core.domain.verification_evidence import VerificationResourceRef
@@ -281,6 +306,19 @@ def build_worker_tool_gateway(
         and task.host_context is not None
         and "artifact.publish" in task.host_context.scopes
     )
+    host_media_importer = (
+        HostMediaArtifactImporter(
+            cloud_artifacts.capture_file,
+            max_bytes=task.host_context.limits.max_artifact_bytes,
+            # Fake-IP acceptance is a property of this runtime's network
+            # resolver, not of the deployment profile. Cloud Workers may be
+            # explicitly composed with the trusted-local runtime for local
+            # integration while policy remains cloud-scoped.
+            allow_fake_ip_dns=settings.runtime.runtime_class == "trusted-local",
+        )
+        if can_publish and cloud_artifacts is not None and task.host_context is not None
+        else None
+    )
     skill_roots = build_scoped_skill_roots(
         system=settings.skill_roots_system,
         admin=settings.skill_roots_admin,
@@ -343,20 +381,21 @@ def build_worker_tool_gateway(
             runtime_handle=runtime_handle,
             client=client_gateway,
             resource_authority_issuer=resource_authority_issuer,
+            host_media_importer=host_media_importer,
         )
     credential_resolver = (
         ConfiguredHmacHostCredentialResolver(settings.host_tool_shared_secret)
         if settings.host_tool_shared_secret
         else None
     )
-    pinned = _resolve_pinned_gateway(
+    pinned = resolve_pinned_gateway(
         task.host_context,
         egress_registry,
         credential_resolver,
     )
     if pinned is not None:
         try:
-            manifest = _frozen_or_discovered_manifest(
+            manifest = frozen_or_discovered_manifest(
                 pinned,
                 task.host_context,
                 manifest_digest,
@@ -381,8 +420,9 @@ def build_worker_tool_gateway(
             runtime_handle=runtime_handle,
             client=client_gateway,
             resource_authority_issuer=resource_authority_issuer,
+            host_media_importer=host_media_importer,
         )
-    if manifest_digest and manifest_digest != _NO_MANIFEST_DIGEST:
+    if manifest_digest and manifest_digest != NO_MANIFEST_DIGEST:
         # The binding froze a real Host manifest, yet no pinned connector
         # resolves for this namespace — inconsistent state fails closed.
         local.close()
@@ -400,6 +440,7 @@ def build_worker_tool_gateway(
             runtime_handle=runtime_handle,
             client=client_gateway,
             resource_authority_issuer=resource_authority_issuer,
+            host_media_importer=host_media_importer,
         )
     if not settings.host_tool_shared_secret:
         local.close()
@@ -433,68 +474,5 @@ def build_worker_tool_gateway(
         runtime_handle=runtime_handle,
         client=client_gateway,
         resource_authority_issuer=resource_authority_issuer,
+        host_media_importer=host_media_importer,
     )
-
-
-_NO_MANIFEST_DIGEST = "0" * 64
-
-
-def _frozen_or_discovered_manifest(
-    pinned: HostToolGateway,
-    host_context: HostContextEnvelope,
-    manifest_digest: str | None,
-    frozen_manifest_loader: object,
-) -> HostToolManifest:
-    """ADR-017 execution freeze: bindings frozen at admission consume the
-    STORED manifest — never a live discovery. Placeholder-digest sessions
-    (admitted before the freeze, or unbound) keep the legacy discovery.
-    Missing or drifted freezes fail closed.
-    """
-
-    if manifest_digest is None or manifest_digest == _NO_MANIFEST_DIGEST:
-        return pinned.discover(host_context)
-    if not callable(frozen_manifest_loader):
-        raise ValueError(
-            "binding carries a frozen manifest digest but no loader is wired; failing closed"
-        )
-    frozen = frozen_manifest_loader(manifest_digest)
-    if not isinstance(frozen, dict):
-        raise ValueError("frozen Host manifest is missing; failing closed")
-    from agent_integrations.host_tools.contracts import HostToolManifest
-
-    manifest = HostToolManifest.from_payload(frozen)
-    if manifest.digest != manifest_digest:
-        raise ValueError("frozen Host manifest digest drifted; failing closed")
-    object.__setattr__(pinned, "manifest", manifest)
-    return manifest
-
-
-def _resolve_pinned_gateway(
-    host_context: HostContextEnvelope,
-    egress_registry: HostConnectorRegistryPort | None,
-    credential_resolver: HostWorkloadCredentialResolverPort | None,
-) -> HostToolGateway | None:
-    """Phase F2: pinned profile egress when a connector binding exists.
-
-    Returns None when no registry is wired or no binding matches (legacy
-    env fallback); revoked or missing profiles fail closed.
-    """
-
-    if egress_registry is None:
-        return None
-    from zebra_agent_worker.host_egress import (
-        HostEgressResolver,
-        build_pinned_host_gateway,
-    )
-
-    assert egress_registry is not None
-    resolver = HostEgressResolver(egress_registry, credential_resolver)
-    pinned = resolver.resolve(host_context)
-    if pinned is None:
-        return None
-    if credential_resolver is None:
-        raise ValueError(
-            "pinned connector requires a configured Host workload credential; failing closed"
-        )
-    credential = resolver.issue_credential(pinned, host_context)
-    return build_pinned_host_gateway(pinned, host_context, credential)

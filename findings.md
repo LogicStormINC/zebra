@@ -1,5 +1,27 @@
 # Findings
 
+## HOST-MEDIA-IMPORT-01 - 2026-09-29
+
+- React, AG-UI and `content.present` already rendered typed image/video/chart
+  parts correctly. The missing boundary was historical Host media: external
+  event URLs were not current-Session Artifacts and therefore could not be
+  presented under Zebra's authority model.
+- The smallest safe repair is an explicit Host import envelope followed by a
+  Worker-side bounded download and the existing Artifact coordinator. The
+  model never receives permission to present arbitrary remote URLs, and replay
+  continues to identify immutable Artifacts rather than unstable hotlinks.
+- URL validation rejects credentials, fragments, redirects, IP literals,
+  non-HTTPS schemes, private/link-local/reserved DNS answers, unsupported MIME
+  types and oversized bodies. Trusted-local runtime may additionally accept
+  only Clash/Mihomo's Fake-IP range `198.18.0.0/15`; ordinary private addresses
+  remain blocked.
+- Host Tool manifests are frozen per Task, so the paired Trench capability
+  generation must advance when adding or correcting the import contract. Old
+  Tasks remain replayable; new requests receive a successor Task.
+- A real browser image proves the complete current stack. Video uses the same
+  importer and existing native renderer with deterministic MIME coverage, but a
+  real historical video source was not available for a separate browser proof.
+
 ## CLOUD-MEMORY-AUTONOMY-01 - 2026-09-27
 
 - The existing PostgreSQL governed-Memory chain already has source provenance,
