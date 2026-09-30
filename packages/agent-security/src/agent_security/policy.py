@@ -164,6 +164,8 @@ class LocalPolicyEngine:
                 tool_call=tool_call,
                 egress=egress,
             )
+        if self.web_pipeline_v2 and tool_name in ("web.read", "web.find"):
+            return _allow(self.profile, f"{tool_name} reads a locally cached Web resource")
         if tool_name in self.additional_read_only_tools:
             return _allow(
                 self.profile,

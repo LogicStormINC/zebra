@@ -30,6 +30,22 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `HAR-EGRESS-TOOL-ALIGN-01`: Review, owned by Luke Ding (Codex),
+  branch `codex/egress-tool-alignment`. Goal: expose networked Web tools only
+  when the effective task network profile permits them, and make opt-in Web v2
+  tools follow the same durable policy. Owned paths:
+  `packages/agent-security/src/agent_security/{mcp_proxy_policy,policy}.py`,
+  `packages/agent-runtime/src/agent_runtime/web_tools.py`,
+  `apps/worker/src/zebra_agent_worker/{tool_gateway_runtime,execution}.py`,
+  focused `tests/agent_runtime/`, `tests/agent_security/`, `tests/worker/`,
+  this registry, `PROGRESS.md`, and `docs/HAR_EGRESS_TOOL_ALIGNMENT.md`.
+  Acceptance: blocked profiles do not
+  advertise networked Web tools; read-only cached v2 tools remain usable;
+  v2 direct calls obey URL/domain policy; chained search fetch and browser
+  fetch cannot bypass a Cloud allowlist. Evidence: focused 113/113, full
+  regression excluding the inherited `test_host_egress.py` import blocker
+  4723 passed/903 skipped, `make check` green. Not merged or deployed.
+
 - `HAR-POLICY-READ-RECOVERY-01`: In Progress, owned by Luke Ding (Codex), branch
   `codex/policy-denial-recovery`, isolated worktree. Goal: keep blocked external
   read egress fail-closed while letting the model recover from the denied

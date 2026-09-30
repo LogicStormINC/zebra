@@ -52,6 +52,20 @@ def test_unconfigured_gateway_keeps_ordinary_catalog_and_dispatch():
     local.execute.assert_called_once_with(request)
 
 
+def test_worker_web_catalog_hides_networked_tools_without_web_authority(tmp_path):
+    local = LocalToolGateway(tmp_path.resolve(), web_pipeline_v2=True)
+    blocked = WorkerToolGateway(local=local, web_egress_enabled=False, web_pipeline_v2=True)
+    allowed = WorkerToolGateway(local=local, web_egress_enabled=True, web_pipeline_v2=True)
+    assert not {tool.name for tool in blocked.model_tools} & {
+        "web.fetch", "web.search", "web.crawl", "web.extract"
+    }
+    assert {"web.read", "web.find"} <= {tool.name for tool in blocked.model_tools}
+    assert {"web.fetch", "web.crawl", "web.extract"} <= {
+        tool.name for tool in allowed.model_tools
+    }
+    assert {"web.crawl", "web.extract", "web.read", "web.find"} <= blocked.read_only_tools
+
+
 @pytest.mark.parametrize("allow_network", [False, True])
 def test_worker_preparation_preserves_network_ceiling(allow_network):
     extension, mcp, skills = Mock(), Mock(), Mock()

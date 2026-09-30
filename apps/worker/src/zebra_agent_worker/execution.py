@@ -183,7 +183,6 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         self._extensions = execution_gateway.extensions(
             extension_snapshot_store, extension_skills, extension_mcp,
         )
-
     def _execute_claimed_session_once(
         self,
         claimed: ClaimedSession,
@@ -431,6 +430,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                     profile=PolicyProfile(task.policy_profile),
                     network_profile=effective_network_profile,
                     web_search_endpoint=self._settings.web_search_endpoint,
+                    web_pipeline_v2=self._settings.web_pipeline_v2,
                     trusted_local=policy_trusted,
                     additional_read_only_tools=local_tool_gateway.read_only_tools,
                     additional_write_tools=local_tool_gateway.authorized_write_tools,

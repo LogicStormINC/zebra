@@ -62,7 +62,9 @@ def classify_tool_egress(
     web_pipeline_v2: bool = False,
 ) -> ToolEgressMetadata:
     normalized_name = tool_call.name.strip()
-    if normalized_name == "web.fetch":
+    if normalized_name == "web.fetch" or (
+        web_pipeline_v2 and normalized_name in ("web.crawl", "web.extract")
+    ):
         return _classify_web_egress(tool_call, network_profile)
     if normalized_name == "web.search":
         return _classify_web_search_egress(
@@ -152,6 +154,15 @@ def _classify_web_search_egress(
             network_profile=network_profile.name.value,
             reason=str(exc),
         )
+    if web_pipeline_v2 and network_profile.name is not NetworkProfileName.FULL_TRUSTED_LOCAL:
+        if parse_search_query(tool_call.arguments).auto_fetch:
+            return ToolEgressMetadata(
+                tool_name=tool_call.name,
+                route=ToolEgressRoute.BLOCKED,
+                network_profile=network_profile.name.value,
+                target=target.hostname,
+                reason="web.search auto_fetch requires trusted-local network authority",
+            )
     if network_profile.name is NetworkProfileName.FULL_TRUSTED_LOCAL or (
         network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
         and target.hostname in network_profile.domain_allowlist

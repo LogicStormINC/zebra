@@ -61,12 +61,18 @@ from zebra_agent_worker.tool_gateway_reachability import (
 )
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
 
+NETWORKED_WEB_TOOLS = frozenset({"web.fetch", "web.search", "web.crawl", "web.extract"})
+NATIVE_WEB_READ_TOOLS = frozenset({"web.crawl", "web.extract", "web.read", "web.find"})
+WEB_ALLOWED_PROFILES = frozenset({"domain-allowlist", "full-trusted-local"})
+
 
 @dataclass
 class WorkerToolGateway:
     """Compose local tools with a manifest-bound Host gateway."""
 
     local: LocalToolGateway
+    web_egress_enabled: bool = True
+    web_pipeline_v2: bool = False
     host: HostToolGateway | None = None
     host_context: HostContextEnvelope | None = None
     host_manifest: HostToolManifest | None = None
@@ -80,10 +86,10 @@ class WorkerToolGateway:
 
     @property
     def model_tools(self) -> tuple[ModelToolDefinition, ...]:
-        tools = self.local.model_tools + _host_model_tools(
-            self.host_manifest,
-            self.host_context,
-        )
+        tools = self.local.model_tools
+        if not self.web_egress_enabled:
+            tools = tuple(tool for tool in tools if tool.name not in NETWORKED_WEB_TOOLS)
+        tools += _host_model_tools(self.host_manifest, self.host_context)
         if self.management is not None:
             registry = ToolRegistry()
             for contract in management_contracts():
@@ -140,7 +146,8 @@ class WorkerToolGateway:
         )
         from agent_tools.effect_guard_support import READ_ONLY_TOOLS
 
-        return READ_ONLY_TOOLS | host_read | (self.management_names & READ_NAMES)
+        native_read = NATIVE_WEB_READ_TOOLS if self.web_pipeline_v2 else frozenset()
+        return READ_ONLY_TOOLS | native_read | host_read | (self.management_names & READ_NAMES)
 
     @property
     def mutation_tools(self) -> frozenset[str]:
@@ -374,9 +381,12 @@ def build_worker_tool_gateway(
         parent_binding=parent_binding,
         parent_context=parent_context,
     )
+    web_egress_enabled = trusted_local or task.network_profile.name.value in WEB_ALLOWED_PROFILES
     if task.host_context is None:
         return WorkerToolGateway(
             local=local,
+            web_egress_enabled=web_egress_enabled,
+            web_pipeline_v2=settings.web_pipeline_v2,
             runtime=runtime,
             runtime_handle=runtime_handle,
             client=client_gateway,
@@ -414,6 +424,8 @@ def build_worker_tool_gateway(
         return WorkerToolGateway(
             local=local,
             host=pinned,
+            web_egress_enabled=web_egress_enabled,
+            web_pipeline_v2=settings.web_pipeline_v2,
             host_context=task.host_context,
             host_manifest=manifest,
             runtime=runtime,
@@ -437,6 +449,8 @@ def build_worker_tool_gateway(
         return WorkerToolGateway(
             local=local,
             runtime=runtime,
+            web_egress_enabled=web_egress_enabled,
+            web_pipeline_v2=settings.web_pipeline_v2,
             runtime_handle=runtime_handle,
             client=client_gateway,
             resource_authority_issuer=resource_authority_issuer,
@@ -468,6 +482,8 @@ def build_worker_tool_gateway(
     return WorkerToolGateway(
         local=local,
         host=host,
+        web_egress_enabled=web_egress_enabled,
+        web_pipeline_v2=settings.web_pipeline_v2,
         host_context=task.host_context,
         host_manifest=manifest,
         runtime=runtime,

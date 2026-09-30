@@ -618,6 +618,19 @@ def test_local_tool_gateway_registers_native_web_tools_when_v2_enabled(tmp_path)
     assert {"web.fetch", "web.crawl", "web.extract", "web.read", "web.find"} <= names
 
 
+def test_native_browser_fetcher_is_reserved_for_trusted_local(tmp_path, monkeypatch) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr("agent_runtime.web_tools.is_crawl4ai_available", lambda: True)
+    monkeypatch.setattr(
+        "agent_runtime.web_tools.Crawl4AIFetchProvider",
+        lambda: calls.append("browser") or object(),
+    )
+    LocalToolGateway(tmp_path.resolve(), web_pipeline_v2=True)
+    assert calls == []
+    LocalToolGateway(tmp_path.resolve(), web_pipeline_v2=True, trusted_local=True)
+    assert calls == ["browser"]
+
+
 def test_local_tool_gateway_keeps_legacy_web_when_v2_disabled(tmp_path) -> None:
     gateway = LocalToolGateway(tmp_path.resolve())
 

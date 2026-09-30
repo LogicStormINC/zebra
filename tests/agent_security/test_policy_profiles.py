@@ -492,7 +492,7 @@ def test_web_search_v2_accepts_pipeline_filters_and_keeps_read_only_scope() -> N
             "limit": 4,
             "time_range": "day",
             "include_domains": ["docs.example.com"],
-            "auto_fetch": 1,
+            "auto_fetch": 0,
             "min_score": 0.2,
             "format": "list",
         },

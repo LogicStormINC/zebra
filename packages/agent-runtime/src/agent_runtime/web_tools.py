@@ -65,7 +65,7 @@ def register_native_web_tools(
     web_projector = WebProjector()
     fetch_provider = (
         Crawl4AIFetchProvider()
-        if is_crawl4ai_available()
+        if trusted_local and is_crawl4ai_available()
         else LocalHttpFetchProvider(use_system_proxy=trusted_local)
     )
     crawl_gateway = CrawlGateway(

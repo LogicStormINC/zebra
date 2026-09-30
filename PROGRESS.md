@@ -1,5 +1,18 @@
 # Zebra Agent Project Status
 
+2026-10-01: `HAR-EGRESS-TOOL-ALIGN-01` is in Review on
+`codex/egress-tool-alignment`. Cloud Worker no longer advertises networked
+Web tools for `none`, `setup-only`, `mcp-proxy-only` or `git-proxy-only`;
+Tool Gateway and Policy remain fail-closed if a tool call is fabricated.
+Opt-in Web v2 `crawl`/`extract` now classify by URL and durable network
+profile, while `read`/`find` remain cached local reads. Cloud v2 search
+rejects `auto_fetch` to avoid unapproved secondary fetches; the optional
+browser fetch provider is reserved for trusted-local, and Cloud uses the
+existing no-redirect HTTP provider. Focused tests 113/113, full suite
+excluding the inherited `test_host_egress.py` import blocker 4723 passed /
+903 skipped, and `make check` pass. No merge, push or deployment of this
+follow-up branch yet.
+
 2026-10-01: `HAR-POLICY-READ-RECOVERY-01` is implemented on
 `codex/policy-denial-recovery` for review. Blocked external read egress now
 returns a failed, non-executed observation to the model without weakening the
