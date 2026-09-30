@@ -319,6 +319,22 @@ def test_mcp_tool_is_blocked_by_fail_closed_default_profile() -> None:
     )
 
 
+def test_blocked_web_read_has_structured_route_without_relaxing_denial() -> None:
+    engine = LocalPolicyEngine(
+        profile=PolicyProfile.FULL_ACCESS,
+        network_profile=parse_network_profile("mcp-proxy-only"),
+    )
+
+    decision = engine.evaluate_tool_call(
+        _tool_call("web.fetch", {"url": "https://rsshub.app/bilibili/user/video/946974"})
+    )
+
+    assert decision.decision is PolicyDecisionType.DENY
+    assert decision.route == "blocked"
+    assert decision.target == "rsshub.app"
+    assert decision.network_profile == "mcp-proxy-only"
+
+
 def test_mcp_tool_requires_approval_when_proxy_route_is_enabled() -> None:
     engine = LocalPolicyEngine(
         profile=PolicyProfile.FULL_ACCESS,

@@ -19,7 +19,7 @@ from agent_core.harness.models import (
     HarnessEventDraft,
 )
 from agent_core.harness.orchestration_events import policy_decision_payload
-from agent_core.harness.policy_step import policy_stop_result
+from agent_core.harness.policy_step import policy_stop_result, recoverable_egress_denial
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.subagent_metadata import aggregate_subagent_metadata
 from agent_core.harness.tool_execution import record_tool_result
@@ -127,6 +127,7 @@ class ConcurrentToolBatchExecutor:
         loop_guard_counts = _loop_guard_counts(metadata)
         metadata = {**metadata, "loop_guard_counts": dict(loop_guard_counts)}
         duplicate_indices: set[int] = set()
+        denied_results: dict[int, ToolResult] = {}
         for index, tool_call in enumerate(tool_calls):
             summary, selection_metadata = selection_evidence(
                 index=index,
@@ -189,6 +190,12 @@ class ConcurrentToolBatchExecutor:
                 )
             )
             if decision.decision is not PolicyDecisionType.ALLOW:
+                denied_result = recoverable_egress_denial(
+                    tool_call, decision, read_only_tools=self._read_only_tools
+                )
+                if denied_result is not None:
+                    denied_results[index] = denied_result
+                    continue
                 terminal = policy_stop_result(
                     context,
                     messages=messages,
@@ -208,15 +215,18 @@ class ConcurrentToolBatchExecutor:
             "parallelism_limit": self._max_parallel_tool_calls,
         }
         executable_calls = tuple(
-            call for idx, call in enumerate(tool_calls) if idx not in duplicate_indices
+            call for idx, call in enumerate(tool_calls)
+            if idx not in duplicate_indices and idx not in denied_results
         )
-        for tool_call in tool_calls:
+        for tool_call in executable_calls:
             emitted_events.append(_started_event(context, tool_call))
         executed_results = self._execute_all(executable_calls)
-        results = _merge_results(tool_calls, executable_calls, executed_results, duplicate_indices)
+        results = _merge_results(
+            tool_calls, executed_results, duplicate_indices, denied_results
+        )
         failed_names: list[str] = []
         observed_epoch = _integer(batch_metadata.get("mutation_epoch"))
-        for tool_call, tool_result in zip(tool_calls, results, strict=True):
+        for index, (tool_call, tool_result) in enumerate(zip(tool_calls, results, strict=True)):
             execution = record_tool_result(
                 context,
                 tool_call,
@@ -224,7 +234,8 @@ class ConcurrentToolBatchExecutor:
                 verifier=self._verifier,
                 emitted_events=emitted_events,
             )
-            tool_calls_executed += 1
+            if index not in denied_results and index not in duplicate_indices:
+                tool_calls_executed += 1
             fingerprints.add(action_fingerprint(tool_call))
             self._model_step.append_tool_result(
                 messages,
@@ -354,18 +365,34 @@ def _loop_guard_counts(metadata: Mapping[str, object]) -> dict[str, int]:
     return {}
 
 
+def _accumulate_failure(metadata: dict[str, object], tool_name: str) -> dict[str, object]:
+    prior_failures = metadata.get("recoverable_tool_failure_count", 0)
+    failure_count = (
+        prior_failures + 1
+        if isinstance(prior_failures, int) and not isinstance(prior_failures, bool)
+        else 1
+    )
+    return {
+        **metadata,
+        "recoverable_tool_failure_count": failure_count,
+        "last_failed_tool_name": tool_name,
+    }
+
+
 def _merge_results(
     tool_calls: tuple[ToolCall, ...],
-    executable_calls: tuple[ToolCall, ...],
     executed_results: tuple[ToolResult, ...],
     duplicate_indices: set[int],
+    denied_results: Mapping[int, ToolResult],
 ) -> tuple[ToolResult, ...]:
-    if not duplicate_indices:
+    if not duplicate_indices and not denied_results:
         return executed_results
     results: list[ToolResult] = []
     exec_iter = iter(executed_results)
     for index, tool_call in enumerate(tool_calls):
-        if index in duplicate_indices:
+        if index in denied_results:
+            results.append(denied_results[index])
+        elif index in duplicate_indices:
             results.append(
                 ToolResult(
                     tool_call_id=tool_call.tool_call_id,

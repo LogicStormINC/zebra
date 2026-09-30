@@ -30,6 +30,20 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `HAR-POLICY-READ-RECOVERY-01`: In Progress, owned by Luke Ding (Codex), branch
+  `codex/policy-denial-recovery`, isolated worktree. Goal: keep blocked external
+  read egress fail-closed while letting the model recover from the denied
+  `web.fetch` in Trench conversation `conv_1790785691290_2a08dd`. Owned paths:
+  `packages/agent-core/src/agent_core/harness/{policy_step,tool_batch,concurrent_batch}.py`,
+  `packages/agent-security/src/agent_security/policy.py`, focused
+  `tests/agent_core/test_{tool_call_batches,concurrent_tool_batches}.py`,
+  `tests/agent_security/test_policy_profiles.py`, this registry, `PROGRESS.md`,
+  and `docs/HAR_POLICY_DENIAL_RECOVERY.md`. Acceptance: denied request never
+  reaches gateway, model receives a paired failure observation, concurrent
+  siblings remain safe, hard policy denials and approvals remain unchanged,
+  focused suites and `make check` pass. Full-suite collection currently has an
+  unrelated missing `_resolve_pinned_gateway` import in `test_host_egress.py`.
+
 - `REACT-DOCUMENT-01`: Review, owned by Codex on
   `cloud-agent-trench` through focused commit `989af16e`. Scope: add a
   host-neutral Asset preview surface for Markdown, text, JSON, CSV/TSV, image,

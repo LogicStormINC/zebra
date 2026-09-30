@@ -28,6 +28,11 @@ TOOLS = (
         description="Run tests.",
         parameters={"type": "object", "properties": {}},
     ),
+    ModelToolDefinition(
+        name="web.fetch",
+        description="Fetch a URL.",
+        parameters={"type": "object", "properties": {}},
+    ),
 )
 
 
@@ -55,6 +60,23 @@ class RecordingToolGateway:
             status=ToolCallStatus.EXECUTED,
             output=f"result:{tool_call.provider_call_id}",
         )
+
+
+class ReadOnlyGateway(RecordingToolGateway):
+    read_only_tools = frozenset({"web.fetch"})
+
+
+class BlockedReadPolicy(PolicyByName):
+    def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
+        if tool_call.name == "web.fetch":
+            return PolicyDecision(
+                decision=PolicyDecisionType.DENY,
+                reason="network profile mcp-proxy-only does not allow the requested egress",
+                policy_profile="test",
+                route="blocked",
+                network_profile="mcp-proxy-only",
+            )
+        return super().evaluate_tool_call(tool_call)
 
 
 class FailingToolGateway(RecordingToolGateway):
@@ -192,6 +214,47 @@ def test_provider_batch_denial_stops_before_denied_member_and_tail() -> None:
     assert result.attempt_result.metadata["policy_decision"] == "deny"
     assert tools.calls == [first]
     assert sum(event.event_type is EventType.POLICY_DECISION_MADE for event in result.events) == 2
+
+
+def test_blocked_read_egress_returns_to_model_without_sending_request() -> None:
+    denied = _call("web.fetch", {"url": "https://rsshub.app/example"}, "call_denied")
+    model = _gateway(
+        _completion("Try external read.", denied),
+        _completion("I can answer from the earlier internal evidence."),
+    )
+    tools = ReadOnlyGateway()
+
+    result = _run(model, tools, max_model_calls=2, policy=BlockedReadPolicy())
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert tools.calls == []
+    assert result.run_result.tool_calls_used == 0
+    assert result.attempt_result.metadata["recoverable_tool_failure_count"] == 1
+    assert any(
+        "No request was sent" in message.content
+        for message in model.requests[1]
+        if message.role is MessageRole.TOOL
+    )
+    assert any(
+        event.event_type is EventType.POLICY_DECISION_MADE
+        and event.payload["decision"] == "deny"
+        for event in result.events
+    )
+
+
+def test_repeated_blocked_read_egress_hits_existing_loop_guard() -> None:
+    calls = tuple(
+        _call("web.fetch", {"url": "https://rsshub.app/example"}, f"call_{index}")
+        for index in range(4)
+    )
+    model = _gateway(*(_completion("Retry blocked read.", call) for call in calls))
+    tools = ReadOnlyGateway()
+
+    result = _run(model, tools, max_model_calls=5, policy=BlockedReadPolicy())
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
+    assert result.attempt_result.metadata["stop_reason"] == "loop_guard_exhausted"
+    assert tools.calls == []
 
 
 def _run(

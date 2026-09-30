@@ -138,7 +138,14 @@ class LocalPolicyEngine:
             web_pipeline_v2=self.web_pipeline_v2,
         )
         if egress.route is ToolEgressRoute.BLOCKED:
-            return _deny(self.profile, blocked_route_reason(egress))
+            return PolicyDecision(
+                decision=PolicyDecisionType.DENY,
+                reason=blocked_route_reason(egress),
+                policy_profile=self.profile.value,
+                route=egress.route.value,
+                target=egress.target,
+                network_profile=egress.network_profile,
+            )
         if egress.route is ToolEgressRoute.WEB_GATEWAY:
             return external_read_allow_decision(
                 policy_profile=self.profile.value,

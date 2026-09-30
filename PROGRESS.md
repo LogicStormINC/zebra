@@ -1,5 +1,13 @@
 # Zebra Agent Project Status
 
+2026-10-01: `HAR-POLICY-READ-RECOVERY-01` is implemented on
+`codex/policy-denial-recovery` for review. Blocked external read egress now
+returns a failed, non-executed observation to the model without weakening the
+policy decision. Sequential and concurrent regression tests plus agent-core
+and agent-security suites pass; `make check` passes. Full `make test` is blocked
+at collection by the existing `test_host_egress.py` import of missing
+`_resolve_pinned_gateway`. No runtime deployment or conversation replay yet.
+
 2026-09-29 HOST-MEDIA-IMPORT-01: authority-scoped historical Host media can now
 cross into Zebra's current-Session Artifact domain without accepting arbitrary
 model-supplied URLs. The Trench adapter selects an entitled event attachment;

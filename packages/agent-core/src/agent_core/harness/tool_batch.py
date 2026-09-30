@@ -11,6 +11,8 @@ from agent_core.harness.concurrent_batch import (
     DEFAULT_REPEAT_HARD_STOP_THRESHOLD,
     ConcurrentToolBatchExecutor,
     ToolBatchResult,
+    _accumulate_failure,
+    _loop_guard_counts,
     selection_evidence,
 )
 from agent_core.harness.evidence_ledger import record_tool_evidence
@@ -19,7 +21,7 @@ from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessContext, HarnessEventDraft
 from agent_core.harness.orchestration_events import policy_decision_payload
 from agent_core.harness.plan_step import execute_plan_call
-from agent_core.harness.policy_step import policy_stop_result
+from agent_core.harness.policy_step import policy_stop_result, recoverable_egress_denial
 from agent_core.harness.selection import ToolCallSelection
 from agent_core.harness.tool_execution import execute_tool_call, record_tool_result
 from agent_core.harness.tool_freshness import (
@@ -250,6 +252,26 @@ class ToolBatchExecutor:
                     )
                 )
                 if decision.decision is not PolicyDecisionType.ALLOW:
+                    denied_result = recoverable_egress_denial(
+                        tool_call, decision, read_only_tools=self.read_only_tools
+                    )
+                    if denied_result is not None:
+                        step = record_tool_result(
+                            context,
+                            tool_call,
+                            denied_result,
+                            verifier=self._verifier,
+                            emitted_events=emitted_events,
+                        )
+                        self._model_step.append_tool_result(
+                            messages,
+                            tool_call=tool_call,
+                            tool_result=denied_result,
+                            created_at=context.attempt.started_at,
+                        )
+                        fingerprints.add(action_fingerprint(tool_call))
+                        metadata = _accumulate_failure(metadata | step.metadata, tool_call.name)
+                        continue
                     terminal = policy_stop_result(
                         context,
                         messages=messages,
@@ -473,26 +495,3 @@ def _can_recover_repeated_reads(
         )
         for tool_call in tool_calls
     )
-
-
-def _loop_guard_counts(metadata: Mapping[str, object]) -> dict[str, int]:
-    raw = metadata.get("loop_guard_counts")
-    if isinstance(raw, dict):
-        return {str(k): v for k, v in raw.items() if isinstance(v, int) and not isinstance(v, bool)}
-    return {}
-
-
-def _accumulate_failure(
-    metadata: dict[str, object], tool_name: str
-) -> dict[str, object]:
-    prior_failures = metadata.get("recoverable_tool_failure_count", 0)
-    failure_count = (
-        prior_failures + 1
-        if isinstance(prior_failures, int) and not isinstance(prior_failures, bool)
-        else 1
-    )
-    return {
-        **metadata,
-        "recoverable_tool_failure_count": failure_count,
-        "last_failed_tool_name": tool_name,
-    }

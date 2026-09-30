@@ -84,6 +84,23 @@ class RecordingGateway:
         )
 
 
+class ReadOnlyRecordingGateway(RecordingGateway):
+    read_only_tools = frozenset({"files.read"})
+
+
+class BlockedReadPolicy(PolicyByProviderId):
+    def evaluate_tool_call(self, tool_call: ToolCall) -> PolicyDecision:
+        if tool_call.provider_call_id == "call_blocked":
+            return PolicyDecision(
+                decision=PolicyDecisionType.DENY,
+                reason="network profile mcp-proxy-only does not allow egress",
+                policy_profile="test",
+                route="blocked",
+                network_profile="mcp-proxy-only",
+            )
+        return super().evaluate_tool_call(tool_call)
+
+
 def test_parallel_safe_calls_overlap_and_preserve_provider_order() -> None:
     calls = (_read("a.txt", "call_a"), _read("b.txt", "call_b"))
     tools = ProbeGateway()
@@ -163,6 +180,26 @@ def test_candidate_batch_denial_stops_before_any_tool_starts() -> None:
     assert result.attempt_result.outcome is HarnessAttemptOutcome.FAILED
     assert tools.calls == []
     assert _event_names(result, EventType.TOOL_EXECUTION_STARTED) == []
+
+
+def test_parallel_batch_skips_blocked_read_but_executes_allowed_sibling() -> None:
+    calls = (_read("allowed.txt", "call_allowed"), _read("blocked.txt", "call_blocked"))
+    tools = ReadOnlyRecordingGateway()
+    result, model = _run(calls, tools, max_parallel=2, policy=BlockedReadPolicy())
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert tools.calls == [calls[0]]
+    assert result.run_result.tool_calls_used == 1
+    assert result.attempt_result.metadata["recoverable_tool_failure_count"] == 1
+    tool_result_ids = [
+        message.tool_call_id
+        for message in model.requests[1]
+        if message.role is MessageRole.TOOL
+    ]
+    assert tool_result_ids == [
+        "call_allowed", "call_blocked"
+    ]
+    assert _event_names(result, EventType.TOOL_EXECUTION_STARTED) == ["files.read"]
 
 
 def test_concurrent_failure_observes_every_started_sibling() -> None:
