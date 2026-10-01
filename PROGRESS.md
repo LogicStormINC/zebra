@@ -4026,3 +4026,24 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
 - Zebra `make check` and focused policy/runtime/schema tests pass locally;
   real Cloud search/MCP/Host acceptance, merge, push, migration and deployment
   remain separate gates.
+
+### 2026-10-01 - Trench/Zebra conversation compatibility incident
+
+- Confirmed old running Zebra API rejected Trench v20 `full-gateway` Tasks
+  with HTTP 400 while PostgreSQL remained at v59. Applied v60 locally and
+  replaced API/Worker from a matching isolated source snapshot; both now
+  recognize `full-gateway`.
+- Added an authenticated runtime-capabilities endpoint for Host preflight.
+  Trench uses separate single-use Host Grants for capability GET and Task POST,
+  identifies version mismatches explicitly and retains the existing conversation.
+- Local browser acceptance: original conversation resumed and a newly created
+  Task completed after correcting the Grant binding. This is local runtime
+  evidence, not remote deployment or all Web/MCP capabilities acceptance.
+- A later Turn in the same conversation stalled at `session_waiting_for_client_effect`:
+  its accepted receipt and trusted resume command preceded the final waiting
+  projection, so the fallback Worker scan skipped that command. The Worker now
+  recognizes this narrow durable-event ordering; a regression test reproduces
+  it. Replacing only the local Worker woke the old Turn, but its bound Host Grant
+  had expired during the wait, so it failed closed. A fresh Turn in that same
+  browser conversation completed with the expected answer. Durable command
+  delivery cutover and remote deployment remain separate work.

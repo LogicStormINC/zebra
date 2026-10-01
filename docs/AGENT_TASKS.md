@@ -29942,3 +29942,34 @@ browser Cookie or Host Grant.
   accepts the profile, and Trench creates a new Task generation.
 - Evidence: focused policy, runtime and schema tests and `make check` pass
   locally. Real service/browser acceptance and deployment remain unverified.
+
+### CLOUD-TASK-COMPAT-01 - Host and runtime Task compatibility incident
+
+- Status: Review
+- Owner: Codex
+- Branch: `codex/conversation-compatibility`
+- Owned paths: Zebra API runtime capability route and focused test,
+  Worker fallback command consumer and focused test,
+  `docs/CLOUD_FULL_GATEWAY_PROFILE.md`, this registry and `PROGRESS.md`.
+  The paired Trench BFF contract, preflight, error mapping and tests live in
+  Trench `codex/conversation-compatibility`.
+- Goal: prevent a Trench Host release from sending a new Task profile to an
+  older Zebra API and preserve the conversation on incompatibility.
+- Acceptance: the API declares its accepted profiles and schema generation;
+  Trench checks this with a separate one-use Grant before Task POST; old
+  runtime responses produce an actionable mismatch error; existing Tasks
+  remain usable; focused tests and a real local new Task pass.
+- Evidence: local database v59 to v60 and matching API/Worker replacement;
+  original conversation resumed, and a new Task completed after correcting
+  single-use Grant binding. Remote deployment and full Web/MCP acceptance
+  remain separate gates. The release build retained two previously deployed
+  uncommitted Artifact/tool-failure fixes from the local workspace.
+- Follow-up: a fast Client Effect receipt can append its trusted resume command
+  before finalization appends `session_waiting_for_client_effect`. With command
+  delivery disabled, the fallback consumer must not treat the later projection
+  sequence as proof that the resume was handled.
+- Validation: focused Worker/client-effect tests and `make check` pass. Local
+  replacement Worker woke the stranded Task; that old Turn then failed closed
+  because its Host Grant had expired. A fresh Turn in the same Trench browser
+  conversation returned the expected answer. This does not prove remote
+  deployment or the durable command-queue cutover.

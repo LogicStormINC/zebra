@@ -7,8 +7,10 @@ from uuid import UUID
 
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.session_handoff import HandoffActorKind
 from agent_security.host_grant import VerifiedHostGrant
+from agent_storage.postgres.migrations import MIGRATIONS
 
 from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.agent_definitions import handle_agent_definition_route
@@ -47,6 +49,12 @@ class RouteAdapter:
         method = request.method.upper()
         if method == "GET" and request.path == "/health":
             return self.app.health()
+        if method == "GET" and request.path == "/capabilities/runtime":
+            return ApiResponse(200, {
+                "contract_version": 1,
+                "schema_version": MIGRATIONS[-1].version,
+                "network_profiles": [profile.value for profile in NetworkProfileName],
+            })
         if method == "GET" and request.path == "/capabilities/mcp":
             return self.app.get_mcp_capabilities()
         if method == "GET" and request.path == "/capabilities/mcp/prompts":

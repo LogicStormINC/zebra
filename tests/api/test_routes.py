@@ -80,6 +80,17 @@ def test_route_adapter_handles_health(tmp_path: Path) -> None:
     assert response.body["status"] == "ok"
 
 
+def test_runtime_capabilities_advertise_current_task_profile(tmp_path: Path) -> None:
+    adapter = RouteAdapter(create_app(tmp_path / "sessions.sqlite"))
+
+    response = adapter.handle(RouteRequest(method="GET", path="/capabilities/runtime"))
+
+    assert response.status_code == 200
+    assert response.body["contract_version"] == 1
+    assert response.body["schema_version"] >= 60
+    assert "full-gateway" in response.body["network_profiles"]
+
+
 def test_route_adapter_handles_session_lookup(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = SQLiteProjectionStore(database_path).save_session(

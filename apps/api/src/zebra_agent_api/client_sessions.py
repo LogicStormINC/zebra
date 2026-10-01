@@ -235,7 +235,12 @@ def bind_client_run(
         task = app.stores.tasks.get_task(parsed_task_id)
         if task is None:
             return ApiResponse(404, {"status": "not_found", "reason": "unknown_task"})
-        if host_context is None or task.namespace != host_context.namespace_id:
+        session = app.stores.sessions.get_session(task.active_segment_id)
+        if (
+            host_context is None
+            or session is None
+            or session.namespace_id != host_context.namespace_id
+        ):
             return ApiResponse(
                 403,
                 {"status": "forbidden", "reason": "task_namespace_mismatch"},
