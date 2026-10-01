@@ -73,6 +73,7 @@ class SandboxSpec:
             "none",
             "domain-allowlist",
             "mcp-proxy-only",
+            "full-gateway",
             "git-proxy-only",
         }:
             raise ValueError("network_profile is unsupported by hard runtime")

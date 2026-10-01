@@ -6,6 +6,13 @@ from agent_storage.postgres.migration_types import PostgresMigrationError
 from agent_storage.postgres.migrations import MIGRATIONS
 
 
+def test_full_gateway_profile_has_additive_postgres_migration() -> None:
+    migration = MIGRATIONS[-1]
+    assert migration.version == 60
+    assert migration.name == "full_gateway_network_profile"
+    assert "'full-gateway'" in migration.statements[-1]
+
+
 @pytest.mark.parametrize("valid", [True, False])
 def test_startup_requires_exact_schema(monkeypatch, valid):
     connection = MagicMock()

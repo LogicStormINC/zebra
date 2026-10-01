@@ -4014,3 +4014,15 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   `7 passed`. Trench `make check` passed with `145` API/model tests, `78`
   cleaning/pipeline tests, `147` ToC tests and both production builds. Browser
   acceptance, commit/push and deployment remain separate gates.
+
+### 2026-10-01 - Cloud full-gateway profile (isolated branch)
+
+- Added `full-gateway` as durable Task authority for simultaneous Web-gateway
+  and MCP-proxy tools. It does not activate trusted-local approval bypass or
+  direct sandbox networking; Host grants remain independent.
+- Added PostgreSQL migration v60 and paired Trench Task-generation change.
+  Existing Tasks retain their frozen profile. Search still requires a configured
+  HTTPS endpoint. See `docs/CLOUD_FULL_GATEWAY_PROFILE.md`.
+- Zebra `make check` and focused policy/runtime/schema tests pass locally;
+  real Cloud search/MCP/Host acceptance, merge, push, migration and deployment
+  remain separate gates.

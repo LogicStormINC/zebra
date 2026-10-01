@@ -29922,3 +29922,23 @@ browser Cookie or Host Grant.
   the full suite passes `4640`, with `897` environment-dependent skips. Real
   PostgreSQL tests were unavailable locally and are not claimed. No model,
   reasoning, Redis authority, commit, push, publication or deployment changed.
+
+### HAR-CLOUD-FULL-GATEWAY-01 - Cloud Web and MCP capability composition
+
+- Status: Review
+- Owner: Codex
+- Branch: `codex/cloud-gateway-full`
+- Depends on: `HAR-EGRESS-TOOL-ALIGN-01`
+- Owned paths: network profile and SandboxSpec contracts under `agent-core`,
+  egress policy under `agent-security`, Worker gateway composition, additive
+  PostgreSQL migration catalog, focused tests, `docs/CLOUD_FULL_GATEWAY_PROFILE.md`,
+  this registry and `PROGRESS.md`. Paired Host preset/UI/tests are in the Trench
+  `codex/agent-full-gateway` branch.
+- Goal: grant explicit Cloud Tasks Web and MCP gateway tools together without
+  using trusted-local authority or direct sandbox networking.
+- Acceptance: Web and MCP calls route through their existing governed gateways,
+  unsafe Web targets still fail closed, MCP approval remains active, a hard
+  runtime accepts the durable profile while keeping network isolation, v60
+  accepts the profile, and Trench creates a new Task generation.
+- Evidence: focused policy, runtime and schema tests and `make check` pass
+  locally. Real service/browser acceptance and deployment remain unverified.

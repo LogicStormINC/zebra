@@ -16,6 +16,7 @@ def test_supported_network_profiles_match_architecture_contract() -> None:
         "setup-only",
         "domain-allowlist",
         "mcp-proxy-only",
+        "full-gateway",
         "git-proxy-only",
         "full-trusted-local",
     )

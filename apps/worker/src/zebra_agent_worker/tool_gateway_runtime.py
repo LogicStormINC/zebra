@@ -63,7 +63,7 @@ from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoor
 
 NETWORKED_WEB_TOOLS = frozenset({"web.fetch", "web.search", "web.crawl", "web.extract"})
 NATIVE_WEB_READ_TOOLS = frozenset({"web.crawl", "web.extract", "web.read", "web.find"})
-WEB_ALLOWED_PROFILES = frozenset({"domain-allowlist", "full-trusted-local"})
+WEB_ALLOWED_PROFILES = frozenset({"domain-allowlist", "full-gateway", "full-trusted-local"})
 
 
 @dataclass

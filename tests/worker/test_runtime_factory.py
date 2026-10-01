@@ -48,6 +48,18 @@ def test_runtime_factory_builds_immutable_gvisor_spec(tmp_path: Path) -> None:
     assert runtime.spec.limits.memory_mb == 1024
 
 
+def test_full_gateway_keeps_hard_runtime_isolation(tmp_path: Path) -> None:
+    image = "zebra/runtime@sha256:" + "a" * 64
+    runtime = build_runtime(
+        _settings(RuntimeSettings(runtime_class="gvisor", image=image)),
+        tmp_path / "sessions.sqlite",
+        workspace_root=tmp_path,
+        network_profile="full-gateway",
+    )
+    assert isinstance(runtime, OciRuntime)
+    assert runtime.spec.network_profile == "full-gateway"
+
+
 def test_runtime_factory_builds_native_os_sandbox(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
         "zebra_agent_worker.runtime_factory.os_sandbox_engine",

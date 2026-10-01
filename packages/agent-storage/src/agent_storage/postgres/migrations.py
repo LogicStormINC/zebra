@@ -22,6 +22,7 @@ from agent_storage.postgres.host_manifest_freeze_migration import HOST_MANIFEST_
 from agent_storage.postgres.mcp_catalog_migration import MCP_CATALOG_MIGRATION
 from agent_storage.postgres.mcp_credentials_migration import MCP_CREDENTIALS_MIGRATION
 from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
+from agent_storage.postgres.migration_catalog_tail import LATEST_MIGRATIONS
 from agent_storage.postgres.migration_extensions import RELIABILITY_MIGRATIONS
 from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.migration_types import Migration
@@ -34,11 +35,6 @@ from agent_storage.postgres.skill_publications_migration import SKILL_PUBLICATIO
 from agent_storage.postgres.skill_uploads_migration import SKILL_UPLOADS_MIGRATION
 from agent_storage.postgres.subagent_delegation_migration import SUBAGENT_DELEGATION_MIGRATION
 from agent_storage.postgres.task_admission_migration import TASK_BINDING_MIGRATION
-from agent_storage.postgres.task_schedule_migration import TASK_SCHEDULE_MIGRATION
-from agent_storage.postgres.tool_profile_constraint_migration import (
-    TOOL_PROFILE_CONSTRAINT_MIGRATION,
-)
-from agent_storage.postgres.user_personalization_migration import USER_PERSONALIZATION_MIGRATION
 from agent_storage.postgres.workspace_control_migration import WORKSPACE_CONTROL_MIGRATION
 from agent_storage.postgres.workspace_definition_snapshot_migration import (
     WORKSPACE_DEFINITION_SNAPSHOT_MIGRATION,
@@ -496,5 +492,5 @@ MIGRATIONS = (
     CLIENT_SECURITY_MIGRATION, *RELIABILITY_MIGRATIONS, EXTENSIONS_MIGRATION,
     SKILL_PUBLICATIONS_MIGRATION, SKILL_UPLOADS_MIGRATION, EXTENSION_SNAPSHOTS_MIGRATION,
     MCP_CREDENTIALS_MIGRATION, MCP_CATALOG_MIGRATION,
-    TOOL_PROFILE_CONSTRAINT_MIGRATION, TASK_SCHEDULE_MIGRATION, USER_PERSONALIZATION_MIGRATION,
+    *LATEST_MIGRATIONS,
 )

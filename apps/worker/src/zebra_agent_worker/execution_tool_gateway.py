@@ -139,7 +139,9 @@ def build_execution_tool_gateway(
     gateway.management = prepare_extension_management(
         extension, mcp=service._extensions.mcp, skills=service._extensions.skills,
         session_id=session_id, fence=fence,
-        allow_network=task.network_profile.name.value in ("mcp-proxy-only", "full-trusted-local"),
+        allow_network=task.network_profile.name.value in (
+            "mcp-proxy-only", "full-gateway", "full-trusted-local"
+        ),
     )
     if gateway.management is not None and extension is not None:
         context = extension.task_ceiling.binding.host_capability.host_context

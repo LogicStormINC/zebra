@@ -83,6 +83,7 @@ def classify_tool_egress(
         )
     if network_profile.name in (
         NetworkProfileName.MCP_PROXY_ONLY,
+        NetworkProfileName.FULL_GATEWAY,
         NetworkProfileName.FULL_TRUSTED_LOCAL,
     ):
         return ToolEgressMetadata(
@@ -114,7 +115,9 @@ def _classify_web_egress(
             network_profile=network_profile.name.value,
             reason=str(exc),
         )
-    if network_profile.name is NetworkProfileName.FULL_TRUSTED_LOCAL or (
+    if network_profile.name in (
+        NetworkProfileName.FULL_GATEWAY, NetworkProfileName.FULL_TRUSTED_LOCAL
+    ) or (
         network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
         and target.hostname in network_profile.domain_allowlist
     ):
@@ -154,7 +157,9 @@ def _classify_web_search_egress(
             network_profile=network_profile.name.value,
             reason=str(exc),
         )
-    if web_pipeline_v2 and network_profile.name is not NetworkProfileName.FULL_TRUSTED_LOCAL:
+    if web_pipeline_v2 and network_profile.name not in (
+        NetworkProfileName.FULL_GATEWAY, NetworkProfileName.FULL_TRUSTED_LOCAL
+    ):
         if parse_search_query(tool_call.arguments).auto_fetch:
             return ToolEgressMetadata(
                 tool_name=tool_call.name,
@@ -163,7 +168,9 @@ def _classify_web_search_egress(
                 target=target.hostname,
                 reason="web.search auto_fetch requires trusted-local network authority",
             )
-    if network_profile.name is NetworkProfileName.FULL_TRUSTED_LOCAL or (
+    if network_profile.name in (
+        NetworkProfileName.FULL_GATEWAY, NetworkProfileName.FULL_TRUSTED_LOCAL
+    ) or (
         network_profile.name is NetworkProfileName.DOMAIN_ALLOWLIST
         and target.hostname in network_profile.domain_allowlist
     ):

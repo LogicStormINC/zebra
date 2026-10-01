@@ -41,6 +41,29 @@ def test_classify_tool_egress_marks_mcp_tool_as_proxy_routable() -> None:
     assert metadata.to_mapping()["route"] == "mcp_proxy"
 
 
+def test_full_gateway_routes_both_web_and_mcp_without_trusted_local_bypass() -> None:
+    profile = parse_network_profile("full-gateway")
+    policy = LocalPolicyEngine(
+        profile=PolicyProfile.FULL_ACCESS,
+        network_profile=profile,
+        web_search_endpoint="https://search.example.com/search",
+        web_pipeline_v2=True,
+    )
+    assert policy.evaluate_tool_call(
+        _tool_call("web.fetch", {"url": "https://example.com/article"})
+    ).decision is PolicyDecisionType.ALLOW
+    assert policy.evaluate_tool_call(
+        _tool_call("web.search", {"query": "test", "auto_fetch": 1})
+    ).decision is PolicyDecisionType.ALLOW
+    assert policy.evaluate_tool_call(
+        _tool_call("mcp.github.create_pull_request", {"title": "test"})
+    ).decision is PolicyDecisionType.REQUIRE_APPROVAL
+    assert classify_tool_egress(
+        _tool_call("web.fetch", {"url": "http://127.0.0.1/"}),
+        network_profile=profile,
+    ).route is ToolEgressRoute.BLOCKED
+
+
 def test_classify_web_fetch_requires_exact_durable_allowlist_match() -> None:
     allowed = classify_tool_egress(
         _tool_call("web.fetch", {"url": "https://docs.example.com/guide"}),
