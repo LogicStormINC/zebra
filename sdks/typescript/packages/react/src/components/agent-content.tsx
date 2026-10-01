@@ -10,6 +10,7 @@ import type {
 } from "@zebra-agent/ui-contracts";
 import { AgentAppBlock, type AgentAppMessage, type AgentAppResourceResolver } from "./agent-app.tsx";
 import { AgentImageBlock, AgentVideoBlock, useArtifactAccess, type AgentArtifactResolver, type AgentMediaLabels } from "./agent-media.tsx";
+import { AgentExternalVideoBlock } from "./agent-external-video.tsx";
 
 export interface AgentContentLabels extends AgentMediaLabels {
   appFailed: string;
@@ -78,6 +79,7 @@ function AgentPart(props: AgentPartRendererProps) {
   if (part.type === "text") return <AgentTextBlock context={context} message={message} part={part} />;
   if (part.type === "image") return <AgentImageBlock labels={context.labels} part={part} {...(context.resolveArtifact ? { resolveArtifact: context.resolveArtifact } : {})} />;
   if (part.type === "video") return <AgentVideoBlock labels={context.labels} part={part} {...(context.resolveArtifact ? { resolveArtifact: context.resolveArtifact } : {})} />;
+  if (part.type === "external_video") return <AgentExternalVideoBlock part={part} />;
   if (part.type === "file") return <AgentFileBlock context={context} part={part} />;
   if (part.type === "app") return <AgentAppBlock allowedCapabilities={context.allowedAppCapabilities} labels={{ failed: context.labels.appFailed, loading: context.labels.loading, unavailable: context.labels.appUnavailable }} part={part} {...(context.onAppMessage ? { onMessage: context.onAppMessage } : {})} {...(context.resolveAppResource ? { resolveAppResource: context.resolveAppResource } : {})} />;
   return <AgentUnsupportedBlock label={context.labels.unsupported} />;

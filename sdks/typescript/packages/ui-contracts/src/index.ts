@@ -140,6 +140,14 @@ export interface AgentVideoPart extends AgentArtifactPartBase {
   width?: number;
 }
 
+/** A Host-authorized public video URL; no media bytes enter the Artifact store. */
+export interface AgentExternalVideoPart extends AgentContentPartBase {
+  type: "external_video";
+  title: string;
+  sourceUrl: string;
+  description?: string;
+}
+
 export type AgentJsonValue =
   | boolean
   | number
@@ -186,6 +194,7 @@ export type AgentContentPart =
   | AgentTextPart
   | AgentImagePart
   | AgentVideoPart
+  | AgentExternalVideoPart
   | AgentChartPart
   | AgentFilePart
   | AgentAppPart;

@@ -29973,3 +29973,26 @@ browser Cookie or Host Grant.
   because its Host Grant had expired. A fresh Turn in the same Trench browser
   conversation returned the expected answer. This does not prove remote
   deployment or the durable command-queue cutover.
+
+### REACT-EXTERNAL-VIDEO-01 - Governed external video presentation
+
+- Status: Review
+- Owner: Codex
+- Branch: `codex/external-video-embed`
+- Owned paths: `sdks/typescript/packages/ui-contracts/src/index.ts`,
+  `sdks/typescript/packages/react/src/components/agent-content.tsx`,
+  `sdks/typescript/packages/react/src/components/agent-external-video.tsx`,
+  `sdks/typescript/packages/react/src/index.ts`, React styles and focused tests,
+  this registry and `PROGRESS.md`. Paired Trench Host tool, event mapper,
+  frontend integration, vendored SDK package and focused tests are owned by the
+  same task on Trench `codex/external-video-embed`.
+- Goal: present authorized external videos inside chat without importing media
+  bytes into the Zebra Artifact Store or accepting model-authored iframe HTML.
+- Acceptance: Host-authorized event resolution emits a replayable typed external
+  video part; the reusable React package renders vetted platform players or
+  direct media with a usable source-link fallback; unsupported/blocked sources
+  remain link cards; no video Artifact is created; focused API/SDK/UI checks and
+  a real Host conversation are evaluated separately.
+- Evidence: SDK `pnpm test` 46/46, `pnpm check`, package audit; paired Trench
+  API 83/83, frontend 162/162 and production build pass. Live authenticated
+  conversation, cross-site playback and deployment are not yet verified.

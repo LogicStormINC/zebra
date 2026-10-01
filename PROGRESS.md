@@ -1,5 +1,15 @@
 # Zebra Agent Project Status
 
+2026-10-01 REACT-EXTERNAL-VIDEO-01: a Host-authorized `external_video` part
+now has a reusable player in `@zebra-agent/react`. The paired Trench Host
+tool resolves only entitled event video URLs; Turn metadata persists the
+part for stream/replay without a video Artifact. The player constructs trusted
+Bilibili/YouTube/Vimeo embeds, supports direct browser-playable files and
+falls back to a source link for other sites. SDK 46 tests, type check and
+package audit, plus paired Trench API 83 tests, frontend 162 tests and build
+pass. The paired worktrees have not been merged or deployed; a live video
+conversation and provider playback remain separate acceptance gates.
+
 2026-10-01: `HAR-EGRESS-TOOL-ALIGN-01` is in Review on
 `codex/egress-tool-alignment`. Cloud Worker no longer advertises networked
 Web tools for `none`, `setup-only`, `mcp-proxy-only` or `git-proxy-only`;

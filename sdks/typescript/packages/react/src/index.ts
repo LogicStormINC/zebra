@@ -53,6 +53,8 @@ export type {
   AgentRendererRegistry,
 } from "./components/agent-content.tsx";
 export { AgentImageBlock, AgentVideoBlock } from "./components/agent-media.tsx";
+export { AgentExternalVideoBlock, resolveExternalVideo } from "./components/agent-external-video.tsx";
+export type { ExternalVideoTarget } from "./components/agent-external-video.tsx";
 export type { AgentArtifactResolver, AgentMediaLabels } from "./components/agent-media.tsx";
 export { AgentAssetPreview } from "./components/agent-asset-preview.tsx";
 export type { AgentAssetPreviewProps, AgentPreviewAsset } from "./components/agent-asset-preview.tsx";

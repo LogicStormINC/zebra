@@ -3,7 +3,7 @@ import { test } from "node:test";
 import React, { act, createElement } from "react";
 import { JSDOM } from "jsdom";
 
-import { AgentContentRenderer, type AgentContentRendererProps } from "../src/index.ts";
+import { AgentContentRenderer, resolveExternalVideo, type AgentContentRendererProps } from "../src/index.ts";
 import type { AgentMessage } from "@zebra-agent/ui-contracts";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -38,6 +38,27 @@ test("legacy string messages render through the typed content surface", async ()
   assert.equal(mounted.container.querySelectorAll(".zebra-agent-content__text").length, 1);
   await act(async () => mounted.root.unmount());
   mounted.dom.window.close();
+});
+
+test("external video waits for interaction and constructs only trusted embeds", async () => {
+  assert.deepEqual(resolveExternalVideo("https://www.bilibili.com/video/BV1xx411c7mD?spm=tracking"), { kind: "embed", url: "https://player.bilibili.com/player.html?bvid=BV1xx411c7mD" });
+  assert.deepEqual(resolveExternalVideo("https://youtu.be/dQw4w9WgXcQ"), { kind: "embed", url: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ" });
+  assert.deepEqual(resolveExternalVideo("https://player.bilibili.com/player.html?bvid=BV1xx411c7mD&autoplay=1"), { kind: "embed", url: "https://player.bilibili.com/player.html?bvid=BV1xx411c7mD" });
+  assert.equal(resolveExternalVideo("http://localhost/video.mp4"), null);
+  assert.equal(resolveExternalVideo("https://127.0.0.1/video.mp4"), null);
+  assert.equal(resolveExternalVideo("javascript:alert(1)"), null);
+  assert.deepEqual(resolveExternalVideo("https://example.com/watch/one"), { kind: "link", url: "https://example.com/watch/one" });
+  const mounted = await mount({ message: message({ content: "", parts: [{ id: "external-1", type: "external_video", state: "ready", title: "Film", sourceUrl: "https://www.bilibili.com/video/BV1xx411c7mD" }] }) });
+  assert.equal(mounted.container.querySelector("iframe"), null);
+  await act(async () => mounted.container.querySelector<HTMLButtonElement>("button.zebra-agent-external-video__play")?.click());
+  assert.equal(mounted.container.querySelector("iframe")?.getAttribute("src"), "https://player.bilibili.com/player.html?bvid=BV1xx411c7mD");
+  await act(async () => mounted.root.unmount());
+  mounted.dom.window.close();
+  const fallback = await mount({ message: message({ content: "", parts: [{ id: "external-2", type: "external_video", state: "ready", title: "Other site", sourceUrl: "https://example.com/watch/one" }] }) });
+  assert.equal(fallback.container.querySelector("iframe"), null);
+  assert.equal(fallback.container.querySelector("a.zebra-agent-external-video__link")?.getAttribute("href"), "https://example.com/watch/one");
+  await act(async () => fallback.root.unmount());
+  fallback.dom.window.close();
 });
 
 test("image, video and file parts resolve opaque Artifact ids", async () => {
