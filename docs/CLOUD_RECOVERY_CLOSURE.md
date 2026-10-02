@@ -3,7 +3,7 @@
 - Status: Ready (user authorized 2026-10-02; claimed below before implementation)
 - Human owner: Luke Ding
 - Branch: `codex/cloud-recovery-closure`
-- Status after implementation: Review (unmerged; live activation not performed)
+- Status: Locally integrated into `cloud-agent-trench` (live activation not performed)
 - Scope: tool failure normalization and bounded recovery, Cloud stop-command
   correctness, model stream recovery, truthful partial delivery and UI feedback.
 - Owned paths: `packages/agent-core/src/agent_core/harness/**`,
@@ -93,3 +93,13 @@
 - No running service was recreated. Real authenticated Trench conversation replay
   against the new images remains a post-activation acceptance check, not a result
   inferred from these tests or builds.
+
+## Authorized local integration, 2026-10-02
+
+- User selected local integration only. Product edits were committed as Zebra
+  `0ebfc943` and Trench `13b8ea2`, then fast-forwarded into `cloud-agent-trench`
+  and `main` respectively. No push, deployment or service restart was performed.
+- Local runtime artifacts, skill installations, generated environment files and
+  the unrelated Trench `next-app` scaffold were excluded and preserved in place.
+- Branch cleanup is limited to fully merged, unoccupied local task branches.
+  Branches containing independent commits or used by other worktrees are retained.

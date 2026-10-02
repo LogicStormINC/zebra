@@ -30,7 +30,7 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
-- `CLOUD-RECOVERY-CLOSURE-01`: Review, owned by Luke Ding,
+- `CLOUD-RECOVERY-CLOSURE-01`: Done (local `cloud-agent-trench` integration), owned by Luke Ding,
   branch `codex/cloud-recovery-closure`. User-authorized follow-up of existing
   recovery work, preserving all earlier edits. Owned paths, disjoint lane
   ownership and acceptance: `docs/CLOUD_RECOVERY_CLOSURE.md`.
