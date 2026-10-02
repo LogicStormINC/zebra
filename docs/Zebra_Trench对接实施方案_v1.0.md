@@ -271,3 +271,14 @@ OpenHarness 清场中，需先协调提交）。
 
 所有 Zebra 侧工作单分支推进（`cloud-agent-trench`），按阶段小 PR 合回
 `cloud-agent`；`main` 暂不维护，维持现状。
+
+## 历史媒体兼容（2026-09-30 本地验收）
+
+会话续接后，Trench 可将当前 Task 重新绑定到新的 Zebra 部署命名空间；
+旧消息中的媒体引用仍指向旧 Task。Trench 只从当前用户、工作区持久化的
+assistant `content_parts` 中精确授权历史 artifact，不授权整个旧 Task。
+历史 `trench-prod` 命名空间由 `zebra-api-legacy` 读取，Caddy 的 `/legacy/*`
+仅放行 GET/HEAD 的 artifact preview/download；新 Task 仍走主 Zebra API。
+Trench 的 `ZEBRA_LEGACY_TASKS_URL` 在该验收环境指向
+`https://zebra.localhost:8443/legacy/tasks`。媒体读取采用独立的 30 秒
+下限超时，避免通用 5 秒请求上限在多图加载时造成 HTTP 500。

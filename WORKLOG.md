@@ -1,5 +1,75 @@
 # Progress Log
 
+## 2026-10-02 - CLOUD-RECOVERY-CLOSURE-01
+
+- Reused existing tool results, stopping policy, continuation metadata and direct
+  control receipts instead of introducing a second recovery framework.
+- Unified expected error observations in sequential/parallel execution; bounded
+  transient read retries, malformed-request correction and final synthesis.
+  Invariants, cancellation, denied authority and uncertain writes remain guarded.
+- Provider transport retries preserve frozen tool history, stop after semantic
+  output, and cannot reopen an exhausted budget at the outer Harness layer.
+- Cloud STOP uses verified durable command/binding identity and direct control;
+  permanent invalid/unsupported intents receive existing-store rejection receipts.
+- React terminal feedback distinguishes partial from completed and retains media;
+  rebuilt package delivered to Trench with Chinese status labels. Host-side
+  projection correction is included in the joint acceptance scope.
+- Full test/check results and runtime limitations are recorded in the task doc.
+  No service restart, deployment, merge or push performed by this task.
+
+## 2026-10-01 - AGENT-QUALITY-02 media evidence delivery-gate repair
+
+- Traced `conv_1790859137314_ab1aef` to Zebra's final quality gate: a valid
+  Bilibili cover URL from a successful tool `images[]` field was absent from
+  the lossy Evidence Ledger, so the answer was suspended as
+  `delivery_requirements_unmet` after one bounded revision.
+- Added typed, bounded `media_refs` collection for image/media/thumbnail
+  fields without promoting media to source citations. The URL gate now allows
+  only exact collected source or media references; invented URLs remain
+  rejected. Revision feedback includes the concrete unsupported URLs.
+- Extended the delivery assessment/event contract with `media_refs` and added
+  regression coverage for nested media results and citation acceptance.
+- Focused Harness/evidence/contract/loop tests pass `63/63`; Ruff and targeted
+  Mypy pass. Worker rebuild and real Trench browser replay are not claimed.
+
+## 2026-09-30 - MEM-QUALITY-01 full-pass historical and recall guard
+
+- Extended the write-quality gate with exact source-event provenance for the
+  obsolete tool-command generator. Scoped inventory exposes a warning only for
+  verified matches; normal inventory JSON shape remains unchanged.
+- Cloud PostgreSQL Context materialization excludes those matches before
+  ranking, so previously confirmed command snippets stop entering new model
+  calls. Manual procedures with no matching source event remain eligible.
+- Trench settings now shows source kind and supports user-confirmed, sequential
+  cleanup through existing audit/CAS endpoints. It stops after uncertain writes
+  and refreshes authoritative state; no background deletion was introduced.
+- Distinct project rules and architecture facts coexist instead of overwriting
+  each other by type. Tests cover source verification, unrelated-memory safety,
+  recall filtering, API projection and UI cleanup/failure behavior.
+- Focused Zebra tests and Trench `make check` pass (API/model `163`, pipeline
+  `79`, both frontend production builds and temporary migration validation).
+  Full Zebra pytest excluding inherited `test_host_egress.py` collection error
+  passes `4724` (`899` skipped). Isolated PostgreSQL 17 Context tests pass
+  `11/11`; the disposable test container was stopped. Existing Zebra service
+  containers have not been rebuilt from this worktree, so live historical
+  cleanup and cross-session browser acceptance remain unverified; no commit,
+  push or deployment.
+
+## 2026-09-30 - MEM-QUALITY-01 P0 write-quality gate
+
+- On the user-selected `cloud-agent-trench` branch, removed automatic
+  `command.run`/`tests.run` procedure candidates, their refresh invalidation,
+  and procedure auto-promotion. Unrelated confirmed procedures now coexist.
+- Added `env UV_CACHE_DIR=... uv ...` and legacy-candidate regression cases;
+  retained immutable Session Events and all existing Memory rows.
+- Focused tests `46/46`, `make check` passed, and full pytest excluding an
+  untouched collection error passed `4720` (`899` skipped). `make test` is
+  blocked at collection by the pre-existing missing `_resolve_pinned_gateway`
+  import in `tests/worker/test_host_egress.py`.
+- Remaining: scoped audit and reversible remediation of historical candidates,
+  evidence-grounded experience proposals, review UX, retrieval-quality eval,
+  PostgreSQL/cloud and browser acceptance. No commit, push or deployment.
+
 ## 2026-09-29 - HOST-MEDIA-IMPORT-01 governed historical media
 
 - Traced the missing rich reply to the authority boundary rather than the React
@@ -10701,3 +10771,13 @@ actual byte access.
 - Evidence: focused `77/77`; `make check` green; full `4711 passed, 901
   skipped`; React renderer/package build and focused tests `10/10` on Node 24.
   No merge, push, publication, Trench packaging or deployment was performed.
+### 2026-10-01 — CLOUD-USER-USAGE-01
+
+- Branches: `codex/cloud-token-usage` in Zebra Agent and Trench; pre-existing
+  dirty worktrees preserved.
+- Implemented Cloud usage evidence API, Trench current-user proxy, reusable
+  Zebra React analytics surface, and Trench account tab.
+- Focused Cloud API/storage tests and Trench proxy/dialog tests pass; SDK
+  component test and Zebra `make check` pass. Trench frontend type-check,
+  focused tests and production build pass. Deployment and signed live data
+  acceptance remain to be run.

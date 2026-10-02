@@ -63,6 +63,7 @@ def read_openai_stream(
     headers: dict[str, str],
     body: dict[str, Any],
     on_text_delta: Callable[[ModelTextDelta], None],
+    on_semantic_output: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     started = perf_counter()
     content_parts: list[str] = []
@@ -73,16 +74,25 @@ def read_openai_stream(
     model_call_id: str | None = None
     system_fingerprint: str | None = None
     finish_reason: str | None = None
+    done = False
     first_event_ms: int | None = None
     first_public_text_ms: int | None = None
     coalescer = _TextDeltaCoalescer(on_text_delta)
     with client.stream("POST", url, headers=headers, json=body) as response:
         response.raise_for_status()
         for line in response.iter_lines():
+            if perf_counter() - started > 180:
+                raise ModelProviderError(
+                    "provider_stream_deadline_exceeded",
+                    retryable=not (content_parts or reasoning_parts or tool_parts),
+                )
             if not line.startswith("data:"):
                 continue
             raw = line.removeprefix("data:").strip()
-            if not raw or raw == "[DONE]":
+            if raw == "[DONE]":
+                done = True
+                break
+            if not raw:
                 continue
             try:
                 payload = json.loads(raw)
@@ -107,6 +117,14 @@ def read_openai_stream(
                 )
             if "error" in payload:
                 raise ModelProviderError("provider_stream_error", retryable=True)
+            choices = payload.get("choices")
+            if isinstance(choices, list) and on_semantic_output is not None:
+                for choice in choices:
+                    delta = choice.get("delta") if isinstance(choice, dict) else None
+                    if isinstance(delta, dict) and any(
+                        delta.get(key) for key in ("content", "reasoning_content", "tool_calls")
+                    ):
+                        on_semantic_output()
             elapsed_ms = int((perf_counter() - started) * 1000)
             if first_event_ms is None:
                 first_event_ms = elapsed_ms
@@ -143,6 +161,11 @@ def read_openai_stream(
                 finish_reason = choice_finish_reason
             if emitted_public_text and first_public_text_ms is None:
                 first_public_text_ms = elapsed_ms
+    if finish_reason is None and not done:
+        raise ModelProviderError(
+            "provider_stream_terminal_missing",
+            retryable=not (content_parts or reasoning_parts or tool_parts),
+        )
     coalescer.flush()
     message: dict[str, Any] = {
         "role": "assistant",

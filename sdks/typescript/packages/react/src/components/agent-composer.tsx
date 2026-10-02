@@ -111,12 +111,14 @@ export function AgentComposer(props: AgentComposerProps) {
     if (event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.altKey ||
       event.metaKey || composing) return;
     event.preventDefault();
-    if (!submitDisabled && !props.busy && !props.canContinue) props.onSubmit();
+    if (!submitDisabled && !props.busy && props.value.trim()) props.onSubmit();
   }
 
   const action = props.busy
     ? { label: props.pausing ? labels.pausing : labels.pause, onClick: props.onPause, symbol: "■" }
-    : props.canContinue
+    : props.value.trim()
+      ? { label: labels.send, onClick: props.onSubmit, symbol: "↑" }
+      : props.canContinue
       ? { label: labels.continue, onClick: props.onContinue, symbol: "▶" }
       : { label: labels.send, onClick: props.onSubmit, symbol: "↑" };
 

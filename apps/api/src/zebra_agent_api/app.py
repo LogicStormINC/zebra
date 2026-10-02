@@ -4,9 +4,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 
-from agent_core.application import (
-    attach_refs_to_user_event,
-)
+from agent_core.application import attach_refs_to_user_event
 from agent_core.application.agent_definitions import PublisherGrantPort
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import (
@@ -103,6 +101,7 @@ from zebra_agent_api.skills_admin import (
     scoped_skill_roots,
 )
 from zebra_agent_api.storage_composition import ControlPlaneStorageMixin
+from zebra_agent_api.usage_api import UsageEvidenceReader
 
 
 @dataclass(frozen=True)
@@ -142,6 +141,7 @@ class ZebraAgentApi(
     platform_operator_authorizer: PlatformOperatorAuthorizer | None = None
     task_schedule_store: TaskScheduleStorePort | None = None
     task_schedule_firing_store: TaskScheduleFiringStorePort | None = None
+    usage_evidence: UsageEvidenceReader | None = None
     _parse_session_id = staticmethod(parse_session_id)
 
     def create_session(

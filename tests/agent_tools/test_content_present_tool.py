@@ -105,6 +105,37 @@ def test_present_builds_ordered_image_video_chart_and_file_parts() -> None:
     assert len({part["id"] for part in parts}) == 4
 
 
+def test_present_external_video_needs_no_artifact_and_rejects_private_urls() -> None:
+    session_id = new_session_id()
+    tool = ContentPresentTool(PresentationReader(session_id, {}), session_id)
+    result = tool.handle(
+        _call(
+            [
+                {
+                    "type": "external_video",
+                    "source_url": "https://www.bilibili.com/video/BV1yEaJ6CEUk",
+                    "title": "最新视频",
+                }
+            ]
+        )
+    )
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.metadata["content_parts"][0]["sourceUrl"].endswith("BV1yEaJ6CEUk")
+    assert "artifactId" not in result.metadata["content_parts"][0]
+    with pytest.raises(ToolArgumentError, match="public HTTPS"):
+        tool.handle(
+            _call(
+                [
+                    {
+                        "type": "external_video",
+                        "source_url": "https://127.0.0.1/video",
+                        "title": "bad",
+                    }
+                ]
+            )
+        )
+
+
 def test_present_rejects_cross_session_or_missing_artifact_authority() -> None:
     session_id = new_session_id()
     tool = ContentPresentTool(

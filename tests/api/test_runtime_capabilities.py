@@ -1,0 +1,22 @@
+from agent_security import SUPPORTED_NETWORK_PROFILES
+from zebra_agent_api import RouteAdapter, RouteRequest, create_app
+from zebra_agent_api.host_auth import _required_scopes_for_request
+from zebra_agent_api.http import HostGrantHttpRequest
+
+
+def test_runtime_capabilities_match_task_network_profiles(tmp_path) -> None:
+    response = RouteAdapter(create_app(tmp_path / "capabilities.sqlite")).handle(
+        RouteRequest(method="GET", path="/capabilities/runtime")
+    )
+
+    assert response.status_code == 200
+    assert response.body == {
+        "contract_version": 1,
+        "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
+    }
+    assert "full-gateway" in response.body["network_profiles"]
+    assert _required_scopes_for_request(
+        HostGrantHttpRequest(
+            method="GET", path="/capabilities/runtime", origin=None, authorization="Bearer grant"
+        )
+    ) == ()  # The Host authorizer applies its default agent.run scope.

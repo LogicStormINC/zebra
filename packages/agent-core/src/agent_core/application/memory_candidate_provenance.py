@@ -10,7 +10,7 @@ def refresh_target_applies(
     refresh_target_key: str,
     source_events: list[SessionEvent],
 ) -> bool:
-    if refresh_target_key not in {"procedure:repo_workflow", "governance:AGENTS.md"}:
+    if refresh_target_key != "governance:AGENTS.md":
         return False
     if (
         record.source_session_id is None

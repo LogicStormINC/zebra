@@ -10,17 +10,8 @@ from agent_core.domain.memories import (
     MemoryQuery,
     MemoryRecord,
     MemoryStatus,
-    MemoryType,
 )
 from agent_core.domain.sessions import Session
-
-_SINGLE_ACTIVE_MEMORY_TYPES = frozenset(
-    {
-        MemoryType.PROJECT_RULE,
-        MemoryType.ARCHITECTURE_FACT,
-        MemoryType.PROCEDURE,
-    }
-)
 
 
 class MemoryReviewAction(StrEnum):
@@ -168,7 +159,7 @@ def _supersede_records(
     reviewed_at: datetime,
 ) -> tuple[MemoryRecord, ...]:
     dynamic_subject = dynamic_memory_subject(record.text)
-    if record.memory_type not in _SINGLE_ACTIVE_MEMORY_TYPES and dynamic_subject is None:
+    if dynamic_subject is None:
         return ()
     superseded: list[MemoryRecord] = []
     for existing in existing_records:

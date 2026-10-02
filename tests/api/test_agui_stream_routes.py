@@ -29,6 +29,7 @@ from zebra_agent_api.ag_ui_stream import (
     tail_agui_events,
 )
 from zebra_agent_api.http import _stream_resource_id, create_http_app
+from zebra_agent_api.responses import ApiResponse
 
 NOW = datetime(2026, 8, 11, 8, 0, tzinfo=UTC)
 
@@ -41,6 +42,29 @@ def test_agui_stream_tenant_guard_uses_thread_id_not_run_id() -> None:
         )
         == "283f65ec-a279-453d-ac4a-59f2e5da6ccd"
     )
+
+
+def test_agui_stream_renews_host_binding_before_tail(monkeypatch, tmp_path: Path) -> None:
+    database_path, session_id, _ = _seed_ready_session(tmp_path)
+    calls: list[str] = []
+
+    def reject_renewal(app, task_id, verified_host_grant):
+        del app, verified_host_grant
+        calls.append(task_id)
+        return ApiResponse(403, {"status": "host_binding_renewal_rejected"})
+
+    monkeypatch.setattr(
+        "zebra_agent_api.session_binding.renew_host_binding_for_command",
+        reject_renewal,
+    )
+    client = TestClient(
+        create_http_app(database_path, stores=sqlite_control_plane_stores(database_path))
+    )
+    response = client.get(_stream_path(session_id, "run-renewal"))
+
+    assert calls == [str(session_id)]
+    assert response.status_code == 403
+    assert response.json() == {"status": "host_binding_renewal_rejected"}
 
 
 def test_agui_stream_replays_official_events_with_exact_cursor_ids(tmp_path: Path) -> None:

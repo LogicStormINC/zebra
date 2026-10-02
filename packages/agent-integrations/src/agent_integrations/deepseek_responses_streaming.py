@@ -20,6 +20,7 @@ def read_deepseek_responses_stream(
     headers: dict[str, str],
     body: dict[str, Any],
     on_text_delta: Callable[[ModelTextDelta], None],
+    on_semantic_output: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     """Read one stateless Responses SSE stream through its semantic terminal event."""
 
@@ -29,9 +30,14 @@ def read_deepseek_responses_stream(
     last_sequence = -1
     delta_index = 0
     terminal: dict[str, Any] | None = None
+    semantic_output = False
     with client.stream("POST", url, headers=headers, json=body) as response:
         response.raise_for_status()
         for line in response.iter_lines():
+            if perf_counter() - started > 180:
+                raise ModelProviderError(
+                    "provider_stream_deadline_exceeded", retryable=not semantic_output,
+                )
             if not line.startswith("data:"):
                 continue
             raw = line.removeprefix("data:").strip()
@@ -52,6 +58,13 @@ def read_deepseek_responses_stream(
             event_type = payload.get("type")
             if not isinstance(event_type, str):
                 raise _rejected(raw, "invalid_responses_event_type")
+            if event_type.startswith((
+                "response.output_text.", "response.reasoning", "response.function_call_arguments.",
+                "response.output_item.", "response.content_part.",
+            )):
+                semantic_output = True
+                if on_semantic_output is not None:
+                    on_semantic_output()
             if event_type == "response.output_text.delta":
                 delta = payload.get("delta")
                 if not isinstance(delta, str):

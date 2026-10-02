@@ -1,5 +1,22 @@
 # Zebra Agent Project Status
 
+2026-10-02: `CLOUD-RECOVERY-CLOSURE-01` implements bounded tool/provider recovery,
+durable legacy Cloud STOP handling and truthful partial delivery on
+`codex/cloud-recovery-closure`. Expected tool exceptions become observations;
+uncertain writes and emitted model streams are not transparently replayed.
+Invalid command receipts prevent starvation, and admitted STOP survives delayed
+processing without renewing execution authority. SDK feedback preserves outputs.
+Acceptance and explicit live-deployment boundaries are recorded in
+`docs/CLOUD_RECOVERY_CLOSURE.md`; pre-existing changes remain preserved.
+
+2026-10-01: AGENT-QUALITY-02 follow-up fixed a delivery-gate false positive for
+tool-returned media URLs. The Evidence Ledger now records bounded `images` /
+`media` / thumbnail references separately from source citations, the citation
+gate accepts only collected source or media URLs, and revision feedback names
+the exact unsupported URL. Delivery assessments expose `media_refs`; focused
+Harness coverage is green. Rebuilding the Worker and replaying the affected
+Trench conversation remain separate runtime/browser acceptance gates.
+
 2026-10-01: `HAR-EGRESS-TOOL-ALIGN-01` is in Review on
 `codex/egress-tool-alignment`. Cloud Worker no longer advertises networked
 Web tools for `none`, `setup-only`, `mcp-proxy-only` or `git-proxy-only`;
@@ -10,16 +27,36 @@ rejects `auto_fetch` to avoid unapproved secondary fetches; the optional
 browser fetch provider is reserved for trusted-local, and Cloud uses the
 existing no-redirect HTTP provider. Focused tests 113/113, full suite
 excluding the inherited `test_host_egress.py` import blocker 4723 passed /
-903 skipped, and `make check` pass. No merge, push or deployment of this
-follow-up branch yet.
+903 skipped, and `make check` pass. These commits are locally merged into
+`cloud-agent-trench`; push and deployment remain separate gates.
 
-2026-10-01: `HAR-POLICY-READ-RECOVERY-01` is implemented on
-`codex/policy-denial-recovery` for review. Blocked external read egress now
-returns a failed, non-executed observation to the model without weakening the
-policy decision. Sequential and concurrent regression tests plus agent-core
-and agent-security suites pass; `make check` passes. Full `make test` is blocked
-at collection by the existing `test_host_egress.py` import of missing
-`_resolve_pinned_gateway`. No runtime deployment or conversation replay yet.
+2026-10-01: Blocked external read egress now returns a failed, non-executed
+observation to the model without weakening the policy decision. Sequential and
+concurrent regression tests plus agent-core and agent-security suites pass;
+`make check` passes in the isolated verification worktree. Full `make test` is
+blocked at collection by `test_host_egress.py` importing missing
+`_resolve_pinned_gateway`. The fix is copied into the active
+`cloud-agent-trench` checkout; runtime deployment and conversation replay are
+not yet claimed. See `docs/HAR_POLICY_DENIAL_RECOVERY.md`.
+
+2026-09-30 MEM-QUALITY-01 (in progress, paired Zebra/Trench): automatic
+`command.run`/`tests.run` procedure extraction, refresh and promotion are
+disabled; independent project rules, architecture facts, preferences and
+procedures no longer supersede one another by type alone. A source-event and
+old-generator exact-match check marks legacy command memories in scoped
+inventory, and PostgreSQL Context materialization excludes these records from
+Cloud recall before ranking. Trench Memory settings displays provenance and
+offers confirmed, sequential, audited cleanup for the exact-match set; manual
+memories and Session Events remain intact. Focused Zebra tests and paired
+Trench `make check` pass (API/model `163`, pipeline `79`, frontend builds,
+temporary migrations). Full Zebra pytest excluding
+the inherited `test_host_egress.py` collection error passes `4724` with `899`
+skipped; `make check` passes including release eval 30/30. A dedicated,
+ephemeral PostgreSQL 17 instance ran Context materialization integration
+tests `11/11` and was then stopped. The currently running Zebra containers
+use a different image/version; this uncommitted change was not redeployed,
+so live historical cleanup and cross-session browser acceptance are still
+unverified. No commit, push or deployment is claimed.
 
 2026-09-29 HOST-MEDIA-IMPORT-01: authority-scoped historical Host media can now
 cross into Zebra's current-Session Artifact domain without accepting arbitrary
@@ -4015,7 +4052,7 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   cleaning/pipeline tests, `147` ToC tests and both production builds. Browser
   acceptance, commit/push and deployment remain separate gates.
 
-### 2026-10-01 - Cloud full-gateway profile (isolated branch)
+### 2026-10-01 - Cloud full-gateway profile (local merge)
 
 - Added `full-gateway` as durable Task authority for simultaneous Web-gateway
   and MCP-proxy tools. It does not activate trusted-local approval bypass or
@@ -4024,5 +4061,41 @@ file-size gate, Ruff, strict Mypy over 958 sources and Eval 10/10.
   Existing Tasks retain their frozen profile. Search still requires a configured
   HTTPS endpoint. See `docs/CLOUD_FULL_GATEWAY_PROFILE.md`.
 - Zebra `make check` and focused policy/runtime/schema tests pass locally;
-  real Cloud search/MCP/Host acceptance, merge, push, migration and deployment
+  real Cloud search/MCP/Host acceptance, push, migration and deployment
   remain separate gates.
+
+### 2026-09-30 - Trench historical media recovery (local)
+
+- Existing chat images survived in PostgreSQL/Artifact Store but their old Task
+  lived in `trench-prod` after the conversation rebound to a `zebra` Task.
+  Trench now checks exact assistant artifact references for historical access;
+  a restricted legacy namespace reader serves those files without broadening
+  the current Task binding.
+- Local browser verified four previously broken images decoded in the original
+  conversation. Focused Trench tests: `49 passed`. Caddy config validated and
+  rejects non-artifact/mutating legacy routes. Changes remain local and uncommitted;
+  remote deployment and wider gates are separate.
+### 2026-10-01 — CLOUD-USER-USAGE-01 (in progress)
+
+Cloud Agent now exposes a bounded, signed-Host `GET /usage?days=7|30` read of
+provider-reported token counts from committed Task events. It filters the
+latest Task binding by Host app, namespace, workspace and opaque principal;
+the Trench current-user API proxies through a fresh signed grant. The Zebra
+React package includes a controlled Usage Analytics surface, consumed by the
+new Trench account settings tab. No plan limits, prices, credit ledger, or
+cross-Host identity mapping were added: unmetered model calls remain explicit
+and billing reconciliation is still a separate task. Focused tests and Zebra
+`make check` pass; the Trench frontend production build also passes. Deployment
+and authenticated browser acceptance with real usage data remain open.
+
+The 2026-10-01 Trench conversation incident exposed two local runtime drift
+failures while this branch was under acceptance: Trench's new signed
+`/capabilities/runtime` preflight had no Zebra API route, and the running
+worker image lacked the already-tested media-evidence citation handling.
+Zebra now returns its supported network-profile contract through the existing
+Host-authorized API route. Both local API and worker images were rebuilt and
+recreated healthy; a real Trench workload-signed grant received HTTP 200 and
+`full-gateway` from the capability endpoint. The worker image now contains
+the media-evidence citation handling. Focused Zebra harness/API tests and
+Trench runtime tests passed. The original suspended Turn remains historical;
+an authenticated browser retry of the conversation is still unverified.

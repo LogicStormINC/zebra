@@ -27,10 +27,14 @@ from agent_core.harness.selection import ToolCallSelectionStrategy
 from agent_core.harness.sequential_support import (
     durable_action_fingerprints,
     executed_action_fingerprints,
+    synthesis_required,
+    synthesis_stop_reason,
 )
 from agent_core.harness.tool_batch import ToolBatchExecutor
+from agent_core.harness.tool_recovery import invalid_request_count
 from agent_core.harness.tool_resolution import (
     ToolCallResolver,
+    reject_invalid_bridge,
     resolve_completion_tool_calls,
 )
 from agent_core.ports.model_gateway import ModelGatewayPort
@@ -70,6 +74,7 @@ class SequentialToolLoop:
             parallel_batch_limits=parallel_batch_limits,
             max_parallel_tool_calls=max_parallel_tool_calls,
         )
+
     def continue_approved(
         self,
         context: HarnessContext,
@@ -272,19 +277,20 @@ class SequentialToolLoop:
                 completion,
                 self._tool_call_resolver,
             )
-        except ValueError as exc:
-            return build_attempt_result(
-                outcome=HarnessAttemptOutcome.FAILED,
-                summary="invalid progressive tool disclosure call",
-                assistant_message=completion.assistant_message.content,
+        except ValueError:
+            reject_invalid_bridge(context, completion, messages, emitted_events)
+            return self._request_next_completion(
+                context,
+                messages=messages,
+                emitted_events=emitted_events,
                 model_calls_used=model_calls_used,
                 tool_calls_executed=tool_calls_executed,
-                emitted_events=emitted_events,
+                fingerprints=fingerprints,
                 metadata={
                     **metadata,
-                    "stop_reason": "invalid_tool_bridge",
-                    "detail": str(exc),
+                    "invalid_tool_requests": invalid_request_count(metadata) + 1,
                 },
+                fallback_message="The tool request was rejected before execution.",
             )
         if not completion.tool_calls:
             gated = finalize_without_tools(
@@ -414,10 +420,11 @@ class SequentialToolLoop:
             )
         tool_limit = context.task.max_tool_calls
         tool_budget_open = tool_limit is None or tool_calls_executed < tool_limit
-        # ponytail: a model-call limit bounds requests, not capabilities inside
-        # the final permitted request. If that request calls a tool and needs a
-        # subsequent synthesis turn, the next entry to this method suspends it.
-        allow_tools = tool_budget_open and not force_final
+        allow_tools = (
+            tool_budget_open
+            and not force_final
+            and not synthesis_required(model_limit, model_calls_used, metadata)
+        )
         if not allow_tools:
             self._model_step.append_final_answer_instruction(
                 messages,
@@ -448,9 +455,7 @@ class SequentialToolLoop:
                 "conversation_compaction_count": compaction_count + 1,
                 "conversation_tokens_after_compaction": compaction.after_tokens,
             }
-            self._model_step.prepare_provider_continuation(
-                self._model_gateway, compaction
-            )
+            self._model_step.prepare_provider_continuation(self._model_gateway, compaction)
         completion = self._model_step.request_completion(
             messages,
             self._model_gateway,
@@ -469,14 +474,10 @@ class SequentialToolLoop:
             )
         )
         if completion.tool_calls and not allow_tools:
-            stop_reason = (
-                "tool_call_budget_exhausted"
-                if not tool_budget_open
-                else "model_call_budget_exhausted"
-            )
+            stop_reason = synthesis_stop_reason(tool_budget_open, metadata)
             return build_attempt_result(
                 outcome=HarnessAttemptOutcome.SUSPENDED,
-                summary="explicit call budget reached; execution can continue with a larger budget",
+                summary="bounded execution stopped before an accepted final answer",
                 assistant_message=completion.assistant_message.content,
                 model_calls_used=model_calls_used,
                 tool_calls_executed=tool_calls_executed,

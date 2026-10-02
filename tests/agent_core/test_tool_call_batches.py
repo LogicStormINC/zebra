@@ -151,10 +151,9 @@ def test_provider_batch_lets_model_recover_from_failed_tool() -> None:
     assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
     assert result.run_result.model_calls_used == 2
     assert tools.calls == [failed]
-    assert gateway.requests[1][-2].content == (
-        '{"detail": "missing.txt does not exist", "reason": "not_a_file", '
-        '"status": "failed"}'
-    )
+    assert '"detail": "missing.txt does not exist"' in gateway.requests[1][-2].content
+    assert '"reason": "not_a_file"' in gateway.requests[1][-2].content
+    assert '"recovery_hint"' in gateway.requests[1][-2].content
     assert any(event.event_type is EventType.TOOL_EXECUTION_FAILED for event in result.events)
 
 

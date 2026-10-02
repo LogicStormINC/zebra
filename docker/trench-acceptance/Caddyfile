@@ -13,6 +13,18 @@ https://zebra.zebra.local:8443 {
 # the reserved .local suffix.
 https://zebra.localhost:8443 {
 	tls /certs/tls.crt /certs/tls.key
+	handle_path /legacy/* {
+		@historical_artifact_read {
+			method GET HEAD
+			path_regexp ^/tasks/[0-9a-f-]+/artifacts/[0-9a-f-]+/(preview|download)$
+		}
+		handle @historical_artifact_read {
+			reverse_proxy zebra-api-legacy:8000
+		}
+		handle {
+			respond 404
+		}
+	}
 	reverse_proxy zebra-api:8000 {
 		flush_interval -1
 	}

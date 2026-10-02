@@ -32,6 +32,7 @@ export interface AgentChatProps {
   renderMessageContent?: AgentMessageListProps["renderContent"];
   renderTurnFooter?: AgentConversationTimelineProps["renderTurnFooter"];
   runStatus?: AgentRunStatusProps;
+  runStatusLabels?: AgentConversationTimelineProps["runStatusLabels"];
   scrollKey?: string;
   theme?: "dark" | "light";
   themeTokens?: Partial<AgentThemeTokens>;
@@ -53,15 +54,6 @@ export function AgentChat(props: AgentChatProps) {
     ? `${runState.phase}:${runState.phase === "terminal" ? runState.outcome : ""}:${runState.queuePosition ?? ""}:${runState.safeMessage ?? ""}`
     : "";
   const terminalOutcome = runState?.phase === "terminal" ? runState.outcome : undefined;
-  const terminalActivityStatus = terminalOutcome === "failed"
-    ? "failed"
-    : terminalOutcome === "blocked"
-      ? "blocked"
-    : terminalOutcome === "cancelled"
-      ? "cancelled"
-        : terminalOutcome
-          ? "completed"
-          : undefined;
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -109,6 +101,7 @@ export function AgentChat(props: AgentChatProps) {
                 {...(props.onArtifactOpen ? { onArtifactOpen: props.onArtifactOpen } : {})}
                 {...(props.renderMessageContent ? { renderMessageContent: props.renderMessageContent } : {})}
                 {...(props.renderTurnFooter ? { renderTurnFooter: props.renderTurnFooter } : {})}
+                {...(props.runStatusLabels ?? props.runStatus?.labels ? { runStatusLabels: props.runStatusLabels ?? props.runStatus?.labels } : {})}
                 turns={props.turns}
               />
             ) : (
@@ -119,7 +112,7 @@ export function AgentChat(props: AgentChatProps) {
                   expanded={props.activityExpanded ?? false}
                   labels={props.activityLabels}
                   onExpandedChange={props.onActivityExpandedChange ?? (() => undefined)}
-                  terminalStatus={terminalActivityStatus}
+                  terminalStatus={terminalOutcome}
                 />
               </>
             )}

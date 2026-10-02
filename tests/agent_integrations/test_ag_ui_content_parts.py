@@ -180,3 +180,55 @@ def test_explicit_v2_parts_preserve_order_and_drop_untrusted_shape() -> None:
         isinstance(event, CustomEvent) and event.name == "zebra.content_part"
         for event in rejected.events
     )
+
+
+def test_external_video_projects_without_artifact() -> None:
+    session_id = new_session_id()
+    events = (
+        _event(
+            session_id,
+            1,
+            EventType.TOOL_CALL_PROPOSED,
+            {
+                "attempt_number": 1,
+                "tool_name": "content.present",
+                "tool_call_id": "video-1",
+                "arguments": {},
+            },
+        ),
+        _event(
+            session_id,
+            2,
+            EventType.TOOL_EXECUTION_COMPLETED,
+            {
+                "attempt_number": 1,
+                "tool_name": "content.present",
+                "tool_call_id": "video-1",
+                "status": "executed",
+                "output": "Presented 1 rich content part(s).",
+                "metadata": {
+                    "delivery": True,
+                    "schema_version": "2",
+                    "content_parts": [
+                        {
+                            "id": "content:video-1:0",
+                            "type": "external_video",
+                            "state": "ready",
+                            "sourceUrl": "https://www.bilibili.com/video/BV1yEaJ6CEUk",
+                            "title": "Video",
+                        }
+                    ],
+                },
+            },
+        ),
+    )
+    projection = AgUiProjector().project(
+        events, AgUiRunIdentity(session_id=session_id, thread_id="task-1", run_id="segment-1")
+    )
+    parts = [
+        event.value["part"]
+        for event in projection.events
+        if isinstance(event, CustomEvent) and event.name == "zebra.content_part"
+    ]
+    assert len(parts) == 1
+    assert parts[0]["sourceUrl"].endswith("BV1yEaJ6CEUk")

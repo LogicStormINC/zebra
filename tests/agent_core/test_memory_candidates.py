@@ -16,7 +16,7 @@ from agent_core.domain.memories import (
 from agent_core.domain.sessions import Session, SessionStatus
 
 
-def test_memory_candidate_extraction_deduplicates_matching_successful_tool_runs() -> None:
+def test_memory_candidate_extraction_does_not_remember_successful_tool_runs() -> None:
     session = _completed_session()
     service = MemoryCandidateExtractionService(_InMemoryMemoryStore())
     tool_event = _tool_event(
@@ -40,11 +40,8 @@ def test_memory_candidate_extraction_deduplicates_matching_successful_tool_runs(
         command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
     )
 
-    assert len(result.records) == 1
-    assert result.records[0].memory_type is MemoryType.PROCEDURE
-    assert result.records[0].text == "Run validation preset 'smoke' as `make check` from `.`."
-    assert [event.event_type for event in result.events] == [EventType.MEMORY_CANDIDATE_EXTRACTED]
-    assert result.events[0].payload["repo_id"] == "zebra-agent"
+    assert result.records == ()
+    assert result.events == ()
 
 
 def test_memory_candidate_extraction_reads_project_rule_from_agents_local_commands() -> None:
@@ -289,7 +286,7 @@ def test_memory_candidate_extraction_keeps_confirmed_doc_memory_without_agents_r
     assert store.records[0].status is MemoryStatus.CONFIRMED
 
 
-def test_expires_stale_confirmed_procedure_memory_after_procedure_refresh() -> None:
+def test_command_runs_do_not_expire_confirmed_procedure_memory() -> None:
     session = _completed_session()
     store = _InMemoryMemoryStore(
         records=[
@@ -340,14 +337,9 @@ def test_expires_stale_confirmed_procedure_memory_after_procedure_refresh() -> N
         if record.status is MemoryStatus.EXPIRED and record.memory_type is MemoryType.PROCEDURE
     ]
 
-    assert len(result.records) == 1
-    assert result.records[0].text == "Run validation preset 'smoke' as `make check` from `.`."
-    assert len(expired) == 1
-    assert any(
-        event.event_type is EventType.MEMORY_REVIEW_RECORDED
-        and event.payload["reason"] == "stale after procedure refresh"
-        for event in result.events
-    )
+    assert result.records == ()
+    assert expired == []
+    assert store.records[0].status is MemoryStatus.CONFIRMED
 
 
 def test_procedure_refresh_does_not_expire_confirmed_preference() -> None:
@@ -381,8 +373,7 @@ def test_procedure_refresh_does_not_expire_confirmed_preference() -> None:
         command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=_now()),
     )
 
-    assert len(result.records) == 1
-    assert any(record.memory_type is MemoryType.PROCEDURE for record in result.records)
+    assert result.records == ()
     assert store.records[0].status is MemoryStatus.CONFIRMED
 
 
@@ -558,7 +549,7 @@ def test_explicit_forget_does_not_delete_partial_or_retained_memory() -> None:
     assert retained.status is MemoryStatus.CONFIRMED
 
 
-def test_host_tool_candidate_uses_user_visibility() -> None:
+def test_host_tool_run_does_not_create_user_memory() -> None:
     session = _completed_session()
     result = MemoryCandidateExtractionService(_InMemoryMemoryStore()).extract(
         session=session,
@@ -586,7 +577,7 @@ def test_host_tool_candidate_uses_user_visibility() -> None:
         ),
     )
 
-    assert result.records[0].visibility is MemoryVisibility.USER
+    assert result.records == ()
 
 
 class _InMemoryMemoryStore:

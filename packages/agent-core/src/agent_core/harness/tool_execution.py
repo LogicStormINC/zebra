@@ -4,6 +4,7 @@ from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness.hooks import VerifierHook
 from agent_core.harness.models import HarnessContext, HarnessEventDraft
+from agent_core.harness.tool_recovery import execute_observed
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
 
@@ -35,7 +36,7 @@ def execute_tool_call(
                 },
             )
         )
-    tool_result = tool_gateway.execute(tool_call)
+    tool_result = execute_observed(tool_gateway, tool_call)
     deferred = tool_result.metadata.get("client_effect_deferred") is True
     if deferred:
         emitted_events.append(

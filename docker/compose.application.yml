@@ -73,6 +73,8 @@ services:
     depends_on:
       zebra-migrate:
         condition: service_completed_successfully
+      zebra-api-legacy:
+        condition: service_started
     ports:
       - "127.0.0.1:${ZEBRA_API_PORT:-18080}:8000"
     healthcheck:
@@ -87,6 +89,26 @@ services:
       timeout: 3s
       retries: 6
       start_period: 10s
+    networks: [dependencies]
+
+  zebra-api-legacy:
+    image: zebra-application-zebra-api
+    environment:
+      <<: *zebra-cloud-environment
+      ZEBRA_DEPLOYMENT_NAMESPACE: trench-prod
+      ZEBRA_CLIENT_INTEGRATION_ENABLED: "false"
+    restart: unless-stopped
+    init: true
+    read_only: true
+    volumes:
+      - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
+      - ${ZEBRA_ACCEPTANCE_CA_BUNDLE_FILE:-./trench-acceptance/secrets/ca-bundle.crt}:/etc/ssl/certs/zebra-acceptance-ca-bundle.crt:ro
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    depends_on:
+      zebra-migrate:
+        condition: service_completed_successfully
     networks: [dependencies]
 
   zebra-worker:

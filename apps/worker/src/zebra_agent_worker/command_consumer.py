@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
@@ -11,13 +12,16 @@ from agent_core.application import (
     project_turns,
 )
 from agent_core.contracts import SessionCommand, SessionCommandAcceptedPayload, SessionCommandKind
+from agent_core.contracts.session_commands import validate_accepted_session_command
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import Session
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import ControlPlaneStores, LeaseConflictError, PostgresControlPlaneStores
 from pydantic import ValidationError
 
-from zebra_agent_worker.control import SessionControlError
+from zebra_agent_worker.command_rejections import command_rejected, reject_command
+from zebra_agent_worker.control import SessionControlError, UnsupportedSessionControlError
 from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeError
 
@@ -48,11 +52,18 @@ class SessionCommandConsumer:
         execution_service: SessionExecutionService,
         *,
         control_service: _SessionControl | None = None,
+        cancel_command: Callable[[SessionCommand], object] | None = None,
+        command_sessions: Callable[[int, SessionId | None], list[Session]] | None = None,
+        next_command: Callable[[SessionId, int], SessionEvent | None] | None = None,
     ) -> None:
         self._stores = stores
         self._projection_store: ProjectionStorePort = stores.sessions
         self._execution_service = execution_service
         self._control_service = control_service
+        self._cancel_command = cancel_command
+        self._command_sessions = command_sessions
+        self._command_reader = next_command
+        self._scan_after: SessionId | None = None
         self._recovery = SessionRecoveryService(
             stores.events,
             stores.sessions,
@@ -66,12 +77,27 @@ class SessionCommandConsumer:
         lease_ttl_seconds: int,
         batch_size: int = 1,
     ) -> CommandConsumption:
-        for session in self._projection_store.list_recent_sessions(limit=max(1, batch_size * 8)):
+        limit = min(500, max(1, batch_size * 8))
+        sessions = (
+            self._command_sessions(limit, self._scan_after)
+            if self._command_sessions is not None
+            else self._projection_store.list_recent_sessions(limit=limit)
+        )
+        if not sessions:
+            self._scan_after = None
+        skipped = None
+        for session in sessions:
+            # Advance even on failure; durable intents remain available on the next sweep.
+            self._scan_after = session.session_id
             command_event = self._next_command(session.session_id, session.current_sequence)
             if command_event is None:
                 continue
             try:
-                accepted = SessionCommandAcceptedPayload.model_validate(command_event.payload)
+                accepted = validate_accepted_session_command(
+                    command_event.payload,
+                    session_id=session.session_id,
+                    idempotency_key=command_event.idempotency_key,
+                )
                 command = SessionCommand(
                     command_id=UUID(accepted.command_id),
                     session_id=SessionId(UUID(accepted.session_id)),
@@ -80,6 +106,14 @@ class SessionCommandConsumer:
                     idempotency_key=accepted.idempotency_key,
                     payload=accepted.payload,
                 )
+            except ValueError:
+                reject_command(self._stores.idempotency, command_event, "invalid_command")
+                skipped = CommandConsumption(
+                    str(session.session_id), _command_kind(command_event),
+                    "skipped", "invalid_command",
+                )
+                continue
+            try:
                 if command.kind in {SessionCommandKind.STOP, SessionCommandKind.CANCEL}:
                     self._cancel(command)
                 elif command.kind is SessionCommandKind.SUSPEND:
@@ -96,6 +130,12 @@ class SessionCommandConsumer:
                         worker_id=_worker_id(command, worker_id),
                         lease_ttl_seconds=_lease_ttl(command, lease_ttl_seconds),
                     )
+            except UnsupportedSessionControlError:
+                reject_command(self._stores.idempotency, command_event, "unsupported_control")
+                skipped = CommandConsumption(
+                    str(session.session_id), command.kind.value, "skipped", "unsupported_control",
+                )
+                continue
             except (
                 ValidationError,
                 ValueError,
@@ -104,22 +144,27 @@ class SessionCommandConsumer:
                 SessionRecoveryError,
                 SessionResumeError,
             ) as exc:
-                return CommandConsumption(
+                skipped = CommandConsumption(
                     session_id=str(session.session_id),
                     command_kind=_command_kind(command_event),
                     status="skipped",
                     reason=str(exc),
                 )
+                continue
             return CommandConsumption(
                 session_id=str(session.session_id),
                 command_kind=command.kind.value,
                 status="executed",
             )
-        return CommandConsumption(session_id=None, command_kind=None, status="idle")
+        return skipped or CommandConsumption(session_id=None, command_kind=None, status="idle")
 
     def _next_command(self, session_id: SessionId, current_sequence: int) -> SessionEvent | None:
+        if self._command_reader is not None:
+            return self._command_reader(session_id, current_sequence)
         for event in self._stores.events.read_since(session_id, current_sequence):
-            if event.event_type is EventType.SESSION_COMMAND_ACCEPTED:
+            if event.event_type is EventType.SESSION_COMMAND_ACCEPTED and not command_rejected(
+                self._stores.idempotency, event,
+            ):
                 return event
         return None
 
@@ -154,6 +199,9 @@ class SessionCommandConsumer:
         self._stores.events.append(event)
 
     def _cancel(self, command: SessionCommand) -> None:
+        if self._cancel_command is not None:
+            self._cancel_command(command)
+            return
         if self._control_service is None:
             raise SessionControlError("control service is not configured")
         self._control_service.cancel_session(command.session_id)

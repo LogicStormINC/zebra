@@ -102,6 +102,11 @@ class FailingToolGateway:
         )
 
 
+class InvalidToolGateway:
+    def execute(self, _tool_call: ToolCall) -> ToolResult:
+        raise ValueError("artifact commit rejected")
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -137,10 +142,11 @@ def _call(name: str, arguments: dict[str, object], call_id: str) -> ToolCall:
 
 def _run(
     gateway: ScriptedModelGateway,
-    tools: RecordingToolGateway | FailingToolGateway,
+    tools: RecordingToolGateway | FailingToolGateway | InvalidToolGateway,
     *,
     max_model_calls: int = 5,
     max_tool_calls: int = 5,
+    parallel: bool = False,
 ):
     return HarnessLoop().run(
         HarnessTask(
@@ -155,6 +161,8 @@ def _run(
             tools,
             model_step=HarnessModelStep(available_tools=TOOLS),
             synthesize_tool_results=True,
+            parallel_safe_tools=frozenset({"files.read", "web.fetch"}) if parallel else frozenset(),
+            max_parallel_tool_calls=2 if parallel else 1,
         ).run,
         created_at=NOW,
     )
@@ -163,6 +171,90 @@ def _run(
 # ---------------------------------------------------------------------------
 # Sequential batch: failure should not stop the batch
 # ---------------------------------------------------------------------------
+
+
+def test_non_plan_value_error_returns_observation_for_correction() -> None:
+    call = _call("files.read", {"path": "result.svg"}, "call_read")
+    result = _run(
+        _gateway(
+            _completion("Read the artifact.", call), _completion("The artifact could not be read.")
+        ),
+        InvalidToolGateway(),
+    )
+
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert result.attempt_result.metadata["tool_name"] == "files.read"
+    assert result.attempt_result.metadata["recoverable_tool_failure_count"] == 1
+
+
+class TransientReadGateway(RecordingToolGateway):
+    read_only_tools = frozenset({"files.read", "web.fetch"})
+
+    def execute(self, tool_call: ToolCall) -> ToolResult:
+        if tool_call.name == "web.fetch" and not any(c.name == "web.fetch" for c in self.calls):
+            self.calls.append(tool_call)
+            raise TimeoutError("untrusted credentials must not enter model context")
+        return super().execute(tool_call)
+
+
+@pytest.mark.parametrize("parallel", [False, True])
+def test_exception_recovery_has_identical_batch_semantics(parallel: bool) -> None:
+    read = _call("files.read", {"path": "proof.txt"}, "proof")
+    fetch = _call("web.fetch", {"url": "https://example.com"}, "first")
+    retry = _call("web.fetch", {"url": "https://example.com"}, "retry")
+    gateway = _gateway(
+        _completion("Read both.", fetch, read),
+        _completion("Retry the transient read.", retry),
+        _completion("Finished."),
+    )
+    tools = TransientReadGateway()
+    result = _run(gateway, tools, parallel=parallel)
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert len(tools.calls) == 3
+    for request in gateway.requests:
+        validate_tool_call_pairing(request)
+    observations = [m.content for m in gateway.requests[1] if m.role is MessageRole.TOOL]
+    assert any('"retryable": true' in observation for observation in observations)
+    assert all("untrusted credentials" not in observation for observation in observations)
+
+
+def test_mixed_clarification_batch_is_correctable_without_side_effects() -> None:
+    clarify = _call("agent.clarify", {"question": "Which file?"}, "question")
+    read = _call("files.read", {"path": "proof.txt"}, "read")
+    corrected = _call("files.read", {"path": "proof.txt"}, "corrected_read")
+    tools = RecordingToolGateway()
+    gateway = _gateway(
+        _completion("Invalid mixed batch.", clarify, read),
+        _completion("Use the known file.", corrected),
+        _completion("Finished."),
+    )
+    result = _run(gateway, tools)
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert len(tools.calls) == 1
+    for request in gateway.requests:
+        validate_tool_call_pairing(request)
+
+
+def test_invalid_clarification_is_returned_to_model() -> None:
+    clarify = _call("agent.clarify", {}, "question")
+    gateway = _gateway(_completion("Ask.", clarify), _completion("No clarification needed."))
+    result = _run(gateway, RecordingToolGateway())
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    validate_tool_call_pairing(gateway.requests[1])
+
+
+def test_final_model_call_reserves_delivery_and_rejects_more_tools() -> None:
+    first = _call("files.read", {"path": "a.txt"}, "call_a")
+    second = _call("files.read", {"path": "b.txt"}, "call_b")
+    gateway = _gateway(_completion("Read.", first), _completion("Read more.", second))
+    tools = RecordingToolGateway()
+    result = _run(gateway, tools, max_model_calls=2, max_tool_calls=2)
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
+    assert result.attempt_result.metadata["stop_reason"] == "model_call_budget_exhausted"
+    assert result.run_result.model_calls_used == 2
+    assert result.run_result.tool_calls_used == 1
+    assert [c.provider_call_id for c in tools.calls] == ["call_a"]
+    assert "Task not fully completed" in result.attempt_result.metadata["assistant_message"]
 
 
 def test_sequential_batch_continues_after_first_failure() -> None:

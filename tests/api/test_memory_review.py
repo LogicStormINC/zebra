@@ -128,7 +128,7 @@ def test_api_memory_review_rejects_non_candidate_record(tmp_path: Path) -> None:
     }
 
 
-def test_api_confirm_session_memory_supersedes_prior_confirmed_memory(tmp_path: Path) -> None:
+def test_api_confirm_session_memory_preserves_unrelated_procedure(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -153,11 +153,11 @@ def test_api_confirm_session_memory_supersedes_prior_confirmed_memory(tmp_path: 
     superseded = SQLiteMemoryStore(database_path).get(prior.memory_id)
 
     assert response.status_code == 200
-    assert response.body["superseded_memory_ids"] == [str(prior.memory_id)]
+    assert response.body["superseded_memory_ids"] == []
     assert response.body["duplicate_of_memory_id"] is None
     assert superseded is not None
-    assert superseded.status is MemoryStatus.SUPERSEDED
-    assert superseded.superseded_by == record.memory_id
+    assert superseded.status is MemoryStatus.CONFIRMED
+    assert superseded.superseded_by is None
 
 
 def test_api_confirm_preference_memory_keeps_prior_confirmed_preference(tmp_path: Path) -> None:

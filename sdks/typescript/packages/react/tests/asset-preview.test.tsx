@@ -17,6 +17,7 @@ async function mount(overrides: Partial<AgentAssetPreviewProps>) {
     Node: dom.window.Node,
     window: dom.window,
   });
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: dom.window.navigator });
   const { createRoot } = await import("react-dom/client");
   const root = createRoot(container);
   const props: AgentAssetPreviewProps = {

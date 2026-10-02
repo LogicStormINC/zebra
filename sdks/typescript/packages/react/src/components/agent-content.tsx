@@ -9,7 +9,7 @@ import type {
   AgentTextPart,
 } from "@zebra-agent/ui-contracts";
 import { AgentAppBlock, type AgentAppMessage, type AgentAppResourceResolver } from "./agent-app.tsx";
-import { AgentImageBlock, AgentVideoBlock, useArtifactAccess, type AgentArtifactResolver, type AgentMediaLabels } from "./agent-media.tsx";
+import { AgentExternalVideoBlock, AgentImageBlock, AgentVideoBlock, useArtifactAccess, type AgentArtifactResolver, type AgentMediaLabels } from "./agent-media.tsx";
 
 export interface AgentContentLabels extends AgentMediaLabels {
   appFailed: string;
@@ -39,7 +39,8 @@ export interface AgentContentRendererContext {
   resolveArtifact?: AgentArtifactResolver | undefined;
 }
 
-export interface AgentContentRendererProps extends Partial<AgentContentRendererContext> {
+export interface AgentContentRendererProps extends Omit<Partial<AgentContentRendererContext>, "labels"> {
+  labels?: Partial<AgentContentLabels>;
   message: AgentMessage;
 }
 
@@ -67,7 +68,7 @@ export function AgentContentRenderer(props: AgentContentRendererProps) {
   };
   const parts = props.message.parts?.length
     ? props.message.parts
-    : [{ id: `${props.message.id}:text`, state: props.message.status === "failed" ? "failed" as const : "ready" as const, type: "text" as const, format: "plain" as const, text: props.message.content }];
+    : [{ id: `${props.message.id}:text`, state: "ready" as const, type: "text" as const, format: "plain" as const, text: props.message.content }];
   return <div className="zebra-agent-content">{parts.map((part) => <AgentPart key={part.id} context={context} message={props.message} part={part} />)}</div>;
 }
 
@@ -78,6 +79,7 @@ function AgentPart(props: AgentPartRendererProps) {
   if (part.type === "text") return <AgentTextBlock context={context} message={message} part={part} />;
   if (part.type === "image") return <AgentImageBlock labels={context.labels} part={part} {...(context.resolveArtifact ? { resolveArtifact: context.resolveArtifact } : {})} />;
   if (part.type === "video") return <AgentVideoBlock labels={context.labels} part={part} {...(context.resolveArtifact ? { resolveArtifact: context.resolveArtifact } : {})} />;
+  if (part.type === "external-video") return <AgentExternalVideoBlock labels={context.labels} part={part} />;
   if (part.type === "file") return <AgentFileBlock context={context} part={part} />;
   if (part.type === "app") return <AgentAppBlock allowedCapabilities={context.allowedAppCapabilities} labels={{ failed: context.labels.appFailed, loading: context.labels.loading, unavailable: context.labels.appUnavailable }} part={part} {...(context.onAppMessage ? { onMessage: context.onAppMessage } : {})} {...(context.resolveAppResource ? { resolveAppResource: context.resolveAppResource } : {})} />;
   return <AgentUnsupportedBlock label={context.labels.unsupported} />;

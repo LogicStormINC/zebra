@@ -75,10 +75,9 @@ def test_each_refresh_target_keeps_its_own_bounded_legacy_query() -> None:
         ),
     )
 
-    assert [query.limit for query in store.queries] == [100, 100]
+    assert [query.limit for query in store.queries] == [100]
     assert [set(query.memory_types) for query in store.queries] == [
         {MemoryType.PROJECT_RULE, MemoryType.ARCHITECTURE_FACT},
-        {MemoryType.PROCEDURE},
     ]
-    assert sum(record.status is MemoryStatus.EXPIRED for record in store.records) == 200
-    assert sum(record.status is MemoryStatus.CONFIRMED for record in store.records) == 40
+    assert sum(record.status is MemoryStatus.EXPIRED for record in store.records) == 100
+    assert sum(record.status is MemoryStatus.CONFIRMED for record in store.records) == 140

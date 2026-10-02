@@ -163,3 +163,70 @@ test("AgentChat keeps one controlled Composer boundary from empty to active conv
   await act(async () => root.unmount());
   dom.window.close();
 });
+
+test("tool and run failures preserve prior text and media, with localized recovery feedback", async () => {
+  const { container, dom, root } = await mount();
+  let retries = 0;
+  const props: AgentChatProps = {
+    composer: null,
+    messages: [
+      { id: "answer", role: "assistant", content: "Saved answer", status: "complete" },
+      {
+        id: "media", role: "assistant", content: "", status: "complete",
+        parts: [
+          { id: "caption", type: "text", format: "plain", state: "ready", text: "Saved caption" },
+          { id: "image", type: "image", state: "ready", artifactId: "image", mimeType: "image/png", alt: "Saved chart" },
+          { id: "video", type: "video", state: "ready", artifactId: "video", mimeType: "video/mp4", title: "Saved video" },
+        ],
+      },
+    ],
+    messageLabels: { failed: "消息未完成" },
+    activityLabels: { failed: "工具失败", failedActivities: (count) => `${count} 项失败`, partial: "部分完成" },
+    contentRenderer: {
+      resolveArtifact: async (artifactId) => ({ artifactId, mimeType: artifactId === "image" ? "image/png" : "video/mp4", url: `https://media.example/${artifactId}` }),
+    },
+  };
+  const render = async (state: AgentRunState, failed = false) => {
+    await act(async () => root.render(createElement(AgentChat, {
+      ...props,
+      messages: props.messages!.map((message) => ({ ...message, status: failed ? "failed" : "complete" })),
+      activities: [{ activityId: "unrelated", kind: "tool", title: "Unrelated search", status: failed ? "failed" : "running" }],
+      runStatus: {
+        state,
+        labels: { outcomes: { failed: "运行失败", partial: "部分结果" }, actions: { retry: "重试请求" } },
+        onRetry: () => { retries += 1; },
+      },
+    })));
+  };
+  await render({ phase: "running", availableActions: [] });
+  const image = container.querySelector("img");
+  const video = container.querySelector("video");
+  assert.ok(image);
+  assert.ok(video);
+  await render({ phase: "running", availableActions: [] }, true);
+  assert.match(container.textContent ?? "", /Saved answer/);
+  assert.match(container.querySelector("summary")?.textContent ?? "", /工具失败 · 1 项失败/);
+  assert.doesNotMatch(container.textContent ?? "", /Retrying|重试中/);
+  await render({ phase: "terminal", outcome: "failed", availableActions: ["retry"], safeMessage: "搜索失败，已生成的结果仍可查看。" }, true);
+  assert.match(container.textContent ?? "", /Saved answer/);
+  assert.match(container.textContent ?? "", /Saved caption/);
+  assert.equal(container.querySelector("img"), image);
+  assert.equal(container.querySelector("video"), video);
+  assert.match(container.querySelector(".zebra-agent-run-status [role=status]")?.textContent ?? "", /运行失败.*搜索失败/);
+  assert.match(container.textContent ?? "", /消息未完成/);
+  const retry = [...container.querySelectorAll("button")].find((button) => button.textContent === "重试请求");
+  assert.ok(retry);
+  await act(async () => retry.click());
+  assert.equal(retries, 1);
+  // Requesting a retry is not evidence that the server has started one.
+  assert.match(container.querySelector(".zebra-agent-run-status")?.textContent ?? "", /运行失败/);
+  await render({ phase: "running", availableActions: [], safeMessage: "正在重试搜索" }, true);
+  assert.match(container.querySelector(".zebra-agent-run-status [role=status]")?.textContent ?? "", /正在重试搜索/);
+  await render({ phase: "terminal", outcome: "partial", availableActions: [] }, true);
+  assert.match(container.querySelector("summary")?.textContent ?? "", /部分完成/);
+  assert.match(container.textContent ?? "", /Saved answer/);
+  assert.equal(container.querySelector("img"), image);
+  assert.equal(container.querySelector("video"), video);
+  await act(async () => root.unmount());
+  dom.window.close();
+});

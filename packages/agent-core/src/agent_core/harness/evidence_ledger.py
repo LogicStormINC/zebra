@@ -21,6 +21,20 @@ _REFERENCE_KEYS = frozenset(
         "uri",
     }
 )
+_MEDIA_REFERENCE_KEYS = frozenset(
+    {
+        "image",
+        "images",
+        "image_url",
+        "image_urls",
+        "media",
+        "media_url",
+        "media_urls",
+        "preview_url",
+        "thumbnail",
+        "thumbnail_url",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -28,6 +42,7 @@ class EvidenceLedger:
     successful_tool_results: int = 0
     failed_tool_results: int = 0
     evidence_refs: tuple[str, ...] = ()
+    media_refs: tuple[str, ...] = ()
     artifact_refs: tuple[str, ...] = ()
 
     @property
@@ -49,6 +64,7 @@ def evidence_ledger(
     successful = 0
     failed = 0
     refs: set[str] = set()
+    media_refs: set[str] = set()
     artifacts: set[str] = set()
     for event in events:
         if event.event_type is EventType.TOOL_EXECUTION_FAILED:
@@ -58,18 +74,19 @@ def evidence_ledger(
             continue
         successful += 1
         payload = event.payload
-        _collect_metadata_refs(payload.get("metadata"), refs, artifacts)
+        _collect_metadata_refs(payload.get("metadata"), refs, artifacts, media_refs)
         output = payload.get("output")
         if isinstance(output, str) and output:
             try:
                 parsed = json.loads(output)
             except (TypeError, ValueError):
                 continue
-            _collect_refs(parsed, refs, artifacts)
+            _collect_refs(parsed, refs, artifacts, media_refs)
     return EvidenceLedger(
         successful_tool_results=successful,
         failed_tool_results=failed,
         evidence_refs=tuple(sorted(refs)),
+        media_refs=tuple(sorted(media_refs)),
         artifact_refs=tuple(sorted(artifacts)),
     )
 
@@ -79,18 +96,19 @@ def record_tool_evidence(
     result: ToolResult,
 ) -> dict[str, object]:
     refs = set(_string_sequence(metadata.get("evidence_refs")))
+    media_refs = set(_url_sequence(metadata.get("evidence_media_refs")))
     artifacts = set(_string_sequence(metadata.get("evidence_artifact_refs")))
     successful = _non_negative_int(metadata.get("evidence_successful_tool_results"))
     failed = _non_negative_int(metadata.get("evidence_failed_tool_results"))
     if result.status is ToolCallStatus.EXECUTED:
         successful += 1
-        _collect_metadata_refs(result.metadata, refs, artifacts)
+        _collect_metadata_refs(result.metadata, refs, artifacts, media_refs)
         if result.output:
             try:
                 parsed = json.loads(result.output)
             except (TypeError, ValueError):
                 parsed = None
-            _collect_refs(parsed, refs, artifacts)
+            _collect_refs(parsed, refs, artifacts, media_refs)
     else:
         failed += 1
     return {
@@ -98,6 +116,7 @@ def record_tool_evidence(
         "evidence_successful_tool_results": successful,
         "evidence_failed_tool_results": failed,
         "evidence_refs": sorted(refs)[:128],
+        "evidence_media_refs": sorted(media_refs)[:128],
         "evidence_artifact_refs": sorted(artifacts)[:128],
     }
 
@@ -109,6 +128,7 @@ def _ledger_from_metadata(metadata: Mapping[str, object]) -> EvidenceLedger:
         ),
         failed_tool_results=_non_negative_int(metadata.get("evidence_failed_tool_results")),
         evidence_refs=_string_sequence(metadata.get("evidence_refs")),
+        media_refs=_url_sequence(metadata.get("evidence_media_refs")),
         artifact_refs=_string_sequence(metadata.get("evidence_artifact_refs")),
     )
 
@@ -123,33 +143,69 @@ def _string_sequence(value: object) -> tuple[str, ...]:
     )
 
 
+def _url_sequence(value: object) -> tuple[str, ...]:
+    if not isinstance(value, list | tuple):
+        return ()
+    return tuple(item for item in value[:128] if isinstance(item, str) and _safe_reference(item))
+
+
 def _non_negative_int(value: object) -> int:
     return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
 
 
-def _collect_refs(value: object, refs: set[str], artifacts: set[str]) -> None:
+def _collect_refs(
+    value: object,
+    refs: set[str],
+    artifacts: set[str],
+    media_refs: set[str] | None = None,
+) -> None:
     if isinstance(value, Mapping):
         for key, item in value.items():
-            if key in _REFERENCE_KEYS and isinstance(item, str):
+            if key in _MEDIA_REFERENCE_KEYS and media_refs is not None:
+                _collect_media_refs(item, media_refs, artifacts)
+            elif key in _REFERENCE_KEYS and isinstance(item, str):
                 normalized = item.strip()
                 if _safe_reference(normalized):
                     refs.add(normalized)
                     if normalized.startswith("artifact://"):
                         artifacts.add(normalized)
             elif isinstance(item, Mapping | list | tuple):
-                _collect_refs(item, refs, artifacts)
+                _collect_refs(item, refs, artifacts, media_refs)
     elif isinstance(value, list | tuple):
         for item in value[:100]:
-            _collect_refs(item, refs, artifacts)
+            _collect_refs(item, refs, artifacts, media_refs)
+
+
+def _collect_media_refs(value: object, media_refs: set[str], artifacts: set[str]) -> None:
+    """Collect bounded media references without treating arbitrary text as evidence."""
+
+    if isinstance(value, str):
+        normalized = value.strip()
+        if _safe_reference(normalized):
+            media_refs.add(normalized)
+            if normalized.startswith("artifact://"):
+                artifacts.add(normalized)
+        return
+    if isinstance(value, Mapping):
+        for item in value.values():
+            _collect_media_refs(item, media_refs, artifacts)
+    elif isinstance(value, list | tuple):
+        for item in value[:100]:
+            _collect_media_refs(item, media_refs, artifacts)
 
 
 def _collect_metadata_refs(
-    value: object, refs: set[str], artifacts: set[str]
+    value: object,
+    refs: set[str],
+    artifacts: set[str],
+    media_refs: set[str] | None = None,
 ) -> None:
-    _collect_refs(value, refs, artifacts)
+    _collect_refs(value, refs, artifacts, media_refs)
     if not isinstance(value, Mapping):
         return
     refs.update(_string_sequence(value.get("evidence_refs")))
+    if media_refs is not None:
+        media_refs.update(_url_sequence(value.get("evidence_media_refs")))
 
 
 def _safe_reference(value: str) -> bool:

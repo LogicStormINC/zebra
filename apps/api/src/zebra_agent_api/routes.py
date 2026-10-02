@@ -8,6 +8,7 @@ from uuid import UUID
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
+from agent_security import SUPPORTED_NETWORK_PROFILES
 from agent_security.host_grant import VerifiedHostGrant
 
 from zebra_agent_api.ag_ui_command import handle_agui_command
@@ -25,6 +26,7 @@ from zebra_agent_api.task_schedule_routes import handle_schedule_route
 from zebra_agent_api.tenant_guard import (
     tenant_scope_response,
 )
+from zebra_agent_api.usage_api import handle_usage_route
 
 
 @dataclass(frozen=True)
@@ -51,12 +53,22 @@ class RouteAdapter:
             return self.app.get_mcp_capabilities()
         if method == "GET" and request.path == "/capabilities/mcp/prompts":
             return self.app.get_mcp_prompts()
+        if method == "GET" and request.path == "/capabilities/runtime":
+            return ApiResponse(200, {
+                "contract_version": 1,
+                "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
+            })
         platform_client_response = handle_platform_client_route(self.app, request)
         if platform_client_response is not None:
             return platform_client_response
         tenant_response = tenant_scope_response(self.app, request)
         if tenant_response is not None:
             return tenant_response
+        usage_response = handle_usage_route(
+            self.app.usage_evidence if request.path == "/usage" else None, request,
+        )
+        if usage_response is not None:
+            return usage_response
         schedule_response = handle_schedule_route(
             self.app,
             request,

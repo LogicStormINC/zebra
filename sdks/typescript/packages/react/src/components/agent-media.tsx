@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import type {
   AgentArtifactAccess,
   AgentArtifactPurpose,
+  AgentExternalVideoPart,
   AgentImagePart,
   AgentVideoPart,
 } from "@zebra-agent/ui-contracts";
@@ -25,6 +26,8 @@ export interface AgentMediaLabels {
   loading: string;
   openImage: string;
   unavailable: string;
+  openExternalVideo?: string;
+  playExternalVideo?: string;
 }
 
 export function AgentImageBlock({ labels, part, resolveArtifact }: MediaBlockProps<AgentImagePart>) {
@@ -110,6 +113,81 @@ export function AgentVideoBlock({ labels, part, resolveArtifact }: MediaBlockPro
         {labels.unavailable}
       </video>
       <figcaption><strong>{part.title}</strong>{part.description ? <span>{part.description}</span> : null}</figcaption>
+    </figure>
+  );
+}
+
+function publicHttpsUrl(value: string): URL | undefined {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "https:" || url.username || url.password || url.port ||
+        !host.includes(".") || host === "localhost" || host.endsWith(".localhost") ||
+        host.endsWith(".local") || host.endsWith(".internal") ||
+        /^[\d.]+$/.test(host) || host.includes(":")) return undefined;
+    return url;
+  } catch {
+    return undefined;
+  }
+}
+
+function externalVideoSource(part: AgentExternalVideoPart): { href: string; embed?: string; mimeType?: string } | undefined {
+  const url = publicHttpsUrl(part.url);
+  if (!url) return undefined;
+  const host = url.hostname.toLowerCase();
+  if (part.provider === "direct") {
+    const match = /\.(mp4|webm)$/i.exec(url.pathname);
+    return match ? { href: url.href, mimeType: `video/${match[1]!.toLowerCase()}` } : undefined;
+  }
+  if (part.provider === "website") return { href: url.href };
+  if (part.provider === "youtube") {
+    const id = host === "youtu.be" ? /^\/([\w-]{11})\/?$/.exec(url.pathname)?.[1]
+      : ["youtube.com", "www.youtube.com", "m.youtube.com"].includes(host)
+        ? url.pathname === "/watch" ? url.searchParams.get("v") : /^\/(?:shorts|embed)\/([\w-]{11})\/?$/.exec(url.pathname)?.[1]
+        : undefined;
+    if (!id || !/^[\w-]{11}$/.test(id)) return undefined;
+    return { href: `https://www.youtube.com/watch?v=${id}`, embed: `https://www.youtube-nocookie.com/embed/${id}` };
+  }
+  if (part.provider === "vimeo") {
+    const id = host === "vimeo.com" || host === "www.vimeo.com"
+      ? /^\/(\d+)\/?$/.exec(url.pathname)?.[1]
+      : host === "player.vimeo.com" ? /^\/video\/(\d+)\/?$/.exec(url.pathname)?.[1] : undefined;
+    return id ? { href: `https://vimeo.com/${id}`, embed: `https://player.vimeo.com/video/${id}` } : undefined;
+  }
+  const id = ["bilibili.com", "www.bilibili.com", "m.bilibili.com"].includes(host)
+    ? /^\/video\/(BV[0-9A-Za-z]{10})\/?$/.exec(url.pathname)?.[1] : undefined;
+  return id ? { href: `https://www.bilibili.com/video/${id}`, embed: `https://player.bilibili.com/player.html?bvid=${id}` } : undefined;
+}
+
+export function AgentExternalVideoBlock({ labels, part }: { labels: AgentMediaLabels; part: AgentExternalVideoPart }) {
+  const [play, setPlay] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [posterFailed, setPosterFailed] = useState(false);
+  useEffect(() => { setPlay(false); setFailed(false); }, [part.provider, part.url]);
+  useEffect(() => { setPosterFailed(false); }, [part.posterUrl]);
+  const source = externalVideoSource(part);
+  const poster = part.posterUrl ? publicHttpsUrl(part.posterUrl)?.href : undefined;
+  if (part.state === "processing") return <AgentMediaPlaceholder label={labels.loading} />;
+  if (!source) return <AgentMediaPlaceholder failed label={labels.unavailable} />;
+  const fallback = <a href={source.href} rel="noopener noreferrer" target="_blank">{labels.openExternalVideo ?? "Open video"}</a>;
+  return (
+    <figure className="zebra-agent-media zebra-agent-media--external-video">
+      {part.state === "ready" && !failed && source.mimeType ? (
+        <video controls onError={() => setFailed(true)} playsInline poster={poster} preload="metadata">
+          <source src={source.href} type={source.mimeType} />
+          {labels.unavailable}
+        </video>
+      ) : part.state === "ready" && !failed && play && source.embed ? (
+        <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen onError={() => setFailed(true)} referrerPolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation" src={source.embed} title={part.title} />
+      ) : (
+        <div className="zebra-agent-media__external-fallback">
+          {poster && !posterFailed ? <img alt="" loading="lazy" onError={() => setPosterFailed(true)} referrerPolicy="no-referrer" src={poster} /> : null}
+          {!poster || posterFailed ? <span className="zebra-agent-media__external-title">{part.title}</span> : null}
+          {part.state === "ready" && !failed && source.embed ? <button onClick={() => setPlay(true)} type="button">{labels.playExternalVideo ?? "Play video"}</button> : null}
+          {part.state === "failed" || failed ? <span role="status">{labels.unavailable}</span> : null}
+        </div>
+      )}
+      <figcaption><strong>{part.title}</strong>{part.description ? <span>{part.description}</span> : null}{fallback}</figcaption>
     </figure>
   );
 }

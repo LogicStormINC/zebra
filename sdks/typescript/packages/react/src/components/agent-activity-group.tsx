@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import type { AgentActivity, AgentActivityStatus } from "@zebra-agent/ui-contracts";
+import type { AgentActivity, AgentActivityStatus, AgentRunOutcome } from "@zebra-agent/ui-contracts";
 
 export interface AgentActivityGroupLabels {
   blocked: string;
   cancelled: string;
   completed: string;
   failed: string;
+  failedActivities: (count: number) => string;
+  partial: string;
   ready: string;
   running: string;
   summary: (count: number) => string;
@@ -19,7 +21,7 @@ export interface AgentActivityGroupProps {
   expanded: boolean;
   labels?: Partial<AgentActivityGroupLabels> | undefined;
   onExpandedChange: (expanded: boolean) => void;
-  terminalStatus?: Exclude<AgentActivityStatus, "running" | "ready"> | undefined;
+  terminalStatus?: AgentRunOutcome | undefined;
 }
 
 const DEFAULT_LABELS: AgentActivityGroupLabels = {
@@ -27,6 +29,8 @@ const DEFAULT_LABELS: AgentActivityGroupLabels = {
   cancelled: "Cancelled",
   completed: "Completed",
   failed: "Failed",
+  failedActivities: (count) => `${count} failed`,
+  partial: "Partially completed",
   ready: "Ready",
   running: "Running",
   summary: (count) => `Work log · ${count}`,
@@ -35,14 +39,15 @@ const DEFAULT_LABELS: AgentActivityGroupLabels = {
 export function AgentActivityGroup(props: AgentActivityGroupProps) {
   const labels = { ...DEFAULT_LABELS, ...props.labels };
   const active = !props.terminalStatus && props.activities.some((item) => item.status === "running");
+  const failedCount = props.activities.filter((item) => item.status === "failed").length;
   const wasActive = useRef(active);
   useEffect(() => {
-    const shouldCollapse = props.terminalStatus === "completed" || props.terminalStatus === "cancelled";
+    const shouldCollapse = !failedCount && (props.terminalStatus === "completed" || props.terminalStatus === "cancelled");
     if (wasActive.current && !active && shouldCollapse && props.expanded) {
       props.onExpandedChange(false);
     }
     wasActive.current = active;
-  }, [active, props.expanded, props.onExpandedChange, props.terminalStatus]);
+  }, [active, failedCount, props.expanded, props.onExpandedChange, props.terminalStatus]);
   if (!props.activities.length) return null;
   const open = active || props.expanded;
   const activityKind = props.activities[0]?.kind ?? "tool";
@@ -60,8 +65,9 @@ export function AgentActivityGroup(props: AgentActivityGroupProps) {
         <span aria-hidden="true" className="zebra-agent-activity__summary-icon" />
         <strong className="zebra-agent-activity__summary-label">{labels.summary(props.activities.length)}</strong>
         <span aria-hidden="true" className="zebra-agent-activity__summary-separator">·</span>
-        <span className="zebra-agent-activity__summary-status">
+        <span aria-live="polite" aria-atomic="true" role="status" className="zebra-agent-activity__summary-status">
           {active ? labels.running : props.terminalStatus ? labels[props.terminalStatus] : latestStatus(props.activities, labels)}
+          {failedCount ? ` · ${labels.failedActivities(failedCount)}` : null}
         </span>
         <span aria-hidden="true" className="zebra-agent-activity__summary-chevron">›</span>
       </summary>

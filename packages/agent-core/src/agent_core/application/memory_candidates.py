@@ -33,7 +33,6 @@ from agent_core.ports.memory_store import MemoryStorePort
 _SINGLETON_REPO_MEMORY_TYPES = (
     MemoryType.PROJECT_RULE,
     MemoryType.ARCHITECTURE_FACT,
-    MemoryType.PROCEDURE,
 )
 
 

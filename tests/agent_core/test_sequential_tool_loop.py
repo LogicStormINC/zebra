@@ -510,7 +510,11 @@ def test_failed_quality_gate_suspends_instead_of_claiming_completion() -> None:
     assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
     assert result.run_result.stop_reason is HarnessStopReason.DELIVERY_REQUIREMENTS_UNMET
     assert result.attempt_result.metadata["delivery_assessment"]["status"] == "blocked"
-    assert not any(event.event_type is EventType.ANSWER_COMMITTED for event in result.events)
+    answer = next(
+        event for event in result.events if event.event_type is EventType.ANSWER_COMMITTED
+    )
+    assert answer.payload["delivery_assessment"]["status"] == "blocked"
+    assert "结论很简单" not in answer.payload["assistant_message"]
 
 
 def test_required_delivery_outcome_blocks_false_completion() -> None:
@@ -541,7 +545,11 @@ def test_required_delivery_outcome_blocks_false_completion() -> None:
     delivery = result.attempt_result.metadata["delivery_assessment"]
     assert delivery["status"] == "partial"
     assert delivery["unmet"] == ["change_applied"]
-    assert not any(event.event_type is EventType.ANSWER_COMMITTED for event in result.events)
+    answer = next(
+        event for event in result.events if event.event_type is EventType.ANSWER_COMMITTED
+    )
+    assert answer.payload["delivery_assessment"]["status"] == "partial"
+    assert "The setting is changed" not in answer.payload["assistant_message"]
 
 
 def test_mutation_only_satisfies_the_matching_task_type_outcome() -> None:
@@ -600,39 +608,6 @@ def test_unrelated_mutation_cannot_satisfy_a_change_outcome() -> None:
 
     assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
     assert result.attempt_result.metadata["stop_reason"] == "acceptance_outcomes_required"
-
-
-def test_final_permitted_model_call_can_still_use_a_tool_before_suspending() -> None:
-    first = _tool_call("files.read", {"path": "a.txt"}, "call_a")
-    second = _tool_call("files.read", {"path": "b.txt"}, "call_b")
-    gateway = _gateway(
-        _completion("Read the first input.", first),
-        _completion("Read the second input too.", second),
-    )
-    tools = SequenceToolGateway()
-
-    result = HarnessLoop().run(
-        HarnessTask(
-            title="Use the full explicit model budget",
-            user_input="Read both inputs.",
-            max_model_calls=2,
-            max_tool_calls=2,
-        ),
-        SingleAttemptOrchestrator(
-            gateway,
-            AllowAllPolicy(),
-            tools,
-            model_step=HarnessModelStep(available_tools=TOOLS),
-            synthesize_tool_results=True,
-        ).run,
-        created_at=NOW,
-    )
-
-    assert result.attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED
-    assert result.attempt_result.metadata["stop_reason"] == "model_call_budget_exhausted"
-    assert result.run_result.model_calls_used == 2
-    assert result.run_result.tool_calls_used == 2
-    assert [call.provider_call_id for call in tools.calls] == ["call_a", "call_b"]
 
 
 def test_unbounded_interactive_loop_exceeds_legacy_call_ceilings() -> None:

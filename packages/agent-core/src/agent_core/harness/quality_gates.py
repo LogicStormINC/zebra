@@ -17,6 +17,7 @@ class AnswerQuality:
     passed: bool
     reason: str
     missing_requirements: tuple[str, ...] = ()
+    unsupported_urls: tuple[str, ...] = ()
 
 
 def missing_selected_skills(
@@ -98,7 +99,12 @@ def evaluate_answer(
         missing.append("citation_matching_collected_evidence")
     if contract.require_artifact and not ledger.artifact_refs:
         missing.append("required_artifact")
-    if contract.require_matching_citation and _unsupported_urls(stripped, ledger.evidence_refs):
+    unsupported_urls = (
+        _unsupported_urls(stripped, ledger.evidence_refs, ledger.media_refs)
+        if contract.require_matching_citation
+        else ()
+    )
+    if unsupported_urls:
         missing.append("citation_uses_exact_collected_url")
     if missing:
         reason = (
@@ -112,7 +118,7 @@ def evaluate_answer(
             if missing[0] == "requested_structure"
             else "deliverable_missing_evidence"
         )
-        return AnswerQuality(False, reason, tuple(missing))
+        return AnswerQuality(False, reason, tuple(missing), unsupported_urls)
     return AnswerQuality(True, "acceptance_contract_satisfied")
 
 
@@ -120,10 +126,14 @@ _URL_PATTERN = re.compile(r"https?://[^\s<>\])]+")
 _TRAILING_URL_PUNCTUATION = ".,;:!?，。；：！？)]}"
 
 
-def _unsupported_urls(answer: str, evidence_refs: tuple[str, ...]) -> tuple[str, ...]:
-    """Reject invented or annotation-extended URLs while allowing normal Markdown closers."""
+def _unsupported_urls(
+    answer: str,
+    evidence_refs: tuple[str, ...],
+    media_refs: tuple[str, ...] = (),
+) -> tuple[str, ...]:
+    """Reject invented URLs while allowing collected media references."""
 
-    supported = set(evidence_refs)
+    supported = set(evidence_refs) | set(media_refs)
     candidates = {
         match.group(0).rstrip(_TRAILING_URL_PUNCTUATION) for match in _URL_PATTERN.finditer(answer)
     }

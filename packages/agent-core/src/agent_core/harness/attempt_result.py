@@ -6,6 +6,7 @@ from agent_core.harness.models import (
     HarnessAttemptResult,
     HarnessEventDraft,
 )
+from agent_core.harness.partial_delivery import publish_partial_status
 
 
 def build_attempt_result(
@@ -18,6 +19,10 @@ def build_attempt_result(
     emitted_events: list[HarnessEventDraft],
     metadata: dict[str, object],
 ) -> HarnessAttemptResult:
+    if outcome in {HarnessAttemptOutcome.SUSPENDED, HarnessAttemptOutcome.FAILED}:
+        partial = publish_partial_status(emitted_events, metadata)
+        if partial is not None:
+            assistant_message, metadata = partial
     return HarnessAttemptResult(
         outcome=outcome,
         summary=summary,

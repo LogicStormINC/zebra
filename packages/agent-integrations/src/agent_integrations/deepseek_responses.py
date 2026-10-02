@@ -109,7 +109,6 @@ class DeepSeekResponsesModelGateway:
                 retries = self._retry_or_raise(
                     exc,
                     retries=retries,
-                    messages=messages,
                     public_delta_emitted=False,
                 )
 
@@ -136,10 +135,9 @@ class DeepSeekResponsesModelGateway:
         retries = 0
         public_delta_emitted = False
 
-        def emit(delta: ModelTextDelta) -> None:
+        def mark_semantic_output() -> None:
             nonlocal public_delta_emitted
             public_delta_emitted = True
-            on_text_delta(delta)
 
         try:
             while True:
@@ -149,7 +147,8 @@ class DeepSeekResponsesModelGateway:
                         url=f"{self._base_url}{RESPONSES_PATH}",
                         headers=self._headers(),
                         body=body,
-                        on_text_delta=emit,
+                        on_text_delta=on_text_delta,
+                        on_semantic_output=mark_semantic_output,
                     )
                     return parse_responses_completion(
                         payload,
@@ -164,7 +163,6 @@ class DeepSeekResponsesModelGateway:
                     retries = self._retry_or_raise(
                         exc,
                         retries=retries,
-                        messages=messages,
                         public_delta_emitted=public_delta_emitted,
                     )
         finally:
@@ -261,10 +259,11 @@ class DeepSeekResponsesModelGateway:
         exc: Exception,
         *,
         retries: int,
-        messages: list[SessionMessage],
         public_delta_emitted: bool,
     ) -> int:
         if isinstance(exc, ModelResponseRejectedError):
+            if public_delta_emitted or retries:
+                exc.retryable = False
             raise exc
         if isinstance(exc, ValueError) and not isinstance(exc, ModelProviderError):
             raise exc
@@ -273,12 +272,11 @@ class DeepSeekResponsesModelGateway:
             error.retryable
             and retries < self._max_retries
             and not public_delta_emitted
-            and not any(message.role is MessageRole.TOOL for message in messages)
         ):
             return retries + 1
         raise ModelProviderError(
             error.normalized_error,
-            retryable=error.retryable,
+            retryable=False,
             retry_count=retries,
         ) from exc
 

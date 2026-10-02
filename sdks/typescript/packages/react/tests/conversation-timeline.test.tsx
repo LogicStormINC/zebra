@@ -89,3 +89,47 @@ test("successful work collapses while failed work remains open", async () => {
   await act(async () => root.unmount());
   dom.window.close();
 });
+
+test("partial delivery stays distinct and failed tools remain visible after later success", async () => {
+  const { container, dom, root } = await mount();
+  const base = turn("running");
+  const render = async (status: AgentConversationTurn["status"], withWork = true) => {
+    await act(async () => root.render(createElement(AgentConversationTimeline, {
+      activityLabels: {
+        partial: "部分完成",
+        failed: "失败",
+        failedActivities: (count) => `${count} 项失败`,
+      },
+      runStatusLabels: { outcomes: { partial: "部分结果", failed: "运行失败" } },
+      turns: [{
+        ...base,
+        status,
+        workSegments: withWork ? [{
+          id: "work-1",
+          activities: [
+            { activityId: "search", kind: "tool", title: "Search", status: "failed" },
+            { activityId: "read", kind: "tool", title: "Read", status: status === "running" ? "running" : "completed" },
+          ],
+        }] : [],
+      }],
+    })));
+  };
+  await render("running");
+  assert.match(container.querySelector("summary [role=status]")?.textContent ?? "", /Running · 1 项失败/);
+  assert.doesNotMatch(container.textContent ?? "", /Retrying/);
+  await render("partial");
+  assert.match(container.querySelector("summary")?.textContent ?? "", /部分完成 · 1 项失败/);
+  assert.equal(container.querySelector("details")?.open, true);
+  assert.match(container.querySelector(".zebra-agent-run-status [role=status]")?.textContent ?? "", /部分结果/);
+  assert.match(container.textContent ?? "", /Repository inspected/);
+  await render("completed");
+  assert.match(container.querySelector("summary")?.textContent ?? "", /Completed · 1 项失败/);
+  assert.equal(container.querySelector("details")?.open, true);
+  await render("partial", false);
+  assert.match(container.querySelector("[role=status]")?.textContent ?? "", /部分结果/);
+  await render("failed", false);
+  assert.match(container.querySelector("[role=status]")?.textContent ?? "", /运行失败/);
+  assert.match(container.textContent ?? "", /Repository inspected/);
+  await act(async () => root.unmount());
+  dom.window.close();
+});

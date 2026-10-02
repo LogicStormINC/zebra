@@ -11,6 +11,7 @@ from agent_core.application.memory_reviews import (
     MemoryReviewService,
     memory_review_scope_query,
 )
+from agent_core.application.user_profile_memory import dynamic_memory_subject
 from agent_core.domain.events import EventActor, SessionEvent
 from agent_core.domain.governed_memories import GovernedMemoryLifecycleMutation
 from agent_core.domain.identifiers import MemoryId
@@ -25,7 +26,6 @@ from agent_core.ports.memory_store import MemoryStorePort
 _AUTO_PROMOTABLE_TYPES = frozenset(
     {
         MemoryType.PREFERENCE,
-        MemoryType.PROCEDURE,
         MemoryType.PROJECT_RULE,
         MemoryType.ARCHITECTURE_FACT,
     }
@@ -227,8 +227,16 @@ def _has_conflict(
     candidate: MemoryRecord,
     existing: tuple[MemoryRecord, ...],
 ) -> bool:
-    candidate_text = _normalize(candidate.text)
-    return any(_normalize(record.text) != candidate_text for record in existing)
+    if candidate.memory_type is MemoryType.PREFERENCE:
+        # Distinct preferences may be compatible, but a broad auto-merge cannot
+        # prove that. Leave the second one for explicit human review.
+        return any(_normalize(record.text) != _normalize(candidate.text) for record in existing)
+    subject = dynamic_memory_subject(candidate.text)
+    return subject is not None and any(
+        dynamic_memory_subject(record.text) == subject
+        and _normalize(record.text) != _normalize(candidate.text)
+        for record in existing
+    )
 
 
 def _normalize(text: str) -> str:

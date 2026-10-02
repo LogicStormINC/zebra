@@ -84,7 +84,7 @@ def test_cli_memory_review_reports_missing_memory(tmp_path: Path) -> None:
     }
 
 
-def test_cli_memory_review_supersedes_prior_confirmed_memory(tmp_path: Path) -> None:
+def test_cli_memory_review_preserves_unrelated_procedure(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session_id, record = _seed_completed_candidate(database_path, tmp_path / "workspace")
     prior = record.model_copy(
@@ -110,11 +110,11 @@ def test_cli_memory_review_supersedes_prior_confirmed_memory(tmp_path: Path) -> 
 
     superseded = SQLiteMemoryStore(database_path).get(prior.memory_id)
 
-    assert result.payload["superseded_memory_ids"] == [str(prior.memory_id)]
+    assert result.payload["superseded_memory_ids"] == []
     assert result.payload["duplicate_of_memory_id"] is None
     assert superseded is not None
-    assert superseded.status is MemoryStatus.SUPERSEDED
-    assert superseded.superseded_by == record.memory_id
+    assert superseded.status is MemoryStatus.CONFIRMED
+    assert superseded.superseded_by is None
 
 
 def test_cli_memory_review_keeps_prior_confirmed_preference(tmp_path: Path) -> None:

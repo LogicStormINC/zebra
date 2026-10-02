@@ -19,7 +19,7 @@ from agent_core.domain.sessions import Session, SessionStatus
 NOW = datetime(2026, 7, 28, 10, 0, tzinfo=UTC)
 
 
-@pytest.mark.parametrize("source", ["preference", "procedure", "agents"])
+@pytest.mark.parametrize("source", ["preference", "agents"])
 def test_promotes_only_reconstructable_local_evidence(source: str) -> None:
     session = _completed_session()
     event = _source_event(session, source)
@@ -47,7 +47,58 @@ def test_promotes_only_reconstructable_local_evidence(source: str) -> None:
     assert all(event.payload["operator"] == "system:auto-promotion" for event in promotion.events)
 
 
-def test_conflicting_confirmed_memory_stays_candidate() -> None:
+def test_command_run_neither_generates_nor_promotes_procedure() -> None:
+    session = _completed_session()
+    event = _source_event(session, "procedure")
+    store = _MemoryStore()
+    extraction = MemoryCandidateExtractionService(store).extract(
+        session=session,
+        events=[event],
+        next_sequence=session.current_sequence + 1,
+        command=MemoryCandidateExtractionCommand(repo_id="zebra-agent", extracted_at=NOW),
+    )
+    promotion = MemoryCandidatePromotionService(store).promote(
+        session=session,
+        source_events=[event],
+        candidates=extraction.records,
+        promoted_at=NOW,
+    )
+
+    assert extraction.records == ()
+    assert promotion.records == ()
+
+
+def test_legacy_command_candidate_cannot_auto_promote() -> None:
+    session = _completed_session()
+    source = _source_event(session, "procedure")
+    legacy = MemoryRecord(
+        memory_id=new_memory_id(),
+        memory_type=MemoryType.PROCEDURE,
+        text="Run validation preset 'smoke' as `make check` from `.`.",
+        confidence=0.9,
+        status=MemoryStatus.CANDIDATE,
+        visibility=MemoryVisibility.REPO,
+        repo_id="zebra-agent",
+        source_session_id=session.session_id,
+        source_event_start=source.sequence,
+        source_event_end=source.sequence,
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    store = _MemoryStore([legacy])
+
+    result = MemoryCandidatePromotionService(store).promote(
+        session=session,
+        source_events=[source],
+        candidates=(legacy,),
+        promoted_at=NOW,
+    )
+
+    assert result.records == ()
+    assert store.get(legacy.memory_id).status is MemoryStatus.CANDIDATE
+
+
+def test_conflicting_confirmed_preference_stays_candidate_for_review() -> None:
     session = _completed_session()
     event = _source_event(session, "preference")
     store = _MemoryStore()

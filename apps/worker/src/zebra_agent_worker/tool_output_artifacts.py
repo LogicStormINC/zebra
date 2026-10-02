@@ -348,6 +348,10 @@ class CloudToolOutputArtifactCoordinator:
         uri = metadata.get("artifact_uri") if isinstance(metadata, dict) else None
         if not isinstance(uri, str):
             return None
+        if draft.payload.get("tool_name") == "artifacts.read":
+            # ponytail: the read tool has already verified this existing Artifact;
+            # its URI is a reference, not a new payload to capture.
+            return None
         with self._lock:
             pending = self._pending.get(uri)
         if pending is None and uri.startswith("artifact://"):

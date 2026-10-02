@@ -70,6 +70,16 @@ class HarnessStoppingPolicy:
             return False
         if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
             return False
+        if attempt_result.metadata.get("retryable") is False:
+            return False
+        if attempt_result.metadata.get("policy_decision") == "deny":
+            return False
+        if attempt_result.metadata.get("stop_reason") in {
+            "loop_guard_exhausted",
+            "invalid_tool_bridge",
+            "selected_skill_tools_unavailable",
+        }:
+            return False
         if max_model_calls is not None and model_calls_used >= max_model_calls:
             return False
         if max_tool_calls is not None and tool_calls_used >= max_tool_calls:

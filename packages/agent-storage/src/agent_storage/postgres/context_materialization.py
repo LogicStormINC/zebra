@@ -3,11 +3,14 @@
 from typing import Any
 
 from agent_core.application import memory_text_features, rank_governed_memories
+from agent_core.application.legacy_command_memory import is_legacy_tool_command_memory
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.context_materialization import (
     ContextMaterialization,
     ContextMaterializationRequest,
 )
+from agent_core.domain.events import SessionEvent
+from agent_core.domain.governed_memories import GovernedMemoryEntry
 from agent_core.domain.memories import MemoryType
 from agent_core.domain.session_history import SessionHistoryMessage
 from agent_core.ports.context_materialization import ContextMaterializationPort
@@ -90,7 +93,9 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
                 {entry.record.memory_id: entry for entry in (*relevant, *stable)}.values()
             )
         return rank_governed_memories(
-            candidates,
+            _exclude_legacy_tool_commands(
+                connection, self._database.deployment_namespace, candidates
+            ),
             query_text=query.text_query,
             limit=query.limit,
         )
@@ -187,3 +192,47 @@ class PostgresContextMaterializationStore(ContextMaterializationPort):
                 "active Context Capsule payload does not match its pointer"
             )
         return capsule
+
+
+def _exclude_legacy_tool_commands(
+    connection: Any,
+    namespace: str,
+    entries: list[GovernedMemoryEntry] | tuple[GovernedMemoryEntry, ...],
+) -> tuple[GovernedMemoryEntry, ...]:
+    pairs = tuple(
+        dict.fromkeys(
+            (entry.record.source_session_id, entry.record.source_event_start)
+            for entry in entries
+            if entry.record.memory_type is MemoryType.PROCEDURE
+            and entry.record.source_session_id is not None
+            and entry.record.source_event_start is not None
+        )
+    )
+    if not pairs:
+        return tuple(entries)
+    placeholders = ", ".join("(%s, %s)" for _ in pairs)
+    params: list[object] = [namespace]
+    for session_id, sequence in pairs:
+        params.extend((session_id, sequence))
+    rows = connection.execute(
+        "SELECT event_id, session_id, sequence, event_type, payload, actor, created_at "
+        "FROM session_events WHERE deployment_namespace = %s "
+        f"AND (session_id, sequence) IN ({placeholders})",
+        tuple(params),
+    ).fetchall()
+    sources = {
+        (event.session_id, event.sequence): event
+        for row in rows
+        if (event := SessionEvent.model_validate(row))
+    }
+    return tuple(
+        entry
+        for entry in entries
+        if not is_legacy_tool_command_memory(
+            entry.record,
+            sources.get((entry.record.source_session_id, entry.record.source_event_start))
+            if entry.record.source_session_id is not None
+            and entry.record.source_event_start is not None
+            else None,
+        )
+    )

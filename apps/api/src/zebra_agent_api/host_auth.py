@@ -96,6 +96,8 @@ class PostgresHostGrantRequestAuthorizer(HostGrantRequestAuthorizer):
 
 
 def _required_scopes_for_request(request: HostGrantHttpRequest) -> tuple[str, ...]:
+    if request.path == "/usage":
+        return ("event.read",)
     if request.path == "/schedules" or request.path.startswith("/schedules/"):
         return (
             ("schedule.read",)

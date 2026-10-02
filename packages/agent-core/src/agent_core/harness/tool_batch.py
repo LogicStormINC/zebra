@@ -30,6 +30,12 @@ from agent_core.harness.tool_freshness import (
     declared_read_only_tools,
     record_tool_freshness,
 )
+from agent_core.harness.tool_recovery import (
+    can_retry_read,
+    invalid_request_count,
+    record_recovery,
+    reject_tool_batch,
+)
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
@@ -86,10 +92,7 @@ class ToolBatchExecutor:
     ) -> ToolBatchResult:
         if not tool_calls:
             raise ValueError("tool batch must not be empty")
-        if (
-            tool_call_limit is not None
-            and tool_calls_executed + len(tool_calls) > tool_call_limit
-        ):
+        if tool_call_limit is not None and tool_calls_executed + len(tool_calls) > tool_call_limit:
             return self._terminal(
                 outcome=HarnessAttemptOutcome.SUSPENDED,
                 summary="tool call budget cannot fit the complete proposed batch",
@@ -108,14 +111,21 @@ class ToolBatchExecutor:
             )
         clarification_calls = tuple(call for call in tool_calls if call.name == "agent.clarify")
         if clarification_calls and len(tool_calls) != 1:
-            return self._terminal(
-                outcome=HarnessAttemptOutcome.FAILED,
-                summary="agent.clarify must be the only tool call in a model response",
-                completion=completion,
+            reject_tool_batch(
+                tool_calls,
+                reason="agent.clarify must be the only call. No tool was executed.",
+                messages=messages,
+                created_at=context.attempt.started_at,
+                attempt_number=context.attempt.number,
                 emitted_events=emitted_events,
-                model_calls_used=model_calls_used,
-                tool_calls_executed=tool_calls_executed,
-                metadata={**metadata, "stop_reason": "invalid_clarification_batch"},
+            )
+            return ToolBatchResult(
+                None,
+                tool_calls_executed,
+                {
+                    **metadata,
+                    "invalid_tool_requests": invalid_request_count(metadata) + 1,
+                },
             )
         if execute_all and _can_recover_repeated_reads(
             tool_calls,
@@ -179,6 +189,7 @@ class ToolBatchExecutor:
                 }
                 if (
                     action_fingerprint(tool_call) in fingerprints
+                    and not can_retry_read(tool_call, metadata)
                     and not can_refresh_repeated_read(
                         tool_call,
                         metadata=metadata,
@@ -297,56 +308,45 @@ class ToolBatchExecutor:
                         tool_calls_executed=tool_calls_executed,
                         metadata=metadata,
                     )
-                except ValueError as exc:
-                    return self._terminal(
-                        outcome=HarnessAttemptOutcome.FAILED,
-                        summary="invalid agent.clarify request",
-                        completion=completion,
+                except ValueError:
+                    reject_tool_batch(
+                        (tool_call,),
+                        reason="Invalid clarification. Correct arguments using its schema.",
+                        messages=messages,
+                        created_at=context.attempt.started_at,
+                        attempt_number=context.attempt.number,
                         emitted_events=emitted_events,
-                        model_calls_used=model_calls_used,
-                        tool_calls_executed=tool_calls_executed,
-                        metadata={
+                    )
+                    return ToolBatchResult(
+                        None,
+                        tool_calls_executed,
+                        {
                             **metadata,
-                            "stop_reason": "invalid_clarification_request",
-                            "detail": str(exc),
+                            "invalid_tool_requests": invalid_request_count(metadata) + 1,
                         },
                     )
                 return ToolBatchResult(terminal, tool_calls_executed, metadata)
-            try:
-                execution = (
-                    execute_plan_call(
-                        context,
-                        tool_call,
-                        verifier=self._verifier,
-                        emitted_events=emitted_events,
-                    )
-                    if tool_call.name == "agent.plan"
-                    else execute_tool_call(
-                        context,
-                        tool_call,
-                        tool_gateway=self._tool_gateway,
-                        verifier=self._verifier,
-                        emitted_events=emitted_events,
-                        emit_execution_started=not (index == 0 and first_execution_started),
-                    )
-                )
-            except ValueError as exc:
-                return self._terminal(
-                    outcome=HarnessAttemptOutcome.FAILED,
-                    summary="invalid agent.plan request",
-                    completion=completion,
+            execution = (
+                execute_plan_call(
+                    context,
+                    tool_call,
+                    verifier=self._verifier,
                     emitted_events=emitted_events,
-                    model_calls_used=model_calls_used,
-                    tool_calls_executed=tool_calls_executed,
-                    metadata={
-                        **metadata,
-                        "stop_reason": "invalid_plan_request",
-                        "detail": str(exc),
-                    },
                 )
+                if tool_call.name == "agent.plan"
+                else execute_tool_call(
+                    context,
+                    tool_call,
+                    tool_gateway=self._tool_gateway,
+                    verifier=self._verifier,
+                    emitted_events=emitted_events,
+                    emit_execution_started=not (index == 0 and first_execution_started),
+                )
+            )
             tool_calls_executed += 1
             fingerprints.add(action_fingerprint(tool_call))
             metadata = {**metadata, **execution.metadata}
+            metadata = record_recovery(metadata, tool_call, execution.result)
             metadata = record_tool_evidence(metadata, execution.result)
             if tool_call.name != "agent.plan":
                 metadata = record_tool_freshness(
@@ -487,6 +487,7 @@ def _can_recover_repeated_reads(
         return False
     return all(
         tool_call.name in {"files.read", "sessions.search"}
+        and not can_retry_read(tool_call, metadata)
         and action_fingerprint(tool_call) in fingerprints
         and not can_refresh_repeated_read(
             tool_call,

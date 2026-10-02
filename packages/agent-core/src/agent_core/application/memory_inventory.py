@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterable, Sequence
 from shlex import join as shell_join
 from typing import Any
 
+from agent_core.application.legacy_command_memory import is_legacy_tool_command_memory
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.memories import MemoryRecord
@@ -69,10 +70,20 @@ def _serialize_inventory_row(
     event_index: dict[int, SessionEvent],
     latest_reviews: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
+    source = (
+        event_index.get(record.source_event_start)
+        if record.source_event_start is not None
+        else None
+    )
     return {
         **record.model_dump(mode="json"),
         "source": _serialize_memory_source(record, event_index),
         "last_review": latest_reviews.get(str(record.memory_id)),
+        **(
+            {"quality_warning": "legacy_tool_command"}
+            if is_legacy_tool_command_memory(record, source)
+            else {}
+        ),
     }
 
 

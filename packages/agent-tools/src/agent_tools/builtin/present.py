@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from ipaddress import ip_address
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
@@ -32,7 +34,9 @@ content_present_contract = ToolContract(
     description=(
         "Present existing current-session Artifacts inline in the answer. Use images only when "
         "they add evidence or clarity, charts for structured comparisons or trends, and video "
-        "only when motion or sequence matters. Do not add decorative media."
+        "only when motion or sequence matters. Use external_video for an HTTPS source "
+        "video page or direct stream without downloading it; the viewer may need to open "
+        "the source when embedding is unavailable. Do not add decorative media."
     ),
     argument_properties={
         "parts": {
@@ -42,9 +46,20 @@ content_present_contract = ToolContract(
             "items": {
                 "type": "object",
                 "additionalProperties": False,
-                "required": ["type", "artifact_uri"],
+                "required": ["type"],
                 "properties": {
-                    "type": {"type": "string", "enum": ["image", "video", "chart", "file"]},
+                    "type": {
+                        "type": "string",
+                        "enum": ["image", "video", "external_video", "chart", "file"],
+                    },
+                    "source_url": {
+                        "type": "string",
+                        "description": "HTTPS video page or direct video URL for external_video.",
+                    },
+                    "poster_url": {
+                        "type": "string",
+                        "description": "Optional HTTPS cover image URL for external_video.",
+                    },
                     "artifact_uri": {
                         "type": "string",
                         "description": "Current-session artifact:// URI.",
@@ -109,6 +124,20 @@ class ContentPresentTool:
         if not isinstance(value, Mapping):
             raise ToolArgumentError("content.present part must be an object")
         kind = _required_text(value, "type", maximum=16)
+        if kind == "external_video":
+            source_url = _external_url(_required_text(value, "source_url", maximum=2048))
+            poster_url = _optional_text(value, "poster_url", maximum=2048)
+            return _compact(
+                {
+                    "id": f"content:{tool_call_id}:{index}",
+                    "type": "external_video",
+                    "state": "ready",
+                    "sourceUrl": source_url,
+                    "posterUrl": _external_url(poster_url) if poster_url else None,
+                    "title": _required_text(value, "title", maximum=500),
+                    "description": _optional_text(value, "description", maximum=2000),
+                }
+            )
         uri = _required_text(value, "artifact_uri", maximum=128)
         inspection = self._artifact(uri)
         part_id = f"content:{tool_call_id}:{index}:{inspection.artifact_id}"
@@ -186,7 +215,9 @@ class ContentPresentTool:
                     "description": _optional_text(value, "description", maximum=2000),
                 }
             )
-        raise ToolArgumentError("content.present type must be image, video, chart, or file")
+        raise ToolArgumentError(
+            "content.present type must be image, video, external_video, chart, or file"
+        )
 
     def _artifact(self, uri: str) -> ArtifactPayloadReadInspection:
         artifact_id = _artifact_id(uri)
@@ -215,6 +246,36 @@ class ContentPresentTool:
         if not inspection.mime_type.startswith(prefix):
             raise _ArtifactPresentationError(f"{key} Artifact has unsupported MIME type")
         return str(inspection.artifact_id)
+
+
+def _external_url(value: str) -> str:
+    try:
+        parsed = urlsplit(value)
+        host = parsed.hostname or ""
+        port = parsed.port
+    except ValueError as exc:
+        raise ToolArgumentError(
+            "content.present external_video requires a public HTTPS URL"
+        ) from exc
+    if (
+        parsed.scheme != "https"
+        or not host
+        or parsed.username
+        or parsed.password
+        or port not in (None, 443)
+    ):
+        raise ToolArgumentError("content.present external_video requires a public HTTPS URL")
+    if host == "localhost" or host.endswith((".localhost", ".local")):
+        raise ToolArgumentError("content.present external_video requires a public HTTPS URL")
+    if "." not in host or host.endswith(".internal"):
+        raise ToolArgumentError("content.present external_video requires a public HTTPS URL")
+    try:
+        address = ip_address(host)
+    except ValueError:
+        return value
+    if not address.is_global:
+        raise ToolArgumentError("content.present external_video requires a public HTTPS URL")
+    return value
 
 
 def _artifact_part(

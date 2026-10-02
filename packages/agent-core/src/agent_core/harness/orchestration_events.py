@@ -11,6 +11,9 @@ _CONTINUATION_METADATA_KEYS = frozenset(
         "conversation_compaction_count",
         "conversation_tokens_after_compaction",
         "durable_action_fingerprints",
+        "tool_recovery",
+        "loop_guard_counts",
+        "invalid_tool_requests",
         "mutation_epoch",
         "mutation_resources",
         "plan_metadata",
@@ -90,9 +93,7 @@ def model_response_event(
         if completion.call_metadata.token_breakdown is not None:
             payload["token_breakdown"] = dict(completion.call_metadata.token_breakdown)
         if completion.call_metadata.token_breakdown_v2 is not None:
-            payload["token_breakdown_v2"] = (
-                completion.call_metadata.token_breakdown_v2.as_payload()
-            )
+            payload["token_breakdown_v2"] = completion.call_metadata.token_breakdown_v2.as_payload()
         if completion.call_metadata.usage.input_tokens is not None:
             payload["input_token_estimate_error"] = (
                 completion.call_metadata.usage.input_tokens - estimated

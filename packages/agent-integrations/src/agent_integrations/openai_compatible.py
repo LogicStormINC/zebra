@@ -8,7 +8,7 @@ from time import perf_counter
 from typing import Any
 
 import httpx
-from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.messages import SessionMessage
 from agent_core.domain.modeling import (
     ModelCompletion,
     ModelContextWindow,
@@ -116,6 +116,8 @@ class OpenAICompatibleModelGateway:
                 )
             except Exception as exc:
                 if isinstance(exc, ModelResponseRejectedError):
+                    if retry_count:
+                        exc.retryable = False
                     raise
                 if isinstance(exc, ValueError) and not isinstance(exc, ModelProviderError):
                     raise
@@ -123,12 +125,11 @@ class OpenAICompatibleModelGateway:
                 if not self._should_retry(
                     error,
                     retry_count=retry_count,
-                    messages=messages,
                     public_delta_emitted=False,
                 ):
                     raise ModelProviderError(
                         error.normalized_error,
-                        retryable=error.retryable,
+                        retryable=False,
                         retry_count=retry_count,
                     ) from exc
                 retry_count += 1
@@ -159,10 +160,9 @@ class OpenAICompatibleModelGateway:
         retry_count = 0
         public_delta_emitted = False
 
-        def emit(delta: ModelTextDelta) -> None:
+        def mark_semantic_output() -> None:
             nonlocal public_delta_emitted
             public_delta_emitted = True
-            on_text_delta(delta)
 
         try:
             while True:
@@ -172,7 +172,8 @@ class OpenAICompatibleModelGateway:
                         url=f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
                         headers=self._headers(),
                         body=request_body,
-                        on_text_delta=emit,
+                        on_text_delta=on_text_delta,
+                        on_semantic_output=mark_semantic_output,
                     )
                     return parse_completion(
                         response_data,
@@ -187,6 +188,9 @@ class OpenAICompatibleModelGateway:
                     )
                 except Exception as exc:
                     if isinstance(exc, ModelResponseRejectedError):
+                        # Do not renew a spent transport budget through Harness repair.
+                        if public_delta_emitted or retry_count:
+                            exc.retryable = False
                         raise
                     if isinstance(exc, ValueError) and not isinstance(exc, ModelProviderError):
                         raise
@@ -194,12 +198,11 @@ class OpenAICompatibleModelGateway:
                     if not self._should_retry(
                         error,
                         retry_count=retry_count,
-                        messages=messages,
                         public_delta_emitted=public_delta_emitted,
                     ):
                         raise ModelProviderError(
                             error.normalized_error,
-                            retryable=error.retryable,
+                            retryable=False,
                             retry_count=retry_count,
                         ) from exc
                     retry_count += 1
@@ -284,15 +287,13 @@ class OpenAICompatibleModelGateway:
         error: ModelProviderError,
         *,
         retry_count: int,
-        messages: list[SessionMessage],
         public_delta_emitted: bool,
     ) -> bool:
+        # Function definitions do not execute tools; durable tool results are safe to resend.
         return (
-            self._deepseek_router is not None
-            and error.retryable
+            error.retryable
             and retry_count < self._max_retries
             and not public_delta_emitted
-            and not any(message.role is MessageRole.TOOL for message in messages)
         )
 
     def _headers(self) -> dict[str, str]:

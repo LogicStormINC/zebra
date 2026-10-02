@@ -29,6 +29,7 @@ from agent_core.harness.tool_freshness import (
     declared_read_only_tools,
     record_tool_freshness,
 )
+from agent_core.harness.tool_recovery import can_retry_read, execute_observed, record_recovery
 from agent_core.ports.policy_engine import PolicyEnginePort
 from agent_core.ports.tool_gateway import ToolGatewayPort
 
@@ -68,8 +69,7 @@ class ConcurrentToolBatchExecutor:
         self._parallel_safe_tools = parallel_safe_tools
         self._parallel_batch_limits = dict(parallel_batch_limits or {})
         invalid_limits = (
-            not name.strip() or limit <= 0
-            for name, limit in self._parallel_batch_limits.items()
+            not name.strip() or limit <= 0 for name, limit in self._parallel_batch_limits.items()
         )
         if any(invalid_limits):
             raise ValueError("parallel batch limits require named tools and positive limits")
@@ -123,7 +123,7 @@ class ConcurrentToolBatchExecutor:
                     "remaining_tool_call_count": len(tool_calls),
                 },
             )
-        seen = set(fingerprints)
+        seen: set[str] = set()
         loop_guard_counts = _loop_guard_counts(metadata)
         metadata = {**metadata, "loop_guard_counts": dict(loop_guard_counts)}
         duplicate_indices: set[int] = set()
@@ -149,14 +149,19 @@ class ConcurrentToolBatchExecutor:
                 )
             )
             fingerprint = action_fingerprint(tool_call)
-            if fingerprint in seen and not can_refresh_repeated_read(
-                tool_call,
-                metadata=metadata,
-                read_only_tools=self._read_only_tools,
-            ):
-                loop_guard_counts[fingerprint] = (
-                    loop_guard_counts.get(fingerprint, 0) + 1
+            if (
+                fingerprint in seen
+                or (
+                    fingerprint in fingerprints
+                    and not can_retry_read(tool_call, metadata)
+                    and not can_refresh_repeated_read(
+                        tool_call,
+                        metadata=metadata,
+                        read_only_tools=self._read_only_tools,
+                    )
                 )
+            ):
+                loop_guard_counts[fingerprint] = loop_guard_counts.get(fingerprint, 0) + 1
                 if loop_guard_counts[fingerprint] >= self._repeat_hard_stop_threshold:
                     return self._terminal(
                         summary=(
@@ -215,15 +220,14 @@ class ConcurrentToolBatchExecutor:
             "parallelism_limit": self._max_parallel_tool_calls,
         }
         executable_calls = tuple(
-            call for idx, call in enumerate(tool_calls)
+            call
+            for idx, call in enumerate(tool_calls)
             if idx not in duplicate_indices and idx not in denied_results
         )
         for tool_call in executable_calls:
             emitted_events.append(_started_event(context, tool_call))
         executed_results = self._execute_all(executable_calls)
-        results = _merge_results(
-            tool_calls, executed_results, duplicate_indices, denied_results
-        )
+        results = _merge_results(tool_calls, executed_results, duplicate_indices, denied_results)
         failed_names: list[str] = []
         observed_epoch = _integer(batch_metadata.get("mutation_epoch"))
         for index, (tool_call, tool_result) in enumerate(zip(tool_calls, results, strict=True)):
@@ -246,6 +250,8 @@ class ConcurrentToolBatchExecutor:
             if tool_result.status is not ToolCallStatus.EXECUTED:
                 failed_names.append(tool_call.name)
             batch_metadata = {**batch_metadata, **execution.metadata}
+            if index not in duplicate_indices:
+                batch_metadata = record_recovery(batch_metadata, tool_call, tool_result)
             batch_metadata = record_tool_evidence(batch_metadata, tool_result)
             batch_metadata = record_tool_freshness(
                 batch_metadata,
@@ -290,7 +296,9 @@ class ConcurrentToolBatchExecutor:
 
     def _execute_all(self, tool_calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
         with ThreadPoolExecutor(max_workers=self._max_parallel_tool_calls) as executor:
-            futures = [executor.submit(self._tool_gateway.execute, call) for call in tool_calls]
+            futures = [
+                executor.submit(execute_observed, self._tool_gateway, call) for call in tool_calls
+            ]
         return tuple(
             _future_result(call, future) for call, future in zip(tool_calls, futures, strict=True)
         )
@@ -348,14 +356,7 @@ def _started_event(context: HarnessContext, tool_call: ToolCall) -> HarnessEvent
 
 
 def _future_result(tool_call: ToolCall, future: Future[ToolResult]) -> ToolResult:
-    try:
-        return future.result()
-    except Exception as exc:
-        return ToolResult(
-            tool_call_id=tool_call.tool_call_id,
-            status=ToolCallStatus.FAILED,
-            metadata={"reason": "tool_gateway_error", "detail": str(exc)},
-        )
+    return future.result()
 
 
 def _loop_guard_counts(metadata: Mapping[str, object]) -> dict[str, int]:

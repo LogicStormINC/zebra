@@ -166,7 +166,8 @@ def test_trace_projector_exposes_failed_tool_trace() -> None:
     )
     assert trace.attempts[0].tools[0].tool_name == "tests.run"
     assert trace.attempts[0].tools[0].status == "failed"
-    assert trace.attempts[0].tools[0].metadata == {"stderr": "failed"}
+    assert trace.attempts[0].tools[0].metadata["stderr"] == "failed"
+    assert trace.attempts[0].tools[0].metadata["execution_state"] == "unknown"
 
 
 def test_trace_projector_normalizes_proxy_policy_metadata() -> None:

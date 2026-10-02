@@ -10,6 +10,7 @@ class DeliveryAssessmentPayload(BaseModel):
     satisfied: list[str] = Field(default_factory=list)
     unmet: list[str] = Field(default_factory=list)
     evidence_refs: list[str] = Field(default_factory=list)
+    media_refs: list[str] = Field(default_factory=list)
     artifact_refs: list[str] = Field(default_factory=list)
     task_type: str | None = None
     goal: str | None = None

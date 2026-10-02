@@ -7,6 +7,7 @@ from agent_core.domain.identifiers import new_message_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.tools import ToolCall
+from agent_core.harness.protocol_invariants import HarnessInvariantError
 from agent_core.harness.tool_resolution import resolve_completion_tool_calls
 
 
@@ -36,7 +37,7 @@ def test_resolver_updates_completion_and_assistant_tool_calls_consistently() -> 
 def test_resolver_rejects_identity_mutation() -> None:
     proposed = _call("agent.tools.call")
 
-    with pytest.raises(ValueError, match="immutable call identity"):
+    with pytest.raises(HarnessInvariantError, match="immutable call identity"):
         resolve_completion_tool_calls(
             _completion(proposed),
             lambda calls: (
@@ -46,7 +47,7 @@ def test_resolver_rejects_identity_mutation() -> None:
 
 
 def test_resolver_rejects_batch_length_mutation() -> None:
-    with pytest.raises(ValueError, match="batch length"):
+    with pytest.raises(HarnessInvariantError, match="batch length"):
         resolve_completion_tool_calls(_completion(_call("agent.tools.call")), lambda _: ())
 
 

@@ -103,7 +103,7 @@ def test_memory_review_service_deletes_confirmed_memory() -> None:
     assert result.event.payload["status"] == "deleted"
 
 
-def test_memory_review_service_supersedes_prior_confirmed_memory_on_confirm() -> None:
+def test_memory_review_service_preserves_unrelated_procedures_on_confirm() -> None:
     session = _completed_session()
     reviewed_at = datetime(2026, 7, 2, 11, 1, tzinfo=UTC)
     record = _candidate_record(session)
@@ -129,12 +129,37 @@ def test_memory_review_service_supersedes_prior_confirmed_memory_on_confirm() ->
     )
 
     assert result.record.status is MemoryStatus.CONFIRMED
-    assert len(result.superseded_records) == 1
-    assert result.superseded_records[0].status is MemoryStatus.SUPERSEDED
-    assert result.superseded_records[0].superseded_by == record.memory_id
-    assert result.superseded_records[0].updated_at == reviewed_at
-    assert result.event.payload["superseded_memory_ids"] == [str(prior.memory_id)]
+    assert result.superseded_records == ()
+    assert result.event.payload["superseded_memory_ids"] == []
     assert result.event.payload["duplicate_of_memory_id"] is None
+
+
+@pytest.mark.parametrize("memory_type", [MemoryType.PROJECT_RULE, MemoryType.ARCHITECTURE_FACT])
+def test_memory_review_preserves_distinct_repository_facts(memory_type: MemoryType) -> None:
+    session = _completed_session()
+    candidate = _candidate_record(session).model_copy(update={
+        "memory_type": memory_type,
+        "text": "The API uses PostgreSQL as authority.",
+    })
+    prior = _candidate_record(session).model_copy(update={
+        "memory_id": MemoryId(UUID("00000000-0000-0000-0000-000000000124")),
+        "memory_type": memory_type,
+        "text": "The UI is a React package.",
+        "status": MemoryStatus.CONFIRMED,
+    })
+    result = MemoryReviewService().review(
+        session=session,
+        record=candidate,
+        next_sequence=4,
+        command=MemoryReviewCommand(
+            action=MemoryReviewAction.CONFIRM,
+            operator="alice",
+            reason="validated independent fact",
+        ),
+        existing_records=(prior,),
+    )
+    assert result.record.status is MemoryStatus.CONFIRMED
+    assert result.superseded_records == ()
 
 
 def test_memory_review_service_keeps_prior_preferences_when_confirming_preference() -> None:

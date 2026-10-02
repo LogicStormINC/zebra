@@ -30,6 +30,11 @@ does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
 
+- `CLOUD-RECOVERY-CLOSURE-01`: Review, owned by Luke Ding,
+  branch `codex/cloud-recovery-closure`. User-authorized follow-up of existing
+  recovery work, preserving all earlier edits. Owned paths, disjoint lane
+  ownership and acceptance: `docs/CLOUD_RECOVERY_CLOSURE.md`.
+
 - `HAR-EGRESS-TOOL-ALIGN-01`: Review, owned by Luke Ding (Codex),
   branch `codex/egress-tool-alignment`. Goal: expose networked Web tools only
   when the effective task network profile permits them, and make opt-in Web v2
@@ -44,21 +49,67 @@ does not authorize production code, migrations or activation of its successor.
   v2 direct calls obey URL/domain policy; chained search fetch and browser
   fetch cannot bypass a Cloud allowlist. Evidence: focused 113/113, full
   regression excluding the inherited `test_host_egress.py` import blocker
-  4723 passed/903 skipped, `make check` green. Not merged or deployed.
+  4723 passed/903 skipped, `make check` green. Locally merged into
+  `cloud-agent-trench`; not pushed or deployed.
 
-- `HAR-POLICY-READ-RECOVERY-01`: In Progress, owned by Luke Ding (Codex), branch
-  `codex/policy-denial-recovery`, isolated worktree. Goal: keep blocked external
-  read egress fail-closed while letting the model recover from the denied
-  `web.fetch` in Trench conversation `conv_1790785691290_2a08dd`. Owned paths:
-  `packages/agent-core/src/agent_core/harness/{policy_step,tool_batch,concurrent_batch}.py`,
-  `packages/agent-security/src/agent_security/policy.py`, focused
-  `tests/agent_core/test_{tool_call_batches,concurrent_tool_batches}.py`,
-  `tests/agent_security/test_policy_profiles.py`, this registry, `PROGRESS.md`,
-  and `docs/HAR_POLICY_DENIAL_RECOVERY.md`. Acceptance: denied request never
-  reaches gateway, model receives a paired failure observation, concurrent
-  siblings remain safe, hard policy denials and approvals remain unchanged,
-  focused suites and `make check` pass. Full-suite collection currently has an
-  unrelated missing `_resolve_pinned_gateway` import in `test_host_egress.py`.
+- `HAR-POLICY-READ-RECOVERY-01`: In Progress, owned by Luke Ding (Codex),
+  developed on `codex/policy-denial-recovery` and ported to the user-selected
+  `cloud-agent-trench` checkout. Goal: keep blocked external read egress
+  fail-closed while recovering from the denied `web.fetch` in
+  `conv_1790785691290_2a08dd`. Owned paths: `packages/agent-core/src/agent_core/harness/`
+  `policy_step.py`, `tool_batch.py`, `concurrent_batch.py`;
+  `packages/agent-security/src/agent_security/policy.py`; focused batch/policy
+  tests; this registry, `PROGRESS.md`, and
+  `docs/HAR_POLICY_DENIAL_RECOVERY.md`. Acceptance: denied request never reaches
+  gateway, model receives a paired failure observation, concurrent siblings
+  remain safe, hard policy denials and approvals remain unchanged, focused
+  suites and `make check` pass. Full-suite collection has an unrelated missing
+  `_resolve_pinned_gateway` import in `test_host_egress.py`.
+
+- `MEM-QUALITY-01`: In Progress, owned by Codex on user-selected
+  `cloud-agent-trench` branch (direct-branch exception). Goal: stop raw tool
+  commands from polluting governed long-term Memory, preserve source events and
+  existing records, then add evidence-grounded proposals, scoped review and
+  cross-session quality evaluation. Owned paths: `packages/agent-core/src/agent_core/application/memory_candidate_*.py`,
+  `packages/agent-core/src/agent_core/application/memory_candidates.py`,
+  `packages/agent-core/src/agent_core/application/memory_reviews.py`,
+  focused `tests/agent_core/test_memory_*.py`,
+  `tests/agent_core/test_governed_memory_contract.py`,
+  `tests/api/test_memory_review.py`, `tests/cli/test_cli_memory_review.py`,
+  `tests/worker/execution/test_memory_lifecycle.py`,
+  `tests/worker/test_cloud_memory_finalization.py`, this registry,
+  `PROGRESS.md`, `WORKLOG.md`, and the primary architecture document. The first bounded
+  slice removes automatic command candidates, promotion and procedure refresh;
+  existing Memory remains untouched until a scoped, auditable review path is
+  validated. Acceptance: raw commands including `env` wrappers never become
+  auto-confirmed Memory, distinct procedures are not superseded by type alone,
+  existing confirmed Memory is not silently deleted, focused and repository
+  gates pass. Subsequent extraction/review/recall/UX/eval slices require their
+  own owned-path updates before implementation.
+  Full-pass ownership extension (2026-09-30):
+  `packages/agent-core/src/agent_core/application/memory_inventory.py`,
+  `packages/agent-core/src/agent_core/application/legacy_command_memory.py`,
+  `tests/agent_core/test_legacy_command_memory.py`,
+  `packages/agent-storage/src/agent_storage/postgres/context_materialization.py`,
+  `tests/agent_storage/test_postgres_legacy_command_recall.py`, and Trench's
+  `services/api/src/trench_api/routers/trench_ai_memory.py`,
+  `tests/api/test_trench_ai_memory.py`,
+  `toc-frontend/src/lib/trench-ai-memory-api.ts`,
+  `toc-frontend/src/components/product/dashboard-memory-settings.tsx` and its
+  focused tests. Trench currently has unrelated dirty source work; preserve it.
+  P0 evidence: focused Memory/Worker tests `46/46`; `make check` passed file
+  sizes, Ruff, Mypy (996 sources), and release eval (30/30). The complete suite
+  excluding an inherited, unrelated `test_host_egress.py` import error passed
+  `4720` with `899` skipped. Historical command candidates/confirmed records
+  are preserved and require separate auditable remediation; no live data was
+  changed or deployment performed.
+  P1 evidence: exact-match legacy warning, PostgreSQL recall exclusion, paired
+  Trench provenance/cleanup UI, and no type-wide supersession; focused Zebra,
+  paired Trench `make check` passes. Full Zebra suite excluding the
+  inherited collection blocker: `4724` passed, `899` skipped. Isolated real
+  PostgreSQL Context tests: `11/11`; disposable container stopped. Live principal
+  cleanup and browser cross-session acceptance remain open;
+  do not call this task Done or claim historical rows were changed.
 
 - `REACT-DOCUMENT-01`: Review, owned by Codex on
   `cloud-agent-trench` through focused commit `989af16e`. Scope: add a
@@ -7250,7 +7301,8 @@ Delegation Store 和 Wakeup Service 的组合方式不得复制到 Client Store�
   `apps/api/src/zebra_agent_api/client_effect_receipts.py`,
   `apps/api/src/zebra_agent_api/client_runtime_routes.py`,
   `apps/api/src/zebra_agent_api/client_grant_auth.py`,
-  `tests/api/test_client_runtime_api.py`
+  `tests/api/test_client_runtime_api.py`,
+  `tests/api/test_client_run_namespace.py`
 - 接口:
   `POST /v1/client-sessions`,
   `POST /v1/client-sessions/{id}/heartbeat`,
@@ -29941,4 +29993,54 @@ browser Cookie or Host Grant.
   runtime accepts the durable profile while keeping network isolation, v60
   accepts the profile, and Trench creates a new Task generation.
 - Evidence: focused policy, runtime and schema tests and `make check` pass
-  locally. Real service/browser acceptance and deployment remain unverified.
+  locally. Locally merged into `cloud-agent-trench`; real service/browser
+  acceptance and deployment remain unverified.
+
+### CLOUD-ART-READ-RECOVERY-01 - Existing Artifact read after publish
+
+- Status: Review
+- Owner: Codex
+- Branch: `cloud-agent-trench` (user-requested integration branch)
+- Owned paths: `apps/worker/src/zebra_agent_worker/tool_output_artifacts.py`,
+  `packages/agent-core/src/agent_core/harness/tool_batch.py`, focused tests under
+  `tests/worker` and `tests/agent_core`, and this task card.
+- Goal: allow a current-session finalized Artifact to be read after publish
+  without mistaking its URI for a newly captured payload, while retaining
+  fail-closed checks for new output and reporting the actual failing tool.
+- Acceptance: focused regression proves publish-then-read succeeds, an
+  uncaptured output URI still fails, and non-plan tool exceptions are not
+  reported as invalid `agent.plan` requests.
+- Review evidence: focused unit tests `11 passed`; isolated PostgreSQL/MinIO
+  Artifact suite and Harness tests `23 passed`; `make check` passes; full
+  pytest excluding unrelated `tests/worker/test_host_egress.py` passes
+  `4729 passed, 899 skipped`. Unexcluded collection still fails on its stale
+  `_resolve_pinned_gateway` import. The local Worker was rebuilt, restarted,
+  healthy, and verified to contain both code changes. No commit or push.
+
+### CLOUD-USER-USAGE-01 - Host-scoped Cloud token usage evidence and Trench analytics
+
+- Status: `In Progress` (claimed from Ready on 2026-10-01)
+- Human owner: Luke Ding; executor: Codex `/root`
+- Branch: `codex/cloud-token-usage` in Zebra and Trench
+- Owned Zebra paths: `apps/api/src/zebra_agent_api/{app,factory,routes,host_auth,usage_api}.py`,
+  `packages/agent-storage/src/agent_storage/postgres/usage_evidence.py`,
+  `tests/api/test_usage_api.py`, `tests/api/test_runtime_capabilities.py`,
+  `tests/agent_storage/test_postgres_usage_evidence.py`,
+  `sdks/typescript/packages/react/**`, `docs/AGENT_TASKS.md`, `PROGRESS.md`,
+  `WORKLOG.md`, `docs/cloud_usage_evidence.md`
+- Owned Trench paths: `services/api/src/trench_api/trench_ai_usage*.py`,
+  `services/api/src/trench_api/routers/trench_ai_usage.py`,
+  `services/api/src/trench_api/main.py`, `tests/api/test_trench_ai_usage.py`,
+  `toc-frontend/src/components/product/dashboard-account-dialog*.tsx`,
+  `toc-frontend/src/components/product/dashboard-usage*.tsx`,
+  `toc-frontend/src/lib/trench-ai-usage*.ts`,
+  `toc-frontend/vendor/zebra-agent/zebra-agent-react-0.1.0.tgz`,
+  `toc-frontend/pnpm-lock.yaml`
+- Goal: expose truthful, bounded per-Task model-call usage evidence from Cloud
+  Events; aggregate only the authenticated Trench user's bound Tasks; render
+  Codex-inspired usage history, top conversations and activity in a reusable
+  Zebra React surface inside Trench account settings. Leave prices, credits,
+  plan limits and cross-Host identity reconciliation outside this task.
+- Acceptance: no estimated tokens masquerade as billed usage; reasoning is not
+  double-counted; unmetered calls are visible; unknown or unauthorized Tasks
+  never enter the current user's totals; focused API, SDK and Trench tests pass.

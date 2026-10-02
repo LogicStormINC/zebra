@@ -627,18 +627,8 @@ def _source_event(session: Session) -> SessionEvent:
     return SessionEvent.create(
         session_id=session.session_id,
         sequence=4,
-        event_type=EventType.TOOL_EXECUTION_COMPLETED,
-        actor=EventActor.TOOL,
-        payload={
-            "attempt_number": 1,
-            "tool_name": "tests.run",
-            "status": "executed",
-            "output": "",
-            "metadata": {
-                "preset": "smoke",
-                "command": ["make", "check"],
-                "cwd": ".",
-            },
-        },
+        event_type=EventType.USER_MESSAGE_RECEIVED,
+        actor=EventActor.USER,
+        payload={"content": "Preference: Prefer concise CLI output."},
         created_at=NOW,
     )

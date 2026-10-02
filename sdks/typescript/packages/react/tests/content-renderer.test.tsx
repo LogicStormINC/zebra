@@ -4,7 +4,7 @@ import React, { act, createElement } from "react";
 import { JSDOM } from "jsdom";
 
 import { AgentContentRenderer, type AgentContentRendererProps } from "../src/index.ts";
-import type { AgentMessage } from "@zebra-agent/ui-contracts";
+import type { AgentExternalVideoPart, AgentMessage } from "@zebra-agent/ui-contracts";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -99,6 +99,103 @@ test("image dialog reports full-size failures and restores focus", async () => {
   assert.match(mounted.container.querySelector('[role="alert"]')?.textContent ?? "", /failed/i);
   await act(async () => close?.click());
   assert.equal(mounted.dom.window.document.activeElement, trigger);
+  await act(async () => mounted.root.unmount());
+  mounted.dom.window.close();
+});
+
+test("known external video hosts embed only after a click and retain an external link", async () => {
+  const cases: { provider: AgentExternalVideoPart["provider"]; url: string; embed: string; href: string }[] = [
+    { provider: "youtube", url: "https://youtu.be/AbCdEfGhI12?t=20", embed: "https://www.youtube-nocookie.com/embed/AbCdEfGhI12", href: "https://www.youtube.com/watch?v=AbCdEfGhI12" },
+    { provider: "vimeo", url: "https://vimeo.com/123456?autoplay=1", embed: "https://player.vimeo.com/video/123456", href: "https://vimeo.com/123456" },
+    { provider: "bilibili", url: "https://www.bilibili.com/video/BV1xx411c7mD?p=2", embed: "https://player.bilibili.com/player.html?bvid=BV1xx411c7mD", href: "https://www.bilibili.com/video/BV1xx411c7mD" },
+  ];
+  for (const item of cases) {
+    const mounted = await mount({ labels: { playExternalVideo: "播放视频" }, message: message({ parts: [{ id: "external", type: "external-video", state: "ready", title: "Demo", posterUrl: "https://images.example/poster.jpg", provider: item.provider, url: item.url }] }) });
+    assert.equal(mounted.container.querySelector("iframe"), null);
+    assert.equal(mounted.container.querySelector(".zebra-agent-media__external-fallback button")?.textContent, "播放视频");
+    assert.equal(mounted.container.querySelector(".zebra-agent-media__external-fallback img")?.getAttribute("src"), "https://images.example/poster.jpg");
+    assert.equal(mounted.container.querySelector(".zebra-agent-media__external-fallback img")?.getAttribute("referrerpolicy"), "no-referrer");
+    assert.equal(mounted.container.querySelector("figcaption a")?.getAttribute("href"), item.href);
+    assert.equal(mounted.container.querySelector("figcaption a")?.getAttribute("rel"), "noopener noreferrer");
+    await act(async () => mounted.container.querySelector<HTMLButtonElement>("button")?.click());
+    assert.equal(mounted.container.querySelector("iframe")?.getAttribute("src"), item.embed);
+    assert.equal(mounted.container.querySelector("iframe")?.getAttribute("sandbox"), "allow-scripts allow-same-origin allow-presentation");
+    await act(async () => mounted.root.unmount());
+    mounted.dom.window.close();
+  }
+});
+
+test("external video hides a rejected poster and keeps a playable title and source link", async () => {
+  const mounted = await mount({ message: message({ parts: [{
+    id: "external", type: "external-video", state: "ready", title: "Latest video",
+    posterUrl: "https://i1.hdslb.com/bfs/archive/poster.jpg", provider: "bilibili",
+    url: "https://www.bilibili.com/video/BV1xx411c7mD",
+  }] }) });
+  const poster = mounted.container.querySelector(".zebra-agent-media__external-fallback img");
+  assert.ok(poster);
+  await act(async () => poster.dispatchEvent(new mounted.dom.window.Event("error", { bubbles: true })));
+  assert.equal(mounted.container.querySelector(".zebra-agent-media__external-fallback img"), null);
+  assert.match(mounted.container.querySelector(".zebra-agent-media__external-title")?.textContent ?? "", /Latest video/);
+  assert.ok(mounted.container.querySelector(".zebra-agent-media__external-fallback button"));
+  assert.equal(mounted.container.querySelector("figcaption a")?.getAttribute("href"), "https://www.bilibili.com/video/BV1xx411c7mD");
+  await act(async () => mounted.root.unmount());
+  mounted.dom.window.close();
+});
+
+test("direct mp4/webm use native video and a link without Artifact resolution", async () => {
+  for (const extension of ["mp4", "webm"] as const) {
+    let resolved = false;
+    const url = `https://media.example/movie.${extension}?token=abc`;
+    const mounted = await mount({
+      message: message({ parts: [{ id: "external", type: "external-video", state: "ready", title: "Movie", provider: "direct", url, posterUrl: "https://media.example/poster.jpg" }] }),
+      resolveArtifact: () => { resolved = true; throw new Error("unexpected Artifact lookup"); },
+    });
+    assert.equal(mounted.container.querySelector("video source")?.getAttribute("src"), url);
+    assert.equal(mounted.container.querySelector("video source")?.getAttribute("type"), `video/${extension}`);
+    assert.equal(mounted.container.querySelector("video")?.getAttribute("poster"), "https://media.example/poster.jpg");
+    assert.equal(mounted.container.querySelector("figcaption a")?.getAttribute("href"), url);
+    assert.equal(resolved, false);
+    await act(async () => mounted.container.querySelector("video")?.dispatchEvent(new mounted.dom.window.Event("error")));
+    assert.equal(mounted.container.querySelector("video"), null);
+    assert.equal(mounted.container.querySelector(".zebra-agent-media__external-fallback img")?.getAttribute("src"), "https://media.example/poster.jpg");
+    assert.equal(mounted.container.querySelector("figcaption a")?.getAttribute("href"), url);
+    await act(async () => mounted.root.unmount());
+    mounted.dom.window.close();
+  }
+});
+
+test("unrecognized video websites retain a source link without unsafe iframe embedding", async () => {
+  const mounted = await mount({ message: message({ content: "", parts: [{
+    id: "website-video", type: "external-video", state: "ready", provider: "website",
+    url: "https://videos.example.com/watch/123", title: "Video",
+  }] }) });
+  assert.equal(mounted.container.querySelector("iframe"), null);
+  assert.equal(mounted.container.querySelector("a")?.getAttribute("href"), "https://videos.example.com/watch/123");
+  await act(async () => mounted.root.unmount());
+  mounted.dom.window.close();
+});
+
+test("external video rejects unsafe and mismatched URLs; failed media keeps a safe poster/link", async () => {
+  const rejected: { provider: AgentExternalVideoPart["provider"]; url: string }[] = [
+    { provider: "youtube", url: "javascript:alert(1)" },
+    { provider: "youtube", url: "https://www.youtube.com.evil.example/watch?v=AbCdEfGhI12" },
+    { provider: "youtube", url: "https://user:pass@www.youtube.com/watch?v=AbCdEfGhI12" },
+    { provider: "vimeo", url: "https://vimeo.com.evil.example/123456" },
+    { provider: "bilibili", url: "https://www.bilibili.com/video/not-an-id" },
+    { provider: "direct", url: "http://media.example/movie.mp4" },
+    { provider: "direct", url: "https://127.0.0.1/movie.mp4" },
+    { provider: "direct", url: "https://media.example/movie.svg" },
+  ];
+  for (const item of rejected) {
+    const mounted = await mount({ message: message({ parts: [{ id: "external", type: "external-video", state: "ready", title: "Unsafe", provider: item.provider, url: item.url }] }) });
+    assert.equal(mounted.container.querySelector("iframe, video, a"), null, item.url);
+    assert.match(mounted.container.textContent ?? "", /cannot be played/i);
+    await act(async () => mounted.root.unmount());
+    mounted.dom.window.close();
+  }
+  const mounted = await mount({ message: message({ parts: [{ id: "external", type: "external-video", state: "failed", title: "Unavailable", provider: "vimeo", url: "https://vimeo.com/123456", posterUrl: "javascript:alert(1)" }] }) });
+  assert.equal(mounted.container.querySelector("iframe, video, img"), null);
+  assert.equal(mounted.container.querySelector("figcaption a")?.getAttribute("href"), "https://vimeo.com/123456");
   await act(async () => mounted.root.unmount());
   mounted.dom.window.close();
 });

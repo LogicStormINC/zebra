@@ -2,7 +2,9 @@
 
 import json
 from collections.abc import Mapping
+from ipaddress import ip_address
 from typing import Any
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from ag_ui.core import CustomEvent
@@ -14,7 +16,7 @@ _INLINE_VIDEO_TYPES = frozenset({"video/mp4", "video/ogg", "video/webm"})
 _VEGA_LITE_TYPES = frozenset({"application/vnd.vegalite+json", "application/vnd.vegalite.v6+json"})
 
 
-_PART_TYPES = frozenset({"image", "video", "chart", "file"})
+_PART_TYPES = frozenset({"image", "video", "external_video", "chart", "file"})
 _ARTIFACT_KEYS = frozenset(
     {
         "artifactId",
@@ -61,6 +63,7 @@ _KEYS_BY_TYPE = {
             "width",
         }
     ),
+    "external_video": _COMMON_KEYS | frozenset({"sourceUrl", "posterUrl", "title", "description"}),
     "chart": _COMMON_KEYS
     | frozenset(
         {
@@ -180,6 +183,7 @@ def _valid_explicit_part(value: object) -> bool:
     required = {
         "image": ("artifactId", "mimeType", "alt"),
         "video": ("artifactId", "mimeType", "title"),
+        "external_video": ("sourceUrl", "title"),
         "chart": ("specArtifactId", "specType", "specVersion", "title", "description"),
         "file": ("artifactId", "mimeType", "name"),
     }[str(kind)]
@@ -187,6 +191,11 @@ def _valid_explicit_part(value: object) -> bool:
         return False
     if kind == "chart" and (
         value.get("specType") != "vega-lite" or value.get("specVersion") != "6"
+    ):
+        return False
+    if kind == "external_video" and (
+        not _public_https(value.get("sourceUrl"))
+        or ("posterUrl" in value and not _public_https(value.get("posterUrl")))
     ):
         return False
     for key in _ARTIFACT_KEYS & set(value):
@@ -199,6 +208,32 @@ def _valid_explicit_part(value: object) -> bool:
         if key in value and not _integer(value[key], minimum=1, maximum=16_384):
             return False
     return True
+
+
+def _public_https(value: object) -> bool:
+    if not isinstance(value, str) or len(value) > 2048:
+        return False
+    try:
+        url = urlsplit(value)
+        host = url.hostname or ""
+        if (
+            url.scheme != "https"
+            or not host
+            or url.username
+            or url.password
+            or url.port not in (None, 443)
+        ):
+            return False
+        if host == "localhost" or host.endswith((".localhost", ".local")):
+            return False
+        if "." not in host or host.endswith(".internal"):
+            return False
+        try:
+            return ip_address(host).is_global
+        except ValueError:
+            return True
+    except ValueError:
+        return False
 
 
 def _text(value: object, maximum: int) -> bool:

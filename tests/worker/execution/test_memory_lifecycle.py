@@ -27,7 +27,7 @@ from worker_execution_support import (
 )
 
 
-def test_worker_execution_service_promotes_procedure_on_success(
+def test_worker_execution_service_keeps_tool_runs_out_of_memory(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -54,18 +54,9 @@ def test_worker_execution_service_promotes_procedure_on_success(
     )
 
     assert result.session.status is SessionStatus.COMPLETED
-    assert len(records) == 1
-    assert records[0].memory_type is MemoryType.PROCEDURE
-    assert records[0].source_session_id == session_id
-    assert records[0].repo_id == str(tmp_path.resolve())
-    assert any(
-        event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED
-        for event in result.events
-    )
-    assert any(
-        event.event_type is EventType.MEMORY_REVIEW_RECORDED
-        and event.payload["status"] == "confirmed"
-        for event in result.events
+    assert records == []
+    assert not any(
+        event.event_type is EventType.MEMORY_CANDIDATE_EXTRACTED for event in result.events
     )
 
 def test_worker_execution_service_promotes_project_rule_from_agents_read(
@@ -221,7 +212,7 @@ def test_worker_execution_service_expires_stale_confirmed_doc_memory_after_agent
         for event in lifecycle_events
     ), [event.payload for event in lifecycle_events]
 
-def test_worker_execution_service_expires_stale_confirmed_procedure_after_refresh(
+def test_worker_execution_service_preserves_confirmed_procedure_after_tool_run(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -263,7 +254,7 @@ def test_worker_execution_service_expires_stale_confirmed_procedure_after_refres
     )
 
     records = SQLiteMemoryStore(database_path).list(
-        MemoryQuery(repo_id=str(tmp_path.resolve()), statuses=(MemoryStatus.EXPIRED,))
+        MemoryQuery(repo_id=str(tmp_path.resolve()), statuses=(MemoryStatus.CONFIRMED,))
     )
 
     assert result.session.status is SessionStatus.COMPLETED
@@ -273,11 +264,7 @@ def test_worker_execution_service_expires_stale_confirmed_procedure_after_refres
         for event in SQLiteEventStore(database_path).list_for_session(session_id)
         if event.event_type is EventType.MEMORY_REVIEW_RECORDED
     ]
-    assert any(
-        event.payload["status"] == "expired"
-        and event.payload["reason"] == "stale after procedure refresh"
-        for event in lifecycle_events
-    ), [event.payload for event in lifecycle_events]
+    assert not any(event.payload["status"] == "expired" for event in lifecycle_events)
 
 
 def _append_tool_result(

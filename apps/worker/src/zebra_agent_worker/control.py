@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -8,11 +9,14 @@ from uuid import UUID
 from agent_core.application import current_turn
 from agent_core.application.session_projection import apply_event as apply_session_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
+from agent_core.contracts import SessionCommand, SessionCommandKind
+from agent_core.contracts.session_commands import validate_accepted_session_command
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
-from agent_core.domain.sessions import SessionStatus
+from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_core.ports.runtime import (
     RuntimeCapabilityError,
@@ -61,6 +65,10 @@ class SessionControlError(ValueError):
     """Raised when a control-plane runtime operation cannot be completed."""
 
 
+class UnsupportedSessionControlError(SessionControlError):
+    """A control operation has no supported Cloud mutation contract."""
+
+
 @dataclass(frozen=True)
 class SuspendedSession:
     event: SessionEvent
@@ -87,6 +95,8 @@ class SessionControlService:
         settings: ZebraAgentSettings | None = None,
         stores: ControlPlaneStores | PostgresControlPlaneStores | None = None,
         cloud_control: PostgresDirectControl | None = None,
+        command_binding_loader: Callable[[SessionId], object] | None = None,
+        command_scope_provider: Callable[[Session], OpaqueAuthorityScope] | None = None,
     ) -> None:
         self._database_path = database_path
         self._settings = settings or load_settings()
@@ -98,6 +108,8 @@ class SessionControlService:
             or self._settings.storage_authority == "postgresql"
         )
         self._cloud_control = cloud_control
+        self._command_binding_loader = command_binding_loader
+        self._command_scope_provider = command_scope_provider
         if (
             cloud_control is not None
             and getattr(active_stores, "deployment_namespace", None)
@@ -113,6 +125,62 @@ class SessionControlService:
             self._workspace_store,
         )
 
+    def cancel_command(self, command: SessionCommand) -> CancelledSession:
+        """Cancel an admitted command using existing durable binding authority."""
+        if command.kind not in {SessionCommandKind.STOP, SessionCommandKind.CANCEL}:
+            raise SessionControlError("command is not a cancellation")
+        if not self._cloud:
+            return self.cancel_session(command.session_id)
+        admitted = next(
+            (
+                event for event in self._event_store.read_since(
+                    command.session_id, command.expected_revision
+                )
+                if event.event_type is EventType.SESSION_COMMAND_ACCEPTED
+                and event.payload.get("command_id") == str(command.command_id)
+            ),
+            None,
+        )
+        if admitted is None:
+            raise SessionControlError("cancellation requires a durable admitted command")
+        accepted = validate_accepted_session_command(
+            admitted.payload, session_id=command.session_id,
+            idempotency_key=admitted.idempotency_key,
+        )
+        if (accepted.fingerprint, accepted.idempotency_key) != (
+            command.fingerprint, command.idempotency_key,
+        ):
+            raise SessionControlError("cancellation differs from admitted command")
+        binding = (
+            self._command_binding_loader(command.session_id)
+            if self._command_binding_loader is not None
+            else None
+        )
+        context = None
+        if binding is not None:
+            if not isinstance(binding, TaskBindingSnapshot):
+                raise SessionControlError("invalid command Task binding")
+            host = binding.host_capability
+            context = host.host_context
+            # Admission is durable; direct control revalidates identity, not execution
+            # permission. Delayed STOP never renews a grant or enables execution.
+            scope = OpaqueAuthorityScope(
+                authority_issuer=host.authority_issuer,
+                namespace_id=host.namespace_id,
+                allowed_session_ids=(str(command.session_id),),
+            )
+        else:
+            session = self._projection_store.get_session(command.session_id)
+            if session is None or self._command_scope_provider is None:
+                raise SessionControlError("cloud command requires trusted authority")
+            scope = self._command_scope_provider(session)
+        return self.cancel_session(
+            command.session_id,
+            scope=scope,
+            host_context=context,
+            operation_id=command.command_id,
+        )
+
     def suspend_session(
         self,
         session_id: SessionId,
@@ -120,7 +188,7 @@ class SessionControlService:
         suspended_at: datetime | None = None,
     ) -> SuspendedSession:
         if self._cloud:
-            raise SessionControlError("cloud user suspend is unsupported")
+            raise UnsupportedSessionControlError("cloud user suspend is unsupported")
         recovery = self._recover(session_id)
         if recovery.session.status not in _SUSPENDABLE_STATUSES:
             raise SessionControlError("session cannot be suspended from its current state")

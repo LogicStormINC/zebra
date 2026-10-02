@@ -139,6 +139,13 @@ test("AgentComposer keeps host actions controlled and switches run actions safel
   });
   assert.equal(calls.at(-1), "continue");
 
+  await render({ ...props, canContinue: true });
+  await act(async () => {
+    (container.querySelector('[aria-label="Send"]') as HTMLButtonElement).click();
+    textarea.dispatchEvent(new dom.window.KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+  });
+  assert.deepEqual(calls.slice(-2), ["submit", "submit"]);
+
   await act(async () => root.unmount());
   dom.window.close();
 });

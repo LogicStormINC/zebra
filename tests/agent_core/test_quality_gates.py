@@ -204,6 +204,26 @@ def test_citation_gate_rejects_invented_and_annotation_extended_urls() -> None:
     assert exact.passed
 
 
+def test_citation_gate_accepts_collected_media_url() -> None:
+    prompt = "请总结最近视频并附链接"
+    source = "https://example.test/video/42"
+    cover = "https://cdn.example.test/video-42.jpg"
+    ledger = EvidenceLedger(
+        successful_tool_results=1,
+        evidence_refs=(source,),
+        media_refs=(cover,),
+    )
+    body = "# 视频摘要\n\n- 已核对视频内容。\n\n" + "补充说明。" * 40
+
+    result = evaluate_answer(
+        prompt,
+        f"{body}\n\n原文：{source}\n封面：{cover}",
+        evidence=ledger,
+    )
+
+    assert result.passed
+
+
 def test_claimed_evidence_text_does_not_substitute_for_a_real_ledger() -> None:
     result = evaluate_answer("请提供证据", "证据：我猜的。")
     assert not result.passed

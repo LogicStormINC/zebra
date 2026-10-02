@@ -38,6 +38,31 @@ def test_ledger_collects_only_successful_explicit_references() -> None:
     assert ledger.artifact_refs == ("artifact://report",)
 
 
+def test_ledger_collects_media_references_without_promoting_them_to_sources() -> None:
+    events = [
+        HarnessEventDraft(
+            event_type=EventType.TOOL_EXECUTION_COMPLETED,
+            actor=EventActor.TOOL,
+            payload={
+                "status": "executed",
+                "output": (
+                    '{"original_url":"https://example.test/video/42",'
+                    '"images":["https://cdn.example.test/video-42.jpg"],'
+                    '"media":{"thumbnail_url":"https://cdn.example.test/thumb-42.jpg"}}'
+                ),
+            },
+        )
+    ]
+
+    ledger = evidence_ledger(events)
+
+    assert ledger.evidence_refs == ("https://example.test/video/42",)
+    assert ledger.media_refs == (
+        "https://cdn.example.test/thumb-42.jpg",
+        "https://cdn.example.test/video-42.jpg",
+    )
+
+
 def test_ledger_without_reference_is_evidence_but_not_citable() -> None:
     ledger = evidence_ledger(
         [

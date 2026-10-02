@@ -140,6 +140,16 @@ export interface AgentVideoPart extends AgentArtifactPartBase {
   width?: number;
 }
 
+/** Online video supplied by a Host; no Artifact or object-storage reference is required. */
+export interface AgentExternalVideoPart extends AgentContentPartBase {
+  type: "external-video";
+  provider: "bilibili" | "youtube" | "vimeo" | "direct" | "website";
+  url: string;
+  title: string;
+  description?: string;
+  posterUrl?: string;
+}
+
 export type AgentJsonValue =
   | boolean
   | number
@@ -186,6 +196,7 @@ export type AgentContentPart =
   | AgentTextPart
   | AgentImagePart
   | AgentVideoPart
+  | AgentExternalVideoPart
   | AgentChartPart
   | AgentFilePart
   | AgentAppPart;

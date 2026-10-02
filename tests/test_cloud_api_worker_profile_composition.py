@@ -27,6 +27,7 @@ from agent_storage import (
     PostgresToolRunProjectionAdapter,
     cloud_composition_from_environment,
     compose_control_plane_stores,
+    postgres_control_plane_stores,
     sqlite_control_plane_stores,
 )
 from zebra_agent_api.app import create_app
@@ -106,6 +107,17 @@ def _cloud_settings() -> CloudCompositionSettings:
         artifact_objects=_ObjectReader(),
         history_scope=scope,
         continuation_scope=scope,
+    )
+
+
+def _cloud_stores():
+    """Real namespace-bearing adapters; constructors do not connect to PostgreSQL."""
+    cloud = _cloud_settings()
+    return postgres_control_plane_stores(
+        cloud.dsn, deployment_namespace=cloud.deployment_namespace,
+        memory_cursor_signing_key=cloud.memory_cursor_signing_key,
+        artifact_objects=cloud.artifact_objects, history_scope=cloud.history_scope,
+        continuation_scope=cloud.continuation_scope,
     )
 
 
@@ -245,13 +257,13 @@ def test_cloud_and_production_worker_profiles_use_shared_composition_without_sql
             "ZEBRA_RUNTIME_REQUIRE_WORKSPACE_QUOTA": "true",
         }
     )
-    local = sqlite_control_plane_stores(tmp_path / "worker.sqlite")
+    local = _cloud_stores()
     captured: dict[str, object] = {}
 
     def fake_compose(cloud: CloudCompositionSettings) -> CloudWorkerComposition:
         captured["cloud"] = cloud
         return CloudWorkerComposition(
-            stores=local,  # type: ignore[arg-type]
+            stores=local,
             effect_dispatch=local.effects,  # type: ignore[arg-type]
             projection_transaction=local.workspaces,  # type: ignore[arg-type]
             deployment_namespace="deployment",
@@ -324,10 +336,10 @@ def test_cloud_skill_worker_passes_one_bundle_and_requires_snapshot_recovery(
     settings = load_settings(env={
         **base, "ZEBRA_CLOUD_EXTENSION_WORKER_ENABLED": "true",
     })
-    local = sqlite_control_plane_stores(tmp_path / "worker.sqlite")
+    local = _cloud_stores()
     extension_snapshots, extensions, objects = object(), object(), _ObjectReader()
     bundle = CloudWorkerComposition(
-        stores=local,  # type: ignore[arg-type]
+        stores=local,
         effect_dispatch=local.effects,  # type: ignore[arg-type]
         projection_transaction=local.workspaces,  # type: ignore[arg-type]
         deployment_namespace="deployment",

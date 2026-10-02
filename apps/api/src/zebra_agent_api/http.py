@@ -41,6 +41,11 @@ from zebra_agent_api.extension_reads import (
     is_extension_path,
 )
 from zebra_agent_api.http_origins import _normalize_exact_origin as _normalize_exact_origin
+from zebra_agent_api.http_stream_routing import (
+    _is_agui_stream_request,
+    _is_stream_request,
+    _stream_resource_id,
+)
 from zebra_agent_api.request_cursor import after_sequence
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
@@ -220,6 +225,22 @@ def create_http_app(
             if denied is not None:
                 return JSONResponse(status_code=denied.status_code, content=denied.body)
             host_context = getattr(request.state, "host_context", None)
+            # The authenticated SSE connection is also the Host's liveness lease.
+            # Its fresh, single-use Grant must refresh queued execution authority;
+            # otherwise a busy Worker picks up a Task after the admission Grant expires.
+            from zebra_agent_api.session_binding import renew_host_binding_for_command
+
+            renewal_error = await asyncio.to_thread(
+                renew_host_binding_for_command,
+                api,
+                agui_thread,
+                getattr(request.state, "verified_host_grant", None),
+            )
+            if renewal_error is not None:
+                return JSONResponse(
+                    status_code=renewal_error.status_code,
+                    content=renewal_error.body,
+                )
             stream_query = dict(request.query_params)
             if last_event_id := request.headers.get("Last-Event-ID"):
                 stream_query.setdefault("last_event_id", last_event_id)
@@ -338,21 +359,6 @@ def _compose_production_host_grant_authorizer(
     )
 
 
-def _is_stream_request(request: Request) -> bool:
-    return request.method.upper() == "GET" and request.url.path.endswith("/stream")
-
-
-def _is_agui_stream_request(request: Request) -> bool:
-    parts = tuple(part for part in request.url.path.split("/") if part)
-    return (
-        request.method.upper() == "GET"
-        and len(parts) == 6
-        and parts[:2] == ("agui", "threads")
-        and parts[3] == "runs"
-        and parts[5] == "stream"
-    )
-
-
 async def _read_request_body(request: Request) -> tuple[dict[str, Any] | None, JSONResponse | None]:
     if request.method.upper() not in {"POST", "PUT", "PATCH"}:
         return None, None
@@ -378,13 +384,6 @@ async def _read_request_body(request: Request) -> tuple[dict[str, Any] | None, J
             },
         )
     return dict(payload), None
-
-
-def _stream_resource_id(path: str) -> str:
-    parts = [part for part in path.split("/") if part]
-    if len(parts) >= 3 and parts[:2] == ["agui", "threads"]:
-        return parts[2]
-    return parts[-2] if len(parts) >= 2 else ""
 
 
 def _deployment_namespace(api: object) -> str | None:

@@ -22,7 +22,9 @@ from zebra_agent_worker.host_egress import (
     PinnedHostConnector,
     build_pinned_host_gateway,
 )
-from zebra_agent_worker.tool_gateway_runtime import _resolve_pinned_gateway
+from zebra_agent_worker.host_gateway_resolution import (
+    resolve_pinned_gateway as _resolve_pinned_gateway,
+)
 
 
 class FakeRegistry:

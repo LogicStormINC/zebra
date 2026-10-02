@@ -305,17 +305,37 @@ def build_worker_loop_service(
             raise ValueError("command delivery requires an explicit cloud DSN")
     elif settings.command_delivery.publish_enabled or settings.command_delivery.consume_enabled:
         raise ValueError("Rabbit command delivery requires PostgreSQL cloud composition")
+    cloud_control = None
+    command_sessions = None
+    if settings.storage_authority == "postgresql" and not migrated:
+        from agent_storage.postgres.direct_control import PostgresDirectControl
+        from agent_storage.postgres.legacy_command_candidates import LegacyCommandCandidates
+
+        assert cloud_bundle.dsn is not None and active_namespace is not None
+        cloud_control = PostgresDirectControl(
+            cloud_bundle.dsn, deployment_namespace=active_namespace
+        )
+        command_sessions = LegacyCommandCandidates(
+            cloud_bundle.dsn, deployment_namespace=active_namespace
+        )
+    control_service = SessionControlService(
+        database_path,
+        settings=settings,
+        stores=execution_stores,
+        cloud_control=cloud_control,
+        command_binding_loader=task_binding_loader,
+        command_scope_provider=active_authority_scope_provider,
+    )
     command_consumer = (
         None
         if migrated
         else SessionCommandConsumer(
             execution_stores,
             execution_service,
-            control_service=SessionControlService(
-                database_path,
-                settings=settings,
-                stores=execution_stores,
-            ),
+            control_service=control_service,
+            cancel_command=control_service.cancel_command if cloud_control is not None else None,
+            command_sessions=command_sessions,
+            next_command=None if command_sessions is None else command_sessions.next_command,
         )
     )
     cloud_memory_recovery = None

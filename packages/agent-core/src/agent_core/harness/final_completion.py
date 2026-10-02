@@ -135,6 +135,7 @@ def finalize_without_tools(
                     reason=quality.reason,
                     missing_requirements=quality.missing_requirements,
                     evidence=ledger,
+                    unsupported_urls=quality.unsupported_urls,
                 ),
                 context,
             )
@@ -161,6 +162,7 @@ def finalize_without_tools(
             contract=context.task.acceptance_contract,
             unmet=quality.missing_requirements or (quality.reason,),
             evidence_refs=ledger.evidence_refs,
+            media_refs=ledger.media_refs,
             artifact_refs=ledger.artifact_refs,
         )
         return build_attempt_result(
@@ -288,6 +290,7 @@ def finalize_without_tools(
                     unmet=unmet,
                     contract=context.task.acceptance_contract,
                     evidence_refs=ledger.evidence_refs,
+                    media_refs=ledger.media_refs,
                     artifact_refs=ledger.artifact_refs,
                 ),
             },
@@ -297,6 +300,7 @@ def finalize_without_tools(
         contract=context.task.acceptance_contract,
         satisfied=satisfied,
         evidence_refs=ledger.evidence_refs,
+        media_refs=ledger.media_refs,
         artifact_refs=ledger.artifact_refs,
     )
     emitted_events.append(
@@ -353,9 +357,7 @@ def _quality_revision_allowed(
     return not isinstance(previous, int) or isinstance(previous, bool) or score < previous
 
 
-def _quality_revision_score(
-    *, answer: str, missing_requirements: tuple[str, ...]
-) -> int:
+def _quality_revision_score(*, answer: str, missing_requirements: tuple[str, ...]) -> int:
     score = 0
     for item in missing_requirements:
         if item.startswith("maximum_length:"):
@@ -366,13 +368,13 @@ def _quality_revision_score(
             score += 10_000
     return score
 
-
 def _quality_revision_feedback(
     *,
     answer: str,
     reason: str,
     missing_requirements: tuple[str, ...],
     evidence: EvidenceLedger,
+    unsupported_urls: tuple[str, ...] = (),
 ) -> str:
     missing = ", ".join(missing_requirements) or "unspecified"
     instructions: list[str] = []
@@ -399,6 +401,12 @@ def _quality_revision_feedback(
             "Cite one or more exact collected references verbatim. Available references: "
             f"{refs}."
         )
+    if "citation_uses_exact_collected_url" in missing_requirements:
+        invalid = ", ".join(unsupported_urls[:6]) or "the unrecognized URL"
+        instructions.append(
+            "Remove or replace these URLs because they were not collected as evidence: "
+            f"{invalid}. Keep any exact collected source or media URL unchanged."
+        )
     if not instructions:
         instructions.append(
             "Revise the candidate directly, preserving valid content and adding only the "
@@ -410,13 +418,13 @@ def _quality_revision_feedback(
         f"{' '.join(instructions)} Do not claim unsupported facts."
     )
 
-
 def _delivery_assessment(
     status: str,
     *,
     satisfied: tuple[str, ...] = (),
     unmet: tuple[str, ...] = (),
     evidence_refs: tuple[str, ...] = (),
+    media_refs: tuple[str, ...] = (),
     artifact_refs: tuple[str, ...] = (),
     contract: object | None = None,
 ) -> dict[str, object]:
@@ -426,6 +434,7 @@ def _delivery_assessment(
         "satisfied": list(satisfied),
         "unmet": list(unmet),
         "evidence_refs": list(evidence_refs),
+        "media_refs": list(media_refs),
         "artifact_refs": list(artifact_refs),
     }
     if contract is not None:
@@ -434,14 +443,12 @@ def _delivery_assessment(
         result["required_outcomes"] = list(required_outcomes)
     return result
 
-
 def _with_verification_gap(answer: str) -> str:
     notice = (
         "Verification status: unverified. The mutation may have been applied, "
         "but no fresh post-mutation read proved the resulting state."
     )
     return f"{answer.rstrip()}\n\n{notice}" if answer.strip() else notice
-
 
 def _contract_verification_satisfied(
     metadata: dict[str, object], *, read_only_tools: frozenset[str]
@@ -459,7 +466,6 @@ def _contract_verification_satisfied(
     return metadata.get("verification_passed") is True and metadata.get(
         "verification_summary"
     ) not in {None, "verifier hook skipped"}
-
 
 def _satisfied_outcomes(
     context: HarnessContext,

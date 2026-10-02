@@ -19,11 +19,13 @@ from agent_storage import (
 )
 from agent_storage.postgres.command_wakeup_outcome import PostgresCommandOutcomeReader
 from agent_storage.postgres.direct_control import PostgresDirectControl
+from agent_storage.postgres.usage_evidence import PostgresUsageEvidenceStore
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
 from zebra_agent_api.api_workspace_mixin import WorkspaceControlStorePort
 from zebra_agent_api.credential_broker import build_default_credential_broker
 from zebra_agent_api.session_context_namespace import resolve_context_namespace
+from zebra_agent_api.usage_api import UsageEvidenceReader
 
 if TYPE_CHECKING:
     from zebra_agent_api.app import ZebraAgentApi
@@ -49,6 +51,7 @@ def create_app(
     publication_security_revocation_actors: frozenset[str] = frozenset(),
     task_schedule_store: TaskScheduleStorePort | None = None,
     task_schedule_firing_store: TaskScheduleFiringStorePort | None = None,
+    usage_evidence: UsageEvidenceReader | None = None,
 ) -> ZebraAgentApi:
     from zebra_agent_api.app import ZebraAgentApi
 
@@ -76,6 +79,21 @@ def create_app(
         getattr(active_stores, "deployment_namespace", None) != command_outcome.deployment_namespace
     ):
         raise ValueError("command outcome composition does not match stores")
+    if (
+        usage_evidence is None
+        and active_settings.deployment == "cloud"
+        and active_settings.storage_authority == "postgresql"
+    ):
+        namespace = getattr(active_stores, "deployment_namespace", None)
+        if isinstance(namespace, str) and namespace.strip():
+            usage_evidence = PostgresUsageEvidenceStore(
+                cloud_composition.dsn if cloud_composition else active_settings.database_url,
+                deployment_namespace=namespace,
+            )
+    if usage_evidence is not None and (
+        getattr(active_stores, "deployment_namespace", None) != usage_evidence.deployment_namespace
+    ):
+        raise ValueError("usage evidence composition does not match stores")
     if (
         cloud_control is not None
         and getattr(active_stores, "deployment_namespace", None)
@@ -192,4 +210,5 @@ def create_app(
         command_outcome=command_outcome,
         task_schedule_store=task_schedule_store,
         task_schedule_firing_store=task_schedule_firing_store,
+        usage_evidence=usage_evidence,
     )

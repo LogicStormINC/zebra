@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { act, createElement } from "react";
 import { JSDOM } from "jsdom";
 
-import { AgentChat, type AgentChatProps } from "../src/index.ts";
+import { AgentChat, AgentUsageAnalytics, type AgentChatProps, type AgentUsageSnapshot } from "../src/index.ts";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -87,6 +87,37 @@ test("AgentChat renders the finite public surfaces and keeps Host actions contro
   });
   assert.equal(calls.at(-1), "expanded:false");
 
+  await act(async () => root.unmount());
+  dom.window.close();
+});
+
+test("AgentUsageAnalytics renders provider usage without inventing billing limits", async () => {
+  const dom = new JSDOM('<!doctype html><div id="root"></div>');
+  const container = dom.window.document.getElementById("root");
+  assert.ok(container);
+  Object.assign(globalThis, {
+    window: dom.window, document: dom.window.document, Event: dom.window.Event,
+    Node: dom.window.Node, HTMLElement: dom.window.HTMLElement,
+  });
+  const { createRoot } = await import("react-dom/client");
+  const root = createRoot(container);
+  const counts = { input_tokens: 8, output_tokens: 2, total_tokens: 10, reasoning_tokens: 1,
+    cache_hit_tokens: 0, cache_miss_tokens: 0, model_calls: 1, unmetered_calls: 0,
+    tool_calls: 0, messages: 1 };
+  const snapshot: AgentUsageSnapshot = {
+    schema_version: 1, source: "committed_cloud_events",
+    period: { days: 7, start: "2026-10-01", end: "2026-10-07", timezone: "UTC" },
+    totals: counts, daily: [{ date: "2026-10-01", ...counts }],
+    daily_models: [{ date: "2026-10-01", model: "model-a", model_calls: 1, total_tokens: 10 }],
+    models: [{ model: "model-a", model_calls: 1, total_tokens: 10 }],
+    tools: [], tasks: [{ task_id: "task-1", title: "Research", ...counts }],
+  };
+  await act(async () => root.render(createElement(AgentUsageAnalytics, {
+    snapshot, days: 7, onDaysChange: () => undefined,
+  })));
+  assert.match(container.textContent ?? "", /Research/);
+  assert.match(container.textContent ?? "", /10/);
+  assert.doesNotMatch(container.textContent ?? "", /积分已用|额度已用/);
   await act(async () => root.unmount());
   dom.window.close();
 });

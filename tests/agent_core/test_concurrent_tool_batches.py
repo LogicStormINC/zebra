@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from threading import Barrier, Lock
 
+import pytest
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id, new_tool_call_id
@@ -196,9 +197,7 @@ def test_parallel_batch_skips_blocked_read_but_executes_allowed_sibling() -> Non
         for message in model.requests[1]
         if message.role is MessageRole.TOOL
     ]
-    assert tool_result_ids == [
-        "call_allowed", "call_blocked"
-    ]
+    assert tool_result_ids == ["call_allowed", "call_blocked"]
     assert _event_names(result, EventType.TOOL_EXECUTION_STARTED) == ["files.read"]
 
 
@@ -393,6 +392,70 @@ def test_candidate_batch_duplicate_becomes_observation() -> None:
     assert result.attempt_result.outcome is not HarnessAttemptOutcome.FAILED
     assert result.attempt_result.metadata["recoverable_tool_failure_count"] == 1
     assert len(tools.calls) == 1
+
+
+@pytest.mark.parametrize("recovery", ["retry", "freshness"])
+def test_recoverable_read_executes_once_per_batch_without_consuming_duplicate_retry(recovery):
+    class RecoveringGateway(ReadOnlyRecordingGateway):
+        mutation_tools = frozenset({"files.write"})
+
+        def execute(self, tool_call):
+            result = super().execute(tool_call)
+            if recovery == "retry" and tool_call.provider_call_id in {"first_a", "retry_a"}:
+                return ToolResult(
+                    tool_call_id=tool_call.tool_call_id,
+                    status=ToolCallStatus.FAILED,
+                    output="Temporary read failure",
+                    metadata={"retryable": True},
+                )
+            return result
+
+    first = (_read("a.txt", "first_a"), _read("b.txt", "first_b"))
+    repeated = (_read("a.txt", "retry_a"), _read("a.txt", "duplicate_a"))
+    followup = (_read("a.txt", "last_a"), _read("c.txt", "last_c"))
+    batches = [first]
+    if recovery == "freshness":
+        batches.append((_call("files.write", {"path": "a.txt"}, "write_a"),))
+    batches.extend([repeated, followup])
+    model = ScriptedModelGateway(responses=(
+        *(ScriptedModelResponse(completion=_completion("Read or update.", *batch))
+          for batch in batches),
+        ScriptedModelResponse(completion=_completion("Finished.")),
+    ))
+    tools = RecoveringGateway()
+    write_definition = ModelToolDefinition(
+        name="files.write", description="Write a file.",
+        parameters={"type": "object", "properties": {}},
+    )
+    result = HarnessLoop().run(
+        HarnessTask(
+            title="Recover one read per batch", user_input="Inspect the inputs.",
+            max_model_calls=6, max_tool_calls=10,
+        ),
+        SingleAttemptOrchestrator(
+            model, PolicyByProviderId(), tools,
+            model_step=HarnessModelStep(available_tools=(*TOOLS, write_definition)),
+            synthesize_tool_results=True,
+            parallel_safe_tools=frozenset({"files.read"}), max_parallel_tool_calls=2,
+        ).run,
+        created_at=NOW,
+    )
+
+    executed = [call.provider_call_id for call in tools.calls]
+    assert result.attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+    assert "duplicate_a" not in executed
+    assert executed.count("retry_a") == 1
+    assert ("last_a" in executed) is (recovery == "retry")
+    assert result.run_result.tool_calls_used == len(executed) == 5
+    duplicate_events = [
+        event for event in result.events
+        if event.event_type is EventType.TOOL_EXECUTION_FAILED
+        and event.payload["tool_call_id"] == str(repeated[1].tool_call_id)
+    ]
+    assert len(duplicate_events) == 1
+    assert duplicate_events[0].payload["metadata"]["executed"] is False
+    if recovery == "freshness":
+        assert result.attempt_result.metadata["verified_mutation_epoch"] == 1
 
 
 def _run(

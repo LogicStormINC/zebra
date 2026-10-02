@@ -16,6 +16,7 @@ from agent_core.domain.modeling import (
 from agent_core.domain.tools import ToolCall
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_integrations import ModelProviderError, OpenAICompatibleModelGateway
+from agent_integrations.model_errors import normalize_provider_error
 
 
 def test_deepseek_routes_no_tool_planner_to_pro_reasoning_profile() -> None:
@@ -512,7 +513,7 @@ def test_deepseek_stream_retries_before_first_public_delta() -> None:
     assert completion.call_metadata.retry_count == 1
 
 
-def test_deepseek_does_not_retry_after_tool_side_effect() -> None:
+def test_deepseek_bounds_model_retry_after_durable_tool_result() -> None:
     calls = 0
 
     def handle(request: httpx.Request) -> httpx.Response:
@@ -534,9 +535,10 @@ def test_deepseek_does_not_retry_after_tool_side_effect() -> None:
     with pytest.raises(ModelProviderError) as caught:
         _gateway(handle).complete(messages)
 
-    assert calls == 1
+    assert calls == 2
     assert caught.value.normalized_error == "provider_unavailable"
-    assert caught.value.retry_count == 0
+    assert caught.value.retry_count == 1
+    assert not caught.value.retryable
 
 
 def test_deepseek_does_not_retry_after_public_stream_delta() -> None:
@@ -643,7 +645,9 @@ def test_deepseek_normalizes_http_errors(
         gateway.complete([_message("classify error")])
 
     assert caught.value.normalized_error == category
-    assert caught.value.retryable is retryable
+    # Raw transport classification remains transient; the configured budget is spent.
+    assert normalize_provider_error(caught.value.__cause__).retryable is retryable
+    assert not caught.value.retryable
 
 
 def _gateway(handler) -> OpenAICompatibleModelGateway:

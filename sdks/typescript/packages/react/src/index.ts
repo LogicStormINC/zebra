@@ -52,7 +52,7 @@ export type {
   AgentPartRendererProps,
   AgentRendererRegistry,
 } from "./components/agent-content.tsx";
-export { AgentImageBlock, AgentVideoBlock } from "./components/agent-media.tsx";
+export { AgentExternalVideoBlock, AgentImageBlock, AgentVideoBlock } from "./components/agent-media.tsx";
 export type { AgentArtifactResolver, AgentMediaLabels } from "./components/agent-media.tsx";
 export { AgentAssetPreview } from "./components/agent-asset-preview.tsx";
 export type { AgentAssetPreviewProps, AgentPreviewAsset } from "./components/agent-asset-preview.tsx";
@@ -67,6 +67,8 @@ export type { AgentApprovalProps, AgentClarificationProps } from "./components/a
 export { AgentArtifacts, AgentMemorySettings } from "./components/agent-resources.tsx";
 export type { AgentArtifactsProps, AgentMemorySettingsProps } from "./components/agent-resources.tsx";
 export { AgentChat } from "./components/agent-chat.tsx";
+export { AgentUsageAnalytics } from "./components/agent-usage-analytics.tsx";
+export type { AgentUsageAnalyticsProps, AgentUsageSnapshot, AgentUsageCounts } from "./components/agent-usage-analytics.tsx";
 export type { AgentChatProps } from "./components/agent-chat.tsx";
 export { AgentRunStatus } from "./components/agent-run-status.tsx";
 export type { AgentRunStatusLabelOverrides, AgentRunStatusLabels, AgentRunStatusProps } from "./components/agent-run-status.tsx";
