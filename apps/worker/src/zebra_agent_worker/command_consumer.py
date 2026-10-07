@@ -13,13 +13,14 @@ from agent_core.application import (
 )
 from agent_core.contracts import SessionCommand, SessionCommandAcceptedPayload, SessionCommandKind
 from agent_core.contracts.session_commands import validate_accepted_session_command
-from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.sessions import Session
+from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import ControlPlaneStores, LeaseConflictError, PostgresControlPlaneStores
 from pydantic import ValidationError
 
+from zebra_agent_worker.client_effect_continuation import pending_client_effect_ids
 from zebra_agent_worker.command_rejections import command_rejected, reject_command
 from zebra_agent_worker.control import SessionControlError, UnsupportedSessionControlError
 from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoveryService
@@ -89,7 +90,9 @@ class SessionCommandConsumer:
         for session in sessions:
             # Advance even on failure; durable intents remain available on the next sweep.
             self._scan_after = session.session_id
-            command_event = self._next_command(session.session_id, session.current_sequence)
+            command_event = self._next_command(
+                session.session_id, session.current_sequence, session.status
+            )
             if command_event is None:
                 continue
             try:
@@ -158,12 +161,41 @@ class SessionCommandConsumer:
             )
         return skipped or CommandConsumption(session_id=None, command_kind=None, status="idle")
 
-    def _next_command(self, session_id: SessionId, current_sequence: int) -> SessionEvent | None:
+    def _next_command(
+        self, session_id: SessionId, current_sequence: int, status: SessionStatus
+    ) -> SessionEvent | None:
         if self._command_reader is not None:
             return self._command_reader(session_id, current_sequence)
         for event in self._stores.events.read_since(session_id, current_sequence):
             if event.event_type is EventType.SESSION_COMMAND_ACCEPTED and not command_rejected(
                 self._stores.idempotency, event,
+            ):
+                return event
+        if status is not SessionStatus.WAITING_CLIENT_EFFECT:
+            return None
+        # ponytail: scan one waiting session's stream only when the projection
+        # passed a fast receipt; durable command cutover removes this O(n) fallback.
+        events = self._stores.events.list_for_session(session_id)
+        pending = set(pending_client_effect_ids(events))
+        receipts = {
+            event.payload.get("client_effect_id")
+            for event in events
+            if event.event_type is EventType.CLIENT_EFFECT_RECEIPT_ACCEPTED
+        }
+        for event in reversed(events):
+            if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED or command_rejected(
+                self._stores.idempotency, event,
+            ):
+                continue
+            result = event.payload.get("payload")
+            effect = result.get("client_effect_result") if isinstance(result, dict) else None
+            effect_id = effect.get("client_effect_id") if isinstance(effect, dict) else None
+            if (
+                event.actor is EventActor.HARNESS
+                and event.payload.get("kind") == "resume"
+                and isinstance(effect_id, str)
+                and effect_id in pending
+                and effect_id in receipts
             ):
                 return event
         return None

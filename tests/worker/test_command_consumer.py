@@ -63,6 +63,86 @@ def test_consumer_wakes_worker_and_does_not_replay_projected_command(tmp_path: P
     assert execution.calls == [(session_id, "worker-a", 30)]
 
 
+def test_fast_client_receipt_resume_survives_later_wait_projection(tmp_path: Path) -> None:
+    stores, session_id, revision = _seed_session(tmp_path)
+    effect_id = str(uuid4())
+    command = SessionCommand(
+        command_id=uuid4(),
+        session_id=session_id,
+        kind=SessionCommandKind.RESUME,
+        expected_revision=revision + 1,
+        idempotency_key=f"client-effect-resume:{effect_id}",
+        payload={
+            "client_effect_result": {
+                "client_effect_id": effect_id,
+                "status": "succeeded",
+                "result": {"applied": True},
+            }
+        },
+    )
+    events = (
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=revision + 1,
+            event_type=EventType.CLIENT_EFFECT_SCHEDULED,
+            actor=EventActor.HARNESS,
+            payload={
+                "attempt_number": 1,
+                "tool_name": "trench.ui.event.open",
+                "tool_call_id": str(uuid4()),
+                "client_effect_id": effect_id,
+                "action_name": "trench.ui.event.open",
+            },
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=revision + 2,
+            event_type=EventType.CLIENT_EFFECT_RECEIPT_ACCEPTED,
+            actor=EventActor.TOOL,
+            payload={
+                "client_effect_id": effect_id,
+                "receipt_id": str(uuid4()),
+                "status": "succeeded",
+            },
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=revision + 3,
+            event_type=EventType.SESSION_COMMAND_ACCEPTED,
+            actor=EventActor.HARNESS,
+            payload=command.event_payload(),
+            idempotency_key=command.idempotency_key,
+        ),
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=revision + 4,
+            event_type=EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
+            actor=EventActor.HARNESS,
+            payload={"client_effect_ids": [effect_id]},
+        ),
+    )
+    for event in events:
+        stores.events.append(event)
+    session = stores.sessions.get_session(session_id)
+    assert session is not None
+    stores.sessions.save_session(
+        session.model_copy(
+            update={
+                "status": SessionStatus.WAITING_CLIENT_EFFECT,
+                "current_sequence": revision + 4,
+            }
+        )
+    )
+    execution = _ExecutionSpy(stores)
+    consumed = SessionCommandConsumer(stores, execution).consume_once(
+        worker_id="worker-a", lease_ttl_seconds=30
+    )  # type: ignore[arg-type]
+
+    assert consumed.status == "executed"
+    assert consumed.command_kind == "resume"
+    assert execution.calls == [(session_id, "worker-a", 30)]
+
+
 def test_approval_grant_enqueues_resume_that_wakes_cloud_worker(tmp_path: Path) -> None:
     stores, session_id, revision = _seed_session(tmp_path)
     session = stores.sessions.get_session(session_id)

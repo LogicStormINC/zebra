@@ -35,6 +35,15 @@ gate accepts only collected source or media URLs, and revision feedback names
 the exact unsupported URL. Delivery assessments expose `media_refs`; focused
 Harness coverage is green. Rebuilding the Worker and replaying the affected
 Trench conversation remain separate runtime/browser acceptance gates.
+2026-10-01 REACT-EXTERNAL-VIDEO-01: a Host-authorized `external_video` part
+now has a reusable player in `@zebra-agent/react`. The paired Trench Host
+tool resolves only entitled event video URLs; Turn metadata persists the
+part for stream/replay without a video Artifact. The player constructs trusted
+Bilibili/YouTube/Vimeo embeds, supports direct browser-playable files and
+falls back to a source link for other sites. SDK 46 tests, type check and
+package audit, plus paired Trench API 83 tests, frontend 162 tests and build
+pass. The paired worktrees have not been merged or deployed; a live video
+conversation and provider playback remain separate acceptance gates.
 
 2026-10-01: `HAR-EGRESS-TOOL-ALIGN-01` is in Review on
 `codex/egress-tool-alignment`. Cloud Worker no longer advertises networked
@@ -4118,3 +4127,23 @@ recreated healthy; a real Trench workload-signed grant received HTTP 200 and
 the media-evidence citation handling. Focused Zebra harness/API tests and
 Trench runtime tests passed. The original suspended Turn remains historical;
 an authenticated browser retry of the conversation is still unverified.
+### 2026-10-01 - Trench/Zebra conversation compatibility incident
+
+- Confirmed old running Zebra API rejected Trench v20 `full-gateway` Tasks
+  with HTTP 400 while PostgreSQL remained at v59. Applied v60 locally and
+  replaced API/Worker from a matching isolated source snapshot; both now
+  recognize `full-gateway`.
+- Added an authenticated runtime-capabilities endpoint for Host preflight.
+  Trench uses separate single-use Host Grants for capability GET and Task POST,
+  identifies version mismatches explicitly and retains the existing conversation.
+- Local browser acceptance: original conversation resumed and a newly created
+  Task completed after correcting the Grant binding. This is local runtime
+  evidence, not remote deployment or all Web/MCP capabilities acceptance.
+- A later Turn in the same conversation stalled at `session_waiting_for_client_effect`:
+  its accepted receipt and trusted resume command preceded the final waiting
+  projection, so the fallback Worker scan skipped that command. The Worker now
+  recognizes this narrow durable-event ordering; a regression test reproduces
+  it. Replacing only the local Worker woke the old Turn, but its bound Host Grant
+  had expired during the wait, so it failed closed. A fresh Turn in that same
+  browser conversation completed with the expected answer. Durable command
+  delivery cutover and remote deployment remain separate work.

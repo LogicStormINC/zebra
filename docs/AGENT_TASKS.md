@@ -30109,3 +30109,58 @@ browser Cookie or Host Grant.
 - Acceptance: no estimated tokens masquerade as billed usage; reasoning is not
   double-counted; unmetered calls are visible; unknown or unauthorized Tasks
   never enter the current user's totals; focused API, SDK and Trench tests pass.
+  locally. Real service/browser acceptance and deployment remain unverified.
+
+### CLOUD-TASK-COMPAT-01 - Host and runtime Task compatibility incident
+
+- Status: Review
+- Owner: Codex
+- Branch: `codex/conversation-compatibility`
+- Owned paths: Zebra API runtime capability route and focused test,
+  Worker fallback command consumer and focused test,
+  `docs/CLOUD_FULL_GATEWAY_PROFILE.md`, this registry and `PROGRESS.md`.
+  The paired Trench BFF contract, preflight, error mapping and tests live in
+  Trench `codex/conversation-compatibility`.
+- Goal: prevent a Trench Host release from sending a new Task profile to an
+  older Zebra API and preserve the conversation on incompatibility.
+- Acceptance: the API declares its accepted profiles and schema generation;
+  Trench checks this with a separate one-use Grant before Task POST; old
+  runtime responses produce an actionable mismatch error; existing Tasks
+  remain usable; focused tests and a real local new Task pass.
+- Evidence: local database v59 to v60 and matching API/Worker replacement;
+  original conversation resumed, and a new Task completed after correcting
+  single-use Grant binding. Remote deployment and full Web/MCP acceptance
+  remain separate gates. The release build retained two previously deployed
+  uncommitted Artifact/tool-failure fixes from the local workspace.
+- Follow-up: a fast Client Effect receipt can append its trusted resume command
+  before finalization appends `session_waiting_for_client_effect`. With command
+  delivery disabled, the fallback consumer must not treat the later projection
+  sequence as proof that the resume was handled.
+- Validation: focused Worker/client-effect tests and `make check` pass. Local
+  replacement Worker woke the stranded Task; that old Turn then failed closed
+  because its Host Grant had expired. A fresh Turn in the same Trench browser
+  conversation returned the expected answer. This does not prove remote
+  deployment or the durable command-queue cutover.
+
+### REACT-EXTERNAL-VIDEO-01 - Governed external video presentation
+
+- Status: Review
+- Owner: Codex
+- Branch: `codex/external-video-embed`
+- Owned paths: `sdks/typescript/packages/ui-contracts/src/index.ts`,
+  `sdks/typescript/packages/react/src/components/agent-content.tsx`,
+  `sdks/typescript/packages/react/src/components/agent-external-video.tsx`,
+  `sdks/typescript/packages/react/src/index.ts`, React styles and focused tests,
+  this registry and `PROGRESS.md`. Paired Trench Host tool, event mapper,
+  frontend integration, vendored SDK package and focused tests are owned by the
+  same task on Trench `codex/external-video-embed`.
+- Goal: present authorized external videos inside chat without importing media
+  bytes into the Zebra Artifact Store or accepting model-authored iframe HTML.
+- Acceptance: Host-authorized event resolution emits a replayable typed external
+  video part; the reusable React package renders vetted platform players or
+  direct media with a usable source-link fallback; unsupported/blocked sources
+  remain link cards; no video Artifact is created; focused API/SDK/UI checks and
+  a real Host conversation are evaluated separately.
+- Evidence: SDK `pnpm test` 46/46, `pnpm check`, package audit; paired Trench
+  API 83/83, frontend 162/162 and production build pass. Live authenticated
+  conversation, cross-site playback and deployment are not yet verified.
