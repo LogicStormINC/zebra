@@ -1,5 +1,23 @@
 # Progress Log
 
+## 2026-10-07 - COV-CON-01 exhaustive coverage contract slice
+
+- User authorized implementation of CLOUD_DATA_COVERAGE_DESIGN.
+- Created managed cov-con-01 worktree and codex/cov-con-01 branch from committed
+  cloud-agent-trench@6b624ac4. Preserved all primary checkout modifications.
+- Registered Ready task, human owner Luke Ding and exact paths before claiming.
+- Added frozen bounded scope/check/snapshot/part/unit/certificate contracts,
+  canonical SHA-256, exact membership reference validation and snapshot/fenced
+  commit Ports. No application parser or runtime activation.
+- Regression input includes 10,003 records, duplicate/missing/extra/versioned
+  identities, negative findings, byte truncation, cross-namespace snapshot proof,
+  expiry, unsupported capabilities and immutable serialization.
+- Documentation names adapter trust boundaries, O(N) reference ceiling and all
+  dependent implementation gaps. A Pydantic certificate is not publication
+  authority; actual certificate minting and gate enforcement remain unimplemented.
+- Baseline core 881 passed. Final verification recorded in task registry.
+- No service restart, business-data mutation, merge, push or deployment.
+
 ## 2026-10-02 - Authorized local branch consolidation
 
 - User selected local integration, explicitly without remote publication.

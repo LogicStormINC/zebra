@@ -1,5 +1,14 @@
 # Zebra Agent Project Status
 
+2026-10-07: COV-CON-01 establishes exhaustive coverage v1 metadata, bounded
+snapshot/batch Ports and a deterministic exact-set reference validator on
+codex/cov-con-01. Contract/scope/check/content versions, frozen body parts,
+record merges, current-authority bindings, expiry, unresolved work and aggregate
+input digests are checked without replacing the existing exploratory runtime.
+See docs/COVERAGE_CONTRACTS.md for trust boundaries and remaining dependent
+snapshot/storage/executor/publication/API/UI/E2E tasks. This is a contract slice,
+not production exhaustive processing. No migration, activation, merge or push.
+
 2026-10-02: `CLOUD-RECOVERY-CLOSURE-01` implements bounded tool/provider recovery,
 durable legacy Cloud STOP handling and truthful partial delivery on
 `codex/cloud-recovery-closure`. Expected tool exceptions become observations;

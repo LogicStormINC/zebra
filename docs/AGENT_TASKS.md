@@ -1,5 +1,31 @@
 # AGENT_TASKS.md
 
+### COV-CON-01 - Exhaustive coverage contracts
+
+- Status: Review (implemented and locally verified 2026-10-07; not merged).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cov-con-01; managed cov-con-01/zebra-agent.
+- Owned paths: packages/agent-core/src/agent_core/domain/coverage_contracts.py;
+  packages/agent-core/src/agent_core/domain/coverage_snapshot.py;
+  packages/agent-core/src/agent_core/domain/coverage_validation.py;
+  packages/agent-core/src/agent_core/ports/coverage.py;
+  tests/agent_core/test_coverage_contracts.py; docs/COVERAGE_CONTRACTS.md;
+  docs/superpowers/plans/2026-10-07-coverage-contracts.md;
+  this registry; PROGRESS.md; WORKLOG.md.
+- Scope: immutable bounded v1 contracts, typed snapshot/commit Ports and exact
+  membership validation. No SQL, model calls, admission or publication activation.
+- Acceptance: reject malformed scope, unsupported parts/checks, duplicate or
+  missing identities, mismatched versions, incomplete body parts and invalid
+  snapshot evidence; local exploratory behavior unchanged.
+- Dependencies: design accepted for this contract slice. Snapshot/storage/executor/
+  gates/UI/E2E successors remain Locked until their dependencies are merged.
+- Baseline: core tests 881 passed on committed cloud-agent-trench@6b624ac4.
+  Primary checkout's uncommitted changes are deliberately not included.
+- Evidence: 50 new focused regressions pass; core 931 passed; final full suite
+  4,925 passed / 911 environment skips; make check passes (file size, Ruff,
+  Mypy 1,010 source files, deterministic eval 30/30). No real PG/snapshot/model/
+  browser coverage E2E claimed. No runtime admission, migrations or activation.
+
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
 > Current execution range: local Beta and single-host production foundations are
