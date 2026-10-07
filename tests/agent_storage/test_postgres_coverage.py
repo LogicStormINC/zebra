@@ -361,6 +361,9 @@ def test_replay_refuses_missing_historical_fence_without_losing_index(env):
     bind(env)
     env.store.commit(batch(env), fence=env.fence)
     with psycopg.connect(env.dsn) as connection:
+        # Corruption injection in this disposable test schema only; retain
+        # production immutable-event triggers introduced by later migrations.
+        connection.execute("SET LOCAL session_replication_role = replica")
         connection.execute(
             "UPDATE session_events SET payload=payload-'fence' "
             "WHERE event_type='coverage_batch_accepted'"
