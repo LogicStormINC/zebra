@@ -1,10 +1,48 @@
 # AGENT_TASKS.md
 
+### COV-STO-01 - Fenced coverage batch persistence
+
+- Status: Review (claimed from Ready 2026-10-07; implemented and locally verified).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cov-sto-01; managed cov-sto-01/zebra-agent.
+- Owned paths: packages/agent-core/src/agent_core/domain/coverage_persistence.py;
+  packages/agent-core/src/agent_core/domain/events.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage*.py;
+  packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py;
+  packages/agent-storage/src/agent_storage/postgres/task_admission.py
+  (shared Task binding renewal lock, added after concurrency review);
+  tests/agent_storage/test_postgres_coverage*.py;
+  tests/agent_storage/test_postgres_migrations.py;
+  tests/agent_storage/test_schema_readiness.py (version-specific catalog regression);
+  tests/agent_core/test_coverage_persistence.py;
+  docs/COVERAGE_STORAGE.md; docs/superpowers/plans/2026-10-07-coverage-storage.md;
+  this registry; PROGRESS.md; WORKLOG.md.
+- Scope: Event-backed immutable run binding, expected-unit index, fenced atomic
+  accepted batches, idempotent receipts, durable continuation intent and explicit
+  projection rebuild. No runtime admission, certificate issuance or publication.
+- Acceptance: real PostgreSQL regressions for rollback, retries, stale fences,
+  namespace/session/version isolation, cancelled runs, missing/corrupt Artifacts,
+  exact membership and replay. Reviews/certificates remain successor gate work.
+- Coordination: reserve migration 78; primary dirty tree already reserves 61-77.
+  Keep all primary dirty files and live services untouched; no merge/push/restart.
+- Evidence: core 940 passed; 70 focused core/Artifact regressions passed; isolated
+  PostgreSQL coverage and related admission/lease/command/migration suite 85 passed.
+  Final full suite 4,948 passed / 939 environment skips; make check passes
+  (file sizes, Ruff, Mypy 1,016 files, deterministic eval 30/30).
+  Spec review and quality review passed after historical-fence evidence and
+  binding-renewal serialization fixes. No MinIO/model/browser acceptance claimed.
+- Handoff: local feature branch only. Merge migration catalog additively with
+  primary pending 61-77, then implement the independent Trench snapshot service.
+  Batch claims, review/certificate projections, publishing/UI and real coupled
+  acceptance remain unfinished; this is not unbounded production processing.
+
+
 ### COV-CON-01 - Exhaustive coverage contracts
 
-- Status: Review (implemented and locally verified 2026-10-07; not merged).
+- Status: Done (locally fast-forward merged into cloud-agent-trench on 2026-10-07).
 - Human owner: Luke Ding; executor: Codex.
-- Branch/worktree: codex/cov-con-01; managed cov-con-01/zebra-agent.
+- Branch/worktree: codex/cov-con-01 (deleted after integration); managed
+  cov-con-01/zebra-agent (archived after integration).
 - Owned paths: packages/agent-core/src/agent_core/domain/coverage_contracts.py;
   packages/agent-core/src/agent_core/domain/coverage_snapshot.py;
   packages/agent-core/src/agent_core/domain/coverage_validation.py;
@@ -17,8 +55,9 @@
 - Acceptance: reject malformed scope, unsupported parts/checks, duplicate or
   missing identities, mismatched versions, incomplete body parts and invalid
   snapshot evidence; local exploratory behavior unchanged.
-- Dependencies: design accepted for this contract slice. Snapshot/storage/executor/
-  gates/UI/E2E successors remain Locked until their dependencies are merged.
+- Dependencies: contract commit 2c49881b is now the local integration ancestor.
+  Snapshot/storage are unlocked; executor/gates/UI/E2E remain Locked until
+  their respective dependencies are merged.
 - Baseline: core tests 881 passed on committed cloud-agent-trench@6b624ac4.
   Primary checkout's uncommitted changes are deliberately not included.
 - Evidence: 50 new focused regressions pass; core 931 passed; final full suite

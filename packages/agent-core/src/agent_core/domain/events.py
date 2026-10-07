@@ -13,6 +13,9 @@ from agent_core.domain.identifiers import (
 
 
 class EventType(StrEnum):
+    COVERAGE_MANIFEST_COMMITTED = "coverage_manifest_committed"
+    COVERAGE_BATCH_ACCEPTED = "coverage_batch_accepted"
+    COVERAGE_RUN_CANCELLED = "coverage_run_cancelled"
     SESSION_CREATED = "session_created"
     SESSION_TITLE_UPDATED = "session_title_updated"
     SESSION_COMMAND_ACCEPTED = "session_command_accepted"

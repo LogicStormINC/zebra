@@ -232,6 +232,8 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (57, "complete_workspace_tool_profiles", 64),
         (58, "user_task_schedules", 64),
         (59, "user_personalization_instructions", 64),
+        (60, "full_gateway_network_profile", 64),
+        (78, "coverage_persistence", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [

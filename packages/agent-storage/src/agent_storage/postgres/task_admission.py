@@ -26,7 +26,7 @@ from psycopg.types.json import Jsonb
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.projections import save_session_in_transaction
-from agent_storage.postgres.task_index_transactions import rebuild_task_in_transaction
+from agent_storage.postgres.task_index_transactions import _lock_task, rebuild_task_in_transaction
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
 
 
@@ -175,6 +175,9 @@ def save_task_binding(
 
     database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
     with database.connect() as connection:
+        # Bindings and fenced aggregate mutations share the Task boundary.
+        # Lock before reading revisions so renewal cannot slip past final validation.
+        _lock_task(connection, deployment_namespace, TaskId(UUID(binding.task_id)))
         if expected_previous_revision is not None:
             latest = connection.execute(
                 """

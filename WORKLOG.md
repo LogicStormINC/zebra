@@ -1,5 +1,41 @@
 # Progress Log
 
+## 2026-10-07 - COV-STO-01 fenced coverage persistence
+
+- Continued the accepted coverage design after local COV-CON-01 integration.
+  Created managed cov-sto-01 worktree / codex/cov-sto-01 from 2c49881b. Primary
+  checkout and all live services were untouched; human owner Luke Ding.
+- Implemented canonical immutable manifest/result Artifact encoding, bounded
+  run Event descriptors, exact indexed expected units, atomic accepted batches,
+  idempotent receipts and dormant continuation intent. Migration 78 avoids
+  primary pending migration reservations 61-77.
+- Reused existing Session lease, Task lock, Event append and Artifact Port.
+  No new broker/executor, infrastructure dependency in core, runtime admission,
+  certificate issuance, publication, push, merge or live migration.
+- Explicit cancellation/rebuild are fail-closed and scope-bound; historical
+  full lease descriptors are durable. Missing/corrupt evidence aborts replay
+  without destroying existing projections. Paginated missing units return
+  actual ordinal cursors, not an unusable inferred index.
+- Spec review found missing persisted fences; repaired and verified replay
+  under a replacement Worker. Quality review found binding renewal could race
+  final validation; shared save_task_binding now takes the existing Task lock
+  before revision reads. Real PostgreSQL pg_locks regression confirms waiting
+  renewal, then refusal of superseded progress while cancellation stays valid.
+- Final validation after index/projection writes catches lease expiry during
+  long work and rolls back source Events as well as derived rows.
+- Evidence: core 940 passed; focused core/Artifact 70 passed; real isolated
+  PostgreSQL plus related admission/lease/command/migration checks 85 passed.
+  Final full pytest 4,948 passed / 939 environment skips. make check passed
+  (file sizes, Ruff, Mypy 1,016 files, deterministic eval 30/30). Spec and quality
+  reviews pass; no real object-store/model/browser delivery evidence claimed.
+- Only newly created disposable PostgreSQL container/schemas were used.
+  Artifact transaction tests compose SQLite payload storage, not live MinIO.
+- Remaining: Trench immutable authorized snapshot, bounded executor and claim
+  epochs, streaming/sharded ingestion/replay beyond 32 MiB evidence, review and
+  certification gates, UI progress and coupled fault/capacity acceptance.
+  Merge this feature branch explicitly before executing dependent runtime work;
+  reconcile catalog 78 with primary dirty 61-77 first. See COVERAGE_STORAGE.md.
+
 ## 2026-10-07 - COV-CON-01 exhaustive coverage contract slice
 
 - User authorized implementation of CLOUD_DATA_COVERAGE_DESIGN.

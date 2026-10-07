@@ -1,5 +1,15 @@
 # Zebra Agent Project Status
 
+2026-10-07: COV-STO-01 implements Event-backed coverage persistence on
+codex/cov-sto-01, based on locally integrated COV-CON-01@2c49881b. Immutable
+Artifact manifests seed exact expected-unit indexes. Batch Events, accepted
+units, idempotent receipts and dormant continuation intent share one fenced
+PostgreSQL transaction. Cancel/rebuild retain source authority and historical
+lease evidence; source coverage events pin the persisted Task binding. See
+docs/COVERAGE_STORAGE.md for explicit scale and authority boundaries. No runtime
+admission, executor/claim activation, certificate, publication or live migration
+is included; snapshot/executor/gates/UI/coupled acceptance remain unfinished.
+
 2026-10-07: COV-CON-01 establishes exhaustive coverage v1 metadata, bounded
 snapshot/batch Ports and a deterministic exact-set reference validator on
 codex/cov-con-01. Contract/scope/check/content versions, frozen body parts,

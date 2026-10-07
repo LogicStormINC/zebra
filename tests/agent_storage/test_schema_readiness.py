@@ -7,8 +7,7 @@ from agent_storage.postgres.migrations import MIGRATIONS
 
 
 def test_full_gateway_profile_has_additive_postgres_migration() -> None:
-    migration = MIGRATIONS[-1]
-    assert migration.version == 60
+    migration = next(m for m in MIGRATIONS if m.version == 60)
     assert migration.name == "full_gateway_network_profile"
     assert "'full-gateway'" in migration.statements[-1]
 
