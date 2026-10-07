@@ -7,7 +7,6 @@ from uuid import UUID
 
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.networking import NetworkProfileName
 from agent_core.domain.session_handoff import HandoffActorKind
 from agent_security import SUPPORTED_NETWORK_PROFILES
 from agent_security.host_grant import VerifiedHostGrant
@@ -51,12 +50,6 @@ class RouteAdapter:
         method = request.method.upper()
         if method == "GET" and request.path == "/health":
             return self.app.health()
-        if method == "GET" and request.path == "/capabilities/runtime":
-            return ApiResponse(200, {
-                "contract_version": 1,
-                "schema_version": MIGRATIONS[-1].version,
-                "network_profiles": [profile.value for profile in NetworkProfileName],
-            })
         if method == "GET" and request.path == "/capabilities/mcp":
             return self.app.get_mcp_capabilities()
         if method == "GET" and request.path == "/capabilities/mcp/prompts":
@@ -64,6 +57,7 @@ class RouteAdapter:
         if method == "GET" and request.path == "/capabilities/runtime":
             return ApiResponse(200, {
                 "contract_version": 1,
+                "schema_version": MIGRATIONS[-1].version,
                 "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
             })
         platform_client_response = handle_platform_client_route(self.app, request)
