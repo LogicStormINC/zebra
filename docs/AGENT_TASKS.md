@@ -1,5 +1,41 @@
 # AGENT_TASKS.md
 
+### COV-EXEC-01 - Snapshot adapter and durable executor
+
+- Status: In Progress (Ready dependencies confirmed, claimed 2026-10-08).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cov-exec-01; cov-exec-01/zebra-agent.
+- Dependencies: local cloud-agent-trench@b97a5b1a includes CON/STO;
+  Trench cloud-agent-trench@2c93f1b includes TRN-COV-SNAPSHOT-01.
+- Owned paths: packages/agent-integrations/src/agent_integrations/coverage_snapshot*.py;
+  tests/agent_integrations/test_coverage_snapshot*.py;
+  packages/agent-core/src/agent_core/application/coverage_executor*.py;
+  tests/agent_core/test_coverage_executor*.py;
+  docs/COVERAGE_EXECUTION.md;
+  docs/superpowers/plans/2026-10-08-coverage-execution.md;
+  this registry; PROGRESS.md; WORKLOG.md.
+- First implementation boundary: strict Trench wire adapter, complete bounded
+  pagination/body reads, governed Artifact publication and authority checks.
+  Reuse signed Host invocation; create must be called through an already
+  admitted idempotent Effect, not an independent network or policy bypass.
+- Full exit criteria: durable executor, fenced recovery, budgets/cancellation,
+  worker composition and real Host/PG integration. Until those pass, this task
+  remains In Progress and runtime activation is unsupported.
+- Coordination: do not modify dirty primary checkouts or live services;
+  no push, migration or restart. No certificate or publication gate in this lane.
+- Adapter slice evidence: 95 focused tests and 168 selected adapter/core/Host
+  regressions passed; independent specification and quality reviews approved.
+  Full Ruff, Mypy (1,021 files), file-size and deterministic eval (30/30) pass.
+- Adapter ceilings: shared publication lock is process-local; whole-byte Artifact
+  Port cannot strictly prebound physical allocation; repeated full-manifest reads
+  are O(N²) over all bodies. Multi-worker activation requires the successor fixes
+  documented in COVERAGE_EXECUTION.md. Trench write Effect receipt is not composed.
+- Full task remains In Progress: no durable executor, publication/UI or deployed
+  coupled acceptance. The merged baseline runtime-capabilities test still expects
+  no schema_version and fails independently of this adapter; not silently waived.
+- Full pytest: 5,044 passed / 939 skipped / 1 inherited failure, reproduced in
+  the clean b97a5b1a integration worktree. No merge or full-green claim.
+
 ### COV-STO-01 - Fenced coverage batch persistence
 
 - Status: Review (claimed from Ready 2026-10-07; implemented and locally verified).

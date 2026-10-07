@@ -1,5 +1,40 @@
 # Progress Log
 
+## 2026-10-08 - COV-EXEC-01 Host adapter slice
+
+- Continued from locally integrated cloud-agent-trench@b97a5b1a in isolated
+  codex/cov-exec-01. Human owner Luke Ding; primary dirty files preserved.
+- Implemented existing CoverageSnapshotPort through frozen signed Host
+  capabilities. Creation requires a separate admitted Effect capability and
+  preserves idempotency; no raw write-policy bypass or new HTTP client.
+- Verified whole-page digest before stripping provenance, complete membership,
+  independent Host/Artifact digest encodings and contiguous canonical base64
+  bytes. Durable deterministic session-bound Artifacts support fresh instances;
+  cached reads still ask the Host to verify current authority.
+- Added bounded record/byte/call/time limits, shared-lock publication, immutable
+  existing-evidence refusal and metadata reinspection. Quality review caught
+  naive stored timestamps; two SQLite regressions now refuse them explicitly.
+- Final evidence: 95 adapter tests; 168 selected adapter/core/Host tests passed.
+  Full Ruff, Mypy (1,021 files), file-size gate (2,374 files), deterministic eval
+  (30/30) and diff check passed. Specification and quality reviews approved.
+- Full pytest: 5,044 passed / 939 skipped / 1 failed. The failure in
+  test_runtime_capabilities_match_task_network_profiles expects no schema_version;
+  merged API returns migration version 78. Reproduced independently in the clean
+  integration worktree at b97a5b1a; adapter does not alter either file. Full test
+  gate remains red and no merge/publication readiness is claimed.
+- No Worker activation, live migration, service restart, business-data update,
+  remote publication or browser/real-Host acceptance performed.
+- Remaining before full COV-EXEC acceptance: durable missing-unit execution,
+  check validation, fenced resume/cancellation/run-wide budgets, Worker wiring,
+  Host write Effect receipt/reconciliation, atomic cross-process publication,
+  bounded physical Artifact reads and indexed manifest membership. Whole-byte
+  reads and O(N²) repeated manifest validation are explicit ceilings, not hidden
+  production claims. Gate/UI/deployed acceptance follow independently.
+- Next: extend the approved executor plan and owned Worker/Port paths before
+  composing runtime. Implement the indexed durable unit loop, then run real
+  signed Host/PostgreSQL fault tests. Do not activate this adapter in multiple
+  Worker processes with only the process-local publication lock.
+
 ## 2026-10-07 - COV-STO-01 fenced coverage persistence
 
 - Continued the accepted coverage design after local COV-CON-01 integration.

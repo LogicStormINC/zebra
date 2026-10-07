@@ -1,5 +1,14 @@
 # Zebra Agent Project Status
 
+2026-10-08: COV-EXEC-01 is claimed on codex/cov-exec-01 from locally integrated
+cloud-agent-trench@b97a5b1a. Its first slice adapts sealed Trench snapshots into
+governed session-bound Artifacts with complete bounded pagination, byte-chunk
+verification and current-authority checks. See docs/COVERAGE_EXECUTION.md.
+This is not runtime activation: durable unit execution, fenced recovery, Worker
+composition, Host write Effect receipts, publication gates, UI and coupled
+deployed acceptance remain unfinished. Dirty primary trees and services are
+preserved; no push, migration or restart is authorized by this implementation.
+
 2026-10-07: COV-STO-01 implements Event-backed coverage persistence on
 codex/cov-sto-01, based on locally integrated COV-CON-01@2c49881b. Immutable
 Artifact manifests seed exact expected-unit indexes. Batch Events, accepted
