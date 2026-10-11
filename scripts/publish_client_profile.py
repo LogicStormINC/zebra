@@ -16,7 +16,10 @@ from agent_core.domain.client_capabilities import FrontendCapabilityProfileVersi
 
 def main() -> int:
     args = _arguments()
-    profile = FrontendCapabilityProfileVersion.model_validate(json.loads(args.profile.read_text()))
+    manifest = json.loads(args.profile.read_text())
+    profile = FrontendCapabilityProfileVersion.model_validate(manifest.get("profile", manifest))
+    if manifest.get("profile_digest", profile.profile_digest) != profile.profile_digest:
+        raise SystemExit("release manifest digest differs from profile contents")
     print(json.dumps({"profile_digest": profile.profile_digest, "revision": profile.revision}))
     if args.check_only:
         return 0
@@ -32,14 +35,27 @@ def main() -> int:
         allow_not_found=True,
     )
     if current is None:
+        latest = _request(
+            "GET",
+            f"{base}/platform/v1/frontend-profiles/{profile.frontend_app_id}",
+            headers,
+            allow_not_found=True,
+        )
+        if latest is not None and profile.revision <= int(latest["revision"]):
+            raise SystemExit("changed profiles must increase the published revision")
+        if args.verify_only:
+            raise SystemExit("profile revision is not published")
         _request(
             "POST",
-            f"{base}/platform/v1/frontend-profiles",
+            f"{base}/platform/v1/frontend-profiles"
+            + (f"/{profile.frontend_app_id}/versions" if latest else ""),
             headers,
             profile.model_dump(mode="json"),
         )
     elif current.get("profile_digest") != profile.profile_digest:
         raise SystemExit("published profile revision has a different digest")
+    elif current.get("lifecycle", "published") != "published":
+        raise SystemExit("profile revision is not active")
     binding_url = (
         f"{base}/platform/v1/frontend-profile-bindings/"
         f"{args.host_app_id}/{args.namespace_id}/{profile.frontend_app_id}"
@@ -61,6 +77,8 @@ def main() -> int:
             )
         )
         return 0
+    if args.verify_only:
+        raise SystemExit("frontend profile binding does not match this release")
     expected_binding_revision = (
         args.expected_binding_revision
         if args.expected_binding_revision is not None
@@ -79,6 +97,13 @@ def main() -> int:
             "revision": profile.revision,
         },
     )
+    verified = _request("GET", binding_url, headers)
+    if (
+        verified is None
+        or verified.get("profile_digest") != profile.profile_digest
+        or verified.get("revision") != profile.revision
+    ):
+        raise SystemExit("published binding verification failed")
     print(json.dumps({"binding": binding, "status": "published"}, sort_keys=True))
     return 0
 
@@ -123,6 +148,11 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--namespace-id", default="trench")
     parser.add_argument("--expected-binding-revision", type=int)
     parser.add_argument("--check-only", action="store_true")
+    parser.add_argument(
+        "--verify-only",
+        action="store_true",
+        help="Read-only deployment gate: require matching active profile and binding",
+    )
     return parser.parse_args()
 
 

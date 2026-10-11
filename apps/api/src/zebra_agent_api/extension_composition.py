@@ -19,6 +19,7 @@ from agent_storage.postgres.mcp_catalog import PostgresMcpCatalogStore
 from agent_storage.postgres.mcp_credentials import PostgresMcpCredentialStore
 from agent_storage.postgres.migration_runner import require_current_schema
 from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
+from agent_storage.postgres.task_io import TaskIoConnections
 from agent_tools.skill_publications import SkillPublicationService
 from zebra_agent_config import ZebraAgentSettings
 
@@ -83,6 +84,7 @@ def compose_http_extensions(
     service: SkillPublicationService | None,
     credentials: McpCredentialManagement | None = None,
     refresh: McpCatalogRefresh | None = None,
+    task_io_connections: TaskIoConnections | None = None,
 ) -> tuple[
     ExtensionStore | None,
     SkillPublicationService | None,
@@ -102,6 +104,7 @@ def compose_http_extensions(
         stores,
         cloud_composition=cloud_composition,
         extension_store=extension_store,
+        **({"task_io_connections": task_io_connections} if task_io_connections is not None else {}),
     )
     if settings.deployment != "local" and settings.cloud_skills_publish_enabled and service is None:
         if cloud_composition is None:
@@ -142,6 +145,7 @@ def compose_extension_store(
     *,
     cloud_composition: CloudCompositionSettings | None = None,
     extension_store: ExtensionStore | None = None,
+    task_io_connections: TaskIoConnections | None = None,
 ) -> ExtensionStore | None:
     """Use explicit cloud injection or admit an enabled, schema-current store."""
     if settings.deployment == "local":
@@ -159,7 +163,11 @@ def compose_extension_store(
         raise ValueError("cloud extension deployment namespace does not match control plane stores")
     dsn = cloud_composition.dsn if cloud_composition is not None else settings.database_url
     require_current_schema(dsn)
-    return PostgresExtensionStore(dsn, deployment_namespace=stores.deployment_namespace)
+    return PostgresExtensionStore(
+        dsn,
+        deployment_namespace=stores.deployment_namespace,
+        **({"task_io_connections": task_io_connections} if task_io_connections is not None else {}),
+    )
 
 
 def compose_extension_turn_admission(
@@ -188,10 +196,13 @@ def compose_extension_turn_admission(
         dsn, deployment_namespace=stores.deployment_namespace
     )
     return CloudExtensionTurnAdmission(
-        extension_store, snapshots, snapshots,
+        extension_store,
+        snapshots,
+        snapshots,
         mcp_catalogs=(
             PostgresMcpCatalogStore(dsn, deployment_namespace=stores.deployment_namespace)
-            if settings.mcp_credentials.worker_enabled else None
+            if settings.mcp_credentials.worker_enabled
+            else None
         ),
     )
 

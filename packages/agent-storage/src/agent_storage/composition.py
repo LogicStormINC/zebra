@@ -22,18 +22,22 @@ from agent_core.ports import (
     ToolRunStorePort,
     WorkspaceProjectionStorePort,
 )
+from agent_core.ports.task_projection_work import TaskProjectionWorkPort
 
 from agent_storage.agent_tasks import SQLiteAgentTaskStore
 from agent_storage.artifact_payload_reads import LocalArtifactPayloadReader
 from agent_storage.artifact_payloads import SQLiteArtifactPayloadStore
 from agent_storage.artifacts import SQLiteArtifactStore
 from agent_storage.context_lifecycle import SQLiteContextLifecycleStore
+from agent_storage.database import SQLiteDatabase
 from agent_storage.delivery_audit import SQLiteDeliveryAuditStore
 from agent_storage.effect_ledger import SQLiteEffectLedger
 from agent_storage.idempotency import SQLiteIdempotencyStore
 from agent_storage.leases import SQLiteLeaseStore
 from agent_storage.memories import SQLiteMemoryStore
 from agent_storage.model_calls import SQLiteModelCallStore
+from agent_storage.projection_work import SQLiteTaskProjectionWorkStore
+from agent_storage.projection_work_schema import initialize_projection_work
 from agent_storage.projections import SQLiteProjectionStore
 from agent_storage.provider_continuations import SQLiteProviderContinuationStore
 from agent_storage.session_handoff_dispatch import SQLiteHandoffDispatchStore
@@ -65,6 +69,7 @@ class ControlPlaneStores:
     provider_continuations: ProviderContinuationStorePort
     session_history: SessionHistoryPort
     delivery_audit: DeliveryAuditStorePort
+    projection_work: TaskProjectionWorkPort | None = None
 
     @property
     def legacy_artifact_control_enabled(self) -> bool:
@@ -81,11 +86,14 @@ def sqlite_control_plane_stores(database_path: str | Path) -> ControlPlaneStores
     model_calls = SQLiteModelCallStore(local_path)
     tool_runs = SQLiteToolRunStore(local_path)
     artifact_payloads = SQLiteArtifactPayloadStore(local_path)
+    tasks = SQLiteAgentTaskStore(local_path)
+    with SQLiteDatabase(local_path).connect() as connection:
+        initialize_projection_work(connection)
     return ControlPlaneStores(
         events=SQLiteEventStore(local_path),
         sessions=SQLiteProjectionStore(local_path),
         workspaces=SQLiteWorkspaceProjectionStore(local_path),
-        tasks=SQLiteAgentTaskStore(local_path),
+        tasks=tasks,
         leases=SQLiteLeaseStore(local_path),
         context_lifecycle=SQLiteContextLifecycleStore(local_path),
         handoffs=SQLiteSessionHandoffStore(local_path),
@@ -96,9 +104,10 @@ def sqlite_control_plane_stores(database_path: str | Path) -> ControlPlaneStores
         artifact_payloads=artifact_payloads,
         model_calls=model_calls,
         tool_runs=tool_runs,
-        artifacts=SQLiteArtifactStore(model_calls, tool_runs),
+        artifacts=SQLiteArtifactStore(local_path),
         provider_continuations=SQLiteProviderContinuationStore(local_path),
         session_history=SQLiteSessionHistory(local_path),
         delivery_audit=SQLiteDeliveryAuditStore(local_path),
         artifact_payload_reader=LocalArtifactPayloadReader(artifact_payloads),
+        projection_work=SQLiteTaskProjectionWorkStore(local_path, "local", "ag-ui-v1"),
     )

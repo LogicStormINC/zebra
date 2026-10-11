@@ -13,6 +13,7 @@ from agent_core.ports import (
     WorkerProjectionTransactionPort,
 )
 from agent_integrations import build_model_gateway
+from agent_integrations.ag_ui.checkpoint_consumer import AgUiCheckpointConsumer
 from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
@@ -20,9 +21,11 @@ from agent_storage import (
     cloud_composition_from_environment,
 )
 from agent_storage.postgres.skill_publications import PostgresSkillPublicationStore
+from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 from agent_tools.skill_publications import SkillPublicationService
 from zebra_agent_config import ZebraAgentSettings
 
+from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.client_effect_runtime import compose_client_runtime
 from zebra_agent_worker.cloud_composition import CloudWorkerComposition, compose_cloud_worker
@@ -186,6 +189,11 @@ def build_worker_loop_service(
         deployment_namespace=active_namespace,
         model_call_indexer=(model_call_indexer if active_transaction is not None else None),
         tool_run_indexer=(tool_run_indexer if active_transaction is not None else None),
+        session_recovery_store=(
+            execution_stores.session_recovery
+            if isinstance(execution_stores, PostgresControlPlaneStores)
+            else None
+        ),
     )
     claim_service = SessionClaimService(
         execution_stores.leases,
@@ -251,6 +259,21 @@ def build_worker_loop_service(
         settings,
         cloud_bundle if settings.storage_authority == "postgresql" else None,
     )
+    replay_reader = (
+        PostgresWorkerReplayReader(cloud_bundle.dsn, deployment_namespace=active_namespace)
+        if settings.storage_authority == "postgresql"
+        and cloud_bundle.dsn is not None
+        and active_namespace is not None
+        else None
+    )
+    recorder_factory = WorkerProjectionRecorderFactory(
+        stores=execution_stores,
+        model_call_indexer=model_call_indexer,
+        tool_run_indexer=tool_run_indexer,
+        transaction=active_transaction,
+        deployment_namespace=active_namespace,
+        tail_reader=replay_reader.tail_page if replay_reader else None,
+    )
     execution_service = SessionExecutionService(
         database_path=database_path,
         claim_service=claim_service,
@@ -274,6 +297,7 @@ def build_worker_loop_service(
         extension_snapshot_store=active_extension_store,
         extension_skills=active_extension_skills,
         extension_mcp=active_extension_mcp,
+        recorder_factory=recorder_factory,
         cloud_artifact_factory=active_artifact_factory,
         cloud_provider_continuation_factory=active_provider_factory,
         workspace_resolver=(
@@ -344,25 +368,29 @@ def build_worker_loop_service(
         assert active_transaction is not None
         cloud_memory_recovery = CloudMemoryFinalizationRecovery(
             claim_service=claim_service,
-            recorder_factory=WorkerProjectionRecorderFactory(
-                stores=execution_stores,
-                model_call_indexer=model_call_indexer,
-                tool_run_indexer=tool_run_indexer,
-                transaction=active_transaction,
-                deployment_namespace=active_namespace,
-            ),
+            recorder_factory=recorder_factory,
             memory_store=cloud_memory_store,
             idempotency_store=execution_stores.idempotency,
             deployment_namespace=active_namespace,
             event_store=execution_stores.events,
             projection_store=execution_stores.sessions,
             workspace_store=execution_stores.workspaces,
+            replay_reader=replay_reader,
             title_service_factory=lambda: SessionTitleService(
                 build_model_gateway(model_provider_settings(settings), client=model_http_client)
                 if model_http_client is not None
                 else build_model_gateway(model_provider_settings(settings))
             ),
         )
+    client_effect_recovery = None
+    if settings.storage_authority == "postgresql":
+        from agent_storage.postgres.client_effect_recovery import ClientEffectRecovery
+
+        assert cloud_bundle.dsn is not None and active_namespace is not None
+        client_effect_recovery = ClientEffectRecovery(
+            cloud_bundle.dsn,
+            deployment_namespace=active_namespace,
+        ).reconcile
     service = WorkerLoopService(
         projection_store=execution_stores.sessions,
         execution_service=execution_service,
@@ -370,6 +398,23 @@ def build_worker_loop_service(
         child_wakeup_service=child_wakeup_service,
         sleep=sleep,
         command_consumer=command_consumer,
+        client_effect_recovery=client_effect_recovery,
+        projection_work=(
+            AgUiProjectionWorkService(
+                AgUiCheckpointConsumer(
+                    execution_stores.tasks,
+                    execution_stores.projection_work,
+                    namespace=active_namespace or "local",
+                    read_summaries=(
+                        execution_stores.tasks
+                        if isinstance(execution_stores, PostgresControlPlaneStores)
+                        else None
+                    ),
+                )
+            )
+            if execution_stores.projection_work is not None
+            else None
+        ),
         scan_ready_sessions=not migrated and settings.deployment != "cloud",
         cutover_probe=None if migrated else cutover_probe,
         memory_delivery=(

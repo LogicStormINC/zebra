@@ -164,6 +164,7 @@ def create_queued_session(
         stores.events.append(event)
     stores.sessions.save_session(bootstrap.session)
     stores.workspaces.save_workspace(workspace)
+    stores.tasks.ensure_for_session(bootstrap.session.session_id)
     return response
 
 

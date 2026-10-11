@@ -130,6 +130,49 @@ def test_postgres_history_scope_and_namespace_isolation(
         _delete_namespace(postgres_dsn, other_namespace)
 
 
+def test_auxiliary_receipts_are_excluded_before_paging(
+    postgres_dsn: str,
+    deployment_namespace: str,
+) -> None:
+    session_id = _stored_session(postgres_dsn, deployment_namespace, "History", "Question", 1)
+    store = PostgresEventStore(postgres_dsn, deployment_namespace=deployment_namespace)
+    for sequence, stage, text in (
+        (4, "public_expression", "PRIVATE-ORDER-JSON"),
+        (5, "candidate", "Main answer"),
+    ):
+        store.append(
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=sequence,
+                event_type=EventType.MODEL_RESPONSE_RECEIVED,
+                actor=EventActor.HARNESS,
+                created_at=_at(1),
+                payload={"response_stage": stage, "assistant_message": text},
+            )
+        )
+    history = PostgresSessionHistory(
+        postgres_dsn,
+        deployment_namespace=deployment_namespace,
+        scope=OpaqueAuthorityScope(authority_issuer="issuer", namespace_id="business-scope"),
+    )
+    page = history.query(
+        SessionHistoryRequest(
+            mode=SessionHistoryMode.READ,
+            session_id=str(session_id),
+            offset=2,
+            limit=1,
+        )
+    )
+    assert page.total_count == 3 and page.next_offset is None
+    assert [message.content for message in page.messages] == ["Main answer"]
+    assert not history.query(
+        SessionHistoryRequest(
+            mode=SessionHistoryMode.SEARCH,
+            query="PRIVATE-ORDER-JSON",
+        )
+    ).sessions
+
+
 def test_postgres_history_scoped_can_explicitly_deny_all(
     postgres_dsn: str,
     deployment_namespace: str,

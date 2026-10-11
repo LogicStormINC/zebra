@@ -103,17 +103,11 @@ class LocalResearchSubagentRunner:
         sources = _research_sources(result.events)
         completed = result.run_result.final_outcome.value == "completed"
         successful_tool_calls = sum(
-            1
-            for event in result.events
-            if event.event_type is EventType.TOOL_EXECUTION_COMPLETED
+            1 for event in result.events if event.event_type is EventType.TOOL_EXECUTION_COMPLETED
         )
         gate = research_evidence_gate(len(sources), successful_tool_calls)
         # SUBAGENT-EVIDENCE-GATE-01: zero-evidence research never completes.
-        status = (
-            SubagentStatus.COMPLETED
-            if completed and gate.passed
-            else SubagentStatus.FAILED
-        )
+        status = SubagentStatus.COMPLETED if completed and gate.passed else SubagentStatus.FAILED
         summary = str(
             result.attempt_result.metadata.get(
                 "assistant_message",
@@ -126,9 +120,7 @@ class LocalResearchSubagentRunner:
             summary=(
                 summary or result.attempt_result.summary
                 if status is SubagentStatus.COMPLETED
-                else (
-                    f"[gate:{gate.reason_code}] {summary or result.attempt_result.summary}"
-                )
+                else (f"[gate:{gate.reason_code}] {summary or result.attempt_result.summary}")
             ),
             sources=sources,
             confidence=1.0 if status is SubagentStatus.COMPLETED else 0.0,
@@ -220,6 +212,7 @@ class ResearchSubagentTool:
         wait_for_result: bool = True,
         delegation_store: object | None = None,
         parent_task_id: object | None = None,
+        parent_attempt_number: int = 1,
         parent_binding: object | None = None,
         parent_context: ContextMaterialization | None = None,
         skill_components: tuple[str, ...] = (),
@@ -236,6 +229,7 @@ class ResearchSubagentTool:
         # binding — never a fabricated stand-in.
         self._delegation_store = delegation_store
         self._parent_task_id = parent_task_id
+        self._parent_attempt_number = parent_attempt_number
         self._parent_binding = parent_binding
         self._parent_context = parent_context
         self._skill_components = skill_components
@@ -258,9 +252,7 @@ class ResearchSubagentTool:
             raise ToolArgumentError("agent.research requires a non-blank objective")
         delegation_reason = tool_call.arguments["delegation_reason"]
         if not isinstance(delegation_reason, str) or not delegation_reason.strip():
-            raise ToolArgumentError(
-                "agent.research requires a non-blank delegation_reason"
-            )
+            raise ToolArgumentError("agent.research requires a non-blank delegation_reason")
         task = ResearchSubagentTask(
             objective=objective.strip(),
             workspace_root=self._workspace_root,
@@ -280,6 +272,7 @@ class ResearchSubagentTool:
                     workspace_root=self._workspace_root,
                     delegation_store=self._delegation_store,
                     parent_task_id=self._parent_task_id,
+                    parent_attempt_number=self._parent_attempt_number,
                     parent_binding=self._parent_binding,
                     max_model_calls=self._max_model_calls,
                     max_tool_calls=self._max_tool_calls,
@@ -330,8 +323,7 @@ class ResearchSubagentTool:
             "status": result.status.value,
             "summary": result.summary,
             "sources": [
-                {"reference": source.reference, "kind": source.kind}
-                for source in result.sources
+                {"reference": source.reference, "kind": source.kind} for source in result.sources
             ],
             "confidence": result.confidence,
             "usage": {

@@ -117,13 +117,13 @@ def infer_task_contract(user_input: str) -> TaskAcceptanceContract:
 def parse_task_contract(
     value: Mapping[str, object], *, fallback_goal: str
 ) -> TaskAcceptanceContract:
-    inferred = infer_task_contract(fallback_goal)
+    goal = _bounded_text(value.get("goal"), fallback_goal, limit=4_000)
+    inferred = infer_task_contract(goal)
     raw_type = value.get("taskType", value.get("task_type", inferred.task_type.value))
     try:
         task_type = AgentTaskType(str(raw_type))
     except ValueError as exc:
         raise ValueError("task acceptance task_type is invalid") from exc
-    goal = _bounded_text(value.get("goal"), fallback_goal, limit=4_000)
     raw_outcomes = value.get("requiredOutcomes", value.get("required_outcomes"))
     outcomes = inferred.required_outcomes
     if raw_outcomes is not None:
@@ -159,6 +159,26 @@ def parse_task_contract(
 
 
 def _task_type(text: str) -> AgentTaskType:
+    # ponytail: bounded negated-action phrases, not semantic intent parsing;
+    # explicit acceptance contracts remain authoritative for ambiguous requests.
+    # Object-separated prohibitions ("不得把冲突记录删除") end at the action,
+    # punctuation or contrast; later affirmative actions must remain visible.
+    action_text = re.sub(
+        r"(?:不要|不允许|禁止|无需|不用|不得)(?:把|将|对|给)"
+        r"(?:(?!而是|但是|然后|并且|但)[^，。；!?！？\n]){0,160}?"
+        r"(?:修复|修改|实现|删除|增加|改成|创建|部署|发布|提交|发送|执行)",
+        "",
+        text,
+    )
+    action_text = re.sub(
+        r"(?:不要|不允许|禁止|无需|不用|不得|不)(?:再|去|进行|任何)?"
+        r"(?:修复|修改|实现|删除|增加|改成|创建|部署|发布|提交|发送|执行)"
+        r"|\b(?:do not|don't|never|without)\s+(?:fix(?:ing)?|chang(?:e|ing)|"
+        r"implement(?:ing)?|delet(?:e|ing)|creat(?:e|ing)|deploy(?:ing)?|"
+        r"publish(?:ing)?|submit(?:ting)?|execut(?:e|ing))\b",
+        "",
+        action_text,
+    )
     information_request = _contains_any(
         text,
         (
@@ -178,7 +198,7 @@ def _task_type(text: str) -> AgentTaskType:
         ),
     )
     explicit_action = _contains_any(
-        text,
+        action_text,
         (
             "请部署",
             "请发布",
@@ -204,8 +224,28 @@ def _task_type(text: str) -> AgentTaskType:
             "please create",
         ),
     )
+    # ponytail: only explicit artifact publication is creation, not deployment.
+    # Other operations in the same request still retain operational verification.
+    # With files.publish, an extension-qualified file object is an Artifact;
+    # ambiguous publication or an external destination still needs verification.
+    if re.search(r"\bfiles\.publish\b", action_text):
+        action_text = re.sub(
+            r"发布(?:以下|这)?[一二三四五六七八九十两\d]*(?:个|份)?\s*"
+            r"\.[a-z0-9.]{1,24}\s*文件(?=\s*(?:[，。；!?！？\n]|$))"
+            r"|\bpublish\s+(?:(?:a|an|the|one|two|three|\d+)\s+)?"
+            r"\.[a-z0-9.]{1,24}\s+files?\b(?=\s*(?:[,.;!?]|and\b|then\b|$))",
+            "",
+            action_text,
+        )
+    operation_text, artifact_publications = re.subn(
+        r"发布(?:为|成|一个|为一个)?\s*(?:json\s*)?artifact\b"
+        r"|\bpublish\s+(?:(?:a|an|the)\s+)?(?:json\s+)?artifact\b"
+        r"|\bfiles\.publish\b",
+        "",
+        action_text,
+    )
     operational_request = _contains_any(
-        text,
+        operation_text,
         (
             "部署",
             "发布",
@@ -219,16 +259,18 @@ def _task_type(text: str) -> AgentTaskType:
             "schedule",
             "scheduled job",
         ),
-    ) or _explicit_execute_request(text)
+    ) or _explicit_execute_request(operation_text)
     if (not information_request or explicit_action) and operational_request:
         return AgentTaskType.OPERATE
     if (not information_request or explicit_action) and _contains_any(
-        text,
+        action_text,
         ("修复", "修改", "实现", "删除", "增加", "改成", "fix", "change", "implement", "delete"),
     ):
         return AgentTaskType.CHANGE
-    if (not information_request or explicit_action) and _contains_any(
-        text, ("创建", "生成文件", "写一篇", "create", "generate a file")
+    if (not information_request or explicit_action) and (
+        artifact_publications or _contains_any(
+            action_text, ("创建", "生成文件", "写一篇", "create", "generate a file")
+        )
     ):
         return AgentTaskType.CREATE
     if _contains_any(
@@ -250,11 +292,14 @@ def _contains_any(text: str, markers: tuple[str, ...]) -> bool:
 def _explicit_execute_request(text: str) -> bool:
     """Distinguish an execution command from prose describing prior execution."""
 
-    return re.search(
-        r"(?:^|[，。；：!?！？\n])\s*(?:请|请帮我|帮我|现在|立即|开始)?执行"
-        r"(?:一次|一下|以下|这个|该|上述|命令|任务|操作|计划|方案|测试|验收|查询|调用|\s|$)",
-        text,
-    ) is not None
+    return (
+        re.search(
+            r"(?:^|[，。；：!?！？\n])\s*(?:请|请帮我|帮我|现在|立即|开始)?执行"
+            r"(?:一次|一下|以下|这个|该|上述|命令|任务|操作|计划|方案|测试|验收|查询|调用|\s|$)",
+            text,
+        )
+        is not None
+    )
 
 
 def _bounded_text(value: object, fallback: str, *, limit: int) -> str:

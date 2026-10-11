@@ -1,7 +1,9 @@
 """Recorder append guards: prevalidation and canonical-sequence handling."""
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import Event
 
 import pytest
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
@@ -125,3 +127,69 @@ def test_project_persisted_tail_advances_primary_projection(tmp_path: Path) -> N
     projected = stores.sessions.get_session(session_id)
     assert projected is not None
     assert projected.current_sequence == 3
+
+
+def test_timer_and_execution_appends_share_one_atomic_sequence(tmp_path: Path, monkeypatch) -> None:
+    stores, recorder, session_id = _recorder(tmp_path)
+    append = stores.events.append
+
+    def slow_append(event):
+        Event().wait(0.005)  # force the old prepare/append race to overlap
+        return append(event)
+
+    monkeypatch.setattr(stores.events, "append", slow_append)
+
+    def emit(index):
+        return recorder.append(
+            EventType.PUBLIC_OUTPUT,
+            EventActor.HARNESS,
+            {
+                "schema_version": 1,
+                "attempt_number": 1,
+                "output_id": f"public:{index}",
+                "kind": "status",
+                "phase": "waiting",
+                "origin": "system",
+                "content": "No new confirmed result yet.",
+                "status": "complete",
+            },
+        ).sequence
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        sequences = list(pool.map(emit, range(16)))
+    assert sorted(sequences) == list(range(3, 19))
+    assert recorder.session.current_sequence == 18
+    assert [event.sequence for event in stores.events.list_for_session(session_id)] == list(
+        range(19)
+    )
+
+
+def test_external_receipt_prepare_commit_accept_is_atomic_with_timer(tmp_path: Path) -> None:
+    stores, recorder, session_id = _recorder(tmp_path)
+    prepared = Event()
+    competing = Event()
+
+    def receipt():
+        with recorder.mutation():
+            event = recorder.prepare(
+                EventType.SESSION_TITLE_UPDATED, EventActor.HARNESS, {"title": "Receipt"}
+            )
+            prepared.set()
+            assert competing.wait(1)
+            stores.events.append(event)  # represents the external atomic receipt store
+            recorder.accept_persisted_event(event)
+        return event.sequence
+
+    def timer():
+        assert prepared.wait(1)
+        competing.set()
+        return recorder.append(
+            EventType.SESSION_TITLE_UPDATED, EventActor.HARNESS, {"title": "Timer"}
+        ).sequence
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        receipt_result, timer_result = pool.submit(receipt), pool.submit(timer)
+        assert (receipt_result.result(), timer_result.result()) == (3, 4)
+    assert [event.sequence for event in stores.events.list_for_session(session_id)] == list(
+        range(5)
+    )

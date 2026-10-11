@@ -314,11 +314,7 @@ def _resolve_artifact(
     session = SQLiteProjectionStore(database_path).get_session(session_key)
     if session is None:
         return None
-    artifacts = SQLiteArtifactStore(database_path).list_for_session(session_key)
-    for artifact in artifacts:
-        if artifact.artifact_id == artifact_id:
-            return artifact
-    return None
+    return SQLiteArtifactStore(database_path).get_for_session(session_key, artifact_id)
 
 
 def _artifact_lifecycle(database_path: Path, uri: str | None) -> dict[str, object] | None:

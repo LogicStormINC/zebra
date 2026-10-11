@@ -24,6 +24,8 @@ from agent_storage import (
 )
 from agent_storage.postgres.session_handoff_transactions import commit_handoff_in_transaction
 from agent_storage.postgres.session_handoffs import PostgresSessionHandoffStore
+from agent_storage.postgres.task_control_target import require_task_control_target
+from agent_storage.postgres.task_index_transactions import _lock_task
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from zebra_agent_api import RouteAdapter
@@ -167,6 +169,43 @@ def test_task_row_contention_is_safe_conflict_without_any_mutation(dsn):
         assert response.body["reason"] == "Task_cancellation_target_is_busy"
     assert (_rows(dsn, "session_events"), _rows(dsn, "worker_leases")) == before
     assert not _rows(dsn, "direct_control_operations")
+
+
+def test_task_allocator_contention_is_safe_conflict_before_cancellation_row_lock(dsn):
+    source = _suspended(dsn)
+    before = {table: _rows(dsn, table) for table in (
+        "session_events", "worker_leases", "agent_tasks", "task_event_index"
+    )}
+    with psycopg.connect(dsn) as allocator:
+        _lock_task(allocator, NAMESPACE, TaskId(source))
+        response = RouteAdapter(_app(dsn)).handle(_request(source))
+        assert response.status_code == 409
+        assert response.body["reason"] == "Task_cancellation_target_is_busy"
+        # Control did not retain a conflicting Task row lock while the allocator owns 61.
+        allocator.execute("SELECT * FROM agent_tasks FOR UPDATE NOWAIT")
+    assert before == {table: _rows(dsn, table) for table in before}
+    assert not _rows(dsn, "direct_control_operations")
+
+
+def test_cancellation_serialization_is_seen_by_the_event_allocator_before_task_row(dsn):
+    source = _suspended(dsn)
+    name = f"task-allocator-{uuid4()}"
+
+    def allocate():
+        with psycopg.connect(_worker_dsn(dsn, name)) as connection:
+            _lock_task(connection, NAMESPACE, TaskId(source))
+            connection.execute("SELECT * FROM agent_tasks FOR UPDATE NOWAIT")
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with psycopg.connect(dsn, row_factory=dict_row) as control:
+            require_task_control_target(control, NAMESPACE, TaskId(source), source, replay=False)
+            allocator = pool.submit(allocate)
+            with psycopg.connect(dsn, autocommit=True) as observer:
+                _wait_locked(observer, name)
+                assert observer.execute(
+                    "SELECT wait_event FROM pg_stat_activity WHERE application_name=%s", (name,)
+                ).fetchone() == ("advisory",)
+        allocator.result(timeout=6)
 
 
 def test_handoff_carries_frozen_host_identity_for_child_admission_and_cancellation(dsn):

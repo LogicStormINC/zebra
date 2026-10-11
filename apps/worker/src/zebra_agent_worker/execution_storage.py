@@ -16,12 +16,40 @@ from agent_core.ports import (
     GovernedMemoryStorePort,
     MemoryReadPort,
     ProviderContinuationStorePort,
+    WorkerProjectionTransactionPort,
 )
 from agent_storage import (
     ControlPlaneStores,
     PostgresControlPlaneStores,
     sqlite_control_plane_stores,
 )
+
+from zebra_agent_worker.model_call_index import ModelCallIndexer
+from zebra_agent_worker.recovery import SessionRecoveryService
+from zebra_agent_worker.tool_run_index import ToolRunIndexer
+
+
+def compose_recovery(
+    stores: ControlPlaneStores | PostgresControlPlaneStores,
+    transaction: WorkerProjectionTransactionPort | None,
+    namespace: str | None,
+    artifacts: ArtifactPayloadStorePort | None,
+) -> tuple[ModelCallIndexer, ToolRunIndexer, SessionRecoveryService]:
+    models = ModelCallIndexer(stores.model_calls)
+    tools = ToolRunIndexer(stores.tool_runs, artifacts)
+    recovery = SessionRecoveryService(
+        stores.events,
+        stores.sessions,
+        stores.workspaces,
+        worker_projection_transaction=transaction,
+        deployment_namespace=namespace,
+        model_call_indexer=models if transaction else None,
+        tool_run_indexer=tools if transaction else None,
+        session_recovery_store=(
+            stores.session_recovery if isinstance(stores, PostgresControlPlaneStores) else None
+        ),
+    )
+    return models, tools, recovery
 
 
 @dataclass(frozen=True, slots=True)

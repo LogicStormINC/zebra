@@ -1,4 +1,89 @@
-# Active task — HOST-MEDIA-IMPORT-01 governed historical media (2026-09-29)
+# Active task — CLOUD-PROGRESS-OUTPUT-01 full progressive delivery (2026-10-02)
+
+User-approved complete scope and checkbox/evidence ledger:
+`docs/CLOUD_PROGRESSIVE_DELIVERY_PLAN.md`.
+
+## Current continuation evidence (supersedes earlier snapshots below)
+
+- Explicit full-goal continuation resumes implementation, with Luke Ding's
+  existing task/branches and disjoint lanes preserved. No application restart,
+  application migration, commit, push or publication is inferred.
+- Latest full Zebra run: 5524 passed, 29 failed, 4 errors, 1129 skipped in
+  582.31s. Native authorization errors lacked the explicit isolated scratch DSN;
+  storage/API failures require focused root-cause reproduction, not weakened
+  assertions. This is not a green full gate.
+- Latest SDK `pnpm verify` completed successfully (package/consumer builds,
+  Chromium/WebKit interactions and Next hydration). It does not prove runtime
+  package identity or actual Host-to-Worker acceptance.
+- Six UTC-expiry probes first failed, then the preflight success and typed-error
+  exits were guarded with both monotonic and UTC expiry checks. The related
+  preflight/principal/stream matrix passed 35 checks; per-frame wall-clock expiry
+  is now being verified separately.
+- Read-only resource authorization review found the target-resource check
+  incomplete. Whole pre-Grant I/O, migration offline closure, the latest full
+  gates/builds, running identity, 14 live cases and >=100 healthy timing samples
+  remain required. No 100-percent claim.
+
+## Earlier implementation snapshots
+
+The latest plan-only audit is evidence progress: cloud GET still renews bindings,
+live/optimistic state bypasses history budgets, and projection repair may roll
+back a completed prefix on deadline. Goal continuation resumes the same owned
+lanes; main separates authenticated renewal from observation without losing
+queued authority. Native/full/build/activated gates remain required. No
+application migration, restart, commit/push or publication is inferred.
+
+Latest final-proposal continuation: resolve native PG Handoff causal allocation,
+separate dependency waiting from failure budgets, propagate durable projection
+problems, remove observation binding renewal without weakening queued execution
+authority, and constrain real Task-store I/O. Then rerun latest full gates and
+build exact artifacts; activated 14-case product/timing acceptance remains open.
+Snapshot import now has 22 actual PG passes. Five disjoint lanes are resumed;
+main owns shared storage/authorization/catalog and governance. No restart or
+application database mutation is authorized by this continuation.
+
+1. `in_review` — durable public output, Harness pacing and truthful fallback; full tests/check pass.
+2. `verified_local` — ordered reusable React, stable mixed-content rendering, spec/quality and full verify.
+3. `in_review` — paired Trench projection, facts, browser timing and intake; three navigation races fixed, fresh quality found same-key navigation recovery still broken.
+4. `in_review` — timers/budgets/recovery and intra-Event cursor regressions; live faults still open.
+5. `in_progress` — packages/frontend built before follow-up fixes; rebuild and user-operated activation/live gates open.
+6. `pending` — requirement-by-requirement audit and baseline comparison.
+
+2026-10-03 resumed full objective after the final system plan. Full Zebra suite:
+5042 passed / 915 skipped; paired API: 794 passed; frontend: 254 passed.
+Isolated real PostgreSQL Effect/consumer checks: 16 passed, scratch DB removed.
+SSE spec approved (26 checks). Navigation-before-prop queue dispatch and stale
+feedback/deletion now pass 51 focused checks; Effect cleanup passes 46 checks and
+41 independent probes. Same-key return now passes 56 focused checks; re-review
+is pending. Source/build/runtime identities differ. Tests, mock browsers, builds
+and health checks do not prove live acceptance.
+Now: the latest user-approved final plan resumes the complete objective. Both
+production builders compose projection work; v67 is registered and its checksum
+verified. Three consumer/CAS regressions now pass; joint checkpoint/Worker tests
+report 77 pass and one CAS-message compatibility failure. API quality reports
+60 pass; queue/native checks report 24 plus 2 pass, but v68 is not frozen or
+registered and existing-Task discovery remains missing. Binding-ledger native
+proof and typed pending handling remain open. Host focused API reports 188 pass;
+full API still has a snapshot-completion-race test discrepancy. Main owns shared
+read-only/CAS/composition/catalog/import fixes; five disjoint lanes resume.
+All latest full gates, builds, activation and 14 live cases remain open.
+No application migration/restart or publication; no live/100-percent claim.
+Latest continuation: 26 Task/API checks pass after explicit fixture admission;
+background bootstrap and typed binding continuation are wired. Five snapshot
+column regressions pass; actual PG import reached 21 pass / one missing-source-
+metadata RED, now repaired by explicit bounded rebuild after admission.
+Independent consumer/API lanes validate wake/closure and true PG observation.
+Next: fresh regressions, production composition, all full gates/builds and all
+14 activated live/fault cases. No completion claim from a focused green subset.
+
+The latest thirteen-section plan requires paged/checkpointed replay. Late
+predecessor memory/title writes stay legal; freeze published Task positions.
+
+Continue directly on user-selected `cloud-agent-trench` and Trench `main`.
+Preserve dirty changes. Implementation does not authorize registry publication,
+remote deployment or service restarts. Keep all unproved gates open.
+
+# Previous task — HOST-MEDIA-IMPORT-01 governed historical media (2026-09-29)
 
 Branch: `cloud-agent-trench`; working directly in the user's requested checkout.
 

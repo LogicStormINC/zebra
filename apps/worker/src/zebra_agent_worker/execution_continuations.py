@@ -57,6 +57,7 @@ def build_child_result_verifier(
         from uuid import UUID
 
         from agent_core.domain.identifiers import SessionId, TaskId
+
         child = TaskId(UUID(str(child_task_id)))
         link = get_link(child)
         if link is None or link.terminal_at is None:
@@ -122,6 +123,7 @@ def recover_and_start_continuations(
     recorder: object,
     cleanup: Callable[[], Exception | None],
     child_result_verifier: ChildResultVerifier | None = None,
+    attempt_number: int = 1,
 ) -> tuple[ClaimedSession, ActiveContinuations]:
     """Recover the active continuation and emit its start Events.
 
@@ -149,5 +151,6 @@ def recover_and_start_continuations(
         started_at=started_at,
         recorder=recorder,  # type: ignore[arg-type]
         child_wakeup=continuations.child_wakeup,
+        attempt_number=attempt_number,
     )
     return started, continuations

@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from datetime import UTC, datetime
+from time import monotonic
 from urllib.parse import quote
 
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_storage.artifact_object_reads import artifact_read_scope, current_artifact_read_scope
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 
+from zebra_agent_api.ag_ui_task_view import authorized_async_read
+from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
 _INLINE_MIME_TYPES = frozenset(
@@ -39,6 +44,67 @@ async def artifact_download_response(
     request: Request,
     adapter: RouteAdapter,
 ) -> Response | None:
+    if _artifact_download_request(request) is None:
+        return None
+    context = getattr(request.state, "host_context", None)
+    if context is None:
+        return await _download(request, adapter)
+    if denied := _authorization_error(context):
+        return denied
+
+    async def read() -> Response | None:
+        with artifact_read_scope(max_bytes=context.limits.max_artifact_bytes):
+            return await _download(request, adapter)
+
+    result = await authorized_async_read(
+        read,
+        authorization_expires_at=context.expires_at,
+        request_deadline=getattr(request.state, "authorization_deadline", None),
+    )
+    return (
+        JSONResponse(status_code=result.status_code, content=result.body)
+        if isinstance(result, ApiResponse)
+        else result
+    )
+
+
+async def authorized_artifact_read(
+    request: Request,
+    adapter: RouteAdapter,
+    route: RouteRequest,
+) -> ApiResponse:
+    """HTTP's Artifact GET/HEAD seam; keep authority/audit in the existing adapter.
+
+    The caller selects read routes only. No Grant consumption, mutation or retry
+    happens here; cancellation kills actual object I/O before collecting the
+    deadline-bounded parent SQL/audit operation.
+    """
+    if route.method.upper() not in {"GET", "HEAD"}:
+        return ApiResponse(405, {"status": "method_not_allowed"})
+    context = route.host_context
+    if context is None:
+        return await asyncio.to_thread(adapter.handle, route)
+    if denied := _authorization_error(context):
+        return ApiResponse(
+            denied.status_code, {"status": "forbidden", "reason": "host_grant_rejected"}
+        )
+    try:
+        context.require_scope("artifact.read")
+    except ValueError:
+        return ApiResponse(403, {"status": "forbidden", "reason": "artifact_read_not_granted"})
+
+    async def read() -> ApiResponse:
+        with artifact_read_scope(max_bytes=context.limits.max_artifact_bytes):
+            return await _read_route(adapter, request, route)
+
+    return await authorized_async_read(
+        read,
+        authorization_expires_at=context.expires_at,
+        request_deadline=getattr(request.state, "authorization_deadline", None),
+    )
+
+
+async def _download(request: Request, adapter: RouteAdapter) -> Response | None:
     parsed = _artifact_download_request(request)
     if parsed is None:
         return None
@@ -52,28 +118,21 @@ async def artifact_download_response(
                 content={"status": "forbidden", "reason": "artifact_read_not_granted"},
             )
     task_id, public_id, disposition = parsed
-    artifact_id, lookup_error = await _resolve_artifact_id(
+    detail = await _read_route(
         adapter,
         request,
-        task_id,
-        public_id,
-        host_context,
-    )
-    if lookup_error is not None:
-        return lookup_error
-    if artifact_id is None:
-        return JSONResponse(status_code=404, content={"status": "not_found"})
-    detail = await asyncio.to_thread(
-        adapter.handle,
         _route_request(
             request,
-            f"/tasks/{task_id}/artifacts/{artifact_id}",
+            f"/tasks/{task_id}/artifacts/{public_id}",
             host_context,
         ),
     )
     if detail.status_code != 200:
         return JSONResponse(status_code=detail.status_code, content=detail.body)
     artifact = detail.body.get("artifact")
+    artifact_id = artifact.get("artifact_id") if isinstance(artifact, dict) else None
+    if not isinstance(artifact_id, str):
+        return _unavailable()
     delivery = artifact.get("delivery") if isinstance(artifact, dict) else None
     file_name = _delivery_text(delivery, "file_name") or f"artifact-{public_id}.bin"
     mime_type = _delivery_text(delivery, "mime_type") or "application/octet-stream"
@@ -92,9 +151,7 @@ async def artifact_download_response(
     headers = {
         "Accept-Ranges": "bytes",
         "Cache-Control": "private, no-store",
-        "Content-Disposition": (
-            f"{disposition}; filename*=UTF-8''{quote(file_name)}"
-        ),
+        "Content-Disposition": (f"{disposition}; filename*=UTF-8''{quote(file_name)}"),
         "Content-Security-Policy": "default-src 'none'; sandbox",
         "ETag": f'"{artifact_id}"',
         "X-Content-Type-Options": "nosniff",
@@ -105,6 +162,9 @@ async def artifact_download_response(
         selected_size = end - start + 1
         status_code = 206
         headers["Content-Range"] = f"bytes {start}-{end}/{size_bytes}"
+    scope = current_artifact_read_scope()
+    if request.method.upper() != "HEAD" and scope is not None and selected_size > scope.max_bytes:
+        return _unavailable()
     headers["Content-Length"] = str(selected_size)
     body = b""
     if request.method.upper() != "HEAD":
@@ -113,8 +173,9 @@ async def artifact_download_response(
             if content_range is not None
             else None
         )
-        content = await asyncio.to_thread(
-            adapter.handle,
+        content = await _read_route(
+            adapter,
+            request,
             _route_request(
                 request,
                 f"/tasks/{task_id}/artifacts/{artifact_id}/content",
@@ -122,17 +183,21 @@ async def artifact_download_response(
                 query=query,
             ),
         )
+        if error := _authorization_error(host_context):
+            return error
         if content.status_code != 200:
             return JSONResponse(status_code=content.status_code, content=content.body)
         encoded = content.body.get("content_base64")
-        if not isinstance(encoded, str):
+        if not isinstance(encoded, str) or len(encoded) != 4 * ((selected_size + 2) // 3):
             return _unavailable()
         try:
-            body = base64.b64decode(encoded, validate=True)
+            body = await asyncio.to_thread(base64.b64decode, encoded, validate=True)
         except ValueError:
             return _unavailable()
         if len(body) != selected_size:
             return _unavailable()
+    if error := _authorization_error(host_context):
+        return error
     return Response(
         content=body,
         media_type=mime_type,
@@ -141,33 +206,46 @@ async def artifact_download_response(
     )
 
 
-async def _resolve_artifact_id(
+async def _read_route(
     adapter: RouteAdapter,
     request: Request,
-    task_id: str,
-    public_id: str,
-    host_context: HostContextEnvelope | None,
-) -> tuple[str | None, JSONResponse | None]:
-    if ":" in public_id:
-        return public_id, None
-    listing = await asyncio.to_thread(
-        adapter.handle,
-        _route_request(request, f"/tasks/{task_id}/artifacts", host_context),
-    )
-    if listing.status_code != 200:
-        return None, JSONResponse(status_code=listing.status_code, content=listing.body)
-    artifacts = listing.body.get("artifacts")
-    if not isinstance(artifacts, list):
-        return None, _unavailable()
-    match = next(
-        (
-            item.get("artifact_id")
-            for item in artifacts
-            if isinstance(item, dict) and item.get("uri") == f"artifact://{public_id}"
-        ),
-        None,
-    )
-    return (match if isinstance(match, str) else None), None
+    route: RouteRequest,
+) -> ApiResponse:
+    if route.host_context is None:
+        return await asyncio.to_thread(adapter.handle, route)
+    scope = current_artifact_read_scope()
+    assert scope is not None
+    scope.remaining()
+    worker = asyncio.create_task(asyncio.to_thread(adapter.handle, route))
+    try:
+        result = await asyncio.shield(worker)
+        scope.remaining()
+        return result
+    except BaseException as primary:
+        # Cancel actual S3 I/O first, then collect the bounded parent operation.
+        # PG audit stays in this worker; an unknown COMMIT is never replayed.
+        scope.cancel(primary)
+        try:
+            async with asyncio.timeout(max(0.01, scope.deadline - monotonic())):
+                await asyncio.shield(worker)
+        except BaseException as cleanup:
+            if not isinstance(cleanup, asyncio.CancelledError):
+                primary.add_note(f"Artifact worker cleanup: {type(cleanup).__name__}")
+        raise
+
+
+def _authorization_error(context: HostContextEnvelope | None) -> JSONResponse | None:
+    expires_at = getattr(context, "expires_at", None)
+    if context is not None and (
+        not isinstance(expires_at, datetime)
+        or expires_at.utcoffset() is None
+        or datetime.now(UTC) >= expires_at
+    ):
+        return JSONResponse(
+            status_code=403,
+            content={"status": "forbidden", "reason": "host_grant_rejected"},
+        )
+    return None
 
 
 def _route_request(
@@ -184,6 +262,7 @@ def _route_request(
         query=query or {},
         body=None,
         host_context=host_context,
+        verified_host_grant=getattr(request.state, "verified_host_grant", None),
     )
 
 

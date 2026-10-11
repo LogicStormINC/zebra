@@ -15,6 +15,7 @@ from agent_storage import (
     LeaseConflictError,
 )
 
+from zebra_agent_worker.ag_ui_projection_work import AgUiProjectionWorkService
 from zebra_agent_worker.child_wakeup import ChildCompletionWakeupService
 from zebra_agent_worker.cloud_memory_recovery import (
     CloudMemoryFinalizationRecovery,
@@ -75,6 +76,8 @@ class WorkerLoopService:
         migrated_run: Callable[..., WorkerLoopRunResult] | None = None,
         cutover_probe: Callable[[], bool] | None = None,
         memory_delivery: Callable[[str], MemoryDeliveryConsumption] | None = None,
+        client_effect_recovery: Callable[[], int] | None = None,
+        projection_work: AgUiProjectionWorkService | None = None,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
@@ -88,6 +91,25 @@ class WorkerLoopService:
         self._memory_delivery_thread: Thread | None = None
         self.migrated_run = migrated_run
         self._cutover_probe = cutover_probe
+        self._client_effect_recovery = client_effect_recovery
+        self._client_recovery_at = 0.0
+        self._projection_work = projection_work
+
+    def _start_projection_work(self) -> None:
+        if self._projection_work is not None:
+            self._projection_work.start()
+
+    def _recover_client_effects(self) -> None:
+        if self._client_effect_recovery is None or time.monotonic() < self._client_recovery_at:
+            return
+        self._client_recovery_at = time.monotonic() + 15
+        try:
+            recovered = self._client_effect_recovery()
+            if recovered:
+                print(f"client effect continuations recovered: {recovered}", file=sys.stderr)
+        except Exception as exc:
+            # Maintenance failures must not starve unrelated execution; retry next tick.
+            print(f"client effect recovery failed: {type(exc).__name__}", file=sys.stderr)
 
     def maintenance_once(
         self,
@@ -96,13 +118,17 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
+        self._start_projection_work()
         self._process_child_wakeups()
+        self._recover_client_effects()
         self._start_memory_delivery(worker_id=worker_id, batch_size=batch_size)
         self._start_cloud_memory_recovery(
             worker_id=worker_id, batch_size=batch_size, lease_ttl_seconds=lease_ttl_seconds
         )
 
     def drain(self) -> None:
+        if self._projection_work is not None:
+            self._projection_work.close()
         if self._cloud_memory_recovery_thread is not None:
             self._cloud_memory_recovery_thread.join()
         if self._memory_delivery_thread is not None:
@@ -115,7 +141,9 @@ class WorkerLoopService:
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
     ) -> WorkerLoopCycleResult:
+        self._start_projection_work()
         self._process_child_wakeups()
+        self._recover_client_effects()
         command_result = (
             self._command_consumer.consume_once(
                 worker_id=worker_id,

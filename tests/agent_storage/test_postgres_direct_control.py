@@ -6,12 +6,10 @@ from uuid import uuid4
 import psycopg
 import pytest
 from agent_core.domain.events import EventType
-from agent_core.domain.execution_authority import ExecutionAuthoritySnapshot
 from agent_storage.postgres import session_cancellation
 from agent_storage.postgres.command_runtime_cleanup import settle_runtime_cleanup
 from agent_storage.postgres.direct_control import PostgresDirectControl
 from psycopg.rows import dict_row
-from psycopg.types.json import Jsonb
 
 from tests.agent_storage.test_command_wakeup import _binding
 from tests.agent_storage.test_postgres_command_runtime_cleanup import _claim
@@ -129,24 +127,9 @@ def test_same_identity_restricted_reissued_scope_replays(dsn):
 def test_generic_no_binding_uses_canonical_identity_not_expired_execution_permission(
     dsn, wrong_issuer
 ):
-    lease = _setup(dsn)
+    lease = _setup(dsn, validated_at=datetime.now(UTC) - timedelta(minutes=20))
     with psycopg.connect(dsn) as connection:
         connection.execute("DELETE FROM task_binding_snapshots")
-        payload = connection.execute("""SELECT payload FROM session_events
-            WHERE event_type='execution_authority_resolved'""").fetchone()[0]
-        now = datetime.now(UTC)
-        payload.update(
-            issued_at=now - timedelta(minutes=4),
-            validated_at=now - timedelta(minutes=3),
-            expires_at=now - timedelta(minutes=1),
-            snapshot_digest=None,
-        )
-        snapshot = ExecutionAuthoritySnapshot.model_validate(payload)
-        connection.execute(
-            """UPDATE session_events SET payload=%s
-            WHERE event_type='execution_authority_resolved'""",
-            (Jsonb(snapshot.model_dump(mode="json")),),
-        )
         connection.execute(
             """UPDATE worker_leases SET acquired_at=clock_timestamp()-interval '3 seconds',
                heartbeat_at=clock_timestamp()-interval '2 seconds',

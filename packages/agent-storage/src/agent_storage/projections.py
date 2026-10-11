@@ -8,6 +8,7 @@ from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.ports.projection_store import ProjectionStorePort
 
 from agent_storage.database import SQLiteDatabase, ensure_column
+from agent_storage.session_observation_headers import sqlite_statements
 
 
 class SQLiteProjectionStore(ProjectionStorePort):
@@ -249,6 +250,8 @@ class SQLiteProjectionStore(ProjectionStorePort):
             ensure_column(connection, "session_projections", "clarification_context_json", "TEXT")
             ensure_column(connection, "session_projections", "task_plan_json", "TEXT")
             ensure_column(connection, "session_projections", "namespace_id", "TEXT")
+            for statement in sqlite_statements():
+                connection.execute(statement)
 
 
 def _approval_context_json(context: ApprovalContext | None) -> str | None:

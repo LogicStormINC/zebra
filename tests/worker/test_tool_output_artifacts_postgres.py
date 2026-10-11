@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 from uuid import UUID, uuid4
@@ -43,8 +44,8 @@ from agent_storage import (
     bootstrap_control_plane_epoch,
 )
 from agent_tools.effect_guard_support import effect_identity
-from botocore.config import Config  # type: ignore[import-untyped]
-from botocore.session import Session  # type: ignore[import-untyped]
+from cloud_artifact_test_objects import bucket as _bucket
+from cloud_artifact_test_objects import s3_client as _s3_client
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from zebra_agent_worker.cloud_effect_payloads import CloudEffectPayloadCoordinator
@@ -141,8 +142,10 @@ def test_effect_request_is_finalized_and_readable_by_another_worker(dsn: str) ->
     dispatch = PostgresEffectDispatchStore(dsn, deployment_namespace=context.namespace)
     writer = CloudEffectPayloadCoordinator(context.session_id, context.coordinator, dispatch)
     call = ToolCall(
-        tool_call_id=new_tool_call_id(), name="command.run",
-        arguments={"command": "deploy"}, created_at=datetime.now(UTC)
+        tool_call_id=new_tool_call_id(),
+        name="command.run",
+        arguments={"command": "deploy"},
+        created_at=datetime.now(UTC),
     )
     identity = effect_identity(call, "workspace-write")
     artifact_ref = writer.request_artifact_ref(
@@ -200,20 +203,27 @@ def test_effect_request_is_finalized_and_readable_by_another_worker(dsn: str) ->
         actor=terminal_draft.actor,
         payload=terminal_draft.payload,
     )
-    assert writer.complete_with_payload(
-        claim,
-        result=result,
-        terminal_event=terminal,
-        authority=authority.model_copy(update={"expected_stream_revision": 1}),
-    ) == terminal
-    assert reader_artifacts.read_verified(
-        _artifact_id(result.metadata), namespace=context.namespace
-    ) == b"effect result evidence"
+    assert (
+        writer.complete_with_payload(
+            claim,
+            result=result,
+            terminal_event=terminal,
+            authority=authority.model_copy(update={"expected_stream_revision": 1}),
+        )
+        == terminal
+    )
+    assert (
+        reader_artifacts.read_verified(_artifact_id(result.metadata), namespace=context.namespace)
+        == b"effect result evidence"
+    )
 
     staged = reader_artifacts.stage_bytes(
-        artifact_id=new_artifact_id(), payload=b"not yet committed",
-        kind="effect_tool_call", mime_type="application/json",
-        file_name="tool-call.json", created_at=datetime.now(UTC),
+        artifact_id=new_artifact_id(),
+        payload=b"not yet committed",
+        kind="effect_tool_call",
+        mime_type="application/json",
+        file_name="tool-call.json",
+        created_at=datetime.now(UTC),
         intended_event_sequence=3,
         authority=authority.model_copy(update={"expected_stream_revision": 2}),
         idempotency_scope="staged-read-check",
@@ -491,6 +501,8 @@ def test_external_artifact_uri_bypasses_managed_object_lifecycle(dsn: str) -> No
 
 
 class _Recorder:
+    mutation = staticmethod(nullcontext)
+
     def __init__(
         self,
         events: PostgresEventStore,
@@ -596,11 +608,7 @@ class _Context:
         self.metadata = metadata
         self.objects = objects
         self.recorder = recorder
-        self.coordinator = CloudToolOutputArtifactCoordinator(
-            session_id,
-            metadata,
-            objects,
-        )
+        self.coordinator = CloudToolOutputArtifactCoordinator(session_id, metadata, objects)
 
 
 def _context(
@@ -651,26 +659,6 @@ def _context(
     )
 
 
-def _s3_client() -> Any:
-    endpoint = os.environ.get("ZEBRA_TEST_S3_ENDPOINT")
-    access_key = os.environ.get("ZEBRA_TEST_S3_ACCESS_KEY")
-    secret_key = os.environ.get("ZEBRA_TEST_S3_SECRET_KEY")
-    if not endpoint or not access_key or not secret_key:
-        pytest.skip("set ZEBRA_TEST_S3_* variables to run MinIO tests")
-    return Session().create_client(
-        "s3",
-        endpoint_url=endpoint,
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key,
-        region_name="us-east-1",
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-    )
-
-
-def _bucket() -> str:
-    return os.environ.get("ZEBRA_TEST_S3_BUCKET", "zebra-artifacts")
-
-
 def _terminal_draft(
     output: str,
     metadata: dict[str, object],
@@ -679,9 +667,9 @@ def _terminal_draft(
     status: str = "executed",
 ) -> HarnessEventDraft:
     return HarnessEventDraft(
-        event_type=event_type,
-        actor=EventActor.TOOL,
-        payload={
+        event_type,
+        EventActor.TOOL,
+        {
             "attempt_number": 1,
             "tool_name": "command.run",
             "status": status,
@@ -692,5 +680,4 @@ def _terminal_draft(
 
 
 def _artifact_id(metadata: dict[str, object]) -> ArtifactId:
-    uri = cast(str, metadata["artifact_uri"])
-    return ArtifactId(UUID(uri.removeprefix("artifact://")))
+    return ArtifactId(UUID(cast(str, metadata["artifact_uri"]).removeprefix("artifact://")))

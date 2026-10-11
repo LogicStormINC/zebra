@@ -63,7 +63,11 @@ class ZebraApiScheduledTaskAdmission:
             raise RuntimeError("scheduled Task admission returned no revision")
         command = self.api.submit_command(
             str(task_id),
-            {"kind": "run", "expected_revision": revision},
+            {
+                "kind": "run",
+                "expected_revision": revision,
+                "payload": {"run_id": f"schedule:{firing.fire_id}:run"},
+            },
             idempotency_key=f"schedule:{firing.fire_id}:run",
             extension_admission=self.extension_admission,
             verified_host_grant=verified,

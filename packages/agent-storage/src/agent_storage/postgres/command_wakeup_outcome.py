@@ -14,6 +14,7 @@ from agent_storage.postgres.command_wakeup import (
 )
 from agent_storage.postgres.command_wakeup_receipts import HANDLED_EVENTS
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.task_replay_headers import read_run_header
 
 
 class PostgresCommandOutcomeReader:
@@ -32,33 +33,39 @@ class PostgresCommandOutcomeReader:
         host_context: HostContextEnvelope,
     ) -> str | None:
         namespace = self.deployment_namespace
-        with self._database.connect() as connection:
+        with self._database.connect_task_io() as connection:
             connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
-            rows = connection.execute(
-                """SELECT event.* FROM session_events event
-                JOIN execution_segments segment
-                ON segment.deployment_namespace=event.deployment_namespace
-                AND segment.session_id=event.session_id
-                WHERE event.deployment_namespace=%s AND segment.task_id=%s
-                AND event.event_type='session_command_accepted'
-                AND event.payload->'payload'->>'run_id'=%s
-                ORDER BY segment.segment_index, event.sequence""",
-                (namespace, task_id, run_id),
-            ).fetchall()
-            executable = [
-                r for r in rows if r["payload"].get("kind") in ("run", "resume", "message")
-            ]
-            anchors = executable or rows
-            if len(anchors) != 1 or anchors[0]["event_id"] != accepted_event_id:
+            try:
+                run = read_run_header(connection, namespace, task_id, run_id, None)
+            except ValueError as exc:
+                raise ValueError("command outcome has no unique canonical run binding") from exc
+            if run.anchor is None or run.anchor.event_id != accepted_event_id:
                 raise ValueError("command outcome has no unique canonical run binding")
-            row = anchors[0]
-            event = SessionEvent.model_validate(
-                {k: v for k, v in row.items() if k != "deployment_namespace"}
-            )
+            row = connection.execute(
+                """SELECT event_id,session_id,sequence,event_type,actor,created_at,
+                   payload->>'command_id' AS command_id
+                   FROM session_events WHERE deployment_namespace=%s AND task_id=%s
+                   AND task_sequence=%s AND event_id=%s AND session_id=%s AND sequence=%s""",
+                (
+                    namespace,
+                    task_id,
+                    run.anchor.task_sequence,
+                    accepted_event_id,
+                    run.anchor.segment_id,
+                    run.anchor.segment_sequence,
+                ),
+            ).fetchone()
+            if row is None:
+                raise ValueError("command outcome has no unique canonical run binding")
+            command_id = row.pop("command_id")
+            if not isinstance(command_id, str) or len(command_id) > 36:
+                raise ValueError("canonical command identity is invalid")
+            UUID(command_id)
+            event = SessionEvent.model_validate({**row, "payload": {"command_id": command_id}})
             bound = _validated_host_context(connection, namespace, event)
             if bound is None or _identity(bound) != _identity(host_context):
                 raise ValueError("command outcome Host identity conflicts")
-            if executable and _terminal(connection, namespace, task_id, event, run_id):
+            if not run.control_only and _terminal(connection, namespace, task_id, event, run_id):
                 return None
             scope = _scope_from_binding(connection, namespace, event)
             scope_key = command_scope_key(scope)
@@ -96,7 +103,7 @@ class PostgresCommandOutcomeReader:
                 return None
             if receipt is not None and receipt["status"] == "requires_reconciliation":
                 return "command_requires_reconciliation"
-            if not executable:
+            if run.control_only:
                 control = connection.execute(
                     """SELECT outcome FROM command_control_receipts WHERE deployment_namespace=%s
                     AND accepted_event_id=%s AND session_id=%s AND scope_key=%s
@@ -160,13 +167,15 @@ def _terminal(
           JOIN session_events committed ON committed.deployment_namespace=%s
             AND committed.session_id=parent.session_id
             AND committed.event_type='session_handoff_committed'
+            AND committed.projection_metadata_ready
             AND (committed.session_id<>%s OR committed.sequence>%s)
           JOIN session_events received
             ON received.deployment_namespace=committed.deployment_namespace
             AND received.event_type='session_handoff_received'
-            AND received.session_id::text=committed.payload->>'target_session_id'
-            AND received.payload->>'parent_session_id'=committed.session_id::text
-            AND received.payload->>'handoff_id'=committed.payload->>'handoff_id'
+            AND received.projection_metadata_ready
+            AND received.session_id=committed.projection_peer_segment_id
+            AND received.projection_peer_segment_id=committed.session_id
+            AND received.projection_handoff_id=committed.projection_handoff_id
           JOIN members child ON child.session_id=received.session_id
         )
         SELECT 1 FROM session_events terminal
@@ -179,8 +188,9 @@ def _terminal(
           SELECT 1 FROM session_events next JOIN members next_segment
           ON next_segment.session_id=next.session_id
           WHERE next.deployment_namespace=%s AND next.event_type='session_command_accepted'
-          AND next.payload->>'kind' IN ('run','resume','message')
-          AND (next.payload->'payload'->>'run_id') IS DISTINCT FROM %s
+          AND next.replay_header_ready AND NOT next.replay_internal_continuation
+          AND next.replay_command_kind IN ('run','resume','message')
+          AND next.replay_run_id IS DISTINCT FROM %s
           AND (next_segment.segment_index,next.sequence)>(original.segment_index,%s)
           AND (next_segment.segment_index,next.sequence)<(current.segment_index,terminal.sequence)
         ) LIMIT 1""",

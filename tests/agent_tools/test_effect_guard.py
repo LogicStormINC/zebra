@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -238,12 +239,42 @@ def test_manifest_declared_host_read_tool_bypasses_effect_ledger(tmp_path) -> No
     assert gateway.calls == 1
 
 
-def test_fenced_effect_persists_intent_and_terminal_around_provider(tmp_path) -> None:
+def test_fenced_effect_persists_intent_and_terminal_around_provider(tmp_path, monkeypatch) -> None:
     gateway = _Gateway()
     dispatch = _Dispatch()
     session_id = new_session_id()
     accepted: list[SessionEvent] = []
     next_sequence = 0
+    guarded_mutation = False
+
+    @contextmanager
+    def mutation():
+        nonlocal guarded_mutation
+        assert not guarded_mutation
+        guarded_mutation = True
+        try:
+            yield
+        finally:
+            guarded_mutation = False
+
+    provider_execute = gateway.execute
+    starts: list[str] = []
+
+    def execution_started(call_id):
+        assert not guarded_mutation
+        assert accepted[-1].event_type is EventType.TOOL_EXECUTION_STARTED
+        starts.append(call_id)
+
+    def execute(call):
+        assert not guarded_mutation  # a slow provider must not prevent waiting updates
+        assert starts[-1] == str(call.tool_call_id)
+        return provider_execute(call)
+
+    monkeypatch.setattr(gateway, "execute", execute)
+
+    def accept(event):
+        assert guarded_mutation
+        accepted.append(event)
 
     def next_event(
         event_type: EventType,
@@ -251,6 +282,7 @@ def test_fenced_effect_persists_intent_and_terminal_around_provider(tmp_path) ->
         payload: dict[str, object],
     ) -> SessionEvent:
         nonlocal next_sequence
+        assert guarded_mutation
         event = SessionEvent.create(
             session_id=session_id,
             sequence=next_sequence,
@@ -271,8 +303,10 @@ def test_fenced_effect_persists_intent_and_terminal_around_provider(tmp_path) ->
         claim_ttl=timedelta(seconds=30),
         authority_scope="workspace-write",
         next_event=next_event,
-        accept_event=accepted.append,
+        accept_event=accept,
         ownership_check=lambda: None,
+        mutation_guard=mutation,
+        execution_started=execution_started,
     )
 
     result = guarded.execute(_call("command.run"))
@@ -637,7 +671,9 @@ def test_lease_lost_during_payload_read_stops_dispatch(tmp_path, monkeypatch) ->
         guarded.execute(_call("mcp.fixture.write"))
     assert gateway.calls == 0
     assert dispatch.last_claim is not None
-    assert dispatch.uncertain == 1
+    assert dispatch.failed_no_effect == 1
+    assert dispatch.uncertain == 0
+    assert accepted[-1].payload["metadata"]["execution_state"] == "not_executed"
 
 
 def _fence() -> LeaseFence:

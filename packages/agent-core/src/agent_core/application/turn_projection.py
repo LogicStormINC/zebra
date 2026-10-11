@@ -65,18 +65,34 @@ def interaction_mode_of(events: list[SessionEvent] | tuple[SessionEvent, ...]) -
     return resolve_interaction_mode(None)
 
 
-def project_turns(events: list[SessionEvent] | tuple[SessionEvent, ...]) -> tuple[TurnRecord, ...]:
+def project_turns(
+    events: list[SessionEvent] | tuple[SessionEvent, ...],
+    *,
+    initial: tuple[TurnRecord, ...] = (),
+    lookup: dict[str, int] | None = None,
+) -> tuple[TurnRecord, ...]:
     """Replay Turn records from one Segment's event stream.
 
     New-style streams open turns via ``USER_MESSAGE_RECEIVED.turn_id`` and
     close them via ``TURN_*`` events. Legacy streams synthesize one turn per
     human message, closed by the Segment terminal event that legacy
     finalization always wrote.
+
+    Incremental callers supply and retain ``lookup`` as an in/out mapping from
+    Turn ID to opened sequence: mutations can target an earlier duplicate ID.
     """
 
-    records: list[TurnRecord] = []
-    open_by_id: dict[str, TurnRecord] = {}
-    turn_index = 0
+    records = list(initial)
+    open_by_id = {record.turn_id: record for record in records}
+    if lookup is not None:
+        by_sequence = {record.opened_sequence: record for record in records}
+        if set(lookup) != set(open_by_id) or any(
+            sequence not in by_sequence or by_sequence[sequence].turn_id != turn_id
+            for turn_id, sequence in lookup.items()
+        ):
+            raise ValueError("Turn lookup does not match its retained records")
+        open_by_id = {turn_id: by_sequence[sequence] for turn_id, sequence in lookup.items()}
+    turn_index = records[-1].turn_index + 1 if records else 0
 
     for event in events:
         if event.event_type is EventType.USER_MESSAGE_RECEIVED:
@@ -171,6 +187,9 @@ def project_turns(events: list[SessionEvent] | tuple[SessionEvent, ...]) -> tupl
                 legacy_close=True,
             )
 
+    if lookup is not None:
+        lookup.clear()
+        lookup.update({turn_id: record.opened_sequence for turn_id, record in open_by_id.items()})
     return tuple(records)
 
 

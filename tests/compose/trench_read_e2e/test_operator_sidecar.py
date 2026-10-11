@@ -45,9 +45,7 @@ def test_worker_restart_requires_operator_token(monkeypatch):
     monkeypatch.setenv("E2E_WORKER_CONTAINER", "zebra-worker-1")
     monkeypatch.setattr(sidecar_module, "_restart_worker", lambda container: 204)
     client = _client()
-    denied = client.post(
-        "/worker-restart", json={"taskId": "t", "runId": "r"}
-    )
+    denied = client.post("/worker-restart", json={"taskId": "t", "runId": "r"})
     assert denied.status_code == 403
     allowed = client.post(
         "/worker-restart",

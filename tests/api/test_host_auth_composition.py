@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agent_storage.postgres.task_io import TaskIoConnections
 from fastapi.testclient import TestClient
 from pytest import MonkeyPatch
 from zebra_agent_api import create_http_app
@@ -10,6 +11,7 @@ from zebra_agent_config import ApiSettings, ModelSettings, RuntimeSettings, Zebr
 
 class _FakePostgresStores:
     deployment_namespace = "deployment-a"
+    task_io_connections = None
 
 
 class _Authorizer:
@@ -45,7 +47,14 @@ def test_cloud_http_factory_composes_default_postgres_host_authorizer(
     calls: list[tuple[str, str]] = []
     authorizer = _Authorizer()
 
-    def build(database_url: str, *, deployment_namespace: str) -> _Authorizer:
+    def build(
+        database_url: str,
+        *,
+        deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> _Authorizer:
+        assert isinstance(task_io_connections, TaskIoConnections)
+        task_io_connections.require_compatible(database_url)
         calls.append((database_url, deployment_namespace))
         return authorizer
 

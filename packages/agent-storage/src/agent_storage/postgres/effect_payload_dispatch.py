@@ -21,6 +21,7 @@ from agent_storage.postgres.effect_payload_transactions import (
     schedule_effect_with_payload_in_transaction,
 )
 from agent_storage.postgres.effects import find_initial_dispatch, same_schedule
+from agent_storage.postgres.events import read_event_in_transaction
 from agent_storage.postgres.leases import assert_current_lease_fence
 
 
@@ -28,6 +29,13 @@ class EffectPayloadDispatchMixin:
     """Add Artifact-finalizing transitions to an Effect store."""
 
     _database: PostgresDatabase
+
+    def read_intent_event(self, dispatch: EffectDispatch) -> SessionEvent:
+        with self._database.connect() as connection:
+            event = read_event_in_transaction(connection, self._namespace, dispatch.intent_event_id)
+        if event is None:
+            raise EffectDispatchStateError("Effect intent Event is unavailable")
+        return event
 
     def schedule_with_payload(
         self,

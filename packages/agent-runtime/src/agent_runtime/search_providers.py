@@ -14,11 +14,19 @@ import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
+from http.client import HTTPException
 
 from agent_core.domain.web import WebTargetError, parse_web_target
 from agent_tools.search_pipeline import SearchHit, SearchQuery
+from agent_tools.web_gateway import WebGatewayError
+from agent_tools.web_search import DEFAULT_WEB_SEARCH_TIMEOUT_SECONDS
 
-from agent_runtime.web_gateway import _NoRedirectHandler, _proxy_configuration
+from agent_runtime.web_gateway import (
+    _native_network_call,
+    _NoRedirectHandler,
+    _proxy_configuration,
+    _read_bounded_body,
+)
 
 FetchJson = Callable[[str], object]
 JSON_CONTENT_TYPE = "application/json"
@@ -32,20 +40,28 @@ class SearXNGSearchProvider:
     fetch_json: FetchJson | None = None
     available: bool = True
     use_system_proxy: bool = False
+    network_cancellation_check: Callable[[], None] | None = None
 
     def search(self, query: SearchQuery, *, limit: int) -> tuple[SearchHit, ...]:
-        fetch = self.fetch_json or urllib_fetch_json(self.use_system_proxy)
+        fetch = self.fetch_json or urllib_fetch_json(
+            self.use_system_proxy, network_cancellation_check=self.network_cancellation_check
+        )
         url = _searxng_url(self.endpoint, query=query, limit=limit)
         payload = fetch(url)
         if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
-            return ()
+            raise WebGatewayError("invalid search response shape", reason="invalid_search_response")
+        if payload.get("unresponsive_engines") or payload.get("error"):
+            # ponytail: the tuple provider contract cannot attest partial engine coverage.
+            raise WebGatewayError("search source query is incomplete", reason="search_incomplete")
         hits: list[SearchHit] = []
         seen: set[str] = set()
         for item in payload["results"]:
             if len(hits) >= limit:
                 break
             hit = _hit_from_searxng(item)
-            if hit is None or hit.url in seen:
+            if hit is None:
+                raise WebGatewayError("invalid search candidate", reason="invalid_search_response")
+            if hit.url in seen:
                 continue
             seen.add(hit.url)
             hits.append(hit)
@@ -96,10 +112,23 @@ def _bounded(value: object, limit: int) -> str:
     return " ".join(value.split())[:limit]
 
 
-def urllib_fetch_json(use_system_proxy: bool = False) -> FetchJson:
+def urllib_fetch_json(
+    use_system_proxy: bool = False,
+    *,
+    network_cancellation_check: Callable[[], None] | None = None,
+) -> FetchJson:
     """Build a fetch_json callable over urllib with no-redirect + proxy control."""
 
     def _fetch(url: str) -> object:
+        if network_cancellation_check is not None:
+            return _native_network_call(
+                "search_json",
+                url,
+                network_cancellation_check,
+                timeout=DEFAULT_WEB_SEARCH_TIMEOUT_SECONDS,
+                use_system_proxy=use_system_proxy,
+                max_output_bytes=MAX_SEARCH_RESPONSE_BYTES * 6 + 65536,
+            )
         hostname = urllib.parse.urlsplit(url).hostname or ""
         proxies = _proxy_configuration(hostname, use_system_proxy=use_system_proxy)
         opener = urllib.request.build_opener(
@@ -112,21 +141,39 @@ def urllib_fetch_json(use_system_proxy: bool = False) -> FetchJson:
             method="GET",
         )
         try:
-            with opener.open(request) as response:
+            with opener.open(request, timeout=DEFAULT_WEB_SEARCH_TIMEOUT_SECONDS) as response:
+                if response.status == 206:
+                    raise WebGatewayError(
+                        "search source query is incomplete", reason="search_incomplete"
+                    )
                 content_type = response.headers.get("Content-Type", "").partition(";")[0]
                 if content_type.strip().lower() != JSON_CONTENT_TYPE:
-                    return {}
-                body = response.read(MAX_SEARCH_RESPONSE_BYTES)
+                    raise WebGatewayError(
+                        "search response is not JSON", reason="unsupported_content_type"
+                    )
+                body = _read_bounded_body(response, MAX_SEARCH_RESPONSE_BYTES)
         except urllib.error.HTTPError as exc:
-            if 300 <= exc.code < 400:
-                return {}
-            raise
-        except (OSError, ValueError):
-            return {}
+            reason = (
+                "redirect_blocked"
+                if 300 <= exc.code < 400
+                else "access_denied"
+                if exc.code in (401, 403)
+                else "http_error"
+            )
+            exc.close()
+            raise WebGatewayError(f"search HTTP error: {exc.code}", reason=reason) from exc
+        except HTTPException as exc:
+            raise WebGatewayError(
+                "search response body is incomplete", reason="response_incomplete"
+            ) from exc
+        except (OSError, ValueError) as exc:
+            raise WebGatewayError("search request unavailable") from exc
         try:
             payload = json.loads(body.decode("utf-8"))
-        except (UnicodeError, json.JSONDecodeError):
-            return {}
-        return payload if isinstance(payload, dict) else {}
+        except (UnicodeError, json.JSONDecodeError) as exc:
+            raise WebGatewayError(
+                "search response is invalid JSON", reason="invalid_search_response"
+            ) from exc
+        return payload
 
     return _fetch

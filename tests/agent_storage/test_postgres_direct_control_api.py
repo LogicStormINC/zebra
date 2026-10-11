@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import pytest
 from agent_integrations.acp import AcpEntryAdapter
+from agent_security.host_grant import JwtAlgorithm, VerifiedHostGrant
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 from zebra_agent_config import load_settings
 from zebra_agent_worker.control import SessionControlError, SessionControlService
@@ -43,12 +44,19 @@ def _app(dsn):
 
 
 def _request(session, *, key=None, context=None, action="cancel"):
+    context = context or _binding(str(session)).host_capability.host_context
+    principal = next(
+        ref.resource_id for ref in context.resource_refs if ref.resource_type == "principal"
+    )
     return RouteRequest(
         "POST",
         f"/tasks/{session}/{action}",
         body={},
         headers=None if key is None else {"Idempotency-Key": key},
-        host_context=context or _binding(str(session)).host_capability.host_context,
+        host_context=context,
+        verified_host_grant=VerifiedHostGrant(
+            context, context.grant_id, JwtAlgorithm.RS256, SCOPE.authority_issuer, principal
+        ),
     )
 
 
@@ -87,7 +95,7 @@ def test_task_caller_scope_and_permission_reject_without_any_mutation(dsn, chang
     context = type(context).model_validate(updated)
     before = _rows(dsn, "session_events"), _rows(dsn, "worker_leases")
     response = RouteAdapter(_app(dsn)).handle(_request(lease.session_id, context=context))
-    assert response.status_code in (404, 409)
+    assert response.status_code == (403 if change in {"principal", "permission"} else 404)
     assert (_rows(dsn, "session_events"), _rows(dsn, "worker_leases")) == before
     assert not _rows(dsn, "command_runtime_cleanup")
 

@@ -62,7 +62,6 @@ def run_process_tree(
     env: Mapping[str, str] | None = None,
     max_output_bytes: int | None = None,
 ) -> CompletedProcess[str]:
-
     if not capture_output or not text or check:
         raise ValueError("runtime process execution requires captured text output and check=False")
     if max_output_bytes is not None and max_output_bytes <= 0:
@@ -146,11 +145,7 @@ def _terminate_process_tree(process: Popen[str] | Popen[bytes]) -> None:
         process.terminate()
         process.kill()
         return
-    try:
-        os.killpg(process.pid, signal.SIGTERM)
-    except ProcessLookupError:
-        return
-    # ponytail: one immediate SIGKILL closes the race without adding a timer thread.
+    # ponytail: timeouts have no grace period; one group KILL avoids the TERM/exit/KILL race.
     try:
         os.killpg(process.pid, signal.SIGKILL)
     except ProcessLookupError:

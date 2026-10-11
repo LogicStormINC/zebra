@@ -4,6 +4,9 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
+from dataclasses import asdict
+from http.client import HTTPException
 
 from agent_core.domain.web import WebTargetError, parse_web_target
 from agent_tools.web_gateway import WebGatewayError
@@ -15,8 +18,14 @@ from agent_tools.web_search import (
     WebSearchResponse,
     WebSearchResult,
 )
+from pydantic import TypeAdapter
 
-from agent_runtime.web_gateway import _NoRedirectHandler, _proxy_configuration
+from agent_runtime.web_gateway import (
+    _native_network_call,
+    _NoRedirectHandler,
+    _proxy_configuration,
+    _read_bounded_body,
+)
 
 JSON_CONTENT_TYPE = "application/json"
 MAX_OUTPUT_CHARS = 20_000
@@ -25,10 +34,27 @@ MAX_OUTPUT_CHARS = 20_000
 class LocalWebSearchTransport:
     """Credential-free bounded SearXNG JSON adapter."""
 
-    def __init__(self, *, use_system_proxy: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        use_system_proxy: bool = False,
+        network_cancellation_check: Callable[[], None] | None = None,
+    ) -> None:
         self._use_system_proxy = use_system_proxy
+        self._network_cancellation_check = network_cancellation_check
 
     def execute(self, request: WebSearchRequest) -> WebSearchResponse:
+        if self._network_cancellation_check is not None:
+            return TypeAdapter(WebSearchResponse).validate_python(
+                _native_network_call(
+                    "search",
+                    asdict(request),
+                    self._network_cancellation_check,
+                    timeout=request.timeout_seconds,
+                    use_system_proxy=self._use_system_proxy,
+                    max_output_bytes=request.max_bytes * 6 + 65536,
+                )
+            )
         proxies = _proxy_configuration(
             request.endpoint.hostname,
             use_system_proxy=self._use_system_proxy,
@@ -47,28 +73,28 @@ class LocalWebSearchTransport:
         )
         try:
             with opener.open(outbound, timeout=request.timeout_seconds) as response:
+                if response.status == 206:
+                    raise WebGatewayError(
+                        "search source query is incomplete", reason="search_incomplete"
+                    )
                 content_type = response.headers.get("Content-Type", "").partition(";")[0]
                 if content_type.strip().lower() != JSON_CONTENT_TYPE:
                     raise WebGatewayError(
                         "search response content type is not application/json",
                         reason="unsupported_content_type",
                     )
-                content_length = response.headers.get("Content-Length")
-                if content_length is not None and int(content_length) > request.max_bytes:
-                    raise WebGatewayError(
-                        "search response exceeds the byte limit", reason="response_too_large"
-                    )
-                body = response.read(request.max_bytes + 1)
-                if len(body) > request.max_bytes:
-                    raise WebGatewayError(
-                        "search response exceeds the byte limit", reason="response_too_large"
-                    )
+                body = _read_bounded_body(response, request.max_bytes)
                 return _normalize_response(body, request, len(body))
         except WebGatewayError:
             raise
         except urllib.error.HTTPError as exc:
             reason = "redirect_blocked" if 300 <= exc.code < 400 else "http_error"
+            exc.close()
             raise WebGatewayError(f"search gateway HTTP error: {exc.code}", reason=reason) from exc
+        except HTTPException as exc:
+            raise WebGatewayError(
+                "search response body is incomplete", reason="response_incomplete"
+            ) from exc
         except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
             raise WebGatewayError(f"search gateway request failed: {exc}") from exc
 
@@ -89,6 +115,8 @@ def _normalize_response(
         raise WebGatewayError(
             "search response has an invalid JSON shape", reason="invalid_response"
         )
+    if payload.get("unresponsive_engines") or payload.get("error"):
+        raise WebGatewayError("search source query is incomplete", reason="search_incomplete")
     normalized: list[WebSearchResult] = []
     seen_urls: set[str] = set()
     output_chars = 0

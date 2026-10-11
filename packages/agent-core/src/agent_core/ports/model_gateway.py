@@ -9,6 +9,25 @@ from agent_core.domain.modeling import (
     ModelToolDefinition,
 )
 
+MODEL_RESPONSE_VALIDATION_RULES = frozenset(
+    {
+        "choices_nonempty_list",
+        "choice_object",
+        "message_object",
+        "reasoning_content_required",
+        "reasoning_content_string",
+        "assistant_content_nonblank",
+        "tool_calls_list",
+        "tool_call_object",
+        "tool_function_object",
+        "tool_function_name_nonblank",
+        "tool_call_id_nonblank",
+        "usage_token_integer",
+        "optional_string_type",
+        "response_payload_validation",
+    }
+)
+
 
 class ModelResponseRejectedError(RuntimeError):
     """A provider response that Zebra must not accept or execute."""
@@ -26,11 +45,14 @@ class ModelResponseRejectedError(RuntimeError):
         payload_sha256: str | None = None,
         response_repair_count: int = 0,
         initial_reason: str | None = None,
+        validation_rule: str | None = None,
     ) -> None:
         if not reason.strip() or not phase.strip():
             raise ValueError("model response rejection reason and phase must not be blank")
         if response_repair_count < 0:
             raise ValueError("response_repair_count must not be negative")
+        if validation_rule is not None and validation_rule not in MODEL_RESPONSE_VALIDATION_RULES:
+            raise ValueError("model response validation_rule must be allowlisted")
         details = [reason, f"phase={phase}"]
         if provider_tool_name is not None:
             details.append(f"tool={provider_tool_name}")
@@ -47,6 +69,7 @@ class ModelResponseRejectedError(RuntimeError):
         self.payload_sha256 = payload_sha256
         self.response_repair_count = response_repair_count
         self.initial_reason = initial_reason
+        self.validation_rule = validation_rule
 
     def after_repairs(
         self,
@@ -65,6 +88,7 @@ class ModelResponseRejectedError(RuntimeError):
             payload_sha256=self.payload_sha256,
             response_repair_count=count,
             initial_reason=initial_reason,
+            validation_rule=self.validation_rule,
         )
 
     def metadata(self) -> dict[str, object]:
@@ -81,6 +105,7 @@ class ModelResponseRejectedError(RuntimeError):
                 "retryable": self.retryable,
                 "response_repair_count": self.response_repair_count,
                 "initial_rejection_reason": self.initial_reason,
+                "validation_rule": self.validation_rule,
             }.items()
             if value is not None
         }

@@ -51,6 +51,7 @@ class SingleAttemptOrchestrator:
         max_parallel_tool_calls: int = 1,
         tool_call_resolver: ToolCallResolver | None = None,
         event_sink: Callable[[HarnessEventDraft], None] | None = None,
+        close_sink: Callable[[], None] | None = None,
     ) -> None:
         self._model_gateway = model_gateway
         self._model_step = model_step or HarnessModelStep()
@@ -70,6 +71,11 @@ class SingleAttemptOrchestrator:
             event_sink=event_sink,
         )
         self._event_sink = event_sink
+        self._close_sink = close_sink
+
+    def close(self) -> None:
+        if self._close_sink is not None:
+            self._close_sink()
 
     def run(self, context: HarnessContext) -> HarnessAttemptResult:
         task = replace(context.task, task_plan=context.session.task_plan)

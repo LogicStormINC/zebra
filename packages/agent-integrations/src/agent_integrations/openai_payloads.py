@@ -111,6 +111,23 @@ def internal_tool_names(
     return {provider_name: tool.name for tool, provider_name in zip(tools, tool_names, strict=True)}
 
 
+_RESPONSE_VALIDATION_RULES = {
+    "model gateway response must include at least one choice": "choices_nonempty_list",
+    "model gateway choice must be an object": "choice_object",
+    "model gateway choice must include a message object": "message_object",
+    "DeepSeek thinking tool call requires reasoning_content": "reasoning_content_required",
+    "DeepSeek reasoning_content must be a string": "reasoning_content_string",
+    "model gateway assistant message content must not be blank": "assistant_content_nonblank",
+    "tool_calls must be a list when present": "tool_calls_list",
+    "tool_call entry must be an object": "tool_call_object",
+    "tool_call must include a function object": "tool_function_object",
+    "tool_call function name must not be blank": "tool_function_name_nonblank",
+    "tool_call id must not be blank": "tool_call_id_nonblank",
+    "usage token fields must be integers": "usage_token_integer",
+    "string fields must be strings when present": "optional_string_type",
+}
+
+
 def parse_completion(
     payload: dict[str, Any],
     *,
@@ -158,6 +175,7 @@ def parse_completion(
             retryable=True,
             payload_size=len(encoded),
             payload_sha256=hashlib.sha256(encoded).hexdigest(),
+            validation_rule=_RESPONSE_VALIDATION_RULES.get(str(exc), "response_payload_validation"),
         ) from exc
 
 
@@ -218,9 +236,7 @@ def _parse_completion(
             content=content,
             created_at=datetime.now(UTC),
             tool_calls=tuple(tool_calls),
-            metadata=(
-                {"provider_reasoning_required": True} if requires_reasoning else {}
-            ),
+            metadata=({"provider_reasoning_required": True} if requires_reasoning else {}),
             provider_reasoning_content=reasoning_content,
         ),
         tool_calls=tuple(tool_calls),

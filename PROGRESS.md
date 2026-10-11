@@ -17,7 +17,326 @@ record merges, current-authority bindings, expiry, unresolved work and aggregate
 input digests are checked without replacing the existing exploratory runtime.
 See docs/COVERAGE_CONTRACTS.md for trust boundaries and remaining dependent
 snapshot/storage/executor/publication/API/UI/E2E tasks. This is a contract slice,
-not production exhaustive processing. No migration, activation, merge or push.
+not production exhaustive processing. Locally merged into cloud-agent-trench
+at 2c49881b by user selection. No migration, activation or push.
+
+2026-10-07 exhaustive data coverage proposal (CLOUD-DATA-COVERAGE-DESIGN-01):
+docs/CLOUD_DATA_COVERAGE_DESIGN.md specifies Host-owned immutable datasets,
+snapshot-bound enumeration, durable per-unit results, exact coverage validation
+and publication gates across final answers, streams, artifacts and dependent
+business actions. Reuses Task/Event/Effect/Artifact authority; semantic accuracy
+is explicitly separate from processing completeness. Planning/docs only;
+successors are proposed/Locked, with no code, migration or runtime activation.
+
+2026-10-07 local sandbox integration (CLOUD-LOCAL-GVISOR-01): reused the existing
+zebra-gvisor OrbStack Ubuntu VM, rather than weakening isolation or adding a VM.
+Its runsc handler is exposed through a client-certificate-required socat TLS
+bridge; private keys remain ignored/root-only and the Worker mounts only client
+credentials. The local Compose overlay removes the outer Docker socket and keeps
+control-plane data in place. Existing quota-volume bytes are shared through the
+VM mapping. Real ephemeral Worker preflight and OciRuntime command/shared-file/
+quota smoke passed; the test sandbox was destroyed. Five Compose boundary tests
+and make check pass. Manual recreate script checks readiness before replacement.
+The VM bridge was installed/started without restarting Docker or user application
+services. API/Worker still run their old images pending user activation; historical
+Turn recovery and live Host/model/browser acceptance remain unproven. See the
+runtime-startup runbook for activation, 30-day certificate rotation and rollback.
+
+2026-10-07 runtime startup closure (CLOUD-RUNTIME-STARTUP-01): missing mandatory
+OCI isolation now closes the prepared command with durable TurnFailed and
+SessionFailed, projected to AG-UI RUN_ERROR and Trench's error terminal. Only
+read-only capability checks receive bounded transient retries; container effects
+and missing-handler failures are not retried or downgraded. Worker health probes
+the configured isolation instead of only Docker version. Runtime preflight is an
+operator CLI; see docs/runbooks/runtime-startup-failure.md. Focused runtime/Worker/
+AG-UI regression passes; paired Trench protocol tests: 49 passed, and RUN_ERROR
+terminal mapping smoke passes. make check passes. Native API/Worker images rebuilt
+without restarting services. Real ephemeral Worker preflight correctly exits 1:
+local Docker does not advertise runsc. Actual task execution remains blocked on a
+compatible configured sandbox host; historical stranded commands were not replayed
+or mutated. These checks do not constitute live browser/model acceptance.
+
+2026-10-07 conversation critical-path follow-up (CLOUD-CONVERSATION-PERF-01):
+Trench native-v9 explicitly marks only independent authorized read tools as
+parallel-safe; existing Worker concurrency and failure isolation remain intact.
+Overview/research acceptance guidance targets named evidence gaps, not exhaustive
+keyword loops or arbitrary forced short answers. Model-only exact repeated
+historical records become references within one user turn; durable observations,
+changed facts, query receipts and evidence URLs remain intact. Selected retained
+conversation observations replay: 210451 -> 123185 bytes (41.47 percent smaller),
+not a provider-token or live latency measurement.
+Cloud Worker composition explicitly scopes one PostgreSQL pool (maximum eight
+connections, two-second acquisition, bounded queue); adapters capture the pool
+for thread use. Deadline-bound Task I/O intentionally retains isolated fresh
+connections and its cancellation/unknown-COMMIT protections. Real PostgreSQL
+rollback/reuse smoke passes; 20 SELECT microbenchmark: fresh 136.02 ms vs pooled
+25.18 ms. Latency summaries now pair parallel calls by session/call identity and
+include attempt preparation. Slow serialized mutations log admission/operation
+time without payloads. No authority event or transactional projection is deferred.
+Paired Trench loads only bounded historical summary columns, combines source and
+total counts, and memoizes Markdown configuration/document rendering while
+preserving media nodes during streaming. Frontend 407 tests and production build
+pass. Local acceptance DOCKER_HOST now uses the proven mounted Unix socket.
+Source gates and build evidence are separate from runtime activation: user services
+have not been restarted; 120.25-second baseline improvement, browser first useful
+output and P95/concurrent-load targets still require fresh calibrated acceptance.
+Search guidance is not a deterministic semantic novelty gate; exact compaction
+does not merge differing facts. No blanket lower-reasoning policy is introduced.
+Final core/Worker regression: 1683 passed / 82 environment-gated skips. Real
+PostgreSQL pooled reuse/rollback suite: four passed. Zebra API/Worker Docker
+images rebuilt successfully with the pooled driver dependency; not activated.
+Local architecture check found single-architecture AMD64 mirror bases on an
+ARM64 host. Application Compose now explicitly selects a configurable platform
+(AMD64 deployment default); ignored local acceptance config uses ARM64 and
+official multi-architecture Python/Docker CLI bases. Native API/Worker builds
+pass. This removes the local emulation requirement after recreation, not proof
+that emulation explained all historical latency. Compose platform matrix passes.
+
+2026-10-07 progressive follow-up: reproduced the chart prompt's double publication
+wording as an OPERATE misclassification. Explicit files.publish plus bounded,
+extension-qualified Artifact file objects now infer CREATE; external destinations
+and mixed deploy/release requests retain operational verification. A full Harness
+regression completes only with a tool-returned Artifact and suspends without one.
+The existing embedded Cloud identity now asks for assistant content alongside
+tool calls, without a separate acknowledgement model call or duplicate prompt.
+Core/stream/progressive Worker regression: 1295 passed, 3 environment skips;
+make check and diff check pass. The exact previous chart QA prompt now requires
+answer/evidence/artifact, not operational verification. No new live chart pass.
+Read-only native header timing localizes an accepted-command-to-model-request
+interval of 4.76/4.99 seconds; request-to-first-text Event is 1.51/0.86 seconds.
+These Event creation timestamps are not calibrated commit-to-visible timings or
+isolated provider timings. Preparation/persistence needs further attribution.
+Current checkout differs from activated v8; no build/restart, publication or
+new calibrated healthy samples are claimed.
+
+2026-10-07 P1 continuation: explicit empty provider reasoning survives stream
+assembly without inventing absent fields or treating empty text as semantic
+output. Main independently reran 174 parser/stream/Worker regressions; all pass.
+Fresh `make check` passes sizes (2360 files), Ruff, mypy (1110 sources), and
+30 deterministic evals. This adapter defect is not yet proven to explain the
+historical v5 image failure. QA async operator-hook fixtures have three
+reproduced failures and are being aligned with actual joined child cleanup.
+Fresh full regression passed: 6800 pass / 1338 environment-gated skips
+(881.22 s); explicit native commentary/recovery/publication/visibility matrix
+passes 65 with zero skips. Frontend full regression passes 397 and TypeScript
+passes. QA async/operator matrix passes 92 Python and 57 Node cases; its
+unbounded cleanup wait is removed with actual close/failure regressions.
+V7 isolated activation and trust renewal are complete. Actual image replay is
+still failing: the browser receives Host 502 from native preview 503. Object
+bytes, immutable version and lifecycle are intact. Read-only reproduction
+identified separate cold DNS resolvers consuming the shared 2-second deadline.
+Artifact index, payload metadata and delivery audit now reuse the existing cloud
+TaskIoConnections; deadlines, fresh SQL connections and integrity checks remain
+unchanged. Focused regressions: 66 pass / 6 skips; make check passes. V8 isolated
+build/activation is complete; actual image slice passes good-image decode,
+fault abort/sibling isolation and preterminal visibility. Turn
+`57b08037-6dbb-4009-8fde-4550aeb120ca`; no calibrated healthy sample is claimed.
+Inline video also passes actual playback/frame advancement/preterminal visibility
+with zero file-download requests. Chart/Markdown/LaTeX replay failed at answer
+render: chart parts were delivered, but the operate contract reports partial
+verification and Host awaits input. Exact Run cleanup confirms lease released
+and all five Worker execution counters zero. No chart UI pass is claimed.
+Full P1/timing acceptance remains incomplete.
+User application services and data remain untouched.
+
+2026-10-04 all-P1 continuation is in progress on the same user-selected branches.
+Disjoint context, delivery, background and isolated-QA lanes are claimed under
+`CLOUD-PROGRESS-OUTPUT-01`; main owns shared wiring and integration. Required
+evidence and timing boundaries are in `docs/P1_PROGRESS_CLOSURE.md`. Existing
+user application containers are not restarted or migrated. No P1 completion,
+publication or application activation is claimed before fresh verification.
+Latest v4 scratch replay passes 3/14 functional cases: simple, multi-source and
+tool-only. Strict Host public-facts preservation and object-separated prohibited
+action inference repair the actual result/verification chain. Quality gates and
+three QA builds pass; fresh full regression is running. Meaningful timing and
+feedback SLOs are not met. One calibrated functional sample is incomplete due to
+legacy tool-loop public-update events and therefore counts as 0/100 complete
+timing samples. Exact evidence and remaining acceptance are in the P1 document.
+Frozen v4 full regression subsequently passed: 6715 pass / 1334 environment
+skips (793.98 s). Media image live case remains failed, and the paired Host
+Redis-timeout double-wait root fix is underway. Functional/full-gate results
+do not close latency, remaining live cases or user-operated activation.
+
+Canonical commentary producer/recovery and paired Host composition now pass
+focused checks, including 49 native PG checks with no skips, exact Unicode and
+whitespace chunks, fenced crash-gap repair, and replay-stable message identities.
+Frontend full tests pass 396; TypeScript and production build pass. Latest
+`make check` passes 1110 source files and 30 deterministic eval cases. V5 full
+regression and isolated rebuild are underway; live matrix/timing remain open.
+QA bucket versioning is corrected without changing existing objects; real Redis
+wakeup/cancellation/fallback checks pass. Application activation remains separate.
+V5 full regression subsequently passed: 6750 pass / 1338 environment skips,
+819.64 s. Final frontend/hook integration passes 397 tests and production build;
+SDK check/build passes with supported Node 24. These are not a completed live
+matrix, 100 calibrated timing samples, or user-application activation.
+V5 isolated activation is byte-verified, but the fresh image case fails before
+tools: 88 streamed characters then `invalid_response_shape`, zero repairs.
+The retained size/hash cannot identify the invalid field; safe diagnostic
+metadata is being added without relaxing validation or retry safety. Later media
+cases remain paused. Synchronous QA guards also distort browser measurement;
+fresh async native checks and exact guard windows are under implementation.
+Neither this failure nor 0/100 complete calibrated samples is marked closed.
+
+2026-10-04 P0 implementation and isolated acceptance are complete on the
+user-selected `cloud-agent-trench`, paired with Trench `main`. Fenced canonical
+Session/index recovery and exact execution-input preparation use bounded,
+resumable pages. Persisted usage, attachment and canonical Turn summaries remove
+cloud Task GET historical hydration; GET never repairs data. Native lease I/O
+and shared workspace reads have deadlines. Duplicate-ID Turn lookup aliases are
+preserved; obsolete derived state rebuilds only through the bounded writer.
+Final frozen gates: 6346 passed, 1273 environment-gated skips (858.70s);
+46 explicit isolated PostgreSQL checks passed with no skips; file-size/Ruff,
+Mypy 1093 source files and all 30 deterministic eval cases passed. Trench backend
+47 and frontend 373 tests passed; frontend typecheck passed.
+Latest API/Worker/migrate images are built. Real isolated Host/browser/SSE short
+answer passed with matching 1093 Zebra and 518 Host source files, migrations
+72–74, same-Run checkpoint/frozen policy and exactly one final commit.
+Evidence: `/tmp/zebra-p0-closure-20261004-uVMAj2`, especially `qa-frozen-v2/`.
+This is not full-plan closure: thirteen live/fault scenarios, 100 healthy timing
+samples/P95, long-input semantic capsules beyond 2048 events/1 MiB, remaining
+background whole-history paths and post-answer Worker cleanup proof remain.
+One simple-answer first-text sample is 17.36s, not a closed latency target.
+Application migrations/restarts and publication were not performed; current
+user application containers still require user-operated activation.
+
+2026-10-04 continuation: fresh `make check` passes file sizes (2360 files),
+Ruff, Mypy (1074 source files), and all 30 deterministic eval cases. Native
+network cancellation passes 49 tests. Real isolated PostgreSQL lease expiry
+and takeover passes both legacy/v2 network paths: native reads stop, sockets
+and children close, old-Worker publication is rejected, and the successor can
+publish. Related media/Worker regressions pass 53 tests; native HTTP/unknown
+commit probes pass six. Explicit optional constructor arguments repair the
+native web-tool typing failure without breaking zero-argument legacy factories.
+The fresh full suite finished with 6173 passed, 1232 skipped and one failure:
+an offline v2 authority test patched synchronous DNS, but native cancellation
+now resolves in a child. Actual DNS returned a proxy fake-IP and SSRF correctly
+rejected it. Injecting the existing CrawlGateway resolver fixes the fixture;
+both authority tests pass with stronger successful-tool-receipt assertions.
+Production DNS cancellation/SSRF is unchanged. A fresh full rerun is logged at
+`/tmp/zebra-progress-validation-20261004-eyv7fq/full-tests-after-dns-regression.log`;
+its terminal result is pending. Whole-history Worker input recovery,
+exact activated images, fourteen actual joint cases and 100 healthy timing
+samples remain open. No application restart/migration, commit or push.
+Independent review reproduced and repaired an unbounded native child cleanup
+wait when termination itself raises secondary cancellation. Independent group
+kill fallback, process kill, pipe closure and at most 0.5-second reap preserve
+the primary exception. Six real RED-to-GREEN probes include descendant socket
+closure; the latest network/Worker/real-PG matrix passes 65 with zero skips.
+The post-DNS full run passed 6174 with 1232 environment-gated skips, but preceded
+this cleanup edit. The subsequent full validation completed (6188 passed, 1232 skipped) in
+`/tmp/zebra-progress-validation-20261004-eyv7fq/full-tests-after-native-cleanup.log`.
+Application images were rebuilt after the cleanup edit; isolated image code
+hash matches local source, without activation. Latest complete `make check`
+again passes sizes/Ruff/1074 typed files/30 evals. Isolated runner protocol
+matrix passes 42 with one environment-gated skip; new runner strict typing and
+browser-script syntax pass. Real scratch topology/cases/timing are not complete.
+
+Previous 2026-10-03 full-suite evidence (not the current running gate):
+full Zebra validation was RED (5524 passed, 29 failed, 4 setup errors,
+1129 skipped). Four native authorization probes require the explicit isolated
+scratch DSN; the remaining failures are being reproduced by independent SQLite
+storage and API compatibility lanes. Fresh SDK `pnpm verify` passed package,
+consumer and Chromium/WebKit/Next checks. Six late UTC authorization probes
+reproduced incorrect success/409 exits; the shared preflight fix passed 35 related
+checks. Per-frame expiry and target-resource authorization are not yet jointly
+closed. Whole pre-Grant I/O, legacy migration gate, current full gates/builds,
+user-operated activation, fourteen live cases and timing distributions remain
+open. Application services/data, commits and publication are unchanged.
+
+2026-10-03 full progressive-delivery implementation is in progress on
+`cloud-agent-trench`, paired with Trench `main`. Public status/commentary/results
+now have a bounded durable contract and ordered Host/React projections. A real
+flush timer emits buffered text during provider silence; truthful receipt-based
+milestones cover tool-only model responses. Optional expression is off by
+default, separately metered, tools/thinking disabled and bounded to two short
+calls. Its receipts are excluded from conversation context/title/trace.
+Per-task policy is frozen in the event stream. Timer appends share recorder
+serialization with tool receipt prepare/commit/accept; long provider calls stay
+outside that boundary. SDK split-text, announcement replay and per-chart failure
+isolation findings are fixed and quality approved. Latest completed full Zebra
+gate: 5042 passed, 915 environment-gated skips; paired Trench API: 794 passed,
+frontend: 272 passed before the latest rejection-guard regressions; TypeScript
+passes. Isolated real PG Effect/consumer: 16 passed; Task/lease/control/handoff
+checks: 54 passed, two RabbitMQ-gated skips. Same-key return, late admission,
+newer-message preservation and revoked observers now have focused regressions;
+fresh quality review still checks the obsolete snapshot rejection branch.
+Effect cleanup independently passes 46 focused checks and 41 probes. Full gates
+and builds must be rerun after follow-up edits. SDK verification and exact five
+packed artifact/lock/installed-byte checks passed before these follow-ups.
+Intra-Event SSE positions now prevent partial-frame disconnect loss; replay
+projects each event once instead of repeatedly projecting prefixes. Backend/Host
+review loops, running-image activation, mandatory bounded historical paging and
+checkpoint recovery, timing evidence and 14 live/fault scenarios remain open.
+Actual SSE now uses the metadata-only checkpoint observer and bounded pages;
+indexed binding passes 22 focused checks, and migration65/66 facade composition
+passes seven real scratch-PG checks. Pending source-header regressions, migration67/68,
+background composition and the latest API matrix still require closure. No live
+or whole-goal completion follows from this evidence.
+No restart, commit, push or 100% claim.
+Requirement ledger: `docs/CLOUD_PROGRESSIVE_DELIVERY_PLAN.md`. Immutable source
+Task-position and bounded legacy-backfill design:
+`docs/CLOUD_TASK_REPLAY_POSITIONS.md` (implementation/activation still open).
+
+2026-10-02 closure follow-up: live media acceptance exposed completed private
+model output incorrectly disabling bounded parse repair, artifact publication
+misclassified as an external operation, stale progress IDs colliding with error
+answers, and chart fetch failures with no recovery control. These are fixed with
+regressions; remote-image/chart tool guidance is explicit. Agent core/tools/
+integrations: 1559 passed, 2 skipped; paired frontend: 36 passed; chart SDK: 5
+passed; make check and frontend production build pass. API/Worker images and
+vendored chart package rebuilt. Bilibili actually played inline without video
+download; a generated Vega-Lite chart rendered after refresh. Fresh runtime
+activation/replay and new chart retry UI acceptance require user-operated service
+restarts. No claim of 100% live closure, merge or push. See CLOUD_PROGRESS_OUTPUT.
+
+2026-10-02 progressive-output follow-up: paired Trench preserves AG-UI message
+identity through streaming, progress promotion, candidate verification and
+final rendering; XMarkdown now renders during streaming, with explicit
+reconnect/verification states. Grant exchange recovers bounded transport faults
+without retrying run commands or relaxing authorization. API 90/frontend 35
+focused tests, lint/types and frontend build pass. Authenticated live acceptance
+verified Markdown, real remote image loading and mid-run refresh with no
+duplicate progress. Provider tool selection still attempted unnecessary image
+downloads; full video/chart live acceptance is not claimed. See
+`docs/CLOUD_PROGRESS_OUTPUT.md`. No restart, commit or push was performed.
+
+2026-10-02 follow-up: user-restarted replay exposed two remaining contract
+defects. Trench's duplicate keyword classifier overrode negation-aware runtime
+inference; partial Host constraints then revealed inference from appended
+conversation history instead of the explicit current goal. Trench now supplies
+only goal and positive product evidence constraints; Zebra infers omitted fields
+from the bounded explicit goal. Positive writes retain verification and create
+tasks retain artifact gates. Focused tests and `make check` pass. New images are
+built; user-operated activation and exact live replay subsequently passed:
+Turn `fa3ba686-0768-49eb-9957-e9d3399eaa36` completed with four progress
+updates and no unmet delivery outcomes (55,319ms).
+
+2026-10-02: `CLIENT-RELEASE-CLOSURE-01` pins Trench frontend release v3,
+checks admission before task execution, isolates optional client capability
+failures from backend queries and preserves authority/fence failures. Publication
+uses immutable versions, CAS binding and readback; the live namespace binding
+passed read-only verification. Joint browser testing completed a query with four
+durable progress updates, and exposed negated-action task inference causing a
+false verification pause. That shared core defect and misleading interrupt copy
+are fixed with regressions. API/worker images and frontend are rebuilt; activation
+and exact negated-query replay remain user-operated. See
+`docs/CLIENT_RELEASE_CLOSURE.md` for evidence and the acceptance boundary.
+
+2026-10-02: `CLOUD-PROGRESS-OUTPUT-01` reuses Zebra's already durable
+`MODEL_RESPONSE_*` events and AG-UI `zebra.model_response` stage marker.
+Trench now projects user-facing tool-loop text as bounded `public_update`
+events, persists/deduplicates them in Turn metadata, replays them across SSE
+and snapshots, and renders them separately from candidate/final answers.
+Legacy progress strings still render. Focused paired validation and the
+service-restart/live acceptance boundary are in `docs/CLOUD_PROGRESS_OUTPUT.md`.
+
+2026-10-02: `CLIENT-RESUME-LIVENESS-01` fixes canonical browser/child resume
+commands, adds bounded receipt/expiry reconciliation and visible rejected-resume
+outcomes, and prevents stale receipts unlocking a new wait. Trench separates
+business progress from SSE heartbeats; SDK summaries preserve live Turn status.
+The affected live session and Trench Turn reached completed after one additive
+repair, without restarting services. Validation and user-operated restart boundary:
+`docs/CLIENT_RESUME_LIVENESS.md`.
 
 2026-10-02: `CLOUD-RECOVERY-CLOSURE-01` implements bounded tool/provider recovery,
 durable legacy Cloud STOP handling and truthful partial delivery on

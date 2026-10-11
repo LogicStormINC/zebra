@@ -7,9 +7,25 @@ from agent_storage.postgres.migrations import MIGRATIONS
 
 
 def test_full_gateway_profile_has_additive_postgres_migration() -> None:
-    migration = next(m for m in MIGRATIONS if m.version == 60)
+    migration = next(item for item in MIGRATIONS if item.version == 60)
+    assert migration.version == 60
     assert migration.name == "full_gateway_network_profile"
     assert "'full-gateway'" in migration.statements[-1]
+
+
+def test_task_positions_have_an_additive_deferred_source_allocator() -> None:
+    migration = next(item for item in MIGRATIONS if item.version == 61)
+    assert migration.version == 61
+    assert migration.name == "immutable_task_event_positions"
+    assert "DEFERRABLE INITIALLY DEFERRED" in migration.statements[-1]
+    assert "WHEN" not in migration.statements[-1]
+
+
+def test_projection_work_migration_is_registered_and_frozen() -> None:
+    migration = next(item for item in MIGRATIONS if item.version == 68)
+    assert migration.version == 68
+    assert migration.name == "durable_bounded_task_projection_work"
+    assert migration.checksum == "a08e29f23387b57b0ed740702c65bedee740384226363e3d919f7689dc36201f"
 
 
 @pytest.mark.parametrize("valid", [True, False])

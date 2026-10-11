@@ -16,6 +16,7 @@ from agent_core.domain.context_materialization import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.leases import WorkerLease
 from agent_core.domain.memories import MemoryQuery
 from agent_core.domain.sessions import Session
 from agent_core.domain.task_bindings import TaskBindingSnapshot
@@ -30,6 +31,7 @@ from zebra_agent_worker.bound_execution_authority import (
 )
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
+from zebra_agent_worker.execution_preparation import finish_preparation
 from zebra_agent_worker.extension_recovery import (
     RecoveredTurnExtension,
     WorkerExtensionStore,
@@ -64,6 +66,8 @@ class AttemptAuthorityEvidence:
     scope_provider: AuthorityScopeProvider | None
     recovery_service: SessionRecoveryService
     event_store: EventStorePort
+    execution_input_reader: Callable[[WorkerLease], list[SessionEvent]] | None = None
+    ownership_check: Callable[[], None] | None = None
 
     def persist(
         self,
@@ -73,6 +77,7 @@ class AttemptAuthorityEvidence:
         *,
         session_id: SessionId,
         started_at: datetime,
+        attempt_number: int = 1,
     ) -> tuple[ClaimedSession, list[SessionEvent]]:
         scope = attempt_authority_scope(
             self.static_scope,
@@ -85,19 +90,28 @@ class AttemptAuthorityEvidence:
             scope,
             session_id=session_id,
             existing_events=session_events,
-            attempt_number=1,
+            attempt_number=attempt_number,
             created_at=started_at,
         ):
             return claimed, session_events
         return (
             ClaimedSession(
-                recovery=self.recovery_service.recover_session(
-                    session_id,
-                    worker_lease=claimed.lease,
+                recovery=finish_preparation(
+                    lambda: self.recovery_service.recover_session(
+                        session_id,
+                        worker_lease=claimed.lease,
+                    ),
+                    self.ownership_check or recorder._ownership_check,
                 ),
                 lease=claimed.lease,
             ),
-            self.event_store.list_for_session(session_id),
+            _refresh_inputs(
+                self.event_store,
+                self.execution_input_reader,
+                claimed.lease,
+                recorder,
+                self.ownership_check,
+            ),
         )
 
 
@@ -118,6 +132,9 @@ def prepare_worker_context(
     as_of: datetime,
     extension_store: WorkerExtensionStore | None = None,
     allow_mcp: bool = False,
+    attempt_number: int = 1,
+    execution_input_reader: Callable[[WorkerLease], list[SessionEvent]] | None = None,
+    ownership_check: Callable[[], None] | None = None,
 ) -> PreparedWorkerContext:
     session_id = claimed.lease.session_id
     binding = load_bound_binding(task_binding_loader, session_id)
@@ -140,12 +157,15 @@ def prepare_worker_context(
         *authority,
         recovery_service,
         event_store,
+        execution_input_reader,
+        ownership_check,
     ).persist(
         recorder,
         claimed,
         events,
         session_id=session_id,
         started_at=as_of,
+        attempt_number=attempt_number,
     )
     materialization = materialize_worker_context(
         store,
@@ -173,11 +193,30 @@ def prepare_worker_context(
             created_at=as_of,
         )
         claimed = ClaimedSession(
-            recovery=recovery_service.recover_session(session_id, worker_lease=claimed.lease),
+            recovery=finish_preparation(
+                lambda: recovery_service.recover_session(session_id, worker_lease=claimed.lease),
+                ownership_check or recorder._ownership_check,
+            ),
             lease=claimed.lease,
         )
-        events = event_store.list_for_session(session_id)
+        events = _refresh_inputs(
+            event_store, execution_input_reader, claimed.lease, recorder, ownership_check
+        )
     return PreparedWorkerContext(claimed, events, binding, materialization, extension)
+
+
+def _refresh_inputs(
+    event_store: EventStorePort,
+    reader: Callable[[WorkerLease], list[SessionEvent]] | None,
+    lease: WorkerLease,
+    recorder: DurableHarnessEventRecorder,
+    ownership_check: Callable[[], None] | None = None,
+) -> list[SessionEvent]:
+    if reader is None:
+        return event_store.list_for_session(lease.session_id)
+    # Retry only the derived input suffix after an authority/materialization
+    # append. Never replay the canonical append or the materialization call.
+    return finish_preparation(lambda: reader(lease), ownership_check or recorder._ownership_check)
 
 
 def materialize_worker_context(

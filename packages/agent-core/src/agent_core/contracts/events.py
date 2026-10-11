@@ -41,6 +41,7 @@ from agent_core.contracts.model_events import (
     ModelResponseDeltaPayload,
     ModelResponseReceivedPayload,
 )
+from agent_core.contracts.public_output import PublicOutputPayload
 from agent_core.contracts.runtime_events import (
     RuntimeCleanupFailedPayload,
     RuntimeProvisionedPayload,
@@ -434,6 +435,7 @@ _EVENT_PAYLOAD_MODELS: dict[EventType, type[BaseModel]] = {
     EventType.MODEL_REQUEST_STARTED: ModelRequestStartedPayload,
     EventType.MODEL_RESPONSE_DELTA: ModelResponseDeltaPayload,
     EventType.MODEL_RESPONSE_RECEIVED: ModelResponseReceivedPayload,
+    EventType.PUBLIC_OUTPUT: PublicOutputPayload,
     EventType.ANSWER_COMMITTED: AnswerCommittedPayload,
     EventType.PLAN_UPDATED: PlanUpdatedPayload,
     EventType.SESSION_SUSPENDED: SessionSuspendedPayload,
@@ -493,7 +495,5 @@ def validate_event_payload(
     try:
         validated = payload_model.model_validate(payload)
     except ValidationError as exc:
-        raise EventPayloadValidationError(
-            f"invalid payload for {event_type.value}",
-        ) from exc
+        raise EventPayloadValidationError(f"invalid payload for {event_type.value}") from exc
     return validated.model_dump(mode="json")

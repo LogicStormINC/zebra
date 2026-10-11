@@ -73,9 +73,16 @@ def project_budget_suspension_event(
     }:
         return ()
     if reason == "verification_required":
+        metadata = event.payload.get("metadata")
+        unverified_mutation = (
+            isinstance(metadata, dict) and metadata.get("unverified_mutation") is True
+        )
         message = (
             "The mutation may have been applied, but its resulting state could not be "
             "verified. The task is paused so a fresh read can confirm it safely."
+            if unverified_mutation
+            else "The task's required verification is not yet proven. The task is paused; "
+            "previously collected results remain available."
         )
     else:
         subject = "model-call" if reason == "model_call_budget_exhausted" else "tool-call"

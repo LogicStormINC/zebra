@@ -13,6 +13,7 @@ from agent_security import CredentialBroker
 from agent_storage import (
     CloudCompositionSettings,
     ControlPlaneStores,
+    PostgresControlPlaneStores,
     cloud_composition_from_environment,
     compose_control_plane_stores,
     with_committed_event_publisher,
@@ -69,11 +70,14 @@ def create_app(
             cloud=cloud_composition,
         )
         active_stores = composed_stores
-        cloud_control = cloud_control or PostgresDirectControl(
-            cloud_composition.dsn, deployment_namespace=cloud_composition.deployment_namespace
-        )
         command_outcome = command_outcome or PostgresCommandOutcomeReader(
             cloud_composition.dsn, deployment_namespace=cloud_composition.deployment_namespace
+        )
+    if cloud_control is None and isinstance(active_stores, PostgresControlPlaneStores):
+        cloud_control = PostgresDirectControl(
+            cloud_composition.dsn if cloud_composition else active_settings.database_url,
+            deployment_namespace=active_stores.deployment_namespace,
+            task_io_connections=active_stores.task_io_connections,
         )
     if command_outcome is not None and (
         getattr(active_stores, "deployment_namespace", None) != command_outcome.deployment_namespace

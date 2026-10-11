@@ -62,6 +62,52 @@ def _two_segment_stream() -> list[TaskEvent]:
     ]
 
 
+def _revisited_segment_stream() -> list[TaskEvent]:
+    delta = SessionEvent.create(
+        session_id=SEGMENT_A, sequence=0, event_type=EventType.MODEL_RESPONSE_DELTA,
+        actor=EventActor.HARNESS,
+        payload={
+            "model_call_id": "call-1", "content_delta": "hello",
+            "delta_index": 0, "attempt_number": 1,
+        },
+    )
+    return [
+        TaskEvent(TASK_ID, 0, SEGMENT_A, 0, delta),
+        _task_event(1, SEGMENT_B, 0, "other segment"),
+        _task_event(2, SEGMENT_A, 1, "hello"),
+    ]
+
+
+def test_revisited_segment_retains_message_state_and_does_not_restart() -> None:
+    frames = list(AgUiTaskProjector().project_task_events(_revisited_segment_stream(), IDENTITY))
+    assert sum(type(event).__name__ == "RunStartedEvent" for _, event in frames) == 2
+    assert [type(event).__name__ for cursor, event in frames if cursor.sequence == 2] == [
+        "TextMessageEndEvent"
+    ]
+
+
+def test_revisited_segment_cursor_uses_the_original_message_state() -> None:
+    events = _revisited_segment_stream()
+    cursor = AgUiCursor(
+        thread_id=IDENTITY.thread_id, run_id=IDENTITY.run_id,
+        sequence=2, event_id=str(events[-1].event.event_id), frame_index=0,
+    )
+    projector = AgUiTaskProjector()
+    assert projector.project_task(events, IDENTITY, after=cursor).events == ()
+    with pytest.raises(AgUiProjectionError, match="frame"):
+        projector.validate_task_cursor(
+            events, IDENTITY, after=cursor.model_copy(update={"frame_index": 1})
+        )
+
+
+def test_revisited_segment_rejects_decreasing_source_sequence() -> None:
+    events = _revisited_segment_stream()
+    events.append(_task_event(3, SEGMENT_B, 1, "more"))
+    events.append(_task_event(4, SEGMENT_A, 0, "invalid rewind"))
+    with pytest.raises(AgUiProjectionError, match="increasing"):
+        AgUiTaskProjector().project_task(events, IDENTITY)
+
+
 class TestTaskProjector:
     def test_full_stream_projects_across_rollover(self) -> None:
         projection = AgUiTaskProjector().project_task(_two_segment_stream(), IDENTITY)

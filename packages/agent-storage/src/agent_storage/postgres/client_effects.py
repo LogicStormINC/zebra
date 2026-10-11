@@ -9,10 +9,10 @@ events or commands (ADR-CLIENT-01).
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from hashlib import sha256
 from typing import Any
 from uuid import UUID, uuid5
 
+from agent_core.contracts.session_commands import SessionCommand, SessionCommandKind
 from agent_core.domain.client_effects import (
     ClientEffectContinuation,
     ClientEffectError,
@@ -385,15 +385,15 @@ class PostgresClientEffectReceipts(ClientEffectReceiptPort):
                 session_id,
                 EventType.SESSION_COMMAND_ACCEPTED,
                 EventActor.HARNESS,
-                {
-                    "command_id": resume_command_id,
-                    "session_id": str(session_id),
-                    "kind": "resume",
-                    "expected_revision": _anchored_revision(
+                SessionCommand(
+                    command_id=UUID(resume_command_id),
+                    session_id=session_id,
+                    kind=SessionCommandKind.RESUME,
+                    expected_revision=_anchored_revision(
                         connection, self._namespace, session_id
                     ),
-                    "idempotency_key": f"client-effect-resume:{receipt.effect_id}",
-                    "payload": {
+                    idempotency_key=f"client-effect-resume:{receipt.effect_id}",
+                    payload={
                         "client_effect_result": {
                             "client_effect_id": str(receipt.effect_id),
                             "tool_call_id": str(request.tool_call_id),
@@ -402,8 +402,7 @@ class PostgresClientEffectReceipts(ClientEffectReceiptPort):
                             "result": receipt.result,
                         }
                     },
-                    "fingerprint": _resume_fingerprint(session_id, receipt.effect_id),
-                },
+                ).event_payload(),
                 idempotency_key=f"client-effect-resume:{receipt.effect_id}",
             )
         return ClientReceiptAcceptance(
@@ -461,10 +460,6 @@ def _anchored_revision(connection: Any, namespace: str, session_id: SessionId) -
     ).fetchone()
     assert row is not None
     return int(row["anchored"])
-
-
-def _resume_fingerprint(session_id: SessionId, effect_id: ClientEffectId) -> str:
-    return sha256(f"{session_id}:client-effect:{effect_id}".encode()).hexdigest()
 
 
 def _request_from_row(row: Any) -> ClientEffectRequest:

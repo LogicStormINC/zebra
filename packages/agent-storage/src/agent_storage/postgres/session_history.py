@@ -172,6 +172,7 @@ class PostgresSessionHistory(SessionHistoryPort):
                 FROM session_events
                 WHERE deployment_namespace = %s AND session_id = %s
                   AND event_type IN (%s, %s)
+                  AND payload->>'response_stage' IS DISTINCT FROM 'public_expression'
                 """,
                 (
                     self._database.deployment_namespace,
@@ -187,6 +188,7 @@ class PostgresSessionHistory(SessionHistoryPort):
                 FROM session_events
                 WHERE deployment_namespace = %s AND session_id = %s
                   AND event_type IN (%s, %s)
+                  AND payload->>'response_stage' IS DISTINCT FROM 'public_expression'
                 ORDER BY sequence ASC
                 LIMIT %s OFFSET %s
                 """,
@@ -239,6 +241,7 @@ class PostgresSessionHistory(SessionHistoryPort):
                 FROM session_events
                 WHERE deployment_namespace = %s AND session_id = %s
                   AND event_type IN (%s, %s)
+                  AND payload->>'response_stage' IS DISTINCT FROM 'public_expression'
                 ORDER BY sequence ASC
                 LIMIT %s
                 """,

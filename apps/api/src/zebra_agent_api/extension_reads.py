@@ -75,7 +75,10 @@ def _public_record(record: SkillInstallation | McpConnection) -> dict[str, objec
 
 
 async def extension_read_response(
-    request: Request, *, store: ExtensionStore | None, deployment: str,
+    request: Request,
+    *,
+    store: ExtensionStore | None,
+    deployment: str,
     manage_enabled: bool = False,
     publications: SkillPublicationService | None = None,
 ) -> JSONResponse | None:
@@ -97,13 +100,20 @@ async def extension_read_response(
         from zebra_agent_api.extension_creates import extension_create_response
 
         return await extension_create_response(
-            request, store=store, verified=verified, collection=parts[0],
+            request,
+            store=store,
+            verified=verified,
+            collection=parts[0],
         )
     if manage_enabled and len(parts) == 2 and request.method == "PATCH":
         from zebra_agent_api.extension_updates import extension_update_response
 
         return await extension_update_response(
-            request, store=store, verified=verified, collection=parts[0], object_id=parts[1],
+            request,
+            store=store,
+            verified=verified,
+            collection=parts[0],
+            object_id=parts[1],
         )
     try:
         scope = extension_scope_from_grant(verified, permission="extensions.read")
@@ -159,8 +169,9 @@ async def extension_read_response(
             }
     except ExtensionNotFoundError:
         return extension_error(404)
-    except Exception:
+    except Exception as exc:
         # Cancellation derives from BaseException and must reach the server.
+        logger.warning("Extension configuration read unavailable: %s", type(exc).__name__)
         return extension_error(503)
     headers = {"Cache-Control": "no-store"}
     if len(parts) == 2:
@@ -169,20 +180,25 @@ async def extension_read_response(
 
 
 async def _described_record(
-    record: SkillInstallation | McpConnection, publications: SkillPublicationService | None,
+    record: SkillInstallation | McpConnection,
+    publications: SkillPublicationService | None,
 ) -> dict[str, object]:
     content = _public_record(record)
     if not isinstance(record, SkillInstallation) or publications is None:
         return content
     try:
         publication = await publications.get(
-            scope=record.scope, skill_id=record.version.skill_id,
+            scope=record.scope,
+            skill_id=record.version.skill_id,
             version_id=record.version.version_id,
         )
     except SkillPublicationNotFoundError:
         return content  # Legacy installations remain manageable without metadata.
     if publication.state != "ready" or publication.version != record.version:
         return content
-    content.update(name=publication.name, description=publication.description,
-                   version_label=publication.version_label)
+    content.update(
+        name=publication.name,
+        description=publication.description,
+        version_label=publication.version_label,
+    )
     return content

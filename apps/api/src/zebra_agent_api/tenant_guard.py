@@ -9,11 +9,15 @@ Sessions without a bound namespace (internal/legacy) stay operator-scoped.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.task_bindings import require_host_thread, require_task_host_context
+from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
+from agent_security.host_grant import VerifiedHostGrant
 
 from zebra_agent_api.responses import ApiResponse
 
@@ -119,15 +123,68 @@ def tenant_scope_response(
     sessions = app.stores.sessions
     path = request.path
     host_context = getattr(request, "host_context", None)
+    verified = getattr(request, "verified_host_grant", None)
+    cloud_host = host_context is not None and bool(
+        getattr(app.stores, "deployment_namespace", None)
+    )
+    if (
+        host_context is not None
+        and getattr(app.stores, "deployment_namespace", None)
+        and path in {"/sessions", "/approvals", "/tasks"}
+        and request.method.upper() == "GET"
+    ):
+        if path == "/approvals":
+            response: ApiResponse = app.list_approvals(
+                host_context=host_context,
+                verified_host_grant=verified,
+            )
+        else:
+            response = app.list_sessions(
+                request.query or {},
+                host_context=host_context,
+                verified_host_grant=verified,
+                include_tasks=path == "/tasks",
+            )
+        return response
     for prefix in ("/sessions/", "/approvals/", "/tasks/"):
         if path.startswith(prefix):
             target = path.removeprefix(prefix).split("/")[0]
+            if cloud_host:
+                assert host_context is not None
+                denied = host_list_context_response(host_context, verified)
+                if denied is not None:
+                    return denied
             if prefix == "/tasks/" and target:
-                task_response = task_access_response(app, target, host_context)
+                task_response = task_access_response(
+                    app,
+                    target,
+                    host_context,
+                    verified_host_grant=verified,
+                )
                 if task_response is not None:
                     return task_response
-            elif target and session_tenant_denied(sessions, target, host_context):
-                return tenant_forbidden_response(target)
+            elif target:
+                if host_context is not None and getattr(app.stores, "deployment_namespace", None):
+                    try:
+                        task_id = app.stores.tasks.task_id_for_session(SessionId(UUID(target)))
+                    except CheckpointNotReady:
+                        return ApiResponse(
+                            409, {"status": "projection_not_ready", "retryable": True}
+                        )
+                    except (ValueError, TypeError):
+                        return tenant_forbidden_response(target)
+                    except Exception:
+                        return ApiResponse(503, {"status": "principal_binding_unavailable"})
+                    if task_id is None:
+                        return tenant_forbidden_response(target)
+                    return task_access_response(
+                        app,
+                        str(task_id),
+                        host_context,
+                        verified_host_grant=verified,
+                    )
+                if session_tenant_denied(sessions, target, host_context):
+                    return tenant_forbidden_response(target)
     return None
 
 
@@ -135,18 +192,43 @@ def task_access_response(
     app: Any,
     task_id: str,
     host_context: HostContextEnvelope | None,
+    *,
+    verified_host_grant: VerifiedHostGrant | None = None,
+    run_id: str | None = None,
 ) -> ApiResponse | None:
-    """Apply the same tenant and principal fence to every Task transport."""
+    """Fence Task transports; envelope-only callers have verified preflight upstream."""
 
-    if session_tenant_denied(app.stores.sessions, task_id, host_context):
-        return tenant_forbidden_response(task_id)
-    return _task_principal_response(app, task_id, host_context)
+    issuer = None
+    if host_context is not None and verified_host_grant is not None:
+        denied = host_list_context_response(host_context, verified_host_grant)
+        if denied is not None:
+            return denied
+        issuer = verified_host_grant.authority_issuer
+        runs = [ref.resource_id for ref in host_context.resource_refs if ref.resource_type == "run"]
+        if run_id is None and runs:
+            run_id = runs[0]
+
+    try:
+        if session_tenant_denied(app.stores.sessions, task_id, host_context):
+            return tenant_forbidden_response(task_id)
+    except Exception:
+        return ApiResponse(503, {"status": "tenant_binding_unavailable"})
+    return _task_principal_response(
+        app,
+        task_id,
+        host_context,
+        authority_issuer=issuer,
+        run_id=run_id,
+    )
 
 
 def _task_principal_response(
     app: Any,
     task_id: str,
     host_context: HostContextEnvelope | None,
+    *,
+    authority_issuer: str | None = None,
+    run_id: str | None = None,
 ) -> ApiResponse | None:
     namespace = getattr(app.stores, "deployment_namespace", None)
     if namespace is None:
@@ -163,13 +245,48 @@ def _task_principal_response(
         return ApiResponse(503, {"status": "principal_binding_unavailable"})
     try:
         binding = control.load_task_binding(TaskId(UUID(task_id)))
+    except CheckpointNotReady:
+        return ApiResponse(409, {"status": "projection_not_ready", "retryable": True})
     except (ValueError, TypeError):
         return tenant_forbidden_response(task_id)
     except Exception:
         return ApiResponse(503, {"status": "principal_binding_unavailable"})
-    bound = _principal_ref(binding.host_capability.host_context) if binding is not None else None
-    if bound != current:
+    if binding is None:
         return tenant_forbidden_response(task_id)
+    try:
+        assert host_context is not None
+        require_task_host_context(
+            binding,
+            host_context,
+            task_id=str(UUID(task_id)),
+            now=datetime.now(UTC),
+            authority_issuer=authority_issuer,
+            run_id=run_id,
+        )
+    except ValueError:
+        return tenant_forbidden_response(task_id)
+    return None
+
+
+def host_list_context_response(
+    context: HostContextEnvelope,
+    verified: VerifiedHostGrant | None,
+) -> ApiResponse | None:
+    """An envelope alone cannot supply the issuer needed by exact list fences."""
+    if (
+        not isinstance(verified, VerifiedHostGrant)
+        or verified.context != context
+        or context.expires_at is None
+        or datetime.now(UTC) >= context.expires_at
+        or _principal_ref(context) is None
+        or len([ref for ref in context.resource_refs if ref.resource_type == "run"]) > 1
+    ):
+        return ApiResponse(403, {"status": "host_grant_rejected"})
+    try:
+        require_host_thread(context)
+        context.require_scope("agent.run")
+    except ValueError:
+        return ApiResponse(403, {"status": "host_grant_rejected"})
     return None
 
 

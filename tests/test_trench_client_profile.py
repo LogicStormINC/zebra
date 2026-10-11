@@ -2,6 +2,7 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
 from agent_core.domain.client_capabilities import FrontendCapabilityProfileVersion
 
 from scripts import publish_client_profile
@@ -68,3 +69,58 @@ def test_profile_release_is_idempotent_for_the_current_binding(monkeypatch, caps
     assert publish_client_profile.main() == 0
     assert [method for method, _ in calls] == ["GET", "GET"]
     assert '"status": "already_published"' in capsys.readouterr().out
+
+
+def test_readonly_release_gate_does_not_publish_missing_profile(monkeypatch):
+    calls = []
+
+    def request(method, url, *_args, **_kwargs):
+        calls.append(method)
+        return None
+
+    monkeypatch.setattr(publish_client_profile, "_request", request)
+    monkeypatch.setattr(
+        sys, "argv", ["publish", "--profile", str(PROFILE), "--token", "operator", "--verify-only"]
+    )
+    with pytest.raises(SystemExit, match="not published"):
+        publish_client_profile.main()
+    assert calls == ["GET", "GET"]
+
+
+def test_release_rejects_digest_mutation_before_binding(monkeypatch):
+    calls = []
+
+    def request(method, url, *_args, **_kwargs):
+        calls.append(method)
+        return {"revision": 1, "profile_digest": "a" * 64}
+
+    monkeypatch.setattr(publish_client_profile, "_request", request)
+    monkeypatch.setattr(sys, "argv", ["publish", "--profile", str(PROFILE), "--token", "operator"])
+    with pytest.raises(SystemExit, match="different digest"):
+        publish_client_profile.main()
+    assert calls == ["GET"]
+
+
+def test_new_release_uses_versions_endpoint_and_verifies_binding(monkeypatch):
+    profile = FrontendCapabilityProfileVersion.model_validate(json.loads(PROFILE.read_text()))
+    calls = []
+    answers = iter(
+        [
+            None,
+            {"revision": 0},
+            {},
+            None,
+            {"binding_revision": 1},
+            {"profile_digest": profile.profile_digest, "revision": profile.revision},
+        ]
+    )
+
+    def request(method, url, *_args, **_kwargs):
+        calls.append((method, url))
+        return next(answers)
+
+    monkeypatch.setattr(publish_client_profile, "_request", request)
+    monkeypatch.setattr(sys, "argv", ["publish", "--profile", str(PROFILE), "--token", "operator"])
+    assert publish_client_profile.main() == 0
+    assert calls[2][1].endswith("/trench-web/versions")
+    assert calls[-1][0] == "GET"

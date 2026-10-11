@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from urllib.parse import quote, urlsplit, urlunsplit
 
+from agent_core.contracts.public_output import PublicOperationFacts, PublicReadFacts
 from agent_core.domain.effect_dispatch import EffectBusinessOutcome
 from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
 from agent_core.domain.host_effect_receipts import (
@@ -478,6 +479,13 @@ def _safe_metadata(value: object) -> dict[str, object]:
     blocked = ("authorization", "token", "secret", "password", "credential")
     for key, item in value.items():
         if not isinstance(key, str) or any(word in key.lower() for word in blocked):
+            continue
+        if key == "public_facts" and isinstance(item, Mapping):
+            schema = PublicOperationFacts if item.get("kind") == "operation" else PublicReadFacts
+            try:
+                safe[key] = schema.model_validate(item).model_dump(mode="json")
+            except ValueError:
+                pass
             continue
         if isinstance(item, str) and len(item) <= 256:
             safe[key] = item

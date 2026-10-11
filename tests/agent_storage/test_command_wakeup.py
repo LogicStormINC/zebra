@@ -22,11 +22,15 @@ def _binding(task_id: str, *, tenant: str = "tenant-a", workspace: str = "worksp
         host_app_id="trench",
         namespace_id=tenant,
         workspace_ref=workspace,
-        resource_refs=({"type": "principal", "id": "user-a"},),
+        resource_refs=(
+            {"type": "principal", "id": "user-a"},
+            {"type": "thread", "id": "command-fixture-thread"},
+        ),
         scopes=("agent.run",),
         limits={"max_runtime_seconds": 60, "max_model_tokens": 100, "max_artifact_bytes": 1024},
         origin="https://trench.example",
         policy_version="test-v1",
+        expires_at=now + timedelta(minutes=10),
     )
     return TaskBindingSnapshot(
         task_id=task_id,

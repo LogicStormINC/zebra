@@ -2,7 +2,7 @@
 
 ### COV-STO-01 - Fenced coverage batch persistence
 
-- Status: Review (claimed from Ready 2026-10-07; implemented and locally verified).
+- Status: Done (locally fast-forward merged into cloud-agent-trench, 2026-10-07).
 - Human owner: Luke Ding; executor: Codex.
 - Branch/worktree: codex/cov-sto-01; managed cov-sto-01/zebra-agent.
 - Owned paths: packages/agent-core/src/agent_core/domain/coverage_persistence.py;
@@ -31,8 +31,8 @@
   (file sizes, Ruff, Mypy 1,016 files, deterministic eval 30/30).
   Spec review and quality review passed after historical-fence evidence and
   binding-renewal serialization fixes. No MinIO/model/browser acceptance claimed.
-- Handoff: local feature branch only. Merge migration catalog additively with
-  primary pending 61-77, then implement the independent Trench snapshot service.
+- Handoff: user selected local merge; catalog 78 is combined additively with
+  primary pending 61-77. Next implement the independent Trench snapshot service.
   Batch claims, review/certificate projections, publishing/UI and real coupled
   acceptance remain unfinished; this is not unbounded production processing.
 
@@ -43,6 +43,8 @@
 - Human owner: Luke Ding; executor: Codex.
 - Branch/worktree: codex/cov-con-01 (deleted after integration); managed
   cov-con-01/zebra-agent (archived after integration).
+- Integration: user selected local merge only; original uncommitted document
+  contents preserved exactly. No remote publication or runtime activation.
 - Owned paths: packages/agent-core/src/agent_core/domain/coverage_contracts.py;
   packages/agent-core/src/agent_core/domain/coverage_snapshot.py;
   packages/agent-core/src/agent_core/domain/coverage_validation.py;
@@ -64,6 +66,82 @@
   4,925 passed / 911 environment skips; make check passes (file size, Ruff,
   Mypy 1,010 source files, deterministic eval 30/30). No real PG/snapshot/model/
   browser coverage E2E claimed. No runtime admission, migrations or activation.
+
+### CLOUD-DATA-COVERAGE-DESIGN-01 - Verifiable exhaustive data processing design
+
+- Status: Planning (2026-10-07; user-requested technical proposal only)
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: existing `cloud-agent-trench` checkout; docs-only, no code claim.
+- Owned paths: docs/CLOUD_DATA_COVERAGE_DESIGN.md; this registry; PROGRESS.md.
+- Scope: snapshot-bound enumeration, durable per-item processing, coverage and
+  publication gates, Trench adapter, recovery, API/UI and acceptance design.
+- Deliverable: reviewable proposal grounded in current local contracts; no
+  implementation, migration, runtime activation, merge or release authorization.
+- Successors remain proposed/Locked until contract review and separate Ready
+  task cards with exact owned paths, human owners and isolated branches exist.
+
+### CLOUD-LOCAL-GVISOR-01 - Existing local VM sandbox connection
+
+- Status: Review (claimed 2026-10-07; real runtime accepted; activation user-operated)
+- Human owner: Luke Ding; executor: Codex
+- Branch/worktree: existing user-selected cloud-agent-trench checkout.
+- Owned paths: application Compose TLS overlay and focused tests; ignored local
+  acceptance configuration/certificates; VM connection service and directory
+  mapping configuration; runtime-startup runbook, PROGRESS.md and WORKLOG.md.
+- Acceptance: existing local VM advertises runsc; authenticated TLS only; preserve
+  the current shared quota workspace and gVisor. No running app service restart,
+  user-task replay, business-data migration or security downgrade.
+- Evidence: anonymous TLS rejected; authenticated Worker preflight ready; real
+  gVisor command/shared-file/quota smoke passed and sandbox cleaned; Compose
+  overlay regressions and make check pass. Existing API/Worker remain untouched.
+
+### CLOUD-RUNTIME-STARTUP-01 - Runtime failure closes the conversation Turn
+
+- Status: Review (claimed 2026-10-07; source/build verified; host readiness blocked)
+- Human owner: Luke Ding; executor: Codex
+- Branch/worktree: existing user-selected `cloud-agent-trench` checkout.
+- Branch-integration follow-up (user-approved 2026-10-12): same owner and branch;
+  owns `tests/api/test_runtime_capabilities.py` to reconcile the public schema
+  version assertion before merging. No runtime restart or capability downgrade.
+- Owned paths: Runtime capability contract and OCI adapter; Worker setup failure,
+  runtime preflight entry point; focused Runtime/Worker/AG-UI tests; Docker health
+  checks; this registry, PROGRESS.md, WORKLOG.md and a focused operations runbook.
+- Acceptance: no missing-handler fallback; bounded pre-effect dependency checks;
+  durable Turn failure reaches RUN_ERROR and Trench terminal state; builds and
+  runtime activation reported separately. No service restart or historical replay.
+- Evidence: focused durable failure/AG-UI tests pass; paired Trench protocol tests
+  49 passed and RUN_ERROR terminal smoke passes; make check and API/Worker builds
+  pass. Ephemeral preflight exits 1 because the local daemon lacks runsc. No
+  isolation downgrade, runtime activation or historical command replay performed.
+
+### CLOUD-CONVERSATION-PERF-01 - Conversation critical-path optimization
+
+- Status: Review (source/build verified 2026-10-07; live timing acceptance pending)
+- Human owner: Luke Ding; executor: Codex
+- Branch: `cloud-agent-trench` (existing user-selected branch)
+- Owned paths: Host read-tool manifests/prompts/tests in paired Trench; Harness
+  concurrent execution/context/tests; PostgreSQL connection/event timing/tests;
+  Worker instrumentation; Trench assistant rendering/timing/tests; Docker
+  application health configuration; this registry, PROGRESS.md, WORKLOG.md.
+- Additional owned paths: Worker main composition, agent-storage pyproject,
+  uv.lock and focused pooled-connection tests. Pool is explicit cloud composition;
+  deadline-bound Task I/O keeps its existing fresh-connection cancellation path.
+- Additional owned paths: agent-observability execution latency projection and
+  regression tests; paired Trench historical SQL query and projection tests.
+- Additional owned paths: Compose application platform selection and ignored
+  local acceptance image overrides and application Compose tests; preserve the
+  AMD64 deployment default.
+- Goal: reduce redundant search, serial tool overhead, connection churn and
+  rendering work without weakening authority, durable events or answer gates.
+- Acceptance: deterministic concurrency/failure/isolation/transaction/render
+  regressions pass; build gates and live latency evidence reported separately.
+- Baseline: Trench Turn `03c15a9e-a86f-4060-a53d-df990b45138c`: 120.25 s,
+  8 model calls, 32 tools, 30 history searches. No browser-paint calibration.
+- Validation: core/Worker 1683 passed, 82 environment skips; focused Trench API
+  42 passed; frontend 407 passed and production build passed; real pool smoke
+  4 passed; make check passed. Zebra API/Worker Docker images rebuilt, not activated.
+- Pending: user service recreation, calibrated same-query/P95/concurrent-load
+  evidence; model-guided stopping is not a proven deterministic call-count bound.
 
 > This is the active executable task registry for Zebra Agent.
 > Status, owner, branch, and evidence must be maintained by humans.
@@ -94,6 +172,631 @@
 does not authorize production code, migrations or activation of its successor.
 
 ## Current Board
+
+- `CLIENT-RELEASE-CLOSURE-01`: Review (created Ready and claimed by Luke Ding),
+  user-selected `cloud-agent-trench` paired with Trench `main`. Sequential follow-up
+  of CLOUD-PROGRESS-OUTPUT-01 and CLIENT-RESUME-LIVENESS-01. Goal: immutable frontend
+  release, admission before execution, explicit optional-client degradation,
+  accurate configuration failures, publish verification and joint acceptance.
+  Owned paths: Zebra `scripts/publish_client_profile.py`, focused script tests,
+  client profile read-only API/control-plane tests if required, this registry,
+  PROGRESS.md, docs/CLIENT_RELEASE_CLOSURE.md; paired Trench client profile/gateway/
+  admission/runtime/contract modules, health/client routers, focused tests,
+  release scripts/config manifests and frontend client bridge/status tests.
+  Live acceptance expanded the owned boundary to core harness task_contracts.py,
+  its focused regression tests and AG-UI verification interrupt copy/tests: negated action
+  requests must not create mutation acceptance contracts for read-only queries.
+  Existing unrelated edits remain preserved. Operator publication is in scope;
+  process restarts remain user-operated. No permission expansion or data-volume changes.
+  Evidence: docs/CLIENT_RELEASE_CLOSURE.md. Restart replay exposed the paired
+  Trench classifier overriding correct core inference. User-authorized Review
+  follow-up removes Host intent duplication and validates partial contracts;
+  explicit contract goals also isolate inference from appended history.
+
+- `CLOUD-PROGRESS-OUTPUT-01`: In Progress (2026-10-02 user-approved full progressive
+  delivery implementation; human owner Luke Ding; current `cloud-agent-trench`
+  paired with Trench `main`). Expanded owned paths for this sequential follow-up:
+  2026-10-07 chat-lifecycle follow-up owns SDK conversation item selection,
+  timeline work disclosure and their tests/package build; paired Trench Dashboard
+  chat layout, history viewport/composer docking, Turn projection, focused tests,
+  vendored React package and lockfile. Luke Ding retains ownership. Remove stale
+  live status at terminal boundaries and collapse work when answer text starts;
+  do not alter execution authority or restart application services.
+  Same-owner screenshot follow-up includes public commentary/evidence messages
+  in the disclosure region, not only tool detail rows. SDK timeline/items/tests
+  and paired Trench Turn projection/history-window/vendor remain owned.
+  2026-10-07 sequential follow-up retains Luke Ding and the requested branch.
+  Main owns core `harness/task_contracts.py`, Worker `execution_context.py`
+  and dedicated classification/prompt regressions:
+  distinguish explicit files.publish Artifact creation from external publication,
+  and request bounded public tool-loop commentary without disclosing reasoning.
+  Verification gates remain intact; latency/live acceptance and activation stay open.
+  Build-blocker follow-up owns `docker/Dockerfile`: official uv registry substitution
+  only, preserving version, index digest and per-platform manifests. Application
+  process recreation remains user-operated and must be gated on successful build.
+  2026-10-04 user requests all P0 closure, same human owner and branch.
+  2026-10-04 P0 implementation/isolated acceptance closed: frozen full 6346 pass,
+  native 46 pass, latest-source real simple-answer pass. Overall task remains
+  In Progress for thirteen live cases, timing, long inputs, cleanup and activation.
+  No application migration/restart or publication.
+  2026-10-04 user-approved all-P1 continuation retains Luke Ding and these branches.
+  Disjoint lanes: main owns command/control/handoff/finalization cleanup,
+  `agent-runtime/command_wakeup_consumer.py` preparation settlement plus its
+  dedicated regression tests; bounded preparation must requeue, never early ACK.
+  Main retains shared composition/contracts; background lane owns cloud MCP
+  authority reads, cloud Memory finalization/recovery and dedicated readers/tests.
+  Delivery QA follow-up explicitly owns additive
+  `tests/compose/trench_read_e2e/joint_worker_takeover.py`,
+  `tests/compose/trench_read_e2e/test_joint_worker_takeover.py`,
+  `tests/compose/trench_read_e2e/joint_authority_cases.py`, and
+  `tests/compose/trench_read_e2e/test_joint_authority_cases.py`.
+  Main retains shared browser runner/operator composition. No product-path or
+  application mutation is authorized by this QA ownership expansion.
+  Latest-source live recovery exposed repeated cold DNS under one 2-second
+  deadline. QA connector follow-up owns PostgreSQL `projections.py`,
+  `workspaces.py`, `session_recovery.py`, `postgres_composition.py` and dedicated
+  composition/native tests for explicit same-DSN connector injection.
+  Background recovery follow-up owns Worker `bounded_session_recovery.py` and
+  its dedicated tests for durable final-page preparation advancement. These
+  root-cause changes invalidate previous product freeze and require fresh builds.
+  Sequential API stream-binding connector fix transfers to the QA lane API
+  `factory.py`, HTTP connector wiring, storage `direct_control.py`, `agent_tasks.py`,
+  `task_admission.py` read-binding helper, `postgres_composition.py` and the
+  relevant focused/native tests. Exact Task/Run/principal checks are preserved;
+  connection preparation must be reused rather than increasing read deadlines.
+  Main owns fixture/argument alignment in API `test_host_auth_composition.py`
+  and `test_skill_publication_composition.py`; DSN, namespace and shared
+  connector assertions remain explicit. No product change is part of this alignment.
+  Live joint replay assigns main the structured public-facts preservation seam
+  in `packages/agent-integrations/src/agent_integrations/host_tools/gateway.py`
+  and a dedicated regression. Only existing strict PublicReadFacts/OperationFacts
+  contracts may cross scalar metadata sanitization; arbitrary nested metadata is rejected.
+  Main also owns core `harness/task_contracts.py` and `test_negated_task_actions.py`
+  for object-separated prohibitions discovered in live replay. Read-only restrictions
+  must not demand mutation verification; affirmative mixed requests retain it.
+  Live latency follow-up assigns delivery lane paired Trench
+  `services/api/src/trench_api/trench_ai_turn_wakeup.py` and
+  `tests/api/test_trench_ai_turn_wakeup.py`: a Redis timeout must not add a second
+  full fallback sleep to the same wait. Preserve durable cursor and authorization;
+  no global polling-budget relaxation or application restart is included.
+  Sequential canonical-commentary closure assigns background lane core
+  `harness/public_output.py`, `orchestration_events.py`, `progress_recovery.py`,
+  `contracts/model_events.py`, `contracts/public_output.py`, `ports/worker_progress.py`,
+  bounded progress checkpoint readers and dedicated tests. Producer-backed public
+  model commentary needs deterministic identity, exact text, crash recovery and
+  a separate bounded quota; it must never be promoted to verified facts.
+  Source files at their limit must be split by responsibility before extension.
+  Main retains AG-UI/paired Host message-identity composition after core freeze.
+  Main's canonical-commentary composition owns `agent_integrations/ag_ui/projection.py`
+  and its focused regressions, paired Host `trench_ai_zebra_event_map.py`,
+  `trench_ai_tool_result_projection.py`, `trench_ai_turn_items.py`,
+  `trench_ai_turn_store.py` if required, focused `trench_ai_model_commentary.py`
+  and dedicated Host tests. Existing verified
+  result identities remain unchanged; only producer-marked commentary aliases
+  its original streamed message. Legacy events remain explicitly unproven.
+  Delivery lane owns paired frontend `src/lib/strategy-chat-api.ts`,
+  `strategy-ordered-items.ts`, `strategy-browser-timing.ts` and their tests for
+  the same validated commentary identity/chunk contract. Preserve exact text,
+  replay/replacement proofs and non-meaningful classification; no new UI style.
+  Sequential final integration transfers paired `src/hooks/use-strategy-turn.ts`
+  and its dedicated tests to main: pass restored ordered items to stream chunk
+  validation and keep validated snapshot commentary out of legacy timing flags.
+  Media QA lane owns `tests/compose/trench_read_e2e/scratch_seed.py` and its
+  dedicated guards for proved isolated bucket versioning. Existing unversioned
+  objects are neither overwritten/deleted nor retroactively accepted as receipts.
+  V5 rejection follow-up assigns background lane ONLY `agent-core/ports/model_gateway.py`,
+  `agent-integrations/openai_payloads.py` and dedicated rejection-diagnostic tests:
+  bounded allowlisted validation-rule metadata, no provider content or arbitrary
+  exception text. Existing rejection reason/phase and retry safety stay unchanged.
+  Main retains the decision on provisional-output replacement and retry identity;
+  no retry guard is relaxed by this diagnostic ownership.
+  Read-path review additionally assigns background lane `openai_streaming.py`
+  and a dedicated regression for provider-returned empty reasoning fields:
+  preserve explicit empty-string presence, never invent a missing field, and
+  do not count that empty field as semantic output for transport retry safety.
+  This independently reproducible adapter defect is not yet attributed to v5.
+  Sequential timing-harness follow-up transfers the frozen paired browser runner
+  to delivery QA, plus `browser_{commit,navigation,authority}_observer.mjs`,
+  `mediafixtures/browser_media_observer.mjs`, new `joint_guard_rpc.py`,
+  `browser_guard_rpc.mjs`, their Python/Node tests, caller-barrier tests,
+  `test_browser_commit_observer.mjs` and `test_joint_navigation_cases.py`.
+  This is QA-only async execution: every mutation still awaits fresh full native
+  preflight, deadlines include queue time, protocol errors fail closed and child
+  close is joined. Record exact guard windows, never subtract them to claim P95.
+  Main/other lanes stop editing these paths until the proof freezes.
+  2026-10-07 continuation additionally owns QA-only
+  `test_shared_runner_operator_hooks.py`: extracted test fragments must inject
+  the real async child-close helper and verify kill/join before browser cleanup.
+  No assertion may accept an unjoined child or authorize a failed preflight.
+  Main sequentially reclaims paired `strategy-joint-acceptance.mjs` cleanup:
+  remove the unbounded operator-exit wait beside the bounded close check,
+  then close the browser last even when native cleanup remains unconfirmed.
+  Main also reclaims `mediafixtures/browser_media_observer.mjs` and a dedicated
+  Node regression for bounded, static observation-stage diagnostics. Failure
+  evidence must preserve media checks without raw exceptions or weakening gates.
+  Main's confirmed Artifact preview resolver follow-up additionally owns
+  `postgres/{artifact_reads,artifact_payloads,delivery_audit}.py`,
+  `postgres_composition.py` and one focused composition regression. Reuse the
+  existing namespace-bound TaskIoConnections; retain the shared request deadline,
+  immutable object verification and fresh SQL connections. No global DNS cache.
+  Isolated QA maintenance boundary (2026-10-07): the scratch CA/leaf expired
+  and its Worker exited. Exact read-only discovery must first prove no old
+  execution can start; missing Worker counters are not zero-counter evidence.
+  QA lane may back up/renew only this scratch trust/SPKI, preserving broker
+  signing identity, restart its proxy/Host to reload trust, and activate byte-
+  verified API/Broker/Worker. PostgreSQL/Redis/MinIO/frontend and user services
+  remain untouched; no migration, reseed, object rewrite or command repair.
+  Full unchanged isolation checks and actual Worker counters gate fixture replay.
+  For the catalog DNS root-cause fix, the QA lane temporarily owns API `http.py`,
+  `extension_composition.py`, `host_auth.py` and PG `host_auth.py` connector
+  composition plus focused tests; main does not edit these paths until freeze.
+  follow-up background ownership includes native `command_wakeup_message.py`,
+  `session_cancellation.py` and `direct_control.py` exact bounded replay; main
+  relinquishes those implementation paths while retaining composition/catalog.
+  context lane owns `ports/execution_inputs.py`, execution-input storage/reducer,
+  execution-input preparation and reusable agent-context capsule/compaction with
+  dedicated tests; delivery lane owns model/progressive-output timing, public-output
+  policy/expression and paired Host admission/timing UI with dedicated tests;
+  QA lane owns isolated joint runner/topology, thirteen remaining live scenarios
+  and at least 100 healthy timing samples. Main owns docs/migration catalog and
+  integration; any migration number or shared-path edit requires coordination.
+  No application restarts, commits, pushes, publication or authority expansion.
+  Existing exact evidence, protected constraints and namespace fencing remain mandatory.
+  Worker execution-input/recovery/context/index checkpoints and bounded preparation,
+  claim/lease-heartbeat deadline and checkpoint handoff with focused/native tests,
+  their core/storage contracts, additive migrations/composition and dedicated tests;
+  the query lane owns persisted Task usage/attachment summaries and indexed paging,
+  API read adapters, dedicated tests and additive storage migrations (coordinate
+  migration catalog numbers with main before editing shared catalog files).
+  The QA lane owns `tests/compose/trench_read_e2e/`, scratch Compose/seed/launcher
+  helpers and paired Trench `toc-frontend/scripts/strategy-joint-acceptance.mjs`.
+  Main retains governance/docs and shared composition/catalog files.
+  The 2026-10-04 explicit navigation handoff transfers ONLY paired Trench
+  `toc-frontend/scripts/strategy-joint-acceptance.mjs` from main to the navigation
+  QA lane (Luke Ding, same branches) until frozen: wire actual browser observers,
+  scoped expected disconnects and hash-verified replay deduplication; preserve
+  existing media/fault hooks and non-navigation gates. Main stops editing it.
+  All lanes preserve unrelated changes; isolated disposable verification is authorized,
+  existing application DB migrations/restarts and publication are not.
+  Zebra `packages/agent-core/src/agent_core/{domain/events.py,contracts/,harness/}`,
+  `packages/agent-integrations/src/agent_integrations/ag_ui/`, model stream adapters,
+  `apps/worker/src/zebra_agent_worker/execution_context.py`, existing Worker progress
+  configuration/composition, `sdks/typescript/packages/{ui-contracts,react}/`,
+  focused core/integration/Worker/SDK tests, acceptance scripts and this plan's
+  public-output config and auxiliary-receipt exclusion in Session History/title
+  projections with regression tests (prevent display-only JSON entering later context),
+  SQLite/Postgres Session History query filtering (pagination counts exclude
+  auxiliary receipts, not merely post-filtered message contents),
+  application Compose public-output environment forwarding and API replay
+  frame laziness/linear replay with slow-consumer regression coverage and
+  optional intra-Event cursor positions (forced disconnect must not skip the
+  remaining frames of a multi-frame durable Event),
+  `sdks/typescript/packages/react-charts/` equal-spec replay identity fix and
+  SDK production-browser regression (unchanged charts must not redraw),
+  config workspace dependency declaration/lock and Worker execution_events.py
+  serialization (timer, receipt and lease-fenced appends share one recorder),
+  Effect gateway mutation guards and Worker handoff/effect/artifact/continuation
+  composition (prepare/commit/accept is atomic relative to timer appends),
+  admitted Effect execution observer outside the mutation guard (truthful wait
+  tracking without duplicating an already-durable start event),
+  `packages/agent-core/src/agent_core/ports/effect_dispatch.py` and the existing
+  PostgreSQL Effect payload mixin for exact intent reads on payload admission
+  failure; focused lifecycle/namespace regressions (no caller identity fallback),
+  `packages/agent-core/src/agent_core/ports/agent_tasks.py`, typed replay records,
+  SQLite/Postgres Task replay adapters, immutable Event-position allocation and
+  derived checkpoint migrations/tests for the explicit bounded-history gate;
+  sequential 2026-10-03 closure also owns `ports/task_projection_work.py`,
+  SQLite/Postgres `projection_work*` adapters and v68 migration, native source
+  wake routing, Worker `ag_ui_projection_work.py` and its loop composition,
+  shared checkpoint source/header index guards, bounded persistent handoff
+  membership resolution, snapshot import/namespace cleanup of derived metadata,
+  flat `ControlPlaneStores` SQLite/Postgres composition of projection work and
+  typed explicit maintenance methods on `AgentTaskPort`,
+  actual GET/frame-disconnect quality tests, and paired Trench observation-only
+  recovery (`zebra.observation.problem`). Main owns composition/catalog/docs;
+  queue, source guards, binding and Host lanes have disjoint file ownership.
+  Latest full-goal continuation includes shared API `ag_ui_task_view.py` awaited
+  authorization deadlines and background consumer/Worker lifetime regressions;
+  independent checks own only their dedicated new test files.
+  API disconnect follow-up delegates only `ag_ui_checkpoint_tail.py` to its
+  test owner; main retains shared authorization/stream composition. Shared
+  checkpoint frontier exceptions/SQLite and PostgreSQL CAS commits are main-owned.
+  The latest approved plan explicitly adds main-owned `apps/api/.../http.py`,
+  `session_binding.py`, `routes.py` and their command/observation authorization
+  tests (including explicit binding-renewal routes and native queued authority),
+  PostgreSQL `database.py` and Task-scoped I/O regressions: observation may not
+  renew execution bindings, and storage deadlines must constrain actual I/O.
+  Main also owns the shared read-only authorization seams in PostgreSQL
+  `projections.py`, `task_admission.py`, `direct_control.py` and API
+  `tenant_guard.py`, plus focused native authorization I/O tests. Canonical
+  admission/cancellation writes retain their existing transaction authority.
+  Final-plan continuation delegates only core `harness/public_output.py` and
+  `tests/agent_core/test_public_output.py` for truthful meaningful-output semantics;
+  the main owner retains Task I/O scopes, awaited preflight and their tests.
+  Paired Host gate closure may edit Trench's legacy-history identity migration
+  `infra/alembic/versions/92a3b4c5d6e7_add_legacy_history_identity.py` and its
+  focused offline/online migration tests; no application migration is authorized.
+  The source-lock lane may update the existing native fixtures in
+  `tests/agent_storage/test_postgres_{agent_tasks,extension_worker_handoff,
+  session_handoffs}.py` for resumable adoption, immutable-source rejection and
+  exact owner-scoped scratch cleanup; it may not weaken production guards.
+  The explicit I/O closure owns `postgres/task_io.py`,
+  the latest full-gate follow-up delegates SQLite fixture alignment only to
+  `tests/agent_storage/test_{source_event_byte_bounds,storage_composition,
+  task_event_positions,task_replay_headers}.py`; source guards, immutable
+  positions and explicit bounded header maintenance remain unchanged.
+  API compatibility closure delegates `apps/api/.../session_queue.py` creation
+  wiring and focused creation/listing regressions, plus existing artifact and
+  approval fixtures in `tests/api/session_artifacts/session_artifact_support.py`,
+  `tests/api/test_{session_list,approval_routes,http_approvals,approval_api_app}.py`
+  and `tests/cli/run/test_inspect_and_approval.py`. Main owns removal of implicit
+  GET adoption in `apps/api/.../{routes,approval_read}.py` and dedicated regressions;
+  all legitimate source-event continuity and Task identity assertions remain.
+  The resumed final plan assigns resource binding closure to a disjoint lane:
+  core `domain/task_bindings.py`, API `tenant_guard.py` and `session_binding.py`,
+  PostgreSQL `direct_control.py`, paired Trench `trench_ai_zebra_{client,binding}.py`
+  and dedicated resource/renewal/cancel regressions. Main retains `host_auth.py`,
+  `http.py` and command-target verification before atomic jti consumption.
+  Main's observation-only mapping owns the existing Task Port and both Task
+  adapters' indexed Session-to-Task reads, plus GET/approval regressions.
+  Independent API/CLI and residual runtime test reviews are read-only until
+  their exact fix paths are claimed; no application database writes or restarts.
+  Latest full-goal continuation assigns the reproduced residual runtime fix to
+  `packages/agent-runtime/src/agent_runtime/process_execution.py`,
+  `tests/agent_runtime/test_local_runtime.py`,
+  `tests/agent_runtime/test_process_execution.py` and
+  `tests/api/test_client_effect_agui_stream.py` (explicit preparation fixture,
+  not restored GET repair). The resource lane additionally owns dedicated
+  `tests/api/test_task_resource_binding.py`,
+  `tests/api/test_task_binding_thread_renewal.py`,
+  `tests/agent_storage/test_postgres_task_resource_binding.py` and paired Trench
+  `tests/api/test_trench_ai_zebra_host_thread.py`.
+  The pre-Grant lane owns API `host_auth.py`, PostgreSQL `host_auth.py`, security
+  `jwt_adapter.py` and dedicated auth/JWKS tests; main retains HTTP integration,
+  target parsing, task-id scalar lookup and the shared deadline lifecycle.
+  Main's HTTP file-size split owns `http_host_auth.py` and dedicated
+  `tests/api/test_http_host_preflight.py`; `http.py` keeps compatible exports.
+  The public-fact lane owns core `harness/public_output.py`, its existing tests,
+  paired Trench `trench_ai_read_tools.py`, `trench_ai_native_history_tools.py`,
+  their focused fact/history tests and `strategy-browser-timing.ts`/its tests.
+  Contract or mapping edits require exact-path registration before coding.
+  The latest thirteen-face goal continuation registers the fact lane's additional
+  exact paths: core `contracts/public_output.py`; paired Trench
+  `services/api/src/trench_api/trench_ai_history_query.py`,
+  `trench_ai_zebra_event_map.py`, `trench_ai_turn_items.py`, frontend
+  `toc-frontend/src/lib/strategy-chat-api.ts` and
+  `toc-frontend/src/hooks/use-strategy-turn.ts`, with their existing focused
+  event-map, snapshot-item and hook tests. No Host intent replanner is added.
+  The pre-Grant lane's dedicated regressions include
+  `tests/api/test_host_auth_bounds.py` and bounded JWKS tests; the main HTTP lane
+  retains `http_host_auth.py` and `test_http_host_preflight.py` exclusively.
+  The ultimate-plan continuation additionally registers the resource lane's API
+  `api_session_read_mixin.py`, `session_list.py`, `approval_read.py` and dedicated
+  `tests/api/test_host_resource_lists.py` for consistent per-resource list access.
+  The fact lane owns the paired Host's new
+  `services/api/src/trench_api/trench_ai_tool_result_projection.py` and its
+  dedicated tests for unavailable/empty/result display semantics and the existing
+  event-map file-size split. Main retains HTTP, preflight, request deadlines and
+  their dedicated regressions; lanes must not edit another lane's shared files.
+  The latest full-goal continuation registers the pre-Grant lane's native HTTP
+  fixture `tests/agent_storage/test_postgres_http_auth_boundary_e2e.py` and its
+  exact-current-thread/principal authorization matrix. Resource-lane follow-up
+  may inspect legacy `task_api.py` read costs but must request narrow ownership
+  before editing Task summary/usage or shared Task Ports. Main owns cumulative
+  HTTP observation deadlines, event-loop JSON decoding and their regressions;
+  the fact lane closes the reproduced pending-receipt count defect with one
+  shared regression. Existing application restart/migration/publication limits
+  remain unchanged; this is implementation, not a claim of activated acceptance.
+  The fresh full-gate closure additionally owns main's
+  `apps/api/src/zebra_agent_api/artifact_download.py` and dedicated bounded
+  download/preview regressions. The pre-Grant lane may repair expired test-only
+  authority in `tests/agent_security/test_extension_authority.py` and the
+  directly affected API extension/Skill fixtures, preserving real expiry checks.
+  The fact lane additionally owns paired Trench
+  `toc-frontend/src/lib/strategy-ordered-items.ts` and its existing tests for
+  durable/live basis, refs and meaningful-output preservation.
+  Resource fixture closure also owns existing
+  `tests/worker/test_{bound_authority_renewal,task_binding_host_context}.py`,
+  `tests/test_approval_decision_contract_matrix.py` and
+  `tests/agent_storage/test_schema_readiness.py`; update admitted identities and
+  preparation only, retaining expired and mismatched authority rejection.
+  Main's bounded observation header owns existing API `task_api.py`,
+  `task_routes.py`, Task Port/replay types and both Task adapters, new
+  `tests/api/test_task_header.py` plus native header regressions. Paired Trench
+  `trench_ai_zebra_client.py` title/clarification/cancel reads and focused client
+  tests may consume this explicit header; full usage/attachment reads retain
+  their contract and remain open until persistent watermarked summaries exist.
+  The header's focused adapter module is `apps/api/.../task_header.py`; it keeps
+  the existing Task API below the source-file limit without moving command logic.
+  The current thirteen-section goal continuation registers the persistent Host
+  identity fix: Trench `packages/core/src/trench_core/orm/__init__.py`, new
+  `orm/trench_ai_task_binding.py`, existing
+  `services/api/src/trench_api/trench_ai_product_conversation_store.py`,
+  `trench_ai_zebra_binding.py`, focused binding helper if needed, a new append-only
+  Alembic migration, and dedicated Task-to-Host ownership/CAS/migration tests.
+  This lane preserves old Task mappings across rebinding, without GET repair or
+  application migration. Main retains `trench_ai_zebra_client.py` and header
+  consumer tests exclusively. The pre-Grant fixture lane additionally owns
+  `tests/agent_storage/test_postgres_extension_turn_admission.py` for explicit
+  valid opaque thread coordinates, never reduced authorization assertions.
+  The generic fact lane may extend core `contracts/public_output.py`,
+  `harness/public_output.py` and their dedicated tests to accept bounded generic
+  operation evidence while preserving legacy Host read facts. The built-in
+  `packages/agent-tools/src/agent_tools/builtin/command.py` and existing command
+  tests are registered for actual receipt-backed operation facts if applicable;
+  any different producer path requires explicit registration before edits.
+  Main's native bounded-header test is
+  `tests/agent_storage/test_postgres_task_read_header.py`.
+  The resumed unified-plan main lane additionally owns paired Trench
+  `tests/api/test_trench_ai_task_header_reads.py` and the existing runtime and
+  clarification fixtures for exact header consumption and durable identity wiring.
+  The media lane exclusively owns API `artifact_download.py` and its existing
+  `tests/api/test_artifact_download_deadline.py` for verified-grant forwarding;
+  deeper object-body fixes require exact-path registration after tracing callers.
+  The latest unified-plan continuation registers main's scalar Session observation
+  headers: new `agent_storage/session_observation_headers.py`, additive PostgreSQL
+  `session_observation_headers_migration.py`, migration catalog tail, SQLite
+  `projections.py` schema composition, and dedicated native/header maintenance
+  tests. Existing Session projection writes and Handoff/import writes must share
+  atomic derived-header triggers; GET must never backfill or read projection JSON.
+  The fact lane additionally owns `agent_runtime/harness.py` and dedicated
+  `tests/agent_runtime/test_tool_projection_receipts.py` to preserve receipt and
+  projection evidence through the actual gateway. Generic execution/byte-count
+  feedback is visible but does not satisfy task-specific communication metrics.
+  The Host fixture lane owns paired Trench `tests/api/test_trench_ai_{assets,
+  skill_binding,product_api,stop_lifecycle}.py` and `tests/api/github_skill_live.py`
+  for explicitly prepared durable identities. Main retains runtime/clarification
+  fixtures and the production Zebra client. No production identity fallback.
+  The current full-goal continuation extends the media lane to exact immutable
+  object-read paths: `agent_storage/{artifact_objects,runtime_composition}.py`,
+  new `artifact_object_reads.py`, existing `test_s3_artifact_objects.py` and new
+  `test_s3_artifact_object_read_bounds.py`. It retains exclusive ownership of
+  API download/preview and its deadline tests; parent-process audit/authority
+  and unknown commits must not be duplicated by cancellation recovery.
+  The Host fixture lane now owns `tests/api/test_trench_ai_zebra_runtime.py`
+  solely for explicit persisted-identity/header protocol fixtures, not production
+  identity defaults. Main owns dedicated SQLite Session observation-header tests,
+  native `test_postgres_task_read_header.py` and header preparation verification;
+  no old migration edits or application database preparation are authorized.
+  The latest unified-plan continuation names main's SQLite regression file
+  `tests/agent_storage/test_session_observation_headers.py` explicitly. Native
+  Header probes reuse only the isolated `header_scratch` schema/role fixture,
+  including atomic triggers, legacy preparation, large plans and actual I/O limits.
+  The current ultimate-plan continuation registers the source-fidelity lane's
+  `agent_runtime/search_providers.py`, `agent_tools/{search_pipeline,web_projection,
+  web_envelope}.py` and their existing/dedicated tests. Fix failed/partial source
+  semantics before generating task-specific evidence; do not classify transport
+  failures as successful empty searches. Main retains public contracts/producer
+  expansion until exact adapter paths and checks are agreed.
+  The Host lane exclusively owns paired Trench `routers/trench_ai_turns.py` and
+  dedicated snapshot-purity tests: GETs consume stored metrics without hydration
+  writes. Trace existing dispatcher metrics publication and report any missing
+  writer before extending unregistered paths. It may finish registered fixture
+  compatibility fixes without weakening cross-scope rejection.
+  Main owns bounded Worker-progress recovery contracts, focused native store
+  readers and tests, plus `execution_context.py`; execution inputs/index recovery
+  remain separate required work, not satisfied by removing a duplicate scan.
+  The current continuation additionally registers main's typed Run progress
+  checkpoint: core `ports/worker_progress.py`, `harness/progress_recovery.py`,
+  storage `worker_progress.py`, PostgreSQL `worker_progress.py` and an additive
+  `worker_progress_migration.py`, both Task adapter composition files, migration
+  catalog tail, plus dedicated core/native-store/Worker progress recovery tests.
+  These are execution-domain checkpoints, not UI state cells or a last-N history
+  cut; namespace, canonical Run anchor and expected-frontier CAS remain required.
+  The resumed final-plan slice names main's regression paths explicitly:
+  `tests/agent_core/test_progress_recovery.py`,
+  `tests/agent_storage/test_worker_progress.py`,
+  `tests/agent_storage/test_postgres_worker_progress.py`, and
+  `tests/worker/test_worker_progress_recovery.py`; Worker composition may add
+  `apps/worker/src/zebra_agent_worker/progress_recovery.py` and update the
+  existing `tests/worker/test_progressive_composition.py`. Public-sink restoration
+  stays in main-owned `harness/public_output.py` and its existing tests.
+  The 2026-10-03 ultimate-plan implementation resumes three disjoint residual
+  lanes. Source fidelity additionally owns runtime `{crawl_gateway,fetch_providers,
+  web_gateway,web_tools}.py`, tools `web_crawl.py`, and dedicated
+  `tests/agent_runtime/test_crawl_source_{fidelity,http}.py`. Media point reads own
+  core `ports/session_artifact_read.py`, storage `{artifacts,tool_runs}.py`, the
+  Artifact-only composition seam, `postgres/artifact_reads.py`, API
+  `{session_artifact_read_mixin,session_artifact_control}.py`, CLI `artifact_read.py`
+  and dedicated `{agent_storage/test_session_artifact_point_reads,
+  api/test_artifact_point_routes,cli/test_artifact_point_reads}.py`; main retains
+  `http.py` shared deadline integration. Trench fixture closure additionally owns
+  `tests/api/test_trench_ai_{grant_recovery,host_binding}.py`,
+  `zebra_runtime_protocol_fixtures.py`, `test_trench_ai_zebra_contract.py` and
+  `test_trench_ai_zebra_artifact_protocol.py`, preserving explicit gate coverage
+  when splitting the oversized runtime test. Main additionally owns Worker
+  `execution_recovery.py`/`recovery.py`/`task_recovery.py` only for the bounded
+  execution-input contract, and `execution.py` actual Attempt/checkpoint wiring.
+  The latest continuation additionally owns `context_materialization.py` for
+  real Attempt authority propagation, native SQLite `task_replay_headers.py`
+  and both Task facade latest-Run header methods. Reuse scalar indexed headers;
+  reject missing/ambiguous Run identity instead of guessing from Task UUIDs.
+  Dedicated progress recovery tests cover these reads and composition paths.
+  The current ultimate-plan continuation also registers main's Worker
+  `execution_finalization.py`, `execution_completion.py` and
+  `execution_preflight.py` for shared actual-Attempt propagation and focused
+  Worker regression tests. The latest full-goal continuation adds main's
+  `gateway_release.py`, `execution_continuations.py`, `continuation_lifecycle.py`
+  and a focused `execution_turn_close.py` extraction for the same Attempt path.
+  `runtime_authority.py` and `tests/worker/test_execution_completion.py` cover
+  original-failure preservation and unconditional gateway cleanup.
+  The media lane now exclusively owns `http.py` only for JSON Artifact content
+  deadline/byte/cancellation wiring; it must preserve existing Host preflight.
+  The Trench fixture lane additionally owns
+  `tests/api/test_trench_ai_client_gateway.py`,
+  `test_trench_ai_history_readiness.py`,
+  `test_trench_ai_legacy_history_migration.py` and `Makefile`: repair durable
+  identity preparation and migration/gate coverage, not assertions or authority.
+  All lanes keep application data/restarts/publication out of scope; native
+  verification uses exact owned scratch databases or schemas only.
+  The current goal continuation explicitly registers main's
+  `tests/worker/test_execution_progress_entry.py` for actual Worker-entry
+  recovery/Attempt/policy regressions. Source fidelity additionally owns both
+  `agent_runtime/web_search.py` and `agent_tools/web_search.py` and focused
+  search/TLS cancellation tests; outer cancellation must reap native I/O.
+  The media lane may provision an isolated scratch MinIO service/bucket only
+  for its registered native object-read tests, never application buckets.
+  Paired Host delivery owns existing SDK pack/consumer verification and Trench
+  frontend gates/builds; shared Worker/core progress files remain main-owned.
+  The current full-goal continuation additionally registers source fidelity's
+  `agent_runtime/harness.py` only for task-scoped native network cancellation
+  composition and its focused tests; shared Worker authority wiring stays main-owned.
+  Media verification owns the existing
+  `tests/api/session_artifacts/session_artifact_support.py` fixture and dedicated
+  media/auth tests for canonical Task/opaque Host thread admission, never invented
+  authorization or weakened assertions. Paired Host delivery owns
+  `strategy-history-window.tsx` and its existing frontend/browser regression
+  scripts for the reproduced empty-state composer width regression.
+  The native media compatibility follow-up additionally owns
+  `tests/api/test_cloud_artifact_read_postgres.py` and
+  `tests/api/ag_ui_checkpoint_postgres_support.py` only for canonical source/Task
+  and opaque Host-thread fixture preparation. Main owns `api_command_mixin.py`
+  and its existing automatic-Run idempotency tests: persist an explicit canonical
+  Run identity at admission, never guess a missing historical identity at recovery.
+  `tests/api/test_automatic_run_admission.py` records automatic-Run admission,
+  cold-header recovery and idempotency/conflict regressions.
+  The current full-goal continuation resumes the same owner and branches. The
+  Host/QA lane additionally owns paired Trench `strategy-browser-timing.ts`, its
+  existing test, `strategy-history-window.tsx` and existing browser regression,
+  plus `tests/compose/trench_read_e2e/{run_acceptance,support,test_runner}.py`
+  and its runner manifest for exact opaque Host identity, isolated fault targets,
+  fourteen-case acceptance and production timing collection. No application
+  services, databases or Broker namespaces may be reused as fault targets.
+  The network lane owns the existing `test_harness_runner.py` factory regression
+  and runtime cancellation composition already registered above; Worker cancel
+  authority and execution-input recovery remain main-owned. Media verification
+  resumes fresh isolated schema checks, preserving published migration checksums.
+  The current continuation registers main's internal Run producers:
+  runtime `research_context.py`, scheduler `admission.py`, and their focused
+  `test_durable_research_run_identity.py` / `test_scheduler_admission.py` checks,
+  plus the existing native HTTP/default-chain regression. Internal admission
+  persists Run identity; recovery never guesses it. Main additionally owns
+  Worker `execution_tool_gateway.py`, `tool_gateway_runtime.py` and
+  `execution_events.py` for actual lease/control cancellation propagation, with
+  `test_execution_progress_entry.py` and a dedicated native network regression.
+  The dedicated regression is `tests/worker/test_execution_network_cancellation.py`;
+  `execution_preflight.py` preserves the captured authoritative control snapshot
+  when network cancellation interrupts an otherwise stale execution recorder.
+  Host/QA and media lanes resume their disjoint paths; no app restart, application
+  migration, commit or publication is inferred.
+  The resumed ultimate-plan main lane additionally owns runtime `research.py`
+  and `harness.py` only for canonical parent Task/actual Attempt propagation,
+  with existing `test_durable_research_run_identity.py` and Worker-entry tests.
+  Durable delegation must not substitute a Segment Session ID for the parent
+  Task or reset resumed Attempts to one; native cancellation work is preserved.
+  The current read-only audit reproduced secondary cancellation replacing the
+  original object-read deadline/cancellation. Media owns its minimal repair in
+  `artifact_object_reads.py` and `test_s3_artifact_object_read_bounds.py`, plus
+  `tests/worker/test_execution_network_cancellation_postgres.py` for actual PG
+  lease expiry/takeover, old-Worker publication rejection and native socket/PID
+  cleanup. Shared Worker authority production remains main-owned; isolated
+  scratch schemas only, without application DB migration or service restart.
+  The 2026-10-04 continuation resumes these disjoint lanes. Main now owns
+  `agent_runtime/web_tools.py` for typed cancellation constructor wiring after
+  the prior network lane stopped; preserve legacy zero-argument factories.
+  Media completes its registered PG cancellation tests and formatting. Host/QA
+  completes its registered fourteen-case runner, requesting registration before
+  adding new paths. Latest full gates must follow the last source edit.
+  The Host/QA lane now additionally owns `isolation.py`, `joint_acceptance.py`,
+  `test_joint_acceptance.py` and `compose.scratch.yml` under
+  `tests/compose/trench_read_e2e/`, plus the paired Trench frontend
+  `scripts/strategy-joint-acceptance.mjs`. Compose only a separately named
+  scratch Host/API/Worker/Broker and authenticated browser entry; never reuse
+  existing application containers, data, credentials or fault targets. Start
+  with real isolation checks and simple-answer SSE/browser/timing evidence,
+  while keeping the other thirteen cases and 100-sample target explicitly open.
+  Main additionally owns `tests/worker/test_web_pipeline_v2_authority.py` for
+  the reproduced full-suite DNS test-double boundary regression. Inject the
+  existing CrawlGateway resolver, preserve native cancellable DNS/SSRF, and
+  require a successful tool receipt rather than only a completed Session.
+  Media/reviewer now additionally owns `agent_runtime/web_gateway.py` and
+  `tests/agent_runtime/test_native_network_cancellation.py` for the reproduced
+  secondary-termination cancellation hang. Independently attempt group kill,
+  process kill, pipe closure and bounded reap; preserve the original exception.
+  A real child probe must fail if cleanup waits indefinitely or leaves a PID.
+  Fresh application image/full-gate evidence must follow this production edit.
+  At the QA handoff main takes the isolated runner Python files only for
+  fixture-alias/import/format lint closure; QA is frozen on those files until
+  explicitly resumed. Scratch Compose/browser implementation remains QA-owned.
+  The media lane may additionally fix the exact scope-denial compatibility test
+  `tests/api/session_artifacts/test_content_and_access.py`; missing authority must
+  remain rejected. Main owns the stale latest-migration assumption in the existing
+  `tests/agent_storage/test_schema_readiness.py`, preserving v68's frozen checksum.
+  `tests/agent_storage/test_postgres_task_io.py`, Task observer/checkpoint/source
+  facade calls to the scoped connection, and the v68 catalog freeze. Dedicated
+  lock-order probes own `tests/agent_storage/test_postgres_source_lock_order.py`;
+  API fixture splitting owns `tests/api/ag_ui_checkpoint_postgres_support.py`.
+  The resumed full-goal audit delegates the reproduced native PG lock-order
+  repair to the lock-probe owner: `postgres/events.py`, `extension_snapshots.py`,
+  `session_handoff_transactions.py`, `task_index_transactions.py` and its
+  dedicated `test_postgres_source_lock_order.py`. Main does not edit those
+  production files concurrently. Main additionally owns
+  `postgres/command_wakeup_outcome.py` and its focused bounded-read regression;
+  no observer may bypass the body-page budget through command outcome lookup.
+  Main owns `postgres/task_replay_headers.py` cleanup and the native checkpoint
+  and source-metadata regression connection seams for scoped Task I/O adoption.
+  Existing execution authorization remains enforced; an explicit renewal command
+  and paired Host call are in scope only if queued/running authority requires them.
+  PostgreSQL shared Event append, Task-index/handoff/admission source-lock order,
+  `postgres/task_control_target.py` Task-before-row cancellation serialization,
+  SQLite Event/handoff/context transactional insertion boundaries and focused
+  SQLite-to-Postgres snapshot coordinate preservation/import regressions,
+  regressions (Event Store remains authority),
+  governance files. Paired Trench owns source/history public fact projections,
+  Turn/event/snapshot/runtime adapters, strategy frontend projection/hook/renderers,
+  focused tests and packed package delivery. The 2026-10-03 completion audit
+  explicitly adds paired Trench `tests/api/test_api_startup.py`,
+  `tests/api/test_dashboard_contract.py`, `tests/api/test_harness_tools.py`,
+  `tests/api/test_capsule_background.py` and
+  `services/api/src/trench_api/routers/capsule_background.py` (plus a directly
+  responsible existing keyword helper only if its callers are checked) to
+  close the four full-API discrepancies without deleting assertions or
+  weakening tool authority. Parent owns SSE/preflight tests, governance and
+  the browser acceptance runner; delegated Effect and Host fixes have disjoint
+  paths. Spec and requirement ledger:
+  `docs/CLOUD_PROGRESSIVE_DELIVERY_PLAN.md`. Existing unrelated dirty work remains
+  outside scope. Service restarts remain user-operated; live activation is a gate.
+  Previous slice scope and provenance follow:
+  user-authorized sequential follow-up, claimed by Luke Ding on
+  user-selected `cloud-agent-trench`), paired with Trench `main`. Goal: turn
+  existing public AG-UI model text into durable, replayable progress separate
+  from candidate/final answers, with visible host rendering and bounded
+  deduplication. Zebra's existing Event Store and AG-UI projection are reused;
+  no new model or transport contract is introduced. Owned paired paths:
+  `Trench/services/api/src/trench_api/{trench_ai_zebra_event_map,trench_ai_turn_store}.py`,
+  `Trench/toc-frontend/src/{hooks/use-strategy-turn,lib/strategy-chat-api,lib/strategy-conversation-turns,components/product/strategy-assistant-content}*`,
+  `Trench/toc-frontend/src/{lib/strategy-message-state,components/product/rich-document-renderer}*`,
+  `Trench/toc-frontend/src/components/product/strategy-workspace*` (sequential
+  follow-up: isolate late submit errors and handle pause rejection at its caller),
+  `Trench/services/api/src/trench_api/trench_ai_zebra_client.py` (bounded grant
+  exchange transport recovery found during live acceptance; no command retry),
+  `Trench/services/api/src/trench_api/trench_ai_zebra_contract.py` (public
+  progress and existing Host rendering capability guidance only),
+  Zebra `packages/agent-tools/src/agent_tools/builtin/present.py` and focused
+  presentation tests (clarify remote-media routing and recoverable argument errors;
+  preserve artifact authority and URL validation),
+  `packages/agent-integrations/src/agent_integrations/{openai_compatible,deepseek_responses}.py`
+  and focused model stream tests (distinguish buffered tool/reasoning tokens
+  from published text for bounded response repair; retain transport retry guard),
+  `packages/agent-core/src/agent_core/harness/task_contracts.py` and focused tests
+  (artifact publication versus external operational intent), and
+  `sdks/typescript/packages/react-charts/{src,tests}/` (recover failed chart fetches).
+  Paired chart-package delivery includes Trench's vendored react-charts tarball
+  and pnpm lockfile; no registry publication or service restart.
+  focused paired tests, this registry, `PROGRESS.md`, and
+  `docs/CLOUD_PROGRESS_OUTPUT.md`. Overlap with `CLIENT-RESUME-LIVENESS-01` is
+  a sequential user-requested Review follow-up, not parallel ownership.
+  User operates service restarts; deployment and live replay remain separate.
+
+- `CLIENT-RESUME-LIVENESS-01`: Review (Ready at claim), owned by Luke Ding,
+  executing on user-selected `cloud-agent-trench`. Goal: canonical client-effect
+  resume commands, bounded observation and recovery of stranded continuations.
+  Owned paths: client-effect storage/control-plane/worker modules, command consumer
+  and rejection modules, related integration/unit tests, operator recovery script,
+  SDK activity status components/tests, this registry, PROGRESS.md and
+  docs/CLIENT_RESUME_LIVENESS.md. Paired Trench:
+  Zebra stream adapter, turn state/UI presentation, client action semantics and
+  focused tests. Service restarts remain user-operated.
 
 - `CLOUD-RECOVERY-CLOSURE-01`: Done (local `cloud-agent-trench` integration), owned by Luke Ding,
   branch `codex/cloud-recovery-closure`. User-authorized follow-up of existing

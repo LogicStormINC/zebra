@@ -27,6 +27,7 @@ from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.projections import save_session_in_transaction
 from agent_storage.postgres.task_index_transactions import _lock_task, rebuild_task_in_transaction
+from agent_storage.postgres.task_io import TaskIoConnections
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
 
 
@@ -89,8 +90,7 @@ class PostgresTaskAdmissionTransaction:
         bootstrap_events = request.events[:command_start]
         command_events = request.events[command_start:]
         if not bootstrap_events or any(
-            event.event_type is not EventType.SESSION_COMMAND_ACCEPTED
-            for event in command_events
+            event.event_type is not EventType.SESSION_COMMAND_ACCEPTED for event in command_events
         ):
             raise ValueError("initial task commands must trail bootstrap events")
         if command_events and request.binding is None:
@@ -101,8 +101,7 @@ class PostgresTaskAdmissionTransaction:
         ):
             raise ValueError("initial task command must remain unprojected until Worker pickup")
         persisted_events = tuple(
-            append_event_in_transaction(connection, namespace, event)
-            for event in bootstrap_events
+            append_event_in_transaction(connection, namespace, event) for event in bootstrap_events
         )
         save_session_in_transaction(connection, namespace, request.session)
         save_workspace_in_transaction(connection, namespace, request.workspace)
@@ -116,8 +115,7 @@ class PostgresTaskAdmissionTransaction:
                 request.binding,
             )
         persisted_events += tuple(
-            append_event_in_transaction(connection, namespace, event)
-            for event in command_events
+            append_event_in_transaction(connection, namespace, event) for event in command_events
         )
         if command_events:
             task = rebuild_task_in_transaction(connection, namespace, root_session_id)
@@ -314,11 +312,15 @@ def load_task_binding(
     *,
     deployment_namespace: str,
     task_id: TaskId,
+    task_io_connections: TaskIoConnections | None = None,
 ) -> TaskBindingSnapshot | None:
     """Reconstruct the latest immutable binding snapshot for one Task."""
 
-    database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
-    with database.connect() as connection:
+    database = PostgresDatabase(
+        dsn, deployment_namespace=deployment_namespace, task_io_connections=task_io_connections
+    )
+    with database.connect_task_io() as connection:
+        connection.execute("SET TRANSACTION READ ONLY")
         row = connection.execute(
             """
             SELECT snapshot_json FROM task_binding_snapshots

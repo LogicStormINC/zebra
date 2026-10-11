@@ -72,13 +72,19 @@ def _skill_gateway() -> ScriptedModelGateway:
             ScriptedModelResponse(
                 completion=ModelCompletion(
                     assistant_message=SessionMessage(
-                        message_id=new_message_id(), role=MessageRole.ASSISTANT,
-                        content="Reading the frozen cloud Skill.", created_at=datetime.now(UTC),
+                        message_id=new_message_id(),
+                        role=MessageRole.ASSISTANT,
+                        content="Reading the frozen cloud Skill.",
+                        created_at=datetime.now(UTC),
                     ),
-                    tool_calls=(ToolCall(
-                        tool_call_id=new_tool_call_id(), name="skills.read",
-                        arguments={"name": "sample"}, created_at=datetime.now(UTC),
-                    ),),
+                    tool_calls=(
+                        ToolCall(
+                            tool_call_id=new_tool_call_id(),
+                            name="skills.read",
+                            arguments={"name": "sample"},
+                            created_at=datetime.now(UTC),
+                        ),
+                    ),
                 )
             ),
             _final_response("Cloud Skill read completed."),
@@ -88,23 +94,33 @@ def _skill_gateway() -> ScriptedModelGateway:
 
 @pytest.mark.parametrize("tampered", [False, True])
 def test_actual_worker_wires_recovered_skill_tools_and_rejects_object_tamper(
-    dsn, tmp_path, monkeypatch, objects, tampered,
+    dsn,
+    tmp_path,
+    monkeypatch,
+    objects,
+    tampered,
 ) -> None:
     skill_id = publication_identity(
         NAMESPACE,
         ExtensionScope(
-            authority_issuer="https://trench.example", namespace_id="tenant-a",
-            principal_id="user-a", workspace_id="workspace-a",
+            authority_issuer="https://trench.example",
+            namespace_id="tenant-a",
+            principal_id="user-a",
+            workspace_id="workspace-a",
         ),
-        "sample", "1.0",
+        "sample",
+        "1.0",
     )[0]
     service, stores, first_lease = _setup(
-        dsn, tmp_path, monkeypatch, interaction_mode=InteractionMode.CONVERSATION,
-        skill_components=(skill_id,), manifest_digest="0" * 64,
+        dsn,
+        tmp_path,
+        monkeypatch,
+        interaction_mode=InteractionMode.CONVERSATION,
+        skill_components=(skill_id,),
+        manifest_digest="0" * 64,
     )
     assert (
-        service.execute_claimed_session(first_lease).session.status
-        is SessionStatus.AWAITING_TURN
+        service.execute_claimed_session(first_lease).session.status is SessionStatus.AWAITING_TURN
     )
     session_id = first_lease.session_id
     scope_store = PostgresExtensionStore(dsn, deployment_namespace=NAMESPACE)
@@ -113,19 +129,32 @@ def test_actual_worker_wires_recovered_skill_tools_and_rejects_object_tamper(
     async def install():
         publication = await publish_skill_package(
             archive=publication_fixtures._archive("PRIVATE-WORKER-SKILL"),
-            scope=_scope(PostgresExtensionSnapshotStore(
-                dsn, deployment_namespace=NAMESPACE,
-            ).resolve_task_ceiling(session_id=str(session_id))),
-            deployment_namespace=NAMESPACE, store=publications, objects=objects,
+            scope=_scope(
+                PostgresExtensionSnapshotStore(
+                    dsn,
+                    deployment_namespace=NAMESPACE,
+                ).resolve_task_ceiling(session_id=str(session_id))
+            ),
+            deployment_namespace=NAMESPACE,
+            store=publications,
+            objects=objects,
         )
         candidate, _ = await create_skill_installation(
-            store=scope_store, scope=publication.scope, idempotency_key="worker-skill",
-            payload={"skill_id": publication.version.skill_id,
-                     "version_id": publication.version.version_id},
+            store=scope_store,
+            scope=publication.scope,
+            idempotency_key="worker-skill",
+            payload={
+                "skill_id": publication.version.skill_id,
+                "version_id": publication.version.version_id,
+            },
         )
         return await set_extension_enabled(
-            store=scope_store, scope=publication.scope, kind="skill",
-            object_id=candidate.installation_id, expected_revision=1, enabled=True,
+            store=scope_store,
+            scope=publication.scope,
+            kind="skill",
+            object_id=candidate.installation_id,
+            expected_revision=1,
+            enabled=True,
         )
 
     installed = asyncio.run(install())
@@ -133,16 +162,23 @@ def test_actual_worker_wires_recovered_skill_tools_and_rejects_object_tamper(
     ceiling = snapshots.resolve_task_ceiling(session_id=str(session_id))
     turn_id = str(derive_turn_id(session_id, 1))
     snapshot = ExtensionSnapshot(
-        scope=installed.scope, session_id=str(session_id), turn_id=turn_id,
+        scope=installed.scope,
+        session_id=str(session_id),
+        turn_id=turn_id,
         skills=(installed,),
     )
     previous = stores.events.list_for_session(session_id)[-1]
     accepted = _accepted(
-        snapshot, expected_revision=previous.sequence,
-        sequence=previous.sequence + 1, key=f"worker-skill-{tampered}",
+        snapshot,
+        expected_revision=previous.sequence,
+        sequence=previous.sequence + 1,
+        key=f"worker-skill-{tampered}",
     )
     stores.events.append_with_extension_snapshot(
-        accepted, scope=snapshot.scope, snapshot=snapshot, task_ceiling=ceiling,
+        accepted,
+        scope=snapshot.scope,
+        snapshot=snapshot,
+        task_ceiling=ceiling,
     )
     handoff = _handoff(dsn, accepted)
     assert handoff.status is HandoffStatus.ACCEPTED and handoff.lease is not None
@@ -155,17 +191,25 @@ def test_actual_worker_wires_recovered_skill_tools_and_rejects_object_tamper(
     service._extension_snapshot_store = snapshots
     service._task_binding_loader = lambda _task_id: ceiling.binding
     service._extension_skills = WorkerSkillCatalogSource(
-        scope_store, cast(ArtifactObjectStorePort, ObjectReader()),
+        scope_store,
+        cast(ArtifactObjectStorePort, ObjectReader()),
     )
     gateway = _skill_gateway()
     monkeypatch.setattr(
-        "zebra_agent_worker.execution.build_model_gateway", lambda _settings: gateway,
+        "zebra_agent_worker.execution.build_model_gateway",
+        lambda _settings: gateway,
     )
     result = service.execute_claimed_session(handoff.lease)
     events = stores.events.list_for_session(session_id)
-    tools = [event for event in events if event.event_type in {
-        EventType.TOOL_EXECUTION_COMPLETED, EventType.TOOL_EXECUTION_FAILED,
-    }]
+    tools = [
+        event
+        for event in events
+        if event.event_type
+        in {
+            EventType.TOOL_EXECUTION_COMPLETED,
+            EventType.TOOL_EXECUTION_FAILED,
+        }
+    ]
     assert any(tool.name == "skills.read" for tool in gateway.tool_requests[-1])
     if tampered:
         assert tools[-1].event_type is EventType.TOOL_EXECUTION_FAILED
@@ -389,31 +433,45 @@ def test_bound_handoff_missing_or_tampered_correlation_fails_closed(
     )
     service.execute_claimed_session(handed_off.lease)
     input_id = _receipt(dsn, accepted)["input_event_id"]
+    original = stores.events.list_for_session(accepted.session_id)
+    expected_guard = "source Events" if corruption == "missing" else "business fields"
     with psycopg.connect(dsn) as connection:
-        if corruption == "missing":
-            connection.execute(
-                "UPDATE command_handoff_receipts SET input_event_id=NULL "
-                "WHERE deployment_namespace=%s AND accepted_event_id=%s",
-                (NAMESPACE, accepted.event_id),
-            )
-            connection.execute(
-                "DELETE FROM task_event_index WHERE deployment_namespace=%s AND event_id=%s",
-                (NAMESPACE, input_id),
-            )
-            connection.execute(
-                "DELETE FROM session_events WHERE deployment_namespace=%s AND event_id=%s",
-                (NAMESPACE, input_id),
-            )
-        else:
-            connection.execute(
-                "UPDATE session_events SET causation_id=%s WHERE deployment_namespace=%s "
-                "AND event_id=%s",
-                (uuid4(), NAMESPACE, input_id),
-            )
+        with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState, match=expected_guard):
+            if corruption == "missing":
+                connection.execute(
+                    "UPDATE command_handoff_receipts SET input_event_id=NULL "
+                    "WHERE deployment_namespace=%s AND accepted_event_id=%s",
+                    (NAMESPACE, accepted.event_id),
+                )
+                connection.execute(
+                    "DELETE FROM task_event_index WHERE deployment_namespace=%s AND event_id=%s",
+                    (NAMESPACE, input_id),
+                )
+                connection.execute(
+                    "DELETE FROM session_events WHERE deployment_namespace=%s AND event_id=%s",
+                    (NAMESPACE, input_id),
+                )
+            else:
+                connection.execute(
+                    "UPDATE session_events SET causation_id=%s WHERE deployment_namespace=%s "
+                    "AND event_id=%s",
+                    (uuid4(), NAMESPACE, input_id),
+                )
+        connection.rollback()
+    assert stores.events.list_for_session(accepted.session_id) == original
+    assert _receipt(dsn, accepted)["input_event_id"] == input_id
+    # Test the recovery boundary independently; never mutate canonical storage.
+    damaged = [
+        event.model_copy(update={"causation_id": uuid4()})
+        if str(event.event_id) == str(input_id)
+        else event
+        for event in original
+        if corruption != "missing" or str(event.event_id) != str(input_id)
+    ]
     with pytest.raises(ValueError, match="missing canonical materialization"):
         recover_turn_extension(
             store=snapshots,
-            events=stores.events.list_for_session(accepted.session_id),
+            events=damaged,
             session_id=accepted.session_id,
             task_binding=ceiling.binding,
         )
@@ -426,25 +484,45 @@ def test_real_handoff_accepted_identity_tamper_fails_before_reads_or_attempt(
     _, stores, handed_off, accepted, _, snapshots, ceiling = _bound_message(
         dsn, tmp_path, monkeypatch
     )
+    original = stores.events.list_for_session(accepted.session_id)
     with psycopg.connect(dsn) as connection:
-        if corruption == "session":
-            connection.execute(
-                "UPDATE session_events SET payload=jsonb_set(payload, '{session_id}', "
-                "to_jsonb(%s::text)) WHERE deployment_namespace=%s AND event_id=%s",
-                (str(uuid4()), NAMESPACE, accepted.event_id),
-            )
-        elif corruption == "fingerprint":
-            connection.execute(
-                "UPDATE session_events SET payload=jsonb_set(payload, '{payload,content}', "
-                "to_jsonb(%s::text)) WHERE deployment_namespace=%s AND event_id=%s",
-                ("tampered", NAMESPACE, accepted.event_id),
-            )
-        else:
-            connection.execute(
-                "UPDATE session_events SET payload=payload - 'extension_snapshot_digest' "
-                "- 'extension_turn_id' WHERE deployment_namespace=%s AND event_id=%s",
-                (NAMESPACE, accepted.event_id),
-            )
+        with pytest.raises(
+            psycopg.errors.ObjectNotInPrerequisiteState,
+            match="projection metadata source is immutable",
+        ):
+            if corruption == "session":
+                connection.execute(
+                    "UPDATE session_events SET payload=jsonb_set(payload, '{session_id}', "
+                    "to_jsonb(%s::text)) WHERE deployment_namespace=%s AND event_id=%s",
+                    (str(uuid4()), NAMESPACE, accepted.event_id),
+                )
+            elif corruption == "fingerprint":
+                connection.execute(
+                    "UPDATE session_events SET payload=jsonb_set(payload, '{payload,content}', "
+                    "to_jsonb(%s::text)) WHERE deployment_namespace=%s AND event_id=%s",
+                    ("tampered", NAMESPACE, accepted.event_id),
+                )
+            else:
+                connection.execute(
+                    "UPDATE session_events SET payload=payload - 'extension_snapshot_digest' "
+                    "- 'extension_turn_id' WHERE deployment_namespace=%s AND event_id=%s",
+                    (NAMESPACE, accepted.event_id),
+                )
+        connection.rollback()
+    assert stores.events.list_for_session(accepted.session_id) == original
+    payload = dict(accepted.payload)
+    if corruption == "session":
+        payload["session_id"] = str(uuid4())
+    elif corruption == "fingerprint":
+        payload["payload"] = {**payload["payload"], "content": "tampered"}
+    else:
+        del payload["extension_snapshot_digest"], payload["extension_turn_id"]
+    damaged = [
+        event.model_copy(update={"payload": payload})
+        if event.event_id == accepted.event_id
+        else event
+        for event in original
+    ]
 
     class CountingStore:
         ceiling_reads = 0
@@ -484,7 +562,7 @@ def test_real_handoff_accepted_identity_tamper_fails_before_reads_or_attempt(
             event_store=cast(object, SimpleNamespace()),
             recorder=cast(DurableHarnessEventRecorder, NoAttemptWrite()),
             claimed=cast(object, SimpleNamespace(lease=handed_off.lease)),
-            events=stores.events.list_for_session(accepted.session_id),
+            events=damaged,
             task=cast(RecoveredTask, SimpleNamespace()),
             active_capsule_id=None,
             as_of=datetime(2026, 9, 7, tzinfo=UTC),

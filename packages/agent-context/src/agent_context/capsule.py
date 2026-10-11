@@ -6,6 +6,8 @@ from hashlib import sha256
 
 from agent_core.domain.context_capsule import ContextCapsule, PendingToolState
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.ports.context_compiler import RuntimeEvidenceInput
+from agent_core.ports.execution_inputs import ExecutionInputEvidence
 
 _TRAILING_PUNCT = "\"'),;>.]}"
 
@@ -128,3 +130,43 @@ def _message_artifact_refs(message: SessionMessage) -> tuple[str, ...]:
         if normalized:
             return (normalized,)
     return ()
+
+
+def execution_evidence_context(evidence: ExecutionInputEvidence) -> RuntimeEvidenceInput:
+    """Expose admitted closed receipts as data, never as active lifecycle authority."""
+    from agent_context.projection_models import ToolResultTombstone
+
+    capsule = evidence.capsule
+    tools = tuple(
+        ToolResultTombstone(
+            tool_name=tool.tool_name,
+            call_id=tool.call_id,
+            status=tool.status,
+            artifact_uri=tool.artifact_uri,
+            checksum=tool.output_sha256,
+            original_characters=tool.output_characters,
+        ).render()
+        + "\nArguments: "
+        + json.dumps(tool.arguments, sort_keys=True, ensure_ascii=False)
+        for tool in evidence.tools
+    )
+    return RuntimeEvidenceInput(
+        kind="execution_receipt_evidence",
+        summary=capsule.objective,
+        details=(*capsule.protected_user_constraints, *capsule.decisions, *tools),
+        metadata={
+            "capsule_id": capsule.capsule_id,
+            "profile": capsule.profile,
+            "source_hash": capsule.source_hash,
+            "source_event_range": (
+                capsule.source_event_range.model_dump() if capsule.source_event_range else None
+            ),
+            "closing_event_id": str(evidence.closing_event_id),
+            "run_event_id": str(evidence.run_event_id),
+            "archived_model_requests": evidence.model_request_count,
+            "archived_model_responses": evidence.model_response_count,
+            "known_omissions": list(capsule.known_omissions),
+            "instruction_boundary": "data",
+            "current_run_budget_authority": False,
+        },
+    )

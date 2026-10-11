@@ -33,6 +33,16 @@ x-zebra-cloud-environment: &zebra-cloud-environment
   ZEBRA_DEVELOPMENT_UNRESTRICTED: ${ZEBRA_DEVELOPMENT_UNRESTRICTED:-false}
   ZEBRA_COMMAND_TICK_SECONDS: ${ZEBRA_COMMAND_TICK_SECONDS:-10}
   ZEBRA_WORKSPACE_VOLUME_LAYOUT: ${ZEBRA_WORKSPACE_VOLUME_LAYOUT:-}
+  ZEBRA_PUBLIC_OUTPUT_VERSION: ${ZEBRA_PUBLIC_OUTPUT_VERSION:-2026-10-02.1}
+  ZEBRA_PUBLIC_OUTPUT_WAIT_SECONDS: ${ZEBRA_PUBLIC_OUTPUT_WAIT_SECONDS:-20}
+  ZEBRA_PUBLIC_OUTPUT_MAX_OUTPUTS: ${ZEBRA_PUBLIC_OUTPUT_MAX_OUTPUTS:-64}
+  ZEBRA_PUBLIC_OUTPUT_MAX_CHARACTERS: ${ZEBRA_PUBLIC_OUTPUT_MAX_CHARACTERS:-4000}
+  ZEBRA_PUBLIC_OUTPUT_DELTA_CHARACTERS: ${ZEBRA_PUBLIC_OUTPUT_DELTA_CHARACTERS:-256}
+  ZEBRA_PUBLIC_OUTPUT_DELTA_SECONDS: ${ZEBRA_PUBLIC_OUTPUT_DELTA_SECONDS:-0.1}
+  ZEBRA_PUBLIC_OUTPUT_EXPRESSION_MAX_CALLS: ${ZEBRA_PUBLIC_OUTPUT_EXPRESSION_MAX_CALLS:-0}
+  ZEBRA_PUBLIC_OUTPUT_EXPRESSION_DEADLINE_SECONDS: ${ZEBRA_PUBLIC_OUTPUT_EXPRESSION_DEADLINE_SECONDS:-1}
+  ZEBRA_PUBLIC_OUTPUT_EXPRESSION_INPUT_CHARACTERS: ${ZEBRA_PUBLIC_OUTPUT_EXPRESSION_INPUT_CHARACTERS:-1600}
+  ZEBRA_PUBLIC_OUTPUT_EXPRESSION_OUTPUT_TOKENS: ${ZEBRA_PUBLIC_OUTPUT_EXPRESSION_OUTPUT_TOKENS:-128}
 
 x-zebra-application-build: &zebra-application-build
   context: ..
@@ -42,6 +52,7 @@ x-zebra-application-build: &zebra-application-build
 
 services:
   zebra-migrate:
+    platform: ${ZEBRA_APPLICATION_PLATFORM:-linux/amd64}
     build:
       <<: *zebra-application-build
       target: migrate
@@ -52,6 +63,7 @@ services:
     networks: [dependencies]
 
   zebra-api:
+    platform: ${ZEBRA_APPLICATION_PLATFORM:-linux/amd64}
     build:
       <<: *zebra-application-build
       target: api
@@ -112,6 +124,7 @@ services:
     networks: [dependencies]
 
   zebra-worker:
+    platform: ${ZEBRA_APPLICATION_PLATFORM:-linux/amd64}
     build:
       <<: *zebra-application-build
       target: worker-engine
@@ -152,10 +165,10 @@ services:
         - CMD-SHELL
         - >-
           /app/.venv/bin/python -c "import os; from zebra_agent_config import load_settings; s=load_settings(); assert os.environ.get(s.model.api_key_env)" &&
-          docker version --format '{{.Server.Version}}' >/dev/null &&
+          /app/.venv/bin/python -m zebra_agent_worker.runtime_preflight &&
           kill -0 1
       interval: 10s
-      timeout: 3s
+      timeout: 30s
       retries: 3
     networks: [dependencies]
 

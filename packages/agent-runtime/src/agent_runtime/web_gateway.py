@@ -1,16 +1,30 @@
 from __future__ import annotations
 
 import ipaddress
+import json
+import math
+import os
+import signal
 import socket
+import subprocess
+import sys
 import urllib.error
 import urllib.request
+from collections.abc import Callable
+from contextlib import redirect_stdout
+from dataclasses import asdict
+from http.client import HTTPException, HTTPResponse
+from threading import Lock
+from time import monotonic
 
 from agent_tools.web_gateway import (
     WebGatewayError,
     WebGatewayRequest,
     WebGatewayResponse,
 )
+from pydantic import TypeAdapter
 
+from agent_runtime.process_execution import _terminate_process_tree
 from agent_runtime.web_content import project_web_text
 
 ALLOWED_CONTENT_TYPES = frozenset({"application/json", "application/xml", "application/xhtml+xml"})
@@ -24,10 +38,27 @@ class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
 class LocalWebGatewayTransport:
     """Bounded local adapter; production deployments should replace it with an egress proxy."""
 
-    def __init__(self, *, use_system_proxy: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        use_system_proxy: bool = False,
+        network_cancellation_check: Callable[[], None] | None = None,
+    ) -> None:
         self._use_system_proxy = use_system_proxy
+        self._network_cancellation_check = network_cancellation_check
 
     def execute(self, request: WebGatewayRequest) -> WebGatewayResponse:
+        if self._network_cancellation_check is not None:
+            return TypeAdapter(WebGatewayResponse).validate_python(
+                _native_network_call(
+                    "fetch",
+                    asdict(request),
+                    self._network_cancellation_check,
+                    timeout=request.timeout_seconds,
+                    use_system_proxy=self._use_system_proxy,
+                    max_output_bytes=max(request.max_bytes, request.max_output_bytes) * 6 + 65536,
+                )
+            )
         proxies = _proxy_configuration(
             request.target.hostname,
             use_system_proxy=self._use_system_proxy,
@@ -48,16 +79,7 @@ class LocalWebGatewayTransport:
             with opener.open(outbound, timeout=request.timeout_seconds) as response:
                 content_type = _content_type(response.headers.get("Content-Type", ""))
                 _require_textual_content(content_type)
-                content_length = response.headers.get("Content-Length")
-                if content_length is not None and int(content_length) > request.max_bytes:
-                    raise WebGatewayError(
-                        "web response exceeds the byte limit", reason="response_too_large"
-                    )
-                body = response.read(request.max_bytes + 1)
-                if len(body) > request.max_bytes:
-                    raise WebGatewayError(
-                        "web response exceeds the byte limit", reason="response_too_large"
-                    )
+                body = _read_bounded_body(response, request.max_bytes)
                 charset = response.headers.get_content_charset() or "utf-8"
                 text = body.decode(charset, errors="replace")
                 try:
@@ -83,16 +105,184 @@ class LocalWebGatewayTransport:
             raise
         except urllib.error.HTTPError as exc:
             reason = "redirect_blocked" if 300 <= exc.code < 400 else "http_error"
+            exc.close()
             raise WebGatewayError(f"web gateway HTTP error: {exc.code}", reason=reason) from exc
+        except HTTPException as exc:
+            raise WebGatewayError(
+                "web response body is incomplete", reason="response_incomplete"
+            ) from exc
         except (OSError, UnicodeError, ValueError) as exc:
             raise WebGatewayError(f"web gateway request failed: {exc}") from exc
+
+
+def sticky_network_cancellation_check(
+    check: Callable[[], None] | None,
+) -> Callable[[], None] | None:
+    """Retain the original ownership error even if a Tool catches Exception."""
+    if check is None:
+        return None
+    failure: BaseException | None = None
+    lock = Lock()
+
+    def require_active() -> None:
+        nonlocal failure
+        with lock:
+            if failure is not None:
+                raise failure
+            try:
+                check()
+            except BaseException as exc:
+                failure = exc
+                raise
+
+    return require_active
+
+
+def _native_network_call(
+    operation: str,
+    arguments: object,
+    check: Callable[[], None],
+    *,
+    timeout: float,
+    use_system_proxy: bool = False,
+    max_output_bytes: int = 4_194_304,
+) -> object:
+    """Kill/reap native DNS/TLS/reads, following the existing JWKS child pattern."""
+    if not math.isfinite(timeout) or timeout <= 0 or max_output_bytes <= 0:
+        raise ValueError("native network request bounds must be finite and positive")
+    check()
+    deadline = monotonic() + timeout
+    # ponytail: one short-lived child per native request; a persistent egress
+    # driver is the throughput upgrade, not abandoning a blocked executor thread.
+    child = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "from agent_runtime.web_gateway import _network_child; _network_child()",
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        start_new_session=os.name == "posix",
+    )
+    try:
+        data: bytes | None = json.dumps(
+            (operation, arguments, use_system_proxy, max_output_bytes)
+        ).encode()
+        while True:
+            check()
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise WebGatewayError("native network request deadline exceeded")
+            try:
+                output, _ = child.communicate(data, timeout=min(0.05, remaining))
+            except subprocess.TimeoutExpired:
+                data = None
+                continue
+            check()  # A completed child must not publish after the Task signal.
+            if child.returncode or len(output) > max_output_bytes:
+                raise WebGatewayError("native network request failed or exceeded its output bound")
+            result = json.loads(output)
+            if "error" in result:
+                raise WebGatewayError(result["error"], reason=result["reason"])
+            return result["result"]
+    except BaseException as primary:
+        # Cleanup has one bounded grace period, never another body read or unbounded wait.
+        cleanup_deadline = monotonic() + 0.5
+        steps: tuple[tuple[str, Callable[[], object]], ...] = (
+            ("group kill", lambda: _terminate_process_tree(child)),
+            *(
+                (("raw group kill", lambda: os.killpg(child.pid, signal.SIGKILL)),)
+                if os.name == "posix"
+                else ()
+            ),
+            ("process kill", child.kill),
+            *(
+                ("pipe close", pipe.close)
+                for pipe in (child.stdin, child.stdout, child.stderr)
+                if pipe is not None
+            ),
+            ("reap", lambda: child.wait(timeout=max(0.001, cleanup_deadline - monotonic()))),
+        )
+        for stage, action in steps:
+            try:
+                action()
+            except ProcessLookupError:
+                pass  # The child/group is already gone; continue closing and reaping.
+            except BaseException as cleanup:
+                primary.add_note(f"native network {stage} failed: {type(cleanup).__name__}")
+        raise
+
+
+def _network_child() -> None:
+    """Private stdin protocol; URL admission and native transport rules are unchanged."""
+    operation, arguments, proxy, maximum = json.load(sys.stdin)
+    result: object
+    try:
+        if operation == "fetch":
+            request = TypeAdapter(WebGatewayRequest).validate_python(arguments)
+            result = asdict(LocalWebGatewayTransport(use_system_proxy=proxy).execute(request))
+        elif operation == "search":
+            from agent_tools.web_search import WebSearchRequest
+
+            from agent_runtime.web_search import LocalWebSearchTransport
+
+            request_search = TypeAdapter(WebSearchRequest).validate_python(arguments)
+            result = asdict(LocalWebSearchTransport(use_system_proxy=proxy).execute(request_search))
+        elif operation == "search_json":
+            from agent_runtime.search_providers import urllib_fetch_json
+
+            result = urllib_fetch_json(proxy)(arguments)
+        elif operation == "resolve":
+            from agent_security.ssrf import SsrfError, resolve_and_validate
+
+            try:
+                resolve_and_validate(arguments)
+            except SsrfError as exc:
+                raise WebGatewayError(str(exc), reason="ssrf_blocked") from exc
+            result = None
+        elif operation == "browser_fetch":
+            from agent_tools.web_crawl import FetchProviderError, FetchRequest
+
+            from agent_runtime.crawl_gateway import Crawl4AIFetchProvider
+
+            browser_request = TypeAdapter(FetchRequest).validate_python(arguments["request"])
+            try:
+                with redirect_stdout(sys.stderr):
+                    result = asdict(
+                        Crawl4AIFetchProvider(arguments["headless"]).fetch(browser_request)
+                    )
+            except FetchProviderError as exc:
+                raise WebGatewayError(str(exc), reason=exc.reason) from exc
+        else:
+            raise WebGatewayError("unknown native network operation")
+        output = json.dumps({"result": result})
+        if len(output.encode()) > maximum:
+            raise WebGatewayError(
+                "native network output exceeds its byte bound", reason="response_too_large"
+            )
+        sys.stdout.write(output)
+    except WebGatewayError as exc:
+        json.dump({"error": str(exc), "reason": exc.reason}, sys.stdout)
+
+
+def _read_bounded_body(response: HTTPResponse, maximum: int) -> bytes:
+    """Share byte/short-body admission across fetch and both search transports."""
+    content_length = response.headers.get("Content-Length")
+    if content_length is not None and int(content_length) > maximum:
+        raise WebGatewayError("web response exceeds the byte limit", reason="response_too_large")
+    body = response.read(maximum + 1)
+    if len(body) > maximum:
+        raise WebGatewayError("web response exceeds the byte limit", reason="response_too_large")
+    if content_length is not None and len(body) != int(content_length):
+        raise WebGatewayError("web response body is incomplete", reason="response_incomplete")
+    return body
 
 
 def reject_non_public_resolution(hostname: str, *, port: int = 443) -> None:
     try:
         addresses = {
-            item[4][0]
-            for item in socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+            item[4][0] for item in socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
         }
     except OSError as exc:
         raise WebGatewayError(f"web hostname resolution failed: {exc}") from exc

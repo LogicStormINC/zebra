@@ -32,6 +32,33 @@
     "ZEBRA_E2E_REDIS_URL",
     "ZEBRA_E2E_OBJECT_STORE_HEALTH_URL",
     "ZEBRA_E2E_GRANT_EXCHANGE_URL",
-    "ZEBRA_E2E_WORKER_RESTART_URL"
-  ]
+    "ZEBRA_E2E_WORKER_RESTART_URL",
+    "ZEBRA_E2E_ISOLATION_MANIFEST",
+    "TRENCH_E2E_USER_ID",
+    "TRENCH_E2E_WORKSPACE_ID",
+    "TRENCH_E2E_RUNTIME_TASKS_URL"
+  ],
+  "joint_acceptance": {
+    "minimum_healthy_turns": 100,
+    "fault_samples_separate": true,
+    "legacy_nine_scenarios_are_not_joint_closure": true,
+    "cases": [
+      {"id":"simple_answer","requires":["single_final_commit","no_redundant_preamble"]},
+      {"id":"multi_source","requires":["partial_before_final","coverage_qualifiers"]},
+      {"id":"tool_only","requires":["real_harness_feedback","recovery_no_duplicate_milestones"]},
+      {"id":"slow_execution","requires":["flush_during_silence","truthful_wait"]},
+      {"id":"partial_failure","requires":["real_fault","usable_partial_result","failure_boundary"]},
+      {"id":"image","requires":["preterminal_render","isolated_image_failure"]},
+      {"id":"inline_video","requires":["actual_playback","no_forced_object_store_download"]},
+      {"id":"chart_markdown_latex","requires":["complete_valid_spec","isolated_chart_failure"]},
+      {"id":"revision","requires":["stable_media_node","stable_playback","reader_anchor"]},
+      {"id":"frame_disconnect","requires":["every_frame_real_disconnect","eof","ordered_replay","no_duplicate_tools"]},
+      {"id":"navigation","requires":["refresh","a_b_a","late_ack","observe_only"]},
+      {"id":"worker_takeover","requires":["real_scratch_worker_fault","budget_preserved","no_duplicate_tools"]},
+      {"id":"authority","requires":["cancel","approval","scope_denial","unknown_write_receipt"]},
+      {"id":"bounded_concurrency","requires":["1k_10k_100k_history","1_10_50_100_observers","slow_client_isolation","terminal_cleanup"]}
+    ],
+    "evidence_per_case": ["input","expected","events_and_cursors","browser_screenshot","timing_samples","cleanup"],
+    "pending_resources": ["isolated_authenticated_browser","real_fault_controller","incremental_100_turn_collector"]
+  }
 }

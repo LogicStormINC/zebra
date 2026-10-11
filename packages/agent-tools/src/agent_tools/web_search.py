@@ -142,6 +142,7 @@ class WebSearchTool:
             status=ToolCallStatus.EXECUTED,
             output="\n".join(lines),
             metadata={
+                **response.metadata,
                 "route": "web_gateway",
                 "target": self.endpoint.hostname,
                 "provider": response.provider,
@@ -149,7 +150,6 @@ class WebSearchTool:
                 "truncated": response.truncated,
                 "byte_count": response.byte_count,
                 "untrusted_external_content": True,
-                **response.metadata,
             },
         )
 

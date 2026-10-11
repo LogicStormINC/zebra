@@ -13,6 +13,7 @@ from agent_core.ports import ArtifactObjectStorePort
 from botocore.config import Config  # type: ignore[import-untyped]
 from botocore.session import Session  # type: ignore[import-untyped]
 
+from agent_storage.artifact_object_reads import bounded_s3_read_client
 from agent_storage.artifact_objects import S3ArtifactObjectStore
 from agent_storage.composition import ControlPlaneStores, sqlite_control_plane_stores
 from agent_storage.postgres.migration_runner import require_current_schema
@@ -95,6 +96,7 @@ def cloud_composition_from_environment(
         artifact_objects=S3ArtifactObjectStore(
             cast(Any, client),
             bucket=bucket,
+            read_client=cast(Any, bounded_s3_read_client(client)),
             key_prefix=_optional(values, "ZEBRA_S3_KEY_PREFIX") or "zebra/artifacts/v1",
         ),
         history_scope=history_scope,

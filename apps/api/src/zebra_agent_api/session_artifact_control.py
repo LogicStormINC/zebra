@@ -6,6 +6,7 @@ from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports import SessionArtifact
+from agent_core.ports.session_artifact_read import SessionArtifactReadUnavailableError
 from agent_security import build_artifact_control_audit_metadata
 from agent_storage import (
     ControlPlaneStores,
@@ -118,9 +119,14 @@ class SessionArtifactControlApi:
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        for artifact in self.stores.artifacts.list_for_session(session_key):
-            if artifact.artifact_id == artifact_id:
-                return artifact
+        try:
+            artifact = self.stores.artifacts.get_for_session(session_key, artifact_id)
+        except SessionArtifactReadUnavailableError:
+            return ApiResponse(
+                503, {"status": "artifact_unavailable", "reason": "artifact_index_unavailable"}
+            )
+        if artifact is not None:
+            return artifact
         return ApiResponse(
             status_code=404,
             body={

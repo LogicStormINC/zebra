@@ -10,6 +10,7 @@ expected UI revision; the harness then suspends as
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any
 
 from agent_control_plane.client_effects import (
@@ -114,6 +115,9 @@ class ClientToolGateway:
             fence_hash=self._context.fence_hash,
             expected_ui_revision=self._context.ui_revision,
             session_id=self._context.session_id,
+            effect_ttl=timedelta(
+                seconds=600 if contract.risk is ClientActionRisk.USER_INTERACTION else 30
+            ),
         )
         continuation = build_client_effect_continuation(
             request,

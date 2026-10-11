@@ -95,6 +95,8 @@ def build_execution_tool_gateway(
     materialized_context: ContextMaterialization | None,
     extension: RecoveredTurnExtension | None,
     fence: LeaseFence,
+    attempt_number: int = 1,
+    network_cancellation_check: Callable[[], None] | None = None,
 ) -> WorkerToolGateway:
     """Compose one execution gateway from already trusted Worker state."""
     gateway = build_worker_tool_gateway(
@@ -111,11 +113,13 @@ def build_execution_tool_gateway(
         trusted_local=trusted_local,
         egress_registry=service._egress_registry,
         delegation_store=service._delegation_store,
-        parent_task_id=session_id,
+        parent_task_id=task_binding.task_id if task_binding else session_id,
+        parent_attempt_number=attempt_number,
         durable_delegation=service._settings.deployment == "cloud",
         parent_binding_digest=task_binding.binding_digest if task_binding else None,
         parent_binding=task_binding,
         parent_context=materialized_context,
+        network_cancellation_check=network_cancellation_check,
         manifest_digest=(task_binding.host_capability.manifest_digest if task_binding else None),
         frozen_manifest_loader=service._frozen_manifest_loader,
         client_gateway=(service._client_runtime(session_id) if service._client_runtime else None),
@@ -130,26 +134,30 @@ def build_execution_tool_gateway(
             else ()
         ),
         cloud_mcp_transport=prepare_worker_mcp(
-            extension, source=service._extensions.mcp, session_id=session_id, fence=fence,
+            extension,
+            source=service._extensions.mcp,
+            session_id=session_id,
+            fence=fence,
         ),
         resource_authority_issuer=(
             task_binding.host_capability.authority_issuer if task_binding is not None else None
         ),
     )
     gateway.management = prepare_extension_management(
-        extension, mcp=service._extensions.mcp, skills=service._extensions.skills,
-        session_id=session_id, fence=fence,
-        allow_network=task.network_profile.name.value in (
-            "mcp-proxy-only", "full-gateway", "full-trusted-local"
-        ),
+        extension,
+        mcp=service._extensions.mcp,
+        skills=service._extensions.skills,
+        session_id=session_id,
+        fence=fence,
+        allow_network=task.network_profile.name.value
+        in ("mcp-proxy-only", "full-gateway", "full-trusted-local"),
     )
     if gateway.management is not None and extension is not None:
         context = extension.task_ceiling.binding.host_capability.host_context
         assert context is not None
         gateway.management_names = (
-            (READ_NAMES if "extensions.read" in context.scopes else frozenset())
-            | (WRITE_NAMES if "extensions.manage" in context.scopes else frozenset())
-        )
+            READ_NAMES if "extensions.read" in context.scopes else frozenset()
+        ) | (WRITE_NAMES if "extensions.manage" in context.scopes else frozenset())
         if gateway.management.refresh is None:
             gateway.management_names -= {"extensions.refresh_mcp"}
         if gateway.management.import_skill is None:

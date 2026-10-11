@@ -1,0 +1,7 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+# Reuse installed dependencies, not mutable application settings or state.
+COPY packages /app/packages
+COPY services /app/services
+COPY infra /app/infra
+COPY pyproject.toml pdm.lock /app/

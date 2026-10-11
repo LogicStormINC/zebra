@@ -31,7 +31,7 @@ postgres_dsn = _pg_fixture
 SCOPE = OpaqueAuthorityScope(authority_issuer="https://trench.example", namespace_id="tenant-a")
 
 
-def _setup(dsn, *, event=None):
+def _setup(dsn, *, event=None, validated_at=None):
     event = _prepare(dsn) if event is None else event
     lease = _handoff(dsn, event).lease
     snapshot = _authority(SCOPE).resolve_for_attempt(
@@ -39,7 +39,7 @@ def _setup(dsn, *, event=None):
             session_id=event.session_id,
             attempt_number=1,
             scope=SCOPE,
-            validated_at=datetime.now(UTC),
+            validated_at=validated_at or datetime.now(UTC),
         )
     )
     _store(dsn).append(

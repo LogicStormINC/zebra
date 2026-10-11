@@ -4,10 +4,12 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
+from contextlib import nullcontext
 from pathlib import Path
 
 import httpx
 from agent_core.domain.sessions import SessionStatus
+from agent_storage.postgres.connection_pool import postgres_pool_scope
 from zebra_agent_config import load_settings
 
 from zebra_agent_worker.claims import SessionClaimService
@@ -26,7 +28,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     database_path = Path(namespace.database or settings.database_url)
     # The process may need an internal CA for Host Grant traffic, but model
     # providers use public TLS. Keep their client independent of SSL_CERT_FILE.
-    with httpx.Client(
+    with (
+        postgres_pool_scope(settings.database_url)
+        if settings.storage_authority == "postgresql" else nullcontext()
+    ), httpx.Client(
         timeout=httpx.Timeout(60.0, connect=10.0),
         trust_env=False,
     ) as model_http_client:

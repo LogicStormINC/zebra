@@ -90,9 +90,7 @@ def test_history_read_pages_only_user_and_assistant_text(tmp_path: Path) -> None
         )
     )
 
-    assert [(item.role, item.content) for item in first_page.messages] == [
-        ("user", "user text")
-    ]
+    assert [(item.role, item.content) for item in first_page.messages] == [("user", "user text")]
     assert first_page.next_offset == 1
     assert first_page.truncated is True
     assert [(item.role, item.content) for item in result.messages] == [
@@ -125,6 +123,43 @@ def test_history_scope_filters_browse_search_and_direct_reads(tmp_path: Path) ->
     assert [item.session_id for item in searched.sessions] == [str(allowed)]
     assert denied_read.sessions == ()
     assert denied_read.messages == ()
+
+
+def test_auxiliary_receipts_do_not_consume_history_pages_or_counts(tmp_path: Path) -> None:
+    database = tmp_path / "history.db"
+    session_id = _stored_session(database, "Auxiliary receipts", "user text", minute=1)
+    store = SQLiteEventStore(database)
+    for sequence, stage, text in (
+        (4, "public_expression", "PRIVATE-ORDER-JSON"),
+        (5, "candidate", "Confirmed final answer"),
+    ):
+        store.append(
+            SessionEvent.create(
+                session_id=session_id,
+                sequence=sequence,
+                event_type=EventType.MODEL_RESPONSE_RECEIVED,
+                actor=EventActor.HARNESS,
+                created_at=_at(1),
+                payload={"response_stage": stage, "assistant_message": text},
+            )
+        )
+    history = SQLiteSessionHistory(database)
+    page = history.query(
+        SessionHistoryRequest(
+            mode=SessionHistoryMode.READ,
+            session_id=str(session_id),
+            offset=2,
+            limit=1,
+        )
+    )
+    assert page.total_count == 3 and page.next_offset is None
+    assert [message.content for message in page.messages] == ["Confirmed final answer"]
+    assert not history.query(
+        SessionHistoryRequest(
+            mode=SessionHistoryMode.SEARCH,
+            query="PRIVATE-ORDER-JSON",
+        )
+    ).sessions
 
 
 def _stored_session(database: Path, title: str, prompt: str, *, minute: int):

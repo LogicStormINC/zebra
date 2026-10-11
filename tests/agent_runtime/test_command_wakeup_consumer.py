@@ -242,6 +242,7 @@ def test_invalid_delivery_ack_waits_for_durable_quarantine(monkeypatch):
 @pytest.mark.parametrize(
     ("status", "expected", "acks", "requeues"),
     [
+        (runtime.HandoffStatus.PREPARING, runtime.PickupOutcome.DEFERRED, 0, 1),
         (runtime.HandoffStatus.SCOPE_DEFERRED, runtime.PickupOutcome.DEFERRED, 0, 1),
         (runtime.HandoffStatus.SCOPE_SETTLED, runtime.PickupOutcome.ACKNOWLEDGED, 1, 0),
     ],
@@ -269,6 +270,38 @@ def test_stale_broker_hint_yields_to_fallback_then_acks_after_settlement(
             delivery = Delivery(body)
             assert await consumer.on_delivery(delivery) is expected
             assert (delivery.acks, delivery.requeues) == (acks, requeues)
+        finally:
+            await consumer.close()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "status", [runtime.ControlStatus.PREPARING, runtime.ControlStatus.SCOPE_DEFERRED]
+)
+def test_control_preparation_requeues_without_ack(monkeypatch, status):
+    event, _, body = _fixture(monkeypatch)
+    monkeypatch.setattr(
+        runtime,
+        "resolve_command_pickup",
+        lambda *a, **k: ResolvedCommand(event.event_id, SCOPE, SessionCommandKind.CANCEL),
+    )
+    monkeypatch.setattr(
+        runtime, "handle_control_command", lambda *a, **k: SimpleNamespace(status=status)
+    )
+
+    async def scenario():
+        consumer = runtime.CommandWakeupConsumer(
+            "unused",
+            deployment_namespace="deployment",
+            owner="worker",
+            execute_claimed=lambda _: pytest.fail("preparing control must not execute"),
+            quarantine=_quarantine,
+        )
+        delivery = Delivery(body)
+        try:
+            assert await consumer.on_delivery(delivery) is runtime.PickupOutcome.DEFERRED
+            assert delivery.acks == 0 and delivery.requeues == 1
         finally:
             await consumer.close()
 

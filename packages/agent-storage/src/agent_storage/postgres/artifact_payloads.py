@@ -31,13 +31,24 @@ from agent_storage.postgres.artifact_payload_worker_transitions import (
 )
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.leases import assert_current_lease_fence
+from agent_storage.postgres.task_io import TaskIoConnections
 
 
 class PostgresCloudArtifactPayloadStore(ArtifactPayloadManagementMixin):
     """Persist cloud payload lifecycle facts without performing object I/O."""
 
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    def __init__(
+        self,
+        dsn: str,
+        *,
+        deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> None:
+        self._database = PostgresDatabase(
+            dsn,
+            deployment_namespace=deployment_namespace,
+            task_io_connections=task_io_connections,
+        )
 
     def reserve_for_worker(
         self,

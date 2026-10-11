@@ -11,17 +11,25 @@ default Worker loop.
 
 from __future__ import annotations
 
+import subprocess
 import threading
 import time
+from contextlib import contextmanager
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from time import monotonic
 from uuid import UUID, uuid4
 
 import httpx
 import jwt
+import psycopg
 import pytest
 import uvicorn
+from agent_core.domain.identifiers import TaskId
+from agent_core.domain.task_bindings import task_bound_host_thread
 from agent_storage import HostRegistryRecord, PostgresHostAuthorityStore
+from agent_storage.postgres.task_io import TaskIoConnection
 from agent_storage.runtime_composition import CloudCompositionSettings
 from cryptography.hazmat.primitives.asymmetric import rsa
 from zebra_agent_api.host_auth import (
@@ -30,14 +38,42 @@ from zebra_agent_api.host_auth import (
 )
 from zebra_agent_api.http import create_http_app
 
+from tests.agent_security.test_jwks_bounds import jwks_server as _jwks_server
 from tests.agent_storage.test_postgres_default_chain_e2e import (
     PARENT_PROMPT,
     _settings,
 )
+from tests.api.test_postgres_host_auth_authorizer import _settings as _auth_settings
+from tests.api.test_postgres_host_auth_authorizer import dsn as _native_auth_dsn
+from tests.test_cloud_api_worker_profile_composition import _cloud_settings
 
 ISSUER = "https://api.trench-e2e.example.com"
 ORIGIN = "https://trench-e2e.example.com"
 AUDIENCE = "zebra-embedded"
+HOST_THREAD = "Trench:opaque/thread-http-e2e"
+jwks_server = _jwks_server
+native_auth_dsn = _native_auth_dsn
+
+
+@contextmanager
+def _http_socket(http_app):
+    server = uvicorn.Server(
+        uvicorn.Config(http_app, host="127.0.0.1", port=0, log_level="critical")
+    )
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    try:
+        for _ in range(200):
+            if server.started:
+                break
+            time.sleep(0.05)
+        assert server.started, "uvicorn failed to start"
+        port = server.servers[0].sockets[0].getsockname()[1]
+        yield f"http://127.0.0.1:{port}"
+    finally:
+        server.should_exit = True
+        thread.join(timeout=10)
+        assert not thread.is_alive()
 
 
 class _StaticResolver:
@@ -46,8 +82,9 @@ class _StaticResolver:
     def __init__(self, key: object) -> None:
         self._key = key
 
-    def resolve(self, jwks_uri: str, token: str) -> object:
+    def resolve(self, jwks_uri: str, token: str, *, deadline: float | None = None) -> object:
         assert jwks_uri.startswith("https://")
+        assert deadline is not None
         return self._key
 
 
@@ -77,7 +114,11 @@ def _claims(jti: str, tenant: str, *, scopes: list[str] | None = None) -> dict:
         "host_app_id": "trench-e2e",
         "namespace_id": tenant,
         "workspace_ref": "workspace-e2e",
-        "resource_refs": [{"type": "trench.event", "id": "evt-e2e"}],
+        "resource_refs": [
+            {"type": "trench.event", "id": "evt-e2e"},
+            {"type": "thread", "id": HOST_THREAD},
+            {"type": "principal", "id": "opaque-subject"},
+        ],
         "scopes": scopes if scopes is not None else ["agent.run"],
         "limits": {
             "max_runtime_seconds": 300,
@@ -128,25 +169,217 @@ def boundary(
             settings=_settings(stub_model_server, postgres_dsn),
             cloud_composition=cloud,
         )
-    server = uvicorn.Server(
-        uvicorn.Config(http_app, host="127.0.0.1", port=0, log_level="critical")
+    with _http_socket(http_app) as base_url:
+        yield {
+            "base_url": base_url,
+            "sign": lambda claims: jwt.encode(claims, private_key, algorithm="RS256"),
+            "api": api,
+            "cloud": cloud,
+        }
+
+
+@pytest.fixture
+def native_boundary(native_auth_dsn, jwks_server, tmp_path):
+    """Real auth/admission/target I/O only; object I/O fails if accidentally used."""
+    from agent_security import CachingJwksKeyResolver
+    from zebra_agent_api.factory import create_app
+
+    uri, key, calls, entered, closed = jwks_server
+    namespace = "native-pregrant"
+    cloud = replace(_cloud_settings(), dsn=native_auth_dsn, deployment_namespace=namespace)
+    registry = PostgresHostAuthorityStore(native_auth_dsn, deployment_namespace=namespace)
+    record = replace(_registry(namespace), jwks_uri=uri + "/keys")
+    registry.upsert_registry(record)
+    authorizer = PostgresHostGrantRequestAuthorizer(
+        registry=registry, decoder=PyJwtHostGrantDecoder(CachingJwksKeyResolver())
     )
-    thread = threading.Thread(target=server.run, daemon=True)
-    thread.start()
-    for _ in range(200):
-        if server.started:
-            break
-        time.sleep(0.05)
-    assert server.started, "uvicorn failed to start"
-    port = server.servers[0].sockets[0].getsockname()[1]
-    yield {
-        "base_url": f"http://127.0.0.1:{port}",
-        "sign": lambda claims: jwt.encode(claims, private_key, algorithm="RS256"),
-        "api": api,
-        "cloud": cloud,
-    }
-    server.should_exit = True
-    thread.join(timeout=10)
+    settings = _auth_settings(native_auth_dsn)
+    http_app = create_http_app(
+        tmp_path / "unused.sqlite",
+        settings=settings,
+        cloud_composition=cloud,
+        host_grant_authorizer=authorizer,
+    )
+    api = create_app(tmp_path / "unused.sqlite", settings=settings, cloud_composition=cloud)
+    with _http_socket(http_app) as base_url, httpx.Client(base_url=base_url, timeout=5) as client:
+        yield {
+            "client": client,
+            "sign": lambda claims: jwt.encode(
+                claims, key, algorithm="RS256", headers={"kid": "current"}
+            ),
+            "api": api,
+            "registry": registry,
+            "record": record,
+            "dsn": native_auth_dsn,
+            "jwks_calls": calls,
+            "namespace": namespace,
+            "jwks_uri": uri,
+            "jwks_entered": entered,
+            "jwks_closed": closed,
+        }
+
+
+def _native_headers(boundary, claims):
+    return {"Authorization": "Bearer " + boundary["sign"](claims), "Origin": ORIGIN}
+
+
+def _native_create(boundary, tmp_path):
+    claims = _claims(str(uuid4()), boundary["namespace"])
+    response = boundary["client"].post(
+        "/tasks",
+        json={
+            "title": "Native admission",
+            "prompt": "Read only",
+            "workspace": str(tmp_path),
+            "execute": False,
+        },
+        headers=_native_headers(boundary, claims),
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["task_id"]
+
+
+@pytest.mark.parametrize("fault", ["missing_thread", "ambiguous_thread", "missing_principal"])
+def test_native_http_creation_rejects_illegal_authority_before_jti(
+    native_boundary, tmp_path, fault
+):
+    boundary = native_boundary
+    claims = _claims(str(uuid4()), boundary["namespace"])
+    if fault == "ambiguous_thread":
+        claims["resource_refs"].append({"type": "thread", "id": "second"})
+    else:
+        resource_type = "thread" if fault == "missing_thread" else "principal"
+        claims["resource_refs"] = [
+            ref for ref in claims["resource_refs"] if ref["type"] != resource_type
+        ]
+    response = boundary["client"].post(
+        "/tasks",
+        json={
+            "title": "Denied admission",
+            "prompt": "Read",
+            "workspace": str(tmp_path),
+            "execute": False,
+        },
+        headers=_native_headers(boundary, claims),
+    )
+    assert response.status_code == 403
+    assert boundary["registry"].list_audit(issuer=ISSUER, jti=claims["jti"]) == ()
+    with psycopg.connect(boundary["dsn"]) as verify:
+        assert verify.execute("SELECT count(*) FROM host_grant_replay_ledger").fetchone() == (0,)
+        assert verify.execute("SELECT count(*) FROM task_binding_snapshots").fetchone() == (0,)
+
+
+@pytest.mark.parametrize("fault", [None, "thread", "task_as_thread", "principal", "issuer", "run"])
+def test_native_http_exact_current_target_precedes_atomic_consumption(
+    native_boundary, tmp_path, fault
+):
+    boundary = native_boundary
+    task_id = _native_create(boundary, tmp_path)
+    binding = boundary["api"].cloud_control.load_task_binding(TaskId(UUID(task_id)))
+    assert binding is not None
+    assert task_bound_host_thread(binding, task_id=task_id).resource_id == HOST_THREAD
+    claims = _claims(str(uuid4()), boundary["namespace"])
+    path = f"/tasks/{task_id}"
+    if fault in {"thread", "task_as_thread", "principal"}:
+        for ref in claims["resource_refs"]:
+            if ref["type"] == ("principal" if fault == "principal" else "thread"):
+                ref["id"] = task_id if fault == "task_as_thread" else "foreign"
+    elif fault == "issuer":
+        record = replace(boundary["record"], issuer="https://new-issuer.example.com")
+        boundary["registry"].upsert_registry(record)
+        claims["iss"] = record.issuer
+    elif fault == "run":
+        claims["resource_refs"].append({"type": "run", "id": "other-run"})
+        path = f"/agui/threads/{task_id}/runs/requested-run/stream"
+    response = boundary["client"].get(path, headers=_native_headers(boundary, claims))
+    assert response.status_code == (200 if fault is None else 404), response.text
+    audit = boundary["registry"].list_audit(issuer=claims["iss"], jti=claims["jti"])
+    assert [record.outcome for record in audit] == (["accepted"] if fault is None else [])
+    current = boundary["api"].cloud_control.load_task_binding(TaskId(UUID(task_id)))
+    assert current == binding, "observation must not renew or replace the durable binding"
+    assert boundary["jwks_calls"] == ["/keys"]
+
+
+def test_native_http_lost_commit_reply_is_typed_no_retry_and_no_task(
+    native_boundary, tmp_path, monkeypatch
+):
+    boundary = native_boundary
+    execute, exit_connection = TaskIoConnection.execute, TaskIoConnection.__exit__
+    commits = []
+
+    def mark(self, query, *args, **kwargs):
+        if "INSERT INTO host_grant_replay_ledger" in str(query):
+            self.grant_consuming = True
+        return execute(self, query, *args, **kwargs)
+
+    def lose_reply(self, exc_type, *args):
+        exit_connection(self, exc_type, *args)
+        if exc_type is None and getattr(self, "grant_consuming", False):
+            commits.append(1)
+            raise psycopg.errors.TransactionResolutionUnknown("lost COMMIT acknowledgement")
+
+    monkeypatch.setattr(TaskIoConnection, "execute", mark)
+    monkeypatch.setattr(TaskIoConnection, "__exit__", lose_reply)
+    claims = _claims(str(uuid4()), boundary["namespace"])
+    response = boundary["client"].post(
+        "/tasks",
+        json={
+            "title": "Unknown consumption",
+            "prompt": "Read",
+            "workspace": str(tmp_path),
+            "execute": False,
+        },
+        headers=_native_headers(boundary, claims),
+    )
+    assert response.status_code == 503, response.text
+    assert response.json()["reason"] == "host_grant_consumption_unknown"
+    assert response.json()["retryable"] is False
+    assert commits == [1]
+    with psycopg.connect(boundary["dsn"]) as verify:
+        assert verify.execute("SELECT count(*) FROM host_grant_replay_ledger").fetchone() == (1,)
+        assert verify.execute("SELECT count(*) FROM host_grant_audit").fetchone() == (1,)
+        assert verify.execute("SELECT count(*) FROM task_binding_snapshots").fetchone() == (0,)
+
+
+def test_native_http_deadline_kills_jwks_and_closes_registry_io_before_consumption(
+    native_boundary, tmp_path, monkeypatch
+):
+    boundary = native_boundary
+    boundary["registry"].upsert_registry(
+        replace(boundary["record"], jwks_uri=boundary["jwks_uri"] + "/drip")
+    )
+    children, connections = [], []
+    spawn, execute = subprocess.Popen, TaskIoConnection.execute
+
+    def record_child(*args, **kwargs):
+        child = spawn(*args, **kwargs)
+        children.append(child)
+        return child
+
+    def record_io(self, *args, **kwargs):
+        connections.append(self)
+        assert isinstance(self.pgconn, psycopg.pq.PGconn)
+        return execute(self, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "Popen", record_child)
+    monkeypatch.setattr(TaskIoConnection, "execute", record_io)
+    claims = _claims(str(uuid4()), boundary["namespace"])
+    started = monotonic()
+    response = boundary["client"].post(
+        "/tasks",
+        json={"title": "Slow JWKS", "prompt": "Read", "workspace": str(tmp_path), "execute": False},
+        headers=_native_headers(boundary, claims),
+    )
+    assert response.status_code == 503, response.text
+    assert response.json()["retryable"] is False
+    assert monotonic() - started < 2.7
+    assert boundary["jwks_entered"].is_set() and boundary["jwks_closed"].wait(0.5)
+    assert len(children) == 1 and children[0].poll() is not None
+    assert connections and all(connection.closed for connection in connections)
+    with psycopg.connect(boundary["dsn"]) as verify:
+        assert verify.execute("SELECT count(*) FROM host_grant_replay_ledger").fetchone() == (0,)
+        assert verify.execute("SELECT count(*) FROM host_grant_audit").fetchone() == (0,)
+        assert verify.execute("SELECT count(*) FROM task_binding_snapshots").fetchone() == (0,)
 
 
 def test_http_auth_boundary_full_chain(
@@ -192,9 +425,7 @@ def test_http_auth_boundary_full_chain(
         assert bad_origin.status_code == 403
         assert bad_origin.json()["reason"] == "host_origin_not_allowed"
 
-        wrong_scope = sign(
-            _claims(f"jti-{uuid4()}", namespace, scopes=["trench.event.read"])
-        )
+        wrong_scope = sign(_claims(f"jti-{uuid4()}", namespace, scopes=["trench.event.read"]))
         missing_scope = client.post(
             "/sessions",
             json=payload,
@@ -222,6 +453,11 @@ def test_http_auth_boundary_full_chain(
         body = first.json()
         assert body.get("command") is not None
         session_id = body["session_id"]
+        binding = boundary["api"].cloud_control.load_task_binding(TaskId(UUID(session_id)))
+        assert binding is not None
+        assert task_bound_host_thread(binding, task_id=session_id).resource_id == HOST_THREAD
+        assert HOST_THREAD != session_id
+        assert binding.host_capability.authority_issuer == ISSUER
 
         replay = client.post(
             "/sessions",
@@ -270,6 +506,6 @@ def test_http_auth_boundary_full_chain(
     events = app.stores.events.list_for_session(SessionId(UUID(session_id)))
     from agent_core.domain.events import EventType
 
-    assert any(
-        event.event_type is EventType.EXECUTION_AUTHORITY_RESOLVED for event in events
-    ), "the verified grant must back the session's frozen binding authority"
+    assert any(event.event_type is EventType.EXECUTION_AUTHORITY_RESOLVED for event in events), (
+        "the verified grant must back the session's frozen binding authority"
+    )

@@ -7,11 +7,9 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 from agent_core.application import (
     SessionMessageAppendCommand,
     SessionMessageAppendService,
-    current_turn,
-    project_turns,
 )
-from agent_core.application.session_projection import rebuild_session
-from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.application.session_projection import apply_event
+from agent_core.application.workspace_projection import apply_event as apply_workspace
 from agent_core.contracts import (
     SessionCommandKind,
     is_command_message_materialization,
@@ -20,6 +18,11 @@ from agent_core.contracts import (
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import EventId
 
+from agent_storage.postgres.command_read_state import (
+    command_event_at,
+    load_command_read_state,
+    store_command_read_state,
+)
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.projections import save_session_in_transaction
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
@@ -65,19 +68,8 @@ def append_command_message(
         raise MessageInputRejected("invalid canonical message input")
     event_id = EventId(uuid5(NAMESPACE_URL, f"zebra-command-input:{namespace}:{accepted.event_id}"))
     key = f"command-input:{accepted.event_id}"
-    # ponytail: replay is O(session history), matching Core Turn projection's
-    # current API. A future indexed Turn projection can replace it; never truncate
-    # history and thereby mistake an existing open Turn for an absent one.
-    rows = connection.execute(
-        """SELECT event_id, session_id, sequence, event_type, payload, actor, created_at,
-                  causation_id, correlation_id, idempotency_key, policy_version, model_profile
-           FROM session_events WHERE deployment_namespace = %s AND session_id = %s
-           ORDER BY sequence""",
-        (namespace, accepted.session_id),
-    ).fetchall()
-    events = [SessionEvent.model_validate(row) for row in rows]
     if input_event_id is not None:
-        existing = next((event for event in events if event.event_id == input_event_id), None)
+        existing = command_event_at(connection, namespace, accepted.session_id, input_event_id)
         expected_type = (
             EventType.USER_MESSAGE_RECEIVED
             if clarification_id is None
@@ -105,20 +97,31 @@ def append_command_message(
         ):
             raise MessageInputRejected("canonical command input association mismatch")
         return existing
-    if any(event.event_id == event_id for event in events):
+    if command_event_at(connection, namespace, accepted.session_id, event_id) is not None:
         raise MessageInputRejected("canonical command input lacks its receipt association")
+    source = connection.execute(
+        "SELECT current_version FROM session_streams WHERE deployment_namespace=%s "
+        "AND session_id=%s FOR UPDATE",
+        (namespace, accepted.session_id),
+    ).fetchone()
+    if source is None:
+        raise MessageInputRejected("canonical command Session is absent")
+    state = load_command_read_state(
+        connection, namespace, accepted.session_id, source["current_version"]
+    )
+    assert state.session is not None and state.workspace is not None
     now = connection.execute("SELECT clock_timestamp() AS now").fetchone()["now"].astimezone(UTC)
     try:
         event = SessionMessageAppendService().build_event(
-            session=rebuild_session(events),
-            next_sequence=events[-1].sequence + 1,
+            session=state.session,
+            next_sequence=state.through_sequence + 1,
             command=SessionMessageAppendCommand(
                 content=content,
                 clarification_id=clarification_id,
                 appended_at=now,
-                prior_human_turns=len(project_turns(events)),
+                prior_human_turns=state.turns.human_turn_count,
                 turn_id=(command.extension_turn_id if clarification_id is None else None),
-                open_turn_exists=current_turn(events) is not None,
+                open_turn_exists=state.turns.current_turn() is not None,
             ),
         )
     except ValueError:
@@ -132,7 +135,16 @@ def append_command_message(
         }
     )
     canonical = append_event_in_transaction(connection, namespace, event)
-    events.append(canonical)
-    save_session_in_transaction(connection, namespace, rebuild_session(events))
-    save_workspace_in_transaction(connection, namespace, rebuild_workspace(events))
+    save_session_in_transaction(connection, namespace, apply_event(state.session, canonical))
+    save_workspace_in_transaction(
+        connection, namespace, apply_workspace(state.workspace, canonical)
+    )
+    store_command_read_state(
+        connection,
+        namespace,
+        accepted.session_id,
+        state.advance(canonical),
+        expected=state.through_sequence,
+        highwater=canonical.sequence,
+    )
     return canonical

@@ -2,19 +2,17 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from uuid import UUID
 
 from agent_core.application import (
     MemoryCandidateExtractionCommand,
     MemoryCandidateExtractionService,
     MemoryCandidatePromotionService,
     SessionTitleService,
-    current_turn,
     memory_extraction_window,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
-from agent_core.domain.turns import InteractionMode, derive_turn_id
+from agent_core.domain.turns import InteractionMode
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports import (
     EventStorePort,
@@ -29,6 +27,7 @@ from zebra_agent_worker.execution_events import (
     DurableHarnessEventRecorder,
     ExecutionInterrupted,
 )
+from zebra_agent_worker.execution_turn_close import append_turn_close
 
 
 class WorkerExecutionError(ValueError): ...
@@ -36,6 +35,10 @@ class WorkerExecutionError(ValueError): ...
 
 class RetryableWorkerSetupError(WorkerExecutionError):
     """Transient runtime setup failure that must leave the Session resumable."""
+
+
+class RuntimeStartupError(WorkerExecutionError):
+    """Runtime preflight exhausted or the configured isolation is unavailable."""
 
 
 @dataclass(frozen=True)
@@ -116,7 +119,7 @@ def reconcile_pending_turn_close(
         terminal_type,
         EventActor.HARNESS,
         {
-            "attempt_number": 1,
+            "attempt_number": turn_event.payload.get("attempt_number", 1),
             "summary": summary if isinstance(summary, str) else "",
             "metadata": metadata if isinstance(metadata, dict) else {},
         },
@@ -155,6 +158,7 @@ def finalize_execution(
     started_at: datetime,
     interaction_mode: InteractionMode = InteractionMode.ONE_SHOT,
     defer_cloud_side_effects: bool = False,
+    attempt_number: int = 1,
 ) -> tuple[SessionEvent, ...]:
     try:
         return _finalize_execution(
@@ -171,6 +175,7 @@ def finalize_execution(
             started_at=started_at,
             interaction_mode=interaction_mode,
             defer_cloud_side_effects=defer_cloud_side_effects,
+            attempt_number=attempt_number,
         )
     except ExecutionInterrupted:
         return recorder.events
@@ -191,6 +196,7 @@ def _finalize_execution(
     started_at: datetime,
     interaction_mode: InteractionMode,
     defer_cloud_side_effects: bool,
+    attempt_number: int,
 ) -> tuple[SessionEvent, ...]:
     if recorder.session.status in {
         SessionStatus.CANCELLED,
@@ -231,17 +237,11 @@ def _finalize_execution(
             EventActor.HARNESS,
             {
                 "reason": "waiting_client_effect",
-                "client_effect_ids": (
-                    effect_ids if isinstance(effect_ids, list) else []
-                ),
+                "client_effect_ids": (effect_ids if isinstance(effect_ids, list) else []),
                 "metadata": {
                     "stop_reason": "waiting_client_effect",
-                    "assistant_message": attempt_result.metadata.get(
-                        "assistant_message"
-                    ),
-                    "continuations": attempt_result.metadata.get(
-                        "client_effect_continuations", {}
-                    ),
+                    "assistant_message": attempt_result.metadata.get("assistant_message"),
+                    "continuations": attempt_result.metadata.get("client_effect_continuations", {}),
                 },
             },
         )
@@ -251,11 +251,12 @@ def _finalize_execution(
         HarnessAttemptOutcome.WAITING_APPROVAL,
         HarnessAttemptOutcome.WAITING_INPUT,
     }:
-        _append_turn_close(
+        append_turn_close(
             recorder=recorder,
             attempt_result=attempt_result,
             event_store=event_store,
             interaction_mode=interaction_mode,
+            attempt_number=attempt_number,
         )
     elif attempt_result.outcome is HarnessAttemptOutcome.SUSPENDED:
         recorder.append(
@@ -329,107 +330,40 @@ def _finalize_execution(
     return recorder.events
 
 
-def _append_turn_close(
-    *,
-    recorder: DurableHarnessEventRecorder,
-    attempt_result: HarnessAttemptResult,
-    event_store: EventStorePort,
-    interaction_mode: InteractionMode,
-) -> None:
-    """Close the executing Turn, then the Segment only on hard boundaries.
-
-    ADR-026: a conversation Task writes ``TURN_COMPLETED(closes_segment=
-    false)`` and stays in ``awaiting_turn``; a one-shot (and every legacy
-    admission) additionally writes ``SESSION_COMPLETED`` so existing
-    terminal consumers keep working. Failures always close the Segment.
-    """
-
-    events = (
-        event_store.list_for_session(recorder.session.session_id) if event_store is not None else []
-    )
-    open_turn = current_turn(events) if events else None
-    fallback: UUID = (
-        events[0].session_id
-        if events
-        else getattr(recorder.session, "session_id", None) or UUID(int=0)
-    )
-    turn_id = open_turn.turn_id if open_turn else str(derive_turn_id(fallback, 0))
-    turn_index = open_turn.turn_index if open_turn else 0
-    if attempt_result.outcome is HarnessAttemptOutcome.COMPLETED:
-        closes_segment = interaction_mode is not InteractionMode.CONVERSATION
-        recorder.append(
-            EventType.TURN_COMPLETED,
-            EventActor.HARNESS,
-            {
-                "turn_id": turn_id,
-                "turn_index": turn_index,
-                "summary": attempt_result.summary,
-                "closes_segment": closes_segment,
-                "attempt_number": 1,
-                "metadata": attempt_result.metadata,
-            },
-        )
-        if closes_segment:
-            recorder.append(
-                EventType.SESSION_COMPLETED,
-                EventActor.HARNESS,
-                {
-                    "attempt_number": 1,
-                    "summary": attempt_result.summary,
-                    "metadata": attempt_result.metadata,
-                },
-            )
-        return
-    recorder.append(
-        EventType.TURN_FAILED,
-        EventActor.HARNESS,
-        {
-            "turn_id": turn_id,
-            "turn_index": turn_index,
-            "reason": attempt_result.summary,
-            "closes_segment": True,
-            "attempt_number": 1,
-            "metadata": attempt_result.metadata,
-        },
-    )
-    recorder.append(
-        EventType.SESSION_FAILED,
-        EventActor.HARNESS,
-        {
-            "attempt_number": 1,
-            "summary": attempt_result.summary,
-            "metadata": attempt_result.metadata,
-        },
-    )
-
-
 def finalize_worker_setup_failure(
     *,
     recorder: DurableHarnessEventRecorder,
     event_store: EventStorePort,
     error: WorkerExecutionError,
+    attempt_number: int = 1,
 ) -> ExecutedSession:
     """Durably close a deterministic setup failure before model execution."""
 
     result = HarnessAttemptResult(
         outcome=HarnessAttemptOutcome.FAILED,
-        summary="Worker execution could not start.",
+        summary=(
+            "沙箱执行环境不可用，任务尚未开始。请检查沙箱运行时配置后重试。"
+            if isinstance(error, RuntimeStartupError) else "Worker execution could not start."
+        ),
         metadata={
             "stop_reason": "worker_setup_failed",
             "error_type": type(error).__name__,
+            "error_code": "runtime_unavailable" if isinstance(error, RuntimeStartupError)
+            else "worker_setup_failed",
         },
     )
     if recorder.session.status is SessionStatus.READY:
         recorder.append(
             EventType.HARNESS_ATTEMPT_STARTED,
             EventActor.HARNESS,
-            {"attempt_number": 1},
+            {"attempt_number": attempt_number},
         )
-    _append_turn_close(
+    append_turn_close(
         recorder=recorder,
         attempt_result=result,
         event_store=event_store,
         interaction_mode=InteractionMode.CONVERSATION,
+        attempt_number=attempt_number,
     )
     return ExecutedSession(recorder.session, recorder.events, result)
 

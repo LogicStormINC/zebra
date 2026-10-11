@@ -679,13 +679,17 @@ def _store(dsn: str, namespace: str) -> PostgresSessionHandoffStore:
 def _delete_namespace(dsn: str, namespace: str) -> None:
     with psycopg.connect(dsn) as connection:
         connection.execute("SET LOCAL zebra.allow_handoff_envelope_delete = 'on'")
+        connection.execute(
+            "SELECT set_config('zebra.task_source_cleanup_namespace',%s,true)",
+            (namespace,),
+        )
         for table in (
             "handoff_dispatch_outbox",
             "session_handoff_envelopes",
             "handoff_operations",
+            "agent_tasks",
             "task_event_index",
             "execution_segments",
-            "agent_tasks",
             "worker_leases",
             "workspace_projections",
             "session_projections",
@@ -693,7 +697,4 @@ def _delete_namespace(dsn: str, namespace: str) -> None:
             "session_streams",
             "control_plane_epochs",
         ):
-            connection.execute(
-                f"DELETE FROM {table} WHERE deployment_namespace = %s",
-                (namespace,),
-            )
+            connection.execute(f"DELETE FROM {table} WHERE deployment_namespace = %s", (namespace,))

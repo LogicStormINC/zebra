@@ -11,8 +11,12 @@ from agent_core.ports import (
     ToolRunStorePort,
     WorkerProjectionTransactionPort,
 )
+from agent_core.ports.execution_inputs import ExecutionInputPort
+from agent_core.ports.session_recovery import SessionRecoveryPort
+from agent_core.ports.task_projection_work import TaskProjectionWorkPort
 
 from agent_storage.artifact_payload_reads import CloudArtifactPayloadReader
+from agent_storage.execution_inputs import ExecutionInputStore
 from agent_storage.postgres import (
     PostgresAgentTaskStore,
     PostgresCloudArtifactPayloadStore,
@@ -34,6 +38,10 @@ from agent_storage.postgres import (
     PostgresUserPersonalizationStore,
     PostgresWorkspaceProjectionStore,
 )
+from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.projection_work import PostgresTaskProjectionWorkStore
+from agent_storage.postgres.session_recovery import PostgresSessionRecoveryStore
+from agent_storage.postgres.task_io import TaskIoConnections
 from agent_storage.postgres_model_tool_compat import (
     PostgresModelCallProjectionAdapter,
     PostgresToolRunProjectionAdapter,
@@ -47,6 +55,11 @@ class PostgresControlPlaneStores(CloudControlPlane):
     ``model_calls`` and ``tool_runs`` are compatibility views only. Their source
     remains the single Event-derived ``model_tool_projections`` adapter.
     """
+
+    projection_work: TaskProjectionWorkPort | None = None
+    session_recovery: SessionRecoveryPort | None = None
+    execution_inputs: ExecutionInputPort | None = None
+    task_io_connections: TaskIoConnections | None = None
 
     @property
     def model_calls(self) -> ModelCallStorePort:
@@ -76,6 +89,7 @@ def postgres_control_plane_stores(
     history_scope: OpaqueAuthorityScope,
     continuation_scope: OpaqueAuthorityScope,
     memory_delivery_scope: MemoryDeliveryScope | None = None,
+    task_io_connections: TaskIoConnections | None = None,
 ) -> PostgresControlPlaneStores:
     """Build one namespace-bound PostgreSQL cloud bundle without running DDL."""
     if not dsn.strip():
@@ -85,18 +99,27 @@ def postgres_control_plane_stores(
     if artifact_objects is None:
         raise ValueError("cloud artifact object reader is required")
 
+    shared = task_io_connections if task_io_connections is not None else TaskIoConnections(dsn)
     events = PostgresEventStore(dsn, deployment_namespace=deployment_namespace)
-    sessions = PostgresProjectionStore(dsn, deployment_namespace=deployment_namespace)
+    sessions = PostgresProjectionStore(
+        dsn, deployment_namespace=deployment_namespace, task_io_connections=shared
+    )
     model_tools = PostgresModelToolProjectionStore(dsn, deployment_namespace=deployment_namespace)
     artifact_payloads = PostgresCloudArtifactPayloadStore(
-        dsn, deployment_namespace=deployment_namespace
+        dsn, deployment_namespace=deployment_namespace, task_io_connections=shared
+    )
+    tasks = PostgresAgentTaskStore(
+        dsn, deployment_namespace=deployment_namespace, task_io_connections=shared
     )
     return PostgresControlPlaneStores(
+        task_io_connections=shared,
         deployment_namespace=deployment_namespace,
         events=events,
         sessions=sessions,
-        workspaces=PostgresWorkspaceProjectionStore(dsn, deployment_namespace=deployment_namespace),
-        tasks=PostgresAgentTaskStore(dsn, deployment_namespace=deployment_namespace),
+        workspaces=PostgresWorkspaceProjectionStore(
+            dsn, deployment_namespace=deployment_namespace, task_io_connections=shared
+        ),
+        tasks=tasks,
         leases=PostgresLeaseStore(dsn, deployment_namespace=deployment_namespace),
         context_lifecycle=PostgresContextLifecycleStore(
             dsn, deployment_namespace=deployment_namespace
@@ -123,7 +146,9 @@ def postgres_control_plane_stores(
             deployment_namespace=deployment_namespace,
         ),
         model_tool_projections=model_tools,
-        artifacts=PostgresSessionArtifactReadStore(dsn, deployment_namespace=deployment_namespace),
+        artifacts=PostgresSessionArtifactReadStore(
+            dsn, deployment_namespace=deployment_namespace, task_io_connections=shared
+        ),
         provider_continuations=PostgresProviderContinuationStore(
             dsn,
             deployment_namespace=deployment_namespace,
@@ -134,8 +159,24 @@ def postgres_control_plane_stores(
             deployment_namespace=deployment_namespace,
             scope=history_scope,
         ),
-        delivery_audit=PostgresDeliveryAuditStore(dsn, deployment_namespace=deployment_namespace),
+        delivery_audit=PostgresDeliveryAuditStore(
+            dsn, deployment_namespace=deployment_namespace, task_io_connections=shared
+        ),
         personalization=PostgresUserPersonalizationStore(
             dsn, deployment_namespace=deployment_namespace
+        ),
+        projection_work=PostgresTaskProjectionWorkStore(
+            PostgresDatabase(dsn, deployment_namespace=deployment_namespace), "ag-ui-v1"
+        ),
+        session_recovery=PostgresSessionRecoveryStore(
+            dsn,
+            deployment_namespace=deployment_namespace,
+            task_io_connections=shared,
+        ),
+        execution_inputs=ExecutionInputStore(
+            PostgresDatabase(dsn, deployment_namespace=deployment_namespace),
+            tasks,
+            namespace=deployment_namespace,
+            postgres=True,
         ),
     )

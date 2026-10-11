@@ -28,14 +28,15 @@ def mark_approved_continuation_started(
     tool_call_id: str,
     started_at: datetime,
     recorder: DurableHarnessEventRecorder | None = None,
+    attempt_number: int = 1,
 ) -> ClaimedSession:
     next_sequence = claimed.recovery.session.current_sequence + 1
     for event_type, payload in (
-        (EventType.HARNESS_ATTEMPT_STARTED, {"attempt_number": 1}),
+        (EventType.HARNESS_ATTEMPT_STARTED, {"attempt_number": attempt_number}),
         (
             EventType.TOOL_EXECUTION_STARTED,
             {
-                "attempt_number": 1,
+                "attempt_number": attempt_number,
                 "tool_name": tool_name,
                 "tool_call_id": tool_call_id,
                 "approval_continuation": True,
@@ -67,6 +68,7 @@ def mark_completed_continuation_started(
     tool_call_id: str,
     started_at: datetime,
     recorder: DurableHarnessEventRecorder | None = None,
+    attempt_number: int = 1,
 ) -> ClaimedSession:
     event = SessionEvent.create(
         session_id=claimed.recovery.session.session_id,
@@ -74,7 +76,7 @@ def mark_completed_continuation_started(
         event_type=EventType.HARNESS_ATTEMPT_STARTED,
         actor=EventActor.HARNESS,
         payload={
-            "attempt_number": 1,
+            "attempt_number": attempt_number,
             "completed_continuation": True,
             "tool_name": tool_name,
             "tool_call_id": tool_call_id,
@@ -96,6 +98,7 @@ def mark_clarification_continuation_started(
     clarification_id: str,
     started_at: datetime,
     recorder: DurableHarnessEventRecorder | None = None,
+    attempt_number: int = 1,
 ) -> ClaimedSession:
     event = SessionEvent.create(
         session_id=claimed.recovery.session.session_id,
@@ -103,7 +106,7 @@ def mark_clarification_continuation_started(
         event_type=EventType.HARNESS_ATTEMPT_STARTED,
         actor=EventActor.HARNESS,
         payload={
-            "attempt_number": 1,
+            "attempt_number": attempt_number,
             "clarification_continuation": True,
             "clarification_id": clarification_id,
         },
@@ -150,15 +153,11 @@ def restore_suspended_session_claim(
                     "waiting_children suspension requires the harness wakeup to resume"
                 )
             resume_reason = "waiting_children_resolved"
-        elif (
-            claimed.recovery.session.status
-            in {
-                SessionStatus.RUNNING,
-                SessionStatus.SUSPENDED,
-                SessionStatus.WAITING_CLIENT_EFFECT,
-            }
-            and is_waiting_client_effect_suspension(events)
-        ):
+        elif claimed.recovery.session.status in {
+            SessionStatus.RUNNING,
+            SessionStatus.SUSPENDED,
+            SessionStatus.WAITING_CLIENT_EFFECT,
+        } and is_waiting_client_effect_suspension(events):
             if not has_trusted_client_effect_resume(events):
                 raise WorkerExecutionError(
                     "waiting_client_effect suspension requires a trusted receipt to resume"
@@ -261,6 +260,7 @@ def start_recovered_continuation(
     started_at: datetime,
     recorder: DurableHarnessEventRecorder | None = None,
     child_wakeup: ChildWakeupContinuation | None = None,
+    attempt_number: int = 1,
 ) -> ClaimedSession:
     """Emit the continuation start Events for the recovered active continuation."""
     if continuation is not None and continuation.completed_output is not None:
@@ -272,6 +272,7 @@ def start_recovered_continuation(
             tool_call_id=str(continuation.tool_call.tool_call_id),
             started_at=started_at,
             recorder=recorder,
+            attempt_number=attempt_number,
         )
     if continuation is not None:
         return mark_approved_continuation_started(
@@ -282,6 +283,7 @@ def start_recovered_continuation(
             tool_call_id=str(continuation.tool_call.tool_call_id),
             started_at=started_at,
             recorder=recorder,
+            attempt_number=attempt_number,
         )
     if clarification is not None:
         return mark_clarification_continuation_started(
@@ -291,6 +293,7 @@ def start_recovered_continuation(
             clarification_id=str(clarification.tool_call.tool_call_id),
             started_at=started_at,
             recorder=recorder,
+            attempt_number=attempt_number,
         )
     if child_wakeup is not None:
         return mark_child_wakeup_continuation_started(
@@ -300,6 +303,7 @@ def start_recovered_continuation(
             tool_call_id=str(child_wakeup.tool_call.tool_call_id),
             started_at=started_at,
             recorder=recorder,
+            attempt_number=attempt_number,
         )
     return claimed
 
@@ -312,6 +316,7 @@ def mark_child_wakeup_continuation_started(
     tool_call_id: str,
     started_at: datetime,
     recorder: DurableHarnessEventRecorder | None = None,
+    attempt_number: int = 1,
 ) -> ClaimedSession:
     event = SessionEvent.create(
         session_id=claimed.recovery.session.session_id,
@@ -319,7 +324,7 @@ def mark_child_wakeup_continuation_started(
         event_type=EventType.HARNESS_ATTEMPT_STARTED,
         actor=EventActor.HARNESS,
         payload={
-            "attempt_number": 1,
+            "attempt_number": attempt_number,
             "child_wakeup_continuation": True,
             "tool_call_id": tool_call_id,
         },

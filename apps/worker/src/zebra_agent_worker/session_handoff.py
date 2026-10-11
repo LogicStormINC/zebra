@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -72,8 +73,11 @@ class SessionHandoffRecoveryGate:
         *,
         fence: LeaseFence,
         recovered_at: datetime,
+        events: list[SessionEvent] | None = None,
     ) -> RecoveredHandoff | None:
-        events = self._events.list_for_session(session_id)
+        events = self._events.list_for_session(session_id) if events is None else events
+        if any(event.session_id != session_id for event in events):
+            raise ValueError("handoff recovery events belong to another Session")
         received = next(
             (event for event in events if event.event_type is EventType.SESSION_HANDOFF_RECEIVED),
             None,
@@ -181,6 +185,8 @@ def guard_effectful_tools(
     ownership_check: Callable[[], None] | None = None,
     effect_payloads: EffectPayloadCoordinatorLike | None = None,
     mutation_authority: Callable[[], WorkerMutationAuthority] | None = None,
+    mutation_guard: Callable[[], AbstractContextManager[object]] = nullcontext,
+    execution_started: Callable[[str], None] | None = None,
 ) -> EffectGuardedToolGateway | FencedEffectToolGateway:
     root_session_id = (
         session_id if recovered_handoff is None else recovered_handoff.envelope.root_session_id
@@ -216,6 +222,8 @@ def guard_effectful_tools(
             ownership_check=ownership_check,
             effect_payloads=effect_payloads,
             mutation_authority=mutation_authority,
+            mutation_guard=mutation_guard,
+            execution_started=execution_started,
         )
         guarded.reconcile_expired()
         guarded.reconcile_uncertain()
@@ -239,8 +247,11 @@ def recover_worker_handoff(
     fence: LeaseFence,
     recovered_at: datetime,
     release: Callable[[], None],
+    events: list[SessionEvent] | None = None,
 ) -> RecoveredHandoff | None:
     try:
+        if events is not None:
+            return gate.recover(session_id, fence=fence, recovered_at=recovered_at, events=events)
         return gate.recover(session_id, fence=fence, recovered_at=recovered_at)
     except (HandoffWorkspaceDriftError, LeaseLostError, ValueError) as exc:
         release()

@@ -9,10 +9,11 @@ budget -> persist (dedup) -> project -> return resource_id.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
 from hashlib import sha256
 
-from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
+from agent_core.domain.web import TruncationScope, WebTarget, WebTargetError, parse_web_target
 from agent_core.domain.web_resource import WebResourceId
 from agent_security.ssrf import HostNameResolver, SsrfError, resolve_and_validate
 from agent_storage.web_chunker import chunk_clean_text
@@ -32,7 +33,11 @@ from agent_tools.web_crawl import (
     FetchRequest,
     FetchResult,
 )
+from agent_tools.web_gateway import DEFAULT_WEB_TIMEOUT_SECONDS, WebGatewayError
 from agent_tools.web_projection import WebProjector
+from pydantic import TypeAdapter
+
+from agent_runtime.web_gateway import _native_network_call
 
 
 @dataclass(frozen=True)
@@ -42,20 +47,31 @@ class CrawlGateway(CrawlGatewayPort):
     projector: WebProjector
     max_clean_chars: int = DEFAULT_MAX_CLEAN_CHARS
     resolver: HostNameResolver | None = None
+    network_cancellation_check: Callable[[], None] | None = None
 
     def __post_init__(self) -> None:
         if self.max_clean_chars <= 0:
             raise ValueError("max_clean_chars must be positive")
 
     def fetch(self, request: FetchRequest, *, max_output_tokens: int) -> FetchOutcome:
+        if self.network_cancellation_check is not None:
+            self.network_cancellation_check()
         try:
             target = parse_web_target(request.url)
         except WebTargetError as exc:
             raise FetchProviderError(str(exc), reason="invalid_web_target") from exc
         # Runtime SSRF: resolve the public hostname and reject private/metadata.
         try:
-            resolve_and_validate(target.hostname, resolver=self.resolver)
-        except SsrfError as exc:
+            if self.network_cancellation_check is not None and self.resolver is None:
+                _native_network_call(
+                    "resolve",
+                    target.hostname,
+                    self.network_cancellation_check,
+                    timeout=DEFAULT_WEB_TIMEOUT_SECONDS,
+                )
+            else:
+                resolve_and_validate(target.hostname, resolver=self.resolver)
+        except (SsrfError, WebGatewayError) as exc:
             raise FetchProviderError(str(exc), reason="ssrf_blocked") from exc
         if not self.provider.available:
             raise FetchProviderError(
@@ -63,11 +79,17 @@ class CrawlGateway(CrawlGatewayPort):
                 reason="provider_unavailable",
             )
         result = self.provider.fetch(request)
+        if self.network_cancellation_check is not None:
+            self.network_cancellation_check()
         clean = result.clean_markdown or ""
         source_truncated = not result.complete
         if len(clean) > self.max_clean_chars:
             clean = clean[: self.max_clean_chars]
             source_truncated = True
+        if source_truncated and not clean.strip():
+            raise FetchProviderError(
+                "source is incomplete with no readable content", reason="source_incomplete"
+            )
         content_sha = sha256(clean.encode("utf-8")).hexdigest()
         resource_id = self.store.find_by_content_hash(content_sha)
         if resource_id is None:
@@ -77,6 +99,19 @@ class CrawlGateway(CrawlGatewayPort):
                 content_sha=content_sha,
                 result=result,
                 source_truncated=source_truncated,
+            )
+        resource = self.store.get(resource_id)
+        expected_status = ResourceStatus.PARTIAL if source_truncated else ResourceStatus.COMPLETE
+        # ponytail: hash-only keys reuse bytes, not provenance; changed headers need a new key.
+        if (
+            resource is None
+            or resource.resource_id != resource_id.value
+            or resource.resource_status != expected_status
+            or resource.requested_url != target.url
+            or resource.final_url != result.final_url
+        ):
+            raise FetchProviderError(
+                "cached resource has incompatible source headers", reason="resource_source_mismatch"
             )
         adapter = WebResourceStoreAdapter(self.store)
         if request.question:
@@ -93,10 +128,18 @@ class CrawlGateway(CrawlGatewayPort):
             final_url=result.final_url,
             content=projection.content,
             truncated=projection.truncated or source_truncated,
-            truncation_scope=projection.truncation_scope,
+            source_truncated=source_truncated,
+            projection_truncated=projection.truncated,
+            truncation_scope=(
+                TruncationScope.PROJECTION
+                if projection.truncated
+                else TruncationScope.SOURCE
+                if source_truncated
+                else TruncationScope.NONE
+            ),
             next_cursor=projection.next_cursor,
             provider=self.provider.name,
-            degraded=not result.complete,
+            degraded=source_truncated,
             metadata={
                 "content_sha256": content_sha,
                 "clean_chars": len(clean),
@@ -164,6 +207,7 @@ class Crawl4AIFetchProvider:
     """
 
     browser_headless: bool = True
+    network_cancellation_check: Callable[[], None] | None = None
 
     @property
     def name(self) -> str:
@@ -174,6 +218,18 @@ class Crawl4AIFetchProvider:
         return is_crawl4ai_available()
 
     def fetch(self, request: FetchRequest) -> FetchResult:
+        if self.network_cancellation_check is not None:
+            try:
+                return TypeAdapter(FetchResult).validate_python(
+                    _native_network_call(
+                        "browser_fetch",
+                        {"request": asdict(request), "headless": self.browser_headless},
+                        self.network_cancellation_check,
+                        timeout=30,
+                    )
+                )
+            except WebGatewayError as exc:
+                raise FetchProviderError(str(exc), reason=exc.reason) from exc
         if not is_crawl4ai_available():
             raise FetchProviderError(
                 "crawl4ai is not installed; run the Web Setup Phase (WEB-PIPE-OPS-01)",
@@ -186,23 +242,33 @@ class Crawl4AIFetchProvider:
 
         from crawl4ai import AsyncWebCrawler  # type: ignore[import-not-found]
 
-        async def _run() -> tuple[str, str | None, str | None]:
+        async def _run() -> tuple[str, str | None, str | None, bool]:
             async with AsyncWebCrawler(headless=self.browser_headless) as crawler:
                 outcome = await crawler.arun(url=request.url)
+                status = getattr(outcome, "status_code", None)
+                if (
+                    getattr(outcome, "success", None) is not True
+                    or type(status) is not int
+                    or not 200 <= status < 300
+                ):
+                    raise FetchProviderError(
+                        "browser source acquisition failed or is unverified",
+                        reason="fetch_provider_failed",
+                    )
                 markdown = getattr(outcome, "markdown", "") or ""
                 metadata = getattr(outcome, "metadata", None)
                 title = metadata.get("title") if isinstance(metadata, dict) else None
                 html = getattr(outcome, "html", None)
-                return markdown, title, html
+                return markdown, title, html, status != 206
 
-        markdown, title, html = asyncio.run(_run())
+        markdown, title, html, complete = asyncio.run(_run())
 
         return FetchResult(
             requested_url=request.url,
             final_url=request.url,
             clean_markdown=markdown,
             fetch_mode="browser",
-            complete=True,
+            complete=complete,
             content_type="text/html",
             title=title,
             raw_html=html,

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.events import EventType
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_storage import (
@@ -10,10 +10,13 @@ from agent_storage import (
 )
 from zebra_agent_api.app import create_app
 
+from tests.api.test_approval_routes import _seed_waiting_session
+
 
 def test_api_approve_records_granted_decision(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = _seed_waiting_session(database_path)
+    original_events = SQLiteEventStore(database_path).list_for_session(session.session_id)
     SQLiteWorkspaceProjectionStore(database_path).save_workspace(
         WorkspaceProjection(
             session_id=session.session_id,
@@ -32,9 +35,7 @@ def test_api_approve_records_granted_decision(tmp_path: Path) -> None:
 
     events = SQLiteEventStore(database_path).list_for_session(session.session_id)
     updated = SQLiteProjectionStore(database_path).get_session(session.session_id)
-    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(
-        session.session_id
-    )
+    workspace = SQLiteWorkspaceProjectionStore(database_path).get_workspace(session.session_id)
 
     assert response.status_code == 200
     assert response.body == {
@@ -42,18 +43,22 @@ def test_api_approve_records_granted_decision(tmp_path: Path) -> None:
         "session_id": str(session.session_id),
         "decision": "approve",
         "event_type": EventType.APPROVAL_GRANTED.value,
-        "sequence": 3,
+        "sequence": session.current_sequence + 1,
         "status": SessionStatus.RUNNING.value,
     }
-    assert len(events) == 2
-    assert events[0].event_type is EventType.APPROVAL_GRANTED
-    assert events[1].event_type is EventType.SESSION_COMMAND_ACCEPTED
-    assert events[1].idempotency_key == f"approval:{session.session_id}:3:resume"
+    assert events[: len(original_events)] == original_events
+    assert [event.sequence for event in events] == list(range(len(events)))
+    assert len(events) == len(original_events) + 2
+    assert events[-2].event_type is EventType.APPROVAL_GRANTED
+    assert events[-1].event_type is EventType.SESSION_COMMAND_ACCEPTED
+    assert events[-1].idempotency_key == (
+        f"approval:{session.session_id}:{session.current_sequence + 1}:resume"
+    )
     assert updated is not None
     assert updated.status is SessionStatus.RUNNING
     assert workspace is not None
     assert workspace.status is WorkspaceStatus.RUNNING
-    assert workspace.current_sequence == updated.current_sequence == 3
+    assert workspace.current_sequence == updated.current_sequence == session.current_sequence + 1
 
 
 def test_api_reject_records_rejected_decision(tmp_path: Path) -> None:
@@ -68,7 +73,10 @@ def test_api_reject_records_rejected_decision(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert response.body["decision"] == "reject"
     assert response.body["event_type"] == EventType.APPROVAL_REJECTED.value
-    assert events[0].payload == {
+    assert [event.sequence for event in events] == list(range(len(events)))
+    assert events[-1].event_type is EventType.APPROVAL_REJECTED
+    assert events[-1].sequence == session.current_sequence + 1
+    assert events[-1].payload == {
         "operator": "api-operator",
         "reason": "reject via API",
     }
@@ -131,57 +139,21 @@ def test_api_approval_returns_not_found_for_missing_session(tmp_path: Path) -> N
     }
 
 
-def _seed_waiting_session(database_path: Path) -> Session:
-    session = Session.create(title="Waiting approval").model_copy(
-        update={
-            "status": SessionStatus.WAITING_APPROVAL,
-            "current_sequence": 2,
-        }
-    )
-    return SQLiteProjectionStore(database_path).save_session(session)
-
-
 def _seed_waiting_session_with_proxy_approval(database_path: Path) -> Session:
-    session = _seed_waiting_session(database_path).model_copy(
-        update={
-            "approval_context": ApprovalContext(
-                tool_name="mcp.github.create_pull_request",
-                reason="proxy-routed external tool execution in test",
-                policy_profile="full_access",
-                route="mcp_proxy",
-                target="github.create_pull_request",
-                network_profile="mcp-proxy-only",
-                scope=(
-                    "tool:mcp.github.create_pull_request",
-                    "route:mcp_proxy",
-                    "network_profile:mcp-proxy-only",
-                    "target:github.create_pull_request",
-                ),
-            )
-        }
+    return _seed_waiting_session(
+        database_path,
+        approval_context=ApprovalContext(
+            tool_name="mcp.github.create_pull_request",
+            reason="proxy-routed external tool execution in test",
+            policy_profile="full_access",
+            route="mcp_proxy",
+            target="github.create_pull_request",
+            network_profile="mcp-proxy-only",
+            scope=(
+                "tool:mcp.github.create_pull_request",
+                "route:mcp_proxy",
+                "network_profile:mcp-proxy-only",
+                "target:github.create_pull_request",
+            ),
+        ),
     )
-    SQLiteProjectionStore(database_path).save_session(session)
-    SQLiteEventStore(database_path).append(
-        SessionEvent.create(
-            session_id=session.session_id,
-            sequence=0,
-            event_type=EventType.APPROVAL_REQUESTED,
-            actor=EventActor.POLICY,
-            payload={
-                "attempt_number": 1,
-                "tool_name": "mcp.github.create_pull_request",
-                "reason": "proxy-routed external tool execution in test",
-                "policy_profile": "full_access",
-                "route": "mcp_proxy",
-                "target": "github.create_pull_request",
-                "network_profile": "mcp-proxy-only",
-                "scope": [
-                    "tool:mcp.github.create_pull_request",
-                    "route:mcp_proxy",
-                    "network_profile:mcp-proxy-only",
-                    "target:github.create_pull_request",
-                ],
-            },
-        )
-    )
-    return session

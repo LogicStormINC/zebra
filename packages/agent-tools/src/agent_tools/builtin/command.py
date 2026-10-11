@@ -1,10 +1,11 @@
 from pathlib import Path
 
+from agent_core.contracts.public_output import PublicOperationFacts
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.ports.runtime import RuntimeExecutionRequest, RuntimePort
 from agent_core.ports.workspace import WorkspacePort
 
-from agent_tools.contracts import ToolContract
+from agent_tools.contracts import MAX_TOOL_OUTPUT_BYTES, ToolContract
 from agent_tools.errors import ToolArgumentError
 from agent_tools.output_projection import ToolOutputProjector
 
@@ -51,11 +52,7 @@ class CommandRunTool:
             timeout_seconds=timeout_seconds,
         )
         runtime_result = self._runtime.execute(request)
-        status = (
-            ToolCallStatus.EXECUTED
-            if runtime_result.succeeded
-            else ToolCallStatus.FAILED
-        )
+        status = ToolCallStatus.EXECUTED if runtime_result.succeeded else ToolCallStatus.FAILED
         projected = (
             self._output_projector.project(
                 stdout=runtime_result.stdout,
@@ -65,10 +62,35 @@ class CommandRunTool:
             if self._output_projector is not None
             else None
         )
+        output = projected.model_output if projected is not None else runtime_result.stdout
+        output_bytes = len(output.encode("utf-8"))
+        receipt = (
+            self.contract.receipt(status=status.value, output_bytes=output_bytes)
+            if output_bytes <= MAX_TOOL_OUTPUT_BYTES
+            else None
+        )
+        # ponytail: over-limit legacy output stays unmeasured rather than inventing a byte count.
+        facts = (
+            PublicOperationFacts(
+                kind="operation",
+                tool_call_id=str(tool_call.tool_call_id),
+                operation_completed=True,
+                receipt=receipt,
+                output_truncated=runtime_result.stdout_truncated
+                or runtime_result.stderr_truncated
+                or projected is not None
+                and projected.metadata.get("output_truncated") is True,
+            ).model_dump(mode="json")
+            if receipt is not None
+            and status is ToolCallStatus.EXECUTED
+            and runtime_result.failure_reason is None
+            else None
+        )
         return ToolResult(
             tool_call_id=tool_call.tool_call_id,
             status=status,
-            output=projected.model_output if projected is not None else runtime_result.stdout,
+            output=output,
+            receipt=receipt,
             metadata={
                 "command": list(command),
                 "cwd": str(Path(cwd).relative_to(self._workspace.root_path))
@@ -79,6 +101,7 @@ class CommandRunTool:
                 "timed_out": runtime_result.timed_out,
                 "failure_reason": runtime_result.failure_reason,
                 **(projected.metadata if projected is not None else {}),
+                **({"public_facts": facts} if facts is not None else {}),
             },
         )
 
@@ -102,9 +125,7 @@ class CommandRunTool:
 
     @staticmethod
     def _read_command_argument(raw_command: object) -> tuple[str, ...]:
-        invalid_shape_message = (
-            "command.run requires 'command' to be a list or tuple of strings"
-        )
+        invalid_shape_message = "command.run requires 'command' to be a list or tuple of strings"
         if isinstance(raw_command, str):
             raise ToolArgumentError(invalid_shape_message)
         if not isinstance(raw_command, list | tuple):

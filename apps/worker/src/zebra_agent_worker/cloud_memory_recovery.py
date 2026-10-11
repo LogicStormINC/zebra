@@ -18,6 +18,7 @@ from agent_core.ports import (
     ProjectionStorePort,
     WorkspaceProjectionStorePort,
 )
+from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.cloud_memory_finalization import (
@@ -143,6 +144,7 @@ class CloudMemoryFinalizationRecovery:
         projection_store: ProjectionStorePort,
         workspace_store: WorkspaceProjectionStorePort,
         title_service_factory: Callable[[], SessionTitleService],
+        replay_reader: PostgresWorkerReplayReader | None = None,
     ) -> None:
         self._claim_service = claim_service
         self._recorder_factory = recorder_factory
@@ -154,6 +156,7 @@ class CloudMemoryFinalizationRecovery:
         self._projection_store = projection_store
         self._workspace_store = workspace_store
         self._title_service_factory = title_service_factory
+        self._replay_reader = replay_reader
 
     def recover(
         self,
@@ -197,10 +200,17 @@ class CloudMemoryFinalizationRecovery:
                 # (ADR-026 §6 — the crash-before-commit case).
                 started_at=recovered_at,
                 allow_commit=True,
+                replay_reader=self._replay_reader,
             )
             if not finalized:
                 return False
-            events = self._event_store.list_for_session(session_id)
+            authority = recorder.worker_mutation_authority
+            assert authority is not None
+            events = (
+                self._replay_reader.memory_events(session_id, authority=authority)
+                if self._replay_reader is not None
+                else self._event_store.list_for_session(session_id)
+            )
             _mark_memory_recovered(
                 self._idempotency_store,
                 session_id,

@@ -12,15 +12,17 @@ connected). Fully offline-testable via injectable providers and fetchers.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
-from datetime import UTC
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from typing import Protocol
 
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.domain.web import TruncationScope, WebTargetError, parse_web_target
 
 from agent_tools.contracts import ToolContract
+from agent_tools.web_crawl import FetchOutcome
 from agent_tools.web_envelope import WebResultEnvelope
+from agent_tools.web_gateway import WebGatewayError
 
 MAX_SEARCH_QUERY_CHARS = 500
 DEFAULT_SEARCH_LIMIT = 8
@@ -201,8 +203,24 @@ def expand_query(query: SearchQuery) -> tuple[str, ...]:
     drops stop-words, so RRF can fuse slightly different result orderings."""
     raw = query.query
     stop = {
-        "the", "a", "an", "of", "to", "in", "on", "for", "and", "or", "is",
-        "are", "what", "how", "why", "who", "when", "which",
+        "the",
+        "a",
+        "an",
+        "of",
+        "to",
+        "in",
+        "on",
+        "for",
+        "and",
+        "or",
+        "is",
+        "are",
+        "what",
+        "how",
+        "why",
+        "who",
+        "when",
+        "which",
     }
     kept = [word for word in raw.split() if word.lower() not in stop]
     variant = " ".join(kept).strip()
@@ -257,9 +275,7 @@ def rerank_hits(hits: Sequence[SearchHit], query_text: str) -> tuple[SearchHit, 
     return tuple(scored)
 
 
-def apply_filters(
-    hits: Sequence[SearchHit], query: SearchQuery
-) -> tuple[SearchHit, ...]:
+def apply_filters(hits: Sequence[SearchHit], query: SearchQuery) -> tuple[SearchHit, ...]:
     filtered: list[SearchHit] = []
     for hit in hits:
         domain = (hit.domain or _hostname_of(hit.url) or "").lower()
@@ -284,9 +300,8 @@ def _hostname_of(url: str) -> str | None:
 # Pipeline + tool
 # ---------------------------------------------------------------------------
 
-#: Injectable fetcher for the search->fetch->rerank loop: url -> clean text.
-#: Returns None when the URL cannot be fetched (the loop degrades gracefully).
-SearchFetcher = Callable[[str], str | None]
+#: Native outcomes retain source status; legacy clean-text/None fetchers remain supported.
+SearchFetcher = Callable[[str], FetchOutcome | str | None]
 
 
 @dataclass(frozen=True)
@@ -296,6 +311,8 @@ class SearchPipeline:
 
     def run(self, query: SearchQuery, *, provider_name: str | None = None) -> SearchRunResult:
         provider = self.registry.get(provider_name)
+        if not provider.available:
+            raise WebGatewayError("search provider is unavailable", reason="provider_unavailable")
         expanded = expand_query(query)
         ranked_lists: list[tuple[SearchHit, ...]] = []
         for variant in expanded:
@@ -307,8 +324,10 @@ class SearchPipeline:
                 exclude_domains=query.exclude_domains,
             )
             ranked_lists.append(provider.search(variant_query, limit=variant_query.limit))
-        fused = reciprocal_rank_fusion(ranked_lists) if len(ranked_lists) > 1 else (
-            ranked_lists[0] if ranked_lists else ()
+        fused = (
+            reciprocal_rank_fusion(ranked_lists)
+            if len(ranked_lists) > 1
+            else (ranked_lists[0] if ranked_lists else ())
         )
         reranked = rerank_hits(fused, query.query)
         filtered = apply_filters(reranked, query)
@@ -325,7 +344,10 @@ class SearchPipeline:
             fetched_count=fetched_count,
             expanded_query_count=len(expanded),
             truncated=truncated,
-            degraded=not provider.available,
+            degraded=any(hit.fetch_status in {"failed", "partial"} for hit in filtered)
+            or bool(filtered)
+            and query.auto_fetch > 0
+            and self.fetcher is None,
         )
 
     def _refetch_and_rerank(
@@ -336,30 +358,19 @@ class SearchPipeline:
         scored: list[tuple[float, SearchHit]] = []
         for hit in candidates:
             assert self.fetcher is not None
-            text = self.fetcher(hit.url)
+            fetched = self.fetcher(hit.url)
+            text = fetched.content if isinstance(fetched, FetchOutcome) else fetched
             if text is None:
-                scored.append((hit.score, _with_fetch_status(hit, "failed")))
+                scored.append((hit.score, replace(hit, fetch_status="failed")))
                 continue
             coverage = keyword_coverage_score(query.query, text)
             blended = 0.5 * hit.score + 0.5 * coverage
-            scored.append(
-                (blended, _with_fetch_status(hit, "fetched"))
+            status = (
+                "partial" if isinstance(fetched, FetchOutcome) and fetched.degraded else "fetched"
             )
+            scored.append((blended, replace(hit, fetch_status=status)))
         scored.sort(key=lambda pair: pair[0], reverse=True)
         return tuple(hit for _, hit in scored) + tuple(tail)
-
-
-def _with_fetch_status(hit: SearchHit, status: str) -> SearchHit:
-    return SearchHit(
-        title=hit.title,
-        url=hit.url,
-        snippet=hit.snippet,
-        score=hit.score,
-        freshness=hit.freshness,
-        domain=hit.domain,
-        fetch_status=status,
-        artifact_uri=hit.artifact_uri,
-    )
 
 
 web_search_v2_contract = ToolContract(
@@ -402,6 +413,8 @@ class SearchPipelineTool:
             result = self.pipeline.run(query, provider_name=self.provider_name)
         except KeyError as exc:
             return _failure(tool_call, reason="provider_unavailable", detail=str(exc))
+        except WebGatewayError as exc:
+            return _failure(tool_call, reason=exc.reason, detail=str(exc))
         lines = ["[UNTRUSTED EXTERNAL SEARCH RESULTS]"]
         for index, hit in enumerate(result.hits, start=1):
             lines.extend((f"{index}. {hit.title}", hit.url, hit.snippet))
@@ -409,12 +422,13 @@ class SearchPipelineTool:
             provider=result.provider,
             provider_version=None,
             capability_version=web_search_v2_contract.capability_version,
-            fetched_at=_now_iso(),
+            fetched_at=datetime.now(UTC).isoformat(),
             canonical_url="web.search",
             truncation_scope=(
                 TruncationScope.NONE if not result.truncated else TruncationScope.PROJECTION
             ),
             truncated=result.truncated,
+            projection_truncated=result.truncated,
             degraded=result.degraded,
             extra={
                 "provider": result.provider,
@@ -452,12 +466,6 @@ class SearchPipelineTool:
                 "web_envelope": envelope.to_metadata(),
             },
         )
-
-
-def _now_iso() -> str:
-    from datetime import datetime
-
-    return datetime.now(UTC).isoformat()
 
 
 def _failure(tool_call: ToolCall, *, reason: str, detail: str) -> ToolResult:

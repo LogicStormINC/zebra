@@ -22,6 +22,7 @@ from agent_core.domain.web_resource import (
     WebResourceId,
     WebResourceIdError,
     WebResourceStorePort,
+    WebResourceView,
 )
 
 from agent_tools.contracts import ToolContract
@@ -56,7 +57,7 @@ class ReadCursor:
         if not isinstance(token, str) or not token.startswith(CURSOR_PREFIX):
             raise CursorError("cursor is malformed")
         try:
-            payload = base64.urlsafe_b64decode(token[len(CURSOR_PREFIX):] + "==").decode("utf-8")
+            payload = base64.urlsafe_b64decode(token[len(CURSOR_PREFIX) :] + "==").decode("utf-8")
             data = json.loads(payload)
         except (ValueError, json.JSONDecodeError) as exc:
             raise CursorError("cursor payload is invalid") from exc
@@ -90,8 +91,7 @@ class TokenBudgeter(Protocol):
         *,
         max_tokens: int,
         reserve_tail: float,
-    ) -> tuple[tuple[WebChunkView, ...], bool]:
-        ...
+    ) -> tuple[tuple[WebChunkView, ...], bool]: ...
 
 
 @dataclass(frozen=True)
@@ -291,8 +291,9 @@ class WebFindTool:
         max_tokens = _optional_int(
             tool_call, "max_output_tokens", default=self.max_output_tokens, minimum=1
         )
-        if self.store.get(resource_id) is None:
-            return _failure(tool_call, reason="resource_not_found", detail="unknown resource_id")
+        resource = _admit_resource(tool_call, self.store, resource_id)
+        if isinstance(resource, ToolResult):
+            return resource
         projection = self.projector.find(
             self.store, resource_id, query, max_tokens=max_tokens, top_k=top_k
         )
@@ -314,8 +315,9 @@ class WebReadTool:
             resource_id = WebResourceId.parse(tool_call.arguments.get("resource_id"))
         except WebResourceIdError as exc:
             return _failure(tool_call, reason="invalid_resource_id", detail=str(exc))
-        if self.store.get(resource_id) is None:
-            return _failure(tool_call, reason="resource_not_found", detail="unknown resource_id")
+        resource = _admit_resource(tool_call, self.store, resource_id)
+        if isinstance(resource, ToolResult):
+            return resource
         max_tokens = _optional_int(
             tool_call, "max_output_tokens", default=self.max_output_tokens, minimum=1
         )
@@ -338,6 +340,31 @@ class WebReadTool:
         return _projection_result(tool_call, self.store, resource_id, projection)
 
 
+def _admit_resource(
+    tool_call: ToolCall,
+    store: WebResourceStorePort,
+    resource_id: WebResourceId,
+    *,
+    missing_reason: str = "resource_not_found",
+) -> WebResourceView | ToolResult:
+    resource = store.get(resource_id)
+    if resource is None:
+        return _failure(tool_call, reason=missing_reason, detail="resource data is unavailable")
+    if resource.resource_id != resource_id.value:
+        return _failure(
+            tool_call,
+            reason="resource_identity_mismatch",
+            detail="source differs from requested resource",
+        )
+    if resource.resource_status not in {"complete", "partial", "failed"}:
+        return _failure(tool_call, reason="invalid_resource_status", detail="unknown source status")
+    if resource.resource_status == "failed":
+        return _failure(
+            tool_call, reason="resource_unavailable", detail="source acquisition failed"
+        )
+    return resource
+
+
 def _projection_result(
     tool_call: ToolCall,
     store: WebResourceStorePort,
@@ -346,15 +373,26 @@ def _projection_result(
     *,
     query: str | None = None,
 ) -> ToolResult:
-    resource = store.get(resource_id)
-    if resource is None:
-        return _failure(tool_call, reason="resource_missing", detail="resource data was removed")
+    resource = _admit_resource(tool_call, store, resource_id, missing_reason="resource_missing")
+    if isinstance(resource, ToolResult):
+        return resource
+    source_truncated = resource.resource_status == "partial"
+    scope = (
+        projection.truncation_scope
+        if projection.truncated
+        else TruncationScope.SOURCE
+        if source_truncated
+        else TruncationScope.NONE
+    )
     canonical_url = resource.canonical_url or resource.final_url
     body = {
         "resource_id": resource_id.value,
         "content": projection.content,
-        "truncated": projection.truncated,
-        "truncation_scope": projection.truncation_scope.value,
+        "truncated": source_truncated or projection.truncated,
+        "truncation_scope": scope.value,
+        "source_truncated": source_truncated,
+        "projection_truncated": projection.truncated,
+        "degraded": source_truncated,
         "next_cursor": projection.next_cursor,
         "selected_chunks": projection.selected_count,
         "total_chunks": projection.total_chunks,
@@ -367,8 +405,11 @@ def _projection_result(
         capability_version=WEB_ENVELOPE_CAPABILITY_VERSION,
         fetched_at=datetime.now(UTC).isoformat(),
         canonical_url=canonical_url,
-        truncation_scope=projection.truncation_scope,
-        truncated=projection.truncated,
+        truncation_scope=scope,
+        truncated=source_truncated or projection.truncated,
+        source_truncated=source_truncated,
+        projection_truncated=projection.truncated,
+        degraded=source_truncated,
         resource_id=resource_id.value,
         extra={
             "selected_count": projection.selected_count,

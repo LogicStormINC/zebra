@@ -1,7 +1,10 @@
 from pathlib import Path
 
-from agent_core.domain.sessions import Session, SessionStatus
-from agent_storage import SQLiteProjectionStore
+from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
+from agent_core.application.session_projection import rebuild_session
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.sessions import ApprovalContext, Session
+from agent_storage import SQLiteAgentTaskStore, SQLiteEventStore, SQLiteProjectionStore
 from zebra_agent_api.app import create_app
 from zebra_agent_api.routes import RouteAdapter, RouteRequest
 
@@ -83,11 +86,39 @@ def test_route_adapter_rejects_invalid_approval_payload(tmp_path: Path) -> None:
     }
 
 
-def _seed_waiting_session(database_path: Path) -> Session:
-    session = Session.create(title="Waiting approval").model_copy(
-        update={
-            "status": SessionStatus.WAITING_APPROVAL,
-            "current_sequence": 2,
-        }
+def _seed_waiting_session(
+    database_path: Path,
+    *,
+    title: str = "Waiting approval",
+    approval_context: ApprovalContext | None = None,
+) -> Session:
+    bootstrap = SessionBootstrapService().build(
+        SessionBootstrapCommand(
+            title=title,
+            user_input="Approval fixture",
+            workspace_root=database_path.parent,
+        )
     )
-    return SQLiteProjectionStore(database_path).save_session(session)
+    events = list(bootstrap.events)
+    for event_type in (EventType.HARNESS_ATTEMPT_STARTED, EventType.APPROVAL_REQUESTED):
+        events.append(
+            SessionEvent.create(
+                session_id=bootstrap.session.session_id,
+                sequence=len(events),
+                event_type=event_type,
+                actor=EventActor.HARNESS,
+                payload={
+                    "attempt_number": 1,
+                    **(
+                        approval_context.to_mapping()
+                        if event_type is EventType.APPROVAL_REQUESTED and approval_context
+                        else {}
+                    ),
+                },
+            )
+        )
+    for event in events:
+        SQLiteEventStore(database_path).append(event)
+    session = SQLiteProjectionStore(database_path).save_session(rebuild_session(events))
+    SQLiteAgentTaskStore(database_path).ensure_for_session(session.session_id)
+    return session

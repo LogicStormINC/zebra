@@ -6,16 +6,17 @@ from pathlib import Path
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
 from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import new_event_id
+from agent_core.domain.identifiers import SessionId, new_event_id
 from agent_integrations.ag_ui import AgUiCursor
 from agent_storage import (
     SQLiteEventStore,
     SQLiteProjectionStore,
     SQLiteWorkspaceProjectionStore,
-    sqlite_control_plane_stores,
 )
 from fastapi.testclient import TestClient
 from zebra_agent_api.http import create_http_app
+
+from tests.api.ag_ui_checkpoint_fixture import checkpoint_stores, table_rows
 
 
 def test_client_effect_replays_once_then_terminal_cursor_only_removes_it(
@@ -79,9 +80,11 @@ def test_client_effect_replays_once_then_terminal_cursor_only_removes_it(
         EventType.SESSION_COMPLETED,
         {},
     )
-    client = TestClient(
-        create_http_app(database_path, stores=sqlite_control_plane_stores(database_path))
-    )
+    sources = store.list_for_session(bootstrap.session.session_id)
+    stores = checkpoint_stores(database_path, bootstrap.session.session_id, "run-client")
+    assert store.list_for_session(bootstrap.session.session_id) == sources
+    client = TestClient(create_http_app(database_path, stores=stores))
+    prepared = table_rows(database_path)
     path = f"/agui/threads/{bootstrap.session.session_id}/runs/run-client/stream"
 
     initial = client.get(path)
@@ -92,17 +95,19 @@ def test_client_effect_replays_once_then_terminal_cursor_only_removes_it(
     assert '"action_contract_digest":"' + ("a" * 64) + '"' in initial.text
     cursor = _cursor_for_sequence(initial.text, scheduled.sequence)
     assert cursor is not None
+    assert table_rows(database_path) == prepared
 
     replay = client.get(f"{path}?cursor={cursor}")
 
     assert replay.status_code == 200
     assert '"op":"remove"' in replay.text
     assert '"op":"add"' not in replay.text
+    assert table_rows(database_path) == prepared
 
 
 def _append(
     store: SQLiteEventStore,
-    session_id,
+    session_id: SessionId,
     sequence: int,
     event_type: EventType,
     payload: dict[str, object],

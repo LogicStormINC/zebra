@@ -110,6 +110,7 @@ def test_execute_only_schedules_a_durable_effect() -> None:
     assert len(dispatch.scheduled) == 1
     request = dispatch.scheduled[0]
     assert request.expected_ui_revision == 4
+    assert (request.expires_at - request.requested_at).total_seconds() == 30
     contract = gateway.context.action_contracts["app.ui.item.open"]
     assert request.action_contract_digest == canonical_client_capability_digest(
         contract.model_dump(mode="json")

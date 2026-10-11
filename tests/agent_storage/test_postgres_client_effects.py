@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import psycopg
 import pytest
+from agent_core.contracts.session_commands import validate_accepted_session_command
 from agent_core.domain.client_effects import (
     ClientEffectContinuation,
     ClientEffectExpiredError,
@@ -212,6 +213,10 @@ def test_receipt_terminal_and_resume_commit_atomically(stores) -> None:
     kinds = [event.event_type.value for event in stream]
     assert kinds.count("client_effect_receipt_accepted") == 1
     assert kinds.count("session_command_accepted") == 1
+    accepted = next(e for e in stream if e.event_type.value == "session_command_accepted")
+    validate_accepted_session_command(
+        accepted.payload, session_id=session_id, idempotency_key=accepted.idempotency_key
+    )
     with pytest.raises(ClientEffectReceiptConflict):
         receipts.accept_receipt(
             _receipt(request, result={"opened": False}),

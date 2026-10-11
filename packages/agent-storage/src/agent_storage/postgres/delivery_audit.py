@@ -11,13 +11,24 @@ from agent_core.ports.delivery_audit_store import DeliveryAuditStorePort
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.task_io import TaskIoConnections
 
 
 class PostgresDeliveryAuditStore(DeliveryAuditStorePort):
     """Append-only audit storage; command transaction ownership stays separate."""
 
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    def __init__(
+        self,
+        dsn: str,
+        *,
+        deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> None:
+        self._database = PostgresDatabase(
+            dsn,
+            deployment_namespace=deployment_namespace,
+            task_io_connections=task_io_connections,
+        )
 
     def append(self, record: DeliveryAuditRecord) -> DeliveryAuditRecord:
         with self._database.connect() as connection:

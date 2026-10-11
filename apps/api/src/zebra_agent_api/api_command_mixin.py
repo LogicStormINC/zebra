@@ -61,7 +61,11 @@ class ApiCommandMixin:
             command = submit_session_command(
                 self.stores,
                 session_text,
-                {"kind": "run", "expected_revision": events[-1].sequence},
+                {
+                    "kind": "run",
+                    "expected_revision": events[-1].sequence,
+                    "payload": _automatic_run_payload(command_key, session_text),
+                },
                 idempotency_key=command_key,
             )
             if command.status_code != 202:
@@ -110,9 +114,8 @@ def _persisted_run_event(
     for event in events:
         if event.idempotency_key != command_key:
             continue
-        if (
-            event.event_type is not EventType.SESSION_COMMAND_ACCEPTED
-            or not _is_genuine_run_event(event, command_key, session_text)
+        if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED or not _is_genuine_run_event(
+            event, command_key, session_text
         ):
             return _RUN_EVENT_MISMATCH
         return event
@@ -153,9 +156,15 @@ def _is_genuine_run_event(event: SessionEvent, command_key: str, session_text: s
         return False
     if str(command.session_id) != session_text:
         return False
-    if command.payload != {}:
+    if command.payload != _automatic_run_payload(command_key, session_text):
         return False
     return accepted.fingerprint == command.fingerprint
+
+
+def _automatic_run_payload(command_key: str, session_text: str) -> dict[str, str]:
+    # Persist this identity at admission; recovery must never invent a Run ID.
+    digest = sha256(f"automatic-run:{session_text}:{command_key}".encode()).hexdigest()
+    return {"run_id": f"run:{digest}"}
 
 
 def _run_key_conflict(session_text: str) -> ApiResponse:

@@ -13,9 +13,6 @@ from agent_core.ports.model_gateway import ModelResponseRejectedError
 
 from agent_integrations.model_errors import ModelProviderError
 
-_COALESCE_CHARS = 64
-_COALESCE_SECONDS = 0.05
-
 
 @dataclass
 class _ToolCallParts:
@@ -24,36 +21,21 @@ class _ToolCallParts:
     arguments: str = ""
 
 
-class _TextDeltaCoalescer:
+class _TextDeltaEmitter:
     def __init__(self, sink: Callable[[ModelTextDelta], None]) -> None:
         self._sink = sink
-        self._buffer = ""
         self._index = 0
-        self._last_emit = perf_counter()
 
     def push(self, content: str) -> None:
         if not content:
             return
-        if self._index == 0 and not self._buffer:
-            self._emit(content)
-            return
-        self._buffer += content
-        if (
-            len(self._buffer) >= _COALESCE_CHARS
-            or perf_counter() - self._last_emit >= _COALESCE_SECONDS
-        ):
-            self.flush()
-
-    def flush(self) -> None:
-        if not self._buffer:
-            return
-        content, self._buffer = self._buffer, ""
+        # ponytail: the Harness owns the single bounded, timer-based coalescer.
+        # A second provider buffer hid text during a paused stream.
         self._emit(content)
 
     def _emit(self, content: str) -> None:
         self._sink(ModelTextDelta(index=self._index, content=content))
         self._index += 1
-        self._last_emit = perf_counter()
 
 
 def read_openai_stream(
@@ -77,14 +59,14 @@ def read_openai_stream(
     done = False
     first_event_ms: int | None = None
     first_public_text_ms: int | None = None
-    coalescer = _TextDeltaCoalescer(on_text_delta)
+    coalescer = _TextDeltaEmitter(on_text_delta)
     with client.stream("POST", url, headers=headers, json=body) as response:
         response.raise_for_status()
         for line in response.iter_lines():
             if perf_counter() - started > 180:
                 raise ModelProviderError(
                     "provider_stream_deadline_exceeded",
-                    retryable=not (content_parts or reasoning_parts or tool_parts),
+                    retryable=not (content_parts or any(reasoning_parts) or tool_parts),
                 )
             if not line.startswith("data:"):
                 continue
@@ -164,9 +146,8 @@ def read_openai_stream(
     if finish_reason is None and not done:
         raise ModelProviderError(
             "provider_stream_terminal_missing",
-            retryable=not (content_parts or reasoning_parts or tool_parts),
+            retryable=not (content_parts or any(reasoning_parts) or tool_parts),
         )
-    coalescer.flush()
     message: dict[str, Any] = {
         "role": "assistant",
         "content": "".join(content_parts) or None,
@@ -205,7 +186,7 @@ def _consume_choices(
     content_parts: list[str],
     reasoning_parts: list[str],
     tool_parts: dict[int, _ToolCallParts],
-    coalescer: _TextDeltaCoalescer,
+    coalescer: _TextDeltaEmitter,
 ) -> tuple[str | None, bool]:
     if value is None:
         return None, False
@@ -234,7 +215,7 @@ def _consume_choices(
         reasoning_content = delta.get("reasoning_content")
         if reasoning_content is not None and not isinstance(reasoning_content, str):
             raise ValueError("model stream reasoning_content delta must be a string")
-        if reasoning_content:
+        if isinstance(reasoning_content, str) and (reasoning_content or not reasoning_parts):
             reasoning_parts.append(reasoning_content)
         _consume_tool_calls(delta.get("tool_calls"), tool_parts)
     return finish_reason, emitted_public_text

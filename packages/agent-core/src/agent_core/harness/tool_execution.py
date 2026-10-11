@@ -132,7 +132,20 @@ def record_tool_result(
                 "attempt_number": context.attempt.number,
                 "summary": verification.summary,
                 "passed": verification.passed,
-                "metadata": verification.metadata,
+                "metadata": {
+                    **verification.metadata,
+                    **(
+                        {
+                            "execution_receipt": {
+                                "tool_call_id": str(tool_call.tool_call_id),
+                                "status": tool_result.status.value,
+                                "public_facts": tool_result.metadata.get("public_facts"),
+                            }
+                        }
+                        if not emit_tool_terminal
+                        else {}
+                    ),
+                },
             },
         )
     )

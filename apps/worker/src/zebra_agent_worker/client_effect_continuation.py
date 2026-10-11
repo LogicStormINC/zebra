@@ -49,13 +49,15 @@ def pending_client_effect_ids(events: list[SessionEvent]) -> tuple[str, ...]:
 def has_trusted_client_effect_resume(events: list[SessionEvent]) -> bool:
     """Only a HARNESS resume command with a client effect result counts."""
 
+    pending = pending_client_effect_ids(events)
     for event in events:
         if (
             event.event_type is EventType.SESSION_COMMAND_ACCEPTED
             and event.actor is EventActor.HARNESS
             and event.payload.get("kind") == "resume"
             and isinstance(event.payload.get("payload"), dict)
-            and "client_effect_result" in event.payload["payload"]
+            and isinstance(event.payload["payload"].get("client_effect_result"), dict)
+            and event.payload["payload"]["client_effect_result"].get("client_effect_id") in pending
         ):
             return True
     return False

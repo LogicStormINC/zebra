@@ -13,6 +13,22 @@ from agent_storage import (
 )
 
 
+def test_task_reads_do_not_adopt_a_legacy_session(tmp_path: Path) -> None:
+    database = tmp_path / "legacy.sqlite"
+    root = _bootstrap(database, tmp_path / "root", "Legacy")
+    store = SQLiteAgentTaskStore(database)
+    task_id = TaskId(root.session.session_id)
+
+    assert store.get_task(task_id) is None
+    assert store.list_tasks(limit=10) == ()
+    assert store.segments(task_id) == ()
+    assert store.active_segment(task_id) is None
+    assert store.read_events(task_id, -1) == ()
+    assert not store.is_internal_segment(root.session.session_id)
+    # Adoption remains explicit, matching the cloud Store's read-only contract.
+    assert store.ensure_for_session(root.session.session_id).task_id == task_id
+
+
 def test_task_store_backfills_root_and_keeps_monotonic_cross_segment_events(
     tmp_path: Path,
 ) -> None:

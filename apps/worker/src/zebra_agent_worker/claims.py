@@ -1,11 +1,24 @@
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from time import monotonic
 
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import DEFAULT_MAX_LEASE_TTL, WorkerLease
 from agent_core.ports.lease_store import LeaseStorePort
+from agent_storage.postgres.leases import PostgresLeaseStore
+from agent_storage.postgres.task_io import task_io_deadline
 
 from zebra_agent_worker.recovery import RecoveredSession, SessionRecoveryService
+
+
+def _lease_io(store: LeaseStorePort) -> AbstractContextManager[None]:
+    # Local compatibility is unchanged; native cloud I/O shares any outer deadline.
+    return (
+        task_io_deadline(monotonic() + 2)
+        if isinstance(store, PostgresLeaseStore)
+        else nullcontext()
+    )
 
 
 @dataclass(frozen=True)
@@ -49,7 +62,7 @@ class SessionClaimService:
             )
         except BaseException as error:
             try:
-                self._lease_store.release(session_id, fence=lease.fence)
+                self.release_lease(lease)
             except Exception as release_error:
                 error.add_note(f"lease cleanup failed: {release_error}")
             raise
@@ -63,11 +76,12 @@ class SessionClaimService:
         lease_ttl_seconds: int,
     ) -> WorkerLease:
         self._require_aware(claimed_at)
-        return self._lease_store.acquire(
-            session_id,
-            owner_instance_id=worker_id,
-            ttl=self._ttl(lease_ttl_seconds),
-        )
+        with _lease_io(self._lease_store):
+            return self._lease_store.acquire(
+                session_id,
+                owner_instance_id=worker_id,
+                ttl=self._ttl(lease_ttl_seconds),
+            )
 
     def recover_lease(
         self,
@@ -75,6 +89,27 @@ class SessionClaimService:
         *,
         lease_ttl_seconds: int,
     ) -> ClaimedSession:
+        if self._recovery_service.bounded_cloud_recovery:
+            from zebra_agent_worker.execution_preparation import finish_preparation
+            from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
+
+            # Recovery may span many committed Pages, but retains this exact fence.
+            # Execution takes over lease cleanup after successful preparation.
+            with LeaseHeartbeat(
+                self,
+                lease,
+                lease_ttl_seconds=lease_ttl_seconds,
+                release_on_exit=False,
+            ) as heartbeat:
+                recovery = finish_preparation(
+                    lambda: self._recovery_service.recover_session(
+                        lease.session_id,
+                        worker_lease=lease,
+                    ),
+                    heartbeat.require_owned,
+                )
+                renewed = heartbeat.advance_checkpoint(recovery.last_sequence)
+            return ClaimedSession(recovery=recovery, lease=renewed)
         recovery = self._recovery_service.recover_session(
             lease.session_id,
             worker_lease=lease,
@@ -110,18 +145,20 @@ class SessionClaimService:
         checkpoint: int | None = None,
     ) -> WorkerLease:
         ttl = self._ttl(lease_ttl_seconds)
-        return self._lease_store.heartbeat(
-            lease.session_id,
-            fence=lease.fence,
-            ttl=ttl,
-            checkpoint=lease.checkpoint if checkpoint is None else checkpoint,
-        )
+        with _lease_io(self._lease_store):
+            return self._lease_store.heartbeat(
+                lease.session_id,
+                fence=lease.fence,
+                ttl=ttl,
+                checkpoint=lease.checkpoint if checkpoint is None else checkpoint,
+            )
 
     def release_claim(self, claimed: ClaimedSession) -> None:
         self.release_lease(claimed.lease)
 
     def release_lease(self, lease: WorkerLease) -> None:
-        self._lease_store.release(lease.session_id, fence=lease.fence)
+        with _lease_io(self._lease_store):
+            self._lease_store.release(lease.session_id, fence=lease.fence)
 
     @staticmethod
     def _require_aware(value: datetime) -> None:

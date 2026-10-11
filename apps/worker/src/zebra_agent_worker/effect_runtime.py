@@ -50,4 +50,6 @@ def guard_worker_effects(
         mutation_authority=cloud_effect_payloads.effect_authority_provider(
             recorders, enabled=effect_payloads is not None
         ),
+        mutation_guard=lambda: recorders[-1].mutation(),
+        execution_started=lambda call_id: recorders[-1].effect_started(call_id),
     )

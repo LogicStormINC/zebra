@@ -5,6 +5,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from agent_context import LocalContextCompiler
+from agent_core.contracts.public_output import project_tool_result_evidence
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.context_materialization import ContextMaterialization
 from agent_core.domain.image_attachments import ImageAttachmentContextInput
@@ -39,9 +40,7 @@ from agent_tools import (
     ToolExecutor,
     ToolOutputProjector,
     ToolRegistry,
-    WebFetchTool,
     WebGatewayTransport,
-    WebSearchTool,
     WebSearchTransport,
     WorkspaceListTool,
     WorkspaceSearchTool,
@@ -66,9 +65,9 @@ from agent_runtime.research import LocalResearchSubagentRunner, ResearchSubagent
 from agent_runtime.skill_requirements import build_skill_read_requirements
 from agent_runtime.subagents import LocalResearchSubagentCoordinator
 from agent_runtime.tool_output_projection import build_output_projector
-from agent_runtime.web_gateway import LocalWebGatewayTransport
+from agent_runtime.web_gateway import LocalWebGatewayTransport, sticky_network_cancellation_check
 from agent_runtime.web_search import LocalWebSearchTransport
-from agent_runtime.web_tools import optional_web_search_endpoint, register_native_web_tools
+from agent_runtime.web_tools import register_web_tools
 from agent_runtime.workspace import LocalWorkspace
 
 DEFAULT_RESEARCH_CHILD_LIMIT = 3
@@ -177,6 +176,7 @@ class LocalToolGateway(ToolGatewayPort):
         durable_delegation: bool = False,
         delegation_store: object | None = None,
         parent_task_id: object | None = None,
+        parent_attempt_number: int = 1,
         parent_binding_digest: str | None = None,
         parent_binding: object | None = None,
         parent_context: ContextMaterialization | None = None,
@@ -202,6 +202,7 @@ class LocalToolGateway(ToolGatewayPort):
         max_publish_bytes: int = 0,
         trusted_local: bool = False,
         web_pipeline_v2: bool = False,
+        network_cancellation_check: Callable[[], None] | None = None,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -225,6 +226,7 @@ class LocalToolGateway(ToolGatewayPort):
             artifact_payload_store, current_session_id=current_session_id
         )
         self._output_projector = output_projector
+        self._network_check = sticky_network_cancellation_check(network_cancellation_check)
         registry = ToolRegistry()
         tools = (
             ClarifyTool(),
@@ -260,7 +262,7 @@ class LocalToolGateway(ToolGatewayPort):
         for tool in tools:
             if tool.contract.name in enabled_names:
                 registry.register(tool.contract, tool.handle)
-        self._register_web_tools(
+        register_web_tools(
             registry,
             enabled_names=enabled_names,
             workspace_root=workspace_root,
@@ -268,17 +270,18 @@ class LocalToolGateway(ToolGatewayPort):
             web_search_endpoint=web_search_endpoint,
             web_search_transport=web_search_transport,
             trusted_local=trusted_local,
-            output_projector=output_projector,
+            max_output_bytes=262_144 if output_projector is not None else 65_536,
             web_pipeline_v2=web_pipeline_v2,
+            network_cancellation_check=self._network_check,
+            fetch_factory=LocalWebGatewayTransport,
+            search_factory=LocalWebSearchTransport,
         )
         self._skill_component_names: tuple[str, ...] = ()
         self._skill_requirements: tuple[SkillReadRequirement, ...] = ()
         if skill_roots or skill_catalog is not None:
             catalog = skill_catalog or LocalSkillCatalog(skill_roots, skills_state=skills_state)
             cloud = isinstance(catalog, CloudSkillCatalog)
-            available_skills = (
-                () if skill_component_names else catalog.list(limit=200)[0]
-            )
+            available_skills = () if skill_component_names else catalog.list(limit=200)[0]
             self._skill_component_names = skill_component_names or tuple(
                 metadata.name for metadata in available_skills
             )
@@ -324,6 +327,7 @@ class LocalToolGateway(ToolGatewayPort):
                 wait_for_result=not durable_delegation,
                 delegation_store=delegation_store,
                 parent_task_id=parent_task_id,
+                parent_attempt_number=parent_attempt_number,
                 parent_binding=parent_binding,
                 parent_context=parent_context,
                 skill_components=self.effective_skill_components,
@@ -340,57 +344,6 @@ class LocalToolGateway(ToolGatewayPort):
                 McpProxyToolGateway(mcp_transport) if mcp_transport is not None else None
             ),
         )
-
-    def _register_web_tools(
-        self,
-        registry: ToolRegistry,
-        *,
-        enabled_names: frozenset[str],
-        workspace_root: Path,
-        web_gateway_transport: WebGatewayTransport | None,
-        web_search_endpoint: str | None,
-        web_search_transport: WebSearchTransport | None,
-        trusted_local: bool,
-        output_projector: ToolOutputProjector | None,
-        web_pipeline_v2: bool,
-    ) -> None:
-        search_endpoint = optional_web_search_endpoint(
-            web_search_endpoint,
-            web_pipeline_v2=web_pipeline_v2,
-        )
-        if web_pipeline_v2:
-            if web_gateway_transport is not None or web_search_transport is not None:
-                raise ValueError(
-                    "legacy web transports are not supported when web_pipeline_v2 is enabled"
-                )
-            # Native v2 path (opt-in via ZEBRA_WEB_PIPELINE_V2). See web_tools.py.
-            register_native_web_tools(
-                registry,
-                enabled_names=enabled_names,
-                workspace_root=workspace_root,
-                search_endpoint=search_endpoint,
-                trusted_local=trusted_local,
-            )
-            return
-        # Legacy v1 path (default). Preserves durable network-authority behavior
-        # guarded by tests/worker/test_approved_continuation.py — do not flip the
-        # default until v2 replicates that authority (see WEB-PIPE §14.2).
-        fetch_transport = web_gateway_transport or LocalWebGatewayTransport(
-            use_system_proxy=trusted_local
-        )
-        legacy_fetch = WebFetchTool(
-            fetch_transport,
-            max_output_bytes=262_144 if output_projector is not None else 65_536,
-        )
-        if "web.fetch" in enabled_names:
-            registry.register(legacy_fetch.contract, legacy_fetch.handle)
-        if search_endpoint is not None and "web.search" in enabled_names:
-            legacy_search = WebSearchTool(
-                endpoint=search_endpoint,
-                transport=web_search_transport
-                or LocalWebSearchTransport(use_system_proxy=trusted_local),
-            )
-            registry.register(legacy_search.contract, legacy_search.handle)
 
     @property
     def delegation_mode(self) -> DelegationMode:
@@ -425,9 +378,16 @@ class LocalToolGateway(ToolGatewayPort):
         return dict(self._parallel_batch_limits)
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
+        if self._network_check is not None:
+            self._network_check()
         try:
             result = self._executor.execute(tool_call)
-            return self._project_tool_output(tool_call, result)
+            if self._network_check is not None:
+                self._network_check()
+            result = self._project_tool_output(tool_call, result)
+            if self._network_check is not None:
+                self._network_check()
+            return result
         except ToolRegistryError as exc:
             detail = str(exc)[:1000]
             failed = ToolResult(
@@ -477,11 +437,8 @@ class LocalToolGateway(ToolGatewayPort):
                 },
             )
             metadata = {**result.metadata, **projected.metadata}
-        return ToolResult(
-            tool_call_id=result.tool_call_id,
-            status=result.status,
-            output=projected.model_output,
-            metadata=metadata,
+        return project_tool_result_evidence(
+            result, output=projected.model_output, metadata=metadata
         )
 
     def resolve_model_tool_calls(

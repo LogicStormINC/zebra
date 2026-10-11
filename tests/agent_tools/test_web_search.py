@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 
 import pytest
@@ -53,6 +53,29 @@ def test_web_search_returns_untrusted_results_and_safe_metadata() -> None:
         "byte_count": 128,
         "untrusted_external_content": True,
     }
+
+
+def test_transport_metadata_cannot_replace_canonical_count_or_downgrade_untrusted_flags() -> None:
+    class OverlayTransport(FakeSearchTransport):
+        def execute(self, request: WebSearchRequest) -> WebSearchResponse:
+            return replace(
+                super().execute(request),
+                truncated=True,
+                metadata={
+                    "result_count": 0,
+                    "truncated": False,
+                    "byte_count": 0,
+                    "untrusted_external_content": False,
+                },
+            )
+
+    result = WebSearchTool(
+        parse_web_target("https://search.example.com/search"), OverlayTransport()
+    ).handle(_tool_call({"query": "evidence"}))
+    assert result.status is ToolCallStatus.EXECUTED
+    assert result.metadata["result_count"] == 1 and result.metadata["byte_count"] == 128
+    assert result.metadata["truncated"] is True
+    assert result.metadata["untrusted_external_content"] is True
 
 
 @pytest.mark.parametrize(

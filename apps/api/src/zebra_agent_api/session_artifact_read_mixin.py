@@ -12,10 +12,12 @@ from agent_core.ports import (
     ArtifactPayloadReadUnavailableError,
     SessionArtifact,
 )
+from agent_core.ports.session_artifact_read import SessionArtifactReadUnavailableError
 from agent_storage import (
     ControlPlaneStores,
     serialize_session_artifact_projection,
 )
+from agent_storage.artifact_object_reads import current_artifact_read_scope
 
 from zebra_agent_api.artifact_access import (
     ArtifactAccessContext,
@@ -180,6 +182,18 @@ class SessionArtifactReadMixin:
             )
         assert artifact.uri is not None
         assert inspection is not None
+        scope = current_artifact_read_scope()
+        selected_size = byte_range[1] - byte_range[0] + 1 if byte_range else inspection.size_bytes
+        if scope is not None and (
+            selected_size is None or selected_size < 0 or selected_size > scope.max_bytes
+        ):
+            return self._artifact_content_unavailable(
+                session_id,
+                artifact,
+                access,
+                reason="artifact_byte_limit_exceeded",
+                retrieval_status="payload_unavailable",
+            )
         try:
             reader = payload_reader(self.stores)
             payload = (
@@ -298,10 +312,14 @@ class SessionArtifactReadMixin:
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
-        artifacts = self.stores.artifacts.list_for_session(session_key)
-        for artifact in artifacts:
-            if artifact.artifact_id == artifact_id:
-                return artifact
+        try:
+            artifact = self.stores.artifacts.get_for_session(session_key, artifact_id)
+        except SessionArtifactReadUnavailableError:
+            return ApiResponse(
+                503, {"status": "artifact_unavailable", "reason": "artifact_index_unavailable"}
+            )
+        if artifact is not None:
+            return artifact
         return ApiResponse(
             status_code=404,
             body={

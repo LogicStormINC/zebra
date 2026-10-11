@@ -1,21 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from collections.abc import Mapping
-from dataclasses import dataclass
-from json import JSONDecodeError
 from pathlib import Path
-from typing import Any, Protocol
 
-from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.ports.extensions import ExtensionStore
 from agent_integrations import GitHubPullRequestTransport
 from agent_runtime.mcp_catalog_refresh import McpCatalogRefresh
-from agent_security import CredentialBroker, HostGrantSecurityError
-from agent_security.host_grant import VerifiedHostGrant
+from agent_security import CredentialBroker
 from agent_security.mcp_credential_management import McpCredentialManagement
 from agent_storage import CloudCompositionSettings, ControlPlaneStores, PostgresControlPlaneStores
+from agent_storage.postgres.task_io import TaskIoConnections
 from agent_tools.skill_publications import SkillPublicationService
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,8 +22,12 @@ from zebra_agent_api.ag_ui_stream import (
     prepare_agui_stream,
     tail_agui_events,
 )
+from zebra_agent_api.ag_ui_task_view import authorized_async_read, authorized_task_preflight
 from zebra_agent_api.app import create_app
-from zebra_agent_api.artifact_download import artifact_download_response
+from zebra_agent_api.artifact_download import (
+    artifact_download_response,
+    authorized_artifact_read,
+)
 from zebra_agent_api.extension_composition import (
     compose_http_extensions,
     compose_http_turn_admission,
@@ -39,6 +38,17 @@ from zebra_agent_api.extension_reads import (
     extension_error,
     extension_read_response,
     is_extension_path,
+)
+from zebra_agent_api.http_host_auth import (
+    HostGrantHttpRequest as HostGrantHttpRequest,
+)
+from zebra_agent_api.http_host_auth import (
+    HostGrantRequestAuthorizer as HostGrantRequestAuthorizer,
+)
+from zebra_agent_api.http_host_auth import (
+    _read_request_body,
+    _resolve_host_origins,
+    authorize_request,
 )
 from zebra_agent_api.http_origins import _normalize_exact_origin as _normalize_exact_origin
 from zebra_agent_api.http_stream_routing import (
@@ -63,29 +73,6 @@ HTTP_ALLOWED_HEADERS = [
     "X-Zebra-Client-Fence",
     "X-Zebra-Client-Session",
 ]
-logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class HostGrantHttpRequest:
-    """Transient request data passed to the injected Host Grant adapter."""
-
-    method: str
-    path: str
-    origin: str | None
-    authorization: str
-
-
-class HostGrantRequestAuthorizer(Protocol):
-    """JWT/registry/replay adapter owned by the production composition root."""
-
-    @property
-    def allowed_origins(self) -> tuple[str, ...]:
-        """Exact registry-backed origins used by the CORS composition."""
-        ...
-
-    def authorize(self, request: HostGrantHttpRequest) -> object | None:
-        """Verify the bearer Grant, bindings, scope and replay state."""
 
 
 def create_http_app(
@@ -128,6 +115,25 @@ def create_http_app(
         credential_env=credential_env,
         github_transport=github_transport,
     )
+    task_io_connections = None
+    if (
+        active_settings.deployment != "local"
+        and (
+            host_grant_authorizer is None
+            or active_settings.cloud_extensions_read_enabled
+            and extension_store is None
+        )
+        and isinstance(api.stores, PostgresControlPlaneStores)
+    ):
+        # All default cloud reads share addresses, never connections or authority.
+        # Explicit adapters stay owned by their caller; local composition is unchanged.
+        task_io_connections = api.stores.task_io_connections
+        if task_io_connections is None:
+            task_io_connections = TaskIoConnections(
+                cloud_composition.dsn
+                if cloud_composition is not None
+                else active_settings.database_url
+            )
     (
         active_extension_store,
         skill_publication_service,
@@ -141,6 +147,7 @@ def create_http_app(
         extension_store=extension_store,
         credentials=mcp_credential_management,
         refresh=mcp_catalog_refresh,
+        task_io_connections=task_io_connections,
     )
     active_host_grant_authorizer = host_grant_authorizer
     if active_host_grant_authorizer is None and active_settings.deployment != "local":
@@ -148,6 +155,7 @@ def create_http_app(
             active_settings,
             api.stores,
             cloud_composition=cloud_composition,
+            task_io_connections=task_io_connections,
         )
     turn_admission = compose_http_turn_admission(
         active_settings, api, active_extension_store, cloud_composition=cloud_composition
@@ -167,19 +175,7 @@ def create_http_app(
         allow_credentials=False,
     )
 
-    async def handle(request: Request, full_path: str = "") -> Response:
-        if request.method.upper() == "OPTIONS" and not is_extension_path(request.url.path):
-            return Response(status_code=200)
-        auth_error = _authorize_request(
-            request,
-            active_settings,
-            host_grant_authorizer=active_host_grant_authorizer,
-            host_grant_origins=exact_host_origins,
-        )
-        if auth_error is not None:
-            if is_extension_path(request.url.path):
-                return extension_error(auth_error.status_code)
-            return auth_error
+    async def optional_extensions(request: Request) -> Response | None:
         credential_response = await extension_management_response(
             request,
             service=mcp_credential_management,
@@ -198,61 +194,79 @@ def create_http_app(
         )
         if publication_response is not None:
             return publication_response
-        extension_response = await extension_read_response(
+        return await extension_read_response(
             request,
             store=active_extension_store,
             deployment=active_settings.deployment,
             manage_enabled=active_settings.cloud_extensions_manage_enabled,
             publications=skill_publication_service,
         )
+
+    async def handle(request: Request, full_path: str = "") -> Response:
+        if request.method.upper() == "OPTIONS" and not is_extension_path(request.url.path):
+            return Response(status_code=200)
+        auth_error = await authorize_request(
+            request,
+            active_settings,
+            api=api,
+            host_grant_authorizer=active_host_grant_authorizer,
+            host_grant_origins=exact_host_origins,
+        )
+        if auth_error is not None:
+            if is_extension_path(request.url.path):
+                return extension_error(auth_error.status_code)
+            return auth_error
+        if (
+            active_settings.deployment != "local"
+            and request.method == "GET"
+            and is_extension_path(request.url.path)
+        ):
+            extension_response = await authorized_async_read(
+                lambda: optional_extensions(request),
+                authorization_expires_at=getattr(
+                    getattr(request.state, "host_context", None), "expires_at", None
+                ),
+                request_deadline=getattr(request.state, "authorization_deadline", None),
+            )
+            if isinstance(extension_response, ApiResponse):
+                return extension_error(extension_response.status_code)
+        else:
+            extension_response = await optional_extensions(request)
         if extension_response is not None:
             return extension_response
         download_response = await artifact_download_response(request, adapter)
         if download_response is not None:
             return download_response
-        body, body_error = await _read_request_body(request)
+        if getattr(request.state, "authorized_body_read", False):
+            body, body_error = request.state.authorized_body, None
+        else:
+            body, body_error = await _read_request_body(request)
         if body_error is not None:
             return body_error
         if _is_agui_stream_request(request):
             from zebra_agent_api.tenant_guard import task_access_response
 
             agui_thread = _stream_resource_id(request.url.path)
-            denied = task_access_response(
-                api,
-                agui_thread,
-                getattr(request.state, "host_context", None),
-            )
-            if denied is not None:
-                return JSONResponse(status_code=denied.status_code, content=denied.body)
             host_context = getattr(request.state, "host_context", None)
-            # The authenticated SSE connection is also the Host's liveness lease.
-            # Its fresh, single-use Grant must refresh queued execution authority;
-            # otherwise a busy Worker picks up a Task after the admission Grant expires.
-            from zebra_agent_api.session_binding import renew_host_binding_for_command
-
-            renewal_error = await asyncio.to_thread(
-                renew_host_binding_for_command,
-                api,
-                agui_thread,
-                getattr(request.state, "verified_host_grant", None),
-            )
-            if renewal_error is not None:
-                return JSONResponse(
-                    status_code=renewal_error.status_code,
-                    content=renewal_error.body,
-                )
+            # Observing does not renew execution authority; Host uses the explicit
+            # authenticated renewal route independently of this read-only tail.
             stream_query = dict(request.query_params)
             if last_event_id := request.headers.get("Last-Event-ID"):
                 stream_query.setdefault("last_event_id", last_event_id)
-            agui_stream = prepare_agui_stream(
-                api.stores,
-                request.url.path,
-                stream_query,
-                live_event_fanout=api.live_event_fanout,
-                deployment_namespace=_deployment_namespace(api),
+            agui_stream = await authorized_task_preflight(
+                lambda: task_access_response(api, agui_thread, host_context),
+                lambda: prepare_agui_stream(
+                    api.stores,
+                    request.url.path,
+                    stream_query,
+                    live_event_fanout=api.live_event_fanout,
+                    deployment_namespace=_deployment_namespace(api),
+                    authorization_expires_at=getattr(host_context, "expires_at", None),
+                    command_outcome=api.command_outcome,
+                    host_context=host_context,
+                ),
                 authorization_expires_at=getattr(host_context, "expires_at", None),
-                command_outcome=api.command_outcome,
-                host_context=host_context,
+                request_deadline=getattr(request.state, "authorization_deadline", None),
             )
             if isinstance(agui_stream, ApiResponse):
                 return JSONResponse(status_code=agui_stream.status_code, content=agui_stream.body)
@@ -274,7 +288,26 @@ def create_http_app(
             host_context=getattr(request.state, "host_context", None),
             verified_host_grant=getattr(request.state, "verified_host_grant", None),
         )
-        response = await asyncio.to_thread(adapter.handle, route_request)
+        artifact_parts = tuple(part for part in request.url.path.split("/") if part)
+        if (
+            active_settings.deployment != "local"
+            and request.method == "GET"
+            and len(artifact_parts) == 5
+            and artifact_parts[0] in {"tasks", "sessions"}
+            and artifact_parts[2] == "artifacts"
+            and artifact_parts[4] == "content"
+        ):
+            response = await authorized_artifact_read(request, adapter, route_request)
+        elif active_settings.deployment != "local" and request.method in {"GET", "HEAD"}:
+            response = await authorized_task_preflight(
+                lambda: None,
+                lambda: adapter.handle(route_request),
+                authorization_expires_at=getattr(route_request.host_context, "expires_at", None),
+                request_deadline=getattr(request.state, "authorization_deadline", None),
+            )
+        else:
+            # Observation budgets must not turn an uncertain command into a retry.
+            response = await asyncio.to_thread(adapter.handle, route_request)
         if _is_stream_request(request) and response.status_code == 200:
             stream_id = _stream_resource_id(request.url.path)
             after_sequence_value, cursor_error = after_sequence(request)
@@ -321,14 +354,20 @@ def create_http_app(
         return JSONResponse(status_code=response.status_code, content=response.body)
 
     async def handle_artifact_preview_head(
-        request: Request, task_id: str, artifact_id: str,
+        request: Request,
+        task_id: str,
+        artifact_id: str,
     ) -> Response:
         _ = task_id, artifact_id
         return await handle(request)
 
     app.add_api_route("/", handle, methods=HTTP_METHODS, response_model=None)
-    app.add_api_route("/tasks/{task_id}/artifacts/{artifact_id}/preview",
-                      handle_artifact_preview_head, methods=["HEAD"], response_model=None)
+    app.add_api_route(
+        "/tasks/{task_id}/artifacts/{artifact_id}/preview",
+        handle_artifact_preview_head,
+        methods=["HEAD"],
+        response_model=None,
+    )
     app.add_api_route(
         "/v1/extensions", handle, methods=["HEAD", "TRACE", "CONNECT"], response_model=None
     )
@@ -347,6 +386,7 @@ def _compose_production_host_grant_authorizer(
     stores: ControlPlaneStores,
     *,
     cloud_composition: CloudCompositionSettings | None,
+    task_io_connections: TaskIoConnections | None = None,
 ) -> HostGrantRequestAuthorizer | None:
     """Build the default cloud authorizer only for the PostgreSQL composition."""
     if not isinstance(stores, PostgresControlPlaneStores):
@@ -356,34 +396,8 @@ def _compose_production_host_grant_authorizer(
     return build_postgres_host_grant_authorizer(
         cloud_composition.dsn if cloud_composition is not None else settings.database_url,
         deployment_namespace=stores.deployment_namespace,
+        **({"task_io_connections": task_io_connections} if task_io_connections is not None else {}),
     )
-
-
-async def _read_request_body(request: Request) -> tuple[dict[str, Any] | None, JSONResponse | None]:
-    if request.method.upper() not in {"POST", "PUT", "PATCH"}:
-        return None, None
-    raw_body = await request.body()
-    if not raw_body:
-        return None, None
-    try:
-        payload = await request.json()
-    except JSONDecodeError:
-        return None, JSONResponse(
-            status_code=400,
-            content={
-                "status": "invalid_request",
-                "reason": "request body must be valid JSON",
-            },
-        )
-    if not isinstance(payload, dict):
-        return None, JSONResponse(
-            status_code=400,
-            content={
-                "status": "invalid_request",
-                "reason": "request body must be a JSON object",
-            },
-        )
-    return dict(payload), None
 
 
 def _deployment_namespace(api: object) -> str | None:
@@ -393,106 +407,3 @@ def _deployment_namespace(api: object) -> str | None:
         return namespace
     settings = getattr(api, "settings", None)
     return "local" if getattr(settings, "deployment", None) == "local" else None
-
-
-def _authorize_request(
-    request: Request,
-    settings: ZebraAgentSettings,
-    *,
-    host_grant_authorizer: HostGrantRequestAuthorizer | None,
-    host_grant_origins: tuple[str, ...],
-) -> JSONResponse | None:
-    if request.method.upper() == "OPTIONS" and not is_extension_path(request.url.path):
-        return None
-    if request.url.path == "/health":
-        return None
-    if request.url.path.startswith("/platform/v1/frontend-profile"):
-        # Platform management has its own operator-only authorizer. Treating
-        # that bearer as a Host Grant makes the cloud route unreachable.
-        return None
-    if settings.deployment != "local":
-        return _authorize_host_request(
-            request,
-            host_grant_authorizer=host_grant_authorizer,
-            host_grant_origins=host_grant_origins,
-        )
-    expected_token = settings.api.auth_token
-    if expected_token is None:
-        return None
-    header = request.headers.get("authorization", "")
-    prefix = "Bearer "
-    if not header.startswith(prefix):
-        return _unauthorized()
-    provided_token = header.removeprefix(prefix).strip()
-    if provided_token != expected_token:
-        return _unauthorized()
-    return None
-
-
-def _authorize_host_request(
-    request: Request,
-    *,
-    host_grant_authorizer: HostGrantRequestAuthorizer | None,
-    host_grant_origins: tuple[str, ...],
-) -> JSONResponse | None:
-    origin = request.headers.get("origin")
-    if origin is not None:
-        try:
-            normalized_origin = _normalize_exact_origin(origin)
-        except ValueError:
-            return _forbidden("host_origin_not_allowed")
-        if normalized_origin not in host_grant_origins:
-            return _forbidden("host_origin_not_allowed")
-    authorization = request.headers.get("authorization", "")
-    if not authorization.startswith("Bearer ") or not authorization.removeprefix("Bearer ").strip():
-        return _unauthorized(reason="missing_or_invalid_host_grant")
-    if host_grant_authorizer is None:
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unavailable",
-                "reason": "host_grant_authorizer_unconfigured",
-            },
-        )
-    try:
-        verified = host_grant_authorizer.authorize(
-            HostGrantHttpRequest(
-                method=request.method.upper(),
-                path=request.url.path,
-                origin=origin,
-                authorization=authorization,
-            )
-        )
-        context = getattr(verified, "context", None)
-        if context is not None and not isinstance(context, HostContextEnvelope):
-            return _forbidden("host_grant_context_invalid")
-        request.state.host_context = context
-        if isinstance(verified, VerifiedHostGrant):
-            request.state.verified_host_grant = verified
-    except (HostGrantSecurityError, ValueError) as exc:
-        logger.warning("Host Grant request rejected: %s", type(exc).__name__)
-        return _forbidden("host_grant_rejected")
-    return None
-
-
-def _resolve_host_origins(
-    authorizer: HostGrantRequestAuthorizer | None,
-    configured_origins: tuple[str, ...] | None,
-) -> tuple[str, ...]:
-    values = configured_origins
-    if values is None and authorizer is not None:
-        values = authorizer.allowed_origins
-    if values is None:
-        return ()
-    normalized = tuple(_normalize_exact_origin(origin) for origin in values)
-    if not normalized or len(set(normalized)) != len(normalized):
-        raise ValueError("Host Grant origins must contain unique exact HTTPS origins")
-    return normalized
-
-
-def _unauthorized(*, reason: str = "missing_or_invalid_bearer_token") -> JSONResponse:
-    return JSONResponse(status_code=401, content={"status": "unauthorized", "reason": reason})
-
-
-def _forbidden(reason: str) -> JSONResponse:
-    return JSONResponse(status_code=403, content={"status": "forbidden", "reason": reason})

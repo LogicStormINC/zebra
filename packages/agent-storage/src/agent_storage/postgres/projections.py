@@ -8,6 +8,7 @@ from agent_core.ports.projection_store import ProjectionStorePort
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.task_io import TaskIoConnections
 
 
 class PostgresProjectionConflictError(ValueError):
@@ -15,10 +16,17 @@ class PostgresProjectionConflictError(ValueError):
 
 
 class PostgresProjectionStore(ProjectionStorePort):
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
+    def __init__(
+        self,
+        dsn: str,
+        *,
+        deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> None:
         self._database = PostgresDatabase(
             dsn,
             deployment_namespace=deployment_namespace,
+            task_io_connections=task_io_connections,
         )
 
     def save_session(self, session: Session) -> Session:
@@ -30,7 +38,8 @@ class PostgresProjectionStore(ProjectionStorePort):
             )
 
     def get_session(self, session_id: SessionId) -> Session | None:
-        with self._database.connect() as connection:
+        with self._database.connect_task_io() as connection:
+            connection.execute("SET TRANSACTION READ ONLY")
             return get_session_in_transaction(
                 connection,
                 self._database.deployment_namespace,

@@ -135,6 +135,29 @@ def test_generate_strips_quotes_and_title_prefix() -> None:
     assert event.payload["title"] == "Fix login bug"
 
 
+def test_title_context_excludes_auxiliary_expression_receipt() -> None:
+    session = _session("New Task")
+    gateway = _CapturingGateway("README translated")
+    events = _exchange_events(session)
+    events.insert(
+        1,
+        SessionEvent.create(
+            session_id=session.session_id,
+            sequence=2,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            created_at=_CREATED_AT,
+            payload={
+                "response_stage": "public_expression",
+                "assistant_message": "PRIVATE-ORDER-JSON",
+            },
+        ),
+    )
+    assert SessionTitleService(gateway).generate(session=session, events=events, next_sequence=3)
+    assert "PRIVATE-ORDER-JSON" not in gateway.messages[1].content
+    assert "Done — translated" in gateway.messages[1].content
+
+
 def test_generate_truncates_overlong_title() -> None:
     session = _session("placeholder")
     service = SessionTitleService(_ScriptedGateway("x" * 200))

@@ -92,6 +92,9 @@ def _setup(
     bootstrap_control_plane_epoch(dsn, deployment_namespace=NAMESPACE)
     _enable(dsn)
     command = _command(bootstrap.session.session_id)
+    command = command.model_copy(update={"payload": {
+        **command.payload, "payload": {"run_id": f"fixture-run-{uuid4()}"},
+    }})
     _store(dsn).append(command)
     lease = _handoff(dsn, command).lease
     assert lease is not None
@@ -112,6 +115,7 @@ def _setup(
         deployment_namespace=NAMESPACE,
         model_call_indexer=ModelCallIndexer(stores.model_calls),
         tool_run_indexer=ToolRunIndexer(stores.tool_runs),
+        session_recovery_store=stores.session_recovery,
     )
     claims = SessionClaimService(stores.leases, recovery)
     service = SessionExecutionService(

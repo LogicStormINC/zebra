@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from agent_core.domain.context_materialization import ContextMaterialization
@@ -297,6 +298,7 @@ def build_worker_tool_gateway(
     egress_registry: HostConnectorRegistryPort | None = None,
     delegation_store: object | None = None,
     parent_task_id: object | None = None,
+    parent_attempt_number: int = 1,
     parent_binding_digest: str | None = None,
     parent_binding: object | None = None,
     parent_context: ContextMaterialization | None = None,
@@ -307,6 +309,7 @@ def build_worker_tool_gateway(
     skill_component_names: tuple[str, ...] = (),
     cloud_mcp_transport: CloudMcpTransport | None = None,
     resource_authority_issuer: str | None = None,
+    network_cancellation_check: Callable[[], None] | None = None,
 ) -> WorkerToolGateway:
     can_publish = (
         cloud_artifacts is not None
@@ -377,9 +380,11 @@ def build_worker_tool_gateway(
         durable_delegation=durable_delegation,
         delegation_store=delegation_store,
         parent_task_id=parent_task_id,
+        parent_attempt_number=parent_attempt_number,
         parent_binding_digest=parent_binding_digest,
         parent_binding=parent_binding,
         parent_context=parent_context,
+        network_cancellation_check=network_cancellation_check,
     )
     web_egress_enabled = trusted_local or task.network_profile.name.value in WEB_ALLOWED_PROFILES
     if task.host_context is None:

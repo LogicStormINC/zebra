@@ -24,7 +24,7 @@ class LegacyCommandCandidates:
     def __call__(self, limit: int, after: SessionId | None) -> list[Session]:
         if not 1 <= limit <= 500:
             raise ValueError("legacy command discovery limit must be between 1 and 500")
-        with self._database.connect() as connection:
+        with self._database.connect_task_io() as connection:
             rows = connection.execute(
                 f"""SELECT p.* FROM session_projections p
                 WHERE p.deployment_namespace=%s
@@ -43,7 +43,7 @@ class LegacyCommandCandidates:
 
     def next_command(self, session_id: SessionId, current_sequence: int) -> SessionEvent | None:
         # STOP/CANCEL bypass prior execution intents, as in the migrated control lane.
-        with self._database.connect() as connection:
+        with self._database.connect_task_io() as connection:
             row = connection.execute(
                 f"""SELECT e.* FROM session_events e
                 WHERE e.deployment_namespace=%s AND e.session_id=%s AND e.sequence>%s

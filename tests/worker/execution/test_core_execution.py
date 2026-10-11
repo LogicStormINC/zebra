@@ -3,7 +3,6 @@ from dataclasses import replace
 from pathlib import Path
 from threading import Event, Thread
 
-import pytest
 from agent_core.application.mock_model import ScriptedModelGateway
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id
@@ -40,7 +39,6 @@ from worker_execution_support import (
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 from zebra_agent_worker.claims import SessionClaimService
 from zebra_agent_worker.control import SessionControlService
-from zebra_agent_worker.execution import RetryableWorkerSetupError
 from zebra_agent_worker.recovery import SessionRecoveryService
 
 
@@ -70,7 +68,7 @@ def test_worker_execution_service_completes_ready_session(
     assert isinstance(model_calls[0], ModelCallRecord)
 
 
-def test_worker_setup_failure_keeps_session_ready_for_retry(
+def test_worker_runtime_failure_closes_turn_and_projects_error(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -89,12 +87,11 @@ def test_worker_setup_failure_keeps_session_ready_for_retry(
         lambda settings: _assistant_only_gateway(settings=settings),
     )
 
-    with pytest.raises(RetryableWorkerSetupError, match="sandbox runtime is unavailable"):
-        _build_execution_service(database_path).execute_session(
-            session_id,
-            worker_id="worker-retryable-setup",
-            executed_at=_created_at(),
-        )
+    result = _build_execution_service(database_path).execute_session(
+        session_id,
+        worker_id="worker-runtime-setup",
+        executed_at=_created_at(),
+    )
 
     events = SQLiteEventStore(database_path).list_for_session(session_id)
     recovered = SessionRecoveryService(
@@ -102,9 +99,18 @@ def test_worker_setup_failure_keeps_session_ready_for_retry(
         SQLiteProjectionStore(database_path),
         SQLiteWorkspaceProjectionStore(database_path),
     ).recover_session(session_id)
-    assert recovered.session.status is SessionStatus.READY
-    assert EventType.HARNESS_ATTEMPT_STARTED not in {event.event_type for event in events}
-    assert EventType.SESSION_FAILED not in {event.event_type for event in events}
+    assert recovered.session.status is SessionStatus.FAILED
+    assert result.attempt_result.metadata["error_code"] == "runtime_unavailable"
+    assert EventType.TURN_FAILED in {event.event_type for event in events}
+    assert EventType.SESSION_FAILED in {event.event_type for event in events}
+    assert not SQLiteModelCallStore(database_path).list_for_session(session_id)
+    from agent_integrations.ag_ui import AgUiProjector, AgUiRunIdentity
+    projection = AgUiProjector().project(
+        tuple(events), AgUiRunIdentity(session_id=session_id, thread_id="task", run_id="run")
+    )
+    assert projection.events[-1].type.value == "RUN_ERROR"
+    assert projection.events[-1].message == result.attempt_result.summary
+    assert SQLiteLeaseStore(database_path).get(session_id) is None
     assert SQLiteLeaseStore(database_path).get(session_id) is None
 
 
@@ -391,12 +397,43 @@ def test_cloud_setup_only_is_persistently_rejected_before_model_start(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
+    from unittest.mock import Mock
+
+    from agent_core.contracts.session_commands import SessionCommand, SessionCommandKind
+    from agent_core.domain.events import EventActor, SessionEvent
+    from agent_storage.agent_tasks import SQLiteAgentTaskStore
+    from agent_storage.database import SQLiteDatabase
+    from agent_storage.execution_inputs import (
+        ExecutionInputStore,
+        execution_input_compaction_schema,
+        execution_input_schema,
+    )
+
     database_path = tmp_path / "worker.db"
     session_id = _seed_ready_session_with_input(
         database_path,
         tmp_path,
         user_input="Install the setup dependencies first.",
         network_profile="setup-only",
+    )
+    events = SQLiteEventStore(database_path)
+    revision = events.list_for_session(session_id)[-1].sequence
+    command = SessionCommand(
+        session_id=session_id,
+        kind=SessionCommandKind.RUN,
+        expected_revision=revision,
+        idempotency_key="cloud-setup-only:run",
+        payload={"run_id": "cloud-setup-only"},
+    )
+    events.append(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=revision + 1,
+            event_type=EventType.SESSION_COMMAND_ACCEPTED,
+            actor=EventActor.USER,
+            payload=command.event_payload(),
+            idempotency_key=command.idempotency_key,
+        )
     )
     settings = ZebraAgentSettings(
         profile="cloud",
@@ -412,6 +449,20 @@ def test_cloud_setup_only_is_persistently_rejected_before_model_start(
     service = _build_execution_service(database_path)
     service._settings = settings
     service._artifact_payload_store = None
+    # The SQLite cloud simulation still needs explicit bounded input composition.
+    tasks = SQLiteAgentTaskStore(database_path)
+    task = tasks.ensure_for_session(session_id)
+    while not tasks.backfill_replay_headers(task.task_id):
+        pass
+    database = SQLiteDatabase(database_path)
+    with database.connect() as connection:
+        for statement in (*execution_input_schema(), *execution_input_compaction_schema()):
+            connection.execute(statement)
+    service._task_index_store = tasks
+    service._execution_namespace = "local"
+    service._execution_input_store = ExecutionInputStore(database, tasks, namespace="local")
+    bounded_pages = Mock(wraps=service._execution_input_store.read_page)
+    monkeypatch.setattr(service._execution_input_store, "read_page", bounded_pages)
     monkeypatch.setattr(
         "zebra_agent_worker.execution.build_model_gateway",
         lambda settings: (_ for _ in ()).throw(AssertionError("model must not start")),
@@ -424,6 +475,7 @@ def test_cloud_setup_only_is_persistently_rejected_before_model_start(
     )
 
     assert result.session.status is SessionStatus.FAILED
+    bounded_pages.assert_called()
     assert result.attempt_result.metadata["stop_reason"] == "unsupported_runtime_capability"
     events = SQLiteEventStore(database_path).list_for_session(session_id)
     assert events[-1].event_type is EventType.SESSION_FAILED

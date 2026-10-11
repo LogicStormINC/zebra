@@ -10,6 +10,7 @@ from zebra_agent_config import mcp_settings
 from zebra_agent_config.command_delivery import CommandDeliverySettings, load_command_delivery
 from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_credentials
 from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memory_gateway_settings
+from zebra_agent_config.public_output_settings import PublicOutputPolicy, load_public_output_policy
 from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
 
 MAX_MCP_SERVERS = mcp_settings.MAX_MCP_SERVERS
@@ -91,6 +92,7 @@ class ZebraAgentSettings:
     live_events: LiveEventSettings = field(default_factory=LiveEventSettings)
     memory_gateway: MemoryGatewaySettings = field(default_factory=MemoryGatewaySettings)
     command_delivery: CommandDeliverySettings = field(default_factory=CommandDeliverySettings)
+    public_output: PublicOutputPolicy = field(default_factory=PublicOutputPolicy)
     runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
     setup: SetupSettings = field(default_factory=SetupSettings)
     scm: ScmSettings = field(
@@ -190,6 +192,7 @@ def load_settings(
         development_unrestricted=development_unrestricted,
     )
     return ZebraAgentSettings(
+        public_output=load_public_output_policy(values),
         profile=profile,
         database_url=database_url,
         api=ApiSettings(

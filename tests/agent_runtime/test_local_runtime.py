@@ -1,7 +1,13 @@
 import json
 import os
+import selectors
+import signal
+import subprocess
+import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import pytest
 from agent_core.ports.runtime import (
@@ -9,6 +15,7 @@ from agent_core.ports.runtime import (
     RuntimeExecutionRequest,
     RuntimeSnapshot,
 )
+from agent_runtime import process_execution
 from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.adapters.local_snapshot_state import LocalSnapshotStatus
 
@@ -73,18 +80,42 @@ def test_local_runtime_reports_timeout() -> None:
 
 
 @pytest.mark.skipif(os.name != "posix", reason="process groups require POSIX")
-def test_local_runtime_timeout_terminates_descendants(tmp_path: Path) -> None:
+@pytest.mark.parametrize("ignore_term", [False, True], ids=["default-signal", "ignore-term"])
+def test_local_runtime_timeout_terminates_descendants(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, ignore_term: bool
+) -> None:
     pid_file = tmp_path / "child.pid"
+
+    def ready_popen(command: Sequence[str], **kwargs: Any) -> subprocess.Popen[str]:
+        process: subprocess.Popen[str] = subprocess.Popen(command, **kwargs)
+        assert process.stdout is not None
+        try:
+            # Establish a descendant before the unchanged 0.2s execution budget starts.
+            with selectors.DefaultSelector() as readiness:
+                readiness.register(process.stdout, selectors.EVENT_READ)
+                assert readiness.select(timeout=2), "descendant startup never became ready"
+            assert process.stdout.readline() == "ready\n"
+        except BaseException:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.communicate(timeout=2)
+            raise
+        return process
+
+    monkeypatch.setattr(process_execution, "Popen", ready_popen)
     runtime = LocalRuntime()
     result = runtime.execute(
         RuntimeExecutionRequest(
             command=(
-                "python3",
+                sys.executable,
                 "-c",
                 (
-                    "import pathlib,subprocess,time; "
-                    f"p=subprocess.Popen(['sleep','30']); path=pathlib.Path({str(pid_file)!r}); "
-                    "path.write_text(str(p.pid)); "
+                    "import pathlib,signal,subprocess,time; "
+                    + ("signal.signal(signal.SIGTERM,signal.SIG_IGN); " if ignore_term else "")
+                    + f"p=subprocess.Popen(['sleep','30']); path=pathlib.Path({str(pid_file)!r}); "
+                    "path.write_text(str(p.pid)); print('ready',flush=True); "
                     "time.sleep(30)"
                 ),
             ),
@@ -92,6 +123,7 @@ def test_local_runtime_timeout_terminates_descendants(tmp_path: Path) -> None:
         )
     )
     assert result.failure_reason == "timeout"
+    assert result.timed_out and result.exit_code is None
     child_pid = int(pid_file.read_text(encoding="utf-8"))
     for _ in range(20):
         try:

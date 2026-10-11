@@ -75,6 +75,13 @@ class PostgresEventStore(EventStorePort):
             raise ValueError("extension snapshot does not match execution command binding")
         try:
             with self._database.connect() as connection:
+                # Freeze the stream before authority rows, matching Handoff and
+                # ordinary append. Keep the revision CAS in the shared appender.
+                connection.execute(
+                    """SELECT current_version FROM session_streams
+                       WHERE deployment_namespace=%s AND session_id=%s FOR UPDATE""",
+                    (self._database.deployment_namespace, event.session_id),
+                ).fetchone()
                 current_ceiling = resolve_extension_task_ceiling_in_transaction(
                     connection,
                     self._database.deployment_namespace,

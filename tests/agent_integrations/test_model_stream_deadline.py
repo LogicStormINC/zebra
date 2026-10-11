@@ -12,7 +12,7 @@ from agent_integrations.model_errors import ModelProviderError
             deepseek_responses_streaming.read_deepseek_responses_stream,
             (0.0, 181.0),
         ),
-        (openai_streaming, openai_streaming.read_openai_stream, (0.0, 0.0, 181.0)),
+        (openai_streaming, openai_streaming.read_openai_stream, (0.0, 181.0)),
     ],
 )
 def test_model_stream_stops_after_absolute_deadline(monkeypatch, module, reader, times):

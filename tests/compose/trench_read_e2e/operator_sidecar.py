@@ -63,9 +63,7 @@ class RestartBody(BaseModel):
 
 def _restart_worker(container: str) -> int:
     socket_path = os.environ.get("E2E_DOCKER_SOCKET", "/var/run/docker.sock")
-    with httpx.Client(
-        transport=httpx.HTTPTransport(uds=socket_path), timeout=30
-    ) as client:
+    with httpx.Client(transport=httpx.HTTPTransport(uds=socket_path), timeout=30) as client:
         response = client.post(f"http://docker/containers/{container}/restart?t=0")
     if response.status_code not in {200, 204}:
         raise RuntimeError(f"docker_restart_failed:{response.status_code}")

@@ -1,0 +1,6 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+RUN rm -rf /app/frontend/.next
+COPY .next /app/frontend/.next
+COPY public /app/frontend/public
+COPY sdk /app/frontend/node_modules/.pnpm

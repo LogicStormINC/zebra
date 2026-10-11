@@ -107,6 +107,8 @@ def _first_text(
     for event in events:
         if event.event_type is not event_type:
             continue
+        if event.payload.get("response_stage") == "public_expression":
+            continue
         value = event.payload.get(key)
         if isinstance(value, str) and value.strip():
             return value.strip()

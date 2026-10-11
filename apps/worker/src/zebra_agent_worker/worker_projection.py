@@ -7,6 +7,7 @@ from agent_core.ports import (
     WorkerMutationAuthority,
     WorkerProjectionTransactionPort,
 )
+from agent_core.ports.session_recovery import SessionEventPage
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
@@ -23,6 +24,8 @@ class WorkerProjectionRecorderFactory:
         tool_run_indexer: ToolRunIndexer,
         transaction: WorkerProjectionTransactionPort | None,
         deployment_namespace: str | None,
+        tail_reader: Callable[[WorkerMutationAuthority, int | None], SessionEventPage]
+        | None = None,
     ) -> None:
         if (transaction is None) != (deployment_namespace is None):
             raise ValueError(
@@ -33,6 +36,7 @@ class WorkerProjectionRecorderFactory:
         self._tool_run_indexer = tool_run_indexer
         self._transaction = transaction
         self._deployment_namespace = deployment_namespace
+        self._tail_reader = tail_reader
 
     def build(
         self,
@@ -63,4 +67,5 @@ class WorkerProjectionRecorderFactory:
             ownership_check=ownership_check,
             worker_projection_transaction=self._transaction,
             worker_mutation_authority=authority,
+            tail_reader=self._tail_reader,
         )

@@ -32,11 +32,20 @@ content_present_contract = ToolContract(
     name="content.present",
     required_arguments=("parts",),
     description=(
-        "Present existing current-session Artifacts inline in the answer. Use images only when "
+        "Present existing current-session Artifacts or external videos inline in the answer. "
+        "The image type accepts artifact:// URIs, not remote URLs. When the Host supports "
+        "Markdown images, show an already-observed remote image as ![alt](exact_image_url) "
+        "in the answer instead of calling this tool or downloading/publishing it. Sandbox "
+        "download failures do not prove that the user's browser cannot display that image. "
+        "Use images only when "
         "they add evidence or clarity, charts for structured comparisons or trends, and video "
         "only when motion or sequence matters. Use external_video for an HTTPS source "
         "video page or direct stream without downloading it; the viewer may need to open "
-        "the source when embedding is unavailable. Do not add decorative media."
+        "the source when embedding is unavailable. A chart requires a published Vega-Lite "
+        "JSON specification (data.values, mark and encoding), not SVG or raw data JSON. "
+        "Publish the specification with files.publish, then pass its artifact_uri and title. "
+        "Present independent ready items separately: one invalid part rejects the whole call. "
+        "Do not add decorative media."
     ),
     argument_properties={
         "parts": {
@@ -62,14 +71,23 @@ content_present_contract = ToolContract(
                     },
                     "artifact_uri": {
                         "type": "string",
-                        "description": "Current-session artifact:// URI.",
+                        "description": (
+                            "Current-session artifact:// UUID only, never an HTTP URL. "
+                            "Remote images use Host Markdown; remote videos use external_video. "
+                            "For chart, the artifact must contain a Vega-Lite JSON specification."
+                        ),
                     },
                     "alt": {
                         "type": "string",
                         "description": "Required concise image alternative text.",
                     },
                     "title": {"type": "string", "description": "Required for video and chart."},
-                    "description": {"type": "string"},
+                    "description": {
+                        "type": "string",
+                        "description": (
+                            "Required for chart: explain its data and meaning; optional otherwise."
+                        ),
+                    },
                     "name": {"type": "string", "description": "Optional file download name."},
                     "width": {"type": "integer", "minimum": 1, "maximum": 16384},
                     "height": {"type": "integer", "minimum": 1, "maximum": 16384},
@@ -124,6 +142,15 @@ class ContentPresentTool:
         if not isinstance(value, Mapping):
             raise ToolArgumentError("content.present part must be an object")
         kind = _required_text(value, "type", maximum=16)
+        raw_uri = value.get("artifact_uri")
+        if isinstance(raw_uri, str) and raw_uri.strip().lower().startswith(("https://", "http://")):
+            raise ToolArgumentError(
+                "artifact_uri cannot be an HTTP URL. For an observed remote image on a "
+                "Markdown-capable Host, use ![alt](exact_image_url) in the answer; do not "
+                "download it merely for display. For remote video use type=external_video, "
+                "source_url and title. Artifact-backed parts require a current-session "
+                "canonical artifact:// UUID."
+            )
         if kind == "external_video":
             source_url = _external_url(_required_text(value, "source_url", maximum=2048))
             poster_url = _optional_text(value, "poster_url", maximum=2048)

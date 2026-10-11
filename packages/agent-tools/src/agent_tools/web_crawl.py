@@ -81,6 +81,8 @@ class FetchOutcome:
     provider: str
     degraded: bool = False
     metadata: dict[str, object] = field(default_factory=dict)
+    source_truncated: bool | None = None
+    projection_truncated: bool | None = None
 
 
 class CrawlGatewayPort(Protocol):
@@ -241,6 +243,8 @@ def _outcome_result(
         canonical_url=outcome.final_url,
         truncation_scope=outcome.truncation_scope,
         truncated=outcome.truncated,
+        source_truncated=outcome.source_truncated,
+        projection_truncated=outcome.projection_truncated,
         degraded=outcome.degraded,
         resource_id=outcome.resource_id,
         extra={
@@ -256,6 +260,7 @@ def _outcome_result(
         status=ToolCallStatus.EXECUTED,
         output=f"[UNTRUSTED EXTERNAL CONTENT]\n{outcome.content}",
         metadata={
+            **outcome.metadata,
             "route": "crawl_gateway",
             "contract": contract_name,
             "resource_id": outcome.resource_id,
@@ -264,11 +269,12 @@ def _outcome_result(
             "provider": outcome.provider,
             "truncated": outcome.truncated,
             "truncation_scope": outcome.truncation_scope.value,
+            "source_truncated": outcome.source_truncated,
+            "projection_truncated": outcome.projection_truncated,
             "next_cursor": outcome.next_cursor,
             "degraded": outcome.degraded,
             "untrusted_external_content": True,
             "web_envelope": envelope.to_metadata(),
-            **outcome.metadata,
         },
     )
 

@@ -1,5 +1,197 @@
 # Findings
 
+## CLOUD-PROGRESS-OUTPUT-01 - 2026-10-03 follow-up
+
+- Final plan-only audit confirmed fresh blockers: native PG Handoff assigned
+  parent commit position 10 after child receive 7; dependency waits consumed the
+  eighth failure attempt; cloud GET renewed a binding before preflight. The goal
+  continuation resumes the same five disjoint lanes and main-owned shared paths.
+  Snapshot-import source-metadata closure from the preceding implementation is
+  now verified by all 22 actual PG import checks, not the earlier 21/one RED.
+  No application migration/restart, commit/push or publication is authorized.
+- Latest plan-only turn produced fresh evidence (one binding-budget RED and one
+  read-only parity PASS), not a completion claim. Goal continuation resumes all
+  existing lanes. Main wires bounded bootstrap, classifies resumable binding
+  work separately, and returns scoped legacy readiness as 409 without adoption.
+  Task/API regression group: 26 passed. Queue waiting must wake on new source
+  or closure; its owner found routing did not yet clear not_ready.
+- Snapshot validation reproduced four REDs: known derived fields rejected and
+  duplicate canonical columns accepted. Explicit whitelist/discard preserves
+  canonical fields and immutable coordinates; five regressions pass. Real PG
+  then reports 21 pass / one RED: restored positions before Task membership did
+  not create source blocks. Reuse bounded metadata maintenance after admission,
+  restricted to the offline atomic importer. No application DB or restart.
+- New main tests initially exceeded two Ruff line limits; the existing formatter
+  fixed them. One diagnostic path named sqlite_snapshot.py incorrectly; the
+  existing exporter is postgres/migration_snapshot.py. No production workaround.
+
+- The final plan-only turn made evidence progress: confirmed native queue wiring,
+  got current independent lane results and discovered missing old-Task discovery,
+  infinite binding-budget repair, native-ledger proof and Host snapshot race gaps.
+  Explicit goal continuation now resumes implementation on the same owned lanes.
+  Main audits all Task read callers: SQLite get/list/internal checks still adopt
+  legacy Sessions, unlike PostgreSQL; add a failing parity check before removal.
+  No application migration/restart, registry publication or commit/push authority.
+
+- The goal resumes full implementation after the plan-only audit, which supplied
+  new actionable consumer/Host/API evidence. Fresh main probes reproduced three
+  consumer failures: production queue missing, stale target ACK using a newer
+  head, and a normal preparation race permanently labeled integrity. Main wires
+  both flat composition roots and introduces a narrow CheckpointStale subtype:
+  only actual frontier advancement is retryable; foreign/future identities still
+  fail closed. An initial patch expected the wrong exception docstring and made
+  no change; reread the exact declaration before applying the corrected patch.
+  User-operated activation and the full live gates remain open.
+
+- Latest plan-only audit is evidence progress: actual storage builders still
+  leave projection_work=None; catalog lacks v67/v68; new queues are unverified
+  drafts, not absent files. Main reproduced the blocked metadata authorization
+  deadline regression (1 failed / 1.65s). Host JSON fallback swallows its typed
+  observation exception. Source/header lane now has 110 focused passes, but
+  cross-smoke has five remaining fixtures/catalog failures. Full-goal resume
+  fixes the shared awaited-frame deadline and resumes five disjoint lanes.
+  No application migration/restart/commit/push is authorized.
+- Shared awaited-frame deadline regression is now GREEN (1 passed / 1.12s).
+  The v67 catalog patch initially matched an import tuple rather than the final
+  catalog tuple, causing ImportError; corrected at the exact tuple before any
+  migration/test activation. Frozen checksum is rechecked next.
+- v67 checksum matches its frozen value; production catalog/local facade group
+  passes five checks. Consumer now rotates Task repairs, alternates their priority
+  with live work, and persists integrity/transient failures without turning
+  bounded backfill batches into failed attempts. Background enable no longer
+  blocks or throws into admitted execution. Ruff caught one comment exceeding
+  100 columns; shortened before the next check. Concrete queue wiring awaits
+  its behavior/real-PG freeze, and Store I/O limits remain an open gate.
+- Strict mypy passes the three main deadline/consumer/runner modules. A combined
+  Worker/API smoke ran during the independent fixture edit and hit missing
+  pytest import in SqlObservation (two collection errors); ownership notified,
+  rerun only after fixture stabilization. Worker-only checks proceed separately.
+  A broad zsh source glob matched no files; subsequent searches use exact files.
+- The final-plan read-only audit changed the next action: durable projection work
+  is only a draft Port, not an implemented queue. v68 and Worker consumption must
+  land before activated SSE can progress. v67 froze after 31 checks; source-header
+  repair reports 92 pass with three covering-index REDs still open; actual API
+  fixture rewrite reports 35 pass, without GET SQL/fault/live proof. The goal
+  continuation explicitly resumes full implementation after that plan-only turn.
+  No application DB migration/restart or publication is inferred.
+- Native source metadata already maintains contiguous block/head facts via
+  source-owned triggers; reuse them. Worker currently starts memory maintenance
+  but performs command/provider execution synchronously. Projection consumption
+  therefore needs one process-owned stoppable background service, started before
+  execution and wired through the same flat ControlPlaneStores bundle. API GET
+  remains observation-only; no facade rebuilding inside the execution loop.
+- Main adds the integration checkpoint consumer and a Worker-owned stoppable
+  process thread, plus optional flat-bundle composition and explicit maintenance
+  Port methods. The first Ruff pass found one long line after fixing five import
+  ordering errors; formatting is rerun before checks. These additions are not
+  wired to concrete queue adapters yet and have no runtime acceptance claim.
+- Latest goal continuation repairs initial/refreshed Task/Run identity (44 pass /
+  one then-PG skip), registers v65/v66 and composes source metadata mixins. Real PG
+  catalog/facade passes seven. Indexed binding matches the full-history oracle in
+  22 checks, including SQLite cold restore. Actual SSE now observes shared bounded
+  checkpoints without synthetic positions; 15 old API REDs / 34 PASS need explicit
+  prepared fixtures and updated transport-vs-execution assertions. Five shared
+  scalar-source-header REDs are independently under repair. Background durable
+  scheduling v68, migration67 freeze, all full/live gates remain open. No restart.
+- User goal continuation resumes the complete plan after the read-only final
+  proposal. Existing main-model communication instructions are present, but the
+  actual SSE still hydrates full history and does not use the bounded observer.
+  Two zero-frame terminal failures are repaired at the shared Head value boundary.
+  Latest plan-only audit reproduced 5 observer REDs (7 pass): legal inter-call
+  append and 4 silent-row identity faults. Bounded head refresh and identity-first
+  observation fixes now enter fresh tests; production wiring remains required.
+  Source Header/metadata/Host owners resumed on their existing disjoint paths.
+- Final proposal preserves all thirteen original acceptance faces and fourteen
+  live cases; fifteen presentation sections do not narrow or redefine closure.
+
+- Latest goal continuation resumes the complete thirteen-section plan after its
+  read-only review. Actual SSE still loads full Task history and synthesizes live
+  Task coordinates; paged/checkpointed production wiring remains required.
+- Latest read-only plan turn made evidence progress: full-history SSE, generic
+  fallback and missing running source labels were verified. Implementation resumes
+  without application migrations/restarts or publication. The retrieved live
+  prior test handle reported 11 new source/cursor identity REDs (35 passed/1 skip).
+  Shared point-source/whole-cursor fixes passed those; independent concurrency
+  audit then reproduced one inconsistent read snapshot (51 passed/1 skip).
+  SQLite BEGIN / PG repeatable-read observations and the bounded read-only
+  observer are now under test; not a production/live closure claim.
+- SQLite cold-process checkpoint/projector parity passed 3 checks at page sizes
+  1/2/256; SQLite large-child/checkpoint/store group passed 30 checks. A committed
+  600-event child now attaches/resumes in bounded batches; real scratch PG passed
+  its large-child/header regression (1 check). These are focused, not live gates.
+- Independent audit reproduced byte admission versus body UPDATE growth, legacy
+  numeric serialization underestimation, payload-parsing point Headers and linear
+  Run-stop scans. Source immutability/byte repair and scalar Header/index repair
+  have disjoint owners; additive PG versions 65/66 are reserved respectively.
+- Previous goal turn made evidence progress: read-only review confirmed incomplete
+  scalar Header/Host/source lanes and 8 checkpoint coverage failures. Full scope
+  remains unchanged; resumed owners work on disjoint paths.
+- PG checkpoint facade/catalog passed 4 real scratch-PG checks; independent PG
+  checkpoint adapter proof passed 31, including actual 1k/10k/100k index cells.
+- Fresh shared SQLite baseline: 9 failed, 6 passed, 1 PG-gated skip. Initialization
+  must install scalar columns before indexes; commit/head need canonical coverage.
+  Shared fixes are applied but not yet claimed GREEN.
+  No application migration, restart, commit, push or publication is authorized.
+
+- Five additional Host regressions were RED (5 failed/20 passed) and now GREEN:
+  56 focused tests plus TypeScript pass. Same-key return explicitly reloads only
+  observation, invalidates old request epochs and clears pending operation flags.
+- A combined plan patch failed exact-context validation and changed no files;
+  refreshed the actual wrapped line and applied the corrected patch.
+
+- Fresh Host quality still reproduces A->B->A and A->New->A before route commit:
+  the composer admits no request and active observation stays aborted. Restoring
+  view ownership alone is insufficient; explicitly resume observation without
+  reviving stale submissions. Three earlier races pass their 51-check gate.
+- Effect cleanup independently approved: 46 focused tests and 41 probes preserve
+  primary failures/cancellation, exact old intent identity and fail-closed behavior.
+- Late predecessor memory/title writes are intentional. Published Task positions
+  must be immutable; Segment concatenation/rebuild must not renumber existing
+  cursors. PG writers converge on append_event_in_transaction; SQLite also has
+  transactional handoff/context insertion boundaries.
+- The latest user plan requires actual bounded paging/checkpoints and fourteen
+  activated live/fault gates. Updated source alone does not activate older images.
+- Follow-up make check exposed Ruff I001 in the added lifecycle test; mechanically
+  sorted that local import block before rerunning. Host verification uses explicit
+  Node 24; bundled fallback pnpm attempted a noninteractive modules replacement,
+  which was rejected without opting into a purge.
+
+- Fresh review reproduces three Host gaps: terminal-before-route queued dispatch,
+  stale feedback replacing a new conversation, and old deletion routing away.
+  A view must lose ownership at navigation intent, not merely prop commit.
+- Secondary CancelledError in intent lookup/settlement/observer/uncertain commit
+  masks the primary failure. Cleanup must preserve it without allowing execution
+  to continue. Exact recovered identity must reach the finish observer.
+- Current local gates: Zebra 5042 passed / 915 skipped; Trench API 794 passed,
+  frontend 254 passed. Isolated PostgreSQL Effect/consumer: 16 passed; only the
+  dedicated temporary database was removed. Gates do not prove live activation.
+- Initial combined planning update failed on a nonexistent findings heading;
+  apply_patch made no changes; corrected exact existing headings before retry.
+
+- The running API/Worker IDs fc13d8a78d39 / 2d7c87ffaf79 differ from the built
+  fd951ae213c6 / c1bbdc2cd654 images. Subsequent working-tree edits also require
+  a new build. Source, artifact and activated-runtime evidence are separate.
+- Normal AG-UI preflight previously projected a 100-event backlog twice before
+  headers. Metadata-only validation fixes that content work; Task hydration
+  still loads O(N) history and remains an unclosed resource gate.
+- Effect start callbacks can outlive the lease. Ownership must be checked again
+  immediately before provider dispatch. Every claimed old Effect needs terminal
+  observation without duplicating the store's lifecycle events.
+- Host creation/admission may settle after navigation. View ownership must gate
+  all async updates/retries/navigation, while the admitted Turn remains durable.
+- Trench API full-suite repair author reports 791 passed; independent review
+  remains necessary. No service restart or live progressive closure is inferred.
+- Independent review exposed duplicate theme-alias scoring and keyword-budget
+  starvation (plus unrelated order bonuses). Three new regressions failed;
+  canonical theme matching now passes 31 capsule checks without dropping assertions.
+- Four new real Host integration checks reproduced stale hook retries before
+  route commit and a disabled landing composer after explicit New. Navigation
+  intent now invalidates pending hook requests synchronously; New clears drafts.
+- Public Effect terminal observation passes 66 focused checks (one PG-gated skip)
+  and make check. Payload retrieval after claim still needs protected cleanup.
+- Diagnostic path corrections: theme checks are in capsule cluster/relevance
+  files, not test_capsule_theme_inference.py; the AG-UI task view is in API.
+
 ## HOST-MEDIA-IMPORT-01 - 2026-09-29
 
 - React, AG-UI and `content.present` already rendered typed image/video/chart

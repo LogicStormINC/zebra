@@ -1,7 +1,8 @@
 """Read-only cloud extension HTTP boundaries with injected async stores."""
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -54,7 +55,7 @@ MCP = McpConnection(
 
 @dataclass
 class Authorizer:
-    verified: object = VERIFIED
+    verified: object = field(default_factory=_verified)
     allowed_origins: tuple[str, ...] = ("https://host.example.com",)
 
     def authorize(self, request: HostGrantHttpRequest) -> object:
@@ -66,7 +67,7 @@ def _client(
     tmp_path: Path,
     store: ExtensionStore | None,
     *,
-    verified: object = VERIFIED,
+    verified: object | None = None,
     local: bool = False,
 ) -> TestClient:
     database = tmp_path / "extensions.sqlite"
@@ -75,7 +76,7 @@ def _client(
             database,
             settings=_local_settings() if local else _cloud_settings("postgresql://unused/zebra"),
             stores=sqlite_control_plane_stores(database),
-            host_grant_authorizer=Authorizer(verified),
+            host_grant_authorizer=Authorizer() if verified is None else Authorizer(verified),
             extension_store=store,
         )
     )
@@ -143,6 +144,16 @@ def test_read_permission_is_explicit(tmp_path: Path, store: AsyncMock, scopes: l
     assert response.status_code == 403
     assert response.json()["code"] == "permission_denied"
     assert response.headers["cache-control"] == "no-store"
+    assert store.mock_calls == []
+
+
+def test_expired_verified_grant_is_denied_before_store(tmp_path: Path, store: AsyncMock) -> None:
+    expired = _verified(now=datetime.now(UTC) - timedelta(minutes=6))
+    response = _client(tmp_path, store, verified=expired).get(
+        f"{PREFIX}/skill-installations", headers=AUTH
+    )
+    assert response.status_code == 403
+    assert response.json()["code"] == "permission_denied"
     assert store.mock_calls == []
 
 

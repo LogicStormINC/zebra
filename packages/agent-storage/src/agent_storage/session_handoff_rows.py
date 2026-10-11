@@ -27,7 +27,10 @@ class HandoffIdempotencyConflictError(HandoffStorageConflictError):
 
 def insert_event(connection: sqlite3.Connection, event: SessionEvent) -> None:
     connection.execute(
-        "INSERT INTO session_events VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """INSERT INTO session_events
+           (event_id,session_id,sequence,event_type,payload,actor,created_at,
+            causation_id,correlation_id,idempotency_key,policy_version,model_profile)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             str(event.event_id),
             str(event.session_id),

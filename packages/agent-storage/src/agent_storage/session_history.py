@@ -142,6 +142,7 @@ class SQLiteSessionHistory(SessionHistoryPort):
                 """
                 SELECT COUNT(*) FROM session_events
                 WHERE session_id = ? AND event_type IN (?, ?)
+                  AND COALESCE(json_extract(payload, '$.response_stage'), '') <> 'public_expression'
                 """,
                 (request.session_id, *SAFE_EVENT_TYPES),
             ).fetchone()[0]
@@ -150,6 +151,7 @@ class SQLiteSessionHistory(SessionHistoryPort):
                 SELECT sequence, event_type, payload, created_at
                 FROM session_events
                 WHERE session_id = ? AND event_type IN (?, ?)
+                  AND COALESCE(json_extract(payload, '$.response_stage'), '') <> 'public_expression'
                 ORDER BY sequence ASC
                 LIMIT ? OFFSET ?
                 """,
@@ -188,6 +190,7 @@ class SQLiteSessionHistory(SessionHistoryPort):
                 SELECT sequence, event_type, payload, created_at
                 FROM session_events
                 WHERE session_id = ? AND event_type IN (?, ?)
+                  AND COALESCE(json_extract(payload, '$.response_stage'), '') <> 'public_expression'
                 ORDER BY sequence ASC
                 LIMIT ?
                 """,
@@ -228,6 +231,8 @@ def _safe_event_text(row: Row) -> str | None:
     try:
         payload = json.loads(row["payload"])
     except (TypeError, json.JSONDecodeError):
+        return None
+    if isinstance(payload, dict) and payload.get("response_stage") == "public_expression":
         return None
     field = (
         "content"

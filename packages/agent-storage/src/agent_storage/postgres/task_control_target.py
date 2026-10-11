@@ -9,6 +9,14 @@ from psycopg.errors import LockNotAvailable
 def require_task_control_target(
     connection: Any, namespace: str, task_id: TaskId, session_id: SessionId, *, replay: bool
 ) -> None:
+    # Never hold the Task row while waiting for an Event-position allocator.
+    # Session/lease/stream locks were taken by the caller; Task serialization is last.
+    acquired = connection.execute(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended(%s,61)) AS acquired",
+        (f"{namespace}:{task_id}",),
+    ).fetchone()
+    if not acquired["acquired"]:
+        raise ValueError("Task cancellation target is busy")
     try:
         row = connection.execute(
             """SELECT task.active_segment_id FROM agent_tasks task
@@ -19,8 +27,7 @@ def require_task_control_target(
             (namespace, task_id, session_id),
         ).fetchone()
     except LockNotAvailable:
-        # A former root Session can also be the Task advisory key. Never wait
-        # here on a successor rollover holding the Task row and needing that key.
+        # A writer outside this protocol may still hold the Task row. Fail closed.
         raise ValueError("Task cancellation target is busy") from None
     if row is None or (not replay and row["active_segment_id"] != session_id):
         raise ValueError("Task cancellation target changed")

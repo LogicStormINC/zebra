@@ -76,27 +76,32 @@ class CloudProviderContinuationCoordinator:
             pending = self._pending.get(artifact_id)
         if pending is None:
             raise ValueError("cloud continuation Event has no staged payload")
-        authority = recorder.worker_mutation_authority
-        if authority is None:
-            raise ValueError("cloud continuation requires Worker mutation authority")
-        event = recorder.prepare(draft.event_type, draft.actor, self._event_payload(draft, pending))
-        event = event.model_copy(update={"idempotency_key": f"provider-continuation:{artifact_id}"})
-        committed = self._store.commit_worker_selection(
-            scope=self._scope,
-            authority=authority,
-            continuation_id=artifact_id,
-            session=recorder.session,
-            workspace=recorder.workspace,
-            reference=pending.reference,
-            opaque_payload=pending.payload,
-            maximum_ttl_seconds=pending.maximum_ttl_seconds,
-            selection_event=event,
-        )
-        recorder.accept_committed_aggregate(
-            committed.event,
-            session=committed.session,
-            workspace=committed.workspace,
-        )
+        with recorder.mutation():
+            authority = recorder.worker_mutation_authority
+            if authority is None:
+                raise ValueError("cloud continuation requires Worker mutation authority")
+            event = recorder.prepare(
+                draft.event_type, draft.actor, self._event_payload(draft, pending)
+            )
+            event = event.model_copy(
+                update={"idempotency_key": f"provider-continuation:{artifact_id}"}
+            )
+            committed = self._store.commit_worker_selection(
+                scope=self._scope,
+                authority=authority,
+                continuation_id=artifact_id,
+                session=recorder.session,
+                workspace=recorder.workspace,
+                reference=pending.reference,
+                opaque_payload=pending.payload,
+                maximum_ttl_seconds=pending.maximum_ttl_seconds,
+                selection_event=event,
+            )
+            recorder.accept_committed_aggregate(
+                committed.event,
+                session=committed.session,
+                workspace=committed.workspace,
+            )
         with self._lock:
             self._pending.pop(artifact_id, None)
         return committed.event

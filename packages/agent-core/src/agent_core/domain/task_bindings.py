@@ -20,7 +20,13 @@ from agent_core.domain.agent_capabilities import (
     capability_set,
     intersect_capabilities,
 )
-from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.host_authority import (
+    HostContextEnvelope,
+    HostGrantExpiredError,
+    HostGrantMismatchError,
+    HostGrantScopeError,
+    HostResourceRef,
+)
 from agent_core.domain.host_capability_manifests import HostCapabilityManifestV1
 
 MAX_DIGEST_LENGTH = 64
@@ -177,6 +183,76 @@ class TaskBindingSnapshot(BaseModel):
         }
         encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode()
         return hashlib.sha256(encoded).hexdigest()
+
+
+def require_host_thread(context: HostContextEnvelope) -> HostResourceRef:
+    """Resolve exactly one opaque Host thread; never infer it from a Task UUID."""
+    refs = [ref for ref in context.resource_refs if ref.resource_type == "thread"]
+    if len(refs) != 1:
+        raise HostGrantScopeError("Host Grant requires one unambiguous thread")
+    return refs[0]
+
+
+def task_bound_host_thread(binding: TaskBindingSnapshot, *, task_id: str) -> HostResourceRef:
+    """Resolve the immutable Task-to-Host mapping without checking old expiry."""
+    if not isinstance(binding, TaskBindingSnapshot) or binding.task_id != task_id:
+        raise HostGrantMismatchError("Task binding target conflicts")
+    host = binding.host_capability
+    bound = host.host_context
+    if (
+        bound is None
+        or host.host_app_id != bound.host_app_id
+        or host.namespace_id != bound.namespace_id
+        or host.grant_digest != host_context_digest(bound)
+    ):
+        raise HostGrantMismatchError("Task binding Host authority conflicts")
+    _host_principal(bound)
+    return require_host_thread(bound)
+
+
+def require_task_host_context(
+    binding: TaskBindingSnapshot,
+    context: HostContextEnvelope,
+    *,
+    task_id: str,
+    now: datetime,
+    authority_issuer: str | None = None,
+    run_id: str | None = None,
+) -> HostResourceRef:
+    """Fence a verified current Grant; signature and atomic jti remain upstream."""
+    if now.tzinfo is None:
+        raise HostGrantMismatchError("Host authorization time must be timezone-aware")
+    if context.expires_at is None or context.expires_at <= now:
+        raise HostGrantExpiredError("Host Grant has expired or lacks an expiry")
+    thread = task_bound_host_thread(binding, task_id=task_id)
+    bound = binding.host_capability.host_context
+    assert bound is not None
+    identity = ("host_app_id", "namespace_id", "origin", "workspace_ref")
+    if any(getattr(bound, field) != getattr(context, field) for field in identity):
+        raise HostGrantMismatchError(
+            "Host Grant identity or workspace drifted from the Task binding"
+        )
+    if _host_principal(bound) != _host_principal(context):
+        raise HostGrantMismatchError("Host Grant principal drifted from the Task binding")
+    if (
+        authority_issuer is not None
+        and binding.host_capability.authority_issuer != authority_issuer
+    ):
+        raise HostGrantMismatchError("Host Grant authority issuer drifted from the Task binding")
+    if require_host_thread(context) != thread:
+        raise HostGrantScopeError("Host Grant thread conflicts with the Task binding")
+    context.require_resource(thread)
+    runs = [ref for ref in context.resource_refs if ref.resource_type == "run"]
+    if len(runs) > 1 or (run_id is not None and runs != [HostResourceRef(type="run", id=run_id)]):
+        raise HostGrantScopeError("Host Grant Run target conflicts")
+    return thread
+
+
+def _host_principal(context: HostContextEnvelope) -> HostResourceRef:
+    refs = [ref for ref in context.resource_refs if ref.resource_type == "principal"]
+    if len(refs) != 1:
+        raise HostGrantScopeError("Host Grant requires one unambiguous principal")
+    return refs[0]
 
 
 def compute_effective_capabilities(

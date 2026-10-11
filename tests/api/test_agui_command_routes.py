@@ -264,4 +264,7 @@ def _seed_ready_session(tmp_path: Path) -> tuple[Path, SessionId, int]:
     SQLiteWorkspaceProjectionStore(database_path).save_workspace(
         rebuild_workspace(list(bootstrap.events))
     )
+    sqlite_control_plane_stores(database_path).tasks.ensure_for_session(
+        bootstrap.session.session_id
+    )  # Explicit test admission; command/observation routes never adopt legacy Sessions.
     return database_path, bootstrap.session.session_id, bootstrap.session.current_sequence

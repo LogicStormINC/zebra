@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import json
+import os
+import re
+import ssl
+import subprocess as subprocess
 import time
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 from hashlib import sha256
+from typing import Any, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlsplit, urlunsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, HTTPSHandler, ProxyHandler, Request, build_opener
 
 
 class E2EError(RuntimeError):
@@ -49,6 +54,10 @@ class Config:
     request_id: str
     timeout_seconds: int
     operator_token: str | None
+    isolation_manifest: str
+    user_id: str
+    workspace_id: str
+    runtime_tasks_url: str
 
     @property
     def command_url(self) -> str:
@@ -78,13 +87,7 @@ class SseEvent:
     data: Mapping[str, object]
 
 
-HOST_GRANT_SCOPES = (
-    "agent.run",
-    "event.read",
-    "evidence.read",
-    "entity.read",
-    "topic.read",
-)
+HOST_GRANT_SCOPES = ("agent.run", "event.read", "evidence.read", "entity.read", "topic.read")
 
 HTTP_ENDPOINT_ENV = {
     "TRENCH_E2E_BFF_URL",
@@ -92,6 +95,7 @@ HTTP_ENDPOINT_ENV = {
     "TRENCH_E2E_HEALTH_URL",
     "TRENCH_E2E_OBJECT_STORE_HEALTH_URL",
     "TRENCH_E2E_BUSINESS_SNAPSHOT_URL",
+    "TRENCH_E2E_RUNTIME_TASKS_URL",
     "ZEBRA_E2E_BASE_URL",
     "ZEBRA_E2E_HEALTH_URL",
     "ZEBRA_E2E_OBJECT_STORE_HEALTH_URL",
@@ -127,6 +131,10 @@ def load_config(environment: Mapping[str, str], required: tuple[str, ...]) -> Co
         invalid.append("TRENCH_E2E_SESSION_COOKIE")
     if len(request_id) > 128 or any(char in request_id for char in "\r\n"):
         invalid.append("TRENCH_E2E_REQUEST_ID")
+    for name in ("TRENCH_E2E_USER_ID", "TRENCH_E2E_WORKSPACE_ID"):
+        value = environment.get(name, "")
+        if value and (len(value) > 64 or "::" in value or any(ord(char) < 32 for char in value)):
+            invalid.append(name)
     if missing or invalid:
         raise ConfigError(missing, invalid)
     return Config(
@@ -151,7 +159,122 @@ def load_config(environment: Mapping[str, str], required: tuple[str, ...]) -> Co
         request_id=request_id,
         timeout_seconds=timeout,
         operator_token=environment.get("ZEBRA_E2E_OPERATOR_TOKEN", "").strip() or None,
+        isolation_manifest=environment["ZEBRA_E2E_ISOLATION_MANIFEST"].strip(),
+        user_id=environment["TRENCH_E2E_USER_ID"].strip(),
+        workspace_id=environment["TRENCH_E2E_WORKSPACE_ID"].strip(),
+        runtime_tasks_url=validate_endpoint(environment["TRENCH_E2E_RUNTIME_TASKS_URL"]),
     )
+
+
+def validate_isolation(config: Config) -> None:
+    from isolation import validate_base
+
+    validate_base(config)
+
+
+def origin(url: str) -> str:
+    parsed = urlsplit(url)
+    return urlunsplit((parsed.scheme, parsed.netloc, "", "", ""))
+
+
+def task_binding(
+    config: Config,
+    *,
+    task_id: str | None = None,
+    conversation_key: str | None = None,
+    simple_slice: bool = False,
+) -> tuple[str, str]:
+    """Two indexed scalar seeks; no newest-Task guess, history, adoption or repair."""
+    if simple_slice:
+        from isolation import validate_base
+
+        validate_base(config, simple_slice=True)
+    else:
+        validate_isolation(config)
+    import psycopg
+
+    parsed = urlsplit(config.runtime_tasks_url)
+    host = cast(str, parsed.hostname).lower()
+    host = f"[{host}]" if ":" in host else host
+    if parsed.port is not None and parsed.port != {"http": 80, "https": 443}[parsed.scheme]:
+        host = f"{host}:{parsed.port}"
+    endpoint = urlunsplit((parsed.scheme, host, parsed.path.rstrip("/"), "", ""))
+    domain = sha256(endpoint.encode()).hexdigest()
+    key = f"trench_ai::{config.user_id}::{config.workspace_id}::{conversation_key}"
+    try:
+        with (
+            psycopg.connect(
+                config.trench_database_dsn,
+                connect_timeout=2,
+                options=(
+                    "-c default_transaction_read_only=on "
+                    "-c statement_timeout=2000 -c lock_timeout=500"
+                ),
+            ) as connection,
+            connection.cursor() as cursor,
+        ):
+            if task_id is None:
+                cursor.execute(
+                    "SELECT zebra_task_id FROM trench_ai_product_conversations "
+                    "WHERE key=%s AND user_id=%s AND workspace_id=%s AND deleted_at_ms IS NULL",
+                    (key, config.user_id, config.workspace_id),
+                )
+                row = cursor.fetchone()
+                task_id = row[0] if row else None
+            cursor.execute(
+                "SELECT b.task_id, b.host_thread FROM trench_ai_task_bindings b "
+                "JOIN trench_ai_product_conversations c ON c.key=b.conversation_key "
+                "WHERE b.runtime_domain=%s AND b.task_id=%s AND b.user_id=%s AND b.workspace_id=%s "
+                "AND c.user_id=b.user_id AND c.workspace_id=b.workspace_id "
+                "AND c.deleted_at_ms IS NULL "
+                "AND b.conversation_key=COALESCE(%s,b.conversation_key)",
+                (
+                    domain,
+                    task_id,
+                    config.user_id,
+                    config.workspace_id,
+                    key if conversation_key else None,
+                ),
+            )
+            row = cursor.fetchone()
+            if row is None or (conversation_key is not None and not task_id):
+                raise E2EError("trench_task_binding_unavailable")
+            if (
+                row[0] != task_id
+                or not isinstance(row[1], str)
+                or not re.fullmatch(r"trench-bootstrap-[a-f0-9]{32}", row[1])
+            ):
+                raise E2EError("trench_task_binding_invalid")
+            return row[0], row[1]
+    except E2EError:
+        raise
+    except Exception:
+        raise E2EError("trench_task_binding_unavailable") from None
+
+
+def host_thread_for_task(config: Config, task_id: str) -> str:
+    return task_binding(config, task_id=task_id)[1]
+
+
+def product_task_binding(config: Config, conversation_key: str) -> str:
+    return task_binding(config, conversation_key=conversation_key)[0]
+
+
+class NoRedirect(HTTPRedirectHandler):
+    def redirect_request(
+        self, req: Any, fp: Any, code: int, msg: str, headers: Any, newurl: str
+    ) -> None:
+        raise E2EError("endpoint_redirect_forbidden")
+
+
+def urlopen(request_obj: Request, *, timeout: int) -> Any:
+    """Direct pinned QA transport, including SSE; no system proxy or redirect."""
+    opener = build_opener(
+        ProxyHandler({}),
+        NoRedirect(),
+        HTTPSHandler(context=ssl.create_default_context(cafile=os.environ.get("SSL_CERT_FILE"))),
+    )
+    return opener.open(request_obj, timeout=timeout)
 
 
 def validate_endpoint(value: str) -> str:
@@ -229,10 +352,15 @@ def postgres_probe(dsn: str) -> None:
     except ImportError as exc:
         raise E2EError("psycopg_unavailable") from exc
     try:
-        with psycopg.connect(dsn, connect_timeout=5, autocommit=True) as connection:
+        with psycopg.connect(
+            dsn,
+            connect_timeout=2,
+            autocommit=True,
+            options="-c default_transaction_read_only=on -c statement_timeout=2000",
+        ) as connection:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT 1")
-                if cursor.fetchone() != (1,):
+                cursor.execute("SELECT current_database()")
+                if cursor.fetchone() != (urlsplit(dsn).path.lstrip("/"),):
                     raise E2EError("postgres_probe_failed")
     except E2EError:
         raise
@@ -258,6 +386,13 @@ def redis_probe(url: str) -> None:
 
 
 def business_snapshot(config: Config) -> str:
+    from isolation import host_qa_mode
+
+    if host_qa_mode():
+        from joint_worker_takeover import host_business_snapshot
+
+        validate_isolation(config)
+        return host_business_snapshot(config)
     response = request(
         "GET",
         config.trench_snapshot_url,
@@ -274,6 +409,7 @@ def business_snapshot(config: Config) -> str:
 
 
 def read_manifest_and_event(config: Config, expected_tools: set[str]) -> None:
+    validate_isolation(config)
     response = request(
         "GET",
         join_url(config.read_tools_url, "/manifest"),
@@ -312,6 +448,7 @@ def read_manifest_and_event(config: Config, expected_tools: set[str]) -> None:
 
 
 def bootstrap(config: Config) -> str:
+    validate_isolation(config)
     response = request(
         "POST",
         join_url(config.bff_url, "/api/copilotkit-zebra/bootstrap"),
@@ -327,6 +464,9 @@ def bootstrap(config: Config) -> str:
 
 
 def obtain_grant(config: Config, thread_id: str, run_id: str) -> str:
+    validate_isolation(config)
+    if not thread_id.startswith("trench-bootstrap-") or not run_id:
+        raise E2EError("grant_host_thread_invalid")
     response = request(
         "POST",
         config.grant_exchange_url,
@@ -348,10 +488,10 @@ def obtain_grant(config: Config, thread_id: str, run_id: str) -> str:
 
 
 def task_state(config: Config, task_id: str, run_id: str) -> int:
-    grant = obtain_grant(config, task_id, run_id)
+    grant = obtain_grant(config, host_thread_for_task(config, task_id), run_id)
     response = request(
         "GET",
-        f"{config.task_url}/{quote(task_id, safe='')}",
+        f"{config.task_url}/{quote(task_id, safe='')}/header",
         headers={
             "Accept": "application/json",
             "Authorization": f"Bearer {grant}",

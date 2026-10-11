@@ -2,13 +2,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_core.domain.artifact_payloads import ArtifactPayloadWrite
+from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.model_calls import ModelCallRecord
 from agent_core.domain.sessions import Session
 from agent_core.domain.tool_runs import ToolRunRecord
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
 from agent_storage import (
+    SQLiteAgentTaskStore,
     SQLiteArtifactPayloadStore,
+    SQLiteEventStore,
     SQLiteModelCallStore,
     SQLiteProjectionStore,
     SQLiteToolRunStore,
@@ -18,9 +21,22 @@ from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
 
 
 def _seed_session(database_path: Path) -> Session:
-    return SQLiteProjectionStore(database_path).save_session(
+    session = SQLiteProjectionStore(database_path).save_session(
         Session.create(title="Artifact session")
     )
+    SQLiteEventStore(database_path).append(
+        SessionEvent.create(
+            session_id=session.session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.USER,
+            payload={"title": session.title},
+            created_at=session.created_at,
+        )
+    )
+    SQLiteAgentTaskStore(database_path).ensure_for_session(session.session_id)
+    return session
+
 
 def _seed_artifacts(database_path: Path, session_id: SessionId) -> None:
     SQLiteModelCallStore(database_path).upsert(
@@ -52,6 +68,7 @@ def _seed_artifacts(database_path: Path, session_id: SessionId) -> None:
             created_at=_created_at(),
         )
     )
+
 
 def _seed_payload_backed_tool_artifact(
     database_path: Path,
@@ -88,6 +105,7 @@ def _seed_payload_backed_tool_artifact(
     )
     return payload
 
+
 def _seed_workspace_policy(
     database_path: Path,
     session_id: SessionId,
@@ -105,8 +123,10 @@ def _seed_workspace_policy(
         )
     )
 
+
 def _created_at() -> datetime:
     return datetime(2026, 6, 23, 14, 0, tzinfo=UTC)
+
 
 def _settings(auth_token: str | None) -> ZebraAgentSettings:
     return ZebraAgentSettings(

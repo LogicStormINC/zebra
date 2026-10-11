@@ -207,7 +207,10 @@ class CommandWakeupConsumer:
                     required_scope_mode=scope_mode,
                 ),
             )
-            if getattr(control, "status", None) is ControlStatus.SCOPE_DEFERRED:
+            if getattr(control, "status", None) in {
+                ControlStatus.SCOPE_DEFERRED,
+                ControlStatus.PREPARING,
+            }:
                 return PickupOutcome.DEFERRED
             return PickupOutcome.ACKNOWLEDGED
         return await self._db(

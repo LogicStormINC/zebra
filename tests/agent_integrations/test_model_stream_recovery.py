@@ -199,6 +199,43 @@ def test_transport_retry_cannot_renew_budget_through_harness_repair(wire):
     assert not caught.value.retryable
 
 
+@pytest.mark.parametrize("kind", ["reasoning", "tool", "text"])
+def test_completed_invalid_response_repairs_only_unpublished_output(wire, kind):
+    requests = []
+    if wire == "responses":
+        invalid = delta(wire, kind) + event({
+            "type": "response.completed", "sequence_number": 1,
+            "response": {"id": "bad", "status": "completed", "output": []},
+        })
+    else:
+        # Invalid complete tool arguments, or reasoning without an answer.
+        invalid = delta(wire, kind)
+        if kind == "text":
+            invalid += delta(wire, "tool")
+        invalid += event({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+        invalid += b"data: [DONE]\n\n"
+
+    def handle(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(200, content=invalid if len(requests) == 1 else success(wire))
+
+    deltas = []
+    with httpx.Client(transport=httpx.MockTransport(handle)) as client:
+        if kind == "text":
+            with pytest.raises(ModelResponseRejectedError):
+                complete_model(gateway(wire, client), [], (), model_call_id="repair",
+                               on_delta=lambda _, delta: deltas.append(delta.content))
+            assert len(requests) == 1
+        else:
+            result = complete_model(gateway(wire, client), [], (), model_call_id="repair",
+                                    on_delta=lambda _, delta: deltas.append(delta.content))
+            assert result.call_metadata.response_repair_count == 1
+            assert len(requests) == 2
+            if wire != "responses":
+                assert "Internal model-response repair" in requests[1]["messages"][-1]["content"]
+        assert deltas == ["piece"]
+
+
 @pytest.mark.parametrize("streaming", [False, True])
 def test_tool_history_is_reused_without_tool_execution(wire, streaming):
     calls = []

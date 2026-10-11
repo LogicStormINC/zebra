@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[3]
 COMPOSE = ROOT / "docker/compose.application.yml"
 
 
-def _render() -> dict[str, object]:
+def _render(platform: str | None = None, *, local_gvisor: bool = False) -> dict[str, object]:
     if not shutil.which("docker"):
         pytest.skip("Docker Compose CLI unavailable")
     env = {key: value for key, value in os.environ.items() if not key.startswith("ZEBRA_")}
@@ -27,6 +27,12 @@ def _render() -> dict[str, object]:
             "ZEBRA_DOCKER_SOCKET_GID": "0",
         }
     )
+    if platform is not None:
+        env["ZEBRA_APPLICATION_PLATFORM"] = platform
+    if local_gvisor:
+        env.update({"ZEBRA_LOCAL_GVISOR_ADDRESS": "192.0.2.10",
+                    "ZEBRA_LOCAL_GVISOR_CERT_GID": "20",
+                    "ZEBRA_WORKSPACE_VOLUME_ROOT": "/quota/zebra"})
     result = subprocess.run(
         [
             "docker",
@@ -35,6 +41,7 @@ def _render() -> dict[str, object]:
             "/dev/null",
             "-f",
             str(COMPOSE),
+            *(["-f", str(ROOT / "docker/compose.local-gvisor.yml")] if local_gvisor else []),
             "config",
             "--format",
             "json",
@@ -49,6 +56,21 @@ def _render() -> dict[str, object]:
     return json.loads(result.stdout)["services"]
 
 
+def test_local_gvisor_uses_authenticated_engine_without_local_socket_or_data_migration():
+    services = _render(local_gvisor=True)
+    worker = services["zebra-worker"]
+    assert worker["environment"]["DOCKER_HOST"] == "tcp://192.0.2.10:2376"
+    assert worker["environment"]["DOCKER_TLS_VERIFY"] == "1"
+    assert worker["environment"]["DOCKER_CERT_PATH"] == "/run/zebra-engine-tls"
+    mounts = {mount["target"]: mount for mount in worker["volumes"]}
+    assert "/var/run/docker.sock" not in mounts
+    assert mounts["/run/zebra-engine-tls"]["read_only"] is True
+    assert mounts["/quota/zebra"]["source"] == "/quota/zebra"
+    assert "20" in worker["group_add"]
+    assert "DOCKER_TLS_VERIFY" not in services["zebra-api"]["environment"]
+    assert services["zebra-api"]["networks"] == services["zebra-worker"]["networks"]
+
+
 def test_client_runtime_reaches_api_and_worker_without_leaking_operator_token() -> None:
     services = _render()
     api = services["zebra-api"]["environment"]
@@ -61,5 +83,12 @@ def test_client_runtime_reaches_api_and_worker_without_leaking_operator_token() 
     assert api["SSL_CERT_FILE"] == "/run/zebra/acceptance-bundle.pem"
     assert worker["SSL_CERT_FILE"] == "/run/zebra/acceptance-bundle.pem"
     healthcheck = services["zebra-worker"]["healthcheck"]["test"]
-    assert "docker version" in " ".join(healthcheck)
+    assert "zebra_agent_worker.runtime_preflight" in " ".join(healthcheck)
     assert "api_key_env" in " ".join(healthcheck)
+
+
+@pytest.mark.parametrize("platform", [None, "linux/arm64", "linux/amd64"])
+def test_application_platform_is_explicit_and_shared_by_execution_services(platform):
+    services = _render(platform)
+    for service in ("zebra-migrate", "zebra-api", "zebra-worker"):
+        assert services[service]["platform"] == (platform or "linux/amd64")

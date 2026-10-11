@@ -79,3 +79,24 @@ def test_negative_clock_skew_never_emits_negative_latency() -> None:
     )
 
     assert model.maximum_ms == 0
+
+
+def test_parallel_tools_pair_by_call_and_session_not_fifo() -> None:
+    origin = datetime(2026, 9, 20, tzinfo=UTC)
+    first, second = new_session_id(), new_session_id()
+    rows = (
+        (first, 1, EventType.TOOL_EXECUTION_STARTED, "slow", 0),
+        (first, 2, EventType.TOOL_EXECUTION_STARTED, "fast", 100),
+        (first, 3, EventType.TOOL_EXECUTION_COMPLETED, "fast", 200),
+        (first, 4, EventType.TOOL_EXECUTION_FAILED, "slow", 900),
+        (second, 1, EventType.TOOL_EXECUTION_STARTED, "slow", 300),
+        (second, 2, EventType.TOOL_EXECUTION_COMPLETED, "slow", 600),
+    )
+    events = tuple(SessionEvent.model_construct(
+        event_id=new_event_id(), session_id=session_id, sequence=sequence,
+        event_type=kind, payload={"tool_call_id": call}, actor=EventActor.SYSTEM,
+        created_at=origin + timedelta(milliseconds=milliseconds),
+    ) for session_id, sequence, kind, call, milliseconds in rows)
+    tool = next(item for item in summarize_execution_latencies(events) if item.stage == "tool")
+    assert tool.observations == 3 and tool.incomplete == 0
+    assert tool.p50_ms == 300 and tool.maximum_ms == 900

@@ -29,6 +29,23 @@ NOW = datetime(2026, 8, 25, tzinfo=UTC)
 SESSION = new_session_id()
 
 
+def test_old_receipt_cannot_resume_new_browser_wait():
+    from zebra_agent_worker.client_effect_continuation import has_trusted_client_effect_resume
+
+    events = _stream()
+    assert has_trusted_client_effect_resume(events)
+    events.append(_event(3, EventType.SESSION_RESUMED, EventActor.HARNESS, {"reason": "done"}))
+    events.append(
+        _event(
+            4,
+            EventType.SESSION_WAITING_FOR_CLIENT_EFFECT,
+            EventActor.HARNESS,
+            {"reason": "waiting_client_effect", "client_effect_ids": ["e-2"]},
+        )
+    )
+    assert not has_trusted_client_effect_resume(events)
+
+
 def _event(sequence: int, event_type: EventType, actor: EventActor, payload: dict):
     return SessionEvent.create(
         session_id=SESSION,
@@ -130,9 +147,7 @@ def _stream() -> list[SessionEvent]:
 
 class AllowAll:
     def evaluate_tool_call(self, _call):
-        return PolicyDecision(
-            decision=PolicyDecisionType.ALLOW, reason="t", policy_profile="t"
-        )
+        return PolicyDecision(decision=PolicyDecisionType.ALLOW, reason="t", policy_profile="t")
 
 
 class UnusedGateway:
@@ -208,9 +223,7 @@ def test_run_continuation_resumes_without_reexecution() -> None:
         ),
     )
     orchestrator = SingleAttemptOrchestrator(
-        ScriptedModelGateway(
-            responses=(ScriptedModelResponse(completion=final_completion),)
-        ),
+        ScriptedModelGateway(responses=(ScriptedModelResponse(completion=final_completion),)),
         AllowAll(),
         UnusedGateway(),
     )

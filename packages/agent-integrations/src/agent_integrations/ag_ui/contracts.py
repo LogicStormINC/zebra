@@ -60,6 +60,7 @@ class AgUiCursor(BaseModel):
     run_id: str = Field(max_length=MAX_PROJECTION_ID_CHARS)
     sequence: int = Field(ge=0)
     event_id: str = Field(max_length=MAX_PROJECTION_ID_CHARS)
+    frame_index: int | None = Field(default=None, ge=0, le=4095, strict=True)
 
     @field_validator("thread_id", "run_id", "event_id")
     @classmethod
@@ -67,7 +68,7 @@ class AgUiCursor(BaseModel):
         return _required_text(value, "cursor value", MAX_PROJECTION_ID_CHARS)
 
     def encode(self) -> str:
-        payload = self.model_dump(mode="json")
+        payload = self.model_dump(mode="json", exclude_none=True)
         encoded = base64.urlsafe_b64encode(
             json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
         ).decode()

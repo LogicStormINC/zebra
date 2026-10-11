@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from agent_core.contracts.model_commentary import ModelCommentaryPlan
 from agent_core.domain.modeling import CONTEXT_TOKEN_CATEGORIES
 
 
@@ -49,6 +50,8 @@ class ModelRequestStartedPayload(BaseModel):
     token_breakdown: dict[str, int] | None = None
     token_breakdown_v2: ModelTokenBreakdownV2Payload | None = None
     reserves: dict[str, int] | None = None
+    public_output_policy: dict[str, str | int | float] | None = None
+    purpose: Literal["public_expression"] | None = None
 
     @field_validator("model_call_id", "model_profile", "token_estimate_method")
     @classmethod
@@ -103,6 +106,7 @@ class ModelResponseReceivedPayload(BaseModel):
     assistant_message: str | None = None
     tool_call_count: int | None = Field(default=None, ge=0)
     response_stage: str | None = None
+    public_commentary: ModelCommentaryPlan | None = None
     model_call_id: str | None = None
     provider: str | None = None
     model_name: str | None = None

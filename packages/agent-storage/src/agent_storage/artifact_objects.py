@@ -21,6 +21,11 @@ from agent_core.domain.artifact_objects import (
 )
 from botocore.exceptions import BotoCoreError, ClientError  # type: ignore
 
+from agent_storage.artifact_object_reads import (
+    artifact_read_scope,
+    bounded_s3_read_client,
+    read_s3,
+)
 from agent_storage.s3_error_mapping import (
     is_not_found,
     is_precondition_failed,
@@ -39,7 +44,7 @@ class _S3Client(Protocol):
 
 
 class _ReadableBody(Protocol):
-    def read(self) -> bytes: ...
+    def read(self, amt: int) -> bytes: ...
 
     def close(self) -> None: ...
 
@@ -53,8 +58,13 @@ class S3ArtifactObjectStore:
         *,
         bucket: str,
         key_prefix: str = "zebra/artifacts/v1",
+        read_client: _S3Client | None = None,
     ) -> None:
         self._client = client
+        self._read_client = (
+            read_client if read_client is not None else bounded_s3_read_client(client)
+        )
+        self._native_reads = getattr(self._read_client, "_zebra_immutable_reads", False) is True
         self._bucket = _canonical_text(bucket, field_name="bucket")
         self._key_prefix = _canonical_prefix(key_prefix)
 
@@ -71,7 +81,7 @@ class S3ArtifactObjectStore:
         except ClientError as error:
             if not is_precondition_failed(error):
                 raise unavailable("conditional object put failed", error) from error
-            verification = self.verify(request.expectation)
+            verification = self._verify(request.expectation)
             if verification.status is ArtifactObjectVerificationStatus.VERIFIED:
                 assert verification.receipt is not None
                 return verification.receipt
@@ -85,19 +95,34 @@ class S3ArtifactObjectStore:
         except BotoCoreError as error:
             raise unavailable("conditional object put failed", error) from error
 
-        verification = self.verify(request.expectation)
+        verification = self._verify(request.expectation)
         if verification.status is not ArtifactObjectVerificationStatus.VERIFIED:
-            raise ArtifactObjectUnavailableError(
-                "written artifact object could not be verified"
-            )
+            raise ArtifactObjectUnavailableError("written artifact object could not be verified")
         assert verification.receipt is not None
         return verification.receipt
 
+    @artifact_read_scope()
     def verify(self, expectation: ArtifactObjectExpectation) -> ArtifactObjectVerification:
+        return self._verify(expectation, read_only=True)
+
+    def _verify(
+        self,
+        expectation: ArtifactObjectExpectation,
+        *,
+        read_only: bool = False,
+    ) -> ArtifactObjectVerification:
         try:
-            response = self._client.head_object(
-                Bucket=self._bucket,
-                Key=self._key(expectation),
+            kwargs = {"Bucket": self._bucket, "Key": self._key(expectation)}
+            response = (
+                read_s3(
+                    self._read_client,
+                    "head_object",
+                    kwargs,
+                    size=0,
+                    native=self._native_reads,
+                )
+                if read_only
+                else self._client.head_object(**kwargs)
             )
         except ClientError as error:
             if is_not_found(error):
@@ -110,6 +135,7 @@ class S3ArtifactObjectStore:
             raise unavailable("artifact object head failed", error) from error
         return self._verification(expectation, response)
 
+    @artifact_read_scope()
     def read_verified(self, expectation: ArtifactObjectExpectation) -> bytes:
         verification = self.verify(expectation)
         if verification.status is ArtifactObjectVerificationStatus.NOT_FOUND:
@@ -122,16 +148,23 @@ class S3ArtifactObjectStore:
         assert receipt is not None
         return self.read_version_verified(expectation, receipt.object_version)
 
+    @artifact_read_scope()
     def read_version_verified(
         self,
         expectation: ArtifactObjectExpectation,
         object_version: str,
     ) -> bytes:
         try:
-            response = self._client.get_object(
-                Bucket=self._bucket,
-                Key=self._key(expectation),
-                VersionId=object_version,
+            response = read_s3(
+                self._read_client,
+                "get_object",
+                {
+                    "Bucket": self._bucket,
+                    "Key": self._key(expectation),
+                    "VersionId": object_version,
+                },
+                size=expectation.size_bytes,
+                native=self._native_reads,
             )
         except ClientError as error:
             if is_not_found(error):
@@ -143,8 +176,8 @@ class S3ArtifactObjectStore:
             raise unavailable("artifact object read failed", error) from error
         try:
             verification = self._verification(expectation, response)
-        except Exception:
-            _close_response_body(response)
+        except Exception as error:
+            _close_response_body(response, primary=error)
             raise
         receipt = verification.receipt
         if (
@@ -152,36 +185,12 @@ class S3ArtifactObjectStore:
             or receipt is None
             or receipt.object_version != object_version
         ):
-            _close_response_body(response)
-            raise ArtifactObjectIntegrityError(
+            integrity_error = ArtifactObjectIntegrityError(
                 "artifact object version does not match read expectation"
             )
-        raw_body = response.get("Body")
-        read = getattr(raw_body, "read", None)
-        close = getattr(raw_body, "close", None)
-        if not callable(read) or not callable(close):
-            raise ArtifactObjectUnavailableError("artifact object response has no body")
-        body = cast(_ReadableBody, raw_body)
-        read_error: Exception | None = None
-        try:
-            payload = body.read()
-        except Exception as error:
-            read_error = error
-            payload = b""
-        finally:
-            try:
-                body.close()
-            except Exception as error:
-                if read_error is None:
-                    raise ArtifactObjectUnavailableError(
-                        "artifact object body close failed"
-                    ) from error
-        if read_error is not None:
-            raise ArtifactObjectUnavailableError(
-                "artifact object body read failed"
-            ) from read_error
-        if not isinstance(payload, bytes):
-            raise ArtifactObjectUnavailableError("artifact object body did not return bytes")
+            _close_response_body(response, primary=integrity_error)
+            raise integrity_error
+        payload = _read_response_body(response, expected_length=expectation.size_bytes)
         if (
             len(payload) != expectation.size_bytes
             or sha256(payload).hexdigest() != expectation.sha256
@@ -189,6 +198,7 @@ class S3ArtifactObjectStore:
             raise ArtifactObjectIntegrityError("artifact object bytes do not match expectation")
         return payload
 
+    @artifact_read_scope()
     def read_version_range_verified(
         self,
         expectation: ArtifactObjectExpectation,
@@ -207,11 +217,17 @@ class S3ArtifactObjectStore:
         ):
             raise ArtifactObjectIntegrityError("artifact object version does not match range")
         try:
-            response = self._client.get_object(
-                Bucket=self._bucket,
-                Key=self._key(expectation),
-                VersionId=object_version,
-                Range=f"bytes={start}-{end}",
+            response = read_s3(
+                self._read_client,
+                "get_object",
+                {
+                    "Bucket": self._bucket,
+                    "Key": self._key(expectation),
+                    "VersionId": object_version,
+                    "Range": f"bytes={start}-{end}",
+                },
+                size=end - start + 1,
+                native=self._native_reads,
             )
         except ClientError as error:
             if is_not_found(error):
@@ -227,8 +243,11 @@ class S3ArtifactObjectStore:
             or response.get("ContentRange") != f"bytes {start}-{end}/{expectation.size_bytes}"
             or response.get("VersionId") != object_version
         ):
-            _close_response_body(response)
-            raise ArtifactObjectIntegrityError("artifact object range evidence is invalid")
+            integrity_error = ArtifactObjectIntegrityError(
+                "artifact object range evidence is invalid"
+            )
+            _close_response_body(response, primary=integrity_error)
+            raise integrity_error
         return _read_response_body(response, expected_length=expected_length)
 
     def delete_if_version(
@@ -273,9 +292,7 @@ class S3ArtifactObjectStore:
             raise unavailable("artifact object version head failed", error) from error
         verification = self._verification(request.expectation, response)
         if verification.status is ArtifactObjectVerificationStatus.MISMATCH:
-            raise ArtifactObjectIntegrityError(
-                "object version does not match delete expectation"
-            )
+            raise ArtifactObjectIntegrityError("object version does not match delete expectation")
         receipt = verification.receipt
         if receipt is None or receipt.object_version != request.object_version:
             raise ArtifactObjectIntegrityError(
@@ -339,13 +356,20 @@ def _metadata(expectation: ArtifactObjectExpectation) -> dict[str, str]:
     }
 
 
-def _close_response_body(response: Mapping[str, object]) -> None:
+def _close_response_body(
+    response: Mapping[str, object], *, primary: BaseException | None = None
+) -> None:
     close = getattr(response.get("Body"), "close", None)
     if not callable(close):
         return
     try:
         close()
-    except Exception as error:
+    except BaseException as error:
+        if primary is not None:
+            primary.add_note(f"Artifact body close failed: {type(error).__name__}")
+            return
+        if not isinstance(error, Exception):
+            raise
         raise ArtifactObjectUnavailableError("artifact object body close failed") from error
 
 
@@ -356,18 +380,27 @@ def _read_response_body(response: Mapping[str, object], *, expected_length: int)
     if not callable(read) or not callable(close):
         raise ArtifactObjectUnavailableError("artifact object response has no body")
     body = cast(_ReadableBody, raw_body)
+    primary: BaseException | None = None
     try:
-        payload = body.read()
-    except Exception as error:
+        payload = body.read(expected_length + 1)
+    except BaseException as error:
+        primary = error
+        if not isinstance(error, Exception):
+            raise
         raise ArtifactObjectUnavailableError("artifact object body read failed") from error
     finally:
         try:
             body.close()
-        except Exception as error:
-            raise ArtifactObjectUnavailableError(
-                "artifact object body close failed"
-            ) from error
-    if not isinstance(payload, bytes) or len(payload) != expected_length:
+        except BaseException as error:
+            if primary is not None:
+                primary.add_note(f"Artifact body close failed: {type(error).__name__}")
+            elif not isinstance(error, Exception):
+                raise
+            else:
+                raise ArtifactObjectUnavailableError("artifact object body close failed") from error
+    if not isinstance(payload, bytes):
+        raise ArtifactObjectUnavailableError("artifact object body did not return bytes")
+    if len(payload) != expected_length:
         raise ArtifactObjectIntegrityError("artifact object range bytes are invalid")
     return payload
 

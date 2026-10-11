@@ -19,6 +19,7 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.extension_snapshots import ExtensionSnapshot
 from agent_core.domain.extensions import SkillInstallation, SkillVersion
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.task_bindings import require_host_thread, task_bound_host_thread
 from agent_core.ports.extension_snapshots import ExtensionSnapshotNotFoundError
 from agent_core.ports.task_admission_transaction import TaskAdmissionRequest
 from agent_security.extension_authority import extension_runtime_scope_from_grant
@@ -47,6 +48,12 @@ from tests.agent_storage.test_postgres_command_wakeup import (
 from tests.agent_storage.test_postgres_command_wakeup import _counts, _enable
 
 NAMESPACE = "extension-turn-admission"
+HOST_THREAD = "conv_extension_turn_admission"
+TASK_RESOURCES = [
+    {"type": "principal", "id": "subject-a"},
+    {"type": "event", "id": "event-a"},
+    {"type": "thread", "id": HOST_THREAD},
+]
 
 
 @pytest.fixture(scope="session")
@@ -87,7 +94,7 @@ def _installation(scope, *, revision: int = 1, enabled: bool = True) -> SkillIns
 
 
 def _seed_task(dsn: str, namespace: str, *, skill_components=("skill",)):
-    verified = _verified(scopes=["agent.run"])
+    verified = _verified(scopes=["agent.run"], resource_refs=TASK_RESOURCES)
     bootstrap = SessionBootstrapService().build(
         SessionBootstrapCommand(
             title="extension",
@@ -119,6 +126,7 @@ def test_distinct_verified_issuer_and_origin_survive_real_task_admission(
         iss="https://api.trench.example.com",
         origin="https://trench.example.com",
         scopes=["agent.run"],
+        resource_refs=TASK_RESOURCES,
     )
     parsed = parse_create_session_payload(
         {"title": "Trench", "prompt": "first", "workspace": "/tmp"}
@@ -138,6 +146,11 @@ def test_distinct_verified_issuer_and_origin_survive_real_task_admission(
     ceiling = snapshot_store.resolve_task_ceiling(session_id=session_id)
     assert ceiling.binding.host_capability.authority_issuer == verified.authority_issuer
     assert ceiling.binding.host_capability.host_context.origin == verified.context.origin
+    assert ceiling.binding.host_capability.host_context == verified.context
+    bound_thread = task_bound_host_thread(ceiling.binding, task_id=session_id)
+    assert bound_thread == require_host_thread(verified.context)
+    assert bound_thread.resource_id == HOST_THREAD
+    assert bound_thread.resource_id != session_id
 
     events = PostgresEventStore(dsn, deployment_namespace=NAMESPACE)
     projections = PostgresProjectionStore(dsn, deployment_namespace=NAMESPACE)

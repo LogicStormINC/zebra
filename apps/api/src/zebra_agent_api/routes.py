@@ -22,6 +22,7 @@ from zebra_agent_api.memory_routes import handle_memory_route
 from zebra_agent_api.personalization_routes import handle_personalization_route
 from zebra_agent_api.platform_client_routes import handle_platform_client_route
 from zebra_agent_api.responses import ApiResponse, bad_request
+from zebra_agent_api.session_binding import handle_host_binding_renewal
 from zebra_agent_api.task_routes import handle_task_route
 from zebra_agent_api.task_schedule_routes import handle_schedule_route
 from zebra_agent_api.tenant_guard import (
@@ -55,19 +56,26 @@ class RouteAdapter:
         if method == "GET" and request.path == "/capabilities/mcp/prompts":
             return self.app.get_mcp_prompts()
         if method == "GET" and request.path == "/capabilities/runtime":
-            return ApiResponse(200, {
-                "contract_version": 1,
-                "schema_version": MIGRATIONS[-1].version,
-                "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
-            })
+            return ApiResponse(
+                200,
+                {
+                    "contract_version": 1,
+                    "schema_version": MIGRATIONS[-1].version,
+                    "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
+                },
+            )
         platform_client_response = handle_platform_client_route(self.app, request)
         if platform_client_response is not None:
             return platform_client_response
         tenant_response = tenant_scope_response(self.app, request)
         if tenant_response is not None:
             return tenant_response
+        renewal_response = handle_host_binding_renewal(self.app, request)
+        if renewal_response is not None:
+            return renewal_response
         usage_response = handle_usage_route(
-            self.app.usage_evidence if request.path == "/usage" else None, request,
+            self.app.usage_evidence if request.path == "/usage" else None,
+            request,
         )
         if usage_response is not None:
             return usage_response
@@ -80,12 +88,16 @@ class RouteAdapter:
             return schedule_response
         if method == "POST" and request.path in {"/sessions", "/tasks"}:
             skill_error = validate_task_skill_selection(
-                request.body or {}, request.verified_host_grant, self.extension_turn_admission,
+                request.body or {},
+                request.verified_host_grant,
+                self.extension_turn_admission,
             )
             if skill_error is not None:
                 return skill_error
         agui_response = handle_agui_command(
-            self.app, request, extension_admission=self.extension_turn_admission,
+            self.app,
+            request,
+            extension_admission=self.extension_turn_admission,
         )
         if agui_response is not None:
             return agui_response
@@ -473,11 +485,8 @@ def _is_hidden_internal_segment(app: ZebraAgentApi, path: str) -> bool:
         session_id = SessionId(UUID(raw))
     except ValueError:
         return False
-    try:
-        task = app.stores.tasks.ensure_for_session(session_id)
-    except ValueError:
-        return False
-    return str(task.task_id) != str(session_id)
+    task_id = app.stores.tasks.task_id_for_session(session_id)
+    return task_id is not None and task_id != session_id
 
 
 def _not_found(request: RouteRequest) -> ApiResponse:

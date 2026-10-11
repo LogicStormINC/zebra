@@ -15,6 +15,8 @@ from psycopg import errors
 from psycopg.rows import dict_row
 
 from agent_storage.postgres.leases import assert_current_lease_fence, lock_session_lease_boundary
+from agent_storage.postgres.task_event_positions import _lock_task as _lock_task
+from agent_storage.postgres.task_event_positions import backfill_task_event_positions
 from agent_storage.postgres.task_lineage import (
     PostgresAgentTaskConflictError,
     derive_lineage,
@@ -53,6 +55,20 @@ def _rebuild_task(
     if root is None:
         raise PostgresAgentTaskConflictError("task root Session was not found")
     lineage = derive_lineage(connection, deployment_namespace, root_session_id)
+    members = connection.execute(
+        """SELECT session_id,task_id,predecessor_id,segment_index,visibility,rollover_reason
+           FROM execution_segments WHERE deployment_namespace=%s AND task_id=%s""",
+        (deployment_namespace, task_id),
+    ).fetchall()
+    expected = {row["session_id"]: row for row in lineage}
+    for member in members:
+        canonical = expected.get(member["session_id"])
+        if canonical is None or any(
+            member[key] != canonical[key]
+            for key in ("predecessor_id", "segment_index", "rollover_reason")
+        ):
+            raise PostgresAgentTaskConflictError("canonical Task membership cannot be rewritten")
+    existing = {member["session_id"] for member in members}
     active = lineage[-1]
     connection.execute(
         """
@@ -85,33 +101,15 @@ def _rebuild_task(
         """,
         (deployment_namespace, task_id),
     ).fetchone()
-    connection.execute(
-        """
-        DELETE FROM task_event_index
-        WHERE deployment_namespace = %s AND task_id = %s
-        """,
-        (deployment_namespace, task_id),
-    )
-    connection.execute(
-        """
-        DELETE FROM execution_segments
-        WHERE deployment_namespace = %s AND task_id = %s
-        """,
-        (deployment_namespace, task_id),
-    )
     for row in lineage:
+        if row["session_id"] in existing:
+            continue  # Unchanged membership must not contend with admission's Segment SHARE lock.
         connection.execute(
             """
             INSERT INTO execution_segments (
                 deployment_namespace, session_id, task_id, predecessor_id,
                 segment_index, visibility, rollover_reason
             ) VALUES (%s, %s, %s, %s, %s, 'internal', %s)
-            ON CONFLICT (deployment_namespace, session_id) DO UPDATE SET
-                task_id = EXCLUDED.task_id,
-                predecessor_id = EXCLUDED.predecessor_id,
-                segment_index = EXCLUDED.segment_index,
-                visibility = EXCLUDED.visibility,
-                rollover_reason = EXCLUDED.rollover_reason
             """,
             (
                 deployment_namespace,
@@ -173,9 +171,7 @@ def attach_segment_for_worker_in_transaction(
             cursor.execute("SELECT 1")
             with connection.transaction():
                 if authority.deployment_namespace != deployment_namespace:
-                    raise LeaseLostError(
-                        "Task mutation authority belongs to another namespace"
-                    )
+                    raise LeaseLostError("Task mutation authority belongs to another namespace")
                 if authority.session_id != predecessor_id:
                     raise LeaseLostError("Task mutation authority belongs to another Session")
                 lock_session_lease_boundary(cursor, deployment_namespace, predecessor_id)
@@ -189,7 +185,7 @@ def attach_segment_for_worker_in_transaction(
                     """
                     SELECT current_version FROM session_streams
                     WHERE deployment_namespace = %s AND session_id = %s
-                    FOR SHARE
+                    FOR UPDATE
                     """,
                     (deployment_namespace, predecessor_id),
                 ).fetchone()
@@ -221,6 +217,24 @@ def _attach_segment(
     predecessor_id: SessionId,
     reason: RolloverReason,
 ) -> None:
+    # Handoff already owns this stream; standalone attach must take the same
+    # boundary before Segment metadata and Task61. No late Session/lease lock.
+    connection.execute(
+        """SELECT current_version FROM session_streams
+           WHERE deployment_namespace=%s AND session_id=%s FOR UPDATE""",
+        (deployment_namespace, predecessor_id),
+    ).fetchone()
+    # Drain the predecessor's same-transaction tail before adopting the child.
+    # Its deferred allocator has not run yet; ready metadata alone misses it.
+    # Take this Segment boundary before Task61, as command admission does.
+    connection.execute(
+        """UPDATE execution_segments SET event_position_source_ready=false
+           WHERE deployment_namespace=%s AND task_id=%s AND session_id=%s
+             AND event_position_source_ready AND EXISTS (
+               SELECT 1 FROM session_events WHERE deployment_namespace=%s
+                 AND session_id=%s AND task_id IS NULL LIMIT 1)""",
+        (deployment_namespace, task_id, predecessor_id, deployment_namespace, predecessor_id),
+    )
     _lock_task(connection, deployment_namespace, task_id)
     active = connection.execute(
         """
@@ -232,6 +246,10 @@ def _attach_segment(
     ).fetchone()
     if active is None or active["active_segment_id"] != predecessor_id:
         raise PostgresAgentTaskConflictError("task active Segment changed during rollover")
+    if not _sync_events_in_transaction(connection, deployment_namespace, task_id):
+        raise PostgresAgentTaskConflictError(
+            "Task Event positions require explicit backfill before rollover"
+        )
     predecessor = connection.execute(
         """
         SELECT segment_index FROM execution_segments
@@ -250,6 +268,13 @@ def _attach_segment(
     ).fetchone()
     if child is None:
         raise PostgresAgentTaskConflictError("rollover Segment projection was not found")
+    foreign = connection.execute(
+        """SELECT 1 FROM session_events WHERE deployment_namespace=%s AND session_id=%s
+           AND task_id IS NOT NULL AND task_id<>%s LIMIT 1""",
+        (deployment_namespace, segment_id, task_id),
+    ).fetchone()
+    if foreign is not None:
+        raise PostgresAgentTaskConflictError("Segment Events already belong to another Task")
     connection.execute(
         """
         INSERT INTO execution_segments (
@@ -276,6 +301,8 @@ def _attach_segment(
     )
     if updated.rowcount != 1:
         raise PostgresAgentTaskConflictError("task active Segment CAS failed")
+    # ponytail: retain the committed adoption frontier for a large existing child.
+    # New appends fail closed until explicit bounded backfill reaches ready.
     _sync_events_in_transaction(connection, deployment_namespace, task_id)
 
 
@@ -288,17 +315,12 @@ def get_task_in_transaction(
         """
         SELECT task.task_id, task.active_segment_id, projection.title,
                projection.status, projection.current_sequence AS segment_sequence,
-               COALESCE(MAX(task_index.task_sequence), -1) AS task_sequence
+               task.next_event_sequence - 1 AS task_sequence
         FROM agent_tasks task
         JOIN session_projections projection
           ON projection.deployment_namespace = task.deployment_namespace
          AND projection.session_id = task.active_segment_id
-        LEFT JOIN task_event_index task_index
-          ON task_index.deployment_namespace = task.deployment_namespace
-         AND task_index.task_id = task.task_id
         WHERE task.deployment_namespace = %s AND task.task_id = %s
-        GROUP BY task.task_id, task.active_segment_id, projection.title,
-                 projection.status, projection.current_sequence
         """,
         (deployment_namespace, task_id),
     ).fetchone()
@@ -325,54 +347,5 @@ def _sync_events_in_transaction(
     connection: Any,
     deployment_namespace: str,
     task_id: TaskId,
-) -> None:
-    row = connection.execute(
-        """
-        SELECT COALESCE(MAX(task_sequence), -1) + 1 AS next_sequence
-        FROM task_event_index
-        WHERE deployment_namespace = %s AND task_id = %s
-        """,
-        (deployment_namespace, task_id),
-    ).fetchone()
-    next_sequence = row["next_sequence"]
-    events = connection.execute(
-        """
-        SELECT event.event_id, event.session_id, event.sequence
-        FROM execution_segments segment
-        JOIN session_events event
-          ON event.deployment_namespace = segment.deployment_namespace
-         AND event.session_id = segment.session_id
-        LEFT JOIN task_event_index indexed
-          ON indexed.deployment_namespace = event.deployment_namespace
-         AND indexed.event_id = event.event_id
-        WHERE segment.deployment_namespace = %s AND segment.task_id = %s
-          AND indexed.event_id IS NULL
-        ORDER BY segment.segment_index, event.sequence
-        """,
-        (deployment_namespace, task_id),
-    ).fetchall()
-    for event in events:
-        connection.execute(
-            """
-            INSERT INTO task_event_index (
-                deployment_namespace, task_id, task_sequence, event_id,
-                segment_id, segment_sequence
-            ) VALUES (%s, %s, %s, %s, %s, %s)
-            """,
-            (
-                deployment_namespace,
-                task_id,
-                next_sequence,
-                event["event_id"],
-                event["session_id"],
-                event["sequence"],
-            ),
-        )
-        next_sequence += 1
-
-
-def _lock_task(connection: Any, namespace: str, task_id: TaskId) -> None:
-    connection.execute(
-        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-        (f"{namespace}:{task_id}",),
-    ).fetchone()
+) -> bool:
+    return backfill_task_event_positions(connection, deployment_namespace, task_id)

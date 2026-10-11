@@ -20,6 +20,7 @@ from agent_core.domain.modeling import (
 )
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 
+from agent_integrations.bounded_model_http import post_bounded_json, validate_bounded_policy
 from agent_integrations.deepseek_profiles import (
     DeepSeekProfileRouter,
     ResolvedDeepSeekInvocation,
@@ -86,6 +87,7 @@ class OpenAICompatibleModelGateway:
         tools: tuple[ModelToolDefinition, ...] = (),
         invocation_policy: ModelInvocationPolicy | None = None,
         strict_tools: bool = False,
+        deadline_s: float | None = None,
     ) -> ModelCompletion:
         self._validate_strict_mode(tools, strict_tools=strict_tools)
         tool_names = provider_tool_names(tools)
@@ -99,10 +101,14 @@ class OpenAICompatibleModelGateway:
             strict_tools=strict_tools,
         )
         started = perf_counter()
+        if deadline_s is not None:
+            request_body["max_tokens"] = validate_bounded_policy(
+                invocation_policy, has_tools=bool(tools)
+            )
         retry_count = 0
         while True:
             try:
-                response_data = self._post_chat_completion(request_body)
+                response_data = self._post_chat_completion(request_body, deadline_s=deadline_s)
                 return parse_completion(
                     response_data,
                     provider_name=self._provider_name,
@@ -116,13 +122,13 @@ class OpenAICompatibleModelGateway:
                 )
             except Exception as exc:
                 if isinstance(exc, ModelResponseRejectedError):
-                    if retry_count:
+                    if retry_count or deadline_s is not None:
                         exc.retryable = False
                     raise
                 if isinstance(exc, ValueError) and not isinstance(exc, ModelProviderError):
                     raise
                 error = normalize_provider_error(exc)
-                if not self._should_retry(
+                if deadline_s is not None or not self._should_retry(
                     error,
                     retry_count=retry_count,
                     public_delta_emitted=False,
@@ -174,6 +180,11 @@ class OpenAICompatibleModelGateway:
                         body=request_body,
                         on_text_delta=on_text_delta,
                         on_semantic_output=mark_semantic_output,
+                    )
+                    # A completed stream's buffered reasoning/tool arguments are not
+                    # published text or executed tools. Allow one Harness parse repair.
+                    public_delta_emitted = (
+                        response_data.get("_zebra_time_to_first_public_text_ms") is not None
                     )
                     return parse_completion(
                         response_data,
@@ -290,11 +301,7 @@ class OpenAICompatibleModelGateway:
         public_delta_emitted: bool,
     ) -> bool:
         # Function definitions do not execute tools; durable tool results are safe to resend.
-        return (
-            error.retryable
-            and retry_count < self._max_retries
-            and not public_delta_emitted
-        )
+        return error.retryable and retry_count < self._max_retries and not public_delta_emitted
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -307,7 +314,17 @@ class OpenAICompatibleModelGateway:
             return self._timeout_s
         return httpx.Timeout(120.0, connect=10.0)
 
-    def _post_chat_completion(self, body: dict[str, Any]) -> dict[str, Any]:
+    def _post_chat_completion(
+        self, body: dict[str, Any], *, deadline_s: float | None = None
+    ) -> dict[str, Any]:
+        if deadline_s is not None:
+            return post_bounded_json(
+                self._client,
+                f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
+                self._headers(),
+                body,
+                deadline_s=deadline_s,
+            )
         client = self._client or httpx.Client(timeout=self._client_timeout())
         should_close = self._client is None
         try:

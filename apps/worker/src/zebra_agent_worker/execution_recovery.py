@@ -5,26 +5,34 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, Never
 
+from agent_context.capsule import execution_evidence_context
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.sessions import SessionStatus
+from agent_core.ports.runtime import RuntimeCapabilityError
+from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
+from agent_core.ports.worker_preparation import PreparationAdvanced
 
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
+import zebra_agent_worker.runtime_setup as runtime_setup
 from zebra_agent_worker.claims import ClaimedSession
 from zebra_agent_worker.continuation_lifecycle import restore_suspended_session_claim
+from zebra_agent_worker.execution_errors import log_worker_failure
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import (
     ExecutedSession,
     RetryableWorkerSetupError,
+    RuntimeStartupError,
     WorkerExecutionError,
     finalize_worker_setup_failure,
     rebuild_task_index,
 )
-from zebra_agent_worker.execution_preflight import run_with_stale_retry
+from zebra_agent_worker.execution_preflight import StaleExecutionSnapshot, run_with_stale_retry
 from zebra_agent_worker.lease_heartbeat import LeaseHeartbeat
+from zebra_agent_worker.progress_recovery import WorkerProgressRecovery, recover_worker_progress
 from zebra_agent_worker.provider_continuation_execution import (
     resolve_provider_continuation,
 )
@@ -47,6 +55,32 @@ class RecoveredExecutionInputs:
     task: RecoveredTask
     active_capsule: Any
     recovered_handoff: Any
+    execution_input_reader: Callable[[WorkerLease], list[SessionEvent]] | None = None
+
+    @property
+    def reader(self) -> Callable[[WorkerLease], list[SessionEvent]] | None:
+        return self.execution_input_reader
+
+
+def recover_execution_progress(
+    service: Any, claimed: ClaimedSession, ownership_check: Callable[[], None]
+) -> WorkerProgressRecovery | None:
+    """Explicit Cloud composition requires an admitted, indexed canonical Run."""
+    namespace = getattr(service, "_execution_namespace", None)
+    if namespace is None:
+        return None
+    try:
+        return recover_worker_progress(
+            tasks=service._task_index_store,
+            namespace=namespace,
+            session_id=claimed.lease.session_id,
+            ownership_check=ownership_check,
+        )
+    except PreparationAdvanced:
+        raise
+    except (CheckpointNotReady, TimeoutError) as error:
+        # A bounded preparation slice is resumable, not a deterministic Task failure.
+        raise RetryableWorkerSetupError(str(error)) from error
 
 
 def execute_claimed_with_stale_retry(
@@ -101,7 +135,44 @@ def recover_execution_inputs(
     handoff_gate: Any,
     artifact_payload_reader: Any,
     workspace_resolver: Any,
+    execution_input_reader: Callable[[WorkerLease], list[SessionEvent]] | None = None,
+    execution_input_store: Any = None,
+    tasks: Any = None,
+    namespace: str | None = None,
+    ownership_check: Callable[[], None] | None = None,
 ) -> RecoveredExecutionInputs:
+    if ownership_check is not None:
+        ownership_check()
+    if execution_input_reader is None and execution_input_store is not None:
+        from zebra_agent_worker.execution_input_preparation import recover_execution_input_events
+
+        if tasks is None or namespace is None:
+            raise ValueError("execution input preparation requires explicit tasks and namespace")
+        if execution_input_store.namespace != namespace:
+            raise ValueError("execution input namespace disagrees with explicit composition")
+
+        def execution_input_reader(lease: WorkerLease) -> list[SessionEvent]:
+            return recover_execution_input_events(
+                store=execution_input_store,
+                tasks=tasks,
+                lease=lease,
+                ownership_check=ownership_check,
+            )
+
+    if cloud_deployment and execution_input_reader is None:
+        raise RetryableWorkerSetupError("cloud execution requires a bounded execution input reader")
+    if execution_input_reader is not None:
+        from zebra_agent_worker.execution_input_preparation import ExecutionInputEventView
+
+        event_store = ExecutionInputEventView(event_store, execution_input_reader, claimed.lease)
+        # Finish all preparation before suspended-session restoration can append
+        # SESSION_RESUMED. The main loop retries only this input phase.
+        event_store.list_for_session(session_id)
+        if execution_input_store is not None and (
+            execution_input_store.read(claimed.lease).state.session_revision
+            != claimed.recovery.session.current_sequence
+        ):
+            raise StaleExecutionSnapshot("execution inputs disagree with claimed Session revision")
     cloud_continuation = provider_runtime.cloud_for_session(
         cloud_provider_continuation_factory, session_id
     )
@@ -119,8 +190,14 @@ def recover_execution_inputs(
         fence=claimed.lease.fence,
         recovered_at=started_at,
         release=lambda: None,
+        events=event_store.list_for_session(session_id) if execution_input_reader else None,
     )
     session_events = event_store.list_for_session(session_id)
+    if execution_input_store is not None and (
+        execution_input_store.read(claimed.lease).state.session_revision
+        != claimed.recovery.session.current_sequence
+    ):
+        raise StaleExecutionSnapshot("execution inputs disagree with restored Session revision")
     active_context = context_lifecycle_store.get_active_capsule(session_id)
     provider_continuation = resolve_provider_continuation(
         cloud_continuation,
@@ -139,6 +216,16 @@ def recover_execution_inputs(
             ),
             client_state_evidence=recover_client_state_evidence(session_events),
         )
+        if execution_input_store is not None:
+            evidence = execution_input_store.read(claimed.lease).state.evidence
+            if evidence is not None:
+                task = replace(
+                    task,
+                    runtime_evidence=(
+                        *task.runtime_evidence,
+                        execution_evidence_context(evidence),
+                    ),
+                )
         if workspace_resolver is not None:
             task = apply_workspace_resolver(task, workspace_resolver, session_id)
     except (FileNotFoundError, ValueError) as exc:
@@ -151,6 +238,7 @@ def recover_execution_inputs(
         task=task,
         active_capsule=active_context.capsule if active_context else None,
         recovered_handoff=recovered_handoff,
+        execution_input_reader=execution_input_reader,
     )
 
 
@@ -247,10 +335,12 @@ def _execute_with_heartbeat(
                 lease=resumed.claimed.lease,
                 ownership_check=heartbeat.require_owned,
             )
+            progress = recover_execution_progress(service, claimed, heartbeat.require_owned)
             failed = finalize_worker_setup_failure(
                 recorder=recorder,
                 event_store=service._event_store,
                 error=error,
+                attempt_number=progress.head.state.attempt_number if progress else 1,
             )
             rebuild_task_index(service._task_index_store, claimed.lease.session_id)
             return failed
@@ -262,6 +352,7 @@ def persist_runtime_cleanup_failure(
     error: Exception,
     target: Literal["runtime", "tool_gateway"],
     created_at: datetime,
+    attempt_number: int = 1,
 ) -> SessionEvent:
     """Persist cleanup failure evidence without changing Session status."""
 
@@ -274,9 +365,57 @@ def persist_runtime_cleanup_failure(
         payload={
             "target": target,
             "error_type": type(error).__name__,
-            "attempt_number": 1,
+            "attempt_number": attempt_number,
         },
         idempotency_key=(f"runtime-cleanup-failed:{target}:{recorder.session.current_sequence}"),
         created_at=created_at,
     )
     return recorder.append_event(event)
+
+
+def destroy_runtime_with_evidence(
+    runtime: Any,
+    handle: Any,
+    *,
+    recorder: DurableHarnessEventRecorder,
+    created_at: datetime,
+    attempt_number: int,
+) -> Exception | None:
+    error = runtime_setup.destroy_runtime(runtime, handle)
+    if error is not None:
+        try:
+            persist_runtime_cleanup_failure(
+                recorder=recorder,
+                error=error,
+                target="runtime",
+                created_at=created_at,
+                attempt_number=attempt_number,
+            )
+        except Exception as evidence_error:
+            error.add_note(f"cleanup evidence unavailable: {type(evidence_error).__name__}")
+    return error
+
+
+def raise_runtime_setup_failure(
+    error: Exception,
+    runtime: Any,
+    handle: Any,
+    *,
+    recorder: DurableHarnessEventRecorder,
+    stage: str,
+    created_at: datetime,
+    attempt_number: int,
+) -> Never:
+    log_worker_failure("worker_setup_failed", stage, recorder.session.session_id, error)
+    cleanup_error = destroy_runtime_with_evidence(
+        runtime,
+        handle,
+        recorder=recorder,
+        created_at=created_at,
+        attempt_number=attempt_number,
+    )
+    if cleanup_error is not None:
+        raise WorkerExecutionError(f"{error}; runtime cleanup failed: {cleanup_error}") from error
+    if isinstance(error, RuntimeCapabilityError):
+        raise RuntimeStartupError(str(error)) from error
+    raise WorkerExecutionError(str(error)) from error

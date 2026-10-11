@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from agent_core.domain.agent_capabilities import capability_set
@@ -22,11 +23,16 @@ from agent_core.domain.task_bindings import (
     HostCapabilitySnapshot,
     TaskBindingSnapshot,
     host_context_digest,
+    require_task_host_context,
 )
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage.postgres.task_admission import load_task_binding, save_task_binding
 
-from zebra_agent_api.responses import ApiResponse
+from zebra_agent_api.responses import ApiResponse, bad_request
+
+if TYPE_CHECKING:
+    from zebra_agent_api.app import ZebraAgentApi
+    from zebra_agent_api.routes import RouteRequest
 
 # The default cloud tool surface includes agent.research, so the default
 # admission capability set must cover delegating read-only evidence work:
@@ -52,24 +58,28 @@ def renew_task_binding_snapshot(
     previous = host.host_context
     if previous is None:
         raise ValueError("Task binding has no renewable Host context")
-    stable_identity = (
-        "host_app_id",
-        "namespace_id",
-        "origin",
-        "workspace_ref",
-    )
-    if any(getattr(previous, name) != getattr(host_context, name) for name in stable_identity):
-        raise ValueError("Host Grant identity or workspace drifted from the Task binding")
-    if _principal_ref(previous) != _principal_ref(host_context):
-        raise ValueError("Host Grant principal drifted from the Task binding")
-    if (
-        host.host_app_id != host_context.host_app_id
-        or host.namespace_id != host_context.namespace_id
-    ):
-        raise ValueError("Host Grant authority drifted from the Task binding")
-    if authority_issuer is not None and host.authority_issuer != authority_issuer:
-        raise ValueError("Host Grant authority issuer drifted from the Task binding")
     renewed_at = bound_at or datetime.now(UTC)
+    require_task_host_context(
+        binding,
+        host_context,
+        task_id=binding.task_id,
+        now=renewed_at,
+        authority_issuer=authority_issuer,
+    )
+    if (
+        not set(host_context.scopes).issubset(previous.scopes)
+        # ponytail: Run is a verified request coordinate, not a business ceiling.
+        # Its exact target is checked at the command/observer boundary.
+        or not {
+            ref.key for ref in host_context.resource_refs if ref.resource_type != "run"
+        }.issubset(ref.key for ref in previous.resource_refs if ref.resource_type != "run")
+        or host_context.policy_version != previous.policy_version
+        or any(
+            value > previous.limits.model_dump()[name]
+            for name, value in host_context.limits.model_dump().items()
+        )
+    ):
+        raise ValueError("Host Grant renewal changed frozen authority ceilings")
     renewed_host = host.model_copy(
         update={
             "grant_digest": host_context_digest(host_context),
@@ -146,12 +156,30 @@ def renew_host_binding_for_command(
     return None
 
 
-def _principal_ref(context: HostContextEnvelope) -> tuple[str, ...]:
-    return tuple(
-        resource.resource_id
-        for resource in context.resource_refs
-        if resource.resource_type == "principal"
-    )
+def handle_host_binding_renewal(app: ZebraAgentApi, request: RouteRequest) -> ApiResponse | None:
+    """Explicit control-plane renewal, never an execution command or SSE side effect."""
+    parts = request.path.strip("/").split("/")
+    if len(parts) != 4 or parts[0] != "tasks" or parts[2:] != ["host-binding", "renew"]:
+        return None
+    if request.method.upper() != "POST":
+        return ApiResponse(405, {"status": "method_not_allowed"})
+    if request.body:
+        return bad_request("binding renewal accepts only an empty body")
+    try:
+        UUID(parts[1])
+    except ValueError:
+        return bad_request("Task id must be a UUID")
+    verified = request.verified_host_grant
+    if (
+        not isinstance(verified, VerifiedHostGrant)
+        or request.host_context != verified.context
+        or "agent.run" not in verified.context.scopes
+    ):
+        return ApiResponse(403, {"status": "host_binding_renewal_rejected"})
+    if app.settings.deployment != "cloud" or app.settings.storage_authority != "postgresql":
+        return ApiResponse(409, {"status": "host_binding_renewal_not_supported"})
+    error = renew_host_binding_for_command(app, parts[1], verified)
+    return error or ApiResponse(200, {"status": "host_binding_renewed"})
 
 
 def _build_binding_snapshot(
@@ -219,7 +247,7 @@ def _build_binding_snapshot(
         capabilities=DEFAULT_CAPABILITIES,
         resolved_at=datetime.now(UTC),
     )
-    return TaskBindingSnapshot(
+    binding = TaskBindingSnapshot(
         task_id=str(session_id),
         agent_capability_ceiling=ceiling,
         host_capability=host,
@@ -228,6 +256,15 @@ def _build_binding_snapshot(
         binding_revision=1,
         bound_at=datetime.now(UTC),
     )
+    if host_context is not None:
+        require_task_host_context(
+            binding,
+            host_context,
+            task_id=str(session_id),
+            now=datetime.now(UTC),
+            authority_issuer=verified_host_grant.authority_issuer if verified_host_grant else None,
+        )
+    return binding
 
 
 def _admission_kwargs(

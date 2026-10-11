@@ -129,7 +129,6 @@ def commit_handoff_in_transaction(
          AND task.task_id = segment.task_id
         WHERE segment.deployment_namespace = %s
           AND segment.task_id = %s AND segment.session_id = %s
-        FOR UPDATE OF task
         """,
         (
             deployment_namespace,

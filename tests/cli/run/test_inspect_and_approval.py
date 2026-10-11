@@ -14,18 +14,19 @@ from cli_run_support import (
 )
 from zebra_agent_cli.cli import execute
 
+from tests.api.test_approval_routes import _seed_waiting_session
+
 
 def test_cli_inspect_command_reads_local_session(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
-    session = SQLiteProjectionStore(database_path).save_session(
-        Session.create(title="Inspect me")
-    )
+    session = SQLiteProjectionStore(database_path).save_session(Session.create(title="Inspect me"))
 
     result = execute(["inspect", str(session.session_id), "--database", str(database_path)])
 
     assert result.command == "inspect"
     assert result.payload["session_id"] == str(session.session_id)
     assert result.payload["title"] == "Inspect me"
+
 
 def test_cli_inspect_command_includes_workspace_projection(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
@@ -72,6 +73,7 @@ def test_cli_inspect_command_includes_workspace_projection(tmp_path: Path) -> No
         },
     }
 
+
 def test_cli_inspect_command_includes_approval_context(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
     session = SQLiteProjectionStore(database_path).save_session(
@@ -103,6 +105,7 @@ def test_cli_inspect_command_includes_approval_context(tmp_path: Path) -> None:
         "scope": ["pull_requests:write"],
     }
 
+
 def test_cli_inspect_command_reports_missing_session(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
 
@@ -121,15 +124,11 @@ def test_cli_inspect_command_reports_missing_session(tmp_path: Path) -> None:
         "status": "not_found",
     }
 
+
 def test_cli_approve_command_records_granted_decision(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
-    waiting = Session.create(title="Needs approval").model_copy(
-        update={
-            "status": SessionStatus.WAITING_APPROVAL,
-            "current_sequence": 2,
-        }
-    )
-    SQLiteProjectionStore(database_path).save_session(waiting)
+    waiting = _seed_waiting_session(database_path, title="Needs approval")
+    original_events = SQLiteEventStore(database_path).list_for_session(waiting.session_id)
 
     result = execute(
         [
@@ -149,11 +148,14 @@ def test_cli_approve_command_records_granted_decision(tmp_path: Path) -> None:
     assert result.payload["session_id"] == str(waiting.session_id)
     assert result.payload["decision"] == "approve"
     assert result.payload["event_type"] == EventType.APPROVAL_GRANTED.value
-    assert result.payload["sequence"] == 3
+    assert result.payload["sequence"] == waiting.current_sequence + 1
     assert result.payload["status"] == SessionStatus.RUNNING.value
-    assert events[0].event_type is EventType.APPROVAL_GRANTED
+    assert events[: len(original_events)] == original_events
+    assert [event.sequence for event in events] == list(range(len(events)))
+    assert events[len(original_events)].event_type is EventType.APPROVAL_GRANTED
     assert session is not None
     assert session.status is SessionStatus.RUNNING
+
 
 def test_cli_approve_command_rejects_non_waiting_session(tmp_path: Path) -> None:
     database_path = tmp_path / "sessions.sqlite"
@@ -174,6 +176,7 @@ def test_cli_approve_command_rejects_non_waiting_session(tmp_path: Path) -> None
 
     assert result.payload["status"] == "invalid_state"
     assert "waiting approval" in str(result.payload["reason"])
+
 
 def test_cli_approve_requires_valid_decision() -> None:
     with pytest.raises(SystemExit):

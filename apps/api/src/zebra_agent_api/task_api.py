@@ -26,13 +26,15 @@ from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.ports import EventStorePort
 from agent_core.ports.agent_tasks import TaskEvent
 from agent_security.host_grant import VerifiedHostGrant
-from agent_storage import ControlPlaneStores
+from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_handoff import SessionHandoffApi
 from zebra_agent_api.session_summary import serialize_session_summary
+from zebra_agent_api.task_header import task_header
 from zebra_agent_api.task_model_usage import summarize_task_model_usage
+from zebra_agent_api.task_read_summaries import task_projection_pending, task_summary_fields
 from zebra_agent_api.task_responses import parse_task_limit, task_not_found
 from zebra_agent_api.task_session_api import TaskSessionApi
 
@@ -41,13 +43,26 @@ from zebra_agent_api.task_session_api import TaskSessionApi
 class TaskReadApi:
     stores: ControlPlaneStores
 
+    def header(self, task_id: str) -> ApiResponse:
+        parsed = parse_task_id(task_id)
+        return parsed if isinstance(parsed, ApiResponse) else task_header(self.stores, parsed)
+
     def get(self, task_id: str) -> ApiResponse:
         parsed = parse_task_id(task_id)
         if isinstance(parsed, ApiResponse):
             return parsed
+        cloud = isinstance(self.stores, PostgresControlPlaneStores)
+        summary = task_summary_fields(self.stores.tasks, parsed) if cloud else {}
+        if isinstance(summary, ApiResponse):
+            return summary
         task = self.stores.tasks.get_task(parsed)
         if task is None:
             return task_not_found(task_id)
+        if cloud and (
+            summary.pop("_summary_active_segment_id") != str(task.active_segment_id)
+            or summary["read_summary_through_sequence"] != task.current_sequence
+        ):
+            return task_projection_pending(parsed, "Task changed while reading its summary")
         session = self.stores.sessions.get_session(task.active_segment_id)
         if session is None:
             return ApiResponse(409, {"task_id": task_id, "status": "projection_incomplete"})
@@ -60,18 +75,28 @@ class TaskReadApi:
             active_segment_sequence=session.current_sequence,
             status=task.status.value,
         )
-        _update_turn_fields(body, session, events_store=self.stores.events)
-        task_events = self.stores.tasks.read_events(parsed, -1)
-        model_usage = summarize_task_model_usage(task_events)
-        if model_usage is not None:
-            body["model_usage"] = model_usage
-        events = [item.event for item in task_events]
-        attachments = [
-            ref.to_mapping() for event in events for ref in attachment_refs_from_event(event)
-        ]
-        if attachments:
-            body["attachments"] = attachments
+        body["active_segment_id"] = str(task.active_segment_id)
+        body["task_status"] = (
+            task.status.value
+            if task.status.value in {"completed", "failed", "cancelled"}
+            else "open"
+        )
+        if not cloud:
+            _update_turn_fields(body, session, events_store=self.stores.events)
+            task_events = self.stores.tasks.read_events(parsed, -1)
+            model_usage = summarize_task_model_usage(task_events)
+            if model_usage is not None:
+                summary["model_usage"] = model_usage
+            attachments = [
+                ref.to_mapping()
+                for item in task_events
+                for ref in attachment_refs_from_event(item.event)
+            ]
+            if attachments:
+                summary["attachments"] = attachments
+        body.update(summary)
         return ApiResponse(200, body)
+
     def list(self, query: Mapping[str, str]) -> ApiResponse:
         limit = parse_task_limit(query.get("limit"))
         if isinstance(limit, ApiResponse):
@@ -110,6 +135,7 @@ class TaskReadApi:
             200,
             {"tasks": items, "sessions": items, "count": len(items), "limit": limit},
         )
+
     def stream(self, task_id: str) -> ApiResponse:
         parsed = parse_task_id(task_id)
         if isinstance(parsed, ApiResponse):

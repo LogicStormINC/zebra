@@ -1,0 +1,190 @@
+# Only launch_scratch.py supplies fresh scope/secrets and validates this rendered graph.
+name: ${SCRATCH_SCOPE:?launcher required}
+x-base: &base
+  restart: "no"
+  labels:
+    zebra.e2e.scratch_id: ${SCRATCH_ID:?launcher required}
+  networks: [scratch]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  tmpfs: [/tmp]
+  read_only: true
+x-zebra: &zebra
+  ZEBRA_PROFILE: cloud
+  ZEBRA_DATABASE_URL: ${ZEBRA_DATABASE_URL:?launcher required}
+  ZEBRA_RUNTIME_CLASS: trusted-local
+  ZEBRA_DEVELOPMENT_UNRESTRICTED: "true"
+  ZEBRA_CLOUD_EXTENSIONS_READ_ENABLED: "true"
+  ZEBRA_DEPLOYMENT_NAMESPACE: ${SCRATCH_SCOPE}
+  ZEBRA_AUTHORITY_ISSUER: ${BROKER_ORIGIN}
+  ZEBRA_HISTORY_SCOPE_NAMESPACE: ${SCRATCH_SCOPE}
+  ZEBRA_CONTINUATION_SCOPE_NAMESPACE: ${SCRATCH_SCOPE}
+  ZEBRA_MEMORY_CURSOR_SIGNING_KEY: ${CURSOR_SECRET}
+  ZEBRA_S3_ENDPOINT: http://${SCRATCH_SCOPE}-object-store:9000
+  ZEBRA_S3_BUCKET: ${SCRATCH_SCOPE}
+  ZEBRA_S3_ACCESS_KEY: ${MINIO_USER}
+  ZEBRA_S3_SECRET_KEY: ${MINIO_SECRET}
+  ZEBRA_LIVE_REDIS_URL: redis://${SCRATCH_SCOPE}-redis:6379/1
+  ZEBRA_WORKSPACE_VOLUME_ROOT: /workspaces
+  ZEBRA_WORKSPACE_VOLUME_LAYOUT: root
+  ZEBRA_PUBLIC_OUTPUT_EXPRESSION_MAX_CALLS: "0"
+  ZEBRA_PUBLIC_OUTPUT_DELTA_SECONDS: "0.1"
+  ZEBRA_HOST_TOOL_ENDPOINT: https://${SCRATCH_SCOPE}-proxy:8443/api/trench-ai/agent
+  ZEBRA_HOST_TOOL_WORKLOAD_IDENTITY: trench-agent-worker
+  ZEBRA_HOST_TOOL_SHARED_SECRET: ${HOST_TOOL_SECRET}
+  ZEBRA_HOST_TOOL_SSRF_ALLOW_HOSTNAMES: ${SCRATCH_SCOPE}-proxy
+  SSL_CERT_FILE: /secrets/ca-bundle.crt
+  DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?provider credential required}
+  DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+  DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
+services:
+  postgres:
+    <<: *base
+    image: ${PG_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-postgres
+    user: postgres
+    read_only: false
+    environment:
+      POSTGRES_USER: qa
+      POSTGRES_PASSWORD: ${PG_SECRET}
+      POSTGRES_DB: ${SCRATCH_SCOPE}_zebra
+    ports: ["127.0.0.1:${PG_PORT}:5432"]
+    volumes: [pg:/var/lib/postgresql/data]
+  redis:
+    <<: *base
+    image: ${REDIS_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-redis
+    command: [redis-server, --save, "", --appendonly, "no"]
+    ports: ["127.0.0.1:${REDIS_PORT}:6379"]
+    volumes: [redis_data:/data]
+  object_store:
+    <<: *base
+    image: ${MINIO_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-object_store
+    networks:
+      scratch:
+        aliases: ["${SCRATCH_SCOPE}-object-store"]
+    command: [server, /data]
+    environment: {MINIO_ROOT_USER: "${MINIO_USER}", MINIO_ROOT_PASSWORD: "${MINIO_SECRET}"}
+    ports: ["127.0.0.1:${MINIO_PORT}:9000"]
+    volumes: [objects:/data]
+  migrate:
+    <<: *base
+    image: ${MIGRATE_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-migrate
+    environment: *zebra
+    volumes: ["${SECRET_ROOT}/ca-bundle.crt:/secrets/ca-bundle.crt:ro"]
+  zebra_api:
+    <<: *base
+    image: ${API_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-zebra_api
+    environment: *zebra
+    ports: ["127.0.0.1:${API_PORT}:8000"]
+    volumes: ["${SECRET_ROOT}/ca-bundle.crt:/secrets/ca-bundle.crt:ro"]
+  worker:
+    <<: *base
+    tmpfs: [/tmp, "/workspaces:uid=65532,gid=65532,size=512m"]
+    image: ${WORKER_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-worker
+    environment:
+      <<: *zebra
+      ZEBRA_WORKER_ID: ${SCRATCH_SCOPE}-worker
+    # QA process-local read-only counters; the wrapper invokes the original Worker main.
+    entrypoint: [python, /secrets/worker_observation.py]
+    command: [--worker-id, "${SCRATCH_SCOPE}-worker", --idle-sleep-seconds, "0.1"]
+    volumes:
+      - ${SECRET_ROOT}/ca-bundle.crt:/secrets/ca-bundle.crt:ro
+      - ${SECRET_ROOT}/worker_observation.py:/secrets/worker_observation.py:ro
+  trench_api:
+    <<: *base
+    image: ${HOST_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-trench_api
+    environment:
+      DATABASE_URL: ${TRENCH_DATABASE_URL}
+      POSTGRES_HOST: ${SCRATCH_SCOPE}-postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: qa
+      POSTGRES_PASSWORD: ${PG_SECRET}
+      POSTGRES_DB: ${SCRATCH_SCOPE}_trench
+      REDIS_HOST: ${SCRATCH_SCOPE}-redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      TRENCH_ARTIFACT_STORE_PATH: /tmp/artifacts
+      TRENCH_SOURCE_ICON_STORE_PATH: /tmp/icons
+      CRAWL4_AI_BASE_DIRECTORY: /tmp
+      TRENCH_AI_AUTH_SECRET: ${AUTH_SECRET}
+      TRENCH_AI_AUTH_ISSUER: ${SCRATCH_SCOPE}
+      TRENCH_AI_AUTH_MODE: legacy
+      ZEBRA_TASKS_URL: https://${SCRATCH_SCOPE}-proxy:8445/tasks
+      ZEBRA_AGUI_COMMAND_URL: https://${SCRATCH_SCOPE}-proxy:8445/agui/commands
+      ZEBRA_AGUI_URL: https://${SCRATCH_SCOPE}-proxy:8445/agui
+      ZEBRA_AGUI_STREAM_BASE_URL: https://${SCRATCH_SCOPE}-proxy:8445
+      ZEBRA_HOST_GRANT_EXCHANGE_URL: https://${SCRATCH_SCOPE}-proxy:8444/exchange
+      ZEBRA_BFF_CA_FILE: /secrets/ca-bundle.crt
+      ZEBRA_BFF_REQUIRE_HTTPS: "true"
+      ZEBRA_GRANT_WORKLOAD_IDENTITY: trench-agent-worker
+      ZEBRA_GRANT_WORKLOAD_SHARED_SECRET: ${GRANT_SECRET}
+      TRENCH_AI_HOST_TOOL_WORKLOAD_IDENTITIES: trench-agent-worker
+      TRENCH_AI_HOST_TOOL_SHARED_SECRET: ${HOST_TOOL_SECRET}
+      ZEBRA_CLIENT_NAMESPACE_ID: ${SCRATCH_SCOPE}
+      ZEBRA_CLIENT_ORIGIN: ${HOST_ORIGIN}
+    command: [python, -m, uvicorn, trench_api.main:app, --host, 0.0.0.0, --port, "8000"]
+    ports: ["127.0.0.1:${HOST_API_PORT}:8000"]
+    volumes: ["${SECRET_ROOT}/ca-bundle.crt:/secrets/ca-bundle.crt:ro"]
+  broker:
+    <<: *base
+    image: ${API_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-broker
+    entrypoint: [python, -m, zebra_host_grant_broker]
+    environment:
+      ZEBRA_GRANT_BROKER_ISSUER: ${BROKER_ORIGIN}
+      ZEBRA_GRANT_BROKER_ORIGIN: ${HOST_ORIGIN}
+      ZEBRA_GRANT_BROKER_NAMESPACE_ID: ${SCRATCH_SCOPE}
+      ZEBRA_GRANT_BROKER_HOST_APP_ID: trench
+      ZEBRA_GRANT_BROKER_POLICY_VERSION: trench-native-v15
+      ZEBRA_GRANT_BROKER_WORKLOAD_IDENTITIES: trench-agent-worker
+      ZEBRA_GRANT_BROKER_WORKLOAD_SHARED_SECRET: ${GRANT_SECRET}
+      ZEBRA_GRANT_BROKER_TRENCH_ME_URL: https://${SCRATCH_SCOPE}-proxy:8443/api/trench-ai/me
+      ZEBRA_GRANT_BROKER_TRENCH_SOURCES_URL: https://${SCRATCH_SCOPE}-proxy:8443/api/trench-ai/sources
+      ZEBRA_GRANT_BROKER_PRIVATE_KEY_FILE: /secrets/broker.pem
+      SSL_CERT_FILE: /secrets/ca-bundle.crt
+    volumes:
+      - ${SECRET_ROOT}/ca-bundle.crt:/secrets/ca-bundle.crt:ro
+      - ${SECRET_ROOT}/broker.pem:/secrets/broker.pem:ro
+    ports: ["127.0.0.1:${BROKER_API_PORT}:8090"]
+  frontend:
+    <<: *base
+    image: ${FRONTEND_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-frontend
+    ports: ["127.0.0.1:${FRONTEND_PORT}:3000"]
+  proxy:
+    <<: *base
+    # The cached Caddy binary carries this file capability even on high ports.
+    cap_add: [NET_BIND_SERVICE]
+    tmpfs: [/tmp, /data, /config]
+    image: ${CADDY_IMAGE}
+    container_name: ${SCRATCH_SCOPE}-proxy
+    entrypoint: [caddy, run, --config, /secrets/Caddyfile, --adapter, caddyfile]
+    ports:
+      - "127.0.0.1:${HOST_TLS_PORT}:8443"
+      - "127.0.0.1:${BROKER_TLS_PORT}:8444"
+      - "127.0.0.1:${ZEBRA_TLS_PORT}:8445"
+      - "127.0.0.1:${ADMIN_PORT}:2019"
+    volumes:
+      - ${SECRET_ROOT}/Caddyfile:/secrets/Caddyfile:ro
+      - ${SECRET_ROOT}/tls.crt:/secrets/tls.crt:ro
+      - ${SECRET_ROOT}/tls.key:/secrets/tls.key:ro
+networks:
+  scratch:
+    name: ${SCRATCH_SCOPE}-network
+    labels: {zebra.e2e.scratch_id: "${SCRATCH_ID}"}
+volumes:
+  pg:
+    name: ${SCRATCH_SCOPE}-pg
+    labels: {zebra.e2e.scratch_id: "${SCRATCH_ID}"}
+  objects:
+    name: ${SCRATCH_SCOPE}-objects
+    labels: {zebra.e2e.scratch_id: "${SCRATCH_ID}"}
+  redis_data:
+    name: ${SCRATCH_SCOPE}-redis-data
+    labels: {zebra.e2e.scratch_id: "${SCRATCH_ID}"}

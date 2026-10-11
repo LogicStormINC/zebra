@@ -99,3 +99,7 @@ class SQLiteToolRunStore(ToolRunStorePort):
                 )
                 """
             )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS tool_runs_artifact_point "
+                "ON tool_runs (session_id, artifact_uri, sequence)"
+            )

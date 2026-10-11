@@ -34,6 +34,7 @@ from agent_storage import (
     bootstrap_control_plane_epoch,
     rotate_control_plane_epoch,
 )
+from agent_storage.event_rows import SessionEventSequenceConflictError
 
 
 @pytest.fixture(scope="session")
@@ -95,6 +96,18 @@ def test_schedule_is_atomic_idempotent_and_preserves_child_execution_scope(
     assert row == (child_session_id, root_session_id, 1)
 
 
+def test_intent_point_read_preserves_identity_and_namespace(postgres_dsn, effect_namespace):
+    session_id = new_session_id()
+    lease = _acquire(postgres_dsn, effect_namespace, session_id)
+    request = _request(execution_session_id=session_id, root_session_id=session_id, sequence=0)
+    store = _store(postgres_dsn, effect_namespace)
+    dispatch = store.schedule(request, fence=lease.fence)
+    assert store.read_intent_event(dispatch) == request.started_event
+    isolated = _store(postgres_dsn, f"other-{uuid4()}")
+    with pytest.raises(EffectDispatchStateError, match="intent Event is unavailable"):
+        isolated.read_intent_event(dispatch)
+
+
 def test_schedule_rolls_back_outbox_when_event_version_fails(
     postgres_dsn: str,
     effect_namespace: str,
@@ -107,7 +120,9 @@ def test_schedule_rolls_back_outbox_when_event_version_fails(
         sequence=1,
     )
 
-    with pytest.raises(ValueError, match="duplicate or conflicting session event"):
+    with pytest.raises(
+        SessionEventSequenceConflictError, match="session event sequence already taken"
+    ):
         _store(postgres_dsn, effect_namespace).schedule(request, fence=lease.fence)
 
     assert _row_count(postgres_dsn, effect_namespace, "effect_outbox") == 0
@@ -298,7 +313,9 @@ def test_terminal_event_failure_rolls_back_dispatch_transition(
     claim = store.claim_next(session_id, fence=lease.fence, claim_ttl=timedelta(seconds=30))
     assert claim is not None
 
-    with pytest.raises(ValueError, match="duplicate or conflicting session event"):
+    with pytest.raises(
+        SessionEventSequenceConflictError, match="session event sequence already taken"
+    ):
         store.complete(
             claim,
             result=_result(),

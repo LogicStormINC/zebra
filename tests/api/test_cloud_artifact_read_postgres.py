@@ -74,7 +74,8 @@ def test_api_composes_rebuildable_postgres_indexes_with_verified_object(
     session = Session.create(title="Cloud Artifact", created_at=NOW)
     events = PostgresEventStore(dsn, deployment_namespace=namespace)
     bootstrap_control_plane_epoch(dsn, deployment_namespace=namespace)
-    events.append(_event(session, 0, EventType.SESSION_CREATED, {"title": session.title}))
+    created = _event(session, 0, EventType.SESSION_CREATED, {"title": session.title})
+    events.append(created)
     events.append(
         _event(
             session,
@@ -181,6 +182,8 @@ def test_api_composes_rebuildable_postgres_indexes_with_verified_object(
     )
     local = sqlite_control_plane_stores(tmp_path / "api.db")
     local.sessions.save_session(session)
+    local.events.append(created)
+    local.tasks.ensure_for_session(session.session_id)
     local.workspaces.save_workspace(
         WorkspaceProjection(
             session_id=session.session_id,
@@ -197,9 +200,7 @@ def test_api_composes_rebuildable_postgres_indexes_with_verified_object(
 
     listed = api.get_session_artifacts(str(session.session_id))
     content = api.get_session_artifact_content(str(session.session_id), "tool-run:2")
-    download = TestClient(
-        create_http_app(tmp_path / "api.db", stores=stores)
-    ).get(
+    download = TestClient(create_http_app(tmp_path / "api.db", stores=stores)).get(
         f"/tasks/{session.session_id}/artifacts/{reservation.artifact_id}/download"
     )
 

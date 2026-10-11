@@ -8,6 +8,7 @@ from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_storage import ControlPlaneStores
+from agent_storage.postgres.command_read_state import CommandReadPreparing
 from agent_storage.postgres.direct_control import PostgresDirectControl
 
 from zebra_agent_api.responses import ApiResponse, conflict
@@ -93,6 +94,18 @@ def cancel_session_control(
             scope=trusted_scope,
             idempotency_key=idempotency_key,
             task_id=task_id,
+        )
+    except CommandReadPreparing:
+        return ApiResponse(
+            status_code=503,
+            body={
+                "session_id": session_id,
+                "status": "preparing",
+                "reason": "command_read_state_preparing",
+                "retryable": True,
+                "retry_after_seconds": 1,
+                "cancelled": False,
+            },
         )
     except SessionControlError as error:
         message = str(error)

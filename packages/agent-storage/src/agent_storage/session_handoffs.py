@@ -46,6 +46,7 @@ from agent_storage.session_handoff_rows import (
     sha256_text,
 )
 from agent_storage.sqlite import SQLiteEventStore
+from agent_storage.task_event_positions import initialize_task_positions
 from agent_storage.workspaces import SQLiteWorkspaceProjectionStore
 
 
@@ -494,6 +495,6 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
 
     def _initialize(self) -> None:
         with self._database.connect() as connection:
-            connection.executescript(SCHEMA)
-            connection.executescript(TASK_SCHEMA)
+            connection.executescript(SCHEMA + TASK_SCHEMA)
+            initialize_task_positions(connection)
             migrate_handoff_fence_columns(connection, at=datetime.now(UTC))

@@ -1,7 +1,8 @@
 from datetime import UTC, datetime
 
 from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
-from agent_core.domain.identifiers import new_message_id, new_tool_call_id
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.identifiers import new_message_id, new_session_id, new_tool_call_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
@@ -29,6 +30,26 @@ class StaticToolGateway:
 
     def execute(self, _tool_call: ToolCall) -> ToolResult:
         return self._result
+
+
+def test_trace_excludes_auxiliary_expression_receipt() -> None:
+    session_id = new_session_id()
+    events = tuple(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=index,
+            event_type=EventType.MODEL_RESPONSE_RECEIVED,
+            actor=EventActor.HARNESS,
+            payload={"attempt_number": 1, "assistant_message": text, "response_stage": stage},
+        )
+        for index, (stage, text) in enumerate(
+            (
+                ("candidate", "Main answer"),
+                ("public_expression", "PRIVATE-ORDER-JSON"),
+            )
+        )
+    )
+    assert HarnessTraceProjector().project_events(events)[0].assistant_message == "Main answer"
 
 
 class ProxyApprovalPolicyEngine:
@@ -132,9 +153,7 @@ def test_trace_projector_exposes_failed_tool_trace() -> None:
                     assistant_message=SessionMessage(
                         message_id=new_message_id(),
                         role=MessageRole.ASSISTANT,
-                        content=(
-                            "The smoke checks failed; no validation evidence is available."
-                        ),
+                        content=("The smoke checks failed; no validation evidence is available."),
                         created_at=created_at,
                     )
                 )

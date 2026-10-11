@@ -58,6 +58,8 @@ class _AttemptBuilder:
 
     def apply(self, event: SessionEvent) -> None:
         if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
+            if event.payload.get("response_stage") == "public_expression":
+                return
             assistant_message = event.payload.get("assistant_message")
             if isinstance(assistant_message, str):
                 self._assistant_message = assistant_message

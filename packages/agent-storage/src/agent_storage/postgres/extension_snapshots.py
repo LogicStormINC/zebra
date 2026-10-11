@@ -102,9 +102,7 @@ class PostgresExtensionSnapshotStore(PostgresDatabase):
         expected_digest = _DIGEST.validate_python(expected_digest)
         return await asyncio.to_thread(self._get, scope, session_id, turn_id, expected_digest)
 
-    async def exists(
-        self, *, scope: ExtensionScope, session_id: str, turn_id: str
-    ) -> bool:
+    async def exists(self, *, scope: ExtensionScope, session_id: str, turn_id: str) -> bool:
         scope = self._validate_scope(scope)
         session_id = _ID.validate_python(session_id)
         turn_id = _ID.validate_python(turn_id)
@@ -238,6 +236,8 @@ def resolve_extension_task_ceiling_in_transaction(
 ) -> ExtensionTaskCeiling:
     """Resolve an internal Segment to its root Task, binding, and Skill ceiling."""
 
+    # Membership is append-only; protect its identity/deletion, not its mutable
+    # cursor. SHARE here would invert Segment -> Task61 against native backfill.
     row = connection.execute(
         """
         SELECT segment.task_id, binding.binding_digest, binding.snapshot_json,
@@ -256,7 +256,8 @@ def resolve_extension_task_ceiling_in_transaction(
           ON workspace.deployment_namespace = segment.deployment_namespace
          AND workspace.session_id = segment.task_id
         WHERE segment.deployment_namespace = %s AND segment.session_id = %s
-        FOR SHARE OF segment, binding, workspace
+        FOR KEY SHARE OF segment
+        FOR SHARE OF binding, workspace
         """,
         (deployment_namespace, session_id),
     ).fetchone()

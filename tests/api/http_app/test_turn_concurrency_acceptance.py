@@ -96,6 +96,7 @@ def test_concurrent_follow_up_arriving_after_claim_executes_the_new_turn(
         ),
         active_capsule=None,
         recovered_handoff=None,
+        execution_input_reader=None,
     )
     original_recovery = execution_module.recover_execution_inputs
     served = {"stale": False}
@@ -106,9 +107,7 @@ def test_concurrent_follow_up_arriving_after_claim_executes_the_new_turn(
             return stale_inputs
         return original_recovery(**kwargs)
 
-    monkeypatch.setattr(
-        execution_module, "recover_execution_inputs", recovery_with_stale_snapshot
-    )
+    monkeypatch.setattr(execution_module, "recover_execution_inputs", recovery_with_stale_snapshot)
 
     response = client.post(f"/tasks/{task_id}/resume", json={})
 
@@ -146,6 +145,7 @@ def test_concurrent_follow_up_arriving_after_claim_executes_the_new_turn(
     sequences = [event.sequence for event in events_after]
     assert sequences == list(range(len(sequences)))
     rebuild_session(events_after)
+
 
 def test_crashed_turn_cancelled_window_is_healed(tmp_path: Path, monkeypatch) -> None:
     def failing_gateway(_settings: ZebraAgentSettings):
@@ -207,6 +207,7 @@ def test_crashed_turn_cancelled_window_is_healed(tmp_path: Path, monkeypatch) ->
         EventType.TURN_CANCELLED,
         EventType.SESSION_CANCELLED,
     ]
+
 
 def test_pending_turn_close_reconciles_end_to_end_on_setup_only_stream(
     tmp_path: Path, monkeypatch
@@ -280,6 +281,7 @@ def test_pending_turn_close_reconciles_end_to_end_on_setup_only_stream(
     assert "session_failed" not in event_types
     assert event_types[-1] == "session_completed"
 
+
 def test_crashed_failed_turn_close_is_healed_without_model_call(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -340,6 +342,7 @@ def test_crashed_failed_turn_close_is_healed_without_model_call(
         EventType.TURN_FAILED,
         EventType.SESSION_FAILED,
     ]
+
 
 def test_crashed_one_shot_turn_close_is_healed_without_model_call(
     tmp_path: Path, monkeypatch
@@ -435,9 +438,7 @@ def test_next_message_during_finalization_tail_defers_instead_of_crashing(
     from agent_storage import SQLiteEventStore, SQLiteProjectionStore
 
     database_path = tmp_path / "tail.sqlite"
-    session_id = SessionId(
-        UUID(client.get(f"/tasks/{task_id}").json()["active_segment_id"])
-    )
+    session_id = SessionId(UUID(client.get(f"/tasks/{task_id}").json()["active_segment_id"]))
     event_store = SQLiteEventStore(database_path)
     original_title_service = execution_module.SessionTitleService
 
@@ -465,9 +466,7 @@ def test_next_message_during_finalization_tail_defers_instead_of_crashing(
             )
             return super().generate(*args, **kwargs)
 
-    monkeypatch.setattr(
-        execution_module, "SessionTitleService", _RacingTitleService
-    )
+    monkeypatch.setattr(execution_module, "SessionTitleService", _RacingTitleService)
 
     first = client.post(f"/tasks/{task_id}/resume", json={})
 
@@ -482,8 +481,7 @@ def test_next_message_during_finalization_tail_defers_instead_of_crashing(
     human = [
         e.payload["content"]
         for e in events
-        if e.event_type.value == "user_message_received"
-        and e.payload.get("origin") == "human"
+        if e.event_type.value == "user_message_received" and e.payload.get("origin") == "human"
     ]
     assert human[-1] == "NEXT WHILE FINALIZING"
     sequences = [e.sequence for e in events]

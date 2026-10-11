@@ -36,6 +36,7 @@ from agent_storage.postgres.projections import (
     get_session_in_transaction,
     save_session_in_transaction,
 )
+from agent_storage.postgres.task_io import TaskIoConnections
 
 
 class PostgresWorkspaceProjectionConflictError(ValueError):
@@ -46,8 +47,16 @@ class PostgresWorkspaceProjectionStore(
     WorkspaceProjectionStorePort,
     WorkerProjectionTransactionPort,
 ):
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    def __init__(
+        self,
+        dsn: str,
+        *,
+        deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> None:
+        self._database = PostgresDatabase(
+            dsn, deployment_namespace=deployment_namespace, task_io_connections=task_io_connections
+        )
 
     def save_workspace(self, workspace: WorkspaceProjection) -> WorkspaceProjection:
         """Replay an Event-derived projection without asserting Worker ownership."""
@@ -178,7 +187,8 @@ class PostgresWorkspaceProjectionStore(
             )
 
     def get_workspace(self, session_id: SessionId) -> WorkspaceProjection | None:
-        with self._database.connect() as connection:
+        with self._database.connect_task_io() as connection:
+            connection.execute("SET TRANSACTION READ ONLY")
             return get_workspace_in_transaction(
                 connection,
                 self._database.deployment_namespace,
@@ -384,9 +394,7 @@ def _workspace_values(
         (
             None
             if workspace.definition_snapshot is None
-            else Jsonb(
-                workspace.definition_snapshot.model_dump(mode="json", exclude_none=True)
-            )
+            else Jsonb(workspace.definition_snapshot.model_dump(mode="json", exclude_none=True))
         ),
     )
 

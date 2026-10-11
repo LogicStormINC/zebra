@@ -27,7 +27,7 @@ def test_missing_cloud_stores_cannot_initialize_sqlite(tmp_path):
 
 @pytest.mark.parametrize("key", ["", "secret-marker-" + "x" * 256])
 def test_invalid_direct_key_fails_before_connection_without_echo(key):
-    control = PostgresDirectControl("unused", deployment_namespace="test")
+    control = PostgresDirectControl("dbname=unused", deployment_namespace="test")
     scope = OpaqueAuthorityScope(authority_issuer="issuer", namespace_id="tenant")
     with pytest.raises(ValueError) as caught:
         control.cancel(uuid4(), scope=scope, idempotency_key=key)

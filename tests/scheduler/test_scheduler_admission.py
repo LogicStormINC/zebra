@@ -149,9 +149,22 @@ def test_scheduled_admission_reuses_api_queue_with_stable_key() -> None:
     assert api.calls[0]["idempotency_key"] == firing.idempotency_key
     assert cast(dict[str, object], api.calls[0]["payload"])["execute"] is False
     assert api.calls[1]["session_id"] == str(task_id)
-    assert api.calls[1]["payload"] == {"kind": "run", "expected_revision": 2}
+    assert api.calls[1]["payload"] == {
+        "kind": "run", "expected_revision": 2,
+        "payload": {"run_id": f"schedule:{firing.fire_id}:run"},
+    }
     assert api.calls[1]["idempotency_key"] == f"schedule:{firing.fire_id}:run"
     assert api.calls[1]["verified_host_grant"].grant_id == "fresh-grant"
+
+    admission.admit(
+        firing.schedule_snapshot.task_template,
+        binding=binding,
+        firing=firing,
+        execution_authority=execution(binding),
+        idempotency_key=firing.idempotency_key,
+    )
+    assert api.calls[3]["payload"] == api.calls[1]["payload"]
+    assert api.calls[3]["idempotency_key"] == api.calls[1]["idempotency_key"]
 
 
 def test_scheduled_admission_classifies_permanent_and_transient_failures() -> None:

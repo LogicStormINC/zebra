@@ -13,8 +13,8 @@ from agent_core.application import (
     memory_extraction_window,
 )
 from agent_core.application.memory_reviews import memory_review_scope_query
-from agent_core.application.session_projection import rebuild_session
-from agent_core.application.workspace_projection import rebuild_workspace
+from agent_core.application.session_projection import apply_event as apply_session
+from agent_core.application.workspace_projection import apply_event as apply_workspace
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.governed_memories import GovernedMemoryEntry
 from agent_core.domain.governed_memory_operations import WorkerMemoryMutationPlan
@@ -29,6 +29,7 @@ from agent_core.ports import (
     WorkspaceProjectionStorePort,
 )
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
+from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 
@@ -43,13 +44,24 @@ def finalize_cloud_memory(
     workspace_store: WorkspaceProjectionStorePort,
     started_at: datetime,
     allow_commit: bool = True,
+    replay_reader: PostgresWorkerReplayReader | None = None,
 ) -> bool:
     """Commit candidate and promotion mutations with their Events in one transaction."""
     authority = recorder.worker_mutation_authority
     if authority is None:
         raise ValueError("cloud Memory finalization requires Worker mutation authority")
     session = recorder.session
-    events = event_store.list_for_session(session.session_id)
+
+    def read_events() -> list[SessionEvent]:
+        current = recorder.worker_mutation_authority
+        assert current is not None
+        return (
+            replay_reader.memory_events(session.session_id, authority=current)
+            if replay_reader is not None
+            else event_store.list_for_session(session.session_id)
+        )
+
+    events = read_events()
     completion_revision = memory_completion_revision(events, session)
     if _has_extraction_checkpoint(events, completion_revision):
         return True
@@ -74,11 +86,12 @@ def finalize_cloud_memory(
             event_store=event_store,
             projection_store=projection_store,
             workspace_store=workspace_store,
+            replay_reader=replay_reader,
         )
         _append_extraction_checkpoint(
             recorder,
             completion_revision=completion_revision,
-            events=event_store.list_for_session(session.session_id),
+            events=read_events(),
         )
         return True
     if authority.expected_stream_revision < completion_revision:
@@ -156,11 +169,12 @@ def finalize_cloud_memory(
         event_store=event_store,
         projection_store=projection_store,
         workspace_store=workspace_store,
+        replay_reader=replay_reader,
     )
     _append_extraction_checkpoint(
         recorder,
         completion_revision=completion_revision,
-        events=event_store.list_for_session(session.session_id),
+        events=read_events(),
     )
     return True
 
@@ -218,13 +232,23 @@ def _accept_receipt(
     event_store: EventStorePort,
     projection_store: ProjectionStorePort,
     workspace_store: WorkspaceProjectionStorePort,
+    replay_reader: PostgresWorkerReplayReader | None = None,
 ) -> None:
     authority = recorder.worker_mutation_authority
     assert authority is not None
     committed = tuple(
         event
-        for event in event_store.read_since(
-            recorder.session.session_id, authority.expected_stream_revision
+        for event in (
+            replay_reader.receipt_events(
+                recorder.session.session_id,
+                after=authority.expected_stream_revision,
+                through=receipt.session_revision,
+                authority=authority,
+            )
+            if replay_reader is not None
+            else event_store.read_since(
+                recorder.session.session_id, authority.expected_stream_revision
+            )
         )
         if event.event_id in receipt.event_ids
     )
@@ -240,10 +264,16 @@ def _accept_receipt(
         # advanced the durable projection past it. The receipt replay is
         # compared against the projection AT THE RECEIPT REVISION — never
         # against the pre-commit authority revision nor the ahead head.
-        all_events = event_store.list_for_session(recorder.session.session_id)
-        at_receipt = [event for event in all_events if event.sequence <= receipt_revision]
-        stored_session = rebuild_session(at_receipt)
-        stored_workspace = rebuild_workspace(at_receipt)
+        if (
+            not committed
+            or recorder.session.current_sequence != committed[0].sequence - 1
+            or recorder.workspace.current_sequence != recorder.session.current_sequence
+        ):
+            raise ValueError("cloud Memory receipt cannot replay from an inexact primary frontier")
+        stored_session, stored_workspace = recorder.session, recorder.workspace
+        for event in committed:
+            stored_session = apply_session(stored_session, event)
+            stored_workspace = apply_workspace(stored_workspace, event)
     recorder.accept_committed_events(
         committed,
         session=stored_session,

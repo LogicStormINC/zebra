@@ -38,6 +38,8 @@ class WebResultEnvelope:
     freshness: str | None = None
     evidence_score: float | None = None
     extra: dict[str, JsonValue] = field(default_factory=dict)
+    source_truncated: bool | None = None
+    projection_truncated: bool | None = None
 
     def __post_init__(self) -> None:
         if not self.provider.strip():
@@ -49,9 +51,16 @@ class WebResultEnvelope:
         if not self.canonical_url.strip():
             raise ValueError("web envelope canonical_url must not be blank")
         if self.truncated and self.truncation_scope is TruncationScope.NONE:
-            raise ValueError(
-                "web envelope truncation_scope must not be NONE when truncated"
-            )
+            raise ValueError("web envelope truncation_scope must not be NONE when truncated")
+        dimensions = (self.source_truncated, self.projection_truncated)
+        if any(value is not None and type(value) is not bool for value in dimensions):
+            raise ValueError("web truncation dimensions must be booleans or unknown")
+        if any(dimensions) and not self.truncated:
+            raise ValueError("web envelope must preserve source/projection truncation")
+        if all(value is not None for value in dimensions) and self.truncated != any(dimensions):
+            raise ValueError("web envelope truncation dimensions disagree with aggregate")
+        if self.source_truncated and not self.degraded:
+            raise ValueError("partial web source must remain degraded")
         if self.evidence_score is not None and not 0.0 <= self.evidence_score <= 1.0:
             raise ValueError("web envelope evidence_score must be within [0.0, 1.0]")
 

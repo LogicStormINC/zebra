@@ -185,7 +185,8 @@ def test_model_response_stage_is_projected_for_host_answer_selection() -> None:
 
     assert stages == ["tool_loop", "candidate"]
     committed = next(
-        event for event in projection.events
+        event
+        for event in projection.events
         if isinstance(event, CustomEvent) and event.name == "zebra.answer_committed"
     )
     assert committed.value["delivery_assessment"] == {"status": "complete"}
@@ -230,9 +231,7 @@ def test_user_file_tool_result_preserves_download_metadata_for_host_projection()
 
     projection = AgUiProjector().project(events, _identity(session_id))
     result = next(
-        event
-        for event in projection.events
-        if event.type is AgUiEventType.TOOL_CALL_RESULT
+        event for event in projection.events if event.type is AgUiEventType.TOOL_CALL_RESULT
     )
 
     assert json.loads(result.content) == {
@@ -302,9 +301,7 @@ def test_failed_tool_result_preserves_status_and_safe_diagnostics() -> None:
 
     projection = AgUiProjector().project(events, _identity(session_id))
     result = next(
-        event
-        for event in projection.events
-        if event.type is AgUiEventType.TOOL_CALL_RESULT
+        event for event in projection.events if event.type is AgUiEventType.TOOL_CALL_RESULT
     )
 
     assert json.loads(result.content) == {
@@ -597,6 +594,21 @@ def test_verification_suspension_projects_to_terminal_recoverable_interrupt() ->
     assert isinstance(finished, RunFinishedEvent)
     assert isinstance(finished.outcome, RunFinishedInterruptOutcome)
     assert finished.outcome.interrupts[0].reason == "verification_required"
+
+
+def test_contract_verification_interrupt_does_not_claim_a_mutation() -> None:
+    session_id = new_session_id()
+    event = _event(
+        session_id,
+        0,
+        EventType.SESSION_SUSPENDED,
+        {"reason": "verification_required", "metadata": {}},
+    )
+    finished = AgUiProjector().project((event,), _identity(session_id)).events[-1]
+    assert isinstance(finished, RunFinishedEvent)
+    assert isinstance(finished.outcome, RunFinishedInterruptOutcome)
+    assert "mutation" not in finished.outcome.interrupts[0].message
+    assert "verification" in finished.outcome.interrupts[0].message
 
 
 def test_internal_child_wait_suspension_does_not_close_ag_ui_run() -> None:

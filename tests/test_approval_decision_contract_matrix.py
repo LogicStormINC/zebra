@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from agent_core.application.session_projection import rebuild_session
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore
@@ -38,9 +39,9 @@ def test_approval_decision_contract_matrix_grant_matches_across_api_and_cli(
     )
 
     assert api_response.status_code == 200
-    assert _normalize_api_approval_decision(
-        api_response.body
-    ) == _normalize_cli_approval_decision(cli_result.payload)
+    assert _normalize_api_approval_decision(api_response.body) == _normalize_cli_approval_decision(
+        cli_result.payload
+    )
 
 
 def test_approval_decision_contract_matrix_reject_matches_across_api_and_cli(
@@ -67,9 +68,9 @@ def test_approval_decision_contract_matrix_reject_matches_across_api_and_cli(
     )
 
     assert api_response.status_code == 200
-    assert _normalize_api_approval_decision(
-        api_response.body
-    ) == _normalize_cli_approval_decision(cli_result.payload)
+    assert _normalize_api_approval_decision(api_response.body) == _normalize_cli_approval_decision(
+        cli_result.payload
+    )
 
 
 def test_approval_decision_contract_matrix_invalid_state_matches_across_api_and_cli(
@@ -93,9 +94,9 @@ def test_approval_decision_contract_matrix_invalid_state_matches_across_api_and_
     )
 
     assert api_response.status_code == 409
-    assert _normalize_api_approval_decision(
-        api_response.body
-    ) == _normalize_cli_approval_decision(cli_result.payload)
+    assert _normalize_api_approval_decision(api_response.body) == _normalize_cli_approval_decision(
+        cli_result.payload
+    )
 
 
 def test_approval_decision_contract_matrix_missing_session_matches_across_api_and_cli(
@@ -117,9 +118,9 @@ def test_approval_decision_contract_matrix_missing_session_matches_across_api_an
     )
 
     assert api_response.status_code == 404
-    assert _normalize_api_approval_decision(
-        api_response.body
-    ) == _normalize_cli_approval_decision(cli_result.payload)
+    assert _normalize_api_approval_decision(api_response.body) == _normalize_cli_approval_decision(
+        cli_result.payload
+    )
 
 
 def _normalize_api_approval_decision(payload: dict[str, object]) -> dict[str, object]:
@@ -127,11 +128,7 @@ def _normalize_api_approval_decision(payload: dict[str, object]) -> dict[str, ob
 
 
 def _normalize_cli_approval_decision(payload: dict[str, object]) -> dict[str, object]:
-    return {
-        key: value
-        for key, value in payload.items()
-        if key != "database"
-    }
+    return {key: value for key, value in payload.items() if key != "database"}
 
 
 def _seed_waiting_session_with_proxy_approval(
@@ -159,28 +156,36 @@ def _seed_waiting_session_with_proxy_approval(
             ),
         }
     )
-    stored = SQLiteProjectionStore(database_path).save_session(seeded_session)
-    SQLiteEventStore(database_path).append(
+    assert seeded_session.approval_context is not None
+    events = [
         SessionEvent.create(
-            session_id=stored.session_id,
-            sequence=0,
-            event_type=EventType.APPROVAL_REQUESTED,
+            session_id=seeded_session.session_id,
+            sequence=sequence,
+            event_type=kind,
             actor=EventActor.POLICY,
-            payload={
-                "attempt_number": 1,
-                "tool_name": "mcp.github.create_pull_request",
-                "reason": "proxy-routed external tool execution in test",
-                "policy_profile": "full_access",
-                "route": "mcp_proxy",
-                "target": "github.create_pull_request",
-                "network_profile": "mcp-proxy-only",
-                "scope": [
-                    "tool:mcp.github.create_pull_request",
-                    "route:mcp_proxy",
-                    "network_profile:mcp-proxy-only",
-                    "target:github.create_pull_request",
-                ],
-            },
+            created_at=seeded_session.created_at,
+            payload=payload,
         )
-    )
-    return stored
+        for sequence, (kind, payload) in enumerate(
+            (
+                (EventType.SESSION_CREATED, {"title": seeded_session.title}),
+                (
+                    EventType.TASK_PREPARED,
+                    {
+                        "title": seeded_session.title,
+                        "user_input": "Approval fixture",
+                        "workspace_root": str(database_path.parent),
+                    },
+                ),
+                (EventType.HARNESS_ATTEMPT_STARTED, {"attempt_number": 1}),
+                (
+                    EventType.APPROVAL_REQUESTED,
+                    {"attempt_number": 1, **seeded_session.approval_context.to_mapping()},
+                ),
+            )
+        )
+    ]
+    store = SQLiteEventStore(database_path)
+    for event in events:
+        store.append(event)
+    return SQLiteProjectionStore(database_path).save_session(rebuild_session(events))

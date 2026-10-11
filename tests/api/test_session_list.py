@@ -1,12 +1,76 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
-from agent_storage import SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
+from agent_storage import (
+    SQLiteAgentTaskStore,
+    SQLiteProjectionStore,
+    SQLiteWorkspaceProjectionStore,
+    sqlite_control_plane_stores,
+)
 from fastapi.testclient import TestClient
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app, create_http_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+
+
+@pytest.mark.parametrize("path", ["/sessions", "/tasks"])
+def test_queued_creation_prepares_task_before_cold_reads(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    path: str,
+) -> None:
+    from uuid import UUID
+
+    from tests.api.test_tenant_isolation import TENANT_A, TENANT_B
+
+    database_path = tmp_path / "sessions.sqlite"
+    created = RouteAdapter(create_app(database_path)).handle(
+        RouteRequest(
+            method="POST",
+            path=path,
+            body={"prompt": "Cold queued task", "workspace": str(tmp_path), "execute": False},
+            host_context=TENANT_A,
+        )
+    )
+    assert created.status_code == 201
+    task_id = str(created.body["session_id"])
+    cold_stores = sqlite_control_plane_stores(database_path)
+    task = cold_stores.tasks.get_task(TaskId(UUID(task_id)))
+    assert task is not None
+    assert task.active_segment_id == SessionId(UUID(task_id))
+    assert task.current_sequence == created.body["current_sequence"] == 2
+    assert len(cold_stores.tasks.segments(task.task_id)) == 1
+    page = cold_stores.tasks.read_event_page(task.task_id, -1)
+    assert [item.task_sequence for item in page.events] == [0, 1, 2]
+
+    def no_read_adoption(*args: object, **kwargs: object) -> None:
+        pytest.fail("GET must not prepare a Task")
+
+    monkeypatch.setattr(SQLiteAgentTaskStore, "ensure_for_session", no_read_adoption)
+    cold = RouteAdapter(create_app(database_path, stores=cold_stores))
+    own = cold.handle(RouteRequest("GET", f"/tasks/{task_id}", host_context=TENANT_A))
+    other = cold.handle(RouteRequest("GET", f"/tasks/{task_id}", host_context=TENANT_B))
+    own_list = cold.handle(RouteRequest("GET", "/sessions", host_context=TENANT_A))
+    other_list = cold.handle(RouteRequest("GET", "/sessions", host_context=TENANT_B))
+    assert own.status_code == 200 and own.body["task_id"] == task_id
+    assert other.status_code == 404
+    assert [item["session_id"] for item in own_list.body["sessions"]] == [task_id]
+    assert other_list.body["sessions"] == []
+
+
+def test_queued_creation_cannot_report_success_when_task_preparation_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unavailable(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("Task preparation unavailable")
+
+    monkeypatch.setattr(SQLiteAgentTaskStore, "ensure_for_session", unavailable)
+    with pytest.raises(RuntimeError, match="Task preparation unavailable"):
+        create_app(tmp_path / "sessions.sqlite").create_session({"prompt": "Queued task"})
 
 
 def test_route_lists_recent_sessions_with_durable_workspace(tmp_path: Path) -> None:
@@ -67,9 +131,7 @@ def test_http_session_list_validates_limit(tmp_path: Path) -> None:
 
 
 def test_http_session_list_requires_configured_bearer_token(tmp_path: Path) -> None:
-    client = TestClient(
-        create_http_app(tmp_path / "sessions.sqlite", settings=_settings("secret"))
-    )
+    client = TestClient(create_http_app(tmp_path / "sessions.sqlite", settings=_settings("secret")))
 
     unauthorized = client.get("/sessions")
     authorized = client.get(
@@ -108,6 +170,7 @@ def _seed_session(
             last_attempt_number=0,
         )
     )
+    SQLiteAgentTaskStore(database_path).ensure_for_session(session.session_id)
     return session
 
 

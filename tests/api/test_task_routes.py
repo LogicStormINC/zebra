@@ -22,6 +22,7 @@ from agent_core.ports.session_handoff import (
     canonical_handoff_request_hash,
 )
 from agent_storage import (
+    SQLiteAgentTaskStore,
     SQLiteEventStore,
     SQLiteProjectionStore,
     SQLiteSessionHandoffStore,
@@ -476,4 +477,5 @@ def _seed_completed(
         store.append(event)
     SQLiteProjectionStore(database).save_session(rebuild_session(events))
     SQLiteWorkspaceProjectionStore(database).save_workspace(rebuild_workspace(events))
+    SQLiteAgentTaskStore(database).ensure_for_session(bootstrap.session.session_id)
     return bootstrap.session.session_id

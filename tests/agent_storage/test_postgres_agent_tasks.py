@@ -61,6 +61,7 @@ def test_reads_do_not_implicitly_build_task_index(
     assert store.active_segment(task_id) is None
     assert store.read_events(task_id, -1) == ()
     assert not store.is_internal_segment(root)
+    assert store.task_id_for_session(root) is None
 
     with psycopg.connect(postgres_dsn) as connection:
         assert connection.execute(
@@ -165,16 +166,14 @@ def test_concurrent_rollover_has_one_winner_and_indexes_child_events(
     assert {item.segment_id for item in events} == {root, segments[-1].session_id}
 
 
-def test_rebuild_removes_noncanonical_rollover_and_reindexes_from_zero(
+def test_rebuild_rejects_noncanonical_membership_without_renumbering_published_events(
     postgres_dsn: str,
     task_namespace: str,
     tmp_path: Path,
 ) -> None:
     root = _seed_session(postgres_dsn, task_namespace, tmp_path / "root", "Root")
     stale = _seed_session(postgres_dsn, task_namespace, tmp_path / "stale", "Stale")
-    canonical = _seed_session(
-        postgres_dsn, task_namespace, tmp_path / "canonical", "Canonical"
-    )
+    canonical = _seed_session(postgres_dsn, task_namespace, tmp_path / "canonical", "Canonical")
     store = _store(postgres_dsn, task_namespace)
     task = store.ensure_for_session(root)
     store.attach_segment_for_worker(
@@ -186,13 +185,13 @@ def test_rebuild_removes_noncanonical_rollover_and_reindexes_from_zero(
     )
     _append_handoff_events(postgres_dsn, task_namespace, root=root, child=canonical)
 
-    rebuilt = store.ensure_for_session(canonical)
-    events = store.read_events(task.task_id, -1)
-
-    assert rebuilt.active_segment_id == canonical
-    assert [item.session_id for item in store.segments(task.task_id)] == [root, canonical]
-    assert stale not in {item.segment_id for item in events}
-    assert [item.task_sequence for item in events] == list(range(len(events)))
+    published = store.read_events(task.task_id, -1)
+    with pytest.raises(PostgresAgentTaskConflictError, match="membership cannot be rewritten"):
+        store.ensure_for_session(canonical)
+    assert store.read_events(task.task_id, -1) == published
+    assert store.active_segment(task.task_id) == stale
+    assert [item.session_id for item in store.segments(task.task_id)] == [root, stale]
+    assert [item.task_sequence for item in published] == list(range(len(published)))
 
 
 @pytest.mark.parametrize("fault", ["checksum", "artifact", "orphan"])
@@ -237,8 +236,7 @@ def test_rebuild_rejects_ambiguous_received_handoff_lineage(
         _store(postgres_dsn, task_namespace).ensure_for_session(child)
 
     assert all(
-        _store(postgres_dsn, task_namespace).get_task(TaskId(root)) is None
-        for root in roots
+        _store(postgres_dsn, task_namespace).get_task(TaskId(root)) is None for root in roots
     )
 
 
@@ -396,6 +394,168 @@ def test_same_task_identity_is_isolated_by_namespace(
         _delete_namespace(postgres_dsn, other)
 
 
+def test_late_predecessor_append_and_index_repair_keep_source_positions(
+    postgres_dsn: str,
+    task_namespace: str,
+    tmp_path: Path,
+) -> None:
+    root = _seed_session(postgres_dsn, task_namespace, tmp_path / "root", "Root")
+    child = _seed_session(postgres_dsn, task_namespace, tmp_path / "child", "Child")
+    store = _store(postgres_dsn, task_namespace)
+    task = store.ensure_for_session(root)
+    store.attach_segment_for_worker(
+        task.task_id,
+        child,
+        predecessor_id=root,
+        reason=RolloverReason.RECOVERY,
+        authority=_worker_authority(postgres_dsn, task_namespace, root),
+    )
+    before = store.read_events(task.task_id, -1)
+    history = PostgresEventStore(postgres_dsn, deployment_namespace=task_namespace)
+    late = SessionEvent.create(
+        session_id=root,
+        sequence=len(history.list_for_session(root)),
+        event_type=EventType.SESSION_TITLE_UPDATED,
+        actor=EventActor.SYSTEM,
+        payload={"title": "Late title"},
+        idempotency_key="late-title",
+    )
+    history.append(late)
+    after = store.read_events(task.task_id, -1)
+    assert after[:-1] == before and after[-1].event == late
+    assert after[-1].task_sequence == len(before)
+    history.append(late)
+    assert store.read_events(task.task_id, -1) == after
+    with psycopg.connect(postgres_dsn) as connection:
+        connection.execute(
+            "DELETE FROM task_event_index WHERE deployment_namespace=%s AND task_sequence=1",
+            (task_namespace,),
+        )
+    assert store.read_events(task.task_id, -1) == after
+    assert store.backfill_event_positions(task.task_id)
+    with psycopg.connect(postgres_dsn) as connection:
+        assert connection.execute(
+            "SELECT task_sequence FROM task_event_index WHERE deployment_namespace=%s "
+            "ORDER BY task_sequence",
+            (task_namespace,),
+        ).fetchall() == [(index,) for index in range(len(after))]
+
+
+@pytest.mark.parametrize("column", ["task_id", "task_sequence", "sequence"])
+def test_published_source_coordinates_cannot_be_reassigned(
+    postgres_dsn: str,
+    task_namespace: str,
+    tmp_path: Path,
+    column: str,
+) -> None:
+    root = _seed_session(postgres_dsn, task_namespace, tmp_path, "Root")
+    store = _store(postgres_dsn, task_namespace)
+    task = store.ensure_for_session(root)
+    before = store.read_events(task.task_id, -1)
+    with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState, match="immutable"):
+        with psycopg.connect(postgres_dsn) as connection:
+            value = uuid4() if column == "task_id" else 9000
+            connection.execute(
+                f"UPDATE session_events SET {column}=%s "
+                "WHERE deployment_namespace=%s AND sequence=0",
+                (value, task_namespace),
+            )
+    assert store.read_events(task.task_id, -1) == before
+
+
+def test_conflicting_index_position_is_not_silently_rebuilt(
+    postgres_dsn: str,
+    task_namespace: str,
+    tmp_path: Path,
+) -> None:
+    root = _seed_session(postgres_dsn, task_namespace, tmp_path, "Root")
+    store = _store(postgres_dsn, task_namespace)
+    task = store.ensure_for_session(root)
+    before = store.read_events(task.task_id, -1)
+    with psycopg.connect(postgres_dsn) as connection:
+        connection.execute(
+            "UPDATE task_event_index SET task_sequence=9000 "
+            "WHERE deployment_namespace=%s AND task_sequence=0",
+            (task_namespace,),
+        )
+    with pytest.raises(PostgresAgentTaskConflictError, match="conflicts with source"):
+        store.backfill_event_positions(task.task_id)
+    assert store.read_events(task.task_id, -1) == before
+
+
+def test_rollover_rejects_foreign_assigned_child_before_membership(
+    postgres_dsn: str,
+    task_namespace: str,
+    tmp_path: Path,
+) -> None:
+    root = _seed_session(postgres_dsn, task_namespace, tmp_path / "root", "Root")
+    child = _seed_session(postgres_dsn, task_namespace, tmp_path / "child", "Child")
+    store = _store(postgres_dsn, task_namespace)
+    task = store.ensure_for_session(root)
+    with psycopg.connect(postgres_dsn) as connection:
+        connection.execute(
+            """UPDATE session_events SET task_id=%s,task_sequence=sequence
+               WHERE deployment_namespace=%s AND session_id=%s""",
+            (uuid4(), task_namespace, child),
+        )
+    with (
+        psycopg.connect(postgres_dsn) as connection,
+        pytest.raises(PostgresAgentTaskConflictError, match="another Task"),
+    ):
+        attach_segment_in_transaction(
+            connection,
+            task_namespace,
+            task_id=task.task_id,
+            segment_id=child,
+            predecessor_id=root,
+            reason=RolloverReason.RECOVERY,
+        )
+    assert store.active_segment(task.task_id) == root
+    assert [member.session_id for member in store.segments(task.task_id)] == [root]
+
+
+def test_rollover_does_not_publish_a_partially_adopted_large_child(
+    postgres_dsn: str,
+    task_namespace: str,
+    tmp_path: Path,
+) -> None:
+    root = _seed_session(postgres_dsn, task_namespace, tmp_path / "root", "Root")
+    child = _seed_session(postgres_dsn, task_namespace, tmp_path / "child", "Child")
+    history = PostgresEventStore(postgres_dsn, deployment_namespace=task_namespace)
+    for sequence in range(len(history.list_for_session(child)), 257):
+        history.append(
+            SessionEvent.create(
+                session_id=child,
+                sequence=sequence,
+                actor=EventActor.SYSTEM,
+                event_type=EventType.SESSION_TITLE_UPDATED,
+                payload={"title": "Child"},
+            )
+        )
+    store = _store(postgres_dsn, task_namespace)
+    task = store.ensure_for_session(root)
+    frozen = store.read_event_page(task.task_id, -1).events
+    with psycopg.connect(postgres_dsn) as connection:
+        attach_segment_in_transaction(
+            connection,
+            task_namespace,
+            task_id=task.task_id,
+            segment_id=child,
+            predecessor_id=root,
+            reason=RolloverReason.RECOVERY,
+        )
+    assert store.active_segment(task.task_id) == child
+    assert [member.session_id for member in store.segments(task.task_id)] == [root, child]
+    with pytest.raises(PostgresAgentTaskConflictError, match="explicit backfill"):
+        store.read_event_page(task.task_id, -1)
+    assert store.backfill_event_positions(task.task_id)
+    assert store.read_event_page(task.task_id, -1).events[: len(frozen)] == frozen
+    tail = store.read_event_page(task.task_id, len(frozen) + 255).events
+    assert [(item.task_sequence, item.segment_sequence) for item in tail] == [
+        (len(frozen) + 256, 256)
+    ]
+
+
 def _seed_session(
     dsn: str,
     namespace: str,
@@ -435,20 +595,15 @@ def _worker_authority(
     namespace: str,
     session_id: SessionId,
 ) -> WorkerMutationAuthority:
-    lease = PostgresLeaseStore(
-        dsn,
-        deployment_namespace=namespace,
-    ).acquire(
+    lease = PostgresLeaseStore(dsn, deployment_namespace=namespace).acquire(
         session_id,
         owner_instance_id=f"task-test-{uuid4()}",
         ttl=timedelta(minutes=5),
     )
     with psycopg.connect(dsn) as connection:
         stream = connection.execute(
-            """
-            SELECT current_version FROM session_streams
-            WHERE deployment_namespace = %s AND session_id = %s
-            """,
+            """SELECT current_version FROM session_streams
+               WHERE deployment_namespace = %s AND session_id = %s""",
             (namespace, session_id),
         ).fetchone()
     assert stream is not None
@@ -524,11 +679,17 @@ def _append_handoff_events(
 
 def _delete_namespace(dsn: str, namespace: str) -> None:
     with psycopg.connect(dsn) as connection:
+        # Only this test-owned namespace is decommissioned; source immutability
+        # remains enforced until Task ownership has been explicitly removed.
+        connection.execute(
+            "SELECT set_config('zebra.task_source_cleanup_namespace',%s,true)",
+            (namespace,),
+        )
         for table in (
             "worker_leases",
+            "agent_tasks",
             "task_event_index",
             "execution_segments",
-            "agent_tasks",
             "session_projections",
             "session_events",
             "session_streams",

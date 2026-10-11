@@ -114,6 +114,7 @@ class RuntimeCapabilities:
     engine_version: str | None = None
     enforcement: str = "unavailable"
     reason: str | None = None
+    retryable: bool = False
 
 
 @dataclass(frozen=True)

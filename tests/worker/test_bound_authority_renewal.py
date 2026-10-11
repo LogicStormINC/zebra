@@ -21,8 +21,6 @@ from zebra_agent_api.session_binding import _build_binding_snapshot, renew_task_
 from zebra_agent_worker.bound_execution_authority import BoundHostExecutionAuthorityResolver
 from zebra_agent_worker.runtime_authority import persist_attempt_authority
 
-NOW = datetime(2026, 9, 5, 10, tzinfo=UTC)
-
 
 def _context(*, grant_id, expires_at=None):
     return HostContextEnvelope(
@@ -30,18 +28,23 @@ def _context(*, grant_id, expires_at=None):
         host_app_id="trench",
         namespace_id="trench:user-1",
         workspace_ref="trench-workspace:user-1",
-        resource_refs=(HostResourceRef(type="principal", id="user-1"),),
+        resource_refs=(
+            HostResourceRef(type="principal", id="user-1"),
+            HostResourceRef(type="thread", id="trench-bootstrap-authority-opaque"),
+            HostResourceRef(type="run", id="authority-run"),
+        ),
         scopes=("agent.run",),
         limits=HostTechnicalLimits(
             max_runtime_seconds=300, max_model_tokens=10000, max_artifact_bytes=1000000
         ),
         origin="https://trench.local",
         policy_version="trench-native-v2",
-        expires_at=expires_at or NOW + timedelta(minutes=5),
+        expires_at=expires_at or datetime.now(UTC) + timedelta(minutes=5),
     )
 
 
 def _case():
+    now = datetime.now(UTC)
     context = _context(grant_id="first")
     binding = _build_binding_snapshot(
         "11111111-1111-1111-1111-111111111111",
@@ -56,10 +59,10 @@ def _case():
         session_id=SessionId(UUID(binding.task_id)),
         attempt_number=1,
         scope=resolver.scope,
-        validated_at=NOW,
+        validated_at=now,
     )
     prior = resolver.resolve_for_attempt(request)
-    later = NOW + timedelta(hours=1)
+    later = now + timedelta(hours=1)
     renewed = renew_task_binding_snapshot(
         binding,
         _context(grant_id="second", expires_at=later + timedelta(minutes=5)),

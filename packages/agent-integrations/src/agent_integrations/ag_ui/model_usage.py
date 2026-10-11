@@ -21,6 +21,20 @@ def project_model_usage(payload: Mapping[str, Any], *, timestamp: int) -> Custom
         )
         if key in payload and payload[key] is not None
     }
+    if payload.get("response_stage") == "public_expression":
+        value.update(
+            {
+                key: payload[key]
+                for key in (
+                    "response_stage",
+                    "role",
+                    "model_call_id",
+                    "output_tokens",
+                    "total_tokens",
+                )
+                if payload.get(key) is not None
+            }
+        )
     breakdown = payload.get("token_breakdown")
     if isinstance(breakdown, Mapping):
         bounded = {
@@ -33,15 +47,11 @@ def project_model_usage(payload: Mapping[str, Any], *, timestamp: int) -> Custom
         if bounded:
             value["token_breakdown"] = bounded
     try:
-        detailed = ModelTokenBreakdownV2Payload.model_validate(
-            payload.get("token_breakdown_v2")
-        )
+        detailed = ModelTokenBreakdownV2Payload.model_validate(payload.get("token_breakdown_v2"))
     except (TypeError, ValueError):
         detailed = None
     if detailed is not None:
-        value["token_breakdown_v2"] = detailed.model_dump(
-            mode="json", exclude_none=True
-        )
+        value["token_breakdown_v2"] = detailed.model_dump(mode="json", exclude_none=True)
     if not value:
         return None
     return CustomEvent(timestamp=timestamp, name="zebra.model_usage", value=value)

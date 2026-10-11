@@ -109,36 +109,34 @@ class CloudToolOutputArtifactCoordinator:
         pending = self._pending_for_draft(draft)
         if pending is None:
             return recorder.append_draft(draft)
-        authority = recorder.worker_mutation_authority
-        if authority is None:
-            raise ValueError("cloud Artifact output requires Worker mutation authority")
-        prepared = self.stage_bytes(
-            artifact_id=pending.artifact_id,
-            payload=pending.payload,
-            kind=pending.kind,
-            mime_type=pending.mime_type,
-            file_name=pending.file_name,
-            created_at=pending.created_at,
-            intended_event_sequence=recorder.next_sequence,
-            authority=authority,
-            idempotency_scope="tool-output",
-        )
-        try:
+        with recorder.mutation():
+            authority = recorder.worker_mutation_authority
+            if authority is None:
+                raise ValueError("cloud Artifact output requires Worker mutation authority")
+            prepared = self.stage_bytes(
+                artifact_id=pending.artifact_id,
+                payload=pending.payload,
+                kind=pending.kind,
+                mime_type=pending.mime_type,
+                file_name=pending.file_name,
+                created_at=pending.created_at,
+                intended_event_sequence=recorder.next_sequence,
+                authority=authority,
+                idempotency_scope="tool-output",
+            )
             event = recorder.prepare(draft.event_type, draft.actor, draft.payload)
             if event.sequence != prepared.intended_event_sequence:
                 raise ValueError("reserved Artifact Event sequence changed before append")
-        except Exception:
             # ponytail: once object I/O succeeds, inline deletion is unsafe without
             # a fenced DB compensation claim; leave staged for management reconcile.
-            raise
-        persisted = recorder.append_event(event)
-        finalized_authority = recorder.worker_mutation_authority
-        if finalized_authority is None:
-            raise ValueError("cloud Artifact Event commit lost Worker authority")
-        self._metadata_store.finalize_for_worker(
-            prepared.finalize_request(persisted),
-            authority=finalized_authority,
-        )
+            persisted = recorder.append_event(event)
+            finalized_authority = recorder.worker_mutation_authority
+            if finalized_authority is None:
+                raise ValueError("cloud Artifact Event commit lost Worker authority")
+            self._metadata_store.finalize_for_worker(
+                prepared.finalize_request(persisted),
+                authority=finalized_authority,
+            )
         self.release_pending(pending.uri)
         return persisted
 

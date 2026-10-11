@@ -5,17 +5,25 @@ import os
 import sqlite3
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import psycopg
 import pytest
+from agent_core.application.session_projection import rebuild_session
 from agent_core.contracts.events import ContextCapsuleCreatedPayload
 from agent_core.domain.context_capsule import ContextCapsule, ContextSourceEventRange
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
-from agent_storage import SQLiteContextLifecycleStore, SQLiteEventStore
+from agent_storage import (
+    PostgresAgentTaskStore,
+    SQLiteAgentTaskStore,
+    SQLiteContextLifecycleStore,
+    SQLiteEventStore,
+    SQLiteProjectionStore,
+)
 from agent_storage.postgres import (
     CutoverConflictError,
     MigrationImportError,
@@ -27,8 +35,46 @@ from agent_storage.postgres import (
     load_sqlite_snapshot,
     write_sqlite_snapshot,
 )
+from agent_storage.postgres.migration_recovery import _events_from_records
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
+
+
+@pytest.mark.parametrize(
+    "column", ["event_bytes_bound", "replay_header_ready", "projection_block_start"]
+)
+def test_event_snapshot_discards_derived_metadata(tmp_path: Path, column: str) -> None:
+    source = tmp_path / "derived.sqlite"
+    event = SessionEvent.create(
+        session_id=new_session_id(),
+        sequence=0,
+        event_type=EventType.SESSION_CREATED,
+        actor=EventActor.SYSTEM,
+        payload={"title": "Canonical"},
+    )
+    SQLiteEventStore(source).append(event)
+    record = export_sqlite_snapshot(source, table_names=("session_events",)).records[0]
+    altered = replace(record, columns=(*record.columns, column), values=(*record.values, "forged"))
+    assert _events_from_records((altered,)) == (event,)
+
+
+@pytest.mark.parametrize("column", ["event_id", "unexpected_projection_override"])
+def test_event_snapshot_rejects_duplicate_or_unknown_columns(tmp_path: Path, column: str) -> None:
+    source = tmp_path / "invalid-column.sqlite"
+    event = SessionEvent.create(
+        session_id=new_session_id(),
+        sequence=0,
+        event_type=EventType.SESSION_CREATED,
+        actor=EventActor.SYSTEM,
+        payload={"title": "Canonical"},
+    )
+    SQLiteEventStore(source).append(event)
+    record = export_sqlite_snapshot(source, table_names=("session_events",)).records[0]
+    altered = replace(
+        record, columns=(*record.columns, column), values=(*record.values, record.values[0])
+    )
+    with pytest.raises(MigrationImportError, match="column contract"):
+        _events_from_records((altered,))
 
 
 def test_sqlite_snapshot_is_canonical_and_read_only(tmp_path: Path) -> None:
@@ -122,6 +168,72 @@ def test_event_import_rebuilds_projection_after_events(isolated_dsn: str, tmp_pa
         )
 
 
+@pytest.mark.parametrize("positioned", [False, True])
+def test_snapshot_import_preserves_positions_and_finishes_long_legacy_history(
+    isolated_dsn: str,
+    tmp_path: Path,
+    positioned: bool,
+) -> None:
+    source = tmp_path / "source.sqlite"
+    session_id = new_session_id()
+    events = [
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=0,
+            event_type=EventType.SESSION_CREATED,
+            actor=EventActor.SYSTEM,
+            payload={"title": "Long import"},
+        )
+    ]
+    events.extend(
+        SessionEvent.create(
+            session_id=session_id,
+            sequence=index,
+            event_type=EventType.SESSION_TITLE_UPDATED,
+            actor=EventActor.SYSTEM,
+            payload={"title": f"Title {index}"},
+        )
+        for index in range(1, 600)
+    )
+    store = SQLiteEventStore(source)
+    for event in events:
+        store.append(event)
+    if positioned:
+        SQLiteProjectionStore(source).save_session(rebuild_session(events))
+        tasks = SQLiteAgentTaskStore(source)
+        task = tasks.ensure_for_session(session_id)
+        while not tasks.backfill_event_positions(task.task_id):
+            pass
+    snapshot_dir = tmp_path / "snapshot"
+    write_sqlite_snapshot(
+        export_sqlite_snapshot(source, table_names=("session_events",)), snapshot_dir
+    )
+    report = import_sqlite_event_snapshot(
+        snapshot_dir,
+        isolated_dsn,
+        deployment_namespace="tenant-a",
+        importer_identity="zebra-postgres-migration-v1",
+    )
+    assert report.event_count == 600
+    from agent_core.domain.identifiers import TaskId
+
+    imported = PostgresAgentTaskStore(isolated_dsn, deployment_namespace="tenant-a")
+    history = imported.read_events(TaskId(session_id), -1)
+    assert [item.event for item in history] == events
+    assert [item.task_sequence for item in history] == list(range(600))
+    with psycopg.connect(isolated_dsn) as connection:
+        assert connection.execute(
+            "SELECT event_position_state,next_event_sequence FROM agent_tasks"
+        ).fetchone() == ("ready", 600)
+        assert connection.execute(
+            "SELECT through_sequence FROM task_projection_source_heads"
+        ).fetchone() == (599,)
+        assert connection.execute(
+            "SELECT count(*) FROM session_events WHERE NOT projection_metadata_ready "
+            "OR projection_block_start IS NULL"
+        ).fetchone() == (0,)
+
+
 def test_event_import_rebuilds_workspace_projection(isolated_dsn: str, tmp_path: Path) -> None:
     source = tmp_path / "source.sqlite"
     event_store = SQLiteEventStore(source)
@@ -193,9 +305,7 @@ def test_event_import_rebuilds_workspace_projection(isolated_dsn: str, tmp_path:
         ).fetchone()
         assert tool is not None
         assert tuple(tool) == ("shell", "succeeded", "ok")
-        task = connection.execute(
-            "SELECT task_id, active_segment_id FROM agent_tasks"
-        ).fetchone()
+        task = connection.execute("SELECT task_id, active_segment_id FROM agent_tasks").fetchone()
         assert task is not None
         assert task[0] == task[1]
 
@@ -222,9 +332,7 @@ def test_event_import_rejects_legacy_authority_tables_before_writes(
         )
     )
     with sqlite3.connect(source) as connection:
-        connection.execute(
-            f'CREATE TABLE "{legacy_authority_table}" (marker TEXT NOT NULL)'
-        )
+        connection.execute(f'CREATE TABLE "{legacy_authority_table}" (marker TEXT NOT NULL)')
         connection.execute(
             f'INSERT INTO "{legacy_authority_table}" VALUES (?)',
             ("legacy-row",),
@@ -403,9 +511,7 @@ def test_event_import_rebuilds_context_capsule_and_active_pointer(
         assert row[2] == capsule_event.sequence
 
 
-def test_event_import_rejects_any_nonempty_target(
-    isolated_dsn: str, tmp_path: Path
-) -> None:
+def test_event_import_rejects_any_nonempty_target(isolated_dsn: str, tmp_path: Path) -> None:
     source = tmp_path / "source.sqlite"
     SQLiteEventStore(source).append(
         SessionEvent.create(

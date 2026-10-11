@@ -45,6 +45,7 @@ from agent_core.harness.provider_continuation import (
     prepare_provider_continuation,
 )
 from agent_core.harness.stream_deltas import TextDeltaCoalescer
+from agent_core.harness.tool_observation_compaction import compact_repeated_records
 from agent_core.ports.context_compiler import ContextCompilerPort
 from agent_core.ports.conversation_compactor import (
     ConversationCompactionResult,
@@ -150,6 +151,7 @@ class HarnessModelStep:
         response_repair_limit: int = 1,
     ) -> ModelCompletion:
         tools = self._available_tools if allow_tools else ()
+        messages = compact_repeated_records(messages)
         window = context_window(model_gateway)
         plan = build_context_plan(tuple(messages), tools, window, model_gateway)
         if not plan.within_budget:

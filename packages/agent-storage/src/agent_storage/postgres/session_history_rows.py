@@ -25,6 +25,8 @@ def safe_event_text(row: Mapping[str, Any]) -> str | None:
     payload = row.get("payload")
     if not isinstance(payload, Mapping):
         return None
+    if payload.get("response_stage") == "public_expression":
+        return None
     field = (
         "content"
         if row.get("event_type") == EventType.USER_MESSAGE_RECEIVED.value

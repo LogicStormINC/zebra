@@ -1,5 +1,6 @@
 """Build the immutable Harness task view from recovered Worker state."""
 
+from collections.abc import Callable
 from typing import Any
 
 from agent_context import (
@@ -7,13 +8,21 @@ from agent_context import (
     context_inputs_from_materialization,
 )
 from agent_core.domain.context_materialization import ContextMaterialization
+from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
+from agent_core.harness.models import HarnessEventDraft
+from agent_core.harness.public_expression import PublicExpression
+from agent_core.harness.public_output import ProgressiveEventSink, PublicOutputPolicy
 from agent_core.ports import MemoryReadPort, UserPersonalizationStorePort
 from agent_core.ports.context_compiler import ConfirmedMemoryInput, RuntimeEvidenceInput
 from agent_storage import list_confirmed_repo_memories
+from agent_tools import FencedEffectToolGateway
 
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
+from zebra_agent_worker.progress_recovery import WorkerProgressRecovery
+from zebra_agent_worker.public_output_runtime import publication_scope
 from zebra_agent_worker.task_recovery import RecoveredTask
 
 CLOUD_CONTEXT_TOKEN_BUDGET = 2_048
@@ -33,6 +42,14 @@ HOST_EMBEDDED_AGENT_IDENTITY_DIRECTIVE = (
     "fails, inspect the failure and exhaust safe in-scope alternatives before asking the "
     "user to retry. Do not expose internal "
     "model, runtime, or tool identifiers unless the user asks. Respond in the user's language."
+    " For multi-step work, include a brief public update in assistant content alongside "
+    "tool calls; do not add a separate model call just for an acknowledgement. "
+    "Report meaningful received evidence or a path change early, not only a final answer. "
+    "Do not narrate every routine call or repeat generic waiting text. "
+    "These updates are public facts and next steps, never private chain-of-thought. "
+    "Use counts/coverage first and fetch full records selectively; do not dump entire collections "
+    "into context. Distinguish partial samples from complete coverage. For simple answers reply "
+    "directly without an unnecessary preamble."
 )
 
 
@@ -51,6 +68,10 @@ def build_worker_orchestrator(
     session_id: SessionId,
     provider_continuation: Any,
     invocation_policy: Any = None,
+    public_output_policy: PublicOutputPolicy | None = None,
+    worker_progress: WorkerProgressRecovery | None = None,
+    user_input: str = "",
+    attempt_number: int = 1,
 ) -> SingleAttemptOrchestrator:
     persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
         cloud_continuation,
@@ -61,6 +82,46 @@ def build_worker_orchestrator(
         local_store=local_continuation_store,
         session_id=session_id,
     )
+    progress: ProgressiveEventSink | None = None
+    if recorder.worker_mutation_authority is not None:
+        if worker_progress is None:
+            raise ValueError("cloud output requires prepared Worker progress")
+        if (
+            worker_progress.head.scope.namespace
+            != recorder.worker_mutation_authority.deployment_namespace
+        ):
+            raise ValueError("Worker progress authority namespace mismatch")
+        worker_progress.catch_up()
+        if worker_progress.head.state.attempt_number != attempt_number:
+            raise ValueError("Worker progress Attempt disagrees with execution")
+        persist_event = worker_progress.persist_with(persist_event)
+        policy = worker_progress.policy(public_output_policy or PublicOutputPolicy())
+        progress = ProgressiveEventSink(
+            persist_event,
+            user_input=user_input,
+            policy=policy,
+            attempt_number=attempt_number,
+            recovery_state=worker_progress.head.state,
+            output_published=worker_progress.output_published,
+            receipts_covered=worker_progress.receipts_covered,
+            emission_scope=publication_scope,
+            expression=PublicExpression(
+                lambda messages, call_policy, deadline: model_gateway.complete(
+                    messages, tools=(), invocation_policy=call_policy, deadline_s=deadline
+                ),
+                persist_event,
+                max_calls=policy.expression_max_calls,
+                deadline_s=policy.expression_deadline_seconds,
+                max_input_characters=policy.expression_input_characters,
+                max_output_tokens=policy.expression_output_tokens,
+                calls_used=worker_progress.head.state.expression_calls_used,
+                attempt_number=attempt_number,
+            ),
+        )
+        recorder.effect_started_listener = progress.operation_started
+        if isinstance(tool_gateway, FencedEffectToolGateway):
+            tool_gateway.execution_finished_listener = _effect_terminal_observer(progress)
+        persist_event = progress
     model_step = HarnessModelStep(
         context_compiler=context_compiler,
         available_tools=tool_gateway.model_tools,
@@ -72,9 +133,9 @@ def build_worker_orchestrator(
         event_sink=persist_event,
         continuation_sink=prepare_continuation,
         provider_continuation=provider_continuation,
-        attempt_number=1,
-        delta_coalesce_characters=256,
-        delta_coalesce_seconds=0.1,
+        attempt_number=attempt_number,
+        delta_coalesce_characters=progress.policy.delta_characters if progress else 256,
+        delta_coalesce_seconds=progress.policy.delta_seconds if progress else 0.1,
         invocation_policy=invocation_policy,
     )
     return SingleAttemptOrchestrator(
@@ -88,7 +149,33 @@ def build_worker_orchestrator(
         max_parallel_tool_calls=3,
         tool_call_resolver=tool_gateway.resolve_model_tool_calls,
         event_sink=persist_event,
+        close_sink=progress.close if progress is not None else None,
     )
+
+
+def _effect_terminal_observer(
+    progress: ProgressiveEventSink,
+) -> Callable[[ToolCall, ToolResult | None], None]:
+    def observe(tool_call: ToolCall, result: ToolResult | None) -> None:
+        # Observation only: the Effect store/recorder already owns durable terminal Events.
+        # The gateway invokes this after mutation(), including when its terminal commit fails.
+        progress.observe_operation_result(
+            HarnessEventDraft(
+                EventType.TOOL_EXECUTION_COMPLETED
+                if result is not None and result.status is ToolCallStatus.EXECUTED
+                else EventType.TOOL_EXECUTION_FAILED,
+                EventActor.TOOL,
+                {
+                    "tool_call_id": str(tool_call.tool_call_id),
+                    "status": ToolCallStatus.FAILED.value
+                    if result is None
+                    else result.status.value,
+                    "metadata": {} if result is None else result.metadata,
+                },
+            )
+        )
+
+    return observe
 
 
 def harness_task_for_recovered(

@@ -9,6 +9,7 @@ import psycopg
 import pytest
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
+from agent_core.contracts.session_commands import validate_accepted_session_command
 from agent_core.domain.client_sessions import ClientSession, ClientSessionGrant
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import TaskId
@@ -204,7 +205,12 @@ def test_real_child_wakeup_and_terminal_marker_share_transaction(dsn, rollback):
         assert _counts(dsn) == (1, 1)
         event = _store(dsn).list_for_session(parent)[-1]
         assert event.payload["kind"] == "resume"
-        assert event.idempotency_key != event.payload["idempotency_key"]
+        assert event.idempotency_key == event.payload["idempotency_key"]
+        validate_accepted_session_command(
+            event.payload,
+            session_id=parent,
+            idempotency_key=event.idempotency_key,
+        )
         with psycopg.connect(dsn) as connection:
             assert connection.execute(
                 "SELECT envelope_json->>'idempotency_key' FROM broker_outbox"

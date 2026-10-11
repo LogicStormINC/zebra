@@ -16,6 +16,8 @@ from agent_core.domain.tools import ToolResult
 
 
 class EffectDispatchPort(Protocol):
+    def read_intent_event(self, dispatch: EffectDispatch) -> SessionEvent: ...
+
     def schedule(
         self,
         request: EffectScheduleRequest,

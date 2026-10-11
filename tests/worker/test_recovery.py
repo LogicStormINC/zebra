@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import Mock
@@ -14,9 +15,40 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import new_session_id
 from agent_core.domain.leases import LeaseFence, WorkerLease
 from agent_core.domain.workspaces import WorkspaceStatus
-from agent_core.ports import WorkerProjectionCommitResult
+from agent_core.ports.session_recovery import (
+    SessionEventPage,
+    SessionRecoveryCommit,
+    SessionRecoveryHead,
+    SessionRecoveryPort,
+)
 from agent_storage import SQLiteEventStore, SQLiteProjectionStore, SQLiteWorkspaceProjectionStore
 from zebra_agent_worker import SessionRecoveryError, SessionRecoveryService
+
+
+def _bounded_recovery_store(events: list[SessionEvent], result: SessionRecoveryCommit) -> Mock:
+    store = Mock(spec=SessionRecoveryPort)
+    highwater = events[-1].sequence
+    store.read_session_recovery_head.side_effect = [
+        SessionRecoveryHead(highwater, -1),
+        SessionRecoveryHead(highwater, highwater),
+    ]
+    size = sum(
+        len(
+            json.dumps(
+                event.model_dump(mode="json"), ensure_ascii=False, separators=(",", ":")
+            ).encode()
+        )
+        for event in events
+    )
+    store.read_session_event_page.return_value = SessionEventPage(
+        result.session.session_id,
+        tuple(events),
+        -1,
+        highwater,
+        size,
+    )
+    store.commit_session_recovery_page.return_value = result
+    return store
 
 
 def test_session_recovery_service_rebuilds_and_persists_projection(
@@ -256,14 +288,12 @@ def test_cloud_recovery_projects_persisted_effect_with_current_lease() -> None:
     workspace_store = Mock()
     workspace_store.get_workspace.return_value = workspace
     event_store = Mock()
-    event_store.list_for_session.return_value = [*bootstrap.events, terminal]
     transaction = Mock()
     expected_session = rebuild_session([*bootstrap.events, terminal])
     expected_workspace = apply_workspace_event(workspace, terminal)
-    transaction.project_persisted_worker_event.return_value = WorkerProjectionCommitResult(
-        event=terminal,
-        session=expected_session,
-        workspace=expected_workspace,
+    recovery_store = _bounded_recovery_store(
+        [*bootstrap.events, terminal],
+        SessionRecoveryCommit(expected_session, expected_workspace, terminal.sequence),
     )
     model_indexer = Mock()
     tool_indexer = Mock()
@@ -288,22 +318,24 @@ def test_cloud_recovery_projects_persisted_effect_with_current_lease() -> None:
         deployment_namespace="cloud-effect-recovery",
         model_call_indexer=model_indexer,
         tool_run_indexer=tool_indexer,
+        session_recovery_store=recovery_store,
     ).recover_session(bootstrap.session.session_id, worker_lease=lease)
 
-    first_authority = model_indexer.index_worker_event.call_args_list[0].kwargs["authority"]
-    terminal_authority = transaction.project_persisted_worker_event.call_args.kwargs["authority"]
+    authority = recovery_store.commit_session_recovery_page.call_args.kwargs["authority"]
     assert recovered.session == expected_session
     assert recovered.workspace == expected_workspace
-    assert first_authority.expected_stream_revision == -1
-    assert terminal_authority.expected_stream_revision == bootstrap.session.current_sequence
-    transaction.project_persisted_worker_event.assert_called_once_with(
-        terminal,
-        expected_session,
-        expected_workspace,
-        authority=terminal_authority,
+    assert authority.expected_stream_revision == -1
+    assert authority.lease_fence == lease.fence
+    assert authority.deployment_namespace == "cloud-effect-recovery"
+    recovery_store.commit_session_recovery_page.assert_called_once_with(
+        recovery_store.read_session_event_page.return_value,
+        expected_index_sequence=-1,
+        authority=authority,
     )
-    assert model_indexer.index_worker_event.call_count == len(event_store.list_for_session())
-    assert tool_indexer.index_worker_event.call_count == len(event_store.list_for_session())
+    model_indexer.index_worker_event.assert_not_called()
+    tool_indexer.index_worker_event.assert_not_called()
+    transaction.project_persisted_worker_event.assert_not_called()
+    event_store.list_for_session.assert_not_called()
     projection_store.save_session.assert_not_called()
     workspace_store.save_workspace.assert_not_called()
 
@@ -333,9 +365,11 @@ def test_cloud_recovery_repairs_lagging_workspace_before_projecting_tail() -> No
     projection_store.get_session.return_value = session
     workspace_store = Mock()
     workspace_store.get_workspace.return_value = workspace
-    workspace_store.save_workspace.return_value = repaired_workspace
     event_store = Mock()
-    event_store.list_for_session.return_value = events
+    recovery_store = _bounded_recovery_store(
+        events,
+        SessionRecoveryCommit(session, repaired_workspace, approval.sequence),
+    )
     transaction = Mock()
     model_indexer = Mock()
     tool_indexer = Mock()
@@ -360,10 +394,19 @@ def test_cloud_recovery_repairs_lagging_workspace_before_projecting_tail() -> No
         deployment_namespace="cloud-approval-repair",
         model_call_indexer=model_indexer,
         tool_run_indexer=tool_indexer,
+        session_recovery_store=recovery_store,
     ).recover_session(session.session_id, worker_lease=lease)
 
     assert recovered.session == session
     assert recovered.workspace == repaired_workspace
-    workspace_store.save_workspace.assert_called_once_with(repaired_workspace)
+    authority = recovery_store.commit_session_recovery_page.call_args.kwargs["authority"]
+    assert authority.lease_fence == lease.fence
+    recovery_store.commit_session_recovery_page.assert_called_once_with(
+        recovery_store.read_session_event_page.return_value,
+        expected_index_sequence=-1,
+        authority=authority,
+    )
+    event_store.list_for_session.assert_not_called()
+    workspace_store.save_workspace.assert_not_called()
     projection_store.save_session.assert_not_called()
     transaction.project_persisted_worker_event.assert_not_called()

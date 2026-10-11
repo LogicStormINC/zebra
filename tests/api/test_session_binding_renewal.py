@@ -15,8 +15,6 @@ from zebra_agent_api.session_binding import (
     renew_task_binding_snapshot,
 )
 
-NOW = datetime(2026, 8, 27, 12, 0, tzinfo=UTC)
-
 
 def _verified(context: HostContextEnvelope) -> VerifiedHostGrant:
     return VerifiedHostGrant(
@@ -39,8 +37,13 @@ def _context(
         host_app_id="trench",
         namespace_id="trench:user-1",
         workspace_ref=workspace_ref,
-        resource_refs=(HostResourceRef(type="trench.source", id="source-1"),),
-        scopes=("trench:source:read",),
+        resource_refs=(
+            HostResourceRef(type="principal", id="user-1"),
+            HostResourceRef(type="thread", id="trench-bootstrap-renewal-opaque"),
+            HostResourceRef(type="run", id="renewal-run"),
+            HostResourceRef(type="trench.source", id="source-1"),
+        ),
+        scopes=("agent.run", "trench:source:read"),
         limits=HostTechnicalLimits(
             max_runtime_seconds=300,
             max_model_tokens=10_000,
@@ -48,11 +51,12 @@ def _context(
         ),
         origin="https://trench.local",
         policy_version="trench-read-v1",
-        expires_at=expires_at or NOW + timedelta(minutes=5),
+        expires_at=expires_at or datetime.now(UTC) + timedelta(minutes=5),
     )
 
 
 def test_renewal_appends_revision_and_preserves_frozen_anchors() -> None:
+    now = datetime.now(UTC)
     original = _context(grant_id="grant-1")
     binding = _build_binding_snapshot(
         "11111111-1111-1111-1111-111111111111",
@@ -61,10 +65,10 @@ def test_renewal_appends_revision_and_preserves_frozen_anchors() -> None:
         definition_snapshot_digest="a" * 64,
         frozen_manifest_digest="b" * 64,
     )
-    fresh = _context(grant_id="grant-2", expires_at=NOW + timedelta(minutes=10))
+    fresh = _context(grant_id="grant-2", expires_at=now + timedelta(minutes=10))
 
     renewed = renew_task_binding_snapshot(
-        binding, fresh, authority_issuer="https://api.trench.local", bound_at=NOW
+        binding, fresh, authority_issuer="https://api.trench.local", bound_at=now
     )
 
     assert renewed.binding_revision == 2
@@ -129,3 +133,38 @@ def test_host_context_digest_covers_ephemeral_authority_fields() -> None:
     second = _context(grant_id="grant-2")
 
     assert host_context_digest(first) != host_context_digest(second)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"scopes": ("trench:source:read", "agent.run", "event.read")},
+        {
+            "resource_refs": (
+                HostResourceRef(type="principal", id="user-1"),
+                HostResourceRef(type="thread", id="trench-bootstrap-renewal-opaque"),
+                HostResourceRef(type="run", id="renewal-run"),
+                HostResourceRef(type="trench.source", id="source-2"),
+            )
+        },
+        {
+            "limits": HostTechnicalLimits(
+                max_runtime_seconds=301,
+                max_model_tokens=10_000,
+                max_artifact_bytes=1_000_000,
+            )
+        },
+        {"policy_version": "different-policy"},
+    ],
+)
+def test_renewal_cannot_expand_or_change_frozen_host_authority(change: dict) -> None:
+    context = _context(grant_id="grant-1")
+    binding = _build_binding_snapshot(
+        "11111111-1111-1111-1111-111111111111",
+        host_context=context,
+        verified_host_grant=_verified(context),
+        definition_snapshot_digest="a" * 64,
+    )
+    fresh = _context(grant_id="grant-2").model_copy(update=change)
+    with pytest.raises(ValueError, match="authority"):
+        renew_task_binding_snapshot(binding, fresh)

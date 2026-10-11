@@ -8,7 +8,11 @@ from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
-from agent_core.harness.task_contracts import TaskAcceptanceContract, infer_task_contract
+from agent_core.harness.task_contracts import (
+    AgentTaskType,
+    TaskAcceptanceContract,
+    infer_task_contract,
+)
 
 MODEL_NATIVE_DELEGATION_GUIDANCE = (
     "Subagent delegation:\n"
@@ -130,6 +134,23 @@ def task_acceptance_message(
         requirements.append(
             "base factual claims on successful tool evidence, deduplicate repeated results, "
             "and reconcile material source conflicts"
+        )
+        if contract.task_type is AgentTaskType.ANSWER:
+            requirements.append(
+                "use overview evidence to rank a short candidate list, then investigate only "
+                "specific missing facts or material conflicts; do not turn an overview into "
+                "exhaustive keyword or category scans. State sampling limits honestly"
+            )
+        elif contract.task_type is AgentTaskType.RESEARCH:
+            requirements.append(
+                "plan coverage from the requested research scope; expand evidence only to "
+                "close named gaps, preserving required completeness rather than using an "
+                "arbitrary shorter answer or tool limit"
+            )
+        requirements.append(
+            "batch independent parallel-safe reads in one tool round, respecting dependencies "
+            "and authority. Share concise verified findings alongside further tool calls when "
+            "useful; distinguish provisional findings from the final accepted answer"
         )
     if contract.require_matching_citation:
         requirements.append(

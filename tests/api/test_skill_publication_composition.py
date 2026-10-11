@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock, PropertyMock
 import pytest
 from agent_storage import runtime_composition, sqlite_control_plane_stores
 from agent_storage.postgres.migration_types import PostgresMigrationError
+from agent_storage.postgres.task_io import TaskIoConnections
 from agent_tools.skill_publications import SkillPublicationService
 from fastapi.testclient import TestClient
 from zebra_agent_api import extension_composition, factory, http
@@ -60,8 +61,13 @@ def test_http_startup_reuses_resolved_bundle(cloud_startup: tuple[Mock, Mock],
         assert client.post(f"{PREFIX}/skill-packages", headers=AUTH).json() == {"ok": True}
     assert resolver.call_count == (0 if explicit else 1)
     assert compose.call_args.kwargs["cloud"] is cloud
-    extension.assert_called_once_with(cloud.dsn, deployment_namespace=cloud.deployment_namespace)
     service = publication.await_args.kwargs["service"]
+    connector = extension.call_args.kwargs["task_io_connections"]
+    assert isinstance(connector, TaskIoConnections)
+    connector.require_compatible(cloud.dsn)
+    extension.assert_called_once_with(
+        cloud.dsn, deployment_namespace=cloud.deployment_namespace, task_io_connections=connector
+    )
     assert isinstance(service, SkillPublicationService)
     assert service.objects is cloud.artifact_objects
     assert service.store._dsn == cloud.dsn != DSN

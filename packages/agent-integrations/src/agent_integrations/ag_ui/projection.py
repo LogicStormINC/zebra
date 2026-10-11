@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import json
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
-from typing import Any
+from collections.abc import Iterator, Mapping, Sequence
 
 from ag_ui.core import (
     CustomEvent,
@@ -43,19 +40,15 @@ from agent_integrations.ag_ui.interrupts import (
     project_interrupt_event,
 )
 from agent_integrations.ag_ui.model_usage import project_model_usage
+from agent_integrations.ag_ui.payload_validation import json_text as _json_text
+from agent_integrations.ag_ui.payload_validation import (
+    optional_payload_text as _optional_payload_text,
+)
+from agent_integrations.ag_ui.payload_validation import (
+    required_payload_text as _required_payload_text,
+)
+from agent_integrations.ag_ui.projection_state import ProjectionState as _ProjectionState
 from agent_integrations.ag_ui.tool_result_projection import tool_result_content
-
-
-@dataclass(slots=True)
-class _ProjectionState:
-    text_messages: dict[str, str] = field(default_factory=dict)
-    text_ended: set[str] = field(default_factory=set)
-    tool_calls: set[str] = field(default_factory=set)
-    open_interrupts: dict[str, Interrupt] = field(default_factory=dict)
-    # ADR-026: once a Turn finished the AG-UI run, the next human message
-    # starts a fresh run and the trailing Segment terminal must not emit a
-    # second RUN_FINISHED.
-    turn_finished: bool = False
 
 
 class AgUiProjector:
@@ -69,24 +62,20 @@ class AgUiProjector:
         after: AgUiCursor | str | None = None,
     ) -> AgUiProjection:
         ordered = tuple(events)
-        self._validate_stream(ordered, identity)
         cursor = self._decode_cursor(after)
         start_sequence = self._validate_cursor(cursor, ordered, identity)
-        state = _ProjectionState()
         projected: list[Event] = []
-        for event in ordered:
-            projected_for_event = self._project_event(event, identity, state)
-            if cursor is None or event.sequence > start_sequence:
-                projected.extend(projected_for_event)
-        if ordered and cursor is None:
-            projected.insert(
-                0,
-                RunStartedEvent(
-                    thread_id=identity.thread_id,
-                    run_id=identity.run_id,
-                    parent_run_id=identity.parent_run_id,
-                ),
-            )
+        for event, frames in self.project_events(ordered, identity):
+            if (
+                cursor is not None
+                and event.sequence == cursor.sequence
+                and cursor.frame_index is not None
+            ):
+                if cursor.frame_index >= len(frames):
+                    raise AgUiProjectionError("cursor frame is outside its durable Event")
+                projected.extend(frames[cursor.frame_index + 1 :])
+            elif cursor is None or event.sequence > start_sequence:
+                projected.extend(frames)
         next_cursor = (
             AgUiCursor(
                 thread_id=identity.thread_id,
@@ -98,6 +87,35 @@ class AgUiProjector:
             else cursor
         )
         return AgUiProjection(tuple(projected), next_cursor, cursor)
+
+    def project_events(
+        self,
+        events: Sequence[SessionEvent],
+        identity: AgUiRunIdentity,
+        *,
+        state: _ProjectionState | None = None,
+    ) -> Iterator[tuple[SessionEvent, tuple[Event, ...]]]:
+        """Warm state once and lazily project each event with exact frame ownership."""
+        ordered = tuple(events)
+        self._validate_stream(ordered, identity)
+        state = state or _ProjectionState()
+        state.bind(identity)
+        if ordered and ordered[0].sequence <= state.last_sequence:
+            raise AgUiProjectionError("durable events must have unique increasing sequences")
+        for event in ordered:
+            frames = self._project_event(event, identity, state)
+            if not state.started:
+                frames = (
+                    RunStartedEvent(
+                        thread_id=identity.thread_id,
+                        run_id=identity.run_id,
+                        parent_run_id=identity.parent_run_id,
+                    ),
+                    *frames,
+                )
+                state.started = True
+            state.last_sequence = event.sequence
+            yield event, frames
 
     @staticmethod
     def _decode_cursor(after: AgUiCursor | str | None) -> AgUiCursor | None:
@@ -141,6 +159,18 @@ class AgUiProjector:
     ) -> tuple[Event, ...]:
         timestamp = int(event.created_at.timestamp() * 1000)
         payload = event.payload
+        if event.event_type is EventType.PUBLIC_OUTPUT:
+            return (
+                CustomEvent(
+                    timestamp=timestamp,
+                    name="zebra.public_output",
+                    value={
+                        **payload,
+                        "sequence": event.sequence,
+                        "event_id": str(event.event_id),
+                    },
+                ),
+            )
         client_effect = project_client_effect(event, timestamp=timestamp)
         if client_effect is not None:
             return client_effect
@@ -183,8 +213,11 @@ class AgUiProjector:
             model_call_id = _optional_payload_text(payload, "model_call_id") or str(event.event_id)
             message_id = state.text_messages.get(model_call_id)
             had_message = message_id is not None
-            assistant_message = _optional_payload_text(payload, "assistant_message")
+            text = payload.get("assistant_message")
+            assistant_message = text if isinstance(text, str) and text.strip() else None
             usage_event = project_model_usage(payload, timestamp=timestamp)
+            if payload.get("response_stage") == "public_expression":
+                return (usage_event,) if usage_event is not None else ()
             if assistant_message == "Tool calls proposed." and not had_message:
                 return (usage_event,) if usage_event is not None else ()
             output: list[Event] = []
@@ -218,6 +251,8 @@ class AgUiProjector:
                             "message_id": message_id,
                             "model_call_id": model_call_id,
                             "response_stage": response_stage,
+                            "attempt_number": payload.get("attempt_number"),
+                            "public_commentary": payload.get("public_commentary"),
                         },
                     )
                 )
@@ -462,26 +497,3 @@ def _project_subagent_event(event: SessionEvent, *, timestamp: int) -> tuple[Eve
             )
         )
     return tuple(projected)
-
-
-def _required_payload_text(
-    payload: Mapping[str, Any], key: str, *, allow_empty: bool = False
-) -> str:
-    value = payload.get(key)
-    if not isinstance(value, str):
-        raise AgUiProjectionError(f"durable payload field {key!r} must be text")
-    if not allow_empty and not value.strip():
-        raise AgUiProjectionError(f"durable payload field {key!r} must not be blank")
-    return value
-
-
-def _optional_payload_text(payload: Mapping[str, Any], key: str) -> str | None:
-    value = payload.get(key)
-    return value.strip() if isinstance(value, str) and value.strip() else None
-
-
-def _json_text(value: Mapping[str, object]) -> str:
-    try:
-        return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-    except (TypeError, ValueError) as exc:
-        raise AgUiProjectionError("tool arguments are not JSON serializable") from exc

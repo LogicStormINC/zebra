@@ -31,12 +31,9 @@ def _hit(url: str, title: str = "t", snippet: str = "") -> SearchHit:
 
 class StubProvider:
     def __init__(self, mapping: dict[str, tuple[SearchHit, ...]]) -> None:
+        self.name = "stub"
         self.mapping = mapping
         self.queries: list[str] = []
-
-    @property
-    def name(self) -> str:
-        return "stub"
 
     @property
     def available(self) -> bool:
@@ -83,7 +80,12 @@ def test_reciprocal_rank_fusion_promotes_consensus_hits() -> None:
     assert fused[0].url == "https://b.example/y"
     assert fused[1].url == "https://a.example/x"
     urls = {hit.url for hit in fused}
-    assert urls == {"https://a.example/x", "https://b.example/y", "https://c.example/z", "https://d.example/w"}
+    assert urls == {
+        "https://a.example/x",
+        "https://b.example/y",
+        "https://c.example/z",
+        "https://d.example/w",
+    }
 
 
 def test_keyword_coverage_and_rerank() -> None:
@@ -115,7 +117,7 @@ def test_apply_filters_resolves_subdomains() -> None:
     assert {hit.url for hit in filtered} == {"https://example.com/a", "https://docs.example.com/b"}
 
 
-def test_pipeline_runs_expansion_filters_and_caps(tmp_path) -> None:
+def test_pipeline_runs_expansion_filters_and_caps() -> None:
     provider = StubProvider(
         {
             "revenue growth": (
@@ -198,3 +200,30 @@ def test_pipeline_tool_rejects_invalid_input() -> None:
 
     assert result.status.value == "failed"
     assert result.metadata["reason"] == "invalid_search_input"
+
+
+@pytest.mark.parametrize("fetch_state", ["success", "failed", "unavailable"])
+def test_search_candidates_and_fetch_dependency_have_distinct_outcomes(fetch_state: str) -> None:
+    provider = StubProvider({"revenue": (_hit("https://a.example/a", snippet="revenue"),)})
+
+    def fetcher(_url: str) -> str | None:
+        return "revenue evidence" if fetch_state == "success" else None
+
+    tool = SearchPipelineTool(
+        SearchPipeline(
+            _registry(provider), fetcher=None if fetch_state == "unavailable" else fetcher
+        )
+    )
+    result = tool.handle(
+        ToolCall(
+            tool_call_id=new_tool_call_id(),
+            name="web.search",
+            created_at=datetime.now(UTC),
+            arguments={"query": "revenue", "auto_fetch": 1},
+        )
+    )
+    assert result.status.value == "executed" and result.metadata["result_count"] == 1
+    assert result.metadata["fetched_count"] == (1 if fetch_state == "success" else 0)
+    assert result.metadata["degraded"] is (fetch_state != "success")
+    assert result.metadata["web_envelope"]["degraded"] is (fetch_state != "success")
+    assert result.metadata["untrusted_external_content"] is True

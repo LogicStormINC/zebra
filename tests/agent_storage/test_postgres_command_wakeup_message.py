@@ -38,7 +38,7 @@ postgres_dsn = _pg_fixture
 
 def _message(dsn, session_id, *, content="Follow-up input", clarification_id=None):
     previous = _store(dsn).list_for_session(session_id)[-1]
-    payload = {"content": content}
+    payload = {"content": content, "run_id": f"fixture-message-{uuid4()}"}
     if clarification_id is not None:
         payload["clarification_id"] = clarification_id
     command = SessionCommand(

@@ -131,6 +131,7 @@ def prepare_execution_preflight(
 
 def _superseded_by_control_event(
     recorder: DurableHarnessEventRecorder,
+    interruption: ExecutionInterrupted | None = None,
 ) -> ExecutedSession:
     """A concurrent cancel/suspend took the sequence: report, don't crash.
 
@@ -138,15 +139,16 @@ def _superseded_by_control_event(
     execution is superseded and returns that status instead of letting
     ``ExecutionInterrupted`` escape the Worker boundary.
     """
+    session = interruption.session if interruption and interruption.session else recorder.session
     return ExecutedSession(
-        session=recorder.session,
+        session=session,
         events=recorder.events,
         attempt_result=HarnessAttemptResult(
             outcome=HarnessAttemptOutcome.SUSPENDED,
             summary="Superseded by a concurrent control event.",
             metadata={
                 "stop_reason": "superseded_by_control_event",
-                "external_status": recorder.session.status.value,
+                "external_status": session.status.value,
             },
         ),
     )

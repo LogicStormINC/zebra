@@ -5,12 +5,15 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from time import monotonic
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
+import psycopg
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.task_io import TaskIoConnections
 
 HostGrantOutcome = Literal["accepted", "replay", "rejected"]
 _ALGORITHMS = frozenset({"RS256", "ES256"})
@@ -22,6 +25,10 @@ class HostAuthorityStorageError(ValueError):
 
 class HostRegistryBindingError(HostAuthorityStorageError):
     """Raised when a registry binding is missing or inactive."""
+
+
+class HostGrantConsumptionUnknown(TimeoutError):
+    """Consumption COMMIT was not confirmed; never authorize or blindly retry."""
 
 
 @dataclass(frozen=True)
@@ -119,8 +126,18 @@ class HostGrantReplayDecision:
 class PostgresHostAuthorityStore:
     """Persist Host registry, replay and audit rows under one deployment namespace."""
 
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    def __init__(
+        self,
+        dsn: str,
+        *,
+        deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> None:
+        self._database = PostgresDatabase(
+            dsn,
+            deployment_namespace=deployment_namespace,
+            task_io_connections=task_io_connections,
+        )
 
     @property
     def deployment_namespace(self) -> str:
@@ -165,8 +182,12 @@ class PostgresHostAuthorityStore:
             raise RuntimeError("Host registry upsert returned no row")
         return _registry_from_row(row)
 
-    def get_registry(self, *, host_app_id: str, namespace_id: str) -> HostRegistryRecord | None:
-        with self._database.connect() as connection:
+    def get_registry(
+        self, *, host_app_id: str, namespace_id: str, deadline: float | None = None
+    ) -> HostRegistryRecord | None:
+        host_app_id = _text(host_app_id, "host_app_id", 128)
+        namespace_id = _text(namespace_id, "namespace_id", 512)
+        with self._database.connect_task_io(deadline=deadline) as connection:
             row = connection.execute(
                 """
                 SELECT host_app_id, namespace_id, issuer, audience, jwks_uri,
@@ -180,7 +201,7 @@ class PostgresHostAuthorityStore:
         return None if row is None else _registry_from_row(row)
 
     def list_registries(self, *, active_only: bool = True) -> tuple[HostRegistryRecord, ...]:
-        with self._database.connect() as connection:
+        with self._database.connect_task_io() as connection:
             rows = connection.execute(
                 """
                 SELECT host_app_id, namespace_id, issuer, audience, jwks_uri,
@@ -189,70 +210,111 @@ class PostgresHostAuthorityStore:
                 WHERE deployment_namespace = %s
                   AND (%s = FALSE OR active = TRUE)
                 ORDER BY host_app_id, namespace_id
+                LIMIT 257
                 """,
                 (self.deployment_namespace, active_only),
             ).fetchall()
+        if len(rows) > 256:
+            raise HostAuthorityStorageError("Host registry listing exceeds its bound")
         return tuple(_registry_from_row(row) for row in rows)
 
-    def consume_grant(self, attempt: HostGrantAttempt) -> HostGrantReplayDecision:
+    def consume_grant(
+        self,
+        attempt: HostGrantAttempt,
+        *,
+        expected_registry: HostRegistryRecord | None = None,
+        deadline: float | None = None,
+    ) -> HostGrantReplayDecision:
         """Atomically consume a jti and append accepted/replay/rejected audit."""
-        with self._database.connect() as connection:
-            registry = connection.execute(
-                """
-                SELECT active, algorithms
-                FROM host_authority_registries
-                WHERE deployment_namespace = %s AND host_app_id = %s
-                  AND namespace_id = %s AND issuer = %s
-                """,
-                (
-                    self.deployment_namespace,
-                    attempt.host_app_id,
-                    attempt.namespace_id,
-                    attempt.issuer,
-                ),
-            ).fetchone()
-            if registry is None:
-                return self._rejected(
-                    connection, attempt, "Host registry binding is not registered"
-                )
-            if not registry["active"]:
-                return self._rejected(connection, attempt, "Host registry binding is inactive")
-            registered_algorithms = tuple(str(value) for value in registry["algorithms"])
-            if attempt.algorithm not in registered_algorithms:
-                return self._rejected(connection, attempt, "JWT algorithm is not registered")
-            now = connection.execute("SELECT transaction_timestamp() AS now").fetchone()
-            if now is None or attempt.expires_at <= now["now"]:
-                return self._rejected(connection, attempt, "Host Grant is expired")
-            inserted = connection.execute(
-                """
-                INSERT INTO host_grant_replay_ledger (
-                    deployment_namespace, issuer, jti, host_app_id, namespace_id,
-                    algorithm, grant_digest, scopes_digest, resource_digest, expires_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (deployment_namespace, issuer, jti) DO NOTHING
-                RETURNING seen_at
-                """,
-                (
-                    self.deployment_namespace,
-                    attempt.issuer,
-                    attempt.jti,
-                    attempt.host_app_id,
-                    attempt.namespace_id,
-                    attempt.algorithm,
-                    attempt.grant_digest,
-                    attempt.scopes_digest,
-                    attempt.resource_digest,
-                    attempt.expires_at,
-                ),
-            ).fetchone()
-            outcome: HostGrantOutcome = "accepted" if inserted is not None else "replay"
-            reason = "jti accepted" if inserted is not None else "jti replay rejected"
-            audit = self._insert_audit(connection, attempt, outcome, reason)
-            return HostGrantReplayDecision(inserted is not None, outcome, audit)
+        remaining_lifetime = (attempt.expires_at - datetime.now(UTC)).total_seconds()
+        if remaining_lifetime > 0:
+            expiry_deadline = monotonic() + remaining_lifetime
+            deadline = min(deadline, expiry_deadline) if deadline is not None else expiry_deadline
+        connection = self._database.connect_task_io(deadline=deadline)
+        committing = False
+        try:
+            with connection:
+                registry = connection.execute(
+                    """
+                    SELECT host_app_id, namespace_id, issuer, audience, jwks_uri,
+                        allowed_origins, algorithms, policy_version, active
+                    FROM host_authority_registries
+                    WHERE deployment_namespace = %s AND host_app_id = %s
+                      AND namespace_id = %s AND issuer = %s
+                    FOR SHARE
+                    """,
+                    (
+                        self.deployment_namespace,
+                        attempt.host_app_id,
+                        attempt.namespace_id,
+                        attempt.issuer,
+                    ),
+                ).fetchone()
+                if registry is None:
+                    return self._rejected(
+                        connection, attempt, "Host registry binding is not registered"
+                    )
+                if (
+                    expected_registry is not None
+                    and _registry_from_row(registry) != expected_registry
+                ):
+                    return self._rejected(
+                        connection, attempt, "Host registry changed after verification"
+                    )
+                if not registry["active"]:
+                    return self._rejected(connection, attempt, "Host registry binding is inactive")
+                registered_algorithms = tuple(str(value) for value in registry["algorithms"])
+                if attempt.algorithm not in registered_algorithms:
+                    return self._rejected(connection, attempt, "JWT algorithm is not registered")
+                now = connection.execute("SELECT clock_timestamp() AS now").fetchone()
+                if now is None or attempt.expires_at <= now["now"]:
+                    return self._rejected(connection, attempt, "Host Grant is expired")
+                inserted = connection.execute(
+                    """
+                    INSERT INTO host_grant_replay_ledger (
+                        deployment_namespace, issuer, jti, host_app_id, namespace_id,
+                        algorithm, grant_digest, scopes_digest, resource_digest, expires_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (deployment_namespace, issuer, jti) DO NOTHING
+                    RETURNING seen_at
+                    """,
+                    (
+                        self.deployment_namespace,
+                        attempt.issuer,
+                        attempt.jti,
+                        attempt.host_app_id,
+                        attempt.namespace_id,
+                        attempt.algorithm,
+                        attempt.grant_digest,
+                        attempt.scopes_digest,
+                        attempt.resource_digest,
+                        attempt.expires_at,
+                    ),
+                ).fetchone()
+                # A unique-key lock must not extend an expired grant.
+                now = connection.execute("SELECT clock_timestamp() AS now").fetchone()
+                if now is None or attempt.expires_at <= now["now"]:
+                    raise HostRegistryBindingError("Host Grant expired during consumption")
+                outcome: HostGrantOutcome = "accepted" if inserted is not None else "replay"
+                reason = "jti accepted" if inserted is not None else "jti replay rejected"
+                audit = self._insert_audit(connection, attempt, outcome, reason)
+                committing = True
+                return HostGrantReplayDecision(inserted is not None, outcome, audit)
+        except Exception as exc:
+            state = exc.sqlstate if isinstance(exc, psycopg.Error) else None
+            if committing and (
+                state is None or state.startswith("08") or state in {"40003", "57P01", "57P02"}
+            ):
+                raise HostGrantConsumptionUnknown(
+                    "Host Grant consumption outcome is unknown"
+                ) from exc
+            raise
 
-    def record_rejection(self, attempt: HostGrantAttempt, reason: str) -> HostGrantAuditRecord:
+    def record_rejection(
+        self, attempt: HostGrantAttempt, reason: str, *, deadline: float | None = None
+    ) -> HostGrantAuditRecord:
         """Record a validated-but-denied attempt without consuming its jti."""
-        with self._database.connect() as connection:
+        with self._database.connect_task_io(deadline=deadline) as connection:
             return self._insert_audit(connection, attempt, "rejected", reason)
 
     def list_audit(self, *, issuer: str, jti: str) -> tuple[HostGrantAuditRecord, ...]:
@@ -333,8 +395,8 @@ def _unique(values: Iterable[str], field_name: str, maximum: int) -> tuple[str, 
 
 def _origins(values: Iterable[str]) -> tuple[str, ...]:
     origins = tuple(_https_origin(value, "allowed_origin") for value in values)
-    if not origins or len(set(origins)) != len(origins):
-        raise HostAuthorityStorageError("allowed_origins must contain unique values")
+    if not 1 <= len(origins) <= 64 or len(set(origins)) != len(origins):
+        raise HostAuthorityStorageError("allowed_origins must contain 1..64 unique values")
     return origins
 
 

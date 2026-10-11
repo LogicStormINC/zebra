@@ -21,7 +21,11 @@ from agent_storage import ControlPlaneStores, LeaseConflictError, PostgresContro
 from pydantic import ValidationError
 
 from zebra_agent_worker.client_effect_continuation import pending_client_effect_ids
-from zebra_agent_worker.command_rejections import command_rejected, reject_command
+from zebra_agent_worker.command_rejections import (
+    command_rejected,
+    fail_rejected_continuation,
+    reject_command,
+)
 from zebra_agent_worker.control import SessionControlError, UnsupportedSessionControlError
 from zebra_agent_worker.recovery import SessionRecoveryError, SessionRecoveryService
 from zebra_agent_worker.resume import SessionResumeError
@@ -110,6 +114,7 @@ class SessionCommandConsumer:
                     payload=accepted.payload,
                 )
             except ValueError:
+                fail_rejected_continuation(self._stores.events, command_event)
                 reject_command(self._stores.idempotency, command_event, "invalid_command")
                 skipped = CommandConsumption(
                     str(session.session_id), _command_kind(command_event),

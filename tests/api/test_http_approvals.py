@@ -1,10 +1,12 @@
 from pathlib import Path
 
-from agent_core.domain.sessions import ApprovalContext, Session, SessionStatus
+from agent_core.domain.sessions import ApprovalContext, Session
 from agent_storage import SQLiteProjectionStore
 from fastapi.testclient import TestClient
 from zebra_agent_api import create_http_app
 from zebra_agent_config import ApiSettings, ModelSettings, ZebraAgentSettings
+
+from tests.api.test_approval_routes import _seed_waiting_session as seed_waiting_session
 
 
 def test_http_app_approves_waiting_session(tmp_path: Path) -> None:
@@ -23,7 +25,7 @@ def test_http_app_approves_waiting_session(tmp_path: Path) -> None:
         "session_id": str(session.session_id),
         "decision": "approve",
         "event_type": "approval_granted",
-        "sequence": 3,
+        "sequence": session.current_sequence + 1,
         "status": "running",
         "approval_context": {
             "tool_name": "mcp.github.create_pull_request",
@@ -53,7 +55,7 @@ def test_http_app_rejects_waiting_session(tmp_path: Path) -> None:
         "session_id": str(session.session_id),
         "decision": "reject",
         "event_type": "approval_rejected",
-        "sequence": 3,
+        "sequence": session.current_sequence + 1,
         "status": "failed",
         "approval_context": {
             "tool_name": "mcp.github.create_pull_request",
@@ -169,22 +171,18 @@ def _settings(auth_token: str | None) -> ZebraAgentSettings:
 
 
 def _seed_waiting_session(database_path: Path) -> Session:
-    session = Session.create(title="Waiting approval").model_copy(
-        update={
-            "status": SessionStatus.WAITING_APPROVAL,
-            "current_sequence": 2,
-            "approval_context": ApprovalContext(
-                tool_name="mcp.github.create_pull_request",
-                reason="proxy-routed external tool execution in test",
-                policy_profile="full_access",
-                route="mcp_proxy",
-                target="github.create_pull_request",
-                network_profile="mcp-proxy-only",
-                scope=(
-                    "tool:mcp.github.create_pull_request",
-                    "route:mcp_proxy",
-                ),
+    return seed_waiting_session(
+        database_path,
+        approval_context=ApprovalContext(
+            tool_name="mcp.github.create_pull_request",
+            reason="proxy-routed external tool execution in test",
+            policy_profile="full_access",
+            route="mcp_proxy",
+            target="github.create_pull_request",
+            network_profile="mcp-proxy-only",
+            scope=(
+                "tool:mcp.github.create_pull_request",
+                "route:mcp_proxy",
             ),
-        }
+        ),
     )
-    return SQLiteProjectionStore(database_path).save_session(session)

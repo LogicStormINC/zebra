@@ -1,4 +1,5 @@
 from agent_security import SUPPORTED_NETWORK_PROFILES
+from agent_storage.postgres.migrations import MIGRATIONS
 from zebra_agent_api import RouteAdapter, RouteRequest, create_app
 from zebra_agent_api.host_auth import _required_scopes_for_request
 from zebra_agent_api.http import HostGrantHttpRequest
@@ -12,6 +13,7 @@ def test_runtime_capabilities_match_task_network_profiles(tmp_path) -> None:
     assert response.status_code == 200
     assert response.body == {
         "contract_version": 1,
+        "schema_version": MIGRATIONS[-1].version,
         "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
     }
     assert "full-gateway" in response.body["network_profiles"]

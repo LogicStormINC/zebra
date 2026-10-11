@@ -25,6 +25,7 @@ from agent_runtime.adapters.local_snapshot_state import (
 )
 from agent_runtime.adapters.local_snapshots import LocalSnapshotBackend
 from agent_runtime.adapters.oci_instances import OciInstances
+from agent_runtime.capability_checks import require_runtime_capabilities
 from agent_runtime.process_execution import run_process_tree
 from agent_runtime.runtime_failures import normalize_runtime_failure
 from agent_runtime.runtime_instance_lifecycle import RuntimeInstanceLifecycle
@@ -78,19 +79,21 @@ class OciRuntime(RuntimePort):
                     and Path(self._engine[0]).name == "docker")
         if combined:
             info = self._invoke((*self._engine, "info", "--format",
-                                 "{{.ServerVersion}}\n{{json .Runtimes}}"))
+                                 "{{.ServerVersion}}\n{{json .Runtimes}}"), timeout=2)
             version_text, separator, runtimes_text = info.stdout.partition("\n")
             if info.returncode != 0 or not separator or not version_text.strip():
-                return self._unavailable("OCI engine is unavailable")
+                return self._unavailable("OCI engine unavailable", retryable=info.returncode != 0)
             engine_version = version_text.strip()
         else:
-            version = self._invoke((*self._engine, "version", "--format", "{{.Server.Version}}"))
+            version = self._invoke(
+                (*self._engine, "version", "--format", "{{.Server.Version}}"), timeout=2)
             if version.returncode != 0:
-                return self._unavailable("OCI engine is unavailable")
+                return self._unavailable("OCI engine is unavailable", retryable=True)
             engine_version = version.stdout.strip() or None
         if self._spec.runtime_class is RuntimeClass.GVISOR:
             if not combined:
-                info = self._invoke((*self._engine, "info", "--format", "{{json .Runtimes}}"))
+                info = self._invoke(
+                    (*self._engine, "info", "--format", "{{json .Runtimes}}"), timeout=2)
                 runtimes_text = info.stdout
             try:
                 runtimes = json.loads(runtimes_text) if info.returncode == 0 else None
@@ -108,7 +111,8 @@ class OciRuntime(RuntimePort):
                 engine_version=engine_version,
                 enforcement=f"gvisor:{self._gvisor_runtime}",
             )
-        rootless = self._invoke((*self._engine, "info", "--format", "{{.Host.Security.Rootless}}"))
+        rootless = self._invoke(
+            (*self._engine, "info", "--format", "{{.Host.Security.Rootless}}"), timeout=2)
         if rootless.returncode != 0 or rootless.stdout.strip().lower() != "true":
             return self._unavailable(
                 "OCI engine did not prove rootless operation",
@@ -132,9 +136,7 @@ class OciRuntime(RuntimePort):
         if effective_spec.digest != self._spec.digest:
             raise RuntimeCapabilityError("runtime spec differs from configured authority")
         root = self._workspace_root(workspace_root or effective_spec.workspace_root)
-        capabilities = self.inspect_capabilities()
-        if not capabilities.available:
-            raise RuntimeCapabilityError(capabilities.reason or "hard runtime is unavailable")
+        capabilities = require_runtime_capabilities(self)
         if self._instances is None:
             self.destroy_session(effective_spec.session_id)
         authority = EffectiveRuntimeAuthority(
@@ -478,13 +480,16 @@ class OciRuntime(RuntimePort):
                 raise RuntimeCapabilityError("cloud runtime administration timed out") from None
             raise
 
-    def _unavailable(self, reason: str, *, version: str | None = None) -> RuntimeCapabilities:
+    def _unavailable(
+        self, reason: str, *, version: str | None = None, retryable: bool = False,
+    ) -> RuntimeCapabilities:
         return RuntimeCapabilities(
             runtime_class=self._spec.runtime_class,
             available=False,
             engine=" ".join(self._engine),
             engine_version=version,
             reason=reason,
+            retryable=retryable,
         )
 
     @staticmethod

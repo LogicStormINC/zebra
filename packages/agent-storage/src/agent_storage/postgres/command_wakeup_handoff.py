@@ -13,7 +13,10 @@ from agent_core.contracts.broker_envelope import (
 )
 from agent_core.domain.identifiers import EventId, SessionId
 from agent_core.domain.leases import DEFAULT_MAX_LEASE_TTL, LeaseConflictError, WorkerLease
+from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 
+from agent_storage.postgres.command_read_budget import command_read_budget
+from agent_storage.postgres.command_read_preflight import prepare_command_candidate
 from agent_storage.postgres.command_rollout import command_scope_mode
 from agent_storage.postgres.command_wakeup import command_scope_key
 from agent_storage.postgres.command_wakeup_discovery import _database
@@ -28,6 +31,7 @@ from agent_storage.postgres.leases import acquire_lease_in_transaction, lock_ses
 
 
 class HandoffStatus(StrEnum):
+    PREPARING = "preparing"
     ACCEPTED = "accepted"
     DUPLICATE = "duplicate"
     RETIRED_NOOP = "retired_noop"
@@ -51,6 +55,7 @@ class _TerminalAfterLease(Exception):
     """Roll back the tentative acquisition without discarding reconciliation."""
 
 
+@command_read_budget
 def handoff_command(
     dsn: str,
     *,
@@ -86,7 +91,19 @@ def handoff_command(
                 raise ValueError("scope or identity mismatch")
         except ValueError:
             raise ValueError("invalid command handoff envelope or scope") from None
-    with _database(dsn, deployment_namespace).connect() as connection:
+    preparing = prepare_command_candidate(
+        dsn,
+        deployment_namespace,
+        scope,
+        accepted_event_id,
+        raw_body,
+        envelope.wake_generation if envelope is not None else None,
+        required_scope_mode,
+        message_only=True,
+    )
+    if preparing is not None:
+        return CommandHandoff(HandoffStatus.PREPARING, preparing["command_id"], accepted_event_id)
+    with _database(dsn, deployment_namespace).connect_task_io() as connection:
         connection.execute("SET LOCAL lock_timeout = '5s'")
         pending = connection.execute(
             """SELECT * FROM session_command_pending
@@ -295,6 +312,10 @@ def handoff_command(
                         execution_floor = max(execution_floor, message.sequence)
             except LeaseConflictError:
                 return CommandHandoff(HandoffStatus.BUSY, pending["command_id"], accepted_event_id)
+            except CheckpointNotReady:
+                return CommandHandoff(
+                    HandoffStatus.PREPARING, pending["command_id"], accepted_event_id
+                )
             except (_TerminalAfterLease, MessageInputRejected):
                 lease = None
                 execution_floor = None

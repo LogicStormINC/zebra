@@ -22,8 +22,13 @@ def _context() -> HostContextEnvelope:
         host_app_id="trench",
         namespace_id="trench:user-1",
         workspace_ref="trench-workspace:user-1",
-        resource_refs=(HostResourceRef(type="trench.source", id="source-1"),),
-        scopes=("trench:source:read",),
+        resource_refs=(
+            HostResourceRef(type="principal", id="user-1"),
+            HostResourceRef(type="thread", id="trench-bootstrap-worker-opaque"),
+            HostResourceRef(type="run", id="worker-run"),
+            HostResourceRef(type="trench.source", id="source-1"),
+        ),
+        scopes=("agent.run", "trench:source:read"),
         limits=HostTechnicalLimits(
             max_runtime_seconds=300,
             max_model_tokens=10_000,
@@ -57,7 +62,9 @@ def _task(tmp_path) -> RecoveredTask:
 
 
 def _verified(context: HostContextEnvelope) -> VerifiedHostGrant:
-    return VerifiedHostGrant(context, context.grant_id, JwtAlgorithm.RS256, context.origin, "user")
+    return VerifiedHostGrant(
+        context, context.grant_id, JwtAlgorithm.RS256, context.origin, "user-1"
+    )
 
 
 def test_worker_uses_exact_context_from_latest_binding(tmp_path) -> None:
@@ -76,7 +83,7 @@ def test_worker_uses_exact_context_from_latest_binding(tmp_path) -> None:
 def test_worker_does_not_confuse_browser_origin_with_verified_jwt_issuer(tmp_path) -> None:
     context = _context()
     verified = VerifiedHostGrant(
-        context, context.grant_id, JwtAlgorithm.RS256, "https://api.trench.local", "user"
+        context, context.grant_id, JwtAlgorithm.RS256, "https://api.trench.local", "user-1"
     )
     binding = _build_binding_snapshot(
         "11111111-1111-1111-1111-111111111111",

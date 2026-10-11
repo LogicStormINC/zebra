@@ -1,5 +1,5 @@
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Literal, cast
 
@@ -21,8 +21,8 @@ from agent_security.host_grant import (
 Permission = Literal["extensions.read", "extensions.manage"]
 
 
-def _verified(**overrides: object) -> VerifiedHostGrant:
-    now = datetime(2026, 9, 6, tzinfo=UTC)
+def _verified(*, now: datetime | None = None, **overrides: object) -> VerifiedHostGrant:
+    now = now if now is not None else datetime.now(UTC)
     claims: dict[str, object] = {
         "iss": "https://host.example.com",
         "aud": "zebra",
@@ -58,6 +58,22 @@ def _verified(**overrides: object) -> VerifiedHostGrant:
         )
     )
     return verifier.verify(grant, algorithm=JwtAlgorithm.RS256, now=now)
+
+
+def test_verified_fixture_is_fresh_with_a_bounded_lifetime() -> None:
+    before = datetime.now(UTC)
+    verified = _verified()
+    after = datetime.now(UTC)
+    assert (
+        before + timedelta(seconds=299)
+        <= verified.context.expires_at
+        <= after + timedelta(seconds=300)
+    )
+
+
+def test_verified_fixture_preserves_an_explicit_security_clock() -> None:
+    now = datetime(2040, 1, 1, tzinfo=UTC)
+    assert _verified(now=now).context.expires_at == now + timedelta(minutes=5)
 
 
 @pytest.mark.parametrize(

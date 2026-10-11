@@ -10,6 +10,7 @@ helpers are imported from ``test_approved_continuation``.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,7 @@ from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_tool_call_id
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.tools import ToolCall
+from agent_runtime.crawl_gateway import CrawlGateway
 from agent_storage import SQLiteEventStore
 
 # Same-dir helpers (pytest prepend mode puts tests/worker on sys.path).
@@ -56,10 +58,10 @@ def test_web_fetch_v2_uses_durable_network_authority_and_executes_exactly_once(
         "agent_runtime.web_tools.LocalHttpFetchProvider",
         lambda **kwargs: provider,
     )
-    # Neutralize runtime DNS so the offline test does not depend on resolution.
+    # Inject at the provider boundary: cancellation runs native DNS in a child.
     monkeypatch.setattr(
-        "agent_runtime.crawl_gateway.resolve_and_validate",
-        lambda *args, **kwargs: ("93.184.216.34",),
+        "agent_runtime.web_tools.CrawlGateway",
+        partial(CrawlGateway, resolver=lambda _host: ("93.184.216.34",)),
     )
     session_id = _seed_session(database_path, tmp_path, network_profile="none")
     service = _execution_service(
@@ -76,6 +78,8 @@ def test_web_fetch_v2_uses_durable_network_authority_and_executes_exactly_once(
     assert len(provider.requests) == 1
     assert provider.requests[0].url == "https://docs.example.com/guide"
     events = SQLiteEventStore(database_path).list_for_session(session_id)
+    assert not any(event.event_type is EventType.TOOL_EXECUTION_FAILED for event in events)
+    assert sum(event.event_type is EventType.TOOL_EXECUTION_COMPLETED for event in events) == 1
     assert (
         sum(
             event.event_type is EventType.TOOL_EXECUTION_STARTED

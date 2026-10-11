@@ -126,15 +126,30 @@ def test_real_signed_grant_replay_scope_origin_and_audit_matrix(dsn: str, tmp_pa
 
     valid = jwt.encode(_claims("accepted-1"), private_key, algorithm="RS256")
     first = client.get(
-        "/sessions/not-a-valid-uuid",
+        "/sessions",
         headers={"Authorization": f"Bearer {valid}", "Origin": "https://trench.example.com"},
     )
     replay = client.get(
-        "/sessions/not-a-valid-uuid",
+        "/sessions",
         headers={"Authorization": f"Bearer {valid}", "Origin": "https://trench.example.com"},
     )
-    assert first.status_code == 400
+    assert first.status_code == 200
     assert replay.status_code == 403
+
+    invalid_target = jwt.encode(_claims("invalid-target"), private_key, algorithm="RS256")
+    for _ in range(2):
+        denied = client.get(
+            "/sessions/not-a-valid-uuid",
+            headers={
+                "Authorization": f"Bearer {invalid_target}",
+                "Origin": "https://trench.example.com",
+            },
+        )
+        assert denied.status_code == 400
+    assert not any(
+        record.outcome in {"accepted", "replay"}
+        for record in registry.list_audit(issuer=_registry().issuer, jti="invalid-target")
+    )
 
     wrong_scope = jwt.encode(
         _claims("scope-1", scopes=["trench.event.read"]),
@@ -160,25 +175,31 @@ def test_real_signed_grant_replay_scope_origin_and_audit_matrix(dsn: str, tmp_pa
     assert all(record.grant_digest != valid for record in (*audit, *scope_audit))
 
 
-@pytest.mark.parametrize("method,path,scope,accepted", [
-    ("GET", "/v1/extensions/mcp-connections", "extensions.read", True),
-    ("POST", "/v1/extensions/mcp-connections", "extensions.manage", True),
-    ("PATCH", "/v1/extensions/skill-installations/item", "extensions.manage", True),
-    ("POST", "/v1/extensions/mcp-connections", "extensions.read", False),
-    ("GET", "/v1/extensions/mcp-connections", "agent.run", False),
-    ("GET", "/sessions", "extensions.read", False),
-    ("GET", "/v1/extensions-other", "extensions.read", False),
-])
+@pytest.mark.parametrize(
+    "method,path,scope,accepted",
+    [
+        ("GET", "/v1/extensions/mcp-connections", "extensions.read", True),
+        ("POST", "/v1/extensions/mcp-connections", "extensions.manage", True),
+        ("PATCH", "/v1/extensions/skill-installations/item", "extensions.manage", True),
+        ("POST", "/v1/extensions/mcp-connections", "extensions.read", False),
+        ("GET", "/v1/extensions/mcp-connections", "agent.run", False),
+        ("GET", "/sessions", "extensions.read", False),
+        ("GET", "/v1/extensions-other", "extensions.read", False),
+    ],
+)
 def test_extension_operation_grants(dsn, method, path, scope, accepted):
     key = rsa.generate_private_key(public_exponent=65_537, key_size=2_048)
     registry = PostgresHostAuthorityStore(dsn, deployment_namespace="deployment-a")
     registry.upsert_registry(_registry())
     authorizer = PostgresHostGrantRequestAuthorizer(
-        registry=registry, decoder=PyJwtHostGrantDecoder(_StaticResolver(key.public_key())),
+        registry=registry,
+        decoder=PyJwtHostGrantDecoder(_StaticResolver(key.public_key())),
     )
     token = jwt.encode(_claims(str(uuid4()), scopes=[scope]), key, algorithm="RS256")
     request = HostGrantHttpRequest(
-        method=method, path=path, origin="https://trench.example.com",
+        method=method,
+        path=path,
+        origin="https://trench.example.com",
         authorization=f"Bearer {token}",
     )
     if accepted:
@@ -192,7 +213,8 @@ class _StaticResolver:
     def __init__(self, key: object) -> None:
         self.key = key
 
-    def resolve(self, jwks_uri: str, token: str) -> object:
+    def resolve(self, jwks_uri: str, token: str, *, deadline: float | None = None) -> object:
         assert jwks_uri.startswith("https://")
         assert token
+        assert deadline is not None
         return self.key

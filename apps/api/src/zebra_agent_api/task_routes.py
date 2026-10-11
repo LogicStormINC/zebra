@@ -4,6 +4,7 @@ from typing import Protocol
 
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_security.host_grant import VerifiedHostGrant
+from agent_storage import PostgresControlPlaneStores
 
 from zebra_agent_api.app import ZebraAgentApi
 from zebra_agent_api.responses import ApiResponse
@@ -13,9 +14,11 @@ from zebra_agent_api.task_api import (
     append_task_message,
     create_task,
     mutate_task,
+    parse_task_id,
     rollover_task,
     route_active_task,
 )
+from zebra_agent_api.task_read_summaries import read_task_attachments, read_task_usage
 
 
 class TaskRouteRequest(Protocol):
@@ -102,6 +105,19 @@ def handle_task_route(app: ZebraAgentApi, request: TaskRouteRequest) -> ApiRespo
         )
     if method == "GET" and len(parts) == 1:
         return TaskReadApi(app.stores).get(parts[0])
+    if method == "GET" and len(parts) == 2 and parts[1] == "header":
+        return TaskReadApi(app.stores).header(parts[0])
+    if method == "GET" and len(parts) == 2 and parts[1] in {"usage", "attachments"}:
+        parsed = parse_task_id(parts[0])
+        if isinstance(parsed, ApiResponse):
+            return parsed
+        if parts[1] == "usage":
+            return read_task_usage(
+                app.stores.tasks,
+                parsed,
+                legacy=not isinstance(app.stores, PostgresControlPlaneStores),
+            )
+        return read_task_attachments(app.stores.tasks, parsed, request.query or {})
     if method == "GET" and len(parts) == 2 and parts[1] == "stream":
         return TaskReadApi(app.stores).stream(parts[0])
     if method == "GET" and len(parts) == 2 and parts[1] == "subagents":

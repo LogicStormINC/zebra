@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
@@ -39,6 +40,8 @@ from zebra_agent_worker.provider_continuation_commit import (
 
 
 class _FakeRecorder:
+    mutation = staticmethod(nullcontext)
+
     def __init__(
         self,
         session: Session,

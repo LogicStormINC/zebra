@@ -12,7 +12,7 @@ from uuid import UUID
 from agent_core.application.session_projection import rebuild_session
 from agent_core.application.workspace_projection import WorkspaceProjectionError, rebuild_workspace
 from agent_core.domain.events import EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import SessionId, TaskId
 from psycopg import sql
 
 from agent_storage.postgres.database import PostgresDatabase
@@ -42,13 +42,34 @@ from agent_storage.postgres.migration_snapshot import (
     SnapshotRecord,
     load_sqlite_snapshot,
 )
+from agent_storage.postgres.migration_task_positions import (
+    TaskPositionMigrationError,
+    restore_task_positions,
+    snapshot_task_positions,
+    validate_task_position_membership,
+)
 from agent_storage.postgres.model_tool_projections import index_event_in_transaction
+from agent_storage.postgres.projection_source_metadata import backfill_projection_source_metadata
 from agent_storage.postgres.projections import save_session_in_transaction
+from agent_storage.postgres.task_event_positions import backfill_task_event_positions
 from agent_storage.postgres.task_index_transactions import rebuild_task_in_transaction
 from agent_storage.postgres.task_lineage import root_for_session
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
 
 _IMPORT_IDENTITY = "zebra-postgres-migration-v1"
+_EVENT_DERIVED_COLUMNS = {
+    "event_bytes_bound_v1",
+    "event_bytes_bound",
+    "replay_command_kind",
+    "replay_run_id",
+    "replay_internal_continuation",
+    "replay_header_ready",
+    "projection_handoff_id",
+    "projection_peer_segment_id",
+    "projection_metadata_ready",
+    "projection_block_start",
+}
+
 
 class MigrationImportError(RuntimeError):
     """Raised when a snapshot cannot be imported without losing authority."""
@@ -105,6 +126,10 @@ def import_sqlite_event_snapshot(
         names = ", ".join(sorted(unsupported))
         raise MigrationImportError(f"snapshot contains unsupported authoritative tables: {names}")
     events = _events_from_records(records_by_table.get("session_events", []))
+    try:
+        positions = snapshot_task_positions(records_by_table.get("session_events", []))
+    except TaskPositionMigrationError as error:
+        raise MigrationImportError(str(error)) from error
     database = PostgresDatabase(postgres_dsn, deployment_namespace=deployment_namespace)
     with database.connect() as connection:
         connection.execute(
@@ -121,9 +146,7 @@ def import_sqlite_event_snapshot(
                 if index_event_in_transaction(connection, deployment_namespace, event) is not None:
                     model_tool_projection_count += 1
             except (KeyError, TypeError, ValueError) as error:
-                raise MigrationImportError(
-                    "Event cannot rebuild model/tool projection"
-                ) from error
+                raise MigrationImportError("Event cannot rebuild model/tool projection") from error
         try:
             context_report = replay_context_snapshot(
                 connection,
@@ -194,12 +217,26 @@ def import_sqlite_event_snapshot(
                 )
                 for session_id in grouped
             }
-            for root_session_id in task_roots:
+            restore_task_positions(connection, deployment_namespace, positions)
+            for root_session_id in sorted(task_roots, key=str):
                 rebuild_task_in_transaction(
                     connection,
                     deployment_namespace,
                     root_session_id,
                 )
+                # ponytail: this restricted offline snapshot is already fully materialized.
+                # Ordinary adoption commits one <=256-row batch; import is atomic as a whole.
+                while not backfill_task_event_positions(
+                    connection, deployment_namespace, TaskId(root_session_id)
+                ):
+                    pass
+                # Restored coordinates can precede Task membership, so the source
+                # trigger could not build blocks then. Rebuild them after admission.
+                while not backfill_projection_source_metadata(
+                    connection, deployment_namespace, TaskId(root_session_id), limit=256
+                ):
+                    pass
+            validate_task_position_membership(connection, deployment_namespace)
             handoff_lineage_count = validate_rebuilt_handoff_lineage(
                 connection,
                 deployment_namespace,
@@ -245,8 +282,20 @@ def _events_from_records(records: Sequence[SnapshotRecord]) -> tuple[SessionEven
                 "idempotency_key",
                 "policy_version",
                 "model_profile",
-            },
+            }
+            | (set(record.columns) & _EVENT_DERIVED_COLUMNS)
+            | (
+                {"task_id", "task_sequence"}
+                if {"task_id", "task_sequence"}.intersection(record.columns)
+                else set()
+            ),
         )
+        # Canonical Events are replayed; byte/header/block metadata is recomputed by
+        # the destination's source-owned rules, never trusted from an old snapshot.
+        for column in _EVENT_DERIVED_COLUMNS:
+            values.pop(column, None)
+        values.pop("task_id", None)
+        values.pop("task_sequence", None)
         payload = values["payload"]
         if isinstance(payload, str):
             try:
@@ -270,7 +319,11 @@ def _events_from_records(records: Sequence[SnapshotRecord]) -> tuple[SessionEven
 
 
 def _record_values(record: SnapshotRecord, expected: set[str]) -> dict[str, object]:
-    if set(record.columns) != expected or len(record.columns) != len(record.values):
+    if (
+        set(record.columns) != expected
+        or len(set(record.columns)) != len(record.columns)
+        or len(record.columns) != len(record.values)
+    ):
         raise MigrationImportError(f"unexpected {record.table} column contract")
     return dict(zip(record.columns, record.values, strict=True))
 

@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid5
 
+from agent_core.contracts.session_commands import SessionCommand, SessionCommandKind
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.parent_continuation import (
@@ -201,17 +202,16 @@ class ChildCompletionWakeupService:
                 sequence=next_sequence,
                 event_type=EventType.SESSION_COMMAND_ACCEPTED,
                 actor=EventActor.HARNESS,
-                payload={
-                    "command_id": str(uuid5(_WAKEUP_NAMESPACE, f"wakeup:{parent}:{epoch_digest}")),
-                    "session_id": str(parent_session),
-                    "kind": "resume",
-                    "expected_revision": int(epoch_anchor["anchored_revision"]),
-                    "idempotency_key": f"child-wakeup:{parent}",
-                    "payload": {"child_results": child_results},
-                    "fingerprint": _command_fingerprint(f"{parent}:{epoch_digest}", "resume"),
-                },
+                payload=SessionCommand(
+                    command_id=uuid5(_WAKEUP_NAMESPACE, f"wakeup:{parent}:{epoch_digest}"),
+                    session_id=parent_session,
+                    kind=SessionCommandKind.RESUME,
+                    expected_revision=int(epoch_anchor["anchored_revision"]),
+                    idempotency_key=f"child-wakeup:{parent}:{epoch_digest}",
+                    payload={"child_results": child_results},
+                ).event_payload(),
                 created_at=datetime.now(UTC),
-                idempotency_key=f"wakeup:{parent}:{epoch_digest}",
+                idempotency_key=f"child-wakeup:{parent}:{epoch_digest}",
             )
             self._append_event(connection, namespace, event)
         return {
@@ -339,7 +339,3 @@ class ChildCompletionWakeupService:
         if row is None:
             return None
         return TaskId(UUID(str(row["parent_task_id"])))
-
-
-def _command_fingerprint(session_id: str, kind: str) -> str:
-    return hashlib.sha256(f"{session_id}:{kind}".encode()).hexdigest()

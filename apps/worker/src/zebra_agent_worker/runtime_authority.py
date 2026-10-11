@@ -1,7 +1,7 @@
 import hashlib
 import json
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from typing import Protocol
 
@@ -313,6 +313,14 @@ def runtime_cleanup_failure_result(
     error: Exception,
     prior: HarnessAttemptResult,
 ) -> HarnessAttemptResult:
+    if prior.outcome is not HarnessAttemptOutcome.COMPLETED:
+        return replace(
+            prior,
+            metadata={
+                **prior.metadata,
+                "cleanup_error_type": type(error).__name__,
+            },
+        )
     return HarnessAttemptResult(
         outcome=HarnessAttemptOutcome.FAILED,
         summary="runtime cleanup failed",

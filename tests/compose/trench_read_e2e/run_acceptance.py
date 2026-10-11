@@ -11,25 +11,27 @@ import uuid
 from collections.abc import Mapping
 from hashlib import sha256
 from pathlib import Path
-from typing import cast
 from urllib.parse import quote
 
-from support import (  # type: ignore[import-not-found]
+from support import (
     Config,
     ConfigError,
     E2EError,
     SseEvent,
     business_snapshot,
     cookie_headers,
+    host_thread_for_task,
     join_url,
     load_config,
     obtain_grant,
+    product_task_binding,
     read_manifest_and_event,
     request,
     require_status,
     run_input,
     sse_events,
     task_state,
+    validate_isolation,
 )
 
 MANIFEST = Path(__file__).with_name("runner_manifest.json")
@@ -51,6 +53,10 @@ REQUIRED_ENV = (
     "ZEBRA_E2E_OBJECT_STORE_HEALTH_URL",
     "ZEBRA_E2E_GRANT_EXCHANGE_URL",
     "ZEBRA_E2E_WORKER_RESTART_URL",
+    "ZEBRA_E2E_ISOLATION_MANIFEST",
+    "TRENCH_E2E_USER_ID",
+    "TRENCH_E2E_WORKSPACE_ID",
+    "TRENCH_E2E_RUNTIME_TASKS_URL",
 )
 SCENARIOS = (
     "infrastructure",
@@ -93,6 +99,7 @@ TERMINAL_EVENT_TYPES = {
 
 
 def create_product_conversation(config: Config) -> str:
+    validate_isolation(config)
     conversation_key = f"zebra-e2e-{uuid.uuid4()}"
     response = request(
         "POST",
@@ -121,6 +128,7 @@ def create_product_conversation(config: Config) -> str:
 
 
 def run_product_turn(config: Config, conversation_key: str, prompt: str) -> str:
+    validate_isolation(config)
     response = request(
         "POST",
         join_url(
@@ -168,31 +176,6 @@ def run_product_turn(config: Config, conversation_key: str, prompt: str) -> str:
     raise E2EError("trench_turn_timeout")
 
 
-def product_task_binding(config: Config, conversation_key: str) -> str:
-    try:
-        import psycopg
-
-        with psycopg.connect(config.trench_database_dsn, connect_timeout=5) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT zebra_task_id
-                    FROM trench_ai_product_conversations
-                    WHERE key LIKE %s
-                    ORDER BY updated_at_ms DESC
-                    LIMIT 1
-                    """,
-                    (f"%::{conversation_key}",),
-                )
-                row = cursor.fetchone()
-    except Exception as exc:
-        raise E2EError("trench_task_binding_unavailable") from exc
-    task_id = row[0] if row is not None else None
-    if not isinstance(task_id, str) or not task_id:
-        raise E2EError("trench_task_binding_unavailable")
-    return task_id
-
-
 def command(
     config: Config,
     task_id: str,
@@ -201,6 +184,7 @@ def command(
     expected_revision: int,
     input_payload: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
+    validate_isolation(config)
     body: dict[str, object] = {
         "action": action,
         "threadId": task_id,
@@ -209,7 +193,7 @@ def command(
     }
     if input_payload is not None:
         body["input"] = dict(input_payload)
-    grant = obtain_grant(config, task_id, run_id)
+    grant = obtain_grant(config, host_thread_for_task(config, task_id), run_id)
     key_hash = sha256(json.dumps(body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     response = request(
         "POST",
@@ -246,12 +230,13 @@ def command(
 
 
 def append_task_message(config: Config, task_id: str, run_id: str, content: str) -> int:
+    validate_isolation(config)
     body = {
         "content": content,
         "model_profile": "deepseek-v4-flash-executor-v1",
         "reasoning_effort": "high",
     }
-    grant = obtain_grant(config, task_id, run_id)
+    grant = obtain_grant(config, host_thread_for_task(config, task_id), run_id)
     key_hash = sha256(json.dumps(body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     response = request(
         "POST",
@@ -279,10 +264,10 @@ def append_task_message(config: Config, task_id: str, run_id: str, content: str)
 def wait_task_terminal(config: Config, task_id: str, run_id: str) -> None:
     deadline = time.monotonic() + config.timeout_seconds
     while time.monotonic() < deadline:
-        grant = obtain_grant(config, task_id, run_id)
+        grant = obtain_grant(config, host_thread_for_task(config, task_id), run_id)
         response = request(
             "GET",
-            f"{config.task_url}/{quote(task_id, safe='')}",
+            f"{config.task_url}/{quote(task_id, safe='')}/header",
             headers={
                 "Accept": "application/json",
                 "Authorization": f"Bearer {grant}",
@@ -317,9 +302,7 @@ def control_command(
                 "Resume the bounded read-only task.",
                 revision,
             )
-            input_payload["resume"] = [
-                {"interruptId": "e2e-control", "status": "resolved"}
-            ]
+            input_payload["resume"] = [{"interruptId": "e2e-control", "status": "resolved"}]
         try:
             return command(config, task_id, run_id, action, revision, input_payload)
         except E2EError as exc:
@@ -369,30 +352,35 @@ def direct_stream(
     cursor: str | None = None,
     stop_after: int | None = None,
 ) -> list[SseEvent]:
-    grant = obtain_grant(config, task_id, run_id)
+    grant = obtain_grant(config, host_thread_for_task(config, task_id), run_id)
     stream_url = (
         f"{config.zebra_base_url}/agui/threads/{quote(task_id, safe='')}"
         f"/runs/{quote(run_id, safe='')}/stream"
     )
-    return cast(
-        list[SseEvent],
-        sse_events(
-            "GET",
-            stream_url,
-            headers={
-                "Accept": "text/event-stream",
-                "Authorization": f"Bearer {grant}",
-                "X-Trench-Request-Id": config.request_id,
-            },
-            payload=None,
-            timeout=config.timeout_seconds,
-            cursor=cursor,
-            stop_after=stop_after,
-        ),
+    return sse_events(
+        "GET",
+        stream_url,
+        headers={
+            "Accept": "text/event-stream",
+            "Authorization": f"Bearer {grant}",
+            "X-Trench-Request-Id": config.request_id,
+        },
+        payload=None,
+        timeout=config.timeout_seconds,
+        cursor=cursor,
+        stop_after=stop_after,
     )
 
 
 def worker_restart(config: Config, task_id: str, run_id: str) -> None:
+    validate_isolation(config)
+    from isolation import host_qa_mode
+
+    if host_qa_mode():
+        from joint_worker_takeover import host_worker_restart
+
+        host_worker_restart(config, task_id, run_id)
+        return
     headers = {"Accept": "application/json", "X-Trench-Request-Id": config.request_id}
     if config.operator_token:
         headers["X-E2E-Operator-Token"] = config.operator_token
@@ -427,7 +415,7 @@ def _scenario_infrastructure(config: Config, state: dict[str, object]) -> None:
 def _scenario_read_task(config: Config, state: dict[str, object]) -> None:
     read_manifest_and_event(config, READ_TOOL_NAMES)
     conversation_key = create_product_conversation(config)
-    run_product_turn(
+    run_id = run_product_turn(
         config,
         conversation_key,
         "Load any selected Skill instructions, then return one bounded read-only summary.",
@@ -435,7 +423,8 @@ def _scenario_read_task(config: Config, state: dict[str, object]) -> None:
     task_id = product_task_binding(config, conversation_key)
     state["conversation_key"] = conversation_key
     state["task_id"] = task_id
-    state["revision"] = task_state(config, task_id, "bootstrap")
+    state["current_run_id"] = run_id
+    state["revision"] = task_state(config, task_id, run_id)
 
 
 def _require_task(state: Mapping[str, object]) -> tuple[str, int]:
@@ -457,6 +446,7 @@ def _scenario_long_task(config: Config, state: dict[str, object]) -> None:
         "context and return a bounded summary.",
     )
     run_id = run_product_turn(config, conversation_key, prompt)
+    state["task_id"] = product_task_binding(config, conversation_key)
     state["long_run_id"] = run_id
 
 
@@ -499,9 +489,11 @@ def _scenario_stop_resume(config: Config, state: dict[str, object]) -> None:
 
 def _scenario_grant_replay(config: Config, state: dict[str, object]) -> None:
     task_id, _ = _require_task(state)
-    run_id = f"grant-replay-{uuid.uuid4()}"
-    grant = obtain_grant(config, task_id, run_id)
-    url = f"{config.task_url}/{task_id}"
+    run_id = state.get("long_run_id") or state.get("current_run_id")
+    if not isinstance(run_id, str):
+        raise E2EError("dependency_current_run")
+    grant = obtain_grant(config, host_thread_for_task(config, task_id), run_id)
+    url = f"{config.task_url}/{quote(task_id, safe='')}/header"
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {grant}",
@@ -515,6 +507,7 @@ def _scenario_grant_replay(config: Config, state: dict[str, object]) -> None:
 
 
 def _scenario_host_tool_failure(config: Config, _state: dict[str, object]) -> None:
+    validate_isolation(config)
     response = request(
         "POST",
         join_url(config.read_tools_url, "/tools/events.get_event/invoke"),
@@ -548,9 +541,12 @@ def _run(evidence_dir: Path) -> int:
         "runner": "EMB-TRN-READ-E2E-01",
         "scenarios": {},
         "passed": False,
+        "full_goal_passed": False,
+        "scope": "legacy_nine_service_smokes_only",
     }
     try:
         config = load_config(os.environ, REQUIRED_ENV)
+        validate_isolation(config)
     except ConfigError as error:
         result.update(
             {
@@ -603,10 +599,16 @@ def _run(evidence_dir: Path) -> int:
                 "duration_seconds": round(time.monotonic() - started, 3),
             }
             print(f"{name}=PASS")
-    result.update({"status": "passed" if failures == 0 else "failed", "passed": failures == 0})
+    result.update(
+        {
+            "status": "blocked" if failures == 0 else "failed",
+            "smoke_passed": failures == 0,
+            "reason": "joint_14_cases_and_100_healthy_not_executed",
+        }
+    )
     _write_result(evidence_dir, result)
-    print(f"ZEBRA_TRENCH_READ_E2E={'PASS' if failures == 0 else 'FAIL'}")
-    return 0 if failures == 0 else 1
+    print(f"ZEBRA_TRENCH_READ_E2E={'BLOCKED' if failures == 0 else 'FAIL'}")
+    return 2 if failures == 0 else 1
 
 
 def _list_manifest() -> int:
@@ -620,12 +622,24 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--evidence-dir", type=Path)
+    parser.add_argument("--joint-preflight", action="store_true")
+    parser.add_argument("--joint", action="store_true")
+    parser.add_argument("--case", choices=["simple_answer"], default="simple_answer")
+    parser.add_argument("--guard", action="store_true")
     args = parser.parse_args()
     if args.list:
         return _list_manifest()
     evidence_dir = args.evidence_dir or Path(
         os.environ.get("ZEBRA_TRENCH_READ_E2E_EVIDENCE_DIR", "trench-read-e2e-evidence")
     )
+    if args.joint_preflight or args.joint:
+        from joint_acceptance import run_joint
+
+        return run_joint(
+            os.environ, evidence_dir, preflight_only=args.joint_preflight, guard=args.guard
+        )
+    if args.guard:
+        parser.error("--guard requires --joint-preflight")
     return _run(evidence_dir)
 
 

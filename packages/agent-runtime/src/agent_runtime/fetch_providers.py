@@ -8,9 +8,10 @@ public-address preflight, HTML cleaning via ``project_web_text``).
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
-from agent_core.domain.web import parse_web_target
+from agent_core.domain.web import WebTargetError, parse_web_target
 from agent_tools.web_crawl import FetchProviderError, FetchRequest, FetchResult
 from agent_tools.web_gateway import (
     DEFAULT_WEB_MAX_BYTES,
@@ -26,6 +27,7 @@ from agent_runtime.web_gateway import LocalWebGatewayTransport
 class LocalHttpFetchProvider:
     use_system_proxy: bool = False
     max_bytes: int = DEFAULT_WEB_MAX_BYTES
+    network_cancellation_check: Callable[[], None] | None = None
 
     @property
     def name(self) -> str:
@@ -36,10 +38,13 @@ class LocalHttpFetchProvider:
         return True
 
     def fetch(self, request: FetchRequest) -> FetchResult:
-        transport = LocalWebGatewayTransport(use_system_proxy=self.use_system_proxy)
+        transport = LocalWebGatewayTransport(
+            use_system_proxy=self.use_system_proxy,
+            network_cancellation_check=self.network_cancellation_check,
+        )
         try:
             target = parse_web_target(request.url)
-        except Exception as exc:  # WebTargetError
+        except WebTargetError as exc:
             raise FetchProviderError(str(exc), reason="invalid_web_target") from exc
         try:
             response = transport.execute(
@@ -57,7 +62,15 @@ class LocalHttpFetchProvider:
             final_url=target.url,
             clean_markdown=response.text,
             fetch_mode="http",
-            complete=True,
+            complete=response.status_code != 206
+            and response.metadata.get("output_truncated") is False,
+            truncation_reason=(
+                "partial_content"
+                if response.status_code == 206
+                else "source_output_limit"
+                if response.metadata.get("output_truncated") is True
+                else None
+            ),
             content_type=response.content_type,
             wire_bytes=response.byte_count,
             decoded_bytes=response.byte_count,

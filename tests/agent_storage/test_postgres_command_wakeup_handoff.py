@@ -23,7 +23,7 @@ from tests.agent_storage.test_postgres_command_wakeup import NAMESPACE, _enable,
 from tests.agent_storage.test_postgres_command_wakeup import dsn as _dsn_fixture
 from tests.agent_storage.test_postgres_command_wakeup import postgres_dsn as _postgres_dsn_fixture
 from tests.agent_storage.test_postgres_command_wakeup_discovery import SCOPE
-from tests.agent_storage.test_postgres_lease_clock import _wait, _wait_locked, _worker_dsn
+from tests.agent_storage.test_postgres_lease_clock import _wait_locked, _worker_dsn
 from tests.agent_storage.test_postgres_leases import _expire
 
 dsn = _dsn_fixture
@@ -271,24 +271,31 @@ def test_terminal_committed_during_lease_wait_rolls_back_new_acquisition(dsn, te
                     "WHERE deployment_namespace = %s AND session_id = %s",
                     (terminal, NAMESPACE, event.session_id),
                 )
-                _wait(observer, "SELECT clock_timestamp() > %s", (initial.expires_at,))
+                # Expire the test lease under its owning transaction rather than
+                # consuming the entire native 2s I/O budget with wall-clock sleep.
+                old_worker.execute(
+                    "UPDATE worker_leases "
+                    "SET expires_at=clock_timestamp()-interval '1 millisecond' "
+                    "WHERE deployment_namespace=%s AND session_id=%s",
+                    (NAMESPACE, event.session_id),
+                )
             result = future.result(timeout=3)
     assert result.status is HandoffStatus.REQUIRES_RECONCILIATION
     assert result.lease is None and store.get(event.session_id) is None
     with psycopg.connect(dsn) as connection:
-        assert connection.execute(
+        stored = connection.execute(
             "SELECT control_plane_epoch, fencing_token, owner_instance_id, checkpoint, "
             "acquired_at, heartbeat_at, expires_at, released_at FROM worker_leases"
-        ).fetchone() == (
+        ).fetchone()
+        assert stored[:6] == (
             initial.fence.control_plane_epoch,
             initial.fence.fencing_token,
             initial.fence.owner_instance_id,
             initial.checkpoint,
             initial.acquired_at,
             initial.heartbeat_at,
-            initial.expires_at,
-            None,
         )
+        assert stored[6] < initial.expires_at and stored[7] is None
         assert connection.execute(
             "SELECT status,control_plane_epoch,fencing_token FROM command_handoff_receipts"
         ).fetchone() == ("requires_reconciliation", None, None)

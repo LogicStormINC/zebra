@@ -173,3 +173,31 @@ def test_stale_revision_and_enclosing_rollback_preserve_exact_lineage(dsn, tmp_p
             )
             raise RuntimeError("injected after lineage write")
     assert before == {table: _rows(dsn, table) for table in tables}
+
+
+def test_task_serialization_does_not_reenter_a_root_session_lease_lock(dsn, tmp_path):
+    """A metadata append already holding lease SHARE must not reacquire its boundary."""
+    from agent_storage.postgres.leases import assert_current_lease_fence
+    from agent_storage.postgres.task_index_transactions import _lock_task
+
+    task, source, _, authority = _setup(dsn, tmp_path, False)
+    name = f"task-domain-{uuid4()}"
+    competitor = PostgresLeaseStore(_worker_dsn(dsn, name), deployment_namespace=NAMESPACE)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        with PostgresDatabase(dsn, deployment_namespace=NAMESPACE).connect() as owner:
+            owner.execute("SET LOCAL lock_timeout = '400ms'")
+            assert_current_lease_fence(owner, NAMESPACE, source, authority.lease_fence)
+            acquisition = executor.submit(
+                competitor.acquire, source, owner_instance_id="other", ttl=timedelta(seconds=30)
+            )
+            with psycopg.connect(dsn, autocommit=True) as observer:
+                _wait_locked(observer, name)
+                wait = observer.execute(
+                    "SELECT wait_event FROM pg_stat_activity WHERE application_name=%s", (name,)
+                ).fetchone()
+                assert wait == ("transactionid",)
+            # The competitor owns the Session advisory lock and awaits our lease SHARE.
+            # Task allocation must use a different lock domain, otherwise this cycles.
+            _lock_task(owner, NAMESPACE, task)
+        with pytest.raises(LeaseConflictError):
+            acquisition.result(timeout=5)

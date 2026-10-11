@@ -10,9 +10,12 @@ from agent_core.contracts.broker_envelope import (
     ZebraCommandEnvelope,
     parse_broker_envelope,
 )
-from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
+from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 
+from agent_storage.postgres.command_read_budget import command_read_budget
+from agent_storage.postgres.command_read_preflight import prepare_command_candidate
+from agent_storage.postgres.command_read_state import command_event_at
 from agent_storage.postgres.command_rollout import command_scope_mode
 from agent_storage.postgres.command_wakeup import command_scope_key
 from agent_storage.postgres.command_wakeup_discovery import _database
@@ -27,6 +30,7 @@ from agent_storage.postgres.session_cancellation import (
 
 
 class ControlStatus(StrEnum):
+    PREPARING = "preparing"
     CANCELLED = "cancelled"
     TERMINAL_NOOP = "terminal_noop"
     UNSUPPORTED = "unsupported"
@@ -43,6 +47,7 @@ class CommandControl:
     terminal_event_id: UUID | None = None
 
 
+@command_read_budget
 def handle_control_command(
     dsn: str,
     *,
@@ -66,7 +71,18 @@ def handle_control_command(
     ):
         raise ValueError("control envelope identity or scope mismatch")
     namespace = deployment_namespace
-    with _database(dsn, namespace).connect() as connection:
+    preparing = prepare_command_candidate(
+        dsn,
+        namespace,
+        scope,
+        accepted_event_id,
+        raw_body,
+        envelope.wake_generation if envelope is not None else None,
+        required_scope_mode,
+    )
+    if preparing is not None:
+        return CommandControl(accepted_event_id, ControlStatus.PREPARING)
+    with _database(dsn, namespace).connect_task_io() as connection:
         connection.execute("SET LOCAL lock_timeout = '5s'")
         pending = connection.execute(
             """SELECT * FROM session_command_pending WHERE deployment_namespace=%s
@@ -133,8 +149,13 @@ def handle_control_command(
             return CommandControl(
                 accepted_event_id, ControlStatus.DUPLICATE, previous["terminal_event_id"]
             )
-        events, lease, now = lock_cancellation_context(connection, namespace, session_id)
-        accepted = next(event for event in events if event.event_id == accepted_event_id)
+        try:
+            state, lease, now = lock_cancellation_context(connection, namespace, session_id)
+        except CheckpointNotReady:
+            return CommandControl(accepted_event_id, ControlStatus.PREPARING)
+        accepted = command_event_at(connection, namespace, session_id, accepted_event_id)
+        if accepted is None:
+            raise ValueError("canonical control Event is absent")
         kind = accepted.payload["kind"]
         if kind not in ("cancel", "stop", "suspend"):
             raise ValueError("command is not a control operation")
@@ -149,18 +170,10 @@ def handle_control_command(
         elif kind == "suspend":
             outcome = ControlStatus.UNSUPPORTED
         else:
-            terminal = next(
-                (
-                    event
-                    for event in reversed(events)
-                    if event.event_type
-                    in {
-                        EventType.SESSION_COMPLETED,
-                        EventType.SESSION_FAILED,
-                        EventType.SESSION_CANCELLED,
-                    }
-                ),
-                None,
+            terminal = (
+                command_event_at(connection, namespace, session_id, state.terminal_event_id)
+                if state.terminal_event_id is not None
+                else None
             )
             if terminal is not None:
                 outcome = ControlStatus.TERMINAL_NOOP
@@ -168,7 +181,7 @@ def handle_control_command(
                 terminal, revoked = cancel_in_transaction(
                     connection,
                     namespace,
-                    events,
+                    state,
                     lease,
                     now,
                     operation_id=accepted_event_id,

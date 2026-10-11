@@ -77,6 +77,7 @@ def delegate_durable_research(
     parent_binding: object | None,
     max_model_calls: int,
     max_tool_calls: int,
+    parent_attempt_number: int = 1,
 ) -> ToolResult:
     from agent_core.application.session_bootstrap import (
         SessionBootstrapCommand,
@@ -118,6 +119,18 @@ def delegate_durable_research(
             reason="durable_delegation_requires_parent_task_id",
             detail="the parent Task identity is unavailable",
         )
+    if parent_binding.task_id != str(parent_uuid):
+        return _refused(
+            tool_call,
+            reason="durable_delegation_parent_mismatch",
+            detail="the parent Task identity disagrees with its frozen binding",
+        )
+    if type(parent_attempt_number) is not int or parent_attempt_number < 1:
+        return _refused(
+            tool_call,
+            reason="durable_delegation_invalid_attempt",
+            detail="the parent Attempt must be a positive integer",
+        )
     get_link = getattr(delegation_store, "get_link", None)
     if callable(get_link) and get_link(TaskId(parent_uuid)) is not None:
         return _refused(
@@ -137,7 +150,7 @@ def delegate_durable_research(
         )
         request = SubagentDelegationRequest(
             parent_task_id=TaskId(parent_uuid),
-            parent_attempt_number=1,
+            parent_attempt_number=parent_attempt_number,
             parent_tool_call_id=str(tool_call.tool_call_id),
             delegation_index=0,
             role=SubagentRole.RESEARCHER,
@@ -176,6 +189,7 @@ def delegate_durable_research(
             kind=SessionCommandKind.RUN,
             expected_revision=bootstrap.events[-1].sequence,
             idempotency_key=run_key,
+            payload={"run_id": run_key},
         )
         run_event = SessionEvent.create(
             session_id=bootstrap.session.session_id,

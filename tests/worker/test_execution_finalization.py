@@ -103,9 +103,11 @@ def test_cloud_side_effects_can_leave_the_durable_reply_path() -> None:
         cloud_memory_store=object(),  # type: ignore[arg-type]
         started_at=datetime(2026, 8, 29, tzinfo=UTC),
         defer_cloud_side_effects=True,
+        attempt_number=3,
     )
 
     assert [event[0] for event in events] == [
         EventType.TURN_COMPLETED,
         EventType.SESSION_COMPLETED,
     ]
+    assert all(event[2]["attempt_number"] == 3 for event in events)
