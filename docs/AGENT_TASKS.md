@@ -2,9 +2,10 @@
 
 ### LOCAL-BRANCH-INTEGRATION-20261012 - Preserve and reconcile local work
 
-- Status: Review (regressions repaired; full9011/static GO; local integration pending).
+- Status: Done (local merge0c78c9b2; full9011/static GO; performance/runtime gates open).
 - Human owner: Luke Ding; executor: Codex.
-- Branch/worktree: codex/integrate-cloud-agent-trench-20261007, existing isolated tree.
+- Branch/worktree: codex/integrate-cloud-agent-trench-20261007 integrated into
+  cloud-agent-trench; isolated checkout retained detached after documentation.
 - Owned paths: merge conflicts in API, Worker, core Ports, integrations, storage,
   tools and corresponding tests; migration composition; docs/governance evidence.
 - Disjoint delegated lanes: API/integrations; Worker/core/effect guard. Storage,
@@ -656,7 +657,9 @@
   Cooperative component GO: independent native-enabled 32/zero skips, zero leaks;
   main default 6,655/1,519 prerequisite skips, Mypy 1,079/Ruff/eval30 passed.
   Full transcript/locked-proof scaling and live acceptance remain unfinished.
-- Branch/worktree: codex/cov-exec-01; cov-exec-01/zebra-agent.
+- Source branch/worktree: codex/cov-exec-01 integrated into cloud-agent-trench
+  on2026-10-12; cov-exec-01/zebra-agent retained detached atf02e455c. This task
+  remains In Progress: SQL<=1000/fleet/live gates are not closed by integration.
 - Certified report HTTP follow-up (claimed 2026-10-10, Luke Ding/Codex):
   apps/api/src/zebra_agent_api/coverage_report*.py;
   apps/api/src/zebra_agent_api/{http,routes,host_auth,factory,app}.py;

@@ -120,6 +120,20 @@ Trench `make check` passed: API 233 passed / 62 infrastructure skips; cleaning
 passed. An additional 70 native coverage/history checks passed in disposable
 schemas; no production migration was applied.
 
+## Local integration outcome
+
+Zebra merge `0c78c9b23dfd263ed17528176dcaa3a388261d37` has parents
+`704fea865745aaf6e3df3920ab792f3c001a8af0` and
+`f02e455c15ec88b2a8941b7971c088e246b3f65d`; the primary `cloud-agent-trench`
+checkout was fast-forwarded to it. Primary independent SDK/AGENTS binary-diff
+digest and both new component hashes match the pre-integration copies exactly.
+Coverage/compatibility refs were deleted only after ancestor checks; their dirty
+or generated files stayed exact in retained same-HEAD detached checkouts.
+The documentation follow-up is also integrated before removing the short-lived
+integration ref. Zebra retains `cloud-agent-trench`, `cloud-agent`, `main`;
+Trench retains `main` at `7015ee9` (source merge `d0c97374`). Recovery bundles,
+all11 stashes, unmatched historical patches and ignored runtime data remain.
+
 ## Remaining acceptance, not hidden by a merge
 
 - The existing nine-record strict workload records **10497 client SQL calls**;

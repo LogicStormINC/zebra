@@ -10,7 +10,8 @@ Native authority80/storage65/privacy13 and Worker dispatch17 pass. Combined
 full-source validation passes9011/2511-prerequisite-skips; checkpoint compatibility, exclusive
 source-owned work routing and scalar-header query cost focused gates pass.
 Staged static gate passes2920-size/1231-typed/eval30; Zebra target integration
-is ready for local target integration.
+is locally merged into cloud-agent-trench at0c78c9b2. Independent primary SDK/
+AGENTS edits remain uncommitted and byte-identical; old checkouts stay detached.
 Trench is locally integrated into main with full check/build and native70 GO.
 The existing strict nine SQL<=1000 gate remains FAIL at10497 client calls;
 receipts OFF, runtime/fleet/semantic acceptance OPEN. No push or service restart.

@@ -9,9 +9,10 @@
   Focused/native root-cause repairs pass; final full-source9011pass2511skip GO.
 - Checkpoint routing/privacy compatibility and scalar-header cost gates pass;
   staged make check passes2920-size/1231-typed/eval30.
-- Next: commit the validated merge,
-  fast-forward cloud-agent-trench,
-  then remove only merged redundant branch refs while retaining checkout files.
+- Validated merge0c78c9b2 fast-forwarded into cloud-agent-trench; coverage and
+  compatibility refs removed after same-HEAD detach and exact file-hash checks.
+- Final handoff: commit this outcome, fast-forward the target again, detach the
+  integration checkout and remove its redundant ref; verify all11 stashes.
 - Keep cloud-agent/main, receipts OFF and the10497 SQL performance failure open.
 
 # Preserved progressive-delivery plan

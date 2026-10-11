@@ -22,6 +22,12 @@
   36pass6skip, source positions native7. No runtime/push/business migration.
 - Strict nine existing10497 client SQL gate remains FAIL and receipts OFF;
   merge validation does not imply performance, live runtime or semantic GO.
+- Local merge0c78c9b2 parents704fea86/f02e455c fast-forwarded into the primary
+  cloud-agent-trench checkout. Dirty primary binary-diff and both new component
+  hashes stayed exact. Coverage/compatibility redundant refs deleted only after
+  ancestor checks and detaching at their same HEAD; file hashes stayed exact.
+  Documentation follow-up closes only LOCAL-BRANCH-INTEGRATION-20261012, not
+  COV-EXEC-01. Final integration branch will be detached/removed after this commit.
 
 ## 2026-10-07 - COV-STO-01 authorized local integration
 
