@@ -27,7 +27,8 @@
   hashes stayed exact. Coverage/compatibility redundant refs deleted only after
   ancestor checks and detaching at their same HEAD; file hashes stayed exact.
   Documentation follow-up closes only LOCAL-BRANCH-INTEGRATION-20261012, not
-  COV-EXEC-01. Final integration branch will be detached/removed after this commit.
+  COV-EXEC-01. Final integration ref removed after outcome commitd97a2c3a was
+  fast-forwarded to the target; integration checkout retained at the same HEAD.
 
 ## 2026-10-07 - COV-STO-01 authorized local integration
 

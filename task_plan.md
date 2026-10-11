@@ -11,8 +11,9 @@
   staged make check passes2920-size/1231-typed/eval30.
 - Validated merge0c78c9b2 fast-forwarded into cloud-agent-trench; coverage and
   compatibility refs removed after same-HEAD detach and exact file-hash checks.
-- Final handoff: commit this outcome, fast-forward the target again, detach the
-  integration checkout and remove its redundant ref; verify all11 stashes.
+- Outcome committed and target fast-forwarded; integration checkout retained
+  detached and its redundant ref removed. Final stash/backup checks are logged
+  in the private recovery inventory; no runtime or remote activation occurred.
 - Keep cloud-agent/main, receipts OFF and the10497 SQL performance failure open.
 
 # Preserved progressive-delivery plan
