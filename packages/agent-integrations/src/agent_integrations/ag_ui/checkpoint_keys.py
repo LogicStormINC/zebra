@@ -14,6 +14,7 @@ from agent_core.ports.task_projection_checkpoints import (
 
 from agent_integrations.ag_ui.client_state_projection import project_client_state
 from agent_integrations.ag_ui.contracts import AgUiProjectionError, AgUiRunIdentity
+from agent_integrations.ag_ui.coverage_checkpoint import coverage_keys
 from agent_integrations.ag_ui.payload_validation import optional_payload_text, required_payload_text
 from agent_integrations.ag_ui.projection_state import ProjectionState
 
@@ -58,7 +59,7 @@ def projection_keys(
             "interrupt",
             f"clarification:{optional_payload_text(payload, 'clarification_id') or event.event_id}",
         )
-    return tuple(dict.fromkeys(keys))
+    return tuple(dict.fromkeys((*keys, *coverage_keys(event))))
 
 
 def settle_interrupt_membership(event: SessionEvent, state: ProjectionState) -> None:

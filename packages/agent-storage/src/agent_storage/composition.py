@@ -70,6 +70,7 @@ class ControlPlaneStores:
     session_history: SessionHistoryPort
     delivery_audit: DeliveryAuditStorePort
     projection_work: TaskProjectionWorkPort | None = None
+    coverage_projection_work: TaskProjectionWorkPort | None = None
 
     @property
     def legacy_artifact_control_enabled(self) -> bool:
@@ -110,4 +111,7 @@ def sqlite_control_plane_stores(database_path: str | Path) -> ControlPlaneStores
         delivery_audit=SQLiteDeliveryAuditStore(local_path),
         artifact_payload_reader=LocalArtifactPayloadReader(artifact_payloads),
         projection_work=SQLiteTaskProjectionWorkStore(local_path, "local", "ag-ui-v1"),
+        coverage_projection_work=SQLiteTaskProjectionWorkStore(
+            local_path, "local", "ag-ui-v1-coverage"
+        ),
     )

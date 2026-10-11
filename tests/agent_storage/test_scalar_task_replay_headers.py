@@ -16,6 +16,9 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_storage import SQLiteAgentTaskStore, SQLiteEventStore, SQLiteProjectionStore
+from agent_storage.task_projection_coverage_cells_schema import (
+    initialize_task_replay_privacy,
+)
 from agent_storage.task_replay_header_schema import (
     backfill_task_replay_headers,
     initialize_task_replay_headers,
@@ -52,6 +55,8 @@ def header_database(path: Path, task: TaskId, *, install: bool = True):
     connection.commit()
     if install:
         initialize_task_replay_headers(connection)
+        initialize_task_replay_privacy(connection)
+        connection.commit()
     return connection
 
 
@@ -254,6 +259,8 @@ def test_readiness_is_distinct_from_invalid_cursor_and_ambiguous_binding(tmp_pat
     connection.execute("UPDATE agent_tasks SET next_event_sequence=1")
     connection.commit()
     initialize_task_replay_headers(connection)
+    initialize_task_replay_privacy(connection)
+    connection.commit()
     with pytest.raises(CheckpointNotReady):
         read_event_header(connection, task, 0)
     with pytest.raises(CheckpointNotReady):
@@ -347,9 +354,16 @@ def test_cold_actual_visits_are_bounded_for_point_and_runstop_with_huge_body(tmp
         assert query["fullscan_steps"] == 0
         assert query["visits"] is not None, "real scanstatus required for actual visit evidence"
         assert sum(query["visits"]) <= 2
-        assert all("SEARCH" in node and "SCAN " not in node for node in query["plan"])
-        if "FROM session_events" in query["sql"]:
-            assert all("COVERING INDEX" in node for node in query["plan"]), query
+        assert all(
+            ("SEARCH" in node and "SCAN " not in node)
+            or node.startswith("CORRELATED SCALAR SUBQUERY ")
+            for node in query["plan"]
+        ), query
+        assert all(
+            "COVERING INDEX" in node
+            for node in query["plan"]
+            if node.startswith("SEARCH session_events ")
+        ), query
     print(
         json.dumps(
             {

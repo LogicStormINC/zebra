@@ -26,7 +26,6 @@ from agent_core.domain.events import EventType, SessionEvent
 
 from agent_integrations.ag_ui.answer_commit_projection import project_answer_committed
 from agent_integrations.ag_ui.client_effect_projection import project_client_effect
-from agent_integrations.ag_ui.client_state_projection import project_client_state
 from agent_integrations.ag_ui.content_parts import project_content_parts
 from agent_integrations.ag_ui.contracts import (
     AgUiCursor,
@@ -34,6 +33,7 @@ from agent_integrations.ag_ui.contracts import (
     AgUiProjectionError,
     AgUiRunIdentity,
 )
+from agent_integrations.ag_ui.coverage_projection import project_coverage
 from agent_integrations.ag_ui.interrupts import (
     RunFinishedInterruptOutcome,
     project_budget_suspension_event,
@@ -47,8 +47,13 @@ from agent_integrations.ag_ui.payload_validation import (
 from agent_integrations.ag_ui.payload_validation import (
     required_payload_text as _required_payload_text,
 )
-from agent_integrations.ag_ui.projection_state import ProjectionState as _ProjectionState
+from agent_integrations.ag_ui.projection_state import ProjectionState
+from agent_integrations.ag_ui.subagent_projection import project_subagent_event
 from agent_integrations.ag_ui.tool_result_projection import tool_result_content
+from agent_integrations.coverage_public_events import (
+    coverage_projection_event,
+    strict_coverage_events,
+)
 
 
 class AgUiProjector:
@@ -60,12 +65,15 @@ class AgUiProjector:
         identity: AgUiRunIdentity,
         *,
         after: AgUiCursor | str | None = None,
+        strict_coverage: bool = False,
     ) -> AgUiProjection:
         ordered = tuple(events)
         cursor = self._decode_cursor(after)
         start_sequence = self._validate_cursor(cursor, ordered, identity)
         projected: list[Event] = []
-        for event, frames in self.project_events(ordered, identity):
+        for event, frames in self.project_events(
+            ordered, identity, strict_coverage=strict_coverage
+        ):
             if (
                 cursor is not None
                 and event.sequence == cursor.sequence
@@ -93,17 +101,35 @@ class AgUiProjector:
         events: Sequence[SessionEvent],
         identity: AgUiRunIdentity,
         *,
-        state: _ProjectionState | None = None,
+        state: ProjectionState | None = None,
+        strict_coverage: bool = False,
     ) -> Iterator[tuple[SessionEvent, tuple[Event, ...]]]:
         """Warm state once and lazily project each event with exact frame ownership."""
         ordered = tuple(events)
         self._validate_stream(ordered, identity)
-        state = state or _ProjectionState()
+        state = state or ProjectionState()
         state.bind(identity)
+        strict = (
+            strict_coverage or strict_coverage_events(ordered)
+            or state.strict_coverage
+        )
+        if strict:
+            state.strict_coverage = True
         if ordered and ordered[0].sequence <= state.last_sequence:
             raise AgUiProjectionError("durable events must have unique increasing sequences")
+        frames: tuple[Event, ...]
         for event in ordered:
-            frames = self._project_event(event, identity, state)
+            public = coverage_projection_event(event, strict=strict)
+            if public is None:
+                frames = ()
+            else:
+                coverage = project_coverage(
+                    public, state.coverage_runs,
+                    timestamp=int(public.created_at.timestamp() * 1000),
+                )
+                frames = (coverage,) if coverage is not None else self._project_event(
+                    public, identity, state
+                )
             if not state.started:
                 frames = (
                     RunStartedEvent(
@@ -155,7 +181,7 @@ class AgUiProjector:
         self,
         event: SessionEvent,
         identity: AgUiRunIdentity,
-        state: _ProjectionState,
+        state: ProjectionState,
     ) -> tuple[Event, ...]:
         timestamp = int(event.created_at.timestamp() * 1000)
         payload = event.payload
@@ -174,7 +200,7 @@ class AgUiProjector:
         client_effect = project_client_effect(event, timestamp=timestamp)
         if client_effect is not None:
             return client_effect
-        subagent_events = _project_subagent_event(event, timestamp=timestamp)
+        subagent_events = project_subagent_event(event, timestamp=timestamp)
         if subagent_events:
             return subagent_events
         if event.event_type is EventType.ANSWER_COMMITTED:
@@ -428,72 +454,3 @@ class AgUiProjector:
                 ),
             )
         return ()
-
-
-def _project_subagent_event(event: SessionEvent, *, timestamp: int) -> tuple[Event, ...]:
-    payload = event.payload
-    if event.event_type is EventType.SUBAGENT_DELEGATED:
-        arguments = payload.get("arguments")
-        details = arguments if isinstance(arguments, Mapping) else {}
-        return (
-            CustomEvent(
-                timestamp=timestamp,
-                name="zebra.subagent",
-                value={
-                    "child_task_id": _required_payload_text(payload, "child_task_id"),
-                    "delegation_reason": _optional_payload_text(details, "delegation_reason"),
-                    "objective": _optional_payload_text(details, "objective"),
-                    "status": "running",
-                    "tool_call_id": _required_payload_text(payload, "tool_call_id"),
-                },
-            ),
-        )
-    if event.event_type in {
-        EventType.SUBAGENT_STARTED,
-        EventType.SUBAGENT_COMPLETED,
-        EventType.SUBAGENT_FAILED,
-        EventType.SUBAGENT_CANCELLED,
-    }:
-        return (
-            CustomEvent(
-                timestamp=timestamp,
-                name="zebra.subagent",
-                value={
-                    key: payload[key]
-                    for key in (
-                        "confidence",
-                        "model_calls_used",
-                        "source_count",
-                        "status",
-                        "subagent_id",
-                        "tool_calls_used",
-                    )
-                    if key in payload
-                },
-            ),
-        )
-    if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
-        return ()
-    client_state = project_client_state(event, timestamp=timestamp)
-    projected: list[Event] = list(client_state or ())
-    command_payload = payload.get("payload")
-    child_results = (
-        command_payload.get("child_results") if isinstance(command_payload, Mapping) else None
-    )
-    if not isinstance(child_results, list):
-        return tuple(projected)
-    for result in child_results:
-        if not isinstance(result, Mapping):
-            continue
-        child_task_id = _optional_payload_text(result, "child_task_id")
-        status = _optional_payload_text(result, "status")
-        if child_task_id is None or status is None:
-            continue
-        projected.append(
-            CustomEvent(
-                timestamp=timestamp,
-                name="zebra.subagent",
-                value={"child_task_id": child_task_id, "status": status},
-            )
-        )
-    return tuple(projected)

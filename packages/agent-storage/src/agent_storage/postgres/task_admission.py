@@ -21,6 +21,7 @@ from agent_core.ports.task_admission_transaction import (
     TaskAdmissionReceipt,
     TaskAdmissionRequest,
 )
+from psycopg import IsolationLevel, errors
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.database import PostgresDatabase
@@ -28,6 +29,11 @@ from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.projections import save_session_in_transaction
 from agent_storage.postgres.task_index_transactions import _lock_task, rebuild_task_in_transaction
 from agent_storage.postgres.task_io import TaskIoConnections
+from agent_storage.postgres.task_lineage import (
+    PostgresAgentTaskConflictError,
+    derive_lineage,
+    root_for_session,
+)
 from agent_storage.postgres.workspaces import save_workspace_in_transaction
 
 
@@ -321,19 +327,79 @@ def load_task_binding(
     )
     with database.connect_task_io() as connection:
         connection.execute("SET TRANSACTION READ ONLY")
-        row = connection.execute(
-            """
-            SELECT snapshot_json FROM task_binding_snapshots
-            WHERE deployment_namespace = %s AND task_id = %s
-            ORDER BY binding_revision DESC
-            LIMIT 1
-            """,
-            (deployment_namespace, str(task_id)),
-        ).fetchone()
+        return _read_task_binding(connection, deployment_namespace, task_id)
+
+
+def load_session_task_binding(
+    dsn: str, *, deployment_namespace: str, session_id: SessionId
+) -> TaskBindingSnapshot | None:
+    """Fresh native lineage and binding, without rebuilding mutable Task indexes."""
+    database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    with database.connect() as connection:
+        # Configure BEGIN itself; methods also forward through deadline/borrow wrappers.
+        connection.set_isolation_level(IsolationLevel.REPEATABLE_READ)
+        connection.set_read_only(True)
+        try:
+            root, binding = _read_session_root_binding(connection, deployment_namespace, session_id)
+        except errors.InvalidTextRepresentation as error:
+            raise PostgresAgentTaskConflictError("Session has malformed root identity") from error
+        # Same REPEATABLE READ snapshot: the root case already answered this query.
+        if root != session_id and root_for_session(connection, deployment_namespace, root) != root:
+            raise ValueError("Task root Session has conflicting native lineage")
+        lineage = derive_lineage(connection, deployment_namespace, root)
+        if not any(row["session_id"] == session_id for row in lineage):
+            raise ValueError("Session is not in its native Task lineage")
+        return binding
+
+
+def _read_session_root_binding(
+    connection: Any, deployment_namespace: str, session_id: SessionId,
+) -> tuple[SessionId, TaskBindingSnapshot | None]:
+    # ponytail: one fresh snapshot read, not a cached grant; lineage stays authoritative.
+    rows = connection.execute(
+        """SELECT coalesce(nullif(received.payload ->> 'root_session_id', ''),
+                           projection.session_id::text) AS root_session_id,
+                  binding.snapshot_json
+           FROM session_projections projection
+           LEFT JOIN session_events received
+             ON received.deployment_namespace=projection.deployment_namespace
+            AND received.session_id=projection.session_id AND received.event_type=%s
+           LEFT JOIN LATERAL (
+               SELECT snapshot_json FROM task_binding_snapshots
+               WHERE deployment_namespace=projection.deployment_namespace
+                 AND task_id=coalesce(nullif(received.payload ->> 'root_session_id', ''),
+                                      projection.session_id::text)::uuid
+               ORDER BY binding_revision DESC LIMIT 1
+           ) binding ON TRUE
+           WHERE projection.deployment_namespace=%s AND projection.session_id=%s""",
+        (EventType.SESSION_HANDOFF_RECEIVED.value, deployment_namespace, session_id),
+    ).fetchall()
+    if not rows:
+        raise PostgresAgentTaskConflictError("Session projection was not found")
+    if len(rows) != 1:
+        raise PostgresAgentTaskConflictError("Session has ambiguous received Handoff lineage")
+    root = SessionId(UUID(rows[0]["root_session_id"]))
+    snapshot = rows[0]["snapshot_json"]
+    return root, None if snapshot is None else _binding_from_snapshot(snapshot, TaskId(root))
+
+
+def _read_task_binding(
+    connection: Any, deployment_namespace: str, task_id: TaskId
+) -> TaskBindingSnapshot | None:
+    row = connection.execute(
+        """SELECT snapshot_json FROM task_binding_snapshots
+           WHERE deployment_namespace=%s AND task_id=%s
+           ORDER BY binding_revision DESC LIMIT 1""",
+        (deployment_namespace, str(task_id)),
+    ).fetchone()
     if row is None:
         return None
-    binding = TaskBindingSnapshot.model_validate(row["snapshot_json"])
-    if binding.binding_digest != _binding_digest_of(binding):
+    return _binding_from_snapshot(row["snapshot_json"], task_id)
+
+
+def _binding_from_snapshot(snapshot: Any, task_id: TaskId) -> TaskBindingSnapshot:
+    binding = TaskBindingSnapshot.model_validate(snapshot)
+    if binding.task_id != str(task_id) or binding.binding_digest != _binding_digest_of(binding):
         raise ValueError("stored task binding digest does not match its snapshot")
     return binding
 

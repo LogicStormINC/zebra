@@ -8,6 +8,7 @@ from pathlib import Path
 
 from zebra_agent_config import mcp_settings
 from zebra_agent_config.command_delivery import CommandDeliverySettings, load_command_delivery
+from zebra_agent_config.coverage_settings import CoverageWorkSettings, load_coverage_work
 from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_credentials
 from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memory_gateway_settings
 from zebra_agent_config.public_output_settings import PublicOutputPolicy, load_public_output_policy
@@ -93,6 +94,7 @@ class ZebraAgentSettings:
     memory_gateway: MemoryGatewaySettings = field(default_factory=MemoryGatewaySettings)
     command_delivery: CommandDeliverySettings = field(default_factory=CommandDeliverySettings)
     public_output: PublicOutputPolicy = field(default_factory=PublicOutputPolicy)
+    coverage_work: CoverageWorkSettings = field(default_factory=CoverageWorkSettings)
     runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
     setup: SetupSettings = field(default_factory=SetupSettings)
     scm: ScmSettings = field(
@@ -233,6 +235,7 @@ def load_settings(
         memory_gateway=load_memory_gateway_settings(values),
         command_delivery=load_command_delivery(values),
         runtime=runtime,
+        coverage_work=load_coverage_work(values),
         setup=load_setup_settings(values),
         scm=_load_scm_settings(values),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),

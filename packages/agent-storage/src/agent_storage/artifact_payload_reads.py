@@ -177,7 +177,11 @@ class CloudArtifactPayloadReader(ArtifactPayloadReadPort):
         self,
         session_id: SessionId,
         uri: str,
+        *,
+        max_bytes: int | None = None,
     ) -> bytes:
+        if max_bytes is not None and (type(max_bytes) is not int or max_bytes <= 0):
+            raise ValueError("artifact payload byte ceiling must be a positive integer")
         artifact_id = _cloud_artifact_id(uri)
         if artifact_id is None:
             raise FileNotFoundError("artifact payload URI is not canonical")
@@ -188,6 +192,8 @@ class CloudArtifactPayloadReader(ArtifactPayloadReadPort):
             raise ArtifactPayloadReadPrunedError("artifact payload has been pruned")
         if record.lifecycle_status is not CloudArtifactPayloadLifecycleStatus.FINALIZED:
             raise ArtifactPayloadReadUnavailableError("artifact payload is not finalized")
+        if max_bytes is not None and record.reservation.size_bytes > max_bytes:
+            raise ArtifactPayloadReadUnavailableError("artifact payload exceeds the byte ceiling")
         assert record.object_receipt is not None
         return self._objects.read_version_verified(
             record.object_receipt.expectation,

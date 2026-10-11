@@ -13,6 +13,8 @@ from agent_core.domain.memories import MemoryStatus
 from agent_runtime import WorkspaceDiffError, WorkspaceDiffService
 from agent_storage import ControlPlaneStores
 
+from zebra_agent_api.coverage_public_read import coverage_session_read_problem
+from zebra_agent_api.coverage_public_summary import coverage_public_summary
 from zebra_agent_api.responses import ApiResponse, conflict
 from zebra_agent_api.session_context import session_workspace_root
 from zebra_agent_api.session_identity_read import (
@@ -48,7 +50,7 @@ class SessionStateReadMixin:
             body["attachments"] = attachments
         return ApiResponse(
             status_code=200,
-            body=body,
+            body=coverage_public_summary(self.stores, session_key, body),
         )
 
     def get_session_stream(self, session_id: str) -> ApiResponse:
@@ -65,6 +67,9 @@ class SessionStateReadMixin:
                 },
             )
         events = self.stores.events.list_for_session(session_key)
+        problem = coverage_session_read_problem(self.stores, session_key)
+        if problem is not None:
+            return problem
         return ApiResponse(
             status_code=200,
             body={

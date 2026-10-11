@@ -20,6 +20,7 @@ from agent_core.ports.extensions import ExtensionStore
 from agent_runtime import WorkspaceRuntimeResolver
 from agent_storage import (
     CloudCompositionSettings,
+    PostgresCloudArtifactPayloadStore,
     PostgresControlPlaneStores,
     PostgresWorkspaceControlStore,
     postgres_control_plane_stores,
@@ -28,6 +29,7 @@ from agent_storage.postgres.extension_snapshots import PostgresExtensionSnapshot
 from agent_storage.postgres.extensions import PostgresExtensionStore
 from zebra_agent_config import MemoryGatewaySettings
 
+from zebra_agent_worker.coverage_composition import CloudCoverageRuntime
 from zebra_agent_worker.memory_context_materialization import RankedMemoryContextMaterializer
 from zebra_agent_worker.memory_gateway_runtime import (
     MemoryGatewayRuntime,
@@ -86,6 +88,7 @@ class CloudWorkerComposition:
     extensions: ExtensionStore | None = None
     skill_objects: ArtifactObjectStorePort | None = None
     memory_runtime: MemoryGatewayRuntime | None = None
+    coverage_runtime: CloudCoverageRuntime | None = None
 
 
 def compose_cloud_worker(
@@ -138,6 +141,8 @@ def compose_cloud_worker(
             ),
         )
     dispatch = stores.effects
+    if not isinstance(stores.artifact_payloads, PostgresCloudArtifactPayloadStore):
+        raise ValueError("strict Cloud composition requires native Artifact metadata")
     required_dispatch = (
         "schedule_with_payload",
         "complete_with_payload",
@@ -277,4 +282,7 @@ def compose_cloud_worker(
         ),
         skill_objects=cloud.artifact_objects,
         memory_runtime=memory_runtime,
+        coverage_runtime=CloudCoverageRuntime(
+            cloud.dsn, cloud.deployment_namespace, stores.artifact_payloads, cloud.artifact_objects
+        ),
     )

@@ -29,10 +29,13 @@ NOW = datetime(2026, 7, 29, tzinfo=UTC)
 class _Body:
     def __init__(self, payload: bytes) -> None:
         self.payload = payload
+        self.offset = 0
         self.closed = False
 
     def read(self, amt: int) -> bytes:
-        return self.payload[:amt]
+        chunk = self.payload[self.offset : self.offset + amt]
+        self.offset += len(chunk)
+        return chunk
 
     def close(self) -> None:
         self.closed = True
@@ -40,6 +43,9 @@ class _Body:
 
 class _FakeS3Client:
     def __init__(self) -> None:
+        from types import SimpleNamespace
+
+        self.meta = SimpleNamespace(endpoint_url="https://fixture-s3.example")
         self.objects: dict[str, dict[str, object]] = {}
         self.calls: list[tuple[str, dict[str, object]]] = []
         self.next_error: tuple[str, ClientError] | None = None

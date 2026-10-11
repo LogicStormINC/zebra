@@ -1,10 +1,28 @@
 import json
+import sqlite3
 from collections.abc import Mapping
 from typing import Any
 
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
+from agent_core.domain.identifiers import SessionId
 from agent_core.ports.session_handoff import HandoffOperation, SessionHandoffCommitRequest
+
+from agent_storage.session_handoff_rows import HandoffStorageConflictError
+
+
+def reject_strict_sqlite_source(connection: sqlite3.Connection, session_id: SessionId) -> None:
+    """Inspect persisted Task admission inside the caller's BEGIN IMMEDIATE."""
+    strict_source = connection.execute(
+        """SELECT EXISTS (
+            SELECT 1 FROM session_events
+            WHERE session_id = ? AND event_type = ?
+              AND json_type(payload, '$.coverage_admission') != 'null'
+        )""",
+        (str(session_id), EventType.TASK_PREPARED.value),
+    ).fetchone()
+    if strict_source[0]:
+        raise HandoffStorageConflictError("strict coverage handoff is unsupported")
 
 
 def build_handoff_events(

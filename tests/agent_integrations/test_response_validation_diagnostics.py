@@ -43,6 +43,9 @@ def parse(payload: dict[str, Any]) -> None:
     ],
 )
 def test_native_parser_shape_matrix(payload: dict[str, Any], rule: str) -> None:
+    for choice in payload.get("choices", []):
+        if isinstance(choice, dict) and isinstance(choice.get("message"), dict):
+            choice["message"]["role"] = "assistant"
     with pytest.raises(ModelResponseRejectedError) as caught:
         parse(payload)
     error = caught.value
@@ -55,6 +58,15 @@ def test_native_parser_shape_matrix(payload: dict[str, Any], rule: str) -> None:
     assert error.payload_size and error.payload_sha256
     assert "secret" not in str(error.metadata())
     assert "private" not in str(error)
+
+
+@pytest.mark.parametrize("role", [None, "user", "tool", "secret"])
+def test_nonassistant_role_is_rejected_with_static_diagnostic(role: str | None) -> None:
+    with pytest.raises(ModelResponseRejectedError) as caught:
+        parse({"choices": [{"message": {"role": role, "content": "private"}}]})
+    assert caught.value.validation_rule == "assistant_role"
+    assert "secret" not in str(caught.value.metadata())
+    assert "private" not in str(caught.value.metadata())
 
 
 @pytest.mark.parametrize("message,rule", openai_payloads._RESPONSE_VALIDATION_RULES.items())

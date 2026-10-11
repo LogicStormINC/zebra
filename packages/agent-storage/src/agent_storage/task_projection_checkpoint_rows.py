@@ -125,6 +125,26 @@ def require_source(
     ).fetchone()
     if source is None:
         raise CheckpointConflict("checkpoint locator conflicts with canonical source")
+    require_source_member(
+        connection,
+        scope,
+        source,
+        event_id=event_id,
+        segment_id=segment_id,
+        segment_sequence=segment_sequence,
+    )
+
+
+def require_source_member(
+    connection: sqlite3.Connection,
+    scope: ProjectionScope,
+    source: sqlite3.Row,
+    *,
+    event_id: str | None = None,
+    segment_id: str | None = None,
+    segment_sequence: int | None = None,
+) -> None:
+    """Validate a native canonical header row without repeating its point seek."""
     # ponytail: two indexed metadata points in the caller's snapshot keep the
     # source body off the read path; joining can select a non-covering source index.
     member = connection.execute(

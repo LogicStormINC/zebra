@@ -1,5 +1,6 @@
 """Shared row and transition primitives for the PostgreSQL Effect aggregate."""
 
+import json
 from datetime import timedelta
 from typing import Any, cast
 from uuid import UUID
@@ -35,7 +36,11 @@ def effect_dispatch_from_row(row: dict[str, Any]) -> EffectDispatch:
         status=row["status"],
         intent_event_id=row["intent_event_id"],
         terminal_event_id=row["terminal_event_id"],
-        result=(None if row["result"] is None else ToolResult.model_validate(row["result"])),
+        result=(
+            None if row["result"] is None else ToolResult.model_validate_json(
+                json.dumps(row["result"]), strict=True, extra="forbid"
+            )
+        ),
         evidence=(
             None if row["evidence"] is None else EffectEvidence.model_validate(row["evidence"])
         ),

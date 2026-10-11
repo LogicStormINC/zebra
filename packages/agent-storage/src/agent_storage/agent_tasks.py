@@ -31,8 +31,10 @@ from agent_storage.task_event_positions import (
     backfill_task_event_positions,
     initialize_task_positions,
 )
-from agent_storage.task_projection_checkpoint_schema import SCHEMA as CHECKPOINT_SCHEMA
 from agent_storage.task_projection_checkpoints import SQLiteTaskProjectionCheckpointMixin
+from agent_storage.task_projection_coverage_cells_schema import (
+    initialize_task_projection_checkpoints,
+)
 from agent_storage.task_read_summaries import SQLiteTaskReadSummaryMixin
 from agent_storage.task_read_summary_schema import task_read_summary_schema
 from agent_storage.task_replay_header_schema import (
@@ -90,7 +92,7 @@ class SQLiteAgentTaskStore(
             initialize_task_positions(connection)
             initialize_task_replay_headers(connection)
             initialize_projection_source_metadata(connection)
-            connection.executescript(CHECKPOINT_SCHEMA)
+            initialize_task_projection_checkpoints(connection)
             for statement in progress_schema():
                 connection.execute(statement)
             for statement in task_read_summary_schema():
@@ -176,9 +178,9 @@ class SQLiteAgentTaskStore(
     def task_id_for_session(self, session_id: SessionId) -> TaskId | None:
         with self._database.connect() as connection:
             row = connection.execute(
-                "SELECT task_id FROM execution_segments WHERE session_id=?", (str(session_id),)
+                "SELECT task_id FROM execution_segments WHERE session_id = ?", (str(session_id),)
             ).fetchone()
-        return None if row is None else TaskId(UUID(row[0]))
+        return None if row is None else TaskId(UUID(row["task_id"]))
 
     def is_internal_segment(self, session_id: SessionId) -> bool:
         task_id = self.task_id_for_session(session_id)

@@ -7,6 +7,7 @@ import os
 import ssl
 from collections.abc import Mapping
 from dataclasses import dataclass
+from time import monotonic
 from urllib.parse import urlsplit
 
 import httpx
@@ -31,6 +32,7 @@ class HttpHostToolTransport:
 
     resolver: HostNameResolver | None = None
     client: httpx.Client | None = None
+    deadline_monotonic: float | None = None
 
     @staticmethod
     def _ssl_verify() -> ssl.SSLContext | bool:
@@ -39,6 +41,7 @@ class HttpHostToolTransport:
             return ssl.create_default_context()
         except Exception:
             return True
+
     max_response_bytes: int = MAX_HOST_TOOL_RESPONSE_BYTES
 
     def __post_init__(self) -> None:
@@ -54,11 +57,49 @@ class HttpHostToolTransport:
         body: Mapping[str, object] | None,
         timeout_seconds: float,
     ) -> HostToolTransportResponse:
+        if self.deadline_monotonic is not None and monotonic() >= self.deadline_monotonic:
+            raise HostToolTransportError("Host Tool deadline exhausted", reason="timeout")
         _validate_endpoint(url, resolver=self.resolver)
+        if self.deadline_monotonic is not None:
+            timeout_seconds = min(timeout_seconds, (self.deadline_monotonic - monotonic()) / 4)
         if timeout_seconds <= 0 or timeout_seconds > 900:
             raise HostToolTransportError("Host Tool timeout is outside its bound", reason="timeout")
         try:
-            if self.client is None:
+            if self.deadline_monotonic is not None:
+                if self.client is None:
+                    raise HostToolTransportError(
+                        "Deadline transport requires a composed client", reason="timeout"
+                    )
+                with self.client.stream(
+                    method,
+                    url,
+                    headers=dict(headers),
+                    json=dict(body) if body is not None else None,
+                    timeout=timeout_seconds,
+                    follow_redirects=False,
+                ) as upstream:
+                    chunks, length = [], 0
+                    iterator = upstream.iter_bytes()
+                    while True:
+                        if monotonic() >= self.deadline_monotonic:
+                            raise HostToolTransportError(
+                                "Host Tool body deadline exhausted", reason="timeout"
+                            )
+                        chunk = next(iterator, None)
+                        if chunk is None:
+                            break
+                        length += len(chunk)
+                        if length > self.max_response_bytes:
+                            raise HostToolTransportError(
+                                "Host Tool response exceeds its bound", reason="response_too_large"
+                            )
+                        chunks.append(chunk)
+                    response = httpx.Response(
+                        upstream.status_code,
+                        content=b"".join(chunks),
+                        headers={"content-type": upstream.headers.get("content-type", "")},
+                    )
+            elif self.client is None:
                 response = httpx.request(
                     method,
                     url,

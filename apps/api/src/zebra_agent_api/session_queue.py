@@ -17,7 +17,7 @@ from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
-from zebra_agent_api.session_payloads import CreateSessionPayload
+from zebra_agent_api.session_payloads import CreateSessionPayload, parse_create_session_payload
 
 
 def create_queued_session(
@@ -32,7 +32,13 @@ def create_queued_session(
     idempotency_request_hash: str | None = None,
     frozen_manifest_digest: str | None = None,
     verified_host_grant: VerifiedHostGrant | None = None,
+    coverage_configuration_digest: str | None = None,
+    public_idempotency_key: str | None = None,
 ) -> ApiResponse:
+    if "coverage_admission" in parsed and coverage_configuration_digest is None:
+        preflight = parse_create_session_payload(dict(parsed))
+        if isinstance(preflight, ApiResponse):
+            return preflight
     if admission_dsn and host_context is not None:
         if (
             not isinstance(verified_host_grant, VerifiedHostGrant)
@@ -58,6 +64,7 @@ def create_queued_session(
             interaction_mode=parsed["interaction_mode"],
             model_profile=parsed["model_profile"],
             reasoning_effort=parsed["reasoning_effort"],
+            coverage_admission=parsed.get("coverage_admission"),
         )
     )
     events, attachment_refs = persist_initial_attachments(
@@ -100,6 +107,13 @@ def create_queued_session(
         },
     )
     response.body["idempotency_key"] = idempotency_key
+    if coverage_configuration_digest is not None:
+        from zebra_agent_api.coverage_http_admission import initial_run
+
+        command_event, command_body = initial_run(bootstrap, idempotency_key)
+        events = (*events, command_event)
+        response.body.update(status="queued", executed=False, command=command_body)
+        response.body["idempotency_key"] = public_idempotency_key
     if admission_dsn and admission_namespace:
         # Phase F3: cloud admission uses the atomic v25 transaction —
         # events, projections, task index, binding and the FULL idempotency
@@ -135,17 +149,26 @@ def create_queued_session(
                 created_at=_dt.now(_UTC),
             )
         try:
-            receipt = PostgresTaskAdmissionTransaction(
-                admission_dsn, deployment_namespace=admission_namespace
-            ).admit(
-                TaskAdmissionRequest(
-                    events=tuple(events),
-                    session=bootstrap.session,
-                    workspace=workspace,
-                    binding=raw_binding if isinstance(raw_binding, TaskBindingSnapshot) else None,
-                    idempotency=idempotency_record,
-                )
+            request = TaskAdmissionRequest(
+                events=tuple(events),
+                session=bootstrap.session,
+                workspace=workspace,
+                binding=raw_binding if isinstance(raw_binding, TaskBindingSnapshot) else None,
+                idempotency=idempotency_record,
             )
+            if coverage_configuration_digest is not None:
+                from agent_storage.postgres.command_coverage_admission import admit_coverage_task
+
+                receipt = admit_coverage_task(
+                    admission_dsn,
+                    admission_namespace,
+                    request,
+                    coverage_configuration_digest,
+                )
+            else:
+                receipt = PostgresTaskAdmissionTransaction(
+                    admission_dsn, deployment_namespace=admission_namespace
+                ).admit(request)
         except TaskAdmissionIdempotencyConflict:
             return ApiResponse(
                 status_code=409,

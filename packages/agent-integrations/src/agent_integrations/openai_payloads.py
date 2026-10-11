@@ -115,6 +115,7 @@ _RESPONSE_VALIDATION_RULES = {
     "model gateway response must include at least one choice": "choices_nonempty_list",
     "model gateway choice must be an object": "choice_object",
     "model gateway choice must include a message object": "message_object",
+    "model gateway response message role must be assistant": "assistant_role",
     "DeepSeek thinking tool call requires reasoning_content": "reasoning_content_required",
     "DeepSeek reasoning_content must be a string": "reasoning_content_string",
     "model gateway assistant message content must not be blank": "assistant_content_nonblank",
@@ -200,6 +201,8 @@ def _parse_completion(
     message = first_choice.get("message")
     if not isinstance(message, dict):
         raise ValueError("model gateway choice must include a message object")
+    if message.get("role") != "assistant":
+        raise ValueError("model gateway response message role must be assistant")
     finish_reason = optional_str(first_choice.get("finish_reason"))
     if resolved is not None:
         finish_error = finish_reason_error(finish_reason)

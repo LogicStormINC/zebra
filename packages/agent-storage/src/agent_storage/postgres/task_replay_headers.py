@@ -135,9 +135,13 @@ def read_run_header(
     if through is not None and (type(through) is not int or through < -1):
         raise ValueError("invalid canonical Run highwater")
     row = connection.execute(
-        "SELECT next_event_sequence,event_position_state FROM agent_tasks "
+        "SELECT next_event_sequence,event_position_state,EXISTS("
+        "SELECT 1 FROM task_replay_coverage_privacy e "
+        "WHERE e.deployment_namespace=t.deployment_namespace AND e.task_id=t.task_id "
+        "AND task_sequence<=LEAST(next_event_sequence-1,COALESCE(%s,next_event_sequence-1)) "
+        ") AS strict_coverage FROM agent_tasks t "
         "WHERE deployment_namespace=%s AND task_id=%s",
-        (namespace, task_id),
+        (through, namespace, task_id),
     ).fetchone()
     if row is None:
         raise PostgresAgentTaskConflictError("Task replay target was not found")
@@ -154,6 +158,7 @@ def read_run_header(
     ):
         raise CheckpointNotReady("Task replay headers require explicit backfill")
     parameters = namespace, task_id, run_id, highwater
+    strict_coverage = row["strict_coverage"]
     rows = connection.execute(
         f"SELECT {_QUERY_COLUMNS} FROM session_events WHERE deployment_namespace=%s AND task_id=%s "
         f"AND replay_run_id=%s AND task_sequence<=%s AND {_QUERY_EXECUTABLE} "
@@ -177,7 +182,16 @@ def read_run_header(
             f"AND task_sequence<=%s AND {_QUERY_COMMAND} ORDER BY task_sequence LIMIT 1",
             (namespace, task_id, highwater),
         ).fetchone()
-        return TaskRunHeader(task_id, run_id, highwater, None, 0, None, legacy=exists is None)
+        return TaskRunHeader(
+            task_id,
+            run_id,
+            highwater,
+            None,
+            0,
+            None,
+            legacy=exists is None,
+            strict_coverage=strict_coverage,
+        )
     anchor = _checked_header(connection, namespace, rows[0], row["next_event_sequence"])
     # Anchor uniqueness already rejects a repeated executable Run. Seek the
     # next executable directly; do not filter/scan the historical command tail.
@@ -187,11 +201,15 @@ def read_run_header(
         "ORDER BY task_sequence LIMIT 1",
         (namespace, task_id, anchor.task_sequence, highwater),
     ).fetchone()
-    if (
-        stop is not None
-        and read_event_header(connection, namespace, task_id, stop["task_sequence"]) is None
-    ):
-        raise CheckpointConflict("canonical Run stop source is unavailable")
+    if stop is not None:
+        source = connection.execute(
+            f"SELECT {_QUERY_COLUMNS} FROM session_events "
+            "WHERE deployment_namespace=%s AND task_id=%s AND task_sequence=%s",
+            (namespace, task_id, stop["task_sequence"]),
+        ).fetchone()
+        if source is None:
+            raise CheckpointConflict("canonical Run stop source is unavailable")
+        _checked_header(connection, namespace, source, row["next_event_sequence"])
     return TaskRunHeader(
         task_id,
         run_id,
@@ -200,6 +218,7 @@ def read_run_header(
         anchor.task_sequence,
         None if stop is None else stop["task_sequence"],
         control_only=control_only,
+        strict_coverage=strict_coverage,
     )
 
 

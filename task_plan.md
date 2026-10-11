@@ -1,3 +1,20 @@
+# Active local integration — 2026-10-12
+
+- User approved repairing regressions before local branch consolidation.
+- Source checkpoints and complete private recovery bundles exist for both repos;
+  existing stashes, ignored runtime files and independent SDK edits stay intact.
+- Trench local main integration and redundant local branch cleanup are complete;
+  full check/build and native70 passed. No remote action or business migration.
+- Zebra integration candidate combines both histories; original65 failures fixed.
+  Focused/native root-cause repairs pass; final full-source9011pass2511skip GO.
+- Checkpoint routing/privacy compatibility and scalar-header cost gates pass;
+  staged make check passes2920-size/1231-typed/eval30.
+- Next: commit the validated merge,
+  fast-forward cloud-agent-trench,
+  then remove only merged redundant branch refs while retaining checkout files.
+- Keep cloud-agent/main, receipts OFF and the10497 SQL performance failure open.
+
+# Preserved progressive-delivery plan
 # Active task — CLOUD-PROGRESS-OUTPUT-01 full progressive delivery (2026-10-02)
 
 User-approved complete scope and checkbox/evidence ledger:
@@ -82,6 +99,174 @@ predecessor memory/title writes stay legal; freeze published Task positions.
 Continue directly on user-selected `cloud-agent-trench` and Trench `main`.
 Preserve dirty changes. Implementation does not authorize registry publication,
 remote deployment or service restarts. Keep all unproved gates open.
+# Preserved coverage-execution plan
+# Active task — COV-EXEC-01 durable coverage closure (2026-10-10)
+
+Latest MODEL settlement continuation (2026-10-11): atomic exact acknowledgement,
+same-TX exit lifecycle/canonical Event revalidation and custom acknowledgement/
+uncommitted-owner refusal component-implemented. Unsafe post-settlement reread
+elision rejected; current original and independent final proof retained.
+Native10/pure155/static1115/eval30 pass; full nine certifies16.1541s10497client/
+15637server237GET/4callbacks/5batches, **SQL<=1000 FAIL**. No performance win;
+bounded Worker-wide authority/adapter phase composition is still the required
+root, followed by immutable retention, history/fleet/live acceptance. In Progress,
+runtime receipts OFF. Details: docs/COVERAGE_MODEL_SETTLEMENT_EVIDENCE.md.
+
+Shared read-phase continuation: common loader reuses existing optional Port;
+native execution read prep/exit checks and original guarded owned-proof fallback
+are distinct. Namespace equality and scoped corruption fault tests added. Exact
+native clock single-guard optimization excludes injectable clocks. Final48 and
+critical native85/local compatibility199 pass. Final serial strict nine certifies
+17.5762s10485client15619server225GET/4callbacks/5batches, SQL<=1000 STILL FAIL.
+1127lease pins/877lineage reads/1419resets remain; no latency/p95 improvement claim.
+Do not merge/activate or declare whole plan finished from these component tests.
+
+Latest exact-owner operation continuation (2026-10-11): existing work-unit owner
+reentry composes MODEL budget, accepted-batch commit/certification and short Worker
+local authority/tail transactions. Deadline, rollback, fresh permissions and
+connection cleanup retained. Native smoke51/boundary60/corrected operation2 pass.
+Nested deadline wrapper widening fixed through existing minimum ContextVar;
+positive nested SQL timeout/native recovery/report/API51 pass. Expanded MODEL/
+final/batch/core56 passed before that fix; failed measurements retained.
+Final source nine23.4505s12180client18052server248GET/5callbacks/6batches,
+certification passes, strict<=1000 SQL FAIL. No fixed-batch/p95 gain claimed.
+Next root is bounded native execution-phase prepare/validation, not more socket
+reuse: guarded adapter-entry fanout remains. Preserve public/post-I/O freshness,
+STOP/lease/revocation and original final certification. Immutable-retention short
+final proof, history/fleet load/fairness and live release gates remain OPEN.
+Exact evidence: docs/COVERAGE_BATCH_TRANSACTION_EVIDENCE.md; activation OFF.
+
+Latest execution-context continuation (2026-10-11): native batched canonical
+materialization/finalization/audit, optional readonly metadata scope, paged exact
+locked row/Event proof and URI index94 implemented. Native76/proof74/index-fleet37
+pass, static1114/eval30/actual2610-size/diff GO. Complete final-source strict nine
+16.0781s10806client16273server218GET/4callbacks/4batches, independent certification
+passes but SQL<=1000 fails. This is still component delivery, not full root cure.
+Next required root is Worker-wide phase authority/transaction composition:
+991 lineage reads,1234 lease pins and1605 connection resets remain. Preserve
+fresh post-lock snapshots, STOP/revocation, side-effect guards and tenant cleanup;
+do not disable DISCARD ALL, use TTL permissions, or hide handoff/reset SQL.
+Immutable-retention-backed final proof outside locks, history/fleet load/fairness,
+live Trench and release acceptance remain open. No activation/business restart.
+
+Latest governed Artifact continuation (2026-10-11): batch reserve/receipt,
+physical I/O outside transactions and atomic exact finalization are implemented.
+Core observations/results batch with immediate durable MODEL checkpoint/charge;
+fault/replacement replay and concurrent reservation rollback verified. Native124,
+MODEL23, buffered-replay2 pass; pure88 pass8 skips/static1110/eval30/actual2604 GO.
+Final-source strict nine19.6260s11772client17472server225GET/4callbacks/5batches:
+<=1000 SQL FAIL, no latency gain. Do not stop at these partial savings: next root
+is bulk governed reads/current operation authority plus native batched canonical
+Event/finalization/audit, then immutable-retention short final proof, history/
+fleet quota/fairness/native load/live acceptance. Full task In Progress, runtime
+receipts OFF. Evidence document retains all measurements and corrected failures.
+
+Latest sealed membership follow-up (2026-10-11): migration93 exact ordered unit
+and record metadata roots, unique Event-backed settlement, selected bounded record
+reads, mutation/legacy fallback and fleet qualification component-implemented.
+Current native44 and expanded19 passed, pure65 passed20 native skips, static1108/
+eval30/actual2600 size GO. Final certification original corruption gate passed.
+Serial nine18.2650s12916client19132server218GET/four wakes/four qualified/root4/4.
+First current21.3039s14371client/five wakes retained. Strict <=1000 SQL gate FAIL.
+Exclusive meters show read/publication5019 plus outer handoff/authority3545,
+commit434. No whole-system improvement claim. Full plan NOT complete.
+Next: bounded governed Artifact lifecycle reserve/settle batches with crash and
+charge safety, then immutable-retention short final transactions and tenant/fleet
+capacity/load/live acceptance. Executor initialization/final/recovery still full;
+selected commit complexity is not whole-execution constant cost. No activation.
+
+Latest batch follow-up (2026-10-11): bounded exact acceptance, operation-pinned
+pure proof, owner-TX borrowing, verified reader, native volume91/delta indexes92,
+fleet qualification and strict client/server SQL measurement component-verified.
+Nine certified18.0889s12912client18823server218GET/four qualified batches;
+**strict <=1000 SQL gate FAIL**. Native MODEL30/readiness55/root-boundaries10,
+pure143 and static gates pass. Full plan remains In Progress, not optimized away.
+Next required root mechanisms: sealed exact membership/delta state; batch evidence
+lifecycle with reserve/settle/crash safety; immutable-retention-backed short final
+certification; shared tenant quotas/backpressure/fairness; live load/Trench closure.
+Exact results and strict reproduction: docs/COVERAGE_BATCH_TRANSACTION_EVIDENCE.md.
+Runtime receipt activation OFF; no service restart/business migration/merge/push.
+
+v90 authority follow-up is component-implemented, NOT whole-system complete.
+Final serial nine30.5219s/20403execute/287GET;7 service binding reads but20 total
+full native validations (7 service/7 dispatch/6 cold new-owner preparations).
+No per-Artifact full Task lineage replay on the versioned normal path. See
+docs/COVERAGE_EXECUTION_CONTEXT_EVIDENCE.md for exact guarantees and open work.
+
+v89 native Task-origin follow-up claimed/implemented2026-10-11. Normal strict
+Task descriptor/continuity reads are bounded while latest binding remains fresh;
+legacy, recovery, initialization and independent certification use full proof.
+Native MODEL54/Worker-fleet82/root8/renewal1 and serial nine passed. This Task
+origin slice is component-verified, not system performance closure:56.0948s,
+49137execute,100 fewer than v88 but no latency gain. Next shared root remains
+per-Artifact fresh Task/Host lineage fanout; no TTL or cross-phase permission cache.
+See docs/COVERAGE_TASK_ADMISSION_EVIDENCE.md. No runtime activation.
+
+Branch: `codex/cov-exec-01`; owner Luke Ding/Codex; paths: `docs/AGENT_TASKS.md`.
+Detailed acceptance contract: `docs/superpowers/plans/2026-10-08-coverage-closure.md`.
+
+Root continuation work (2026-10-11): v87 mutation revisions and normal receipt
+reads are component-verified. Revision-bound mint now removes the redundant
+full-history fingerprint after exact native commit validation; legacy fallback
+is retained. Native15 and serial nine certified50.4048s49375execute passed;
+this mint slice is component-verified, not system performance closure.
+Next: seal incremental MODEL budget facts
+with atomic native mutation rules, not scalar revision arithmetic; then versioned
+fresh authority, short transactions and tenant/fleet acceptance. Production
+receipts remain OFF. This does not mark the full root plan complete.
+
+v88 incremental facts follow-up: new runs have exact native transition-maintained
+budget/source/witness summaries. Final-certification normal index has one scoped
+proof read; eager, legacy, invalidated roots and full certification retain native
+history proof. Legacy requalification and Task/Host version roots remain open.
+Native5/pure105 and static gates passed; final combined MODEL48 and Worker/fleet82
+passed with zero skips. Serial nine certified52.1281s/49237execute passed;
+138 fewer executes than prior same-callback run, no latency gain. This slice is
+component-verified, not whole-system performance or live acceptance. Next shared
+root is versioned Task/Host authority and Artifact read fanout, not caller caches.
+
+1. `component_verified` — durable snapshot adapter, resumable executor,
+   exact Effect invocation and cross-process Artifact publication.
+2. `component_verified` — immutable single-shot MODEL request, full original
+   completion checkpoint, bounded semantic derivation and reserve/replay
+   accounting. PostgreSQL callback composition has separate SPEC/QUALITY GO.
+3. `component_verified` — verify each accepted MODEL unit against its original
+   response and canonical observation on commit, retry, rebuild and certificate
+   issue/read. Raw typed inputs must be checked before lossy normalization.
+4. `component_verified` — bounded multipart same-Session Worker recovery,
+   atomic admission and compatible process routing have separate SPEC/QUALITY
+   GO. Final native matrix 106/zero skips includes resumed certification.
+   Heavy recovery preparation is outside lifecycle locks; final exact checks
+   are deadline-bounded. Original authority and unknown-call refusal remain.
+5. `component_verified` — API safety preflight approved; durable absolute events and
+   paired Trench counters/reconnect/terminal state passed SPEC and QUALITY.
+   Report GET/HEAD checks fresh authority and original proof: independent
+   SPEC/QUALITY GO, 41 native/42 pure checks. Trench: 37 backend/225 frontend
+   checks and production build. Live joint acceptance remains.
+6. `component_verified` — proof reads/history and acceptance tools; pure 33;
+   default 6,688/1,523; native 10/0; real-service synthetic load report recorded.
+   Active-lease preflight: nine144.69s; diagnostic60s99.53s (worse, unchanged SQL).
+   See COVERAGE_WORK_SLICE_EVIDENCE.md; normal continuation/SLO/live remain open.
+
+Evidence: component tests do not prove semantics or live scale; no activation,
+merge or deployment. Preserve unrelated dirty work.
+
+## Current authority/transaction root follow-up (2026-10-11)
+
+1. Component-verified: native lineage revision plus fresh scoped Task/lease/binding
+   checks, shared Worker guard and skipping unchanged projection tail reads.
+   Normal same-wake continuation reuses its exact context; new-owner handoff and
+   exceptional recovery prepare independent authority. Missing strict consumer
+   exits before proof I/O, without replacing final native atomic admission.
+2. Component-verified: callback-local exact immutable bytes (256 entries/32MiB),
+   phase-pinned pure reads and short database read work units. Live Host/current
+   authority and independent final physical certification remain; all existing
+   final proof external I/O has NOT been moved out of lock windows.
+3. Component validation: native mutation/lease-wait/revocation/isolation and
+   workload structural gates. Remaining: overall execute/rows/lock budgets,
+   per-Artifact fanout, MODEL membership/volume roots, native multi-tenant growth
+   load and p95, fleet fairness, coordinated rollout/live progressive output.
+   20403 executes for tiny nine data remains above the intended system goal.
 
 # Previous task — HOST-MEDIA-IMPORT-01 governed historical media (2026-09-29)
 

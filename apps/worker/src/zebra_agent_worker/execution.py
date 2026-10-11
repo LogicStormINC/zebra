@@ -35,18 +35,13 @@ from zebra_agent_worker.client_effect_resume import recover_client_effect_wakeup
 from zebra_agent_worker.client_tool_gateway import ClientToolGateway
 from zebra_agent_worker.context_materialization import prepare_worker_context
 from zebra_agent_worker.control import SessionControlService
+from zebra_agent_worker.coverage_composition import CloudCoverageRuntime
 from zebra_agent_worker.effect_runtime import guard_worker_effects
 from zebra_agent_worker.execution_completion import finish_execution, run_worker_continuation
 from zebra_agent_worker.execution_entrypoints import SessionExecutionEntrypoints
-from zebra_agent_worker.execution_errors import (
-    log_worker_failure,
-    sequence_race_guard,
-)
+from zebra_agent_worker.execution_errors import log_worker_failure, sequence_race_guard
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder, ExecutionInterrupted
-from zebra_agent_worker.execution_finalization import (
-    ExecutedSession,
-    WorkerExecutionError,
-)
+from zebra_agent_worker.execution_finalization import ExecutedSession, WorkerExecutionError
 from zebra_agent_worker.execution_finalization import (
     RetryableWorkerSetupError as RetryableWorkerSetupError,
 )
@@ -61,10 +56,7 @@ from zebra_agent_worker.execution_recovery import (
     recover_execution_inputs,
     recover_execution_progress,
 )
-from zebra_agent_worker.execution_storage import (
-    compose_recovery,
-    resolve_execution_storage,
-)
+from zebra_agent_worker.execution_storage import compose_recovery, resolve_execution_storage
 from zebra_agent_worker.extension_recovery import WorkerExtensionStore
 from zebra_agent_worker.gateway_release import GatewayRelease
 from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
@@ -102,6 +94,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         extension_skills: execution_gateway.WorkerSkillSource | None = None,
         extension_mcp: execution_gateway.WorkerMcpSource | None = None,
         recorder_factory: WorkerProjectionRecorderFactory | None = None,
+        coverage_runtime: CloudCoverageRuntime | None = None,
     ) -> None:
         runtime_authority.validate_authority_wiring(
             execution_authority_resolver,
@@ -191,6 +184,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
             extension_skills,
             extension_mcp,
         )
+        self._coverage_runtime = coverage_runtime
 
     def _execute_claimed_session_once(
         self,
@@ -211,7 +205,9 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 claimed,
                 started_at,
                 ownership_check,
-                recover_execution_inputs,
+                lambda **kwargs: recover_execution_inputs(
+                    **kwargs, strict_dispatch_configured=self._coverage_runtime is not None
+                ),
             )
         claimed = inputs.claimed
         session_events = inputs.session_events
@@ -244,6 +240,10 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         )
         if preflight_failure is not None:
             return preflight_failure
+        if task.coverage_admission is not None:
+            if self._coverage_runtime is None:
+                raise WorkerExecutionError("coverage_unsupported")
+            return self._coverage_runtime.execute(self, inputs, authority_recorder, ownership_check)
         model_gateway = execution_gateway.model_gateway(self, build_model_gateway)
         effect_recorder: list[DurableHarnessEventRecorder] = []
         try:

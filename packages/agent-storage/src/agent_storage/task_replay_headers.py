@@ -13,7 +13,7 @@ from agent_core.ports.task_projection_checkpoints import (
 from agent_core.ports.task_replay import TaskEventHeader, TaskRunHeader
 
 from agent_storage.task_event_page_limits import page_highwater
-from agent_storage.task_projection_checkpoint_rows import require_source
+from agent_storage.task_projection_checkpoint_rows import require_source_member
 from agent_storage.task_replay_header_schema import (
     COLUMNS,
     COMMAND,
@@ -49,12 +49,10 @@ def _checked_header(
     header = event_header(row)
     if header.task_sequence >= task["next_event_sequence"]:
         raise CheckpointConflict("canonical Event header exceeds Task source coverage")
-    # ponytail: reuse the canonical source-only guard. This scope's version
-    # never addresses a derived checkpoint, and no checkpoint needs to exist.
-    require_source(
+    require_source_member(
         connection,
         ProjectionScope(task["namespace"], header.task_id, None, "source-metadata-v1"),
-        header.task_sequence,
+        row,
         event_id=str(header.event_id),
         segment_id=str(header.segment_id),
         segment_sequence=header.segment_sequence,
@@ -96,26 +94,29 @@ def read_run_header(
         raise ValueError("invalid replay Run identity")
     if through is not None and (type(through) is not int or through < -1):
         raise ValueError("invalid canonical Run highwater")
+    bound = "next_event_sequence-1" if through is None else "MIN(next_event_sequence-1,?)"
+    bounds = () if through is None else (through, through)
     row = connection.execute(
-        "SELECT namespace,next_event_sequence,event_position_state "
+        "SELECT namespace,next_event_sequence,event_position_state,EXISTS("
+        "SELECT 1 FROM task_replay_coverage_privacy INDEXED BY session_events_coverage_privacy "
+        "WHERE task_replay_coverage_privacy.task_id=agent_tasks.task_id "
+        f"AND task_sequence<={bound}) "
+        "AS strict_coverage,EXISTS(SELECT 1 FROM session_events "
+        "INDEXED BY session_events_scalar_pending WHERE session_events.task_id=agent_tasks.task_id "
+        f"AND task_sequence<={bound} "
+        "AND replay_header_ready=0) AS pending_headers "
         "FROM agent_tasks WHERE task_id=?",
-        (str(task_id),),
+        (*bounds, str(task_id)),
     ).fetchone()
     if row is None:
         raise ValueError("Task replay target was not found")
     if row["event_position_state"] != "ready":
         raise CheckpointNotReady("Task Event positions require explicit backfill")
     highwater = page_highwater(-1, row["next_event_sequence"], through)
-    if (
-        connection.execute(
-            "SELECT 1 FROM session_events INDEXED BY session_events_scalar_pending "
-            "WHERE task_id=? AND task_sequence<=? AND replay_header_ready=0 LIMIT 1",
-            (str(task_id), highwater),
-        ).fetchone()
-        is not None
-    ):
+    if row["pending_headers"]:
         raise CheckpointNotReady("Task replay headers require explicit backfill")
     parameters = str(task_id), run_id, highwater
+    strict_coverage = bool(row["strict_coverage"])
     rows = connection.execute(
         f"SELECT {COLUMNS} FROM session_events INDEXED BY session_events_scalar_run_executable "
         "WHERE task_id=? AND replay_run_id=? "
@@ -139,7 +140,16 @@ def read_run_header(
             f"AND {COMMAND} ORDER BY task_sequence LIMIT 1",
             (str(task_id), highwater),
         ).fetchone()
-        return TaskRunHeader(task_id, run_id, highwater, None, 0, None, legacy=exists is None)
+        return TaskRunHeader(
+            task_id,
+            run_id,
+            highwater,
+            None,
+            0,
+            None,
+            legacy=exists is None,
+            strict_coverage=strict_coverage,
+        )
     anchor = _checked_header(connection, rows[0], row)
     # LIMIT 2 above rejects repeated executable Run IDs. The next executable
     # is therefore the stop; a Run-ID inequality would turn this seek into a scan.
@@ -151,16 +161,24 @@ def read_run_header(
         "ORDER BY task_sequence LIMIT 1",
         (str(task_id), anchor.task_sequence, highwater),
     ).fetchone()
-    if stop is not None and read_event_header(connection, task_id, stop[0]) is None:
-        raise CheckpointConflict("canonical Run stop source is unavailable")
+    if stop is not None:
+        source = connection.execute(
+            f"SELECT {COLUMNS} FROM session_events INDEXED BY session_events_scalar_header "
+            "WHERE task_id=? AND task_sequence=?",
+            (str(task_id), stop[0]),
+        ).fetchone()
+        if source is None:
+            raise CheckpointConflict("canonical Run stop source is unavailable")
+        _checked_header(connection, source, row)
     return TaskRunHeader(
         task_id,
         run_id,
         highwater,
         anchor,
         anchor.task_sequence,
-        None if stop is None else stop[0],
+        None if stop is None else stop["task_sequence"],
         control_only=control_only,
+        strict_coverage=strict_coverage,
     )
 
 

@@ -27,6 +27,13 @@ from agent_storage.postgres.command_wakeup_pickup import (
     discover_command_pickups,
     resolve_command_pickup,
 )
+from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecoveryCheck
+from agent_storage.postgres.coverage_recovery_preparation import CoverageRecoveryDeferred
+from agent_storage.postgres.worker_capability import (
+    WorkerCapabilityLease,
+    WorkerCapabilityLostError,
+)
+from psycopg.errors import LockNotAvailable, QueryCanceled
 from pydantic import TypeAdapter, ValidationError
 
 
@@ -79,6 +86,8 @@ class CommandWakeupConsumer:
         lease_ttl: timedelta = timedelta(seconds=30),
         requeue_delay: float = 0.25,
         scoped_rollout: bool = False,
+        coverage_check: CoverageRecoveryCheck | None = None,
+        consumer_capability: Callable[[], WorkerCapabilityLease | None] | None = None,
     ) -> None:
         try:
             TypeAdapter(Namespace).validate_python(deployment_namespace)
@@ -103,6 +112,8 @@ class CommandWakeupConsumer:
         self._batch, self._ttl = batch_size, lease_ttl
         self._requeue_delay = requeue_delay
         self._scoped_rollout = scoped_rollout
+        self._coverage_check = coverage_check
+        self._consumer_capability = consumer_capability
         self._slots = BoundedSemaphore(execution_slots)
         self._execution = ThreadPoolExecutor(execution_slots, thread_name_prefix="command-execute")
         self._admission = ThreadPoolExecutor(2, thread_name_prefix="command-admit")
@@ -111,6 +122,7 @@ class CommandWakeupConsumer:
         self._lock, self._closed = Lock(), False
         self._cursors: dict[PickupLane, PendingCursor | None] = {"execution": None, "control": None}
         self._polling = {"execution": asyncio.Lock(), "control": asyncio.Lock()}
+        self._execution_discovery_generation = 0
 
     async def _db[T](self, pool: ThreadPoolExecutor, function: Callable[[], T]) -> T:
         with self._lock:
@@ -146,6 +158,10 @@ class CommandWakeupConsumer:
                 ttl=self._ttl,
                 raw_body=raw,
                 required_scope_mode=required_scope_mode,
+                coverage_check=self._coverage_check,
+                consumer_capability=(
+                    self._consumer_capability() if self._consumer_capability is not None else None
+                ),
             )
             if result.status in {
                 HandoffStatus.DUPLICATE,
@@ -165,6 +181,13 @@ class CommandWakeupConsumer:
             # Slot release follows the real synchronous Future, never task cancellation.
             future.add_done_callback(self._execution_finished)
             return PickupOutcome.SCHEDULED
+        except (
+            WorkerCapabilityLostError,
+            CoverageRecoveryDeferred,
+            QueryCanceled,
+            LockNotAvailable,
+        ):
+            return PickupOutcome.DEFERRED
         finally:
             if not scheduled:
                 self._slots.release()
@@ -288,6 +311,8 @@ class CommandWakeupConsumer:
                 )
             except _Busy:
                 return ()
+            if lane == "execution":
+                self._execution_discovery_generation += 1
             if not rows:
                 self._cursors[lane] = None
                 return ()

@@ -44,7 +44,7 @@ def record_command_wakeup_in_transaction(
     if event.event_type is not EventType.SESSION_COMMAND_ACCEPTED:
         return
     rollout = connection.execute(
-        """SELECT admission_enabled,
+        """WITH rollout AS (SELECT admission_enabled,
                   COALESCE((to_jsonb(rollout)->>'max_pending_per_scope')::int,32)
                       AS max_pending_per_scope,
                   COALESCE((to_jsonb(rollout)->>'max_pending_control_per_scope')::int,8)
@@ -54,12 +54,31 @@ def record_command_wakeup_in_transaction(
                   COALESCE((to_jsonb(rollout)->>'reserved_control_outbox')::int,64)
                       AS reserved_control_outbox
            FROM command_wakeup_rollouts rollout
-           WHERE deployment_namespace = %s FOR SHARE""",
-        (deployment_namespace,),
+           WHERE deployment_namespace = %s FOR SHARE), strict_task AS (
+             SELECT EXISTS (
+               SELECT 1 FROM execution_segments target JOIN execution_segments source
+                 ON source.deployment_namespace=target.deployment_namespace
+                 AND source.task_id=target.task_id
+               JOIN session_events prepared
+                 ON prepared.deployment_namespace=source.deployment_namespace
+                 AND prepared.session_id=source.session_id AND prepared.event_type='task_prepared'
+               WHERE target.deployment_namespace=%s AND target.session_id=%s
+                 AND prepared.payload ? 'coverage_admission'
+             ) AS strict_task)
+           SELECT rollout.*,strict_task.strict_task FROM strict_task LEFT JOIN rollout ON TRUE""",
+        (deployment_namespace, deployment_namespace, event.session_id),
     ).fetchone()
+    from agent_storage.postgres.command_coverage_admission import (
+        admit_strict_command,
+        check_worker_capability_clock,
+    )
+
     if rollout is None or not rollout["admission_enabled"]:
+        if rollout is not None and rollout.get("strict_task", False):
+            admit_strict_command(connection, deployment_namespace, event, native_enabled=False)
         return
     scope = _scope_from_binding(connection, deployment_namespace, event)
+    capability = admit_strict_command(connection, deployment_namespace, event, native_enabled=True)
     envelope = _envelope(deployment_namespace, event, scope)
     scope_key = command_scope_key(scope)
     kind = SessionCommandKind(event.payload["kind"])
@@ -156,6 +175,8 @@ def record_command_wakeup_in_transaction(
             reserved_control_outbox=rollout["reserved_control_outbox"],
         )
     insert_command_outbox(connection, envelope)
+    if capability is not None:
+        check_worker_capability_clock(connection, capability)
 
 
 def _check_outbox_capacity(
@@ -356,10 +377,10 @@ def _validated_host_context(
         if (
             context is None
             or host.grant_digest != host_context_digest(context)
-                or host.namespace_id != context.namespace_id
-                or session_namespace != context.namespace_id
-                or host.host_app_id != context.host_app_id
-            ):
+            or host.namespace_id != context.namespace_id
+            or session_namespace != context.namespace_id
+            or host.host_app_id != context.host_app_id
+        ):
             raise ValueError("inconsistent binding")
         # The frozen host workspace is the business scope, not a filesystem path.
         # Expiry is NOT re-admission: downstream execution still verifies authority.

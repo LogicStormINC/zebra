@@ -18,16 +18,16 @@ from agent_core.domain.agent_tasks import (
     ContextLifecycleSignals,
     RolloverReason,
 )
-from agent_core.domain.events import EventType
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.session_handoff import HandoffActorKind
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.ports import EventStorePort
-from agent_core.ports.agent_tasks import TaskEvent
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
 
+from zebra_agent_api.coverage_public_read import coverage_task_read_problem
+from zebra_agent_api.coverage_public_summary import coverage_public_summary
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_handoff import SessionHandoffApi
@@ -35,7 +35,9 @@ from zebra_agent_api.session_summary import serialize_session_summary
 from zebra_agent_api.task_header import task_header
 from zebra_agent_api.task_model_usage import summarize_task_model_usage
 from zebra_agent_api.task_read_summaries import task_projection_pending, task_summary_fields
+from zebra_agent_api.task_responses import is_user_task_event as is_user_task_event
 from zebra_agent_api.task_responses import parse_task_limit, task_not_found
+from zebra_agent_api.task_responses import serialize_task_event as serialize_task_event
 from zebra_agent_api.task_session_api import TaskSessionApi
 
 
@@ -95,7 +97,7 @@ class TaskReadApi:
             if attachments:
                 summary["attachments"] = attachments
         body.update(summary)
-        return ApiResponse(200, body)
+        return ApiResponse(200, coverage_public_summary(self.stores, session.session_id, body))
 
     def list(self, query: Mapping[str, str]) -> ApiResponse:
         limit = parse_task_limit(query.get("limit"))
@@ -130,7 +132,7 @@ class TaskReadApi:
                     else "open"
                 ),
             )
-            items.append(body)
+            items.append(coverage_public_summary(self.stores, session.session_id, body))
         return ApiResponse(
             200,
             {"tasks": items, "sessions": items, "count": len(items), "limit": limit},
@@ -143,6 +145,9 @@ class TaskReadApi:
         store = self.stores.tasks
         if store.get_task(parsed) is None:
             return task_not_found(task_id)
+        problem = coverage_task_read_problem(self.stores, parsed)
+        if problem is not None:
+            return problem
         return ApiResponse(
             200,
             {
@@ -420,41 +425,6 @@ def rollover_task(
             else RolloverReason.CONTEXT_PRESSURE
         ),
     )
-
-
-def serialize_task_event(item: TaskEvent) -> dict[str, object]:
-    event = item.event
-    payload = event.payload
-    if (
-        event.event_type is EventType.USER_MESSAGE_RECEIVED
-        and payload.get("source") == "session_handoff"
-    ):
-        payload = {"content": payload.get("content", "")}
-    return {
-        "event_id": str(event.event_id),
-        "sequence": item.task_sequence,
-        "event_type": event.event_type.value,
-        "actor": event.actor.value,
-        "created_at": event.created_at.isoformat(),
-        "payload": payload,
-    }
-
-
-def is_user_task_event(item: TaskEvent) -> bool:
-    event = item.event
-    if event.event_type in {
-        EventType.SESSION_HANDOFF_COMMITTED,
-        EventType.SESSION_HANDOFF_RECEIVED,
-    }:
-        return False
-    if item.segment_id != TaskId(item.task_id) and event.event_type in {
-        EventType.SESSION_CREATED,
-        EventType.TASK_PREPARED,
-    }:
-        return False
-    if event.event_type is EventType.USER_MESSAGE_RECEIVED:
-        return event.payload.get("actor_kind") != HandoffActorKind.AUTOMATION.value
-    return True
 
 
 def _rollover(

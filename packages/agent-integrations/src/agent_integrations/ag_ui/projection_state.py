@@ -1,6 +1,7 @@
 """Per-segment transient state for deterministic incremental AG-UI projection."""
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from ag_ui.core import Interrupt
 from agent_core.ports.task_projection_checkpoints import (
@@ -25,6 +26,8 @@ class ProjectionState:
     checkpoint_interrupt_ids: set[str] = field(default_factory=set)
     # A trailing Segment terminal must not finish an already completed Turn twice.
     turn_finished: bool = False
+    coverage_runs: dict[str, dict[str, Any]] = field(default_factory=dict)
+    strict_coverage: bool = False
 
     def bind(self, identity: AgUiRunIdentity) -> None:
         binding = (

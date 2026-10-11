@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Literal, Never
 
 from agent_context.capsule import execution_evidence_context
+from agent_core.domain.coverage_contracts import CoverageRefusalReason, CoverageRefusedError
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import WorkerLease
@@ -140,6 +141,7 @@ def recover_execution_inputs(
     tasks: Any = None,
     namespace: str | None = None,
     ownership_check: Callable[[], None] | None = None,
+    strict_dispatch_configured: bool = False,
 ) -> RecoveredExecutionInputs:
     if ownership_check is not None:
         ownership_check()
@@ -226,8 +228,14 @@ def recover_execution_inputs(
                         execution_evidence_context(evidence),
                     ),
                 )
-        if workspace_resolver is not None:
+        if task.coverage_admission is not None and not strict_dispatch_configured:
+            raise CoverageRefusedError(CoverageRefusalReason.UNSUPPORTED)
+        if workspace_resolver is not None and task.coverage_admission is None:
             task = apply_workspace_resolver(task, workspace_resolver, session_id)
+    except CoverageRefusedError as exc:
+        raise WorkerExecutionError(
+            f"strict coverage refused: {exc.reason.value}", coverage_refusal_reason=exc.reason
+        ) from None
     except (FileNotFoundError, ValueError) as exc:
         raise WorkerExecutionError(str(exc)) from exc
     return RecoveredExecutionInputs(

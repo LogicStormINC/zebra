@@ -80,15 +80,27 @@ def cloud_composition_from_environment(
     )
     endpoint = _required(values, "ZEBRA_S3_ENDPOINT")
     bucket = _required(values, "ZEBRA_S3_BUCKET")
-    client = Session().create_client(
-        "s3",
+    client_options = dict(
         endpoint_url=endpoint,
         aws_access_key_id=_required(values, "ZEBRA_S3_ACCESS_KEY"),
         aws_secret_access_key=_required(values, "ZEBRA_S3_SECRET_KEY"),
         aws_session_token=_optional(values, "ZEBRA_S3_SESSION_TOKEN"),
         region_name=_optional(values, "ZEBRA_S3_REGION") or "us-east-1",
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
+    config = Config(signature_version="s3v4", s3={"addressing_style": "path"})
+    client = Session().create_client("s3", **client_options, config=config)
+
+    def deadline_client(timeout: float) -> Any:
+        return Session().create_client(
+            "s3",
+            **client_options,
+            config=config.merge(
+                Config(
+                    connect_timeout=timeout, read_timeout=timeout, retries={"total_max_attempts": 1}
+                )
+            ),
+        )
+
     return CloudCompositionSettings(
         dsn=_required(values, "ZEBRA_DATABASE_URL"),
         deployment_namespace=_required(values, "ZEBRA_DEPLOYMENT_NAMESPACE"),
@@ -98,6 +110,7 @@ def cloud_composition_from_environment(
             bucket=bucket,
             read_client=cast(Any, bounded_s3_read_client(client)),
             key_prefix=_optional(values, "ZEBRA_S3_KEY_PREFIX") or "zebra/artifacts/v1",
+            deadline_client_factory=deadline_client,
         ),
         history_scope=history_scope,
         continuation_scope=continuation_scope,

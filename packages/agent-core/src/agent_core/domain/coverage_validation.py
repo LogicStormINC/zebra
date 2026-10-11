@@ -12,6 +12,7 @@ from agent_core.domain.coverage_contracts import (
     CoverageModel,
     CoverageName,
     CoverageRefusalReason,
+    CoverageRefusedError,
     CoverageSchemaVersion,
     CoverageTime,
     coverage_digest,
@@ -126,8 +127,13 @@ def manifest_digest(contract: CoverageContract, records: tuple[CoverageRecord, .
 
 
 def expected_units(
-    contract: CoverageContract, records: tuple[CoverageRecord, ...]
+    contract: CoverageContract, records: tuple[CoverageRecord, ...], *, max_units: int | None = None
 ) -> tuple[CoverageUnitKey, ...]:
+    if max_units is not None:
+        if type(max_units) is not int or max_units < 0:
+            raise ValueError("invalid coverage unit bound")
+        if len(contract.checks) * sum(len(record.parts) + 1 for record in records) > max_units:
+            raise CoverageRefusedError(CoverageRefusalReason.BUDGET_EXCEEDED)
     units: list[CoverageUnitKey] = []
     for record in records:
         for check in contract.checks:

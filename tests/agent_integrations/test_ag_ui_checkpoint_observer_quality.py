@@ -611,7 +611,13 @@ def test_real_pg_metadata_matches_frame_source_guard_without_payload_privilege(
         connection.execute(
             sql.SQL("""GRANT SELECT (deployment_namespace,task_id,task_sequence,
           event_id,session_id,sequence,event_type,replay_command_kind,replay_run_id,
-          replay_internal_continuation,replay_header_ready) ON session_events TO {}""").format(
+          replay_internal_continuation,replay_header_ready)
+          ON session_events TO {}""").format(
+                sql.Identifier(role)
+            )
+        )
+        connection.execute(
+            sql.SQL("GRANT SELECT ON task_replay_coverage_privacy TO {}").format(
                 sql.Identifier(role)
             )
         )

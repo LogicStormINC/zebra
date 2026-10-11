@@ -318,6 +318,8 @@ def _text_completion(text: str) -> httpx.Response:
         200,
         json={
             "model": "deepseek-v4-flash",
-            "choices": [{"message": {"content": text}, "finish_reason": "stop"}],
+            "choices": [
+                {"message": {"role": "assistant", "content": text}, "finish_reason": "stop"}
+            ],
         },
     )

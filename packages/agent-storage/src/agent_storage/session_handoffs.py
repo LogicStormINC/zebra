@@ -27,11 +27,11 @@ from agent_core.ports.session_handoff import (
     SessionHandoffResult,
 )
 
+from agent_storage import session_handoff_events as handoff_events
 from agent_storage.agent_tasks import TASK_SCHEMA, attach_handoff_segment_locked
 from agent_storage.database import SQLiteDatabase
 from agent_storage.leases import SQLiteLeaseStore
 from agent_storage.projections import SQLiteProjectionStore
-from agent_storage.session_handoff_events import build_handoff_events, insert_child_projections
 from agent_storage.session_handoff_facts import read_source_facts
 from agent_storage.session_handoff_rows import (
     INSERT_HANDOFF_OPERATION,
@@ -119,13 +119,13 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
             with self._database.connect() as connection:
                 connection.execute("BEGIN IMMEDIATE")
                 operation = self._locked_operation(connection, request.operation.operation_id)
+                handoff_events.reject_strict_sqlite_source(connection, operation.source_session_id)
                 if operation.status is HandoffOperationStatus.COMMITTED:
                     return self._result_for_operation(connection, operation, replay=True)
                 if operation.status is HandoffOperationStatus.ABORTED:
                     raise HandoffStorageConflictError("handoff operation is aborted")
                 self._validate_commit(connection, operation, request)
-                result = self._commit_locked(connection, operation, request)
-                return result
+                return self._commit_locked(connection, operation, request)
         except sqlite3.IntegrityError as exc:
             self._abort_after_conflict(request.operation.operation_id, "handoff_successor_conflict")
             raise HandoffStorageConflictError("handoff successor or event conflict") from exc
@@ -381,7 +381,7 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
                 envelope.checksum,
             ),
         )
-        events = build_handoff_events(operation, request, workspace)
+        events = handoff_events.build_handoff_events(operation, request, workspace)
         for event in events:
             insert_event(connection, event)
         parent_sequence = operation.expected_source_stream_version + 1
@@ -392,7 +392,7 @@ class SQLiteSessionHandoffStore(SessionHandoffPort):
             """,
             (parent_sequence, envelope.created_at.isoformat(), str(operation.source_session_id)),
         )
-        insert_child_projections(connection, operation, request, workspace)
+        handoff_events.insert_child_projections(connection, operation, request, workspace)
         attached = attach_handoff_segment_locked(
             connection,
             root_session_id=envelope.root_session_id,

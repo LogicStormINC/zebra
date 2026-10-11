@@ -36,14 +36,21 @@ from agent_integrations.ag_ui.checkpoint_keys import (
     settle_interrupt_membership,
 )
 from agent_integrations.ag_ui.checkpoint_plan import (
-    AG_UI_CHECKPOINT_VERSION,
     ProjectionPagePlan,
+    checkpoint_version,
     validate_restore_run,
 )
 from agent_integrations.ag_ui.contracts import AgUiCursor, AgUiProjectionError, AgUiRunIdentity
+from agent_integrations.ag_ui.coverage_checkpoint import (
+    coverage_changes,
+    coverage_chunk_count,
+    coverage_keys,
+    restore_coverage,
+)
 from agent_integrations.ag_ui.payload_validation import required_payload_text
 from agent_integrations.ag_ui.projection import AgUiProjector
 from agent_integrations.ag_ui.projection_state import ProjectionState
+from agent_integrations.coverage_public_events import coverage_projection_event
 
 
 class _PageReader:
@@ -127,17 +134,26 @@ def _state_for(
     reader: _PageReader,
     entry: TaskEvent,
     identity: AgUiRunIdentity,
+    *, strict_coverage: bool = False,
 ) -> tuple[ProjectionState, tuple[ProjectionCellKey, ...], SegmentCheckpoint]:
     scalar = reader.scalar(entry.segment_id)
-    keys = projection_keys(entry.event)
+    public = coverage_projection_event(entry.event, strict=strict_coverage)
+    keys = projection_keys(public) if public is not None else ()
     cells = reader.load(keys)
     message = next((c.value for c in cells if c.key.kind == "text_message"), None)
     if message is not None:
         keys = projection_keys(entry.event, message_id=message)
         cells = reader.load(keys)
+    count = coverage_chunk_count(entry.event, cells)
+    if count:
+        keys = tuple(dict.fromkeys((*keys, *coverage_keys(entry.event, count))))
+        cells = reader.load(keys)
     if any(cell.task_sequence > scalar.task_sequence for cell in cells):
         raise CheckpointConflict("projector cell is newer than its Segment scalar")
-    return ProjectionState.from_checkpoint(scalar, cells, identity), keys, scalar
+    state = ProjectionState.from_checkpoint(scalar, cells, identity)
+    state.strict_coverage = strict_coverage
+    restore_coverage(entry.event, cells, state)
+    return state, keys, scalar
 
 
 def _check_frames(frames: tuple[Event, ...]) -> None:
@@ -285,7 +301,9 @@ class AgUiCheckpointMaterializer:
             frames: tuple[Event, ...] = ()
             if decision.projected:
                 segment_identity = _segment_identity(identity, entry.segment_id)
-                state, keys, scalar = _state_for(reader, entry, segment_identity)
+                state, keys, scalar = _state_for(
+                    reader, entry, segment_identity, strict_coverage=plan.run.strict_coverage
+                )
                 previous = scalar.task_sequence
                 admit_projection(entry.event, segment_identity, started=state.started)
                 _, frames = next(
@@ -296,9 +314,15 @@ class AgUiCheckpointMaterializer:
                     )
                 )
                 _check_frames(frames)
-                settle_interrupt_membership(entry.event, state)
+                if coverage_projection_event(
+                    entry.event, strict=plan.run.strict_coverage
+                ) is not None:
+                    settle_interrupt_membership(entry.event, state)
                 for key in keys:
-                    reader.change(key, entry.task_sequence, state.checkpoint_value(key))
+                    if key.kind != "coverage":
+                        reader.change(key, entry.task_sequence, state.checkpoint_value(key))
+                for key, value in coverage_changes(entry.event, state):
+                    reader.change(key, entry.task_sequence, value)
                 scalar = SegmentCheckpoint(
                     entry.segment_id,
                     entry.task_sequence,
@@ -342,7 +366,7 @@ class AgUiCheckpointMaterializer:
         run: TaskRunHeader,
     ) -> ProjectionFrameHeader:
         """Validate even whole-Event cursors before skipping their public frames."""
-        if scope.projector_version != AG_UI_CHECKPOINT_VERSION:
+        if scope.projector_version != checkpoint_version(run):
             raise AgUiProjectionError("unsupported checkpoint projector version")
         if entry.task_id != scope.task_id or str(scope.task_id) != identity.thread_id:
             raise AgUiProjectionError("checkpoint belongs to another Task")
@@ -381,7 +405,9 @@ class AgUiCheckpointMaterializer:
         header = self._restore_header(scope, entry, identity, run=run)
         reader = _PageReader(self.port, scope, entry.task_sequence)
         segment_identity = _segment_identity(identity, entry.segment_id)
-        state, _, scalar = _state_for(reader, entry, segment_identity)
+        state, _, scalar = _state_for(
+            reader, entry, segment_identity, strict_coverage=run.strict_coverage
+        )
         if scalar.task_sequence != header.state_before_sequence:
             raise CheckpointConflict("frame header references another predecessor checkpoint")
         admit_projection(entry.event, segment_identity, started=state.started)

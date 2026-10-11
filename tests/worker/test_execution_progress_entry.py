@@ -96,12 +96,14 @@ def _entry(tmp_path, monkeypatch, *, admitted=True):
         policy_profile="read_only",
         network_profile=parse_network_profile("none"),
         model_invocation_policy=None,
+        coverage_admission=None,
         interaction_mode=Mock(),
     )
     settings = _settings(tmp_path / "recorder.sqlite")
     factory = SimpleNamespace(build=lambda **_: recorder)
     service = SimpleNamespace(
         _execution_namespace="local",
+        _coverage_runtime=None,
         _execution_input_store=None,
         _task_index_store=stores.tasks,
         _event_store=stores.events,

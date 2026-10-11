@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
 from threading import Lock
+from time import monotonic
 from typing import Any
 
 from agent_core.domain.leases import WorkerLease
@@ -21,9 +22,10 @@ from agent_runtime.command_wakeup_consumer import (
 )
 from agent_runtime.command_wakeup_quarantine import CommandWakeupQuarantine
 from agent_runtime.command_wakeup_relay import relay_command_batch
+from agent_storage.postgres.command_wakeup_recovery_proof import CoverageRecoveryCheck
 from zebra_agent_config import ZebraAgentSettings
 
-from zebra_agent_worker.command_process_state import CommandRecoverySweep
+from zebra_agent_worker.command_process_state import CommandRecoverySweep, CommandWorkerCapability
 from zebra_agent_worker.runtime_factory import pin_cloud_engine
 from zebra_agent_worker.worker_loop_service import WorkerLoopRunResult
 from zebra_agent_worker.worker_polling import validate_loop_inputs
@@ -56,10 +58,12 @@ class CommandWorkerProcess:
         maintenance: Callable[..., None],
         drain: Callable[[], None],
         transport_factory: Callable[..., Any] | None = None,
+        coverage_check: CoverageRecoveryCheck | None = None,
     ) -> None:
         self._dsn, self._namespace, self._settings = dsn, namespace, settings
         self._execute, self._maintenance, self._drain = execute, maintenance, drain
         self._transport_factory = transport_factory
+        self._coverage_check = coverage_check
         self._muted: list[tuple[logging.Logger, bool]] = []
 
     def run(
@@ -117,6 +121,12 @@ class CommandWorkerProcess:
     ) -> WorkerLoopRunResult:
         config = self._settings.command_delivery
         stop = asyncio.Event()
+        capability = CommandWorkerCapability(
+            self._dsn, self._namespace, self._settings, self._execute, self._coverage_check
+        )
+        recovery_generation = 0
+        control_generation = 0
+        recovery_completed_at = control_completed_at = 0.0
         consumer: CommandWakeupConsumer | None = None
 
         def stop_new_work() -> None:
@@ -230,6 +240,8 @@ class CommandWorkerProcess:
             batch_size=config.batch_size if batch_size is None else batch_size,
             lease_ttl=timedelta(seconds=ttl),
             scoped_rollout=config.scoped_rollout_enabled,
+            coverage_check=self._coverage_check,
+            consumer_capability=lambda: capability.lease_for(consumer),
         )
         callbacks: set[asyncio.Task[Any]] = set()
         tag: str | None = None
@@ -275,6 +287,7 @@ class CommandWorkerProcess:
             self._namespace,
             config.batch_size,
             scope_mode="fallback" if config.scoped_rollout_enabled else "all",
+            coverage_check=self._coverage_check,
         )
         maintenance_pool = ThreadPoolExecutor(1, thread_name_prefix="command-maintenance")
         cleanup_pool = ThreadPoolExecutor(1, thread_name_prefix="command-cleanup")
@@ -312,6 +325,7 @@ class CommandWorkerProcess:
                     pass
 
         async def maintenance() -> None:
+            nonlocal recovery_generation, recovery_completed_at
             await loop.run_in_executor(
                 maintenance_pool,
                 partial(
@@ -323,22 +337,23 @@ class CommandWorkerProcess:
             )
             if not stop.is_set():
                 await loop.run_in_executor(maintenance_pool, recovery.tick)
+                recovery_generation += 1
+                recovery_completed_at = monotonic()
+
+        async def control() -> None:
+            nonlocal control_generation, control_completed_at
+            await consumer.poll(
+                "control", scope_mode="fallback" if config.scoped_rollout_enabled else "all"
+            )
+            control_generation += 1
+            control_completed_at = monotonic()
 
         jobs = [
             asyncio.create_task(background(maintenance)),
             asyncio.create_task(background(lambda: loop.run_in_executor(cleanup_pool, cleanup))),
         ]
         # Canonical controls always have a separate DB lane, even with broker-only execution.
-        jobs.append(
-            asyncio.create_task(
-                background(
-                    lambda: consumer.poll(
-                        "control",
-                        scope_mode="fallback" if config.scoped_rollout_enabled else "all",
-                    )
-                )
-            )
-        )
+        jobs.append(asyncio.create_task(background(control)))
         if subscriber is not None:
             jobs.append(asyncio.create_task(background(subscribe)))
         if publisher is not None:
@@ -382,6 +397,7 @@ class CommandWorkerProcess:
             while not stop.is_set() and (max_cycles is None or cycles < max_cycles):
                 outcomes: tuple[PickupOutcome, ...] = ()
                 if config.scan_fallback_enabled:
+                    discovery_generation = consumer._execution_discovery_generation
                     try:
                         outcomes = await consumer.poll(
                             "execution",
@@ -390,6 +406,20 @@ class CommandWorkerProcess:
                     except Exception:
                         logger.warning("command_execution_pickup_failed")
                         outcomes = (PickupOutcome.DEFERRED,)
+                    else:
+                        if (
+                            not stop.is_set()
+                            and consumer._execution_discovery_generation > discovery_generation
+                        ):
+                            try:
+                                await asyncio.to_thread(
+                                    capability.consumer_tick,
+                                    consumer,
+                                    min(recovery_generation, control_generation),
+                                    min(recovery_completed_at, control_completed_at),
+                                )
+                            except Exception:
+                                logger.warning("worker_capability_tick_failed")
                 cycles += 1
                 with execution_lock:
                     is_idle = config.scan_fallback_enabled and not outcomes and running == 0
@@ -410,6 +440,10 @@ class CommandWorkerProcess:
             stop_new_work()
 
             async def shutdown() -> None:
+                try:
+                    await asyncio.to_thread(capability.close)
+                except Exception:
+                    logger.warning("worker_capability_revoke_failed")
                 if subscriber is not None:
                     try:
                         if tag is not None:

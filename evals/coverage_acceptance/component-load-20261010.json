@@ -1,0 +1,42 @@
+{
+  "schema": "zebra.coverage-component-load.v1",
+  "synthetic_data": true,
+  "postgres": {
+    "rows": 10003,
+    "page_limit": 100,
+    "baseline": {
+      "seconds": 1.3117993749910966,
+      "python_peak_bytes": 21234714
+    },
+    "paged_spool": {
+      "seconds": 1.3262511249631643,
+      "python_peak_bytes": 545222
+    },
+    "original_metadata_pages": {
+      "seconds": 0.8697415840579197,
+      "python_peak_bytes": 434182
+    },
+    "exact_rows_equal": true,
+    "original_metadata_equal": true,
+    "passed": true
+  },
+  "minio": {
+    "objects": 128,
+    "uses_per_object": 3,
+    "baseline": {
+      "seconds": 2.6608065409818664,
+      "python_peak_bytes": 507057
+    },
+    "private_invocation": {
+      "seconds": 2.909944999963045,
+      "python_peak_bytes": 1508883
+    },
+    "baseline_gets": 384,
+    "private_gets": 128,
+    "exact_bytes_equal": true,
+    "passed": true
+  },
+  "full_worker_acceptance": false,
+  "business_semantic_accuracy": "not_evaluated",
+  "passed": true
+}

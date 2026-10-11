@@ -8,6 +8,7 @@ from math import isfinite
 from time import monotonic
 
 import psycopg
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import TaskId
 from agent_core.ports.agent_tasks import TaskEvent
 from agent_core.ports.task_projection_checkpoints import CheckpointConflict, CheckpointNotReady
@@ -136,14 +137,26 @@ def stream_problem(status: int, code: str, detail: str, path: str) -> ApiRespons
 
 
 def canonical_task_view(stores: ControlPlaneStores, task_id: TaskId) -> list[TaskEvent]:
+    segments = sorted(stores.tasks.segments(task_id), key=lambda s: s.segment_index)
+    if (
+        not segments
+        or str(segments[0].session_id) != str(task_id)
+        or any(
+            segment.task_id != task_id
+            or segment.segment_index != index
+            or segment.predecessor_id != (segments[index - 1].session_id if index else None)
+            for index, segment in enumerate(segments)
+        )
+    ):
+        raise AgUiProjectionError("Task membership is incomplete or contradictory")
     try:
-        events = list(stores.tasks.read_events(task_id, -1))
+        indexed = list(stores.tasks.read_events(task_id, -1))
     except ValueError as exc:
         raise AgUiProjectionError(str(exc)) from exc
-    members = {segment.session_id for segment in stores.tasks.segments(task_id)}
+    members = {segment.session_id for segment in segments}
     sequences: dict[object, int] = {}
     identities: set[object] = set()
-    for position, item in enumerate(events):
+    for position, item in enumerate(indexed):
         if (
             item.task_id != task_id
             or item.task_sequence != position
@@ -156,4 +169,34 @@ def canonical_task_view(stores: ControlPlaneStores, task_id: TaskId) -> list[Tas
             raise AgUiProjectionError("canonical Task Event positions conflict")
         sequences[item.segment_id] = item.segment_sequence
         identities.add(item.event.event_id)
-    return events
+    positions = {item.event.event_id: item for item in indexed}
+    identities.clear()
+    for segment in segments:
+        # ponytail: O(n) original read; an index high-watermark cannot prove an
+        # intact prefix. Optimize only with verified prefix membership, not cache.
+        for segment_sequence, event in enumerate(
+            stores.events.list_for_session(segment.session_id)
+        ):
+            if (
+                event.session_id != segment.session_id
+                or event.sequence != segment_sequence
+                or event.event_id in identities
+            ):
+                raise AgUiProjectionError("canonical Segment Event positions conflict")
+            identities.add(event.event_id)
+            if event.event_type is EventType.SESSION_HANDOFF_RECEIVED and (
+                event.payload.get("root_session_id") != str(segments[0].session_id)
+                or segment.predecessor_id is None
+                or event.payload.get("parent_session_id") != str(segment.predecessor_id)
+                or type(event.payload.get("stage_index")) is not int
+                or event.payload["stage_index"] != segment.segment_index
+            ):
+                raise AgUiProjectionError("Task membership contradicts durable handoff origin")
+            retained = positions.get(event.event_id)
+            if retained is None or retained.event != event:
+                raise AgUiProjectionError("Task index cannot align with canonical segment tails")
+    if set(positions) != identities:
+        raise AgUiProjectionError("Task index contains a non-member Segment")
+    # Preserve canonical Task arrival order across Segment revisits; the retained
+    # originals prove membership, not a new grouping that would change cursors.
+    return indexed

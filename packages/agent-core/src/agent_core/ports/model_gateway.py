@@ -17,6 +17,7 @@ MODEL_RESPONSE_VALIDATION_RULES = frozenset(
         "reasoning_content_required",
         "reasoning_content_string",
         "assistant_content_nonblank",
+        "assistant_role",
         "tool_calls_list",
         "tool_call_object",
         "tool_function_object",

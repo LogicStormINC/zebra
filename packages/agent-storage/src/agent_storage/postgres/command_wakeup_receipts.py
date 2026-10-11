@@ -2,9 +2,46 @@
 
 from typing import Any
 
+from agent_core.contracts.broker_envelope import (
+    PrincipalScope,
+    ZebraCommandEnvelope,
+    parse_broker_envelope,
+)
 from agent_core.contracts.turn_events import validate_turn_identity
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
+
+from agent_storage.postgres.command_wakeup import command_scope_key
+from agent_storage.postgres.command_wakeup_relay import _validated_body
+
+
+def _validate(
+    connection: Any,
+    namespace: str,
+    pending: dict[str, Any],
+    outbox: dict[str, Any],
+    scope: PrincipalScope,
+    raw: bytes | None,
+) -> None:
+    try:
+        body = _validated_body(connection, namespace, outbox)
+        envelope = parse_broker_envelope(body)
+        if (
+            not isinstance(envelope, ZebraCommandEnvelope)
+            or envelope.scope != scope
+            or envelope.accepted_event_id != str(pending["accepted_event_id"])
+            or envelope.accepted_sequence != pending["accepted_sequence"]
+            or envelope.aggregate_id != str(pending["session_id"])
+            or envelope.operation_id != str(pending["command_id"])
+            or command_scope_key(scope) != pending["scope_key"]
+            or pending["tenant_id"] != scope.tenant_id
+            or pending["workspace_id"] != scope.workspace_id
+            or (raw is not None and raw != body)
+        ):
+            raise ValueError("invalid candidate")
+    except (ValueError, TypeError, KeyError):
+        raise ValueError("command handoff canonical identity or scope mismatch") from None
 
 HANDLED_EVENTS = frozenset({
     EventType.APPROVAL_REQUESTED, EventType.CLARIFICATION_REQUESTED,
@@ -12,6 +49,15 @@ HANDLED_EVENTS = frozenset({
     EventType.TURN_COMPLETED, EventType.TURN_FAILED, EventType.TURN_CANCELLED,
     EventType.SESSION_COMPLETED, EventType.SESSION_FAILED, EventType.SESSION_CANCELLED,
 })
+
+
+def _terminal_session(connection: Any, namespace: str, session_id: SessionId) -> bool:
+    row = connection.execute(
+        """SELECT status FROM session_projections
+           WHERE deployment_namespace = %s AND session_id = %s""",
+        (namespace, session_id),
+    ).fetchone()
+    return row is None or row["status"] in ("completed", "failed", "cancelled")
 
 
 def record_worker_command_boundary(

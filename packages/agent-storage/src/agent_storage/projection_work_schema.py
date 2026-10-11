@@ -144,6 +144,13 @@ def routing_statements(source: str) -> tuple[str, ...]:
 
 def initialize_projection_work(connection: sqlite3.Connection) -> None:
     """DDL/hooks only; no source scan, registration, adoption, or implicit repair."""
+    from agent_storage.projection_work_routing import (
+        activate_privacy,
+        classified_pending,
+        routed_statements,
+    )
+    from agent_storage.task_projection_coverage_cells_schema import COVERAGE_PRIVACY
+
     for statement in SCHEMA.split(";"):
         if statement.strip():
             connection.execute(statement)
@@ -155,30 +162,54 @@ def initialize_projection_work(connection: sqlite3.Connection) -> None:
         connection.execute(
             "ALTER TABLE task_projection_work ADD COLUMN dependency_wait INTEGER NOT NULL DEFAULT 0"
         )
+    if "privacy_frontier" not in {
+        row[1] for row in connection.execute("PRAGMA table_info(task_projection_work_routes)")
+    }:
+        connection.execute(
+            "ALTER TABLE task_projection_work_routes ADD COLUMN privacy_frontier INTEGER "
+            "NOT NULL DEFAULT -1 CHECK(privacy_frontier>=-1)"
+        )
+        connection.execute(
+            "UPDATE task_projection_work_projectors SET bootstrap_after_task_id=NULL,"
+            "bootstrap_complete=0"
+        )
     connection.execute(
         "CREATE INDEX IF NOT EXISTS projection_work_task_scope ON agent_tasks(namespace,task_id)"
     )
     task_source = """SELECT NEW.namespace AS deployment_namespace,NEW.task_id AS task_id,
      NEW.next_event_sequence-1 AS task_sequence,NULL AS selected_version"""
-    connection.execute(f"""CREATE TRIGGER IF NOT EXISTS agent_tasks_projection_work_insert
-     AFTER INSERT ON agent_tasks BEGIN {pending_statement(task_source)}; END""")
+    connection.execute("DROP TRIGGER IF EXISTS agent_tasks_projection_work_insert")
+    connection.execute(f"""CREATE TRIGGER agent_tasks_projection_work_insert
+     AFTER INSERT ON agent_tasks BEGIN {classified_pending(task_source)}; END""")
     source = """SELECT namespace AS deployment_namespace,NEW.task_id AS task_id,
      NEW.event_id AS event_id,NEW.task_sequence AS task_sequence,NEW.event_type AS event_type,
      NEW.replay_command_kind AS command_kind,NEW.replay_run_id AS run_id,
      NEW.replay_internal_continuation AS internal,NULL AS selected_version
      FROM agent_tasks WHERE task_id=NEW.task_id"""
-    body = ";\n".join(routing_statements(source)) + ";"
+    # SQLite does not specify sibling AFTER-trigger order. Ensure the existing
+    # source-guarded locator first; never route a first strict marker as ordinary.
+    locate = f"""INSERT OR IGNORE INTO task_replay_coverage_privacy
+     SELECT event_id,task_id,task_sequence FROM session_events WHERE event_id=NEW.event_id
+     AND task_id IS NOT NULL AND task_sequence IS NOT NULL AND {COVERAGE_PRIVACY};"""
+    body = locate + ";\n".join(routed_statements(source)) + ";"
     for name, operation in (
         ("insert", "INSERT"),
         ("assign", "UPDATE OF task_id,task_sequence,replay_header_ready"),
     ):
-        if upgraded:
-            connection.execute(f"DROP TRIGGER IF EXISTS session_events_work_{name}")
-        connection.execute(f"""CREATE TRIGGER IF NOT EXISTS session_events_work_{name}
+        connection.execute(f"DROP TRIGGER IF EXISTS session_events_work_{name}")
+        connection.execute(f"""CREATE TRIGGER session_events_work_{name}
          AFTER {operation} ON session_events WHEN NEW.task_id IS NOT NULL
          AND NEW.task_sequence IS NOT NULL AND NEW.replay_header_ready=1
          BEGIN {body} END""")
-        connection.execute(f"""CREATE TRIGGER IF NOT EXISTS session_events_work_pending_{name}
+        connection.execute(f"DROP TRIGGER IF EXISTS session_events_work_pending_{name}")
+        connection.execute(f"""CREATE TRIGGER session_events_work_pending_{name}
          AFTER {operation} ON session_events WHEN NEW.task_id IS NOT NULL
          AND NEW.task_sequence IS NOT NULL AND NEW.replay_header_ready=0
-         BEGIN {pending_statement(source)}; END""")
+         BEGIN {locate}{classified_pending(source)};{activate_privacy(source)}; END""")
+    connection.execute("DROP TRIGGER IF EXISTS coverage_privacy_projection_work_insert")
+    locator_source = """SELECT namespace AS deployment_namespace,task_id,
+     next_event_sequence-1 AS task_sequence,NULL AS selected_version
+     FROM agent_tasks WHERE task_id=NEW.task_id"""
+    connection.execute(f"""CREATE TRIGGER coverage_privacy_projection_work_insert
+     AFTER INSERT ON task_replay_coverage_privacy BEGIN
+     {classified_pending(locator_source)};{activate_privacy(locator_source)}; END""")

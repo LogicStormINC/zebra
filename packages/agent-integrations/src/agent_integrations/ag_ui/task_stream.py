@@ -26,6 +26,7 @@ from agent_integrations.ag_ui.contracts import (
 from agent_integrations.ag_ui.projection import AgUiProjector
 from agent_integrations.ag_ui.projection_state import ProjectionState
 from agent_integrations.ag_ui.task_run_binding import TaskRunBinding, bind_task_run
+from agent_integrations.coverage_public_events import strict_coverage_events
 
 
 class AgUiTaskProjector:
@@ -40,9 +41,12 @@ class AgUiTaskProjector:
         identity: AgUiRunIdentity,
         *,
         after: AgUiCursor | None = None,
+        strict_coverage: bool = False,
     ) -> AgUiProjection:
         projected = tuple(
-            event for _, event in self.project_task_events(task_events, identity, after=after)
+            event for _, event in self.project_task_events(
+                task_events, identity, after=after, strict_coverage=strict_coverage
+            )
         )
         ordered = tuple(task_events)
         binding = bind_task_run(ordered, identity.run_id)
@@ -78,13 +82,16 @@ class AgUiTaskProjector:
         identity: AgUiRunIdentity,
         *,
         after: AgUiCursor | None = None,
+        strict_coverage: bool = False,
     ) -> Iterator[tuple[AgUiCursor, Event]]:
         """Warm each Segment once, yielding exact intra-Event reconnect positions."""
         ordered = tuple(task_events)
         binding = _validated_binding(ordered, identity, after)
         resume_task_sequence = after.sequence if after is not None else -1
 
-        for entry, frames in self._project_batches(ordered, identity, binding):
+        for entry, frames in self._project_batches(
+            ordered, identity, binding, strict_coverage=strict_coverage
+        ):
             start = 0
             if entry.task_sequence <= resume_task_sequence:
                 if (
@@ -110,8 +117,10 @@ class AgUiTaskProjector:
 
     def _project_batches(
         self, ordered: tuple[TaskEvent, ...], identity: AgUiRunIdentity, binding: TaskRunBinding,
+        *, strict_coverage: bool = False,
     ) -> Iterator[tuple[TaskEvent, tuple[Event, ...]]]:
         states: dict[SessionId, ProjectionState] = {}
+        strict = strict_coverage or strict_coverage_events(entry.event for entry in ordered)
         for segment_slice in _contiguous_segments(ordered):
             eligible = [entry for entry in segment_slice if binding.includes(entry)]
             if not eligible:
@@ -124,9 +133,13 @@ class AgUiTaskProjector:
                 thread_id=identity.thread_id,
                 run_id=identity.run_id,
             )
-            projected = self._projector.project_events(
-                [e.event for e in segment_slice], segment_identity,
-                state=states.setdefault(segment_identity.session_id, ProjectionState()),
+            state = states.setdefault(segment_identity.session_id, ProjectionState())
+            events = [entry.event for entry in segment_slice]
+            projected = (
+                self._projector.project_events(
+                    events, segment_identity, state=state, strict_coverage=True
+                )
+                if strict else self._projector.project_events(events, segment_identity, state=state)
             )
             for entry, (_, frames) in zip(segment_slice, projected, strict=True):
                 if not binding.includes(entry):

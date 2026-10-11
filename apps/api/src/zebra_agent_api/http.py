@@ -28,6 +28,7 @@ from zebra_agent_api.artifact_download import (
     artifact_download_response,
     authorized_artifact_read,
 )
+from zebra_agent_api.coverage_report_http import coverage_report_response
 from zebra_agent_api.extension_composition import (
     compose_http_extensions,
     compose_http_turn_admission,
@@ -64,7 +65,7 @@ from zebra_agent_api.session_streaming import tail_session_events, tail_task_eve
 from zebra_agent_api.skill_publications import skill_publication_response
 from zebra_agent_api.task_api import parse_task_id
 
-HTTP_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
+HTTP_METHODS = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
 HTTP_ALLOWED_HEADERS = [
     "Accept",
     "Authorization",
@@ -171,7 +172,7 @@ def create_http_app(
         allow_origins=["*"] if active_settings.deployment == "local" else exact_host_origins,
         allow_methods=HTTP_METHODS,
         allow_headers=[*HTTP_ALLOWED_HEADERS, "If-Match", "Idempotency-Key"],
-        expose_headers=["ETag"],
+        expose_headers=["ETag", "X-Coverage-Report-Sha256", "Content-Disposition"],
         allow_credentials=False,
     )
 
@@ -234,6 +235,9 @@ def create_http_app(
             extension_response = await optional_extensions(request)
         if extension_response is not None:
             return extension_response
+        report_response = await coverage_report_response(request, adapter)
+        if report_response is not None:
+            return report_response
         download_response = await artifact_download_response(request, adapter)
         if download_response is not None:
             return download_response

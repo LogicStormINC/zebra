@@ -11,12 +11,29 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from agent_core.domain.context_capsule import ContextCapsuleValidationError
+from agent_core.domain.coverage_contracts import CoverageRefusalReason
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 from agent_integrations.model_errors import ModelProviderError
 
 logger = logging.getLogger(__name__)
+
+
+class WorkerExecutionError(ValueError):
+    def __init__(
+        self, *args: object, coverage_refusal_reason: CoverageRefusalReason | None = None
+    ) -> None:
+        if coverage_refusal_reason is not None and not isinstance(
+            coverage_refusal_reason, CoverageRefusalReason
+        ):
+            raise TypeError("coverage refusal requires a typed reason")
+        self.coverage_refusal_reason = coverage_refusal_reason
+        super().__init__(*args)
+
+
+class RetryableWorkerSetupError(WorkerExecutionError):
+    """Transient setup failure leaves the Session resumable."""
 
 
 def log_worker_failure(kind: str, stage: str, session_id: object, exc: BaseException) -> None:

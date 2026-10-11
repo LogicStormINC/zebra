@@ -12,6 +12,7 @@ from agent_core.domain.effect_dispatch import (
     EffectDispatch,
     EffectDispatchConflictError,
     EffectDispatchStateError,
+    EffectDispatchStatus,
     EffectEvidence,
     EffectResolutionOutcome,
     EffectScheduleRequest,
@@ -27,6 +28,7 @@ from agent_core.ports import (
     EffectDispatchPort,
     WorkerMutationAuthority,
 )
+from agent_core.ports.effect_dispatch import effect_input
 
 from agent_tools.effect_guard_support import (
     EffectPayloadCoordinatorLike,
@@ -85,8 +87,7 @@ class FencedEffectToolGateway:
         self._mutation_guard = mutation_guard
         self._execution_started = execution_started
         self.execution_finished_listener: Callable[[ToolCall, ToolResult | None], None] | None = (
-            None
-        )
+            None)
 
     def __getattr__(self, name: str) -> object:
         return getattr(self._gateway, name)
@@ -219,9 +220,7 @@ class FencedEffectToolGateway:
         while True:
             self._ownership_check()
             claim = self._dispatch.claim_next(
-                self._execution_session_id,
-                fence=self._fence,
-                claim_ttl=self._claim_ttl,
+                self._execution_session_id, fence=self._fence, claim_ttl=self._claim_ttl
             )
             if claim is None:
                 raise EffectDispatchStateError("scheduled Effect was not claimable")
@@ -278,26 +277,17 @@ class FencedEffectToolGateway:
                         else ToolResult(
                             tool_call_id=claimed_call.tool_call_id,
                             status=ToolCallStatus.FAILED,
-                            metadata={
-                                "effect_status": "failed_no_effect",
-                                "execution_state": "not_executed",
-                            },
+                            metadata={"effect_status": "failed_no_effect",
+                                      "execution_state": "not_executed"},
                         ),
                     )
-                    commit = (
-                        self._dispatch.mark_uncertain
-                        if dispatched
-                        else self._dispatch.fail_no_effect
-                    )
+                    commit = (self._dispatch.mark_uncertain if dispatched
+                              else self._dispatch.fail_no_effect)
                     persisted = commit(
                         claim,
-                        evidence=EffectEvidence(
-                            reason_code=(
-                                "provider_call_raised"
-                                if dispatched
-                                else "provider_call_not_dispatched"
-                            )
-                        ),
+                        evidence=EffectEvidence(reason_code=(
+                            "provider_call_raised" if dispatched else "provider_call_not_dispatched"
+                        )),
                         terminal_event=terminal,
                     )
                     self._accept_event(persisted)
@@ -317,28 +307,68 @@ class FencedEffectToolGateway:
             self._accept_event(persisted)
         return result
 
+    def execute_exact(self, tool_call: ToolCall) -> ToolResult:
+        """Execute only this Effect; caller owns policy and fresh external authority."""
+        self._ownership_check()
+        tool_call = ToolCall.model_validate(effect_input(tool_call), strict=True, extra="forbid")
+        LeaseFence.model_validate(effect_input(self._fence), strict=True, extra="forbid")
+        if not self.manages_durable_effect(tool_call):
+            raise EffectDispatchStateError("exact execution requires an effectful tool")
+        with self._mutation_guard():
+            scheduled = EffectDispatch.model_validate(
+                effect_input(self._schedule(tool_call)), strict=True, extra="forbid"
+            )
+        identity = effect_identity(tool_call, self._authority_scope)
+        if (
+            scheduled.execution_session_id != self._execution_session_id
+            or scheduled.root_session_id != self._root_session_id
+            or scheduled.identity != identity
+            or scheduled.request_hash != identity.canonical_effect_hash
+        ):
+            raise EffectDispatchConflictError("scheduled Effect identity conflicts")
+        original = ToolCall.model_validate(
+            effect_input(self._read_tool_call(scheduled.payload_artifact_ref)),
+            strict=True, extra="forbid",
+        )
+        if (
+            (original.tool_call_id, original.name, original.arguments)
+            != (tool_call.tool_call_id, tool_call.name, tool_call.arguments)
+            or effect_identity(original, self._authority_scope) != identity
+        ):
+            raise EffectDispatchConflictError("durable Effect request conflicts")
+        self._ownership_check()
+        if scheduled.status is EffectDispatchStatus.SUCCEEDED:
+            if scheduled.result is None or scheduled.result.tool_call_id != tool_call.tool_call_id:
+                raise EffectDispatchConflictError("durable Effect result identity conflicts")
+            return scheduled.result
+        if scheduled.status is not EffectDispatchStatus.PENDING:
+            raise EffectDispatchStateError("exact Effect is not pending; no reissue permitted")
+        claim = self._dispatch.claim_exact(
+            self._execution_session_id, expected=scheduled,
+            fence=self._fence, claim_ttl=self._claim_ttl,
+        )
+        if claim is None:
+            raise EffectDispatchStateError("exact Effect was not claimable")
+        return self._execute_claim(claim, original)
+
     def _schedule(self, tool_call: ToolCall) -> EffectDispatch:
         identity = effect_identity(tool_call, self._authority_scope)
         find_existing = getattr(self._dispatch, "find_by_ledger_key", None)
         if callable(find_existing):
             existing: EffectDispatch | None = find_existing(
-                self._root_session_id, identity=identity
-            )
+                self._root_session_id, identity=identity)
             if existing is not None:
                 if (
                     existing.identity != identity
                     or existing.request_hash != identity.canonical_effect_hash
                 ):
-                    raise EffectDispatchConflictError(
-                        "effect ledger identity has conflicting meaning"
-                    )
+                    raise EffectDispatchConflictError("effect ledger identity conflicts")
                 # Business-identical replay: the stored payload is
                 # authoritative — never mint a competing artifact for it.
                 return existing
         if self._effect_payloads is not None:
             payload_ref = self._effect_payloads.request_artifact_ref(
-                root_session_id=self._root_session_id,
-                identity=identity,
+                root_session_id=self._root_session_id, identity=identity
             )
             payload = effect_event_payload(tool_call)
             payload["metadata"] = {"artifact_uri": payload_ref}
@@ -401,19 +431,16 @@ class FencedEffectToolGateway:
             artifact_id = ArtifactId(UUID(artifact_ref.removeprefix(prefix)))
         except ValueError as error:
             raise EffectDispatchStateError("Effect payload artifact id is invalid") from error
-        return ToolCall.model_validate_json(self._artifacts.read_payload_bytes(artifact_id))
+        return ToolCall.model_validate_json(
+            self._artifacts.read_payload_bytes(artifact_id), strict=True, extra="forbid"
+        )
 
     def _complete(
-        self,
-        claim: EffectClaim,
-        result: ToolResult,
-        terminal_event: SessionEvent,
+        self, claim: EffectClaim, result: ToolResult, terminal_event: SessionEvent
     ) -> SessionEvent:
         if self._effect_payloads is not None:
             persisted = self._effect_payloads.complete_with_payload(
-                claim,
-                result=result,
-                terminal_event=terminal_event,
+                claim, result=result, terminal_event=terminal_event,
                 authority=self._require_mutation_authority(),
             )
             if persisted is not None:
@@ -421,49 +448,33 @@ class FencedEffectToolGateway:
         return self._dispatch.complete(claim, result=result, terminal_event=terminal_event)
 
     def _mark_uncertain(
-        self,
-        claim: EffectClaim,
-        result: ToolResult,
-        terminal_event: SessionEvent,
+        self, claim: EffectClaim, result: ToolResult, terminal_event: SessionEvent
     ) -> SessionEvent:
         evidence = uncertain_evidence(result)
         if self._effect_payloads is not None:
             persisted = self._effect_payloads.mark_uncertain_with_payload(
-                claim,
-                result=result,
-                evidence=evidence,
-                terminal_event=terminal_event,
+                claim, result=result, evidence=evidence, terminal_event=terminal_event,
                 authority=self._require_mutation_authority(),
             )
             if persisted is not None:
                 return persisted
         return self._dispatch.mark_uncertain(
-            claim,
-            evidence=evidence,
-            terminal_event=terminal_event,
+            claim, evidence=evidence, terminal_event=terminal_event
         )
 
     def _fail_no_effect(
-        self,
-        claim: EffectClaim,
-        result: ToolResult,
-        terminal_event: SessionEvent,
+        self, claim: EffectClaim, result: ToolResult, terminal_event: SessionEvent
     ) -> SessionEvent:
         evidence = EffectEvidence(reason_code="provider_rejected_without_effect")
         if self._effect_payloads is not None:
             persisted = self._effect_payloads.fail_no_effect_with_payload(
-                claim,
-                result=result,
-                evidence=evidence,
-                terminal_event=terminal_event,
+                claim, result=result, evidence=evidence, terminal_event=terminal_event,
                 authority=self._require_mutation_authority(),
             )
             if persisted is not None:
                 return persisted
         return self._dispatch.fail_no_effect(
-            claim,
-            evidence=evidence,
-            terminal_event=terminal_event,
+            claim, evidence=evidence, terminal_event=terminal_event
         )
 
     def _require_mutation_authority(self) -> WorkerMutationAuthority:
@@ -471,11 +482,7 @@ class FencedEffectToolGateway:
             raise EffectDispatchStateError("cloud Effect payload authority is unavailable")
         return self._mutation_authority()
 
-    def _terminal_event(
-        self,
-        tool_call: ToolCall,
-        result: ToolResult | None,
-    ) -> SessionEvent:
+    def _terminal_event(self, tool_call: ToolCall, result: ToolResult | None) -> SessionEvent:
         payload = effect_event_payload(tool_call)
         payload.update(
             {

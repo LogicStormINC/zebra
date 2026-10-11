@@ -15,7 +15,7 @@ from agent_core.ports.task_projection_checkpoints import (
 from agent_core.ports.task_replay import TaskRunHeader
 
 from agent_integrations.ag_ui.checkpoint_materializer import AgUiCheckpointMaterializer
-from agent_integrations.ag_ui.checkpoint_plan import AG_UI_CHECKPOINT_VERSION
+from agent_integrations.ag_ui.checkpoint_plan import checkpoint_version
 from agent_integrations.ag_ui.contracts import AgUiCursor, AgUiProjectionError, AgUiRunIdentity
 
 
@@ -49,7 +49,7 @@ class AgUiCheckpointObserver:
             raise CheckpointConflict("observation Run belongs to another Task/run")
         scope = ProjectionScope(
             self.namespace, task_id, run.anchor.event_id if run.anchor else None,
-            AG_UI_CHECKPOINT_VERSION,
+            checkpoint_version(run),
         )
         # A newly admitted command may not have reached its source index yet.
         # Do not inspect a legacy projection or another Run while waiting.
@@ -65,6 +65,7 @@ class AgUiCheckpointObserver:
             if (
                 refreshed.anchor != run.anchor or refreshed.start != run.start
                 or refreshed.legacy != run.legacy or refreshed.control_only != run.control_only
+                or refreshed.strict_coverage != run.strict_coverage
             ):
                 raise CheckpointNotReady("observation Run changed while capturing its head")
             run = refreshed
@@ -174,9 +175,18 @@ class AgUiCheckpointObserver:
                 continue  # Silent/ineligible source positions still advance the caller's watermark.
             if after is not None and entry.task_sequence < after.sequence:
                 continue
-            yield from self.materializer.iter_event_frames(
+            frames = self.materializer.iter_event_frames(
                 snapshot.head.scope, entry, identity, run=snapshot.run,
                 after=(
                     after if after is not None and entry.task_sequence == after.sequence else None
                 ),
             )
+            for frame in frames:
+                current = self.tasks.read_run_header(snapshot.run.task_id, identity.run_id)
+                if (
+                    current.task_id != snapshot.run.task_id or current.run_id != identity.run_id
+                    or current.anchor != snapshot.run.anchor or current.start != snapshot.run.start
+                    or current.strict_coverage != snapshot.run.strict_coverage
+                ):
+                    raise CheckpointNotReady("observation Run privacy changed before delivery")
+                yield frame

@@ -15,9 +15,11 @@ MAX_CHECKPOINT_EVENTS = 256
 MAX_CHECKPOINT_KEYS = 1_024
 MAX_CHECKPOINT_BYTES = 1_048_576
 MAX_EVENT_FRAMES = 4_096
-CellKind = Literal["text_message", "text_ended", "tool_call", "interrupt", "run_member", "handoff"]
+CellKind = Literal[
+    "text_message", "text_ended", "tool_call", "interrupt", "run_member", "handoff", "coverage"
+]
 CELL_KINDS = frozenset(
-    {"text_message", "text_ended", "tool_call", "interrupt", "run_member", "handoff"}
+    {"text_message", "text_ended", "tool_call", "interrupt", "run_member", "handoff", "coverage"}
 )
 
 
@@ -69,7 +71,9 @@ class ProjectionCell:
         _position(self.task_sequence, minimum=0)
         if self.value is not None:
             _text(self.value, "cell value", 2_048)
-        if self.key.kind not in {"text_message", "handoff"} and self.value not in {None, "1"}:
+        if self.key.kind not in {"text_message", "handoff", "coverage"} and self.value not in {
+            None, "1"
+        }:
             raise ValueError("membership cell must be 1 or a tombstone")
 
 

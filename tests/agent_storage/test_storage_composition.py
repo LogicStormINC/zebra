@@ -38,9 +38,13 @@ def test_sqlite_control_plane_stores_compose_every_authoritative_boundary(
         "delivery_audit",
         "artifact_payload_reader",
         "projection_work",
+        "coverage_projection_work",
     }
     assert stores.projection_work is not None
     assert stores.projection_work.read_pending_projection_work(limit=1) == ()
+    assert stores.coverage_projection_work is not None
+    assert stores.coverage_projection_work is not stores.projection_work
+    assert stores.coverage_projection_work.read_pending_projection_work(limit=1) == ()
     session_id = SessionId(UUID("00000000-0000-0000-0000-000000000001"))
     assert stores.artifacts.list_for_session(session_id) == []
     assert stores.artifact_payload_reader is not None

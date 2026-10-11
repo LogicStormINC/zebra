@@ -178,7 +178,11 @@ class _AsyncReceipt(httpx.AsyncByteStream):
 
 def _completion_payload(kind: str, text: str) -> dict:
     if kind == "chat":
-        return {"choices": [{"message": {"content": text}, "finish_reason": "stop"}]}
+        return {
+            "choices": [
+                {"message": {"role": "assistant", "content": text}, "finish_reason": "stop"}
+            ]
+        }
     return {
         "status": "completed",
         "output": [{"type": "message", "content": [{"type": "output_text", "text": text}]}],

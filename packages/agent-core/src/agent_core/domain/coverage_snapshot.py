@@ -62,6 +62,9 @@ class CoverageSnapshot(CoverageModel):
     manifest_digest: CoverageDigest
     record_count: CoverageCount
     manifest_artifact_ref: CoverageArtifactRef
+    source_resource_ref: CoverageName | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     as_of: CoverageTime
     expires_at: CoverageTime
 

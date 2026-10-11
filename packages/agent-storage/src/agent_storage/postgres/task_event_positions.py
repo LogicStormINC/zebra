@@ -11,10 +11,13 @@ from agent_storage.postgres.task_lineage import PostgresAgentTaskConflictError
 POSITION_BATCH_LIMIT = 256
 
 
-def _lock_task(connection: Any, namespace: str, task_id: TaskId) -> None:
+def _lock_task(
+    connection: Any, namespace: str, task_id: TaskId, *, shared: bool = False,
+) -> None:
     # Root Task IDs equal Session IDs. Session/lease seed 0 must stay independent.
+    lock = "pg_advisory_xact_lock_shared" if shared else "pg_advisory_xact_lock"
     connection.execute(
-        "SELECT pg_advisory_xact_lock(hashtextextended(%s,61))",
+        f"SELECT {lock}(hashtextextended(%s,61))",
         (f"{namespace}:{task_id}",),
     ).fetchone()
 

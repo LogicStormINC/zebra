@@ -10,6 +10,7 @@ from agent_core.application import (
     SessionTitleService,
     memory_extraction_window,
 )
+from agent_core.application.execution_authority_replay import current_turn_authority_start
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.turns import InteractionMode
@@ -22,19 +23,16 @@ from agent_core.ports import (
 )
 
 from zebra_agent_worker.cloud_memory_finalization import finalize_cloud_memory
+from zebra_agent_worker.execution_errors import (
+    RetryableWorkerSetupError as RetryableWorkerSetupError,
+)
+from zebra_agent_worker.execution_errors import WorkerExecutionError as WorkerExecutionError
 from zebra_agent_worker.execution_errors import is_sequence_race
 from zebra_agent_worker.execution_events import (
     DurableHarnessEventRecorder,
     ExecutionInterrupted,
 )
 from zebra_agent_worker.execution_turn_close import append_turn_close
-
-
-class WorkerExecutionError(ValueError): ...
-
-
-class RetryableWorkerSetupError(WorkerExecutionError):
-    """Transient runtime setup failure that must leave the Session resumable."""
 
 
 class RuntimeStartupError(WorkerExecutionError):
@@ -251,6 +249,20 @@ def _finalize_execution(
         HarnessAttemptOutcome.WAITING_APPROVAL,
         HarnessAttemptOutcome.WAITING_INPUT,
     }:
+        if (
+            attempt_result.outcome is HarnessAttemptOutcome.COMPLETED
+            and "coverage_certificate" in attempt_result.metadata
+        ):
+            # Unit-budget attempts are distinct from this recorder's durable Harness start.
+            events = recorder.events
+            durable_attempt = next((
+                event.payload.get("attempt_number")
+                for event in reversed(events[current_turn_authority_start(events):])
+                if event.event_type is EventType.HARNESS_ATTEMPT_STARTED
+            ), None)
+            if type(durable_attempt) is not int or durable_attempt < 1:
+                raise ValueError("certified coverage completion requires a durable Attempt")
+            attempt_number = durable_attempt
         append_turn_close(
             recorder=recorder,
             attempt_result=attempt_result,
@@ -350,6 +362,11 @@ def finalize_worker_setup_failure(
             "error_type": type(error).__name__,
             "error_code": "runtime_unavailable" if isinstance(error, RuntimeStartupError)
             else "worker_setup_failed",
+            **(
+                {"coverage_refusal_reason": error.coverage_refusal_reason.value}
+                if error.coverage_refusal_reason is not None
+                else {}
+            ),
         },
     )
     if recorder.session.status is SessionStatus.READY:

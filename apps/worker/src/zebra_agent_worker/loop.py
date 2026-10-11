@@ -54,9 +54,7 @@ from zebra_agent_worker.worker_loop_service import (
 from zebra_agent_worker.worker_loop_service import (
     WorkerLoopService as WorkerLoopService,
 )
-from zebra_agent_worker.worker_loop_service import (
-    _task_binding_id,
-)
+from zebra_agent_worker.worker_loop_service import _task_binding_id as _task_binding_id
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 from zebra_agent_worker.worker_skill_catalog import WorkerSkillCatalogSource
 
@@ -203,7 +201,7 @@ def build_worker_loop_service(
     egress_registry = None
     delegation_store = None
     if cloud_memory_store is not None and settings.storage_authority == "postgresql":
-        from agent_storage.postgres.task_admission import load_task_binding as _load_binding
+        from agent_storage.postgres.task_admission import load_session_task_binding as _load_binding
 
         binding_dsn = cloud_bundle.dsn or ""
         if binding_dsn:
@@ -213,7 +211,7 @@ def build_worker_loop_service(
                 return _load_binding(
                     binding_dsn,
                     deployment_namespace=active_namespace,
-                    task_id=_task_binding_id(execution_stores.tasks, session_id),
+                    session_id=session_id,
                 )
 
     frozen_manifest_loader = None
@@ -289,6 +287,9 @@ def build_worker_loop_service(
         frozen_manifest_loader=frozen_manifest_loader,
         client_runtime=client_runtime,
         model_http_client=model_http_client,
+        coverage_runtime=(
+            cloud_bundle.coverage_runtime if settings.storage_authority == "postgresql" else None
+        ),
         runtime_instance_factory=(
             cloud_bundle.runtime_instance_factory
             if settings.storage_authority == "postgresql"
@@ -410,7 +411,18 @@ def build_worker_loop_service(
                         if isinstance(execution_stores, PostgresControlPlaneStores)
                         else None
                     ),
-                )
+                ),
+                coverage_consumer=(
+                    AgUiCheckpointConsumer(
+                        execution_stores.tasks, execution_stores.coverage_projection_work,
+                        namespace=active_namespace or "local",
+                        read_summaries=(
+                            execution_stores.tasks
+                            if isinstance(execution_stores, PostgresControlPlaneStores) else None
+                        ),
+                    )
+                    if execution_stores.coverage_projection_work is not None else None
+                ),
             )
             if execution_stores.projection_work is not None
             else None
@@ -423,6 +435,7 @@ def build_worker_loop_service(
     )
     if migrated:
         from zebra_agent_worker.command_process import CommandWorkerProcess
+        from zebra_agent_worker.coverage_recovery_preparation import NativeCoverageRecoveryCheck
 
         assert cloud_bundle.dsn is not None and active_namespace is not None
         service.migrated_run = CommandWorkerProcess(
@@ -432,5 +445,10 @@ def build_worker_loop_service(
             execute=execution_service.execute_claimed_session,
             maintenance=service.maintenance_once,
             drain=service.drain,
+            coverage_check=(
+                None
+                if cloud_bundle.coverage_runtime is None
+                else NativeCoverageRecoveryCheck(cloud_bundle.coverage_runtime, execution_service)
+            ),
         ).run
     return service

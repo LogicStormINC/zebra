@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from hashlib import sha256
 from pathlib import Path
 
 from agent_core.application import attach_refs_to_user_event
@@ -10,16 +9,7 @@ from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import (
     apply_event as apply_workspace_event,
 )
-from agent_core.application.workspace_projection import (
-    rebuild_workspace,
-)
-from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.host_authority import HostContextEnvelope
-from agent_core.domain.image_attachments import (
-    ImageAttachmentContextInput,
-    ImageAttachmentInput,
-)
-from agent_core.domain.tool_profiles import ToolProfile
 from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
 from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
@@ -34,14 +24,10 @@ from agent_runtime import (
 )
 from agent_security import (
     CredentialBroker,
-    PolicyProfile,
-    parse_network_profile,
-    resolve_effective_network_profile,
 )
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import (
     ControlPlaneStores,
-    list_confirmed_repo_memories,
     store_text_attachments,
 )
 from agent_storage.postgres.command_wakeup_outcome import PostgresCommandOutcomeReader
@@ -68,13 +54,12 @@ from zebra_agent_api.api_workspace_mixin import (
     WorkspaceApiMixin,
     WorkspaceControlStorePort,
 )
+from zebra_agent_api.coverage_http_admission import CoverageHttpAdmission, create_strict_session
 from zebra_agent_api.factory import create_app as create_app
 from zebra_agent_api.idempotency import replay_idempotent_response
-from zebra_agent_api.model_configuration import model_provider_settings
 from zebra_agent_api.platform_operator_auth import PlatformOperatorAuthorizer
-from zebra_agent_api.responses import ApiResponse, bad_request, conflict, service_unavailable
+from zebra_agent_api.responses import ApiResponse, bad_request, conflict
 from zebra_agent_api.serialization import serialize_trace_events
-from zebra_agent_api.session_attachment_persistence import persist_initial_attachments
 from zebra_agent_api.session_binding import (
     _compose_admission,
     _post_admission_idempotency,
@@ -97,8 +82,6 @@ from zebra_agent_api.session_queue import create_queued_session
 from zebra_agent_api.session_replay import reconcile_replayed_run
 from zebra_agent_api.skills_admin import (
     ApiSkillsAdminMixin,
-    runtime_skills_state,
-    scoped_skill_roots,
 )
 from zebra_agent_api.storage_composition import ControlPlaneStorageMixin
 from zebra_agent_api.usage_api import UsageEvidenceReader
@@ -142,6 +125,7 @@ class ZebraAgentApi(
     task_schedule_store: TaskScheduleStorePort | None = None
     task_schedule_firing_store: TaskScheduleFiringStorePort | None = None
     usage_evidence: UsageEvidenceReader | None = None
+    coverage_http_admission: CoverageHttpAdmission | None = None
     _parse_session_id = staticmethod(parse_session_id)
 
     def create_session(
@@ -153,6 +137,15 @@ class ZebraAgentApi(
         verified_host_grant: VerifiedHostGrant | None = None,
     ) -> ApiResponse:
         from zebra_agent_api.idempotency import scoped_idempotency_key
+
+        if "coverage_admission" in payload:
+            return create_strict_session(
+                self,
+                payload,
+                idempotency_key=idempotency_key,
+                host_context=host_context,
+                verified_host_grant=verified_host_grant,
+            )
 
         storage_idempotency_key = scoped_idempotency_key(idempotency_key, host_context)
         replayed = (
@@ -392,109 +385,6 @@ class ZebraAgentApi(
         )
 
     def _create_and_execute_session(self, parsed: CreateSessionPayload) -> ApiResponse:
-        workspace_root = Path(str(parsed["workspace"])).expanduser().resolve()
-        confirmed_memories = list_confirmed_repo_memories(
-            self.stores.memories,
-            repo_id=str(workspace_root),
-        )
-        try:
-            model_gateway = build_model_gateway(model_provider_settings(self.settings))
-        except ValueError as error:
-            return service_unavailable(
-                status="model_gateway_unavailable",
-                reason=str(error),
-            )
-        try:
-            trusted_local = trusted_local_mode_enabled(self.settings)
-            network_profile = resolve_effective_network_profile(
-                parse_network_profile(
-                    str(parsed["network_profile"]),
-                    domain_allowlist=parsed["network_allowlist"],
-                ),
-                trusted_local=trusted_local,
-            )
-            from zebra_agent_api.local_execution import run_local_harness
+        from zebra_agent_api.local_execution import create_and_execute_session
 
-            result = run_local_harness(
-                prompt=str(parsed["prompt"]),
-                title=str(parsed["title"]),
-                workspace_root=workspace_root,
-                model_gateway=model_gateway,
-                policy_profile=PolicyProfile(str(parsed["policy_profile"])),
-                tool_profile=ToolProfile(str(parsed["tool_profile"])),
-                network_profile=network_profile,
-                web_search_endpoint=self.settings.web_search_endpoint,
-                skill_roots=scoped_skill_roots(self.settings),
-                skills_state=runtime_skills_state(self.settings),
-                mcp_servers=self.settings.mcp_servers,
-                mcp_allowlist=parsed["mcp_allowlist"],
-                trusted_local=trusted_local,
-                max_model_calls=parsed["max_model_calls"],
-                max_tool_calls=parsed["max_tool_calls"],
-                session_history=self.stores.session_history.scoped(parsed["history_session_ids"]),
-                confirmed_memories=confirmed_memories,
-                attachments=tuple(
-                    AttachmentContextInput.model_validate(
-                        {
-                            **attachment.model_dump(exclude={"payload"}),
-                            "text": attachment.payload.decode("utf-8"),
-                        }
-                    )
-                    for attachment in parsed["attachments"]
-                    if not isinstance(attachment, ImageAttachmentInput)
-                ),
-                image_attachments=tuple(
-                    ImageAttachmentContextInput(
-                        attachment_id=attachment.attachment_id,
-                        file_name=attachment.file_name,
-                        media_type=attachment.media_type,
-                        payload=attachment.payload,
-                        width=attachment.width,
-                        height=attachment.height,
-                        sha256=sha256(attachment.payload).hexdigest(),
-                    )
-                    for attachment in parsed["attachments"]
-                    if isinstance(attachment, ImageAttachmentInput)
-                ),
-            )
-        except ValueError as error:
-            return service_unavailable(
-                status="tool_gateway_unavailable",
-                reason=str(error),
-            )
-        events, attachment_refs = persist_initial_attachments(
-            self.stores.artifact_payloads,
-            tuple(result.events),
-            parsed["attachments"],
-        )
-        for event in events:
-            self.stores.events.append(event)
-        self.stores.sessions.save_session(result.session)
-        self.stores.workspaces.save_workspace(rebuild_workspace(list(events)))
-        return ApiResponse(
-            status_code=201,
-            body={
-                "session_id": str(result.session.session_id),
-                "title": str(parsed["title"]),
-                "prompt": str(parsed["prompt"]),
-                "workspace": str(parsed["workspace"]),
-                "executed": True,
-                "status": result.session.status.value,
-                "assistant_message": result.attempt_result.metadata.get("assistant_message"),
-                "stop_reason": result.run_result.stop_reason.value,
-                "attempts_used": result.run_result.attempts_used,
-                "policy_profile": str(parsed["policy_profile"]),
-                "tool_profile": str(parsed["tool_profile"]),
-                "network_profile": str(parsed["network_profile"]),
-                "network_allowlist": parsed["network_allowlist"],
-                "mcp_allowlist": parsed["mcp_allowlist"],
-                "mcp_resource_ids": parsed["mcp_resource_ids"],
-                **(
-                    {"mcp_prompt_id": parsed["mcp_prompt_id"]}
-                    if parsed["mcp_prompt_id"] is not None
-                    else {}
-                ),
-                "trace": serialize_trace_events(tuple(result.events)),
-                "attachments": [ref.to_mapping() for ref in attachment_refs],
-            },
-        )
+        return create_and_execute_session(self, parsed, build_model_gateway)

@@ -16,7 +16,11 @@ from agent_core.domain.coverage_persistence import (
     coverage_manifest_bytes,
     coverage_result_bytes,
 )
-from agent_core.domain.coverage_validation import AcceptedCoverageUnit, expected_units
+from agent_core.domain.coverage_validation import (
+    AcceptedCoverageUnit,
+    expected_units,
+    manifest_digest,
+)
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import ArtifactId, TaskId
 from agent_core.domain.leases import LeaseLostError
@@ -126,11 +130,37 @@ def test_atomic_batch_and_retry_do_not_double_count(env):
     assert env.store.missing_units("tenant-a", "run-1", limit=10) == ()
 
 
-def test_changed_retry_ref_is_not_accepted(env):
+def test_program_checks_do_not_store_model_membership_metadata(env):
+    program = env.binding.contract.model_copy(update={
+        "checks": tuple(check.model_copy(update={"kind": "program"})
+                        for check in env.binding.contract.checks),
+    })
+    env.binding = env.binding.model_copy(update={
+        "contract": program,
+        "snapshot": env.binding.snapshot.model_copy(update={
+            "contract_digest": program.digest,
+            "manifest_digest": manifest_digest(program, env.items),
+        }),
+    })
+    bind(env)
+    with psycopg.connect(env.dsn) as connection:
+        assert not connection.execute(
+            "SELECT 1 FROM coverage_units WHERE record IS NOT NULL LIMIT 1"
+        ).fetchall()
+        assert not connection.execute("SELECT 1 FROM coverage_membership_seals").fetchall()
+    env.store.commit(batch(env), fence=env.fence)
+    assert env.store.counts("tenant-a", "run-1") == (4, 4)
+
+
+def test_changed_retry_ref_is_not_accepted(env, monkeypatch):
     bind(env)
     request = batch(env)
     env.store.commit(request, fence=env.fence)
     altered = batch(env)  # Identical bytes but a different governed Artifact identity.
+    monkeypatch.setattr(
+        coverage, "verify_model_results",
+        lambda *_, **__: pytest.fail("conflicting retry entered expensive MODEL proof"),
+    )
     with pytest.raises(ValueError):
         env.store.commit(altered, fence=env.fence)
     assert env.store.counts("tenant-a", "run-1") == (4, 4)

@@ -21,6 +21,11 @@ from agent_core.domain.modeling import (
 from agent_core.ports.model_gateway import ModelResponseRejectedError
 
 from agent_integrations.bounded_model_http import post_bounded_json, validate_bounded_policy
+from agent_integrations.coverage_model_request import (
+    PreparedChatRequests,
+    PreparedModelRequest,
+    _build_prepared_http_request,
+)
 from agent_integrations.deepseek_profiles import (
     DeepSeekProfileRouter,
     ResolvedDeepSeekInvocation,
@@ -70,6 +75,26 @@ class OpenAICompatibleModelGateway:
                 legacy_executor_model=model_name,
             )
         self._client = client
+        self._prepared_requests = PreparedChatRequests()
+
+    def prepare_text_request(
+        self,
+        messages: list[SessionMessage],
+        *,
+        invocation_policy: ModelInvocationPolicy,
+        tools: tuple[ModelToolDefinition, ...] = (),
+        stream: bool = False,
+        strict_tools: bool = False,
+    ) -> PreparedModelRequest:
+        """Freeze an inspectable request; caller must reserve durably before sending."""
+        return self._prepared_requests.prepare(
+            self, messages, invocation_policy, tools=tools, stream=stream,
+            strict_tools=strict_tools,
+        )
+
+    def complete_prepared(self, request: PreparedModelRequest) -> ModelCompletion:
+        """Consume an owned preparation with one HTTP attempt and no redirects."""
+        return self._prepared_requests.send(self, request)
 
     @property
     def context_window(self) -> ModelContextWindow:
@@ -315,9 +340,12 @@ class OpenAICompatibleModelGateway:
         return httpx.Timeout(120.0, connect=10.0)
 
     def _post_chat_completion(
-        self, body: dict[str, Any], *, deadline_s: float | None = None
+        self, body: dict[str, Any] | bytes, *, endpoint: str | None = None,
+        deadline_s: float | None = None,
     ) -> dict[str, Any]:
         if deadline_s is not None:
+            if isinstance(body, bytes) or endpoint is not None:
+                raise ValueError("prepared Chat cannot use auxiliary model transport")
             return post_bounded_json(
                 self._client,
                 f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
@@ -325,14 +353,19 @@ class OpenAICompatibleModelGateway:
                 body,
                 deadline_s=deadline_s,
             )
-        client = self._client or httpx.Client(timeout=self._client_timeout())
+        client = self._client or httpx.Client(
+            timeout=self._client_timeout(), trust_env=not isinstance(body, bytes),
+        )
         should_close = self._client is None
         try:
-            response = client.post(
-                f"{self._base_url}{CHAT_COMPLETIONS_PATH}",
-                headers=self._headers(),
-                json=body,
-            )
+            url = endpoint or f"{self._base_url}{CHAT_COMPLETIONS_PATH}"
+            if isinstance(body, bytes):
+                request = _build_prepared_http_request(
+                    client, endpoint=url, headers=self._headers(), body=body,
+                )
+                response = client.send(request, auth=None, follow_redirects=False)
+            else:
+                response = client.post(url, headers=self._headers(), json=body)
             response.raise_for_status()
             try:
                 payload = response.json()

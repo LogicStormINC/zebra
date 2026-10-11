@@ -81,8 +81,13 @@ class TaskRunHeader:
     stop: int | None
     legacy: bool = False
     control_only: bool = False
+    # Source-owned, Task-wide presence at this captured highwater, including
+    # malformed TASK_PREPARED coverage_admission markers and coverage Events.
+    strict_coverage: bool = False
 
     def __post_init__(self) -> None:
+        if type(self.strict_coverage) is not bool:
+            raise ValueError("invalid canonical Run coverage privacy")
         if not isinstance(self.run_id, str) or not self.run_id or len(self.run_id) > 256:
             raise ValueError("invalid replay Run identity")
         if type(self.highwater) is not int or self.highwater < -1:

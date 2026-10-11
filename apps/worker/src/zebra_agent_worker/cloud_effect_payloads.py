@@ -125,7 +125,9 @@ class CloudEffectPayloadCoordinator:
     def read_tool_call(self, artifact_ref: str, *, namespace: str) -> ToolCall:
         artifact_id = _artifact_id(artifact_ref)
         return ToolCall.model_validate_json(
-            self._artifacts.read_verified(artifact_id, namespace=namespace)
+            self._artifacts.read_verified(artifact_id, namespace=namespace),
+            strict=True,
+            extra="forbid",
         )
 
     def complete_with_payload(

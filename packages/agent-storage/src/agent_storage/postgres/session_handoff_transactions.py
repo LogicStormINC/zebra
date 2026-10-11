@@ -9,7 +9,7 @@ from agent_core.application.workspace_projection import (
     apply_event as apply_workspace_event,
 )
 from agent_core.application.workspace_projection import rebuild_workspace
-from agent_core.domain.events import SessionEvent
+from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.session_handoff import (
@@ -68,15 +68,6 @@ def commit_handoff_in_transaction(
     if not _same_reservation(operation, request.operation):
         raise HandoffStorageConflictError("handoff reservation facts changed")
     _validate_request(operation, request)
-    if operation.status is HandoffOperationStatus.COMMITTED:
-        return result_for_operation(
-            connection,
-            deployment_namespace,
-            operation,
-            replay=True,
-        )
-    if operation.status is HandoffOperationStatus.ABORTED:
-        raise HandoffStorageConflictError("handoff operation is aborted")
     lock_session_lease_boundary(
         connection,
         deployment_namespace,
@@ -89,6 +80,25 @@ def commit_handoff_in_transaction(
         """,
         (deployment_namespace, operation.source_session_id),
     ).fetchone()
+    strict_source = connection.execute(
+        """SELECT EXISTS (
+            SELECT 1 FROM session_events
+            WHERE deployment_namespace = %s AND session_id = %s AND event_type = %s
+              AND payload -> 'coverage_admission' <> 'null'::jsonb
+        ) AS strict_source""",
+        (deployment_namespace, operation.source_session_id, EventType.TASK_PREPARED.value),
+    ).fetchone()
+    if strict_source["strict_source"]:
+        raise HandoffStorageConflictError("strict coverage handoff is unsupported")
+    if operation.status is HandoffOperationStatus.COMMITTED:
+        return result_for_operation(
+            connection,
+            deployment_namespace,
+            operation,
+            replay=True,
+        )
+    if operation.status is HandoffOperationStatus.ABORTED:
+        raise HandoffStorageConflictError("handoff operation is aborted")
     source = get_session_in_transaction(
         connection,
         deployment_namespace,

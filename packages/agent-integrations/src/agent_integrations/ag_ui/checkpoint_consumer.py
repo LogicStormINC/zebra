@@ -1,6 +1,7 @@
 """Bounded background materialization; callers own process lifetime, not SSE."""
 
 import logging
+from dataclasses import replace
 from time import monotonic
 
 from agent_core.domain.identifiers import TaskId
@@ -13,6 +14,7 @@ from agent_core.ports.task_projection_checkpoints import (
 )
 from agent_core.ports.task_projection_work import ProjectionWork, TaskProjectionWorkPort
 from agent_core.ports.task_read_summaries import TaskReadSummaryPort
+from agent_core.ports.task_replay import TaskRunHeader
 
 from agent_integrations.ag_ui.binding_resolution import (
     BindingResolutionPending,
@@ -20,7 +22,11 @@ from agent_integrations.ag_ui.binding_resolution import (
 )
 from agent_integrations.ag_ui.checkpoint_binding import build_projection_page_plan
 from agent_integrations.ag_ui.checkpoint_materializer import AgUiCheckpointMaterializer
-from agent_integrations.ag_ui.checkpoint_plan import AG_UI_CHECKPOINT_VERSION
+from agent_integrations.ag_ui.checkpoint_plan import (
+    AG_UI_CHECKPOINT_VERSION,
+    AG_UI_COVERAGE_CHECKPOINT_VERSION,
+    checkpoint_version,
+)
 from agent_integrations.ag_ui.contracts import AgUiRunIdentity
 
 logger = logging.getLogger(__name__)
@@ -58,7 +64,10 @@ class AgUiCheckpointConsumer:
         self._repair_turn = True
 
     def _scope(self, scope: ProjectionScope) -> None:
-        if scope.namespace != self.namespace or scope.projector_version != AG_UI_CHECKPOINT_VERSION:
+        if scope.namespace != self.namespace or scope.projector_version not in {
+            AG_UI_CHECKPOINT_VERSION,
+            AG_UI_COVERAGE_CHECKPOINT_VERSION,
+        }:
             raise CheckpointConflict("projection work belongs to another namespace/version")
 
     def _repair_task(self, task: TaskId) -> bool:
@@ -115,14 +124,25 @@ class AgUiCheckpointConsumer:
 
     def materialize_once(self, work: ProjectionWork) -> bool:
         self._scope(work.scope)
-        summary_ready = self.read_summaries is None or self.read_summaries.backfill_read_summary(
-            work.scope.task_id
-        )
         run = self.tasks.read_run_header(
             work.scope.task_id,
             work.run_id,
             through_sequence=work.requested_through,
         )
+        # Work targets can close before a later Task-wide privacy marker. Public
+        # replay uses today's strict scope, so rebuild that same captured window.
+        latest = self.tasks.read_run_header(work.scope.task_id, work.run_id)
+        if (
+            not isinstance(latest, TaskRunHeader)
+            or latest.task_id != run.task_id
+            or latest.run_id != run.run_id
+            or latest.anchor != run.anchor
+            or latest.start != run.start
+            or latest.highwater < run.highwater
+        ):
+            raise CheckpointConflict("latest privacy header conflicts with canonical Run")
+        if latest.strict_coverage and not run.strict_coverage:
+            run = replace(run, strict_coverage=True)
         if (
             run.anchor is None
             or run.control_only
@@ -134,6 +154,14 @@ class AgUiCheckpointConsumer:
             or run.highwater != work.requested_through
         ):
             raise CheckpointConflict("projection work conflicts with its canonical Run")
+        if work.scope.projector_version != checkpoint_version(run):
+            # No ACK, timer or repeated privacy poll. Source-owned routing repair
+            # wakes old closed anchors after a late flip, preserving failure caps.
+            self.work.defer_projection_work(work, problem_code="not_ready")
+            return False
+        summary_ready = self.read_summaries is None or self.read_summaries.backfill_read_summary(
+            work.scope.task_id
+        )
         head = self.tasks.read_checkpoint_head(work.scope)
         if head.through_sequence >= work.requested_through:
             if not summary_ready:

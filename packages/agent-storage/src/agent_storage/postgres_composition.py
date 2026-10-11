@@ -57,6 +57,7 @@ class PostgresControlPlaneStores(CloudControlPlane):
     """
 
     projection_work: TaskProjectionWorkPort | None = None
+    coverage_projection_work: TaskProjectionWorkPort | None = None
     session_recovery: SessionRecoveryPort | None = None
     execution_inputs: ExecutionInputPort | None = None
     task_io_connections: TaskIoConnections | None = None
@@ -167,6 +168,9 @@ def postgres_control_plane_stores(
         ),
         projection_work=PostgresTaskProjectionWorkStore(
             PostgresDatabase(dsn, deployment_namespace=deployment_namespace), "ag-ui-v1"
+        ),
+        coverage_projection_work=PostgresTaskProjectionWorkStore(
+            PostgresDatabase(dsn, deployment_namespace=deployment_namespace), "ag-ui-v1-coverage"
         ),
         session_recovery=PostgresSessionRecoveryStore(
             dsn,

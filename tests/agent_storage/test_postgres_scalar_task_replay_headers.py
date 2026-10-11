@@ -12,6 +12,9 @@ import psycopg
 import pytest
 from agent_core.domain.identifiers import TaskId
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
+from agent_storage.postgres.task_replay_coverage_privacy_migration import (
+    TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION,
+)
 from agent_storage.postgres.task_replay_header_migration import TASK_REPLAY_HEADER_MIGRATION
 from agent_storage.postgres.task_replay_headers import (
     HEADER_INDEXES,
@@ -78,6 +81,8 @@ def scratch():
 def install(connection):
     # Execute owned DDL in a newly created scratch schema, not the app migration catalog.
     for statement in TASK_REPLAY_SCALAR_HEADER_MIGRATION.statements:
+        connection.execute(statement)
+    for statement in TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION.statements:
         connection.execute(statement)
 
 
@@ -392,7 +397,11 @@ def test_cold_pg_seek_actual_rows_and_no_payload_privilege_with_huge_toast(scrat
         connection.execute(
             sql.SQL("""GRANT SELECT (deployment_namespace,task_id,task_sequence,
             event_id,session_id,sequence,event_type,replay_command_kind,replay_run_id,
-            replay_internal_continuation,replay_header_ready) ON session_events TO {}""").format(
+            replay_internal_continuation,replay_header_ready)
+            ON session_events TO {}""").format(sql.Identifier(role))
+        )
+        connection.execute(
+            sql.SQL("GRANT SELECT ON task_replay_coverage_privacy TO {}").format(
                 sql.Identifier(role)
             )
         )

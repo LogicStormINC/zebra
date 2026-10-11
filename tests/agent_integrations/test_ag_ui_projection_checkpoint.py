@@ -23,14 +23,15 @@ from agent_core.ports.task_projection_checkpoints import (
 from agent_core.ports.task_replay import TaskEventHeader, TaskRunHeader
 from agent_integrations.ag_ui.checkpoint_materializer import AgUiCheckpointMaterializer
 from agent_integrations.ag_ui.checkpoint_plan import (
-    AG_UI_CHECKPOINT_VERSION,
     ProjectionEventPlan,
     ProjectionPagePlan,
+    checkpoint_version,
 )
 from agent_integrations.ag_ui.contracts import AgUiCursor, AgUiProjectionError, AgUiRunIdentity
 from agent_integrations.ag_ui.projection import AgUiProjector
 from agent_integrations.ag_ui.task_run_binding import bind_task_run
 from agent_integrations.ag_ui.task_stream import AgUiTaskProjector
+from agent_integrations.coverage_public_events import strict_coverage_events
 
 from tests.agent_integrations.test_ag_ui_projection import _golden_events
 
@@ -201,9 +202,10 @@ def plans(
         binding.stop,
         binding.legacy,
         binding.control_only,
+        strict_coverage=strict_coverage_events(entry.event for entry in events),
     )
     scope = ProjectionScope(
-        "namespace", TASK, run.anchor.event_id if run.anchor else None, AG_UI_CHECKPOINT_VERSION
+        "namespace", TASK, run.anchor.event_id if run.anchor else None, checkpoint_version(run)
     )
     warm: set[int] = set()
     for _, rows in groupby(events, key=lambda e: e.segment_id):

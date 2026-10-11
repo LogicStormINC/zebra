@@ -25,19 +25,19 @@ from agent_core.ports.task_projection_work import (
     TaskProjectionWorkPort,
 )
 
-from agent_storage.projection_work_schema import BOOTSTRAP_ENQUEUE, SOURCE, routing_statements
+from agent_storage.projection_work_routing import (
+    BOOTSTRAP_SOURCE,
+    COVERAGE,
+    ORDINARY,
+    activate_privacy,
+    classified_pending,
+    routed_statements,
+    task_version,
+)
+from agent_storage.projection_work_routing import PENDING as PENDING
+from agent_storage.projection_work_schema import SOURCE
 
 WHERE = "deployment_namespace=? AND task_id=? AND anchor_key=? AND projector_version=?"
-PENDING = """SELECT w.*,COALESCE((SELECT h.through_sequence FROM task_projection_heads h
- WHERE h.deployment_namespace=w.deployment_namespace AND h.task_id=w.task_id
- AND h.anchor_key=w.anchor_key AND h.projector_version=w.projector_version LIMIT 1),-1)
- AS after_sequence
- FROM (SELECT deployment_namespace,task_id,anchor_key,projector_version,run_id,
- anchor_sequence,requested_through,revision,closed_through FROM task_projection_work
- WHERE deployment_namespace=? AND projector_version=? AND pending=1
- AND problem_code IS NULL AND (task_id,anchor_key)>(?,?)
- ORDER BY task_id,anchor_key LIMIT ?) w
- ORDER BY w.task_id,w.anchor_key"""
 HEADER_BYTES = "128+" + "+".join(
     f"COALESCE(length(CAST({name} AS BLOB)),0)"
     for name in ("event_id", "event_type", "replay_command_kind", "replay_run_id")
@@ -186,15 +186,14 @@ class SQLiteTaskProjectionWorkStore(TaskProjectionWorkPort):
                 (self._namespace, cursor or "", limit),
             ).fetchall()
             for row in rows:
-                connection.execute(
-                    BOOTSTRAP_ENQUEUE,
-                    (
-                        self._namespace,
-                        row["task_id"],
-                        self._version,
-                        row["next_event_sequence"] - 1,
-                    ),
+                params = dict(
+                    namespace=self._namespace,
+                    task_id=row["task_id"],
+                    version=self._version,
+                    through=row["next_event_sequence"] - 1,
                 )
+                connection.execute(classified_pending(BOOTSTRAP_SOURCE), params)
+                connection.execute(activate_privacy(BOOTSTRAP_SOURCE), params)
             done = len(rows) < limit
             connection.execute(
                 "UPDATE task_projection_work_projectors SET bootstrap_after_task_id=?,"
@@ -249,7 +248,8 @@ class SQLiteTaskProjectionWorkStore(TaskProjectionWorkPort):
         deadline = time.monotonic() + PROJECTION_WORK_SECONDS
         with self._connect(write=True, deadline=deadline) as connection:
             task = connection.execute(
-                "SELECT namespace,next_event_sequence,event_position_state "
+                "SELECT namespace,next_event_sequence,event_position_state,"
+                f"{task_version('agent_tasks')} AS selected_version "
                 "FROM agent_tasks WHERE task_id=?",
                 (str(task_id),),
             ).fetchone()
@@ -258,19 +258,28 @@ class SQLiteTaskProjectionWorkStore(TaskProjectionWorkPort):
             if not self._enabled(connection):
                 raise CheckpointNotReady("explicit projector enable required")
             key = (self._namespace, str(task_id), self._version)
-            connection.execute(
-                "INSERT INTO task_projection_work_routes "
-                "(deployment_namespace,task_id,projector_version) VALUES (?,?,?) "
-                "ON CONFLICT DO NOTHING",
-                key,
+            params = dict(
+                namespace=self._namespace,
+                task_id=str(task_id),
+                version=self._version,
+                through=task["next_event_sequence"] - 1,
             )
-            connection.execute(
-                "UPDATE task_projection_work_routes SET wanted_through="
-                "MAX(wanted_through,?),needs_repair=1 "
-                "WHERE deployment_namespace=? AND task_id=? AND projector_version=?",
-                (task["next_event_sequence"] - 1, *key),
-            )
-            # Discovery survives a cancelled page.
+            connection.execute(classified_pending(BOOTSTRAP_SOURCE), params)
+            connection.execute(activate_privacy(BOOTSTRAP_SOURCE), params)
+            if self._version in (ORDINARY, COVERAGE) and task["selected_version"] != self._version:
+                connection.execute(
+                    "UPDATE task_projection_work_routes SET needs_repair=0 "
+                    "WHERE deployment_namespace=? AND task_id=? AND projector_version=?",
+                    key,
+                )
+                return self._repair(
+                    dict(
+                        task_id=str(task_id),
+                        observed_through=-1,
+                        wanted_through=-1,
+                        needs_repair=0,
+                    )
+                )
             connection.commit()
             if task["event_position_state"] != "ready":
                 raise CheckpointNotReady("explicit source position repair required")
@@ -341,15 +350,14 @@ class SQLiteTaskProjectionWorkStore(TaskProjectionWorkPort):
                         run_id=row["replay_run_id"],
                         internal=row["replay_internal_continuation"],
                     )
-                    for statement in routing_statements(SOURCE):
+                    for statement in routed_statements(SOURCE):
                         connection.execute(statement, params)
                     completed = connection.execute(
                         "SELECT * FROM task_projection_work_routes WHERE "
                         "deployment_namespace=? AND task_id=? AND projector_version=?",
                         key,
                     ).fetchone()
-                    # SQLITE_INTERRUPT on a write rolls back the whole transaction, not
-                    # only a savepoint. Commit each complete header; keep 200ms for cleanup.
+                    # SQLITE_INTERRUPT rolls back the transaction; commit each complete header.
                     connection.set_progress_handler(parent_timer, 100)
                     connection.commit()
                     route = completed

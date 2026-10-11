@@ -20,10 +20,10 @@ from agent_core.ports.task_replay import TaskEventHeader, TaskHandoffHeader, Tas
 from agent_integrations.ag_ui.binding_certificates import BindingCertificateReader
 from agent_integrations.ag_ui.binding_resolution import BindingResolutionPending
 from agent_integrations.ag_ui.checkpoint_plan import (
-    AG_UI_CHECKPOINT_VERSION,
     ProjectionEventPlan,
     ProjectionHandoffProof,
     ProjectionPagePlan,
+    checkpoint_version,
 )
 from agent_integrations.ag_ui.contracts import AgUiProjectionError, AgUiRunIdentity
 
@@ -245,7 +245,7 @@ def build_projection_page_plan(
     """
     anchor = run.anchor.event_id if run.anchor is not None else None
     if (
-        scope.projector_version != AG_UI_CHECKPOINT_VERSION
+        scope.projector_version != checkpoint_version(run)
         or scope.task_id != run.task_id
         or str(run.task_id) != identity.thread_id
         or run.run_id != identity.run_id

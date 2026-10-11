@@ -124,7 +124,10 @@ async def tail_checkpoint_frames(
                 target = (
                     snapshot.run.highwater if snapshot.run.stop is None else snapshot.run.stop - 1
                 )
-                work = context.stores.projection_work
+                work = (
+                    context.stores.coverage_projection_work
+                    if snapshot.run.strict_coverage else context.stores.projection_work
+                )
                 if (
                     snapshot.run.anchor is not None
                     and work is not None

@@ -33,6 +33,7 @@ from zebra_agent_api.artifact_payload_read import (
     serialize_read_lifecycle,
     serialize_read_retrieval,
 )
+from zebra_agent_api.coverage_public_read import coverage_session_read_problem
 from zebra_agent_api.delivery_audit import record_delivery_audit
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_delivery_audit import SessionDeliveryAuditApi
@@ -55,6 +56,9 @@ class SessionArtifactReadMixin:
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
+        problem = coverage_session_read_problem(self.stores, session_key)
+        if problem is not None:
+            return problem
         artifacts = self.stores.artifacts.list_for_session(session_key)
         return ApiResponse(
             status_code=200,
@@ -312,6 +316,9 @@ class SessionArtifactReadMixin:
                 status_code=404,
                 body={"session_id": session_id, "status": "not_found"},
             )
+        problem = coverage_session_read_problem(self.stores, session_key)
+        if problem is not None:
+            return problem
         try:
             artifact = self.stores.artifacts.get_for_session(session_key, artifact_id)
         except SessionArtifactReadUnavailableError:

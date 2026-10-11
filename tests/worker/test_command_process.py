@@ -2,6 +2,7 @@
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import replace
 from threading import Event
 from types import SimpleNamespace
@@ -21,6 +22,7 @@ def wired(monkeypatch):
 
     class Consumer:
         def __init__(self, dsn, **kwargs):
+            self._execution_discovery_generation = 0
             self.options = kwargs
             self.pool = ThreadPoolExecutor(1)
             self.future = None
@@ -28,6 +30,8 @@ def wired(monkeypatch):
             log.append(("dsn", dsn, kwargs["deployment_namespace"]))
 
         async def poll(self, lane, **_kwargs):
+            if lane == "execution":
+                self._execution_discovery_generation += 1
             log.append(lane)
             if lane == "execution" and self.future is None:
                 self.future = self.pool.submit(self.options["execute_claimed"], lease)
@@ -231,10 +235,16 @@ def test_worker_main_closes_model_client_after_real_process_drain_and_hides_dsn(
             log.append("model-client-close")
 
     process = _process(wired)
+    pool_dsns = []
+    monkeypatch.setattr(
+        main_module, "postgres_pool_scope",
+        lambda dsn: pool_dsns.append(dsn) or nullcontext(),
+    )
     monkeypatch.setattr(main_module, "load_settings", lambda: settings)
     monkeypatch.setattr(main_module.httpx, "Client", Client)
     monkeypatch.setattr(main_module, "build_worker_loop_service", lambda **kwargs: process)
     assert main_module.main(["--max-cycles", "1"]) == 0
+    assert pool_dsns == [settings.database_url]
     assert (
         log.index("consumer-drained")
         < log.index("memory-drained")

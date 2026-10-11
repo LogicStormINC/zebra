@@ -25,7 +25,10 @@ from agent_core.ports.task_projection_checkpoints import (
 )
 from agent_core.ports.task_replay import TaskHandoffHeader, TaskRunHeader
 
-from agent_integrations.ag_ui.checkpoint_plan import AG_UI_CHECKPOINT_VERSION
+from agent_integrations.ag_ui.checkpoint_plan import (
+    AG_UI_CHECKPOINT_VERSION,
+    AG_UI_COVERAGE_CHECKPOINT_VERSION,
+)
 
 BINDING_VERSION = "ag-ui-binding-v1"
 BINDING_PROOF_KEY = "binding:admission"
@@ -49,7 +52,7 @@ class BindingResolutionPending(CheckpointNotReady):
 
 
 def binding_scope(scope: ProjectionScope) -> ProjectionScope:
-    if scope.projector_version != AG_UI_CHECKPOINT_VERSION:
+    if scope.projector_version not in {AG_UI_CHECKPOINT_VERSION, AG_UI_COVERAGE_CHECKPOINT_VERSION}:
         raise CheckpointConflict("binding requires the supported output scope")
     return ProjectionScope(scope.namespace, scope.task_id, scope.anchor_event_id, BINDING_VERSION)
 

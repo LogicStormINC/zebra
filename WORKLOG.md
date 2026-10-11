@@ -1,5 +1,28 @@
 # Progress Log
 
+## 2026-10-12 - User-approved regression repair before local integration
+
+- Checkpointed reviewed source in both repos and retained private recovery Git
+  bundles, binary patches, file archives and all11 stashes. Independent primary
+  Zebra SDK/AGENTS edits after checkpoint remain outside this integration.
+- Coverage six-module111 and full6998 pass after fixing stale test contracts.
+  Combined first gate exposed29 additional failures; shared bounded-I/O, typed
+  errors, native authority and projection/source contracts are being reconciled.
+- Native authority80/storage65/privacy13 and Worker17 passed in disposable test
+  schemas. Additive95/96/97/98 migrations preserve historic registered checksums;
+  late Task coordinate allocation no longer invalidates immutable MODEL proofs.
+- Trench main integrated; full make check/build and native70 pass. Seven merged
+  local refs removed, checkouts retained detached, dirty user files preserved.
+- Zebra final combined full gate passes9011/2511-prerequisite-skips1054.58s.
+  The preceding one-failure run retained as evidence; composition-field list
+  and independent coverage-queue smoke assertions corrected, focused18pass19skip.
+  Final checkpoint compatibility,
+  scalar VM780/header native14 and exclusive source-owned routing native17 pass;
+  staged make check passes2920-size/1231-typed/eval30. Final-source routing rerun
+  36pass6skip, source positions native7. No runtime/push/business migration.
+- Strict nine existing10497 client SQL gate remains FAIL and receipts OFF;
+  merge validation does not imply performance, live runtime or semantic GO.
+
 ## 2026-10-07 - COV-STO-01 authorized local integration
 
 - User selected local merge only. Fast-forwarded cloud-agent-trench to f278fce9;
@@ -12,6 +35,2139 @@
 - Combined-catalog real PostgreSQL coverage, Artifact, migration, lease and
   admission regressions: 60 passed. Temporary PostgreSQL container removed.
 - No pull, push, live migration, build, service restart or business-data mutation.
+## 2026-10-11 - Atomic MODEL settlement proof and rejected reread shortcut
+
+- Continued claimed COV-EXEC-01, same isolated owner/branch. Optional typed
+  settlement returns the exact verified checkpoint/sequence after its own commit;
+  borrowed-owner result escape refused, old integer API/custom hooks preserved.
+  Already-settled invocation does not open an extra optional settlement phase.
+- Review found same-transaction exit callback lifecycle/Event mutations and
+  later callback physical corruption. Added fresh uncached full proof comparison
+  after scope exit and retained the integration original reread. Unsafe elision
+  withdrawn; no TTL/reset suppression/final certificate shortcut introduced.
+- Final-source native10 passed70.35s, pure155 passed2.86s; static1115/eval30 and
+  actual2615-size/diff passed before the evidence doc. Broad older-loaded run
+  72pass3fixturefail335.82s is not full GO; final focused rerun fixes DDL field,
+  wrapped-exception cause and canonical-refusal expectations. All failed XMLs
+  retained in docs/COVERAGE_MODEL_SETTLEMENT_EVIDENCE.md.
+- Full serial nine certifies16.1541s10497client15637server237GET/4callbacks/5batches,
+  one initialization replay/zero exceptional recovery. Strict<=1000 FAIL;
+  client+12/GET+12 versus preceding10485/225, no performance win claimed.
+  Fresh exit metadata/Event reads add cost for safety. Repeated guard/adapter
+  phase entry remains the root: lease1127/lineage877/reset1419 unchanged.
+- No business restart/migration/activation/integration/commit/merge/push. Whole
+  task remains In Progress. Next required: Worker bounded native phase authority
+  composition, then immutable-retention final unlock and fleet/history/live gates.
+
+## 2026-10-11 - Shared consumer readonly Artifact phase
+
+- Claimed COV-EXEC-01 continuation before coding in existing isolated task branch.
+  Common loader uses existing bounded read-scope Port for snapshot/MODEL/readback,
+  accepting bytes only after successful exact metadata/authority/retention exit.
+- Native incremental boundary avoids adjacent duplicate guard only with exact
+  native clock. Review found injectable clock is a callback; post-clock authority
+  retained there, tested cancellation and post-fence callback cancellation.
+- Review found owned-TX fallback, deployment equality and old source-only fault
+  injection gaps. Extended ownership, fixed shared native scope fallback and
+  adapter namespace guard, tested owned/custom guard preservation and scoped/
+  fallback corruption. No reset suppression or permission cache introduced.
+- Smoke13pass2fail30.47s corrected fixture-only mistakes (new fence and retention
+  constraint); corrected158 pass43.95s, clock-reviewed160 pass29.30s. Final-source
+  shared/verified/prepared/clock48 pass60.51s. Unknown digest2metadata SQL/2guards
+  versus old3/3; known digest2/2. These are component counts, not full SQL budget.
+- Expanded old-module process interrupted after42 passed529.43s, not final/full
+  evidence. Final critical native85 passed172.48s, local compatibility199 passed
+  3.30s. Full serial nine independently certifies17.5762s10485client15619server,
+  225GET/four callbacks/five qualified batches. <=1000 SQL gate STILL FAIL.
+  1127lease pins/877lineage reads/1419resets remain; new scope query attribution
+  moves to caller, not artificial SQL savings. Earlier10922/five-batch had437more
+  client calls but lower elapsed16.4840s; no latency/p95 or root-cure claim.
+  Exact evidence and all failures retained; whole root cure/live/fleet still open.
+  Existing primary dirty work and running business services untouched.
+
+## 2026-10-11 - Exact-owner native operation transaction composition
+
+- Continued claimed COV-EXEC-01 in isolated branch/worktree; primary dirty work
+  and business runtime untouched. Extended owned paths before coding. Reused
+  existing work-unit rather than adding dependencies or a second transaction API.
+- Exact owner/deadline borrower reentry shares native MODEL budget, acceptance/
+  certification and short Worker local authority/tail phases. Unrelated socket
+  ownership refused, caught nested failure poisons outer operation, scope escape/
+  thread restrictions and tighter deadlines retained. All fresh authority/lease/
+  STOP/Host checks and full independent originals stay; DISCARD ALL at operation
+  end remains. Existing final external proof still holds locks, explicitly OPEN.
+- Native smoke51 pass215.80s; boundary60 pass1 failure104.92s. Failure was wrong
+  test exception type: actual storage invalid-Host contract is ValueError, not
+  CoverageRefusedError. Corrected exact assertion; operation2 pass12.01s proves
+  one backend/reset with two fresh post-lock guards and visible revocation with
+  complete rollback. No production guard weakened; failed XML retained.
+- Serial strict nine independently certified16.4840s10922client16346server,
+  225GET/4callbacks/5accepted-qualified batches,18units/nine MODEL,one init/zero
+  exceptional recovery. SQL<=1000 FAIL. Prior10806 had four batches; no fixed
+  workload speed/p95 or root-cure claim. Two metering setup failures retained:
+  missing pg_stat extension and eviction; fixed only disposable PG extension/
+  capacity50000, restarted only test container, no business service mutations.
+- Whole plan In Progress: execution-phase guarded-entry fanout remains; next is
+  bounded native phase preparation/validation, not hiding callbacks or SQL.
+  Immutable retention, history/fleet quotas/fairness/load/live and independent
+  labeled semantics remain OPEN. Runtime receipts OFF; no merge/commit/push.
+- Expanded MODEL acceptance/final proof/batch replay/core56 passed602.66s.
+  Independent read-only review found P2 nested older SQL deadline widening.
+  Extended owned paths before fix; shared execute propagates existing minimum
+  deadline around configuration/delegation/cursor checks, no identity unwrap or
+  owner mutation. Positive0.2s nested budget under20s owner cancels pg_sleep3
+  in<2s; later explicit preceding-insert rollback assertion added. Native work
+  unit/recovery/report/API/operation51 passed28.65s before that extra assertion.
+  Re-review no further actionable finding; not live/fleet acceptance.
+- Final-source serial strict nine23.4505s12180client18052server248GET,
+  five callbacks/six accepted-qualified batches. Independent certification
+  completes; <=1000 SQL STILL FAIL. Retained earlier16.4840s10922/4callbacks/
+  5batches; shape differs, no fixed-batch speed/p95 claim. Exact boundary and
+  SQL categories/phase/server measurements in batch evidence document.
+- Final deadline/work-unit/recovery/report/API/operation51 passed27.71s, including
+  preceding-insert rollback after actual shortened-timeout cancellation. XML:
+  /tmp/cov-operation-final-deadlines.xml. All full-meter SQL gates still FAIL.
+- Final make check Ruff/Mypy1114/eval30, actual2611 file limits and diff GO.
+  Removed only this run's disposable PostgreSQL container/anonymous volume,
+  verified absent; test environment can be recreated, XML evidence retained.
+  Business data/runtime/primary checkout unchanged, task remains In Progress.
+
+## 2026-10-11 - Execution metadata context and native Event finalization
+
+- Continued claimed COV-EXEC-01 in its isolated branch/worktree; primary changes
+  and running services preserved. Optional core readonly scope uses fresh bulk
+  metadata/authority entry+exit, bounded1000/32MiB, no transaction over physical
+  reads, no escape/publication/MODEL within scope. Core source/prior/report use it.
+- Replaced per-object native Event append/finalize with set-based CAS/Event/row/
+  audit statements; canonical Event identities, request hashes and fresh authority
+  retained. One/nine batch reserve6/receipt8/finalize8 queries. Crash/ack-loss/
+  replacement/exact retry unchanged; no partial finalized evidence or lost charges.
+- Same-transaction pure proof prefetches bounded lifecycle and canonical Event
+  pages; exact per-object checks and conflicting URI/Event sources retained.
+  Unknown callbacks/overflow use original path; exit clears all cached records.
+  One/nine repeated exact proofs use2/2 native queries; readonly scope6/6.
+  Native migration94 indexes URI proof lookup; actual5000-row EXPLAIN uses both
+  URI and Event-ID indexes, not Seq Scan. New executable composition digest.
+- Native76 pass254.66s, proof/fault74 pass585.39s, index/fleet37 pass29.90s;
+  final current make check Ruff/Mypy1114/eval30 and actual2610-size/diff GO.
+  Corrected retention-fixture creation time and captured original replacement
+  fence. Concurrent retry waits for winner before fresh retry; no runtime guard
+  weakened. Initial nonexistent test filename ran no tests, not counted evidence.
+- Serial strict final source:9records/117bytes/18units/9MODEL, certified16.0781s,
+  10806client16273server218GET/4callbacks/4accepted-qualified batches, one init
+  replay/zero exceptional recovery. <=1000 SQL gate STILL FAIL. Prior same-four
+  callback/batch sealed18.2650s12916: observed2110 fewer calls/2.187s, no p95/SLO.
+  Pre-prefetch5callback/6batch20.4653s12571 retained, not fixed-work comparison.
+- Whole plan remains In Progress: Worker-wide repeated authority/transaction
+  layers (991lineage/1234lease/1605reset), immutable-retention short final proof,
+  history/fleet quotas/fairness/load/live remain open. No independent labeled
+  semantic dataset. Runtime receipts OFF; no business migration/restart/activation/
+  integration/commit/push. Exact boundary/results in batch evidence document.
+- Final-source boundary/retry/merge/revocation/Worker/migration suite42 passed,
+  one stale general migration expectation failed (stopped at78). Explicitly
+  extended ownership before editing the unchanged test; added expected79-94,
+  kept concurrency/idempotency/checksum/epoch/schema checks. Native migration
+  suite6 passed3.23s afterward; failed and corrected XML evidence both retained.
+- Final pure executor/batch/report/verified-read60 passed3.37s; final make check
+  Ruff/Mypy1114/eval30 GO. Removed only this run's isolated native PostgreSQL test
+  container and anonymous volume; retained XML evidence, business services/data
+  untouched. Whole-execution SQL budget remains FAIL, task remains In Progress.
+
+## 2026-10-11 - Governed Artifact batch publication and race-safe replay
+
+- Continued claimed COV-EXEC-01 in isolated worktree, primary dirty tree untouched.
+  Optional immutable batch Port reuses actual executor/Worker facade. Buffer only
+  <=999 observations/current result and bounded bytes; parts flush before merges.
+  Immediate MODEL checkpoint/usage remain durable even if buffered derivation is
+  lost. Local/single IDs/legacy path preserved; new fleet identity is required.
+- Native publication shares scoped short reserve/receipt transactions and set SQL.
+  Upload/exact-version byte checks happen outside database work units. All new
+  finalizations/Event bindings commit atomically; exact post-callback revalidation
+  refuses same-transaction metadata/Event mutation. Physical final certification
+  is independent and still under locks; per-object append/finalize SQL remains.
+- Expanded native135 pass1 failure exposed concurrent missing-row reservation
+  (SELECT cannot lock absent rows). Ordered ON CONFLICT insert rolls partial delta
+  back as typed fresh-snapshot conflict. Legal competing lifecycle advancement is
+  retryable; changed immutable identity/bytes refuses. Current native124 pass76.05s,
+  MODEL/crash/charge/final-original23 pass253.31s. Real MinIO tests updated but not run.
+- Added actual native executor before/after batch publication interruption + Worker
+  replacement + independent certification:2 pass31.65s, one HTTP/exact same usage.
+  Initial test referenced an unimported body then confused Source with Adapter;
+  corrected to actual Host adapter importing governed native Cloud Artifacts.
+  Pure executor/report/read/artifact88 pass8 native-gated skips5.03s; locked native
+  path separately in124. Current make check Ruff/Mypy1110/eval30; actual2604-size
+  and diff checks GO. An early readiness filename typo ran no tests; not evidence.
+- Serial complete strict meter, no other native test running: current19.6260s,
+  11772 application calls,17472server(15361top/2111nested),225GET,four callbacks,
+  five accepted/qualified batches,one initialization full replay,zero exceptional
+  full recoveries,nine MODEL calls. Independent certificate completes; test FAILS
+  strict1000call gate. Earlier batch19.5519s11582/four callbacks and final-check
+  23.0696s13031/five callbacks retained in evidence. Current saved1144vs12916 prior
+  but accepted batch count differs; no fixed-batch latency/p95 or root closure claim.
+- Remaining root: bulk read/operation authority and batched native Event/audit/
+  finalization, final physical proof outside locks with immutable retention,
+  execution/history scale,fleet quotas/fairness/load/live/semantic acceptance.
+  User has no labeled business dataset. Task In Progress, runtime receipts OFF;
+  no business migration/restart/activation/commit/merge/push. Own scratch PG only;
+  generated test DB cleanup recorded after all sessions complete, XMLs retained.
+  Cleanup complete: removed only own `zebra-cov-artifact-batch-native-20261011`
+  and its anonymous generated PG volume; test DB discarded, XML evidence retained.
+
+## 2026-10-11 - Exact membership and bounded selected record proof
+
+- Claimed v93 membership scope before coding in COV-EXEC-01 isolated worktree.
+  Seal exact ordered unit keys and full record/part metadata from validated first
+  manifest. Native SHA256 chain parity retains Unicode, quoted strings and real
+  whitespace; guards prevent direct root mutation/resealing. Indexed exact
+  reservation/first receipt settlement changes remaining count once, not twice
+  on UPDATE old/new scope. Unsupported mutations invalidate transactionally.
+- Found nominal fast path could never qualify a locked facade subclass; qualify
+  actual original trusted facade before wrapping instead. Normal accepted-delta
+  proof reads root and selected <=1000 records. Tests fail if it parses full
+  manifest or uploads all keys. Legacy/eager/arbitrary/recovery/final remain full.
+  User-approved incremental deferral tested: corrupt original manifest can leave
+  incremental retry valid, but independent certification refuses without Event.
+- Initial native trigger guard wrongly resolved seal-only fields for part rows;
+  fixed nested table guard. Explicit fixed-size MD5 candidate index always retains
+  exact JSONB equality; no collision-based proof. Selected-record primary-key
+  EXPLAIN tests5000 rows, scoped foreign tenant refusal. Record-tamper test's
+  ordinal restore was faulty; corrected test, nonnegative DB constraint unchanged.
+- Current native44 pass104.08s + expanded19 pass89.56s; pure65 pass20 native skips
+  0.75s; make check Mypy1108/Ruff/eval30/tracked GO; actual2600 size/diff GO.
+  Earlier unit-only broad native92 pass633.42s is separate prior-version evidence.
+- Serial full native nine business proof passes but strict <=1000 gate FAIL:
+  21.3039s14371all-client calls21134server242GET/5wakes/6accepted qualified/root6/6,
+  1 initialization replay0exceptional recovery. Earlier unit-only19.0184s12912/
+  218GET/4wakes/server19198 retained. No fixed-wake SQL saving/p95 claim.
+  Added exclusive ContextVar phase meter; sum exactly14371. Artifact metadata+
+  publisher5342, outer handoff/authority4318, commit559. Per-object governed
+  lifecycle/authority fanout remains the next structural root, not more indexes.
+- Full plan/task remain In Progress; executor/history scale, batched lifecycle,
+  immutable-retention short final proof, tenant quotas/fairness and live acceptance
+  OPEN. Runtime receipts OFF; no primary/business edit/migration/restart/activation/
+  commit/merge/push. Native tests only on own disposable PG; cleanup after finish.
+- Serial repeat:18.2650s12916client19132server218GET/4wakes/4qualified/root4/4,
+  strict SQL FAIL again. Same-callback prior12912: selected record query adds4,
+  no total SQL saving. Exclusive metadata/publisher5019, outer3545, commit434.
+  Expanded native initially94 passed11 failed653.47s; all failures were fixture
+  problems (ordinal restore1, removed effect_input patch10), not silently ignored.
+  Corrected focused membership19/recovery transcript+query+readiness46 passed.
+  Independent binding/time fallback retained. Current fleet qualification rejects
+  intermediate unit-only93 composition as well as index-only92 consumers.
+- Program-only metadata/ordinary retry/qualified MODEL compatibility3 pass9.33s.
+  The first new test incorrectly labeled an existing MODEL contract as program;
+  corrected to an explicit program contract and consistent frozen digests.
+  All native tests finished; removed only owned zebra-cov-membership-native-20261011
+  container/generated test databases. XML reports kept; business state untouched.
+
+## 2026-10-11 - Bounded batches and native SQL gate (still FAIL)
+
+- Claimed accepted batch root plan before coding in existing COV-EXEC-01 owned
+  paths/worktree. Implemented bounded exact unit acceptance, known-pure locked
+  operation entry/exit authority, pinned metadata and owner-TX borrowing; default
+  local behavior unchanged, public guards/final original proof retained.
+- Native MODEL volume91 avoids full-history budget-size proof on qualified delta
+  phases; exact expiry/current lifecycle/mutation fallback remain. Delta indexes92
+  tested with5000 synthetic rows; 1000 non-MODEL Events retain two volume queries.
+  Neither proves sealed membership or full fleet scalability. New consumer digest
+  rejects v90-only and volume-only compositions. No business schema application.
+- Expanded client meter includes Cursor/Connection/reset/timeout/failure/final
+  work; server track=all records implicit/nested work independently. Counters and
+  fingerprints freeze at the same endpoint. Strict <=1000 gate now fails explicitly.
+  Own disposable PG statistics eviction correctly failed first strict observation;
+  increased only own instance capacity to100000 and reran without stats reset.
+- Final native nine: business certified18.0889s12912client18823server218GET,
+  four callbacks/four qualified batches,9MODEL/18units,1init replay/0exceptional
+  recovery. Test FAIL on SQL target, not business proof. Prior17.8327s13480/225GET
+  retained (latest not faster). Historical20403 only counted Connection.execute;
+  not a strict all-client baseline. No p95 or live provider/Trench claims.
+- Native MODEL30 pass289.62s, fleet/readiness55 pass36.49s, growth/budget/final
+  boundaries10 pass95.38s; pure143 pass2.63s; native adopted work units/query plans
+  pass. Independent publication observer moved to real separate thread/connection;
+  retained rollback/revocation assertion. Invalid ledger correctly falls back to
+  original reads rather than a mistaken zero-read expectation. Direct deadline
+  adoption fixed to allow exact timeout suffix but reject schema-changing options.
+- Static Mypy1106/Ruff/eval30/tracked size GO; actual2597 size GO. Remaining
+  sealed membership, per-object lifecycle/authority fanout, final locked I/O,
+  fleet quotas/fairness/backpressure/multi-tenant/p95 and live Trench acceptance
+  are explicitly OPEN. See COVERAGE_BATCH_TRANSACTION_EVIDENCE.md for evidence
+  and reproduction. No primary edit/business migration/service restart/activation/
+  commit/merge/push; receipts OFF; task remains In Progress.
+
+## 2026-10-11 - Versioned wake authority and short read work units
+
+- Claimed migration/authority/Worker/read-unit/native-test paths before coding,
+  then early missing-consumer admission extension before editing that shared path.
+  Debugger traced per-Artifact full Task proof, empty tail projection, separate
+  read connections, incremental physical rereads and unqualified proof preparation.
+- Migration90 maintains ordered monotonic lineage roots natively. Exact wake
+  context replaces repeated full history proof; live binding/status/STOP/clock/
+  lease/Host remain checked. Native lease-wait revocation exposed the unsafe
+  combined-statement snapshot; fixed with lease pin THEN fresh post-lock read.
+  Normal continuation shares exact same wake context; new-owner/exceptional paths
+  prepare independently. Shared native write authority keeps original locks and
+  post-append rollback. Callback bytes bounded256 entries/32MiB; independent final
+  physical original proof unchanged. Short read work units prohibit nested commit,
+  poison caught errors and refuse escaped/cross-thread/deployment borrowing.
+- Added all-native validation counter; service-only6 omitted direct preparations.
+  Gate found27. Same-wake sharing left22. Two-stage initial budget omitted necessary
+  cold new-owner handoff; corrected three-stage gate still rejected22. Missing
+  strict consumer now refuses before expensive proof, keeping final locked native
+  admission. Actual17 (6service/6dispatch/5cold-handoff) passes; no filtered count.
+- Final serial workload1 passed255 deselected33.32s. Measurement after setup to
+  independent certificate:27.9448s19303execute/280GET/6wakes/18qualified/zero
+  exceptional full recovery/two MODEL initialization replays. Prior v89
+  56.0948s49137execute/518GET/10wakes. Different wakes, controlled transport and
+  Connection.execute-only scope prevent production/p95 or causal-one-helper claim.
+  Remaining725 public metadata reads,2277 lease/epoch,1881 lineage,1004 locked
+  metadata and3095 resets show whole-system SQL amplification is NOT complete.
+- Earlier native write/bind/publication/MODEL/final-proof53 passed, including
+  unrelated-object corruption refusal and post-append rollback; native authority/
+  read-unit/capability/dispatch/continuation50 passed164.96s before final early
+  preflight. New missing-consumer regression1 passed5.80s. Pure bounded/locked/
+  capability56 passed1 deselected; readiness/routing96 passed7 environment skips.
+  Final make check: size/Ruff GO, Mypy1103 sources GO, eval30/30 GO.
+  Expanded native initially49 passed2 failed because missing-consumer preflight
+  correctly preceded the intended legacy-method refusal. Supplied qualified
+  credentials in those two tests; kept exact missing-method/no-object/no-state
+  refusal assertions. Final native51 passed166.35s, zero skips. Review additionally
+  found active borrowed objects could be passed to another thread despite borrow-
+  creation checks: fixed actual access/entry guard; native work-unit3 pass2.59s.
+  Pure read/locked reader55 pass1.20s; pure capability16 pass8 native-env skips.
+  Final source serial rerun1 pass35.06s: certified30.5219s20403execute/287GET/
+  7wakes/20 full native binding validations (7service/7dispatch/6cold-handoff),
+  18qualified/zero exceptional recovery/two initialization replays. Earlier six-
+  wake pass above is retained, not selected as the only result. Actual tracked+
+  untracked2586-size/diff GO; make check1103-source/eval30 GO.
+- OPEN: operation-level Artifact authority/lifecycle batching, final external
+  proof outside locks, MODEL membership/volume roots, overall SQL/row/lock budgets,
+  tenant/fleet fairness/capacity/history-growth/p95 and real Trench rollout.
+  Independent labelled semantics unavailable. No business migration, primary edit,
+  build/restart, activation, commit/merge/push; receipts OFF. Task In Progress.
+
+## 2026-10-11 - Native Task descriptor and continuity proof
+
+- Claimed v89 follow-up before coding. Debugger traced shared task_policy:
+  repeated TaskPrepared enumeration and Session count/min/max preceded every
+  normal index/receipt/commit policy check. Added database-maintained exact
+  per-Session continuity/origin root; ordinary edits cannot requalify history.
+- Normal proof is one indexed root plus fresh latest binding; full recovery,
+  initialization and publication certification remain independent history proof.
+  Already verified same-phase policy forwarded to preflight. No permission cache.
+  Fleet digest now rejects v88-only consumers. Early native4 passed30.48s;
+  pure66 passed1.34s/4 native environment skips. Final MODEL54 passed299.54s,
+  Worker/fleet82 passed252.27s (zero skips); expanded root8 passed57.31s,
+  separate committed binding renewal1 passed9.92s. Serial nine1 passed61.53s:
+  independent certified56.0948s/49137execute/2413bindings/518GET/10callbacks,
+  18qualified/zero recovery/two initialization replays. Same-callback v88
+  52.1281s49237execute:100 fewer executes, no latency improvement claimed.
+  Trigger-internal SQL is excluded; this is not full runtime or tenant/SLO proof.
+- New tests use actual native append growth, mutation/rollback/current-binding,
+  foreign scope, checksum/legacy fallback and forbidden direct root edits. Fixed
+  fixture-only call/truncate assertions and narrow policy-forwarding fake index;
+  existing production guards remain intact. Final make check1098-source/eval30 GO,
+  actual tracked+untracked2578-size/diff GO after final renewal regression.
+- Remaining authority fanout, MODEL volume/membership, long object transactions,
+  legacy qualification and tenant/fleet/SLO/live acceptance. No primary change,
+  business migration/restart/activation/commit/merge/push; production receipts OFF.
+
+## 2026-10-11 - Exact incremental native MODEL summary
+
+- Claimed v88 migration/index/capability follow-up before coding on the existing
+  COV-EXEC-01 branch. Debugger tracing found the shared native budget index still
+  scanned all MODEL representations; repaired that shared path, not individual
+  callers. Native reservation and first settlement maintain exact summary facts
+  atomically, with scoped source equality and sticky invalidation on unsupported
+  mutation. Legacy runs stay unqualified; no projection-only backfill.
+- Actual final_certification normal reads use one indexed proof. Eager/full
+  recovery and final certification retain independent full native proof. Fresh
+  Task/Host authority and deadlines remain. Capability digest excludes v87-only
+  consumers; production runtime role/rollout enforcement still required.
+- New native5 pass10.74s. Final MODEL48 pass228.11s and Worker/fleet82 pass225.65s,
+  zero skips. Initial matrix had3 old error-order assertion failures; all3 were
+  reproduced without v88, then only assertion alternatives were updated to include
+  existing incomplete-set refusal. No production rejection gate was removed.
+- Pure105 pass0.60s/4 native environment skips; make check1096-source/eval30 GO;
+  actual tracked+untracked2575-size and diff checks GO. Serial nine1 pass58.12s:
+  certified52.1281s/49237execute/2413bindings/518GET/10callbacks/18qualified,
+  zero full recovery/two initialization replays/independent final certification.
+  Prior same-callback50.4048s49375execute:138 fewer executes, no latency gain.
+  Counters exclude trigger-internal SQL, cursor and implicit transactions.
+- Remaining: versioned Task/Host authority, preflight/membership historical scans,
+  shorter object-proof transactions, verified legacy qualification, tenant/fleet
+  SLO and live acceptance. No primary edit, business migration, restart, activation,
+  commit/merge/push; production receipts remain OFF.
+
+## 2026-10-11 - Revision-bound mint without historical fingerprint
+
+- Claimed scoped follow-up and capability/readiness path extension before coding.
+  Exact verified commit now captures the native revision root without redundantly
+  fingerprinting history. Legacy root-less mint/read unchanged; missing root
+  refuses downgrade. Qualification digest includes revision contract, rejecting
+  fingerprint-only process identity before database registration.
+- Native initial13 pass/1 fail exposed obsolete global fingerprint-capacity
+  assertion. Split legacy capacity fallback versus root-bound path: updated
+  native15 pass121.08s/zero skips, missing-root/mutation/rollback/expiry/finalcert.
+  First qualification pure34 passed with14 native environment skips; separate
+  native continuation/fleet matrix follows. Static gate follows final test edit.
+- Serial nine1 pass55.64s: certified50.4048s/49375execute/2413bindings/518GET/
+  10callbacks/18qualified/zero recovery/two initialization replays/finalcert.
+  Prior same-callback v87 control53.5462s49393execute: exactly18 mint historical
+  scans removed; timing single-run, not SLO or root-plan completion.
+- Remaining: sealed incremental budget facts, versioned fresh authority, short
+  transactions, membership/preflight scans and tenant/fleet/live acceptance.
+  No activation, business DB migration, restart, primary edits, commit/merge/push.
+- Final readiness/continuation/capability/native race matrix69 pass122.37s/zero
+  skips. Final make check1094-source/30eval GO; actual2572 size and diff GO.
+
+## 2026-10-11 - Database-maintained MODEL revision root
+
+- Claimed migration/catalog, native root and receipt boundaries before coding.
+  Debugger confirmed unsealed MODEL representations forced receipt history scans.
+  Added v87 guarded mutation generation/revision; inserts/updates/deletes/truncates
+  invalidate exact roots atomically, direct root edits refuse, rollback restores
+  revisions and separate committed changes invalidate prepared native reads.
+- New receipts freeze current revision after existing full native mint verification;
+  new reads use one indexed revision lookup. Legacy witnesses still scan their
+  exact fingerprint; no backfill or authorization cache. Public error text retained
+  after an initial compatibility assertion failure; expiry injection now covers
+  either native revision or legacy fingerprint boundary.
+- Native final14 passed113.40s/zero skips; initial native5 passed35.63s included
+  initialization4; pure161 passed2.35s. make check1094-source GO before last test
+  edits; actual2572 size GO. Latest nine workload1 passed58.63s: completion
+  53.5462s/49393execute/2413bindings/518GET/10callbacks,18qualified/zero recovery/
+  independent finalcert. Prior49.2905s had9callbacks; no new time/query-count
+  improvement claimed. Bounded receipt-read complexity is the verified gain.
+- NOT the full atomic MODEL budget state machine: mint/index/Task history/preflight
+  scans and authority fanout remain, plus short transactions/Worker rollout and
+  tenant/fault/SLO/live gates. No production migration/activation/restart/primary
+  edits/commit/merge/push. Existing default receipt composition remains OFF.
+
+## 2026-10-11 - Delta MODEL transcript and admitted boundaries
+
+- Follow-up ownership claimed before coding in COV-EXEC-01, same isolated branch.
+  Debugger traced shared MODEL replay and historical boundary physical reads.
+  Scoped MODEL/index Python reconstruction to current records only; native full
+  budget/source/index integrity precedes it, exact manifest membership determines
+  remaining work, short pages stop without an extra empty query. No new dependency.
+- Explicit actual native final_certification policy match and initial manifest/
+  official policy verification required before deferring historical boundary I/O.
+  Fresh authority and original deadlines remain; eager/full replay unchanged.
+  Current evidence verification and independent final proof remain required.
+- Native final4 pass73.54s/zero skips; pure invocation/recovery/boundary/paging148
+  pass2.88s. Initial native object-loss test failed because it expected ValueError
+  rather than actual ArtifactObjectIntegrityError. Corrected the test only; final
+  corrupt historical proof is refused, incremental selected proof succeeds.
+- Latest native nine workload passed49.2905s measured certified completion,
+  47599execute/2331binding reads/508GET/18qualified/zero exceptional recovery.
+  Prior control60.2254s56639execute745GET; callbacks10->9 because time slicing.
+  Not fixed-callback causality, p95/SLO, tenant concurrency or live E2E evidence.
+- Structural plan remains incomplete: sealed MODEL state/CAS, versioned operation
+  authority, history-scan removal, short atomic acceptance, Worker fleet admission
+  and multi-tenant failure/performance gates. Production receipts OFF, no runtime
+  activation/restart/migration/primary edits/commit/merge/push.
+
+## 2026-10-11 - Same-read MODEL metadata
+
+- Claimed shared loader/invocation/tests/evidence paths first. Debugger traced
+  discarded verified metadata plus redundant retention/frozen-digest getters.
+  Reused existing verified Port and same-read metadata; backward-compatible
+  load result and unknown/legacy fallback retained. No cross-read cache.
+- Full identity/scope/kind/MIME/lifecycle/retention/digest/length checks and
+  fresh native pre/post authority retained. Every frozen boundary still reads
+  physical bytes. Original shorter deadlines cannot be renewed by metadata.
+- Integration223 pass; hardened native26 pass27.57s, zero skips. Scoped source
+  reviewer GO; make check sizes2382/Ruff/Mypy1092/eval30 GO, actual2565 size GO.
+- Native2s nine serial2 pass139.46s:65039->56607execute,3394->2867binding reads,
+  unchanged745GET;70.7937->59.9912s observed completion. Native60s serial2
+  pass99.28s:47699->40307execute,2571->2109binding reads, unchanged645GET;
+  49.4899->41.0434s. Both independent final certification,18qualified receipts,
+  zero exceptional recovery. Controlled native PostgreSQL/Worker, synthetic
+  Host/model/S3; one pair each, not real tenant latency/p95/SLO.
+- Remaining commit MODEL replay and authority fanout remain substantial.
+  Production receipt composition OFF; no runtime activation/restart/migration,
+  primary edits, commit/merge/push or full live/fleet acceptance.
+
+## 2026-10-11 - Receipt-backed MODEL initialization
+
+- Claimed shared initializer/native receipt-reader/tests/evidence ownership first;
+  debugger skill traced per-slice Worker + invocation construction (not each HTTP)
+  reinitializing budget and re-reading historical physical objects. Existing
+  qualified receipt root now reused only when native MODEL tail unchanged.
+  Fresh native fingerprint/Task/fence/STOP/authority/deadline checks retained;
+  absent/legacy/tail full replay, corruption refusal, final cert unchanged.
+- First native probe borrowed conflicting locks and was interrupted256.99s,
+  no tests completed; corrected to same mint transaction. Native4 pass34.38s,
+  then full receipt guard matrix14 pass137.72s/zero skips. Pure13 pass; combined
+  focused48 pass10 native skipped without DSN. Scoped reviewer GO, make check
+  sizes2382/Ruff/Mypy1092/eval30 GO; explicit actual2565 file-size GO.
+- Native60s nine serial2 pass104.30s: both2 full initializations/645GET,
+  full47669execute versus reuse47699; no replay saved, added30 eligibility SQL.
+  Observed48.3019->46.4271s not an optimization claim.
+- Native2s nine serial2 pass149.83s, no concurrent heavy gates: full20 versus
+  receipt2 initialization replays,67979->65039execute,835->745GET,
+  3536->3394binding reads,73.4938->67.1875s. Both10callbacks18qualified0recovery
+  nine model HTTPs/one independent certificate. SQL4.3%/GET10.8% reduction;
+  one time pair not p95/SLO. Regression asserts two initial replays on qualified
+  multi-slice runs; authority fanout and commit/native-prefix replay still open.
+- Production activation remains OFF. No runtime restart/migration/activation,
+  commit/merge/push. Real tenant/fleet/semantic accuracy acceptance not proved.
+- Hardened qualified2s rerun1 passed74.13s/zero skips with replay-count assertion:
+  same65039execute3394binding745GET/two full initializations/10callbacks/
+  18qualified/zero recovery/final certificate; measured completion68.6504s.
+  Final focused47 passed0.26s and make check GO. Fixture determinism, not p95.
+
+## 2026-10-11 - Incremental accepted-batch routing
+
+- Claimed shared commit/replay/verification/transactions/native-test ownership
+  before coding. Used debugger skill to trace record_merge calling full batches.
+  Optional Event membership is atomically derived from validated result keys;
+  scoped reads only under explicit final_certification incremental acceptance.
+  Full final/eager/recovery scans retained, no projection-count proof/cache.
+- Source review found legal 1,000-result hints could exceed64KiB Event bound.
+  Shared writer now omits optional hints on overflow, retaining the mandatory
+  descriptor bound and legacy fallback. No schema migration/backfill.
+- Native initial13 passed/two failed only stale batch_page2 expectation against
+  pre-existing short-page1 behavior. Corrected assertions; final guards4 passed
+  128.53s and hardened5 passed91.04s, zero skips. SQL-hidden required part refuses,
+  final cert exact immutable mismatch, mixed persisted batch reads whole and
+  detects duplicate original source. Mixed fixture not successful mixed commit.
+  Deterministic27/oversized1 pass; reviewer scoped GO and make check GO.
+- Same native nine comparison serial2 pass99.73s, no concurrent gates:
+  full46.3997s49829execute2713binding717GET versus scoped45.1373s47669execute
+  2569binding645GET. Both1callback18qualified0recovery9modelHTTP1finalcert.
+  Commit inclusive time7.4244->5.0952s; one pair not p95 or production SLO.
+- SQL reduction2160(4.3%), GET72(10.0%); overall47k+ queries/45s still bad.
+  Authority fanout/full MODEL replay remain root work, native2s scoped timing
+  and tenant-scale/fleet/live acceptance not done. No runtime restart/activation,
+  migration, merge or push; evidence in COVERAGE_BINDING_READ_EVIDENCE.md.
+
+## 2026-10-11 - Shared verified Artifact load
+
+- Claimed shared integrations loader/native regressions/workload scope before
+  coding. Used existing verified bounded Port rather than duplicate inspect;
+  full metadata equality and independent SHA/length retained. Legacy untouched.
+- New actual Cloud facade test proves fresh initial/pre/post guards, post-I/O
+  revocation refusal and metadata/digest/length refusals. Native15 pass15.60s,
+  zero skips; integration46 pass1.26s and snapshot3 pass1.03s; reviewer narrow GO.
+- Same native binding nine atomic diagnostic60s comparison: serial2 pass100.12s;
+  old54181execute50.1475s versus new49829execute41.3743s, binding2985->2713,
+  public _record1753->1481. Both717GET/18qualified/zero recovery/final cert.
+  Static checks briefly concurrent; no isolated timing, p95 or production claim.
+- make check sizes2382/Ruff/Mypy1092/eval30 GO; explicit tracked+untracked2562
+  size GO. Performance/commit replay/fleet/real-load remains OPEN. No restart,
+  runtime activation, merge or push. Evidence in COVERAGE_BINDING_READ_EVIDENCE.md.
+- Native2s hardened1 pass68.45s, zero skips/31 deselected: completion63.7075s,
+  70139execute3680binding reads907GET10callbacks, 18qualified/zero exceptional
+  recovery/nine model calls/final certificate retained. No old native2s pair;
+  repeated slice preparation/history replay remain, not full-recovery recurrence.
+
+## 2026-10-11 - Fresh native binding query consolidation
+
+- Claimed native binding/shared regressions/workload measurement ownership first.
+  Reused indexed latest-binding lookup in root identity read; same fresh RR
+  transaction, unchanged full lineage, child-root existence and Worker guards.
+- Reviewer caught UUID SQL-cast exception escaping controlled recovery refusal;
+  corrected to ValueError-compatible native conflict and added regression.
+- Initial10 pass25.51s, hardened12 pass11.30s, zero skips. Reviewer narrow GO.
+  make check sizes2382/Ruff/Mypy1092/eval30 GO; diff check clean.
+- Added explicitly labelled native binding path to existing frozen9 matrix.
+  Diagnostic60s atomic serial2 pass96.06s: fixed35.4825s45226execute; native
+  51.4186s54181execute2985binding reads. Both18 qualified receipts, zero recovery,
+  717GET, nine model calls, one independent certificate. Not before/after latency.
+- Original fixed callback benchmark excluded native binding SQL. Root query
+  regression proves3->2 business queries; still thousands of authorization calls.
+  Remaining fanout/replay/fleet/real-load work and source-only boundaries recorded
+  in docs/COVERAGE_BINDING_READ_EVIDENCE.md. No runtime activation or restart.
+
+## 2026-10-11 - Frozen nine-record atomic continuation measurement
+
+- Claimed existing workload/evidence lane before editing. Reused actual native
+  Worker/PG fixture with same9 records117bytes18 unique commits9 MODEL HTTPs and
+  one certificate; receipt opt-in exists only in trusted test composition.
+- Added recovery constructor and prepare_continuation/full publication phase
+  counters, per-callback SQL/GET/times and qualified18receipt assertions. Reviewer
+  measurement GO; clarify Connection.execute versus wire SQL, fixture consumer
+  lifecycle versus pure pickup, nested phases and controlled transports.
+- Initial serial4 incremental cases passed205.97s, zero skips/4 eager deselected:
+  /tmp/cov-atomic-frozen-load-20261011.xml. Receipt2s versus off2s:50.5764 versus
+  66.6344s,63584 versus75984exec,907 versus1997GET,0 versus27fullrecovery;
+  both10callbacks. Diagnostic60s onecallback:qualified34.7905s45226exec717GET,
+  off37.7172s45010exec717GET. Not repeated p95 or an isolated timing effect.
+- Initial run loaded before final explicit18qualifiedreceipt assertions; hardened
+  atomic2s rerun1 passed67.92s, zero skips/7 deselected:
+  /tmp/cov-atomic-frozen-load-hardened-20261011.xml.18qualifiedreceipts/zero recovery,
+  62.3807s65682exec929GET11callbacks. Retain slower observation; no cherry-pick.
+  make check sizes2382/Ruff/Mypy1092/eval30 passed.
+- Remaining root costs: _record/authority fanout and commit native MODEL replay,
+  fingerprint scaling; mixed tenants/real text/provider/broker/browser/fleet
+  rollover still open. Source only, no production activation or runtime restart.
+
+## 2026-10-11 - Native continuation duplicate pickup root repair
+
+- Actual post-Inbox/receipt/lease write interruption rolled back all execution
+  tables; retry succeeded but same-generation duplicate returned reconciliation.
+  Focused reproduction failed10.76s at the explicit DUPLICATE assertion.
+- Moved shared native receipt identity/idempotency before predecessor proof;
+  retain native scope/envelope/approval, lease serialization and capability clock.
+  No lease or fresh execution is returned for duplicate delivery.
+- First preparer shortcut was too broad: prepare_continuation also creates
+  approval. Full regression caught7 failures/31 passes113.04s. Reverted Worker
+  shortcut; restrict reuse to storage pickup preparation's existing approval
+  SELECT joined to the native receipt. No extra round trip or new dependency.
+- Added STOP/proof mutation after actual marked preparation, post-write rollback,
+  successful retry, unchanged duplicate state/object reads/one MODEL HTTP request,
+  and real full publication verification with physical reads/exactly one cert Event.
+- Corrected boundary source reviewer GO. Native suite37 pass/1 test-only class-name
+  ImportError128.85s; corrected actual CoveragePublicationQueries spy, isolated
+  crash/duplicate/final-cert case passed12.44s, zero skips. XML:
+  /tmp/cov-continuation-idempotency-final-20261011.xml and
+  /tmp/cov-continuation-crash-cert-final-20261011.xml. Sibling multipart/crash/
+  approval-tamper/no-progress/crash-budget10 passed155.32s, zero skips:
+  /tmp/cov-continuation-sibling-final-20261011.xml;
+  make check sizes2382/Ruff/Mypy1092/eval30 passed. No primary checkout mutation,
+  runtime migration/restart, production activation, merge/push or SLO claim.
+- Remaining: full concurrent process-kill/source-race matrix, schema86 mixed fleet
+  rollover, native MODEL history fingerprint cost and frozen9/mixed-tenant latency
+  acceptance. Production execution_receipts remains defaultFalse; no live activation.
+
+## 2026-10-11 - Continuation qualification concurrency acceptance (IN PROGRESS)
+
+- Claimed same isolated COV-EXEC-01 lane before editing. Reused native pin/final
+  clock/handoff boundaries; no runtime gate weakening or extra scheduler code.
+  Actual PG blocking-pid assertions prove pin serializes with process revocation
+  and control-plane epoch rotation. Final-clock expiry after a successful pin and
+  tentative write must roll back; assertions forbid early-failure false positives.
+- Native marked pickup now snapshots leases, pending, handoff receipts, Inbox,
+  outbox and Events before unqualified refusal and after preparation-to-pickup
+  revoke/epoch injection. Injection must return marked proof and run exactly once;
+  refused pickup must preserve all snapshots and add zero historical object reads.
+- Initial17 run16 pass/1 test injection bootstrap-seam failure75.95s; direct native
+  handoff fixes the test seam (not a runtime bug). Revised17 passed79.78s before
+  reviewer hardening. Final hardened17 plus specific84-to85 upgrade2 passed111.63s,
+  zero skips: /tmp/cov-continuation-races-hardened-20261011.xml.
+  Source review GO; make check sizes2382/Ruff/Mypy1092/eval30 passed.
+- Version86 exposed a stale upgrade fixture that excluded only85; explicitly bind
+  that fixture's initial catalog to<=84 and focused upgrade to<=85. Preserve actual
+  catalog ordering and current schema for its non-upgrade cases.
+- Still OPEN: complete concurrent crash/STOP/approval-source-race matrix, coordinated
+  schema86 fleet rollout, native historical scan cost, nine-record/mixed-tenant
+  load and live acceptance. Production minting OFF; no runtime migration/restart,
+  primary edit, merge/push or reply-speed/SLO improvement claim.
+
+## 2026-10-11 - Native continuation process qualification (IN PROGRESS)
+
+- Extended existing v3 process registration with optional protocol-qualified
+  configuration digest; no new scheduling channel or weakening of legacy gates.
+  Worker registers only exact native preparer/deriver composition. Heartbeat and
+  natural-expiry replacement preserve the qualification. Marked native current
+  approval requires same-process extension at pickup; unmarked v3 tasks/STOP
+  remain compatible under upgraded code. No additional requirement-read query.
+- Scratch tests found migration86 initially preceded82/83 in execution catalog;
+  moved86 to its actual dependency-safe tail. Fixed legacy test tail assertion
+  and native query test doubles without loosening runtime validation.
+- Native focused tests add extension refusal before DB, old/new process pinning,
+  no borrowed qualification, no heartbeat upgrade/downgrade, actual marked pickup
+  refusal followed by qualified completion. Earlier91 pass/1 stale loaded catalog
+  assertion failed106.45s; corrected full92 passed108.63s, zero skips:
+  /tmp/cov-native-qualification-verified-20261011.xml. Source reviewer GO;
+  make check sizes2382/Ruff/Mypy1092/eval30 pass.
+- Schema86 is not compatible with old compiled85 binaries (exact catalog gate).
+  Coordinated fleet/schema rollover and fault/race/load acceptance remain OPEN.
+  Minting stays OFF; scratch-schema migrations only, no running service migration,
+  restart, primary changes, merge/push or real load/SLO claim.
+
+## 2026-10-10 - Atomic continuation native source retention (IN PROGRESS)
+
+- Continued claimed COV-EXEC-01 migration/native-test lane in isolated checkout.
+  Migration85 protects receipt-linked native accepted Events. Exact deployment/
+  session/sequence/namespace/run/type must match before BEFORE INSERT performs a
+  same-TX no-op row-version write. UPDATE/DELETE/TRUNCATE guards retain the source;
+  stale RR writers cannot miss the new receipt and mutate an older row version.
+- Reviewer caught an upgrade regression in the initial seal-column design:
+  to_jsonb(Event) would change and invalidate all prior MODEL witness source_row.
+  Removed column entirely; canonical Event and witness bodies remain unchanged.
+  Existing receipt sources get the row-version barrier before guards install;
+  this is retention, never proof repair/backfill/fast-path qualification.
+- Revised source review GO. Native regression includes rollback, ordinary source
+  updates, scope mismatches, stale RR/concurrent writers, existing-receipt upgrade,
+  valid pre-v85 model witness replay and tampered witness refusal. Initial13-case
+  report predates review revision and is NOT final evidence. Revised19 selection
+  initially had2 fixture errors (raw Events not projected to stream); upgraded
+  tests now use actual verified acceptance for MODEL replay. Hardened native19
+  passed146.53s, no skips: /tmp/cov-execution-source-hardened-20261010.xml.
+  Source/test reviewer GO; explicit84-before/85-after schema assertions added,
+  supplemental upgrade2 passed26.18s (test-only hardening):
+  /tmp/cov-execution-source-upgrade-final-20261010.xml.
+- make check passed: Ruff, Mypy1089, tracked-size2382, eval30. Default6915 passed/
+  1598 infrastructure prerequisites125.90s; native tests were skipped in that run.
+- Normal continuation/pickup still full recovery. Capability qualification,
+  short atomic approval/outbox, pickup before full preparation, live races/load
+  SLO remain OPEN. Current Worker minting stays off. No runtime activation,
+  primary edit, restart, commit/merge/push or performance improvement claim.
+
+## 2026-10-10 - Atomic continuation receipt groundwork (IN PROGRESS)
+
+- User selected the architectural root fix. Claimed COV-EXEC-01 ownership before
+  edits on codex/cov-exec-01 isolated worktree, not dirty primary. Debugger traced
+  commit -> continuation -> unconditional preparation -> handoff full replay.
+- Migration84 and append-only execution receipt chain implemented inside verified
+  final-mode commit TX. Exact accepted Event, prior receipt, command generation/
+  floor/fence, frozen binding, expected/accepted units, verified original budget,
+  deadline and native MODEL source/witness/call/ledger fingerprint pinned. No
+  backfill from ordinary projections; duplicate retry does not mint/increment.
+  Source integrity/SQL failure rolls back acceptance, receipt and projections.
+- Receipt capacity is optional availability, not a new business budget. Reviewer
+  rejected initial capacity-fatal behavior; fixed to no-mint/full-recovery fallback.
+  Also fixed missing/JSON-null protocol constraint, strengthened native timestamp
+  rollback assertion and UPDATE/DELETE/TRUNCATE rejection. Initial migration83
+  collision caught in scratch; reserved84 after checking entire actual catalog.
+- Trusted store composition defaults receipt minting off. Current Worker does
+  not opt in; unchanged normal path gains no receipt/fingerprint SQL. Native tests
+  explicitly compose real stores with opt-in; default test omits keyword entirely.
+  A generic configured deriver's stored witness is NOT fast-path qualification.
+- Initial native6 passed64.24s after abort/capacity correction. Prior native8 plus
+  acceptance37 passed45 total659.38s; that report predates latest protocol/default
+  hardening. Hardened final native9 passed89.86s, zero skips:
+  /tmp/cov-execution-receipts-hardened-20261010.xml. Host/model/S3 are controlled
+  transports; not production, mixed-tenant or semantic-accuracy acceptance.
+- Ruff, Mypy1088, file-size gate and deterministic eval30 passed. Initial default
+  6915 passed/1587 prerequisite skips122.50s; final default6915 passed/1588
+  prerequisite skips117.34s. Last receipt-only policy/validity guards subsequently
+  added and checked with make check; final native9 passed95.19s, zero skips:
+  /tmp/cov-execution-receipts-validity-20261010.xml. Child policy is exact and
+  inherited validity cannot extend; real retry chain proves exactly two mints.
+  Read-only source reviewer scoped GO. All checks ended; no running test processes.
+  Scratch inventory preserved the prior unknown schema, no unrelated cleanup.
+- Root implementation is NOT finished: source-prefix retention/immutability,
+  qualified/versioned consumer, normal short transaction/outbox approval, pickup
+  routing before full preparation, authority/tail/race tests and frozen load SLO
+  remain. Fingerprint is O(history); opt-in descriptor storage/retention budget
+  also needs release acceptance. Final physical certification remains unchanged.
+  No activation, restart, primary edit, commit/merge/push or performance-GO claim.
+
+## 2026-10-10 - Recovery bounded-query coalescing
+
+- Claimed COV-EXEC-01 same owner/worktree before editing; traced full Worker
+  recovery callers with debugger. Native history/unit bounds and row pairs now
+  take2 SELECTs instead of4. Oversized bodies are suppressed; full native scope,
+  source digests, authority, budget and object proofs unchanged. Two scans remain.
+- Reviewer caught WITH prefix incompatible with restricted RR adapter; retained
+  SELECT-only boundary using outer SELECT. Native adapter57 pass16.72s;
+  crash/no-progress/approval tamper7 pass75.66s. Hardened query10 pass1.94s prove
+  independent scope isolation, exact byte limit and unchanged-count/byte tamper
+  refusal on fresh native revalidation. Initial32 raw-query results retained, not
+  used as final adapter evidence. Source GO; explicit bound assertions added.
+- Frozen nine load2 pass113.85s: default70.68s/75772SQL/1987GET/10callbacks;
+  diagnostic33.17s/45010SQL/717GET/onecallback. Single observations, not p95.
+  Main normal full-recovery/public-authority fanout remains OPEN; not SLO GO.
+- Full default6915 pass/1579 prerequisites130.14s; Ruff/Mypy1086/size2382/eval30
+  GO (test-only101-character line fixed before final checks). All processes ended.
+  Scratch inventory retained earlier unknown schema; no deletion. No activation,
+  merge/push/primary edit, mixed-tenant or business semantic acceptance claim.
+
+## 2026-10-10 - Native transaction start and short-page query removal
+
+- Claimed same COV-EXEC-01 lane before editing. Existing psycopg setters configure
+  RR/read-only BEGIN, forwarding through deadline/borrow adapters; removed the
+  separate binding SET TRANSACTION. No cached authority or connection reset change.
+- Canonical accepted batches stop after a short page under locked-run/RR callers.
+  Full pages retain the next-page probe; added 0/99/100/101/199/200 boundaries.
+- Debugger root-cause workflow and Hubble read-only source review applied. No
+  scoped blockers. Focused17 passed; native binding/reset13 passed7.92s, including
+  deadline and repeated borrowed connection isolation checks.
+- `/tmp/cov-native-begin-load-20261010.xml`:2 passed139.20s,2 eager deselected.
+  Default81.3504s/85643SQL/2007GET/10callbacks; diagnostic49.1902s/54282SQL/717GET/1.
+  Frozen certified-completion counters, controlled Host/model/S3; no heavy gate
+  concurrently. This fixture's fixed binding loader excludes native-BEGIN gains.
+  SQL fell42/11 vs preceding single samples; times did not improve. No p95 claim.
+- Ruff/Mypy1086/size2382/eval30 pass. Default run6890 pass/1567 prerequisites,
+  1 failure119.13s: unrelated local-runtime timeout SIGKILL PermissionError.
+  `/tmp/cov-native-begin-default-20261010.xml` retained. Isolated runtime14 pass
+  1.24s at `/tmp/cov-native-begin-runtime-recheck-20261010.xml`; full rerun6891
+  pass/1567 prerequisites119.62s at `/tmp/cov-native-begin-default-recheck-20261010.xml`.
+  Corrected verifier/reader selection35 pass0.21s.
+  A supplemental command used a nonexistent policy-test filename (no tests ran);
+  corrected to existing verifier/reader selection, not treated as evidence.
+  Scratch still has only the previously retained ownership-unknown schema.
+  No primary checkout change, merge or activation.
+  Normal continuation/full recovery separation, authority fanout, indexed exact
+  dependency reads, capacity/fairness and mixed-tenant/live acceptance remain OPEN.
+
+## 2026-10-10 - Locked proof reads and within-phase publication deduplication
+
+- Added private commit-only reader using the existing transaction's native row
+  locks. Entry/exit authority and physical pre/post checks remain. Scope mismatch,
+  expiry, object identity and cache bounds are tested; scope is invalidated finally.
+- Removed the initial8192-item eligibility refusal after review: overflow now
+  falls back to the original guarded reader without eviction or new refusal.
+- Metadata reuse is enabled only for the exact pure semantic deriver. Unknown
+  derivers retain per-getter native metadata checks. No same-transaction metadata
+  writes or pin release occur in the enabled verifier; commit writes follow exit.
+- Verified manifest/result/observation/checkpoint bytes share32MiB per invocation;
+  overflow reads physically. Public cache-hit authority and new final-phase reads
+  remain. No cached permission decision or durable verified-prefix is introduced.
+- Publication now uses the same fresh complete verifier for source equality and
+  aggregate verification inside one lifecycle phase, avoiding duplicate ledger
+  construction. Removed an immediately repeated source proof before any writes.
+  Every later post-append/retry/cross-TX lifecycle proof remains independently new.
+- Intermediate source validation: focused93 pass; body-cache default6882 pass/
+  1565 prerequisites132.24s; pinned-reader default6885/1565 in132.60s. Full Ruff,
+  Mypy1086/size2382/eval30 passed. Final default6886/1565 in123.42s; native
+  publication54 pass/zero skips182.76s. Frozen-source load2 pass134.86s:
+  default81.0788s/85685SQL/2007GET/10callbacks, diagnostic43.7284s/54293SQL/
+  717GET/onecallback;/tmp/cov-final-proof-load-20261010.xml. No other heavy gates
+  ran concurrently. Single samples still do not prove p95 or causality.
+- Intermediate body-cache native load:/tmp/cov-verified-body-load-20261010.xml,
+  default110.46s/96419SQL/2358GET/11callbacks, diagnostic56.13s/60593SQL/855GET/
+  onecallback. Default tests ran concurrently: report counts, not isolated timing.
+  This run predates pinned-record and publication changes. Prior scoped-reader
+  run:/tmp/cov-locked-reader-load-20261010.xml, diagnostic56.88s/60593SQL/954GET.
+  Neither achieves performance SLO. Final gates and remeasurement completed above.
+- All test processes ended. Scratch has one residual schema
+  command_wakeup_9934f374e97b4d83825e8e2780159e51 and no other active connections.
+  Its ownership is not proven; preserved without destructive cleanup.
+- Whole request remains incomplete: normal continuation still uses full recovery;
+  exact indexed incremental membership, current authority query fanout, connection
+  reset/capacity and mixed-tenant fair scheduling/load remain OPEN. No primary
+  edits, service restart, deployment, merge or push.
+
+## 2026-10-10 - Locked policy reuse and measured-boundary correction
+
+- Implemented same-chain native policy reuse via private omitted-value sentinel;
+  supplied None cannot become admission. Standalone entrypoints and subsequent
+  proof phases derive fresh policy. Current clocks/STOP/fence/Host/object guards
+  remain; no cached authority and no persistent verified prefix introduced.
+- Combined stream revision and exact count/min/max history witness into one SQL
+  statement, with deployment/session correlation preserved. Conflicting retry
+  identity rejects before expensive MODEL verification; exact retry still proves.
+- Added policy forwarding/mode/fresh-phase tests and native conflicting-retry
+  denial assertion. Focused55 passed0.66s; wider109 passed/55 prerequisite skips.
+- Fixed measurement endpoint: SQL categories, phase costs and object counts are
+  frozen before post-completion validation queries; category count equals total.
+- Native controlled nine117bytes/18units: default89.9846s/98485SQL/2430GET/11
+  callbacks; 60s diagnostic56.5517s/63005SQL/954GET/onecallback. Two passed155.56s;
+  evidence /tmp/cov-policy-reuse-20261010.xml. Current authority getters remain
+  the major fanout. Single samples cannot isolate latency savings or establish p95.
+- Source-only review GO for existing locked/RR callers. Normal continuation still
+  requires canonical accepted membership; raw projection/result_count is not proof.
+  Getter batching, transaction-only connection lifecycle, fast continuation,
+  certified indexed acceptance and mixed-tenant fairness/load remain OPEN.
+  Final default6864 passed/1565 prerequisites129.15s; selected native safety6
+  passed116.12s. Ruff/Mypy1085/size2382/eval30 GO. No primary edit, commit, merge
+  or activation. Native and default XMLs /tmp/cov-policy-{native,default}-20261010.xml.
+
+## 2026-10-10 - Checkpoint metadata and root-lineage query coalescing
+
+- Continuing the claimed COV-EXEC-01 lane, same Luke Ding owner and isolated
+  branch. Reused verified read metadata in checkpoint verification after native
+  checkpoint_source pins canonical finalized lifecycle and materialization Event.
+  No redundant lifecycle lock/getter; current pre/post authority checks, exact
+  locked-record comparison, receipt validation and final retention still apply.
+- Same-transaction root Session lookup is performed once instead of twice;
+  internal segments still validate their distinct root. No cached authority.
+- Added structural read-count and locked metadata conflict regressions, and kept
+  native lifecycle-lock/deadline tests by moving their interception to the new
+  shared read entrypoint. Targeted unit53 and additional verified-read20 passed;
+  these selections overlap. Mypy1085 and scoped Ruff passed. Native gates and
+  a fresh controlled load remain pending; no SLO or activation claim.
+- Native initial metadata gate:72 passed/1 failed601.51s, retained at
+  /tmp/coverage-proof-metadata-reuse-20261010.xml. Incomplete acceptance attempted
+  full MODEL proof before checking missing units; mixed fixture manifest failed
+  a native lifecycle lookup instead of the intended incomplete refusal.
+  Moved missing/exact-set/report validation before expensive lifecycle proof
+  under the existing run lock. This is denial-only: all complete sets still
+  undergo the same original proof. Added a regression forbidding full proof
+  on incomplete sets. Repaired native42 passed207.35s (68 prior cases deselected),
+  publication/boundary52 passed97.11s. Retain the original failed run.
+- Final default6853 passed/1565 prerequisite skips146.54s; XML
+  /tmp/coverage-metadata-final-default-20261010.xml. Source-only review GO.
+  Nine default112.95s/95165SQL; diagnostic81.62s/63329SQL. Both single timings
+  worsened despite lower query counts. Benchmark imported before denial-only
+  publication reorder; no frozen-final-source or latency/p95 claim. Native
+  XMLs /tmp/coverage-metadata-repaired-20261010.xml and
+  /tmp/coverage-publication-order-20261010.xml. No tests left running, merge,
+  push, primary checkout edit or service activation. Next: bounded fresh
+  authority query composition and distinct normal continuation, then remeasure.
+
+## 2026-10-10 - Explicit incremental acceptance, final certification boundary
+
+- User approved deferring unrelated historical-object damage to final certification.
+  Added admission/policy validation_mode with byte-compatible eager omission;
+  opted-in commits verify all current-record parts, original MODEL event/budget
+  facts, current authority, fence and retention. Final proof remains independent.
+- Coalesced verified Artifact reads retain fresh pre/post checks; one bounded
+  invocation-local checkpoint cache, streaming single-pass Task-policy query,
+  same-recovery replay reuse. Budget preflight retains global volume limits while
+  opted-in lifecycle enumeration is scoped; current receipt is always checked.
+- Rejected and removed batch record_ids hint optimization after review identified
+  hidden selected-dependency duplicates. Complete batch replay remains.
+- Found budget-only rebuild unnecessarily requiring accepted-result manifest
+  lifecycle. Fixed that branch to replay original budget proof, preserving
+  accepted/certified rebuild's strict verification. Original safety run retained
+  in /tmp/coverage-coalesced-safety-20261010.xml: 4 failed/31 passed, interrupted
+  after 840.12s to inspect failures. Targeted repaired native8 passed137.27s.
+- Protocol v3 rejects old workers. Persisted v2 commands need old-worker drain,
+  not silent migration. No deployment/restart, merge, push or primary edits.
+- Final default suite6848 passed/1565 prerequisite skips129.42s. Ruff/mypy1085,
+  file-size gate and deterministic eval30 passed. Controlled incremental default
+  100.77s/99495SQL; diagnostic67.31s/66101SQL. No isolated latency/p95 claim;
+  see COVERAGE_WORK_SLICE_EVIDENCE.md. SLO, fast continuation and live/UI open.
+- Extended native recovery matrix completed: 37 passed873.88s,
+  /tmp/coverage-incremental-final-guards-20261010.xml. This process imported
+  code before the subsequent checkpoint metadata coalescing change; that
+  follow-up has its own native gate. Bounded fresh authority batching and
+  normal continuation protocol remain pending.
+
+## 2026-10-10 - Complete performance plan, documentation only
+
+- Refreshed historical versus current evidence; retained negative diagnostic
+  timing and overlapping-span caveat. One-callback bottleneck drives priorities.
+- Defined batched fresh authority, incremental native acceptance, normal versus
+  crash continuation, final proof, bounded reads, budget and fault boundaries.
+- Added additive protocol rollout/rollback, real-stack/UI checks and explicit
+  controlled SLO versus real-model/semantic acceptance limits.
+- No runtime implementation, benchmark rerun, merge or service activation.
+
+## 2026-10-10 - Active-lease deny-only recovery preflight
+
+- Claimed same-owner scoped paths before edit; kept isolated codex/cov-exec-01.
+- Full recovery preparation previously preceded the active-lease rejection.
+  Fresh hint and original lock order now defer active scoped due pending commands
+  without preparing external proof. Savepoint miss releases all preflight locks.
+  Existing60s schedule fairness and full fenced/inactive fallback remain.
+- Retain first native53pass/4fail and second56pass/1fail XMLs in /tmp. Fixed
+  two new test fixture errors, savepoint lock boundary, then inactive hint bypass
+  to preserve original advisory queue race; existing race tests not weakened.
+- Final native preflight/recovery58 passed49.24s/zero schemas, independent source
+  review GO; Ruff/Mypy1083 clean. Proof selection66 passed117.70s/zero schemas.
+- Controlled nine144.69s/152882SQL/2534GET/11callbacks; prepare32=3*11-1.
+  This workload does not isolate an active-lease saving. Diagnostic99.53s with
+  unchanged98296SQL/1062GET is worse. Preserve negative measurement; no SLO GO.
+  Load2 passed253.23s/zero schemas, eval30/size2382; final source6736 passed/
+  1557 prerequisite skips126.14s, Ruff/Mypy1083 clean. No merge/activation.
+
+## 2026-10-10 - Coverage performance plan implementation
+
+- Claimed paths before coding in existing isolated worktree, main exclusive PG.
+- Work slices replace production fixed limit=1; defaults32 units/8MiB/2s.
+  Per-unit durability, merge ordering, fresh authority and admission limits stay.
+- RR READ ONLY query reuse bounded to32MiB serialized rows; cache discarded
+  before final original SQL/locks/digests revalidation. Combine timeout config;
+  final wrapper uses earlier deadline once, not recursive set_config.
+- Added config/core/revocation/memory/timeout regressions and normal nine-record
+  Worker benchmark with nested phase and SQL-category measurement. Pure75/10
+  prerequisites, native safety73/3 deselected/zero leaked fixture schemas.
+- Nine finaldefault180.50s/178760SQL/3173GET/14 callbacks; diagnostic60s69.96s/
+  98296SQL/1062GET/onecallback. Full details and earlier observations retained in
+  docs/COVERAGE_WORK_SLICE_EVIDENCE.md. No p95, real model or performance GO.
+- Found production binding reads rebuilt all Task indexes. Added read-only native
+  root/lineage/latestbinding loader and Worker wiring; no cached authority.
+  Reviewer caught missing root existence: fixed within sameRR and added regression.
+- Final native binding4 +actual Worker1: five passed26.29s, zero leaked schemas.
+  Preserve earlier fixture FK setup failure XML; repaired fixture removes mutable
+  indexes first, retaining native Events/binding and constraints. No production
+  deletion or constraint disabling. Final Ruff/size clean; Mypy1083.
+- Earlier default gate6735/1537; subsequent same suite hit unrelated process-tree
+  PermissionError (6735pass/1537skip/1fail). Preserve XML and rerun final source.
+- Normal continuation/full per-unit history/authority fanout still unresolved.
+- Final frozen source default6736passed/1542prerequisite skips126.55s; separate
+  native safety73 +binding5 +instrumentedload2, zero schemas; source review GO,
+  Ruff/Mypy1083/size/eval30. Original red evidence retained, no overall SLO GO.
+  Next: implement versioned normal continuation with native atomic outbox/fence
+  regression, then per-unit dependent receipt queries and bounded current-authority
+  query batching; repeat normal/crash/final native gates before live acceptance.
+  No primary overwrite, restart, commit, merge, push or deployment.
+
+## 2026-10-10 - Recovery proof-read scaling follow-up
+
+- Claimed exact paths before edits, same isolated branch/worktree; main exclusive
+  scratch PG, Hubble source-only review. Reused existing _ModelVerification from
+  rebuild/publication rather than constructing it once per accepted recovery batch.
+- RR preparation reuses bounded original bytes only; full native/fresh Cloud
+  record comparisons, finalized/receipt/strict bound/SHA checks on every hit.
+  32MiB cap falls back uncached; no new legal-work rejection or logical-charge refund.
+  Locked finalization still retains record+digest and physically rereads originals.
+- Transcript-only native1/6/9 completed22.38/151.81/263.27s; GET166/2426/4946.
+  Nine baseline459.46s/10304GET. Added SQL count and <=1 verifier/recovery assertion.
+- Pure proof/cache/transport selection44 passed/3 native prerequisites skipped;
+  new cache regressions13 passed. Final load1/6/9 certified17.69/140.89/261.70s,
+  GET157/1802/3521, SQL execute15629/127819/224929, physical opens53/343/517.
+  Every recovery phase constructs at most one verifier. Nine completion improved
+  about43%, GETs about66%; byte reuse alone did not prove further latency gain
+  over transcript-only263.27s. First completed nine-run unit13.92s versus prior
+  6.32s, so no first-response improvement claim. Local controlled transports only.
+- Combined load XML retained: four passes then an incorrect test expectation
+  (FAILED result rather than existing ArtifactObjectIntegrityError propagation).
+  No production exception-contract change. Corrected tamper/delete guards assert
+  final exact Key+VersionId GET attempt and no certificate. Separate native safety
+  selection27 passed/5 deselected (193.46s), zero new scratch schemas; includes
+  authority/expiry/crash/replay/budget refusal. Red XML is not full native GO.
+- Frozen default6712 passed/1535 prerequisite skips (165.25s); Mypy1082, Ruff,
+  file-size and eval30 passed. Nine still262s: fresh authority/lease queries,
+  independent per-callback proofs and final certificate remain costly. Live broker/
+  process/browser/provider SLO and independently labeled semantics remain open.
+- No primary overwrite, runtime replacement, restart, commit, merge, push or deploy.
+
+## 2026-10-10 - Callback physical connection reuse, bounded native matrix verified
+
+- Claimed measured connection follow-up before editing; isolated existing task
+  branch/worktree only. Main owns scratch PG; Hubble read-only source review.
+- Reused existing psycopg and stdlib, no package installation/dependency added.
+  Explicit callback scopes pool at most eight idle sockets, keyed DSN/deployment;
+  nested borrows exclusive, copied-context cross-thread use refused. Commit/rollback
+  and session discard on each borrow; close all sockets on callback completion.
+- Review found committed-success/reset-error and refusal/reset-error masking.
+  Fixed centrally, added three injected failure tests and removed closed tracking.
+  No query result, authority or proof cache; fresh final reads remain independent.
+- Executor-only 1/6 measured 15.82/300.95s. Recovery/check/final-authority scopes
+  measured 16.07/145.32s, physical opens 53/343 including handoff/execution.
+  Final rerun 1/6 currently 17.23/172.42s; object GETs unchanged. Variable local
+  timing is not a production latency SLO. All earlier red XML evidence retained.
+- Original 12-record fixture generated illegal 12,582,912 tokens. Clamped test
+  fixture to the real native ceiling; Worker correctly refuses full-C admission
+  as budget_exceeded before model HTTP. Largest same-profile eligible size is 9.
+  Final1/6/9 +12-refusal/expiry/socket: 14 passed/zero skips (689.86s), zero new
+  schemas; certified17.23/172.42/459.46s, physical opens53/343/517. Larger/real
+  scale is not GO; proof-query fanout remains slow. Extra tamper/crash/no-progress
+  safety checks: 8 passed/zero skips (135.39s), zero new scratch schemas.
+- Frozen default: 6,699 passed/1,533 prerequisite skips (129.36s), Mypy 1,082,
+  Ruff, tracked size 2,382/zero and eval30. Independent source review found no blocker.
+- No primary overwrite, runtime replacement/restart, commit, merge, push or deploy.
+
+## 2026-10-10 - Worker/UI acceptance exposed native scale failure
+
+- Reused Worker/PostgreSQL admission and handoff with controlled Host/model/S3.
+  Replacement consumer per callback avoids fixture-only capability expiry without
+  extending TTL. Preserved the full-run failure XML separately from green smoke.
+- One-record profiled run: 52.77s, 4,610 DB connections; six-record case FAILED
+  at final callback (604.29s case time, frozen execution budget 600s); 12 not run.
+  Deadline exhaustion consistent, exact refusal unavailable; no latency GO.
+- Shared Worker setup now records safe enum refusal reason, not raw error.
+  Missing/expired Host is rejected before admission; one entry timestamp closes
+  a reviewer-found boundary race. IO continues fresh authority checks.
+- Trench own task in paired worktree: real Workspace/SDK absolute coverage,
+  active snapshot status and idle reconnect/snapshot recovery; 100 frontend,
+  95 backend, TypeScript/lint/build passed. No browser/primary activation.
+- Default Zebra 6,695 passed/1,528 prerequisite skips (130.02s), focused 31;
+  Ruff/Mypy 1,081/size clean. Native smoke 3/zero skips (165.44s) before final
+  Host guard; final runtime/grant/expiry-race 3/zero skips (17.04s), zero new
+  scratch schemas. Default suite preceded final timestamp fix.
+- Connection/proof fanout and full-scale retry remain open; business labels absent.
+  Final focused selection 30/4 deselected (2.57s); independent guard review GO.
+  No restart, primary overwrite, commit, integration, merge, push or deployment.
+
+## 2026-10-10 - Proof/history follow-up resumed and independently reviewed
+
+- Main resumed former agent ownership after interruption; primary dirty Zebra
+  and Trench checkouts preserved. Native scratch PostgreSQL exclusively main.
+- Completed phase-private 32 MiB checkpoint-byte reuse, exact disk-spooled
+  rebuild history, source/index and original preflight paging. Review identified
+  a remaining full fetch and then a server-cursor recovery/deadline bypass; both
+  fixed centrally. Keyset reads preserve recorded revalidation and deadlines.
+- Independent final read-only review: no blocker; final 33 pure passed. Default
+  6,688 passed/1,523 prerequisite skips in 128.53s; Mypy 1,081, Ruff/size/eval30.
+- Initial real scratch component load: 10,003 synthetic rows, allocation peak
+  21,234,502 -> 545,222 bytes; 0.606 -> 1.240s (explicit latency tradeoff).
+  128 real MinIO originals, 384 -> 128 GETs; 2.648 -> 2.560s. Not full Worker,
+  production throughput or real business accuracy. Refresh adds original pages.
+- Offline semantic scoring controls deliberately reject unresolved-positive
+  recall failure. User confirmed no independent business labels. No automatic
+  business-accuracy claim; real held-out accuracy remains pending.
+- Previous-source 11 native passed/386.76s/zero scratch schema leaks. Latest-source
+  10 native passed/zero skips in 373.00s, zero new fixture schemas. Includes
+  checkpoint reuse, rebuild rollback, cumulative byte bounds and source guards.
+- Refreshed load JSON: 10,003 rows, history peak 21,234,714 -> 545,222 bytes;
+  original metadata paging 434,182 bytes; times 1.312/1.326/0.870s. MinIO 128
+  objects: 384 -> 128 GETs; times 2.661 -> 2.910s; cache peak 1,508,883 bytes.
+  Timing variability and bounded cache RAM tradeoff are explicit, not latency GO.
+  Fresh schema and versioned bucket removed; shared services preserved.
+- No commit/merge/push/migration/restart/runtime activation in this slice.
+
+## 2026-10-10 - Remaining proof/history and acceptance follow-up claimed
+
+- Human requested both remaining performance and semantic acceptance items in
+  one execution. Reuse existing implementation/ports and isolated worktree.
+- Lovelace owns proof-read reuse and paged history; Hubble owns acceptance scripts
+  and metrics; main owns governance/full gates; Ptolemy independent review.
+  Native scratch ownership passes author -> acceptance -> reviewer explicitly.
+- Cache scope is one locked proof phase. Per-use metadata/provenance/time checks,
+  logical byte charging, independent final certificate proof and atomic rollback
+  remain. Streaming cannot replace exact source comparison with count/hash only.
+- User asked asynchronously for independent business labels. Synthetic controls
+  and live model accuracy must not be conflated; no production load or restart.
+
+## 2026-10-10 - Rebuild transcript reuse follow-up, scoped SPEC/QUALITY GO
+
+- Independent frozen review: 11 native/zero skips (305.22s); zero scratch schema
+  leaks and PG released. Source hashes unchanged; no blocking findings.
+  Historical sequence reviewed in source, expired-snapshot rebuild not separately
+  native-proven in this selection. Main pure transcript tests 8/zero skips.
+- Implemented and source-frozen: coverage.py plus one 73-line native regression
+  file. Author two new cases/zero skips (74.01s), nine existing recovery cases/
+  zero skips (214.73s); both left zero scratch schemas. PG handed to reviewer.
+  Main frozen full regression 6,663 passed/1,523 prerequisite skips (122.55s);
+  Mypy 1,080/Ruff/size 2,028/eval30 passed.
+  Reuse is restricted to the locked rebuild phase. Original part and independent
+  certificate proofs still execute; history memory and live scale remain open.
+- Previous independent frozen SPEC/QUALITY GO: 53 native/zero skips in 1127.53s,
+  zero new fixture schemas. Pure object/HTTP/transcript 15/11/8 passed separately.
+  This long-running selection is not production latency or real MinIO evidence.
+- Claim ready follow-up on same branch/worktree: Lovelace owns coverage.py and
+  new rebuild regressions; main docs/full gates; Ptolemy read-only review.
+  Author alone owns scratch PG until explicit handoff. Reuse existing private
+  proof inside locked replay; preserve original source comparison and rollback.
+  No restart, main-checkout overwrite, integration, commit or push.
+
+## 2026-10-10 - Verification-local transcript follow-up, review pending
+
+- Claimed COV-EXEC-01 source verification optimization on codex/cov-exec-01.
+  Lovelace owns bounded storage implementation/tests; main governance; Ptolemy
+  independent read-only review. Native scratch PostgreSQL exclusive to author.
+- Traced commit, rebuild, certificate issue/replay/read callers. Publication
+  repeats whole-run verification per batch and rescans batches per record merge.
+  Preserve original provenance, strict earlier-source checks and cumulative caps;
+  final locked proof is independently rebuilt. No cross-request verified cache.
+- Operation counts are not production latency. Per-batch rebuild remains outside
+  this slice unless separately claimed. No restart, integration or publication.
+- Implemented a private invocation-local manifest/ledger and canonical batch
+  index. Public verification always creates new proof. Record merge provenance
+  uses indexed sources and scalar batch bytes while preserving repeated logical
+  charging, strict earlier-than-batch checks and earliest retention bounds.
+- Default regression 6,663 passed/1,521 skips (122.20s), Mypy 1,080, Ruff,
+  Python scan 2,027/zero and eval 30/30. Author native two cases passed/zero skips
+  in 133.21s; zero scratch leaks. Earlier single-case failure was simultaneous
+  fixture bootstrap initialization, fixed by conditional fixture loading only.
+- Independent reviewer now exclusively owns scratch PG for the bounded matrix;
+  main does not access it. No final SPEC/QUALITY claim until that review completes.
+
+## 2026-10-10 - Cooperative report deadline and paired timeout/schema fixes
+
+- Reused SQL recovery deadline and bounded original object transports. Explicit
+  request-local scope carries one non-extending report budget through tenant
+  preflight, DB connections, SQL/locks, Host checks and final proof. No shared
+  singleton mutation; ordinary callers unchanged. Expired transactions roll back,
+  late results refuse delivery and timeout errors remain transient.
+- Trench mapping/grant/stream uses one 25-second outer budget and overrides the
+  report-owned HTTP client's remaining timeout; unrelated default 5s clients are
+  untouched. Unicode schema lengths now count code points. Fixed safe 503/504/422
+  responses and distinct retry hints. 37 backend/225 frontend/build checks passed.
+- Main default regression 6,655 passed/1,519 prerequisite skips (116.12s);
+  Mypy 1,079, Ruff, 2,024-file Python scan/zero and eval 30/30 passed.
+  Initial seven subprocess failures were test-launch environment failures:
+  exporting the worktree's absolute PYTHONPATH fixed all 72 affected checks and
+  the full rerun. No business code change was used to suppress those failures.
+- Author native-enabled selection 30 passed/zero skips, including actual certificate
+  GET/HEAD, revocation and SQL cancellation with backend idle afterward. Independent
+  source/pure deadline review 89 checks plus three probes; independent native-enabled
+  selection 32 passed/zero skips and zero scratch leaks. Contended lock cancellation
+  was QueryCanceled, not proof that lock_timeout fired first. Independent Trench
+  scoped review passed 37 backend/29 focused frontend checks. Both bounded GO.
+- Pure operation-count probe confirms repeated full ledger verification per
+  batch, not a linear read bound. One proof-phase 1,000-batch fixture invokes the
+  whole-run verifier 1,000 times; this is not production timing evidence.
+- Remaining: verification-local transcript optimization, locked final-proof cost,
+  semantic precision/recall and live/native-scale/browser acceptance. Cooperative
+  deadlines do not hard-preempt DNS/multi-address setup, CPU parsing, queued threads
+  or blocking cleanup. No restart, migration, merge, push or primary-checkout edits.
+
+## 2026-10-10 - Certified report HTTP and paired Trench delivery
+
+- Added private GET/HEAD report delivery with fresh history/artifact authority,
+  exact frozen principal/Host/connector/snapshot binding, original canonical-byte
+  proof and final grant-expiry recheck. No discovery, renewal or Artifact fallback.
+- Strengthened shared certificate reads with system actor, historical fence and
+  original lawful issuance checks. HEAD uses the same gate; Range refuses reuse,
+  ETag cannot bypass authority. Safe errors do not expose underlying proof data.
+- Paired Trench resolves Task IDs server-side, signs fresh authority and verifies
+  exact bounded bytes/digest/ETag. Existing Drawer previews 50 observations per
+  page; download reauthenticates. Conversation changes clear state/abort requests.
+- Final default Python: 6,648 passed / 1,518 prerequisite skips (116.49s).
+  Mypy 1,079 sources, Ruff, tracked/untracked Python size 2,022/zero and eval
+  30/30 passed. Initial CORS expectation and API vocabulary guard failures were
+  repaired through the additive public-header contract and existing integration
+  constant; the architecture guard itself was not weakened.
+- Independent reader SPEC/QUALITY GO: 41 native / zero skips and 42 pure checks;
+  actual Worker certification-to-GET/HEAD and mid-proof revocation covered.
+  Scratch cleanup zero. Shared certificate native controls: 16 / zero skips.
+  Broker source and 14 checks confirm automatic verified principal binding.
+- Trench focused backend 32, full frontend 216 and production build passed;
+  full Trench backend was not rerun. No migration/restart/integration/push.
+- Remaining: O(n) proof reads, final-lock cost, total DB/object deadline, native
+  scale, semantic precision/recall and live JWT/Host/browser acceptance. Host
+  20-second/eight-call and proxy/UI 25/30-second limits do not prove live latency.
+
+## 2026-10-09 - Atomic admission / compatible routing / proof-lock final checks
+
+- Reused native Task admission to atomically persist strict bootstrap, binding,
+  RUN, command pending/outbox and idempotency, with a deferred final capability
+  check. Actual compatible consumers prove process/epoch/configuration at pickup.
+- Configuration binds actual S3 endpoint; skipped polls do not refresh readiness.
+  Task authority is pinned after the Session lock, with post-wait identity reread
+  and combined capability/Host/context/runtime deadline checks.
+- Recovery semantic replay and source verification prepare outside lifecycle
+  locks. Final exact native reads and original-object validation are deadline
+  bounded; transient SQL/HTTP/S3 exhaustion rolls back and defers without ACK,
+  dead-letter or false certification. Ordinary paths remain unchanged.
+- Final default Python: 6,613 passed / 1,514 prerequisite skips (124.72s).
+  Native PostgreSQL: 106 passed / zero skips (168.33s), actual resumed native
+  certification included, zero new fixture schemas remain. Mypy 1,076 sources;
+  Ruff clean; tracked/untracked Python size scan 2,017 / zero violations;
+  deterministic eval 30/30. Lock-split SPEC/QUALITY GO (QUALITY 89 pure checks
+  and 29 independent probes); atomic SPEC/QUALITY GO (104/98 pure checks and
+  independent authority/lock-order probes). Initial import-order lint failure was corrected
+  and the final Ruff check passed.
+- No business migration, service restart, primary-checkout integration or push.
+  Historical report HTTP GET/HEAD, paired UI/live acceptance, O(n) proof-root
+  scaling and long read-only snapshot/vacuum pressure remain outside this slice.
+
+## 2026-10-09 - Current verification reconciliation
+
+- Final supplemental tracked+untracked size check passed 2,497 files with zero
+  violations. The stock 2,382-file check is tracked-only; do not describe it as
+  coverage of untracked implementation files. Diff whitespace check is clean.
+
+- Multipart independent QUALITY completed eight actual-PG negative controls,
+  zero skips (212.63s), seven frozen hashes unchanged and fixture schema baseline
+  preserved. Normal many-record certification and pre-budget crash recovery are
+  still active under the sole reviewer PG ownership; no final GO claimed yet.
+
+- Final slices4 default suite: 6,551 passed/1,487 prerequisite skips, 135.84s;
+  Mypy 1,070, file-size 2,382/zero violations, deterministic eval 30/30, Ruff clean.
+  Separate repaired QUALITY passed 98 tests plus 786 differential comparisons;
+  Separate SPEC passed 98 tests/zero skips plus 2,730 exact comparisons over
+  363 permutations. Slices4 scoped SPEC/QUALITY GO; performance3 remains BLOCKED.
+- Read-only HTTP trace confirms existing Task admission can atomically include
+  canonical RUN/wakeup/idempotency. Remaining missing contracts are trusted
+  comparable configuration descriptor, durable requirement and genuine consuming
+  process handoff proof, plus current resource-specific historical report read
+  authorization. Preserve HTTP refusal until those real boundaries are composed.
+
+- SSE performance3 independent QUALITY reproduced returning A/excluded-B/A
+  starts/cursors suppressed on replay and reconnect. Freeze remains BLOCKED;
+  reopened exact same owned paths, replaced Segment-ID comparison with contiguous
+  slice identity and added two retained regression cases. Main 42 tests including
+  independent probes passed; Ruff/Mypy clean. New slices4 freeze is in re-review.
+- Reportdeadline3 independent QUALITY passed 13/zero skips, including nine real
+  scratch-PG cases, and killed the final grant-expiry-check-removal mutant. Exact
+  hashes unchanged. PG released then assigned exclusively to multipart QUALITY.
+- Repaired API/AG-UI selection 911 passed/29 prerequisite skips in 39.04s. The
+  prior 925 selection covered more paths; counts are not directly comparable.
+  Final full-source/default-suite gate is running after slices4.
+
+- Final post-SSE-performance default suite: 6,549 passed, 1,487 prerequisite
+  skips, 127.29s; Mypy 1,070 sources and Ruff passed. API/AG-UI 925 passed,
+  29 prerequisite skips. Native review evidence remains separately attributed.
+- Recovered completed descriptor repaired2 QUALITY: exact two hashes unchanged,
+  199 descriptor regressions plus six scratch final-boundary controls (three
+  negative controls and three helper-removal mutants). Scoped GO only.
+- Prior unavailable reviewers left multipart/report source-pure reports, not
+  native GO. Verified no active Zebra pytest process; reassigned exclusive
+  scratch PostgreSQL slot to reportdeadline3 independent QUALITY, and assigned
+  separate SSE performance3 pure QUALITY. No parallel native tests authorized.
+- Continue tracing atomic HTTP admission/compatible pickup and current-authority
+  report composition. Do not replace the existing fail-closed HTTP guard with
+  observational readiness. Primary dirty checkouts/services remain untouched.
+
+## 2026-10-09 - Remaining final-authority and SSE repairs
+
+- Reopened only exact SSE performance3 paths after Public20 GO. Extracted frame
+  helper, preserved legacy import alias, validated full strict Task before any
+  skip, then skipped only already-started same-Segment private prefixes. Public
+  progress/start and ordinary outputs match the former reviewed implementation.
+  Main 46 passed/2.37s, Mypy two/Ruff clean. Exact 501-event projector calls
+  501→2, processed prefix entries 125,751→502; not a latency benchmark or general
+  O(N) guarantee. Broader post-change gate and independent review active.
+- Worker readiness repair independent QUALITY GO: 81 pure, six actual-PG/zero
+  skips/30.08s, frozen7 unchanged. Native PG explicitly released to Goodall for
+  report/multipart QUALITY; main does not run concurrent native suites.
+- Readiness repair independent SPEC: six actual-PG passed/zero skips/30.13s;
+  report deadline independent SPEC: thirteen passed/zero skips/16.43s (nine PG,
+  four pure). Exact frozen hashes unchanged. No readiness injection or fake
+  certificate replaces actual consumer/checker and native publication evidence.
+  PG explicitly released to Helmholtz for readiness QUALITY, then Goodall for
+  multipart/report QUALITY. API admission remains unavailable by design until
+  the atomic routing/final transaction boundary is implemented and accepted.
+- Full current Python: 6,540 passed/1,487 prerequisite skips, 118.88s, with final
+  descriptor reason assertions separately four passed. Independent descriptor
+  repair SPEC: 229 passed/zero skips. Multipart SPEC: 11 actual PG/zero skips,
+  66 distinct pure controls; frozen7 unchanged. Long proof lock blocking lease
+  renewal was observed, not a reproduced deadlock or scale/performance GO.
+  PG explicitly released from Helmholtz to Darwin for readiness/report re-SPEC.
+- Public20 final source/pure SPEC 109 and QUALITY 118 passed; all twenty frozen
+  hashes match. Readiness mandatory-dependency repair source/pure SPEC 63 passed.
+  Native and HTTP admission/routing remain separate uncompleted boundaries.
+- Expanded current API/AG-UI/source suite: 1,115 passed/29 prerequisite skips
+  (37.93s); Ruff, Mypy 1,069 sources and deterministic eval 30/30 pass. New test
+  expiry previously used module-import time and failed two cases in the longer
+  suite; changed to a fresh grant deadline, retaining injected exact expiry and
+  explicit refusal-reason checks. Full suite is running, not yet a final result.
+- Original Event prefix read replaces unproved index high-watermark; current
+  post-prefix API/AG-UI 908 passed/29 prerequisite skips. Independent QUALITY
+  found late strict marker lost by incremental SSE slicing. Full canonical Task
+  strict presence now strengthens every prefix; eight new ordinary/reconnect/
+  malformed-marker controls and shared gate total 50 passed. Re-review pending.
+- Descriptor-only final-return expiry repaired using existing publication_time;
+  65 source/preparation tests passed. No new network calls or Artifact reads.
+- Reopened report3 for optional current verified-authority expiry, validated
+  before any binding/object access and compared with final retention DB clock.
+  Four pure deadline checks passed; native delayed-callback and positive controls
+  await the serialized PG slot. New deadline is not a grant verification API.
+- Multipart writer completed 20 native/zero skips; readiness writer completed
+  three native/zero skips. Readiness SPEC reproduced missing mandatory execution
+  wiring despite a configuration digest; Goodall repairs existing owned paths.
+  No independent closure, HTTP activation, merge/push or restart inferred.
+
+## 2026-10-09 - Remaining read-side and multipart closure work
+
+- Independent public14 QUALITY found retained strict-root authority detached by
+  partial membership. Public18 initial SPEC additionally found self-consistent
+  child-as-root relabel and direct Task stream projection error. Both freezes
+  BLOCKED; no approval inferred from earlier passing pure/native tests.
+- Shared canonical view now checks durable handoff root/parent/stage against
+  membership, not only table consistency. Raw Task/Session share one translated
+  refusal. Summary whitelist is wired across Session get and Task get/list.
+  Current 17 focused passed (2.24s); broader post-origin gate and re-SPEC active.
+  Previous pre-origin summary gate passed 906/29 skips (38.32s), not final proof.
+- Read-only Cloud adapter2 separate QUALITY GO; descriptor-only revalidation
+  separate SPEC GO (197 repository + 24 independent controls, 221 total/zero
+  skips). Neither approval enables strict HTTP/report or proves dataset contents.
+
+- Public14 final independent SPEC: six native passed, zero skips, 5.46s, fourteen
+  hashes unchanged; separate QUALITY pending before summary callers reopen.
+- Bounded Cloud reader2 independent SPEC/QUALITY GO: 33 pure plus physical-bound
+  controls and killed guard mutants. Existing S3 read requests at most ceiling+1
+  body bytes; this is not a network wire-byte or cumulative I/O guarantee.
+- Session/deployment-bound read-only Artifact adapter added without importing
+  Worker composition or acquiring publisher authority. Main 22 combined pure
+  passed, Ruff/Mypy clean; SPEC four originals plus twelve controls passed,
+  QUALITY pending. HTTP certificate authorization is not enabled by this slice.
+- Descriptor-only Host revalidation reuses existing current authority checks,
+  avoiding full snapshot enumeration on report reads. Main 60 passed; SPEC pending.
+- Multipart7 is frozen; main writer reports 36 pure passed and static gates clean.
+  Darwin now owns the serial native slot. Goodall owns process-capability proof
+  implementation with exact registry paths; API admission remains fail-closed.
+- Summary whitelist helper and runnable caller regression added; caller wiring
+  waits for public14 QUALITY. No restart, business migration, merge or push.
+
+## 2026-10-09 - Public-output isolation and remaining admission boundary
+
+- Candidate4 and report3 independent QUALITY GO: 27 native/zero skips in two
+  serial runs (422.01s/47.99s), 260 pure cases, three killed mutants; seven
+  frozen paths unchanged. Multipart implementation now authorized on exact
+  Worker/recovery paths; no unknown/crash retry or budget/deadline relaxation.
+- Public14 frozen after cross-Segment parent lookup and missing-index/handoff
+  refusal repairs. Main 55 repair/ordinary tests passed/2.28s, expanded 893
+  passed/29 prerequisite skips/34.23s, latest 27 pure/SQLite passed/1.80s.
+  Native Segment lookup passed/zero skips/0.43s; fixture export style was then
+  changed for Ruff, requiring final frozen review. Independent re-SPEC active.
+- Candidate4 final native 27 passed/0 skipped/490.02s; independent SPEC 13
+  passed/0 skipped/257.62s. Report3 main 59 native passed/0 skipped/85.93s;
+  independent SPEC 13/60.77s plus historical deadline 1/89.65s. QUALITY runs in
+  the serial native slot; no final approval inferred while that run is active.
+- Claimed public10 paths before implementation. Main 46 focused passed/2.13s;
+  broad API/AG-UI 891 passed, 29 prerequisite skips/39.98s; scoped Ruff/Mypy clean.
+  Independent SPEC reproduced a strict-parent/ordinary-child Segment bypass in
+  raw stream and Task Artifact aliases. Superseded public10 freeze is BLOCKED.
+- Expanded explicit ownership for a read-only native Segment-to-Task lookup;
+  shared Session read guard now checks canonical parent Task identity and durable
+  lineage fallback. Retesting the repair; no false public-all closure claim.
+- HTTP remains 503: compatible consuming-Worker process proof is missing. No
+  ordinary health flag or sandbox instance replaces it. Multipart, certified
+  report HTTP/UI, native scale/live semantic and joint acceptance remain open.
+  No restart, live migration, commit, merge or push.
+
+## 2026-10-09 - Active coverage plan and next composition boundary
+
+- Worker recovery slice frozen on eighteen paths, ordered digest
+  `15397cfda60abec06933a68e1bd8e9281486bce82b326c301cf9f0d8e7fa868c`.
+  Main independently checked all hashes. Full current Python gate: 6,429 passed /
+  1,440 environment-prerequisite skips (129.25s); deterministic release eval
+  30/30 passed. Main whole frozen native Worker/recovery gate: 45 passed, zero
+  skipped (388.23s). Independent SPEC/QUALITY GO for empty/single-part same-Session:
+  SPEC preparing-crash two passed (83.75s), essential controls four (133.39s),
+  QUALITY twelve native passed (485.55s), all zero skips and unchanged hashes.
+  Coder's split tests cover
+  ten distinct cases, including issued-report recovery after the original deadline.
+  Empty/single-part and same-Session continuation are the current bounded scope;
+  multipart, new-Segment handoff and production HTTP activation remain unfinished.
+- Multipart follow-up must use a shared authoritative cumulative checkpoint
+  candidate bound before usage/refund mutation. Existing single-part restriction
+  is not a core-contract requirement. Simply removing it would allow settlement
+  beyond the raw-proof cap before later acceptance refuses. No average-byte
+  estimates, unsafe cache, new workflow engine or policy relaxation approved.
+  Shared pre-read/pre-refund candidate-bound implementation is now active;
+  Worker expansion waits for its independent SPEC and QUALITY approval.
+- Main report-byte gate is implemented, awaiting independent review: extracted the existing
+  certificate read into one shared function, preserved the original two-item
+  interface and added canonical bytes at that same final authority boundary.
+  Ruff and focused mypy pass. Seven new native regressions and the original
+  publication/boundary suite pass together: 59 passed/zero skipped (85.93s).
+  Independent SPEC/QUALITY waits for the candidate slice's review approval.
+  No HTTP download, admission or public output has been enabled by this change.
+- Direct API adapter preflight passed SPEC and QUALITY on three frozen paths
+  (`f4f3d490cb70958661032a6546538b764873d772ead6c43eda06be4ae6db8f37`).
+  Internal admission composition and direct queue creation reuse shared raw
+  validation before Host/hash/bootstrap/attachments/storage. Main nineteen tests,
+  SPEC thirty-two, QUALITY nineteen plus eighteen negative controls and two
+  guard-removal mutants pass. Ordinary function AST is unchanged apart from the
+  guard; valid unsupported strict input remains 503, malformed input stays 400.
+- Expanded API/AG-UI gate: 872 passed / 29 skipped / one ordinary concurrency
+  regression (38.18s). Independent focused reproduction locates the removed
+  `execution.recover_execution_inputs` injection seam, not an established stale
+  Turn assertion failure. Worker owner is repairing compatibility before freeze.
+- Progress QUALITY found a terminal display defect: ready/done with processing
+  coverage continued to imply ongoing work or pending certification. Shared label
+  now uses both execution state and receipt phase; uncertified terminal runs show
+  ended/unverified while retaining exact counts. Fifteen focused frontend checks
+  and TypeScript passed. Fresh independent re-SPEC requested; QUALITY not yet GO.
+- Current full native storage coverage gate completed: 362 passed / two S3
+  prerequisite skips (2043.45s). Separate actual PostgreSQL + versioned MinIO
+  publication/crash and synchronized two-process tests: two passed, zero skipped
+  (3.16s). Removed only the owned UUID temporary bucket and its test versions;
+  business buckets and services untouched. Fresh progress re-SPEC GO after the
+  terminal fix; 196 frontend checks/57 files passed (7.22s), QUALITY re-requested.
+- Worker restored the ordinary execution-module recovery injection seam;
+  main independently passed all six concurrent Turn acceptance cases (2.08s).
+  Wider API/AG-UI rerun remains active. Paired Trench full API gate reports seven
+  failures / 738 passed / 21 skipped (42.03s); isolated clean-HEAD comparison is
+  requested before attributing them to this change. Current production frontend
+  build passed again after terminal repair (compile 13.3s, all 16 static pages).
+- Fresh progress QUALITY GO: exact twelve source hashes, independent 28 Zebra /
+  four backend / 15 frontend passes, 160 terminal controls and guard-removal
+  mutation captured. Main expanded API/AG-UI rerun: 873 passed / 29 skipped
+  (36.81s). Trench's seven API failures independently reproduce at clean paired
+  HEAD with identical unchanged source/tests; they are existing baseline debt,
+  not a new progress regression. Mypy 1,061 sources, Ruff, and 2,473 tracked plus
+  untracked source/test file-size checks pass. Repeated MODEL original I/O cannot
+  safely be removed using only existing metadata get/inspect: exact-version
+  physical presence verification is missing. No unsafe digest cache added.
+- API preflight follow-up passed independent SPEC and QUALITY. Fixed the
+  idempotency replay/reconciliation bypass before any scoped key, hashing or
+  Store access. Main 47 passed (2.83s), SPEC 47 plus ten probes, QUALITY 29 plus
+  mutation checks. Local inline execution moved to existing composition seam;
+  gateway monkeypatch contract and ordinary create AST remain unchanged.
+- Replay-safe AG-UI progress implemented: absolute accepted units, source
+  watermark, exact manifest/run/certificate binding. Main 28 passed (0.83s).
+  A historical certificate never grants a download or current publication.
+  Paired Trench consumes existing context/meta persistence: three mapper/store
+  cases pass, including duplicate cursor, recreated Store and terminal snapshot.
+  Frontend focused 12 passed, expiry without a new event tested; Next production
+  build and TypeScript passed. Separate progress SPEC/QUALITY still pending.
+- Full native storage coverage suite is currently running on isolated scratch
+  PostgreSQL. The two S3 cases lack an explicitly owned temporary bucket in that
+  invocation and skip; they require a separate actual-service run. Worker first
+  composition tests passed but recovery/handoff is still being implemented.
+  No activation, restart, service replacement, commit, merge or push performed.
+- Continued full closure under current user instruction. Main full Python gate
+  completed before Worker source edits: 6,382 passed / 1,430 skipped (121.17s).
+  Missing native prerequisites remain skipped, not runtime proof. Shared create/
+  scheduled-template API parser now reconstructs strict raw inputs and refuses
+  with coverage_unsupported before side effects while Worker readiness is absent;
+  absent-field ordinary output unchanged. Seventeen API regressions passed
+  (1.57s), three-path source frozen for independent SPEC. This safety slice does
+  not admit executable strict tasks. Full Mypy during unfinished Worker edits
+  reports two composition typing/import errors; final gate must rerun on freeze.
+- cap10 and legacy5 separate QUALITY GO received: 23 native/raw cases plus two
+  recovery negative controls; legacy41 focused cases. Reviewer checked each
+  frozen file hash but did not reproduce ordered aggregate; component GO binds
+  the verified individual hashes, not a claimed independently reproduced digest.
+  No reviewer-owned sessions remain. Exact Worker loop/handoff paths claimed
+  before dispatching same-owner native composition/recovery implementation.
+  Main full Python regression started; native181 standalone/combined, Worker/API/
+  UI activation, live semantic accuracy and native-scale acceptance remain pending.
+- Fresh shared-cap re-SPEC GO on frozen ten paths only: independent actual-PG
+  probe covered all six cert/query/rebuild and intact/deleted-index branches;
+  35,670,877-byte set refused with zero original reads/no DB/Event drift (19.45
+  seconds). Three actual-PG projection/prune/ledger representatives passed
+  (76.90 seconds); deadline source unchanged from prior independently tested
+  repair. Ten hashes stable. Separate QUALITY dispatched; legacy5 SPEC requested
+  separately. No Worker/API/UI/live or native-scale acceptance implied.
+- Shared replay-entry cap repair frozen on ten verified paths (ordered digest
+  abb9070c64fd6e88a9d7f0db9db2676fe54ee3e7d2380386ebb96d4f69d1a39e).
+  Coder six actual-PG certify/query/rebuild cases with intact/deleted call index
+  passed (114.54 seconds): zero original reads, no DB/Event drift. An isolated
+  guard-removal mutant read over 32 MiB and failed the negative regression.
+  Fresh independent re-SPEC dispatched; separate QUALITY remains pending.
+  Main independently verified all ten file hashes, whitespace, 284 protocol/raw
+  tests (2.40 seconds) and Mypy 1,056 files. These are component checks only.
+  Legacy 181-case standalone/combined gates are not complete; requested exact
+  binding-fixture failure ownership before editing additional paths.
+  Claimed exact Worker recovery follow-up paths without activating dispatch.
+- Legacy binding fixture's eight usage forgery cases now prepare the native
+  receipt before the no-drift snapshot; coder independent run: 8 passed (14.52
+  seconds). Retention delayed-hook case: 1 passed (53.55 seconds), hook reached.
+  Prior owned native suite completed: 31 passed (859.41 seconds), but collected
+  before the newest shared-cap fixture, so not a current combined release gate.
+  Five legacy files frozen (ordered digest
+  08618a06ece24658979aa328efe915bbeff98ea29ffb67b3727dd47055274f2f)
+  and independently hash-checked by main; migration review requested separately.
+  Main current core coverage: 370 passed (5.10 seconds); integration coverage:
+  843 passed (7.17 seconds). Ruff clean; 2,464 tracked/untracked files, zero size
+  violations. Full native 181-case standalone/combined and live acceptance remain
+  pending; no production restart, migration, merge or activation performed.
+- Main current scratch-PG independent regression: ten passed, 94 deselected,
+  zero skipped (46.70 seconds), covering certification pre-read cap with intact
+  and deleted calls plus all eight usage forged-binding variants. Both current
+  frozen lists remain hash-matched. This does not replace full legacy or runtime
+  acceptance; independent cap re-SPEC requested before Worker coding.
+- Claimed `task_plan.md` in COV-EXEC-01 and prepended the current closure task,
+  preserving prior media/presentation work as history. MODEL acceptance is
+  in progress; Worker/API/UI activation and runtime acceptance remain pending.
+- Read-only API trace confirms `CreateSessionPayload` and `create_queued_session`
+  do not yet carry strict coverage admission. Existing bootstrap/domain support
+  alone does not make the deployed API capable of accepting strict tasks.
+- Worker composition must reuse frozen/pinned Host gateway resolution and
+  existing native authority revalidation. Do not bypass unconfigured external
+  authority or replace durable command scheduling with a separate queue.
+- No primary checkout, paired Trench source, running service, credentials or
+  business data changed by this governance/trace update.
+- Main reran the existing deterministic release eval: 30 cases, pass rate and
+  average score 1.00. This is Harness regression evidence, not new MODEL gate
+  acceptance, live semantic accuracy or deployed end-to-end verification.
+- Frozen eight-path gate implementation reported 37 real-PG and 13 raw-core
+  passes; independent SPEC is reviewing source/new tests while the same coder
+  migrates separately claimed legacy fixtures. Main core regression: 106 passed
+  (2.24 seconds). Main standalone old budget/checkpoint/retention run: 120 passed,
+  61 failed, zero skips (302.51 seconds) before fixture migration. This differs
+  from the implementer's 50-failure combined run; requested standalone and
+  combined reruns to check timing/order effects. It is not a clean release gate.
+- Independent SPEC GO for frozen eight-path integrity scope: 50 new tests passed
+  (37 real-PG, 13 core), zero skips, 917.02 seconds; core coverage suite 370 passed
+  (4.34 seconds), hashes unchanged. Quality review dispatched separately.
+- SPEC measured a 17,835,458-byte original causing 35,672,731 bytes of repeated
+  commit I/O while accepted; two originals totaling 35,670,944 bytes refused
+  without accepted-unit/Event/budget drift. The 32 MiB settled-set ceiling is not
+  a total physical-I/O bound. Repeated native-lock-held scans and scale/stress
+  remain pending; no whole-chain or runtime activation claim follows this GO.
+- Main independently confirmed all 50 new tests on actual scratch PostgreSQL:
+  50 passed / zero skips in 959.97 seconds. Full source Mypy: 1,056 clean;
+  frozen eight-path Ruff clean; tracked/untracked file gate: 2,463 checked,
+  zero violations. Test-suite duration includes setup and deliberate expiry
+  waits; it is not a measured provider reply latency or large-run throughput.
+- Independent QUALITY blocked the green component on two reproduced Important
+  defects: model calls/ledger/witness projection deletion cannot rebuild because
+  the new gate requires those projections first; certified rebuild does not pin
+  the report deadline and can return after report expiry. Reviewer new50 tests
+  passed (813.04 seconds), illustrating missing regression coverage. Separate
+  actual-PG probes reproduced both defects; scope-eight hashes stayed unchanged.
+- Claimed bounded source replay and a new focused Worker rebuild regression file
+  before redirecting the same coder to root-cause repair. Existing legacy
+  fixture migration is preserved. No source-gate bypass, uncapped replay,
+  Worker activation or green-release claim; re-SPEC then re-QUALITY required.
+- Read-only native scheduling trace: CommandWakeupConsumer ACKs an accepted
+  scheduling handoff, not completion. CommandRecoverySweep delegates to generic
+  recovery that refuses started executions or post-floor Events as uncertain;
+  existing continuation rows alone do not prove crash-resumable scheduling.
+  Strict coverage must reconcile verified checkpoints/missing-unit progress
+  under native lease/Task boundaries without weakening ordinary uncertain-tool
+  recovery. Recorded this requirement before Worker implementation.
+- Main independently reran repaired representative rebuild cases against actual
+  scratch PostgreSQL: 7 passed, 18 deselected, zero skips (369.53 seconds),
+  covering model projection restoration plus delayed report expiry and report
+  prune races. This is preliminary repair evidence while the coder finishes
+  freezing/retesting; independent re-SPEC/re-QUALITY and complete regressions
+  remain required. No business service changes or Worker activation followed.
+- Repair snapshot main checks: coverage core 370 passed (5.83 seconds), Mypy
+  1,056 source files clean, ten-path Ruff clean, tracked/untracked file gate
+  2,464 checked with zero violations. Re-SPEC is checking the ten-path repair
+  snapshot independently; these checks are not a whole-product release gate.
+- Repair re-SPEC confirms the original two Important fixes with 14 actual-PG
+  representative passes / zero skips (538.75 seconds), but BLOCKED on a shared
+  pre-read bound: first certification calls budget replay before acceptance's
+  original-set preflight. Independent two-original proof reads 35,670,877 bytes
+  above 32 MiB before refusing missing call projection; no certificate or DB/
+  Event drift occurs. Move the authoritative usage-Event size preflight to the
+  shared replay entry, not duplicate it per caller or weaken the explicit bound.
+  Ten-path freeze withdrawn; same coder repairing, re-SPEC then QUALITY due.
+
+## 2026-10-08 - MODEL invoke-or-replay composition (in progress)
+
+- Main independently reran all callback-to-Cloud cases: 17 passed / zero skipped
+  (240.40 seconds) on real scratch PostgreSQL. Independent SPEC blocked on a
+  missing public-projection absence assertion, not a reproduced runtime leak.
+  Same implementer is adding native PostgresSessionArtifactReadStore list checks
+  after settlement and checkpoint recovery/replay within the two claimed tests.
+  Provider, object storage and external Host transport remain explicit fixtures.
+- Public projection repair re-SPEC GO: three real PG representative cases and
+  policy/checkpoint projection mutations passed. Main independently passed three
+  repaired settlement/checkpoint cases (65.32 seconds); implementer full 17 passed
+  with zero skips (274.89 seconds). Separate QUALITY review is running. Full
+  Python 6,369 passed / 1,362 skipped (138.57 seconds), Ruff/Mypy 1,055 source
+  files and tracked-plus-untracked file-size gate 2,459 / zero violations passed.
+- QUALITY blocked on an independent native-clock test gap: disabling
+  CoverageModelBudgetQueries._model_clock still passed the HTTP-expiry test
+  because the invocation's Python clock rejected it first. Same implementer
+  must pin that Python clock before deadline while actual PG time expires and
+  prove the native guard rejects without changing durable state; this is a test
+  isolation defect, not an observed production bypass. Next coding slice waits.
+- Native clock assertion repair frozen: old HTTP case survives the disabled
+  _model_clock mutant (31.86 seconds); pinned-clock settled replay now kills it
+  with DID NOT RAISE (34.79 seconds). One clean full 17 passed / zero skipped
+  (244.32 seconds). No extra wait case or production change; re-SPEC then
+  re-QUALITY remain required before next implementation.
+- Pinned native deadline re-SPEC GO: independent actual PG settled replay passed
+  with zero skips (34.22 seconds), preserving private-projection assertions and
+  frozen hashes. Re-QUALITY now checks its prior mutant blocker independently.
+- Re-QUALITY GO: independent native PG normal case passed (33.74 seconds);
+  disabled native-clock mutant failed DID NOT RAISE (34.52 seconds), cleanup and
+  hashes stable. Reviewer reported scratch credentials in its failure traceback;
+  do not persist/repeat them, and suppress fixture-bearing failure tracebacks in
+  subsequent probes. No business service changes were performed.
+- Main independently passed both actual PostgreSQL + versioned MinIO crash/
+  two-process publication tests (4.02 seconds). Only the uniquely owned temporary
+  bucket/versions were removed, preserving the existing service and other data.
+  Next exact eight-path result-derivation transaction implementation is claimed.
+- Claimed eight exact integration/test paths before dispatching one fresh
+  implementer. Reuse the existing budget and Artifact Ports, strict derivation,
+  prepared transport and full completion codec. Stable reservation keys bind
+  the run/unit rather than request content, preventing changed requests from
+  avoiding an earlier uncertain reservation.
+- The callback must prove configured official metadata capacity, reserve the
+  exact prepared request before transport, publish/read back original v2 bytes
+  before usage acknowledgement, and replay only original governed evidence.
+  Metadata parsing alone is not authenticated provider-origin proof; trusted
+  Worker composition and frozen policy publication remain explicit boundaries.
+- Main re-traced paired progress: Trench only has generic public updates/steps,
+  not authoritative coverage counters. Recorded absolute counters/run watermark,
+  reconnect replacement and terminal spinner behavior in the closure plan.
+  No paired Trench edits or running-service changes have been made.
+- Independent SPEC NO-GO reproduced internal prepared dispatcher replacement:
+  subclass/instance overrides can issue two HTTP requests under one reservation,
+  or transport before reservation. Same implementer is closing this shared
+  invocation boundary and adding zero-transport regressions before re-review.
+- Main authenticated read-only official /models check returned HTTP 200 with
+  effort.supported_levels=[low, high, max] and default_level=high; the parser
+  incorrectly expected supported_reasoning_efforts. Actual official bytes were
+  refused. Repair must use faithful provider-format fixtures and strict explicit
+  capability proof, not local defaults. No model generation or secret output.
+- Both repairs frozen for independent re-SPEC. Main 558 focused cases passed
+  (3.55 seconds), Ruff, Mypy 1,055 sources and diff checks passed. Fresh
+  authenticated official response is now accepted with context=1,048,576 and
+  output=393,216. Whole regression and independent reviews remain underway;
+  no Worker/API/UI or live semantic-quality acceptance is claimed.
+- Main full Python after the repaired freeze: 6,353 passed / 1,345 skipped
+  (118.68 seconds), file gate 2,457 files / zero violations. PostgreSQL/Cloud
+  callback composition and full product-chain acceptance remain separate gates.
+- Re-SPEC NO-GO found an instance-created WeakKeyDictionary._remove callback
+  outside class callable enumeration. Overriding it causes hidden HTTP when an
+  unsent prepared request is collected during settled replay (two HTTP / one
+  reservation / one receipt). Same implementer is repairing callback/default
+  provenance and adding the settled-replay regression before another freeze.
+- Main independently reran scratch PostgreSQL retention/deadline tests:
+  34 passed / zero skipped (143.62 seconds). This checks the existing locked
+  lifecycle gates, not new callback-to-Cloud/Worker integration.
+- Registry repair frozen: native callback code/globals/default target and raw
+  idle state are validated at request boundaries; unused replay preparations
+  are explicitly removed before GC. This is trusted-composition validation,
+  not an in-process sandbox against arbitrary Python execution/monkeypatching.
+  Main 574 focused tests passed (4.76 seconds); independent re-SPEC and final
+  full regression are running. Invocation source is 474 lines; tests 679/595.
+- Independent re-SPEC GO: 505 tests and 18 callback/default-target probes;
+  three consecutive settled replays perform one total HTTP request, preserve
+  the complete original completion and clear registry state. Separate fresh
+  QUALITY review dispatched. Final main full Python: 6,369 passed / 1,345
+  skipped (120.96 seconds), Ruff/Mypy 1,055 and 2,457-file size gate passed.
+- Separate QUALITY GO: 193 direct + 463 adjacent tests, offline native TLS/
+  single-send probe, overlapping-composition recovery and deadline refusal.
+  Measured 26 bounded reads per fresh invocation and 15 per settled replay;
+  whole-path large-run performance remains explicit debt. Private weakref state
+  guards need upgrade regression coverage. This approval is component-only.
+- Next exact two test paths claimed for callback-to-Cloud acceptance using
+  actual PostgreSQL and existing Cloud facade/publisher. Provider/object fixture
+  evidence must remain distinguished from live provider/S3 and Worker activation.
+- Callback-to-Cloud tests frozen in two claimed paths (361/412 lines). The
+  implementer reports 17 actual PostgreSQL cases / zero skips (257.95 seconds).
+  Main independent full rerun and fresh SPEC review are now running; QUALITY
+  will follow approval. No production source changes or activation were needed.
+
+## 2026-10-08 - Semantic request/source/response derivation (review)
+
+- Three claimed integration paths implemented: reusable completion validation,
+  v2 original-request/receipt/unit/frozen-rule checks and exact manifest part
+  UTF-8 digest/length verification. No provider calls or storage acceptance are
+  authorized by this pure helper. Actual Artifact provenance, settlement and
+  manifest membership remain caller obligations.
+- Main passed 278 semantic/prepared transport regressions (1.55 seconds).
+  Additional main probe replaced provider/model_name/resolved_model with foreign
+  values in an otherwise valid original completion and matching receipt; the
+  helper still accepted a finding. Independent SPEC is assessing that identity
+  gap; QUALITY and next Worker implementation remain held pending resolution.
+- SPEC independently reproduced each foreign identity field and an actual
+  prepared gateway returning a foreign model name; P1 NO-GO. The same
+  implementer is repairing the strict derivation boundary and adding individual
+  identity plus actual-wire regressions. Legacy semantic callers remain unchanged.
+- Repair frozen: strict derivation requires ten original response identity/profile
+  fields; missing or conflicting values refuse. Independent re-SPEC GO confirmed
+  34 original/missing/foreign probes, actual foreign-model gateway refusal and
+  legal finding/clear behavior. Separate QUALITY is running.
+- Main post-repair: 312 semantic/prepared tests (1.88 seconds), full Python
+  6,176 passed / 1,345 skipped (120.52 seconds), Ruff, Mypy 1,053 sources,
+  diff check and file gate 2,452 files / zero violations passed. These are source
+  regression gates, not actual model precision/recall or service activation.
+- Separate QUALITY GO: 637 independent checks plus 68 malformed-state probes;
+  original identity bypass is closed. Indicative pure-derivation timings were
+  3.30 ms normally and 22.75 ms for 4,096 manifest parts plus a 12,000-character
+  source. These exclude provider, storage and end-user latency. No full-chain
+  certification, runtime activation or real semantic accuracy is claimed.
+
+## 2026-10-08 - Exact prepared-request checkpoint v2 (review)
+
+- Added optional original request bytes to the neutral internal checkpoint.
+  Legacy v1 canonical bytes remain unchanged; v2 requires canonical nonempty
+  JSON, exact reservation SHA-256 and a combined 32 MiB envelope ceiling.
+  Both versions deliberately share the same Artifact identity: an existing
+  response-only publication conflicts rather than silently becoming v2.
+- Main independently passed 222 core/prepared-transport tests (1.48 seconds).
+  Independent SPEC review and full Python regression are running; QUALITY
+  follows SPEC approval. This is byte/provenance groundwork, not provider
+  semantic verification, unit acceptance or Worker/API/UI activation.
+- Independent SPEC and separate QUALITY both approved the three frozen paths.
+  Main full Python: 6,050 passed / 1,345 skipped (114.76 seconds), scoped Ruff,
+  Mypy 1,052 sources and file gate 2,450 files / zero violations passed.
+  QUALITY measured an approximately 1.09-second 32 MiB round-trip probe; its
+  process peak RSS includes multiple test payloads and is not a per-call bound.
+  Serialization remains repeated work; large-payload production memory and
+  whole-chain scale acceptance are not established by the byte ceiling.
+- Main additionally passed all 34 real scratch PostgreSQL retention/deadline
+  regressions after v2 (147.35 seconds, zero skips). Discovery is now explicitly
+  distinguished from frozen model-proof composition. Ordinary Worker grants
+  default to 200,000 tokens, below the conservative 1,048,576 full-context
+  reservation: strict prequeue admission must refuse/explain, never silently
+  enlarge signed authority or queue an unexecutable model task.
+- Claimed three exact semantic derivation paths before the next implementer:
+  reuse semantic completion validation, strict original system/user request,
+  manifest part digest/length and settled receipt before deriving observations.
+  Storage acceptance and Worker/API/UI composition remain separate work.
+
+## 2026-10-08 - MODEL checkpoint settlement and lifecycle (in progress)
+
+- Claimed the exact nine core/storage/test paths before implementation; one
+  implementer owns that slice. Original completion evidence must bind request,
+  profile, run and reservation before settlement/refund or exact replay. Every
+  settled checkpoint remains necessary evidence at certificate lifecycle gates.
+  Semantic unit-to-response linkage and Worker activation remain separate work.
+- Main traced public Artifact readers: they resolve Model/Tool Session Artifact
+  projections, not arbitrary payload metadata. A unique temporary SQLite/API
+  probe passed five checks: no listing and UUID/URI detail/content return 404
+  without exposing the private marker. This is not authenticated Cloud HTTP,
+  inline/range preview or download acceptance; durable negative tests remain due.
+- Saved successor boundaries in the closure plan: request-first preparation,
+  no second invocation after uncertain reservation, per-MODEL-unit linkage,
+  private evidence isolation and strict dispatch before ordinary gateway/sandbox.
+  Model-list identity alone cannot prove a context-token capacity.
+- Implementer froze nine paths and reports 253 core/provider checks and 186
+  distinct scratch PostgreSQL regressions. Main independently passed 253
+  core/provider checks, full Python 5,985 passed / 1,298 skipped (132.11 seconds),
+  Ruff, Mypy (1,052 sources) and file gate (2,448 files / zero violations).
+  Main PostgreSQL selection and independent SPEC review are still running.
+  Review explicitly checks readerless uncertified rebuild: linkage-only replay
+  must not become authority to use a response without its original verified bytes.
+- Main scratch PostgreSQL selection passed 134 distinct tests / zero skips
+  (227.33 seconds). Independent SPEC NO-GO reproduced four uncertified rebuild
+  cases (missing/corrupt/expired original evidence, including deleted MODEL
+  projections): reconstruction accepted refunded state and a later reservation
+  received invoke=True. Claimed the exact tenth coverage.py caller path before
+  returning the shared-reader/replay repair to the same implementer. QUALITY is
+  held until independent re-SPEC approves; whole-suite pass did not catch this.
+
+- Main post-rebuild-repair evidence: four-file PostgreSQL selection 199 passed
+  / zero skipped (377.78 seconds); full Python 5,985 passed / 1,311 skipped
+  (138.22 seconds); Mypy 1,052 sources passed. These precede the next repair.
+- Independent re-SPEC refused a real retention race: the first of two verified
+  checkpoints expired while the second object was read, yet a new call committed
+  refunded headroom. Claimed the separate retention regression test before coding.
+  Same implementer must carry proof deadlines to a fresh final boundary across
+  new invocation, settlement, replay/rebuild and certification; QUALITY remains
+  held. Row locks protect mutation, not passage of retention time.
+- Main read-only AG-UI probe passed three checks: private checkpoint,
+  reservation and usage Events emit no public payload; reconnect at the exact
+  tail emits no replayed content. This is projection evidence only, not the
+  pending authenticated Cloud Artifact/inline/range/download acceptance.
+- Retention repair frozen across eleven scoped paths (one new regression file).
+  Main independently passed all 30 actual PostgreSQL retention cases in 121.39
+  seconds, Ruff, Mypy 1,052 sources, diff check and file-size gate 2,449 files /
+  zero violations. Broad PostgreSQL/full Python and independent re-SPEC remain
+  running; QUALITY still follows specification approval, not test counts.
+- Independent re-SPEC GO for eleven paths: original actual five-second expiry
+  counterexample and twelve delayed final-caller probes now refuse with complete
+  rollback; 30 retention PG, 29 core and 12 prior integrity checks pass. Source
+  hashes unchanged. Main post-retention full Python: 5,985 passed / 1,341 skipped
+  (136.51 seconds), no failures. Fresh independent QUALITY is now dispatched;
+  broad PostgreSQL run remains active. No callback/Worker activation claim.
+- Main final broad PostgreSQL rerun: 199 passed / zero skipped (329.88 seconds).
+  Combined with the separate 30-case retention run, 229 distinct real PG cases
+  pass after the retention repair. Independent QUALITY is still pending.
+- Main read-only authenticated official DeepSeek /models discovery returned
+  HTTP 200 with exactly one deepseek-v4-pro entry, owned_by=deepseek,
+  context_window=1048576, max_output_tokens=393216, text-only input/output and
+  high effort support. No model generation request, credentials exposed or local
+  config mutation. Official model-list documentation defines context_window as
+  combined input/output capacity. This resolves current identity/capacity discovery
+  evidence, not an implemented frozen transport-bound policy or live semantic eval.
+- Independent QUALITY NO-GO found distinct first-issuance deadline race: final
+  authority callback crossed the original MODEL deadline, but certification
+  committed because the newly appended certificate timestamp was used as a
+  historical replay time. Same implementer must recheck the original execution
+  deadline with fresh time after final callbacks for first issuance; valid
+  historical replay must stay readable. Existing retention suite does not prove
+  this distinct deadline rule. No runtime activation follows a NO-GO.
+- First-issuance deadline repair frozen: final fresh PostgreSQL time is checked
+  after proof reads, final authority callback and write validation, without
+  another object reread. Existing historical certificate replay/read retains its
+  original certified deadline proof and current retention gates. Implementer
+  passed 14 focused real-PG cases; main full Ruff/Mypy 1,052 and diff check pass.
+  Main fresh full Python/retention matrix and independent re-SPEC are running;
+  QUALITY re-review follows only after specification GO.
+- Main post-first-issuance repair: complete real PostgreSQL retention/deadline
+  matrix 34 passed / zero skipped (149.28 seconds); fresh full Python 5,985
+  passed / 1,345 skipped (122.14 seconds). No failures. The earlier 199-case PG
+  result precedes this last repair and is not relabeled as final-source evidence.
+- Successor proof gap recorded: response request_hash alone does not prove
+  which source text was sent. Strict composed checkpoints must also retain exact
+  prepared wire bytes and prove frozen rule/unit/source digest before MODEL unit
+  acceptance. Current lifecycle approval does not substitute for that gate.
+- Independent re-SPEC GO followed by separate re-QUALITY GO for final eleven
+  files. Original late-issuance probe and empty-retention case refuse without
+  certificates/Events/projection writes; historical post-deadline positives stay
+  valid. Source hashes unchanged, file gate 2,449 / zero. MODEL lifecycle slice
+  approved; next prerequisite is exact prepared-request checkpoint evidence.
+
+## 2026-10-08 - Full MODEL completion checkpoint codec (in progress)
+
+- Claimed the exact integration codec/test paths before implementation. Preserve
+  all typed response fields, including excluded provider reasoning; reject raw
+  coercion/extras and bound bytes without truncation. The codec has no provider
+  transport or budget authority. Independent SPEC then QUALITY remain required.
+- Main traced the budget/publication chain: receipts currently lack checkpoint
+  evidence and certify_model_budget only checks unresolved count/deadline. Exact
+  checkpoint linkage and locked lifecycle verification must precede activation;
+  the concrete integration boundary is saved in the closure plan.
+- Main regressions during this slice: semantic adapter/rule 124 passed;
+  prepared-request/executor/report selection 175 passed (3.01 seconds), including
+  the existing 10,003-record bounded batch check. This is not end-to-end 10k MODEL
+  performance evidence. No primary checkout or running service was changed.
+- Codec source frozen: implementer/main each verified 85 codec tests. Main full
+  Ruff/Mypy (1,050 sources) pass; budget ledger selection against real scratch PG
+  37 passed / zero skipped (57.09 seconds). Independent SPEC review is running;
+  QUALITY follows only after SPEC GO. These are component checks, not runtime
+  checkpoint settlement or product activation.
+- Independent SPEC NO-GO reproduced DST-overlap full equality loss for uncached
+  ZoneInfo and acceptance of UUID/Enum internal-state mutation yielding unreadable
+  checkpoints. Same implementer is repairing before QUALITY. Canonical cached
+  ZoneInfo/fixed stdlib timezone support is explicit; arbitrary timezone object
+  identity cannot be preserved across processes and must refuse before encoding.
+- Both SPEC findings repaired. Independent re-SPEC GO: original counterexamples
+  and 18 unsupported-timezone, 16 scalar-mutation and 24 full-roundtrip probes
+  passed. Implementer 100 codec tests passed; source is frozen for QUALITY.
+  Main post-repair full Python: 5,913 passed / 1,201 skipped, zero failures
+  (127.90 seconds); Ruff/Mypy (1,050 sources) pass. Whole-suite skips are not live
+  Cloud acceptance. Worker/receipt/publication/UI integration remains pending.
+- QUALITY NO-GO independently reproduced Python 3.12 ISO parsing loss for fixed
+  offsets under one second and escaped isolated Unicode surrogates accepted by
+  decode but not re-encodable as UTF-8. Same implementer repairs fixed-offset
+  wire evidence and shared string/key validation; re-SPEC then re-QUALITY required.
+  The full-suite result above is the pre-QUALITY-repair baseline, not approval.
+- Final fixed-offset/UTF-8 repairs pass independent re-SPEC and re-QUALITY GO.
+  Main final full Python: 5,956 passed / 1,201 skipped, zero failures
+  (127.96 seconds). Independent QUALITY reran all 143 focused cases and original
+  counterexamples; full Ruff/Mypy (1,050 sources) pass. Byte ceiling is 32 MiB,
+  not a peak-memory promise. No provider/budget/runtime/public-surface claim.
+
+## 2026-10-08 - Prepared MODEL request prerequisite (approved after repairs)
+
+- Added opt-in prepare_text_request/complete_prepared to the existing Chat
+  gateway. Canonical wire bytes and resolved metadata are frozen once; the
+  single-shot path checks ownership/configuration and consumes before I/O.
+  Existing complete/stream behavior is preserved. No token-bound certificate,
+  durable reservation callback or strict Worker activation is claimed.
+- Implementer: 61 focused tests; integrations selection 672 passed / 17 skipped;
+  full Ruff and Mypy (1,049 sources) pass. Independent SPEC review pending,
+  followed by QUALITY; source is frozen until findings are addressed.
+- Main independently reran 61 focused cases successfully. SPEC nevertheless
+  reproduced injected Client auth replay, request-hook body rewriting and query
+  parameter drift, plus raw policy False/zero values washed into a large default
+  output cap. Repair must fail closed at the opt-in raw policy/client boundary
+  before transport without changing ordinary Chat behavior. QUALITY is held;
+  no strict admission or single-wire runtime support claim until re-review GO.
+- Repair now validates raw policy before resolver and rejects unsupported injected
+  Client auth/hooks/query/mount/transport capabilities and configuration drift;
+  the final built URL, byte stream and content are checked before sending with
+  auth disabled and redirects disabled on this opt-in path. Ordinary Chat tests
+  retain auth/hooks/params behavior. Known ceiling: already-used HTTPTransport
+  pools are unsupported; MockTransport is a trusted fixture, not network proof.
+  Implementer: 122 focused tests, integrations 733 passed / 17 skipped; full
+  Ruff/Mypy (1,049 sources). Re-SPEC pending; durable MODEL callbacks unfinished.
+- Independent re-SPEC GO; main verified 122 focused cases and full Python
+  5,807 passed / 1,201 skipped (123.85 seconds), Ruff/Mypy and 2,442-file gate.
+  QUALITY still found URL userinfo overriding Bearer with Basic Auth and exposing
+  credentials in the inspectable prepared endpoint. Refuse userinfo before
+  constructing the prepared value and prove zero HTTP. All-green tests do not
+  supersede this independent transport-boundary finding; re-reviews remain open.
+- Userinfo repair refuses any URL authority containing '@' before resolver,
+  builder or inspectable request construction; generic errors do not contain
+  credentials. Main independent focused verification: 128 passed (1.10 seconds),
+  full Ruff and diff check pass. Implementer integrations: 739 passed / 17 skipped,
+  Mypy 1,049 sources. Narrow SPEC/QUALITY and final full gate are pending.
+- Final independent SPEC/QUALITY re-reviews GO after the userinfo repair; original
+  Basic Auth override and credential-leak probes now refuse before HTTP. Main
+  final full Python gate: 5,813 passed / 1,201 skipped (121.06 seconds), zero
+  failures; full Ruff/Mypy (1,049 sources), diff check and 2,442-file size gate
+  (zero violations) pass. Prepared request prerequisite is component-approved,
+  not a token-bound certificate or composed durable MODEL runtime.
+- Exact next implementation: connect SemanticCoverageModel to prepared requests,
+  supported frozen total-token proof, exact durable reservation/invoke decision,
+  immutable full-completion checkpoint before usage acknowledgment, and receipt/
+  certification checkpoint verification. Expand codec/proof/test ownership before
+  edits. Then Worker/continuation/API/all-surface gates and paired Trench progress.
+  Running primary services, dirty primary checkouts and business data unchanged.
+
+## 2026-10-08 - Cloud snapshot Effect callback (SPEC/QUALITY approved)
+
+- Added the explicit signed Host callback over actual PostgreSQL/Cloud Effect
+  coordination and finalized Artifact lifecycle, preserving the opaque key and
+  original result. It checks frozen admission/Task binding/manifest/resource,
+  current authority/policy/fence and STOP without Session-wide reconciliation.
+- Implementer selection: 103 passed, zero skips, including 24 callback cases.
+  Main independently ran those 24 against fixture-owned real scratch PostgreSQL:
+  24 passed, zero skips (37.25 seconds). Host transport is a signing-verifying
+  mock and object bytes are fixture-backed: this is not live Host/S3 acceptance.
+- SPEC review pending, followed by QUALITY. No main Worker activation. Each
+  preflight still scans whole Session history (O(events) I/O/memory); scaling
+  optimization remains explicitly unfinished.
+- SPEC blocked missing persisted Session namespace validation in callback
+  preflight. Frozen Host/Task namespace alone is not sufficient. Repair must
+  compare actual scoped Session projection before first invocation and replay,
+  with real PG regressions proving no new Effect/Event/Artifact/provider writes.
+- Repair now reads the actual Session projection namespace and refuses mismatch
+  at construction, first call and replay. Independent SPEC re-review GO. Main
+  independently ran all 28 callback cases against fixture-owned real PostgreSQL:
+  28 passed, zero skips (41.27 seconds). Implementer broader callback/bootstrap
+  selection: 107 passed, zero skips. QUALITY review remains pending; these tests
+  still use signed mock Host transport, not live Host/S3 or Worker activation.
+- QUALITY independently reproduced missing terminal output object and a valid
+  descriptor edited only in the outbox: replay incorrectly accepted both. Repair
+  must read the original finalized Artifact through the existing verified-read
+  path and compare complete bytes/hash, refusing missing or conflicting output
+  without invoking Host again. Prepared MODEL implementation remains held until
+  this integrity blocker passes both re-reviews.
+- Output-integrity repair now validates FINALIZED tool_output metadata and the
+  exact terminal Event, reads the immutable object version using the existing
+  Cloud reader, and compares complete bytes/hash/integer size. Independent SPEC
+  re-review GO; main independently verified 30 callback cases against scratch
+  PostgreSQL (zero skips, 41.56 seconds), full Ruff and 2,440-file size gate (zero
+  violations). Implementer broader selection: 109 passed, zero skips. QUALITY
+  re-review pending; no Worker/API/UI activation or live model acceptance.
+- Independent QUALITY re-review GO. Reviewer reran all 30 callback cases against
+  real scratch PostgreSQL (zero skips, 42.75 seconds) and independently repeated
+  both original corruption probes: refusal, no Host recall or persistent writes;
+  restoring the original object preserves valid original-result replay. This
+  approval is callback-only; O(events) preflight scaling is still unfinished.
+- Main full Python gate: 5,683 passed / 1,201 skipped / 2 failed (122.14 seconds).
+  Both failures are real architecture gates: the new Worker callback duplicated
+  Host business resource vocabulary. Repair must reuse the existing integration
+  adapter's canonical resource contract; do not relax either gate. Callback
+  correctness approval does not supersede full-repository architecture checks.
+- Layering repair exports the existing canonical history-resource type from the
+  integration adapter and reuses it in Worker; all three adapter callers share
+  the same wire value. No gate exception or wire-contract change. Main independent
+  architecture/Worker gate: 22 passed. Implementer architecture/snapshot selection:
+  114 passed; callback real PG: 30 passed, zero skips. Narrow re-review and a new
+  full suite run are pending.
+- Narrow SPEC/QUALITY re-reviews GO after layering repair. Final main full Python
+  rerun: 5,685 passed / 1,201 skipped (118.90 seconds), zero failures; full Ruff
+  and diff check pass. Mypy: 1,048 source files. Environmental skips remain
+  distinct from real Host/model/browser acceptance. Released the next prepared
+  MODEL request prerequisite in its exact owned integration paths only.
+
+## 2026-10-08 - Exact Effect claim review (approved; callback in progress)
+
+- Added an exact-row claim/execute prerequisite so strict snapshot creation does
+  not drain another pending Effect in the same Session. Callback activation has
+  not started and the ordinary queue path remains unchanged.
+- Independent SPEC review reproduced bool/float coercion in the new expected-row
+  boundary and malformed typed succeeded-result replay. Both require repair and
+  new rejection regressions before SPEC/QUALITY approval; no activation claim.
+- Two broader PostgreSQL tests fail on an old exception-message regex, reproduced
+  with HEAD outbox methods and current dependencies. Their later rollback checks
+  did not run. Repair those assertions to the actual typed exception, then verify
+  the complete rollback behavior rather than dismissing the failures.
+- Initial implementation real scratch PostgreSQL exact/payload selection reported
+  36 passed, zero skips. This predates the review repairs and is not final proof.
+- Repairs now recursively reconstruct original typed inputs and strictly validate
+  requests, dispatch/fence and nested results. Independent SPEC re-review GO:
+  malformed replay refused, valid replay preserved, ordinary callers unchanged.
+- Main independently ran the repaired gateway regressions: 29 passed; exact,
+  payload and dispatch tests against real scratch PostgreSQL: 52 passed, zero
+  skips (40.33 seconds). Implementer expanded PG selection: 56 passed, zero skips,
+  including three rollback fault tests and one effect-state read test. Full Ruff,
+  Mypy (1,046 sources), and file gate (2,436 files, zero violations) passed.
+- QUALITY review is pending. Callback and main Worker activation remain unfinished.
+- Main final full Python regression for this frozen prerequisite: 5,672 passed /
+  1,165 skipped in 113.99 seconds. Environmental skips do not prove live delivery.
+- QUALITY subsequently blocked raw persisted-input decoding: Artifact ToolCall
+  parsing ignores unknown fields, and PostgreSQL result JSONB decoding ignores
+  unknown fields/coerces receipt output-byte bool/float before exact validation.
+  Its independent probes reproduced provider invocation for a malformed raw
+  request and terminal replay of malformed raw results. Ownership expanded before
+  repair to the shared row decoder and Cloud payload reader. Do not describe
+  the full green suite or earlier SPEC GO as closure of this later finding.
+- Raw readers now validate JSON before normalization with strict types and
+  forbidden unknown fields. Independent SPEC re-review GO after raw local/Cloud
+  requests, raw PostgreSQL result/receipt, and valid legacy JSON probes. Main
+  independently ran the original four QUALITY counterexamples (all rejected with
+  no claim/transport), 44 gateway/Cloud-reader tests, and 59 actual scratch PG
+  exact/payload/dispatch tests (zero skips, 48.99 seconds). Implementer expanded
+  PG selection: 63 passed, zero skips. QUALITY re-review is pending.
+- QUALITY re-review GO: original four raw counterexamples rejected, valid replay
+  and ordinary caller behavior retained. Main repaired full Python suite: 5,684
+  passed / 1,172 skipped (115.17 seconds); full Ruff/Mypy (1,046 sources) passed.
+  Released the next owned Worker coverage Effect callback slice only after both
+  reviews. No main Worker dispatch or API/UI activation yet.
+- Main final raw-repair file-size gate: 2,437 files, zero violations. The
+  5,684/1,172 full-suite result applies to this frozen prerequisite, not the
+  subsequent callback currently being implemented.
+
+## 2026-10-08 - MODEL storage and snapshot provenance review
+
+- Migration 80 adds durable exact MODEL reservations, usage receipts, independent
+  source witnesses and indexed counters. Missing or malformed usage stays charged;
+  original admission deadlines survive replacement Workers and exact replay.
+- Snapshot provenance repair freezes the verified history resource locally without
+  changing the Host wire Descriptor. Strict MODEL initialization/reservation/
+  certification refuses absent or foreign provenance; legacy non-strict reads
+  remain compatible. Shared prepared/read callers were repaired together.
+- Implementer: 419 focused tests, zero skips, with fixture-owned real PostgreSQL
+  schemas. Main independently ran 163 budget/publication/execution/bootstrap
+  tests against scratch PostgreSQL, zero skips; Core/model selection: 81 passed.
+  Full Ruff/Mypy (1,045 sources) passed. Review exposed typed binding equality
+  hiding unknown fields; root lock/write/projection/bind validation now rebuilds
+  recursive raw fields before I/O, preserving UUID identities. Main scratch PG
+  binding regression: 73 passed, zero skips. SPEC/QUALITY independently ran 66
+  public API falsification probes; both approved this component.
+  Main repaired full suite: 5,643 passed / 1,133 skipped; file gate: 2,433 files,
+  zero violations. The skipped cases are not live acceptance.
+- Implementer broader snapshot plus real scratch PostgreSQL regression completed:
+  503 passed, zero skips (272.62 seconds), after the shared binding repair.
+- Integrity proof remains O(n) per mutation/O(n²) cumulatively. Native scans avoid
+  Python history allocation but are not 10k-scale acceptance. Actual callbacks,
+  Worker dispatch/wakeup, all-surface gates and paired Trench UI remain unfinished.
+- No service restart, business migration, primary-tree edits, commit or push.
+- Next bounded slice: compose actual snapshot-create callback through existing
+  Cloud Effect dispatch, exact opaque key preservation and original result replay.
+  It remains a callback prerequisite, not main Worker dispatch activation.
+- Main storage-only synthetic benchmark in an owned scratch schema: 250 sequential
+  reservation/receipt pairs, 34.33 seconds total. Pair median / p95 in milliseconds:
+  calls 1-50: 128.03 / 244.60; 101-150: 121.48 / 176.32; 201-250: 134.25 / 156.31.
+  Each receipt reports synthetic zero usage, not provider billing. This measures
+  complete storage method wall time on the current shared scratch service only,
+  not model/network latency, high concurrency or 10k-scale behavior. The owned
+  schema and temporary generated SQLite data were cleaned up.
+
+## 2026-10-08 - Authorized semantic continuation (in progress)
+
+- The user selected semantic checks and delegated the first rule. Recorded
+  `bounded_semantic/1`, exact-source acceptance and separate live semantic-quality
+  thresholds; no further business-rule choice is blocking implementation.
+- Added typed finding/clear/unresolved validation, frozen profile/rule digest,
+  exact quotes and fail-closed unsupported results. Independent quality review
+  caught illicit attributes being lost by typed-object serialization; repaired
+  recursive raw validation with top-level and nested regression tests.
+- Independent SPEC and QUALITY approved this component. Focused semantic tests:
+  66 passed; quality also ran 39 separate parity/refusal probes. This does not
+  measure real model accuracy or activate Worker/API/UI. Model gateway adapter
+  is the next implementation slice; running services and business data unchanged.
+- Model gateway adapter now passed independent SPEC/QUALITY. It binds an explicit
+  reviewer profile, disallows tools, bounds output, records completion before
+  acceptance and rejects malformed/incomplete/drifted responses. Review exposed
+  shared parser role normalization hiding wrong wire roles; root parser repaired
+  with actual HTTP and direct parser regressions and one corrected beta fixture.
+- Current integrations suite: 455 passed / 6 skipped; full Ruff and Mypy (1,034
+  sources) pass. Completion callbacks are not yet wired to durable run usage;
+  provider parse failures return no completion and remain an uncertain reservation.
+- Started typed strict Task admission/bootstrap/recovery after both approvals.
+  No actual production strict route or Trench UI changes have been activated.
+
+## 2026-10-08 - COV-EXEC-01 durable executor/storage follow-up (in progress)
+
+- Preserved dirty primary repositories and all running services. Extended the
+  owned full-chain plan before editing; no Trench changes or live activation.
+- Added immutable/bounded optional Artifact Ports, SQLite cross-process write
+  serialization and interrupted-prune recovery, bounded S3 reads, prepared
+  membership indexes and fresh Host authorization per cached body.
+- Implemented validated versioned checks, source-quote validation, durable
+  missing-unit resume, observation-before-acceptance ordering and frozen
+  attempt/input-byte budgets with Event-derived counter recovery (migration 79).
+- Added fenced PostgreSQL coverage upload recovery; STAGED objects remain
+  unreadable. Materialized Event and FINALIZED state commit atomically, with
+  full-run reservation binding preventing cross-run upload takeover.
+- Added exact deterministic report construction, certificate Events and replay,
+  source batch Artifact verification, full certificate binding checks and
+  certified-run immutability with exact old receipt retry compatibility.
+- Independent storage/prepared review approved. Executor/publication review found
+  evidence-loss certification, 100-quote merge overflow, 1,000-result ceiling and
+  facade retention defects; repairs and regression validation are in progress.
+- Follow-up quality review additionally found lifecycle/cancellation TOCTOU and
+  allocation-before-bound defects. Core now refuses aggregate body/prior bytes
+  before unbounded merges and counts units before report expansion; 46 focused
+  executor/report tests pass. Storage race repairs passed specification review;
+  quality re-review remains pending, so the component is not yet approved.
+- Latest completed full suite: 5,188 passed / 1,018 skipped; final isolated real
+  PostgreSQL selection: 116 passed; isolated PostgreSQL/MinIO tests: 3 passed.
+  Only the unique versioned test bucket was created and removed, not user data.
+- Requested the missing first business-check definition from the user. Existing
+  literal checks are not a semantic risk-review standard; the plan requires
+  versioned published rules and predefined semantic acceptance thresholds.
+- Real independent-process publication proof passed: two Python processes share
+  the same fence and synchronized upload barriers, return identical canonical
+  receipts and create one Event/object version; conflicting bytes still refuse.
+  Coverage real PostgreSQL/MinIO selection passed 2 tests using a unique owned
+  bucket, subsequently removed with only its own versions.
+- Repaired both final timing defects: fresh read-only Host authority checks after
+  source verification and final lease validation after lifecycle scans, including
+  certificate retries. Retrieval checks fresh expiry/cancellation after final
+  authority without requiring a completed Session to retain its lease. Final
+  specification and quality re-reviews approved the bounded component. Quality
+  independently reran 15 focused real-PostgreSQL tests successfully. Six new
+  PostgreSQL regressions cover these timing boundaries; whole-chain remains open.
+- Actual Worker dispatch/wakeup, strict admission, production check/model setup,
+  all-surface gates, signed API/Trench UI and real object/Host/model/browser
+  acceptance remain unimplemented. Do not advertise the facade as live wiring.
+
+## 2026-10-08 - COV-EXEC-01 Host adapter slice
+
+- Continued from locally integrated cloud-agent-trench@b97a5b1a in isolated
+  codex/cov-exec-01. Human owner Luke Ding; primary dirty files preserved.
+- Implemented existing CoverageSnapshotPort through frozen signed Host
+  capabilities. Creation requires a separate admitted Effect capability and
+  preserves idempotency; no raw write-policy bypass or new HTTP client.
+- Verified whole-page digest before stripping provenance, complete membership,
+  independent Host/Artifact digest encodings and contiguous canonical base64
+  bytes. Durable deterministic session-bound Artifacts support fresh instances;
+  cached reads still ask the Host to verify current authority.
+- Added bounded record/byte/call/time limits, shared-lock publication, immutable
+  existing-evidence refusal and metadata reinspection. Quality review caught
+  naive stored timestamps; two SQLite regressions now refuse them explicitly.
+- Final evidence: 95 adapter tests; 168 selected adapter/core/Host tests passed.
+  Full Ruff, Mypy (1,021 files), file-size gate (2,374 files), deterministic eval
+  (30/30) and diff check passed. Specification and quality reviews approved.
+- Full pytest: 5,044 passed / 939 skipped / 1 failed. The failure in
+  test_runtime_capabilities_match_task_network_profiles expects no schema_version;
+  merged API returns migration version 78. Reproduced independently in the clean
+  integration worktree at b97a5b1a; adapter does not alter either file. Full test
+  gate remains red and no merge/publication readiness is claimed.
+- No Worker activation, live migration, service restart, business-data update,
+  remote publication or browser/real-Host acceptance performed.
+- Remaining before full COV-EXEC acceptance: durable missing-unit execution,
+  check validation, fenced resume/cancellation/run-wide budgets, Worker wiring,
+  Host write Effect receipt/reconciliation, atomic cross-process publication,
+  bounded physical Artifact reads and indexed manifest membership. Whole-byte
+  reads and O(N²) repeated manifest validation are explicit ceilings, not hidden
+  production claims. Gate/UI/deployed acceptance follow independently.
+- Next: extend the approved executor plan and owned Worker/Port paths before
+  composing runtime. Implement the indexed durable unit loop, then run real
+  signed Host/PostgreSQL fault tests. Do not activate this adapter in multiple
+  Worker processes with only the process-local publication lock.
 
 ## 2026-10-07 - COV-STO-01 fenced coverage persistence
 
@@ -11240,3 +13396,258 @@ actual byte access.
   explicit configurable Compose platform and local ARM64 official-base overrides,
   retaining AMD64 default for server deployments. Rebuilt native API/Worker;
   application platform matrix four pass. Runtime speedup remains uncalibrated.
+# 2026-10-08 strict Task review closure
+
+SPEC and QUALITY approved typed strict identity/recovery after a quality finding:
+bootstrap used event created_at to check Host expiry. It now checks actual UTC
+time independently; backdated commands cannot admit already expired grants.
+Legacy event timestamps/payloads remain unchanged. Main focused post-repair tests:
+97 passed. Core/Worker selection: 1,513 passed / 29 skipped. Mypy: 1,037 sources.
+No API/Worker activation or cross-session handoff completion is claimed.
+Next: extract shared bounded manifest preparation without Artifact publication,
+then compose complete Cloud binding/publication and actual execution dispatch.
+Full suite collected after the typed Task clock repair (before new preparation
+tests): 5,414 passed / 1,018 skipped, 117.05 seconds. This is not real-service or
+whole-chain acceptance; preparation changes require their own final regression.
+The shared Artifact-free source preparation slice now passed SPEC/QUALITY.
+Adapter and source use one enumerator, retaining legacy manifest caching and
+publication/readback. Frozen intent contains descriptor, records, canonical
+bytes and deterministic ID but is not authority or a publication certificate.
+Main final full suite: 5,472 passed / 1,018 skipped, 111.71 seconds. Focused
+preparation 58 and independent snapshot 159 tests pass. Full Ruff/Mypy (1,038
+sources) passed. Cloud bootstrap/factory, durable model/time budgets, actual
+strict dispatch/wakeup, cross-session preservation and API/UI remain unfinished.
+
+Cloud bootstrap implementation is stable for independent review. The main run
+executed bootstrap, Worker Artifact facade and immutable publication regressions
+against the existing scratch PostgreSQL in fixture-owned unique schemas only:
+58 passed / zero skipped, 65.82 seconds. Object storage in this selection is
+fake, not live MinIO acceptance. Full Ruff and Mypy (1,039 sources) passed.
+Events are read/recovered before acquiring Task/stream locks; the locked current
+revision must equal the recovered history before Host access. Unknown typed-copy
+authority fields and nested fences are rejected. Bootstrap SPEC/QUALITY approval
+and actual main-loop composition remain pending; no services were restarted.
+
+Bootstrap SPEC review found and independently reproduced two fail-open paths:
+typed descriptor extras were dropped by serialization, and a Source could use
+a different valid tool manifest than the persisted Task. Both were repaired;
+descriptor/records/nested parts are reconstructed before dumping and the
+canonical nonzero tool manifest must match before any Host call. Independent
+SPEC re-review approved. Main related real-PG selection after these repairs:
+83 passed / zero skipped, 43.34 seconds (fake object store). Full Ruff/Mypy
+1,039 and deterministic eval 30/30 pass. QUALITY review is still pending.
+The full suite collected before these final identity regressions passed
+5,500 / 1,030 skipped in 114.12 seconds; not the final repaired-suite result.
+
+QUALITY found a final-bind race: preflight released locks before bind, allowing
+changed Task Events/authority to be persisted before a late rejection. Repair
+is in progress: carry the preflight stream revision and pinned Task-binding
+digest into the bind transaction, refusing raced Events/renewals before writes.
+Full suite collected after the first identity repairs: 5,522 passed / 1,032
+skipped, one failure in untouched local-runtime timeout process-group cleanup
+(macOS killpg PermissionError). Immediate isolated local-runtime rerun passed
+14/14. This is recorded as a full-gate failure, not silently counted as green.
+
+Final-bind CAS repair is stable: concrete PostgreSQL bind accepts paired expected
+stream revision and Task-binding digest and checks them under the existing
+transaction locks before writing the manifest Event/run index. Core Port and
+legacy callers are unchanged. SPEC re-review approved. Main independent bootstrap,
+identity and malformed-guard selection against scratch PostgreSQL: 79 passed,
+zero skipped, 26.79 seconds; object-store transport remains fake. Full Ruff and
+Mypy (1,039 source files) pass. QUALITY re-review remains pending; main-loop
+activation, durable model budgets, publication gates and paired UI are not done.
+
+QUALITY re-review also approved the final-bind repair; original race is closed.
+Next bounded prerequisite: deterministic snapshot-create ToolCall identity for
+exact durable Effect replay across fresh adapter instances. Read calls remain
+unique, foreign receipts remain refused; this is not main-loop Effect activation.
+
+Main full-suite rerun after the bootstrap final-bind repair, collected before
+the next Effect replay slice: 5,535 passed / 1,034 skipped, 113.86 seconds. The
+earlier macOS process-group cleanup failure did not reproduce; no unrelated
+runtime workaround was applied. Real PG evidence remains the separate 79-test
+selection above; default-suite skips are not deployment acceptance.
+
+Snapshot replay prerequisite first independent SPEC review found a key mismatch:
+UUID hashed trimmed key, but callback received the raw key. The reviewer proved
+whitespace variants could share ToolCallID while a raw-key Host created two
+operations. Repair must normalize the forwarded create key too and test actual
+Host deduplication, not only UUID equality. 186 snapshot regressions passed but
+do not override this blocker; successor implementation waits for re-review.
+
+Existing adapter tests established opaque-key preservation as compatibility
+contract. Replay now hashes and forwards the exact same validated raw key;
+whitespace variants are distinct identities, exact raw-key retries reuse the
+original ToolCall ID. No legacy tests changed. Main and independent SPEC each
+passed all 187 snapshot tests; SPEC re-review approved. QUALITY remains pending.
+
+Replay QUALITY also approved; full Ruff/Mypy (1,039 sources) pass. Next bounded
+strict handoff guard is claimed within the explicitly extended ownership: actual
+SQLite/PostgreSQL commit/replay must not drop persisted strict admission into an
+exploratory child. This is explicit unsupported behavior, not child certification.
+
+Strict handoff component implemented in the two actual storage commit paths;
+nonnull persisted Task admission refuses under transaction locks before any
+aggregate writes or committed replay success. Later omission cannot erase it;
+ordinary omitted/null admission remains compatible. Main scratch PostgreSQL plus
+SQLite selection: 41 passed / zero skipped, 16.51 seconds. Independent SPEC
+approved; QUALITY pending. Test fixture-owned schemas only, no live services.
+
+Handoff QUALITY also approved. Model-budget storage is now the active next slice:
+actual strict admission policy/deadline, fenced reservation and exact usage
+receipts, Event-backed rebuild and certification refusal on unresolved usage.
+This still does not activate callbacks or Worker dispatch; unsupported token
+bounds must refuse at composition, not become claimed exact provider quotas.
+# 2026-10-10 — demand-driven bounded SQL
+
+User requires fewer necessary queries, stepwise rather than up-front full reads.
+Same COV-EXEC-01 owner/branch/worktree. Shared original/model paging now stops at
+its proven upper sequence; does not infer completeness from a short page or
+apply this rule to unbounded/equal-sequence scans. Conflicting Task source rejects
+before stream/history/binding queries. Tests prove lazy consumption, exact page
+counts at0/1/100/101/1000 records, continued recovery witness recording and fresh
+authority checks. Initial focused35pass/1failure was the obsolete expectation
+for a terminal empty read; adjusted to one actual bounded read, not bypassed.
+Expanded focused suite106 passed0.71s; scoped Ruff and diff checks passed.
+No native PG/full-load rerun or observed latency improvement claim. Main fanout,
+normal-continuation and connection lifecycle work still open. No runtime edits.
+
+# 2026-10-10 — coverage recovery guard fanout
+
+Same COV-EXEC-01 owner/worktree; ownership expanded before editing facade.
+Coalesced nested cold-read guards from four to two; cache hits and independent
+final physical rereads preserved. Regressions invoke actual shared facade method,
+including native cold/cached post-read revocation refusal. Load2 passed237.84s,
+zero schemas; default9 certified154.12s/162309 executes/2831GET/12callbacks.
+One-callback diagnostic75.30s with unchanged98296 executes/1062GET, slower than
+previous69.96s; no steady-state improvement claim. Full regression/fault matrix
+results in COVERAGE_WORK_SLICE_EVIDENCE.md. Normal-continuation protocol, incremental
+commit, batched authority and runtime/UI/semantic acceptance still open. No push,
+merge or services replaced. Next: native normal continuation distinct from crash
+recovery; update owned paths and versioned trust protocol before implementation.
+Native-enabled58 passed/zero skips231.01s/zero schemas after shared fixture repair.
+Earlier parallel and serial runs each46 passed/one30s-capability refusal retained.
+Root fixture lacked process heartbeat, so every manual handoff now qualifies an
+actual fresh consumer (existing normal-load pattern); production TTL unchanged.
+Final source6736 passed/1544 prerequisite skips122.39s, Ruff/Mypy1083/size/eval30
+passed; source-only review GO. No claim for live performance or semantic accuracy.
+
+# 2026-10-10 — coverage generation-audit N+1
+
+Same COV-EXEC-01 Luke Ding/Codex owner and isolated branch/worktree; claim/owned
+paths expanded before edits. Debugger root-cause pass traced both approval and
+handoff to shared coverage_generation_usage. Reused native window queries: one
+bounded history query and at most one canonical accepted-prefix query, not one
+SUM per historical generation. Exact scope, byte/count bounds, progress/crash
+limits, repeated watermarks, inclusive cutoffs, fresh proof/authority/clock remain.
+Focused44 pass/8 prerequisites; native52 pass/zero skips71.78s. Source-only review
+GO. Frozen9-record load2 pass136.33s: default78.6969s/85170SQL/1987GET/10callbacks;
+diagnostic49.2711s/54282SQL/717GET/onecallback. Controlled model/object transports,
+real PostgreSQL/Worker; not live E2E or p95. Default previous85643SQL/81.3504s is
+one observation and read mix varied; diagnostic unchanged. Principal remaining
+work is authority getter fanout and normal-continuation/full-recovery separation,
+followed by bounded connection/fairness and mixed-tenant/live/UI acceptance.
+Ruff/Mypy1086/size2382/eval30 pass; full default6903 pass/1568 prerequisites125.58s
+at `/tmp/cov-generation-audit-default-20261010.xml`. Final focused44 pass/8
+prerequisites0.27s; all test processes ended. Scratch read-only
+inventory found only the earlier unknown-owner schema, preserved. No restart,
+merge/push or primary checkout edit. Next shared hot path: phase-local final
+proof reads, with independently fresh post-append/retry/cross-transaction proofs;
+expand ownership and native safety acceptance before composing that optimization.
+
+# 2026-10-10 — final lifecycle pinned proof reads
+
+Same COV-EXEC-01 Luke Ding/Codex branch/worktree; owned paths claimed before edit.
+Debugger traced getter authority fanout into complete certification lifecycle;
+reused existing private locked reader, no new dependency or global cache. Only
+exact pure semantic deriver enables metadata reuse. Each lifecycle gets a fresh
+scope, invalidated before append/retry, while budget/source byte proofs remain
+independent and complete. Unknown derivers keep public reads; authority/expiry/
+pins/8192-record overflow fallback retain. Report-read/rebuild paths unchanged.
+Source review GO. Focused initial67pass/1failure was a test clock mocking only
+private reader while final unknown callback correctly used public fallback.
+Advance both clocks; final focused68pass0.29s. Initial native54pass136.65s, stronger
+post-append injection assertions then reviewed and rerun: native3pass54.47s.
+Those tests require append hook, injected physical-reader call/exact error or
+exact AUTHORITY_INVALID, zero committed certificate Events on damage, invalidated
+scope rejection and two distinct readers on success. Earlier failures preserved.
+Frozen load2pass119.14s (no concurrent heavy gate): default72.8697s/76349SQL/
+2017GET/10callbacks; diagnostic37.4566s/45010SQL/717GET/onecallback. Preceding
+diagnostic49.2711s/54282SQL/717GET, so proof bytes unchanged and authority fanout
+reduced. Single controlled real-PG/Worker plus synthetic model/object/Host cases,
+not p95 or live E2E. Default read mix varied; inclusive phase times non-additive.
+Ruff/Mypy1086/size2382/eval30pass; full default6913pass/1571prerequisites126.87s,
+`/tmp/cov-final-scope-default-20261010.xml`. All test processes ended; read-only
+scratch inventory retained the same unknown-owner schema. Still OPEN: repeated
+normal full recovery, remaining authority/read fanout, process/fleet capacity and
+tenant fairness, real broker/model/UI and independently labeled semantics. No
+restart/merge/push/primary edit or whole-plan completion.
+# 2026-10-11 — native continuation reader and explicit preparation intent
+
+Same COV-EXEC-01 owner/branch/worktree; reader lane claimed before coding.
+Native latest acceptance/predecessor, exact sealed source JSON, full binding,
+expected identity/count delta, original command/generation/floor/producing fence,
+settled budget and non-extending deadline validated in bounded source reads.
+Migration85 name/checksum prerequisite; MODEL fingerprint stays native O(history),
+not a new incremental root. Fresh clock follows fingerprint. SELECT-only RR
+adapter supported without relaxing it. No historical object bodies read.
+Shared preparation explicit normal intent reuses existing checker protocol;
+absent normal method keeps legacy recovery, selected invalid method refuses.
+Worker default-off preserved. Native38 pass108.30s, initial9 pass97.17s and
+fault/preparation29 pass12.75s; scoped source reviewer GO after exact predecessor
+source and post-scan clock fixes. Final strengthened predecessor/expiry native
+2 pass23.30s, zero skips, `/tmp/cov-receipt-reader-hardened-20261011.xml`.
+Ruff/Mypy1090/size2382/eval30 pass; full default suite not rerun this slice.
+Still OPEN: actual verifier/capability qualification, normal Worker preparer,
+atomic versioned approval/outbox, pickup selection and race/load/live acceptance.
+No restart, primary checkout edit, merge/push or end-to-end improvement claim.
+
+## 2026-10-11 — Native normal preparation and persisted pickup selection
+
+COV-EXEC-01, same isolated owner/branch/worktree. Shared debugger tracing retained
+native Task/Host/STOP/fence/tail/deadline checks, then uses an eligible receipt
+before object and full MODEL reconstruction. Atomic approval pins receipt/Event
+and protocol; pickup selects from native persisted approval and revalidates exact
+proof under locks. Unsupported consumers refuse; legacy/fault recovery unchanged.
+Review found a missing full-C remaining-budget predicate. Successful native commit
+verification now pins exact remaining-part/settled-call facts; missing or inadequate
+budget retains precise full recovery. Successors cannot change verifier identity.
+Final certification remains independent, not replaced by the receipt.
+
+Native normal/preparation38 pass44.80s, `/tmp/cov-normal-preparer-final-20261011.xml`;
+one/three-record repeated pickup adds zero object reads through final certification.
+Initial combined regression39 passed/one failed143.54s: test assumed three parts
+instead of three separate records, corrected to receipt expected_count and rerun.
+Focused budget/pickup8 pass1.63s; scoped source reviewer GO after budget repair.
+Native Host revocation1 pass10.55s, `/tmp/cov-normal-revocation-20261011.xml`:
+marked normal pickup refuses with no lease and no additional object reads.
+make check: sizes2382, Ruff, Mypy1091, eval30 pass. No full default suite this slice.
+Production minting OFF: trusted marker is not executable/fleet qualification.
+Remaining: qualified native producer and versioned fleet capability, fault/race
+expansion, native source-root/read-scan cost and real nine-record load acceptance.
+No restart, primary edit, commit/merge/push, or live/SLO acceptance claim.
+
+## 2026-10-11 — Native producer identity, not an opt-in marker
+
+Same COV-EXEC-01 owner/branch/worktree; qualification follow-up claimed first.
+Debugger traced actual derive callback through original Artifact facade and
+successful commit verifier. VerifiedCommitFacts now carries exact native
+qualification; minting rejects a configured non-null marker mismatch before SQL.
+Wrappers/subclasses remain generic and cannot upgrade legacy receipt prefixes.
+Separate pure continuation digest checks actual native prep/method/dispatch and
+domain-separates protocol/producer from v3. No fleet registration/admission switch.
+Trusted composition only; arbitrary privileged Python monkeypatching is outside
+this boundary. Default-off retained without receipt SQL on production commits.
+
+Native continuation/readiness42 pass86.77s, zero skips,
+`/tmp/cov-native-producer-final-20261011.xml`: actual native callback positive,
+arbitrary callback opt-in yields no receipt and full legacy proof; exceptional
+preparation with a valid receipt still reads objects/full proof; Host revocation
+and repeated normal no-object pickup through certification retained.
+Host/model/S3 synthetic; PostgreSQL and Worker actual, not deployed fleet E2E.
+Initial combined40 passed/1 failed70.06s used a test attempting frozen-instance
+assignment; corrected explicit structural mutation and final complete rerun42 pass.
+Scoped source reviewer GO. make check: size2382, Ruff, Mypy1091, eval30 pass.
+No full default suite rerun. Still OPEN: versioned capability fleet wiring/rollover,
+concurrent failure/approval races, native history scan/root cost and real9 load.
+No runtime restart/activation, primary edit, commit/merge/push or SLO claim.

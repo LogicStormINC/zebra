@@ -209,6 +209,12 @@ def test_commit_probe_inputs_are_private_and_removed_after_browser_exit(tmp_path
 
     import joint_acceptance as joint
 
+    is_file = Path.is_file
+    monkeypatch.setattr(
+        Path, "is_file",
+        lambda path: path.name == "strategy-joint-acceptance.mjs" or is_file(path),
+    )
+
     config = SimpleNamespace(
         bff_url="https://localhost", session_cookie="qa=private", timeout_seconds=10
     )

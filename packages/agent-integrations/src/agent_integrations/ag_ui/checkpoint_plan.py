@@ -15,8 +15,14 @@ from agent_core.ports.task_projection_checkpoints import MAX_CHECKPOINT_EVENTS, 
 from agent_core.ports.task_replay import TaskEventHeader, TaskRunHeader
 
 from agent_integrations.ag_ui.contracts import AgUiProjectionError, AgUiRunIdentity
+from agent_integrations.coverage_public_events import strict_coverage_events
 
 AG_UI_CHECKPOINT_VERSION = "ag-ui-v1"
+AG_UI_COVERAGE_CHECKPOINT_VERSION = "ag-ui-v1-coverage"
+
+
+def checkpoint_version(run: TaskRunHeader) -> str:
+    return AG_UI_COVERAGE_CHECKPOINT_VERSION if run.strict_coverage else AG_UI_CHECKPOINT_VERSION
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,8 +89,10 @@ class ProjectionPagePlan:
             or len(self.handoffs) > MAX_CHECKPOINT_EVENTS
         ):
             raise AgUiProjectionError("projection plan exceeds/mismatches Page coverage")
-        if scope.projector_version != AG_UI_CHECKPOINT_VERSION:
+        if scope.projector_version != checkpoint_version(self.run):
             raise AgUiProjectionError("unsupported checkpoint projector version")
+        if not self.run.strict_coverage and strict_coverage_events(e.event for e in page.events):
+            raise AgUiProjectionError("canonical Run privacy metadata contradicts its Page")
         anchor_id = self.run.anchor.event_id if self.run.anchor is not None else None
         if (
             scope.task_id != self.run.task_id
@@ -134,7 +142,8 @@ def validate_restore_run(
 ) -> None:
     anchor_id = run.anchor.event_id if run.anchor is not None else None
     if (
-        run.task_id != scope.task_id
+        scope.projector_version != checkpoint_version(run)
+        or run.task_id != scope.task_id
         or str(scope.task_id) != identity.thread_id
         or run.run_id != identity.run_id
         or scope.anchor_event_id != anchor_id

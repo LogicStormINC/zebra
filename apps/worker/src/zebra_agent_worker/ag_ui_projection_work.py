@@ -9,10 +9,14 @@ logger = logging.getLogger(__name__)
 
 
 class AgUiProjectionWorkService:
-    def __init__(self, consumer: AgUiCheckpointConsumer, *, interval_seconds: float = 0.1) -> None:
+    def __init__(
+        self, consumer: AgUiCheckpointConsumer, *, interval_seconds: float = 0.1,
+        coverage_consumer: AgUiCheckpointConsumer | None = None,
+    ) -> None:
         if not 0.01 <= interval_seconds <= 2:
             raise ValueError("invalid projection polling interval")
         self.consumer, self.interval = consumer, interval_seconds
+        self.consumers = (consumer,) if coverage_consumer is None else (consumer, coverage_consumer)
         self._stop, self._lock = Event(), Lock()
         self._thread: Thread | None = None
 
@@ -25,18 +29,19 @@ class AgUiProjectionWorkService:
             self._thread.start()
 
     def _run(self) -> None:
-        enabled = False
+        enabled: set[int] = set()
         while not self._stop.is_set():
             delay = self.interval
-            try:
-                if not enabled:
-                    self.consumer.work.enable_projection_work()
-                    enabled = True
-                self.consumer.work.bootstrap_projection_work(limit=32)
-                self.consumer.poll_once()
-            except Exception as exc:
-                logger.warning("AG-UI projection maintenance failed: %s", type(exc).__name__)
-                delay = max(delay, 1.0)
+            for index, consumer in enumerate(self.consumers):
+                try:
+                    if index not in enabled:
+                        consumer.work.enable_projection_work()
+                        enabled.add(index)
+                    consumer.work.bootstrap_projection_work(limit=32)
+                    consumer.poll_once()
+                except Exception as exc:
+                    logger.warning("AG-UI projection maintenance failed: %s", type(exc).__name__)
+                    delay = max(delay, 1.0)
             self._stop.wait(delay)
 
     def close(self) -> None:

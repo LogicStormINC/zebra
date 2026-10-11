@@ -25,7 +25,6 @@ from psycopg import ClientCursor, Connection, Cursor
 from psycopg.errors import QueryCanceled
 
 from agent_storage.postgres.database import PostgresDatabase
-from agent_storage.postgres.projection_work_migration import postgres_routing
 from agent_storage.postgres.task_io import TaskIoConnection
 from agent_storage.projection_work import (
     PENDING,
@@ -35,7 +34,15 @@ from agent_storage.projection_work import (
     scope_values,
     work_from_row,
 )
-from agent_storage.projection_work_schema import BOOTSTRAP_ENQUEUE
+from agent_storage.projection_work_routing import (
+    COVERAGE,
+    ORDINARY,
+    PG_BOOTSTRAP_SOURCE,
+    activate_privacy,
+    classified_pending,
+    routed_statements,
+    task_version,
+)
 
 PG_WHERE = WHERE.replace("?", "%s")
 PG_PENDING = PENDING.replace("?", "%s").replace("h.task_id=w.task_id", "h.task_id=w.task_id::uuid")
@@ -181,16 +188,18 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
             ).fetchall()
             # Native assignment updates this Task HWM before routing. Share locks either
             # observe its commit or leave the discovery cursor unchanged on bounded retry.
-            enqueue = BOOTSTRAP_ENQUEUE.replace("?", "%s").replace("MAX(", "GREATEST(")
             for row in rows:
+                enqueue_params = dict(
+                    namespace=self._namespace,
+                    task_id=str(row["task_id"]),
+                    version=self._version,
+                    through=row["next_event_sequence"] - 1,
+                )
                 connection.execute(
-                    enqueue,
-                    (
-                        self._namespace,
-                        str(row["task_id"]),
-                        self._version,
-                        row["next_event_sequence"] - 1,
-                    ),
+                    classified_pending(PG_BOOTSTRAP_SOURCE, postgres=True), enqueue_params
+                )
+                connection.execute(
+                    activate_privacy(PG_BOOTSTRAP_SOURCE, postgres=True), enqueue_params
                 )
             done = len(rows) < limit
             connection.execute(
@@ -250,7 +259,9 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
         with self._connect(write=True, deadline=deadline) as connection:
             execute = connection.execute
             task = execute(
-                "SELECT next_event_sequence,event_position_state FROM agent_tasks "
+                "SELECT next_event_sequence,event_position_state,"
+                f"{task_version('agent_tasks', postgres=True)} AS selected_version "
+                "FROM agent_tasks "
                 "WHERE deployment_namespace=%s AND task_id=%s",
                 (self._namespace, task_id),
             ).fetchone()
@@ -258,18 +269,28 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                 raise CheckpointConflict("projection-work Task is outside namespace")
             if not self._enabled(connection):
                 raise CheckpointNotReady("explicit projector enable required")
-            execute(
-                "INSERT INTO task_projection_work_routes "
-                "(deployment_namespace,task_id,projector_version) "
-                "VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
-                key,
+            params = dict(
+                namespace=self._namespace,
+                task_id=str(task_id),
+                version=self._version,
+                through=task["next_event_sequence"] - 1,
             )
-            execute(
-                "UPDATE task_projection_work_routes SET wanted_through=GREATEST(wanted_through,%s),"
-                "needs_repair=1 "
-                "WHERE deployment_namespace=%s AND task_id=%s AND projector_version=%s",
-                (task["next_event_sequence"] - 1, *key),
-            )
+            execute(classified_pending(PG_BOOTSTRAP_SOURCE, postgres=True), params)
+            execute(activate_privacy(PG_BOOTSTRAP_SOURCE, postgres=True), params)
+            if self._version in (ORDINARY, COVERAGE) and task["selected_version"] != self._version:
+                execute(
+                    "UPDATE task_projection_work_routes SET needs_repair=0 "
+                    "WHERE deployment_namespace=%s AND task_id=%s AND projector_version=%s",
+                    key,
+                )
+                return self._repair(
+                    dict(
+                        task_id=str(task_id),
+                        observed_through=-1,
+                        wanted_through=-1,
+                        needs_repair=0,
+                    )
+                )
             # Discovery survives page cancellation; no source-row locks are taken by repair.
             connection.commit()
             if task["event_position_state"] != "ready":
@@ -286,7 +307,7 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
             # ponytail: reserve 200ms inside the existing 2s budget for recovery/COMMIT.
             # Each header is atomic; a timed-out header cannot undo the completed prefix.
             step = _WorkConnection(connection.connection, connection.deadline - 0.2)
-            routing = "BEGIN " + ";".join(postgres_routing(SOURCE)) + ";END"
+            routing = "BEGIN " + ";".join(routed_statements(SOURCE, postgres=True)) + ";END"
             for index in range(limit):
                 remaining = step.deadline - time.monotonic()
                 if remaining <= 0 or route["observed_through"] >= route["wanted_through"]:
