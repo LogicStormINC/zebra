@@ -182,6 +182,8 @@ def _parse_completion(
     message = first_choice.get("message")
     if not isinstance(message, dict):
         raise ValueError("model gateway choice must include a message object")
+    if message.get("role") != "assistant":
+        raise ValueError("model gateway response message role must be assistant")
     finish_reason = optional_str(first_choice.get("finish_reason"))
     if resolved is not None:
         finish_error = finish_reason_error(finish_reason)

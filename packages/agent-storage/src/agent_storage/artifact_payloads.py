@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import sqlite3
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -49,9 +51,15 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
         artifact_id: ArtifactId | None = None,
     ) -> StoredArtifactPayload:
         artifact_id = artifact_id or new_artifact_id()
+        return self.store_payload_immutable(payload, artifact_id=artifact_id)
+
+    def store_payload_immutable(
+        self,
+        payload: ArtifactPayloadWrite,
+        *,
+        artifact_id: ArtifactId,
+    ) -> StoredArtifactPayload:
         payload_path = self._payload_path(payload.session_id, artifact_id, payload.file_name)
-        payload_path.parent.mkdir(parents=True, exist_ok=True)
-        payload_path.write_bytes(payload.payload)
         stored = StoredArtifactPayload(
             artifact_id=artifact_id,
             session_id=payload.session_id,
@@ -69,6 +77,51 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
             created_at=payload.created_at.astimezone(UTC),
         )
         with self._database.connect() as connection:
+            # ponytail: one database writer lock covers all IDs; scale via cloud reservations.
+            connection.execute("BEGIN IMMEDIATE")
+            existing = self._get_payload(connection, artifact_id)
+            if existing is not None:
+                comparable = existing.model_copy(
+                    update={
+                        "uri": stored.uri,
+                        "access_uri": self._stored_payload_path(existing).resolve().as_uri(),
+                    }
+                )
+                filename = connection.execute(
+                    """SELECT file_name,file_name_recorded FROM artifact_payloads
+                       WHERE artifact_id=?""",
+                    (str(artifact_id),),
+                ).fetchone()
+                if comparable != stored or (
+                    filename["file_name_recorded"] and filename["file_name"] != payload.file_name
+                ):
+                    raise ValueError("artifact payload immutable metadata conflicts")
+                self._verify_payload_bytes(existing, max_bytes=stored.size_bytes)
+                if not filename["file_name_recorded"]:
+                    # ponytail: old schemas discarded the basename; bind the first
+                    # byte/path/metadata-verified retry, then enforce exact filenames.
+                    connection.execute(
+                        """UPDATE artifact_payloads SET file_name=?,file_name_recorded=1
+                           WHERE artifact_id=?""",
+                        (payload.file_name, str(artifact_id)),
+                    )
+                return existing
+            # A crashed publisher may leave bytes without a row. Never replace them,
+            # including same-ID orphans under another session or filename suffix.
+            # ponytail: scan session directories; cloud reservations index orphan identities.
+            for directory in self._root.glob(f"*/{artifact_id}"):
+                for orphan in directory.iterdir():
+                    if orphan != payload_path:
+                        raise ValueError("artifact payload orphan identity conflicts")
+            payload_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                with payload_path.open("xb") as stream:
+                    if stream.write(payload.payload) != len(payload.payload):
+                        raise OSError("artifact payload write was incomplete")
+                    stream.flush()
+                    os.fsync(stream.fileno())
+            except FileExistsError:
+                self._verify_payload_bytes(stored, max_bytes=stored.size_bytes)
             connection.execute(
                 """
                 INSERT INTO artifact_payloads (
@@ -84,7 +137,8 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
                     retained_until,
                     pruned_at,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ,file_name,file_name_recorded
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,1)
                 """,
                 (
                     str(stored.artifact_id),
@@ -103,14 +157,20 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
                     ),
                     None,
                     stored.created_at.isoformat(),
+                    payload.file_name,
                 ),
             )
         return stored
 
     def get_payload(self, artifact_id: ArtifactId) -> StoredArtifactPayload | None:
         with self._database.connect() as connection:
-            row = connection.execute(
-                """
+            return self._get_payload(connection, artifact_id)
+
+    def _get_payload(
+        self, connection: sqlite3.Connection, artifact_id: ArtifactId
+    ) -> StoredArtifactPayload | None:
+        row = connection.execute(
+            """
                 SELECT
                     artifact_id,
                     session_id,
@@ -127,8 +187,8 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
                 FROM artifact_payloads
                 WHERE artifact_id = ?
                 """,
-                (str(artifact_id),),
-            ).fetchone()
+            (str(artifact_id),),
+        ).fetchone()
         if row is None:
             return None
         return StoredArtifactPayload(
@@ -176,16 +236,15 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
         *,
         pruned_at: datetime | None = None,
     ) -> StoredArtifactPayload | None:
-        stored = self.get_payload(artifact_id)
-        if stored is None:
-            return None
-        if stored.lifecycle_status is ArtifactPayloadLifecycleStatus.PRUNED:
-            return stored
-        payload_path = self._stored_payload_path(stored)
-        if payload_path.exists():
-            payload_path.unlink()
         effective_pruned_at = (pruned_at or datetime.now(UTC)).astimezone(UTC)
         with self._database.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            stored = self._get_payload(connection, artifact_id)
+            if stored is None:
+                return None
+            if stored.lifecycle_status is ArtifactPayloadLifecycleStatus.PRUNED:
+                self._stored_payload_path(stored).unlink(missing_ok=True)
+                return stored
             connection.execute(
                 """
                 UPDATE artifact_payloads
@@ -198,6 +257,9 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
                     str(artifact_id),
                 ),
             )
+        # Durable unreadable state precedes physical removal. A crash leaves only
+        # a reclaimable PRUNED file, never ACTIVE metadata pointing at removed bytes.
+        self._stored_payload_path(stored).unlink(missing_ok=True)
         updated = self.get_payload(artifact_id)
         assert updated is not None
         return updated
@@ -213,18 +275,26 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
                 """
                 SELECT artifact_id
                 FROM artifact_payloads
-                WHERE lifecycle_status = ?
+                WHERE (lifecycle_status = ?
                   AND retained_until IS NOT NULL
-                  AND retained_until <= ?
+                  AND retained_until <= ?) OR lifecycle_status = ?
                 ORDER BY retained_until, created_at
                 """,
                 (
                     ArtifactPayloadLifecycleStatus.ACTIVE.value,
                     effective_as_of.isoformat(),
+                    ArtifactPayloadLifecycleStatus.PRUNED.value,
                 ),
             ).fetchall()
         pruned: list[StoredArtifactPayload] = []
         for row in rows:
+            existing = self.get_payload(ArtifactId(UUID(row["artifact_id"])))
+            if (
+                existing is not None
+                and existing.lifecycle_status is ArtifactPayloadLifecycleStatus.PRUNED
+                and not self._stored_payload_path(existing).exists()
+            ):
+                continue
             payload = self.prune_payload(
                 ArtifactId(UUID(row["artifact_id"])),
                 pruned_at=effective_as_of,
@@ -234,15 +304,36 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
         return pruned
 
     def read_payload_bytes(self, artifact_id: ArtifactId) -> bytes:
+        stored = self.get_payload(artifact_id)
+        if stored is None:
+            raise ArtifactPayloadMissingError("artifact payload metadata was not found")
+        return self.read_payload_bytes_bounded(artifact_id, max_bytes=stored.size_bytes)
+
+    def read_payload_bytes_bounded(self, artifact_id: ArtifactId, *, max_bytes: int) -> bytes:
+        self._validate_limit(max_bytes)
         inspection = self.inspect_payload(artifact_id)
         if inspection is None:
             raise ArtifactPayloadMissingError("artifact payload metadata was not found")
-        payload_path = self._stored_payload_path(inspection.payload)
         if inspection.status is ArtifactPayloadStatus.PRUNED:
             raise ArtifactPayloadMissingError("artifact payload has been pruned")
         if inspection.status is ArtifactPayloadStatus.MISSING:
             raise ArtifactPayloadMissingError("artifact payload file is missing")
-        return payload_path.read_bytes()
+        return self._verify_payload_bytes(inspection.payload, max_bytes=max_bytes)
+
+    @staticmethod
+    def _validate_limit(max_bytes: int) -> None:
+        if type(max_bytes) is not int or max_bytes < 0:
+            raise ValueError("max_bytes must be a non-negative integer")
+
+    def _verify_payload_bytes(self, stored: StoredArtifactPayload, *, max_bytes: int) -> bytes:
+        self._validate_limit(max_bytes)
+        if type(stored.size_bytes) is not int or not 0 <= stored.size_bytes <= max_bytes:
+            raise ValueError("artifact payload exceeds byte limit or has invalid length")
+        with self._stored_payload_path(stored).open("rb") as stream:
+            body = stream.read(max_bytes + 1)
+        if len(body) != stored.size_bytes or sha256(body).hexdigest() != stored.sha256:
+            raise ValueError("artifact payload bytes do not match immutable metadata")
+        return body
 
     def _initialize(self) -> None:
         with self._database.connect() as connection:
@@ -272,6 +363,10 @@ class SQLiteArtifactPayloadStore(ArtifactPayloadStorePort):
             ensure_column(connection, "artifact_payloads", "retained_until", "TEXT")
             ensure_column(connection, "artifact_payloads", "pruned_at", "TEXT")
             ensure_column(connection, "artifact_payloads", "access_uri", "TEXT")
+            ensure_column(connection, "artifact_payloads", "file_name", "TEXT")
+            ensure_column(
+                connection, "artifact_payloads", "file_name_recorded", "INTEGER NOT NULL DEFAULT 0"
+            )
 
     def _payload_path(
         self,

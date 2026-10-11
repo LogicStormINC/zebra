@@ -234,6 +234,22 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (59, "user_personalization_instructions", 64),
         (60, "full_gateway_network_profile", 64),
         (78, "coverage_persistence", 64),
+        (79, "coverage_execution_budget", 64),
+        (80, "coverage_model_budget", 64),
+        (81, "coverage_command_checkpoint_recovery", 64),
+        (82, "worker_process_capability_leases", 64),
+        (83, "strict_command_capability_requirements", 64),
+        (84, "coverage_execution_receipts", 64),
+        (85, "coverage_execution_source_seal", 64),
+        (86, "worker_continuation_qualification", 64),
+        (87, "coverage_model_revision_root", 64),
+        (88, "coverage_model_incremental_summary", 64),
+        (89, "coverage_task_admission_summary", 64),
+        (90, "coverage_authority_lineage_versions", 64),
+        (91, "coverage_model_incremental_volume", 64),
+        (92, "coverage_delta_lookup_indexes", 64),
+        (93, "coverage_exact_membership_seal", 64),
+        (94, "coverage_materialization_proof_lookup", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [

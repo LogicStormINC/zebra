@@ -11,6 +11,7 @@ from agent_core.domain.effect_dispatch import (
     EffectDispatch,
     EffectDispatchConflictError,
     EffectDispatchStateError,
+    EffectDispatchStatus,
     EffectEvidence,
     EffectResolutionOutcome,
     EffectScheduleRequest,
@@ -26,6 +27,7 @@ from agent_core.ports import (
     EffectDispatchPort,
     WorkerMutationAuthority,
 )
+from agent_core.ports.effect_dispatch import effect_input
 
 from agent_tools.effect_guard_support import (
     EffectPayloadCoordinatorLike,
@@ -216,33 +218,87 @@ class FencedEffectToolGateway:
             )
             if claim is None:
                 raise EffectDispatchStateError("scheduled Effect was not claimable")
-            claimed_call = self._read_tool_call(claim.dispatch.payload_artifact_ref)
-            try:
-                # Payload retrieval can outlive ownership; do not dispatch under a stale lease.
-                self._ownership_check()
-                result = self._gateway.execute(claimed_call)
-            except BaseException as error:
-                try:
-                    terminal = self._terminal_event(claimed_call, None)
-                    persisted = self._dispatch.mark_uncertain(
-                        claim,
-                        evidence=EffectEvidence(reason_code="provider_call_raised"),
-                        terminal_event=terminal,
-                    )
-                    self._accept_event(persisted)
-                except Exception as terminal_error:
-                    error.add_note(f"Effect uncertain commit failed: {terminal_error}")
-                raise
-            terminal = self._terminal_event(claimed_call, result)
-            if result.status is ToolCallStatus.EXECUTED:
-                persisted = self._complete(claim, result, terminal)
-            elif proves_failed_no_effect(result):
-                persisted = self._fail_no_effect(claim, result, terminal)
-            else:
-                persisted = self._mark_uncertain(claim, result, terminal)
-            self._accept_event(persisted)
+            result = self._execute_claim(claim)
             if claim.dispatch.dispatch_id == scheduled.dispatch_id:
                 return result
+
+    def execute_exact(self, tool_call: ToolCall) -> ToolResult:
+        """Execute only this scheduled Effect, without Session reconciliation.
+
+        Policy admission and fresh external authority remain the caller's duty;
+        ownership_check runs before scheduling, replay and provider invocation.
+        """
+        self._ownership_check()
+        tool_call = ToolCall.model_validate(effect_input(tool_call), strict=True, extra="forbid")
+        LeaseFence.model_validate(effect_input(self._fence), strict=True, extra="forbid")
+        if not self.manages_durable_effect(tool_call):
+            raise EffectDispatchStateError("exact execution requires an effectful tool")
+        scheduled = EffectDispatch.model_validate(
+            effect_input(self._schedule(tool_call)), strict=True, extra="forbid"
+        )
+        identity = effect_identity(tool_call, self._authority_scope)
+        if (
+            scheduled.execution_session_id != self._execution_session_id
+            or scheduled.root_session_id != self._root_session_id
+            or scheduled.identity != identity
+            or scheduled.request_hash != identity.canonical_effect_hash
+        ):
+            raise EffectDispatchConflictError("scheduled Effect identity conflicts")
+        original = ToolCall.model_validate(
+            effect_input(self._read_tool_call(scheduled.payload_artifact_ref)),
+            strict=True, extra="forbid",
+        )
+        if (
+            original.tool_call_id != tool_call.tool_call_id
+            or original.name != tool_call.name
+            or original.arguments != tool_call.arguments
+            or effect_identity(original, self._authority_scope) != identity
+        ):
+            raise EffectDispatchConflictError("durable Effect request conflicts")
+        self._ownership_check()
+        if scheduled.status is EffectDispatchStatus.SUCCEEDED:
+            if scheduled.result is None or scheduled.result.tool_call_id != tool_call.tool_call_id:
+                raise EffectDispatchConflictError("durable Effect result identity conflicts")
+            return scheduled.result
+        if scheduled.status is not EffectDispatchStatus.PENDING:
+            raise EffectDispatchStateError("exact Effect is not pending; no reissue permitted")
+        claim = self._dispatch.claim_exact(
+            self._execution_session_id,
+            expected=scheduled,
+            fence=self._fence,
+            claim_ttl=self._claim_ttl,
+        )
+        if claim is None:
+            raise EffectDispatchStateError("exact Effect was not claimable")
+        return self._execute_claim(claim, original)
+
+    def _execute_claim(self, claim: EffectClaim, original: ToolCall | None = None) -> ToolResult:
+        claimed_call = original or self._read_tool_call(claim.dispatch.payload_artifact_ref)
+        try:
+            # Payload retrieval can outlive ownership; do not dispatch under a stale lease.
+            self._ownership_check()
+            result = self._gateway.execute(claimed_call)
+        except BaseException as error:
+            try:
+                terminal = self._terminal_event(claimed_call, None)
+                persisted = self._dispatch.mark_uncertain(
+                    claim,
+                    evidence=EffectEvidence(reason_code="provider_call_raised"),
+                    terminal_event=terminal,
+                )
+                self._accept_event(persisted)
+            except Exception as terminal_error:
+                error.add_note(f"Effect uncertain commit failed: {terminal_error}")
+            raise
+        terminal = self._terminal_event(claimed_call, result)
+        if result.status is ToolCallStatus.EXECUTED:
+            persisted = self._complete(claim, result, terminal)
+        elif proves_failed_no_effect(result):
+            persisted = self._fail_no_effect(claim, result, terminal)
+        else:
+            persisted = self._mark_uncertain(claim, result, terminal)
+        self._accept_event(persisted)
+        return result
 
     def _schedule(self, tool_call: ToolCall) -> EffectDispatch:
         identity = effect_identity(tool_call, self._authority_scope)
@@ -328,7 +384,9 @@ class FencedEffectToolGateway:
             artifact_id = ArtifactId(UUID(artifact_ref.removeprefix(prefix)))
         except ValueError as error:
             raise EffectDispatchStateError("Effect payload artifact id is invalid") from error
-        return ToolCall.model_validate_json(self._artifacts.read_payload_bytes(artifact_id))
+        return ToolCall.model_validate_json(
+            self._artifacts.read_payload_bytes(artifact_id), strict=True, extra="forbid"
+        )
 
     def _complete(
         self,

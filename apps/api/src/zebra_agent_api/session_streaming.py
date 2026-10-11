@@ -13,6 +13,11 @@ from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
 from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
 from fastapi import Request
 
+from zebra_agent_api.ag_ui_task_view import canonical_task_view
+from zebra_agent_api.coverage_public_read import (
+    coverage_public_read_problem,
+    coverage_session_read_problem,
+)
 from zebra_agent_api.task_api import is_user_task_event, serialize_task_event
 
 _POLL_SECONDS = 0.05
@@ -34,6 +39,8 @@ async def tail_session_events(
     after_sequence: int,
 ) -> AsyncIterator[str]:
     active_stores = stores or sqlite_control_plane_stores(database_path)
+    if coverage_session_read_problem(active_stores, session_id):
+        return
     cursor = after_sequence
     live_cursor: LiveEventCursor | None = None
     if live_event_fanout is not None and deployment_namespace is not None:
@@ -49,6 +56,8 @@ async def tail_session_events(
     last_delivery = monotonic()
     while not await request.is_disconnected():
         events = await asyncio.to_thread(active_stores.events.read_since, session_id, cursor)
+        if coverage_public_read_problem(events):
+            return
         for event in events:
             cursor = event.sequence
             last_delivery = monotonic()
@@ -67,6 +76,8 @@ async def tail_session_events(
                     block_ms=1_000,
                 )
                 live_cursor = live_batch.next_cursor
+                if coverage_public_read_problem(item.event for item in live_batch.events):
+                    return
                 for envelope in live_batch.events:
                     if envelope.event.sequence <= cursor:
                         continue
@@ -95,11 +106,18 @@ async def tail_task_events(
     request: Request,
     after_sequence: int,
 ) -> AsyncIterator[str]:
-    store = (stores or sqlite_control_plane_stores(database_path)).tasks
+    active_stores = stores or sqlite_control_plane_stores(database_path)
+    store = active_stores.tasks
+    if coverage_public_read_problem(
+        item.event for item in canonical_task_view(active_stores, task_id)
+    ):
+        return
     cursor = after_sequence
     last_delivery = monotonic()
     while not await request.is_disconnected():
         events = await asyncio.to_thread(store.read_events, task_id, cursor)
+        if coverage_public_read_problem(item.event for item in events):
+            return
         for event in events:
             cursor = event.task_sequence
             if not is_user_task_event(event):

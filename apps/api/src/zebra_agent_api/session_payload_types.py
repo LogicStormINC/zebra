@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from agent_core.domain.attachments import TextAttachmentInput
+from agent_core.domain.coverage_task_admission import CoverageTaskAdmission
 from agent_core.domain.identifiers import AgentDefinitionId
 from agent_core.domain.image_attachments import ImageAttachmentInput
 from agent_core.domain.turns import InteractionMode
@@ -11,6 +12,7 @@ from agent_core.domain.workspace_control import WorkspaceSource
 
 
 class CreateSessionPayload(TypedDict):
+    coverage_admission: NotRequired[CoverageTaskAdmission]
     prompt: str
     title: str
     workspace: str

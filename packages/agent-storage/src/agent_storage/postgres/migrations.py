@@ -1,41 +1,35 @@
 """Immutable PostgreSQL migration catalog."""
+from agent_storage.postgres import command_coverage_admission_migration as coverage_admission_ddl
 from agent_storage.postgres.agent_mailbox_migration import AGENT_MAILBOX_MIGRATION
-from agent_storage.postgres.agent_registry_migration import AGENT_REGISTRY_MIGRATION
 from agent_storage.postgres.agent_release_enforcement_migration import (
     AGENT_RELEASE_ENFORCEMENT_MIGRATION,
 )
-from agent_storage.postgres.artifact_payload_migration import ARTIFACT_PAYLOAD_MIGRATION
 from agent_storage.postgres.client_capability_migration import CLIENT_CAPABILITY_MIGRATION
 from agent_storage.postgres.client_effect_migration import CLIENT_EFFECT_MIGRATION
 from agent_storage.postgres.client_security_migration import CLIENT_SECURITY_MIGRATION
 from agent_storage.postgres.client_session_migration import CLIENT_SESSION_MIGRATION
-from agent_storage.postgres.control_plane_migration import CONTROL_PLANE_MIGRATION
-from agent_storage.postgres.delivery_transaction_migration import DELIVERY_TRANSACTION_MIGRATION
 from agent_storage.postgres.extension_snapshots_migration import EXTENSION_SNAPSHOTS_MIGRATION
 from agent_storage.postgres.extensions_migration import EXTENSIONS_MIGRATION
-from agent_storage.postgres.governed_memory_migration import GOVERNED_MEMORY_MIGRATION
 from agent_storage.postgres.governed_memory_scope_migration import GOVERNED_MEMORY_SCOPE_MIGRATION
-from agent_storage.postgres.handoff_migration import HANDOFF_MIGRATION
-from agent_storage.postgres.host_auth_migration import HOST_AUTH_MIGRATION
 from agent_storage.postgres.host_connector_migration import HOST_CONNECTOR_MIGRATION
 from agent_storage.postgres.host_manifest_freeze_migration import HOST_MANIFEST_FREEZE_MIGRATION
 from agent_storage.postgres.mcp_catalog_migration import MCP_CATALOG_MIGRATION
 from agent_storage.postgres.mcp_credentials_migration import MCP_CREDENTIALS_MIGRATION
-from agent_storage.postgres.memory_delivery_migration import MEMORY_DELIVERY_MIGRATION
-from agent_storage.postgres.migration_catalog_tail import LATEST_MIGRATIONS
+from agent_storage.postgres.migration_catalog_tail import (
+    LATEST_MIGRATIONS,
+    STORAGE_AUTHORITY_MIGRATIONS,
+)
 from agent_storage.postgres.migration_extensions import RELIABILITY_MIGRATIONS
-from agent_storage.postgres.migration_recovery_migration import MIGRATION_RECOVERY_MIGRATION
 from agent_storage.postgres.migration_types import Migration
-from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATION
 from agent_storage.postgres.orchestration_migration import ORCHESTRATION_MIGRATION
-from agent_storage.postgres.provider_continuation_migration import PROVIDER_CONTINUATION_MIGRATION
 from agent_storage.postgres.research_profile_migration import RESEARCH_TOOL_PROFILE_MIGRATION
 from agent_storage.postgres.session_tenant_migration import SESSION_TENANT_NAMESPACE_MIGRATION
 from agent_storage.postgres.skill_publications_migration import SKILL_PUBLICATIONS_MIGRATION
 from agent_storage.postgres.skill_uploads_migration import SKILL_UPLOADS_MIGRATION
 from agent_storage.postgres.subagent_delegation_migration import SUBAGENT_DELEGATION_MIGRATION
 from agent_storage.postgres.task_admission_migration import TASK_BINDING_MIGRATION
-from agent_storage.postgres.workspace_control_migration import WORKSPACE_CONTROL_MIGRATION
+from agent_storage.postgres.worker_capability_migration import WORKER_CAPABILITY_MIGRATION
+from agent_storage.postgres.worker_continuation_migration import WORKER_CONTINUATION_MIGRATION
 from agent_storage.postgres.workspace_definition_snapshot_migration import (
     WORKSPACE_DEFINITION_SNAPSHOT_MIGRATION,
 )
@@ -476,21 +470,31 @@ MIGRATIONS = (
             """,
         ),
     ),
-    HANDOFF_MIGRATION, ARTIFACT_PAYLOAD_MIGRATION,
-    GOVERNED_MEMORY_MIGRATION, MEMORY_DELIVERY_MIGRATION,
-    NATIVE_MEMORY_MIGRATION, PROVIDER_CONTINUATION_MIGRATION,
-    CONTROL_PLANE_MIGRATION, DELIVERY_TRANSACTION_MIGRATION,
-    MIGRATION_RECOVERY_MIGRATION, HOST_AUTH_MIGRATION,
-    WORKSPACE_CONTROL_MIGRATION, AGENT_REGISTRY_MIGRATION,
+    *STORAGE_AUTHORITY_MIGRATIONS,
     WORKSPACE_DEFINITION_SNAPSHOT_MIGRATION,
     GOVERNED_MEMORY_SCOPE_MIGRATION,
-    AGENT_RELEASE_ENFORCEMENT_MIGRATION, SESSION_TENANT_NAMESPACE_MIGRATION,
-    HOST_CONNECTOR_MIGRATION, TASK_BINDING_MIGRATION,
-    SUBAGENT_DELEGATION_MIGRATION, ORCHESTRATION_MIGRATION,
-    AGENT_MAILBOX_MIGRATION, RESEARCH_TOOL_PROFILE_MIGRATION, HOST_MANIFEST_FREEZE_MIGRATION,
-    CLIENT_CAPABILITY_MIGRATION, CLIENT_SESSION_MIGRATION, CLIENT_EFFECT_MIGRATION,
-    CLIENT_SECURITY_MIGRATION, *RELIABILITY_MIGRATIONS, EXTENSIONS_MIGRATION,
-    SKILL_PUBLICATIONS_MIGRATION, SKILL_UPLOADS_MIGRATION, EXTENSION_SNAPSHOTS_MIGRATION,
-    MCP_CREDENTIALS_MIGRATION, MCP_CATALOG_MIGRATION,
+    AGENT_RELEASE_ENFORCEMENT_MIGRATION,
+    SESSION_TENANT_NAMESPACE_MIGRATION,
+    HOST_CONNECTOR_MIGRATION,
+    TASK_BINDING_MIGRATION,
+    SUBAGENT_DELEGATION_MIGRATION,
+    ORCHESTRATION_MIGRATION,
+    AGENT_MAILBOX_MIGRATION,
+    RESEARCH_TOOL_PROFILE_MIGRATION,
+    HOST_MANIFEST_FREEZE_MIGRATION,
+    CLIENT_CAPABILITY_MIGRATION,
+    CLIENT_SESSION_MIGRATION,
+    CLIENT_EFFECT_MIGRATION,
+    CLIENT_SECURITY_MIGRATION,
+    *RELIABILITY_MIGRATIONS,
+    EXTENSIONS_MIGRATION,
+    SKILL_PUBLICATIONS_MIGRATION,
+    SKILL_UPLOADS_MIGRATION,
+    EXTENSION_SNAPSHOTS_MIGRATION,
+    MCP_CREDENTIALS_MIGRATION,
+    MCP_CATALOG_MIGRATION,
     *LATEST_MIGRATIONS,
+    WORKER_CAPABILITY_MIGRATION,
+    coverage_admission_ddl.COMMAND_COVERAGE_ADMISSION_MIGRATION,
+    WORKER_CONTINUATION_MIGRATION,
 )

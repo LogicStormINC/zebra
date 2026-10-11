@@ -28,6 +28,8 @@ from agent_core.ports.agent_tasks import TaskEvent
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 
+from zebra_agent_api.coverage_public_read import coverage_task_read_problem
+from zebra_agent_api.coverage_public_summary import coverage_public_summary
 from zebra_agent_api.idempotency import replay_idempotent_response, save_idempotent_response
 from zebra_agent_api.responses import ApiResponse
 from zebra_agent_api.session_handoff import SessionHandoffApi
@@ -71,7 +73,7 @@ class TaskReadApi:
         ]
         if attachments:
             body["attachments"] = attachments
-        return ApiResponse(200, body)
+        return ApiResponse(200, coverage_public_summary(self.stores, session.session_id, body))
     def list(self, query: Mapping[str, str]) -> ApiResponse:
         limit = parse_task_limit(query.get("limit"))
         if isinstance(limit, ApiResponse):
@@ -105,7 +107,7 @@ class TaskReadApi:
                     else "open"
                 ),
             )
-            items.append(body)
+            items.append(coverage_public_summary(self.stores, session.session_id, body))
         return ApiResponse(
             200,
             {"tasks": items, "sessions": items, "count": len(items), "limit": limit},
@@ -117,6 +119,9 @@ class TaskReadApi:
         store = self.stores.tasks
         if store.get_task(parsed) is None:
             return task_not_found(task_id)
+        problem = coverage_task_read_problem(self.stores, parsed)
+        if problem is not None:
+            return problem
         return ApiResponse(
             200,
             {

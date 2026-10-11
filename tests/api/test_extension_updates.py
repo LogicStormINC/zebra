@@ -196,7 +196,9 @@ def test_cors(tmp_path: Path, store: AsyncMock) -> None:
         },
         json={"enabled": False},
     )
-    assert response.headers["access-control-expose-headers"] == "ETag"
+    assert set(response.headers["access-control-expose-headers"].split(", ")) == {
+        "ETag", "X-Coverage-Report-Sha256", "Content-Disposition",
+    }
 
 
 def test_body_stream_stops_at_limit(store: AsyncMock) -> None:

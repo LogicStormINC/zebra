@@ -1,0 +1,3 @@
+{"case_id":"positive","outcome":"finding","quotes":[{"start":1,"end":3,"text":"停产"}]}
+{"case_id":"negative","outcome":"clear","quotes":[]}
+{"case_id":"missed","outcome":"unresolved","quotes":[]}

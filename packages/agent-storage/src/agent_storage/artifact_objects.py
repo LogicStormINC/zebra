@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import datetime
 from hashlib import sha256
+from time import monotonic
 from typing import Protocol, cast
 
 from agent_core.domain.artifact_objects import (
@@ -39,7 +40,7 @@ class _S3Client(Protocol):
 
 
 class _ReadableBody(Protocol):
-    def read(self) -> bytes: ...
+    def read(self, size: int) -> bytes: ...
 
     def close(self) -> None: ...
 
@@ -53,10 +54,32 @@ class S3ArtifactObjectStore:
         *,
         bucket: str,
         key_prefix: str = "zebra/artifacts/v1",
+        deadline_client_factory: Callable[[float], _S3Client] | None = None,
     ) -> None:
         self._client = client
         self._bucket = _canonical_text(bucket, field_name="bucket")
         self._key_prefix = _canonical_prefix(key_prefix)
+        self._deadline_client_factory = deadline_client_factory
+
+    def read_version_verified_before(
+        self, expectation: ArtifactObjectExpectation, object_version: str, deadline: float
+    ) -> bytes:
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            raise TimeoutError("artifact verification deadline exhausted")
+        if self._deadline_client_factory is None:
+            raise TimeoutError("bounded object transport is not composed")
+        client = self._deadline_client_factory(remaining / 4)
+        try:
+            store = S3ArtifactObjectStore(client, bucket=self._bucket, key_prefix=self._key_prefix)
+            try:
+                return store.read_version_verified(expectation, object_version, deadline=deadline)
+            except ArtifactObjectUnavailableError:
+                raise TimeoutError("bounded object transport unavailable") from None
+        finally:
+            close = getattr(client, "close", None)
+            if callable(close):
+                close()
 
     def put_if_absent(self, request: ArtifactObjectPutRequest) -> ArtifactObjectReceipt:
         key = self._key(request.expectation)
@@ -74,6 +97,7 @@ class S3ArtifactObjectStore:
             verification = self.verify(request.expectation)
             if verification.status is ArtifactObjectVerificationStatus.VERIFIED:
                 assert verification.receipt is not None
+                self.read_version_verified(request.expectation, verification.receipt.object_version)
                 return verification.receipt
             if verification.status is ArtifactObjectVerificationStatus.MISMATCH:
                 raise ArtifactObjectConflictError(
@@ -87,9 +111,7 @@ class S3ArtifactObjectStore:
 
         verification = self.verify(request.expectation)
         if verification.status is not ArtifactObjectVerificationStatus.VERIFIED:
-            raise ArtifactObjectUnavailableError(
-                "written artifact object could not be verified"
-            )
+            raise ArtifactObjectUnavailableError("written artifact object could not be verified")
         assert verification.receipt is not None
         return verification.receipt
 
@@ -111,6 +133,7 @@ class S3ArtifactObjectStore:
         return self._verification(expectation, response)
 
     def read_verified(self, expectation: ArtifactObjectExpectation) -> bytes:
+        _validate_length(expectation.size_bytes)
         verification = self.verify(expectation)
         if verification.status is ArtifactObjectVerificationStatus.NOT_FOUND:
             raise ArtifactObjectNotFoundError("artifact object was not found")
@@ -126,7 +149,10 @@ class S3ArtifactObjectStore:
         self,
         expectation: ArtifactObjectExpectation,
         object_version: str,
+        *,
+        deadline: float | None = None,
     ) -> bytes:
+        _validate_length(expectation.size_bytes)
         try:
             response = self._client.get_object(
                 Bucket=self._bucket,
@@ -156,36 +182,12 @@ class S3ArtifactObjectStore:
             raise ArtifactObjectIntegrityError(
                 "artifact object version does not match read expectation"
             )
-        raw_body = response.get("Body")
-        read = getattr(raw_body, "read", None)
-        close = getattr(raw_body, "close", None)
-        if not callable(read) or not callable(close):
-            raise ArtifactObjectUnavailableError("artifact object response has no body")
-        body = cast(_ReadableBody, raw_body)
-        read_error: Exception | None = None
-        try:
-            payload = body.read()
-        except Exception as error:
-            read_error = error
-            payload = b""
-        finally:
-            try:
-                body.close()
-            except Exception as error:
-                if read_error is None:
-                    raise ArtifactObjectUnavailableError(
-                        "artifact object body close failed"
-                    ) from error
-        if read_error is not None:
-            raise ArtifactObjectUnavailableError(
-                "artifact object body read failed"
-            ) from read_error
-        if not isinstance(payload, bytes):
-            raise ArtifactObjectUnavailableError("artifact object body did not return bytes")
-        if (
-            len(payload) != expectation.size_bytes
-            or sha256(payload).hexdigest() != expectation.sha256
-        ):
+        payload = _read_response_body(
+            response, expected_length=expectation.size_bytes, deadline=deadline
+        )
+        if deadline is not None and monotonic() >= deadline:
+            raise TimeoutError("artifact verification deadline exhausted")
+        if sha256(payload).hexdigest() != expectation.sha256:
             raise ArtifactObjectIntegrityError("artifact object bytes do not match expectation")
         return payload
 
@@ -196,7 +198,14 @@ class S3ArtifactObjectStore:
         start: int,
         end: int,
     ) -> bytes:
-        if start < 0 or end < start or end >= expectation.size_bytes:
+        _validate_length(expectation.size_bytes)
+        if (
+            type(start) is not int
+            or type(end) is not int
+            or start < 0
+            or end < start
+            or end >= expectation.size_bytes
+        ):
             raise ValueError("artifact object range is invalid")
         verification = self.verify(expectation)
         receipt = verification.receipt
@@ -223,13 +232,20 @@ class S3ArtifactObjectStore:
             raise unavailable("artifact object range read failed", error) from error
         expected_length = end - start + 1
         if (
-            response.get("ContentLength") != expected_length
+            type(response.get("ContentLength")) is not int
+            or response.get("ContentLength") != expected_length
             or response.get("ContentRange") != f"bytes {start}-{end}/{expectation.size_bytes}"
             or response.get("VersionId") != object_version
         ):
             _close_response_body(response)
             raise ArtifactObjectIntegrityError("artifact object range evidence is invalid")
-        return _read_response_body(response, expected_length=expected_length)
+        payload = _read_response_body(response, expected_length=expected_length)
+        if (
+            expected_length == expectation.size_bytes
+            and sha256(payload).hexdigest() != expectation.sha256
+        ):
+            raise ArtifactObjectIntegrityError("artifact object bytes do not match expectation")
+        return payload
 
     def delete_if_version(
         self,
@@ -273,9 +289,7 @@ class S3ArtifactObjectStore:
             raise unavailable("artifact object version head failed", error) from error
         verification = self._verification(request.expectation, response)
         if verification.status is ArtifactObjectVerificationStatus.MISMATCH:
-            raise ArtifactObjectIntegrityError(
-                "object version does not match delete expectation"
-            )
+            raise ArtifactObjectIntegrityError("object version does not match delete expectation")
         receipt = verification.receipt
         if receipt is None or receipt.object_version != request.object_version:
             raise ArtifactObjectIntegrityError(
@@ -349,27 +363,49 @@ def _close_response_body(response: Mapping[str, object]) -> None:
         raise ArtifactObjectUnavailableError("artifact object body close failed") from error
 
 
-def _read_response_body(response: Mapping[str, object], *, expected_length: int) -> bytes:
+def _read_response_body(
+    response: Mapping[str, object], *, expected_length: int, deadline: float | None = None
+) -> bytes:
     raw_body = response.get("Body")
     read = getattr(raw_body, "read", None)
     close = getattr(raw_body, "close", None)
     if not callable(read) or not callable(close):
+        _close_response_body(response)
         raise ArtifactObjectUnavailableError("artifact object response has no body")
     body = cast(_ReadableBody, raw_body)
     try:
-        payload = body.read()
+        if deadline is None:
+            payload = body.read(expected_length + 1)
+        else:
+            chunks, length = [], 0
+            while length <= expected_length:
+                if monotonic() >= deadline:
+                    raise TimeoutError("artifact verification deadline exhausted")
+                chunk = body.read(min(64 * 1024, expected_length + 1 - length))
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                length += len(chunk)
+            payload = b"".join(chunks)
+    except TimeoutError:
+        raise
     except Exception as error:
         raise ArtifactObjectUnavailableError("artifact object body read failed") from error
     finally:
         try:
             body.close()
         except Exception as error:
-            raise ArtifactObjectUnavailableError(
-                "artifact object body close failed"
-            ) from error
-    if not isinstance(payload, bytes) or len(payload) != expected_length:
-        raise ArtifactObjectIntegrityError("artifact object range bytes are invalid")
+            raise ArtifactObjectUnavailableError("artifact object body close failed") from error
+    if not isinstance(payload, bytes):
+        raise ArtifactObjectUnavailableError("artifact object body did not return bytes")
+    if len(payload) != expected_length:
+        raise ArtifactObjectIntegrityError("artifact object bytes length is invalid")
     return payload
+
+
+def _validate_length(length: int) -> None:
+    if type(length) is not int or length < 0:
+        raise ValueError("artifact object length must be a non-negative integer")
 
 
 def _canonical_text(value: str, *, field_name: str) -> str:

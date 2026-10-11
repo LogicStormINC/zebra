@@ -12,6 +12,7 @@ from agent_core.domain.coverage_snapshot import (
 )
 from agent_core.domain.host_authority import HostContextEnvelope
 
+from agent_integrations.coverage_snapshot_invocation import OperationBudget
 from agent_integrations.coverage_snapshot_wire import decode_chunk
 
 if TYPE_CHECKING:
@@ -24,10 +25,19 @@ def read_part(
     record: CoverageRecord,
     part: CoveragePart,
     authority: HostContextEnvelope,
+    *,
+    verified: tuple[CoverageSnapshot, tuple[CoverageRecord, ...]] | None = None,
+    budget: OperationBudget | None = None,
 ) -> CoveragePartRead:
-    budget = adapter.host.budget(authority)
-    current, rows = adapter._get(snapshot.snapshot_id, authority, budget)
-    if current != snapshot:
+    budget = budget or adapter.host.budget(authority)
+    current, rows = verified or adapter._get(snapshot.snapshot_id, authority, budget)
+    # ponytail: legacy non-strict snapshots have no local provenance field.
+    # Strict MODEL Task admission independently requires an exact non-null ref.
+    if (
+        snapshot.source_resource_ref not in (None, adapter.host.resource.resource_id)
+        or current.model_dump(exclude={"source_resource_ref"})
+        != snapshot.model_dump(exclude={"source_resource_ref"})
+    ):
         raise CoverageRefusedError(Reason.SCOPE_MISMATCH)
     if record.ordinal >= len(rows) or rows[record.ordinal] != record or part not in record.parts:
         raise CoverageRefusedError(Reason.PART_MISMATCH)

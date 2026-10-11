@@ -24,18 +24,15 @@ from agent_core.ports import (
 )
 
 from zebra_agent_worker.cloud_memory_finalization import finalize_cloud_memory
+from zebra_agent_worker.execution_errors import (
+    RetryableWorkerSetupError as RetryableWorkerSetupError,
+)
+from zebra_agent_worker.execution_errors import WorkerExecutionError as WorkerExecutionError
 from zebra_agent_worker.execution_errors import is_sequence_race
 from zebra_agent_worker.execution_events import (
     DurableHarnessEventRecorder,
     ExecutionInterrupted,
 )
-
-
-class WorkerExecutionError(ValueError): ...
-
-
-class RetryableWorkerSetupError(WorkerExecutionError):
-    """Transient runtime setup failure that must leave the Session resumable."""
 
 
 @dataclass(frozen=True)
@@ -417,6 +414,11 @@ def finalize_worker_setup_failure(
         metadata={
             "stop_reason": "worker_setup_failed",
             "error_type": type(error).__name__,
+            **(
+                {"coverage_refusal_reason": error.coverage_refusal_reason.value}
+                if error.coverage_refusal_reason is not None
+                else {}
+            ),
         },
     )
     if recorder.session.status is SessionStatus.READY:

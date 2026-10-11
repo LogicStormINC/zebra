@@ -12,7 +12,7 @@ from time import monotonic
 from typing import Protocol
 from uuid import UUID
 
-from ag_ui.core import Event, RunErrorEvent
+from ag_ui.core import RunErrorEvent
 from ag_ui.encoder import EventEncoder
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
@@ -29,6 +29,7 @@ from agent_integrations.ag_ui.task_run_binding import bind_task_run
 from agent_integrations.ag_ui.task_stream import AgUiTaskProjector
 from agent_storage import ControlPlaneStores
 
+from zebra_agent_api.ag_ui_task_frames import project_new_task_events as _project_new_task_events
 from zebra_agent_api.ag_ui_task_view import canonical_task_view, deadline_frames
 from zebra_agent_api.ag_ui_task_view import stream_problem as _problem
 from zebra_agent_api.responses import ApiResponse
@@ -430,46 +431,6 @@ def _run_command_is_not_indexed(
 ) -> bool:
     binding = bind_task_run(events, run_id)
     return not binding.legacy and binding.anchor is None
-
-
-def _project_new_task_events(
-    events: list[TaskEvent] | tuple[TaskEvent, ...],
-    identity: AgUiRunIdentity,
-    after: AgUiCursor | None,
-) -> list[tuple[AgUiCursor, str]]:
-    """Project one Task event at a time so every SSE id is an exact cursor.
-
-    ponytail: replaying the bounded Task stream for each new event is
-    intentionally simple and keeps cursor-to-event attribution exact across
-    Segment rollovers; a larger deployment can replace this with a stateful
-    projector without changing the wire contract.
-    """
-
-    start_sequence = after.sequence if after is not None else -1
-    previous = after
-    encoder = EventEncoder()
-    projector = AgUiTaskProjector()
-    projected: list[tuple[AgUiCursor, str]] = []
-    binding = bind_task_run(events, identity.run_id)
-    for index, entry in enumerate(events):
-        if entry.task_sequence <= start_sequence or not binding.includes(entry):
-            continue
-        projection = projector.project_task(
-            events[: index + 1],
-            identity,
-            after=previous,
-        )
-        next_cursor = projection.next_cursor
-        if next_cursor is None:
-            continue
-        for agui_event in projection.events:
-            projected.append((next_cursor, _encode_event(encoder, agui_event, next_cursor)))
-        previous = next_cursor
-    return projected
-
-
-def _encode_event(encoder: EventEncoder, event: Event, cursor: AgUiCursor) -> str:
-    return f"id: {cursor.encode()}\n{encoder.encode(event)}"
 
 
 def _stream_path_identity(path: str) -> tuple[str, str] | None:

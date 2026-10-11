@@ -29,6 +29,7 @@ from zebra_agent_api.ag_ui_stream import (
 )
 from zebra_agent_api.app import create_app
 from zebra_agent_api.artifact_download import artifact_download_response
+from zebra_agent_api.coverage_report_http import coverage_report_response
 from zebra_agent_api.extension_composition import (
     compose_http_extensions,
     compose_http_turn_admission,
@@ -54,7 +55,7 @@ from zebra_agent_api.session_streaming import tail_session_events, tail_task_eve
 from zebra_agent_api.skill_publications import skill_publication_response
 from zebra_agent_api.task_api import parse_task_id
 
-HTTP_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
+HTTP_METHODS = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
 HTTP_ALLOWED_HEADERS = [
     "Accept",
     "Authorization",
@@ -163,7 +164,7 @@ def create_http_app(
         allow_origins=["*"] if active_settings.deployment == "local" else exact_host_origins,
         allow_methods=HTTP_METHODS,
         allow_headers=[*HTTP_ALLOWED_HEADERS, "If-Match", "Idempotency-Key"],
-        expose_headers=["ETag"],
+        expose_headers=["ETag", "X-Coverage-Report-Sha256", "Content-Disposition"],
         allow_credentials=False,
     )
 
@@ -207,6 +208,9 @@ def create_http_app(
         )
         if extension_response is not None:
             return extension_response
+        report_response = await coverage_report_response(request, adapter)
+        if report_response is not None:
+            return report_response
         download_response = await artifact_download_response(request, adapter)
         if download_response is not None:
             return download_response
@@ -320,15 +324,7 @@ def create_http_app(
             )
         return JSONResponse(status_code=response.status_code, content=response.body)
 
-    async def handle_artifact_preview_head(
-        request: Request, task_id: str, artifact_id: str,
-    ) -> Response:
-        _ = task_id, artifact_id
-        return await handle(request)
-
     app.add_api_route("/", handle, methods=HTTP_METHODS, response_model=None)
-    app.add_api_route("/tasks/{task_id}/artifacts/{artifact_id}/preview",
-                      handle_artifact_preview_head, methods=["HEAD"], response_model=None)
     app.add_api_route(
         "/v1/extensions", handle, methods=["HEAD", "TRACE", "CONNECT"], response_model=None
     )

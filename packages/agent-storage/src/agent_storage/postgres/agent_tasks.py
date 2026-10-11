@@ -130,6 +130,15 @@ class PostgresAgentTaskStore(FencedAgentTaskStorePort):
             ).fetchone()
         return row is not None and row["task_id"] != session_id
 
+    def task_id_for_session(self, session_id: SessionId) -> TaskId | None:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                "SELECT task_id FROM execution_segments "
+                "WHERE deployment_namespace=%s AND session_id=%s",
+                (self._database.deployment_namespace, session_id),
+            ).fetchone()
+        return None if row is None else TaskId(row["task_id"])
+
     def attach_segment(
         self,
         task_id: TaskId,

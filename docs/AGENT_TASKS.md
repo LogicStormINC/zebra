@@ -4,7 +4,688 @@
 
 - Status: In Progress (Ready dependencies confirmed, claimed 2026-10-08).
 - Human owner: Luke Ding; executor: Codex.
+- Branch-integration regression repair (user-approved 2026-10-12, claimed before
+  coding): same owner/branch/worktree; owns the six coverage orchestration/paging/
+  recovery-read regression files and this registry/evidence. Update outdated
+  test doubles for transaction identity, proof callbacks and cache ownership;
+  preserve refusal assertions and native proof gates. Run full tests before
+  integration; SQL performance/runtime activation remain separate open gates.
+- Verified MODEL settlement continuation (Ready after shared reads; claimed
+  2026-10-11 before coding, same owner/branch/worktree): owns optional core
+  coverage MODEL settlement contract, native budget/checkpoint settlement,
+  integration invocation and native/pure/fault/workload regression tests,
+  fleet qualification identity and evidence/progress docs. Deliver the exact
+  original bytes already verified by the atomic usage settlement, rather than
+  reopen another proof phase solely to reread them. Preserve fresh callback
+  authority, replay verification, eager/legacy fallback, immediate charges and
+  independent final originals. Full <=1000 SQL gate remains mandatory; no
+  runtime activation, business migration, service restart or merge/push.
+  Implemented atomic acknowledgement and uncached exact post-callback proof;
+  unsafe post-settlement reread elision withdrawn. First/replay fault native10
+  and pure155 pass, static1115/eval30 GO. Serial nine certifies16.1541s10497client/
+  15637server237GET/4callbacks/5batches: SQL<=1000 FAIL, no query reduction claim.
+  Normal continuation still has zero exceptional full recoveries; bounded guard
+  fanout remains OPEN. See COVERAGE_MODEL_SETTLEMENT_EVIDENCE.md; In Progress.
+- Shared Artifact read-phase continuation (Ready after operation composition;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns
+  packages/agent-integrations/src/agent_integrations/coverage_snapshot_artifacts.py,
+  native readonly phase/consumer regression tests, fleet qualification identity
+  and evidence/progress docs. Reuse the existing bounded read-scope Port at the
+  common read entrance; consume only after successful exit. Keep writes/model
+  requests outside scopes, native locked proof and legacy guarded fallback,
+  fresh exit authority/metadata/retention and independent final certification.
+  No runtime activation, merge/push, business migration or restart.
+  Explicitly extends to coverage_model_invocation.py and pure/native MODEL
+  boundary tests: an admitted final-certification boundary with no reads, writes
+  or delegated callbacks needs one current authority check, not two adjacent
+  checks. Keep both sides of real external/physical I/O and fresh-fence callbacks.
+  Boundary review explicitly extends ownership to the optional core read-scope
+  Port contract, native coverage_artifacts/coverage_prepared_reads, existing
+  verified-load regressions and owned-transaction/deployment mismatch tests.
+  Already-owned/custom proof reads keep guarded fallback, not unlocked/coalesced
+  guarantees; prepared bulk reads must match the configured deployment first.
+  Implemented shared read entrance, native-clock-only single guard, owned proof
+  fallback and deployment equality. Final48/critical native85/local199 pass;
+  static1114/eval30/actual2612-size GO. Serial nine independently certifies17.5762s
+  10485client15619server225GET/4callbacks/5batches, <=1000 SQL FAIL. Whole task
+  remains In Progress; Worker-wide guard fanout/final retention/fleet/live OPEN.
+- Native operation transaction continuation (Ready after bounded proof pages;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns PostgreSQL
+  work-unit exact-owner reentry, coverage store/budget/publication transaction
+  composition, Worker coverage local authority composition, related native
+  rollback/revocation/isolation/query-count/workload tests, qualification and
+  evidence/progress docs. Share one short native transaction across nested
+  database adapters; keep fresh post-lock authority, public callback checks,
+  external I/O boundaries, full tenant cleanup and independent final proof.
+  No permission TTL/cache, reset suppression, business migration or restart.
+  Implemented exact-owner/deadline borrower reentry and native MODEL budget,
+  acceptance/certification/Worker local authority composition. Smoke51/boundary60/
+  corrected operation2 passed; original wrong exception assertion retained as
+  failed evidence. Whole-nine independently certified16.4840s10922client16346server
+  225GET/4callbacks/5qualified batches, strict<=1000 FAIL. Guarded adapter-entry
+  fanout, final immutable-retention proof outside locks and fleet/history/live
+  closure remain OPEN; task In Progress, runtime activation OFF.
+  Deadline-wrapper follow-up ownership explicitly extended before coding:
+  packages/agent-storage/src/agent_storage/postgres/coverage_recovery_preparation.py
+  and native work-unit/deadline tests. Preserve the minimum still-positive
+  deadline through nested wrappers; old owner cannot reinstall a longer timeout.
+  Implemented shared minimum propagation; native/recovery/report/API51 passed.
+  Expanded MODEL/final/batch/core56 passed before that fix. Final-source strict
+  nine23.4505s12180client18052server248GET/5callbacks/6qualified batches,<=1000 FAIL.
+  All prior runs retained; no fixed-batch speed claim or root-cure completion.
+- Batch execution context/native finalization continuation (Ready after batch
+  publication; claimed 2026-10-11 before coding, same owner/branch/worktree):
+  owns scoped coverage proof metadata readers, native Artifact materialization
+  Event/finalization batch transaction, Worker execution composition, focused
+  native fault/query-count/workload tests and progress/evidence docs. Preserve
+  canonical per-object Events, mutation audit, fresh authority at boundaries,
+  independent final certification and legacy paths. Strict full-scope SQL gate
+  remains <=1000; no service restart, release activation or business migration.
+  Migration validation ownership explicitly includes the general migration-list
+  assertion, which still stopped at78; update explicit79-94 expectations and
+  retain concurrent idempotency/checksum/epoch assertions (same owner, no overlap).
+  Implemented native set-based canonical Events/finalization/audit, bounded
+  readonly execution phases and <=1000-row locked metadata/Event proof pages.
+  Native index94 verifies exact deployment/URI lookup without Seq Scan; fleet
+  qualification updated. Native76+74+37 pass/static1114/eval30/actual2610-size GO.
+  Final-source strict nine16.0781s10806client16273server218GET/4callbacks/4batches:
+  <=1000 SQL FAIL. Remaining Worker-wide authority/transaction fanout, final
+  immutable-retention proof outside locks and fleet/history/live gates; In Progress.
+- Governed Artifact batch continuation (Ready after sealed membership components;
+  claimed 2026-10-11 before coding, same human owner/branch/worktree): owns core
+  optional immutable batch Port/executor, native coverage Artifact publisher and
+  shared receipt transition, Worker facade, focused pure/native/fault/workload
+  checks, executable fleet capability qualification and evidence/progress docs.
+  Batch bounded observations/results; preserve
+  immediate MODEL checkpoint/usage, original final certification and local fallback.
+  Upload outside DB transactions; exact retry, current fence and tenant authority
+  at atomic settlement. No runtime activation, business migration or integration.
+  Implemented optional batch Port/actual executor and native scoped set reservation/
+  receipt settlement, external physical verification and atomic finalization with
+  exact post-callback batch/Event revalidation. Concurrent missing-row insertion
+  rolls back whole delta; fresh-snapshot retry revalidates identity. MODEL checkpoint/
+  charges remain immediate; before/after batch interruption + replacement + final
+  certificate uses one HTTP and unchanged usage. Native124+23+2 pass, pure88 pass8
+  native skips/static1110/eval30/actual2604 GO. Strict final-source nine19.6260s,
+  11772client17472server225GET/4callbacks/5qualified batches: <=1000 FAIL, no latency
+  gain. Bulk reads/authority, per-object canonical Event/finalization, final proof
+  under locks and fleet/history/live remain open; task In Progress, receipts OFF.
+- Sealed membership continuation (Ready after batch components; claimed
+  2026-10-11 before coding, same owner/branch/worktree): native migration/catalog,
+  bind/projection/MODEL verifier/acceptance and consumer qualification, focused
+  native/pure/workload checks and evidence docs. Seal exact ordered membership
+  from the validated original manifest at first bind; update only exact unique
+  MODEL part settlement, invalidate unsupported mutations, retain legacy/full
+  recovery and independent final certification. No counter-only completeness.
+  Implemented93: guarded ordered key/record SHA256 roots and unique Event-backed
+  exact part settlement; qualified normal commits read selected <=1000 records
+  without full manifest parse/all-key upload. Native44+expanded19 pass; pure65
+  pass20 native skips/static1108/eval30/actual2600-size GO. Final original manifest
+  corruption refuses despite valid seal/incremental retry. Root repeat4/4hits,
+  nine18.2650s12916client19132server218GET/4wakes/4qualified batches; strict SQL
+  gate STILL FAIL. Lifecycle batch/fleet/history scale and release/live remain
+  open; same task In Progress, receipts OFF, no activation/integration.
+  First current21.3039s14371client/5wakes retained. Broad native94 pass11 fixture
+  failures; corrected membership19/recovery-readiness46 pass cover all failures.
+- Batch transaction follow-up (Ready after v90; claimed 2026-10-11 before
+  coding, same owner/branch/worktree): owns coverage Artifact proof readers,
+  native lifecycle/membership/commit queries and additive migrations/catalog,
+  Worker coverage scheduling/composition, command admission capacity, related
+  integrations and native/pure/load tests, plus evidence/progress/plan docs.
+  Implement operation-scoped proof reads and batch metadata revalidation,
+  delta membership/acceptance, short certification transactions and bounded
+  scheduling. Preserve authority at access/commit boundaries, exact Event-backed
+  facts, tenant isolation and independent final certification. Acceptance includes
+  the nine-record <=1000 application-call target and server-side SQL accounting;
+  failures remain explicit, never hidden in a changed measurement boundary.
+  Component-verified: bounded acceptance, pure operation proof/owner-TX borrowing,
+  verified-load reuse, native volume91/index92 and fleet qualification. Latest
+  nine certified18.0889s12912client18823server218GET/four batches; strict SQL
+  <=1000 gate FAIL. Sealed membership, governed lifecycle batches, short final
+  certification/immutable retention and fleet/load/live closure remain open.
+  Native MODEL30/fleet55/root-boundaries10 and pure143/static gates pass.
+  Exact evidence: docs/COVERAGE_BATCH_TRANSACTION_EVIDENCE.md. Task In Progress;
+  runtime receipts OFF; no business migration/restart/activation/merge/push.
+- Execution authority and transaction boundary follow-up (Ready after v89;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns additive
+  lineage revision migration/catalog and scoped authority reads, Worker coverage
+  dispatch/Artifact proof boundaries, PostgreSQL connection work units, native
+  mutation/lease/cancellation/isolation tests and SQL workload evidence. Replace
+  nested full Task checks with current version checks, retain live Host checks,
+  exact final certification and fallback for unsupported histories. Consolidate
+  short database work units without holding transactions over external I/O.
+  Scope also includes capability qualification and performance gate tests.
+  Owned-path extension claimed before coding: command_wakeup_handoff early
+  and command_coverage_admission read-only missing-consumer rejection, with
+  native capability regressions. No
+  unqualified Worker may perform expensive recovery proof before later refusal;
+  retain independent final locked capability/lease/authority admission checks.
+  Implemented migration90/current native authority, same-wake normal continuation,
+  shared write authority, short read work units and bounded incremental object
+  reuse; exceptional recovery and final original certification remain independent.
+  Final serial nine30.5219s20403execute/20 full native validations/287GET/
+  7callbacks/18qualified/zero exceptional recovery; structural gate passes,
+  overall SQL/SLO and tenant/fleet acceptance do NOT. Production receipts OFF.
+  Native expanded51 and latest work-unit3 pass; static/actual2586-size/diff GO.
+  Exact scope, failed-gate correction and remaining work:
+  docs/COVERAGE_EXECUTION_CONTEXT_EVIDENCE.md. Task remains In Progress.
+- Native Task admission proof follow-up (Ready after v88, claimed 2026-10-11
+  before coding, same owner/branch/worktree): owns additive migration/catalog,
+  coverage Task descriptor proof/source/index/budget entry points, capability
+  configuration, native storage/readiness regressions and evidence/progress.
+  Maintain exact append-only Session continuity and strict Task identity in the
+  native transaction; normal admitted proof is bounded, latest Task authority
+  remains a fresh read. Unsupported history changes and legacy use full scans;
+  independent recovery/publication certification remains full. No activation.
+  Implemented: native MODEL54/Worker-fleet82/root8/renewal1 and static gates pass;
+  1,000 native descriptor appends keep normal proof at two fresh queries. Serial
+  nine56.0948s49137execute/18qualified/zero recovery/finalcert;100 fewer executes
+  than v88 but no overall latency gain. Per-Artifact authority fanout remains open.
+- Incremental native MODEL summary follow-up (Ready after v87 receipt roots;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns additive
+  migration/catalog, MODEL index/summary and capability contract, focused native
+  storage/Worker regressions, workload/evidence/progress. Database triggers
+  maintain exact fresh-run counters and representation checks transactionally;
+  unsupported mutations invalidate the fast path rather than blessing projections.
+  Legacy/recovery/final certification keep independent history proof. No activation.
+- Revision-bound mint follow-up (Ready after v87; claimed 2026-10-11 before
+  coding, same owner/branch/worktree): owns execution receipt mint/read, native
+  revision receipt regressions and evidence/progress. Use the verified commit's
+  transaction-local revision root without constructing a redundant historical
+  fingerprint; retain legacy fallback and independent certification. No activation.
+  Owned-path extension before coding: worker_capability_configuration and focused
+  readiness tests bind the revision-root proof contract into fleet qualification,
+  preventing old fingerprint-only consumers from matching new routing identity.
+  Implemented: native15 passed121.08s; nine workload certified50.4048s with
+  49375execute/18qualified/zero recovery/finalcert. Exactly18 redundant scans
+  removed versus same-callback49393execute control, not full performance closure.
+  Final continuation/capability/race matrix69 pass122.37s, static/actual size GO.
+- Native MODEL revision-root follow-up (Ready after delta proof; claimed
+  2026-10-11 before coding, same owner/branch/worktree): owns additive storage
+  migration/catalog, MODEL revision tracking, receipt mint/read and focused
+  native receipt/mutation/concurrency regressions, evidence and progress docs.
+  Database-maintained monotonic revisions invalidate receipts on every MODEL
+  source/witness/call/ledger mutation, including rollback and truncate. Existing
+  receipts retain full fingerprint fallback; no permission cache or activation.
+  Implemented v87 version root and bounded normal receipt reads. Native final14
+  pass113.40s plus initialization4, pure161 pass; no history-scan function on the
+  new read path. Mint/index/authority roots and fleet gates remain In Progress;
+  production receipts OFF, no migration/activation/merge/push.
+- Incremental MODEL state-machine follow-up (Ready after same-read metadata;
+  claimed 2026-10-11 before coding, Luke Ding/Codex, codex/cov-exec-01 in
+  cov-exec-01 worktree): owns postgres coverage MODEL source/index/verification/
+  acceptance, Worker composition and authority proof boundaries, focused native
+  storage/Worker tests, workload controls and evidence/docs. Separate normal
+  delta proof from independent full recovery/certification; retain exact source,
+  fresh authority/fence/STOP and atomic ledger checks. Complete each safe slice
+  before activation; report unresolved historical scans and production gates.
+  Delta transcript/boundary slice implemented; current native4/pure148 passed.
+  Nine native workload49.2905s47599execute508GET/18qualified/zero recovery/final
+  certificate, versus prior60.2254s56639execute745GET (callbacks10->9; no SLO).
+  Full state-machine/authority/fleet root work remains In Progress; production
+  receipts OFF. Exact evidence and unresolved work: COVERAGE_BINDING_READ_EVIDENCE.
+- Verified-load metadata follow-up (Ready after receipt initialization; claimed
+  2026-10-11 before coding, same owner/branch/worktree): owns integrations
+  coverage_snapshot_artifacts and coverage_model_invocation, focused integrations/
+  native Worker regressions/workload controls and evidence/docs. Reuse the
+  verified read's metadata; known-digest loads use the existing verified Port
+  directly. Keep legacy path, full metadata/bytes checks and fresh authority,
+  retention/deadline guards. No body/permission cache or runtime activation.
+  Implemented; integration223/native26 pass, scoped source GO, make check and
+  actual2565 size GO. Native2s nine serial2 pass139.46s:65039->56607SQL,
+  bindings3394->2867/GET745 unchanged; observed70.7937->59.9912s. Native60s
+  pair2 pass99.28s:47699->40307SQL/GET645 unchanged,49.4899->41.0434s.
+  Independent final cert/18qualified/zero exceptional recovery retained.
+  No p95/SLO/live claim. Commit MODEL replay, authority fanout and tenant/fleet
+  acceptance OPEN; production receipts OFF, no restart/activation/merge/push.
+- Receipt-backed MODEL initialization follow-up (Ready after batch-routing
+  acceptance; claimed 2026-10-11 before coding, same owner/branch/worktree): owns
+  postgres MODEL budget initialization and execution receipt reader, native
+  Worker/regression/workload measurements and evidence/docs. Reuse qualified
+  existing atomic receipts only with unchanged MODEL tail, fresh native policy,
+  current authority/fence/STOP and original deadline; legacy/tail uses full replay,
+  corruption refuses and final certification remains independent. No activation.
+  Implemented; native14/pure13 pass, scoped source GO, make check/actual2565 size
+  GO. Native2s nine serial2 pass149.83s:20->2 full initialization replays,
+  SQL67979->65039/GET835->745, observed73.4938->67.1875s. Single pair not SLO;
+  diagnostic60s avoids no replay and adds30 SQL. Authority fanout, commit replay,
+  native fingerprint and tenant/fleet/live acceptance remain OPEN. No activation.
+  Hardened qualified2s rerun1 pass74.13s: same65039SQL/745GET/two full replays,
+  measured68.6504s completion; new replay-count regression passed. Final pure47
+  and make check GO; no runtime integration or release acceptance claimed.
+- Incremental batch routing follow-up (Ready after verified-load acceptance;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns postgres
+  coverage commit/Event descriptors including transactions payload bounds,
+  shared replay/verification, native scoped
+  batch regressions and evidence/docs. Atomically emit bounded record membership;
+  use only for final_certification incremental selection, validate selected hints
+  against canonical Artifact, preserve legacy full replay and independent final
+  certification. No migration, runtime activation, merge or restart.
+  Implemented; native initial13 pass plus final guards4/hardened5 pass, zero
+  skips; corrected two stale short-page counter assertions, no proof weakening.
+  Deterministic27/oversized1 pass; scoped source GO, make check GO.
+  Same native diagnostic nine serial2 pass99.73s: full49829execute717GET46.3997s
+  versus scoped47669execute645GET45.1373s; 18qualified/zero recovery/finalcert
+  retained. SQL4.3% reduction, single time pair not SLO. MODEL native replay,
+  authority fanout, real2s/load/fleet/live acceptance remain OPEN.
+- Verified Artifact load follow-up (Ready after binding consolidation;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns shared
+  coverage_snapshot_artifacts loader, native Worker Artifact/load regressions,
+  existing workload measurements and evidence/docs. Reuse existing verified
+  bounded reader Port, retain fresh pre/post authority and exact metadata/bytes;
+  preserve legacy fallback, no cross-operation cache or runtime activation.
+  Implemented; integration46 + snapshot3/native15 pass, scoped source GO and
+  make check GO. Native diagnostic nine2 pass100.12s; execute54181->49829,
+  binding2985->2713, GET717/finalcert retained. Single latency pair50.15->41.37s,
+  not SLO. Full authority fanout and commit MODEL replay remain OPEN.
+  Native2s hardened1 pass68.45s; completion63.7075s70139execute10callbacks,
+  zero exceptional recovery and finalcert retained; performance goals unmet.
+- Fresh binding query consolidation (Ready after frozen-load measurement;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns native
+  task_admission Session binding reads, binding regressions, existing nine-record
+  workload native-loader measurement and evidence/docs.
+  Combine root identity and latest binding in one fresh RR query; retain full
+  native lineage validation, ambiguity rejection and all Worker authority gates.
+  No cross-operation authority cache or runtime activation.
+  Implemented; native initial10 + hardened12 passed, zero skips; scoped review
+  GO and make check GO. Diagnostic nine2 passed96.06s: native51.4186s/54181execute,
+  2985binding reads; fixed35.4825s/45226execute. Root business SQL3->2 proven;
+  no old/new latency claim. Authority fanout and commit replay remain OPEN.
+- Continuation frozen-load measurement (Ready after duplicate root repair;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns existing
+  nine-record Worker workload measurement tests, native continuation/final-proof
+  counters and performance evidence/docs. Compare default-off and qualified
+  fixture-only receipts without changing production composition or guarantees.
+  Serial4 plus hardened1 passed, zero skips. Normal recovery27->0; qualified
+  2s observations50.58/62.38s with63584/65682execute, goals unmet. Shared
+  Artifact/authority fanout and commit native MODEL replay remain OPEN.
+- Continuation failure-window acceptance (Ready after hardened19; claimed
+  2026-10-11 before coding, same owner/branch/worktree): owns marked native
+  handoff STOP/proof-change/crash regression tests and shared handoff boundary
+  fixes including storage pickup preparation if a reproducible failure requires them;
+  evidence/docs. Duplicate-before-predecessor-check root repair source review GO;
+  native37 plus corrected crash/cert1 and sibling10 passed (zero skips), make check
+  passed. Full source-race/fleet/load acceptance OPEN. Preserve all
+  authority/publication gates; no runtime migration/restart/minting activation.
+- Continuation concurrency acceptance (Ready after native92; claimed 2026-10-11
+  before coding, same owner/branch/worktree): owns qualification lock/race tests,
+  native marked handoff rollback assertions, migration upgrade fixtures and
+  evidence/docs. No runtime
+  migration, restart or minting activation; preserve source gates unless a
+  reproducible defect requires fixing the shared boundary.
+  Native hardened19 passed111.63s, zero skips; scoped source review GO and
+  make check pass. Complete crash/STOP/source-race/fleet/load acceptance OPEN.
+- Native continuation fleet follow-up (Ready after producer qualification42;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns optional
+  process continuation qualification migration/catalog, registration/heartbeat,
+  pure configuration digest, strict command consumer pin and Worker wiring/tests.
+  Keep v3 legacy requirements; only marked native approval requires the extension.
+  No runtime migration/activation; production minting remains OFF during acceptance.
+  Source implemented; native92 passed108.63s, zero skips, source review GO and
+  make check pass. Coordinated schema86 fleet rollover/race/load acceptance OPEN.
+- Native producer-qualification follow-up (Ready after normal routing regressions;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns native
+  Artifact proof facade, verified commit facts/receipt minting, Worker composition
+  qualification and focused/native tests. Require actual native derive identity,
+  not an opt-in string; retain v3 fleet/default-off compatibility until versioned
+  admission and rollout acceptance are separately complete.
+  Implemented exact native facade/deriver qualification in verified commit facts
+  and pre-SQL minting check; separate pure native consumer configuration digest.
+  Native42 pass86.77s, scoped source review GO, make check pass. Versioned fleet
+  registration/pickup wiring implemented in fleet follow-up above; coordinated
+  rollover/race/load acceptance remains OPEN; production minting stays OFF.
+- Native normal-preparer follow-up (Ready after reader/source gates; claimed
+  2026-10-11 before coding, same owner/branch/worktree): owns Worker recovery/
+  preparation/continuation, receipt verifier identity, persisted pickup selection,
+  native continuation tests and evidence/docs. Reuse current authority and
+  conservative tail gates; skip historical object reconstruction only for an
+  explicitly qualified receipt. Production minting stays off until consumer
+  protocol qualification and native races/load are accepted.
+  Source normal preparation/atomic protocol approval/pickup selection implemented;
+  native normal/preparation38 pass44.80s, repeated pickup zero object reads and
+  final certification retained. Scoped source review GO, make check passes.
+  Executable producer/capability qualification and real-load activation OPEN.
+- Native receipt-reader follow-up (Ready: sealed-source prerequisite passed;
+  claimed 2026-10-11 before coding, same owner/branch/worktree): owns postgres
+  execution receipt validation, shared preparation intent, focused/native tests
+  and evidence/docs. Read exact source/chain/budget without historical object I/O;
+  no reader result alone confers Host authority, verifier qualification or pickup
+  permission. Current Worker stays off until all normal routing gates are wired.
+  Native38 pass108.30s; strengthened predecessor/expiry2 pass23.30s, zero skips.
+  Source review scoped GO; Ruff/Mypy1090/size/eval30 pass. No activation/SLO claim.
+- Atomic source-retention follow-up: same claimed migration/receipt/native-test
+  ownership. Migration85 retains receipt-linked native accepted Events using
+  same-TX row-version serialization, without changing Event JSON or MODEL witness
+  representation. Source/test review GO; native19 pass146.53s. Normal
+  routing and capability qualification still OPEN, minting off in actual Worker.
+- Atomic continuation follow-up (Ready: user explicitly selected this root fix;
+  claimed before coding, same Luke Ding/Codex owner/branch/worktree): owns
+  postgres coverage commit/continuation receipt schema+migrations, command recovery/
+  handoff/approval adapters, Worker native checker/dispatch, capability contracts
+  if required, focused/native fault/load tests and architecture/evidence/governance.
+  Only validated final_certification commits may mint execution receipts; native
+  current authority/fence/STOP and exact command/Event links remain mandatory.
+  No caller digest/count bypass; old or uncertain executions retain full recovery.
+  Final certification independent; no primary edits or runtime activation.
+  First storage slice: migration84, atomic append-only receipt chain, verified
+  budget/source fingerprint, retry and capacity/legacy fallback; source review GO.
+  Minting defaults off; current Worker unchanged. Hardened native9 pass89.86s;
+  prior receipt/acceptance45 pass659.38s. Ruff/Mypy1088/size/eval30 pass.
+  Final policy/validity native9 pass95.19s; default6915 pass/1588 prerequisites
+  117.34s before those receipt-only guards. Source review scoped GO, not release.
+  Normal routing/capability qualification and native race/load acceptance
+  NOT DONE; normal continuation remains full recovery. See atomic-continuation doc.
+- Recovery bounded-query follow-up (Ready: duplicate volume/row reads traced;
+  claimed before edit, same owner/branch/worktree): owns Worker
+  coverage_recovery.py, recovery transcript/query regressions and evidence/docs.
+  Combine each native volume preflight and bounded row read in one statement;
+  oversized inputs must not transfer full payloads. No normal-continuation
+  admission shortcut, authority cache, reset bypass or runtime activation.
+  Native57 pass16.72s; crash/tamper7 pass75.66s, exact-bounds10 pass1.94s.
+  Full default6915 pass/1579 prerequisites130.14s; Ruff/Mypy1086/size/eval30 GO.
+  Nine default70.68s/75772SQL, diagnostic33.17s/45010SQL (unchanged diagnostic
+  query count); source GO, not SLO or whole-task completion. No activation.
+- Final lifecycle proof-read follow-up (Ready: measured authority fanout;
+  claimed before edit, same Luke Ding/Codex branch/worktree): owned paths add
+  coverage_publication.py, Worker coverage_artifacts.py/coverage_proof_reads.py,
+  lifecycle/reader/publication regressions and workload/evidence/governance.
+  Reuse existing private locked reader only within each complete certification
+  lifecycle and only for the exact pure semantic deriver. Exit invalidates it;
+  post-append/retry/cross-TX proofs remain independent. Arbitrary derivers and
+  stores without this private composition retain public reads. No byte-cache
+  sharing between budget/source proofs or phases, migration or runtime activation.
+  Source review GO; focused68 pass0.29s, initial native54 pass136.65s. Post-append
+  injection assertions strengthened after review; hardened native3 pass54.47s. Frozen
+  nine load default72.87s/76349SQL/2017GET/10callbacks; diagnostic37.46s/45010SQL/
+  717GET/onecallback, not p95/SLO. Full default6913 pass/1571 prerequisites126.87s;
+  Ruff/Mypy1086/size2382/eval30 pass. Whole task remains OPEN.
+- Generation-audit N+1 follow-up (Ready: repeated prefix queries confirmed;
+  claimed before edit, same Luke Ding/Codex branch/worktree): owned paths add
+  postgres/command_wakeup_recovery_proof.py, generation audit and native prefix
+  regressions, work-load/evidence/governance. Merge history bounds into its bounded
+  row query; prove all historical prefix counts in one ordered native statement.
+  Both approval/handoff callers keep locks, full checkpoint/authority and current
+  clock checks. No continuation admission shortcut, projection trust or migration.
+  Focused44 pass/8 prerequisites; native52 pass/zero skips71.78s, source reviewer
+  GO. Frozen load2 pass136.33s: default78.70s/85170SQL/1987GET/10callbacks;
+  diagnostic49.27s/54282SQL/717GET/onecallback. Ruff/Mypy1086/size2382/eval30 pass;
+  full default6903 pass/1568 prerequisites125.58s. Dominant authority/recovery fanout and capacity remain
+  open; no SLO, activation or whole-task completion claim.
+- Native transaction-start/short-page follow-up (claimed before edit, same lane):
+  owns postgres/task_admission.py, coverage_model_verification.py, binding-read
+  and verifier regressions. Configure RR/read-only using existing psycopg methods
+  before first query (also through deadline/borrow wrappers), and finish canonical
+  batch scans on a short page. No authority cache, reset bypass or recovery shortcut.
+  Focused17 pass; native binding/reset13 pass. Nine load default81.35s/85643SQL,
+  diagnostic49.19s/54282SQL; fixed-loader fixture excludes native BEGIN savings.
+  Ruff/Mypy1086/size2382/eval30 pass. Default6890 pass/1567 skips with one SIGKILL
+  PermissionError in unrelated runtime test; isolated runtime14 pass. Full rerun
+  6891 pass/1567 prerequisites119.62s; supplemental verifier/reader35 pass.
+  No SLO/whole-plan completion or activation.
+- Locked-policy SQL follow-up (claimed 2026-10-10, same owner/branch/worktree):
+  main integrates source/replay/volume/verification policy forwarding under the
+  existing locked proof or RR preparation boundary, matching count regressions,
+  coverage.py retry denial ordering, native coverage tests and work-load timing.
+  No cross-phase authority cache, activation, migration or primary checkout edit.
+- Transactional proof-reader follow-up (claimed before edit 2026-10-10): main
+  owns Worker coverage_proof_reads.py and CloudCoverageArtifacts scope factory,
+  storage coverage_model_acceptance.py scope composition and matching Worker/
+  storage tests. Same locked commit only; no scope escape, public reader change,
+  final certification shortcut or authority-equivalence claim. Hubble review.
+- Locked-record reuse follow-up (claimed before edit 2026-10-10, same lane):
+  within the above private commit scope, enable pinned metadata reuse only for
+  the exact configured pure semantic deriver; arbitrary derivers retain fresh
+  native getters. Retain row locks, fresh expiry and boundary authority checks,
+  capacity fallback and scope invalidation. Same owned paths and focused tests.
+- Final-phase deduplication follow-up (claimed before edit, same owner/lane):
+  coverage_publication.py and matching publication/verifier regressions. Reuse
+  the fresh full verifier only within one locked lifecycle phase; retain aggregate
+  verification and create new proof for post-append/retry/cross-TX phases.
+- Above components verified, task remains In Progress: final default6886 pass/
+  1565 prerequisites; native publication54 pass and pinned-reader16 pass;
+  Ruff/Mypy1086/size2382/eval30 GO. Final nine load default81.08s/85685SQL,
+  diagnostic43.73s/54293SQL, not SLO GO. Normal continuation/indexed membership/
+  authority fanout/capacity/fairness/live gates remain OPEN. No activation.
+- Scoped volume-preflight sublane (claimed 2026-10-10, Luke Ding/Popper):
+  owned paths add postgres/coverage_model_volume.py, the preflight section and
+  reexport in coverage_model_source.py, coverage_model_budget.py, and focused
+  volume/budget tests. Main retains source task_policy/replay_model ownership.
+  Global count/byte bounds remain; only explicit final_certification scopes may
+  limit checkpoint metadata enumeration. No PG runs, commits, or activation.
+- Incremental acceptance follow-up (user approved 2026-10-10): same task/owner/
+  branch/worktree; owned paths add core coverage_task_admission/model_budget,
+  postgres coverage_model_budget/index/source/verification/acceptance,
+  coverage_projection.py and focused
+  tests, worker_capability_configuration.py, Worker capability and API admission
+  wiring if required. New admission
+  explicitly pins final-certification validation; legacy eager semantics remain.
+  Final independent physical certification and publication gates are unchanged.
+  Main owns contracts/acceptance; Popper budget path; Hubble recovery replay reuse.
+- Complete performance follow-up (Ready: measured baseline and complete design;
+  claimed 2026-10-10, same owner/branch/worktree): owned paths expand to core
+  artifact_payload_store Ports; Worker coverage_artifacts/dispatch/recovery;
+  storage coverage_artifacts/model_acceptance/model_verification/model_source/
+  model_checkpoint, continuation/recovery/publication and matching tests;
+  performance ADR/plan/evidence/governance. Current authority and independent
+  final certification remain mandatory; no production activation or primary edits.
+  Main owns implementation and scratch PG; Hubble read-only acceptance review.
+- Active-lease recovery preflight follow-up (claimed 2026-10-10, same owner/branch):
+  Owned paths add postgres/command_wakeup_recovery.py and matching storage tests,
+  existing load fixtures and evidence/governance docs. Atomically defer scoped due
+  commands whose current-epoch lease is active before expensive proof preparation.
+  Denial only; no approval, outbox or proof mutation. Preserve retry fairness and
+  full locked fallback for inactive leases and every fenced continuation.
+  Native recovery58 passed49.24s, proof selection66 passed117.70s, zero schemas;
+  source-only review GO. Nine default144.69s/152882SQL/11callbacks; diagnostic
+  99.53s/98296SQL worse than75.30s. No isolated saving or SLO GO; final source
+  6736 passed/1557 prerequisites126.14s, Ruff/Mypy1083/size/eval30 clean.
+  No runtime activation. Work-slice evidence retains failures.
+- Artifact read fanout follow-up (claimed 2026-10-10, same owner/branch):
+  Owned paths include Worker coverage_artifacts.py, coverage_recovery_preparation.py
+  and matching tests. Coalesce nested first-read guards, retaining pre/post fresh
+  authority, metadata/version comparison and independent final physical reads.
+  No continuation protocol change or runtime activation in this slice.
+- Native fault-fixture follow-up (same owner/branch, claimed before edit):
+  Owned paths add tests/worker/test_coverage_dispatch.py shared native_handoff.
+  Forced manual handoffs
+  must start a fresh actual consumer capability per replacement, not keep an
+  unrenewed 30s capability across twelve callbacks. Production expiry unchanged.
+- Guard follow-up gates: native-enabled selection58 passed/zero skips231.01s,
+  zero schemas; scoped source review GO. Nine default154.12s/162309 SQL,
+  diagnostic75.30s/98296 SQL unchanged. Preserve expired-fixture failure XMLs;
+  normal continuation/commit/authority scaling remains OPEN. Source-only changes.
+  Final source default6736/1544 prerequisites122.39s; Ruff/Mypy1083/size/eval30 GO.
+- Execution performance plan follow-up (Ready: bounded proof-read gates verified;
+  claimed 2026-10-10, Luke Ding/Codex): same codex/cov-exec-01 worktree.
+  Owned paths: core coverage_executor.py, Worker coverage_dispatch/composition,
+  config settings and matching tests, postgres coverage/recovery preparation and
+  matching tests, normal/native load fixtures and governance/evidence docs.
+  Work slices retain per-unit commits, dependency order and current authority;
+  reduce SQL round trips without widening deadlines. Expand owned paths before
+  new normal-continuation or acceptance protocol changes. Scratch PG exclusive
+  main; no service activation. Baseline nine117bytes/261.70s/224929 SQL executes.
+- Read-only binding follow-up (claimed 2026-10-10, same owner/branch): expand
+  Owned paths to postgres/task_admission.py, Worker loop.py and matching storage/
+  Worker wiring tests. Reuse native root/lineage validation to load binding without
+  rebuilding Task indexes on every authority read; no cached binding or authority.
+  Existing load/admission/rebuild contracts remain; malformed native lineage refuses.
+- Work-slice/read-only-binding component verified, not overall performance Done:
+  final default6736/1542 prerequisites (126.55s), native safety73 +binding5,
+  instrumented load2, zero fixture schemas; Ruff/Mypy1083/size/eval30 clean.
+  Source-only review GO. Default nine180.50s/178760SQL/14callbacks; 60s diagnostic
+  69.96s/98296SQL/onecallback. Normal continuation/commit/authority fanout open.
+  See docs/COVERAGE_WORK_SLICE_EVIDENCE.md. No merge or runtime activation.
+- Proof-query scaling follow-up (Ready: native socket matrix verified; claimed
+  2026-10-10, Luke Ding/Codex): same branch/worktree. Main owns worker
+  coverage_recovery{,_preparation}.py, existing postgres/coverage_model_verification*.py and
+  coverage_model_checkpoint.py if shared proof defects require them, matching
+  tests/worker/test_coverage_acceptance_load.py, test_coverage_recovery_reads.py,
+  existing proof tests, governance/evidence.
+  Reuse invocation-local verifier, never carry proof across transactions or
+  callbacks; preserve original bytes, retention, sequence and final rereads.
+  Scratch PG exclusive main; source review read-only; no service activation.
+  Component verified: final admitted1/6/9 certified17.69/140.89/261.70s,
+  GET157/1802/3521 versus nine baseline459.46s/10304GET. Separate native safety
+  27 passed/zero fixture schemas; default6712/1535 prerequisite skips,
+  Mypy1082/Ruff/size/eval30. Keep load XML's corrected test-expectation failure;
+  load cases passed, final physical tamper/delete guards passed separately.
+  Nine still262s, not UX/SLO GO; fresh authority/independent final proof remain.
+  No integration/activation. Business labels and live broker/provider/browser open.
+- Connection performance follow-up (Ready prerequisite: measured native Worker
+  bottleneck; claimed 2026-10-10, Luke Ding/Codex): reuse same branch/worktree.
+  Main owns postgres/database.py, postgres/connection_scope.py,
+  worker/{coverage_composition,coverage_recovery_preparation,coverage_recovery}.py,
+  tests/worker/test_coverage_multipart.py (legal fixture token budget only),
+  tests/agent_storage/test_postgres_connection_scope.py,
+  tests/worker/test_coverage_acceptance_load.py, existing governance/evidence.
+  Callback-local physical connection reuse only; each borrow is an independent
+  transaction, nested borrows exclusive, thread/deployment/DSN isolated, session
+  state reset and cleanup mandatory. No authority/evidence cache or deadline
+  extension. Hubble read-only review; scratch PG exclusively main. No activation.
+  Component verified: native admitted1/6/9 +12-refusal/expiry/socket14 passed,
+  zero skips/schemas (689.86s); default6,699/1,533 (129.36s), Mypy1,082/Ruff/
+  size/eval30. Nine records still459.46s; proof-query scaling/live acceptance open.
+- Worker/UI acceptance follow-up (Ready prerequisite: proof/history component
+  gates verified; claimed 2026-10-10 by Luke Ding/Codex): same branch/worktree.
+  Main owns tests/worker/test_coverage_acceptance_load.py,
+  scripts/coverage_acceptance_runtime*.py, evals/coverage_acceptance/* and existing
+  governance docs. Reuse actual Worker admission/handoff/recovery fixtures and
+  measure explicitly named boundaries; controlled provider/Host is not live E2E.
+  Paired Trench owns TRN-COV-UI-RECOVERY-01 in its isolated worktree;
+  no overlapping implementation or PG use. Its slice is now in Review.
+  Main exclusively owns scratch PG; no primary overwrite, restart, paid model
+  scale calls, merge or deployment. Expand ownership before any production fix.
+  Expanded 2026-10-10 for lost typed refusal diagnostics:
+  apps/worker/src/zebra_agent_worker/{coverage_composition,coverage_dispatch,
+  execution_errors,execution_finalization}.py and
+  tests/worker/execution/test_claimed_execution.py. Preserve raw-error redaction,
+  lease/authority/certificate gates; no deadline increase or authority cache.
+  Verification: default 6,695 passed/1,528 prerequisite skips (130.02s),
+  focused 31, native smoke 3/zero skips, Trench frontend 100/backend 95 and build.
+  Pre-socket Worker scale evidence RED: six records FAILED at 604.29s with a 600s
+  budget; 12-record case not run. No integration or runtime activation.
+  Final runtime/grant/entry-race native checks: 3 passed/zero skips (17.04s),
+  zero new scratch schemas. Default suite preceded the last entry timestamp fix.
+- Remaining proof-read/history/acceptance follow-up (Ready prerequisite: rebuild
+  SPEC/QUALITY GO; claimed 2026-10-10, Luke Ding/Codex): same branch/worktree.
+  Main resumes former Lovelace ownership: postgres coverage{,_transactions,_model_source,_model_checkpoint,
+  _model_verification,_model_acceptance}.py and matching dedup/paging tests under
+  tests/agent_storage; additionally postgres/coverage_model_replay_rows.py for
+  bounded source/witness pages within source file limits. Main now owns
+  scripts/coverage_acceptance*.py,
+  tests/agent_integrations/test_coverage_semantic_acceptance*.py and
+  evals/coverage_acceptance/* (load/semantic acceptance only). Main owns docs and
+  full gates; resumed Hubble is read-only reviewer (former agents unavailable).
+  Retain exact locked source comparison,
+  original bytes/metadata/retention, historical sequence, logical byte charging,
+  independent certificate proof and rollback. No cross-phase trusted cache.
+  Scratch PG exclusive to main; Hubble review uses no PostgreSQL or services.
+  Isolated scratch load/model probes only; no production migration, restart,
+  primary-checkout overwrite, merge or push. Representative labeled-data and
+  real-model accuracy evidence must be distinguished from synthetic controls.
+  Component verification completed: 33 focused, default 6,688/1,523 prerequisites;
+  native 10/zero skips/zero leaks, Mypy 1,081/Ruff/size/eval30. Load report proves
+  bounded paging and 384->128 object GETs, not stable latency improvement. Business
+  labels absent; full Worker/model/browser large-run acceptance and integration
+  remain open. Main scratch lane released after exact temporary-resource cleanup.
+- Rebuild proof follow-up (Ready prerequisite: transcript SPEC/QUALITY GO;
+  claimed 2026-10-10 by Luke Ding/Codex): same branch/worktree. Lovelace owns
+  packages/agent-storage/src/agent_storage/postgres/coverage.py and
+  tests/agent_storage/test_coverage_model_verification_rebuild.py; existing
+  verification source/tests only if a shared defect is demonstrated. Main owns
+  governance/docs; Ptolemy independent read-only review. Reuse one locked replay
+  transcript; preserve source comparison, historical order, projection rollback,
+  expired-snapshot rebuild, original retention and independent certificate gate.
+  No commit-path cache, restart, merge, push or primary-checkout changes.
+  Scoped SPEC/QUALITY GO: independent native 11/zero skips (305.22s), zero
+  fixture leaks; source hashes unchanged. Default 6,663/1,523 prerequisite skips.
+  Expired-snapshot rebuild not separately native-proven by this selection.
+- Verification-local transcript follow-up (claimed 2026-10-10, Luke Ding/Codex):
+  Ready prerequisite: certified report and cooperative deadline component GO.
+  Reuse codex/cov-exec-01 worktree. Lovelace owns implementation in
+  packages/agent-storage/src/agent_storage/postgres/coverage_model_acceptance.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_model_verification*.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_publication.py;
+  tests/agent_storage/test_coverage_model_verification*.py;
+  existing coverage acceptance/publication/report regression tests as needed.
+  Main owns this registry, PROGRESS.md, WORKLOG.md, task_plan.md and
+  docs/COVERAGE_EXECUTION.md; Ptolemy owns read-only independent review/probes.
+  One transcript per live proof phase only; preserve original receipt/checkpoint
+  validation, batch sequence/duplicates, exact membership, cumulative byte caps,
+  source retention and final locked proof. No cache across phase/request/transaction.
+  No service activation, restart, main checkout overwrite, merge or publication.
+  Component SPEC/QUALITY GO: independent native 53/zero skips (1127.53s),
+  zero fixture leaks; pure object/HTTP/transcript 15/11/8. Not live scale GO.
+- Report deadline/performance follow-up (claimed 2026-10-10, Luke Ding/Codex):
+  Existing certified report/API/authority paths and tests; additionally
+  packages/agent-storage/src/agent_storage/postgres/{database,coverage_recovery_preparation}.py;
+  packages/agent-storage/src/agent_storage/coverage_artifact_reader.py;
+  tests/agent_storage/test_coverage_report_deadline.py;
+  tests/api/test_coverage_report_deadline.py. Reuse existing bounded SQL/object
+  reads; one deadline across report phases, no detached proof work after refusal.
+  Lovelace implements this narrow slice; Ptolemy performs read-only review/scale
+  probes after source freeze. No proof relaxation or live restart authorized.
+  Cooperative component GO: independent native-enabled 32/zero skips, zero leaks;
+  main default 6,655/1,519 prerequisite skips, Mypy 1,079/Ruff/eval30 passed.
+  Full transcript/locked-proof scaling and live acceptance remain unfinished.
 - Branch/worktree: codex/cov-exec-01; cov-exec-01/zebra-agent.
+- Certified report HTTP follow-up (claimed 2026-10-10, Luke Ding/Codex):
+  apps/api/src/zebra_agent_api/coverage_report*.py;
+  apps/api/src/zebra_agent_api/{http,routes,host_auth,factory,app}.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_certificate_read.py;
+  tests/api/test_coverage_report*.py; tests/api/test_extension_updates.py
+  (additive exposed report-header contract); existing native coverage fixture tests;
+  docs/COVERAGE_EXECUTION.md; this registry; PROGRESS.md; WORKLOG.md; task_plan.md.
+  Ready prerequisite component gates confirmed in preceding checkpoint. Reuse
+  certified bytes/read-only Artifact adapter and frozen binding reads. Never
+  discover or renew authority during reads; authenticate the fresh JWT once.
+- Atomic enqueue / compatible consumer / lock-duration follow-up (2026-10-09):
+  Human owner Luke Ding; main executor Codex. Reopen the existing readiness,
+  dispatch and recovery claims. Additional exact owned paths:
+  apps/api/src/zebra_agent_api/{session_payloads,app,session_binding,session_queue,factory,coverage_http_admission}.py;
+  packages/agent-storage/src/agent_storage/postgres/command_coverage_admission*.py;
+  packages/agent-storage/src/agent_storage/worker_capability_configuration.py;
+  packages/agent-storage/src/agent_storage/postgres/command_wakeup*.py;
+  packages/agent-runtime/src/agent_runtime/command_wakeup_consumer.py;
+  apps/worker/src/zebra_agent_worker/coverage_recovery*.py;
+  tests/api/test_coverage_http_admission.py;
+  tests/worker/test_coverage_command_routing.py;
+  tests/agent_storage/test_coverage_recovery_preparation.py.
+  packages/agent-storage/src/agent_storage/postgres/coverage_recovery_preparation.py;
+  apps/worker/src/zebra_agent_worker/coverage_recovery_preparation.py;
+  apps/worker/src/zebra_agent_worker/coverage_composition.py;
+  apps/worker/src/zebra_agent_worker/loop.py;
+  QUALITY deadline repair: packages/agent-storage/src/agent_storage/artifact_objects.py;
+  packages/agent-storage/src/agent_storage/runtime_composition.py;
+  packages/agent-integrations/src/agent_integrations/host_tools/http.py;
+  tests/agent_storage/test_s3_artifact_objects.py (shared streaming fixture);
+  tests/agent_storage/test_coverage_recovery_transports.py;
+  tests/agent_storage/test_coverage_recovery_preparation.py;
+  Reuse atomic Task admission; fail closed on missing live compatible consumers.
+  Prepare expensive checkpoint validation before command locks, then revalidate
+  exact native evidence and current authority under the final transaction.
+  No runtime restart, business migration, main-checkout overwrite or publication.
+  Scoped follow-up verified: atomic admission, compatible pickup and recovery
+  lock split have separate SPEC/QUALITY GO; final native matrix 106/zero skips,
+  default suite 6,613/1,514 prerequisite skips, Mypy 1,076 and eval 30/30.
+  COV-EXEC-01 remains In Progress for certified report HTTP, paired live/UI
+  acceptance, scale work and authorized integration; not whole-task Done.
+- Exact Effect claim prerequisite ownership (user authorized 2026-10-08):
+  packages/agent-core/src/agent_core/ports/effect_dispatch.py;
+  packages/agent-tools/src/agent_tools/effect_guard.py;
+  packages/agent-storage/src/agent_storage/postgres/outbox.py;
+  packages/agent-storage/src/agent_storage/postgres/outbox_claim*.py;
+  tests/agent_tools/test_effect*.py; tests/agent_storage/test_postgres_effect*.py.
+  Raw persisted-input repair ownership (QUALITY finding, 2026-10-08):
+  packages/agent-storage/src/agent_storage/postgres/effects.py;
+  apps/worker/src/zebra_agent_worker/cloud_effect_payloads.py;
+  tests/worker/test_cloud_effect_payload*.py.
+  Validate persisted request/result/receipt before lossy normalization; valid
+  legacy records stay readable. Add raw database/Artifact corruption regressions.
+  Bounded prerequisite only: additive exact claim/execute, existing ordinary
+  dispatch semantics and atomic payload publication preserved. Freeze for
+  SPEC/QUALITY approval before implementing the coverage Effect callback;
+  no main Worker activation, commit/push/restart or business migration.
 - Dependencies: local cloud-agent-trench@b97a5b1a includes CON/STO;
   Trench cloud-agent-trench@2c93f1b includes TRN-COV-SNAPSHOT-01.
 - Owned paths: packages/agent-integrations/src/agent_integrations/coverage_snapshot*.py;
@@ -13,7 +694,368 @@
   tests/agent_core/test_coverage_executor*.py;
   docs/COVERAGE_EXECUTION.md;
   docs/superpowers/plans/2026-10-08-coverage-execution.md;
-  this registry; PROGRESS.md; WORKLOG.md.
+  this registry; PROGRESS.md; WORKLOG.md; task_plan.md.
+- Full-chain follow-up ownership (user authorized 2026-10-08):
+  Current-authority deadline at certified read (2026-10-09, main executor):
+  packages/agent-storage/src/agent_storage/postgres/coverage_certificate_read.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_publication.py;
+  tests/agent_storage/test_coverage_certificate_read.py.
+  Reopen report3 only for an optional verified-grant deadline, checked again
+  with the final database clock under the existing publication lock. Preserve
+  certificate-only callers and all proof checks. Independent re-review required;
+  no HTTP activation or current-authority proof follows from a supplied date.
+  Process-level strict Worker readiness (2026-10-09, executor Goodall):
+  packages/agent-storage/src/agent_storage/postgres/worker_capability*.py;
+  packages/agent-storage/src/agent_storage/postgres/migrations.py;
+  apps/worker/src/zebra_agent_worker/command_process.py;
+  apps/worker/src/zebra_agent_worker/command_process_state.py;
+  tests/agent_storage/test_worker_capability*.py;
+  tests/worker/test_coverage_worker_readiness.py.
+  Start after multipart source freeze; separate process lease from Session lease,
+  bind actual storage namespace/restore epoch/configuration, revoke on exit and
+  heartbeat actual consumer work. No boolean readiness and no HTTP activation.
+  Coordinate command_process paths with Darwin; no concurrent PostgreSQL tests.
+  Certified report read-only Cloud Artifact adapter (2026-10-09):
+  packages/agent-storage/src/agent_storage/coverage_artifact_reader.py;
+  tests/agent_storage/test_coverage_artifact_reader.py.
+  Explicit Session/deployment binding, existing verified bounded Cloud reads,
+  lifecycle revalidation and no publisher/Worker mutation capability. Storage
+  adapter prerequisite only; HTTP current-authority composition stays closed.
+  Public summary isolation follow-up (2026-10-09, main executor):
+  apps/api/src/zebra_agent_api/coverage_public_summary.py;
+  apps/api/src/zebra_agent_api/session_state_read_mixin.py;
+  apps/api/src/zebra_agent_api/task_api.py;
+  tests/api/test_coverage_public_summary.py.
+  Reuse canonical strict identity and whitelist lifecycle fields after ordinary
+  summary assembly; do not expose candidate text, tool arguments or attachments.
+  This reopens summary callers only after the public14 independent native review;
+  raw-stream and artifact isolation remain unchanged and require revalidation.
+  Bounded public report-read prerequisite (2026-10-09, main executor):
+  packages/agent-storage/src/agent_storage/artifact_payload_reads.py;
+  tests/agent_storage/test_artifact_payload_read_bounds.py.
+  Reuse the existing Cloud read method with an optional byte ceiling checked
+  against the same metadata record used for the exact-version object read;
+  preserve ordinary reads. No HTTP report/admission activation follows.
+  Public strict-output isolation claim (2026-10-09, main executor):
+  Strict SSE private-prefix performance (after Public20 source/pure GO):
+  apps/api/src/zebra_agent_api/ag_ui_task_frames.py;
+  apps/api/src/zebra_agent_api/ag_ui_stream.py;
+  tests/api/test_coverage_sse_frames_performance.py.
+  Extract the existing frame helper to preserve file limits. Validate the full
+  Task once, then skip only private same-Segment prefixes already proven to emit
+  nothing; preserve starts, public progress, original cursor attribution and
+  ordinary behavior. Exact reference-output and malformed-tail regressions,
+  independent review required; no claim of general linear projection.
+  QUALITY repair reopens the same performance paths: distinguish contiguous
+  Segment slices, not only Segment IDs, when skipping hidden prefixes. Preserve
+  returning-Segment starts and cursors even across run-excluded intervening
+  slices; add replay/reconnect regression and repeat independent reviews.
+  apps/api/src/zebra_agent_api/ag_ui_stream.py;
+  tests/api/test_coverage_sse_prefix.py.
+  Reopen public18 after QUALITY's late-marker prefix counterexample. Pin strict
+  identity from the full canonical Task across each SSE prefix and reconnect;
+  this may only strengthen isolation, never disable a prefix's own strict marker.
+  apps/api/src/zebra_agent_api/ag_ui_task_view.py;
+  tests/api/test_coverage_public_identity_repair.py;
+  packages/agent-integrations/src/agent_integrations/coverage_public_events.py;
+  packages/agent-integrations/src/agent_integrations/ag_ui/projection.py;
+  packages/agent-integrations/src/agent_integrations/ag_ui/task_stream.py;
+  apps/api/src/zebra_agent_api/coverage_public_read.py;
+  apps/api/src/zebra_agent_api/session_state_read_mixin.py;
+  apps/api/src/zebra_agent_api/session_artifact_read_mixin.py;
+  apps/api/src/zebra_agent_api/task_api.py;
+  apps/api/src/zebra_agent_api/session_streaming.py;
+  tests/agent_integrations/test_coverage_public_events.py;
+  tests/api/test_coverage_public_read.py.
+  Cross-segment identity repair claim (SPEC P1):
+  packages/agent-core/src/agent_core/ports/agent_tasks.py;
+  packages/agent-storage/src/agent_storage/agent_tasks.py;
+  packages/agent-storage/src/agent_storage/postgres/agent_tasks.py.
+  tests/agent_storage/test_coverage_public_task_identity.py.
+  Add a read-only Segment-to-Task lookup to the existing task port; never call
+  write-bearing ensure_for_session during public authorization. All Session
+  readers inherit the canonical parent Task's strict identity.
+  Trusted persisted strict presence gates before manifest/progress. Retain
+  canonical cursor positions and private Events; only typed public progress and
+  sanitized lifecycle may project. Ordinary raw stream/Artifact paths refuse
+  strict output until a separately composed certified report read is available.
+  Certified report-byte read claim (2026-10-09, main executor):
+  packages/agent-storage/src/agent_storage/postgres/coverage_publication.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_certificate_read.py;
+  tests/agent_storage/test_coverage_certificate_read.py.
+  Reuse the existing certificate gate and return its already validated canonical
+  bytes at the same final authority boundary; no later ordinary Artifact read.
+  This storage-only slice does not activate HTTP admission or downloads.
+  Replay-safe public progress claim (2026-10-09, main executor):
+  packages/agent-integrations/src/agent_integrations/ag_ui/coverage_projection.py;
+  packages/agent-integrations/src/agent_integrations/ag_ui/projection.py;
+  tests/agent_integrations/test_ag_ui_coverage_projection.py.
+  Absolute accepted-unit counts and source watermark; historical certification
+  is not current publication authority. No download URL from progress projection.
+  Legacy fixture repair claim (2026-10-09):
+  tests/agent_storage/test_coverage_binding_validation.py.
+  Migrate native usage-receipt setup before the pre-mutation database snapshot;
+  preserve all eight forged-binding negative cases and complete no-drift asserts.
+  Exact Worker recovery follow-up ownership (2026-10-09, same owner/branch):
+  apps/worker/src/zebra_agent_worker/command_process.py;
+  apps/worker/src/zebra_agent_worker/command_process_state.py;
+  packages/agent-runtime/src/agent_runtime/command_wakeup_consumer.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_command_recovery_migration.py;
+  apps/worker/src/zebra_agent_worker/execution_recovery.py;
+  apps/worker/src/zebra_agent_worker/loop.py;
+  apps/worker/src/zebra_agent_worker/coverage_dispatch.py;
+  apps/worker/src/zebra_agent_worker/coverage_composition.py;
+  packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery.py;
+  packages/agent-storage/src/agent_storage/postgres/command_wakeup_recovery_proof.py;
+  packages/agent-storage/src/agent_storage/postgres/command_wakeup_handoff.py;
+  tests/worker/test_coverage_dispatch.py;
+  tests/agent_storage/test_coverage_command_recovery.py.
+  Begin only after MODEL proof-gate SPEC and QUALITY approval. Preserve ordinary
+  uncertain-program quarantine; broker ACK alone is not execution completion.
+  packages/agent-core/src/agent_core/ports/coverage*.py;
+  packages/agent-core/src/agent_core/ports/artifact_payload_store.py;
+  packages/agent-core/src/agent_core/application/coverage*.py;
+  packages/agent-core/src/agent_core/domain/coverage*.py;
+  packages/agent-core/src/agent_core/domain/events.py;
+  packages/agent-storage/src/agent_storage/artifact_payload*.py;
+  packages/agent-storage/src/agent_storage/artifact_objects.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage*.py;
+  packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py;
+  packages/agent-storage/src/agent_storage/postgres_composition.py;
+  apps/worker/src/zebra_agent_worker/coverage*.py;
+  apps/worker/src/zebra_agent_worker/execution.py;
+  apps/worker/src/zebra_agent_worker/execution_completion.py;
+  apps/worker/src/zebra_agent_worker/cloud_composition.py;
+  apps/worker/src/zebra_agent_worker/tool_output_artifacts.py;
+  apps/api/src/zebra_agent_api/coverage*.py;
+  apps/api/src/zebra_agent_api/routes.py;
+  packages/agent-core/src/agent_core/harness/final_completion.py;
+  packages/agent-integrations/src/agent_integrations/ag_ui*.py;
+  packages/agent-integrations/src/agent_integrations/ag_ui/coverage*.py;
+  packages/agent-integrations/src/agent_integrations/ag_ui/projection.py;
+  packages/agent-integrations/src/agent_integrations/ag_ui/task_stream.py;
+  tests/agent_storage/test_coverage*.py; tests/agent_storage/test_artifact_payload*.py;
+  tests/agent_core/test_coverage*.py; tests/worker/test_coverage*.py;
+  tests/api/test_coverage*.py; tests/api/test_runtime_capabilities.py;
+  tests/agent_storage/test_s3_artifact_objects.py;
+  tests/agent_storage/test_postgres_coverage_artifacts.py;
+  docs/superpowers/plans/2026-10-08-coverage-closure.md.
+- Semantic/admission follow-up ownership (user authorized autonomous semantic
+  rules 2026-10-08): packages/agent-core/src/agent_core/application/session_bootstrap*.py;
+  packages/agent-core/src/agent_core/domain/event_payloads*.py;
+  packages/agent-core/src/agent_core/domain/task_admission*.py;
+  apps/worker/src/zebra_agent_worker/task_recovery.py;
+  apps/worker/src/zebra_agent_worker/execution_entrypoints.py;
+  tests/agent_core/test_session_bootstrap*.py; tests/worker/test_task_recovery*.py;
+  tests/agent_core/test_coverage_semantic*.py.
+- Exact contract/adapter paths for this continuation:
+  packages/agent-core/src/agent_core/contracts/events.py;
+  packages/agent-core/src/agent_core/contracts/task_prepared.py (split before
+  extending the existing 499-line contract registry);
+  packages/agent-integrations/src/agent_integrations/coverage_model.py;
+  tests/agent_integrations/test_coverage_model.py;
+  apps/api/src/zebra_agent_api/session_payload_types.py;
+  apps/api/src/zebra_agent_api/session_payloads.py;
+  apps/api/src/zebra_agent_api/session_queue.py;
+  tests/api/test_coverage_admission.py.
+  Shared API preflight ownership (2026-10-09, same owner/branch):
+  tests/api/test_coverage_admission_preflight.py.
+  Direct-adapter strict-presence repair (2026-10-09, main executor):
+  apps/api/src/zebra_agent_api/session_binding.py;
+  apps/api/src/zebra_agent_api/session_queue.py.
+  Reuse the shared parser before manifest freeze/bootstrap/attachments; bypassing
+  HTTP parsing must not discard strict identity and create ordinary work.
+  API replay-order repair ownership (SPEC finding, 2026-10-09):
+  apps/api/src/zebra_agent_api/app.py;
+  apps/api/src/zebra_agent_api/local_execution.py.
+  Move the existing inline local execution adapter into its existing local
+  composition module before extending the 500-line API entrypoint. Strict
+  preflight precedes request hashing, replay and reconciliation, not only queue.
+  Reject explicit strict requests before ordinary/scheduled create side effects
+  while native Worker readiness remains unavailable; do not infer completeness.
+- Semantic gateway parser repair ownership (wire-role review finding):
+  packages/agent-integrations/src/agent_integrations/openai_payloads.py;
+  tests/agent_integrations/test_openai_payloads*.py;
+  tests/integrations/test_openai_payloads_roles.py;
+  tests/agent_integrations/test_deepseek_beta.py (valid wire role fixture only).
+- Prepared MODEL request prerequisite ownership (same task, 2026-10-08):
+  packages/agent-integrations/src/agent_integrations/openai_compatible.py;
+  packages/agent-integrations/src/agent_integrations/coverage_model_request.py;
+  tests/agent_integrations/test_coverage_model_request.py.
+  Add an opt-in single-shot, immutable prepared Chat request using the existing
+  wire builder and parser. No second resolution/rebuild, hidden retry, redirect
+  or alternative provider path. Existing complete/stream behavior unchanged.
+  This prerequisite does not certify a token bound or activate strict Worker
+  dispatch; durable checkpoint and usage acknowledgment remain separate work.
+- Full MODEL completion checkpoint codec ownership (same task, 2026-10-08):
+  packages/agent-integrations/src/agent_integrations/coverage_model_completion.py;
+  tests/agent_integrations/test_coverage_model_completion.py.
+  Preserve the complete typed response including provider reasoning and usage;
+  validate raw fields before coercion, bound bytes without truncating, reject
+  corruption and unsupported shapes. This codec alone does not activate MODEL
+  replay, budget settlement, certification or Worker dispatch.
+- MODEL checkpoint/receipt lifecycle slice (same task, 2026-10-08):
+  packages/agent-core/src/agent_core/domain/coverage_model_checkpoint.py;
+  packages/agent-core/src/agent_core/domain/coverage_model_budget.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_model_checkpoint.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_model_budget.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_model_source.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_publication.py;
+  tests/agent_core/test_coverage_model_checkpoint.py;
+  tests/agent_storage/test_coverage_model_budget.py;
+  tests/agent_storage/test_coverage_model_checkpoint.py.
+  Require original immutable completion evidence before settling or replaying a
+  strict receipt, and recheck every settled checkpoint through certificate
+  issuance/replay/read lifecycle locks. Reuse Artifact storage, no new queue or
+  provider adapter dependency in storage. This is not Worker activation or a
+  claim that receipt counts alone prove semantic unit coverage.
+- MODEL lifecycle SPEC repair ownership (2026-10-08):
+  packages/agent-storage/src/agent_storage/postgres/coverage.py (additional
+  exact tenth path). Uncertified rebuild must pass its governed reader into
+  shared replay; a settled receipt may not reconstruct refunded authority
+  from Event linkage alone. Require original byte/header/lifecycle proof before
+  reconstruction writes; preserve readerless legacy/no-receipt behavior only.
+  Add missing/corrupt/expired uncertified-rebuild regressions in the already
+  owned checkpoint test file, including deleted projections and later calls.
+- Strict recovery fail-closed ownership: apps/worker/src/zebra_agent_worker/execution_recovery.py;
+  tests/worker/test_coverage_task_recovery.py.
+- MODEL retention race repair ownership (2026-10-08): existing ten MODEL
+  lifecycle paths plus tests/agent_storage/test_coverage_model_checkpoint_retention.py.
+  Carry verified retention deadlines through shared proof/replay and recheck
+  against a fresh clock before returning authority or committing reconstruction,
+  settlement, new-call and certificate mutations. Split regressions into the
+  new exact test path because the checkpoint test is already 696 lines.
+- Exact prepared-request checkpoint prerequisite ownership (2026-10-08):
+  packages/agent-core/src/agent_core/domain/coverage_model_checkpoint.py;
+  tests/agent_core/test_coverage_model_checkpoint.py;
+  tests/agent_core/test_coverage_model_checkpoint_request.py.
+  Versioned additive original-request bytes must bind the exact reservation
+  digest, strict bounded canonical JSON and unchanged replay identity; preserve
+  response-only v1 budget evidence without letting it certify source derivation.
+  No provider imports, new dependency, transport activation or public projection.
+- Exact semantic derivation follow-up ownership (2026-10-08):
+  packages/agent-integrations/src/agent_integrations/coverage_model.py;
+  packages/agent-integrations/src/agent_integrations/coverage_model_derivation.py;
+  tests/agent_integrations/test_coverage_model_derivation.py.
+  Reuse the existing semantic response validator and full completion codec;
+  require v2 original request, settled receipt, frozen system/user messages and
+  exact manifest part bytes before deriving the observation. Reject duplicate
+  embedded keys, extra history/tools/rules and unrelated source/unit/profile.
+  Strict derivation must reject conflicting or absent original response
+  provider/model identities, including an actual gateway returning another
+  model; retain legacy semantic completion behavior outside this strict gate.
+  This validator is not transport/authority or external semantic truth proof;
+  strict storage acceptance and Worker composition must call it separately.
+- MODEL invoke-or-replay composition ownership (2026-10-08):
+  packages/agent-integrations/src/agent_integrations/coverage_model.py;
+  packages/agent-integrations/src/agent_integrations/coverage_model_derivation.py;
+  packages/agent-integrations/src/agent_integrations/coverage_snapshot_artifacts.py;
+  packages/agent-integrations/src/agent_integrations/coverage_model_policy.py;
+  packages/agent-integrations/src/agent_integrations/coverage_model_invocation.py;
+  tests/agent_integrations/test_coverage_model_policy.py;
+  tests/agent_integrations/test_coverage_model_invocation.py;
+  tests/agent_integrations/test_coverage_model_invocation_recovery.py.
+  Explicit trusted official metadata proof and existing typed budget/Artifact
+  Ports compose request-first reservation, one prepared transport attempt,
+  immutable original checkpoint read-back and usage acknowledgement. Stable
+  reservation identity excludes request content, so changed requests conflict
+  instead of creating a second uncertain call. Reuse strict derivation before
+  replay; preserve legacy callers and default Artifact MIME. No Worker activation
+  or relaxed generic storage provenance is authorized by this component alone.
+- MODEL callback-to-Cloud acceptance slice (2026-10-08, SPEC and QUALITY GO):
+  tests/worker/coverage_model_cloud_fixtures.py;
+  tests/worker/test_coverage_model_cloud.py.
+  Reuse actual PostgreSQL Task/Host/lease/Event stores, existing Cloud coverage
+  Artifact facade/publisher and budget store with prepared MockTransport. Prove
+  finalized private policy/checkpoint Events, fresh-fence single transport,
+  exact settled replay, post-publication/pre-ack recovery and crash uncertainty.
+  Distinguish actual PG from fixture object transport/provider metadata; no
+  new production Worker activation or live generation. If source changes are
+  necessary, report the exact root cause and claim paths before editing.
+- MODEL result-derivation transaction follow-up ownership (same task, 2026-10-09;
+  callback-to-Cloud SPEC and QUALITY GO, implementation in progress):
+  packages/agent-storage/src/agent_storage/postgres/coverage.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_publication.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_model_checkpoint.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_model_acceptance.py;
+  packages/agent-core/src/agent_core/application/coverage_executor.py;
+  packages/agent-core/src/agent_core/application/coverage_checks.py;
+  tests/worker/test_coverage_model_acceptance.py;
+  tests/agent_core/test_coverage_raw_observation.py.
+  Reuse settled source replay and locked original checkpoint validation; compose
+  the existing pure semantic derivation through a callable, never an integrations
+  import in storage. No verifier means strict MODEL acceptance is unavailable.
+  Compare exact part observation digest/outcome and deterministic record merge
+  with all canonical parts before commit/retry/rebuild/certify/certificate read.
+  Preserve raw typed fields before validation rather than discard illegal fields
+  through model_dump. Keep legacy program-only paths and current lifecycle/fence
+  gates unchanged. Add real PostgreSQL forgery/recovery/publication regressions.
+  Split publication source within these boundaries if needed to stay under 500
+  lines; claim any additional exact split/test path before editing it.
+- MODEL gate regression fixture migration (same owner/task, 2026-10-09):
+  tests/agent_storage/test_coverage_model_budget.py;
+  tests/agent_storage/test_coverage_model_checkpoint.py;
+  tests/agent_storage/test_coverage_model_checkpoint_retention.py;
+  tests/agent_storage/coverage_model_proof_fixtures.py (shared bounded fixture
+  only, if needed to keep the existing checkpoint test below 700 lines).
+  Preserve budget, retention, expiry and historical certificate assertions;
+  replace synthetic semantic acceptance with valid v2 per-unit original proof
+  or isolate the low-level accounting behavior being tested. No production
+  profile bypass, no skips or removed negative coverage to appease old fixtures.
+  Freeze the completed eight production/gate paths while migrating these tests;
+  report any reproduced source defect before changing frozen source again.
+- MODEL gate QUALITY repair ownership (same owner/task, 2026-10-09):
+  reopen the eight claimed gate paths for the two independently reproduced
+  defects: recover missing model projections from bounded authoritative Events
+  before requiring their indexes, and retain the certified report lifecycle
+  deadline through the final rebuild transaction boundary.
+  Additional exact paths: packages/agent-storage/src/agent_storage/postgres/
+  coverage_model_source.py (bounded source replay only, if required);
+  tests/worker/test_coverage_model_rebuild.py (new focused regressions; preserve
+  the existing 686-line acceptance file below its limit).
+  No verifier bypass or uncapped replay before post-hoc proof validation.
+  Re-freeze, then independent re-SPEC followed by re-QUALITY before Worker work.
+- Worker composition follow-up ownership (same full-chain task):
+  apps/worker/src/zebra_agent_worker/loop.py;
+  apps/worker/src/zebra_agent_worker/execution_events.py;
+  apps/worker/src/zebra_agent_worker/execution_tool_gateway.py;
+  apps/worker/src/zebra_agent_worker/effect_runtime.py;
+  tests/worker/test_cloud_composition.py;
+  tests/worker/test_execution.py.
+- Coupled Trench changes will receive a separate paired task card and isolated
+  branch before edits. Same owner, exact Host Effect/BFF/ToC paths only.
+- Strict handoff follow-up ownership (same full-chain task):
+  packages/agent-storage/src/agent_storage/session_handoff_events.py;
+  packages/agent-storage/src/agent_storage/session_handoffs.py;
+  packages/agent-storage/src/agent_storage/postgres/session_handoff_transactions.py;
+  tests/agent_storage/test_coverage_handoff*.py.
+  Inspect persisted source Task Events inside the existing commit transaction;
+  unsupported strict handoff must explicitly refuse before any parent/child
+  writes rather than synthesize an exploratory child. Legacy handoff unchanged.
+- MODEL ledger snapshot-identity repair ownership (same task, 2026-10-08):
+  packages/agent-core/src/agent_core/domain/coverage_snapshot.py;
+  packages/agent-integrations/src/agent_integrations/coverage_snapshot.py;
+  packages/agent-integrations/src/agent_integrations/coverage_snapshot_prepared.py;
+  packages/agent-integrations/src/agent_integrations/coverage_snapshot_read.py;
+  apps/worker/src/zebra_agent_worker/coverage_bootstrap.py;
+  packages/agent-storage/src/agent_storage/postgres/coverage_model_source.py;
+  tests/agent_core/test_coverage*.py; tests/agent_integrations/test_coverage_snapshot*.py;
+  tests/worker/test_coverage_bootstrap*.py; tests/agent_storage/test_coverage_model_budget.py.
+  Freeze the verified Host history reference in new snapshots; strict MODEL
+  admission refuses missing/mismatched references. Legacy non-strict snapshots
+  remain readable without fabricating provenance.
+- Exact Effect claim prerequisite ownership (same task, 2026-10-08):
+  packages/agent-core/src/agent_core/ports/effect_dispatch.py;
+  packages/agent-tools/src/agent_tools/effect_guard.py;
+  packages/agent-storage/src/agent_storage/postgres/outbox.py;
+  packages/agent-storage/src/agent_storage/postgres/outbox_claim*.py;
+  tests/agent_tools/test_effect*.py;
+  tests/agent_storage/test_postgres_effect*.py;
+  apps/worker/src/zebra_agent_worker/coverage_effect*.py;
+  tests/worker/test_coverage_effect*.py.
+  Add atomic exact-dispatch claim for strict Host creation; preserve ordinary
+  claim-next behavior. Split the 499-line outbox before adding logic. No wide
+  Session reconciliation or unrelated queue claim in the strict callback.
 - First implementation boundary: strict Trench wire adapter, complete bounded
   pagination/body reads, governed Artifact publication and authority checks.
   Reuse signed Host invocation; create must be called through an already
@@ -22,19 +1064,42 @@
   worker composition and real Host/PG integration. Until those pass, this task
   remains In Progress and runtime activation is unsupported.
 - Coordination: do not modify dirty primary checkouts or live services;
-  no push, migration or restart. No certificate or publication gate in this lane.
+  no push, live migration or restart. Certificate and publication gates are now
+  included in the explicitly authorized full-chain follow-up.
 - Adapter slice evidence: 95 focused tests and 168 selected adapter/core/Host
   regressions passed; independent specification and quality reviews approved.
   Full Ruff, Mypy (1,021 files), file-size and deterministic eval (30/30) pass.
-- Adapter ceilings: shared publication lock is process-local; whole-byte Artifact
-  Port cannot strictly prebound physical allocation; repeated full-manifest reads
-  are O(N²) over all bodies. Multi-worker activation requires the successor fixes
-  documented in COVERAGE_EXECUTION.md. Trench write Effect receipt is not composed.
-- Full task remains In Progress: no durable executor, publication/UI or deployed
-  coupled acceptance. The merged baseline runtime-capabilities test still expects
-  no schema_version and fails independently of this adapter; not silently waived.
-- Full pytest: 5,044 passed / 939 skipped / 1 inherited failure, reproduced in
-  the clean b97a5b1a integration worktree. No merge or full-green claim.
+- Follow-up implements optional immutable/bounded Artifact Ports, SQLite/S3
+  safeguards, prepared indexes, resumable core checks, run budget migration 79,
+  atomic Cloud materialized Events, report construction and certificate source
+  verification. Storage/prepared-reader specification and quality reviews passed;
+  executor/publication review found four defects now repaired with regressions.
+- Full task remains In Progress: actual strict admission/Worker dispatch/wakeup,
+  Host Effect/model composition, all-surface gates, API/UI and real coupled
+  acceptance are absent. The Worker facade alone is not Worker integration.
+- Bootstrap and replay follow-up evidence: bootstrap SPEC/QUALITY approved after
+  raw identity/tool-manifest and final-bind CAS repairs; main scratch PostgreSQL
+  selection 79 passed, zero skipped. Full suite before replay: 5,535 passed /
+  1,034 skipped. Exact opaque-key snapshot replay SPEC/QUALITY approved with
+  187 regressions; full Ruff/Mypy (1,039 sources) pass. Strict handoff refusal is
+  now active implementation; this does not complete main-loop or API/UI wiring.
+- Semantic continuation: fixed rule, configured ModelGateway adapter and typed
+  Task identity/recovery passed independent SPEC then QUALITY review. Bootstrap
+  fresh expiry no longer uses backdated event timestamps. Temporary strict
+  recovery refusal precedes workspace/model/runtime setup. Main post-repair
+  focused tests: 97 passed; core/Worker: 1,513 passed / 29 skipped; Mypy 1,037.
+  Manifest prepublication preparation passed SPEC/QUALITY; 58 preparation and
+  159 snapshot tests pass. Full Python: 5,472 passed / 1,018 skipped.
+  Cloud bootstrap component now has 58 main-run related regressions passing
+  with real isolated PostgreSQL (fake object storage); full Ruff/Mypy 1,039 pass.
+  Independent bootstrap review is pending. Actual Worker activation and
+  cross-session strict identity preservation remain pending.
+- Runtime-capabilities test now checks the actual latest migration catalog instead
+  of dropping schema_version. Final full suite: 5,188 passed / 1,018 skipped;
+  isolated PostgreSQL: 116 passed; real PostgreSQL/MinIO: 3 passed. Ruff and
+  Mypy (1,032 sources), tracked-and-new file-size gate (2,404 files) and eval
+  (30/30) pass. Final bounded-component specification and quality reviews approved.
+  No merge, production activation or full-chain completion claim.
 
 ### COV-STO-01 - Fenced coverage batch persistence
 

@@ -6,14 +6,17 @@ import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Protocol
+from uuid import NAMESPACE_URL, uuid5
 
 from agent_core.domain.coverage_contracts import CoverageRefusalReason as Reason
-from agent_core.domain.coverage_contracts import CoverageRefusedError
+from agent_core.domain.coverage_contracts import CoverageRefusedError, coverage_digest
 from agent_core.domain.host_authority import HostContextEnvelope, HostResourceRef
-from agent_core.domain.identifiers import new_tool_call_id
+from agent_core.domain.identifiers import ToolCallId, new_tool_call_id
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolIdempotency, ToolResult, ToolRisk
 
 from agent_integrations.host_tools.contracts import HostToolManifest
+
+HISTORY_RESOURCE_TYPE = "trench.history"
 
 
 class HostCoverageInvoke(Protocol):
@@ -89,7 +92,7 @@ class CoverageInvocation:
         if not history_ref or history_ref != history_ref.strip():
             raise ValueError("history_ref must be explicit and trimmed")
         self.bound = authority
-        self.resource = HostResourceRef(type="trench.history", id=history_ref)
+        self.resource = HostResourceRef(type=HISTORY_RESOURCE_TYPE, id=history_ref)
         # Round-trip pins and independently validates the frozen manifest digest.
         self.manifest = HostToolManifest.from_payload(manifest.to_payload()) if manifest else None
         self.invoke = invoke
@@ -111,7 +114,8 @@ class CoverageInvocation:
             or current >= authority.expires_at
             or self.resource not in authority.resource_refs
             or sum(
-                resource.resource_type == "trench.history" for resource in authority.resource_refs
+                resource.resource_type == HISTORY_RESOURCE_TYPE
+                for resource in authority.resource_refs
             )
             != 1
             or "history.read" not in authority.scopes
@@ -150,6 +154,8 @@ class CoverageInvocation:
         key: str | None = None,
     ) -> dict[str, object]:
         write = name == "create"
+        if write and (not isinstance(key, str) or not key.strip() or len(key) > 512):
+            raise CoverageRefusedError(Reason.UNSUPPORTED)
         self.authority_check(authority, write=write)
         invoker = self.effect if write else self.invoke
         tool_name = "dataset.snapshot." + name
@@ -162,7 +168,7 @@ class CoverageInvocation:
             or set(contract.scopes) - set(authority.scopes)
             or not any(
                 rule.argument_pointer == "/history_ref"
-                and rule.resource_type == "trench.history"
+                and rule.resource_type == HISTORY_RESOURCE_TYPE
                 and rule.required
                 and rule.match_mode == "exact"
                 for rule in rules
@@ -178,11 +184,31 @@ class CoverageInvocation:
             or (not write and contract.risk != ToolRisk.READ)
         ):
             raise CoverageRefusedError(Reason.UNSUPPORTED)
+        actual_arguments = {"history_ref": self.resource.resource_id, **arguments}
+        if write:
+            try:
+                # ponytail: reuse canonical coverage hashing; clocks never enter replay identity.
+                digest = coverage_digest(
+                    {
+                        "key": key,
+                        "binding": self.bound.model_dump(mode="json"),
+                        "context": authority.model_dump(mode="json"),
+                        "manifest": self.manifest.digest,
+                        "tool": tool_name,
+                        "arguments": actual_arguments,
+                        "resource": self.resource.model_dump(mode="json"),
+                    }
+                )
+            except (ValueError, TypeError, RecursionError) as exc:
+                raise CoverageRefusedError(Reason.UNSUPPORTED) from exc
+            call_id = ToolCallId(uuid5(NAMESPACE_URL, "zebra-coverage-create/1:" + digest))
+        else:
+            call_id = new_tool_call_id()
         budget.before_call()
         call = ToolCall(
-            tool_call_id=new_tool_call_id(),
+            tool_call_id=call_id,
             name=tool_name,
-            arguments={"history_ref": self.resource.resource_id, **arguments},
+            arguments=actual_arguments,
             created_at=self.now(),
         )
         try:

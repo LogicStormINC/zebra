@@ -21,6 +21,7 @@ def wired(monkeypatch):
 
     class Consumer:
         def __init__(self, dsn, **kwargs):
+            self._execution_discovery_generation = 0
             self.options = kwargs
             self.pool = ThreadPoolExecutor(1)
             self.future = None
@@ -28,6 +29,8 @@ def wired(monkeypatch):
             log.append(("dsn", dsn, kwargs["deployment_namespace"]))
 
         async def poll(self, lane, **_kwargs):
+            if lane == "execution":
+                self._execution_discovery_generation += 1
             log.append(lane)
             if lane == "execution" and self.future is None:
                 self.future = self.pool.submit(self.options["execute_claimed"], lease)

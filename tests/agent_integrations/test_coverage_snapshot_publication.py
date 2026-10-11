@@ -17,14 +17,14 @@ from tests.agent_integrations.test_coverage_snapshot import AUTHORITY, NOW, setu
 def test_fresh_adapters_share_publication_lock_real_sqlite(tmp_path, monkeypatch):
     adapter, host, store, options = setup_adapter(tmp_path)
     writers = 0
-    original = store.store_payload
+    original = store.store_payload_immutable
 
     def counted(*args, **kwargs):
         nonlocal writers
         writers += 1
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(store, "store_payload", counted)
+    monkeypatch.setattr(store, "store_payload_immutable", counted)
     gate = Barrier(2)
 
     def publish():
@@ -49,7 +49,7 @@ def test_publish_rechecks_corrupt_deterministic_id_under_lock(tmp_path, monkeypa
     def no_write(*args, **kwargs):
         pytest.fail("existing corrupt deterministic artifact must never reach store_payload")
 
-    monkeypatch.setattr(store, "store_payload", no_write)
+    monkeypatch.setattr(store, "store_payload_immutable", no_write)
     with pytest.raises(CoverageRefusedError, match="artifact_unavailable"):
         adapter.artifacts.publish(
             identifier,
@@ -71,7 +71,7 @@ def test_publication_conflict_leaves_existing_valid_payload(tmp_path, monkeypatc
     def no_write(*args, **kwargs):
         pytest.fail("different bytes at an existing ID must never be overwritten")
 
-    monkeypatch.setattr(store, "store_payload", no_write)
+    monkeypatch.setattr(store, "store_payload_immutable", no_write)
     with pytest.raises(CoverageRefusedError, match="artifact_unavailable"):
         adapter.artifacts.publish(
             identifier,
@@ -95,7 +95,7 @@ def test_budget_rechecked_after_waiting_for_publication_lock(tmp_path, monkeypat
     def no_write(*args, **kwargs):
         pytest.fail("expired operation must not write after lock acquisition")
 
-    monkeypatch.setattr(store, "store_payload", no_write)
+    monkeypatch.setattr(store, "store_payload_immutable", no_write)
 
     def publish():
         started.set()
@@ -124,11 +124,11 @@ def test_load_refuses_mutation_between_bytes_and_inspection(tmp_path, monkeypatc
     adapter, _, store, _ = setup_adapter(tmp_path)
     snapshot = adapter.get("snapshot", authority=AUTHORITY)
     identifier = adapter.manifest_artifact_id(snapshot)
-    original_read = store.read_payload_bytes
+    original_read = store.read_payload_bytes_bounded
     read_ids = []
 
-    def mutate_after_read(artifact_id):
-        body = original_read(artifact_id)
+    def mutate_after_read(artifact_id, *, max_bytes):
+        body = original_read(artifact_id, max_bytes=max_bytes)
         read_ids.append(artifact_id)
         if mutation == "prune":
             store.prune_payload(artifact_id)
@@ -148,7 +148,7 @@ def test_load_refuses_mutation_between_bytes_and_inspection(tmp_path, monkeypatc
                     )
         return body
 
-    monkeypatch.setattr(store, "read_payload_bytes", mutate_after_read)
+    monkeypatch.setattr(store, "read_payload_bytes_bounded", mutate_after_read)
     with pytest.raises(CoverageRefusedError, match="artifact_unavailable"):
         adapter.artifacts.load(identifier, "coverage_manifest", 33554432, adapter.host.now())
     assert read_ids == [identifier]

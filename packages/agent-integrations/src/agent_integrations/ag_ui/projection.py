@@ -37,6 +37,7 @@ from agent_integrations.ag_ui.contracts import (
     AgUiProjectionError,
     AgUiRunIdentity,
 )
+from agent_integrations.ag_ui.coverage_projection import project_coverage
 from agent_integrations.ag_ui.interrupts import (
     RunFinishedInterruptOutcome,
     project_budget_suspension_event,
@@ -44,10 +45,15 @@ from agent_integrations.ag_ui.interrupts import (
 )
 from agent_integrations.ag_ui.model_usage import project_model_usage
 from agent_integrations.ag_ui.tool_result_projection import tool_result_content
+from agent_integrations.coverage_public_events import (
+    coverage_projection_event,
+    strict_coverage_events,
+)
 
 
 @dataclass(slots=True)
 class _ProjectionState:
+    coverage_runs: dict[str, dict[str, Any]] = field(default_factory=dict)
     text_messages: dict[str, str] = field(default_factory=dict)
     text_ended: set[str] = field(default_factory=set)
     tool_calls: set[str] = field(default_factory=set)
@@ -67,15 +73,18 @@ class AgUiProjector:
         identity: AgUiRunIdentity,
         *,
         after: AgUiCursor | str | None = None,
+        strict_coverage: bool = False,
     ) -> AgUiProjection:
         ordered = tuple(events)
         self._validate_stream(ordered, identity)
         cursor = self._decode_cursor(after)
         start_sequence = self._validate_cursor(cursor, ordered, identity)
         state = _ProjectionState()
+        strict = strict_coverage or strict_coverage_events(ordered)
         projected: list[Event] = []
         for event in ordered:
-            projected_for_event = self._project_event(event, identity, state)
+            public = coverage_projection_event(event, strict=strict)
+            projected_for_event = self._project_event(public, identity, state) if public else ()
             if cursor is None or event.sequence > start_sequence:
                 projected.extend(projected_for_event)
         if ordered and cursor is None:
@@ -141,6 +150,9 @@ class AgUiProjector:
     ) -> tuple[Event, ...]:
         timestamp = int(event.created_at.timestamp() * 1000)
         payload = event.payload
+        coverage = project_coverage(event, state.coverage_runs, timestamp=timestamp)
+        if coverage is not None:
+            return (coverage,)
         client_effect = project_client_effect(event, timestamp=timestamp)
         if client_effect is not None:
             return client_effect

@@ -49,6 +49,10 @@ from agent_storage.postgres.effects import (
 )
 from agent_storage.postgres.events import append_event_in_transaction
 from agent_storage.postgres.leases import assert_current_lease_fence
+from agent_storage.postgres.outbox_claim import (
+    claim_exact_in_transaction,
+    claim_next_in_transaction,
+)
 
 
 class PostgresEffectDispatchStore(
@@ -143,37 +147,23 @@ class PostgresEffectDispatchStore(
     ) -> EffectClaim | None:
         ttl = positive_ttl(claim_ttl)
         with self._database.connect() as connection:
-            assert_current_lease_fence(connection, self._namespace, execution_session_id, fence)
-            row = connection.execute(
-                """
-                WITH candidate AS (
-                    SELECT dispatch_id FROM effect_outbox
-                    WHERE deployment_namespace = %s
-                      AND execution_session_id = %s AND status = 'pending'
-                    ORDER BY created_at, dispatch_id
-                    FOR UPDATE SKIP LOCKED LIMIT 1
-                )
-                UPDATE effect_outbox AS effect
-                SET status = 'claimed', claim_epoch = %s,
-                    claim_fencing_token = %s, claim_owner_instance_id = %s,
-                    claim_expires_at = transaction_timestamp() + %s::interval,
-                    updated_at = transaction_timestamp()
-                FROM candidate
-                WHERE effect.deployment_namespace = %s
-                  AND effect.dispatch_id = candidate.dispatch_id
-                RETURNING effect.*
-                """,
-                (
-                    self._namespace,
-                    execution_session_id,
-                    fence.control_plane_epoch,
-                    fence.fencing_token,
-                    fence.owner_instance_id,
-                    ttl,
-                    self._namespace,
-                ),
-            ).fetchone()
-        return None if row is None else effect_claim_from_row(row)
+            return claim_next_in_transaction(
+                connection, self._namespace, execution_session_id, fence, ttl
+            )
+
+    def claim_exact(
+        self,
+        execution_session_id: SessionId,
+        *,
+        expected: EffectDispatch,
+        fence: LeaseFence,
+        claim_ttl: timedelta,
+    ) -> EffectClaim | None:
+        ttl = positive_ttl(claim_ttl)
+        with self._database.connect() as connection:
+            return claim_exact_in_transaction(
+                connection, self._namespace, execution_session_id, expected, fence, ttl
+            )
 
     def complete(
         self,

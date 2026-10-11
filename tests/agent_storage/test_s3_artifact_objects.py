@@ -28,10 +28,13 @@ NOW = datetime(2026, 7, 29, tzinfo=UTC)
 class _Body:
     def __init__(self, payload: bytes) -> None:
         self.payload = payload
+        self.offset = 0
         self.closed = False
 
-    def read(self) -> bytes:
-        return self.payload
+    def read(self, size: int) -> bytes:
+        chunk = self.payload[self.offset : self.offset + size]
+        self.offset += len(chunk)
+        return chunk
 
     def close(self) -> None:
         self.closed = True
@@ -39,6 +42,9 @@ class _Body:
 
 class _FakeS3Client:
     def __init__(self) -> None:
+        from types import SimpleNamespace
+
+        self.meta = SimpleNamespace(endpoint_url="https://fixture-s3.example")
         self.objects: dict[str, dict[str, object]] = {}
         self.calls: list[tuple[str, dict[str, object]]] = []
         self.next_error: tuple[str, ClientError] | None = None
@@ -105,9 +111,7 @@ class _FakeS3Client:
     def _item(self, kwargs: dict[str, object]) -> dict[str, object]:
         key = cast(str, kwargs["Key"])
         item = self.objects.get(key)
-        if item is None or (
-            "VersionId" in kwargs and kwargs["VersionId"] != item["VersionId"]
-        ):
+        if item is None or ("VersionId" in kwargs and kwargs["VersionId"] != item["VersionId"]):
             raise _client_error("NoSuchKey", 404)
         return item
 
@@ -254,14 +258,10 @@ def test_range_read_uses_pinned_version_and_provider_range() -> None:
     expectation = _expectation()
     receipt = store.put_if_absent(_request(expectation))
 
-    assert store.read_version_range_verified(
-        expectation, receipt.object_version, 2, 8
-    ) == PAYLOAD[2:9]
-    get_call = next(
-        kwargs
-        for method, kwargs in reversed(client.calls)
-        if method == "get_object"
+    assert (
+        store.read_version_range_verified(expectation, receipt.object_version, 2, 8) == PAYLOAD[2:9]
     )
+    get_call = next(kwargs for method, kwargs in reversed(client.calls) if method == "get_object")
     assert get_call["Range"] == "bytes=2-8"
     assert get_call["VersionId"] == receipt.object_version
     assert client.last_body is not None and client.last_body.closed
@@ -279,8 +279,7 @@ def test_delete_requires_matching_exact_version_and_is_idempotent() -> None:
 
     wrong_version = request.model_copy(update={"object_version": "version-other"})
     assert (
-        store.delete_if_version(wrong_version).status
-        is ArtifactObjectDeleteStatus.ALREADY_ABSENT
+        store.delete_if_version(wrong_version).status is ArtifactObjectDeleteStatus.ALREADY_ABSENT
     )
     assert not any(method == "delete_object" for method, _ in client.calls)
 
@@ -293,10 +292,7 @@ def test_delete_requires_matching_exact_version_and_is_idempotent() -> None:
     client.objects[key]["Metadata"] = expected_metadata
 
     assert store.delete_if_version(request).status is ArtifactObjectDeleteStatus.DELETED
-    assert (
-        store.delete_if_version(request).status
-        is ArtifactObjectDeleteStatus.ALREADY_ABSENT
-    )
+    assert store.delete_if_version(request).status is ArtifactObjectDeleteStatus.ALREADY_ABSENT
     delete_call = next(kwargs for method, kwargs in client.calls if method == "delete_object")
     assert delete_call["VersionId"] == receipt.object_version
 

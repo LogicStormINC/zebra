@@ -2,9 +2,12 @@ from datetime import timedelta
 from typing import Protocol
 from uuid import UUID
 
+from pydantic import BaseModel
+
 from agent_core.domain.effect_dispatch import (
     EffectClaim,
     EffectDispatch,
+    EffectDispatchStateError,
     EffectEvidence,
     EffectResolutionOutcome,
     EffectScheduleRequest,
@@ -13,6 +16,21 @@ from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import LeaseFence
 from agent_core.domain.tools import ToolResult
+
+
+def effect_input(value: object) -> object:
+    """Expose original recursive fields so exact execution never trusts typed copies."""
+    if isinstance(value, BaseModel):
+        if value.__pydantic_extra__ or value.__dict__.keys() - type(value).model_fields.keys():
+            raise EffectDispatchStateError("exact Effect input carries unsupported attributes")
+        return effect_input(value.__dict__)
+    if isinstance(value, dict):
+        return {key: effect_input(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return tuple(effect_input(item) for item in value)
+    if isinstance(value, list):
+        return [effect_input(item) for item in value]
+    return value
 
 
 class EffectDispatchPort(Protocol):
@@ -30,6 +48,21 @@ class EffectDispatchPort(Protocol):
         fence: LeaseFence,
         claim_ttl: timedelta,
     ) -> EffectClaim | None: ...
+
+    def claim_exact(
+        self,
+        execution_session_id: SessionId,
+        *,
+        expected: EffectDispatch,
+        fence: LeaseFence,
+        claim_ttl: timedelta,
+    ) -> EffectClaim | None:
+        """Atomically claim only the matching pending durable dispatch.
+
+        expected is the authoritative schedule result, not a caller-created ID
+        selector. Missing, foreign, changed or nonpending rows cause no writes.
+        """
+        ...
 
     def list_reconcilable(
         self,

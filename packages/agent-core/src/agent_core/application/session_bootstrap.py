@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
+from agent_core.application.coverage_admission import validate_coverage_admission
 from agent_core.application.session_projection import apply_event
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.context_inheritance import DelegatedContextSnapshot
+from agent_core.domain.coverage_task_admission import CoverageTaskAdmission
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.mcp import normalize_mcp_allowlist
@@ -38,6 +40,7 @@ class SessionBootstrapCommand:
     model_profile: str | None = None
     reasoning_effort: str | None = None
     created_at: datetime | None = None
+    coverage_admission: CoverageTaskAdmission | None = None
 
 
 @dataclass(frozen=True)
@@ -55,6 +58,15 @@ class SessionBootstrapService:
             else normalize_history_session_ids(command.history_session_ids)
         )
         session = Session.create(title=command.title, created_at=command.created_at)
+        coverage_admission = (
+            validate_coverage_admission(
+                command.coverage_admission,
+                host_context=command.host_context,
+                now=datetime.now(UTC),
+            )
+            if command.coverage_admission is not None
+            else None
+        )
         turn_id = derive_turn_id(session.session_id, 0)
         events = (
             SessionEvent.create(
@@ -101,6 +113,11 @@ class SessionBootstrapService:
                     "max_attempts": command.max_attempts,
                     "max_model_calls": command.max_model_calls,
                     "max_tool_calls": command.max_tool_calls,
+                    **(
+                        {"coverage_admission": coverage_admission.model_dump(mode="json")}
+                        if coverage_admission is not None
+                        else {}
+                    ),
                     **({"model_profile": command.model_profile} if command.model_profile else {}),
                     **(
                         {"reasoning_effort": command.reasoning_effort}

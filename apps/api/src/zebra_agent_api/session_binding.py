@@ -297,12 +297,20 @@ def _compose_admission(
     host_context: object,
     payload: dict[str, object],
     idempotency_key: str | None,
+    *,
+    strict_composed: bool = False,
 ) -> object:
     """Admission kwargs incl. the frozen manifest digest (or the error)."""
 
     from zebra_agent_api.idempotency import request_hash
     from zebra_agent_api.responses import ApiResponse
 
+    if "coverage_admission" in payload:
+        from zebra_agent_api.session_payloads import parse_create_session_payload
+
+        preflight = parse_create_session_payload(payload, structural_only=strict_composed)
+        if isinstance(preflight, ApiResponse):
+            return preflight
     frozen_digest = _frozen_manifest_digest(api, host_context)
     if isinstance(frozen_digest, ApiResponse):
         return frozen_digest

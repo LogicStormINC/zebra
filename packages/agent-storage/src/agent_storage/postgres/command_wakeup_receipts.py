@@ -4,6 +4,7 @@ from typing import Any
 
 from agent_core.contracts.turn_events import validate_turn_identity
 from agent_core.domain.events import EventType, SessionEvent
+from agent_core.domain.identifiers import SessionId
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 
 HANDLED_EVENTS = frozenset({
@@ -12,6 +13,15 @@ HANDLED_EVENTS = frozenset({
     EventType.TURN_COMPLETED, EventType.TURN_FAILED, EventType.TURN_CANCELLED,
     EventType.SESSION_COMPLETED, EventType.SESSION_FAILED, EventType.SESSION_CANCELLED,
 })
+
+
+def _terminal_session(connection: Any, namespace: str, session_id: SessionId) -> bool:
+    row = connection.execute(
+        """SELECT status FROM session_projections
+           WHERE deployment_namespace = %s AND session_id = %s""",
+        (namespace, session_id),
+    ).fetchone()
+    return row is None or row["status"] in ("completed", "failed", "cancelled")
 
 
 def record_worker_command_boundary(

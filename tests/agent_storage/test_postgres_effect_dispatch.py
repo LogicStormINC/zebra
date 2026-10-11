@@ -34,6 +34,7 @@ from agent_storage import (
     bootstrap_control_plane_epoch,
     rotate_control_plane_epoch,
 )
+from agent_storage.event_rows import SessionEventSequenceConflictError
 
 
 @pytest.fixture(scope="session")
@@ -107,7 +108,7 @@ def test_schedule_rolls_back_outbox_when_event_version_fails(
         sequence=1,
     )
 
-    with pytest.raises(ValueError, match="duplicate or conflicting session event"):
+    with pytest.raises(SessionEventSequenceConflictError):
         _store(postgres_dsn, effect_namespace).schedule(request, fence=lease.fence)
 
     assert _row_count(postgres_dsn, effect_namespace, "effect_outbox") == 0
@@ -298,7 +299,7 @@ def test_terminal_event_failure_rolls_back_dispatch_transition(
     claim = store.claim_next(session_id, fence=lease.fence, claim_ttl=timedelta(seconds=30))
     assert claim is not None
 
-    with pytest.raises(ValueError, match="duplicate or conflicting session event"):
+    with pytest.raises(SessionEventSequenceConflictError):
         store.complete(
             claim,
             result=_result(),

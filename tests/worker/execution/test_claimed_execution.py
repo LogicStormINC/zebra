@@ -121,6 +121,43 @@ def test_claimed_setup_failure_uses_existing_finalization(tmp_path, monkeypatch)
     assert leases.get(lease.session_id) is None
 
 
+@pytest.mark.parametrize("reason", ["budget_exceeded", "authority_invalid", "snapshot_expired"])
+def test_claimed_failure_keeps_typed_refusal_not_raw_error(tmp_path, monkeypatch, reason):
+    from agent_core.domain.coverage_contracts import CoverageRefusalReason
+
+    service, lease, leases = _setup(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        service,
+        "_execute_claimed_session_once",
+        Mock(
+            side_effect=WorkerExecutionError(
+                "private transport credential/body",
+                coverage_refusal_reason=CoverageRefusalReason(reason),
+            )
+        ),
+    )
+    result = service.execute_claimed_session(lease)
+    assert result.session.status is SessionStatus.FAILED
+    assert result.attempt_result.metadata["coverage_refusal_reason"] == reason
+    assert "private transport" not in str(result.attempt_result.metadata)
+    assert any(
+        e.payload.get("metadata", {}).get("coverage_refusal_reason") == reason
+        for e in result.events
+        if e.event_type is EventType.TURN_FAILED
+    )
+    assert leases.get(lease.session_id) is None
+
+
+def test_untyped_coverage_failure_reason_is_rejected():
+    with pytest.raises(TypeError, match="typed reason"):
+        WorkerExecutionError("private", coverage_refusal_reason="budget_exceeded")
+
+
+@pytest.mark.parametrize("args", [(), ("one",), ("one", "two")])
+def test_worker_error_preserves_value_error_arguments(args):
+    assert WorkerExecutionError(*args).args == args
+
+
 def test_claimed_successor_fence_is_not_released(tmp_path, monkeypatch):
     service, lease, leases = _setup(tmp_path, monkeypatch)
     leases.release(lease.session_id, fence=lease.fence)

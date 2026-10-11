@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from pathlib import Path
 
 from agent_core.application import attachment_refs_from_event
@@ -9,11 +10,16 @@ from agent_core.application.agent_definition_binding import (
     DefinitionBindingError,
     validate_recovered_snapshot,
 )
+from agent_core.application.coverage_admission import validate_coverage_admission
 from agent_core.domain.agent_definition_snapshots import AgentDefinitionSnapshot
 from agent_core.domain.attachments import AttachmentContextInput
 from agent_core.domain.client_context import ClientStateSnapshot
 from agent_core.domain.context_capsule import ContextCapsule
 from agent_core.domain.context_inheritance import DelegatedContextSnapshot
+from agent_core.domain.coverage_task_admission import (
+    CoverageTaskAdmission,
+    coverage_admission_input,
+)
 from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import new_message_id
@@ -116,6 +122,7 @@ class RecoveredTask:
     interaction_mode: InteractionMode = InteractionMode.ONE_SHOT
     model_invocation_policy: ModelInvocationPolicy | None = None
     acceptance_contract: TaskAcceptanceContract | None = None
+    coverage_admission: CoverageTaskAdmission | None = None
 
 
 def apply_bound_host_context(
@@ -125,6 +132,12 @@ def apply_bound_host_context(
     """Use only the exact Host context frozen into the latest binding revision."""
 
     if binding is None or binding.host_capability.host_context is None:
+        if task.coverage_admission is not None:
+            validate_coverage_admission(
+                task.coverage_admission,
+                host_context=task.host_context if binding is None else None,
+                now=datetime.now(UTC),
+            )
         return task
     context = binding.host_capability.host_context
     host = binding.host_capability
@@ -132,6 +145,10 @@ def apply_bound_host_context(
         raise ValueError("bound Host context digest does not match the Task binding")
     if context.host_app_id != host.host_app_id or context.namespace_id != host.namespace_id:
         raise ValueError("bound Host context authority does not match the Task binding")
+    if task.coverage_admission is not None:
+        validate_coverage_admission(
+            task.coverage_admission, host_context=context, now=datetime.now(UTC)
+        )
     return replace(task, host_context=context)
 
 
@@ -148,6 +165,7 @@ def recover_task(
     user_input: str | None = None
     task_payload: dict[str, object] | None = None
     user_event: SessionEvent | None = None
+    strict_identity: CoverageTaskAdmission | None = None
     for event in events:
         if event.event_type is EventType.USER_MESSAGE_RECEIVED:
             content = event.payload.get("content")
@@ -155,9 +173,27 @@ def recover_task(
                 user_input = content.strip()
                 user_event = event
         if event.event_type is EventType.TASK_PREPARED:
+            raw_admission = event.payload.get("coverage_admission")
+            candidate = (
+                CoverageTaskAdmission.model_validate(coverage_admission_input(raw_admission))
+                if raw_admission is not None
+                else None
+            )
+            if strict_identity is not None and candidate != strict_identity:
+                raise ValueError("TASK_PREPARED dropped or changed strict coverage identity")
+            strict_identity = candidate
             task_payload = event.payload
     if user_input is None or user_event is None or task_payload is None:
         raise ValueError("queued session is missing bootstrap task input")
+    coverage_admission = (
+        validate_coverage_admission(
+            task_payload["coverage_admission"],
+            host_context=task_payload.get("host_context"),
+            now=datetime.now(UTC),
+        )
+        if task_payload.get("coverage_admission") is not None
+        else None
+    )
     title = task_payload.get("title")
     resolved_title = title.strip() if isinstance(title, str) and title.strip() else fallback_title
     policy_profile = workspace.policy_profile or PolicyProfile.WORKSPACE_WRITE.value
@@ -220,6 +256,7 @@ def recover_task(
         client_state=client_state_evidence,
         model_invocation_policy=invocation_policy,
         acceptance_contract=task_contract,
+        coverage_admission=coverage_admission,
     )
 
 

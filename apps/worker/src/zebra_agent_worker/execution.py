@@ -35,6 +35,7 @@ from zebra_agent_worker.client_tool_gateway import ClientToolGateway
 from zebra_agent_worker.context_materialization import prepare_worker_context
 from zebra_agent_worker.continuation_dispatch import run_continuation
 from zebra_agent_worker.control import SessionControlService
+from zebra_agent_worker.coverage_composition import CloudCoverageRuntime
 from zebra_agent_worker.effect_runtime import guard_worker_effects
 from zebra_agent_worker.execution_completion import finish_execution
 from zebra_agent_worker.execution_entrypoints import SessionExecutionEntrypoints
@@ -53,6 +54,7 @@ from zebra_agent_worker.execution_finalization import (
 from zebra_agent_worker.execution_recovery import (
     persist_runtime_cleanup_failure,
     recover_execution_inputs,
+    recover_service_execution_inputs,
 )
 from zebra_agent_worker.execution_storage import resolve_execution_storage
 from zebra_agent_worker.extension_recovery import WorkerExtensionStore
@@ -94,6 +96,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         extension_snapshot_store: WorkerExtensionStore | None = None,
         extension_skills: execution_gateway.WorkerSkillSource | None = None,
         extension_mcp: execution_gateway.WorkerMcpSource | None = None,
+        coverage_runtime: CloudCoverageRuntime | None = None,
     ) -> None:
         runtime_authority.validate_authority_wiring(
             execution_authority_resolver,
@@ -183,6 +186,7 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         self._extensions = execution_gateway.extensions(
             extension_snapshot_store, extension_skills, extension_mcp,
         )
+        self._coverage_runtime = coverage_runtime
     def _execute_claimed_session_once(
         self,
         claimed: ClaimedSession,
@@ -193,20 +197,8 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         session_id = claimed.lease.session_id
         cloud_artifacts = provider_runtime.artifact_for(self._cloud_artifact_factory, session_id)
         with sequence_race_guard("execution inputs lost a sequence race"):
-            inputs = recover_execution_inputs(
-                claimed=claimed,
-                session_id=session_id,
-                started_at=started_at,
-                cloud_deployment=self._settings.deployment == "cloud",
-                cloud_provider_continuation_factory=(self._cloud_provider_continuation_factory),
-                provider_continuation_store=self._provider_continuation_store,
-                control_service=self._control_service,
-                recovery_service=self._recovery_service,
-                event_store=self._event_store,
-                context_lifecycle_store=self._context_lifecycle_store,
-                handoff_gate=self._handoff_gate,
-                artifact_payload_reader=self._artifact_payload_reader,
-                workspace_resolver=self._workspace_resolver,
+            inputs = recover_service_execution_inputs(
+                self, claimed, started_at=started_at, recover=recover_execution_inputs
             )
         claimed = inputs.claimed
         session_events = inputs.session_events
@@ -233,6 +225,10 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         )
         if preflight_failure is not None:
             return preflight_failure
+        if task.coverage_admission is not None:
+            if self._coverage_runtime is None:
+                raise WorkerExecutionError("coverage_unsupported")
+            return self._coverage_runtime.execute(self, inputs, authority_recorder, ownership_check)
         model_gateway = execution_gateway.model_gateway(self, build_model_gateway)
         runtime_handle = None
         runtime = None

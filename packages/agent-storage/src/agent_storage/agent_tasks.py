@@ -118,6 +118,13 @@ class SQLiteAgentTaskStore(AgentTaskPort):
         task = self.get_task(task_id)
         return None if task is None else task.active_segment_id
 
+    def task_id_for_session(self, session_id: SessionId) -> TaskId | None:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                "SELECT task_id FROM execution_segments WHERE session_id = ?", (str(session_id),)
+            ).fetchone()
+        return None if row is None else TaskId(UUID(row["task_id"]))
+
     def is_internal_segment(self, session_id: SessionId) -> bool:
         try:
             task = self.ensure_for_session(session_id)

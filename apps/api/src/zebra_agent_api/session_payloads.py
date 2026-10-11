@@ -4,6 +4,10 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from agent_core.domain.attachments import TextAttachmentInput
+from agent_core.domain.coverage_task_admission import (
+    CoverageTaskAdmission,
+    coverage_admission_input,
+)
 from agent_core.domain.identifiers import AgentDefinitionId
 from agent_core.domain.image_attachments import ImageAttachmentInput
 from agent_core.domain.mcp import normalize_mcp_allowlist
@@ -16,7 +20,7 @@ from agent_core.domain.workspace_control import WorkspaceSource
 from agent_runtime import normalize_mcp_resource_ids
 from agent_security import NetworkProfileError, PolicyProfile, parse_network_profile
 
-from zebra_agent_api.responses import ApiResponse, bad_request
+from zebra_agent_api.responses import ApiResponse, bad_request, service_unavailable
 from zebra_agent_api.session_attachment_inputs import parse_attachment_inputs
 from zebra_agent_api.session_payload_types import (
     AppendSessionMessagePayload,
@@ -40,10 +44,25 @@ CREATE_SESSION_FIELDS = frozenset(CreateSessionPayload.__annotations__)
 
 def parse_create_session_payload(
     payload: dict[str, object],
+    *,
+    structural_only: bool = False,
 ) -> CreateSessionPayload | ApiResponse:
     unknown_fields = sorted(payload.keys() - CREATE_SESSION_FIELDS)
     if unknown_fields:
         return bad_request(f"unknown create-session fields: {', '.join(unknown_fields)}")
+    coverage = None
+    if "coverage_admission" in payload:
+        try:
+            coverage = CoverageTaskAdmission.model_validate(
+                coverage_admission_input(payload["coverage_admission"])
+            )
+        except ValueError:
+            return bad_request("coverage_admission is invalid")
+        # ponytail: shared preflight requires native strict dispatch/recovery; no Harness fallback.
+        if not structural_only:
+            return service_unavailable(
+                status="coverage_unsupported", reason="strict_worker_not_ready"
+            )
     prompt = payload.get("prompt")
     if not isinstance(prompt, str) or not prompt.strip():
         return bad_request("prompt must be a non-blank string")
@@ -201,7 +220,7 @@ def parse_create_session_payload(
     if isinstance(reasoning_effort, ApiResponse):
         return reasoning_effort
 
-    return {
+    result: CreateSessionPayload = {
         "prompt": prompt.strip(),
         "title": title.strip(),
         "workspace": workspace.strip(),
@@ -226,6 +245,9 @@ def parse_create_session_payload(
         "model_profile": model_profile,
         "reasoning_effort": reasoning_effort,
     }
+    if coverage is not None:
+        result["coverage_admission"] = coverage
+    return result
 
 
 def parse_resume_session_payload(

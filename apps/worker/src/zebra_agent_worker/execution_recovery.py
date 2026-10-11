@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Literal
 
+from agent_core.domain.coverage_contracts import CoverageRefusalReason, CoverageRefusedError
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.leases import WorkerLease
@@ -47,6 +48,32 @@ class RecoveredExecutionInputs:
     task: RecoveredTask
     active_capsule: Any
     recovered_handoff: Any
+
+
+def recover_service_execution_inputs(
+    service: Any,
+    claimed: ClaimedSession,
+    *,
+    started_at: datetime,
+    recover: Callable[..., RecoveredExecutionInputs] | None = None,
+) -> RecoveredExecutionInputs:
+    """Keep the execution service's dependency forwarding in its recovery module."""
+    return (recover or recover_execution_inputs)(
+        claimed=claimed,
+        session_id=claimed.lease.session_id,
+        started_at=started_at,
+        cloud_deployment=service._settings.deployment == "cloud",
+        cloud_provider_continuation_factory=service._cloud_provider_continuation_factory,
+        provider_continuation_store=service._provider_continuation_store,
+        control_service=service._control_service,
+        recovery_service=service._recovery_service,
+        event_store=service._event_store,
+        context_lifecycle_store=service._context_lifecycle_store,
+        handoff_gate=service._handoff_gate,
+        artifact_payload_reader=service._artifact_payload_reader,
+        workspace_resolver=service._workspace_resolver,
+        strict_dispatch_configured=getattr(service, "_coverage_runtime", None) is not None,
+    )
 
 
 def execute_claimed_with_stale_retry(
@@ -101,6 +128,7 @@ def recover_execution_inputs(
     handoff_gate: Any,
     artifact_payload_reader: Any,
     workspace_resolver: Any,
+    strict_dispatch_configured: bool = False,
 ) -> RecoveredExecutionInputs:
     cloud_continuation = provider_runtime.cloud_for_session(
         cloud_provider_continuation_factory, session_id
@@ -139,7 +167,9 @@ def recover_execution_inputs(
             ),
             client_state_evidence=recover_client_state_evidence(session_events),
         )
-        if workspace_resolver is not None:
+        if task.coverage_admission is not None and not strict_dispatch_configured:
+            raise CoverageRefusedError(CoverageRefusalReason.UNSUPPORTED)
+        if workspace_resolver is not None and task.coverage_admission is None:
             task = apply_workspace_resolver(task, workspace_resolver, session_id)
     except (FileNotFoundError, ValueError) as exc:
         raise WorkerExecutionError(str(exc)) from exc

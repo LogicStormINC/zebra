@@ -189,6 +189,9 @@ def create_app(
         active_settings.platform_operator_token,
         strict=active_settings.deployment != "local",
     )
+    from zebra_agent_api.coverage_http_admission import compose_coverage_http_admission
+
+    coverage_http_admission = compose_coverage_http_admission(active_settings, active_stores)
     return ZebraAgentApi(
         database_path=active_database_path,
         settings=active_settings,
@@ -211,4 +214,5 @@ def create_app(
         task_schedule_store=task_schedule_store,
         task_schedule_firing_store=task_schedule_firing_store,
         usage_evidence=usage_evidence,
+        coverage_http_admission=coverage_http_admission,
     )

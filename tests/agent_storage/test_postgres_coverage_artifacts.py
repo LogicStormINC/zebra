@@ -11,9 +11,15 @@ from agent_core.domain.artifact_payloads import (
     StoredArtifactPayload,
 )
 from agent_core.domain.identifiers import ArtifactId, SessionId
-from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
+from agent_core.ports.artifact_payload_store import (
+    ArtifactPayloadStorePort,
+    BoundedArtifactPayloadReaderPort,
+)
 from agent_storage.postgres.coverage_artifacts import MAX_COVERAGE_ARTIFACT_BYTES, read_artifact
 
+
+class BoundedStoreSpec(ArtifactPayloadStorePort, BoundedArtifactPayloadReaderPort):
+    pass
 
 def payload():
     artifact_id = ArtifactId(uuid4())
@@ -53,19 +59,19 @@ def test_invalid_metadata_fails_before_body_read(changes):
 
 def test_corrupt_bytes_are_rejected():
     metadata = payload()
-    artifacts = Mock(spec=ArtifactPayloadStorePort)
+    artifacts = Mock(spec=BoundedStoreSpec)
     artifacts.get_payload.return_value = metadata
-    artifacts.read_payload_bytes.return_value = b"[]"
+    artifacts.read_payload_bytes_bounded.return_value = b"[]"
     with pytest.raises(ValueError, match="corrupt"):
         read_artifact(artifacts, metadata.uri, metadata.sha256, metadata.session_id)
 
 
 def test_pruning_racing_the_object_read_is_rejected():
     metadata = payload()
-    artifacts = Mock(spec=ArtifactPayloadStorePort)
+    artifacts = Mock(spec=BoundedStoreSpec)
     artifacts.get_payload.side_effect = [metadata, metadata.model_copy(update={
         "lifecycle_status": ArtifactPayloadLifecycleStatus.PRUNED,
     })]
-    artifacts.read_payload_bytes.return_value = b"{}"
+    artifacts.read_payload_bytes_bounded.return_value = b"{}"
     with pytest.raises(ValueError, match="metadata changed"):
         read_artifact(artifacts, metadata.uri, metadata.sha256, metadata.session_id)

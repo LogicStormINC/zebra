@@ -14,6 +14,10 @@ from agent_core.contracts.broker_envelope import (
 from agent_core.domain.identifiers import EventId, SessionId
 from agent_core.domain.leases import DEFAULT_MAX_LEASE_TTL, LeaseConflictError, WorkerLease
 
+from agent_storage.postgres.command_coverage_admission import (
+    pin_command_consumer,
+    reject_missing_command_consumer,
+)
 from agent_storage.postgres.command_rollout import command_scope_mode
 from agent_storage.postgres.command_wakeup import command_scope_key
 from agent_storage.postgres.command_wakeup_discovery import _database
@@ -21,10 +25,31 @@ from agent_storage.postgres.command_wakeup_message import (
     MessageInputRejected,
     append_command_message,
 )
-from agent_storage.postgres.command_wakeup_recovery_proof import recovery_approval
+from agent_storage.postgres.command_wakeup_receipts import _terminal_session as _terminal_session
+from agent_storage.postgres.command_wakeup_recovery_proof import (
+    MAX_GENERATION,
+    CoverageRecoveryCheck,
+    check_coverage_recovery_clock,
+    coverage_generation_usage,
+    recovery_approval,
+    verified_coverage_recovery,
+)
 from agent_storage.postgres.command_wakeup_relay import _validated_body
+from agent_storage.postgres.coverage_recovery_preparation import (
+    check_prepared_recovery_clock,
+    prepare_command_handoff,
+    prepared_recovery_connection,
+)
 from agent_storage.postgres.events import read_event_in_transaction
-from agent_storage.postgres.leases import acquire_lease_in_transaction, lock_session_lease_boundary
+from agent_storage.postgres.leases import (
+    acquire_lease_in_transaction,
+    assert_current_lease_fence,
+    lock_session_lease_boundary,
+)
+from agent_storage.postgres.worker_capability import (
+    WorkerCapabilityLease,
+    check_worker_capability_clock,
+)
 
 
 class HandoffStatus(StrEnum):
@@ -62,6 +87,8 @@ def handoff_command(
     raw_body: bytes | None = None,
     maximum_ttl: timedelta = DEFAULT_MAX_LEASE_TTL,
     required_scope_mode: Literal["broker", "fallback"] | None = None,
+    coverage_check: CoverageRecoveryCheck | None = None,
+    consumer_capability: WorkerCapabilityLease | None = None,
 ) -> CommandHandoff:
     """Trusted scope is independent of the message; success is not scheduler ACK.
 
@@ -100,6 +127,16 @@ def handoff_command(
             or pending["workspace_id"] != scope.workspace_id
         ):
             raise ValueError("command handoff scope or canonical candidate mismatch")
+        reject_missing_command_consumer(
+            connection, deployment_namespace, accepted_event_id, consumer_capability)
+        coverage_check = prepare_command_handoff(
+            coverage_check, connection, deployment_namespace, accepted_event_id,
+            pending["current_generation"] if envelope is None else envelope.wake_generation,
+        )
+        connection = prepared_recovery_connection(connection, coverage_check)
+        capability = pin_command_consumer(
+            connection, deployment_namespace, accepted_event_id, consumer_capability
+        )
         if required_scope_mode is not None:
             connection.execute(
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s,50))",
@@ -119,6 +156,11 @@ def handoff_command(
                 return CommandHandoff(status, pending["command_id"], accepted_event_id)
         session_id = SessionId(pending["session_id"])
         lock_session_lease_boundary(connection, deployment_namespace, session_id)
+        if capability is not None:
+            capability = pin_command_consumer(
+                connection, deployment_namespace, accepted_event_id, consumer_capability,
+                lock_task_authority=True,
+            )
         # No pending/Inbox lock before lease serialization: workers write those
         # after holding their existing lease SHARE and stream/projection locks.
         pending = connection.execute(
@@ -170,6 +212,7 @@ def handoff_command(
                AND scope_key = %s AND command_id = %s""",
             (deployment_namespace, pending["scope_key"], pending["command_id"]),
         ).fetchone()
+        coverage_proof = None
         if receipt is not None:
             if (
                 receipt["accepted_event_id"] != accepted_event_id
@@ -178,16 +221,48 @@ def handoff_command(
                 raise ValueError("canonical command receipt identity conflict")
             if receipt["wake_generation"] == generation or receipt["handled_event_id"] is not None:
                 _inbox(connection, deployment_namespace, pending, outbox, receipt["status"])
+                if capability is not None:
+                    pin_command_consumer(
+                        connection, deployment_namespace, accepted_event_id, consumer_capability
+                    )
+                    check_worker_capability_clock(connection, capability)
                 status = (
                     HandoffStatus.DUPLICATE
                     if receipt["status"] == "accepted"
                     else HandoffStatus.REQUIRES_RECONCILIATION
                 )
                 return CommandHandoff(status, pending["command_id"], accepted_event_id)
+        if approved is not None and approved["reason"] in {
+            "coverage_checkpoint",
+            "coverage_continuation",
+        }:
+            try:
+                coverage_proof = verified_coverage_recovery(
+                    connection, deployment_namespace, pending, receipt, coverage_check
+                )
+                coverage_generation_usage(
+                    connection,
+                    deployment_namespace,
+                    pending,
+                    coverage_proof,
+                    maximum_crashes=MAX_GENERATION,
+                )
+                if (
+                    approved["coverage_proof"] != coverage_proof
+                    or receipt is None
+                    or receipt["wake_generation"] != generation - 1
+                    or approved["approved_stream_sequence"] != coverage_proof["stream_revision"]
+                ):
+                    raise ValueError("strict command recovery proof changed before handoff")
+            except (ValueError, TypeError, KeyError):
+                return CommandHandoff(
+                    HandoffStatus.REQUIRES_RECONCILIATION, pending["command_id"], accepted_event_id
+                )
+        if receipt is not None:
             if (
                 approved is None
                 or receipt["wake_generation"] >= generation
-                or receipt["started_event_id"] is not None
+                or (receipt["started_event_id"] is not None and coverage_proof is None)
                 or receipt["status"] != "accepted"
             ):
                 raise ValueError("command receipt cannot be rebound without recovery proof")
@@ -331,16 +406,22 @@ def handoff_command(
             ),
         )
         _inbox(connection, deployment_namespace, pending, outbox, status.value)
+        if coverage_proof is not None:
+            check_coverage_recovery_clock(connection, coverage_proof, pending=pending)
+            if lease is not None:
+                assert_current_lease_fence(
+                    connection, deployment_namespace, session_id, lease.fence
+                )
+        if capability is not None:
+            pin_command_consumer(
+                connection, deployment_namespace, accepted_event_id, consumer_capability
+            )
+            check_worker_capability_clock(connection, capability)
+        if coverage_proof is not None:
+            check_prepared_recovery_clock(
+                connection, coverage_check, proof=coverage_proof, pending=pending
+            )
         return CommandHandoff(status, pending["command_id"], accepted_event_id, lease)
-
-
-def _terminal_session(connection: Any, namespace: str, session_id: SessionId) -> bool:
-    row = connection.execute(
-        """SELECT status FROM session_projections
-           WHERE deployment_namespace = %s AND session_id = %s""",
-        (namespace, session_id),
-    ).fetchone()
-    return row is None or row["status"] in ("completed", "failed", "cancelled")
 
 
 def _validate(

@@ -24,6 +24,7 @@ from agent_integrations.ag_ui.contracts import (
 )
 from agent_integrations.ag_ui.projection import AgUiProjector
 from agent_integrations.ag_ui.task_run_binding import bind_task_run
+from agent_integrations.coverage_public_events import strict_coverage_events
 
 
 class AgUiTaskProjector:
@@ -38,8 +39,10 @@ class AgUiTaskProjector:
         identity: AgUiRunIdentity,
         *,
         after: AgUiCursor | None = None,
+        strict_coverage: bool = False,
     ) -> AgUiProjection:
         ordered = tuple(task_events)
+        strict = strict_coverage or strict_coverage_events(entry.event for entry in ordered)
         _validate_task_ordering(ordered)
         if any(str(entry.task_id) != identity.thread_id for entry in ordered):
             raise AgUiProjectionError("events do not belong to the requested Task")
@@ -93,6 +96,7 @@ class AgUiTaskProjector:
                 [entry.event for entry in segment_slice],
                 segment_identity,
                 after=segment_after,
+                strict_coverage=strict,
             )
             projected_events.extend(projection.events)
 
