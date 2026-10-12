@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import Event
 from uuid import uuid4
 
 from agent_core.application import SessionBootstrapCommand, SessionBootstrapService
@@ -34,6 +35,7 @@ class _LiveFanout:
         self.fail = fail
         self.captured = False
         self.reads = 0
+        self.read_started = Event()
 
     def capture_barrier(
         self, *, deployment_namespace: str, session_id: SessionId
@@ -62,6 +64,7 @@ class _LiveFanout:
         assert self.captured
         assert barrier.value == "0-0"
         self.reads += 1
+        self.read_started.set()
         if self.fail:
             raise ConnectionError("redis unavailable")
         assert self.event is not None
@@ -76,7 +79,7 @@ class _LiveFanout:
         )
 
 
-def test_sse_replays_durable_then_filters_duplicate_live_entries(tmp_path: Path) -> None:
+def test_sse_never_emits_uncommitted_live_payload(tmp_path: Path) -> None:
     database_path, session_id, revision = _seed_session(tmp_path)
     event = _live_event(session_id, revision + 1)
     fanout = _LiveFanout(event)
@@ -96,8 +99,8 @@ def test_sse_replays_durable_then_filters_duplicate_live_entries(tmp_path: Path)
 
     chunks = asyncio.run(collect())
 
-    assert len(chunks) == 1
-    assert '"event_type": "model_request_started"' in chunks[0]
+    # Redis payloads are hints, never public facts without a durable commit.
+    assert chunks == []
     assert fanout.reads == 1
 
 
@@ -126,7 +129,7 @@ def test_sse_falls_back_to_durable_polling_when_live_read_fails(tmp_path: Path) 
     fanout = _LiveFanout(fail=True)
 
     async def produce() -> None:
-        await asyncio.sleep(0.02)
+        await asyncio.to_thread(fanout.read_started.wait, 5)
         event_store.append(event)
         projection_store.save_session(rebuild_session(event_store.list_for_session(session_id)))
 
@@ -177,3 +180,54 @@ def _live_event(session_id: SessionId, sequence: int) -> SessionEvent:
         actor=EventActor.HARNESS,
         payload={"attempt_number": 1, "model_call_id": str(uuid4())},
     )
+
+
+def test_healthy_notification_timeouts_do_not_repeat_sql_replay(tmp_path, monkeypatch):
+    from agent_storage import sqlite_control_plane_stores
+    from zebra_agent_api import session_streaming
+
+    database, session_id, revision = _seed_session(tmp_path)
+    stores = sqlite_control_plane_stores(database)
+    fanout = _LiveFanout()
+    reads = []
+    original = session_streaming._read_until
+
+    async def bounded(deadline, read, *args, **kwargs):
+        reads.append(read.__name__)
+        return await original(deadline, read, *args, **kwargs)
+
+    def timeout(**kwargs):
+        fanout.reads += 1
+        return LiveEventBatch((), kwargs["barrier"])
+
+    monkeypatch.setattr(session_streaming, "_read_until", bounded)
+    monkeypatch.setattr(fanout, "read_after", timeout)
+
+    async def collect():
+        return [frame async for frame in tail_session_events(
+            database_path=database, stores=stores, session_id=session_id,
+            request=_DisconnectAfter(4), after_sequence=revision,
+            live_event_fanout=fanout, deployment_namespace="live-test",
+        )]
+
+    assert asyncio.run(collect()) == []
+    assert fanout.reads == 4
+    assert reads.count("read_since") == reads.count("get_session") == 1
+
+
+def test_expired_grant_prevents_even_barrier_or_replay(tmp_path):
+    from datetime import timedelta
+
+    database, session_id, revision = _seed_session(tmp_path)
+    fanout = _LiveFanout()
+
+    async def collect():
+        return [frame async for frame in tail_session_events(
+            database_path=database, session_id=session_id,
+            request=_DisconnectAfter(4), after_sequence=revision,
+            live_event_fanout=fanout, deployment_namespace="live-test",
+            authorization_expires_at=datetime.now(UTC) - timedelta(seconds=1),
+        )]
+
+    assert asyncio.run(collect()) == []
+    assert not fanout.captured

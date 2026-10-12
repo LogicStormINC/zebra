@@ -248,6 +248,7 @@ def first_observation(tasks, queue, task, identity):
         task_id=task.task_id,
         identity=identity,
         deployment_namespace="local",
+        live_event_fanout=None,
         cursor=None,
         command_outcome=None,
         host_context=None,

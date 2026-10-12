@@ -1,5 +1,73 @@
 # Progress Log
 
+## 2026-10-12 - CLOUD-STREAM-READ-01 reader slice (Review, uncommitted)
+
+- Claimed Ready then In Progress before coding on codex/cloud-stream-read-01,
+  managed read worktree based f16d8324. Parent explicitly extended owned paths
+  before touching typed checkpoint protocol, consumer callback and Worker loop.
+- User override: cloud-agent-trench is local integration target; validated stages
+  may integrate/unlock. No push/deploy; no edits to frozen baseline worktree.
+- Session/Task terminal status now triggers a final durable drain. Redis copies
+  never become facts ahead of durable replay. Task uses existing bounded pages.
+  Separate body-free checkpoint channel wakes AG-UI only after own commit;
+  failed notifications never undo checkpoints or become Task failures.
+- Healthy timeouts stay in blocking wait without repeated SQL;30s reconciliation.
+  Degraded1–30s exponential+jitter. Local50/250ms and indefinite Task conversation
+  observation retained; signed grant/read/frame deadlines composed.
+- Native controlled PG/Redis regression: source private baseline env (no secret
+  output), uv run pytest tests/stream_storage/test_native_terminal_race.py -q:
+  2passed10.78s, actual fenced commits between empty reads and terminal checks.
+- uv run pytest tests/api/test_live_session_streaming.py
+  tests/agent_integrations/test_ag_ui_checkpoint_consumer.py
+  tests/agent_integrations/test_checkpoint_ready_notification.py -q:
+  39passed10environment-skips51.01s. Initial missing SimpleNamespace optional
+  fanout field corrected in fixture; all8 affected probes rerun green.
+- uv run pytest tests/api/test_session_streaming.py tests/api/test_task_streaming.py
+  tests/api/test_ag_ui_task_stream.py tests/agent_integrations/test_redis_live_fanout.py
+  tests/agent_integrations/test_checkpoint_ready_notification.py -q:35passed2.94s.
+- uv run pytest tests/api/test_live_session_streaming.py tests/worker/test_loop.py -q:
+  latest17passed9.50s. make check: sizes2981/Ruff/mypy1246/eval30 GO.
+- Followup native proof: new callback test switched to shared sqlite/postgres
+  native_source fixture. source .artifacts/header-scratch.env (private0600), then
+  uv run pytest tests/agent_integrations/test_checkpoint_ready_notification.py
+  tests/agent_integrations/test_ag_ui_checkpoint_consumer.py -q:
+  46passed72.36s, no skips, including actual PG separate-connection visibility
+  before ACK and lost-hint business-state preservation. Runtime source unchanged.
+- Qualityreview P2 fixed:30s degraded sleep suppressed3/15s keepalives. Shared
+  heartbeat-sized sleep retains one stable retry deadline; only deadline expiry
+  resumes SQL/Redis retry. Blocking reads also honor remaining heartbeat budget.
+  Four deterministic whole-tail healthy/outage clock cases prove3/15s heartbeats
+  with one replay/capture before30s and reconciliation only at30s. Final target
+  reader/Worker/callback38passed1native-environment-skip10.04s; make check GO.
+  Prior explicit SQLite+PG46pass native callback proof remains valid.
+- Qualityreview future-Task-cursor P2 fixed: grant-bounded body-free Task header
+  captures highwater before StreamingResponse. Futurecursor returns JSON400; typed
+  canonical errors remain fail-closed with no blanketValueError handling. HTTP
+  regression checks future999400, valid terminal suffix once, Sessionfuture999
+  legacy200/empty unchanged. Final HTTPgrant/reader/heartbeat36pass8.39s; static
+  make check GO2981/Ruff/mypy1246/eval30. No rebase or commit by executor.
+- OPEN: Session read_since and startup privacy full-history hydration, native
+  SQL/latency100subscriber gate, signed Host HTTP and browser acceptance. Sync
+  blocking notifications occupy defaultexecutor<=32threads. Two lazy Redis pools
+  max128each; short reads/publication sockets2s, legacy>1s reads socket62s.
+  These checks do not establish full READ/spec acceptance or measured savings.
+- No primary SDK edits by this executor. Review-time SHA256 inventory below is
+  retained for parent comparison with its original dirty-state snapshot:
+
+```text
+bf24fffd311b7642a1a79d206287d34f1e2c9e12db115ab981330d442fb5317c sdks/typescript/packages/react-charts/src/index.tsx
+e8e68c8e172c47bf98b118695b15923d84c1f79d06e33e9977eb6d43cc5548ad sdks/typescript/packages/react-charts/tests/chart-renderer.test.tsx
+19959c0885fc361bbc26fa9c98d3f61e431f1db47ebb2e4996b4b1137c5ad14d sdks/typescript/packages/react/src/components/agent-activity-group.tsx
+546c3409cfff1adfc72462b1e265bb58d99c7c14009a06f27193b601ee27f926 sdks/typescript/packages/react/src/components/agent-chat.tsx
+0b884d8bec358b2e47cf3a3a1415b6efd720703de1a491f1ce674909b20ce589 sdks/typescript/packages/react/src/components/agent-conversation-timeline.tsx
+209f366bce0ea774f902e6fb745570853e5f1f7419c0232e6c833fd6571c1440 sdks/typescript/packages/react/styles/surfaces.css
+0e3a82d3f514f27a293b57ea034cee48bdb561fe5b68223ead0d402701570528 sdks/typescript/packages/react/tests/conversation-timeline.test.tsx
+e35a529337e917f07db77e7d1f7aff52c7167a3cabab9480e4954e6c5d4a2961 sdks/typescript/packages/react/tests/surfaces.test.tsx
+c1a32d3b39c0c2655250b6608987c1dfd5d2da2fdc314445c3f2f55c29d42905 sdks/typescript/packages/ui-contracts/src/index.ts
+4943337a47fae6bb451ee2bd83c34356f5ee0b5a44f0651fc9b932a263138acc sdks/typescript/scripts/package-audit.mjs
+123c437080ed14b7639d36291ce65b8838d2c4eef67c3f4785595a6b089e667e sdks/typescript/scripts/react-browser-matrix.mjs
+```
+
 ## 2026-10-12 - Baidu retirement/manual restart handoff
 
 - Explicit operator follow-up within WEB-SEARCH-CHINA-01 owned paths.

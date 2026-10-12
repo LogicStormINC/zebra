@@ -5,11 +5,13 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import AsyncGenerator, Callable
+from random import uniform
 from time import monotonic
 from typing import TYPE_CHECKING
 
 from ag_ui.core import CustomEvent
 from ag_ui.encoder import EventEncoder
+from agent_core.ports.live_event_fanout import CheckpointNotificationPort, LiveEventCursor
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_core.ports.task_projection_work import ProjectionWorkProblem
 from agent_integrations.ag_ui.checkpoint_observer import AgUiCheckpointObserver
@@ -55,6 +57,64 @@ def projection_problem_notice(problem: ProjectionWorkProblem) -> tuple[str, bool
     return "projection_retry_scheduled", True
 
 
+async def _checkpoint_barrier(
+    context: AgUiStreamContext, deadline: float
+) -> LiveEventCursor | None:
+    fanout = context.live_event_fanout
+    if not isinstance(fanout, CheckpointNotificationPort) or context.deployment_namespace is None:
+        return None
+    try:
+        return await _read_until(
+            deadline, fanout.capture_checkpoint_barrier,
+            deployment_namespace=context.deployment_namespace, task_id=context.task_id,
+        )
+    except Exception:
+        return None
+
+
+async def _backoff_slice(deadline: float, retry_at: float, keepalive_seconds: float) -> bool:
+    """Yield control for heartbeats without advancing the SQL/Redis retry frontier."""
+    await asyncio.sleep(min(
+        max(0.0, retry_at - monotonic()), max(0.001, keepalive_seconds),
+        max(0.0, deadline - monotonic()),
+    ))
+    return monotonic() >= retry_at
+
+
+async def _checkpoint_wait(
+    context: AgUiStreamContext, deadline: float, barrier: LiveEventCursor | None,
+    poll_seconds: float, backoff: float, keepalive_seconds: float, retry_at: float | None,
+) -> tuple[LiveEventCursor | None, float | None, bool]:
+    fanout = context.live_event_fanout
+    if retry_at is None:
+        if (
+            barrier is not None and isinstance(fanout, CheckpointNotificationPort)
+            and context.deployment_namespace is not None
+        ):
+            try:
+                cursor = await _read_until(
+                    deadline, fanout.wait_checkpoint_after,
+                    deployment_namespace=context.deployment_namespace, task_id=context.task_id,
+                    barrier=barrier,
+                    block_ms=max(1, int(
+                        min(1.0, deadline - monotonic(), keepalive_seconds) * 1000
+                    )),
+                )
+                return cursor, None, False
+            except Exception:
+                pass
+        # Cloud readers reconcile even after a missed readiness publication.
+        cloud = (
+            context.deployment_namespace not in {None, "local"}
+            or getattr(context.stores, "deployment_namespace", None) is not None
+        )
+        delay = min(30.0, backoff * uniform(0.9, 1.1)) if cloud else poll_seconds
+        retry_at = monotonic() + delay
+    if not await _backoff_slice(deadline, retry_at, keepalive_seconds):
+        return None, retry_at, False
+    return await _checkpoint_barrier(context, deadline), None, True
+
+
 async def tail_checkpoint_frames(
     context: AgUiStreamContext,
     request: _DisconnectableRequest,
@@ -67,7 +127,9 @@ async def tail_checkpoint_frames(
         context.stores.tasks,
         namespace=context.deployment_namespace or "local",
     )
+    barrier = await _checkpoint_barrier(context, deadline)  # Before snapshot/replay.
     cursor, after_source = context.cursor, None
+    backoff, retry_at = 1.0, None
     reported_problem: ProjectionWorkProblem | None = None
     encoder, last_delivery, failures = EventEncoder(), monotonic(), 0
     while monotonic() < deadline:
@@ -196,4 +258,22 @@ async def tail_checkpoint_frames(
             last_delivery = monotonic()
             yield ": keepalive\n\n"
         if not emitted:
-            await asyncio.sleep(min(poll_seconds, max(0.0, deadline - monotonic())))
+            reconcile_at = monotonic() + 30.0
+            while monotonic() < deadline:
+                previous = barrier
+                barrier, retry_at, reconcile = await _checkpoint_wait(
+                    context, deadline, barrier, poll_seconds, backoff,
+                    max(0.001, keepalive_seconds - monotonic() + last_delivery), retry_at
+                )
+                if retry_at is None:
+                    backoff = min(30.0, backoff * 2) if reconcile else 1.0
+                if (
+                    reconcile or retry_at is None and barrier != previous
+                    or monotonic() >= reconcile_at
+                ):
+                    break
+                if await request.is_disconnected():
+                    return
+                if monotonic() - last_delivery >= keepalive_seconds:
+                    last_delivery = monotonic()
+                    yield ": keepalive\n\n"

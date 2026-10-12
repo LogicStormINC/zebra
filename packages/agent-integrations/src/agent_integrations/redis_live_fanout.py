@@ -6,13 +6,14 @@ from typing import Any, Protocol, cast
 from uuid import UUID
 
 from agent_core.domain.events import SessionEvent
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.ports.committed_event_publisher import CommittedEventPublisherPort
 from agent_core.ports.live_event_fanout import (
     LiveEventBatch,
     LiveEventCursor,
     LiveEventEnvelope,
 )
+from agent_core.ports.task_projection_checkpoints import ProjectionCheckpointHead
 from redis import Redis
 from redis.exceptions import ResponseError
 
@@ -98,12 +99,14 @@ class RedisLiveEventFanout:
         *,
         max_stream_length: int = 1_000,
         key_prefix: str = "zebra:live:v1",
+        long_read_client: RedisStreamClient | None = None,
     ) -> None:
         if max_stream_length < 1:
             raise ValueError("max_stream_length must be positive")
         if not key_prefix or key_prefix != key_prefix.strip() or " " in key_prefix:
             raise ValueError("key_prefix must be non-blank and contain no spaces")
         self._client = client
+        self._long_read_client = long_read_client or client
         self._max_stream_length = max_stream_length
         self._key_prefix = key_prefix
 
@@ -117,8 +120,20 @@ class RedisLiveEventFanout:
     ) -> RedisLiveEventFanout:
         if not url or url != url.strip():
             raise ValueError("Redis URL must be non-blank and trimmed")
-        client = cast(RedisStreamClient, Redis.from_url(url, decode_responses=True))
-        return cls(client, max_stream_length=max_stream_length, key_prefix=key_prefix)
+        # ponytail: cap blocking reader sockets at 128; excess readers degrade to
+        # durable reconciliation. Instance-local multiplexing is the scale-out path.
+        client = cast(RedisStreamClient, Redis.from_url(
+            url, decode_responses=True, socket_connect_timeout=1.0, socket_timeout=2.0,
+            max_connections=128,
+        ))
+        long_reads = cast(RedisStreamClient, Redis.from_url(
+            url, decode_responses=True, socket_connect_timeout=1.0, socket_timeout=62.0,
+            max_connections=128,
+        ))
+        return cls(
+            client, max_stream_length=max_stream_length, key_prefix=key_prefix,
+            long_read_client=long_reads,
+        )
 
     def capture_barrier(
         self,
@@ -183,7 +198,8 @@ class RedisLiveEventFanout:
         key = self._stream_key(namespace, expected_session)
         if barrier.stream_ref is not None and barrier.stream_ref != key:
             raise RedisLiveEventError("live-event barrier does not match namespace or session")
-        response = self._client.xread(
+        reader = self._long_read_client if block_ms > 1000 else self._client
+        response = reader.xread(
             {key: self._redis_cursor(barrier.value).value},
             count=count,
             block=block_ms or None,
@@ -210,6 +226,57 @@ class RedisLiveEventFanout:
                 seen_event_ids.add(event_id)
                 entries.append(envelope)
         return LiveEventBatch(events=tuple(entries), next_cursor=next_cursor)
+
+    def _checkpoint_key(self, namespace: str, task_id: TaskId) -> str:
+        return self._stream_key(namespace, task_id) + ":checkpoint"
+
+    def capture_checkpoint_barrier(
+        self, *, deployment_namespace: str, task_id: TaskId,
+    ) -> LiveEventCursor:
+        key = self._checkpoint_key(deployment_namespace, task_id)
+        try:
+            info = self._client.xinfo_stream(key)
+        except ResponseError as exc:
+            if "no such key" in str(exc).lower():
+                return LiveEventCursor(_EMPTY_STREAM_CURSOR, stream_ref=key)
+            raise
+        return self._cursor(info.get("last-generated-id", info.get(b"last-generated-id")), key)
+
+    def publish_checkpoint(self, head: ProjectionCheckpointHead) -> LiveEventCursor:
+        scope = head.scope
+        key = self._checkpoint_key(scope.namespace, scope.task_id)
+        cursor = self._client.xadd(
+            key,
+            {"namespace": scope.namespace, "task_id": str(scope.task_id),
+             "through_sequence": str(head.through_sequence),
+             "projector_version": scope.projector_version},
+            maxlen=self._max_stream_length, approximate=False,
+        )
+        return self._redis_cursor(cursor, key)
+
+    def wait_checkpoint_after(
+        self, *, deployment_namespace: str, task_id: TaskId,
+        barrier: LiveEventCursor, block_ms: int,
+    ) -> LiveEventCursor:
+        key = self._checkpoint_key(deployment_namespace, task_id)
+        if barrier.stream_ref != key or not 1 <= block_ms <= 1000:
+            raise RedisLiveEventError("invalid checkpoint notification read scope/budget")
+        cursor = barrier
+        for stream, entries in self._client.xread({key: barrier.value}, count=100, block=block_ms):
+            if self._text(stream) != key:
+                raise RedisLiveEventError("unexpected checkpoint stream")
+            for position, fields in entries:
+                value = {self._text(k): self._text(v) for k, v in fields.items()}
+                if (
+                    set(value) != {"namespace", "task_id", "through_sequence", "projector_version"}
+                    or value["namespace"] != deployment_namespace
+                    or value["task_id"] != str(task_id)
+                    or not value["through_sequence"].isdecimal()
+                    or not value["projector_version"]
+                ):
+                    raise RedisLiveEventError("invalid checkpoint notification")
+                cursor = self._redis_cursor(position, key)
+        return cursor
 
     def _decode_entry(
         self,

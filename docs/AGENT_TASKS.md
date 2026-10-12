@@ -30,25 +30,54 @@
   gap (runtime is unchanged);7profiler/native/CLI checks pass3.59s; make check
   GO, independent spec/quality reviews GO for profiler.
 - Remaining: 60s/3repeat, fullWorker/Grant/browser/v2. Baseline measurement is
-  not runtime correctness approval; READ remains dependency-locked.
+  not runtime correctness approval; reviewed instrumentation integrated locally
+  to cloud-agent-trench f16d8324; long-run evidence remains pending.
 - Disposable labeled PG/Redis test dependencies and scratch migration allowed;
   no production load, existing-service operations, business migration,
   paid-model calls or deploy. Successor tasks remain dependent on this evidence.
 
 ### CLOUD-STREAM-READ-01 - Replace fixed-frequency SSE data polling
 
-- Status: Locked; Depends on CLOUD-STREAM-BASELINE-01 accepted integration.
-- Human owner: Luke Ding; intended branch codex/cloud-stream-read-01.
+- Status: Review for reader race/notification slice (claimed before coding).
+  Full READ completion remains open pending bounded Session/privacy startup and native scale gates.
+- Dependency: reviewed baseline instrumentation f16d8324 accepted locally;
+  60s/3repeat measurements continue in the frozen baseline worktree.
+- User integration override: cloud-agent-trench is the dependency target;
+  validated stages may integrate locally and unlock; no push or deployment.
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-read-01, isolated managed checkout.
 - Owned paths: API session_streaming.py, ag_ui_checkpoint_tail.py,
-  ag_ui_stream.py; integrations/redis_live_fanout.py notification reads;
-  corresponding API/live read tests. Scope and paths frozen at claim.
+  ag_ui_stream.py, http.py stream wiring; integrations/redis_live_fanout.py
+  notification reads; corresponding API/live read tests;
+  tests/stream_storage/test_native_terminal_race.py regression transferred
+  from BASELINE (frozen measurement worktree remains untouched).
+  Registry, task_plan.md, PROGRESS.md, WORKLOG.md status/evidence only;
+  spec header/execution state and baseline-heading clarity, claimed before edits.
+  Scope extension claimed 2026-10-12 before edits: core ports/live_event_fanout.py
+  separate checkpoint notification protocol; integrations/ag_ui/checkpoint_consumer.py
+  post-own-commit callback; Worker loop.py notification composition; corresponding
+  checkpoint consumer/Worker tests. Body-free task watermark uses a distinct
+  namespace+task stream, never a canonical Event or coverage source.
+  Any further paths must be claimed explicitly before editing.
 - Acceptance: bounded replay/barrier/blocking notification, Grant deadlines,
   checkpoint-ready wake and degraded backoff; legacy/local behavior preserved.
-- Redis adapter ownership transfers serially to WRITER only after this merges.
+- Evidence: native PG/Redis Session+Task terminal scheduling regression2pass10.78s;
+  focused reader/consumer39pass10environment-skips51.01s; API/Redis35pass2.94s;
+  latest live/Worker17pass9.50s; native SQLite+PG consumer/ready46pass72.36s/no skips;
+  quality P2 heartbeat/backoff fix4deterministic cases; final target38pass1skip10.04s;
+  future-Task-cursor preflight P2 fixed; final HTTPgrant/reader36pass8.39s;
+  make check GO2981files/mypy1246/eval30.
+- Open ceilings: Session read_since and startup privacy canonical_task_view still
+  hydrate full historical bodies; bounded followup must reuse SessionEventPage and
+  source-owned strict_coverage/canonical source coverage, never weaken privacy.
+  Sync Redis blocking reads occupy the default executor (up to32threads).
+  Redis socket pools capped128 each (bounded notifications and long legacy reads);
+  100subscriber latency/SQL reduction and full Host/browser acceptance remain OPEN.
+- Redis adapter ownership transfers serially to WRITER only after reviewed integration.
 
 ### CLOUD-STREAM-CONTRACT-01 - Freeze transient output and v2 compatibility
 
-- Status: Review (Ready claimed before coding; deterministic contracts/static gates GO).
+- Status: Done for typed-contract scope (accepted locally d8e85614); prior Review (Ready claimed before coding; deterministic contracts/static gates GO).
 - Dependency: reviewed instrumentation f16d8324 integrated cloud-agent-trench;
   frozen long-window evidence still running, no runtime GO inferred.
 - User allows validated local stage integration/unlock on cloud-agent-trench;
@@ -62,7 +91,7 @@
 - Approved names: core domain/transient_output.py, domain/stream_admission.py,
   ports/transient_output.py; ADR-024 supplement. No Worker/API/runtime edits.
 - User-authorized labelled ordinary candidate draft rule applied; call-purpose
-  wiring and independent review pending, v2 dormant. No publication/SQL reduction GO.
+  wiring pending; independent spec/quality GO, primary37pass; v2 dormant. No publication/SQL reduction GO.
 
 ### CLOUD-STREAM-WRITER-01 - Compose bounded transient delta writer
 

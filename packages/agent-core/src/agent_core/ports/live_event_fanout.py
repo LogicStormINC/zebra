@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from agent_core.domain.events import SessionEvent
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.ports.task_projection_checkpoints import ProjectionCheckpointHead
 
 _MAX_NAMESPACE_LENGTH = 255
 _MAX_CURSOR_LENGTH = 128
@@ -85,3 +86,19 @@ class LiveEventFanoutPort(Protocol):
         count: int = 100,
         block_ms: int = 0,
     ) -> LiveEventBatch: ...
+
+
+@runtime_checkable
+class CheckpointNotificationPort(Protocol):
+    """Body-free readiness hints; checkpoint replay remains authoritative."""
+
+    def capture_checkpoint_barrier(
+        self, *, deployment_namespace: str, task_id: TaskId,
+    ) -> LiveEventCursor: ...
+
+    def wait_checkpoint_after(
+        self, *, deployment_namespace: str, task_id: TaskId,
+        barrier: LiveEventCursor, block_ms: int,
+    ) -> LiveEventCursor: ...
+
+    def publish_checkpoint(self, head: ProjectionCheckpointHead) -> LiveEventCursor: ...

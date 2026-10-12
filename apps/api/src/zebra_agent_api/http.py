@@ -324,10 +324,35 @@ def create_http_app(
                         status_code=task_key.status_code,
                         content=task_key.body,
                     )
+                head = await authorized_task_preflight(
+                    lambda: None,
+                    lambda: api.stores.tasks.read_task_header(task_key),
+                    authorization_expires_at=getattr(
+                        route_request.host_context, "expires_at", None
+                    ),
+                    request_deadline=getattr(request.state, "authorization_deadline", None),
+                )
+                if isinstance(head, ApiResponse):
+                    return JSONResponse(status_code=head.status_code, content=head.body)
+                if head is None:
+                    return JSONResponse(status_code=404, content={"status": "not_found"})
+                if after_sequence_value > head.current_sequence:
+                    return JSONResponse(
+                        status_code=400,
+                        content={
+                            "status": "invalid_request",
+                            "reason": "after_sequence exceeds Task highwater",
+                        },
+                    )
                 stream = tail_task_events(
                     database_path=active_database_path,
                     stores=api.stores,
                     task_id=task_key,
+                    live_event_fanout=api.live_event_fanout,
+                    deployment_namespace=_deployment_namespace(api),
+                    authorization_expires_at=getattr(
+                        route_request.host_context, "expires_at", None
+                    ),
                     request=request,
                     after_sequence=after_sequence_value,
                 )
@@ -344,6 +369,9 @@ def create_http_app(
                     live_event_fanout=api.live_event_fanout,
                     deployment_namespace=_deployment_namespace(api),
                     session_id=session_key,
+                    authorization_expires_at=getattr(
+                        route_request.host_context, "expires_at", None
+                    ),
                     request=request,
                     after_sequence=after_sequence_value,
                 )

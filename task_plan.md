@@ -10,10 +10,15 @@ Existing incident/search and COV-SQL-PHASE-01 work retains its scope and priorit
    Instrumentation reviewed; frozen45/18short-window cells preserve4/6terminal
    gaps; seven profiler checks/static GO. Final3cell smoke retains1Task terminal gap.
    Next: current-harness60s/3repeat steady runs, then baseline review/integration.
-2. Locked: CLOUD-STREAM-READ-01; remove fixed-frequency SQL data polling.
-3. Review: CLOUD-STREAM-CONTRACT-01; typed v2/RPO/STOP/privacy contracts;
-   deterministic/static GO, independent review and public-call purpose wiring
-   pending; labelled candidate drafts authorized, v2 dormant.
+2. Review for reader race/notification slice: CLOUD-STREAM-READ-01; remove SQL data polling
+   and fix native terminal race. Baseline instrumentation f16d8324 integrated
+   into cloud-agent-trench; frozen60s/3repeat measurement continues. User
+   authorized validated local stage integration/unlock, no push or deployment.
+   Native terminal2pass; make check GO. Fullstage remains open for bounded
+   Session/privacy startup, native subscriber SQL/latency and independent reviews.
+3. Accepted locally: CLOUD-STREAM-CONTRACT-01; d8e85614 integrated into
+   cloud-agent-trench after independent spec/quality GO, primary37pass.
+   Labelled ordinary candidate drafts authorized; v2 remains dormant.
 4. Locked: CLOUD-STREAM-WRITER-01; bounded Redis delta path after READ/CONTRACT.
 5. Locked: CLOUD-STREAM-CLIENT-01; SDK/AG-UI replace/resync and old cursor/history.
 6. Locked: CLOUD-STREAM-RELIABILITY-01; postcommit relay, crash/GC/byte quotas.

@@ -259,3 +259,30 @@ def test_redis_failures_are_not_silently_converted_to_empty_tail() -> None:
 def test_adapter_rejects_invalid_configuration(kwargs: dict[str, object]) -> None:
     with pytest.raises(ValueError):
         RedisLiveEventFanout(_FakeRedis(), **kwargs)  # type: ignore[arg-type]
+
+
+def test_checkpoint_ready_barrier_is_distinct_body_free_and_scope_bound():
+    from agent_core.domain.identifiers import TaskId
+    from agent_core.ports.task_projection_checkpoints import (
+        ProjectionCheckpointHead,
+        ProjectionScope,
+    )
+
+    adapter, client = _adapter()
+    task_id = TaskId(uuid4())
+    barrier = adapter.capture_checkpoint_barrier(deployment_namespace="a", task_id=task_id)
+    adapter.publish(deployment_namespace="a", event=_event(SessionId(task_id), 1))
+    assert adapter.wait_checkpoint_after(
+        deployment_namespace="a", task_id=task_id, barrier=barrier, block_ms=1000
+    ) == barrier
+    scope = ProjectionScope("a", task_id, None, "agui-v1")
+    ready = adapter.publish_checkpoint(ProjectionCheckpointHead(scope, 1, uuid4()))
+    assert adapter.wait_checkpoint_after(
+        deployment_namespace="a", task_id=task_id, barrier=barrier, block_ms=1000
+    ) == ready
+    assert client.last_block == 1000
+    assert all("event" not in fields for _, fields in client.streams[ready.stream_ref])
+    with pytest.raises(RedisLiveEventError):
+        adapter.wait_checkpoint_after(
+            deployment_namespace="b", task_id=task_id, barrier=barrier, block_ms=1000
+        )

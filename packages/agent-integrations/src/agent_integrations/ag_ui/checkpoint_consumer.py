@@ -1,6 +1,7 @@
 """Bounded background materialization; callers own process lifetime, not SSE."""
 
 import logging
+from collections.abc import Callable
 from dataclasses import replace
 from time import monotonic
 
@@ -10,6 +11,7 @@ from agent_core.ports.task_projection_checkpoints import (
     CheckpointConflict,
     CheckpointNotReady,
     CheckpointStale,
+    ProjectionCheckpointHead,
     ProjectionScope,
 )
 from agent_core.ports.task_projection_work import (
@@ -52,6 +54,7 @@ class AgUiCheckpointConsumer:
         *,
         namespace: str,
         read_summaries: TaskReadSummaryPort | None = None,
+        checkpoint_committed: Callable[[ProjectionCheckpointHead], object] | None = None,
     ) -> None:
         if (
             not isinstance(namespace, str)
@@ -62,6 +65,7 @@ class AgUiCheckpointConsumer:
             raise ValueError("invalid projection consumer namespace")
         self.tasks, self.work, self.namespace = tasks, work, namespace
         self.read_summaries = read_summaries
+        self.checkpoint_committed = checkpoint_committed
         self.materializer = AgUiCheckpointMaterializer(tasks)
         self._after_scope: ProjectionScope | None = None
         self._after_repair: TaskId | None = None
@@ -139,6 +143,14 @@ class AgUiCheckpointConsumer:
                 "AG-UI projection problem persistence failed: %s", type(failure).__name__
             )
 
+    def _notify_checkpoint(self, head: ProjectionCheckpointHead) -> None:
+        if self.checkpoint_committed is not None:
+            try:
+                self.checkpoint_committed(head)
+            except Exception:
+                # ponytail: failed readiness hints converge through bounded reader fallback.
+                logger.warning("AG-UI checkpoint notification unavailable")
+
     def materialize_once(self, work: ProjectionWork) -> bool:
         self._scope(work.scope)
         run = self.tasks.read_run_header(
@@ -181,6 +193,7 @@ class AgUiCheckpointConsumer:
         )
         head = self.tasks.read_checkpoint_head(work.scope)
         if head.through_sequence >= work.requested_through:
+            self._notify_checkpoint(head)
             if not summary_ready:
                 return False
             return self.work.complete_projection_work(work, expected_through=work.requested_through)
@@ -221,6 +234,7 @@ class AgUiCheckpointConsumer:
         except CheckpointStale:
             # Only a confirmed frontier race is benign; identity conflicts still fail closed.
             return False
+        self._notify_checkpoint(committed)
         if committed.through_sequence >= work.requested_through and summary_ready:
             self.work.complete_projection_work(work, expected_through=committed.through_sequence)
         return True

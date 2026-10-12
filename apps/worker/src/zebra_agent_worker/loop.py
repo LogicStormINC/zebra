@@ -12,7 +12,7 @@ from agent_core.ports import (
     GovernedMemoryStorePort,
     WorkerProjectionTransactionPort,
 )
-from agent_integrations import build_model_gateway
+from agent_integrations import RedisCommittedEventPublisher, build_model_gateway
 from agent_integrations.ag_ui.checkpoint_consumer import AgUiCheckpointConsumer
 from agent_storage import (
     CloudCompositionSettings,
@@ -392,6 +392,13 @@ def build_worker_loop_service(
             cloud_bundle.dsn,
             deployment_namespace=active_namespace,
         ).reconcile
+    checkpoint_committed = None
+    if settings.live_events.redis_url is not None:
+        checkpoint_committed = RedisCommittedEventPublisher.from_url(
+            settings.live_events.redis_url, deployment_namespace=active_namespace or "local",
+            max_stream_length=settings.live_events.stream_max_length,
+            key_prefix=settings.live_events.key_prefix,
+        ).fanout.publish_checkpoint
     service = WorkerLoopService(
         projection_store=execution_stores.sessions,
         execution_service=execution_service,
@@ -406,6 +413,7 @@ def build_worker_loop_service(
                     execution_stores.tasks,
                     execution_stores.projection_work,
                     namespace=active_namespace or "local",
+                    checkpoint_committed=checkpoint_committed,
                     read_summaries=(
                         execution_stores.tasks
                         if isinstance(execution_stores, PostgresControlPlaneStores)
@@ -416,6 +424,7 @@ def build_worker_loop_service(
                     AgUiCheckpointConsumer(
                         execution_stores.tasks, execution_stores.coverage_projection_work,
                         namespace=active_namespace or "local",
+                        checkpoint_committed=checkpoint_committed,
                         read_summaries=(
                             execution_stores.tasks
                             if isinstance(execution_stores, PostgresControlPlaneStores) else None

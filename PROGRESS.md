@@ -1,9 +1,39 @@
-Cloud stream typed contract (2026-10-12, CLOUD-STREAM-CONTRACT-01): Review.
+# Cloud stream READ slice review — 2026-10-12
+
+Session/Task readers drain again after observing terminal status, closing the
+native empty-read/terminal-commit race. Redis canonical payloads only wake durable
+replay; Task pages reuse existing count/byte bounds. AG-UI waits for a distinct
+body-free checkpoint-ready notification published after the derived own commit.
+Healthy empty blocking waits do not repeat SQL; reconciliation30s, degraded
+exponential1–30s+jitter, grant/frame gates, local polling/conversation lifetime retained.
+Native terminal2pass; focused39pass10environment-skips and35pass; latest live/Worker
+17pass; subsequent native SQLite+PG consumer/ready46pass72.36s/no skips;
+Qualityreview heartbeat/backoff P2 repaired:4deterministic cases, final target
+38pass1native-env-skip10.04s; make check GO2981files/mypy1246/eval30.
+Future-Task-cursor P2 repaired with grant-bound body-free highwater preflight400;
+HTTPgrant/reader36pass8.39s and staticGO. Source frozen again for independent review.
+Full READ remains OPEN: Session replay and privacy startup still hydrate unbounded
+history, sync Redis readers share an executor capped at up to32threads, Redis pools
+128 each. No100subscriber/nativeSQL reduction/Host/browser gate claim. Followup
+must own bounded Session and source-proof privacy reads before full acceptance.
+User integration target remains cloud-agent-trench; validated local integration
+only, no push/deployment. Frozen baseline measurement checkout untouched.
+
+# Cloud stream local integration — 2026-10-12
+
+User selected cloud-agent-trench as dependency integration target and authorized
+validated stages to integrate locally and unlock; no push or deployment.
+Reviewed baseline instrumentation f16d8324 integrated with unrelated dirty files
+preserved. Native runtime conformance remains failing due to terminal races;
+frozen60s/3repeat measurement continues. CLOUD-STREAM-READ-01 claimed before
+coding to fix shared reader correctness and polling costs.
+
+Cloud stream typed contract (2026-10-12, CLOUD-STREAM-CONTRACT-01): locally accepted (d8e85614).
 Dedicated core transient schema/Port and immutable Run mode/capability negotiation;
 16KiB UTF-8 frame, 256KiB batch, scope/Grant/full LeaseFence/generation boundaries; ADR-024
 supplement preserves canonical commit-before-publish and strict coverage privacy.
 Deterministic contracts37pass for authorized draft policy; make check GO1249/eval30.
-Independent review pending.
+Independent spec/quality reviews GO; primary postmerge37pass.
 No composition activates v2. Current delta precedes candidate/tool_loop classification;
 User permits ordinary labelled candidate drafts; public-call wiring remains OPEN.
 Native fencing/revocation, SDK replacement, SQL/RPO fault gates remain successor work.
