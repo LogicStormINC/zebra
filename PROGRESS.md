@@ -1,3 +1,15 @@
+Cloud stream typed contract (2026-10-12, CLOUD-STREAM-CONTRACT-01): Review.
+Dedicated core transient schema/Port and immutable Run mode/capability negotiation;
+16KiB UTF-8 frame, 256KiB batch, scope/Grant/full LeaseFence/generation boundaries; ADR-024
+supplement preserves canonical commit-before-publish and strict coverage privacy.
+Deterministic contracts37pass for authorized draft policy; make check GO1249/eval30.
+Independent review pending.
+No composition activates v2. Current delta precedes candidate/tool_loop classification;
+User permits ordinary labelled candidate drafts; public-call wiring remains OPEN.
+Native fencing/revocation, SDK replacement, SQL/RPO fault gates remain successor work.
+User permits validated stage local cloud-agent-trench integration/unlock only;
+no push/deploy. Long-window baseline and READ runtime terminal repair remain separate.
+
 # Zebra Agent Project Status
 
 Cloud stream/storage execution started (2026-10-12, CLOUD-STREAM-BASELINE-01):

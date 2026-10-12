@@ -1,6 +1,6 @@
 # Cloud 流式输出与持久存储优化重构 Spec
 
-日期：2026-10-12。状态：已启动基线测量；运行时合同与后继依赖待解锁。
+日期：2026-10-12。状态：基线持续测量；v2 typed 合同实现评审中，运行时尚未激活。
 文档任务：CLOUD-STREAM-SPEC-01。人类 Owner：Luke Ding；编写：Codex。
 源码基线：cloud-agent-trench / d836b04cef7df21c6130c1df8be74ff200089f32。
 本稿由源码审计与官方资料形成；未连接生产数据库测量，未修改运行代码。
@@ -59,8 +59,8 @@ coverage 当前严格 SQL Gate 是独立工作，不能宣称本重构自动解�
 沿用 ADR-023 的 expected_revision、命令 admission 和幂等 fingerprint。
 沿用 ADR-026 的 Task/Turn/Segment 生命周期；结束文本不等于结束 Task。
 沿用 ADR-017 的 Artifact 元数据与校验字节联合权威。
-沿用 ADR-024 的持久 Event 提交后发布；本稿提议新增独立临时帧类别。
-实施批准时补充 ADR-024，明确其规则仍覆盖所有 canonical Event。
+沿用 ADR-024 的持久 Event 提交后发布；已批准新增独立临时帧合同。
+ADR-024 补充仅冻结 typed contract，原规则仍覆盖所有 canonical Event。
 
 优先复用现有 coalescer、Redis、checkpoint、游标、Host Grant 和 outbox/relay。
 不新增 Kafka、独立流数据库、第二套 Task 状态机或通用消息总线框架。
@@ -82,7 +82,7 @@ local 默认保持 SQLite 事件模式；cloud v2 显式组合，不隐式降级
 | coverage 原文 | 原始 MODEL transcript、不可变 source、receipt、certificate | 保持既有持久证据，不因名字有 delta 而排除 |
 
 一期只分流普通可公开文本 delta；其他事件默认 durable，逐项审计再改。
-私有 reasoning、候选答案、public_expression、coverage 未认证内容不能借临时流外泄。
+用户已明确允许普通候选正文作为标注临时草稿展示；private/coverage/public_expression 禁止。
 如当前发布门禁禁止某内容在验证前出现，v2 仍禁止；速度不能改变资格。
 新事件类型未分类时拒绝临时发送，防止默认“全发 Redis”。
 
@@ -111,20 +111,22 @@ Gate 1 必须证明无 delta 历史时，首块、等待提示与重试预算仍
 
 ## 6. 临时帧契约（拟议 wire v2）
 
-下列为字段设计示例，不是现有 API，也不是建议直接新增通用框架：
+下列由 agent-core TransientTextFrame 冻结为 compact JSON；不是已启用的 API：
 
 ```json
 {
   "version": 2,
   "kind": "text_delta",
+  "presentation": "provisional_draft",
   "task_id": "<uuid>",
   "segment_id": "<uuid>",
   "turn_id": "<uuid>",
   "run_id": "<opaque>",
   "attempt_number": 1,
   "model_call_id": "<opaque>",
-  "message_id": "<stable-id>",
+  "message_id": "message:<model_call_id>",
   "generation_id": "<opaque>",
+  "lease_fence": 1,
   "offset": 0,
   "content_delta": "可公开的文本",
   "durable_anchor": 123
@@ -137,9 +139,46 @@ offset 是按帧递增的位置，不是 Python 字符数、UTF-8 字节数或 t
 durable_anchor 仅用于定位关联事实，不能推进 expected_revision 或 Task sequence。
 Redis entry ID 是传输位置；event_id/Task sequence 是持久位置，禁止混用。
 重复 (generation, offset) 内容一致则去重，内容不同则完整性错误。
-采用已有字段边界或更严格上限；拟定单帧 JSON 上限 16KiB，超过须合法分块。
+Typed contract 强制单帧完整 compact UTF-8 JSON 上限 16KiB，超过须合法分块。
 参数均以 UTF-8 字节计容量，避免中文/emoji 与字符数估算不一致。
 帧时间戳用于观测，不决定顺序；跨 generation 不用时间戳拼接正文。
+
+### 6.1 已冻结的实现与可信输入边界
+
+新增 core domain/transient_output.py、domain/stream_admission.py 和
+ports/transient_output.py；ADR-024 补充是 WRITER/CLIENT 实施合同。
+transient_category_allowed 默认拒绝；只接受明确 ordinary_public_text delta，
+coverage_mode 必须明确 false；candidate/tool_loop 或未知最终阶段的普通公开正文
+可以标注临时草稿，public_expression/private/coverage 拒绝；分类本身不授权。
+TransientWriterAuthorization.gate_context_ref 是已校验实际调用的进程内 handle，
+不建立新 durable gate 表。Adapter activation 必须解析 exact scope/调用公开门禁，
+不能相信调用方 bool、模型/客户端分类或任意构造的 Python 对象；否则不启用 v2。
+当前 model_step 在完成前发 delta，随后才分类 candidate/tool_loop；WRITER 必须
+在 call admission 由可信 output policy 限定普通非coverage调用的 typed on_text_delta，
+不能将缺省 stage 一概公开。用户已授权明确标注临时草稿；真实 wiring 仍待实现。
+TransientGeneration 绑定 Task/Segment(Session)/Turn/Run/Attempt/model call/message/
+generation/lease_fence；message ID 必须等于 message:{model_call_id} 字符串。字段总
+JSON 字节计入预算，未知字段、整数强转拒绝；presentation 固定 provisional_draft。
+scope 服务端解析 opaque issuer/namespace/session allowlist，wire 不包含 namespace。
+
+RunStreamAdmission 冻结模式；StreamCapabilities 要求 wire2 + replace_message +
+reset_provisional + scoped_resume + provisional_draft_label，仍需 server 显式 enable；
+默认/local/旧 Run legacy。MODEL_RESPONSE_RECEIVED 可 replace，但草稿标签直到
+ANSWER_COMMITTED 原门禁通过才移除，不能由完整消息自称最终成功。
+TransientResumeCursor 仅内部 decoded object：wire token 必须认证且绑定 exact scope，
+连接另做 fresh Grant；durable_sequence/frame_index 和 live_cursor/offset 独立。
+旧 generation 游标 resync，不与新 Attempt 拼接；不兼容 reader 只能 durable snapshot。
+TransientOutputBatch 同时限制100帧与累计256KiB，resync 不携带 provisional。
+
+Writer expires_at <= min(issued_at+30s, lease expiry, Grant expiry)，可配置收紧；
+server-only authorization 复用完整 LeaseFence(epoch/token/owner)，token 必须匹配
+wire generation.lease_fence；handle绑定完整fence，wire不暴露owner/epoch。
+ensure_frame 对照 current fullFence；adapter append仍须原子核验active generation/fullFence。
+read block 截断至 Grant deadline，实际交付再次校验，read 不续 retention。
+STOP completed 必须 durable cancel 且 generation 失效/观察关闭；Redis invalidation
+未确认不能声称展示安全停止。撤销传播有界时延，不虚构 PG/Redis 共同原子事务。
+值对象检查见 tests/agent_core/test_transient_output_contract.py；真实 Writer 门禁、
+撤销/重复/乱序/Redis fault、SDK replace 和 RPO 故障 Gate 仍由后继卡证明。
 
 ## 7. 合并、容量与保留
 
@@ -296,7 +335,7 @@ Redis 故障用独立预算测量，不能把降级时高频轮询混进正常�
 | STOP/fence 变更 | 旧 generation 失效，原执行保护仍有效 |
 | Grant 到期/跨租户游标 | 停止交付/拒绝，历史和临时流都不能泄露 |
 | 慢消费/重复/乱序/缺 offset | 有界队列；去重或 resync，不悄悄丢正文 |
-| coverage/private/candidate | 原门禁仍生效，不可通过临时通道发布 |
+| coverage/private/draft-label | coverage/private仍禁止；候选仅标注草稿，原最终门禁不变 |
 | next Turn/handoff/mixed v1/v2 | 正确身份与终态，旧历史和 local 可正常恢复 |
 | 最终正文与 provisional 不同 | replace 收敛，无双倍全文，AG-UI start/end 合法 |
 
@@ -310,8 +349,11 @@ tests/agent_core 的 progress/public_output，用例扩展按共享函数回归�
 
 ## 15. 分阶段实施、路径与依赖
 
-2026-10-12 用户要求纳入计划；已登记 CLOUD-STREAM-* 后继卡。
-BASELINE 为 Ready，其余 Locked；登记不等于实现或部署授权。
+2026-10-12 用户先要求纳入计划，随后授权全 spec 实施；已登记 CLOUD-STREAM-*。
+reviewed instrumentation f16d8324 已本地集成；READ/CONTRACT 独立认领实施。
+用户允许 validated stage 本地集成 cloud-agent-trench 后解锁依赖，不要求先合 main；
+此阶段授权不含 push/部署。60s/3repeat matrix 仍运行，终态缺口由 READ 修复，
+不据 instrumentation/static gates 宣称 runtime GO 或提前激活 v2。
 每项一分支/Owner/worktree；跨路径更改先明确转移，不默认共享 ownership。
 
 | 任务 | 工作及主要路径 | 依赖 / 验收 |

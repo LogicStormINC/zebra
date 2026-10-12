@@ -11,7 +11,9 @@ Existing incident/search and COV-SQL-PHASE-01 work retains its scope and priorit
    gaps; seven profiler checks/static GO. Final3cell smoke retains1Task terminal gap.
    Next: current-harness60s/3repeat steady runs, then baseline review/integration.
 2. Locked: CLOUD-STREAM-READ-01; remove fixed-frequency SQL data polling.
-3. Locked: CLOUD-STREAM-CONTRACT-01; freeze v2/RPO/STOP/sequence/privacy semantics.
+3. Review: CLOUD-STREAM-CONTRACT-01; typed v2/RPO/STOP/privacy contracts;
+   deterministic/static GO, independent review and public-call purpose wiring
+   pending; labelled candidate drafts authorized, v2 dormant.
 4. Locked: CLOUD-STREAM-WRITER-01; bounded Redis delta path after READ/CONTRACT.
 5. Locked: CLOUD-STREAM-CLIENT-01; SDK/AG-UI replace/resync and old cursor/history.
 6. Locked: CLOUD-STREAM-RELIABILITY-01; postcommit relay, crash/GC/byte quotas.

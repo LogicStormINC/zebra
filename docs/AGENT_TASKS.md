@@ -48,13 +48,21 @@
 
 ### CLOUD-STREAM-CONTRACT-01 - Freeze transient output and v2 compatibility
 
-- Status: Locked; Depends on CLOUD-STREAM-BASELINE-01 accepted integration.
-- Human owner: Luke Ding; intended branch codex/cloud-stream-contract-01.
+- Status: Review (Ready claimed before coding; deterministic contracts/static gates GO).
+- Dependency: reviewed instrumentation f16d8324 integrated cloud-agent-trench;
+  frozen long-window evidence still running, no runtime GO inferred.
+- User allows validated local stage integration/unlock on cloud-agent-trench;
+  no push or deployment.
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-contract-01, isolated managed checkout.
 - Owned paths: minimal core transient frame/Port and contracts; ADR-024;
   this spec contract sections; associated deterministic contract checks.
 - Acceptance: durable sequence/live offset separation, closed publish categories,
   frozen Run mode, scope/STOP semantics, coverage privacy and RPO boundaries.
-- No Worker/API runtime edits; approve ADR and transfer exact names before coding.
+- Approved names: core domain/transient_output.py, domain/stream_admission.py,
+  ports/transient_output.py; ADR-024 supplement. No Worker/API/runtime edits.
+- User-authorized labelled ordinary candidate draft rule applied; call-purpose
+  wiring and independent review pending, v2 dormant. No publication/SQL reduction GO.
 
 ### CLOUD-STREAM-WRITER-01 - Compose bounded transient delta writer
 
@@ -65,7 +73,8 @@
   integrations/redis_live_fanout.py write side; related tests.
 - Recorder/progress paths stay with COV-SQL-PHASE-01 until explicit handoff.
 - Acceptance: zero per-frame PG content/projection writes; bounded writer scope,
-  old generation fencing, no candidate/private/coverage publication bypass.
+  old generation fencing; ordinary candidates labelled draft, private/coverage
+  prohibited and final publication gates preserved.
 
 ### CLOUD-STREAM-CLIENT-01 - Reconcile AG-UI and SDK streaming state
 
