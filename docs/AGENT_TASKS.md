@@ -263,8 +263,8 @@
 
 ### CLOUD-STREAM-CLIENT-01 - Compose scoped v2 readers and labelled draft SDK
 
-- Status: Review (independent SPEC and QUALITY GO; accepted for local commit/
-  integration2026-10-13). Human owner: Luke Ding; executor: Codex.
+- Status: Done (accepted bounded component committedc0e073fe and locally
+  integrated2026-10-13). Human owner: Luke Ding; executor: Codex.
 - Branch/worktree: codex/cloud-stream-client-01, managed isolated checkout.
 - Dependency: WRITER0d49f0b0 + ADMISSIONffe8f38b accepted locally;
   READ3a3e5902/CONTRACTd8e85614 available. Primary admission23pass;42original
@@ -360,11 +360,16 @@
   QUALITY native39/no-skips68.69s and SDK80/no-skips GO; all41source/current5
   proofs and archived copies match. Historical review failures retained; total
   performance/reliability/product gates stay OPEN and admission OFF.
+- Local integration evidence: primary native40/no-skips65.92s; combined dirty
+  SDK99/no-skips7.07s and build/typecheck GO. Initial98/99 retained one timeline
+  collapse failure, isolated21/21 and full99/99 rerun passed; no unrelated UI
+  edits. Original41 hashes and UI original hunks exact afterfeature reverse.
 - Trench changes require a separate cross-repo card, not implicit owned paths.
 
 ### CLOUD-STREAM-PROOF-PERF-01 - Reduce fresh proof and quiet-read fixed costs
 
-- Status: Locked; Depends on CLIENT accepted local integration.
+- Status: Ready; CLIENTc0e073fe accepted local integration and combined gates
+  passed2026-10-13. Claim before implementation.
 - Human owner: Luke Ding; intended branch codex/cloud-stream-proof-perf-01.
 - Goal: reduce measured connection/query duplication without caching mutable
   authorization, changing privacy checks or hiding costs behind longer polling.

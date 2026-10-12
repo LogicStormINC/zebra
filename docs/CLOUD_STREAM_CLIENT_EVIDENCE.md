@@ -314,3 +314,14 @@ Both reviewers verify41owned source/current5proof hashes and complete archives.
 Root post-review changes only acceptance governance, not reviewed implementation.
 Local integration and combined dirty SDK gates are subsequent evidence boundaries;
 full total SQL/TTFT/reliability/capacity/runtime acceptance remains OPEN.
+
+## Local integration and unrelated-work boundary
+
+Commitc0e073fe fast-forwarded into cloud-agent-trench. Primary native40/no-skips
+65.92s passed. Combined primary SDK99/no-skips7.07s and build/typecheck passed.
+Initial98/99 retains timeline collapse assertion failure; isolated21 and full99
+rerun pass. No unrelated UI fix or test weakening was performed.41originaldirty
+hashes match, plus original UI-contract contents match after reversing only the
+feature patch. Backup .artifacts/stream-client-integration-1791832903310151000
+retains original files/hashes/patches; no artifacts staged or pushed.
+CLOUD-STREAM-PROOF-PERF-01 Ready; overall product performance/reliability staysOPEN.

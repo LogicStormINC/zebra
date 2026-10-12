@@ -1,3 +1,13 @@
+## Cloud stream CLIENT locally integrated — 2026-10-13
+
+c0e073fe fast-forwarded into cloud-agent-trench after independent SPEC/QUALITY.
+Primary native40/no-skips65.92s; combined dirty SDK99/no-skips7.07s and build/type
+check GO. Initial combined98/99 retained one timeline collapse assertion failure;
+isolated21 and full99 rerun pass. No unrelated UI modifications:41 originaldirty
+file hashes unchanged, original UI-contract hunks byte-exact after feature reverse.
+CLOUD-STREAM-PROOF-PERF-01 unlocked Ready, not claimed/coded yet; reduce fixed
+fresh-proof/quiet-read costs next. Admission OFF, no push/deploy; product gates OPEN.
+
 ## Cloud stream CLIENT bounded component accepted — 2026-10-13
 
 Independent SPEC and QUALITY GO on freeze17dd8f7d after historical-memory,

@@ -33,10 +33,10 @@ Existing incident/search and COV-SQL-PHASE-01 work retains its scope and priorit
     mode-aware Worker/Turn/Host binding composition on accepted0d49f0b0.
     Configured261/no-skips (including native16); static GO; SPEC39/QUALITY39+Writer26 no-skips GO.
     Activation81SQL/call and0.3766/0.4024s remain material fixed-cost/TTFT evidence.
-5. Accepted bounded component, local integration pending: CLOUD-STREAM-CLIENT-01; actual scoped v2 SSE + signed cursors,
+5. Done bounded component locallyc0e073fe, native40/combinedSDK99: CLOUD-STREAM-CLIENT-01; actual scoped v2 SSE + signed cursors,
    trusted generation discovery and labelled SDK draft/replace/reset/recovery;
    root dirty SDK handoff narrowed before coding.  SDK/AG-UI replace/resync and old cursor/history.
-5a. Locked: CLOUD-STREAM-PROOF-PERF-01; explicit fresh proof batches and combined
+5a. Ready after CLIENT integration: CLOUD-STREAM-PROOF-PERF-01; explicit fresh proof batches and combined
     source-qualified heads after CLIENT acceptance; preserve full privacy checks.
 6. Locked: CLOUD-STREAM-RELIABILITY-01; postcommit relay, crash/GC/byte quotas.
 7. Locked: CLOUD-STREAM-ACCEPTANCE-01; native paired SQL gates, full checks,

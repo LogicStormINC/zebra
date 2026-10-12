@@ -14217,3 +14217,10 @@ not full acceptance. Fresh issue/resolve snapshots and original authority remain
 CLIENT. QUALITY native39/no-skips68.69s and SDK80/no-skips; exact original
 retry/legacy reproductions repaired. Root accepts bounded component for explicit
 owned41-path local commit/integration only; all product gates remain OPEN.
+
+2026-10-13 root: CLIENTc0e073fe locally integrated, exact42dirty-content
+preservation proven (41hashes+UI reverse-feature originalhash). Primary native40
+passed65.92s; combinedSDK initial98/99 one timeline collapse failure retained,
+isolated21/full99rerun passed; SDKbuild/typecheck GO. No unrelated UI edits.
+Backup: primary .artifacts/stream-client-integration-1791832903310151000.
+Proof PERF unlocked Ready after these gates; not claimed/coded yet. No push/deploy.
