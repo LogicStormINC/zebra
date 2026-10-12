@@ -7,6 +7,9 @@
   shared v1/v2 guidance. No Baidu API, credential or charge configured.
 - Running API/Worker still old images; prepare replacement only, operator starts.
 - Preserve unrelated primary dirty changes and stashes; no external push.
+- Final focused40pass5.41s and make check GO. Exact merged SearXNG settings
+  exclude Baidu. Latest arm64 API29b2ac793b4c/Worker4e81e1a00804/Migrate96096e8ca377
+  built; sourcea23a65f0 locally integrated, no existing service restart.
 
 ## 2026-10-12 - WEB-SEARCH-CHINA-01
 

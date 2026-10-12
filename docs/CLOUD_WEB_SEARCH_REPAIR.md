@@ -10,6 +10,12 @@ Baidu availability. Default Bing-cn and explicit Sogou/360/WeChat remain.
 Prepared images must replace the currently running older API/Worker; rebuild is
 not necessary after this handoff. Use the restart commands below, preserving
 local-gvisor and Pro overrides. No migration or data deletion is required.
+Final retirement gate: focused40passed5.41s, make check GO; merged SearXNG
+configuration has exactly four engines and no Baidu processor. Sourcea23a65f0
+locally integrated; original dirty files/stashes preserved. Latest arm64 images
+supersede all older IDs below: API29b2ac793b4c,
+Worker4e81e1a00804, Migrate96096e8ca377. Existing API/Worker remain on older
+25b8306057d8/aec421e851e9; no restart or model-task acceptance performed.
 
 Run the baseline operator probe, then a separate public WeChat probe:
 
