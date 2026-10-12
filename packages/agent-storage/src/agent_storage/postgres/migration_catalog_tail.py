@@ -13,6 +13,9 @@ from agent_storage.postgres.coverage_command_recovery_migration import (
 )
 from agent_storage.postgres.coverage_delta_indexes_migration import COVERAGE_DELTA_INDEXES_MIGRATION
 from agent_storage.postgres.coverage_execution_migration import COVERAGE_EXECUTION_MIGRATION
+from agent_storage.postgres.coverage_execution_positions_migration import (
+    COVERAGE_EXECUTION_POSITIONS_MIGRATION,
+)
 from agent_storage.postgres.coverage_execution_receipt_migration import (
     COVERAGE_EXECUTION_RECEIPT_MIGRATION,
 )
@@ -143,4 +146,5 @@ LATEST_MIGRATIONS = (
     COVERAGE_MODEL_SOURCE_POSITIONS_MIGRATION,
     TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION,
     TASK_PROJECTION_WORK_ROUTING_MIGRATION,
+    COVERAGE_EXECUTION_POSITIONS_MIGRATION,
 )

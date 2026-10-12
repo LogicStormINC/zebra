@@ -7,7 +7,7 @@ from collections import defaultdict
 from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import replace
-from functools import partial, wraps
+from functools import partial
 from time import perf_counter
 
 import psycopg
@@ -16,18 +16,25 @@ from agent_core.application.coverage_executor import CoverageExecutor
 from agent_core.domain.events import EventType
 from agent_core.domain.sessions import SessionStatus
 from agent_integrations.coverage_model_invocation import CoverageModelInvocation
+from agent_integrations.coverage_snapshot_source import HostCoverageSnapshotSource
+from agent_storage import S3ArtifactObjectStore
 from agent_storage.postgres.command_wakeup_handoff import HandoffStatus
 from agent_storage.postgres.coverage import PostgresCoverageStore
 from agent_storage.postgres.coverage_artifact_publication import PostgresCoverageArtifactPublisher
+from agent_storage.postgres.coverage_authority import PostgresCoverageAuthority
+from agent_storage.postgres.coverage_evidence_operation import PostgresCoverageEvidenceOperation
 from agent_storage.postgres.coverage_recovery_preparation import RecoveryReadSnapshot
 from agent_storage.postgres.task_admission import load_session_task_binding
 from zebra_agent_config.coverage_settings import CoverageWorkSettings
 from zebra_agent_worker.coverage_artifacts import CloudCoverageArtifacts
 from zebra_agent_worker.coverage_continuation import NATIVE_CONTINUATION_VERIFIER
+from zebra_agent_worker.coverage_native_executor import NativeCoverageExecutor
+from zebra_agent_worker.coverage_native_model import NativeCoverageModelInvocation
 from zebra_agent_worker.coverage_recovery_preparation import NativeCoverageRecoveryCheck
 
 from tests.worker.coverage_model_cloud_fixtures import NAMESPACE, dsn, postgres_dsn  # noqa: F401
 from tests.worker.coverage_server_sql_metrics import difference, snapshot
+from tests.worker.coverage_work_phase_metrics import observe_phases
 from tests.worker.test_coverage_dispatch import (  # noqa: F401
     _stop_native_capability,
     native_handoff,
@@ -170,6 +177,8 @@ def test_native_normal_work_slices(
 
         monkeypatch.setattr(PostgresCoverageStore, "__init__", composed)
     before_gets = sum(method == "get_object" for method, _ in env.client.calls)
+    before_sends = dict(env.native_object_sends)
+    before_puts = sum(method == "put_object" for method, _ in env.client.calls)
     original_execute = psycopg.Connection.execute
     original_cursor_execute = psycopg.Cursor.execute
     original_many = psycopg.Cursor.executemany
@@ -190,7 +199,7 @@ def test_native_normal_work_slices(
 
     monkeypatch.setattr(recovery, "_ModelVerification", counted_verifier)
 
-    for cls, name in (
+    phase_targets = (
         (PostgresCoverageStore, "commit"),
         (NativeCoverageRecoveryCheck, "prepare"),
         (NativeCoverageRecoveryCheck, "prepare_continuation"),
@@ -199,22 +208,14 @@ def test_native_normal_work_slices(
         (CloudCoverageArtifacts, "_record"),
         (PostgresCoverageArtifactPublisher, "publish"),
         (PostgresCoverageArtifactPublisher, "publish_batch"),
+        (PostgresCoverageEvidenceOperation, "publish_model_checkpoint"),
+        (PostgresCoverageEvidenceOperation, "commit_evidence"),
         (CoverageExecutor, "execute_batch"),
         (CoverageModelInvocation, "__call__"),
-    ):
-        def instrument(original, label):
-            @wraps(original)
-            def measured(*args, **kwargs):
-                stamp = perf_counter()
-                phase_token = current_phase.set(label)
-                try:
-                    return original(*args, **kwargs)
-                finally:
-                    current_phase.reset(phase_token)
-                    phase_cost[label]["calls"] += 1
-                    phase_cost[label]["seconds"] += perf_counter() - stamp
-            return measured
-        monkeypatch.setattr(cls, name, instrument(getattr(cls, name), f"{cls.__name__}.{name}"))
+        (NativeCoverageModelInvocation, "_qualified_preparation"),
+        (NativeCoverageModelInvocation, "_preparation_boundary"),
+        (NativeCoverageModelInvocation, "_mutation_fence"),
+    )
 
     def measured_sql(query, invoke):
         nonlocal queries
@@ -261,30 +262,31 @@ def test_native_normal_work_slices(
     phase_sql_calls.clear()
     started, callbacks = perf_counter(), 0
     callback_cost = []
-    for _ in range(18):
-        callback_start, sql_start = perf_counter(), queries
-        gets_start = sum(method == "get_object" for method, _ in env.client.calls)
-        _stop_native_capability(env, remove_revoked=True)
-        handoff = native_handoff(env)
-        handoff_elapsed = perf_counter() - callback_start
-        assert handoff.status is HandoffStatus.ACCEPTED
-        result = env.service.execute_claimed_session(handoff.lease, lease_ttl_seconds=300)
-        callbacks += 1
-        callback_cost.append({
-            "handoff_seconds": handoff_elapsed,
-            "total_seconds": perf_counter() - callback_start,
-            "sql_executes": queries - sql_start,
-            "object_gets": sum(method == "get_object" for method, _ in env.client.calls)
-            - gets_start,
-        })
-        if result.session.status is SessionStatus.COMPLETED:
-            break
-        assert result.session.status is SessionStatus.RUNNING
-    else:
-        pytest.fail("normal work slices did not converge")
+    operation_counters = (
+        (PostgresCoverageAuthority, "check"),
+        (PostgresCoverageAuthority, "observe"),
+        (NativeCoverageExecutor, "_qualified_preparation"),
+        (PostgresCoverageEvidenceOperation, "publish_model_checkpoint"),
+        (PostgresCoverageEvidenceOperation, "commit_evidence"),
+        (HostCoverageSnapshotSource, "_get_descriptor"),
+        (S3ArtifactObjectStore, "read_version_verified"),
+        (S3ArtifactObjectStore, "put_if_absent"),
+    )
+    with observe_phases(
+        phase_targets, current_phase, phase_cost, counts_only=operation_counters,
+    ):
+        result, callbacks = _run_callbacks(
+            env, callbacks, queries=lambda: queries, callback_cost=callback_cost,
+        )
     measured_queries = queries
     elapsed = perf_counter() - started
     measured_gets = sum(method == "get_object" for method, _ in env.client.calls) - before_gets
+    measured_sends = {name: count - before_sends[name]
+                      for name, count in env.native_object_sends.items()}
+    measured_sends["PUT"] = (
+        sum(method == "put_object" for method, _ in env.client.calls) - before_puts
+    )
+    measured_gets += measured_sends["GET"]
     measured_sql_cost, measured_phase_cost = deepcopy(dict(sql_cost)), deepcopy(dict(phase_cost))
     measured_fingerprints = deepcopy(dict(sql_fingerprints))
     measured_phase_sql = dict(phase_sql_calls)
@@ -329,6 +331,11 @@ def test_native_normal_work_slices(
     else:
         assert receipt_counts["total"] == 0
     measurement = {
+        "native_operation_calls": {
+            f"{kind.__name__}.{name}": measured_phase_cost.get(
+                f"{kind.__name__}.{name}", {},
+            ).get("calls", 0) for kind, name in operation_counters
+        },
         "records": 9, "input_bytes": 117, "accepted_units": 18,
         "validation_mode": env.admission.validation_mode,
         "execution_receipts": execution_receipts,
@@ -346,8 +353,14 @@ def test_native_normal_work_slices(
         "receipt_budget": receipt_budget,
         "load_metadata": load_metadata,
         "model_initialization_replays": model_initialization_replays,
+        "native_preparation_checks": measured_phase_cost.get(
+            "NativeCoverageModelInvocation._qualified_preparation", {},
+        ),
         "membership_reads": membership_reads, "membership_hits": membership_hits,
         "object_gets": measured_gets,
+        "object_transport_sends": measured_sends,
+        "object_transport_boundary": "fixture botocore read _send and fake-client put_object; "
+        "counts attempts including failures, not live S3",
         "sql_execute_cost": measured_sql_cost, "inclusive_phase_cost": measured_phase_cost,
         "exclusive_phase_sql_calls": measured_phase_sql,
         "server_sql": server_cost, "accepted_batches": len(accepted),
@@ -362,6 +375,7 @@ def test_native_normal_work_slices(
         "handoff_includes_fixture_consumer_lifecycle": True,
         "recovery_counter_excludes_commit_and_publication": True,
         "phase_times_are_nested_not_additive": True,
+        "phase_observer": "sys.setprofile code frames; source delegates not replaced",
         "live_e2e": False, "business_accuracy_claim": False,
     }
     record_property("coverage_work_measurement", json.dumps(measurement))
@@ -372,3 +386,27 @@ def test_native_normal_work_slices(
         assert measurement["sql_budget_met"], (
             f"certified completion exceeded SQL budget: {measured_queries} > 1000"
         )
+
+
+def _run_callbacks(env, callbacks, *, queries, callback_cost):
+    for _ in range(18):
+        callback_start, sql_start = perf_counter(), queries()
+        gets_start = (sum(method == "get_object" for method, _ in env.client.calls)
+                      + env.native_object_sends["GET"])
+        _stop_native_capability(env, remove_revoked=True)
+        handoff = native_handoff(env)
+        handoff_elapsed = perf_counter() - callback_start
+        assert handoff.status is HandoffStatus.ACCEPTED
+        result = env.service.execute_claimed_session(handoff.lease, lease_ttl_seconds=300)
+        callbacks += 1
+        callback_cost.append({
+            "handoff_seconds": handoff_elapsed,
+            "total_seconds": perf_counter() - callback_start,
+            "sql_executes": queries() - sql_start,
+            "object_gets": (sum(method == "get_object" for method, _ in env.client.calls)
+                            + env.native_object_sends["GET"] - gets_start),
+        })
+        if result.session.status is SessionStatus.COMPLETED:
+            return result, callbacks
+        assert result.session.status is SessionStatus.RUNNING
+    pytest.fail("normal work slices did not converge")

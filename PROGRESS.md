@@ -1,5 +1,54 @@
 # Zebra Agent Project Status
 
+SQL operation-boundary repair (2026-10-12, COV-SQL-PHASE-01): **In Progress**.
+User authorized local integration of codex/cov-sql-phase-01 into
+cloud-agent-trench as a manual-test candidate; no running-service activation.
+Application image preparation and operator commands are documented in
+docs/COV_SQL_MANUAL_TEST_20261012.md. Strict SQL gate remains FAIL.
+Native authority observation no longer performs projection writes; bounded Task
+repair/projection batches and additive99 preserve canonical source immutability.
+Pure proof retention and complete-record payload reuse are scoped; both prepared
+and locked physical reads retain fresh entry/exit guards. Unit reservation
+counters no longer conflict with Harness attempt replay on normal short wakes.
+Latest reviewed readonly/executor long6848 SQL38.5006s/short16292 SQL72.1584s,
+both independently certify with zero exceptional full recoveries. **<=1000 FAIL**.
+Pure native preparation qualified72/72 and dispatches no SQL/Host I/O; actual
+I/O retains fresh entry/exit guards. Receipt and publication finalization now
+share one owned transaction, with crash/revocation rollback and exact retry.
+Private outer semantic formatting delegates to the same qualified native owner;
+native90/90 qualify; final checkpoint-publication/preparation9 pass47.29s.
+Independent final proofs own fresh bounded bytes, never incremental cache bytes;
+exact native MODEL publication consumes its verified original acknowledgement.
+Fresh single-SQL readonly authority observation and exact native executor pure
+preparation follow-up pass authority/executor30 and final enhanced11 regressions.
+Unknown/altered Host, transport, artifact, definition and authority delegates
+retain guarded fallback; hostile properties are rejected before access.
+Final critical publication/physical-I/O/proof80 pass81.57s after serial tests.
+Unified evidence owner is now wired to native Worker checkpoint usage and unit
+acceptance, with bounded full-metadata preparation, staged durable reservations,
+outside-transaction object I/O and one atomic postupload settlement. Final
+certification retains its independent originals. Post-review6411/15653SQL still
+FAIL (1/2 and7/8 callbacks/batches; recovery0). Real Worker staged crash recovery
+and missing/corrupt/STOP4 pass, without second MODEL; Host I/O no longer borrows
+native settlement TX. Bounded pre-I/O legacy fallback retains full public proof.
+Full checkpoint9036pass2680prerequisite-skips0fail; final tiny timeout and PG
+trigger expectation changes have separate19/12 focused and independent1 GO.
+This is not strict-SQL, live runtime, semantic or multi-tenant load acceptance.
+Outer/kernel authority fanout remains; resets alone cannot meet the budget.
+Borrowed write checks remain locked; final `_live` remains fully guarded.
+The new non-mutating profiler
+changes timing overhead; no direct end-to-end latency improvement is claimed.
+Nested operation authorization and MODEL publication fanout remain the root;
+do not describe these bounded improvements as a complete performance cure.
+Native private publication now reads fresh stream authority without aggregate
+replay; continuation/finalization still catch up the committed tail. Host I/O
+exit now rechecks local revocation; lower6599/11067 interim counts precede this
+necessary repair and cannot be presented as current acceptance.
+Current static2920/1243/eval30 GO; full checkpoint9036pass2680skip0fail and
+late-fix focused evidence are recorded separately. Borrowed native writes
+suppress premature live hints; durable replay owns visibility. See
+docs/COVERAGE_SQL_PHASE_EVIDENCE.md for current evidence and open gates.
+
 Local branch reconciliation (2026-10-12, LOCAL-BRANCH-INTEGRATION-20261012):
 the original 65 coverage fixture regressions are repaired; coverage full suite
 6998 passed / 2033 infrastructure skips. Combined-source repairs preserve

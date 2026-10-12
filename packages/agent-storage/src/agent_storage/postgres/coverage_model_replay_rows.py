@@ -10,7 +10,8 @@ from agent_storage.postgres.coverage_proof_prefetch import prefetch_proof
 
 
 def original_rows(
-    connection: Any, sql: str, parameters: tuple[Any, ...], upper: int | None
+    connection: Any, sql: str, parameters: tuple[Any, ...], upper: int | None,
+    *, artifacts: Any = None,
 ) -> Iterator[Any]:
     # Preflight requires one joined row per Session sequence before paging.
     # Use execute so recovery read witnesses and deadline checks remain composed.
@@ -23,6 +24,12 @@ def original_rows(
         ).fetchall()
         if not rows:
             return
+        if artifacts is not None:
+            refs = tuple(CoverageModelUsageReceipt.model_validate(row["receipt"]).checkpoint_ref
+                         for row in rows)
+            if any(ref is None for ref in refs):
+                raise ValueError("settled MODEL replay requires an original checkpoint")
+            prefetch_proof(artifacts, tuple(ref for ref in refs if ref is not None))
         yield from rows
         cursor = rows[-1]["sequence"]
 

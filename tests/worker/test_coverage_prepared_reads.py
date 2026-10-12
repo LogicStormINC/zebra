@@ -1,4 +1,4 @@
-"""Native bounded execution reads: batch SQL, no I/O locks, refusal before consumption."""
+"""Batch metadata without I/O locks; per-object revocation stays a fresh boundary."""
 # ruff: noqa: F811
 
 from contextvars import ContextVar
@@ -27,18 +27,27 @@ from tests.agent_storage.test_postgres_coverage import env as postgres_env  # no
 
 def facade(env, check=None):
     fence = env.fence
+
     def native():
         with env.metadata._database.connect() as connection:
             validate_write(connection, NAMESPACE, env.binding, fence)
+
     return CloudCoverageArtifacts(
-        binding=env.binding, deployment_namespace=NAMESPACE, metadata=env.metadata,
-        objects=env.objects, publisher=env.publisher, authority=lambda: _authority(env),
-        check_authority=native if check is None else check, sync_events=lambda: None,
+        binding=env.binding,
+        deployment_namespace=NAMESPACE,
+        metadata=env.metadata,
+        objects=env.objects,
+        publisher=env.publisher,
+        authority=lambda: _authority(env),
+        check_authority=native if check is None else check,
+        sync_events=lambda: None,
     )
 
 
 def test_bounded_read_phase_sql_constant_and_no_transaction_during_objects(
-    publication, monkeypatch, record_property,
+    publication,
+    monkeypatch,
+    record_property,
 ):
     env, source = publication, facade(publication)
     phase = ContextVar("execution_read_test", default=False)
@@ -74,7 +83,9 @@ def test_bounded_read_phase_sql_constant_and_no_transaction_during_objects(
             phase.reset(token)
         with pytest.raises(RuntimeError, match="ended"):
             reader.get_payload(records[0].artifact_id)
-    assert counts[0] == counts[1]
+    # Metadata is constant-size SQL; physical I/O intentionally retains fresh
+    # pre/post authority. Never report the metadata budget as total read cost.
+    assert counts[1] > counts[0]
     record_property("prepared_phase_client_sql", counts)
 
 
@@ -82,11 +93,23 @@ def test_bounded_read_phase_sql_constant_and_no_transaction_during_objects(
 def test_post_read_change_refuses_before_phase_consumption(publication, monkeypatch, change):
     env, payloads = publication, writes(publication)
     if change == "expired":
-        payloads = tuple((key, payload.model_copy(update={
-            "created_at": datetime.now(UTC) - timedelta(hours=2),
-        })) for key, payload in payloads)
+        payloads = tuple(
+            (
+                key,
+                payload.model_copy(
+                    update={
+                        "created_at": datetime.now(UTC) - timedelta(hours=2),
+                    }
+                ),
+            )
+            for key, payload in payloads
+        )
     records = publish(env, payloads)
-    check = Mock(side_effect=[None, ValueError("revoked")]) if change == "revocation" else None
+    check = (
+        Mock(side_effect=[None, None, None, ValueError("revoked")])
+        if (change == "revocation")
+        else None
+    )
     source, consumed = facade(env, check), False
     with pytest.raises((ValueError, LeaseLostError)):
         with source.read_payload_scope(tuple(key for key, _ in payloads)) as reader:
@@ -95,8 +118,10 @@ def test_post_read_change_refuses_before_phase_consumption(publication, monkeypa
                 _replace_worker(env)
             elif change in {"metadata", "expired"}:
                 with env.metadata._database.connect() as connection:
-                    field = "file_name='changed'" if change == "metadata" else (
-                        "retained_until=clock_timestamp() - interval '1 second'"
+                    field = (
+                        "file_name='changed'"
+                        if change == "metadata"
+                        else ("retained_until=clock_timestamp() - interval '1 second'")
                     )
                     connection.execute(
                         f"UPDATE artifact_payload_metadata SET {field} "
@@ -113,8 +138,12 @@ def test_read_phase_refuses_invalid_missing_foreign_and_writes(publication):
     env, source = publication, facade(publication)
     payloads = writes(env, 1)
     record = publish(env, payloads)[0]
-    for invalid in ((), (record.artifact_id, record.artifact_id), ("invalid",),
-                    tuple(ArtifactId(uuid4()) for _ in range(1001))):
+    for invalid in (
+        (),
+        (record.artifact_id, record.artifact_id),
+        ("invalid",),
+        tuple(ArtifactId(uuid4()) for _ in range(1001)),
+    ):
         with pytest.raises(ValueError, match="identity set"):
             with source.read_payload_scope(invalid):
                 pytest.fail("invalid read phase entered")

@@ -103,6 +103,27 @@ def test_attempt_cannot_move_backwards():
         fold_progress_page(head, page, output_published=lambda _: False)
 
 
+def test_coverage_unit_counter_does_not_change_harness_attempt_or_public_progress():
+    head, page = head_and_page(
+        (EventType.HARNESS_ATTEMPT_STARTED, {"attempt_number": 2}),
+        (EventType.COVERAGE_UNIT_ATTEMPTED, {"attempt_number": 9}),
+        (EventType.COVERAGE_UNIT_ATTEMPTED, {"attempt_number": 10}),
+        (EventType.MODEL_RESPONSE_DELTA, {"attempt_number": 2, "content_delta": "Checking"}),
+        state=WorkerProgressState(attempt_number=1),
+    )
+    folded = fold_progress_page(head, page, output_published=lambda _: False)
+    assert folded.head.state.attempt_number == 2
+    assert folded.head.state.model_spoke and folded.head.through_sequence == 4
+    assert folded.head.state.published_count == 0
+
+
+@pytest.mark.parametrize("number", [None, True, 0, -1, "2", 2.0])
+def test_invalid_coverage_unit_counter_is_rejected(number):
+    head, page = head_and_page((EventType.COVERAGE_UNIT_ATTEMPTED, {"attempt_number": number}))
+    with pytest.raises(CheckpointConflict, match="positive counter"):
+        fold_progress_page(head, page, output_published=lambda _: False)
+
+
 @pytest.mark.parametrize(
     "kind",
     [

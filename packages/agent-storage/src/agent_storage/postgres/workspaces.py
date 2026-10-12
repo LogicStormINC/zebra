@@ -195,6 +195,18 @@ class PostgresWorkspaceProjectionStore(
                 session_id,
             )
 
+    def project_persisted_worker_events(
+        self, events: tuple[SessionEvent, ...], session: Session, workspace: WorkspaceProjection,
+        *, authority: WorkerMutationAuthority,
+    ) -> WorkerProjectionCommitResult:
+        from agent_storage.postgres.workspace_projection_batch import project_batch
+
+        with self._database.connect() as connection:
+            return project_batch(
+                connection, self._database.deployment_namespace,
+                events, session, workspace, authority,
+            )
+
     def _validate_worker_commit(
         self,
         event: SessionEvent,

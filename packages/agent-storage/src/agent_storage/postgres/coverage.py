@@ -144,83 +144,96 @@ class PostgresCoverageStore(
         binding = self._binding(request.namespace, request.run_id)
         validate_request(binding, request)
         verify_results(self._artifacts, request)
-        digest = request_digest(request)
         with postgres_work_unit(self._database), self._database.connect() as connection:
             row, version = lock_run(connection, self._deployment, binding, fence)
-            assert_projection(connection, self._deployment, binding, row)
-            if row["cancelled"]:
-                raise ValueError("coverage run is cancelled")
-            previous = connection.execute(
-                """SELECT * FROM session_events WHERE deployment_namespace=%s
-                   AND payload->>'namespace'=%s AND payload->>'run_id'=%s
-                   AND event_type='coverage_batch_accepted'
-                   AND payload #>> '{request,commit_key}'=%s LIMIT 2""",
-                (self._deployment, request.namespace, request.run_id, request.commit_key),
-            ).fetchall()
-            event = SessionEvent.model_validate(previous[0]) if previous else None
-            # Reject conflicting retries before model/history/object proof. A matching
-            # retry still passes the complete required proof and current write fences.
-            if event is not None and (
-                len(previous) != 1
-                or event.session_id != binding.session_id
-                or event.payload["request_digest"] != digest
-                or event.payload["request"] != request.model_dump(mode="json", exclude={"results"})
-                or event.payload["result_count"] != len(request.results)
-                or ("record_ids" in event.payload and event.payload["record_ids"]
-                    != sorted({item.key.record_id for item in request.results}))
-            ):
-                raise ValueError("coverage commit key reused with a different request")
-            deadlines: list[datetime] = []
-            verified_commits: list[VerifiedCommitFacts] = []
-            policy = verify_model_results(
-                connection,
-                self._deployment,
-                binding,
-                request.results,
-                artifacts=self._artifacts,
-                derive=self._model_observation_deriver,
-                deadlines=deadlines,
-                request=request,
-                before_sequence=previous[0]["sequence"] if previous else version + 1,
-                incremental_commit=True,
-                verified_commits=verified_commits if self._execution_receipts else None,
+            return self._commit_locked(
+                connection, binding, request, fence=fence, row=row, version=version,
             )
-            if event is not None:
-                validate_write(connection, self._deployment, binding, fence)
-                check_checkpoint_retention(connection, deadlines)
-                return receipt_from_event(event)
-            assert_not_certified(connection, self._deployment, binding)
-            accept_units(connection, self._deployment, request)
-            event = append_coverage_event(
-                connection,
-                self._deployment,
-                binding,
-                fence,
-                version + 1,
-                EventType.COVERAGE_BATCH_ACCEPTED,
-                {
-                    "request": request.model_dump(mode="json", exclude={"results"}),
-                    "request_digest": digest,
-                    "result_count": len(request.results),
-                    "record_ids": sorted({item.key.record_id for item in request.results}),
-                },
-            )
-            receipt = project_batch(connection, self._deployment, binding, request, event)
+
+    def _commit_locked(
+        self, connection: Any, binding: CoverageRunBinding, request: CoverageCommit, *,
+        fence: LeaseFence, row: Any, version: int, artifacts: Any = None,
+    ) -> CoverageCommitReceipt:
+        """Caller owns run/stream locks; supplied readers cannot open another owner."""
+        validate_request(binding, request)
+        digest = request_digest(request)
+        reader = self._artifacts if artifacts is None else artifacts
+        if artifacts is not None:
+            verify_results(reader, request)
+        assert_projection(connection, self._deployment, binding, row)
+        if row["cancelled"]:
+            raise ValueError("coverage run is cancelled")
+        previous = connection.execute(
+            """SELECT * FROM session_events WHERE deployment_namespace=%s
+               AND payload->>'namespace'=%s AND payload->>'run_id'=%s
+               AND event_type='coverage_batch_accepted'
+               AND payload #>> '{request,commit_key}'=%s LIMIT 2""",
+            (self._deployment, request.namespace, request.run_id, request.commit_key),
+        ).fetchall()
+        event = SessionEvent.model_validate(previous[0]) if previous else None
+        # Reject conflicting retries before model/history/object proof. A matching
+        # retry still passes the complete required proof and current write fences.
+        if event is not None and (
+            len(previous) != 1
+            or event.session_id != binding.session_id
+            or event.payload["request_digest"] != digest
+            or event.payload["request"] != request.model_dump(mode="json", exclude={"results"})
+            or event.payload["result_count"] != len(request.results)
+            or ("record_ids" in event.payload and event.payload["record_ids"]
+                != sorted({item.key.record_id for item in request.results}))
+        ):
+            raise ValueError("coverage commit key reused with a different request")
+        deadlines: list[datetime] = []
+        verified_commits: list[VerifiedCommitFacts] = []
+        policy = verify_model_results(
+            connection,
+            self._deployment,
+            binding,
+            request.results,
+            artifacts=reader,
+            derive=self._model_observation_deriver,
+            deadlines=deadlines,
+            request=request,
+            before_sequence=previous[0]["sequence"] if previous else version + 1,
+            incremental_commit=True,
+            verified_commits=verified_commits if self._execution_receipts else None,
+        )
+        if event is not None:
             validate_write(connection, self._deployment, binding, fence)
-            now = check_checkpoint_retention(connection, deadlines)
-            if policy is not None and not policy.started_at <= now < policy.deadline:
-                raise ValueError("first MODEL acceptance exceeded original execution deadline")
-            if verified_commits:
-                assert policy is not None
-                mint_execution_receipt(
-                    connection, self._deployment, binding, event, verified_commits[0],
-                    valid_until=min(policy.deadline, binding.snapshot.expires_at, *deadlines),
-                    verifier_contract=self._execution_receipt_verifier,
-                )
-                # Mint I/O is inside the transaction; never commit a late witness.
-                check_checkpoint_retention(connection, [policy.deadline, *deadlines])
-                validate_write(connection, self._deployment, binding, fence)
-            return receipt
+            check_checkpoint_retention(connection, deadlines)
+            return receipt_from_event(event)
+        assert_not_certified(connection, self._deployment, binding)
+        accept_units(connection, self._deployment, request)
+        event = append_coverage_event(
+            connection,
+            self._deployment,
+            binding,
+            fence,
+            version + 1,
+            EventType.COVERAGE_BATCH_ACCEPTED,
+            {
+                "request": request.model_dump(mode="json", exclude={"results"}),
+                "request_digest": digest,
+                "result_count": len(request.results),
+                "record_ids": sorted({item.key.record_id for item in request.results}),
+            },
+        )
+        receipt = project_batch(connection, self._deployment, binding, request, event)
+        validate_write(connection, self._deployment, binding, fence)
+        now = check_checkpoint_retention(connection, deadlines)
+        if policy is not None and not policy.started_at <= now < policy.deadline:
+            raise ValueError("first MODEL acceptance exceeded original execution deadline")
+        if verified_commits:
+            assert policy is not None
+            mint_execution_receipt(
+                connection, self._deployment, binding, event, verified_commits[0],
+                valid_until=min(policy.deadline, binding.snapshot.expires_at, *deadlines),
+                verifier_contract=self._execution_receipt_verifier,
+            )
+            # Mint I/O is inside the transaction; never commit a late witness.
+            check_checkpoint_retention(connection, [policy.deadline, *deadlines])
+            validate_write(connection, self._deployment, binding, fence)
+        return receipt
 
     def cancel(self, namespace: str, run_id: str, *, fence: LeaseFence) -> int:
         binding = self._binding(namespace, run_id)

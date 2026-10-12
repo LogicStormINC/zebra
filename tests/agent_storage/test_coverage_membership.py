@@ -2,6 +2,7 @@
 # ruff: noqa: F811
 
 from hashlib import sha256
+from uuid import uuid4
 
 import psycopg
 import pytest
@@ -49,19 +50,24 @@ def test_exact_seal_settlement_and_scoped_fast_path(model_cloud, monkeypatch):
         assert initial["remaining_parts"] == initial["part_count"] == 1
         assert initial["records_seeded"] == initial["record_count"] == 1
         assert membership_records(
-            connection, NAMESPACE, env.binding, {env.record.record_id},
+            connection,
+            NAMESPACE,
+            env.binding,
+            {env.record.record_id},
         ) == (env.record,)
         assert initial["records_chain"] == record_chain(
-            sha256(b"coverage-membership-records/1").hexdigest(), env.record,
+            sha256(b"coverage-membership-records/1").hexdigest(),
+            env.record,
         )
         assert membership_state(connection, "foreign", env.binding) is None
         # Native/Python chain parity preserves real strings, not stripped JSON.
         seed = sha256(b"coverage-membership/1").hexdigest()
-        for name in ('space inside', '中文🙂"quote"\\slash', 'line\n\tend'):
+        for name in ("space inside", '中文🙂"quote"\\slash', "line\n\tend"):
             key = env.key.model_copy(update={"record_id": name})
             row = connection.execute(
                 "SELECT encode(sha256(convert_to(%s || jsonb_build_array("
-                + ",".join(["%s::text"] * len(FIELDS)) + ")::text,'UTF8')),'hex') AS digest",
+                + ",".join(["%s::text"] * len(FIELDS))
+                + ")::text,'UTF8')),'hex') AS digest",
                 (seed, *(getattr(key, field) for field in FIELDS)),
             ).fetchone()
             assert row["digest"] == key_chain(seed, key)
@@ -80,9 +86,11 @@ def test_exact_seal_settlement_and_scoped_fast_path(model_cloud, monkeypatch):
     monkeypatch.setattr(membership, "membership_state", qualified)
     import agent_storage.postgres.coverage_model_verification as verification
 
-    monkeypatch.setattr(verification, "read_manifest", lambda *_: pytest.fail(
-        "qualified normal commit parsed full original manifest"
-    ))
+    monkeypatch.setattr(
+        verification,
+        "read_manifest",
+        lambda *_: pytest.fail("qualified normal commit parsed full original manifest"),
+    )
     with env.database.connect() as connection:
         state = original(connection, NAMESPACE, env.binding)
         assert state["remaining_parts"] == 0
@@ -97,9 +105,16 @@ def test_exact_seal_settlement_and_scoped_fast_path(model_cloud, monkeypatch):
                 return getattr(connection, name)
 
         verify_model_results(
-            ExactDelta(), NAMESPACE, env.binding, request.results,
-            artifacts=env.cloud, derive=derive_semantic_observation, deadlines=[],
-            request=request, incremental_commit=True, verified_commits=facts,
+            ExactDelta(),
+            NAMESPACE,
+            env.binding,
+            request.results,
+            artifacts=env.cloud,
+            derive=derive_semantic_observation,
+            deadlines=[],
+            request=request,
+            incremental_commit=True,
+            verified_commits=facts,
         )
         assert visited and all(row is not None for row in visited)
         assert facts[0].expected_count == 2 and not facts[0].model_work_remaining
@@ -107,21 +122,32 @@ def test_exact_seal_settlement_and_scoped_fast_path(model_cloud, monkeypatch):
         assert original(connection, NAMESPACE, env.binding)["remaining_parts"] == 0
 
 
-@pytest.mark.parametrize("mutation", [
-    "UPDATE coverage_units SET ordinal=ordinal+10",
-    "UPDATE coverage_units SET record=record || '{\"content_digest\":\"tampered\"}'::jsonb "
-    "WHERE record IS NOT NULL",
-    "UPDATE coverage_runs SET binding=binding || '{\"namespace\":\"foreign\"}'::jsonb",
-    "UPDATE session_events SET payload=payload || '{\"expected_count\":0}'::jsonb "
-    "WHERE event_type='coverage_manifest_committed'",
-    "UPDATE coverage_model_calls SET receipt_sequence=receipt_sequence+1",
-])
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "UPDATE coverage_units SET ordinal=ordinal+10",
+        'UPDATE coverage_units SET record=record || \'{"content_digest":"tampered"}\'::jsonb '
+        "WHERE record IS NOT NULL",
+        'UPDATE coverage_runs SET binding=binding || \'{"namespace":"foreign"}\'::jsonb',
+        "UPDATE session_events SET payload=payload || '{\"expected_count\":0}'::jsonb "
+        "WHERE event_type='coverage_manifest_committed'",
+        "UPDATE session_events SET created_at=created_at+interval '1 microsecond' "
+        "WHERE event_type='coverage_manifest_committed'",
+        "UPDATE coverage_model_calls SET receipt_sequence=receipt_sequence+1",
+    ],
+)
 def test_unsupported_mutation_invalidates_and_rollback_restores(model_cloud, mutation):
     env = model_cloud
     settled(env)
     with env.database.connect() as connection:
         before = membership_state(connection, NAMESPACE, env.binding)
         assert before is not None
+        if mutation.startswith("UPDATE session_events"):
+            with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState, match="immutable"):
+                with connection.transaction():
+                    connection.execute(mutation)
+            assert membership_state(connection, NAMESPACE, env.binding) == before
+            return  # Denied at the original source; no invalidation is necessary.
         with pytest.raises(RuntimeError, match="probe"), connection.transaction():
             connection.execute(mutation)
             assert membership_state(connection, NAMESPACE, env.binding) is None
@@ -133,14 +159,22 @@ def test_unsupported_mutation_invalidates_and_rollback_restores(model_cloud, mut
         assert membership_state(connection, NAMESPACE, env.binding) == before
 
 
-@pytest.mark.parametrize("table", [
-    "coverage_membership_seals", "coverage_membership_parts", "coverage_membership_records",
-])
+@pytest.mark.parametrize(
+    "table",
+    [
+        "coverage_membership_seals",
+        "coverage_membership_parts",
+        "coverage_membership_records",
+    ],
+)
 def test_membership_root_is_not_caller_mutable(model_cloud, table):
     env = model_cloud
     with env.database.connect() as connection:
-        for statement in (f"DELETE FROM {table}", f"TRUNCATE {table}",
-                          f"UPDATE {table} SET namespace=%s"):
+        for statement in (
+            f"DELETE FROM {table}",
+            f"TRUNCATE {table}",
+            f"UPDATE {table} SET namespace=%s",
+        ):
             with pytest.raises(psycopg.errors.RaiseException, match="database maintained"):
                 with connection.transaction():
                     connection.execute(statement, ("foreign",) if "%s" in statement else None)
@@ -150,10 +184,27 @@ def test_membership_root_is_not_caller_mutable(model_cloud, table):
 def test_changed_manifest_cannot_requalify_from_projection(model_cloud):
     env = model_cloud
     with env.database.connect() as connection:
+        before = membership_state(connection, NAMESPACE, env.binding)
         with pytest.raises(RuntimeError, match="probe"), connection.transaction():
+            with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState, match="immutable"):
+                with connection.transaction():
+                    connection.execute(
+                        "UPDATE session_events SET payload=payload-'membership' "
+                        "WHERE event_type='coverage_manifest_committed'"
+                    )
+            assert membership_state(connection, NAMESPACE, env.binding) == before
+            # A conflicting inserted manifest cannot qualify or be repaired by
+            # changing the mutable projection, even with source guards enabled.
             connection.execute(
-                "UPDATE session_events SET payload=payload-'membership' "
-                "WHERE event_type='coverage_manifest_committed'"
+                """INSERT INTO session_events
+                   (deployment_namespace,event_id,session_id,sequence,event_type,payload,
+                    actor,created_at)
+                   SELECT deployment_namespace,%s,session_id,
+                     (SELECT max(sequence)+1 FROM session_events WHERE deployment_namespace=%s
+                       AND session_id=%s),event_type,payload-'membership',actor,created_at
+                   FROM session_events WHERE deployment_namespace=%s AND session_id=%s
+                     AND event_type='coverage_manifest_committed'""",
+                (uuid4(), NAMESPACE, env.session, NAMESPACE, env.session),
             )
             assert membership_state(connection, NAMESPACE, env.binding) is None
             connection.execute(
@@ -162,6 +213,7 @@ def test_changed_manifest_cannot_requalify_from_projection(model_cloud):
             )
             assert membership_state(connection, NAMESPACE, env.binding) is None
             raise RuntimeError("probe")
+        assert membership_state(connection, NAMESPACE, env.binding) == before
 
 
 def test_existing_history_is_not_backfilled_by_migration(model_cloud):
@@ -198,9 +250,12 @@ def test_duplicate_part_call_cannot_consume_membership_twice(model_cloud):
                    receipt_sequence FROM coverage_model_calls"""
             )
             assert membership_state(connection, NAMESPACE, env.binding) is None
-            assert connection.execute(
-                "SELECT remaining_parts FROM coverage_membership_seals"
-            ).fetchone()["remaining_parts"] == 0
+            assert (
+                connection.execute(
+                    "SELECT remaining_parts FROM coverage_membership_seals"
+                ).fetchone()["remaining_parts"]
+                == 0
+            )
             raise RuntimeError("probe")
         assert membership_state(connection, NAMESPACE, env.binding) == before
 
@@ -220,8 +275,11 @@ def test_incremental_seal_never_bypasses_final_original_manifest_proof(model_clo
     env = model_cloud
     request, observation, merge, _ = accepted(env)
     ref, digest = report_for(env, (observation, merge))
-    objects = [value for value in env.client.objects.values()
-               if sha256(value["Body"]).hexdigest() == env.binding.manifest_artifact_digest]
+    objects = [
+        value
+        for value in env.client.objects.values()
+        if sha256(value["Body"]).hexdigest() == env.binding.manifest_artifact_digest
+    ]
     assert len(objects) == 1
     objects[0]["Body"] = b"corrupt original manifest after sealed incremental acceptance"
     before = history(env)

@@ -12,12 +12,27 @@ from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from agent_core.ports.committed_event_publisher import CommittedEventPublisherPort
 from agent_core.ports.event_store import EventStorePort
 from agent_core.ports.workspace_projection_store import (
+    WorkerProjectionBatchPort,
     WorkerProjectionCommitResult,
     WorkerProjectionTransactionPort,
 )
 
 from agent_storage.composition import ControlPlaneStores
 from agent_storage.postgres_composition import PostgresControlPlaneStores
+
+
+def _borrows_native_transaction(store: object) -> bool:
+    from agent_storage.postgres.events import PostgresEventStore
+    from agent_storage.postgres.work_unit import borrow_work_unit
+    from agent_storage.postgres.workspaces import PostgresWorkspaceProjectionStore
+
+    if not isinstance(store, PostgresEventStore | PostgresWorkspaceProjectionStore):
+        return False
+    database = store._database
+    # ponytail: suppress a best-effort hint rather than publish before the outer
+    # commit. Durable replay supplies delivery; an owned post-commit outbox is
+    # the upgrade path if borrowed operations require immediate live hints.
+    return borrow_work_unit((database._dsn, database.deployment_namespace)) is not None
 
 
 class PostCommitPublishingEventStore(EventStorePort):
@@ -54,6 +69,8 @@ class PostCommitPublishingEventStore(EventStorePort):
         return persisted
 
     def _publish(self, persisted: SessionEvent) -> None:
+        if _borrows_native_transaction(self._event_store):
+            return
         try:
             self._publisher.publish_committed(persisted)
         except Exception:
@@ -113,11 +130,34 @@ class PostCommitPublishingWorkerProjectionTransaction(WorkerProjectionTransactio
         return committed
 
     def _publish(self, event: SessionEvent) -> None:
+        if _borrows_native_transaction(self._transaction):
+            return
         try:
             self._publisher.publish_committed(event)
         except Exception:
             # ponytail: Redis is a live hint; PostgreSQL replay is authoritative.
             pass
+
+
+class PostCommitPublishingWorkerProjectionBatch(PostCommitPublishingWorkerProjectionTransaction):
+    def project_persisted_worker_events(
+        self,
+        events: tuple[SessionEvent, ...],
+        session: Session,
+        workspace: WorkspaceProjection,
+        *,
+        authority: WorkerMutationAuthority,
+    ) -> WorkerProjectionCommitResult:
+        assert isinstance(self._transaction, WorkerProjectionBatchPort)
+        committed = self._transaction.project_persisted_worker_events(
+            events,
+            session,
+            workspace,
+            authority=authority,
+        )
+        for event in events:
+            self._publish(event)
+        return committed
 
 
 def with_committed_event_publisher[StoreBundle: ControlPlaneStores | PostgresControlPlaneStores](
@@ -138,4 +178,9 @@ def with_worker_projection_publisher(
 ) -> WorkerProjectionTransactionPort:
     if isinstance(transaction, PostCommitPublishingWorkerProjectionTransaction):
         return transaction
-    return PostCommitPublishingWorkerProjectionTransaction(transaction, publisher)
+    wrapper = (
+        PostCommitPublishingWorkerProjectionBatch
+        if isinstance(transaction, WorkerProjectionBatchPort)
+        else PostCommitPublishingWorkerProjectionTransaction
+    )
+    return wrapper(transaction, publisher)

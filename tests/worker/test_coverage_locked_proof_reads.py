@@ -64,7 +64,7 @@ def test_known_pure_deriver_reuses_locked_full_record_only_in_this_scope(proof, 
             for _ in range(3):
                 assert read(bodies, record) == b"{}"
             assert rows.call_count == phase + 1
-    assert authority.call_count == 4  # Each pure phase has an entry and exit guard.
+    assert authority.call_count == 8  # Entry, physical pre/post, exit in each phase.
     assert source.objects.read_version_verified.call_count == 2
 
 
@@ -187,8 +187,8 @@ def test_pure_phase_revoked_during_original_read_never_returns_success(proof, fi
             connection, source.deployment, source.binding, derive=derive_semantic_observation,
             final_certification=final,
         ) as reader:
-            assert read(reader, record) == b"{}"  # Internal only; exit must refuse.
-    assert authority.call_count == 2
+            read(reader, record)  # Physical post-check refuses before returning bytes.
+    assert authority.call_count == 3
     assert not reader._proof_records and not reader._proof_rows
     with pytest.raises(RuntimeError, match="ended"):
         read(reader, record)

@@ -47,6 +47,11 @@ from zebra_agent_worker.coverage_artifacts import CloudCoverageArtifacts
 from zebra_agent_worker.coverage_certified import read_issued_report
 from zebra_agent_worker.coverage_composition import CloudCoverageRuntime, load_official_model_policy
 from zebra_agent_worker.coverage_recovery_authority import prepare_recovery_authority
+from zebra_agent_worker.coverage_staged_recovery import (
+    prove_uploaded_responses,
+    revalidate_uploaded_responses,
+    uploaded_responses_digest,
+)
 from zebra_agent_worker.host_gateway_resolution import (
     frozen_or_discovered_manifest,
     resolve_pinned_gateway,
@@ -66,11 +71,7 @@ def verify_cloud_coverage_recovery(
     continuation: bool = False,
     execution_authority: PostgresCoverageAuthority | None = None,
 ) -> dict[str, Any]:
-    """Current authority plus original bytes and exact accepted Event/index equality.
-
-    ponytail: bounded repeated proof reads, not a native-scale/I/O guarantee.
-    No digest cache replaces retained originals or the 32 MiB cumulative gate.
-    """
+    """Current authority plus original bytes and exact accepted Event/index equality."""
     session_id = pending["session_id"]
     if (
         namespace != runtime.deployment_namespace
@@ -352,8 +353,9 @@ def verify_cloud_coverage_recovery(
             raise ValueError("strict command proof manifest membership changed")
         transcript.merge_deadlines(deadlines)
         state, calls = transcript.state, transcript.calls
-        if state is not None and state.unresolved:
-            raise ValueError("unknown model attempt requires reconciliation, never another HTTP")
+        recoverable, uploaded = (prove_uploaded_responses(
+            transcript, artifacts, external, deadlines,
+        ) if state is not None and state.unresolved else (set(), []))
         if state is not None:
             transcript.verify((), deadlines=deadlines)
         accepted = {}
@@ -395,7 +397,7 @@ def verify_cloud_coverage_recovery(
                 model_observation_deriver=derive_semantic_observation,
             )
             read_issued_report(store, connection, binding, issued[0], deadlines, external)
-        settled_keys = {
+        settled_keys = recoverable | {
             coverage_digest(c["reservation"]["key"])
             for c in calls.values()
             if c["receipt"] is not None
@@ -414,6 +416,11 @@ def verify_cloud_coverage_recovery(
             ):
                 raise ValueError("strict continuation has no full-C remaining model budget")
         external()
+        uploaded_only = [entry for entry in uploaded if str(entry[0].artifact_id) not in originals]
+        if sum(row.reservation.size_bytes for row, _ in originals.values()) + sum(
+            row.reservation.size_bytes for row, _, _ in uploaded_only
+        ) > MAX_COVERAGE_ARTIFACT_BYTES:
+            raise ValueError("combined original response recovery exceeds bounded bytes")
         check_checkpoint_retention(connection, deadlines)
         if finalizers is not None:
 
@@ -463,6 +470,7 @@ def verify_cloud_coverage_recovery(
                         if sha256(data).digest() != digest:
                             raise ValueError("prepared original object changed before recovery")
                     fresh.timeout = httpx.Timeout(remaining_recovery_time(deadline) / 4)
+                    revalidate_uploaded_responses(artifacts, uploaded, final_external, deadline)
                     final_external()
                     remaining_recovery_time(deadline)
 
@@ -487,5 +495,6 @@ def verify_cloud_coverage_recovery(
             "expected_count": len(keys),
             "expected_digest": coverage_digest([k.model_dump(mode="json") for k in keys]),
             "accepted_count": len(accepted),
+            "uploaded_response_digest": uploaded_responses_digest(uploaded),
             "valid_until": min(deadlines).isoformat(),
         }

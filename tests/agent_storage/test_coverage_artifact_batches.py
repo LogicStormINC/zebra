@@ -17,6 +17,7 @@ from agent_core.domain.cloud_artifact_requests import ArtifactMetadataQuery
 from agent_core.domain.identifiers import ArtifactId
 from agent_core.domain.leases import LeaseLostError
 from agent_storage.postgres import coverage_artifact_publication as module
+from agent_storage.postgres.work_unit import borrow_work_unit
 
 from tests.agent_storage.test_coverage_artifact_publication import (
     _authority,
@@ -92,8 +93,7 @@ def test_interruption_never_partially_finalizes_and_replacement_resumes(
     assert all(row.lifecycle_status == CloudArtifactPayloadLifecycleStatus.STAGED for row in rows)
     assert all(row.event_binding is None for row in rows)
     assert source_counts(env) == before
-    if stage != "upload":
-        assert all(row.lifecycle_revision == 1 for row in rows)
+    assert all(row.lifecycle_revision == 0 and row.object_receipt is None for row in rows)
     _replace_worker(env)
     result = publish(env, payloads)
     assert all(row.lifecycle_revision == 2 for row in result)
@@ -217,8 +217,9 @@ def test_final_callback_same_transaction_mutation_rolls_back_whole_batch(publica
 
     def check():
         nonlocal calls
-        calls += 1
-        if calls == 3:
+        if (not calls and borrow_work_unit((env.dsn, NAMESPACE)) is not None
+                and all(row.lifecycle_revision == 2 for row in metadata(env, payloads))):
+            calls += 1
             with env.metadata._database.connect() as connection:
                 if target == "metadata":
                     connection.execute(
@@ -236,11 +237,15 @@ def test_final_callback_same_transaction_mutation_rolls_back_whole_batch(publica
                     )
 
     before = source_counts(env)
-    with pytest.raises(ValueError, match="before final commit"):
+    with pytest.raises(
+        (ValueError, psycopg.errors.ObjectNotInPrerequisiteState),
+        match="before final commit|projection metadata source is immutable",
+    ):
         publish(env, payloads, check)
-    assert calls == 3 and source_counts(env) == before
+    assert calls == 1 and source_counts(env) == before
     rows = metadata(env, payloads)
-    assert all(row.lifecycle_revision == 1 and row.event_binding is None for row in rows)
+    assert all(row.lifecycle_revision == 0 and row.event_binding is None
+               and row.object_receipt is None for row in rows)
     assert all(row.reservation.file_name is None for row in rows)
 
 

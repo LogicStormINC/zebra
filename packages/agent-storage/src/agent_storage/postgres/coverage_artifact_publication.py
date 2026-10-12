@@ -60,6 +60,31 @@ class PostgresCoverageArtifactPublisher:
         authority: WorkerMutationAuthority, check_authority: Callable[[], None],
     ) -> tuple[CloudArtifactPayloadRecord, ...]:
         binding = validated_binding(binding)
+        payloads = self._prepare_publication(binding, payloads, authority)
+        check_authority()
+        with self._database.connect() as connection, postgres_transaction_work_unit(
+            self._database, connection,
+        ):
+            records = reserve_batch(connection, self._deployment, binding, payloads, authority)
+        receipts, _ = self._upload_verified(binding, records, payloads, check_authority)
+        check_authority()
+        with self._database.connect() as connection, postgres_transaction_work_unit(
+            self._database, connection,
+        ):
+            row, version = lock_run(connection, self._deployment, binding, authority.lease_fence)
+            result, _ = self._finalize_locked(
+                connection, binding, records, receipts, authority, row, version,
+            )
+            check_authority()
+            validate_write(connection, self._deployment, binding, authority.lease_fence)
+            self._revalidate_finalized(connection, binding, result)
+        return result
+
+    def _prepare_publication(
+        self, binding: CoverageRunBinding,
+        payloads: tuple[tuple[ArtifactId, ArtifactPayloadWrite], ...],
+        authority: WorkerMutationAuthority,
+    ) -> tuple[tuple[ArtifactId, ArtifactPayloadWrite], ...]:
         if not isinstance(payloads, tuple) or not 1 <= len(payloads) <= 1000:
             raise ValueError("invalid coverage Artifact batch count")
         if any(not isinstance(identifier, UUID) for identifier, _ in payloads):
@@ -78,12 +103,14 @@ class PostgresCoverageArtifactPublisher:
         if any(payload.retained_until is not None and payload.retained_until <= datetime.now(UTC)
                for _, payload in payloads):
             raise ValueError("coverage Artifact retention has expired")
-        check_authority()
-        with self._database.connect() as connection, postgres_transaction_work_unit(
-            self._database, connection,
-        ):
-            records = reserve_batch(connection, self._deployment, binding, payloads, authority)
-        receipts = []
+        return payloads
+
+    def _upload_verified(
+        self, binding: CoverageRunBinding, records: tuple[CloudArtifactPayloadRecord, ...],
+        payloads: tuple[tuple[ArtifactId, ArtifactPayloadWrite], ...],
+        check_authority: Callable[[], None],
+    ) -> tuple[tuple[ArtifactObjectReceipt, ...], tuple[bytes, ...]]:
+        receipts, bodies = [], []
         # No connection/work unit survives object I/O. Interrupted uploads leave
         # only staged reservations; deterministic IDs recover exact bytes.
         for record, (_, payload) in zip(records, payloads, strict=True):
@@ -91,26 +118,36 @@ class PostgresCoverageArtifactPublisher:
                 deployment_namespace=self._deployment, artifact_id=record.artifact_id,
                 sha256=record.reservation.sha256, size_bytes=record.reservation.size_bytes,
             )
-            receipt = record.object_receipt or self._objects.put_if_absent(
-                ArtifactObjectPutRequest(expectation=expectation, payload=payload.payload)
-            )
-            if (self._objects.read_version_verified(expectation, receipt.object_version)
-                    != payload.payload):
+            receipt = record.object_receipt
+            if receipt is None:
+                check_authority()
+                receipt = self._objects.put_if_absent(
+                    ArtifactObjectPutRequest(expectation=expectation, payload=payload.payload)
+                )
+                check_authority()
+            check_authority()
+            body = self._objects.read_version_verified(expectation, receipt.object_version)
+            check_authority()
+            if body != payload.payload:
                 raise ValueError("coverage object bytes changed")
             receipts.append(receipt)
-        check_authority()
-        records = self._record_receipts(binding, records, tuple(receipts), authority)
-        with self._database.connect() as connection, postgres_transaction_work_unit(
-            self._database, connection,
-        ):
-            _, version = lock_run(connection, self._deployment, binding, authority.lease_fence)
-            result = finalize_batch(
-                connection, self._deployment, binding, records, authority, version,
-            )
-            check_authority()
-            validate_write(connection, self._deployment, binding, authority.lease_fence)
-            self._revalidate_finalized(connection, binding, result)
-            return result
+            bodies.append(body)
+        return tuple(receipts), tuple(bodies)
+
+    def _finalize_locked(
+        self, connection: Any, binding: CoverageRunBinding,
+        records: tuple[CloudArtifactPayloadRecord, ...],
+        receipts: tuple[ArtifactObjectReceipt, ...],
+        authority: WorkerMutationAuthority, row: Any, version: int,
+    ) -> tuple[tuple[CloudArtifactPayloadRecord, ...], int]:
+        # This fresh read runs after lock waits, never from the upload's authority snapshot.
+        validate_write(connection, self._deployment, binding, authority.lease_fence)
+        pending = sum(record.lifecycle_status == "staged" for record in records)
+        recorded = self._record_receipts(binding, records, receipts, authority)
+        result = finalize_batch(
+            connection, self._deployment, binding, recorded, authority, version,
+        )
+        return result, version + pending
 
     def _revalidate_finalized(
         self, connection: Any, binding: CoverageRunBinding,

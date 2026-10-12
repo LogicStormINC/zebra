@@ -1,5 +1,93 @@
 # AGENT_TASKS.md
 
+### COV-SQL-PHASE-01 - Eliminate nested execution proof fanout
+
+- Status: In Progress (Ready on merged1388aca7; claimed2026-10-12 before coding).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cov-sql-phase-01; retained isolated integration checkout.
+- Local integration follow-up (user-approved2026-10-12 before staging): commit
+  this owned changeset and fast-forward cloud-agent-trench for manual testing.
+  Owns docs/COV_SQL_MANUAL_TEST_20261012.md and the existing governance paths.
+  Build application images only; preserve primary SDK/AGENTS/stashes and existing
+  runtime configuration. No push, service restart, business migration or strict
+  performance release approval. Task remains In Progress until the SQL gate passes.
+- Owned paths: PostgreSQL coverage authority/read/proof/budget/publication and
+  database/work-unit/deadline boundaries; Worker coverage composition/readers;
+  integrations coverage consumers; corresponding native/fault/workload tests;
+  docs/COVERAGE_SQL_PHASE_EVIDENCE.md, this registry, PROGRESS.md, task_plan.md,
+  findings.md and WORKLOG.md. Extend explicitly before touching other paths.
+- Follow-up owned paths (2026-10-12 before implementation): additive migration99
+  and catalog, execution-source position regressions; optional bounded Worker
+  projection-batch Port, native/live projection adapters, recorder and tests.
+  Historic migration bodies/checksums remain unchanged.
+- Explicit source-repair follow-up: task_event_positions.py and its native tests;
+  suppress unnecessary byte-bound row mutations, not immutable-source guards.
+- Continuation regression follow-up (claimed before coding): shared core
+  harness/progress_recovery.py and test_progress_recovery.py. Coverage-unit
+  attempt counters are not Harness attempt identities; retain stale public
+  output and model callback refusal while correcting the durable page fold.
+- Prepared-read sibling boundary follow-up: coverage_prepared_reads.py and
+  tests/test_coverage_prepared_reads.py / test_coverage_shared_read_phase.py /
+  proof_phase_boundaries.py. Cache reuse
+  requires full record equality; every actual object read keeps both fresh
+  guards even when its surrounding metadata phase is batched.
+- Borrowed publication follow-up: live_event_store.py and native projection /
+  publication contract tests. Suppress best-effort hints while the exact native
+  transaction belongs to an outer work-unit owner; never publish uncommitted
+  Events or end another adapter's transaction. Durable replay remains required.
+- Additive99 catalog compatibility also owns test_branch_migration_catalog.py;
+  preserve historical catalog digests and contiguous ordering while extending
+  only the new tail, not weakening old migration immutability.
+- Native private publication authority reads the fresh fenced canonical stream
+  version without projecting the tail. Aggregate state still folds at batch
+  continuation and finalization; evidence writes retain native revision CAS,
+  immutable source proof and independent post-lock mutation validation.
+- Acceptance: reduce full-scope client SQL (strict nine <=1000), measured from
+  first handoff to independently certified completion; retain namespace/fence,
+  post-lock fresh authority, callback revocation, exact lifecycle/Event proof,
+  rollback and original final certification. Do not remove tests or raise budget.
+- Disjoint follow-ups after read-only reviews: one executor owns bounded Task
+  index repair and its new native test; another owns execution-source/membership
+  test compatibility and additive99 regression tests. Main retains authority
+  composition, proof reader, batch projection, catalog and serial measurement.
+- No primary dirty SDK edits, business migration, service restart or push.
+- Native operation follow-up (claimed before capability identity edits): owns
+  Worker coverage_native_model.py, integration pure-preparation hooks/delegate
+  provenance module, worker_capability_configuration.py, non-mutating workload
+  phase observation and their regressions. Source-owned preparation qualifies
+  exact delegates; altered callbacks retain legacy guards. Physical I/O and
+  post-lock authority are not cached. Receipt/finalization share one transaction.
+- Publication ownership follow-up (before implementation): private Worker
+  coverage_native_publication.py and its native/pure regressions. Only exact
+  full-binding-derived MODEL checkpoints consume the native verified publication
+  acknowledgement; bootstrap/manifest/body legacy reuse remains guarded.
+- Read-observation/executor ownership follow-up (before implementation): native
+  coverage_authority.py and its tests, core application/coverage_executor.py,
+  private Worker coverage_native_executor.py, composition and regressions.
+  A single fresh SQL snapshot may observe readonly authority outside a borrowed
+  transaction; native write/post-lock checks retain their existing lock sequence.
+  Pure executor preparation qualifies exact owned adapters, never an arbitrary
+  callback or cached permission. Final certification keeps the full live guard.
+- Unified evidence-operation follow-up (user-approved2026-10-12; before coding):
+  extends ownership to optional core/integration publication and commit hooks,
+  native PostgreSQL evidence-operation coordinator and locked settlement/acceptance
+  kernels, Worker composition/qualification, bounded authority+metadata reads,
+  related deterministic/native/crash/replay/tenant/workload tests and evidence.
+  Storage implementer owns coverage.py, coverage_model_budget.py, native publisher
+  reservation/receipt/finalization modules and a new coverage_evidence_operation.py
+  with its storage tests. Main owns core/integration hooks, Worker wiring/read
+  phases/qualification, performance instrumentation and governance. No overlap.
+  Preserve pretransport durable reservation, perphysical-I/O revocation, exact
+  canonical Events/CAS, immediate usage accounting and independent final originals.
+  Source-owned postupload coordinator may settle publication plus usage or unit
+  acceptance in one transaction using frozen verified inputs; no authority TTL,
+  no caller-asserted proof flag, no SQL threshold change or runtime activation.
+- Crash closure follow-up (before implementation): Worker coverage_recovery.py
+  and a bounded staged-checkpoint proof helper plus actual Worker recovery tests.
+  Only independently read, exact reserved request/response bytes may classify an
+  uploaded unresolved call as recoverable; absent/ambiguous responses still need
+  reconciliation and never authorize MODEL retry. Final certification unchanged.
+
 ### LOCAL-BRANCH-INTEGRATION-20261012 - Preserve and reconcile local work
 
 - Status: Done (local merge0c78c9b2; full9011/static GO; performance/runtime gates open).

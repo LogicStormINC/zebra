@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
@@ -44,3 +44,13 @@ class WorkerProjectionTransactionPort(Protocol):
         authority: WorkerMutationAuthority,
     ) -> WorkerProjectionCommitResult:
         """Fence and project an Event already committed by another aggregate."""
+
+
+@runtime_checkable
+class WorkerProjectionBatchPort(Protocol):
+    """Optional bounded canonical-tail projection; not an Event append shortcut."""
+
+    def project_persisted_worker_events(
+        self, events: tuple[SessionEvent, ...], session: Session, workspace: WorkspaceProjection,
+        *, authority: WorkerMutationAuthority,
+    ) -> WorkerProjectionCommitResult: ...

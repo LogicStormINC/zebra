@@ -12,7 +12,11 @@ POSITION_BATCH_LIMIT = 256
 
 
 def _lock_task(
-    connection: Any, namespace: str, task_id: TaskId, *, shared: bool = False,
+    connection: Any,
+    namespace: str,
+    task_id: TaskId,
+    *,
+    shared: bool = False,
 ) -> None:
     # Root Task IDs equal Session IDs. Session/lease seed 0 must stay independent.
     lock = "pg_advisory_xact_lock_shared" if shared else "pg_advisory_xact_lock"
@@ -144,11 +148,32 @@ def _position_rows(
     limit: int,
     *,
     highwater: int = 9_223_372_036_854_775_807,
+    repair: bool = False,
 ) -> list[Any]:
     # Both indexed input seeks are bounded BEFORE UNION; never filter mismatches
     # over the history. No Event body or aggregate root count is loaded.
+    proof_fields = (
+        """,previous.task_id AS previous_task,
+        previous.task_sequence AS previous_position,mapped.task_id AS mapped_task,
+        mapped.task_sequence AS mapped_position,mapped.segment_id AS mapped_segment,
+        mapped.segment_sequence AS mapped_sequence"""
+        if repair
+        else ""
+    )
+    proof_joins = (
+        """LEFT JOIN LATERAL (
+          SELECT task_id,task_sequence FROM session_events WHERE deployment_namespace=%s
+            AND session_id=event.session_id AND sequence>=event.sequence-1
+            AND sequence<event.sequence ORDER BY sequence DESC LIMIT 1
+        ) previous ON true LEFT JOIN LATERAL (
+          SELECT task_id,task_sequence,segment_id,segment_sequence FROM task_event_index
+          WHERE deployment_namespace=%s AND event_id=candidate.event_id LIMIT 1
+        ) mapped ON true"""
+        if repair
+        else ""
+    )
     rows = connection.execute(
-        """WITH candidates AS (
+        f"""WITH candidates AS (
              (SELECT task_sequence,event_id,segment_id,segment_sequence FROM task_event_index
                WHERE deployment_namespace=%s AND task_id=%s
                  AND task_sequence>%s AND task_sequence<=%s ORDER BY task_sequence LIMIT %s)
@@ -158,6 +183,7 @@ def _position_rows(
                  AND task_sequence>%s AND task_sequence<=%s ORDER BY task_sequence LIMIT %s))
            SELECT candidate.*,event.session_id,event.sequence,event.task_id AS source_task,
                   event.task_sequence AS source_position,member.task_id AS member_task
+                  {proof_fields}
            FROM candidates candidate LEFT JOIN LATERAL (
              SELECT session_id,sequence,task_id,task_sequence FROM session_events
              WHERE deployment_namespace=%s AND event_id=candidate.event_id LIMIT 1
@@ -165,7 +191,7 @@ def _position_rows(
              SELECT task_id FROM execution_segments WHERE deployment_namespace=%s
                AND session_id=event.session_id LIMIT 1
            ) member ON true
-           ORDER BY candidate.task_sequence LIMIT %s""",
+           {proof_joins} ORDER BY candidate.task_sequence LIMIT %s""",
         (
             namespace,
             task_id,
@@ -179,6 +205,7 @@ def _position_rows(
             limit,
             namespace,
             namespace,
+            *((namespace, namespace) if repair else ()),
             limit,
         ),
     ).fetchall()
@@ -211,7 +238,8 @@ def _assign(connection: Any, namespace: str, task_id: TaskId, row: Any, position
         )
     connection.execute(
         f"UPDATE session_events SET event_bytes_bound={BYTE_BOUND} "
-        "WHERE deployment_namespace=%s AND event_id=%s",
+        f"WHERE deployment_namespace=%s AND event_id=%s AND event_bytes_bound "
+        f"IS DISTINCT FROM ({BYTE_BOUND})",
         (namespace, row["event_id"]),
     )
     mapped = connection.execute(
@@ -268,7 +296,17 @@ def repair_task_event_index(
         raise PostgresAgentTaskConflictError(
             "derived Task position conflicts with source highwater"
         )
-    for row in _position_rows(connection, namespace, task_id, cursor, limit, highwater=highwater):
+    rows = _position_rows(
+        connection,
+        namespace,
+        task_id,
+        cursor,
+        limit,
+        highwater=highwater,
+        repair=True,
+    )
+    missing = []
+    for row in rows:
         if (
             row["member_task"],
             row["source_task"],
@@ -279,8 +317,51 @@ def repair_task_event_index(
             raise PostgresAgentTaskConflictError("derived Task position conflicts with source")
         if row["task_sequence"] != cursor + 1:
             raise PostgresAgentTaskConflictError("canonical Task source coverage is incomplete")
-        repaired += _assign(connection, namespace, task_id, row, row["task_sequence"])
+        if row["sequence"] > 0:
+            if row["previous_task"] is None:
+                raise PostgresAgentTaskConflictError(
+                    "legacy Task reservation omits a source prefix"
+                )
+            if row["previous_task"] != task_id:
+                raise PostgresAgentTaskConflictError("source Event belongs to another Task")
+            if row["previous_position"] >= row["task_sequence"]:
+                raise PostgresAgentTaskConflictError("legacy Task reservations invert source order")
+        if row["mapped_task"] is None:
+            missing.append(row["event_id"])
+        elif (
+            row["mapped_task"],
+            row["mapped_position"],
+            row["mapped_segment"],
+            row["mapped_sequence"],
+        ) != (task_id, row["task_sequence"], row["session_id"], row["sequence"]):
+            raise PostgresAgentTaskConflictError("derived Task position conflicts with source")
         cursor = row["task_sequence"]
+    # Validate the complete bounded page before DML. Native guards still arbitrate
+    # conflicts; unchanged bounds must not mutate sealed MODEL source witnesses.
+    if rows:
+        connection.execute(
+            f"UPDATE session_events SET event_bytes_bound={BYTE_BOUND} "
+            f"WHERE deployment_namespace=%s AND event_id=ANY(%s) AND event_bytes_bound "
+            f"IS DISTINCT FROM ({BYTE_BOUND})",
+            (namespace, [row["event_id"] for row in rows]),
+        )
+    if missing:
+        try:
+            inserted = connection.execute(
+                """INSERT INTO task_event_index
+                   (deployment_namespace,task_id,task_sequence,event_id,segment_id,segment_sequence)
+                   SELECT deployment_namespace,task_id,task_sequence,event_id,session_id,sequence
+                   FROM session_events WHERE deployment_namespace=%s AND task_id=%s
+                     AND event_id=ANY(%s) ORDER BY task_sequence""",
+                (namespace, task_id, missing),
+            )
+        except errors.UniqueViolation as exc:
+            raise PostgresAgentTaskConflictError(
+                "derived Task position conflicts with source"
+            ) from exc
+        repaired = inserted.rowcount
+        if repaired != len(missing):
+            raise PostgresAgentTaskConflictError("canonical Task source coverage is incomplete")
     if not _position_rows(connection, namespace, task_id, cursor, 1, highwater=highwater):
         if cursor != highwater:
             raise PostgresAgentTaskConflictError("canonical Task source coverage is incomplete")

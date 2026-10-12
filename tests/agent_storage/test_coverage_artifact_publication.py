@@ -101,8 +101,9 @@ def _crash(env, monkeypatch, stage):
             _publish(env)
     staged = _metadata(env)
     assert staged.lifecycle_status == CloudArtifactPayloadLifecycleStatus.STAGED
-    assert staged.lifecycle_revision == (0 if stage == "upload" else 1)
-    assert (staged.object_receipt is None) == (stage == "upload")
+    # Uploads survive, but receipt and Event settlement share one transaction.
+    assert staged.lifecycle_revision == 0
+    assert staged.object_receipt is None
     assert staged.event_binding is None
     assert len(env.client.objects) == 1
     assert source_counts(env) == before
@@ -205,7 +206,7 @@ def test_revocation_before_finalize_rolls_back_event_and_metadata_rebinding(
     def check_authority():
         nonlocal calls
         calls += 1
-        if calls == 3:
+        if _metadata(env).lifecycle_status == CloudArtifactPayloadLifecycleStatus.FINALIZED:
             # The transaction has appended the Event and rebound the metadata;
             # another connection must still see the staged, committed version.
             # A nested adapter now deliberately borrows the caller's transaction.
@@ -217,7 +218,7 @@ def test_revocation_before_finalize_rolls_back_event_and_metadata_rebinding(
 
     with pytest.raises(CoverageRefusedError, match="authority_invalid"):
         _publish(env, check_authority=check_authority)
-    assert calls == 3
+    assert calls > 3
     assert source_counts(env) == before
     assert _metadata(env) == staged
     _assert_finalized(env, _publish(env))

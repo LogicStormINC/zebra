@@ -3,12 +3,15 @@
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any, cast
+from uuid import UUID
 
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.cloud_artifact_payloads import CloudArtifactPayloadRecord
+from agent_core.domain.identifiers import ArtifactId, SessionId
 from agent_core.domain.leases import LeaseFence, LeaseLostError
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.ports.effect_dispatch import effect_input
 
+from agent_storage.postgres.artifact_payload_rows import artifact_payload_from_row
 from agent_storage.postgres.coverage_authority_migration import COVERAGE_AUTHORITY_MIGRATION
 from agent_storage.postgres.database import PostgresDatabase
 
@@ -106,9 +109,68 @@ class PostgresCoverageAuthority:
             row = self._read_lineage(connection)
         return self._validate_lineage(row, deadline)
 
-    def _read_lineage(self, connection: Any) -> dict[str, Any]:
+    def observe(self, *, deadline: datetime | None = None) -> int:
+        """One fresh readonly snapshot; never replaces a post-lock mutation guard.
+
+        No lock survives external I/O, even in the legacy check. A fresh scalar
+        observation needs no preliminary lock statement. Borrowed transactions
+        retain the locked check: their owner may be validating a mutation.
+        """
+        from agent_storage.postgres.work_unit import borrow_work_unit
+
+        if borrow_work_unit((self.database._dsn, self.database.deployment_namespace)) is not None:
+            return self.check(deadline=deadline)
+        with self.database.connect() as connection:
+            row = self._read_lineage(connection, observe_lease=True)
+            validate_coverage_lease(row, self.fence, row["now"])
+        return self._validate_lineage(row, deadline)
+
+    def observe_payloads(
+        self, identifiers: tuple[ArtifactId, ...], *, deadline: datetime | None = None,
+    ) -> tuple[int, dict[ArtifactId, CloudArtifactPayloadRecord]]:
+        """Fresh readonly phase; no result grants a later mutation right."""
+        from agent_storage.postgres.work_unit import borrow_work_unit
+
+        if (type(identifiers) is not tuple or not 1 <= len(identifiers) <= 1000
+                or any(type(identifier) is not UUID for identifier in identifiers)
+                or len(set(identifiers)) != len(identifiers)):
+            raise ValueError("invalid readonly metadata identity set")
+        if borrow_work_unit((self.database._dsn, self.database.deployment_namespace)) is not None:
+            raise ValueError("readonly metadata preparation cannot borrow mutation authority")
+        with self.database.connect() as connection:
+            row = self._read_lineage(connection, observe_lease=True, payload_ids=identifiers)
+            validate_coverage_lease(row, self.fence, row["now"])
+            version = self._validate_lineage(row, deadline)
+        records = [artifact_payload_from_row(item) for item in row["payloads"]]
+        if (any(record.artifact_id not in identifiers or record.session_id != self.session
+                or record.deployment_namespace != self.database.deployment_namespace
+                for record in records)
+                or sum(record.reservation.size_bytes for record in records) > 32 * 1024 * 1024):
+            raise ValueError("readonly metadata scope or byte bound conflicts")
+        return version, {record.artifact_id: record for record in records}
+
+    def _read_lineage(
+        self, connection: Any, *, observe_lease: bool = False,
+        payload_ids: tuple[ArtifactId, ...] | None = None,
+    ) -> dict[str, Any]:
+        # Fixed internal fragments only; every fact uses the same SQL snapshot.
+        lease_columns = (
+            "lease.*, (SELECT epoch FROM control_plane_epochs "
+            "WHERE deployment_namespace=l.deployment_namespace) AS current_epoch,"
+            if observe_lease else ""
+        )
+        lease_join = (
+            " LEFT JOIN worker_leases lease ON lease.deployment_namespace=l.deployment_namespace"
+            " AND lease.session_id=l.session_id" if observe_lease else ""
+        )
+        payload_columns = (
+            "(SELECT coalesce(jsonb_agg(to_jsonb(m)), '[]'::jsonb) "
+            "FROM artifact_payload_metadata m WHERE m.deployment_namespace=l.deployment_namespace"
+            " AND m.session_id=l.session_id AND m.artifact_id=ANY(%s)) AS payloads,"
+            if payload_ids is not None else ""
+        )
         row = connection.execute(
-                """SELECT clock_timestamp() AS now,
+                "SELECT " + lease_columns + payload_columns + """clock_timestamp() AS now,
                      (SELECT current_version FROM session_streams
                        WHERE deployment_namespace=l.deployment_namespace
                          AND session_id=l.session_id) AS current_version,
@@ -134,8 +196,10 @@ class PostgresCoverageAuthority:
                              ('session_cancelled','session_failed','session_completed')
                            OR (stop.event_type='session_command_accepted'
                                AND stop.payload->>'kind' IN ('stop','cancel')))) AS stopped
-                   FROM (SELECT %s::text AS deployment_namespace,%s::uuid AS session_id) l""",
-                (*([self.binding.task_id] * 3), self.database.deployment_namespace, self.session),
+                   FROM (SELECT %s::text AS deployment_namespace,%s::uuid AS session_id) l"""
+                + lease_join,
+                (*((list(payload_ids),) if payload_ids is not None else ()),
+                 *([self.binding.task_id] * 3), self.database.deployment_namespace, self.session),
             ).fetchone()
         assert row is not None  # Scalar SELECT has exactly one result row.
         return cast(dict[str, Any], row)

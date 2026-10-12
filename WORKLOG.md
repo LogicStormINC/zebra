@@ -1,5 +1,144 @@
 # Progress Log
 
+## 2026-10-12 - User-authorized manual-test integration preparation
+
+- Current request explicitly authorizes local merge into cloud-agent-trench and
+  application image preparation, not remote push/restart/business migration.
+- Primary has unrelated SDK/AGENTS modifications; their complete modified and
+  untracked file digest and stash-reference digest were recorded before merging.
+  Staging uses the explicit owned 83-file list, never the primary dirty paths.
+- Fresh pre-merge make check GO (size2920, mypy1243, Ruff, eval30); scratch native
+  boundary tests69pass0skip0fail367.33s. Original SQL<=1000 gate remains FAIL.
+- Existing runtime uses the local-gvisor overlay and arm64 application images;
+  preserve both. Compose validation and existing CA/mTLS file checks pass.
+  Pre-build API/Worker image rollback tags retained; operator commands/checklist
+  in docs/COV_SQL_MANUAL_TEST_20261012.md. Merge/build outcome still pending here.
+
+## 2026-10-12 - COV-SQL-PHASE-01 source-only execution
+
+- Full current checkpoint completes9036pass2680prerequisite-skips0fail1153.74s;
+  final tiny original-timeout fix and PG trigger expectations are separately
+  validated19/12 and independent1, not silently folded into that full snapshot.
+  Runtime/tenant-scale/semantic and strict6411/15653<=1000FAIL remain OPEN.
+  Task stays In Progress; primary checkout/services/stashes unchanged.
+
+- Scoped SPEC/quality reviews GO after four closure fixes and exact staged-proof
+  timeout deferral. Post-review fault63pass2old-error-expectation-fails626.15s;
+  current corresponding12pass130.37s (immutable Task Event trigger refuses
+  corruption), no weak assertions. Timeout/read/transcript19pass2.68s and
+  independent reviewer1pass1.66s. Static1243/Ruff/size/eval30 GO. Fresh full run
+  still active; its source predates only the finalizer timeout handling patch.
+
+- Post-review serial9 long6411SQL37.9034s1callback/2batches and
+  short15653SQL73.4954s7/8; independent certification/recovery0, strictFAIL.
+  Review found staged Worker restart, lock-held Host, oversized proof and legacy
+  routing gaps; all corrected with exact private-original recovery proof and
+  pre-I/O fallback. Actual Worker4pass41.65s, recovery123pass10skip3.32s.
+  Fullbaseline9024pass2662skip12fixturefails, missingrealremember method corrected
+  and focused14pass; fresh full and post-review fault matrices still running.
+  No completion/activation/performance cure claimed; no push/merge/restart.
+
+- User-approved unified evidence operation implemented in isolated branch:
+  bounded full-metadata authority snapshot, staged durable reservation, physical
+  I/O outside mutation TX, shared locked publication/usage or acceptance owner,
+  exact postcallback facts and independent final originals. Native Worker wired.
+  Interim serial6442/14104SQL certified but strictFAIL. Final fault/static/full
+  review and final-source serial retest pending; no merge/restart/push.
+
+- Final readonly/executor reviewed source: long6848SQL38.500638s1callback/2batches;
+  short16292SQL72.158400s7callbacks/8batches. Independent certification and
+  exceptional recovery0 in both; strict<=1000 still FAIL. Native transport
+  GET107/HEAD1/PUT43 and GET204/HEAD1/PUT49. Long counts remove897 from7745,
+  short1453 from17745; not live/p95/semantic or multi-tenant load acceptance.
+- Corrected authority/executor30pass167.96s; final enhanced native11pass58.73s.
+  Reviewer found subordinate delegate/equality/provenance qualification gaps,
+  repaired with exact typed guards and hostile/foreign fallback regressions.
+  Final Host property access is after exact-native classification; scoped review
+  reports no remaining finding. Static2920/1238/eval30 GO, pure29pass2skip2.45s.
+  Critical object/publication/proof80pass81.57s after serial benchmarks.
+- Structural read-only review confirms that removing resets or combining only
+  readonly queries cannot meet1000: native publication/usage/unit acceptance
+  still rebuild their separate transaction/proof boundaries. Recorded coherent
+  bounded evidence-operation owner and required crash/revocation/tenant/final
+  regressions as unimplemented, never inferred from zero-SQL preparation hooks.
+- Checkpoint-owner latest strict long7745SQL40.5162s/short17745SQL76.9410s,
+  independently certified, exceptional recovery0. Long1callback/2batches;
+  short7callbacks/8batches. <=1000 FAIL. SDK transport attempts now measured:
+  long GET107/HEAD1/PUT43; short GET200/HEAD1/PUT49, controlled fixtures only.
+- Fresh final proof byte ownership/native checkpoint acknowledgement regressions
+  final9pass47.29s; read43pass29.54s; source static2920/1237/eval30 GO. Publication
+  fault43pass94.94s preceded the final acknowledgement field correction, then
+  final9 reran. No summed subset/full-suite acceptance claim.
+- Read-observation/native executor ownership claimed before coding. Readonly
+  authority now uses one fresh SQL snapshot outside borrowed transactions;
+  write callbacks retain lock-then-fresh SQL. CPU executor hook defaults to full
+  guards and qualifies only exact native adapters; `_live`/finals unchanged.
+  Initial authority24pass/4fail exposed old tests editing immutable original
+  Events; tests now append typed canonical stop/handoff Events through native
+  appender. Helper placement typo run interrupted after4pass/1fail; corrected
+  source rerun passed30. No weakened immutable-source trigger or refusal test.
+- Continuation: source-qualified pure MODEL preparation implemented; admission /
+  factory precharge / postresponse / settlement / delivery barriers retained.
+  Changed facade/load/metadata/splitguards/deriver/publisher callbacks cannot
+  inherit SQL-free preparation. Read-only reviewer found no remaining blocker.
+- Publisher physical put/read now guarded individually before/after I/O. Its
+  postupload receipt/finalization share one transaction;14newfault tests and
+  coordinated legacy crash-phase contracts pass in the30test native group.
+- Generic MODEL145pass, observer2pass, authority/dispatch/observer21pass;
+  scoped static2920-size/1236-typed/eval30 GO before semantic-owner follow-up.
+- Serial preparation checkpoint8513SQL31.1152s long /16805SQL52.6762s short;
+  qualified72/72, full recovery0, shortcallbacks6/batches7. Stdlib frame observer
+  replaces delegate monkeypatches, so timing comparisons remain diagnostic.
+  <=1000 FAIL, no whole-chain benefit claimed. Continue private native semantic
+  outer preparation; complete executor/publication ownership remains OPEN.
+- Native semantic outer guard now delegates only to the captured native
+  classifier; replaced classifier functions are not executed to qualify their
+  own bypass. Final2test factory/delegate/classifier/revocation pass22.90s;
+  broader native21pass100.16s preceded the last classifier repair. Pure183pass /
+  15prerequisite-skips3.49s; static2920/1236/eval30 GO. Scoped review GO.
+- Semantic-owner serial long8405SQL29.3450s,90qualifiedpurechecks.108SQL lower
+  than preparation-only8513, still >1000. Old short16805 is presemantic evidence.
+  Added non-mutating actualauthority/Host/objectoperation counters to avoid
+  falsely interpreting the fixture get_object0 as native SDK I/O0.
+- Claimed before implementation in the retained isolated worktree, based1388aca7;
+  primary dirty SDK/AGENTS changes, runtime, stashes and business databases left
+  untouched. No service restart, merge/push or deployment.
+- Added bounded Task index repair, migration99 canonical-coordinate distinction,
+  optional native projection batching, proof-prefetch forwarding and pure
+  retention coalescing. Read authority no longer writes projections.
+- Native short-wake replay exposed a unit/Harness counter conflict, now fixed
+  at the shared progress fold with invalid-counter/stale-output checks retained.
+- Physical read regression repairs require full-record cache equality and fresh
+  before/after guards in both prepared and locked scopes. Related group100pass;
+  Task repair16 and source/membership/migration/proof group45pass (overlap noted).
+- Serial strict long slice:8032clientSQL15.402365s; short slice:13072SQL25.092773s.
+  Both certify, full recovery0. Performance gate still FAIL; root operation
+  owner and MODEL-publication consolidation remain unimplemented.
+- Static size/Ruff/mypy/eval GO. Full regression started; additive99 catalog
+  expectation failure repaired without touching historical migration digests.
+- Review exposed borrowed-transaction premature live publication; native hints
+  are now suppressed while an outer owner still controls commit. Added rollback
+  and success cases for singleton, batch projection and direct Event append.
+  Focused final validation and full-suite results recorded in SQL evidence doc.
+- Native private publication obtains fresh canonical revision without projection;
+  Artifact sync is read-only after bootstrap, while continuation/finalization
+  still fold committed tails. Direct-sync/dispatch18pass. Read-only independent
+  review found no recorder sequence dependency in reservation/finalization.
+- Host descriptor exit now revalidates current SQL authority. Its regression
+  initially expected a returned failed session rather than WorkerExecutionError;
+  corrected the test to the actual refusal layer, authority/exit2pass.
+- Full source run:9019pass2556skip7fail1034.96s. Optional prefetch must not require
+  receipt columns for volume-only paging; repaired shared function, corresponding
+  paging/catalog24pass. Historic migration bodies/checksums unchanged.
+- Final serial native long7976SQL15.912958s / short14654SQL29.566447s; full recovery0
+  in both. Short callbacks5/batches6/qualifiedreceipts6. Strict<=1000 still FAIL;
+  private-separation pre-Host6599/11067 measurements are not final acceptance.
+- Latest static2920-size/1234-typed/eval30 GO. Root source-owned MODEL operation,
+  publication/settlement consolidation, new full green and fleet/live remain OPEN.
+- Final native recorder-lag/Host exit/dispatch19pass67.34s: private publications
+  keep exact fresh stream revisions across recorder lag, then certified delivery
+  catches up; cancelled SQL authority after Host return never certifies.
+
 ## 2026-10-12 - User-approved regression repair before local integration
 
 - Checkpointed reviewed source in both repos and retained private recovery Git

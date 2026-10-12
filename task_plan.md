@@ -1,4 +1,46 @@
-# Active local integration — 2026-10-12
+# Active SQL root-cause repair — 2026-10-12
+
+1. Done: reproduce exact serial long/short nine including final certification.
+2. Done: trace nested authority, lifecycle, clock and connection call stacks.
+3. Component implemented: bounded proof/projection/Task repair, readonly authority,
+   unit/Harness replay distinction, full-record cache and physical I/O barriers.
+4. Borrowed-owner publication rollback30 and static GO. Full9019pass2556skip7fail;
+   corresponding paging/catalog repairs24pass, fresh full green remains OPEN.
+   Private publication authority/sync no longer projects. Host exit revocation
+   now refuses and is included in final measurement. No service activation.
+5. Component implemented: source-qualified native pure preparation and semantic
+   wrapper, per-object publication barriers and atomic receipt/finalization.
+   Final-proof fresh bounded bytes/native MODEL acknowledgement9 pass. Fresh
+   single-SQL readonly authority/native executor CPU hooks pass native30 and
+   enhanced11; unknown/changed delegates retain full fallback. Scoped review GO.
+   Superseded by step7: consolidated MODEL usage and unit settlement implemented;
+   nested executor/publication/singleton-reader entries remain. Finals unchanged.
+6. OPEN: strict <=1000 FAIL (6411 post-review long;15653 short), tenant fleet
+   load/fairness, live E2E and independent business semantic accuracy.
+7. Implemented, validation in progress (user-approved2026-10-12): bounded evidence owner
+   spans fresh authority/metadata read preparation and post-upload checkpoint /
+   receipt / usage / eligible unit Event settlement. Preserve durable precharge,
+   external I/O guards, exact retry and independent final originals. Existing
+   separate phases exceed the budget even without connection resets; do not
+   spend another slice only changing SQL spelling or hiding server statements.
+   Implementation lanes: storage-owned two-phase publisher with postupload
+   locked usage/acceptance kernels; main-owned native invocation/executor hooks,
+   Worker qualification and bounded fresh readonly metadata. Acceptance requires
+   crash/replay/isolation/revocation/final-proof regressions and serial unchanged
+   <=1000 SQL gates; no release approval inferred from focused tests. Subsequent
+   user request authorizes local merge/manual-test image preparation only;
+   restarts and business migrations remain operator actions.
+   Post-review: Host I/O outside native settlement TX, typed pre-I/O fallback,
+   exact staged-original crash approval/handoff and Worker recovery implemented.
+   Actual Worker4 and recovery123pass10skip GO; full checkpoint9036pass2680skip
+   0fail, final tiny timeout/PG-trigger fixes have separate19/12 focused GO.
+   Performance still FAIL; operation entry fanout/normal wake facts not closed.
+8. Next root boundary: qualified Host/outer consumer operation ownership and
+   normal-wake authority facts must replace repeated guarded adapter entries.
+   Retain per-I/O revocation and independent final proof; do not remove reset
+   accounting, obscure server work, widen strict1000, or activate this candidate.
+
+# Completed local integration — 2026-10-12
 
 - User approved repairing regressions before local branch consolidation.
 - Source checkpoints and complete private recovery bundles exist for both repos;

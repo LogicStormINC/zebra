@@ -156,7 +156,9 @@ def verify_model_checkpoint(
     deadline = record.reservation.retained_until
     if deadline is not None:
         deadlines[:] = [min(deadlines[0], deadline) if deadlines else deadline]
-    check_checkpoint_retention(connection, deadlines)
+    defer = getattr(artifacts, "_defer_checkpoint_retention", None)
+    if not callable(defer) or not defer(connection, deadlines):
+        check_checkpoint_retention(connection, deadlines)
     return body
 
 

@@ -4,6 +4,7 @@
 from contextlib import contextmanager
 from hashlib import sha256
 
+import psycopg
 import pytest
 from agent_core.domain.artifact_objects import ArtifactObjectIntegrityError
 from agent_core.domain.coverage_contracts import CoverageRefusedError
@@ -157,7 +158,11 @@ def test_scope_exit_mutation_rolls_back_first_settlement_and_replay(
 
     with monkeypatch.context() as patch:
         patch.setattr(env.cloud, "_locked_proof_scope", changed)
-        with pytest.raises(ValueError, match="canonical Event linkage|changed during settlement"):
+        with pytest.raises(
+            (ValueError, psycopg.errors.ObjectNotInPrerequisiteState),
+            match="canonical Event linkage|changed during settlement|"
+                  "canonical Task Event business fields are immutable",
+        ):
             env.store.settle_model_checkpoint(env.binding, current, fence=env.fence)
     assert database_state(env) == before
     assert borrow_work_unit((env.dsn, NAMESPACE)) is None

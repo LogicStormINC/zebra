@@ -18,6 +18,7 @@ from agent_core.domain.events import EventType
 from agent_core.domain.leases import LeaseFence
 from psycopg.types.json import Jsonb
 
+from agent_storage.postgres.coverage_evidence_reads import EvidenceOperationReads
 from agent_storage.postgres.coverage_execution_receipt_read import read_execution_receipt
 from agent_storage.postgres.coverage_model_checkpoint import (
     check_checkpoint_retention,
@@ -299,44 +300,67 @@ class CoverageModelBudgetQueries:
     def _settle_model_checkpoint(
         self, binding: CoverageRunBinding, receipt: CoverageModelUsageReceipt, *, fence: LeaseFence
     ) -> tuple[int, bytes]:
-        # Validate raw/forged typed fields before mutation. Invalid/absent usage
-        # leaves the existing full charge and unresolved reservation intact.
         receipt = CoverageModelUsageReceipt.model_validate(coverage_admission_input(receipt))
         with postgres_work_unit(self._database), self._database.connect() as connection:
-            version = self._model_boundary(connection, binding, fence)
-            deadlines: list[datetime] = []
-            state = indexed_state(connection, self._deployment, binding)
-            if (
-                state is None
-                or receipt.reservation.model_profile not in self._supported_model_profiles
-            ):
-                raise ValueError("unsupported/uninitialized model usage")
-            self._model_clock(connection, binding, fence, state.policy)
-            call = indexed_call(
-                connection, self._deployment, binding, receipt.reservation.reservation_key
+            row, version = lock_run(connection, self._deployment, binding, fence)
+            return self._settle_model_checkpoint_locked(
+                connection, binding, receipt, fence=fence, row=row, version=version,
             )
-            if call is None or call["reservation"] != receipt.reservation.model_dump(mode="json"):
-                raise ValueError("usage does not match an exact reserved request")
-            proof: list[tuple[Any, Any]] = []
-            with self._model_artifact_scope(connection, binding) as artifacts:
-                preflight_original_volume(
-                    connection, self._deployment, binding, candidate=receipt,
-                    reserved_sequence=call["reserved_sequence"], retention_deadlines=deadlines,
-                    _incremental_keys=(
-                        {receipt.reservation.key}
-                        if state.policy.validation_mode == "final_certification" else None
-                    ),
-                    _policy=state.policy, _artifacts=artifacts,
-                )
-                body = verify_model_checkpoint(
-                    connection, self._deployment, binding, receipt, artifacts,
-                    reserved_sequence=call["reserved_sequence"],
-                    receipt_sequence=call["receipt_sequence"], retention_deadlines=deadlines,
-                    proof=proof,
-                )
-            # The scope exit invokes extensible authority callbacks. Row locks
-            # do not stop same-transaction writes: bypass its cached reader and
-            # compare the full current lifecycle and canonical Event afterward.
+
+    def _settle_model_checkpoint_locked(
+        self, connection: Any, binding: CoverageRunBinding, receipt: CoverageModelUsageReceipt, *,
+        fence: LeaseFence, row: Any, version: int, artifacts: Any = None,
+    ) -> tuple[int, bytes]:
+        """Use the owner's locks and optional physically verified bounded reader."""
+        receipt = CoverageModelUsageReceipt.model_validate(coverage_admission_input(receipt))
+        assert_projection(connection, self._deployment, binding, row)
+        assert_not_certified(connection, self._deployment, binding)
+        if row["cancelled"]:
+            raise ValueError("cancelled run cannot change model budget")
+        deadlines: list[datetime] = []
+        state = indexed_state(connection, self._deployment, binding)
+        if (
+            state is None
+            or receipt.reservation.model_profile not in self._supported_model_profiles
+        ):
+            raise ValueError("unsupported/uninitialized model usage")
+        self._model_clock(connection, binding, fence, state.policy)
+        call = indexed_call(
+            connection, self._deployment, binding, receipt.reservation.reservation_key
+        )
+        if call is None or call["reservation"] != receipt.reservation.model_dump(mode="json"):
+            raise ValueError("usage does not match an exact reserved request")
+        proof: list[tuple[Any, Any]] = []
+        owned_reader = (
+            type(artifacts) is EvidenceOperationReads
+            and artifacts.connection is connection and artifacts.deployment == self._deployment
+            and artifacts.binding == binding and artifacts.source is self._artifacts
+            and artifacts._derive is self._model_observation_deriver
+            and all(name not in vars(artifacts) and getattr(type(artifacts), name) is method
+                    for name, method in _EVIDENCE_READER_METHODS.items())
+        )
+        context = (self._model_artifact_scope(connection, binding)
+                   if artifacts is None else nullcontext(artifacts))
+        with context as artifacts:
+            preflight_original_volume(
+                connection, self._deployment, binding, candidate=receipt,
+                reserved_sequence=call["reserved_sequence"], retention_deadlines=deadlines,
+                _incremental_keys=(
+                    {receipt.reservation.key}
+                    if state.policy.validation_mode == "final_certification" else None
+                ),
+                _policy=state.policy, _artifacts=artifacts,
+            )
+            body = verify_model_checkpoint(
+                connection, self._deployment, binding, receipt, artifacts,
+                reserved_sequence=call["reserved_sequence"],
+                receipt_sequence=call["receipt_sequence"], retention_deadlines=deadlines,
+                proof=proof,
+            )
+        # The scope exit invokes extensible authority callbacks. Row locks
+        # do not stop same-transaction writes: bypass its cached reader and
+        # compare the full current lifecycle and canonical Event afterward.
+        if not owned_reader:
             fresh: list[tuple[Any, Any]] = []
             checkpoint_source(
                 connection, self._deployment, binding, receipt,
@@ -345,48 +369,51 @@ class CoverageModelBudgetQueries:
             )
             if fresh != proof:
                 raise ValueError("checkpoint proof changed during settlement callback")
-            if call["receipt"] is not None:
-                if call["receipt"] != receipt.model_dump(mode="json"):
-                    raise ValueError("conflicting model usage receipt")
-                self._model_clock(connection, binding, fence, state.policy)
-                check_checkpoint_retention(connection, deadlines)
-                return int(call["receipt_sequence"]), body
-            event = append_coverage_event(
-                connection,
-                self._deployment,
-                binding,
-                fence,
-                version + 1,
-                EventType.COVERAGE_MODEL_USAGE_RECORDED,
-                {"receipt": receipt.model_dump(mode="json")},
-            )
-            connection.execute(
-                """UPDATE coverage_model_calls SET receipt=%s,receipt_sequence=%s
-                   WHERE deployment_namespace=%s AND namespace=%s AND run_id=%s
-                   AND reservation_key=%s""",
-                (
-                    Jsonb(receipt.model_dump(mode="json")),
-                    event.sequence,
-                    *params(self._deployment, binding),
-                    receipt.reservation.reservation_key,
-                ),
-            )
-            witness_event(connection, self._deployment, binding, event)
-            connection.execute(
-                """UPDATE coverage_model_ledger SET charged_tokens=charged_tokens-%s,
-                   unresolved=unresolved-1 WHERE deployment_namespace=%s
-                   AND namespace=%s AND run_id=%s""",
-                (
-                    receipt.reservation.token_bound - receipt.total_tokens,
-                    *params(self._deployment, binding),
-                ),
-            )
-            project_watermark(
-                connection, self._deployment, binding, event.sequence, cancelled=False
-            )
+        # Exact supplied readers have no extensible context exit. Their operation
+        # owner compares the whole page/Event and settlement AFTER its callbacks,
+        # before committing. Generic scopes still reread originals here.
+        if call["receipt"] is not None:
+            if call["receipt"] != receipt.model_dump(mode="json"):
+                raise ValueError("conflicting model usage receipt")
             self._model_clock(connection, binding, fence, state.policy)
             check_checkpoint_retention(connection, deadlines)
-            return event.sequence, body
+            return int(call["receipt_sequence"]), body
+        event = append_coverage_event(
+            connection,
+            self._deployment,
+            binding,
+            fence,
+            version + 1,
+            EventType.COVERAGE_MODEL_USAGE_RECORDED,
+            {"receipt": receipt.model_dump(mode="json")},
+        )
+        connection.execute(
+            """UPDATE coverage_model_calls SET receipt=%s,receipt_sequence=%s
+               WHERE deployment_namespace=%s AND namespace=%s AND run_id=%s
+               AND reservation_key=%s""",
+            (
+                Jsonb(receipt.model_dump(mode="json")),
+                event.sequence,
+                *params(self._deployment, binding),
+                receipt.reservation.reservation_key,
+            ),
+        )
+        witness_event(connection, self._deployment, binding, event)
+        connection.execute(
+            """UPDATE coverage_model_ledger SET charged_tokens=charged_tokens-%s,
+               unresolved=unresolved-1 WHERE deployment_namespace=%s
+               AND namespace=%s AND run_id=%s""",
+            (
+                receipt.reservation.token_bound - receipt.total_tokens,
+                *params(self._deployment, binding),
+            ),
+        )
+        project_watermark(
+            connection, self._deployment, binding, event.sequence, cancelled=False
+        )
+        self._model_clock(connection, binding, fence, state.policy)
+        check_checkpoint_retention(connection, deadlines)
+        return event.sequence, body
 
     def model_budget_state(self, binding: CoverageRunBinding) -> CoverageModelBudgetState:
         with postgres_work_unit(self._database), self._database.connect() as connection:
@@ -417,3 +444,9 @@ class CoverageModelBudgetQueries:
 
 
 _NATIVE_RECORD_USAGE = CoverageModelBudgetQueries.record_model_usage
+_EVIDENCE_READER_METHODS = {name: getattr(EvidenceOperationReads, name) for name in (
+    "__init__", "_boundary", "_native_payload_row", "_native_materialized_sources",
+    "_prefetch_proof", "_locked_proof_scope", "_execution_receipt_verifier", "get_payload",
+    "read_payload_bytes_bounded", "read_payload_verified_bounded", "revalidate",
+    "finish_retention", "close",
+)}

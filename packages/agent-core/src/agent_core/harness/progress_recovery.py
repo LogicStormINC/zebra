@@ -29,7 +29,12 @@ class ProgressPageFold:
 def validate_progress_attempt(kind: EventType, payload: Mapping[str, object], current: int) -> None:
     """Reject stale callbacks before persistence as well as during recovery."""
     number = payload.get("attempt_number")
-    if kind is EventType.HARNESS_ATTEMPT_STARTED:
+    if kind is EventType.COVERAGE_UNIT_ATTEMPTED:
+        # The immutable source field counts reserved units across the coverage
+        # run, not Harness retries. Never let it update the public-output Attempt.
+        if type(number) is not int or number < 1:
+            raise CheckpointConflict("Coverage unit attempt requires a positive counter")
+    elif kind is EventType.HARNESS_ATTEMPT_STARTED:
         if type(number) is not int or number < current:
             raise CheckpointConflict("Worker progress Attempt moved backwards")
     elif number is not None and (type(number) is not int or number != current):

@@ -207,12 +207,15 @@ def replay_model(
         indexed_budget = indexed_state(connection, deployment, binding, _policy=policy)
         record_ids = sorted({key.record_id for key in _incremental_keys})
     if _incremental_keys is None:
-        preflight_original_volume(connection, deployment, binding, retention_deadlines=deadlines)
+        preflight_original_volume(
+            connection, deployment, binding, retention_deadlines=deadlines, _artifacts=artifacts,
+        )
     else:
         preflight_original_volume(
             connection, deployment, binding, retention_deadlines=deadlines,
             _incremental_keys=_incremental_keys,
             _policy=policy,
+            _artifacts=artifacts,
         )
     ledger = None if indexed_budget is not None else connection.execute(
         """SELECT * FROM coverage_model_ledger

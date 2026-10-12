@@ -1,7 +1,7 @@
 """Strict native execution; no exploratory Harness, runtime, or narration fallback."""
 
 from collections.abc import Callable
-from contextlib import ExitStack, nullcontext
+from contextlib import ExitStack
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -9,26 +9,20 @@ from uuid import UUID
 
 import httpx
 from agent_core.application.coverage_admission import validate_coverage_admission
-from agent_core.application.coverage_checks import PublishedCoverageRunner
-from agent_core.application.coverage_executor import CoverageExecutor
-from agent_core.application.coverage_semantic import semantic_check
 from agent_core.application.execution_authority_replay import current_turn_authority_start
 from agent_core.domain.coverage_contracts import CoverageRefusalReason as Reason
 from agent_core.domain.coverage_contracts import CoverageRefusedError
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import TaskId
+from agent_core.domain.identifiers import ArtifactId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from agent_core.ports.effect_dispatch import effect_input
 from agent_integrations import build_model_gateway
-from agent_integrations.coverage_model import SemanticCoverageModel
 from agent_integrations.coverage_model_derivation import derive_semantic_observation
-from agent_integrations.coverage_model_invocation import CoverageModelInvocation
+from agent_integrations.coverage_model_invocation import _utc_now
 from agent_integrations.coverage_model_policy import REVIEWER_PROFILE
-from agent_integrations.coverage_snapshot import HostCoverageSnapshotAdapter
-from agent_integrations.coverage_snapshot_artifacts import CoverageArtifacts
 from agent_integrations.coverage_snapshot_source import HostCoverageSnapshotSource
 from agent_integrations.host_credentials import ConfiguredHmacHostCredentialResolver
 from agent_integrations.host_tools.http import HttpHostToolTransport
@@ -49,6 +43,12 @@ from zebra_agent_worker.coverage_bootstrap import bootstrap_cloud_coverage
 from zebra_agent_worker.coverage_certified import finish_certified_execution, read_issued_report
 from zebra_agent_worker.coverage_composition import CloudCoverageRuntime, load_official_model_policy
 from zebra_agent_worker.coverage_effect import CloudCoverageEffectInvoke
+from zebra_agent_worker.coverage_native_composition import compose_coverage_checks
+from zebra_agent_worker.coverage_native_executor import NativeCoverageExecutor
+from zebra_agent_worker.coverage_native_model import (
+    NativeCoverageModelInvocation,
+    NativeSemanticCoverageModel,
+)
 from zebra_agent_worker.coverage_recovery_preparation import NativeCoverageRecoveryCheck
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.execution_finalization import ExecutedSession
@@ -130,25 +130,18 @@ def execute_cloud_coverage(
         raise CoverageRefusedError(Reason.AUTHORITY_INVALID)
     snapshot_id: str | None = None
     execution_authority = PostgresCoverageAuthority.prepare(
-        runtime.metadata._database, lease.session_id, pinned, lease.fence,
+        runtime.metadata._database,
+        lease.session_id,
+        pinned,
+        lease.fence,
         lambda session: load_session_task_binding(
-            runtime.dsn, deployment_namespace=runtime.deployment_namespace, session_id=session,
+            runtime.dsn,
+            deployment_namespace=runtime.deployment_namespace,
+            session_id=session,
         ),
     )
 
-    def check_local_native() -> None:
-        ownership_check()
-        if execution_authority is not None:
-            try:
-                latest = execution_authority.check(
-                    deadline=host_expiry if issued else min(host_expiry, deadline),
-                )
-            except ValueError as error:
-                raise CoverageRefusedError(Reason.AUTHORITY_INVALID) from error
-            if latest > recorder.session.current_sequence:
-                recorder.project_persisted_tail()
-        else:
-            recorder.project_persisted_tail()
+    def validate_local_entry() -> None:
         current_gateway = resolve_pinned_gateway(host, service._egress_registry, credential)
         if (
             current_gateway is None
@@ -158,8 +151,10 @@ def execute_cloud_coverage(
             or current_gateway.shared_secret != gateway.shared_secret
         ):
             raise CoverageRefusedError(Reason.AUTHORITY_INVALID)
-        current = pinned if execution_authority is not None else (
-            service._task_binding_loader(lease.session_id)
+        current = (
+            pinned
+            if execution_authority is not None
+            else (service._task_binding_loader(lease.session_id))
         )
         if (
             not isinstance(current, TaskBindingSnapshot)
@@ -186,9 +181,30 @@ def execute_cloud_coverage(
         if recorder.session.status not in {SessionStatus.READY, SessionStatus.RUNNING}:
             raise CoverageRefusedError(Reason.CANCELLED)
 
+    def check_local_native() -> int | None:
+        ownership_check()
+        current_version = None
+        if execution_authority is not None:
+            try:
+                current_version = execution_authority.observe(
+                    deadline=host_expiry if issued else min(host_expiry, deadline),
+                )
+            except ValueError as error:
+                raise CoverageRefusedError(Reason.AUTHORITY_INVALID) from error
+            # Authority observation is read-only. Aggregate/continuation exits
+            # consume committed tails, not private evidence publications. Mixing
+            # replay into every read guard repeats SQL and may adopt Events from
+            # a borrowed transaction before its owner has committed them.
+        else:
+            recorder.project_persisted_tail()
+        validate_local_entry()
+        return current_version
+
     def check_local() -> None:
-        # DB-only phase: fresh authority and recorder tail/projection share the
-        # exact transaction, then release it before Host/model/object I/O.
+        # Short read-only authority phase; release before Host/model/object I/O.
+        if execution_authority is not None:
+            check_local_native()
+            return
         with postgres_work_unit(runtime.metadata._database):
             check_local_native()
 
@@ -205,8 +221,37 @@ def execute_cloud_coverage(
     def check() -> None:
         check_local()
         check_external()
+        if snapshot_id is not None:
+            # Host I/O may revoke the local lease/Task while returning an
+            # unchanged descriptor. Observe that revocation before consumption.
+            check_local()
+
+    def read_metadata(identifiers: tuple[ArtifactId, ...]) -> dict[ArtifactId, Any]:
+        check_external()
+        ownership_check()
+        validate_local_entry()
+        if execution_authority is None:
+            raise CoverageRefusedError(Reason.UNSUPPORTED)
+        until = host_expiry if issued else min(host_expiry, deadline)
+        _, records = execution_authority.observe_payloads(identifiers, deadline=until)
+        if datetime.now(UTC) >= until:
+            raise CoverageRefusedError(Reason.AUTHORITY_INVALID)
+        return records
 
     def authority() -> WorkerMutationAuthority:
+        if execution_authority is not None:
+            with postgres_work_unit(runtime.metadata._database):
+                version = check_local_native()
+            assert version is not None
+            # Private evidence writes need the canonical stream version, not
+            # a rewritten user-facing projection. Native mutations still own
+            # their fresh post-lock lease, scope and exact revision checks.
+            return WorkerMutationAuthority(
+                deployment_namespace=runtime.deployment_namespace,
+                session_id=lease.session_id,
+                expected_stream_revision=version,
+                lease_fence=lease.fence,
+            )
         recorder.project_persisted_tail()
         result = recorder.worker_mutation_authority
         if result is None:
@@ -275,11 +320,21 @@ def execute_cloud_coverage(
         recorder.append(
             EventType.HARNESS_ATTEMPT_STARTED,
             EventActor.HARNESS,
-            {"attempt_number": 1 + next((
-                e.payload["attempt_number"] for e in reversed(
-                    inputs.session_events[current_turn_authority_start(inputs.session_events):]
-                ) if e.event_type is EventType.HARNESS_ATTEMPT_STARTED
-            ), 0)},
+            {
+                "attempt_number": 1
+                + next(
+                    (
+                        e.payload["attempt_number"]
+                        for e in reversed(
+                            inputs.session_events[
+                                current_turn_authority_start(inputs.session_events) :
+                            ]
+                        )
+                        if e.event_type is EventType.HARNESS_ATTEMPT_STARTED
+                    ),
+                    0,
+                )
+            },
         )
         # A recovery reuses the authoritative manifest's original run/snapshot.
         with runtime.metadata._database.connect() as connection:
@@ -319,6 +374,11 @@ def execute_cloud_coverage(
         if execution_authority is not None:
             boot.artifacts.check_local_authority = check_local
             boot.artifacts.check_external_authority = check_external
+            boot.artifacts._metadata_reader = read_metadata
+            # Private evidence publishers already own revision CAS and fenced
+            # writes. They must not fold/write both UI aggregates per object.
+            # Continuation and final delivery explicitly fold the committed tail.
+            boot.artifacts.sync_events = check_local
         boot.artifacts.reuse_verified_payloads = admission.validation_mode == "final_certification"
         store = PostgresCoverageStore(
             runtime.dsn,
@@ -363,34 +423,14 @@ def execute_cloud_coverage(
         ):
             raise CoverageRefusedError(Reason.BUDGET_EXCEEDED)
         policy = store.initialize_model_budget(boot.binding, fence=lease.fence)
-        invocation = CoverageModelInvocation(
-            binding=boot.binding,
-            artifacts=CoverageArtifacts(boot.artifacts, lease.session_id, nullcontext()),
-            budget_store=store,
-            original_policy=policy,
-            fresh_fence=lambda: lease.fence,
-            check_authority=check,
-            gateway_factory=gateway_factory,
-            trusted_proof=proof,
+        prepared, runner = compose_coverage_checks(
+            boot=boot, store=store, lease=lease, policy=policy, proof=proof, settings=settings,
+            host=host, history_ref=admission.history_ref, manifest=manifest,
+            invoke=gateway.invoke, effect=effect, check=check,
+            invocation_factory=NativeCoverageModelInvocation,
+            model_factory=NativeSemanticCoverageModel,
         )
-        adapter = HostCoverageSnapshotAdapter(
-            session_id=lease.session_id,
-            authority=host,
-            history_ref=admission.history_ref,
-            manifest=manifest,
-            invoke=gateway.invoke,
-            artifacts=boot.artifacts,
-            publication_lock=nullcontext(),
-            admitted_effect_invoke=effect,
-        )
-        prepared = adapter.prepare(snapshot_id, authority=host)
-        runner = PublishedCoverageRunner(
-            (semantic_check(REVIEWER_PROFILE),),
-            model=SemanticCoverageModel(
-                model_profile=REVIEWER_PROFILE, check_authority=check, invoke_or_replay=invocation
-            ),
-        )
-        executor = CoverageExecutor(
+        executor = NativeCoverageExecutor(
             binding=boot.binding,
             records=boot.records,
             store=store,
@@ -399,11 +439,14 @@ def execute_cloud_coverage(
             runner=runner,
             budget=admission.execution_budget,
             check_authority=check,
+            now=_utc_now,
         )
         work = service._settings.coverage_work
         expected, accepted = executor.execute_batch(
-            fence=lease.fence, limit=work.max_units,
-            max_input_bytes=work.max_input_bytes, max_seconds=work.max_milliseconds / 1000,
+            fence=lease.fence,
+            limit=work.max_units,
+            max_input_bytes=work.max_input_bytes,
+            max_seconds=work.max_milliseconds / 1000,
             batch_commits=True,
         )
         if accepted != expected:

@@ -5,6 +5,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from datetime import UTC, datetime
+from hashlib import sha256
 from typing import Any
 
 from agent_core.domain.artifact_payloads import (
@@ -26,6 +27,12 @@ from agent_core.ports.artifact_object_store import ArtifactObjectStorePort
 from agent_storage.postgres.artifact_payloads import PostgresCloudArtifactPayloadStore
 from agent_storage.postgres.coverage_artifact_publication import PostgresCoverageArtifactPublisher
 from agent_storage.postgres.work_unit import postgres_transaction_work_unit, postgres_work_unit
+
+_PUBLICATION_METHODS = {
+    name: getattr(PostgresCoverageArtifactPublisher, name)
+    for name in ("publish", "publish_batch", "_record_receipts", "_revalidate_finalized",
+                 "_prepare_publication", "_upload_verified", "_finalize_locked")
+}
 
 
 class CloudCoverageArtifacts:
@@ -60,6 +67,9 @@ class CloudCoverageArtifacts:
         )
         self.check_local_authority: Callable[[], None] | None = None
         self.check_external_authority: Callable[[], None] | None = None
+        self._metadata_reader: Callable[
+            [tuple[ArtifactId, ...]], dict[ArtifactId, CloudArtifactPayloadRecord]
+        ] | None = None
         self.reuse_verified_payloads = False
         self._verified_payloads: OrderedDict[
             ArtifactId, tuple[CloudArtifactPayloadRecord, bytes]
@@ -96,19 +106,42 @@ class CloudCoverageArtifacts:
             reader = LockedCoverageProofReads(
                 self, connection, reuse_records=derive is derive_semantic_observation
             )
+            if final_certification and reader._reuse_records:
+                from zebra_agent_worker.coverage_native_model import qualified_final_reads
+
+                if qualified_final_reads(self):
+                    # Fresh owner-local bytes, NOT the incremental execution
+                    # cache. Each certification (including post-append) starts
+                    # empty. Within the bounded cache, pure sibling checks share
+                    # only the original bytes physically read in this proof.
+                    reader.reuse_verified_payloads = True
             if not final_certification and reader._reuse_records and self.reuse_verified_payloads:
                 reader.reuse_verified_payloads = True
                 reader._verified_payload_owner = self
             try:
                 yield reader
                 self.check_authority()  # Before the enclosing transaction can commit.
+                reader._finish_retention()  # Fresh DB time after even the exit callback.
             finally:
+                if reader._verified_payload_owner is reader:
+                    reader._verified_payloads.clear()
+                    reader._verified_bytes = 0
                 reader._proof_connection = None
                 reader._proof_records.clear()
                 reader._proof_rows.clear()
                 reader._proof_events.clear()
+                reader._proof_deadlines.clear()
 
     def _record(self, artifact_id: ArtifactId) -> CloudArtifactPayloadRecord | None:
+        from zebra_agent_worker.coverage_prepared_reads import native_metadata
+
+        observed = native_metadata(self, (artifact_id,))
+        if observed is not None:
+            record = observed.get(artifact_id)
+            if (record is not None and record.reservation.retained_until is not None
+                    and record.reservation.retained_until <= datetime.now(UTC)):
+                return None
+            return record
         local, external = self.check_local_authority, self.check_external_authority
         if local is not None and external is not None:
             external()  # Host I/O finishes before starting the short database unit.
@@ -190,6 +223,7 @@ class CloudCoverageArtifacts:
     def store_payload_immutable(
         self, payload: ArtifactPayloadWrite, *, artifact_id: ArtifactId
     ) -> StoredArtifactPayload:
+        payload = ArtifactPayloadWrite.model_validate(payload.model_dump(), strict=True)
         if payload.retained_until is not None and payload.retained_until <= datetime.now(UTC):
             raise ValueError("coverage Artifact retention has expired")
         self.sync_events()
@@ -201,18 +235,73 @@ class CloudCoverageArtifacts:
             check_authority=self.check_authority,
         )
         self.sync_events()
+        self._remember_publication(record, artifact_id, payload)
         return self._stored(record)
 
     def store_payloads_immutable(
         self, payloads: tuple[tuple[ArtifactId, ArtifactPayloadWrite], ...],
     ) -> tuple[StoredArtifactPayload, ...]:
+        payloads = tuple((identifier, ArtifactPayloadWrite.model_validate(
+            payload.model_dump(), strict=True,
+        )) for identifier, payload in payloads)
         self.sync_events()
         records = self.publisher.publish_batch(
             self.binding, payloads, authority=self.authority(),
             check_authority=self.check_authority,
         )
         self.sync_events()
+        for record, (identifier, payload) in zip(records, payloads, strict=True):
+            self._remember_publication(record, identifier, payload)
         return tuple(self._stored(record) for record in records)
+
+    def _remember_publication(
+        self, record: CloudArtifactPayloadRecord, identifier: ArtifactId,
+        payload: ArtifactPayloadWrite,
+    ) -> None:
+        publisher = self.publisher
+        if (type(self) is CloudCoverageArtifacts
+                and type(publisher) is PostgresCoverageArtifactPublisher
+                and publisher._metadata is self.metadata and publisher._objects is self.objects
+                and all(name not in vars(publisher) and getattr(type(publisher), name) is method
+                        for name, method in _PUBLICATION_METHODS.items())):
+            # The native publisher verified these exact bytes and committed full
+            # receipt/Event identity. Reuse bytes, never its authority snapshot:
+            # reads still obtain fresh metadata and certification bypasses reuse.
+            reservation, receipt = record.reservation, record.object_receipt
+            now = datetime.now(UTC)
+            if (record.lifecycle_status != CloudArtifactPayloadLifecycleStatus.FINALIZED
+                    or record.artifact_id != identifier or record.session_id != payload.session_id
+                    or record.session_id != self.binding.session_id or receipt is None
+                    or receipt.expectation.deployment_namespace != self.deployment
+                    or receipt.expectation.artifact_id != identifier
+                    or receipt.expectation.sha256 != reservation.sha256
+                    or receipt.expectation.size_bytes != reservation.size_bytes
+                    or reservation.kind != payload.kind
+                    or reservation.mime_type != payload.mime_type
+                    or reservation.file_name != payload.file_name
+                    or reservation.sha256 != sha256(payload.payload).hexdigest()
+                    or reservation.size_bytes != len(payload.payload)
+                    or reservation.retained_until != payload.retained_until
+                    or reservation.created_at > now
+                    or (reservation.retained_until is not None
+                        and reservation.retained_until <= now)):
+                raise ValueError("verified publication acknowledgement conflicts with frozen bytes")
+            self._remember_verified(record, payload.payload)
+
+    def _remember_verified(self, record: CloudArtifactPayloadRecord, data: bytes) -> None:
+        if not self.reuse_verified_payloads or len(data) > 32 * 1024 * 1024:
+            return
+        cache, artifact_id = self._verified_payload_owner, record.artifact_id
+        old = cache._verified_payloads.pop(artifact_id, None)
+        cache._verified_bytes -= len(old[1]) if old is not None else 0
+        while cache._verified_payloads and (
+            len(cache._verified_payloads) >= 256
+            or cache._verified_bytes + len(data) > 32 * 1024 * 1024
+        ):
+            _, (_, evicted) = cache._verified_payloads.popitem(last=False)
+            cache._verified_bytes -= len(evicted)
+        cache._verified_payloads[artifact_id] = (deepcopy(record), data)
+        cache._verified_bytes += len(data)
 
     def store_payload(
         self, payload: ArtifactPayloadWrite, *, artifact_id: ArtifactId | None = None
@@ -267,19 +356,7 @@ class CloudCoverageArtifacts:
         )
         if self._record(artifact_id) != record:
             raise ValueError("coverage Artifact changed while reading")
-        if self.reuse_verified_payloads and len(data) <= 32 * 1024 * 1024:
-            old = cache._verified_payloads.pop(artifact_id, None)
-            cache._verified_bytes -= len(old[1]) if old is not None else 0
-            while cache._verified_payloads and (
-                len(cache._verified_payloads) >= 256
-                or cache._verified_bytes + len(data) > 32 * 1024 * 1024
-            ):
-                _, (_, evicted) = cache._verified_payloads.popitem(last=False)
-                cache._verified_bytes -= len(evicted)
-            # Only incremental admission permits reuse across proof phases in a
-            # callback. Independent certification constructs a fresh reader.
-            cache._verified_payloads[artifact_id] = (deepcopy(record), data)
-            cache._verified_bytes += len(data)
+        self._remember_verified(record, data)
         return data
 
     def read_payload_bytes(self, artifact_id: ArtifactId) -> bytes:

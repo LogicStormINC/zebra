@@ -39,6 +39,7 @@ def reader(monkeypatch):
             return self.current
 
         _read_payload_bytes_for_record = CloudCoverageArtifacts._read_payload_bytes_for_record
+        _remember_verified = CloudCoverageArtifacts._remember_verified
 
         def read_version_verified(self, expectation, version):
             assert (expectation, version) == ("expected", "v1")

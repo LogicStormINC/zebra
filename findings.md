@@ -1,5 +1,87 @@
 # Findings
 
+## COV-SQL-PHASE-01 - current measured root, 2026-10-12
+
+- Current post-review unified owner6411/15653SQL still FAIL. Same1/2 and7/8
+  callbacks/batches and107/204 GETs as the prior6848/16292 checkpoint; reductions
+  are6.38%/3.92%, not a scale-out acceptance or a latency distribution. Outer
+  guards/normal continuation and locked-kernel fact recollection remain too
+  expensive. Native Host I/O is outside settlement TX; late Host refusal keeps
+  private committed evidence but cannot acknowledge or publish a formal answer.
+- Crash recovery must distinguish unknown response from retained original
+  response. Exact staged bytes now prove reservation/request/profile/member,
+  full metadata and version in approval AND handoff; they remain unaccepted and
+  unsettled until fresh fenced Worker mutation. Real Worker positive plus
+  missing/corrupt/STOP4 pass with one MODEL HTTP. Never treat upload alone,
+  a supplied receipt, or a cached digest as certification or retry permission.
+
+- Unified evidence operation is implemented, not a complete performance cure.
+  Interim native long6442 and short14104 certify/recovery0 but fail1000.
+  Publication+usage or publication+acceptance share a postupload transaction;
+  affected evidence replaces all-history prefetch. Locked kernels and outer
+  guarded consumers still rebuild authority/proof facts, retaining high fanout.
+  Final-source runs must follow final guard/fault review; no activation.
+
+- Scoped reviewer confirms the next root slice must own bounded read preparation,
+  publication and settlement together. Current physical I/O barriers plus226
+  duplicated write-fact/lease pairs alone approach/exceed1000 statements before
+  metadata/DML/reset. This is a structural estimate, not an additive profiler
+  counter or a reason to weaken freshness. Separate public adapters rebuilding
+  proof over just-produced evidence are the remaining architectural fault.
+  At that earlier checkpoint consolidation was unimplemented; native hooks and
+  lower counts cannot qualify completion or runtime activation.
+- Latest reviewed readonly/executor6848/16292SQL still FAIL. Native preparation
+  qualifications succeed; scalar/preparation work is not the complete root.
+  Dominant duplicated entries live above the owned adapters:
+  executor `_live`, facade sync/authority and singleton read scopes. Peractual
+  publisher I/O checks add required cost; do not remove them to hide regression.
+- Receipt and Event finalization are now atomic after upload. A lost receipt
+  acknowledgement leaves metadata revision0 and immutable uploaded objects,
+  not a committed revision1. Existing crash/replacement tests now assert this
+  authorized contract and observe the actual finalization phase, not call ordinal.
+- Profiling must not monkeypatch native qualified methods. Stdlib code-frame
+  observer preserves identity but adds time overhead; new timing is diagnostic.
+- Native semantic formatting now delegates pure outer preparation to the exact
+  unchanged invocation; altered callbacks retain full authority guards. This
+  follow-up has not yet established the full SQL budget or semantic-unit owner.
+- Fresh independent final-byte reuse/native checkpoint publication9 regressions
+  pass. Exact native acknowledgements remove outer lookup/readback, not actual
+  object guards or independent final proof. Native transport counts GET107 /
+  HEAD1 / PUT43 (long) and GET200 / HEAD1 / PUT49 (short) now include SDK attempts.
+- The previous readonly authority took a preliminary lease lock query although it
+  released that transaction before I/O. New observation uses one fresh scalar
+  snapshot outside transactions; borrowed/write checks retain post-lock SQL.
+  Generic executor CPU hooks stay guarded; exact native operation delegates
+  preparation only to qualified owned adapters. Final long1callback/2batches;
+  short7callbacks/8batches, exceptional recovery0. Long authority1358 entries /
+  descriptor721 versus actual107GET/43PUT; short handoff/general authority8255
+  SQL. The next structural problem is native operation ownership and repeated
+  cold preparation, not missing query indexes or exceptional full recovery.
+  Clock-containing category1883 includes authority snapshots; standalone
+  timestamp queries are294. Do not call them1883 standalone clock round trips.
+- Earlier Host-exit nine certified at7976/14654 client calls; <=1000 remained FAIL.
+  Normal continuation performs zero exceptional full recoveries, so another
+  recovery-cache tweak cannot cure the observed amplification.
+- Dominant cost is nested operation ownership: private Artifact publications
+  (1270 exclusive SQL),9 MODEL calls (2079 SQL). Final lifecycle proof is798;
+  clock/reset cost is real, not noise. Five short-slice Worker callbacks multiply
+  admission/continuation cost; bounded work is not equivalent to bounded total SQL.
+- Fresh native private publication authority and Artifact sync no longer replay
+  UI aggregates. Interim6599/11067 counts preceded the mandatory Host exit
+  revalidation, so they cannot qualify the final candidate or a release claim.
+- Physical read caches must compare entire current records. Cache existence
+  alone let a mismatch take an actual object path without its fresh barriers.
+  Prepared multi-object scopes also need per-physical-read guards to stop object
+  two after object one's callback revokes authority. Both siblings are repaired.
+- A native adapter returning from a borrowed work unit has not committed.
+  Suppress best-effort live hints there; do not commit or query via another
+  socket to infer ownership. Durable replay remains authoritative.
+- Next root slice must be source-qualified operation owners: zero-SQL pure
+  preparation, fresh real-I/O boundaries, one fenced native mutation kernel and
+  independent final certification. Frozen fence identity is NOT a live lease.
+  Details/evidence and unresolved qualification gates are recorded in the
+  focused SQL phase document; no activation or completion claim.
+
 ## CLOUD-PROGRESS-OUTPUT-01 - 2026-10-03 follow-up
 
 - Final plan-only audit confirmed fresh blockers: native PG Handoff assigned

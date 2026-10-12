@@ -10,6 +10,7 @@ from agent_core.domain.coverage_validation import CoverageUnitKey
 from psycopg.types.json import Jsonb
 
 from agent_storage.postgres.coverage_model_volume_summary import volume_summary
+from agent_storage.postgres.coverage_proof_prefetch import prefetch_proof
 
 
 def preflight_original_volume(
@@ -94,7 +95,9 @@ def preflight_original_volume(
     settled: set[str] = set()
     previous = None
     total = sizes["bytes"]
-    for row in source.original_rows(connection, source_sql, source_params, upper):
+    for row in source.original_rows(
+        connection, source_sql, source_params, upper, artifacts=_artifacts,
+    ):
         receipt = CoverageModelUsageReceipt.model_validate(row["receipt"])
         key = receipt.reservation.reservation_key
         if (
@@ -131,6 +134,8 @@ def preflight_original_volume(
         else:
             if type(reserved_sequence) is not int:
                 raise ValueError("strict MODEL candidate requires its reserved source sequence")
+            if candidate.checkpoint_ref is not None:
+                prefetch_proof(_artifacts, (candidate.checkpoint_ref,))
             record = source.checkpoint_source(
                 connection, deployment, binding, candidate,
                 reserved_sequence=reserved_sequence, artifacts=_artifacts,

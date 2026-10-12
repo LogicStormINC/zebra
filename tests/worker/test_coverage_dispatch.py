@@ -59,12 +59,14 @@ def native_worker(
     from tests.worker.test_coverage_effect import SignedHost
 
     env = model_cloud
+    env.native_object_sends = {"HEAD": 0, "GET": 0}
 
     def object_response(request, **kwargs):
         # Fixture bytes only; native signing/parser and scoped size/deadline checks remain.
         scope = artifact_object_reads.current_artifact_read_scope()
         assert scope is not None and scope.remaining() > 0
         assert request.method in {"HEAD", "GET"}
+        env.native_object_sends[request.method] += 1
         assert b"AWS4-HMAC-SHA256" in request.headers["Authorization"]
         key = unquote(urlsplit(request.url).path).split("/", 2)[2]
         query = dict(parse_qsl(urlsplit(request.url).query))

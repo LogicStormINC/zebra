@@ -25,6 +25,7 @@ from agent_core.ports import (
     WorkspaceProjectionStorePort,
 )
 from agent_core.ports.session_recovery import SessionEventPage
+from agent_core.ports.workspace_projection_store import WorkerProjectionBatchPort
 from agent_storage.postgres.task_io import current_task_io_deadline, task_io_deadline
 
 from zebra_agent_worker.model_call_index import ModelCallIndexer
@@ -368,6 +369,12 @@ class DurableHarnessEventRecorder:
         """
 
         with self._tail_budget():
+            if (self._tail_reader is not None
+                    and isinstance(self._worker_projection_transaction, WorkerProjectionBatchPort)):
+                from zebra_agent_worker.execution_tail_batches import project_tail_batches
+
+                project_tail_batches(self)
+                return
             for event in self._external_tail():
                 self.accept_persisted_event(event)
 

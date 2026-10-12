@@ -28,8 +28,11 @@ from tests.worker.test_coverage_prepared_reads import (  # noqa: F401
 
 
 @pytest.mark.parametrize("known_digest", [False, True])
-def test_shared_load_has_two_boundaries_without_io_transaction(
-    publication, monkeypatch, known_digest, record_property,
+def test_shared_load_has_phase_and_physical_boundaries_without_io_transaction(
+    publication,
+    monkeypatch,
+    known_digest,
+    record_property,
 ):
     env, payloads = publication, writes(publication, 1)
     record = publish(env, payloads)[0]
@@ -48,22 +51,34 @@ def test_shared_load_has_two_boundaries_without_io_transaction(
 
     monkeypatch.setattr(psycopg.Connection, "execute", counted)
     monkeypatch.setattr(env.objects, "read_version_verified", outside)
-    arguments = dict(mime_type=record.reservation.mime_type, expected_digest=(
-        record.reservation.sha256 if known_digest else None
-    ))
+    arguments = dict(
+        mime_type=record.reservation.mime_type,
+        expected_digest=(record.reservation.sha256 if known_digest else None),
+    )
     result = consumer.load_payload(
-        record.artifact_id, record.reservation.kind, 1024, datetime.now(UTC), **arguments,
+        record.artifact_id,
+        record.reservation.kind,
+        1024,
+        datetime.now(UTC),
+        **arguments,
     )
     assert result is not None and result[1] == payloads[0][1].payload
-    assert check.call_count == 2
+    assert check.call_count == 4
     assert sum("SELECT * FROM artifact_payload_metadata" in q for q in queries) == 2
     count = len(queries)
     queries.clear()
     check.reset_mock()
     # The prior guarded consumer remains the fallback, measured with the same input.
-    assert consumer._load_payload(
-        record.artifact_id, record.reservation.kind, 1024, datetime.now(UTC), **arguments,
-    ) == result
+    assert (
+        consumer._load_payload(
+            record.artifact_id,
+            record.reservation.kind,
+            1024,
+            datetime.now(UTC),
+            **arguments,
+        )
+        == result
+    )
     assert check.call_count == (2 if known_digest else 3)
     assert count <= len(queries)
     record_property("shared_read_client_sql", {"phase": count, "legacy": len(queries)})
@@ -73,9 +88,17 @@ def test_shared_load_has_two_boundaries_without_io_transaction(
 def test_shared_load_exit_refuses_before_result_is_consumed(publication, monkeypatch, change):
     env, payloads = publication, writes(publication, 1)
     if change == "expired":
-        payloads = tuple((key, payload.model_copy(update={
-            "created_at": datetime.now(UTC) - timedelta(hours=2),
-        })) for key, payload in payloads)
+        payloads = tuple(
+            (
+                key,
+                payload.model_copy(
+                    update={
+                        "created_at": datetime.now(UTC) - timedelta(hours=2),
+                    }
+                ),
+            )
+            for key, payload in payloads
+        )
     record = publish(env, payloads)[0]
     revoked = False
     fence = env.fence
@@ -97,8 +120,11 @@ def test_shared_load_exit_refuses_before_result_is_consumed(publication, monkeyp
         if change == "replacement":
             _replace_worker(env)
         elif change in {"metadata", "expired"}:
-            field = ("file_name='changed'" if change == "metadata" else
-                     "retained_until=clock_timestamp() - interval '1 second'")
+            field = (
+                "file_name='changed'"
+                if change == "metadata"
+                else "retained_until=clock_timestamp() - interval '1 second'"
+            )
             with env.metadata._database.connect() as connection:
                 connection.execute(
                     f"UPDATE artifact_payload_metadata SET {field} "
@@ -112,7 +138,10 @@ def test_shared_load_exit_refuses_before_result_is_consumed(publication, monkeyp
     consumed = False
     with pytest.raises((CoverageRefusedError, LeaseLostError)):
         consumer.load_payload(
-            record.artifact_id, record.reservation.kind, 1024, datetime.now(UTC),
+            record.artifact_id,
+            record.reservation.kind,
+            1024,
+            datetime.now(UTC),
             mime_type=record.reservation.mime_type,
         )
         consumed = True
@@ -130,16 +159,23 @@ def test_missing_shared_read_revalidates_absence_before_return(publication):
             publish(env, payloads)
 
     consumer = CoverageArtifacts(
-        facade(env, insert_at_exit), env.binding.session_id, nullcontext(),
+        facade(env, insert_at_exit),
+        env.binding.session_id,
+        nullcontext(),
     )
     with pytest.raises(CoverageRefusedError):
         consumer.load_payload(
-            payloads[0][0], env.payload.kind, 1024, datetime.now(UTC),
+            payloads[0][0],
+            env.payload.kind,
+            1024,
+            datetime.now(UTC),
             mime_type=env.payload.mime_type,
         )
     consumer = CoverageArtifacts(facade(env), env.binding.session_id, nullcontext())
-    assert consumer.load_payload(ArtifactId(uuid4()), env.payload.kind, 1024,
-                                 datetime.now(UTC)) is None
+    assert (
+        consumer.load_payload(ArtifactId(uuid4()), env.payload.kind, 1024, datetime.now(UTC))
+        is None
+    )
 
 
 def test_owned_transaction_common_loader_retains_guarded_fallback(publication, monkeypatch):
@@ -156,7 +192,10 @@ def test_owned_transaction_common_loader_retains_guarded_fallback(publication, m
     monkeypatch.setattr(env.objects, "read_version_verified", owned)
     with postgres_work_unit(env.metadata._database):
         loaded = consumer.load_payload(
-            record.artifact_id, record.reservation.kind, 1024, datetime.now(UTC),
+            record.artifact_id,
+            record.reservation.kind,
+            1024,
+            datetime.now(UTC),
             mime_type=record.reservation.mime_type,
         )
         assert loaded is not None and loaded[1] == payloads[0][1].payload
@@ -170,13 +209,19 @@ def test_miscomposed_deployment_refuses_before_authority_or_sql(publication, mon
     check = Mock()
     source = facade(env, check)
     source.metadata = PostgresCloudArtifactPayloadStore(
-        env.dsn, deployment_namespace="different-deployment",
+        env.dsn,
+        deployment_namespace="different-deployment",
     )
     consumer = CoverageArtifacts(source, env.binding.session_id, nullcontext())
     execute = Mock(side_effect=AssertionError("cross-deployment SQL"))
     monkeypatch.setattr(psycopg.Connection, "execute", execute)
     with pytest.raises(CoverageRefusedError):
-        consumer.load_payload(record.artifact_id, record.reservation.kind, 1024,
-                              datetime.now(UTC), mime_type=record.reservation.mime_type)
+        consumer.load_payload(
+            record.artifact_id,
+            record.reservation.kind,
+            1024,
+            datetime.now(UTC),
+            mime_type=record.reservation.mime_type,
+        )
     check.assert_not_called()
     execute.assert_not_called()

@@ -102,6 +102,10 @@ class CoverageExecutor:
         if not self.binding.snapshot.as_of <= self.now() < self.binding.snapshot.expires_at:
             raise CoverageRefusedError(CoverageRefusalReason.SNAPSHOT_EXPIRED)
 
+    def _preparation_boundary(self) -> None:
+        """Unknown adapters retain the full guard, including custom callbacks."""
+        self._live()
+
     def _bytes(
         self, ref: str, *, digest: str | None = None,
         reader: ArtifactPayloadStorePort | None = None,
@@ -245,7 +249,7 @@ class CoverageExecutor:
             # before merges, whose prior proof must come from the durable index.
             missing = tuple(sorted(missing, key=lambda item: item[1].kind == "record_merge"))
         for _, key in missing:
-            self._live()
+            self._preparation_boundary()
             record = self.records.get(key.record_id)
             if record is None or record.content_digest != key.content_digest:
                 raise ValueError("missing-unit index disagrees with manifest")
@@ -298,7 +302,7 @@ class CoverageExecutor:
                     payload = self._bytes(read.artifact_ref, digest=part.digest, reader=reader)
                     part.verify_bytes(payload)
                     bodies[part.id] = payload.decode("utf-8", errors="strict")
-            self._live()
+            self._preparation_boundary()
             identifier = observation_id(self.binding, key)
             existing = self.artifacts.get_payload(identifier)
             if existing is None:
@@ -359,10 +363,27 @@ class CoverageExecutor:
             coverage_digest(self.binding.model_dump(mode="json"))
         )
         batch_id = ArtifactId(uuid5(NAMESPACE_URL, f"coverage-batch/1:{identity}:{digest}"))
-        if payloads:
+        self._commit_evidence(CoverageCommit(
+            namespace=self.binding.namespace, session_id=self.binding.session_id,
+            task_id=self.binding.task_id, run_id=self.binding.run_id,
+            snapshot_id=self.binding.snapshot.snapshot_id,
+            contract_digest=self.binding.contract.digest,
+            manifest_digest=self.binding.snapshot.manifest_digest, commit_key=str(batch_id),
+            result_artifact_ref=f"artifact://{batch_id}", result_artifact_digest=digest,
+            results=results,
+        ), (*payloads, (batch_id, self._payload("coverage_results", body))),
+            fence=fence, batch=bool(payloads))
+
+    def _commit_evidence(
+        self, request: CoverageCommit,
+        payloads: tuple[tuple[ArtifactId, ArtifactPayloadWrite], ...],
+        *, fence: LeaseFence, batch: bool,
+    ) -> None:
+        """Default producer/commit behavior; native owners may settle both atomically."""
+        if batch:
             assert isinstance(self.artifacts, ImmutableArtifactPayloadBatchStorePort)
             self._live()
-            writes = (*payloads, (batch_id, self._payload("coverage_results", body)))
+            writes = payloads
             if sum(len(payload.payload) for _, payload in writes) > MAX_BYTES:
                 raise CoverageRefusedError(CoverageRefusalReason.BUDGET_EXCEEDED)
             stored = self.artifacts.store_payloads_immutable(writes)
@@ -379,16 +400,12 @@ class CoverageExecutor:
                     raise ValueError("coverage Artifact batch metadata conflicts")
             uri = stored[-1].uri
         else:
-            uri = self._publish(batch_id, "coverage_results", body)
+            identifier, payload = payloads[-1]
+            uri = self._publish(identifier, payload.kind, payload.payload)
+        if uri != request.result_artifact_ref:
+            raise ValueError("coverage result publication returned a different identity")
         self._live()
-        self.store.commit(CoverageCommit(
-            namespace=self.binding.namespace, session_id=self.binding.session_id,
-            task_id=self.binding.task_id, run_id=self.binding.run_id,
-            snapshot_id=self.binding.snapshot.snapshot_id,
-            contract_digest=self.binding.contract.digest,
-            manifest_digest=self.binding.snapshot.manifest_digest, commit_key=str(batch_id),
-            result_artifact_ref=uri, result_artifact_digest=digest, results=results,
-        ), fence=fence)
+        self.store.commit(request, fence=fence)
 
     def publish_report(
         self, publication: CoveragePublicationStorePort, *, fence: LeaseFence

@@ -270,6 +270,7 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (96, "coverage_model_source_positions", 64),
         (97, "task_replay_coverage_privacy", 64),
         (98, "source_owned_projection_work_routing", 64),
+        (99, "coverage_execution_source_positions", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [

@@ -31,7 +31,7 @@ def settle_checkpoint(
         return
     if invocation._defer_boundary_proof and isinstance(store, VerifiedCoverageModelSettlementPort):
         sequence, verified = store.settle_model_checkpoint(
-            invocation.binding, receipt, fence=invocation._fence(),
+            invocation.binding, receipt, fence=invocation._mutation_fence(),
         )
         if (type(sequence) is not int or sequence < 1
                 or type(verified) is not bytes or verified != body):
@@ -41,4 +41,4 @@ def settle_checkpoint(
             raise CoverageRefusedError(Reason.SCOPE_MISMATCH)
         checkpoint.validate_receipt(receipt)
         return
-    store.record_model_usage(invocation.binding, receipt, fence=invocation._fence())
+    store.record_model_usage(invocation.binding, receipt, fence=invocation._mutation_fence())

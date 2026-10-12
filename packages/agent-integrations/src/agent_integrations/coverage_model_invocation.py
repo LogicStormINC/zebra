@@ -11,9 +11,7 @@ import json
 from collections.abc import Callable
 from datetime import UTC, datetime
 from hashlib import sha256
-from types import FunctionType
 from uuid import UUID
-from weakref import ReferenceType, WeakKeyDictionary
 
 import httpx
 from agent_core.application.coverage_semantic import semantic_check
@@ -48,6 +46,7 @@ from agent_integrations.coverage_model_completion import (
     decode_model_completion,
     encode_model_completion,
 )
+from agent_integrations.coverage_model_delegates import _validate_gateway_delegates
 from agent_integrations.coverage_model_derivation import (
     derive_semantic_observation,
     validate_semantic_request,
@@ -58,70 +57,14 @@ from agent_integrations.coverage_model_policy import (
     REVIEWER_PROFILE,
     OfficialDeepSeekPolicy,
 )
-from agent_integrations.coverage_model_request import PreparedChatRequests, PreparedModelRequest
 from agent_integrations.coverage_model_settlement import settle_checkpoint
 from agent_integrations.coverage_snapshot_artifacts import CoverageArtifacts, artifact_id
 from agent_integrations.coverage_snapshot_invocation import unique_object
-from agent_integrations.deepseek_profiles import DeepSeekProfileRouter
 from agent_integrations.openai_compatible import OpenAICompatibleModelGateway
-
-_NATIVE_REMOVE = vars(WeakKeyDictionary[object, object]())["_remove"]
 
 
 def _utc_now() -> datetime:
     return datetime.now(UTC)
-
-
-def _validate_gateway_delegates(
-    gateway: OpenAICompatibleModelGateway, request: PreparedModelRequest | None = None
-) -> None:
-    """Require builtin callable provenance, not proof of network/provider origin."""
-
-    def builtin(value: object, expected: type[object]) -> None:
-        if type(value) is not expected or any(
-            name in vars(value) for name in dir(expected) if callable(getattr(expected, name))
-        ):
-            raise ValueError("strict MODEL requires builtin unmodified gateway delegates")
-
-    # Inspect parents before accessing their children; a foreign dispatcher may
-    # also replace prepare/send or the registry's get/pop delegated call paths.
-    builtin(gateway, OpenAICompatibleModelGateway)
-    builtin(gateway._prepared_requests, PreparedChatRequests)
-    builtin(gateway._prepared_requests._issued, WeakKeyDictionary)
-    builtin(gateway._deepseek_router, DeepSeekProfileRouter)
-    if (
-        type(vars(gateway._prepared_requests._issued)["data"]) is not dict
-        or type(vars(gateway._deepseek_router)["_role_profiles"]) is not dict
-    ):
-        raise ValueError("strict MODEL requires builtin delegate dictionaries")
-    registry = gateway._prepared_requests._issued
-    state = vars(registry)
-    remove = state["_remove"]
-    if (
-        set(state) != {"data", "_remove", "_pending_removals", "_iterating", "_dirty_len"}
-        or type(state["_pending_removals"]) is not list
-        or state["_pending_removals"]
-        or type(state["_iterating"]) is not set
-        or state["_iterating"]
-        or type(state["_dirty_len"]) is not bool
-        or type(remove) is not FunctionType
-        or remove.__code__ is not _NATIVE_REMOVE.__code__
-        or remove.__globals__ is not _NATIVE_REMOVE.__globals__
-        or remove.__closure__ is not None
-        or remove.__kwdefaults__ is not None
-        or vars(remove)
-        or type(remove.__defaults__) is not tuple
-        or len(remove.__defaults__) != 1
-        or type(remove.__defaults__[0]) is not ReferenceType
-        or remove.__defaults__[0].__callback__ is not None
-        or remove.__defaults__[0]() is not registry
-        or len(state["data"]) != (0 if request is None else 1)
-        or any(
-            type(key) is not ReferenceType or key() is not request or key.__callback__ is not remove
-            for key in state["data"]
-        )
-    ):
-        raise ValueError("strict MODEL requires native idle registry callback/state")
 
 
 class CoverageModelInvocation:
@@ -302,6 +245,31 @@ class CoverageModelInvocation:
         self._time()
         return fence
 
+    def _preparation_boundary(self) -> datetime:
+        """Legacy callers guard every helper; native owners may qualify pure preparation."""
+        return self._boundary()
+
+    def _mutation_fence(self) -> LeaseFence:
+        """Copying a fence grants no right: the mutation owns its fresh post-lock check."""
+        return self._fence()
+
+    def _publish_checkpoint(self, identifier: ArtifactId, body: bytes) -> bool:
+        """Legacy publication leaves usage to its separate verified settlement."""
+        self.artifacts.publish(
+            identifier, MODEL_CHECKPOINT_KIND, body, MAX_MODEL_CHECKPOINT_BYTES,
+            self._preparation_boundary, self.binding.snapshot.expires_at,
+            mime_type="application/json",
+        )
+        if self._required(identifier, MODEL_CHECKPOINT_KIND) != body:
+            raise CoverageRefusedError(Reason.ARTIFACT_UNAVAILABLE)
+        return False
+
+    def _recover_checkpoint(
+        self, identifier: ArtifactId, reservation: CoverageModelReservation,
+    ) -> bytes | None:
+        """Only an exact native owner may recover private staged evidence."""
+        return None
+
     def _freeze_policy(self) -> None:
         existing = self._load(self.policy_id, POLICY_KIND)
         state = CoverageModelBudgetState.model_validate(
@@ -372,7 +340,7 @@ class CoverageModelInvocation:
     ) -> ModelCompletion:
         owned_registry_data: dict[object, object] | None = None
         try:
-            self._boundary()
+            self._preparation_boundary()
             self._checkpoint = None
             gateway = self.gateway_factory()
             _validate_gateway_delegates(gateway)
@@ -418,41 +386,44 @@ class CoverageModelInvocation:
                 model_profile=REVIEWER_PROFILE,
                 token_bound=self.proof.context_window,
             )
+            # Factories/preparation are extensible. Observe any revocation they
+            # caused before reserving a charge, even for a qualified native owner.
+            self._boundary()
             result = CoverageModelReservationResult.model_validate(
                 coverage_admission_input(
-                    self.store.reserve_model_call(self.binding, reservation, fence=self._fence())
+                    self.store.reserve_model_call(
+                        self.binding, reservation, fence=self._mutation_fence(),
+                    )
                 ),
                 strict=True,
             )
             if result.reservation != reservation or (result.invoke and result.receipt is not None):
                 raise ValueError("reservation result conflicts with exact prepared request")
-            self._boundary()
+            self._preparation_boundary()
             _validate_gateway_delegates(gateway, prepared)
             identifier = model_checkpoint_id(self.binding, reservation)
             body = self._load(identifier, MODEL_CHECKPOINT_KIND)
+            usage_settled = False
+            recovered = False
+            if body is None and not result.invoke:
+                body = self._recover_checkpoint(identifier, reservation)
+                recovered = body is not None
             if body is None:
                 if not result.invoke:
                     raise CoverageRefusedError(Reason.UNRESOLVED_FAILURE)
                 self._boundary()
                 _validate_gateway_delegates(gateway, prepared)
                 response = gateway.complete_prepared(prepared)  # Exactly one attempt; never retry.
+                self._boundary()  # Transport callbacks cannot grant the next publication.
                 completion = encode_model_completion(response)
                 validate_semantic_response_identity(self.definition, response)
                 checkpoint = CoverageModelCheckpoint(
                     self.binding, reservation, completion, prepared.body
                 )
                 body = checkpoint.canonical_bytes
-                self.artifacts.publish(
-                    identifier,
-                    MODEL_CHECKPOINT_KIND,
-                    body,
-                    MAX_MODEL_CHECKPOINT_BYTES,
-                    self._boundary,
-                    self.binding.snapshot.expires_at,
-                    mime_type="application/json",
-                )
-                if self._required(identifier, MODEL_CHECKPOINT_KIND) != body:
-                    raise CoverageRefusedError(Reason.ARTIFACT_UNAVAILABLE)
+                usage_settled = self._publish_checkpoint(identifier, body)
+                if type(usage_settled) is not bool:
+                    raise ValueError("checkpoint owner must return an explicit usage outcome")
             checkpoint = decode_model_checkpoint(body)
             if (
                 checkpoint.binding != self.binding
@@ -460,6 +431,10 @@ class CoverageModelInvocation:
                 or checkpoint.request != prepared.body
             ):
                 raise ValueError("original checkpoint conflicts with prepared request")
+            if recovered:
+                usage_settled = self._publish_checkpoint(identifier, body)
+                if type(usage_settled) is not bool:
+                    raise ValueError("checkpoint owner must return an explicit usage outcome")
             response = decode_model_completion(checkpoint.completion)
             validate_semantic_response_identity(self.definition, response)
             self._checkpoint = identifier, body
@@ -475,11 +450,11 @@ class CoverageModelInvocation:
             if result.receipt is not None and result.receipt != receipt:
                 raise ValueError("settled receipt conflicts with original bytes/usage")
             settle_checkpoint(
-                self, receipt, body, settled=result.receipt is not None,
+                self, receipt, body, settled=result.receipt is not None or usage_settled,
             )
             checkpoint.validate_receipt(receipt)
             derive_semantic_observation(body, receipt, self.definition, key, record)
-            self._boundary()
+            self._preparation_boundary()
             if self._required(identifier, MODEL_CHECKPOINT_KIND) != body:
                 raise CoverageRefusedError(Reason.ARTIFACT_UNAVAILABLE)
             self._boundary()
