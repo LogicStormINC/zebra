@@ -1,10 +1,7 @@
-/**
- * Zebra client-core: React-free browser runtime (ADR-CLIENT-01).
- *
- * Invariants enforced here: no HostGrant is ever stored; handlers are
- * resolved only through the mounted registry; one effect executes at
- * most once; failed receipts retry; fence expiry stops execution; a
- * profile digest mismatch stops mounting.
+import { streamObserverOptions, type StreamObserverOptions } from "./conversation_stream.ts";
+/** React-free browser runtime (ADR-CLIENT-01).
+ * Never stores Host Grants; handlers and profiles must be mounted and fenced.
+ * Effects dedupe, receipts retry, and expiry stops execution.
  */
 import {
   CLIENT_SDK_ERRORS,
@@ -30,7 +27,7 @@ export interface MountOptions {
   mountedReadables?: readonly string[];
 }
 
-export interface ClientRuntimeDependencies {
+export interface ClientRuntimeDependencies extends StreamObserverOptions {
   fetchImpl: typeof fetch;
   baseUrl: string;
   clientSessionId: string;
@@ -77,7 +74,7 @@ export class ZebraClientRuntime {
     this.lastEventId = restored.lastEventId;
   }
 
-  static fromConfig(config: RuntimeClientConfig): ZebraClientRuntime {
+  static fromConfig(config: RuntimeClientConfig & StreamObserverOptions): ZebraClientRuntime {
     const sessionSecret = config.sessionCredential.slice(config.clientSessionId.length + 1);
     if (
       !config.sessionCredential.startsWith(`${config.clientSessionId}:`) ||
@@ -140,6 +137,7 @@ export class ZebraClientRuntime {
       actionContractDigests: config.actionContractDigests,
       initialUiRevision: config.initialUiRevision,
       streamUrl: config.streamUrl,
+      ...streamObserverOptions(config),
       storage: config.storage ?? browserSessionStorage(),
     });
   }
@@ -257,10 +255,9 @@ export class ZebraClientRuntime {
         stopped: () => this.stopped,
         signal: this.abortController.signal,
         initialEventId: this.lastEventId,
+        ...streamObserverOptions(this.deps),
         onCursor: (eventId) => { this.lastEventId = eventId; this.persistState(); },
-        onCursorRecovered: async () => {
-          for (const effect of await this.listPendingEffects()) await this.runEffect(effect);
-        },
+        onCursorRecovered: () => this.poll(),
         onTerminalRejection: () => this.stop(),
         onEffect: (effect) => this.runEffect(effect),
       });
@@ -498,3 +495,5 @@ export class ZebraClientRuntime {
     }
   }
 }
+export { ConversationStreamReducer, STREAM_V2_CAPABILITIES } from "./conversation_stream.ts";
+export type { ConversationMessage, ConversationStreamEvent } from "./conversation_stream.ts";

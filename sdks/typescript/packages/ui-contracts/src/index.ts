@@ -92,6 +92,8 @@ export interface AgentWorkSegment {
 }
 
 export interface AgentMessage {
+  /** A draft stays provisional until the canonical answer commit. */
+  presentation?: "provisional" | "committed";
   id: string;
   role: AgentMessageRole;
   /** Legacy plain/Markdown content. New rich messages should also provide ordered parts. */

@@ -22,6 +22,7 @@ from agent_integrations.ag_ui import AgUiCursor, AgUiProjectionError, AgUiRunIde
 from agent_integrations.ag_ui.checkpoint_observer import AgUiCheckpointObserver
 from agent_integrations.ag_ui.task_run_binding import bind_task_run
 from agent_integrations.ag_ui.task_stream import AgUiTaskProjector
+from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_storage import ControlPlaneStores
 
 from zebra_agent_api.ag_ui_checkpoint_tail import tail_checkpoint_frames
@@ -62,6 +63,8 @@ class AgUiStreamContext:
     authorization_expires_at: datetime | None = None
     command_outcome: Callable[[TaskId, str, UUID, HostContextEnvelope], str | None] | None = None
     host_context: HostContextEnvelope | None = None
+    notifications: AsyncRedisNotifications | None = None
+    recovery_notice: bool = False
 
 
 def prepare_agui_stream(
@@ -74,6 +77,8 @@ def prepare_agui_stream(
     authorization_expires_at: datetime | None = None,
     command_outcome: Callable[[TaskId, str, UUID, HostContextEnvelope], str | None] | None = None,
     host_context: HostContextEnvelope | None = None,
+    notifications: AsyncRedisNotifications | None = None,
+    recovery_notice: bool = False,
 ) -> AgUiStreamContext | ApiResponse | None:
     """Indexed, body-free preflight; never adopt/repair/materialize from GET."""
     path_identity = _stream_path_identity(path)
@@ -161,6 +166,8 @@ def prepare_agui_stream(
         authorization_expires_at,
         command_outcome,
         host_context,
+        notifications,
+        recovery_notice,
     )
 
 

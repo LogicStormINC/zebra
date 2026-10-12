@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -28,6 +27,7 @@ from agent_integrations.redis_transient_deadlines import (
     TransientSSLRedisConnection,
     transient_lock,
 )
+from agent_integrations.redis_transient_discovery import TransientDescriptor, transient_lane
 from agent_integrations.redis_transient_scripts import ACTIVATE, INVALIDATE, PUBLISH, READ, SNAPSHOT
 
 
@@ -42,6 +42,7 @@ class RedisTransientOutput:
         *,
         resolve_authorization: Callable[[TransientWriterAuthorization], None],
         read_authority: Callable[[TransientStreamScope], datetime] | None = None,
+        descriptor_source: Callable[[TransientWriterAuthorization], int] | None = None,
         key_prefix: str = "zebra:transient:v2",
         retention_seconds: int = 3600,
         max_bytes: int = 8 * 1024 * 1024,
@@ -55,6 +56,7 @@ class RedisTransientOutput:
             raise ValueError("invalid transient row capacity")
         self._client, self._resolve = client, resolve_authorization
         self._read_authority = read_authority
+        self._descriptor_source = descriptor_source
         self._prefix, self._retention = key_prefix, retention_seconds
         self._max_bytes, self._max_rows = max_bytes, max_rows
         self._active: dict[str, TransientWriterAuthorization] = {}
@@ -67,13 +69,18 @@ class RedisTransientOutput:
         *,
         resolve_authorization: Callable[[TransientWriterAuthorization], None],
         key_prefix: str = "zebra:transient:v2",
+        descriptor_source: Callable[[TransientWriterAuthorization], int] | None = None,
+        read_authority: Callable[[TransientStreamScope], datetime] | None = None,
+        read_timeout: float = 2,
     ) -> RedisTransientOutput:
+        if not 0 < read_timeout <= 2:
+            raise ValueError("invalid transient socket deadline")
         return cls(
             Redis.from_url(
                 url,
                 decode_responses=True,
-                socket_connect_timeout=1,
-                socket_timeout=2,
+                socket_connect_timeout=min(1, read_timeout),
+                socket_timeout=read_timeout,
                 max_connections=128,
                 connection_class=(
                     TransientSSLRedisConnection
@@ -83,24 +90,21 @@ class RedisTransientOutput:
                 retry=Retry(NoBackoff(), 0),
             ),
             resolve_authorization=resolve_authorization,
+            descriptor_source=descriptor_source,
+            read_authority=read_authority,
             key_prefix=key_prefix,
         )
 
     def _keys(self, scope: TransientStreamScope) -> tuple[str, str, str]:
         generation = scope.generation
-        lane = sha256(
-            json.dumps(
-                (
-                    scope.deployment_namespace,
-                    scope.authority_scope.model_dump_json(),
-                    str(generation.task_id),
-                    str(generation.segment_id),
-                    generation.run_id,
-                ),
-                separators=(",", ":"),
-            ).encode()
-        ).hexdigest()
-        prefix = f"{self._prefix}:{{{lane}}}"
+        prefix = transient_lane(
+            scope.deployment_namespace,
+            scope.authority_scope,
+            str(generation.task_id),
+            str(generation.segment_id),
+            generation.run_id,
+            key_prefix=self._prefix,
+        )
         return (
             f"{prefix}:authority",
             f"{prefix}:{generation.generation_id}:frames",
@@ -109,7 +113,8 @@ class RedisTransientOutput:
 
     def _eval(self, script: str, scope: TransientStreamScope, *args: object) -> list[str]:
         try:
-            raw = self._client.eval(script, 3, *self._keys(scope), *args)
+            keys = self._keys(scope)
+            raw = self._client.eval(script, 4, *keys, keys[0] + ":control", *args)
             return [item.decode() if isinstance(item, bytes) else str(item) for item in raw]
         except (RedisError, OSError) as exc:
             raise TransientOutputUnavailable("temporary output transport unavailable") from exc
@@ -149,6 +154,15 @@ class RedisTransientOutput:
                 int(renewing),
                 expected,
                 uuid4().hex,
+                (
+                    TransientDescriptor(
+                        scope=scope,
+                        fence=fence,
+                        request_sequence=self._descriptor_source(authorization),
+                    ).model_dump_json()
+                    if self._descriptor_source is not None
+                    else ""
+                ),
             )
             if result[0] != "ok":
                 raise TransientOutputUnavailable(f"temporary activation rejected: {result[0]}")

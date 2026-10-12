@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
 from pathlib import Path
 
 from agent_core.ports.event_store import BoundedSessionEventReadPort
@@ -18,11 +18,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from zebra_agent_config import ZebraAgentSettings, load_settings
 
-from zebra_agent_api.ag_ui_stream import (
-    AgUiStreamContext,
-    prepare_agui_stream,
-    tail_agui_events,
-)
 from zebra_agent_api.ag_ui_task_view import authorized_async_read, authorized_task_preflight
 from zebra_agent_api.app import create_app
 from zebra_agent_api.artifact_download import (
@@ -169,7 +164,19 @@ def create_http_app(
         active_host_grant_authorizer,
         host_grant_origins,
     )
-    app = FastAPI(title="Zebra Agent API")
+    from contextlib import asynccontextmanager
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            if api.stream_v2_reader is not None:
+                await api.stream_v2_reader.close()
+            if api.stream_notifications is not None:
+                await api.stream_notifications.close()
+
+    app = FastAPI(title="Zebra Agent API", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"] if active_settings.deployment == "local" else exact_host_origins,
@@ -251,41 +258,10 @@ def create_http_app(
         if body_error is not None:
             return body_error
         if _is_agui_stream_request(request):
-            from zebra_agent_api.tenant_guard import task_access_response
+            from zebra_agent_api.stream_v2_http import agui_response
 
-            agui_thread = _stream_resource_id(request.url.path)
-            host_context = getattr(request.state, "host_context", None)
-            # Observing does not renew execution authority; Host uses the explicit
-            # authenticated renewal route independently of this read-only tail.
-            stream_query = dict(request.query_params)
-            if last_event_id := request.headers.get("Last-Event-ID"):
-                stream_query.setdefault("last_event_id", last_event_id)
-            agui_stream = await authorized_task_preflight(
-                lambda: task_access_response(api, agui_thread, host_context),
-                lambda: prepare_agui_stream(
-                    api.stores,
-                    request.url.path,
-                    stream_query,
-                    live_event_fanout=api.live_event_fanout,
-                    deployment_namespace=_deployment_namespace(api),
-                    authorization_expires_at=getattr(host_context, "expires_at", None),
-                    command_outcome=api.command_outcome,
-                    host_context=host_context,
-                ),
-                authorization_expires_at=getattr(host_context, "expires_at", None),
-                request_deadline=getattr(request.state, "authorization_deadline", None),
-            )
-            if isinstance(agui_stream, ApiResponse):
-                return JSONResponse(status_code=agui_stream.status_code, content=agui_stream.body)
-            if isinstance(agui_stream, AgUiStreamContext):
-                return StreamingResponse(
-                    tail_agui_events(agui_stream, request),
-                    media_type="text/event-stream",
-                    headers={
-                        "Cache-Control": "no-cache",
-                        "X-Accel-Buffering": "no",
-                    },
-                )
+            if stream_response := await agui_response(api, request):
+                return stream_response
         route_request = RouteRequest(
             method=request.method,
             path=request.url.path,
@@ -329,6 +305,11 @@ def create_http_app(
             # Observation budgets must not turn an uncertain command into a retry.
             response = await asyncio.to_thread(adapter.handle, route_request)
         if _is_stream_request(request) and response.status_code == 200:
+            from zebra_agent_api.stream_v2_http import raw_response
+
+            v2_response = await raw_response(api, request, database_path=active_database_path)
+            if v2_response is not None:
+                return v2_response
             stream_id = _stream_resource_id(request.url.path)
             after_sequence_value, cursor_error = after_sequence(request)
             if cursor_error is not None:
@@ -367,6 +348,7 @@ def create_http_app(
                     stores=api.stores,
                     task_id=task_key,
                     live_event_fanout=api.live_event_fanout,
+                    notifications=api.stream_notifications,
                     deployment_namespace=_deployment_namespace(api),
                     authorization_expires_at=getattr(
                         route_request.host_context, "expires_at", None
@@ -409,6 +391,7 @@ def create_http_app(
                     database_path=active_database_path,
                     stores=api.stores,
                     live_event_fanout=api.live_event_fanout,
+                    notifications=api.stream_notifications,
                     deployment_namespace=_deployment_namespace(api),
                     session_id=session_key,
                     authorization_expires_at=getattr(

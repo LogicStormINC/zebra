@@ -1,3 +1,41 @@
+## Cloud stream CLIENT bounded component accepted — 2026-10-13
+
+Independent SPEC and QUALITY GO on freeze17dd8f7d after historical-memory,
+ACK retry/legacy expansion, parent-Session and reset/disconnect repairs.
+Renewed QUALITY native39/no-skips68.69s and SDK80/no-skips; original failure
+reproductions now converge without duplicates. All41source/current5proof hashes
+and archived source/proof copies verified. Root preparing explicit-path local
+commit/integration; no push/deploy, admission OFF. Full total SQL/TTFT, aggregate
+quotas/relay/STOP/100subscribers and joint runtime/browser acceptance remain OPEN.
+
+## Cloud stream fixed-cost performance follow-up — 2026-10-13
+
+Readonly native audit measured one activation at81SQL/18 fresh connections/
+297.5ms (68SELECT+13SET); quiet Session/Task/AG-UI cycles13/12/13 SQL. At30s,
+inferred rates0.433/0.400/0.433 exceed0.2 target before additional HTTP costs.
+CLOUD-STREAM-PROOF-PERF-01 added Locked after CLIENT acceptance: explicit fresh
+proof batches, then complete source-qualified head reads. No mutable authority
+cache or polling-delay substitution. See docs/CLOUD_STREAM_PROOF_PERF_PLAN.md;
+full SQL/TTFT/ten-minute/capacity acceptance remains unverified.
+
+## Cloud stream CLIENT component ready for independent review — 2026-10-13
+
+Three actual v2 HTTP routes, signed scoped cursors, trusted generation discovery,
+canonical recovery and labelled SDK drafts implemented on clean CLIENT base.
+Durable AG-UI checkpoint semantics unchanged. Native reader/cursor30pass; clean SDK80pass,
+Chromium synthetic fixture pass, static gates pass. Final configured cohort and
+freeze manifest recorded in docs/CLOUD_STREAM_CLIENT_EVIDENCE.md. Independent
+SPEC first review found unbounded historical call tracking; current-descriptor
+closure fix and 5,000-history regression passed. QUALITY then found ACK retry
+staging and legacy ASCII expansion; corrected with SDK73 and configured196/no
+skips/182.28s proof; static sizes3008/Ruff/mypy1264/eval30 GO.
+Parent canonical Session handoff now preserves history and excludes child drafts.
+Renewed SPEC found reset/disconnect partial-cursor retention; fixed cursor discard
+and cold retry boundary without pausing same-connection live effects. Native39
+and SDK80/build/browser/static GO; renewed SPEC/QUALITY and local integration pending; admission OFF.
+Full SQL/TTFT/relay/quota/STOP/capacity and joint Worker/browser gates remain OPEN
+in the three focused follow-up plans. No push/deploy or business operations.
+
 ## Cloud admission bounded component accepted — 2026-10-13
 
 Independent native review found fresh binding digest validation, superseded main

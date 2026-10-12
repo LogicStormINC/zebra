@@ -6,6 +6,7 @@ import { AgentContentRenderer, type AgentContentRendererProps } from "./agent-co
 
 export interface AgentMessageListLabels {
   assistant: string;
+  draft: string;
   collapse: string;
   empty: string;
   expand: string;
@@ -33,6 +34,7 @@ interface AgentMessageItemProps {
 
 const DEFAULT_LABELS: AgentMessageListLabels = {
   assistant: "Agent",
+  draft: "Draft",
   collapse: "Collapse message",
   empty: "No messages yet",
   expand: "Expand message",
@@ -59,13 +61,14 @@ export function AgentMessageList(props: AgentMessageListProps) {
 
 export function AgentMessageItem(props: AgentMessageItemProps) {
   const { labels, message } = props;
-  const showMeta = Boolean(labels[message.role] || message.timestampLabel || message.status !== "complete");
+  const showMeta = Boolean(message.presentation === "provisional" || labels[message.role] || message.timestampLabel || message.status !== "complete");
   return (
     <li className={`zebra-agent-message zebra-agent-message--${message.role}`}>
       <article>
         {showMeta ? (
           <header className="zebra-agent-message__meta">
             {labels[message.role] ? <strong>{labels[message.role]}</strong> : null}
+            {message.presentation === "provisional" ? <span className="zebra-agent-message__draft">{labels.draft}</span> : null}
             {message.timestampLabel ? <time>{message.timestampLabel}</time> : null}
             {message.status !== "complete" ? (
               <span className={`zebra-agent-message__status zebra-agent-message__status--${message.status}`}>

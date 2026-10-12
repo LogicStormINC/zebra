@@ -12,6 +12,7 @@ from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
 from agent_core.ports.event_store import BoundedSessionEventReadPort
+from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
 from fastapi import Request
 
@@ -50,8 +51,10 @@ class StreamWake:
         deadline: float,
         *,
         cloud: bool = False,
+        notifications: AsyncRedisNotifications | None = None,
     ) -> None:
         self.fanout, self.namespace, self.session_id = fanout, namespace, session_id
+        self.notifications = notifications
         self.deadline = deadline
         self.cloud = cloud or namespace not in {None, "local"}
         self.cursor: LiveEventCursor | None = None
@@ -64,6 +67,10 @@ class StreamWake:
         if self.fanout is None or self.namespace is None or monotonic() < self.retry_at:
             return
         try:
+            if self.notifications is not None:
+                key = self.notifications.key(self.namespace, self.session_id)
+                self.cursor = LiveEventCursor(await self.notifications.barrier(key), stream_ref=key)
+                return
             self.cursor = await _read_until(
                 self.deadline,
                 self.fanout.capture_barrier,
@@ -87,6 +94,20 @@ class StreamWake:
             await self.capture()
         if self.cursor is not None and self.fanout is not None and self.namespace is not None:
             try:
+                if self.notifications is not None:
+                    key = self.notifications.key(self.namespace, self.session_id)
+                    positions = await self.notifications.wait(
+                        {key: self.cursor.value},
+                        block_ms=max(
+                            1, int(min(1, self.deadline - monotonic(), keepalive_seconds) * 1000)
+                        ),
+                    )
+                    changed = positions[key] != self.cursor.value
+                    self.cursor = LiveEventCursor(positions[key], stream_ref=key)
+                    if changed or monotonic() >= self.reconcile_at:
+                        self.reconcile_at = monotonic() + 30
+                        return True
+                    return False
                 batch = await _read_until(
                     self.deadline,
                     self.fanout.read_after,
@@ -131,6 +152,8 @@ async def tail_session_events(
     request: Request,
     after_sequence: int,
     authorization_expires_at: datetime | None = None,
+    notifications: AsyncRedisNotifications | None = None,
+    recovery_notice: bool = False,
 ) -> AsyncIterator[str]:
     active = stores or sqlite_control_plane_stores(database_path)
     deadline = _deadline(authorization_expires_at)
@@ -143,11 +166,13 @@ async def tail_session_events(
             session_id,
             deadline,
             cloud=getattr(active, "deployment_namespace", None) is not None,
+            notifications=notifications,
         )
         await wake.capture()  # Capture before either privacy preflight or durable replay.
         if await _read_until(deadline, coverage_session_read_problem, active, session_id):
             return
         cursor, closing, last_delivery = after_sequence, False, monotonic()
+        recovered = not recovery_notice
         events: Sequence[SessionEvent]
         status: SessionStatus | None
         while not await request.is_disconnected():
@@ -169,6 +194,11 @@ async def tail_session_events(
                 yield encode_sse_event(event)
             if events:
                 continue
+            if not recovered:
+                recovered = True
+                yield (
+                    'data: {"type":"CUSTOM","name":"zebra.stream.recovery_complete","value":{}}\n\n'
+                )
             if closing:
                 return
             if cloud and isinstance(active.events, BoundedSessionEventReadPort):
@@ -210,6 +240,8 @@ async def tail_task_events(
     live_event_fanout: LiveEventFanoutPort | None = None,
     deployment_namespace: str | None = None,
     authorization_expires_at: datetime | None = None,
+    notifications: AsyncRedisNotifications | None = None,
+    recovery_notice: bool = False,
 ) -> AsyncIterator[str]:
     active = stores or sqlite_control_plane_stores(database_path)
     store, deadline = active.tasks, _deadline(authorization_expires_at)
@@ -227,11 +259,13 @@ async def tail_task_events(
             task.active_segment_id,
             deadline,
             cloud=getattr(active, "deployment_namespace", None) is not None,
+            notifications=notifications,
         )
         await wake.capture()
         if await _read_until(deadline, coverage_task_read_problem, active, task_id):
             return
         cursor, closing, last_delivery = after_sequence, False, monotonic()
+        recovered = not recovery_notice
         while not await request.is_disconnected():
             page = await _read_until(deadline, store.read_event_page, task_id, cursor)
             if cloud:
@@ -253,6 +287,11 @@ async def tail_task_events(
                 )
             if events:
                 continue
+            if not recovered:
+                recovered = True
+                yield (
+                    'data: {"type":"CUSTOM","name":"zebra.stream.recovery_complete","value":{}}\n\n'
+                )
             if closing:
                 return
             task = await _read_until(
@@ -268,6 +307,7 @@ async def tail_task_events(
                     task.active_segment_id,
                     deadline,
                     cloud=getattr(active, "deployment_namespace", None) is not None,
+                    notifications=notifications,
                 )
                 await wake.capture()
                 continue  # Replay again after capturing the new Segment barrier.

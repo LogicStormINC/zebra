@@ -61,6 +61,13 @@ async def _checkpoint_barrier(
     context: AgUiStreamContext, deadline: float
 ) -> LiveEventCursor | None:
     fanout = context.live_event_fanout
+    notifications = getattr(context, "notifications", None)
+    if notifications is not None and context.deployment_namespace is not None:
+        key = notifications.key(context.deployment_namespace, context.task_id, checkpoint=True)
+        try:
+            return LiveEventCursor(await notifications.barrier(key), stream_ref=key)
+        except Exception:
+            return None
     if not isinstance(fanout, CheckpointNotificationPort) or context.deployment_namespace is None:
         return None
     try:
@@ -97,6 +104,18 @@ async def _checkpoint_wait(
 ) -> tuple[LiveEventCursor | None, float | None, bool]:
     fanout = context.live_event_fanout
     if retry_at is None:
+        notifications = getattr(context, "notifications", None)
+        if barrier is not None and notifications is not None:
+            assert barrier.stream_ref is not None
+            positions = await notifications.wait(
+                {barrier.stream_ref: barrier.value},
+                block_ms=max(1, int(min(1, deadline - monotonic(), keepalive_seconds) * 1000)),
+            )
+            return (
+                LiveEventCursor(positions[barrier.stream_ref], stream_ref=barrier.stream_ref),
+                None,
+                False,
+            )
         if (
             barrier is not None
             and isinstance(fanout, CheckpointNotificationPort)
@@ -143,6 +162,7 @@ async def tail_checkpoint_frames(
     barrier = await _checkpoint_barrier(context, deadline)  # Before snapshot/replay.
     cursor, after_source = context.cursor, None
     backoff, retry_at = 1.0, None
+    recovered = not getattr(context, "recovery_notice", False)
     reported_problem: ProjectionWorkProblem | None = None
     encoder, last_delivery, failures = EventEncoder(), monotonic(), 0
     while monotonic() < deadline:
@@ -200,6 +220,14 @@ async def tail_checkpoint_frames(
                         cursor, emitted, last_delivery = next_cursor, True, monotonic()
                         yield f"id: {cursor.encode()}\n{encoder.encode(event)}"
                     after_source = page.next_sequence  # Include zero-frame source rows.
+                target = (
+                    snapshot.run.highwater if snapshot.run.stop is None else snapshot.run.stop - 1
+                )
+                if not recovered and after_source >= target and snapshot.through >= target:
+                    recovered = True
+                    yield EventEncoder().encode(
+                        CustomEvent(name="zebra.stream.recovery_complete", value={})
+                    )
                 terminal = snapshot.head.terminal
                 if (
                     terminal is not None

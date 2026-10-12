@@ -67,7 +67,9 @@ def compose_transient_output_factory(
         try:
             port = (
                 RedisTransientOutput.from_url(
-                    settings.live_events.redis_url, resolve_authorization=resolve
+                    settings.live_events.redis_url,
+                    resolve_authorization=resolve,
+                    descriptor_source=lambda authorization: gate.request_sequence if gate else 0,
                 )
                 if settings.live_events.redis_url
                 else None

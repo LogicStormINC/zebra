@@ -21,6 +21,7 @@ local function less(a,b)
 end
 expiry=tonumber(expiry); maximum=tonumber(maximum)
 if expiry<=now or expiry>now+30000 or maximum<=now then return {'expired'} end
+if ARGV[10] and string.len(ARGV[10])>8192 then return {'descriptor_size'} end
 local old=redis.call('HGET',KEYS[1],'generation')
 if renew=='1' and not old then return {'lost'} end
 if redis.call('HEXISTS',KEYS[1],'retired:'..gen)==1 then return {'retired'} end
@@ -49,10 +50,15 @@ expiry=math.min(expiry,maximum)
 if expiry<=now then return {'expired'} end
 redis.call('HSET',KEYS[1],'generation',gen,'epoch',epoch,'token',token,
  'owner',owner,'expiry',expiry,'maximum',maximum,'closed','0','revision',revision)
+if ARGV[10] and ARGV[10]~='' then
+ redis.call('HSET',KEYS[1],'descriptor',ARGV[10])
+end
+if old~=gen then redis.call('XADD',KEYS[4],'MAXLEN','~',256,'*','generation',gen) end
 -- Fixed lane expiry never slides on renew/publish/read.
 local laneend=redis.call('HGET',KEYS[1],'laneend')
 if not laneend then laneend=maximum; redis.call('HSET',KEYS[1],'laneend',laneend) end
 redis.call('PEXPIREAT',KEYS[1],laneend)
+redis.call('PEXPIREAT',KEYS[4],laneend)
 return {'ok'}
 """
 
@@ -92,6 +98,8 @@ if redis.call('HGET',KEYS[1],'generation')==ARGV[1] and
  redis.call('HGET',KEYS[1],'closed')~='1' then
  redis.call('HSET',KEYS[1],'closed','1','retired:'..ARGV[1],'1',
   'revision',redis.call('HGET',KEYS[1],'revision')..':closed')
+ redis.call('XADD',KEYS[4],'MAXLEN','~',256,'*','generation',ARGV[1])
+ redis.call('PEXPIREAT',KEYS[4],redis.call('HGET',KEYS[1],'laneend'))
 end
 return {'ok'}
 """

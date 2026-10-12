@@ -73,7 +73,7 @@ export class ClientRuntimeStateStore {
         executedEffects,
         inflightEffects,
         pendingReceipts,
-        lastEventId: isText(parsed.lastEventId) ? parsed.lastEventId : null,
+        lastEventId: isStreamCursor(parsed.lastEventId) ? parsed.lastEventId : null,
       };
     } catch {
       return emptyState();
@@ -123,4 +123,9 @@ function isReceipt(value: unknown): value is ReceiptSubmission {
     typeof receipt.result === "object" &&
     !Array.isArray(receipt.result)
   );
+}
+
+/** Shared wire ceiling; effect identifiers retain their separate256-character bound. */
+export function isStreamCursor(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 4096 && !/[\x00-\x1f]/.test(value);
 }

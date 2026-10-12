@@ -18,6 +18,7 @@ from agent_integrations import (
     GitHubPullRequestTransport,
     build_model_gateway,
 )
+from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_runtime import (
     read_mcp_resource_attachments,
     validate_mcp_capability_selection,
@@ -84,6 +85,7 @@ from zebra_agent_api.skills_admin import (
     ApiSkillsAdminMixin,
 )
 from zebra_agent_api.storage_composition import ControlPlaneStorageMixin
+from zebra_agent_api.stream_v2_reader import StreamV2Reader
 from zebra_agent_api.usage_api import UsageEvidenceReader
 
 
@@ -112,6 +114,8 @@ class ZebraAgentApi(
     cloud_control: PostgresDirectControl | None = None
     command_outcome: PostgresCommandOutcomeReader | None = None
     live_event_fanout: LiveEventFanoutPort | None = None
+    stream_notifications: AsyncRedisNotifications | None = None
+    stream_v2_reader: StreamV2Reader | None = None
     effect_state: EffectStateReadPort | None = None
     workspace_control_store: WorkspaceControlStorePort | None = None
     administrative_context_namespace: str | None = None

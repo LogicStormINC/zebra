@@ -9,6 +9,7 @@ from agent_core.ports import EffectStateReadPort, LiveEventFanoutPort
 from agent_core.ports.agent_registry import AgentRegistryPort
 from agent_core.ports.task_schedules import TaskScheduleFiringStorePort, TaskScheduleStorePort
 from agent_integrations import GitHubPullRequestTransport, RedisCommittedEventPublisher
+from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_security import CredentialBroker
 from agent_storage import (
     CloudCompositionSettings,
@@ -26,6 +27,8 @@ from zebra_agent_config import ZebraAgentSettings, load_settings
 from zebra_agent_api.api_workspace_mixin import WorkspaceControlStorePort
 from zebra_agent_api.credential_broker import build_default_credential_broker
 from zebra_agent_api.session_context_namespace import resolve_context_namespace
+from zebra_agent_api.stream_v2_authority import V2ReadAuthority
+from zebra_agent_api.stream_v2_reader import StreamV2Reader
 from zebra_agent_api.usage_api import UsageEvidenceReader
 
 if TYPE_CHECKING:
@@ -57,10 +60,21 @@ def create_app(
     from zebra_agent_api.app import ZebraAgentApi
 
     active_settings = settings or load_settings()
+    if (
+        active_settings.deployment == "cloud"
+        and active_settings.stream.new_admission_enabled
+        and (
+            active_settings.stream.cursor_signing_key is None
+            or active_settings.live_events.redis_url is None
+        )
+    ):
+        raise ValueError("new v2 admission requires shared cursor key and Redis reader composition")
     active_database_path = Path(database_path or active_settings.database_url)
     active_stores = stores
     live_event_fanout: LiveEventFanoutPort | None = None
     composed_stores = None
+    notifications = None
+    stream_v2_reader = None
     if active_stores is None and active_settings.storage_authority == "postgresql":
         cloud_composition = cloud_composition or cloud_composition_from_environment()
         composed_stores = compose_control_plane_stores(
@@ -112,6 +126,23 @@ def create_app(
             namespace = "local"
         if not isinstance(namespace, str) or not namespace.strip():
             raise ValueError("live Redis publishing requires deployment_namespace")
+        notifications = AsyncRedisNotifications(
+            active_settings.live_events.redis_url,
+            key_prefix=active_settings.live_events.key_prefix,
+        )
+        if active_settings.stream.cursor_signing_key is not None and namespace != "local":
+            stream_v2_reader = StreamV2Reader(
+                V2ReadAuthority(
+                    active_stores,
+                    dsn=cloud_composition.dsn
+                    if cloud_composition
+                    else active_settings.database_url,
+                    namespace=namespace,
+                ),
+                url=active_settings.live_events.redis_url,
+                key=active_settings.stream.cursor_signing_key,
+                live_prefix=active_settings.live_events.key_prefix,
+            )
         publisher = RedisCommittedEventPublisher.from_url(
             active_settings.live_events.redis_url,
             deployment_namespace=namespace,
@@ -202,6 +233,8 @@ def create_app(
         _stores=active_stores,
         workspace_control_store=workspace_control_store,
         live_event_fanout=live_event_fanout,
+        stream_notifications=notifications,
+        stream_v2_reader=stream_v2_reader,
         administrative_context_namespace=resolve_context_namespace(
             administrative_context_namespace, context_administrative_namespace
         ),

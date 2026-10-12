@@ -261,16 +261,137 @@
 - CLIENT stays Locked pending this prerequisite plus explicit SDK path handoff;
   aggregate quotas/GC, cursor/HTTP/SDK and100-subscriber/full SQL gates remain open.
 
-### CLOUD-STREAM-CLIENT-01 - Reconcile AG-UI and SDK streaming state
+### CLOUD-STREAM-CLIENT-01 - Compose scoped v2 readers and labelled draft SDK
 
-- Status: Locked; Depends on WRITER accepted integration and SDK dirty-work handoff.
-- Human owner: Luke Ding; intended branch codex/cloud-stream-client-01.
-- Owned paths: integrations/ag_ui projection/checkpoint/codec modules;
-  API v2 cursor/composition after READ handoff; SDK client-core/ui-contracts/React
-  stream handling and related tests. Exact modified files frozen at claim.
-- Acceptance: message replace/resync, independent cursors, start/content/end,
-  legacy history and client-effect continuity; GET never repairs state.
+- Status: Review (independent SPEC and QUALITY GO; accepted for local commit/
+  integration2026-10-13). Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-client-01, managed isolated checkout.
+- Dependency: WRITER0d49f0b0 + ADMISSIONffe8f38b accepted locally;
+  READ3a3e5902/CONTRACTd8e85614 available. Primary admission23pass;42original
+  unrelated dirty hashes unchanged. Full SQL/TTFT/reliability gates remain open.
+- User authorizes staged local cloud-agent-trench integration only, no push/deploy.
+- Exact new CLIENT modules/tests (approved before coding): API
+  stream_v2_cursor.py, stream_v2_reader.py, stream_v2_authority.py,
+  stream_v2_wire.py (pure wire split approved before creation); integrations
+  redis_transient_discovery.py, redis_live_fanout_async.py; SDK
+  client-core/src/conversation_stream.ts and conversation_stream.test.ts;
+  tests/api/test_stream_v2_cursor.py, test_stream_v2_reader.py,
+  test_stream_v2_native.py; tests/agent_integrations/test_transient_discovery.py.
+- Owned existing API paths: ag_ui_stream.py/ag_ui_checkpoint_tail.py,
+  session_streaming.py/http.py/app.py/factory.py; API focused new v2 cursor,
+  multiplex/discovery/canonical-authority modules declared before coding;
+  command response/capabilities modules only after exact path amendment.
+- Existing tests/api/test_agui_stream_routes.py one-line foreign-tenant probe
+  instrumentation target transfer approved before edit; assertions unchanged.
+- Exact additional CLIENT HTTP/browser checks approved before coding:
+  API stream_v2_http.py; tests/api/test_stream_v2_http.py; SDK
+  package.json test-script only and scripts/stream-v2-browser.mjs.
+- Wire-only v2 keeps durable checkpoint projection/state/version unchanged;
+  previously considered extra materializer paths are unused.
+- Owned integrations: ag_ui/projection.py/projection_state.py,
+  answer_commit_projection.py/checkpoint_plan.py/checkpoint_observer.py,
+  checkpoint_consumer.py/contracts.py; checkpoint state/key/materializer files
+  only after exact claim if deterministic frozen-mode plumbing requires them;
+  redis_transient_output.py/redis_transient_scripts.py,
+  redis_live_fanout.py for serial async/control notification handoff;
+  run_stream_admission.py source locator reuse only.
+- Owned core: ports/transient_output.py/live_event_fanout.py and
+  domain/transient_output.py narrow typed generation discovery/control/cursor
+  bounds only; no new domain execution/policy or COV mutation contracts.
+- Owned Worker: transient_output_composition.py/transient_output_runtime.py
+  narrow trusted descriptor registration/source locator reuse handoff only;
+  cloud_composition.py/loop.py control notification wiring if required.
+- Config: stream_settings.py, API factory configuration, .env.example;
+  settings.py only after exact line-budget amendment if needed (already500lines).
+  Shared >=32byte cursor key configured server-side across API replicas;
+  no generated process-local signing secret or untrusted cursor authority.
+- Exact SDK handoff paths: client-core/src/sse_stream.ts/runtime_state.ts/index.ts,
+  one focused new conversation reducer and supporting bounded wire types;
+  ui-contracts/src/index.ts additive AgentMessage presentation field;
+  react/src/components/agent-message-list.tsx visible localized draft label.
+  Related focused API/integrations/core/Worker/SDK/native tests and browser
+  fixture; declare exact new tests/helpers in this registry before creating.
+- SDK dirty-work boundary: REACT-CONVERSATION-02 Review retains its unrelated
+  timeline/components/chart/build/script work. CLIENT implements in clean base,
+  does not recreate primary untracked conversation-items.ts or commit its dirty
+  baseline. Parent backs up exact tracked patches/untracked files before local
+  integration, composes additive owned hunks then reapplies original changes;
+  original42hashes or preserved original hunks prove no unrelated work loss.
+- Governance: registry/PROGRESS/task_plan/WORKLOG and focused
+  CLOUD_STREAM_CLIENT_EVIDENCE.md, CLOUD_STREAM_PROOF_PERF_PLAN.md,
+  CLOUD_STREAM_RELIABILITY_PLAN.md, CLOUD_STREAM_RUNTIME_ACCEPTANCE_PLAN.md;
+  spec execution/evidence only under600lines.
+- Scope: frozen Run mode, exact fresh Host/Task/Run/active Segment singleton,
+  canonical actual Turn/call/fence-qualified generation discovery and separate
+  control hints; capture transient AND checkpoint barriers before bounded replay.
+  Redis descriptor is locator only; no PG per frame/batch, no TTL read renewal.
+- V2 cursor is signed/domain-separated/exact-scope bound with fresh request auth;
+  reject tamper/future/crossscope, gap/loss/generation reset and durable recovery.
+  Initial retained draft needs full bounded prefix, never suffix-only display.
+  Canonical full response replaces stable message:model_call_id; label remains
+  draft until ANSWER_COMMITTED. Text end/Run terminal never commits an answer.
+- Cold durable recovery reduces historical effects without dispatch; at explicit
+  catch-up boundary reuse current pending-effect bootstrap, then awaited live
+  handling. Preserve receipt/inflight/executed state and cursor-after-success.
+  Cursor restoration gets a shared bounded ceiling separate from256char effectID.
+- Bound queue/encoded frames and preserve large canonical/Artifact/rich-content
+  flow. Use installed Redis async notification support or proven bounded fanout
+  to close default32-thread long-read ceiling, not a false100subscriber claim.
+- Acceptance: signed native HTTP all3routes/generation/cursor/barrier/fault checks;
+  SDK label/replace/commit/reset/recovery/effect interleaving; actual local browser
+  with Host/BFF fixture and fresh signed grants. No paid provider/business data.
+  Independent SPEC then QUALITY approval before local integration.
+- ADMISSION activation fixed cost~81SQL/~0.4s remains OPEN. Total SQL, full TTFT,
+  aggregate/global GC, STOP/relay/rollback and100-subscriber paired gates remain
+  RELIABILITY/ACCEPTANCE work; add a focused readonly performance slice if needed.
+- First SPEC review NOT GO: historical call set grew with replay. Review fix
+  uses current-descriptor closure boolean; actual5,000history regression passes.
+  Refreshed native/static/newfreeze required before renewed SPEC then QUALITY.
+- QUALITY NOT GO P2: premature canonical/reducer staging ACK retirement and
+  valid legacy DEL escape expansion. Review fixes keep bounded exact replay state
+  and8MiB legacy ceiling. Parent canonical Session handoff scoped independently
+  from temporary active-child authority; exact owned HTTP/native checks added.
+  Renewed SPEC then QUALITY before local integration, not accepted yet.
+- Renewed SPEC NOT GO reset/disconnect partial cursor gap: v2 reset now drops
+  continuation, next connection cold-recovers while current live effects stay
+  active. Host teardown failures cannot keep rejected authority retrying.
+  Whole2419proof archived/verified before edits; renewed SPEC then QUALITY needed.
+- Final bounded component accepted at freeze17dd8f7d: renewed SPEC SDK80 GO;
+  QUALITY native39/no-skips68.69s and SDK80/no-skips GO; all41source/current5
+  proofs and archived copies match. Historical review failures retained; total
+  performance/reliability/product gates stay OPEN and admission OFF.
 - Trench changes require a separate cross-repo card, not implicit owned paths.
+
+### CLOUD-STREAM-PROOF-PERF-01 - Reduce fresh proof and quiet-read fixed costs
+
+- Status: Locked; Depends on CLIENT accepted local integration.
+- Human owner: Luke Ding; intended branch codex/cloud-stream-proof-perf-01.
+- Goal: reduce measured connection/query duplication without caching mutable
+  authorization, changing privacy checks or hiding costs behind longer polling.
+- Explicit read-only COV handoff at claim: storage postgres/agent_tasks.py,
+  task_replay_headers.py, task_admission.py, worker_replay_reader.py, leases.py,
+  stream_read_preflight.py and narrowly declared proof-batch/source-head modules;
+  Worker transient_output_runtime.py/transient_output_composition.py;
+  Session/Task streaming, AG-UI observer/checkpoint reads and narrow read contracts.
+  Exact additional paths must be declared before implementation.
+- Two serial slices: explicit connection-level bounded readonly snapshots for
+  locator/issue/resolve; then combined fully source-qualified head/highwater/status
+  to avoid redundant empty-page/status queries on unchanged quiet frontiers.
+- Every issue and resolve obtains a separate fresh snapshot. Preserve membership,
+  index/coordinate/order/handoff/coverage, Run anchor, Turn, call, full lease fence,
+  Host identity/digest/expiry, namespace, byte/count and cumulative time bounds.
+  No recorder/mutation/proof writes or shared implicit connection borrowing.
+- Evidence and runnable acceptance plan: CLOUD_STREAM_PROOF_PERF_PLAN.md.
+- Current one-sample native activation: 81 client SQL,18 fresh connections,
+  297.5ms; quiet-cycle Session13/Task12/AG-UI13 SQL. Not p95 or capacity proof.
+- Targets: activation about3 connections; quiet cycle2-4 client SQL, measured
+  <=0.2 SQL/subscriber/s. Connection reuse alone cannot meet the SQL goal.
+- Validate authority mutation between issue/resolve, legitimate renewal/ancillary
+  expression, namespace/snapshot/timeouts/cleanup, terminal drain/handoff/missed
+  hints, zero frame SQL and paired actual HTTP/SDK total SQL/TTFT.
+- Governance: this registry, PROGRESS/task_plan/WORKLOG, focused plan/evidence.
+  Local integration only; no push/deploy. Estimated80-150k tokens/6-11 effective
+  hours for both slices, not a budget cap or completion promise.
 
 ### CLOUD-STREAM-RELIABILITY-01 - Reliable notifications and temporary-stream GC
 

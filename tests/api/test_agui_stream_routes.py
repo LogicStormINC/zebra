@@ -119,7 +119,7 @@ def test_foreign_legacy_session_get_is_hidden_before_checkpoint_preflight(
     client = TestClient(app)
     before = table_rows(path)
     with monkeypatch.context() as patch:
-        patch.setattr("zebra_agent_api.http.prepare_agui_stream", forbidden_preflight)
+        patch.setattr("zebra_agent_api.stream_v2_http.prepare_agui_stream", forbidden_preflight)
         sql = SqlObservation(patch, path, bodies=False)
         response = client.get(_stream_path(session, "legacy"))
         assert response.status_code == 404 and response.json()["status"] == "not_found"

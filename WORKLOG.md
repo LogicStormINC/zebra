@@ -14141,3 +14141,79 @@ cloud-agent-trench follows separately. No implementation source changed after
 reviews. Full performance81SQL/~0.4s activation, CLIENT/reliability/browser and
 rollout gates remain OPEN; new v2 admission remains off. Artifacts/private env
 excluded; no push/deploy.
+
+## CLOUD-STREAM-CLIENT-01 claim — 2026-10-13
+
+Ready unlocked from acceptedffe8f38b then claimed before coding in its clean
+managed worktree. Luke Ding owner/Codex executor; exact source/API/SDK paths
+above, no broad shared ownership. Primary dirty SDK work retained; source hashes
+42/42 unchanged after ADMISSION integration and supported Node22 full baseline
+pnpmtest72pass/no skips (complete captured log). Independent read-only audit
+found cursor256char restoration cap and historical effect replay-order hazard;
+v2 cold recovery must not dispatch history, reuse current pending-effect flow.
+Legacy cursor normalization stays compatible; default32-thread blocking read
+ceiling must be closed before native100-reader SLO. No paid model/push/deploy.
+
+2026-10-13: root recorded readonly fixed-cost audit and Locked PROOF-PERF follow-up
+in CLIENT coordination window. No implementation changes; independent samples
+not full acceptance. Fresh issue/resolve snapshots and original authority remain.
+
+
+## 2026-10-13 - CLOUD-STREAM-CLIENT-01 implementation checkpoint
+
+- Clean owned checkout; signed Session/Task/AG-UI routes, scoped discovery,
+  bounded wire chunks, cold recovery/effect safety and labelled Host React props.
+- Wire-only transport preserves all durable AG-UI projector versions/semantics.
+- Configured focused187/no skips; updated native/wire27pass; SDK64pass/build check;
+  Chromium synthetic SSE/React fixture passed. Final configured191/no skips/173.15s; final guard native HTTP5pass/15.71s and legacy30pass/9.98s.
+- Initial fixture/probe/optional-context failures retained and corrected; startup
+  metadata aggregate250ms replaces earlier proof-in-startup suppression.
+- No implementation commit yet; independent SPEC then QUALITY review next.
+- Follow-up PERF/reliability/runtime acceptance documented; admission stays OFF.
+
+
+## 2026-10-13 - CLIENT independent SPEC P2 correction
+
+- SPEC NOT GO: retained historical canonical-call set violated per-connection
+  bounded state. Replaced with current-descriptor closure boolean, no history cut.
+- Actual tail 5,000-history/no-generation + active-closure checks pass; no late
+  draft reads after current response. Reader/wire9pass/1.90s.
+- Refreshed native/source/HTTP29pass/54.48s, no skips; make check
+  sizes3008/Ruff/mypy1264/eval30 GO. New freeze before renewed SPEC/QUALITY.
+- No commit, push or deployment; SDK unchanged and admission OFF.
+
+
+## 2026-10-13 - CLIENT QUALITY P2 corrections and parent canonical handoff
+
+- QUALITY NOT GO: premature canonical assembly retirement, reducer ACK retry
+  staging and legacy DEL ASCII expansion. Fixed bounded ACK retry state and8MiB
+  legacy compatibility ceiling; V2 still16KiB. SDK20focused/73full+browser pass.
+- Temporary reset now drops live resume ordinal and restarts retained prefix.
+  Current Host guard authorizes parent canonical history after handoff; separate
+  requested Session cursor identity, no child temporary discovery/control/body.
+- Native reader/cursor30pass/58.21s, HTTP/discovery10pass/8.47s; final configured196/no skips/182.28s.
+  Static sizes3008/Ruff/mypy1264/eval30 GO; current full proof archive at freeze.
+- Preservation mistake: saved rejected888e66manifest but overwritten its old SDK64
+  raw final logs before archival. Old hashes/review result are historical; exact
+  old SDK logs unavailable. Native29 proof untouched. No fabricated log recovery.
+  Future freezes archive whole evidence directory before filename reuse.
+- No acceptance/commit/push/deploy; renewed independent SPEC then QUALITY needed.
+
+
+## 2026-10-13 - Renewed SPEC reset then disconnect correction
+
+- Renewed SPEC NOT GO: unsigned reset cleared preview staging but kept partial
+  resume cursor across immediate socket failure. V2 resets discard continuation
+  even if Host callback fails; next no-token connection cold-recovers history and
+  current effects, while same-connection live effects remain active.
+- Terminal authorization failures terminate despite Host/terminal hook errors.
+  Focused SDK27pass; final SDK80/no skips/build+type check+Chromium pass.
+  Prior ACK retry cases included; terminal410 hook failure stays terminal.
+- Whole2419 proof archive/hash verified BEFORE overwriting filenames; rejected
+  manifest saved. All Python sources/tests unchanged, native39/no skips/67.14s.
+- Static sizes3008/Ruff/mypy1264/eval30 GO. No commit/push/deploy; renewed review.
+
+2026-10-13 root: renewed independent SPEC and QUALITY GO at17dd8f7d frozen
+CLIENT. QUALITY native39/no-skips68.69s and SDK80/no-skips; exact original
+retry/legacy reproductions repaired. Root accepts bounded component for explicit
+owned41-path local commit/integration only; all product gates remain OPEN.
