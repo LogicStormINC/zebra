@@ -1,7 +1,9 @@
 # Zebra Agent Project Status
 
 Worker startup incident (2026-10-12, COV-POOL-STARTUP-01): source/image repair GO;
-local integration being finalized, operator live replacement/replay pending.
+code21825082 fast-forwarded locally into cloud-agent-trench; operator live
+replacement/replay pending. Primary postmerge critical12pass0skip6.53s and
+make check GO2958/Ruff/mypy1243/eval30; original dirty-file/stash digests unchanged.
 The operator restarted Pro API/Worker and applied schema99; session6721d0b0
 failed before MODEL at runtime binding. A pooled readonly REPEATABLE READ
 binding reader leaked client defaults into later Task INSERTs, including failure

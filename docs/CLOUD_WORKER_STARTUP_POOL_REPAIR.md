@@ -64,6 +64,12 @@ remaining strict SQL gate. The recorded long/short6411/15653 statements still
 exceed1000. Native strict command admission/receipts remain operator-controlled
 and were not enabled by this incident fix. No paid task was resubmitted.
 
+Code commit `2182508240a81236f662d24dae0f6288dea9d5c9` was fast-forwarded locally
+into `cloud-agent-trench`. Primary postmerge critical checks:12 passed /0 skipped
+in6.53s; `/tmp/zebra-pool-startup-primary-postmerge-20261012.xml`. Primary make
+check GO2958/Ruff/mypy1243/eval30. Independent dirty-file and stash hashes are
+unchanged; no remote push or retained performance-checkout cleanup occurred.
+
 ## Images and operator-only replacement
 
 Built API/Worker images are arm64 and their two modified runtime modules match

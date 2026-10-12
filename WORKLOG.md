@@ -20,8 +20,14 @@
   includes later concurrency/tenant regression. Sizes2956/Ruff/mypy1243/eval30 GO.
   API/Worker/migrate arm64 rebuilt; offline imports/catalog99 and two runtime
   SHA256 equality GO. Prior application image tags retained for recovery.
-- Local integration/recheck pending. Strict performance/activation/semantic and
-  operator live acceptance remain open, not conflated with this incident repair.
+- Local source commit21825082 fast-forwarded into cloud-agent-trench; primary
+  postmerge12pass0skip6.53s and make check GO2958/Ruff/mypy1243/eval30. Tests run
+  from a fresh temporary cwd to preserve the primary .env.local alias configuration.
+  Dirty/untracked digest0e6aeaf3 and stash digesta0dce840 unchanged. Existing
+  API/Worker containers retain old image IDs; Worker restart count2 was observed
+  without agent-triggered restarts. No remote push or retained checkout cleanup.
+- Strict performance/activation/semantic and operator live acceptance remain
+  open, not conflated with this incident repair. Operator commands documented.
 
 ## 2026-10-12 - User-selected inactive Pro manual-test overlay
 

@@ -8,8 +8,9 @@
    critical/concurrency/tenant/Worker12pass0skip; full9041pass2685skip0fail;
    sizes/Ruff/mypy1243/eval30 GO. Late native fixture changes separately covered.
 6. Images prepared: API/Worker/migrate arm64, offline imports/catalog99 and
-   exact runtime hashes GO. Local integration being finalized; operator owns
-   restarts/replay. No flags or original task are changed/resubmitted.
+   exact runtime hashes GO. Local code21825082 integrated into cloud-agent-trench;
+   primary postmerge12pass0skip6.53s and make check GO, dirty/stash hashes unchanged.
+   Operator owns restarts/replay; no flags or original task changed/resubmitted.
 7. Separate open issue: strict SQL<=1000, activation/fleet/semantic acceptance.
 
 # Active SQL root-cause repair — 2026-10-12

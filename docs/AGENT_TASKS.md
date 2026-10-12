@@ -39,6 +39,9 @@
   final critical/concurrency/tenant/Worker12pass0skip6.82s; make check GO.
   API/Worker/migrate arm64 builds, offline imports/catalog99 and two-runtime-file
   SHA256 equality GO. Strict SQL/activation/fleet/semantic gates remain open.
+- Integrated code21825082 locally into cloud-agent-trench; primary postmerge
+  critical12pass0skip6.53s/static GO and dirty-file/stash hashes unchanged.
+  Retain this checkout for open performance work; operator live replay pending.
 
 ### COV-SQL-PHASE-01 - Eliminate nested execution proof fanout
 
