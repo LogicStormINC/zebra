@@ -1,5 +1,45 @@
 # AGENT_TASKS.md
 
+### COV-POOL-STARTUP-01 - Reset pooled transaction defaults and bound projection repair
+
+- Status: Review (Ready on merged a7dee3da; claimed 2026-10-12 before coding;
+  source repair verified, operator live replacement/replay pending).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cov-pool-startup-01; retained isolated integration checkout.
+- Owned paths: postgres/connection_pool.py, postgres/task_replay_headers.py,
+  integrations/ag_ui/checkpoint_consumer.py, Worker execution_recovery.py only
+  if the durable failure-finalization regression proves a separate defect;
+  corresponding pool/replay-header/consumer/Worker tests; this registry,
+  task_plan.md, PROGRESS.md, findings.md, WORKLOG.md.
+- Handoff documentation follow-up: docs/CLOUD_WORKER_STARTUP_POOL_REPAIR.md,
+  including exact operator-only restart commands and acceptance boundaries.
+- Existing manual-test handoff follow-up: docs/COV_SQL_MANUAL_TEST_20261012.md;
+  link superseding incident evidence without rewriting historical build records.
+- Local integration follows the user's approved cloud-agent-trench/manual-test
+  handoff. Fast-forward only; preserve primary dirty files/stashes. No remote push,
+  cleanup of the retained performance checkout, business migration or restart.
+- These incident paths are exclusively transferred from COV-SQL-PHASE-01
+  until this repair finishes. No parallel implementation on those paths.
+- Regression fixture follow-up (claimed before editing):
+  tests/agent_storage/test_session_task_binding_reads.py; its malformed legacy
+  source fixture must first assert current immutability, then inject corruption
+  only inside its generated scratch schema. No production trigger/schema change.
+- Native projector follow-up (claimed before editing):
+  tests/agent_integrations/ag_ui_checkpoint_consumer_scratch.py; composed current
+  replay readers require real migration97's privacy view on the legacy queue
+  scratch fixture. Keep the frozen queue migration test and production catalog.
+- Acceptance: reproduce readonly connection contamination before repair;
+  preserve reader snapshots and subsequent writable borrows, failure rollback,
+  tenant scope and final certification. Repair must make bounded durable progress,
+  not endlessly roll back the same batch or spin on failed Tasks.
+- No business migration, rollout activation, service restart, task resubmission
+  or remote push. Preserve primary SDK changes and stashes.
+- Verification: full9041pass2685infra-skips0fail1113.41s; fresh scratch native
+  boundary145pass10skip103.18s, explicitly completed projector68pass0skip77.56s;
+  final critical/concurrency/tenant/Worker12pass0skip6.82s; make check GO.
+  API/Worker/migrate arm64 builds, offline imports/catalog99 and two-runtime-file
+  SHA256 equality GO. Strict SQL/activation/fleet/semantic gates remain open.
+
 ### COV-SQL-PHASE-01 - Eliminate nested execution proof fanout
 
 - Status: In Progress (Ready on merged1388aca7; claimed2026-10-12 before coding).

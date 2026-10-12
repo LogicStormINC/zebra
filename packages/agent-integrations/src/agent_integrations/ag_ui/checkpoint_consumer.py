@@ -12,7 +12,11 @@ from agent_core.ports.task_projection_checkpoints import (
     CheckpointStale,
     ProjectionScope,
 )
-from agent_core.ports.task_projection_work import ProjectionWork, TaskProjectionWorkPort
+from agent_core.ports.task_projection_work import (
+    PROJECTION_WORK_SECONDS,
+    ProjectionWork,
+    TaskProjectionWorkPort,
+)
 from agent_core.ports.task_read_summaries import TaskReadSummaryPort
 from agent_core.ports.task_replay import TaskRunHeader
 
@@ -62,6 +66,7 @@ class AgUiCheckpointConsumer:
         self._after_scope: ProjectionScope | None = None
         self._after_repair: TaskId | None = None
         self._repair_turn = True
+        self._repair_retry_at = 0.0
 
     def _scope(self, scope: ProjectionScope) -> None:
         if scope.namespace != self.namespace or scope.projector_version not in {
@@ -76,9 +81,12 @@ class AgUiCheckpointConsumer:
             return False
         if not self.tasks.backfill_replay_headers(
             task,
-            limit=256,
+            limit=128,
             max_bytes=1_048_576,
-            timeout_seconds=0.1,
+            # This is maintenance, not an SSE read. The native two-second I/O
+            # budget includes cold DNS/connect and transaction exit; 100ms
+            # repeatedly expires before DNS can populate its address cache.
+            timeout_seconds=PROJECTION_WORK_SECONDS,
         ):
             return False
         if not self.tasks.backfill_projection_sources(task, limit=256):
@@ -89,6 +97,8 @@ class AgUiCheckpointConsumer:
         return True
 
     def repair_once(self) -> int:
+        if monotonic() < self._repair_retry_at:
+            return 0
         repairs = self.work.read_projection_work_repairs(limit=1, after_task_id=self._after_repair)
         if not repairs:
             self._after_repair = None
@@ -99,7 +109,14 @@ class AgUiCheckpointConsumer:
             try:
                 return int(self._repair_task(repair.scope.task_id))
             except Exception as exc:
-                logger.warning("AG-UI projection repair deferred: %s", type(exc).__name__)
+                # ponytail: one-second consumer-local cooldown, not a durable
+                # execution lease. The round-robin cursor still reaches other
+                # Tasks; restart safely retries from canonical source metadata.
+                self._repair_retry_at = monotonic() + 1.0
+                logger.warning(
+                    "AG-UI projection repair deferred task=%s error=%s",
+                    repair.scope.task_id, type(exc).__name__,
+                )
         return 0
 
     def _defer(self, work: ProjectionWork, exc: Exception) -> None:

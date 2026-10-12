@@ -1,5 +1,41 @@
 # Findings
 
+## COV-POOL-STARTUP-01 - exact startup/projection roots, 2026-10-12
+
+- Session6721d0b0-f777-4f91-9746-38b7abf25874 (Trench conv1791784350642)
+  failed at runtime_instance_binding before any MODEL. load_session_task_binding
+  sets psycopg readonly/repeatable-read client defaults. The composition pool
+  previously only ended transactions, so later ensure_for_session INSERT and
+  failure-finalization index rebuilding borrowed a readonly connection. A private
+  readonly SELECT/SHOW probe confirmed same backend PID and readonly on next BEGIN.
+- Native pool regressions failed for retained defaults, then passed with the
+  installed psycopg_pool reset callback. It runs before reuse; native pool
+  discards reset failures. Reset has zero SQL, clears autocommit/isolation/readonly/
+  deferrable and never edits the active reader transaction or outer work unit.
+  Namespace queries, readonly proof readers and independent certification stay.
+  Call-site scan found no persistent role/search-path/session-GUC mutation in
+  PostgreSQL adapters; this change does not authorize new session-local state.
+- Live container private SELECT-only connector probe: cold0.1s budget failed DNS
+  at0.0919s;2s budget succeeded0.4587s; warmed0.1s succeeded0.0085s. Repeated
+  short DNS deadlines prevent address-cache population. Background repair now
+  shares existing PROJECTION_WORK_SECONDS rather than using an SSE-sized budget,
+  halves replay-header batch to128 and waits1s before rediscovery after failure.
+  Cursor rotates to the next Task; no execution authority or leases are cached.
+- Actual pooled native Worker binds runtime and durably finalizes two consecutive
+  synthetic setup failures, releasing both leases without restarting the service.
+  This distinguishes shared-pool contamination from a separate finalizer defect:
+  no catch-all failure suppression or Worker state-machine edit was necessary.
+- Optional native projector fixture was frozen at queue v68 and lacked the
+  current replay reader's real v97 source-owned privacy view. Its composition
+  now installs the unchanged official v97 definition inside the generated
+  scratch schema; queue migration tests stay frozen. Initial10 native failures
+  become68/68 GREEN, not skips or a removed privacy predicate.
+- Final full9041pass2685infra-skips0fail1113.41s; fresh boundary145pass10skip;
+  explicitly enabled native projector68pass0skip and final critical12pass0skip.
+  Late test/fixture additions have those separate native checks. Static GO;
+  API/Worker/migrate arm64 builds and offline exact-source/import checks GO.
+  No live replacement, paid task replay, migration or capability activation.
+
 ## COV-SQL-PHASE-01 - current measured root, 2026-10-12
 
 - Current post-review unified owner6411/15653SQL still FAIL. Same1/2 and7/8

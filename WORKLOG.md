@@ -1,5 +1,28 @@
 # Progress Log
 
+## 2026-10-12 - COV-POOL-STARTUP-01 incident repair
+
+- Claimed focused branch and exclusive paths before coding, preserving the
+  primary SDK/AGENTS changes and all stashes. No running service was restarted.
+- Exact failure: readonly pool defaults poison runtime binding and derived Task
+  finalization. Native reader/writer tests RED twice, shared callback GREEN6.
+- Projection cold DNS mismatch reproduced live with SELECT-only private connector;
+  deterministic cold-repair/backoff tests RED, then GREEN on existing2s budget.
+- Native Worker regression passes with canonical RUN admission, actual PostgreSQL
+  projections/fences, runtime binding and two failure finalizations on one service.
+- Broader initial run129pass10skip1fail15setup-errors: stale scratch migration95,
+  missing CREATEDB privilege, and immutable legacy fixture injection. Preserved
+  old scratch DB; new dedicated scratch role/database and corrected isolated
+  fixture produce145pass10skip0fail. Optional projector native fixture's missing
+  official privacy view exposed10 failures; exact v97 fixture composition fixes
+  them:68pass0skip77.56s, no production guard/catalog changes.
+- Full9041pass2685infra-skips0fail1113.41s; final critical12pass0skip6.82s
+  includes later concurrency/tenant regression. Sizes2956/Ruff/mypy1243/eval30 GO.
+  API/Worker/migrate arm64 rebuilt; offline imports/catalog99 and two runtime
+  SHA256 equality GO. Prior application image tags retained for recovery.
+- Local integration/recheck pending. Strict performance/activation/semantic and
+  operator live acceptance remain open, not conflated with this incident repair.
+
 ## 2026-10-12 - User-selected inactive Pro manual-test overlay
 
 - Claimed Docker Pro overlay/application Compose tests and governance before

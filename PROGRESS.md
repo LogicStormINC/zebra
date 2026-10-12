@@ -1,5 +1,24 @@
 # Zebra Agent Project Status
 
+Worker startup incident (2026-10-12, COV-POOL-STARTUP-01): source/image repair GO;
+local integration being finalized, operator live replacement/replay pending.
+The operator restarted Pro API/Worker and applied schema99; session6721d0b0
+failed before MODEL at runtime binding. A pooled readonly REPEATABLE READ
+binding reader leaked client defaults into later Task INSERTs, including failure
+finalization, causing one Worker restart. Shared pool reset now clears those
+defaults with zero SQL, preserving the reader transaction and existing guards.
+Separately, a cold connection/read took0.4587s versus a0.1s repair I/O budget;
+maintenance now uses the existing bounded2s budget/128-row header batch and a
+one-second discovery cooldown after failure. RED regressions reproduced both.
+Native pooled Worker durably finalizes two sequential setup failures without a
+restart. Full9041pass2685infra-skips0fail1113.41s; scratch native145pass10skip,
+explicit projector68pass0skip; final critical/concurrency/tenant12pass0skip.
+Sizes/Ruff/mypy1243/eval30 GO. Three arm64 images built; offline imports/catalog99
+and both modified runtime module SHA256 values match. See
+docs/CLOUD_WORKER_STARTUP_POOL_REPAIR.md for operator-only replacement commands.
+No operator env/rollout/receipt changes, service restart or task resubmission.
+This incident repair does not qualify the still-failing strict SQL gate below.
+
 SQL operation-boundary repair (2026-10-12, COV-SQL-PHASE-01): **In Progress**.
 User-authorized local integration into cloud-agent-trench completed at code
 commit b40a38be as a manual-test candidate; no running-service activation.

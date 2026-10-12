@@ -1,3 +1,17 @@
+# Active Worker startup incident — 2026-10-12
+
+1. Done: exact session/log reconstruction; readonly reuse and cold DNS reproduced.
+2. Done: shared zero-SQL default reset; readonly/success/failure/reset-discard tests.
+3. Done: bounded maintenance budget and discovery cooldown; cold native repair test.
+4. Done: actual pooled Worker runtime binding and two durable failure finalizations.
+5. Done: native boundary145pass10skip; complete native projector68pass0skip;
+   critical/concurrency/tenant/Worker12pass0skip; full9041pass2685skip0fail;
+   sizes/Ruff/mypy1243/eval30 GO. Late native fixture changes separately covered.
+6. Images prepared: API/Worker/migrate arm64, offline imports/catalog99 and
+   exact runtime hashes GO. Local integration being finalized; operator owns
+   restarts/replay. No flags or original task are changed/resubmitted.
+7. Separate open issue: strict SQL<=1000, activation/fleet/semantic acceptance.
+
 # Active SQL root-cause repair — 2026-10-12
 
 1. Done: reproduce exact serial long/short nine including final certification.

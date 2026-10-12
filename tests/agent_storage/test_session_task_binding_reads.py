@@ -204,12 +204,22 @@ def test_malformed_root_is_a_controlled_lineage_refusal(dsn):
     child, _ = admit(dsn)
     _append_handoff_events(dsn, NAMESPACE, root=root, child=child)
     with psycopg.connect(dsn) as connection:
-        connection.execute(
+        query = (
             "UPDATE session_events SET payload=jsonb_set(payload, '{root_session_id}',"
             " '\"not-a-uuid\"'::jsonb) WHERE deployment_namespace=%s AND session_id=%s"
-            " AND event_type='session_handoff_received'",
-            (NAMESPACE, child),
+            " AND event_type='session_handoff_received'"
         )
+        with pytest.raises(psycopg.errors.ObjectNotInPrerequisiteState, match="immutable"):
+            with connection.transaction():
+                connection.execute(query, (NAMESPACE, child))
+        # Reproduce preexisting corrupt legacy data only in this fixture-owned
+        # schema. Current immutable-source refusal is independently asserted above.
+        assert connection.execute("SELECT current_schema()").fetchone()[0].startswith(
+            "command_wakeup_"
+        )
+        connection.execute("ALTER TABLE session_events DISABLE TRIGGER USER")
+        connection.execute(query, (NAMESPACE, child))
+        connection.execute("ALTER TABLE session_events ENABLE TRIGGER USER")
     with pytest.raises(ValueError, match="malformed root identity"):
         load_session_task_binding(dsn, deployment_namespace=NAMESPACE, session_id=child)
 

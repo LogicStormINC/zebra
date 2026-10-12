@@ -9,6 +9,7 @@ from time import monotonic
 from types import SimpleNamespace
 from uuid import UUID
 
+import psycopg
 import pytest
 from agent_core.application.session_projection import rebuild_session
 from agent_core.domain.agent_tasks import RolloverReason
@@ -32,6 +33,9 @@ from agent_storage import (
     bootstrap_control_plane_epoch,
     postgres_control_plane_stores,
 )
+from agent_storage.postgres.task_replay_coverage_privacy_migration import (
+    TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION,
+)
 from agent_storage.projection_work import SQLiteTaskProjectionWorkStore
 from agent_storage.projection_work_schema import initialize_projection_work
 from zebra_agent_api.ag_ui_checkpoint_tail import tail_checkpoint_frames
@@ -45,6 +49,15 @@ from tests.agent_storage.test_postgres_control_plane_composition import _ObjectR
 
 def _native(tmp_path: Path, *, dsn=None):
     if dsn is not None:
+        # The standalone queue fixture stays frozen at v68. Composing current
+        # replay readers additionally requires the real source-owned privacy
+        # view, not a test-built replacement or a removed privacy predicate.
+        with psycopg.connect(dsn) as connection:
+            assert connection.execute("SELECT current_schema()").fetchone()[0].startswith(
+                "projection_work_native_"
+            )
+            for statement in TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION.statements:
+                connection.execute(statement)
         bootstrap_control_plane_epoch(dsn, deployment_namespace="local")
         scope = OpaqueAuthorityScope(authority_issuer="test", namespace_id="test")
         stores = postgres_control_plane_stores(

@@ -22,6 +22,16 @@ def composition_pool(dsn: str) -> ConnectionPool[Connection[dict[str, Any]]] | N
     return binding[1] if binding and binding[0] == conninfo_to_dict(dsn) else None
 
 
+def _reset_transaction_defaults(connection: Connection[dict[str, Any]]) -> None:
+    # The pool ends the borrower's transaction first, but retains these client
+    # defaults. Reset before reuse; psycopg_pool discards a connection on failure.
+    # No SQL: readonly snapshots remain readonly until their transaction ends.
+    connection.autocommit = False
+    connection.isolation_level = None
+    connection.read_only = None
+    connection.deferrable = None
+
+
 @contextmanager
 def postgres_pool_scope(dsn: str) -> Iterator[None]:
     # Captured by adapters during composition, including adapters used in Worker
@@ -30,6 +40,7 @@ def postgres_pool_scope(dsn: str) -> Iterator[None]:
         dsn, min_size=1, max_size=8, timeout=2, max_waiting=32,
         kwargs={"row_factory": dict_row, "connect_timeout": 2},
         check=ConnectionPool.check_connection,
+        reset=_reset_transaction_defaults,
     ) as pool:
         token = _POOL.set((conninfo_to_dict(dsn), pool))
         try:

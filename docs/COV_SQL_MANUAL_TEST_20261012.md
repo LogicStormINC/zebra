@@ -2,6 +2,13 @@
 
 Owner: Luke Ding / Codex. Date: 2026-10-12.
 
+Historical preparation record below. The operator subsequently restarted Pro
+services/applied99 and hit a pooled readonly startup failure. Current incident
+repair, new image IDs and operator-only replacement instructions supersede the
+old runtime/image observations here: [Worker startup repair](CLOUD_WORKER_STARTUP_POOL_REPAIR.md).
+No additional schema migration is required for that repair; strict rollout and
+performance approval remain separate and unchanged.
+
 ## Scope and current evidence
 
 The user authorized local source integration into `cloud-agent-trench` and
