@@ -1,3 +1,28 @@
+# Cloud stream bounded replay component review — 2026-10-12
+
+READ-BOUNDS implements native count/UTF8 byte Session pages, metadata-only HTTP
+stream admission, source-qualified Task/Segment/index/privacy preflight, scalar
+namespace/status reads, and qualification before AG-UI page delivery. Local
+default behavior remains unchanged; privacy is UNKNOWN until source-qualified.
+Focused85pass11header-env-skips58.70s, configured native header/role12pass9.09s;
+make check GO2988files/mypy1250/eval30. Independent quality P1 exposed unknown
+prefix SSE admission; exact raw route-shape fix and signed unrelated Grant
+regressions pass initial repair target50cases12.82s; complete configured
+native/API/Host/header rerun107pass/no skips65.90s. Renewed reviews pending.
+O(history) metadata SQL per page can mean O(history*pages) legacy replay; 2s
+deadline and256Segment cap fail closed. Handoff scalar SQL requires payload
+SELECT; historical bodies never hydrate in Python startup. Oversized raw pages
+can fail after HTTP200 before frames. Full READ100subscriber/paired SQL/Host/browser
+gates remain OPEN; v2 dormant, no integration/performance/push/deployment claim.
+Evidence: docs/CLOUD_STREAM_READ_EVIDENCE.md.
+
+# Cloud stream bounded-read followup — 2026-10-12
+
+READ slice4a79a270 integrated locally after spec/quality review; postmerge42pass,
+combined rebase64pass/staticGO. Full READ remains open. READ-BOUNDS Ready card
+created and claimed before implementation; exact readonly COV source forwarding
+and header/page handoff recorded. v2 remains dormant; no push or deployment.
+
 # Cloud stream READ slice review — 2026-10-12
 
 Session/Task readers drain again after observing terminal status, closing the

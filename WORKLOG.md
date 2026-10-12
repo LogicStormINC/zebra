@@ -14012,3 +14012,40 @@ No runtime restart/activation, primary edit, commit/merge/push or SLO claim.
 - Final CLI/native check7passed3.59s; final3cell smoke re-exposes1Task terminal
   gap and honestly exits1. make check afterwards GO; shell's final exit0 is
   not a combined native runtime PASS. No assertion or failure artifact suppressed.
+
+
+## 2026-10-12 — CLOUD-STREAM-READ-BOUNDS-01 component handoff
+
+Claimed Ready task before implementation on codex/cloud-stream-read-bounds-01.
+Reused native SessionEventPage and source-owned UTF8 byte metadata; added read
+forwarding only to post-commit wrapper. Cloud HTTP startup avoids legacy full
+replay; preserves signed Host target checks and exact tenant/principal guard.
+Source preflight verifies bounded Segment metadata, canonical/index cardinality
+and coordinates, contiguous order, source cursors and durable handoff identity
+in one read-only REPEATABLE READ snapshot. Strict privacy reuses the canonical
+source view, never a projected boolean. Default TaskReadHeader privacy is None.
+
+Validation: focused85pass11header-env-skips58.70s; separately configured native
+header/no-payload-role12pass9.09s. Static gates passed2988files/mypy1250/eval30.
+A deterministic native concurrent append commits between captured header and
+metadata validation; repeatable-read retains a consistent prior snapshot.
+Independent quality P1 identified permissive unknown-prefix SSE routing; repaired
+shared exact /sessions/{id}/stream and /tasks/{id}/stream recognition, malformed
+preflight404, and cloud malformed normalization404. Signed unrelated Grant cannot
+read victim source/frame on /foo/{victim}/stream; repair target50pass12.82s.
+Combined configured suite and renewed reviews remain pending at this entry.
+
+Limits: O(history) metadata work per replay page, possible O(history*pages) total;
+2s read deadline, max256 Segments, fail closed. Handoff scalar SQL needs payload
+column privilege; narrow existing Run header probes retain no-payload privilege.
+Raw oversized page rejection may surface after HTTP200 with no frames. No
+100subscriber, paired SQL reduction, Host/browser, v2 activation or deployment GO.
+Parent owns commit/local integration after review. No push/deployment performed.
+Next: rerun both native env suites, renew independent reviews on exact P1 repair,
+then parent records review decisions before local stage integration.
+
+Configured combined native/API/Host/header rerun after the exact-route P1 repair:
+107passed, no skips,65.90s. Static gates GO2988files/mypy1250/eval30. Source
+refrozen for renewed independent reviews; governance evidence updated only.
+
+2026-10-12: READ-BOUNDS independent final quality GO after exact-route P1 fix; configured107 tests/no skips and static gates pass. Recorded completed frozen54-cell baseline,23 existing terminal failures and20SQL/durable delta; paired v2/full-runtime acceptance stays open. Local integration authorized, no push/deploy.

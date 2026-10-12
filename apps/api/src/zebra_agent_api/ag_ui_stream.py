@@ -86,9 +86,19 @@ def prepare_agui_stream(
         task_id = TaskId(UUID(thread_text))
     except ValueError:
         return _problem(400, "invalid_request", "threadId must be a UUID", path)
-    task = stores.tasks.get_task(task_id)
+    cloud = getattr(stores, "deployment_namespace", None) is not None
+    try:
+        task = (
+            stores.tasks.read_task_header(task_id, require_source_coverage=True)
+            if cloud
+            else stores.tasks.get_task(task_id)
+        )
+    except CheckpointNotReady:
+        return _problem(409, "projection_not_ready", "stream source requires preparation", path)
+    except (CheckpointConflict, ValueError):
+        return _problem(409, "projection_conflict", "stream source conflicts with Task", path)
     if task is None:
-        if stores.sessions.get_session(SessionId(UUID(thread_text))) is not None:
+        if not cloud and stores.sessions.get_session(SessionId(UUID(thread_text))) is not None:
             response = _problem(
                 409,
                 "projection_not_ready",
@@ -98,7 +108,7 @@ def prepare_agui_stream(
             response.body["retryable"] = True
             return response
         return _problem(404, "not_found", "AG-UI thread was not found", path)
-    if stores.sessions.get_session(task.active_segment_id) is None:
+    if not cloud and stores.sessions.get_session(task.active_segment_id) is None:
         return _problem(409, "projection_incomplete", "active Segment is unavailable", path)
     identity = AgUiRunIdentity(
         session_id=task.active_segment_id,

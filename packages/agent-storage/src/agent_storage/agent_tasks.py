@@ -134,7 +134,9 @@ class SQLiteAgentTaskStore(
             ).fetchall()
             return tuple(_task_from_connection(connection, TaskId(UUID(row[0]))) for row in rows)
 
-    def read_task_header(self, task_id: TaskId) -> TaskReadHeader | None:
+    def read_task_header(
+        self, task_id: TaskId, *, require_source_coverage: bool = False
+    ) -> TaskReadHeader | None:
         with self._database.connect() as connection:
             row = connection.execute(
                 "SELECT t.active_segment_id,t.next_event_sequence,t.event_position_state,"

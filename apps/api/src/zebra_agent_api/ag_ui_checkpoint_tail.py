@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from ag_ui.core import CustomEvent
 from ag_ui.encoder import EventEncoder
 from agent_core.ports.live_event_fanout import CheckpointNotificationPort, LiveEventCursor
-from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
+from agent_core.ports.task_projection_checkpoints import CheckpointConflict, CheckpointNotReady
 from agent_core.ports.task_projection_work import ProjectionWorkProblem
 from agent_integrations.ag_ui.checkpoint_observer import AgUiCheckpointObserver
 from agent_storage.postgres.task_io import task_io_deadline
@@ -65,8 +65,10 @@ async def _checkpoint_barrier(
         return None
     try:
         return await _read_until(
-            deadline, fanout.capture_checkpoint_barrier,
-            deployment_namespace=context.deployment_namespace, task_id=context.task_id,
+            deadline,
+            fanout.capture_checkpoint_barrier,
+            deployment_namespace=context.deployment_namespace,
+            task_id=context.task_id,
         )
     except Exception:
         return None
@@ -74,31 +76,42 @@ async def _checkpoint_barrier(
 
 async def _backoff_slice(deadline: float, retry_at: float, keepalive_seconds: float) -> bool:
     """Yield control for heartbeats without advancing the SQL/Redis retry frontier."""
-    await asyncio.sleep(min(
-        max(0.0, retry_at - monotonic()), max(0.001, keepalive_seconds),
-        max(0.0, deadline - monotonic()),
-    ))
+    await asyncio.sleep(
+        min(
+            max(0.0, retry_at - monotonic()),
+            max(0.001, keepalive_seconds),
+            max(0.0, deadline - monotonic()),
+        )
+    )
     return monotonic() >= retry_at
 
 
 async def _checkpoint_wait(
-    context: AgUiStreamContext, deadline: float, barrier: LiveEventCursor | None,
-    poll_seconds: float, backoff: float, keepalive_seconds: float, retry_at: float | None,
+    context: AgUiStreamContext,
+    deadline: float,
+    barrier: LiveEventCursor | None,
+    poll_seconds: float,
+    backoff: float,
+    keepalive_seconds: float,
+    retry_at: float | None,
 ) -> tuple[LiveEventCursor | None, float | None, bool]:
     fanout = context.live_event_fanout
     if retry_at is None:
         if (
-            barrier is not None and isinstance(fanout, CheckpointNotificationPort)
+            barrier is not None
+            and isinstance(fanout, CheckpointNotificationPort)
             and context.deployment_namespace is not None
         ):
             try:
                 cursor = await _read_until(
-                    deadline, fanout.wait_checkpoint_after,
-                    deployment_namespace=context.deployment_namespace, task_id=context.task_id,
+                    deadline,
+                    fanout.wait_checkpoint_after,
+                    deployment_namespace=context.deployment_namespace,
+                    task_id=context.task_id,
                     barrier=barrier,
-                    block_ms=max(1, int(
-                        min(1.0, deadline - monotonic(), keepalive_seconds) * 1000
-                    )),
+                    block_ms=max(
+                        1, int(min(1.0, deadline - monotonic(), keepalive_seconds) * 1000)
+                    ),
                 )
                 return cursor, None, False
             except Exception:
@@ -158,6 +171,19 @@ async def tail_checkpoint_frames(
                     )
                 page = await _read_until(deadline, observer.read_page, snapshot, after_source)
                 if page is not None:
+                    if getattr(context.stores, "deployment_namespace", None) is not None:
+                        header = await _read_until(
+                            deadline,
+                            context.stores.tasks.read_task_header,
+                            context.task_id,
+                            require_source_coverage=True,
+                        )
+                        if (
+                            header is None
+                            or header.strict_coverage is None
+                            or (header.strict_coverage != snapshot.run.strict_coverage)
+                        ):
+                            raise CheckpointConflict("public replay source privacy changed")
                     # At most one bounded Page is retained; frames encode/yield lazily.
                     frames = observer.iter_page_frames(
                         snapshot, page, context.identity, after=cursor
@@ -188,7 +214,8 @@ async def tail_checkpoint_frames(
                 )
                 work = (
                     context.stores.coverage_projection_work
-                    if snapshot.run.strict_coverage else context.stores.projection_work
+                    if snapshot.run.strict_coverage
+                    else context.stores.projection_work
                 )
                 if (
                     snapshot.run.anchor is not None
@@ -262,13 +289,20 @@ async def tail_checkpoint_frames(
             while monotonic() < deadline:
                 previous = barrier
                 barrier, retry_at, reconcile = await _checkpoint_wait(
-                    context, deadline, barrier, poll_seconds, backoff,
-                    max(0.001, keepalive_seconds - monotonic() + last_delivery), retry_at
+                    context,
+                    deadline,
+                    barrier,
+                    poll_seconds,
+                    backoff,
+                    max(0.001, keepalive_seconds - monotonic() + last_delivery),
+                    retry_at,
                 )
                 if retry_at is None:
                     backoff = min(30.0, backoff * 2) if reconcile else 1.0
                 if (
-                    reconcile or retry_at is None and barrier != previous
+                    reconcile
+                    or retry_at is None
+                    and barrier != previous
                     or monotonic() >= reconcile_at
                 ):
                     break

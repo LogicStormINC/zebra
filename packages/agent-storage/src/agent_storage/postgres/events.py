@@ -7,7 +7,9 @@ from agent_core.domain.events import SessionEvent
 from agent_core.domain.extension_snapshots import ExtensionSnapshot, ExtensionTaskCeiling
 from agent_core.domain.extensions import ExtensionScope
 from agent_core.domain.identifiers import EventId, SessionId
+from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.event_store import EventStorePort
+from agent_core.ports.session_recovery import SessionEventPage
 from psycopg import errors
 from psycopg.types.json import Jsonb
 
@@ -143,6 +145,62 @@ class PostgresEventStore(EventStorePort):
                 (self._database.deployment_namespace, session_id, sequence),
             ).fetchall()
         return [_event_from_row(row) for row in rows]
+
+    def read_session_highwater(self, session_id: SessionId) -> int:
+        from agent_core.ports.session_recovery import SessionRecoveryConflict
+
+        with self._database.connect_task_io() as connection:
+            row = connection.execute(
+                "SELECT current_version FROM session_streams "
+                "WHERE deployment_namespace=%s AND session_id=%s",
+                (self._database.deployment_namespace, session_id),
+            ).fetchone()
+        if row is None:
+            raise SessionRecoveryConflict("canonical Session source is unavailable")
+        return int(row["current_version"])
+
+    def read_session_status(self, session_id: SessionId) -> SessionStatus:
+        from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
+
+        with self._database.connect_task_io() as connection:
+            row = connection.execute(
+                "SELECT h.status,h.current_sequence,s.current_version "
+                "FROM session_streams s LEFT JOIN session_observation_headers h "
+                "ON h.deployment_namespace=s.deployment_namespace "
+                "AND h.session_id=s.session_id::text "
+                "WHERE s.deployment_namespace=%s AND s.session_id=%s",
+                (self._database.deployment_namespace, session_id),
+            ).fetchone()
+        if (
+            row is None
+            or row["status"] is None
+            or row["current_sequence"] != row["current_version"]
+        ):
+            raise CheckpointNotReady("Session observation header requires explicit preparation")
+        return SessionStatus(row["status"])
+
+    def read_session_event_page(
+        self,
+        session_id: SessionId,
+        after_sequence: int,
+        *,
+        through_sequence: int | None = None,
+        limit: int = 256,
+        max_bytes: int = 1_048_576,
+    ) -> SessionEventPage:
+        from agent_storage.postgres.session_recovery import read_session_page
+
+        with self._database.connect_task_io() as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            return read_session_page(
+                connection,
+                self._database.deployment_namespace,
+                session_id,
+                after_sequence,
+                through=through_sequence,
+                limit=limit,
+                max_bytes=max_bytes,
+            )
 
     def _advance_stream(self, connection: Any, event: SessionEvent) -> bool:
         return _advance_stream(connection, self._database.deployment_namespace, event)

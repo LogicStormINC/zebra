@@ -1,5 +1,8 @@
 """Namespace-scoped PostgreSQL Task and Segment Store facade."""
 
+from contextlib import nullcontext
+from time import monotonic
+
 from agent_core.domain.agent_tasks import AgentTask, ExecutionSegment, RolloverReason
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId, TaskId
@@ -23,7 +26,7 @@ from agent_storage.postgres.task_index_transactions import (
     get_task_in_transaction,
     rebuild_task_in_transaction,
 )
-from agent_storage.postgres.task_io import TaskIoConnections
+from agent_storage.postgres.task_io import TaskIoConnections, task_io_deadline
 from agent_storage.postgres.task_lineage import (
     EVENT_COLUMNS,
     PostgresAgentTaskConflictError,
@@ -133,8 +136,15 @@ class PostgresAgentTaskStore(
                 for row in rows
             )
 
-    def read_task_header(self, task_id: TaskId) -> TaskReadHeader | None:
-        with self._database.connect_task_io() as connection:
+    def read_task_header(
+        self, task_id: TaskId, *, require_source_coverage: bool = False
+    ) -> TaskReadHeader | None:
+        with (
+            task_io_deadline(monotonic() + 2.0) if require_source_coverage else nullcontext(),
+            self._database.connect_task_io() as connection,
+        ):
+            if require_source_coverage:
+                connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
             row = connection.execute(
                 "SELECT t.active_segment_id,t.next_event_sequence,t.event_position_state,"
                 "h.title,h.status,h.current_sequence AS active_segment_sequence,"
@@ -145,6 +155,19 @@ class PostgresAgentTaskStore(
                 "WHERE t.deployment_namespace=%s AND t.task_id=%s",
                 (self._database.deployment_namespace, task_id),
             ).fetchone()
+            strict_coverage = None
+            if row is not None and require_source_coverage:
+                from agent_storage.postgres.stream_read_preflight import require_stream_source
+
+                if row["event_position_state"] != "ready":
+                    raise CheckpointNotReady("Task Event positions require explicit backfill")
+                if row["status"] is None or row["active_segment_sequence"] is None:
+                    raise CheckpointNotReady(
+                        "stream observation header requires explicit preparation"
+                    )
+                strict_coverage = require_stream_source(
+                    connection, self._database.deployment_namespace, task_id, row
+                )
         if row is None:
             return None
         if row["event_position_state"] != "ready":
@@ -159,6 +182,7 @@ class PostgresAgentTaskStore(
             title_truncated=bool(row["title_truncated"]),
             clarification_id=row["clarification_id"],
             clarification_invalid=bool(row["clarification_invalid"]),
+            strict_coverage=strict_coverage,
         )
 
     def segments(self, task_id: TaskId) -> tuple[ExecutionSegment, ...]:

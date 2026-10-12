@@ -16,6 +16,7 @@ from uuid import UUID
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.task_bindings import require_host_thread, require_task_host_context
+from agent_core.ports.projection_store import SessionNamespaceReadPort
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_security.host_grant import VerifiedHostGrant
 
@@ -53,6 +54,9 @@ def session_tenant_denied(
         parsed = SessionId(UUID(session_id))
     except (ValueError, AttributeError):
         return False
+    if isinstance(sessions, SessionNamespaceReadPort):
+        exists, bound = sessions.get_session_namespace(parsed)
+        return exists and bound != namespace
     session = sessions.get_session(parsed)
     if session is None:
         return False

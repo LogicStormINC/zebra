@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import AsyncGenerator, AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from random import uniform
@@ -11,14 +11,16 @@ from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
+from agent_core.ports.event_store import BoundedSessionEventReadPort
 from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
 from fastapi import Request
 
 from zebra_agent_api.ag_ui_checkpoint_tail import _backoff_slice, _read_until
-from zebra_agent_api.ag_ui_task_view import canonical_task_view, deadline_frames
+from zebra_agent_api.ag_ui_task_view import deadline_frames
 from zebra_agent_api.coverage_public_read import (
     coverage_public_read_problem,
     coverage_session_read_problem,
+    coverage_task_read_problem,
 )
 from zebra_agent_api.task_api import is_user_task_event, serialize_task_event
 
@@ -41,8 +43,13 @@ class StreamWake:
     """
 
     def __init__(
-        self, fanout: LiveEventFanoutPort | None, namespace: str | None,
-        session_id: SessionId, deadline: float, *, cloud: bool = False,
+        self,
+        fanout: LiveEventFanoutPort | None,
+        namespace: str | None,
+        session_id: SessionId,
+        deadline: float,
+        *,
+        cloud: bool = False,
     ) -> None:
         self.fanout, self.namespace, self.session_id = fanout, namespace, session_id
         self.deadline = deadline
@@ -58,8 +65,10 @@ class StreamWake:
             return
         try:
             self.cursor = await _read_until(
-                self.deadline, self.fanout.capture_barrier,
-                deployment_namespace=self.namespace, session_id=self.session_id,
+                self.deadline,
+                self.fanout.capture_barrier,
+                deployment_namespace=self.namespace,
+                session_id=self.session_id,
             )
         except Exception:
             self.cursor, self.retry_at = None, monotonic() + _FALLBACK_SECONDS
@@ -71,9 +80,7 @@ class StreamWake:
             self.fallback_until = None
         return ready
 
-    async def wait(
-        self, sequence: int, *, keepalive_seconds: float = _KEEPALIVE_SECONDS
-    ) -> bool:
+    async def wait(self, sequence: int, *, keepalive_seconds: float = _KEEPALIVE_SECONDS) -> bool:
         if self.fallback_until is not None:
             return await self._wait_backoff(keepalive_seconds)
         if self.cursor is None:
@@ -81,12 +88,16 @@ class StreamWake:
         if self.cursor is not None and self.fanout is not None and self.namespace is not None:
             try:
                 batch = await _read_until(
-                    self.deadline, self.fanout.read_after,
-                    deployment_namespace=self.namespace, session_id=self.session_id,
-                    barrier=self.cursor, durable_sequence=sequence, count=100,
-                    block_ms=max(1, int(
-                        min(1.0, self.deadline - monotonic(), keepalive_seconds) * 1000
-                    )),
+                    self.deadline,
+                    self.fanout.read_after,
+                    deployment_namespace=self.namespace,
+                    session_id=self.session_id,
+                    barrier=self.cursor,
+                    durable_sequence=sequence,
+                    count=100,
+                    block_ms=max(
+                        1, int(min(1.0, self.deadline - monotonic(), keepalive_seconds) * 1000)
+                    ),
                 )
                 changed = self.cursor != batch.next_cursor
                 self.cursor, self.backoff = batch.next_cursor, 1.0
@@ -106,33 +117,51 @@ class StreamWake:
 def _deadline(expires_at: datetime | None) -> float:
     if expires_at is None:
         return float("inf")  # Preserve indefinite local/conversation observation.
-    seconds = max(
-        0.0, (expires_at - datetime.now(UTC)).total_seconds()
-    )
+    seconds = max(0.0, (expires_at - datetime.now(UTC)).total_seconds())
     return monotonic() + min(seconds, _MAX_STREAM_SECONDS)
 
 
 async def tail_session_events(
-    *, database_path: Path, stores: ControlPlaneStores | None = None,
+    *,
+    database_path: Path,
+    stores: ControlPlaneStores | None = None,
     live_event_fanout: LiveEventFanoutPort | None = None,
-    deployment_namespace: str | None = None, session_id: SessionId,
-    request: Request, after_sequence: int,
+    deployment_namespace: str | None = None,
+    session_id: SessionId,
+    request: Request,
+    after_sequence: int,
     authorization_expires_at: datetime | None = None,
 ) -> AsyncIterator[str]:
     active = stores or sqlite_control_plane_stores(database_path)
     deadline = _deadline(authorization_expires_at)
+    cloud = getattr(active, "deployment_namespace", None) is not None
 
     async def frames() -> AsyncGenerator[str, None]:
         wake = StreamWake(
-            live_event_fanout, deployment_namespace, session_id, deadline,
+            live_event_fanout,
+            deployment_namespace,
+            session_id,
+            deadline,
             cloud=getattr(active, "deployment_namespace", None) is not None,
         )
         await wake.capture()  # Capture before either privacy preflight or durable replay.
         if await _read_until(deadline, coverage_session_read_problem, active, session_id):
             return
         cursor, closing, last_delivery = after_sequence, False, monotonic()
+        events: Sequence[SessionEvent]
+        status: SessionStatus | None
         while not await request.is_disconnected():
-            events = await _read_until(deadline, active.events.read_since, session_id, cursor)
+            if cloud:
+                if not isinstance(active.events, BoundedSessionEventReadPort):
+                    return
+                page = await _read_until(
+                    deadline, active.events.read_session_event_page, session_id, cursor
+                )
+                events = page.events
+                if await _read_until(deadline, coverage_session_read_problem, active, session_id):
+                    return
+            else:
+                events = await _read_until(deadline, active.events.read_since, session_id, cursor)
             if coverage_public_read_problem(events):
                 return
             for event in events:
@@ -142,8 +171,12 @@ async def tail_session_events(
                 continue
             if closing:
                 return
-            session = await _read_until(deadline, active.sessions.get_session, session_id)
-            if session is None or session.status not in _ACTIVE_STATUSES:
+            if cloud and isinstance(active.events, BoundedSessionEventReadPort):
+                status = await _read_until(deadline, active.events.read_session_status, session_id)
+            else:
+                session = await _read_until(deadline, active.sessions.get_session, session_id)
+                status = session.status if session is not None else None
+            if status not in _ACTIVE_STATUSES:
                 # Terminal can commit between the empty read and status read.
                 # Drain again AFTER observing terminal, then close on an empty suffix.
                 closing = True
@@ -152,9 +185,8 @@ async def tail_session_events(
                 last_delivery = monotonic()
                 yield ": keepalive\n\n"
             while not await wake.wait(
-                cursor, keepalive_seconds=max(
-                    0.001, _KEEPALIVE_SECONDS - monotonic() + last_delivery
-                )
+                cursor,
+                keepalive_seconds=max(0.001, _KEEPALIVE_SECONDS - monotonic() + last_delivery),
             ):
                 if await request.is_disconnected():
                     return
@@ -169,31 +201,43 @@ async def tail_session_events(
 
 
 async def tail_task_events(
-    *, database_path: Path, stores: ControlPlaneStores | None = None,
-    task_id: TaskId, request: Request, after_sequence: int,
+    *,
+    database_path: Path,
+    stores: ControlPlaneStores | None = None,
+    task_id: TaskId,
+    request: Request,
+    after_sequence: int,
     live_event_fanout: LiveEventFanoutPort | None = None,
     deployment_namespace: str | None = None,
     authorization_expires_at: datetime | None = None,
 ) -> AsyncIterator[str]:
     active = stores or sqlite_control_plane_stores(database_path)
     store, deadline = active.tasks, _deadline(authorization_expires_at)
+    cloud = getattr(active, "deployment_namespace", None) is not None
 
     async def frames() -> AsyncGenerator[str, None]:
-        task = await _read_until(deadline, store.get_task, task_id)
+        task = await _read_until(
+            deadline, store.read_task_header if cloud else store.get_task, task_id
+        )
         if task is None:
             return
         wake = StreamWake(
-            live_event_fanout, deployment_namespace, task.active_segment_id, deadline,
+            live_event_fanout,
+            deployment_namespace,
+            task.active_segment_id,
+            deadline,
             cloud=getattr(active, "deployment_namespace", None) is not None,
         )
         await wake.capture()
-        view = await _read_until(deadline, canonical_task_view, active, task_id)
-        if coverage_public_read_problem(item.event for item in view):
+        if await _read_until(deadline, coverage_task_read_problem, active, task_id):
             return
-        del view
         cursor, closing, last_delivery = after_sequence, False, monotonic()
         while not await request.is_disconnected():
             page = await _read_until(deadline, store.read_event_page, task_id, cursor)
+            if cloud:
+                problem = await _read_until(deadline, coverage_task_read_problem, active, task_id)
+                if problem is not None:
+                    return
             events = page.events
             if coverage_public_read_problem(item.event for item in events):
                 return
@@ -211,13 +255,18 @@ async def tail_task_events(
                 continue
             if closing:
                 return
-            task = await _read_until(deadline, store.get_task, task_id)
+            task = await _read_until(
+                deadline, store.read_task_header if cloud else store.get_task, task_id
+            )
             if task is None or task.status not in _ACTIVE_STATUSES:
                 closing = True
                 continue
             if task.active_segment_id != wake.session_id:
                 wake = StreamWake(
-                    live_event_fanout, deployment_namespace, task.active_segment_id, deadline,
+                    live_event_fanout,
+                    deployment_namespace,
+                    task.active_segment_id,
+                    deadline,
                     cloud=getattr(active, "deployment_namespace", None) is not None,
                 )
                 await wake.capture()

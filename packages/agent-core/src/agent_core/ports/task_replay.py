@@ -21,6 +21,7 @@ class TaskReadHeader:
     title_truncated: bool = False
     clarification_id: str | None = None
     clarification_invalid: bool = False
+    strict_coverage: bool | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -30,6 +31,8 @@ class TaskReadHeader:
             or self.current_sequence < -1
         ):
             raise ValueError("invalid Task read header")
+        if self.strict_coverage is not None and type(self.strict_coverage) is not bool:
+            raise ValueError("invalid qualified stream privacy header")
         if self.title is not None and (not isinstance(self.title, str) or len(self.title) > 512):
             raise ValueError("invalid observation title")
         if self.status is not None and not isinstance(self.status, SessionStatus):

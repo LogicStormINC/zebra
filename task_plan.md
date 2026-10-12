@@ -16,6 +16,10 @@ Existing incident/search and COV-SQL-PHASE-01 work retains its scope and priorit
    authorized validated local stage integration/unlock, no push or deployment.
    Native terminal2pass; make check GO. Fullstage remains open for bounded
    Session/privacy startup, native subscriber SQL/latency and independent reviews.
+2a. In Progress: CLOUD-STREAM-READ-BOUNDS-01; close bounded cloud Session
+    replay/privacy startup gap after accepted4a79a270; exact read-only COV
+    source forwarding handoff claimed before edits. Native identity/bytes/Grant
+    checks required; no GET repairs or SDK edits.
 3. Accepted locally: CLOUD-STREAM-CONTRACT-01; d8e85614 integrated into
    cloud-agent-trench after independent spec/quality GO, primary37pass.
    Labelled ordinary candidate drafts authorized; v2 remains dormant.

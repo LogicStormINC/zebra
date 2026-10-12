@@ -46,6 +46,15 @@ class PostgresProjectionStore(ProjectionStorePort):
                 session_id,
             )
 
+    def get_session_namespace(self, session_id: SessionId) -> tuple[bool, str | None]:
+        with self._database.connect_task_io() as connection:
+            row = connection.execute(
+                "SELECT namespace_id FROM session_projections "
+                "WHERE deployment_namespace=%s AND session_id=%s",
+                (self._database.deployment_namespace, session_id),
+            ).fetchone()
+        return (False, None) if row is None else (True, row["namespace_id"])
+
     def list_recent_sessions(self, *, limit: int) -> list[Session]:
         if limit <= 0:
             return []

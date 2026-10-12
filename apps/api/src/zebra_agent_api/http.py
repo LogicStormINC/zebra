@@ -4,6 +4,7 @@ import asyncio
 from collections.abc import Mapping
 from pathlib import Path
 
+from agent_core.ports.event_store import BoundedSessionEventReadPort
 from agent_core.ports.extensions import ExtensionStore
 from agent_integrations import GitHubPullRequestTransport
 from agent_runtime.mcp_catalog_refresh import McpCatalogRefresh
@@ -28,6 +29,7 @@ from zebra_agent_api.artifact_download import (
     artifact_download_response,
     authorized_artifact_read,
 )
+from zebra_agent_api.coverage_public_read import cloud_raw_stream_preflight
 from zebra_agent_api.coverage_report_http import coverage_report_response
 from zebra_agent_api.extension_composition import (
     compose_http_extensions,
@@ -64,6 +66,7 @@ from zebra_agent_api.session_identity_read import _parse_session_id
 from zebra_agent_api.session_streaming import tail_session_events, tail_task_events
 from zebra_agent_api.skill_publications import skill_publication_response
 from zebra_agent_api.task_api import parse_task_id
+from zebra_agent_api.tenant_guard import tenant_scope_response
 
 HTTP_METHODS = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
 HTTP_ALLOWED_HEADERS = [
@@ -302,6 +305,19 @@ def create_http_app(
             and artifact_parts[4] == "content"
         ):
             response = await authorized_artifact_read(request, adapter, route_request)
+        elif active_settings.deployment != "local" and _is_stream_request(request):
+            response = await authorized_task_preflight(
+                lambda: tenant_scope_response(api, route_request),
+                lambda: cloud_raw_stream_preflight(api.stores, request.url.path),
+                authorization_expires_at=getattr(route_request.host_context, "expires_at", None),
+                request_deadline=getattr(request.state, "authorization_deadline", None),
+            )
+        elif (
+            active_settings.deployment != "local"
+            and request.url.path.endswith("/stream")
+            and not _is_agui_stream_request(request)
+        ):
+            response = ApiResponse(404, {"status": "not_found"})
         elif active_settings.deployment != "local" and request.method in {"GET", "HEAD"}:
             response = await authorized_task_preflight(
                 lambda: None,
@@ -326,7 +342,9 @@ def create_http_app(
                     )
                 head = await authorized_task_preflight(
                     lambda: None,
-                    lambda: api.stores.tasks.read_task_header(task_key),
+                    lambda: api.stores.tasks.read_task_header(
+                        task_key, require_source_coverage=active_settings.deployment != "local"
+                    ),
                     authorization_expires_at=getattr(
                         route_request.host_context, "expires_at", None
                     ),
@@ -363,6 +381,30 @@ def create_http_app(
                         status_code=session_key.status_code,
                         content=session_key.body,
                     )
+                if active_settings.deployment != "local":
+                    if not isinstance(api.stores.events, BoundedSessionEventReadPort):
+                        return JSONResponse(status_code=503, content={"status": "unavailable"})
+                    event_reader = api.stores.events
+                    highwater = await authorized_task_preflight(
+                        lambda: None,
+                        lambda: event_reader.read_session_highwater(session_key),
+                        authorization_expires_at=getattr(
+                            route_request.host_context, "expires_at", None
+                        ),
+                        request_deadline=getattr(request.state, "authorization_deadline", None),
+                    )
+                    if isinstance(highwater, ApiResponse):
+                        return JSONResponse(
+                            status_code=highwater.status_code, content=highwater.body
+                        )
+                    if after_sequence_value > highwater:
+                        return JSONResponse(
+                            status_code=400,
+                            content={
+                                "status": "invalid_request",
+                                "reason": "after_sequence exceeds Session highwater",
+                            },
+                        )
                 stream = tail_session_events(
                     database_path=active_database_path,
                     stores=api.stores,

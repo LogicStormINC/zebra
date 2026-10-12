@@ -1,9 +1,13 @@
+import json
 import sqlite3
 from pathlib import Path
 
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.event_store import EventStorePort
+from agent_core.ports.session_recovery import SessionEventPage
+from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 
 from agent_storage.database import SQLiteDatabase
 from agent_storage.event_rows import (
@@ -12,6 +16,7 @@ from agent_storage.event_rows import (
     ensure_idempotent_event_retry,
     serialize_event_payload,
 )
+from agent_storage.task_event_page_limits import admitted_page_positions, validate_page_request
 
 
 class SQLiteEventStore(EventStorePort):
@@ -107,6 +112,87 @@ class SQLiteEventStore(EventStorePort):
                 (str(session_id), sequence),
             ).fetchall()
         return [deserialize_event_row(row) for row in rows]
+
+    def read_session_highwater(self, session_id: SessionId) -> int:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                "SELECT MAX(sequence) AS highwater FROM session_events WHERE session_id=?",
+                (str(session_id),),
+            ).fetchone()
+        if row["highwater"] is None:
+            raise ValueError("canonical Session source is unavailable")
+        return int(row["highwater"])
+
+    def read_session_status(self, session_id: SessionId) -> SessionStatus:
+        with self._database.connect() as connection:
+            row = connection.execute(
+                "SELECT status,current_sequence FROM session_observation_headers "
+                "WHERE deployment_namespace='' AND session_id=?",
+                (str(session_id),),
+            ).fetchone()
+        if row is None or row["current_sequence"] != self.read_session_highwater(session_id):
+            raise CheckpointNotReady("Session observation header requires explicit preparation")
+        return SessionStatus(row["status"])
+
+    def read_session_event_page(
+        self,
+        session_id: SessionId,
+        after_sequence: int,
+        *,
+        through_sequence: int | None = None,
+        limit: int = 256,
+        max_bytes: int = 1_048_576,
+    ) -> SessionEventPage:
+        validate_page_request(after_sequence, limit, max_bytes, through_sequence)
+        with self._database.connect() as connection:
+            connection.execute("BEGIN")
+            source = connection.execute(
+                "SELECT MAX(sequence) AS highwater FROM session_events WHERE session_id=?",
+                (str(session_id),),
+            ).fetchone()["highwater"]
+            through = source if through_sequence is None else through_sequence
+            if source is None or not after_sequence <= through <= source:
+                raise ValueError("Session page cursor exceeds canonical source")
+            if "event_bytes_bound" not in {
+                row[1] for row in connection.execute("PRAGMA table_info(session_events)")
+            }:
+                raise CheckpointNotReady("Session Event byte bounds require explicit preparation")
+            metadata = connection.execute(
+                "SELECT sequence,event_bytes_bound FROM session_events "
+                "WHERE session_id=? AND sequence>? AND sequence<=? ORDER BY sequence LIMIT ?",
+                (str(session_id), after_sequence, through, limit),
+            ).fetchall()
+            if any(row["event_bytes_bound"] is None for row in metadata):
+                raise CheckpointNotReady("Session Event byte bounds require explicit preparation")
+            positions = admitted_page_positions(
+                [(row["sequence"], row["event_bytes_bound"]) for row in metadata],
+                after=after_sequence,
+                highwater=through,
+                max_bytes=max_bytes,
+            )
+            rows = (
+                []
+                if not positions
+                else connection.execute(
+                    "SELECT * FROM session_events WHERE session_id=? "
+                    "AND sequence>? AND sequence<=? ORDER BY sequence LIMIT ?",
+                    (str(session_id), after_sequence, positions[-1], len(positions)),
+                ).fetchall()
+            )
+            if len(rows) != len(positions):
+                raise ValueError("Session page changed during canonical read")
+            events = tuple(deserialize_event_row(row) for row in rows)
+            size = sum(
+                len(
+                    json.dumps(
+                        event.model_dump(mode="json"), ensure_ascii=False, separators=(",", ":")
+                    ).encode()
+                )
+                for event in events
+            )
+            if size > max_bytes:
+                raise ValueError("Session page exceeds admitted byte budget")
+            return SessionEventPage(session_id, events, after_sequence, through, size)
 
     def _initialize(self) -> None:
         with self._database.connect() as connection:

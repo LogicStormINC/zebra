@@ -71,7 +71,7 @@ def read_session_page(
     session_id: SessionId,
     after: int,
     *,
-    through: int,
+    through: int | None,
     limit: int = 256,
     max_bytes: int = 1_048_576,
 ) -> SessionEventPage:
@@ -81,7 +81,10 @@ def read_session_page(
         "WHERE deployment_namespace=%s AND session_id=%s",
         (namespace, session_id),
     ).fetchone()
-    if source is None or through > source["current_version"]:
+    if source is None:
+        raise SessionRecoveryConflict("canonical Session source is unavailable")
+    through = source["current_version"] if through is None else through
+    if not after <= through <= source["current_version"]:
         raise SessionRecoveryConflict("Session page highwater exceeds canonical source")
     metadata = connection.execute(
         SESSION_PAGE_METADATA_SQL,

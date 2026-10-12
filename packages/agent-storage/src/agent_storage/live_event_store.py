@@ -6,11 +6,12 @@ from agent_core.domain.events import SessionEvent
 from agent_core.domain.extension_snapshots import ExtensionSnapshot, ExtensionTaskCeiling
 from agent_core.domain.extensions import ExtensionScope
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.sessions import Session
+from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
 from agent_core.ports.committed_event_publisher import CommittedEventPublisherPort
-from agent_core.ports.event_store import EventStorePort
+from agent_core.ports.event_store import BoundedSessionEventReadPort, EventStorePort
+from agent_core.ports.session_recovery import SessionEventPage
 from agent_core.ports.workspace_projection_store import (
     WorkerProjectionBatchPort,
     WorkerProjectionCommitResult,
@@ -82,6 +83,35 @@ class PostCommitPublishingEventStore(EventStorePort):
 
     def read_since(self, session_id: SessionId, sequence: int) -> list[SessionEvent]:
         return self._event_store.read_since(session_id, sequence)
+
+    def read_session_highwater(self, session_id: SessionId) -> int:
+        if not isinstance(self._event_store, BoundedSessionEventReadPort):
+            raise ValueError("underlying store has no bounded Session reader")
+        return self._event_store.read_session_highwater(session_id)
+
+    def read_session_status(self, session_id: SessionId) -> SessionStatus:
+        if not isinstance(self._event_store, BoundedSessionEventReadPort):
+            raise ValueError("underlying store has no bounded Session reader")
+        return self._event_store.read_session_status(session_id)
+
+    def read_session_event_page(
+        self,
+        session_id: SessionId,
+        after_sequence: int,
+        *,
+        through_sequence: int | None = None,
+        limit: int = 256,
+        max_bytes: int = 1_048_576,
+    ) -> SessionEventPage:
+        if not isinstance(self._event_store, BoundedSessionEventReadPort):
+            raise ValueError("underlying store has no bounded Session reader")
+        return self._event_store.read_session_event_page(
+            session_id,
+            after_sequence,
+            through_sequence=through_sequence,
+            limit=limit,
+            max_bytes=max_bytes,
+        )
 
 
 class PostCommitPublishingWorkerProjectionTransaction(WorkerProjectionTransactionPort):

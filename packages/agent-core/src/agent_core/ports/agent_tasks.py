@@ -81,7 +81,9 @@ class AgentTaskPort(
 
     def get_task(self, task_id: TaskId) -> AgentTask | None: ...
 
-    def read_task_header(self, task_id: TaskId) -> TaskReadHeader | None:
+    def read_task_header(
+        self, task_id: TaskId, *, require_source_coverage: bool = False
+    ) -> TaskReadHeader | None:
         """Read indexed coordinates only; never adopt or hydrate historical bodies."""
         ...
 

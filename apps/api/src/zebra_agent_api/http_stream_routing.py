@@ -10,8 +10,19 @@ def _stream_resource_id(path: str) -> str:
     return parts[-2] if len(parts) >= 2 else ""
 
 
+def _is_raw_stream_path(path: str) -> bool:
+    parts = path.split("/")
+    return (
+        len(parts) == 4
+        and parts[0] == ""
+        and parts[1] in {"sessions", "tasks"}
+        and bool(parts[2])
+        and parts[3] == "stream"
+    )
+
+
 def _is_stream_request(request: Request) -> bool:
-    return request.method.upper() == "GET" and request.url.path.endswith("/stream")
+    return request.method.upper() == "GET" and _is_raw_stream_path(request.url.path)
 
 
 def _is_agui_stream_request(request: Request) -> bool:

@@ -20,7 +20,8 @@
 - Branch/worktree: codex/cloud-stream-baseline-01; isolated managed checkout.
 - Owned paths: tests/stream_storage/ (new bounded baseline/load checks);
   docs/CLOUD_STREAM_STORAGE_REFACTOR_SPEC.md §20 measurement evidence only;
-  registry, task_plan.md, PROGRESS.md, WORKLOG.md for status/evidence handoff.
+  registry, task_plan.md, PROGRESS.md, WORKLOG.md for status/evidence handoff;
+  docs/CLOUD_STREAM_READ_EVIDENCE.md measured baseline handoff only.
 - Scope: freeze source/workload; separate Session/Task/AG-UI read SQL, delta
   write SQL, authorization, transactions, sockets, WAL and Redis/queue bytes.
 - Acceptance: native PG/Redis 1/10/100 matrix; first/final replay separate;
@@ -29,9 +30,11 @@
   all content/tool positions observed. Final3cell smoke retains1Task terminal
   gap (runtime is unchanged);7profiler/native/CLI checks pass3.59s; make check
   GO, independent spec/quality reviews GO for profiler.
-- Remaining: 60s/3repeat, fullWorker/Grant/browser/v2. Baseline measurement is
-  not runtime correctness approval; reviewed instrumentation integrated locally
-  to cloud-agent-trench f16d8324; long-run evidence remains pending.
+- Completed frozen60s/3repeat matrix:54/54cells, unchanged harness/runtime;
+  23terminal failures, zero content/tool failures (existing v1 runtime defects).
+  Cd=20SQL/durable delta; single idle reader median Session213/Task3479/AGUI2739
+  SQL per60s. FullWorker/Grant/browser/v2 remains open; measurement is not
+  runtime correctness approval. Instrumentation integrated locally f16d8324.
 - Disposable labeled PG/Redis test dependencies and scratch migration allowed;
   no production load, existing-service operations, business migration,
   paid-model calls or deploy. Successor tasks remain dependent on this evidence.
@@ -74,6 +77,72 @@
   Redis socket pools capped128 each (bounded notifications and long legacy reads);
   100subscriber latency/SQL reduction and full Host/browser acceptance remain OPEN.
 - Redis adapter ownership transfers serially to WRITER only after reviewed integration.
+
+### CLOUD-STREAM-READ-BOUNDS-01 - Bound Cloud replay and privacy preflight
+
+- Status: Review for bounded replay/source-qualified privacy component
+  (Ready created then claimed before coding; full READ scale/paired gates stay open).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-read-bounds-01, managed isolated checkout.
+- Dependency: READ slice 4a79a270 and CONTRACT d8e85614 accepted locally into
+  cloud-agent-trench; postmerge42pass, rebase64pass/static GO. Full READ still open.
+- Owned paths: core ports/event_store.py and session_recovery.py minimal read
+  contract; storage sqlite.py, postgres/events.py and postgres/session_recovery.py
+  read-only page reuse; live_event_store.py read forwarding ONLY;
+  API session_streaming.py, coverage_public_read.py, ag_ui_task_view.py/http.py
+  bounded read preflight; ag_ui_stream.py cloud source-qualified header
+  startup (claimed before edits); ag_ui_checkpoint_tail.py readonly source
+  qualification before page frames (claimed before edits); source replay/header
+  reads if required;
+  associated core/storage/API native/integrity tests. Exact new helpers declared
+  before writing; no migration, source mutation, recorder or recovery-write edits.
+- Explicit serial handoff: COV-SQL-PHASE-01 source is integrated5dfa824d and its
+  retained checkout is clean; read-only live_event_store forwarding and source
+  header/page adapters transfer here. COV mutation/recorder/coverage proof and
+  write paths retain their original owner. No broad shared ownership.
+- Scope extension claimed before edits: core ports/agent_tasks.py optional
+  require_source_coverage flag; ports/task_replay.py unknown-by-default optional
+  strict_coverage header; SQLite agent_tasks.py signature compatibility only;
+  postgres/agent_tasks.py opt-in readonly header qualification; new
+  postgres/stream_read_preflight.py metadata-only integrity/privacy SQL;
+  tests/api/test_cloud_stream_read_bounds.py and
+  tests/agent_storage/test_session_event_pages.py, associated header/fault tests.
+- Review fix path claimed before editing: API http_stream_routing.py exact
+  raw stream route predicate shared by HTTP bypass and public preflight;
+  unknown/malformed prefixes retain normal route rejection and cannot read data.
+  Associated actual signed-Grant/tenant/routing regression tests included.
+- Auth-scalar extension claimed before edits: API tenant_guard.py shared
+  namespace lookup; postgres/projections.py readonly get_session_namespace;
+  optional core projection_store.py named reader protocol if needed; associated
+  tenant/auth/native regressions. Existing namespace guard semantics retained.
+- Native handoff root/parent/stage scalar JSON extraction permitted under the
+  same source-qualified deadline; no model/tool/full-history payload transfer.
+  Metadata prefix SQL may scan O(history); two-second deadline/failclosed is
+  explicit, not a false constant-work proof. At most256segment metadata rows.
+  Existing Worker/default header callers retain original costs/semantics.
+- Governance owned: registry, PROGRESS.md, task_plan.md, WORKLOG.md; stream spec
+  execution/READ evidence only, with separate focused evidence doc if needed to
+  keep spec under600lines. No unrelated SDK changes.
+- Acceptance: cloud count/UTF8byte/time-bounded replay and privacy preflight,
+  source-qualified membership/index highwater, strict privacy including late
+  markers and incomplete backfill; GET never repairs. Local/legacy unchanged.
+- Native oversized/missing/index-conflict/private/cursor/grant regressions;
+  default executor100subscriber/Host/browser/paired SQL gates remain separate.
+- Integration: validated local cloud-agent-trench stages only, no push/deploy.
+
+- Component evidence: focused85pass/11header-env-skips58.70s, then configured
+  native header/role12pass9.09s; make check GO2988files/mypy1250/eval30.
+  Independent quality P1 found unknown-prefix SSE admission; repaired exact
+  raw-route shape predicate and helper rejection, signed unrelated Grant tests
+  and malformed normalization checks. Initial repair target50pass12.82s; complete
+  configured native/API/Host/header rerun107pass/no skips65.90s. Independent spec/quality component reviews GO; P1 reproduction returns404.
+- Read ceiling: O(history) source-metadata SQL per page under2s deadline; legacy
+  replay can total O(history*pages). At most256 Segments; handoff SQL needs
+  payload-column SELECT but historical Python body hydration is zero at startup.
+  Privacy defaults UNKNOWN(None); strict coverage uses the canonical source view.
+  Raw oversized page rejection can occur after HTTP200 before any frame; no
+  structured raw-tail observation notice yet. No SQL reduction/performance claim.
+- Detailed evidence: [CLOUD_STREAM_READ_EVIDENCE.md](CLOUD_STREAM_READ_EVIDENCE.md).
 
 ### CLOUD-STREAM-CONTRACT-01 - Freeze transient output and v2 compatibility
 
@@ -270,6 +339,9 @@
 ### COV-SQL-PHASE-01 - Eliminate nested execution proof fanout
 
 - Status: In Progress (Ready on merged1388aca7; claimed2026-10-12 before coding).
+- Stream handoff2026-10-12: integrated/clean source-only EventStore read forwarding
+  and bounded header/page adapters transferred serially to READ-BOUNDS; COV
+  mutation/recorder/coverage proof and write ownership retained.
 - Human owner: Luke Ding; executor: Codex.
 - Branch/worktree: codex/cov-sql-phase-01; retained isolated integration checkout.
 - Inactive Pro-test overlay follow-up (user-approved2026-10-12 before edits):
