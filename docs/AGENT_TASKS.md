@@ -5,6 +5,12 @@
 - Status: In Progress (Ready on merged1388aca7; claimed2026-10-12 before coding).
 - Human owner: Luke Ding; executor: Codex.
 - Branch/worktree: codex/cov-sql-phase-01; retained isolated integration checkout.
+- Inactive Pro-test overlay follow-up (user-approved2026-10-12 before edits):
+  owns docker/compose.coverage-pro-test.yml and the existing application Compose
+  contract test tests/compose/application/test_client_integration_runtime.py,
+  plus existing manual-test/governance paths. Align API/Worker model descriptors;
+  preserve base/env/gVisor/tenant/rollout settings. Prepare and render only;
+  no migration, service start/restart, business cutover or performance approval.
 - Local integration follow-up (user-approved2026-10-12 before staging): commit
   this owned changeset and fast-forward cloud-agent-trench for manual testing.
   Owns docs/COV_SQL_MANUAL_TEST_20261012.md and the existing governance paths.

@@ -11,9 +11,12 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 COMPOSE = ROOT / "docker/compose.application.yml"
+PRO_TEST = ROOT / "docker/compose.coverage-pro-test.yml"
 
 
-def _render(platform: str | None = None, *, local_gvisor: bool = False) -> dict[str, object]:
+def _render(
+    platform: str | None = None, *, local_gvisor: bool = False, coverage_pro: bool = False,
+) -> dict[str, object]:
     if not shutil.which("docker"):
         pytest.skip("Docker Compose CLI unavailable")
     env = {key: value for key, value in os.environ.items() if not key.startswith("ZEBRA_")}
@@ -25,6 +28,7 @@ def _render(platform: str | None = None, *, local_gvisor: bool = False) -> dict[
             "ZEBRA_API_SSL_CERT_FILE": "/run/zebra/acceptance-bundle.pem",
             "ZEBRA_WORKER_SSL_CERT_FILE": "/run/zebra/acceptance-bundle.pem",
             "ZEBRA_DOCKER_SOCKET_GID": "0",
+            "DEEPSEEK_API_KEY": "fixture-only",
         }
     )
     if platform is not None:
@@ -42,6 +46,7 @@ def _render(platform: str | None = None, *, local_gvisor: bool = False) -> dict[
             "-f",
             str(COMPOSE),
             *(["-f", str(ROOT / "docker/compose.local-gvisor.yml")] if local_gvisor else []),
+            *(["-f", str(PRO_TEST)] if coverage_pro else []),
             "config",
             "--format",
             "json",
@@ -92,3 +97,30 @@ def test_application_platform_is_explicit_and_shared_by_execution_services(platf
     services = _render(platform)
     for service in ("zebra-migrate", "zebra-api", "zebra-worker"):
         assert services[service]["platform"] == (platform or "linux/amd64")
+
+
+def test_coverage_pro_pairs_api_worker_model_and_aliases():
+    services = _render("linux/arm64", local_gvisor=True, coverage_pro=True)
+    for name in ("zebra-api", "zebra-api-legacy", "zebra-worker"):
+        env = services[name]["environment"]
+        assert env["ZEBRA_MODEL_PROVIDER"] == "deepseek"
+        assert env["ZEBRA_MODEL_NAME"] == env["DEEPSEEK_MODEL"] == "deepseek-v4-pro"
+        assert env["ZEBRA_MODEL_BASE_URL"] == env["DEEPSEEK_BASE_URL"] == "https://api.deepseek.com"
+        assert env["ZEBRA_DEEPSEEK_REVIEWER_PROFILE"] == "deepseek-v4-pro-reviewer-v1"
+        assert env["ZEBRA_DEEPSEEK_WIRE_API"] == "chat_completions"
+
+
+@pytest.mark.parametrize("local_gvisor", [False, True])
+def test_coverage_pro_changes_only_model_settings_not_authority_or_runtime(local_gvisor):
+    before = _render("linux/arm64", local_gvisor=local_gvisor)
+    after = _render("linux/arm64", local_gvisor=local_gvisor, coverage_pro=True)
+    changed = {
+        "ZEBRA_MODEL_PROVIDER", "ZEBRA_MODEL_NAME", "DEEPSEEK_MODEL",
+        "ZEBRA_MODEL_BASE_URL", "DEEPSEEK_BASE_URL", "ZEBRA_DEEPSEEK_REVIEWER_PROFILE",
+        "ZEBRA_DEEPSEEK_WIRE_API",
+    }
+    for name in ("zebra-api", "zebra-api-legacy", "zebra-worker"):
+        for key in changed:
+            assert key not in before[name]["environment"]
+            del after[name]["environment"][key]
+    assert after == before

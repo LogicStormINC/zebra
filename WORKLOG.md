@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-10-12 - User-selected inactive Pro manual-test overlay
+
+- Claimed Docker Pro overlay/application Compose tests and governance before
+  editing. User selected strict-Pro test preparation only; no service activation.
+- API admission computes the same configuration digest as Worker registration;
+  Worker-only model override would refuse. Inactive overlay aligns API/legacy/
+  Worker official DeepSeek Pro endpoint/model/reviewer/wire API including aliases.
+- Three new tests RED on missing overlay, then GREEN after creating it; preserve
+  all non-model settings with and without local-gvisor. Actual acceptance-env
+  Compose rendering GO. Existing base/env files, credentials and runtime untouched.
+- Final application Compose16pass0skip1.51s and size/Ruff/mypy1243/eval30 GO.
+  Pure effective configuration of actual rendered API/Worker env confirms
+  Pro/reviewer/gVisor and identical capability digests without DB/registration.
+- Does not enable cutover/receipts or relax namespace/revocation/final certification
+  or SQL<=1000. Operator commands updated; no image rebuild needed for env-only
+  overlay. Native registration, signed Host admission and runtime tests stay open.
+
 ## 2026-10-12 - User-authorized manual-test integration preparation
 
 - Outcome: code b40a38be locally fast-forwarded into cloud-agent-trench; independent

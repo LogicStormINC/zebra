@@ -68,8 +68,27 @@ Strict native coverage registration requires `deepseek-v4-pro` and the exact
 reviewer profile. The controlled fixture tests select that profile explicitly.
 Without explicit operator selection/configuration, ordinary conversation testing
 does **not** exercise the native strict-coverage operation measured above.
-The user has been asked whether to prepare an inactive Pro-only testing overlay;
-no profile or production flag was silently changed.
+The user explicitly selected preparation of an inactive Pro testing overlay:
+`docker/compose.coverage-pro-test.yml`. Append it **last**, after application and
+local-gvisor. It aligns API, legacy API and Worker model descriptors because
+native API admission compares its descriptor with registered Worker capability.
+It pins the official endpoint, Pro model, reviewer profile and Chat Completions,
+including the DeepSeek aliases that otherwise override `ZEBRA_MODEL_*` values.
+It does not change credentials, tenant namespaces, resource budgets, TLS/mounts,
+admission cutover or execution-receipt rollout. Merely creating it activates nothing.
+While selected, ordinary model requests in those application processes also use
+Pro and may have different cost/latency. No new image build is needed for this
+environment-only overlay; the existing built runtime images are unchanged.
+
+Compose contract tests first failed for the absent overlay, then passed after
+creation. Both base-only and gVisor combinations preserve all non-model settings.
+Actual local acceptance-env Compose rendering also passed without starting services.
+Final application Compose suite: **16 passed / 0 skipped in 1.51s**; size/Ruff/
+mypy1,243/eval30 GO. Pure `load_settings` of actual rendered API/Worker envs
+confirms Pro/reviewer/gVisor and identical capability configuration digests,
+without accessing the database or registering any Worker. Current image IDs
+remain the three built IDs above; operator env/base/gVisor files unchanged.
+Preparation is not proof of capability registration or strict task success.
 
 ## Operator-only replacement commands
 
@@ -90,19 +109,27 @@ cd /Users/lukeding/Desktop/playground/2026/product/zebra-agent
 
 docker compose --env-file docker/trench-acceptance.env \
   -f docker/compose.application.yml -f docker/compose.local-gvisor.yml \
+  -f docker/compose.coverage-pro-test.yml config --quiet
+
+docker compose --env-file docker/trench-acceptance.env \
+  -f docker/compose.application.yml -f docker/compose.local-gvisor.yml \
+  -f docker/compose.coverage-pro-test.yml \
   stop zebra-api zebra-api-legacy zebra-worker
 
 docker compose --env-file docker/trench-acceptance.env \
   -f docker/compose.application.yml -f docker/compose.local-gvisor.yml \
+  -f docker/compose.coverage-pro-test.yml \
   run --rm --no-deps zebra-migrate
 
 docker compose --env-file docker/trench-acceptance.env \
   -f docker/compose.application.yml -f docker/compose.local-gvisor.yml \
+  -f docker/compose.coverage-pro-test.yml \
   up -d --no-build --no-deps --force-recreate --wait \
   zebra-api zebra-api-legacy zebra-worker
 
 docker compose --env-file docker/trench-acceptance.env \
   -f docker/compose.application.yml -f docker/compose.local-gvisor.yml \
+  -f docker/compose.coverage-pro-test.yml \
   ps --all
 ```
 
@@ -110,6 +137,15 @@ The migration image applies pending additive migrations (up to 99), not just 99.
 API legacy shares the new API image and must also be replaced to avoid mixed
 versions. Recreating a container with `--no-build` before successful image build
 does not test the new source. Healthy containers prove readiness, not task success.
+After replacement, verify effective model/reviewer and successful native Worker
+registration before sending a **new**, explicitly coverage-admitted task. Host
+signed admission, connector availability, operator cutover and current Worker
+capability remain mandatory; a normal chat completion is not strict acceptance.
+If API refuses `coverage_admission_unavailable`, inspect the existing gate and
+registration rather than enabling cutover, bypassing proof or changing SQL budgets.
+To return to the baseline model profile later, omit only the Pro overlay during
+an operator-managed application recreation. Keep gVisor and the upgraded schema;
+this is a model-profile change, not database or image rollback.
 
 ## Manual acceptance checklist
 
