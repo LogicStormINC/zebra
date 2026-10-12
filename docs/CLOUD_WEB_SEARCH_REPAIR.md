@@ -82,6 +82,9 @@ Reference: [SearXNG engine defaults and Bing regional endpoint](https://github.c
   - Worker:`d65422f0a11f30b0c4324cf6d716fbb84b43d38d6133abe72dfa3840ff03bb3a`
   - Migrate:`77cd7ab9ffd12063d1c8a11f14689e0174123d3b24561c1610bf4619d7870675`
 - Seven modified runtime/tool module SHA256 values match the prepared image.
+- Source commit `c7fe3f0e` locally fast-forwarded into `cloud-agent-trench`;
+  primary checkout readiness regression15passed3.25s and both Compose configs
+  validate. Original dirty-file and stash digests unchanged; no remote push.
 
 ## Verified incident
 

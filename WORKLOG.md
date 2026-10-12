@@ -19,6 +19,9 @@
   API12a55b4e, Workerd65422f0, Migrate77cd7ab9 arm64 prepared; seven source hashes
   match images. Existing Worker uses older aec421e8; observed2restarts are not
   explained/qualified by this provider repair. Operator replacement remains.
+- Sourcec7fe3f0e fast-forwarded into local cloud-agent-trench; primary readiness
+  regression15pass3.25s and both Compose configs validate. Dirty-file digest
+  a68fd567 and stash digest24add7d1 unchanged. No remote push or existing restart.
 
 ## 2026-10-12 - WEB-EGRESS-DELIVERY-01
 
