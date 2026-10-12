@@ -924,3 +924,11 @@ P1→P3 顺序拉栈、填配置、跑 runner。
 - [x] Pass focused tests, full Zebra gates and full Trench gates.
 - [ ] Execute Linux gVisor, one-digest production canary and rollback rehearsal
   on the authorized production host before release approval.
+# WEB-SEARCH-CHINA-01 - 2026-10-12
+
+- Claimed focused domestic config/selector follow-up; preserve primary dirty work.
+- Actual native engine matrix: Bing/Sogou/360/WeChat usable; Baidu CAPTCHA.
+- RED/GREEN config and shared v1/v2 tool query guidance implemented.
+- Exact-settings HTTPS-to-evidence qualification and static/test gates complete.
+- Final images built; local integration next. Operator/model tests pending;
+  v2 mixed-HTTP result compatibility remains OPEN separately from engine config.

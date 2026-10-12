@@ -1,5 +1,70 @@
 # Cloud search and exact-link delivery repair
 
+## Domestic engine selection - 2026-10-12
+
+Tracked settings now retain Bing, Baidu, Sogou, 360search and Sogou WeChat.
+Only Bing-cn participates by default; other native engines are disabled by
+default but explicitly `inactive:false`, so native query selectors activate them.
+The default language is zh-CN. Each optional engine has a five-second timeout;
+the global six-second ceiling and strict incomplete-source failure remain.
+Both search tool versions expose this selector guidance to the model:
+
+| Intent | web.search query |
+| --- | --- |
+| Default domestic web | `人工智能 新闻` |
+| Explicit Bing | `!bing 人工智能 新闻` |
+| Sogou web | `!sogou 人工智能` |
+| 360 web | `!360so 人工智能` |
+| Public WeChat articles | `!sogouw 人工智能` |
+| Baidu, currently blocked on this egress | `!bd 人工智能` |
+
+Use single `!`, not `!!` (external redirect). Select engines separately: a failed
+engine must not poison unrelated ordinary searches. An explicit failed selection
+still fails truthfully; there is no CAPTCHA bypass or automatic success fallback.
+WeChat search covers Sogou-indexed public articles, not private chats, login-only
+content, all WeChat in-app content or exhaustive coverage. Results can be Sogou
+article forwarding URLs; these are collected references, not proof the article
+body is fetched or that every redirect will be accessible.
+
+An isolated same pinned SearXNG image, with real native requests and explicit
+selection of default-disabled engines, returned:
+
+- Bing Chinese query:10results/no failures,0.181s.
+- Sogou:7results/no failures,0.675s.
+- 360:4results/no failures,1.412s.
+- WeChat:9results/no failures,0.205s; result hosts were weixin.sogou.com.
+- Baidu:0results/CAPTCHA,0.119s; not qualified ready or enabled in default fan-out.
+
+The exact tracked settings were also loaded in separate disposable SearXNG/TLS
+containers. A prepared Worker exercised real HTTPS, normalization, evidence
+ledger and final URL admission; default/Sogou/360/WeChat probes returned ready=true
+with5/5/3/5sources in legacy mode. No model, Task, SQL or existing service restart.
+In v2, 360/WeChat returned ready=true with3/5sources, but default Chinese/Sogou
+queries failed invalid_search_response: their otherwise valid provider result
+lists include HTTP URLs, which the existing v2 all-candidate HTTPS gate rejects.
+This separate provider-projection limitation remains OPEN: no silently discarded
+candidates, URL scheme rewriting or weakened source gate in this config slice.
+This is tool retrieval evidence, not semantic freshness, relevance or model-task
+acceptance. Operator restart commands below remain required; images include
+both tool versions' native selector guidance.
+
+To qualify public WeChat retrieval after restart:
+
+```sh
+docker exec -i zebra-application-zebra-worker-1 python - \
+  --query '!sogouw 人工智能' < docker/web-search/verify.py
+```
+
+Reference: [SearXNG native engine selection](https://docs.searxng.org/user/search-syntax.html)
+and [native Sogou WeChat engine](https://github.com/searxng/searxng/blob/master/searx/engines/sogou_wechat.py).
+
+Validation: affected1270passed12environment-skipped69.57s; focused43passed5.28s;
+make check GO (Ruff/mypy1246/eval30). Prepared arm64 application image IDs:
+API2ec641797dd785dd53f212936761b42a0c70883ddbc31e71cf44d1c73131dfe4,
+Workerba82d8dad6bd1f5352e950ed96733ed7e6fc8827e10b9fc5f1fd8ded08528331,
+Migrate767e44f8cabb16ea39b1bff1d0f0bfcfbf8b30a7fe7b3d0841a3eafd02a08fd7.
+Both modified tool module SHA256 values match the prepared Worker image.
+
 ## Operator retest follow-up - 2026-10-12
 
 The first deployed search stack was healthy but **not search-ready**. The

@@ -1,5 +1,16 @@
 # Zebra Agent Project Status
 
+Domestic search follow-up (2026-10-12, WEB-SEARCH-CHINA-01): domestic native
+engines and public WeChat selectors prepared, operator replacement pending.
+Bing-cn remains default with zh-CN; Baidu/Sogou/360/WeChat remain independently
+selectable, not default fan-out. Real native Sogou/360/WeChat returned7/4/9results;
+Baidu CAPTCHA is not certified ready. Tool v1/v2 now explain native selection.
+Affected1270pass12environment-skips69.57s and static gates GO. Legacy all four
+usable routes pass HTTPS-to-evidence; v2 360/WeChat pass, but mixed HTTP URLs in
+some Bing-Chinese/Sogou responses still trigger v2 invalid_search_response: OPEN.
+No new dependency, CAPTCHA bypass, authority/SQL/final-gate weakening or restart.
+See docs/CLOUD_WEB_SEARCH_REPAIR.md for scope, probes and manual replacement.
+
 Search readiness follow-up (2026-10-12, WEB-SEARCH-READINESS-01): source/image
 and temporary tool-chain acceptance GO; operator replacement/new conversation
 pending. Affected1617pass12environment-skips87.88s; make check GO

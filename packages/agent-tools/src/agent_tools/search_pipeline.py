@@ -23,7 +23,7 @@ from agent_tools.contracts import ToolContract
 from agent_tools.web_crawl import FetchOutcome
 from agent_tools.web_envelope import WebResultEnvelope
 from agent_tools.web_gateway import WebGatewayError
-from agent_tools.web_search import search_failure
+from agent_tools.web_search import search_failure, web_search_contract
 
 MAX_SEARCH_QUERY_CHARS = 500
 DEFAULT_SEARCH_LIMIT = 8
@@ -384,7 +384,7 @@ web_search_v2_contract = ToolContract(
     ),
     required_arguments=("query",),
     argument_properties={
-        "query": {"type": "string", "minLength": 1, "maxLength": MAX_SEARCH_QUERY_CHARS},
+        "query": web_search_contract.argument_properties["query"],
         "limit": {"type": "integer", "minimum": 1, "maximum": MAX_SEARCH_LIMIT},
         "time_range": {"type": "string", "enum": sorted(TIME_RANGES)},
         "include_domains": {"type": "array", "items": {"type": "string"}},

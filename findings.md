@@ -2380,3 +2380,15 @@ Cloud PG+MinIO composition `33/33 PASS`,`make check` 全绿,
   Interactive custom applications remain on the separately sandboxed MCP Apps
   path; provider-specific creation/import tools remain a follow-up rather than
   being hidden inside presentation.
+# Domestic native search qualification - 2026-10-12
+
+Pinned SearXNG supports all requested domestic engines natively. `disabled:true`
+excludes default fan-out but does not prevent explicit !engine selection;
+`inactive:false` keeps the processor registered. Actual !sogou/!360so/!sogouw
+queries returned7/4/9results, while !bd is CAPTCHA-blocked on this egress.
+Keep independent selection to avoid reinstating cross-engine failure coupling.
+WeChat is public article indexing and often returns Sogou forwarding URLs, not
+private WeChat app coverage or guaranteed full article body access.
+The v2 provider rejects an entire candidate list if one HTTP URL appears.
+Legacy normalization skips these with truncation; v2 Bing-Chinese/Sogou remains
+OPEN despite valid HTTPS neighbors. No scheme rewriting or gate weakening here.

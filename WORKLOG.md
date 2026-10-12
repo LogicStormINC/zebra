@@ -1,5 +1,20 @@
 # Progress Log
 
+## 2026-10-12 - WEB-SEARCH-CHINA-01
+
+- Claimed focused Ready task/branch and owned config/contracts/tests/docs first.
+- Native engine proof: Sogou7/3604/WeChat9results; Baidu0/CAPTCHA.
+- Config registers all five engines, default zh-CN Bing only; explicit optional
+  selectors work without new dependencies or default failure amplification.
+- Config/selector tests reproduced missing engines/guidance RED; GREEN43pass5.28s,
+  make check GO (sizes2971, Ruff, mypy1246, eval30). Wider1270pass12skip69.57s.
+- Exact tracked config in disposable SearXNG/TLS stack and prepared Worker passed
+  legacy default/Sogou/360/WeChat HTTPS-to-evidence probes with5/5/3/5sources.
+  No original paid Task, model call, SQL or existing service restart.
+- V2 360/WeChat ready3/5; mixed HTTP candidate rejection for some Bing-Chinese
+  and Sogou queries remains OPEN, not hidden by unsafe rewriting or dropped rows.
+- Final images built; both changed tool modules match the Worker image SHA256.
+
 ## 2026-10-12 - WEB-SEARCH-READINESS-01
 
 - Claimed focused Ready follow-up before coding. Reproduced live zero/CAPTCHA;

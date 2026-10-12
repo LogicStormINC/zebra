@@ -1,5 +1,26 @@
 # AGENT_TASKS.md
 
+### WEB-SEARCH-CHINA-01 - Domestic engines and explicit public WeChat search
+
+- Status: Review (created Ready and claimed 2026-10-12 before coding;
+  config/tool-selector proof GO, operator replacement/model acceptance pending).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/search-china-engines-01; retained isolated worktree.
+- Owned paths: docker/web-search/settings.yml, verify.py;
+  tests/config/test_search_engine_defaults.py; docs/CLOUD_WEB_SEARCH_REPAIR.md;
+  this registry, PROGRESS.md, task_plan.md, findings.md, WORKLOG.md.
+- Follow-up claimed before edits: tools/web_search.py and search_pipeline.py query guidance and their
+  corresponding tool-contract tests, so the Agent can discover native selectors.
+- Reuse pinned native SearXNG engines and query shortcuts, no new dependency.
+  Qualify Baidu/Sogou/360/WeChat individually; explicitly selected failing
+  engines must fail, not poison ordinary default search or report empty readiness.
+- Preserve current authority/SSRF/source/SQL gates. No service restart, original
+  paid Task replay, model call, remote push or unrelated SDK modification.
+- Validation: affected1270pass12skip69.57s; make check GO. Legacy native HTTPS
+  default/Sogou/360/WeChat probes ready5/5/3/5; v2 360/WeChat ready3/5.
+  V2 mixed HTTP candidate rejection still OPEN for some Chinese/Sogou queries.
+  Baidu remains CAPTCHA-blocked. No successful empty or partial-source fallback.
+
 ### WEB-SEARCH-READINESS-01 - Search engine activation and observable provider failure
 
 - Status: Review (created Ready after live SearXNG reproduction; claimed

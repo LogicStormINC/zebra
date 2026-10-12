@@ -1,11 +1,33 @@
 # Private operator service, not a public multi-tenant search website.
 use_default_settings:
   engines:
-    keep_only: [bing]
+    keep_only: [bing, baidu, sogou, 360search, sogou wechat]
 engines:
   - name: bing
     disabled: false
     base_url: https://cn.bing.com
+  # disabled excludes default fan-out, not explicit native !engine selection.
+  # ponytail: one default avoids cross-engine failures; qualify before enabling more.
+  - name: baidu
+    disabled: true
+    inactive: false
+    shortcut: bd
+    timeout: 5.0
+  - name: sogou
+    disabled: true
+    inactive: false
+    shortcut: sogou
+    timeout: 5.0
+  - name: 360search
+    disabled: true
+    inactive: false
+    shortcut: 360so
+    timeout: 5.0
+  - name: sogou wechat
+    disabled: true
+    inactive: false
+    shortcut: sogouw
+    timeout: 5.0
 server:
   limiter: false
   public_instance: false
@@ -14,6 +36,7 @@ server:
 search:
   formats: [html, json]
   safe_search: 1
+  default_lang: zh-CN
 outgoing:
   request_timeout: 5.0
   max_request_timeout: 6.0
