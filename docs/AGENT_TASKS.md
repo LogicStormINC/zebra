@@ -20,6 +20,9 @@
   default/Sogou/360/WeChat probes ready5/5/3/5; v2 360/WeChat ready3/5.
   V2 mixed HTTP candidate rejection still OPEN for some Chinese/Sogou queries.
   Baidu remains CAPTCHA-blocked. No successful empty or partial-source fallback.
+- Operator-requested follow-up (claimed before edits): remove Baidu from retained
+  engines and shared tool query guidance; update existing regression and handoff.
+  Same owner/branch/owned paths. Prepare images only; no existing service restart.
 
 ### WEB-SEARCH-READINESS-01 - Search engine activation and observable provider failure
 

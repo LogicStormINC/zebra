@@ -1,5 +1,30 @@
 # Cloud search and exact-link delivery repair
 
+## Current operator handoff - Baidu retired, 2026-10-12
+
+The operator declined Baidu official API integration. Baidu is removed from the
+retained engine list and both tool versions' shared query guidance. No paid
+provider, account, credentials or fallback mislabeled as Baidu was configured.
+The engine matrix below preserves earlier investigation evidence, not current
+Baidu availability. Default Bing-cn and explicit Sogou/360/WeChat remain.
+Prepared images must replace the currently running older API/Worker; rebuild is
+not necessary after this handoff. Use the restart commands below, preserving
+local-gvisor and Pro overrides. No migration or data deletion is required.
+
+Run the baseline operator probe, then a separate public WeChat probe:
+
+```sh
+docker exec -i zebra-application-zebra-worker-1 python - \
+  < docker/web-search/verify.py
+docker exec -i zebra-application-zebra-worker-1 python - \
+  --query '!sogouw 人工智能' < docker/web-search/verify.py
+```
+
+Every line must be ready=true with sources>0. Then create a new signed,
+network-enabled conversation. Existing failed attempts are not automatically
+replayed. V2 mixed-HTTP candidate rejection remains OPEN; neither retiring Baidu
+nor restarting fixes that separate provider projection limitation.
+
 ## Domestic engine selection - 2026-10-12
 
 Tracked settings now retain Bing, Baidu, Sogou, 360search and Sogou WeChat.

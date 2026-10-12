@@ -1,5 +1,10 @@
 # Zebra Agent Project Status
 
+Operator handoff (2026-10-12): user declined Baidu/API integration. Removed Baidu
+from retained engines and shared v1/v2 query guidance; prepare-only, no service
+restart, paid provider or credentials. Current config retains Bing/Sogou/360/WeChat.
+V2 mixed-HTTP candidate compatibility remains OPEN independently of this handoff.
+
 Domestic search follow-up (2026-10-12, WEB-SEARCH-CHINA-01): domestic native
 engines and public WeChat selectors prepared, operator replacement pending.
 Bing-cn remains default with zh-CN; Baidu/Sogou/360/WeChat remain independently

@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-10-12 - Baidu retirement/manual restart handoff
+
+- Explicit operator follow-up within WEB-SEARCH-CHINA-01 owned paths.
+- Updated config/query regressions RED before removing Baidu registration and
+  shared v1/v2 guidance. No Baidu API, credential or charge configured.
+- Running API/Worker still old images; prepare replacement only, operator starts.
+- Preserve unrelated primary dirty changes and stashes; no external push.
+
 ## 2026-10-12 - WEB-SEARCH-CHINA-01
 
 - Claimed focused Ready task/branch and owned config/contracts/tests/docs first.
