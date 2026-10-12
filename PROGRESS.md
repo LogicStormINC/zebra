@@ -1,8 +1,12 @@
 # Zebra Agent Project Status
 
 SQL operation-boundary repair (2026-10-12, COV-SQL-PHASE-01): **In Progress**.
-User authorized local integration of codex/cov-sql-phase-01 into
-cloud-agent-trench as a manual-test candidate; no running-service activation.
+User-authorized local integration into cloud-agent-trench completed at code
+commit b40a38be as a manual-test candidate; no running-service activation.
+Fresh pre-merge69 and hermetic primary post-merge40 pass; primary make check GO.
+Arm64 migrate/API/Worker images built; offline imports/36-file source hashes GO.
+Existing Flash runtime is not qualified strict-Pro coverage; operator profile
+selection, migration/replacement and manual acceptance remain explicit/open.
 Application image preparation and operator commands are documented in
 docs/COV_SQL_MANUAL_TEST_20261012.md. Strict SQL gate remains FAIL.
 Native authority observation no longer performs projection writes; bounded Task

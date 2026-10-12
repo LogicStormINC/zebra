@@ -39,6 +39,12 @@
    normal-wake authority facts must replace repeated guarded adapter entries.
    Retain per-I/O revocation and independent final proof; do not remove reset
    accounting, obscure server work, widen strict1000, or activate this candidate.
+9. User-authorized manual-test preparation: code b40a38be locally fast-forwarded
+   into cloud-agent-trench; pre-merge69/post-merge hermetic40 and primary static
+   GO. Migrate/API/Worker arm64 images built and exact-source/offline-smoke checked.
+   Preserve dirty SDK/AGENTS/stashes and runtime config. Strict-Pro test profile
+   selection, operator migration/replacement/manual acceptance and SQL gate stay
+   open; no runtime/remote activation. Commands in COV_SQL_MANUAL_TEST_20261012.md.
 
 # Completed local integration — 2026-10-12
 

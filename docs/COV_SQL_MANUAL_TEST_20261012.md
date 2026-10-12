@@ -32,8 +32,44 @@ Host/model/object responses do not prove business semantic accuracy or live p95.
   authority-outside-transaction, bounded selection/fallback and core hooks.
 - Compose validation and existing mTLS/CA file readability checks pass.
 - Previous API/Worker images retained as `manual-test-before-20261012` tags.
-- Pending: local fast-forward, preserved-file verification, application image
-  build and offline image import/contract smoke checks.
+- Code commit `b40a38bed82bddfbd2a6830bad65ff975dac79a3` fast-forwarded locally
+  into `cloud-agent-trench`; isolated source branch retained for open SQL work.
+- Primary modified/untracked file digest and all nine stash references unchanged
+  before/after integration and build. SDK/AGENTS work was not staged.
+- Fresh primary `make check` GO: sizes 2,956 / Ruff / mypy 1,243 / eval 30.
+- Initial primary native group: 36 pass / 4 setup errors. Root cause independently
+  traced to primary `.env.local`'s `DEEPSEEK_MODEL=deepseek-flash`, overriding the
+  fixture's Pro model. Strict capability correctly refused; no guard was relaxed.
+  Re-ran the same primary source/venv from an empty temporary cwd with a symlink
+  to the tracked configs and absolute pytest/config paths: **40 pass, 0 skip,
+  0 fail in 62.43s**; `/tmp/zebra-manual-postmerge-hermetic-20261012.xml`.
+  Local model configuration was not changed. This is not a full-suite rerun.
+- Build of migrate/API/Worker GO, all `arm64`. Each image's 36 changed runtime
+  Python files exactly match the merged source by SHA-256. Offline imports and
+  migration-99 catalog smoke checks pass with network disabled/read-only root;
+  neither application entrypoints nor migration `main()` were invoked.
+
+| Image | Built ID |
+| --- | --- |
+| zebra-application-zebra-migrate | `sha256:5c9eefdf62dcd4afda8f5a95cf9071bbdf5b80e4c8bd286eb41e89bd4d18aa29` |
+| zebra-application-zebra-api | `sha256:bb93c4ee64702559fb2c353eb4f8b5b05d7dd62a5e269829fac49fc3ca16bbf3` |
+| zebra-application-zebra-worker | `sha256:e3e59a42a7a094c46378d823c3ce3202a9f2c688b5468a5221374662aabe74da` |
+
+Existing API/Worker/legacy container IDs and pinned image IDs remain unchanged:
+running services are still the old version until the operator replaces them.
+
+### Strict coverage profile prerequisite remains explicit
+
+Read-only inspection of the existing running Worker reports `cloud`,
+`deepseek-flash`, reviewer profile `None`, scan fallback `True`. Newly built
+images retain the tracked defaults and existing operator env; image rebuilding
+does not authorize enabling native coverage receipts or changing model profiles.
+Strict native coverage registration requires `deepseek-v4-pro` and the exact
+reviewer profile. The controlled fixture tests select that profile explicitly.
+Without explicit operator selection/configuration, ordinary conversation testing
+does **not** exercise the native strict-coverage operation measured above.
+The user has been asked whether to prepare an inactive Pro-only testing overlay;
+no profile or production flag was silently changed.
 
 ## Operator-only replacement commands
 
@@ -79,7 +115,9 @@ does not test the new source. Healthy containers prove readiness, not task succe
 
 1. Start a **new** Trench conversation with an authenticated user. Record its
    conversation ID, request start time, first visible output, and terminal time.
-2. Run a bounded subscription query with an explicit date/source range. Verify
+2. Run a bounded subscription query with an explicit date/source range. For a
+   native strict-coverage test, first satisfy the profile prerequisite above;
+   otherwise this checks the ordinary conversation path only. Verify
    progressive updates, tool summaries, final answer and a terminal state rather
    than indefinitely retained Working. Compare results with the actual selected
    records; sample retrieval must not claim exhaustive coverage.

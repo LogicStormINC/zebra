@@ -11,6 +11,9 @@
   Build application images only; preserve primary SDK/AGENTS/stashes and existing
   runtime configuration. No push, service restart, business migration or strict
   performance release approval. Task remains In Progress until the SQL gate passes.
+  Outcome: local code fast-forward b40a38be; pre-merge69/post-merge hermetic40
+  and primary static GO; arm64 images and offline hash/import checks GO. Actual
+  running Flash profile still needs explicit strict-Pro test selection. No activation.
 - Owned paths: PostgreSQL coverage authority/read/proof/budget/publication and
   database/work-unit/deadline boundaries; Worker coverage composition/readers;
   integrations coverage consumers; corresponding native/fault/workload tests;

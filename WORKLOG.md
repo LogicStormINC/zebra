@@ -2,6 +2,17 @@
 
 ## 2026-10-12 - User-authorized manual-test integration preparation
 
+- Outcome: code b40a38be locally fast-forwarded into cloud-agent-trench; independent
+  dirty-file/stash digests unchanged. Primary make check GO2956/1243/eval30.
+  Initial primary fixture36pass4setuperrors reproduced and traced to .env.local
+  DeepSeek model alias overriding explicit fixture Pro. No configuration/guard
+  changed: hermetic-cwd run of the same primary source/venv passes40/0skip62.43s.
+  Arm64 migrate/API/Worker builds GO; each36-runtime-file SHA256 equality and
+  offline network-none/read-only import/catalog checks GO. Existing application
+  container/image IDs unchanged; no migration, restart, push or final acceptance.
+  Running Worker remains Flash/reviewerNone; strict-Pro testing profile selection
+  remains an explicit user decision, not inferred from source integration.
+
 - Current request explicitly authorizes local merge into cloud-agent-trench and
   application image preparation, not remote push/restart/business migration.
 - Primary has unrelated SDK/AGENTS modifications; their complete modified and
