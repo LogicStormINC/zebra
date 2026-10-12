@@ -11,6 +11,9 @@
   proof are recorded in docs/CLOUD_WEB_SEARCH_REPAIR.md after completion.
 - Independent SearXNG/Caddy images pulled/digest pinned; no search service started.
   Existing Worker continues its old image with restart count0, intentionally.
+- Source96a817bc locally fast-forwarded into cloud-agent-trench; primary critical
+  46pass0skip2.20s and Compose validation GO. Original dirty-file digest
+  21e3f02b and stash digest24add7d1 unchanged. No remote push.
 
 ## 2026-10-12 - COV-POOL-STARTUP-01 incident repair
 

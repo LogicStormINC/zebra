@@ -8,6 +8,7 @@
 4. Done: independent SearXNG/TLS configuration, secret bootstrap and manual runbook.
 5. Done: complete search URLs-to-ledger boundary and canonical fetch metadata.
 6. Done: final affected1602pass12environment-skips, make check and rebuilt images.
+   Source96a817bc fast-forwarded into cloud-agent-trench; primary46pass0skip.
 7. Operator pending: start search, replace API/Worker, test a new signed-network
    conversation; original suspended Task is neither resubmitted nor rewritten.
 

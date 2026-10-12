@@ -126,6 +126,11 @@ and [JSON search API](https://docs.searxng.org/dev/search_api.html).
 
 ## Source/image validation record - 2026-10-12
 
+- Source96a817bc fast-forwarded locally into `cloud-agent-trench`. Primary
+  postmerge critical46passed0skipped2.20s; both Compose definitions validate.
+  Original dirty SDK files and all stash refs have unchanged SHA256 digests.
+  No GitHub push or service restart was performed.
+
 - Final affected cross-package gate:1602passed12environment-skipped,92.09s;
   runtime/tools/config/security/Worker authority plus exact citation regressions.
   This is not the full repository suite or strict SQL/semantic coverage gate.

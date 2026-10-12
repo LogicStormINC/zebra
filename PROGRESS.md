@@ -2,6 +2,8 @@
 
 Web search/delivery incident (2026-10-12, WEB-EGRESS-DELIVERY-01): source/image
 repair GO; operator startup and real search/conversation replay pending.
+Source96a817bc integrated locally into cloud-agent-trench; primary critical
+46pass0skip2.20s; dirty/stash digests unchanged; no remote push or restart.
 Affected cross-package1602pass12environment-skips92.09s; make check GO
 (Ruff, mypy1245, eval30). Three arm64 images built and runtime module hashes
 verified; new-image public HTTPS200/text probe GO. Live recovery301ee0ef is
