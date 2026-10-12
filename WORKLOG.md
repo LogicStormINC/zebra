@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026-10-12 - WEB-EGRESS-DELIVERY-01
+
+- Claimed isolated focused branch/paths before coding; source fixes preserve
+  primary dirty SDK work and all stashes. No service restart, Task replay or push.
+- RED/GREEN tests cover Markdown citation parsing, Fake-IP/mixed/private DNS,
+  fixed search backend, native protocol/TLS, typed DNS failures, canonical search
+  refs-to-ledger, source metadata trust and idempotent certificate bootstrap.
+- Source static gates pass (Ruff, mypy1245, eval30); final broad gate and image
+  proof are recorded in docs/CLOUD_WEB_SEARCH_REPAIR.md after completion.
+- Independent SearXNG/Caddy images pulled/digest pinned; no search service started.
+  Existing Worker continues its old image with restart count0, intentionally.
+
 ## 2026-10-12 - COV-POOL-STARTUP-01 incident repair
 
 - Claimed focused branch and exclusive paths before coding, preserving the

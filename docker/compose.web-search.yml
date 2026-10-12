@@ -1,0 +1,6 @@
+# Opt-in Worker wiring; keep local-gvisor and coverage-pro-test overrides too.
+services:
+  zebra-worker:
+    environment:
+      ZEBRA_WEB_SEARCH_ENDPOINT: https://search.zebra.test/search
+      ZEBRA_WEB_SEARCH_PRIVATE_BACKEND: "true"

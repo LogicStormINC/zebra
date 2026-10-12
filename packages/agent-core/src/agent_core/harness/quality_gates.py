@@ -122,7 +122,7 @@ def evaluate_answer(
     return AnswerQuality(True, "acceptance_contract_satisfied")
 
 
-_URL_PATTERN = re.compile(r"https?://[^\s<>\])]+")
+_URL_PATTERN = re.compile(r"https?://[^\s<>`\])]+")
 _TRAILING_URL_PUNCTUATION = ".,;:!?，。；：！？)]}"
 
 

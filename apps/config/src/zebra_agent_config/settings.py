@@ -108,6 +108,7 @@ class ZebraAgentSettings:
         )
     )
     web_search_endpoint: str | None = None
+    web_search_private_backend: bool = False
     web_pipeline_v2: bool = False
     client_integration_enabled: bool = False
     cloud_extensions_read_enabled: bool = False
@@ -239,6 +240,9 @@ def load_settings(
         setup=load_setup_settings(values),
         scm=_load_scm_settings(values),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
+        web_search_private_backend=_read_bool(
+            values, "ZEBRA_WEB_SEARCH_PRIVATE_BACKEND", default=False
+        ),
         web_pipeline_v2=_read_bool(values, "ZEBRA_WEB_PIPELINE_V2", default=False),
         client_integration_enabled=_read_bool(
             values, "ZEBRA_CLIENT_INTEGRATION_ENABLED", default=False

@@ -1,5 +1,40 @@
 # AGENT_TASKS.md
 
+### WEB-EGRESS-DELIVERY-01 - Exact Markdown citations and operator search egress
+
+- Status: Review (created Ready from verified live incident; claimed
+  2026-10-12 before implementation; source/image/component gates GO,
+  operator startup and real search/conversation replay pending).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/web-egress-delivery-01; retained isolated integration worktree.
+- Owned paths: core/harness/quality_gates.py; runtime public_dns.py,
+  mcp_http_egress.py, search_egress.py, web_gateway.py, web_search.py, search_providers.py,
+  web_tools.py, harness.py, crawl_gateway.py; config/settings.py;
+  Worker/tool_gateway_runtime.py; corresponding core/runtime/config/Worker tests;
+  docker/compose.application.yml, docker/compose.web-search.yml,
+  docker/web-search/, .gitignore; docs/CLOUD_WEB_SEARCH_REPAIR.md;
+  this registry, PROGRESS.md, task_plan.md, findings.md, WORKLOG.md.
+- Acceptance: exact collected code-formatted URL passes; invented URLs fail;
+  public HTTPS remains pinned and TLS verified; only exclusively Fake-IP DNS
+  answers may use bounded public DoH; mixed/private/metadata targets fail;
+  only an operator-bound search endpoint can use private backend addresses.
+- Prepare independent SearXNG and manual startup instructions; no running
+  service restart, original task resubmission, remote push, SQL threshold,
+  tenant isolation or final certification changes.
+- Native TLS fixture follow-up (claimed before editing):
+  tests/agent_runtime/test_crawl_source_http.py and test_search_source_fidelity.py.
+  Route their scratch socket at the
+  new pinned connection boundary, not by disabling real TLS or public guards.
+- Final search evidence follow-up (claimed before editing):
+  packages/agent-tools/src/agent_tools/web_search.py and web_gateway.py;
+  tests/agent_tools/test_web_search.py, test_web_gateway.py,
+  test_web_search_evidence.py. Preserve canonical fetched URL/untrusted metadata
+  and emit bounded successful search result refs for final citation assessment.
+- Validation: final affected cross-package1602pass12environment-skips92.09s;
+  make check GO (Ruff, mypy1245, eval30). Three arm64 application images built;
+  public HTTPS200/text verified in disposable new-image probe; no original Task
+  replay or service restart. Exact manual commands/evidence are in the runbook.
+
 ### COV-POOL-STARTUP-01 - Reset pooled transaction defaults and bound projection repair
 
 - Status: Review (Ready on merged a7dee3da; claimed 2026-10-12 before coding;

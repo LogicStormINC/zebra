@@ -52,6 +52,7 @@ def test_web_search_returns_untrusted_results_and_safe_metadata() -> None:
         "truncated": False,
         "byte_count": 128,
         "untrusted_external_content": True,
+        "evidence_refs": ["https://docs.example.com/result"],
     }
 
 

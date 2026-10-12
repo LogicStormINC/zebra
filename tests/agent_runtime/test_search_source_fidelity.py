@@ -96,7 +96,9 @@ def search(endpoint: str) -> ToolResult:
 @pytest.fixture
 def isolated_http(monkeypatch: pytest.MonkeyPatch) -> None:
     # Only the loopback egress preflight is replaced: urllib, HTTP parsing and sockets are real.
-    monkeypatch.setattr("agent_runtime.search_providers._proxy_configuration", lambda *a, **k: {})
+    monkeypatch.setattr(
+        "agent_runtime.search_providers.search_network_options", lambda *a, **k: ({}, None)
+    )
     monkeypatch.setattr("agent_runtime.search_providers.MAX_SEARCH_RESPONSE_BYTES", 256)
     monkeypatch.setattr(
         "agent_runtime.search_providers.DEFAULT_WEB_SEARCH_TIMEOUT_SECONDS", 0.03, raising=False
@@ -156,8 +158,9 @@ def test_native_connection_refusal_is_not_empty() -> None:
     assert "result_count" not in result.metadata
 
 
-def test_private_network_guard_still_blocks_before_native_http() -> None:
-    result = search("http://127.0.0.1:1/search")
+def test_private_network_guard_still_blocks_before_native_http(monkeypatch) -> None:
+    monkeypatch.setattr("socket.getaddrinfo", lambda *a, **k: [(2, 1, 6, "", ("127.0.0.1", 443))])
+    result = search("https://search.example/search")
     assert result.status.value == "failed"
     assert result.metadata["reason"] == "private_network_blocked"
 

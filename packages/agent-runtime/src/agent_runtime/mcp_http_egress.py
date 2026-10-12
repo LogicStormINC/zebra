@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import http.client
-import ipaddress
 import socket
 import ssl
 import urllib.request
+from collections.abc import Sequence
+
+from agent_runtime.public_dns import AddressInfo, public_addresses
 
 
 class PublicMcpHttpsConnection(http.client.HTTPSConnection):
@@ -14,14 +16,13 @@ class PublicMcpHttpsConnection(http.client.HTTPSConnection):
     _context: ssl.SSLContext
     source_address: tuple[str, int] | None
 
+    def resolve_addresses(self) -> Sequence[AddressInfo]:
+        return public_addresses(self.host, self.port)
+
     def connect(self) -> None:
         if self._tunnel_host is not None:
             raise OSError("MCP proxy tunnels are unsupported")
-        addresses = socket.getaddrinfo(self.host, self.port, type=socket.SOCK_STREAM)
-        if not addresses or any(
-            not ipaddress.ip_address(item[4][0]).is_global for item in addresses
-        ):
-            raise OSError("MCP target resolves to a blocked address")
+        addresses = self.resolve_addresses()
         # ponytail: use the first validated address, with no request replay or
         # second hostname resolution; multi-address fallback can be added pre-TLS.
         family, kind, protocol, _, address = addresses[0]

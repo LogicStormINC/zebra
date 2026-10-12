@@ -52,6 +52,7 @@ def register_web_tools(
     network_cancellation_check: Callable[[], None] | None,
     fetch_factory: Callable[..., WebGatewayTransport],
     search_factory: Callable[..., WebSearchTransport],
+    web_search_private_backend: bool = False,
 ) -> None:
     """Existing gateway composition; factories retain legacy injected transport compatibility."""
     search_endpoint = optional_web_search_endpoint(
@@ -69,6 +70,9 @@ def register_web_tools(
             search_endpoint=search_endpoint,
             trusted_local=trusted_local,
             network_cancellation_check=network_cancellation_check,
+            trusted_search_endpoint=(
+                search_endpoint.url if web_search_private_backend and search_endpoint else None
+            ),
         )
         return
     # Legacy remains default until v2 replicates durable network authority.
@@ -85,7 +89,13 @@ def register_web_tools(
         registry.register(tool.contract, tool.handle)
     if search_endpoint is not None and "web.search" in enabled_names:
         search_transport = web_search_transport or search_factory(
-            use_system_proxy=trusted_local, **cancel_options
+            use_system_proxy=trusted_local,
+            **cancel_options,
+            **(
+                {"trusted_search_endpoint": search_endpoint.url}
+                if web_search_private_backend
+                else {}
+            ),
         )
         search = WebSearchTool(endpoint=search_endpoint, transport=search_transport)
         registry.register(search.contract, search.handle)
@@ -114,6 +124,7 @@ def register_native_web_tools(
     search_endpoint: WebTarget | None,
     trusted_local: bool,
     network_cancellation_check: Callable[[], None] | None = None,
+    trusted_search_endpoint: str | None = None,
 ) -> None:
     web_store = SQLiteWebResourceStore(
         workspace_root / ".zebra-agent" / "web_resources.sqlite",
@@ -154,6 +165,7 @@ def register_native_web_tools(
                 endpoint=search_endpoint.url,
                 use_system_proxy=trusted_local,
                 network_cancellation_check=network_cancellation_check,
+                trusted_search_endpoint=trusted_search_endpoint,
             ),
             default=True,
         )

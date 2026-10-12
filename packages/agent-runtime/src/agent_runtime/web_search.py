@@ -20,10 +20,10 @@ from agent_tools.web_search import (
 )
 from pydantic import TypeAdapter
 
+from agent_runtime.search_egress import search_network_options
 from agent_runtime.web_gateway import (
     _native_network_call,
     _NoRedirectHandler,
-    _proxy_configuration,
     _read_bounded_body,
 )
 
@@ -39,9 +39,11 @@ class LocalWebSearchTransport:
         *,
         use_system_proxy: bool = False,
         network_cancellation_check: Callable[[], None] | None = None,
+        trusted_search_endpoint: str | None = None,
     ) -> None:
         self._use_system_proxy = use_system_proxy
         self._network_cancellation_check = network_cancellation_check
+        self._trusted_search_endpoint = trusted_search_endpoint
 
     def execute(self, request: WebSearchRequest) -> WebSearchResponse:
         if self._network_cancellation_check is not None:
@@ -53,15 +55,18 @@ class LocalWebSearchTransport:
                     timeout=request.timeout_seconds,
                     use_system_proxy=self._use_system_proxy,
                     max_output_bytes=request.max_bytes * 6 + 65536,
+                    trusted_search_endpoint=self._trusted_search_endpoint,
                 )
             )
-        proxies = _proxy_configuration(
-            request.endpoint.hostname,
+        proxies, https_handler = search_network_options(
+            request.endpoint.url,
+            self._trusted_search_endpoint,
             use_system_proxy=self._use_system_proxy,
         )
         opener = urllib.request.build_opener(
             urllib.request.ProxyHandler(proxies),
             _NoRedirectHandler(),
+            *((https_handler,) if https_handler is not None else ()),
         )
         outbound = urllib.request.Request(
             _search_url(request),

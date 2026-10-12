@@ -1,0 +1,16 @@
+https://search.zebra.test {
+    tls /certs/search.crt /certs/search.key
+    @search {
+        method GET
+        path /search /healthz
+    }
+    handle @search {
+        reverse_proxy searxng:8080
+    }
+    handle {
+        respond 404
+    }
+    log {
+        output discard
+    }
+}

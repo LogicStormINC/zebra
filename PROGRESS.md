@@ -1,5 +1,18 @@
 # Zebra Agent Project Status
 
+Web search/delivery incident (2026-10-12, WEB-EGRESS-DELIVERY-01): source/image
+repair GO; operator startup and real search/conversation replay pending.
+Affected cross-package1602pass12environment-skips92.09s; make check GO
+(Ruff, mypy1245, eval30). Three arm64 images built and runtime module hashes
+verified; new-image public HTTPS200/text probe GO. Live recovery301ee0ef is
+blocked by a Markdown backtick URL
+scanner false positive, not Worker startup. Search was unregistered because
+endpoint configuration was missing/unforwarded; public DNS also returned
+Fake-IP198.18/15. Source repair preserves exact citations and public-address
+pinning and canonical search refs-to-ledger; independent TLS SearXNG
+configuration/operator-only startup is prepared.
+No service restart or original paid Task replay. See CLOUD_WEB_SEARCH_REPAIR.md.
+
 Worker startup incident (2026-10-12, COV-POOL-STARTUP-01): source/image repair GO;
 code21825082 fast-forwarded locally into cloud-agent-trench; operator live
 replacement/replay pending. Primary postmerge critical12pass0skip6.53s and

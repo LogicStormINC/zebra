@@ -37,6 +37,7 @@ from agent_tools.web_gateway import DEFAULT_WEB_TIMEOUT_SECONDS, WebGatewayError
 from agent_tools.web_projection import WebProjector
 from pydantic import TypeAdapter
 
+from agent_runtime.public_dns import public_host_ips
 from agent_runtime.web_gateway import _native_network_call
 
 
@@ -70,7 +71,7 @@ class CrawlGateway(CrawlGatewayPort):
                     timeout=DEFAULT_WEB_TIMEOUT_SECONDS,
                 )
             else:
-                resolve_and_validate(target.hostname, resolver=self.resolver)
+                resolve_and_validate(target.hostname, resolver=self.resolver or public_host_ips)
         except (SsrfError, WebGatewayError) as exc:
             raise FetchProviderError(str(exc), reason="ssrf_blocked") from exc
         if not self.provider.available:

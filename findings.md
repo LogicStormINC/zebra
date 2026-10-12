@@ -1,5 +1,18 @@
 # Findings
 
+## WEB-EGRESS-DELIVERY-01 - delivery and search roots, 2026-10-12
+
+- Live child301ee0ef/seq125 fails only exact citation assessment: a backtick and
+  adjacent Chinese were consumed as part of the collected itjuzi URL.
+- Worker restart count0; full-gateway already granted. No web.search backend was
+  configured; base Compose dropped the endpoint environment setting as well.
+- Public domains resolve Fake-IP198.18/15. TLS-verified public DoH works in the
+  same Worker. New image fetch obtained public HTTPS200/text through pinned IPs.
+- Legacy search returned plain-text links but no durable refs; final gate could
+  reject real results. Explicit canonical result refs close settlement/replay.
+- Independently prepared search service needs operator startup and real engine/
+  conversation acceptance. Do not infer success from health or source/unit gates.
+
 ## COV-POOL-STARTUP-01 - exact startup/projection roots, 2026-10-12
 
 - Session6721d0b0-f777-4f91-9746-38b7abf25874 (Trench conv1791784350642)

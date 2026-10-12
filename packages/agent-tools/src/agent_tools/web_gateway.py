@@ -104,6 +104,7 @@ class WebFetchTool:
             status=ToolCallStatus.EXECUTED,
             output=f"[UNTRUSTED EXTERNAL CONTENT]\n{response.text}",
             metadata={
+                **response.metadata,
                 "route": "web_gateway",
                 "target": target.hostname,
                 "url": target.url,
@@ -111,7 +112,6 @@ class WebFetchTool:
                 "content_type": response.content_type,
                 "byte_count": response.byte_count,
                 "untrusted_external_content": True,
-                **response.metadata,
             },
         )
 

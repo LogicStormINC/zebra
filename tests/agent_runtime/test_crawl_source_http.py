@@ -147,8 +147,12 @@ def native_tls_source(
             isolation.delenv("SSL_CERT_FILE", raising=False)
         isolation.setattr(socket, "create_connection", route)
         isolation.setattr("agent_runtime.web_gateway._proxy_configuration", isolated_proxy)
-        isolation.setattr("agent_runtime.search_providers._proxy_configuration", isolated_proxy)
-        isolation.setattr("agent_runtime.web_search._proxy_configuration", isolated_proxy)
+        isolation.setattr(
+            "agent_runtime.mcp_http_egress.PublicMcpHttpsConnection.resolve_addresses",
+            lambda connection: [
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", server.server_port))
+            ],
+        )
         try:
             yield requests, entered, peer_closed, release, writes
         finally:
@@ -245,7 +249,12 @@ def native_http_source(mode: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[l
     def isolated_opener(
         *handlers: urllib.request.BaseHandler | Callable[[], urllib.request.BaseHandler],
     ) -> urllib.request.OpenerDirector:
-        return original_opener(*handlers, RoutedHttpsHandler())
+        from agent_runtime.mcp_http_egress import PublicMcpHttpsHandler
+
+        return original_opener(
+            *(handler for handler in handlers if not isinstance(handler, PublicMcpHttpsHandler)),
+            RoutedHttpsHandler(),
+        )
 
     def isolated_proxy(hostname: str, *, use_system_proxy: bool) -> dict[str, str]:
         assert hostname == "source.example"
@@ -256,7 +265,6 @@ def native_http_source(mode: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[l
     with monkeypatch.context() as isolation:
         isolation.setattr("urllib.request.build_opener", isolated_opener)
         isolation.setattr("agent_runtime.web_gateway._proxy_configuration", isolated_proxy)
-        isolation.setattr("agent_runtime.search_providers._proxy_configuration", isolated_proxy)
         isolation.setattr(
             "agent_runtime.web_tools.CrawlGateway",
             partial(CrawlGateway, resolver=lambda _host: ("93.184.216.34",)),

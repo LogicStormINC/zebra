@@ -21,10 +21,10 @@ from agent_tools.search_pipeline import SearchHit, SearchQuery
 from agent_tools.web_gateway import WebGatewayError
 from agent_tools.web_search import DEFAULT_WEB_SEARCH_TIMEOUT_SECONDS
 
+from agent_runtime.search_egress import search_network_options
 from agent_runtime.web_gateway import (
     _native_network_call,
     _NoRedirectHandler,
-    _proxy_configuration,
     _read_bounded_body,
 )
 
@@ -41,10 +41,13 @@ class SearXNGSearchProvider:
     available: bool = True
     use_system_proxy: bool = False
     network_cancellation_check: Callable[[], None] | None = None
+    trusted_search_endpoint: str | None = None
 
     def search(self, query: SearchQuery, *, limit: int) -> tuple[SearchHit, ...]:
         fetch = self.fetch_json or urllib_fetch_json(
-            self.use_system_proxy, network_cancellation_check=self.network_cancellation_check
+            self.use_system_proxy,
+            network_cancellation_check=self.network_cancellation_check,
+            trusted_search_endpoint=self.trusted_search_endpoint,
         )
         url = _searxng_url(self.endpoint, query=query, limit=limit)
         payload = fetch(url)
@@ -116,6 +119,7 @@ def urllib_fetch_json(
     use_system_proxy: bool = False,
     *,
     network_cancellation_check: Callable[[], None] | None = None,
+    trusted_search_endpoint: str | None = None,
 ) -> FetchJson:
     """Build a fetch_json callable over urllib with no-redirect + proxy control."""
 
@@ -128,12 +132,15 @@ def urllib_fetch_json(
                 timeout=DEFAULT_WEB_SEARCH_TIMEOUT_SECONDS,
                 use_system_proxy=use_system_proxy,
                 max_output_bytes=MAX_SEARCH_RESPONSE_BYTES * 6 + 65536,
+                trusted_search_endpoint=trusted_search_endpoint,
             )
-        hostname = urllib.parse.urlsplit(url).hostname or ""
-        proxies = _proxy_configuration(hostname, use_system_proxy=use_system_proxy)
+        proxies, https_handler = search_network_options(
+            url, trusted_search_endpoint, use_system_proxy=use_system_proxy
+        )
         opener = urllib.request.build_opener(
             urllib.request.ProxyHandler(proxies),
             _NoRedirectHandler(),
+            *((https_handler,) if https_handler is not None else ()),
         )
         request = urllib.request.Request(
             url,

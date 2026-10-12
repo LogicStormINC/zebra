@@ -349,6 +349,7 @@ def build_worker_tool_gateway(
         model_gateway=model_gateway,
         tool_profile=task.tool_profile,
         web_search_endpoint=settings.web_search_endpoint,
+        web_search_private_backend=settings.web_search_private_backend,
         skill_roots=() if skill_catalog is not None else skill_roots,
         skill_catalog=skill_catalog,
         skill_component_names=skill_component_names,

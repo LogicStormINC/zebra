@@ -1,0 +1,16 @@
+# Private operator service, not a public multi-tenant search website.
+use_default_settings:
+  engines:
+    keep_only: [duckduckgo, bing]
+server:
+  limiter: false
+  public_instance: false
+  image_proxy: false
+  method: GET
+search:
+  formats: [html, json]
+  safe_search: 1
+outgoing:
+  request_timeout: 5.0
+  max_request_timeout: 6.0
+  pool_connections: 20

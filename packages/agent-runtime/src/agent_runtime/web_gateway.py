@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import ipaddress
 import json
 import math
 import os
 import signal
-import socket
+import socket as socket  # Compatibility export for existing resolver injection.
 import subprocess
 import sys
 import urllib.error
@@ -24,7 +23,9 @@ from agent_tools.web_gateway import (
 )
 from pydantic import TypeAdapter
 
+from agent_runtime.mcp_http_egress import PublicMcpHttpsHandler
 from agent_runtime.process_execution import _terminate_process_tree
+from agent_runtime.public_dns import PublicAddressBlocked, public_addresses, public_host_ips
 from agent_runtime.web_content import project_web_text
 
 ALLOWED_CONTENT_TYPES = frozenset({"application/json", "application/xml", "application/xhtml+xml"})
@@ -66,6 +67,7 @@ class LocalWebGatewayTransport:
         opener = urllib.request.build_opener(
             urllib.request.ProxyHandler(proxies),
             _NoRedirectHandler(),
+            *(() if proxies else (PublicMcpHttpsHandler(),)),
         )
         outbound = urllib.request.Request(
             request.target.url,
@@ -146,6 +148,7 @@ def _native_network_call(
     timeout: float,
     use_system_proxy: bool = False,
     max_output_bytes: int = 4_194_304,
+    trusted_search_endpoint: str | None = None,
 ) -> object:
     """Kill/reap native DNS/TLS/reads, following the existing JWKS child pattern."""
     if not math.isfinite(timeout) or timeout <= 0 or max_output_bytes <= 0:
@@ -167,7 +170,7 @@ def _native_network_call(
     )
     try:
         data: bytes | None = json.dumps(
-            (operation, arguments, use_system_proxy, max_output_bytes)
+            (operation, arguments, use_system_proxy, max_output_bytes, trusted_search_endpoint)
         ).encode()
         while True:
             check()
@@ -216,7 +219,7 @@ def _native_network_call(
 
 def _network_child() -> None:
     """Private stdin protocol; URL admission and native transport rules are unchanged."""
-    operation, arguments, proxy, maximum = json.load(sys.stdin)
+    operation, arguments, proxy, maximum, search_endpoint = json.load(sys.stdin)
     result: object
     try:
         if operation == "fetch":
@@ -228,16 +231,20 @@ def _network_child() -> None:
             from agent_runtime.web_search import LocalWebSearchTransport
 
             request_search = TypeAdapter(WebSearchRequest).validate_python(arguments)
-            result = asdict(LocalWebSearchTransport(use_system_proxy=proxy).execute(request_search))
+            result = asdict(
+                LocalWebSearchTransport(
+                    use_system_proxy=proxy, trusted_search_endpoint=search_endpoint
+                ).execute(request_search)
+            )
         elif operation == "search_json":
             from agent_runtime.search_providers import urllib_fetch_json
 
-            result = urllib_fetch_json(proxy)(arguments)
+            result = urllib_fetch_json(proxy, trusted_search_endpoint=search_endpoint)(arguments)
         elif operation == "resolve":
             from agent_security.ssrf import SsrfError, resolve_and_validate
 
             try:
-                resolve_and_validate(arguments)
+                resolve_and_validate(arguments, resolver=public_host_ips)
             except SsrfError as exc:
                 raise WebGatewayError(str(exc), reason="ssrf_blocked") from exc
             result = None
@@ -281,17 +288,13 @@ def _read_bounded_body(response: HTTPResponse, maximum: int) -> bytes:
 
 def reject_non_public_resolution(hostname: str, *, port: int = 443) -> None:
     try:
-        addresses = {
-            item[4][0] for item in socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
-        }
-    except OSError as exc:
-        raise WebGatewayError(f"web hostname resolution failed: {exc}") from exc
-    if not addresses:
-        raise WebGatewayError("web hostname did not resolve")
-    if any(not ipaddress.ip_address(address).is_global for address in addresses):
+        public_addresses(hostname, port)
+    except PublicAddressBlocked as exc:
         raise WebGatewayError(
             "web hostname resolves to a non-public address", reason="private_network_blocked"
-        )
+        ) from exc
+    except OSError as exc:
+        raise WebGatewayError("web hostname resolution unavailable") from exc
 
 
 def _reject_non_public_resolution(hostname: str) -> None:

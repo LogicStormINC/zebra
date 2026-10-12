@@ -19,3 +19,4 @@ UI/**/node_modules/
 UI/**/dist/
 UI/**/src-tauri/target/
 docker/trench-acceptance.env
+docker/web-search/secrets/

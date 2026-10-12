@@ -1,0 +1,50 @@
+name: zebra-web-search
+services:
+  searxng:
+    image: ${ZEBRA_SEARXNG_IMAGE:-docker.io/searxng/searxng@sha256:ddd642cae6eac75412938fd846ddbf440a2df029cfeae8a562b8b205f4e35e25}
+    restart: unless-stopped
+    env_file: ./secrets/service.env
+    environment:
+      SEARXNG_BASE_URL: https://search.zebra.test/
+    volumes:
+      - ./settings.yml:/etc/searxng/settings.yml:ro
+      - search-cache:/var/cache/searxng
+    security_opt: [no-new-privileges:true]
+    cpus: 1
+    mem_limit: 512m
+    pids_limit: 128
+    networks: [search]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+  search-tls:
+    image: ${ZEBRA_SEARCH_TLS_IMAGE:-docker.io/library/caddy@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f}
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./secrets/search.crt:/certs/search.crt:ro
+      - ./secrets/search.key:/certs/search.key:ro
+      - search-tls-data:/data
+      - search-tls-config:/config
+    ports: ["127.0.0.1:18445:443"]
+    security_opt: [no-new-privileges:true]
+    cpus: 0.5
+    mem_limit: 128m
+    depends_on:
+      searxng:
+        condition: service_healthy
+    networks:
+      search: {}
+      dependencies:
+        aliases: [search.zebra.test]
+networks:
+  search: {}
+  dependencies:
+    name: ${ZEBRA_APPLICATION_NETWORK:-zebra-dependencies}
+    external: true
+volumes:
+  search-cache: {}
+  search-tls-data: {}
+  search-tls-config: {}

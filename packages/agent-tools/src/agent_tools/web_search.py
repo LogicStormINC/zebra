@@ -150,6 +150,7 @@ class WebSearchTool:
                 "truncated": response.truncated,
                 "byte_count": response.byte_count,
                 "untrusted_external_content": True,
+                "evidence_refs": [item.url for item in response.results],
             },
         )
 

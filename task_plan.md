@@ -1,5 +1,16 @@
 # Active Worker startup incident — 2026-10-12
 
+## Follow-up WEB-EGRESS-DELIVERY-01
+
+1. Done: reconstruct live child301ee0ef and exact citation false positive.
+2. Done: exact Markdown link regression; Fake-IP-only public resolver and pinning.
+3. Done: fixed operator private search endpoint, both registries/native child.
+4. Done: independent SearXNG/TLS configuration, secret bootstrap and manual runbook.
+5. Done: complete search URLs-to-ledger boundary and canonical fetch metadata.
+6. Done: final affected1602pass12environment-skips, make check and rebuilt images.
+7. Operator pending: start search, replace API/Worker, test a new signed-network
+   conversation; original suspended Task is neither resubmitted nor rewritten.
+
 1. Done: exact session/log reconstruction; readonly reuse and cold DNS reproduced.
 2. Done: shared zero-SQL default reset; readonly/success/failure/reset-discard tests.
 3. Done: bounded maintenance budget and discovery cooldown; cold native repair test.
