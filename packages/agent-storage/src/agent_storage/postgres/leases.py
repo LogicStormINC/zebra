@@ -81,15 +81,7 @@ class PostgresLeaseStore(LeaseStorePort):
 
     def get(self, session_id: SessionId) -> WorkerLease | None:
         with self._database.connect() as connection:
-            row = connection.execute(
-                """SELECT lease.* FROM worker_leases AS lease
-                JOIN control_plane_epochs AS authority USING (deployment_namespace)
-                WHERE lease.deployment_namespace = %s AND lease.session_id = %s
-                  AND lease.control_plane_epoch = authority.epoch
-                  AND lease.released_at IS NULL AND lease.expires_at > clock_timestamp()""",
-                (self._database.deployment_namespace, session_id),
-            ).fetchone()
-        return None if row is None else _lease_from_row(row)
+            return read_current_lease(connection, self._database.deployment_namespace, session_id)
 
     def _ttl(self, ttl: timedelta) -> timedelta:
         return _validate_ttl(ttl, self._maximum_ttl)
@@ -106,6 +98,20 @@ class PostgresLeaseStore(LeaseStorePort):
         if not stripped:
             raise ValueError("owner_instance_id must not be blank")
         return stripped
+
+
+def read_current_lease(
+    connection: Any, namespace: str, session_id: SessionId
+) -> WorkerLease | None:
+    row = connection.execute(
+        """SELECT lease.* FROM worker_leases AS lease
+        JOIN control_plane_epochs AS authority USING (deployment_namespace)
+        WHERE lease.deployment_namespace = %s AND lease.session_id = %s
+          AND lease.control_plane_epoch = authority.epoch
+          AND lease.released_at IS NULL AND lease.expires_at > clock_timestamp()""",
+        (namespace, session_id),
+    ).fetchone()
+    return None if row is None else _lease_from_row(row)
 
 
 def _validate_ttl(ttl: timedelta, maximum_ttl: timedelta) -> timedelta:

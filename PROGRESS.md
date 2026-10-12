@@ -1,3 +1,26 @@
+## 2026-10-13 - Proof PERF slice1 accepted locally
+
+Independent SPEC and QUALITY GO at frozen f9f777f344f6f2a12e4646b7e11743d2f7047c19281cad9ec4208fe6fd4df116.
+Four fresh Worker snapshots reduce measured activation to72SQL/4connections;
+factory16SQL/3connections separate; API bind18/qualify32SQL, each1connection.
+FrameSQL0. Historical81/18 baseline uses a different fixture, no paired latency
+claim. QUALITY native45/runtime15/shared48 plus4 lifetime scenarios passed;
+SPEC native45/runtime15/shared30 passed. All22source/18proof live/archive hashes
+verified independently. Six unrelated resource-binding fixture failures match
+accepted249f4e6d. Scoped slice1 only; whole PERF and inclusive quiet target OPEN.
+Post-review root changes only acceptance/governance docs before explicit owned
+commit/local integration; no push/deploy. New admission remains OFF.
+
+## Cloud stream proof performance claimed — 2026-10-13
+
+CLOUD-STREAM-PROOF-PERF-01 claimed Ready before coding on clean managed
+codex/cloud-stream-proof-perf-01 base249f4e6d. Luke Ding owns; Codex executes.
+Slice1 explicit readonly fresh snapshot batching, retaining issue/resolve
+independence and full source/privacy/fence/Host/Turn/count/bytes/2s bounds.
+Readonly COV paths explicitly transferred in task card; no mutation/recorder.
+No authority cache or extended polling. Slice2 exact ownership amendment before
+qualified quiet-head changes; goals still unmeasured. Admission OFF, no push/deploy.
+
 ## Cloud stream CLIENT locally integrated — 2026-10-13
 
 c0e073fe fast-forwarded into cloud-agent-trench after independent SPEC/QUALITY.

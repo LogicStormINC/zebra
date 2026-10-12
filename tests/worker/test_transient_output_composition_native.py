@@ -152,7 +152,11 @@ def test_native_mode_aware_model_hook_exact_turn_timer_and_zero_frame_sql(
     factory = compose_transient_output_factory(
         run.stores, dsn=owned[0], namespace=run.namespace, settings=settings
     )
-    writer = factory(recovery, lease)
+    telemetry = Telemetry()
+    initialized = monotonic()
+    with telemetry.installed(), phase("native/real-composition-factory"):
+        writer = factory(recovery, lease)
+    factory_seconds = monotonic() - initialized
     assert writer is not None and writer._port is not None
     from zebra_agent_worker import transient_output_composition as composition
 
@@ -212,7 +216,6 @@ def test_native_mode_aware_model_hook_exact_turn_timer_and_zero_frame_sql(
             )
 
     provider = Provider()
-    telemetry = Telemetry()
     step = HarnessModelStep(event_sink=progress, public_call_started=hook)
     try:
         with telemetry.installed():
@@ -242,6 +245,14 @@ def test_native_mode_aware_model_hook_exact_turn_timer_and_zero_frame_sql(
                 if "/native/real-composition-activation/sql:" in key
             ),
         )
+        for metric, expected in (("new_pg_socket", 8), ("client_commit", 8), ("statement:set", 8)):
+            measured = sum(
+                value
+                for key, value in telemetry.calls.items()
+                if f"/native/real-composition-activation/{metric}" in key
+            )
+            assert measured == expected
+            record_property(f"activation_{metric}_two_calls", measured)
         record_property(
             "provider_frame_sql_two_calls",
             sum(
@@ -252,6 +263,20 @@ def test_native_mode_aware_model_hook_exact_turn_timer_and_zero_frame_sql(
         )
         record_property(
             "activation_seconds", ",".join(f"{value:.4f}" for value in activation_times)
+        )
+        record_property("factory_seconds", f"{factory_seconds:.4f}")
+        for metric in ("new_pg_socket", "client_commit", "statement:set"):
+            record_property(
+                f"factory_{metric}",
+                telemetry.calls[f"initial/native/real-composition-factory/{metric}"],
+            )
+        record_property(
+            "factory_sql",
+            sum(
+                value
+                for key, value in telemetry.calls.items()
+                if "/native/real-composition-factory/sql:" in key
+            ),
         )
         record_property(
             "measured_total_sql_two_requests_responses",
@@ -449,9 +474,7 @@ def test_native_handoff_uses_root_host_binding_and_active_child_turn(owned, monk
 
 
 def test_native_cached_mode_still_rejects_changed_current_run_anchor(owned, monkeypatch):
-    from dataclasses import replace
-    from uuid import uuid4
-
+    from agent_core.contracts.session_commands import SessionCommand, SessionCommandKind
     from agent_integrations.redis_transient_output import TransientOutputUnavailable
 
     run, lease, recovery, _, settings = setup(owned, monkeypatch)
@@ -467,9 +490,16 @@ def test_native_cached_mode_still_rejects_changed_current_run_anchor(owned, monk
     )
     writer.start_public_call("anchor-check", 1)
     assert not writer._failed
-    original = run.stores.tasks.read_latest_run_header(run.task_id)
-    changed = replace(original, anchor=replace(original.anchor, event_id=uuid4()))
-    monkeypatch.setattr(run.stores.tasks, "read_latest_run_header", lambda _: changed)
+    command = SessionCommand(
+        session_id=run.session_id,
+        kind=SessionCommandKind.RUN,
+        expected_revision=run.recorder.session.current_sequence,
+        idempotency_key="new-current-anchor",
+        payload={"run_id": "new-current-run"},
+    )
+    run.recorder.append(
+        EventType.SESSION_COMMAND_ACCEPTED, EventActor.USER, command.event_payload()
+    )
     try:
         with pytest.raises(TransientOutputUnavailable, match="source does not authorize"):
             writer._gate.issue()

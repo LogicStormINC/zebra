@@ -368,8 +368,32 @@
 
 ### CLOUD-STREAM-PROOF-PERF-01 - Reduce fresh proof and quiet-read fixed costs
 
-- Status: Ready; CLIENTc0e073fe accepted local integration and combined gates
-  passed2026-10-13. Claim before implementation.
+- Status: In Progress (Ready claimed before coding2026-10-13 after CLIENT
+  local249f4e6d acceptance). Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-proof-perf-01, clean managed checkout.
+- Slice1 independent SPEC and QUALITY GO at f9f777f344f6f2a12e4646b7e11743d2f7047c19281cad9ec4208fe6fd4df116;
+  measured72SQL/4connections per activation, frameSQL0; API18/32SQL each1socket.
+  Factory16SQL/3sockets separate. QUALITY45native+15runtime+48shared+4lifetime
+  checks pass. Six resource fixture failures reproduced on accepted249f4e6d.
+  This does not complete the card; slice2 and inclusive quiet/TTFT remain OPEN.
+- Current slice1 exact ownership: packages/agent-storage/src/agent_storage/postgres/
+  agent_tasks.py, task_replay_headers.py, task_admission.py, worker_replay_reader.py,
+  leases.py, stream_read_preflight.py; proposed focused stream_proof_batch.py;
+  apps/worker/src/zebra_agent_worker/transient_output_runtime.py and
+  transient_output_composition.py; apps/api/src/zebra_agent_api/stream_v2_authority.py.
+  Read-only COV source functions explicitly transferred for this performance
+  slice only; no recorder, appender, mutation, publication or proof writes.
+- Exact tests/docs: tests/agent_storage/test_stream_proof_batch.py,
+  tests/worker/test_transient_output_composition_native.py,
+  tests/worker/test_transient_output_runtime.py, tests/api/test_stream_v2_native.py
+  (678lines; do not exceed700), new
+  tests/api/test_stream_v2_proof_batch_native.py for fresh bind/qualify snapshot
+  telemetry and native mutation checks, existing
+  tests/stream_storage/telemetry.py instrumentation only if required;
+  docs/CLOUD_STREAM_PROOF_PERF_EVIDENCE.md and existing focused plan plus
+  registry/PROGRESS/task_plan/WORKLOG. No SDK, UI or Trench edits.
+- Slice2 qualified quiet head and any additional module/helper/test path require
+  exact registry amendment before editing; do not implicitly expand ownership.
 - Human owner: Luke Ding; intended branch codex/cloud-stream-proof-perf-01.
 - Goal: reduce measured connection/query duplication without caching mutable
   authorization, changing privacy checks or hiding costs behind longer polling.

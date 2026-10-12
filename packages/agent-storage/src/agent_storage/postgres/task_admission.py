@@ -339,21 +339,30 @@ def load_session_task_binding(
         # Configure BEGIN itself; methods also forward through deadline/borrow wrappers.
         connection.set_isolation_level(IsolationLevel.REPEATABLE_READ)
         connection.set_read_only(True)
-        try:
-            root, binding = _read_session_root_binding(connection, deployment_namespace, session_id)
-        except errors.InvalidTextRepresentation as error:
-            raise PostgresAgentTaskConflictError("Session has malformed root identity") from error
-        # Same REPEATABLE READ snapshot: the root case already answered this query.
-        if root != session_id and root_for_session(connection, deployment_namespace, root) != root:
-            raise ValueError("Task root Session has conflicting native lineage")
-        lineage = derive_lineage(connection, deployment_namespace, root)
-        if not any(row["session_id"] == session_id for row in lineage):
-            raise ValueError("Session is not in its native Task lineage")
-        return binding
+        return read_session_task_binding(connection, deployment_namespace, session_id)
+
+
+def read_session_task_binding(
+    connection: Any, deployment_namespace: str, session_id: SessionId
+) -> TaskBindingSnapshot | None:
+    """Reuse native lineage and snapshot validation inside an explicit readonly snapshot."""
+    try:
+        root, binding = _read_session_root_binding(connection, deployment_namespace, session_id)
+    except errors.InvalidTextRepresentation as error:
+        raise PostgresAgentTaskConflictError("Session has malformed root identity") from error
+    # Same REPEATABLE READ snapshot: the root case already answered this query.
+    if root != session_id and root_for_session(connection, deployment_namespace, root) != root:
+        raise ValueError("Task root Session has conflicting native lineage")
+    lineage = derive_lineage(connection, deployment_namespace, root)
+    if not any(row["session_id"] == session_id for row in lineage):
+        raise ValueError("Session is not in its native Task lineage")
+    return binding
 
 
 def _read_session_root_binding(
-    connection: Any, deployment_namespace: str, session_id: SessionId,
+    connection: Any,
+    deployment_namespace: str,
+    session_id: SessionId,
 ) -> tuple[SessionId, TaskBindingSnapshot | None]:
     # ponytail: one fresh snapshot read, not a cached grant; lineage stays authoritative.
     rows = connection.execute(

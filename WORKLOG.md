@@ -14224,3 +14224,32 @@ passed65.92s; combinedSDK initial98/99 one timeline collapse failure retained,
 isolated21/full99rerun passed; SDKbuild/typecheck GO. No unrelated UI edits.
 Backup: primary .artifacts/stream-client-integration-1791832903310151000.
 Proof PERF unlocked Ready after these gates; not claimed/coded yet. No push/deploy.
+
+2026-10-13 root: claimed READY proof PERF on clean managedworktree/base249f4e6d.
+Exact readonly slice1 storage/Worker/API ownership and focused test/evidence paths
+declared before coding. Fresh snapshot independence and existing bounds remain;
+no source cache/mutation/SDK/Trench. Slice2 path amendment required before edits.
+
+2026-10-13 root: before coding, add exact API test ownership
+tests/api/test_stream_v2_proof_batch_native.py; existing native API suite is near
+700-line limit. Slice1 keeps four independent locator/eligibility/issue/resolve
+snapshots; no extra sink lifecycle solely to reduce one connection. Measure
+actual outcome, retain original three-connection target as unmet if applicable.
+
+## 2026-10-13 - Proof PERF slice1 accepted locally
+
+Independent SPEC and QUALITY GO at frozen f9f777f344f6f2a12e4646b7e11743d2f7047c19281cad9ec4208fe6fd4df116.
+Four fresh Worker snapshots reduce measured activation to72SQL/4connections;
+factory16SQL/3connections separate; API bind18/qualify32SQL, each1connection.
+FrameSQL0. Historical81/18 baseline uses a different fixture, no paired latency
+claim. QUALITY native45/runtime15/shared48 plus4 lifetime scenarios passed;
+SPEC native45/runtime15/shared30 passed. All22source/18proof live/archive hashes
+verified independently. Six unrelated resource-binding fixture failures match
+accepted249f4e6d. Scoped slice1 only; whole PERF and inclusive quiet target OPEN.
+Post-review root changes only acceptance/governance docs before explicit owned
+commit/local integration; no push/deploy. New admission remains OFF.
+
+Reviewer surfaced an owned-test DSN in an old private failure traceback. Root
+rotated only owned PostgreSQL32781 and32786 passwords, updated excluded0600
+baseline/header env files and verified new connections; old logged credentials
+invalid. Frozen proofs/source unchanged. No business credentials or services.

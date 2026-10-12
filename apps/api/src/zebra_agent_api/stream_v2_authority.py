@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 from agent_core.application.turn_projection import current_turn
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
@@ -10,11 +11,11 @@ from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import TaskId
 from agent_core.domain.stream_admission import StreamMode
 from agent_core.domain.task_bindings import require_task_host_context
+from agent_core.ports.agent_tasks import AgentTaskPort
 from agent_integrations.redis_transient_discovery import TransientDescriptor, transient_lane
 from agent_integrations.run_stream_admission import load_run_stream_admission
 from agent_storage import ControlPlaneStores
-from agent_storage.postgres.task_admission import load_session_task_binding
-from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
+from agent_storage.postgres.stream_proof_batch import StreamProofReader, StreamProofSnapshot
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,18 +51,22 @@ class V2ReadAuthority:
     ) -> None:
         self.stores, self.dsn, self.namespace = stores, dsn, namespace
         self.key_prefix = key_prefix
-        self.turns = PostgresWorkerReplayReader(dsn, deployment_namespace=namespace)
+        self.proofs = StreamProofReader(dsn, deployment_namespace=namespace)
 
     def bind(self, task_id: TaskId, run_id: str, host: HostContextEnvelope) -> V2ReadBinding | None:
-        admission = load_run_stream_admission(self.stores.tasks, task_id, run_id)
+        with self.proofs.snapshot() as proof:
+            return self._bind(proof, task_id, run_id, host)
+
+    def _bind(
+        self, proof: StreamProofSnapshot, task_id: TaskId, run_id: str, host: HostContextEnvelope
+    ) -> V2ReadBinding | None:
+        admission = load_run_stream_admission(cast(AgentTaskPort, proof), task_id, run_id)
         if admission is None or admission.mode is StreamMode.LEGACY:
             return None
-        header = self.stores.tasks.read_task_header(task_id, require_source_coverage=True)
+        header = proof.read_task_header(task_id, require_source_coverage=True)
         if header is None or type(header.strict_coverage) is not bool:
             raise ValueError("provisional output privacy is unavailable")
-        binding = load_session_task_binding(
-            self.dsn, deployment_namespace=self.namespace, session_id=header.active_segment_id
-        )
+        binding = proof.binding(header.active_segment_id)
         if binding is None:
             raise ValueError("provisional Task Host binding is unavailable")
         require_task_host_context(
@@ -85,8 +90,14 @@ class V2ReadAuthority:
         )
 
     def qualify(self, bound: V2ReadBinding, descriptor: TransientDescriptor) -> datetime:
+        with self.proofs.snapshot() as proof:
+            return self._qualify(proof, bound, descriptor)
+
+    def _qualify(
+        self, proof: StreamProofSnapshot, bound: V2ReadBinding, descriptor: TransientDescriptor
+    ) -> datetime:
         scope, generation = descriptor.scope, descriptor.scope.generation
-        fresh = self.bind(bound.task_id, bound.run_id, bound.host)
+        fresh = self._bind(proof, bound.task_id, bound.run_id, bound.host)
         if fresh != bound or (
             scope.deployment_namespace != bound.namespace
             or scope.authority_scope != bound.authority
@@ -95,7 +106,7 @@ class V2ReadAuthority:
             or descriptor.fence.fencing_token != generation.lease_fence
         ):
             raise ValueError("temporary generation crosses canonical request scope")
-        run = self.stores.tasks.read_latest_run_header(bound.task_id)
+        run = proof.read_latest_run_header(bound.task_id)
         if (
             run.run_id != bound.run_id
             or run.stop is not None
@@ -103,7 +114,7 @@ class V2ReadAuthority:
             or run.strict_coverage
         ):
             raise ValueError("temporary Run is no longer active")
-        page = self.stores.tasks.read_event_page(
+        page = proof.read_event_page(
             bound.task_id,
             descriptor.request_sequence - 1,
             through_sequence=run.highwater,
@@ -149,7 +160,7 @@ class V2ReadAuthority:
                 or event.payload.get("model_call_id") == generation.model_call_id
             ):
                 raise ValueError("temporary callback identity was reused")
-        turn = current_turn(self.turns.authority_events(generation.segment_id))
+        turn = current_turn(proof.authority_events(generation.segment_id))
         if (
             turn is None
             or turn.legacy
@@ -157,7 +168,7 @@ class V2ReadAuthority:
             or turn.opened_sequence >= request.sequence
         ):
             raise ValueError("temporary generation has no canonical open Turn")
-        lease = self.stores.leases.get(generation.segment_id)
+        lease = proof.get(generation.segment_id)
         now = datetime.now(UTC)
         if lease is None or lease.fence != descriptor.fence or lease.expires_at <= now:
             raise ValueError("temporary generation full lease fence is stale")

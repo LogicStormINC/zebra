@@ -145,41 +145,60 @@ class PostgresWorkerReplayReader:
             connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
             if authority is not None:
                 assert_current_lease_fence(connection, namespace, session_id, authority.lease_fence)
-            source = connection.execute(
-                "SELECT current_version FROM session_streams "
-                "WHERE deployment_namespace=%s AND session_id=%s",
-                (namespace, session_id),
-            ).fetchone()
-            if source is None:
-                raise CheckpointNotReady("Worker replay Session is absent")
-            highwater = source["current_version"] if through is None else through
-            if (
-                type(highwater) is not int
-                or not -1 <= after <= highwater <= source["current_version"]
-            ):
-                raise ValueError("Worker replay range conflicts with canonical source")
-            result: list[SessionEvent] = []
-            size = 0
-            while after < highwater:
-                page = (
-                    list(
-                        read_session_page(
-                            connection, namespace, session_id, after, through=highwater
-                        ).events
-                    )
-                    if types is None
-                    else _typed_page(connection, namespace, session_id, types, after, highwater)
-                )
-                if not page:
-                    break
-                size += sum(len(_encoded(event)) for event in page)
-                if len(result) + len(page) > 2048 or size > 1_048_576:
-                    raise WorkerReplayLimitExceeded("exact Worker replay exceeds 2048 Events/1MiB")
-                result.extend(page)
-                after = page[-1].sequence
-            if authority is not None:
-                assert_current_lease_fence(connection, namespace, session_id, authority.lease_fence)
-            return result
+            return read_worker_events(
+                connection,
+                namespace,
+                session_id,
+                types,
+                after=after,
+                through=through,
+                authority=authority,
+            )
+
+
+def read_worker_events(
+    connection: Any,
+    namespace: str,
+    session_id: SessionId,
+    types: tuple[EventType, ...] | None,
+    *,
+    after: int = -1,
+    through: int | None = None,
+    authority: WorkerMutationAuthority | None = None,
+) -> list[SessionEvent]:
+    """Connection-level bounded evidence; caller owns the cumulative deadline/snapshot."""
+    source = connection.execute(
+        "SELECT current_version FROM session_streams "
+        "WHERE deployment_namespace=%s AND session_id=%s",
+        (namespace, session_id),
+    ).fetchone()
+    if source is None:
+        raise CheckpointNotReady("Worker replay Session is absent")
+    highwater = source["current_version"] if through is None else through
+    if type(highwater) is not int or not -1 <= after <= highwater <= source["current_version"]:
+        raise ValueError("Worker replay range conflicts with canonical source")
+    result: list[SessionEvent] = []
+    size = 0
+    while after < highwater:
+        page = (
+            list(
+                read_session_page(
+                    connection, namespace, session_id, after, through=highwater
+                ).events
+            )
+            if types is None
+            else _typed_page(connection, namespace, session_id, types, after, highwater)
+        )
+        if not page:
+            break
+        size += sum(len(_encoded(event)) for event in page)
+        if len(result) + len(page) > 2048 or size > 1_048_576:
+            raise WorkerReplayLimitExceeded("exact Worker replay exceeds 2048 Events/1MiB")
+        result.extend(page)
+        after = page[-1].sequence
+    if authority is not None:
+        assert_current_lease_fence(connection, namespace, session_id, authority.lease_fence)
+    return result
 
 
 def _encoded(event: SessionEvent) -> bytes:

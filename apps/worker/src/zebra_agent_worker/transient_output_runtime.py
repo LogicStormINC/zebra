@@ -1,7 +1,7 @@
 """Ordinary public drafts; cloud mode is frozen and new admission defaults off."""
 
 from collections.abc import Callable, Iterator
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, nullcontext
 from datetime import UTC, datetime, timedelta
 from threading import RLock
 from time import monotonic
@@ -22,6 +22,7 @@ from agent_core.ports.transient_output import (
     TransientWriterAuthorization,
 )
 from agent_integrations.redis_transient_output import TransientOutputUnavailable
+from agent_storage.postgres.stream_proof_batch import StreamProofSnapshot
 from agent_storage.postgres.task_io import task_io_deadline
 
 from zebra_agent_worker.progress_recovery import WorkerProgressRecovery
@@ -47,7 +48,12 @@ class WorkerTransientCallGate:
         load_admission: Callable[[], RunStreamAdmission | None],
         fresh_grant_expiry: Callable[[TransientStreamScope], datetime],
         expected_anchor_event_id: EventId | None = None,
+        fresh_snapshot: Callable[[], AbstractContextManager[StreamProofSnapshot]] | None = None,
+        snapshot_grant_expiry: Callable[[TransientStreamScope, StreamProofSnapshot], datetime]
+        | None = None,
     ) -> None:
+        if (fresh_snapshot is None) != (snapshot_grant_expiry is None):
+            raise ValueError("fresh snapshot and its grant validator must be composed together")
         if type(request_sequence) is not int or request_sequence < 0:
             raise ValueError("request_sequence must be a canonical Task position")
         self.scope, self.fence = scope, fence
@@ -55,6 +61,7 @@ class WorkerTransientCallGate:
         self._tasks, self._leases = tasks, leases
         self._admission, self._grant = load_admission, fresh_grant_expiry
         self._anchor_event_id = expected_anchor_event_id
+        self._snapshot, self._snapshot_grant = fresh_snapshot, snapshot_grant_expiry
         self._issued: TransientWriterAuthorization | None = None
         self._closed = False
         self._selected_mode: StreamMode | None = None
@@ -82,7 +89,9 @@ class WorkerTransientCallGate:
             if self._selected_mode is StreamMode.LEGACY:
                 return False
             generation = self.scope.generation
-            header = self._tasks.read_task_header(generation.task_id, require_source_coverage=True)
+            with self._snapshot() if self._snapshot is not None else nullcontext() as proof:
+                tasks = proof if proof is not None else self._tasks
+                header = tasks.read_task_header(generation.task_id, require_source_coverage=True)
             if (
                 header is None
                 or type(header.strict_coverage) is not bool
@@ -94,7 +103,12 @@ class WorkerTransientCallGate:
     def _fresh_authority(self) -> tuple[datetime, datetime]:
         if self._closed:
             raise TransientOutputUnavailable("public callback is closed")
-        with task_io_deadline(monotonic() + 2):
+        with (
+            task_io_deadline(monotonic() + 2),
+            self._snapshot() if self._snapshot is not None else nullcontext() as proof,
+        ):
+            tasks = proof if proof is not None else self._tasks
+            leases = proof if proof is not None else self._leases
             admission = self._admission()
             generation = self.scope.generation
             if (
@@ -104,8 +118,8 @@ class WorkerTransientCallGate:
                 or admission.run_id != generation.run_id
             ):
                 raise TransientOutputUnavailable("Run has no frozen v2 admission")
-            header = self._tasks.read_task_header(generation.task_id, require_source_coverage=True)
-            run = self._tasks.read_latest_run_header(generation.task_id)
+            header = tasks.read_task_header(generation.task_id, require_source_coverage=True)
+            run = tasks.read_latest_run_header(generation.task_id)
             if (
                 header is None
                 or header.strict_coverage is not False
@@ -121,7 +135,7 @@ class WorkerTransientCallGate:
                 or run.strict_coverage
             ):
                 raise TransientOutputUnavailable("source does not authorize ordinary public text")
-            page = self._tasks.read_event_page(
+            page = tasks.read_event_page(
                 generation.task_id,
                 self.request_sequence - 1,
                 through_sequence=run.highwater,
@@ -175,10 +189,14 @@ class WorkerTransientCallGate:
                 raise TransientOutputUnavailable(
                     "public callback source is completed or reused or superseded"
                 )
-            lease = self._leases.get(generation.segment_id)
+            lease = leases.get(generation.segment_id)
             if lease is None or lease.fence != self.fence:
                 raise TransientOutputUnavailable("fresh full lease fence rejected")
-            return lease.expires_at, self._grant(self.scope)
+            return lease.expires_at, (
+                self._snapshot_grant(self.scope, proof)
+                if proof is not None and self._snapshot_grant is not None
+                else self._grant(self.scope)
+            )
 
     def issue(self) -> TransientWriterAuthorization:
         with publication_lock(self._lock, bounded=True):

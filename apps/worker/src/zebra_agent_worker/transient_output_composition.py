@@ -20,9 +20,8 @@ from agent_integrations.redis_transient_output import (
 )
 from agent_integrations.run_stream_admission import load_run_stream_admission
 from agent_storage import PostgresControlPlaneStores
-from agent_storage.postgres.task_admission import load_session_task_binding
+from agent_storage.postgres.stream_proof_batch import StreamProofReader, StreamProofSnapshot
 from agent_storage.postgres.task_io import task_io_deadline
-from agent_storage.postgres.worker_replay_reader import PostgresWorkerReplayReader
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_worker.progress_recovery import WorkerProgressRecovery
@@ -33,7 +32,7 @@ def compose_transient_output_factory(
     stores: PostgresControlPlaneStores, *, dsn: str, namespace: str, settings: ZebraAgentSettings
 ) -> Callable[[WorkerProgressRecovery, WorkerLease], TransientDeltaSink | None]:
     """Always mode-aware, even when new admission is disabled or Redis is absent."""
-    reader = PostgresWorkerReplayReader(dsn, deployment_namespace=namespace)
+    reader = StreamProofReader(dsn, deployment_namespace=namespace)
 
     def factory(progress: WorkerProgressRecovery, lease: WorkerLease) -> TransientDeltaSink | None:
         run_scope = progress.head.scope
@@ -81,7 +80,7 @@ def compose_transient_output_factory(
             nonlocal gate
             if selected is None:
                 raise TransientOutputUnavailable("initial Run mode was unavailable")
-            with task_io_deadline(monotonic() + 2):
+            with reader.snapshot() as proof:
                 # The hook follows the durable request sink; a publication timer may
                 # already have advanced progress, so bind its exact bounded source row.
                 position = progress.head.through_sequence
@@ -90,12 +89,12 @@ def compose_transient_output_factory(
                 for candidate in range(
                     position, max(run_scope.anchor_sequence - 1, position - 256), -1
                 ):
-                    header = stores.tasks.read_event_header(run_scope.task_id, candidate)
+                    header = proof.read_event_header(run_scope.task_id, candidate)
                     if header is None:
                         raise TransientOutputUnavailable("callback Task position is unavailable")
                     if header.event_type is not EventType.MODEL_REQUEST_STARTED:
                         continue
-                    page = stores.tasks.read_event_page(
+                    page = proof.read_event_page(
                         run_scope.task_id,
                         candidate - 1,
                         through_sequence=candidate,
@@ -148,13 +147,11 @@ def compose_transient_output_factory(
                     or request.payload.get("purpose") is not None
                 ):
                     raise TransientOutputUnavailable("actual model callback source conflicts")
-                turn = current_turn(reader.authority_events(entry.segment_id))
+                turn = current_turn(proof.authority_events(entry.segment_id))
                 if turn is None or turn.legacy or turn.opened_sequence >= request.sequence:
                     raise TransientOutputUnavailable("no canonical open Turn for temporary draft")
                 turn_id = TurnId(UUID(turn.turn_id))
-                binding = load_session_task_binding(
-                    dsn, deployment_namespace=namespace, session_id=entry.segment_id
-                )
+                binding = proof.binding(entry.segment_id)
                 if binding is None or binding.task_id != str(run_scope.task_id):
                     raise TransientOutputUnavailable("Task Host binding is unavailable")
                 host = binding.host_capability
@@ -178,47 +175,48 @@ def compose_transient_output_factory(
                     ),
                 )
 
+                def snapshot_expiry(
+                    candidate: TransientStreamScope, fresh_proof: StreamProofSnapshot
+                ) -> datetime:
+                    fresh = fresh_proof.binding(entry.segment_id)
+                    if fresh is None or candidate != scope:
+                        raise TransientOutputUnavailable("Task Host binding changed")
+                    context = fresh.host_capability.host_context
+                    if context is None:
+                        raise TransientOutputUnavailable("Task has no API-verified Host context")
+                    require_task_host_context(
+                        fresh,
+                        context,
+                        task_id=str(run_scope.task_id),
+                        now=datetime.now(UTC),
+                        authority_issuer=scope.authority_scope.authority_issuer,
+                        run_id=run_scope.run_id,
+                    )
+                    require_task_host_context(
+                        binding,
+                        context,
+                        task_id=str(run_scope.task_id),
+                        now=datetime.now(UTC),
+                        authority_issuer=scope.authority_scope.authority_issuer,
+                        run_id=run_scope.run_id,
+                    )
+                    if (
+                        fresh.host_capability.namespace_id != scope.authority_scope.namespace_id
+                        or fresh.host_capability.authority_issuer
+                        != scope.authority_scope.authority_issuer
+                    ):
+                        raise TransientOutputUnavailable("Task Host namespace changed")
+                    current = current_turn(fresh_proof.authority_events(entry.segment_id))
+                    if current is None or current.legacy or current.turn_id != str(turn_id):
+                        raise TransientOutputUnavailable("callback Turn closed or changed")
+                    expiry = context.expires_at
+                    assert expiry is not None
+                    frozen_expiry = fresh.host_capability.grant_expires_at
+                    return min(expiry, frozen_expiry) if frozen_expiry is not None else expiry
+
                 def fresh_expiry(candidate: TransientStreamScope) -> datetime:
-                    with task_io_deadline(monotonic() + 2):
-                        fresh = load_session_task_binding(
-                            dsn, deployment_namespace=namespace, session_id=entry.segment_id
-                        )
-                        if fresh is None or candidate != scope:
-                            raise TransientOutputUnavailable("Task Host binding changed")
-                        context = fresh.host_capability.host_context
-                        if context is None:
-                            raise TransientOutputUnavailable(
-                                "Task has no API-verified Host context"
-                            )
-                        require_task_host_context(
-                            fresh,
-                            context,
-                            task_id=str(run_scope.task_id),
-                            now=datetime.now(UTC),
-                            authority_issuer=scope.authority_scope.authority_issuer,
-                            run_id=run_scope.run_id,
-                        )
-                        require_task_host_context(
-                            binding,
-                            context,
-                            task_id=str(run_scope.task_id),
-                            now=datetime.now(UTC),
-                            authority_issuer=scope.authority_scope.authority_issuer,
-                            run_id=run_scope.run_id,
-                        )
-                        if (
-                            fresh.host_capability.namespace_id != scope.authority_scope.namespace_id
-                            or fresh.host_capability.authority_issuer
-                            != scope.authority_scope.authority_issuer
-                        ):
-                            raise TransientOutputUnavailable("Task Host namespace changed")
-                        current = current_turn(reader.authority_events(entry.segment_id))
-                        if current is None or current.legacy or current.turn_id != str(turn_id):
-                            raise TransientOutputUnavailable("callback Turn closed or changed")
-                        expiry = context.expires_at
-                        assert expiry is not None
-                        frozen_expiry = fresh.host_capability.grant_expires_at
-                        return min(expiry, frozen_expiry) if frozen_expiry is not None else expiry
+                    with reader.snapshot() as fresh_proof:
+                        return snapshot_expiry(candidate, fresh_proof)
 
                 gate = WorkerTransientCallGate(
                     scope=scope,
@@ -229,6 +227,8 @@ def compose_transient_output_factory(
                     leases=stores.leases,
                     load_admission=admission,
                     fresh_grant_expiry=fresh_expiry,
+                    fresh_snapshot=reader.snapshot,
+                    snapshot_grant_expiry=snapshot_expiry,
                 )
                 return gate
 
