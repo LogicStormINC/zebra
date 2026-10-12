@@ -1,5 +1,18 @@
 # Zebra Agent Project Status
 
+Search readiness follow-up (2026-10-12, WEB-SEARCH-READINESS-01): source/image
+and temporary tool-chain acceptance GO; operator replacement/new conversation
+pending. Affected1617pass12environment-skips87.88s; make check GO
+(Ruff/mypy1246/eval30). Both real temporary v1/v2 HTTPS search-to-evidence
+probes return ready=true/source_count5 for both queries. Operator live retest
+confirmed current searchHTTP200/zero/CAPTCHA;
+kept Bing inherited disabled=true. Corrected explicit Bing-cn configuration
+returned real10/8candidates for both failing queries in an isolated same-image
+instance. Sanitized failure metadata/native receipts and an actual Worker
+search-to-evidence qualification probe are implemented. No running service
+restart, original Task submission, SQL threshold or certification change.
+New operator restart/probe instructions supersede the older handoff below.
+
 Web search/delivery incident (2026-10-12, WEB-EGRESS-DELIVERY-01): source/image
 repair GO; operator startup and real search/conversation replay pending.
 Source96a817bc integrated locally into cloud-agent-trench; primary critical

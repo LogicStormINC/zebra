@@ -1,5 +1,15 @@
 # Active Worker startup incident — 2026-10-12
 
+## Follow-up WEB-SEARCH-READINESS-01
+
+1. Done: live failure replay; current SearXNG0/CAPTCHA and Bing disabled default.
+2. Done: bounded upstream controls, explicit enabled Bing-cn succeeds10/8results.
+3. Done: sanitized engine codes, known execution, bounded retry rules/native hop.
+4. Done: actual adapter-to-ledger operator probe; never qualify empty/error as ready.
+5. Done: affected1617pass12environment-skips, static/image proof and real temporary
+   v1/v2 search-to-evidence acceptance. Local integration/handoff follows.
+6. Operator pending: replace search/API/Worker and run probe/new conversation.
+
 ## Follow-up WEB-EGRESS-DELIVERY-01
 
 1. Done: reconstruct live child301ee0ef and exact citation false positive.

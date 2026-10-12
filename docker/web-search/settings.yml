@@ -1,7 +1,11 @@
 # Private operator service, not a public multi-tenant search website.
 use_default_settings:
   engines:
-    keep_only: [duckduckgo, bing]
+    keep_only: [bing]
+engines:
+  - name: bing
+    disabled: false
+    base_url: https://cn.bing.com
 server:
   limiter: false
   public_instance: false

@@ -22,6 +22,7 @@ from agent_tools.web_gateway import WebGatewayError
 from agent_tools.web_search import DEFAULT_WEB_SEARCH_TIMEOUT_SECONDS
 
 from agent_runtime.search_egress import search_network_options
+from agent_runtime.search_health import require_complete_search
 from agent_runtime.web_gateway import (
     _native_network_call,
     _NoRedirectHandler,
@@ -53,9 +54,7 @@ class SearXNGSearchProvider:
         payload = fetch(url)
         if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
             raise WebGatewayError("invalid search response shape", reason="invalid_search_response")
-        if payload.get("unresponsive_engines") or payload.get("error"):
-            # ponytail: the tuple provider contract cannot attest partial engine coverage.
-            raise WebGatewayError("search source query is incomplete", reason="search_incomplete")
+        require_complete_search(payload)
         hits: list[SearchHit] = []
         seen: set[str] = set()
         for item in payload["results"]:

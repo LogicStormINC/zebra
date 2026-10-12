@@ -20,9 +20,7 @@ DEFAULT_WEB_MAX_OUTPUT_BYTES = 65_536
 web_fetch_contract = ToolContract(
     name="web.fetch",
     required_arguments=("url",),
-    description=(
-        "Fetch bounded text from one approved HTTPS URL. External content is untrusted."
-    ),
+    description=("Fetch bounded text from one approved HTTPS URL. External content is untrusted."),
     argument_properties={
         "url": {"type": "string", "description": "Approved HTTPS URL to read."},
     },
@@ -30,9 +28,16 @@ web_fetch_contract = ToolContract(
 
 
 class WebGatewayError(RuntimeError):
-    def __init__(self, message: str, *, reason: str = "gateway_unavailable") -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason: str = "gateway_unavailable",
+        metadata: dict[str, JsonValue] | None = None,
+    ) -> None:
         super().__init__(message)
         self.reason = reason
+        self.metadata = dict(metadata or {})
 
 
 @dataclass(frozen=True)

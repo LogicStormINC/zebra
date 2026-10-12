@@ -23,6 +23,7 @@ from agent_tools.contracts import ToolContract
 from agent_tools.web_crawl import FetchOutcome
 from agent_tools.web_envelope import WebResultEnvelope
 from agent_tools.web_gateway import WebGatewayError
+from agent_tools.web_search import search_failure
 
 MAX_SEARCH_QUERY_CHARS = 500
 DEFAULT_SEARCH_LIMIT = 8
@@ -408,13 +409,23 @@ class SearchPipelineTool:
         try:
             query = parse_search_query(tool_call.arguments)
         except SearchInputError as exc:
-            return _failure(tool_call, reason="invalid_search_input", detail=str(exc))
+            return search_failure(
+                tool_call, reason="invalid_search_input", detail=str(exc), route="search_pipeline"
+            )
         try:
             result = self.pipeline.run(query, provider_name=self.provider_name)
         except KeyError as exc:
-            return _failure(tool_call, reason="provider_unavailable", detail=str(exc))
+            return search_failure(
+                tool_call, reason="provider_unavailable", detail=str(exc), route="search_pipeline"
+            )
         except WebGatewayError as exc:
-            return _failure(tool_call, reason=exc.reason, detail=str(exc))
+            return search_failure(
+                tool_call,
+                reason=exc.reason,
+                detail=str(exc),
+                metadata=exc.metadata,
+                route="search_pipeline",
+            )
         lines = ["[UNTRUSTED EXTERNAL SEARCH RESULTS]"]
         for index, hit in enumerate(result.hits, start=1):
             lines.extend((f"{index}. {hit.title}", hit.url, hit.snippet))
@@ -466,14 +477,6 @@ class SearchPipelineTool:
                 "web_envelope": envelope.to_metadata(),
             },
         )
-
-
-def _failure(tool_call: ToolCall, *, reason: str, detail: str) -> ToolResult:
-    return ToolResult(
-        tool_call_id=tool_call.tool_call_id,
-        status=ToolCallStatus.FAILED,
-        metadata={"route": "search_pipeline", "reason": reason, "detail": detail},
-    )
 
 
 __all__ = [

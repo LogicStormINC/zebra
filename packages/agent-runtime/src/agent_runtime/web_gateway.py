@@ -187,7 +187,9 @@ def _native_network_call(
                 raise WebGatewayError("native network request failed or exceeded its output bound")
             result = json.loads(output)
             if "error" in result:
-                raise WebGatewayError(result["error"], reason=result["reason"])
+                raise WebGatewayError(
+                    result["error"], reason=result["reason"], metadata=result.get("metadata")
+                )
             return result["result"]
     except BaseException as primary:
         # Cleanup has one bounded grace period, never another body read or unbounded wait.
@@ -270,7 +272,7 @@ def _network_child() -> None:
             )
         sys.stdout.write(output)
     except WebGatewayError as exc:
-        json.dump({"error": str(exc), "reason": exc.reason}, sys.stdout)
+        json.dump({"error": str(exc), "reason": exc.reason, "metadata": exc.metadata}, sys.stdout)
 
 
 def _read_bounded_body(response: HTTPResponse, maximum: int) -> bytes:

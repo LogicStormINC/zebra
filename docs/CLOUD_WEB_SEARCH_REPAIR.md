@@ -1,5 +1,88 @@
 # Cloud search and exact-link delivery repair
 
+## Operator retest follow-up - 2026-10-12
+
+The first deployed search stack was healthy but **not search-ready**. The
+operator's `OpenAI news` query returned HTTP200/0candidates with
+`[["duckduckgo", "CAPTCHA"]]`. The prepared config kept Bing but inherited its
+upstream `disabled:true` default. The first offline check proved engine presence,
+not actual enabled status: that was insufficient acceptance.
+
+The corrected default keeps only the qualified Bing engine, explicitly sets
+`disabled:false` and uses the upstream-documented `https://cn.bing.com` regional
+endpoint. No CAPTCHA bypass, proxy rotation or private-network exemption is used.
+A disposable SearXNG instance loading the exact corrected file returned:
+
+- `OpenAI news`:10results, Bing only, no failed engines,0.722s.
+- `OpenAI latest official announcement news release`:8results, Bing only,
+  no failed engines,0.199s.
+
+Those are upstream candidate retrieval measurements, not claims that every hit
+is official/newest or that a production model conversation has completed. Other
+diagnostic engines hit CAPTCHA,403,429 or empty results on the same egress. A
+single scraper-backed engine has no long-term SLA; a production provider upgrade
+requires independently qualified API credentials and quotas, not more retries.
+
+Engine errors now retain bounded/sanitized codes and candidate count through the
+native subprocess and both search tool versions. Known HTTP/JSON source failures
+have `execution_state:executed`; only transient timeout/connection errors are
+retryable. CAPTCHA/access denial/rate-limiting are not automatically hammered.
+All engine-incomplete responses still fail; this repair does not certify partial
+results or turn zero candidates into usable search. Source and SQL gates remain.
+
+After integrating the follow-up source/prepared images, run these commands
+yourself. They change only the named services, not stored business data:
+
+```sh
+cd /Users/lukeding/Desktop/playground/2026/product/zebra-agent
+
+docker compose --env-file docker/trench-acceptance.env \
+  -f docker/web-search/compose.yml \
+  up -d --no-build --force-recreate --wait searxng search-tls
+
+docker compose --env-file docker/trench-acceptance.env \
+  -f docker/compose.application.yml \
+  -f docker/compose.local-gvisor.yml \
+  -f docker/compose.coverage-pro-test.yml \
+  -f docker/compose.web-search.yml \
+  up -d --no-build --no-deps --force-recreate --wait zebra-api zebra-worker
+
+# Uses actual Worker settings, native search transport, normalization, evidence
+# ledger and final URL boundary. No model request, Task submission or SQL.
+docker exec -i zebra-application-zebra-worker-1 python - \
+  < docker/web-search/verify.py
+```
+
+Both probe lines must say `ready:true` and return source_count>0, with exit0.
+A healthy container or HTTP200 alone is insufficient. Then use a new signed
+network-enabled conversation and verify real search calls/source-linked delivery.
+
+Reference: [SearXNG engine defaults and Bing regional endpoint](https://github.com/searxng/searxng/blob/master/searx/settings.yml).
+
+### Follow-up validation record
+
+- Final affected cross-package1617passed12environment-skipped87.88s;
+  make check GO (Ruff/mypy1246/eval30); new RED/GREEN readiness/receipt cases.
+- A separate labeled temporary Docker network hosted the corrected pinned
+  SearXNG and TLS proxy. A disposable **new Worker image** executed the operator
+  probe through real HTTPS, private backend pinning, native child, normalization,
+  canonical refs, evidence ledger and final URL admission. In both legacy and v2
+  modes, both user query strings returned ready=true/source_count5, exit0.
+  No fake HTTP provider, model Task, original conversation replay or SQL was used.
+- This qualifies the search tool chain, not a final model answer, production
+  deployment or semantic freshness/relevance/full-web coverage. The existing
+  services were not restarted; operator replacement and new-conversation test
+  remain mandatory. During work the existing Worker still used aec421e8 and its
+  observed restart counter changed from0to2; no cause was established by the
+  final15minute log window, and this search repair does not qualify boot stability.
+- Exact test-labeled containers/network and their anonymous volumes were cleaned
+  after acceptance; no existing/named business volume was removed.
+- Prepared arm64 images supersede the older record below:
+  - API:`12a55b4e081d3bbba0892c34348d6fd53190d84da519a2c8122acb677c9dc1b8`
+  - Worker:`d65422f0a11f30b0c4324cf6d716fbb84b43d38d6133abe72dfa3840ff03bb3a`
+  - Migrate:`77cd7ab9ffd12063d1c8a11f14689e0174123d3b24561c1610bf4619d7870675`
+- Seven modified runtime/tool module SHA256 values match the prepared image.
+
 ## Verified incident
 
 Trench conversation `conv_1791784350642_9757c5` maps to Task/session

@@ -21,6 +21,7 @@ from agent_tools.web_search import (
 from pydantic import TypeAdapter
 
 from agent_runtime.search_egress import search_network_options
+from agent_runtime.search_health import require_complete_search
 from agent_runtime.web_gateway import (
     _native_network_call,
     _NoRedirectHandler,
@@ -120,8 +121,7 @@ def _normalize_response(
         raise WebGatewayError(
             "search response has an invalid JSON shape", reason="invalid_response"
         )
-    if payload.get("unresponsive_engines") or payload.get("error"):
-        raise WebGatewayError("search source query is incomplete", reason="search_incomplete")
+    require_complete_search(payload)
     normalized: list[WebSearchResult] = []
     seen_urls: set[str] = set()
     output_chars = 0

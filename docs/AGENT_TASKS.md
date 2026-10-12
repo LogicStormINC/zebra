@@ -1,5 +1,31 @@
 # AGENT_TASKS.md
 
+### WEB-SEARCH-READINESS-01 - Search engine activation and observable provider failure
+
+- Status: Review (created Ready after live SearXNG reproduction; claimed
+  2026-10-12 before implementation; source/image and temporary tool-chain
+  acceptance GO, operator replacement/new conversation pending).
+- Human owner: Luke Ding; executor: Codex.
+- Branch: codex/search-provider-readiness-01; retained isolated worktree.
+- Owned paths: docker/web-search/settings.yml, compose.yml, verify.py;
+  runtime/search_providers.py, web_search.py, web_gateway.py, search_health.py;
+  tools/web_gateway.py, web_search.py, search_pipeline.py; corresponding
+  runtime/tool/config tests; docs/CLOUD_WEB_SEARCH_REPAIR.md; registry,
+  PROGRESS.md, task_plan.md, findings.md, WORKLOG.md.
+- Root evidence: current Worker uses aec421e8 with no restart; backend is healthy
+  but OpenAI news returns0/CAPTCHA. Config includes Bing but inherits disabled=true.
+- Acceptance: test enabled default engines, real source queries and exact collected
+  references; distinguish no candidates, failed engines and valid provider results.
+  Bound and sanitize provider diagnostics across native child/tool receipts.
+  No weakening strict SQL/certification/SSRF/tenant controls or successful empty
+  search fallback. Prepare source/images and operator restart steps; no original
+  paid Task replay, restart of existing services, or remote push.
+- Validation: affected1617pass12environment-skips87.88s; make check GO
+  (Ruff/mypy1246/eval30). Actual temporary SearXNG/TLS/new Worker transport
+  validated both queries in v1 and v2: each ready=true/source_count5, exit0.
+  Temporary labeled containers, anonymous volumes and network were removed;
+  existing services and business state were not restarted or cleared.
+
 ### WEB-EGRESS-DELIVERY-01 - Exact Markdown citations and operator search egress
 
 - Status: Review (created Ready from verified live incident; claimed

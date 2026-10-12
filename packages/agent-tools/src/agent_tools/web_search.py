@@ -131,9 +131,11 @@ class WebSearchTool:
                 )
             )
         except WebSearchInputError as exc:
-            return _failure(tool_call, reason="invalid_search_input", detail=str(exc))
+            return search_failure(tool_call, reason="invalid_search_input", detail=str(exc))
         except WebGatewayError as exc:
-            return _failure(tool_call, reason=exc.reason, detail=str(exc))
+            return search_failure(
+                tool_call, reason=exc.reason, detail=str(exc), metadata=exc.metadata
+            )
         lines = ["[UNTRUSTED EXTERNAL SEARCH RESULTS]"]
         for index, result in enumerate(response.results, start=1):
             lines.extend((f"{index}. {result.title}", result.url, result.snippet))
@@ -155,9 +157,16 @@ class WebSearchTool:
         )
 
 
-def _failure(tool_call: ToolCall, *, reason: str, detail: str) -> ToolResult:
+def search_failure(
+    tool_call: ToolCall,
+    *,
+    reason: str,
+    detail: str,
+    metadata: dict[str, JsonValue] | None = None,
+    route: str = "web_gateway",
+) -> ToolResult:
     return ToolResult(
         tool_call_id=tool_call.tool_call_id,
         status=ToolCallStatus.FAILED,
-        metadata={"route": "web_gateway", "reason": reason, "detail": detail},
+        metadata={**(metadata or {}), "route": route, "reason": reason, "detail": detail},
     )

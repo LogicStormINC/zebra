@@ -1,5 +1,25 @@
 # Progress Log
 
+## 2026-10-12 - WEB-SEARCH-READINESS-01
+
+- Claimed focused Ready follow-up before coding. Reproduced live zero/CAPTCHA;
+  pinned image verified Bing inherited disabled=true. Root was provider defaults,
+  not another Worker boot/policy/SQL failure.
+- Fixed configuration qualified real10/8candidates in disposable same-image
+  instance; no service restart, Task replay, paid model request or remote push.
+- RED/GREEN cases cover exact defaults, sanitized bounded failure metadata,
+  known read execution, native hop, retained incomplete rejection and operator
+  probe that requires actual canonical sources/citation admission.
+- Primary dirty SDK work and stashes are preserved. Latest validation/image
+  identities and pending operator restart are recorded in the search runbook.
+- Final affected1617pass12environment-skips87.88s; make check GO. Exact corrected
+  pinned SearXNG/TLS/new-image tests qualify both v1/v2 for both queries with
+  ready=true/source_count5. No model/SQL/original Task call or existing restart.
+- Removed only labeled temporary acceptance containers/network/anonymous volumes.
+  API12a55b4e, Workerd65422f0, Migrate77cd7ab9 arm64 prepared; seven source hashes
+  match images. Existing Worker uses older aec421e8; observed2restarts are not
+  explained/qualified by this provider repair. Operator replacement remains.
+
 ## 2026-10-12 - WEB-EGRESS-DELIVERY-01
 
 - Claimed isolated focused branch/paths before coding; source fixes preserve

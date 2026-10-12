@@ -1,5 +1,18 @@
 # Findings
 
+## WEB-SEARCH-READINESS-01 - live provider readiness, 2026-10-12
+
+- Current Worker aec421e8 running0restarts, backend healthy. Direct same-Worker
+  OpenAI news queryHTTP200 returns0/CAPTCHA, so partial-result allowance would not
+  restore search. Engine list included Bing but its merged default disabled=true.
+- Free upstream controls reproduced CAPTCHA/403/429/empty on current egress.
+  Bing regional endpoint cn.bing.com with explicit disabled=false succeeds for
+  both user-reported query strings:10/8candidates,0.722/0.199s, no failed engines.
+- Preserve incomplete engine failure, final citation and strict coverage checks.
+  Correct defaults and actual source qualification, not only presence/liveness.
+  Do not claim relevance, freshness, full-web coverage or conversation acceptance
+  from a successful candidate response. Single free scraper has no fleet SLA.
+
 ## WEB-EGRESS-DELIVERY-01 - delivery and search roots, 2026-10-12
 
 - Live child301ee0ef/seq125 fails only exact citation assessment: a backtick and
