@@ -1,6 +1,6 @@
 # Cloud 流式输出与持久存储优化重构 Spec
 
-日期：2026-10-12。状态：54组基线完成；合同与有界读取本地集成；WRITER 实施中，v2 未激活。
+日期：2026-10-12。状态：54组基线完成；WRITER 有界组件已集成；ADMISSION 13Oct有界组件复审通过，新增v2准入关闭。
 文档任务：CLOUD-STREAM-SPEC-01。人类 Owner：Luke Ding；编写：Codex。
 源码基线：cloud-agent-trench / d836b04cef7df21c6130c1df8be74ff200089f32。
 本稿由源码审计与官方资料形成；已实施合同与读侧切片，未测生产 SQL 或部署。
@@ -362,12 +362,15 @@ reviewed instrumentation f16d8324 已本地集成；READ/CONTRACT 独立认领�
 | STREAM-READ | API session/task/ag_ui checkpoint tail + Redis notify | baseline；消除高频轮询，legacy 不变 |
 | STREAM-CONTRACT | core transient frame/Port；ADR-024 与 wire 能力契约 | baseline；scope/sequence/公开资格/兼容冻结 |
 | STREAM-WRITER | coalescer/model step/Worker composition + Redis adapter | contract；安全分流、容量、旧 Worker fencing |
-| STREAM-CLIENT | AG-UI projection/checkpoint、API cursor、SDK client-core/React | contract+writer；replace/resync/混合历史 |
+| STREAM-ADMISSION | typed accepted Run mode、真实 Turn/Host-bound Worker | writer；固定准入、旧Run兼容、故障不降级 |
+| STREAM-CLIENT | AG-UI projection/checkpoint、API cursor、SDK client-core/React | contract+writer+admission；replace/resync/混合历史 |
 | STREAM-RELIABILITY | PG notification/relay、提交 hook、临时 GC/config | read+writer；kill/rollback/Redis 故障通过 |
 | STREAM-ACCEPTANCE | native faults/load、SDK/browser、Host/BFF 跨项目 | 全部；性能、安全、最终收敛 Gate |
 
 STREAM-READ 可先独立交付，不提前切换 durable delta；没有 v2 SDK 时不激活 writer。
-完整模式必须等待 writer/client/reliability 成套通过，不以单一 Worker 改动上线。
+完整模式必须等待 writer/admission/client/reliability 成套通过，不以单一 Worker 改动上线。
+ADMISSION 默认新增准入关闭；已固定v2不随开关关闭或Redis故障降回持久delta。
+有界组件证据见 CLOUD_STREAM_ADMISSION_EVIDENCE.md；总体SQL/TTFT与浏览器Gate仍OPEN。
 后续卡涉及 COV-SQL-PHASE-01 recorder、live_event_store 时等待其合并/移交。
 目前 React/SDK 有未提交工作；须在明确合并基线后 rebase，不能覆盖主工作区。
 Trench BFF/业务 UI 属于另仓库，单独任务和 Owner；Zebra 不直接扩大 owned paths。

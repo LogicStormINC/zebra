@@ -212,6 +212,55 @@
   same-fence new call, token, closure/loss/absent-lane races fail closed.
   Renewed independent spec/quality reviews pending; source refrozen before commit.
 
+### CLOUD-STREAM-ADMISSION-01 - Freeze real Run mode and compose trusted Writer
+
+- Status: Review (accepted bounded component2026-10-13 after independent SPEC/QUALITY GO; local integration pending).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-admission-01, managed isolated checkout.
+- Dependency: WRITER bounded component0d49f0b0 accepted locally after renewed
+  spec42/native quality54/no-skips GO; primary29pass and42dirty hashes unchanged.
+  READ3a3e5902/CONTRACTd8e85614 available. Full Writer activation remains open.
+- User-authorized integration target: cloud-agent-trench; validated stages may
+  integrate locally/unlock; no push/deploy or existing-service operations.
+- Owned paths: core contracts/session_commands.py; core domain/stream_admission.py
+  only if existing Run-ID compatibility needs a minimal contract correction;
+  integrations new run_stream_admission.py; API ag_ui_command.py,
+  command_submission.py/app.py/factory.py accepted mode composition/response;
+  api_command_mixin.py minimal typed cloud setting forwarding (root approved);
+  config new stream_settings.py and existing settings.py; .env.example;
+  Worker new transient_output_composition.py, cloud_composition.py/loop.py,
+  worker_loop_service.py only if existing binding-loader composition needs
+  factoring; transient_output_runtime.py narrow optional transport/composition
+  handoff from accepted WRITER only. No Redis mutation or COV recorder writes.
+  New tests: tests/agent_core/test_stream_command_admission.py;
+  tests/agent_integrations/test_run_stream_admission.py;
+  tests/config/test_stream_settings.py; tests/api/test_stream_command_admission_api.py;
+  tests/worker/test_transient_output_composition.py and
+  tests/worker/test_transient_output_composition_native.py.
+  Corresponding focused core/API/config/integrations/Worker tests; existing
+  affected tests fixture/interface compatibility only, declared before editing.
+  Registry/PROGRESS/task_plan/WORKLOG, focused CLOUD_STREAM_ADMISSION_EVIDENCE.md,
+  stream spec execution sequencing/status only under600lines.
+- Inspect sibling accepted-command callers coverage_http_admission.py and
+  child_wakeup.py; any source edits there require explicit claim before coding.
+- Scope: requested typed capabilities remain fingerprinted intent; server mode
+  is optional outer accepted metadata, atomically committed by existing Event
+  append and returned on idempotent retry. Reuse indexed unique Run anchor plus
+  one bounded source row, no schema/history hydration or per-frame PG work.
+- Factory binds actual current Task/Run/Segment/Attempt/model callback/open Turn,
+  full lease and fresh persisted API-verified Host binding/expiry. Scope narrows
+  to active Segment; reuse lineage/context validation, never fabricate grants.
+  Missing metadata is legacy including historical256char Run IDs; malformed or
+  unavailable metadata cannot silently become legacy. Never invent a Turn UUID.
+- Existing v2 stays v2 when new-admission flag switches off or Redis unavailable:
+  suppress/reset provisional text, preserve full durable response/answer gates.
+  Defaults off until CLIENT/reliability/paired acceptance; no rollout GO here.
+- Acceptance: native immutable metadata/fingerprint/idempotency and source-loader
+  checks, actual Worker/Turn/binding/hand-off/fault checks, settings validation;
+  renewed independent spec then quality reviews and local integration.
+- CLIENT stays Locked pending this prerequisite plus explicit SDK path handoff;
+  aggregate quotas/GC, cursor/HTTP/SDK and100-subscriber/full SQL gates remain open.
+
 ### CLOUD-STREAM-CLIENT-01 - Reconcile AG-UI and SDK streaming state
 
 - Status: Locked; Depends on WRITER accepted integration and SDK dirty-work handoff.

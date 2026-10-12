@@ -13,6 +13,7 @@ from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_c
 from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memory_gateway_settings
 from zebra_agent_config.public_output_settings import PublicOutputPolicy, load_public_output_policy
 from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
+from zebra_agent_config.stream_settings import StreamSettings, load_stream_settings
 
 MAX_MCP_SERVERS = mcp_settings.MAX_MCP_SERVERS
 McpHttpServerSettings = mcp_settings.McpHttpServerSettings
@@ -91,6 +92,7 @@ class ZebraAgentSettings:
     model: ModelSettings
     session_handoff: SessionHandoffSettings = field(default_factory=SessionHandoffSettings)
     live_events: LiveEventSettings = field(default_factory=LiveEventSettings)
+    stream: StreamSettings = field(default_factory=StreamSettings)
     memory_gateway: MemoryGatewaySettings = field(default_factory=MemoryGatewaySettings)
     command_delivery: CommandDeliverySettings = field(default_factory=CommandDeliverySettings)
     public_output: PublicOutputPolicy = field(default_factory=PublicOutputPolicy)
@@ -196,6 +198,7 @@ def load_settings(
     )
     return ZebraAgentSettings(
         public_output=load_public_output_policy(values),
+        stream=load_stream_settings(values),
         profile=profile,
         database_url=database_url,
         api=ApiSettings(

@@ -1,4 +1,4 @@
-"""Optional ordinary-public callback transport; default composition is dormant."""
+"""Ordinary public drafts; cloud mode is frozen and new admission defaults off."""
 
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager
@@ -8,6 +8,7 @@ from time import monotonic
 from uuid import uuid4
 
 from agent_core.domain.events import EventActor, EventType
+from agent_core.domain.identifiers import EventId
 from agent_core.domain.leases import LeaseFence, WorkerLease
 from agent_core.domain.stream_admission import RunStreamAdmission, StreamMode
 from agent_core.domain.transient_output import MAX_TRANSIENT_FRAME_BYTES, TransientTextFrame
@@ -30,9 +31,9 @@ from zebra_agent_worker.public_output_runtime import publication_lock, publicati
 class WorkerTransientCallGate:
     """Process-local handle for one actual public callback, checked afresh on renewal.
 
-    CLIENT must supply a durable server-negotiated admission loader and a fresh
-    verified Grant loader. No production loader exists yet; constructors are not
-    admission evidence and composition never manufactures an enabled Run.
+    Trusted cloud composition supplies proven immutable accepted metadata and
+    fresh persisted API-verified Host binding expiry. Constructors grant nothing;
+    current source, open Turn and full fence remain fresh at issue/activation.
     """
 
     def __init__(
@@ -45,6 +46,7 @@ class WorkerTransientCallGate:
         leases: LeaseStorePort,
         load_admission: Callable[[], RunStreamAdmission | None],
         fresh_grant_expiry: Callable[[TransientStreamScope], datetime],
+        expected_anchor_event_id: EventId | None = None,
     ) -> None:
         if type(request_sequence) is not int or request_sequence < 0:
             raise ValueError("request_sequence must be a canonical Task position")
@@ -52,6 +54,7 @@ class WorkerTransientCallGate:
         self.request_sequence = request_sequence
         self._tasks, self._leases = tasks, leases
         self._admission, self._grant = load_admission, fresh_grant_expiry
+        self._anchor_event_id = expected_anchor_event_id
         self._issued: TransientWriterAuthorization | None = None
         self._closed = False
         self._selected_mode: StreamMode | None = None
@@ -111,6 +114,10 @@ class WorkerTransientCallGate:
                 or run.stop is not None
                 or run.control_only
                 or run.anchor is None
+                or (
+                    self._anchor_event_id is not None
+                    and run.anchor.event_id != self._anchor_event_id
+                )
                 or run.strict_coverage
             ):
                 raise TransientOutputUnavailable("source does not authorize ordinary public text")
@@ -147,12 +154,27 @@ class WorkerTransientCallGate:
                     "public callback Attempt was superseded or Session is terminal"
                 )
             if any(
-                entry.event.event_type
-                in (EventType.MODEL_REQUEST_STARTED, EventType.MODEL_RESPONSE_RECEIVED)
-                and entry.event.payload.get("model_call_id") == generation.model_call_id
+                (
+                    entry.event.event_type is EventType.MODEL_REQUEST_STARTED
+                    and (
+                        entry.event.actor is not EventActor.HARNESS
+                        or entry.segment_id != generation.segment_id
+                        or entry.event.payload.get("attempt_number") != generation.attempt_number
+                        or entry.event.payload.get("purpose") != "public_expression"
+                        or entry.event.payload.get("model_call_id") == generation.model_call_id
+                        or not isinstance(entry.event.payload.get("model_call_id"), str)
+                        or not entry.event.payload.get("model_call_id")
+                    )
+                )
+                or (
+                    entry.event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+                    and entry.event.payload.get("model_call_id") == generation.model_call_id
+                )
                 for entry in page.events[1:]
             ):
-                raise TransientOutputUnavailable("public callback source is completed or reused")
+                raise TransientOutputUnavailable(
+                    "public callback source is completed or reused or superseded"
+                )
             lease = self._leases.get(generation.segment_id)
             if lease is None or lease.fence != self.fence:
                 raise TransientOutputUnavailable("fresh full lease fence rejected")
@@ -229,7 +251,7 @@ class TransientDeltaSink:
 
     def __init__(
         self,
-        port: TransientOutputPort,
+        port: TransientOutputPort | None,
         open_call: Callable[[str, int], WorkerTransientCallGate],
         *,
         durable_anchor: Callable[[], int],
@@ -279,6 +301,8 @@ class TransientDeltaSink:
                     if (generation.model_call_id, generation.attempt_number) != self._call:
                         raise TransientOutputUnavailable("callback gate identity mismatch")
                     self._auth = self._gate.issue()
+                    if self._port is None:
+                        raise TransientOutputUnavailable("temporary draft transport is unavailable")
                     self._port.activate(self._auth)
                 except Exception:
                     self._failed = True
@@ -317,7 +341,7 @@ class TransientDeltaSink:
         return sink
 
     def _publish(self, event: HarnessEventDraft) -> None:
-        if self._failed or self._auth is None or self._gate is None:
+        if self._failed or self._auth is None or self._gate is None or self._port is None:
             return
         try:
             if datetime.now(UTC) >= self._auth.expires_at - timedelta(seconds=1):
@@ -346,7 +370,8 @@ class TransientDeltaSink:
             if self._gate is not None:
                 self._gate.close()
                 try:
-                    self._port.invalidate(self._gate.scope)
+                    if self._port is not None:
+                        self._port.invalidate(self._gate.scope)
                 except (TransientOutputUnavailable, TimeoutError):
                     pass  # Redis authority expires; full durable response is still authoritative.
             self._gate, self._auth = None, None

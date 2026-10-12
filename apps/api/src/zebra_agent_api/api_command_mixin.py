@@ -8,6 +8,7 @@ from agent_core.domain.events import EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
+from zebra_agent_config.settings import ZebraAgentSettings
 
 from zebra_agent_api.command_submission import submit_session_command
 from zebra_agent_api.extension_turn_admission import CloudExtensionTurnAdmission
@@ -16,6 +17,9 @@ from zebra_agent_api.responses import ApiResponse, conflict
 
 class _CommandApp(Protocol):
     stores: ControlPlaneStores
+
+    @property
+    def settings(self) -> ZebraAgentSettings: ...
 
 
 class _RunEventMismatch:
@@ -102,6 +106,10 @@ class ApiCommandMixin:
             idempotency_key=idempotency_key,
             extension_admission=extension_admission,
             verified_host_grant=verified_host_grant,
+            transient_admission_enabled=(
+                self.settings.storage_authority == "postgresql"
+                and self.settings.stream.new_admission_enabled
+            ),
         )
 
 

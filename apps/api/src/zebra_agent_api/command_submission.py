@@ -10,7 +10,13 @@ from agent_core.contracts import (
     decide_session_command,
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import SessionId
+from agent_core.domain.identifiers import SessionId, TaskId
+from agent_core.domain.stream_admission import (
+    RunStreamAdmission,
+    StreamCapabilities,
+    StreamMode,
+    negotiate_stream_mode,
+)
 from agent_core.ports.extensions import ExtensionSkillConflictError
 from agent_security.host_grant import HostGrantBindingError, VerifiedHostGrant
 from agent_storage import ControlPlaneStores
@@ -36,6 +42,7 @@ def submit_session_command(
     idempotency_key: str | None,
     extension_admission: CloudExtensionTurnAdmission | None = None,
     verified_host_grant: VerifiedHostGrant | None = None,
+    transient_admission_enabled: bool = False,
 ) -> ApiResponse:
     try:
         session_key = SessionId(UUID(session_id))
@@ -142,6 +149,16 @@ def submit_session_command(
                 status_code=503,
                 body={"session_id": session_id, "status": "extension_admission_unavailable"},
             )
+    try:
+        stream_admission = _stream_admission(
+            stores,
+            command,
+            transient_admission_enabled and isinstance(verified_host_grant, VerifiedHostGrant),
+        )
+    except (ValueError, ValidationError) as exc:
+        return bad_request(str(exc))
+    except Exception:
+        return ApiResponse(503, {"status": "stream_admission_unavailable"})
     event = SessionEvent.create(
         session_id=session_key,
         sequence=current_revision + 1,
@@ -150,6 +167,7 @@ def submit_session_command(
         payload=command.event_payload(
             extension_snapshot_digest=snapshot.digest if snapshot is not None else None,
             extension_turn_id=snapshot.turn_id if snapshot is not None else None,
+            stream_admission=stream_admission,
         ),
         idempotency_key=command.idempotency_key,
     )
@@ -225,6 +243,8 @@ def _decision_response(
     if decision.reason is not None:
         body["reason"] = decision.reason
     if existing is not None:
+        if "stream_admission" in existing.payload:
+            body["stream_admission"] = existing.payload["stream_admission"]
         body["event_sequence"] = existing.sequence
         existing_command_id = existing.payload.get("command_id")
         if isinstance(existing_command_id, str):
@@ -247,6 +267,11 @@ def _accepted_response(
             "event_type": event.event_type.value,
             "event_sequence": event.sequence,
             "expected_revision": command.expected_revision,
+            **(
+                {"stream_admission": event.payload["stream_admission"]}
+                if "stream_admission" in event.payload
+                else {}
+            ),
         },
     )
 
@@ -293,3 +318,28 @@ def _expected_revision(value: object) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError("expected_revision must be a non-negative integer")
     return value
+
+
+def _stream_admission(
+    stores: ControlPlaneStores, command: SessionCommand, enabled: bool
+) -> RunStreamAdmission | None:
+    raw = command.payload.get("stream_capabilities")
+    if raw is None or command.kind not in {SessionCommandKind.RUN, SessionCommandKind.RESUME}:
+        return None
+    caps = StreamCapabilities.model_validate(raw)
+    task_id = TaskId(UUID(str(command.payload.get("thread_id"))))
+    run_id = command.payload.get("run_id")
+    if not isinstance(run_id, str):
+        raise ValueError("stream capabilities require an explicit Run identity")
+    mode = negotiate_stream_mode(capabilities=caps, transient_enabled=enabled)
+    if mode is StreamMode.TRANSIENT_V2:
+        header = stores.tasks.read_task_header(task_id, require_source_coverage=True)
+        if header is None or header.active_segment_id != command.session_id:
+            raise ValueError("stream admission Task does not own the active Segment")
+        if type(header.strict_coverage) is not bool:
+            raise ValueError("stream admission privacy is unavailable")
+        if header.strict_coverage:
+            mode = StreamMode.LEGACY
+    if mode is StreamMode.LEGACY:
+        return None  # Accepted absence pins legacy and keeps old Workers byte-compatible.
+    return RunStreamAdmission(task_id=task_id, run_id=run_id, mode=mode, capabilities=caps)

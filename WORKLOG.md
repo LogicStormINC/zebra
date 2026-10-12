@@ -14086,3 +14086,58 @@ f4e7e6be3deb0e8ed1eb66ebdffa6a966b919e17bc013aa98069276ca32f8ae1 verified.
 Bounded component accepted for explicit-path local commit/integration. Actual
 admission/factory activation, paired runtime and aggregate GC remain OPEN.
 No push or deployment; next ADMISSION uses a separate task/worktree.
+
+## CLOUD-STREAM-ADMISSION-01 claim — 2026-10-12
+
+Ready created then claimed before coding on codex/cloud-stream-admission-01,
+base0d49f0b0. Explicit owned paths above; Luke Ding owner/Codex executor.
+Read-only audit found existing indexed Run anchor + one bounded accepted row
+sufficient; no new schema. Mode belongs to server outer metadata; requested caps
+remain original fingerprint intent. Actual open Turn and refreshed API-verified
+Host binding are required, no synthetic grants. Legacy/missing metadata preserved,
+existing v2 must not downgrade on flag-off/Redis fault. No push/deploy authorized.
+
+## CLOUD-STREAM-ADMISSION-01 implementation freeze — 2026-10-12
+
+Typed fingerprinted capabilities + optional immutable accepted metadata; actual
+cloud mode-aware factory and Memory-independent Host binding loader implemented
+within claimed paths. Callback binds actual open source Turn/full lease/current
+Run/exact anchor and freshly persisted Host authority; old/absent metadata legacy,
+unknown/malformed source drops drafts. No Redis/config failure can downgrade v2.
+Header locator repairs timer-frontier race without old body hydration. Initial
+accepted metadata is cached (append-only assumption), mutable authority stays fresh.
+Configured229pass/no skips61.14s + final native9pass/no skips19.67s, compatibility19;
+make check GO2999/mypy1257/eval30. Native activation SQL258 ->162 across two calls,
+0.4394/0.4480s ->0.3343/0.2890s; provider10/100frameSQL0; measuredtotal626 ->530.
+No total paired/performance/production claim. Independent SPEC then QUALITY pending;
+no commit/integration until reviews, no push/deploy. Exact artifacts/next gates are
+in docs/CLOUD_STREAM_ADMISSION_EVIDENCE.md; private env/artifacts excluded.
+
+## CLOUD-STREAM-ADMISSION-01 renewed freeze — 2026-10-13
+
+Initial SPEC NO-GO native proof found fresh digest self-validation, later different
+ordinary-call supersession and actual PublicExpression hook interleaving gaps.
+Shared owned runtime/composition repairs preserve fresh full authority while
+allowing only trusted distinct same-Segment/Attempt ancillary requests. Native
+corrupted digest rejects issue/resolve; valid API renewal works; unknown/forged/
+reused requests reject; bounded locator uses cumulative page.byte_count.
+Compatibility correction: legacy returnsNone and accepted metadata field uses
+exclude_if so generic Event normalization cannot insert stream_admission:null.
+Old extra-forbid accepted shape/original fingerprints remain compatible, including
+capability-free, flag-off, unsigned and coverage fallback and flag-on retries.
+Earlier full repair255pass/1fixture stale-projection failure corrected; final261
+pass/no skips76.92s, including16native. make check GO2999/mypy1257/eval30.
+Activation162SQL/2calls,0.3766/0.4024s; frameSQL0; measuredtotal530. No TTFT/totalpaired
+SLO claim. Refrozen17-source/test SHA256 d1066f670c1d630f4a497de084b0ab6f5ef4a47b2d6cde9696fb3276866a997f;
+renewed SPEC then QUALITY pending. No commit/push/deploy; artifacts excluded.
+
+## CLOUD-STREAM-ADMISSION-01 accepted bounded component — 2026-10-13
+
+Independent renewed SPEC GO39/no skips35.4s and QUALITY GO39/no skips34.81s plus
+original Writer26/no skips6.48s; all17source/config/test hashes matched frozen
+SHA256d1066f670c1d630f4a497de084b0ab6f5ef4a47b2d6cde9696fb3276866a997f.
+Root authorized explicit-path commit of this bounded component; integration into
+cloud-agent-trench follows separately. No implementation source changed after
+reviews. Full performance81SQL/~0.4s activation, CLIENT/reliability/browser and
+rollout gates remain OPEN; new v2 admission remains off. Artifacts/private env
+excluded; no push/deploy.

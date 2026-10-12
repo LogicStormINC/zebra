@@ -8,6 +8,7 @@ from uuid import UUID
 from ag_ui.core import RunAgentInput
 from agent_core.contracts import SessionCommandKind
 from agent_core.domain.identifiers import ClientSessionId, TaskId
+from agent_core.domain.stream_admission import StreamCapabilities
 from agent_security.host_grant import VerifiedHostGrant
 from agent_storage import ControlPlaneStores
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, ValidationError, field_validator
@@ -60,6 +61,11 @@ class AgUiCommandEnvelope(BaseModel):
         ge=0,
     )
     input: dict[str, object] | None = None
+    stream_capabilities: StreamCapabilities | None = Field(
+        default=None,
+        validation_alias="streamCapabilities",
+        serialization_alias="streamCapabilities",
+    )
 
     @field_validator("thread_id", "run_id")
     @classmethod
@@ -171,6 +177,10 @@ def _command_payload(envelope: AgUiCommandEnvelope) -> dict[str, object]:
         "thread_id": envelope.thread_id,
         "run_id": envelope.run_id,
     }
+    if envelope.stream_capabilities is not None:
+        if envelope.action == "stop":
+            raise ValueError("stop command must not renegotiate streaming")
+        payload["stream_capabilities"] = envelope.stream_capabilities.model_dump(mode="json")
     if envelope.action == "stop":
         if envelope.input is not None:
             raise ValueError("stop command must not include input")
@@ -224,9 +234,10 @@ def _admit_client_mounts(
     client_session_id = forwarded.get("clientSessionId")
     ui_revision = forwarded.get("uiRevision")
     tools = run_input.get("tools")
-    if not any(
-        value is not None for value in (frontend_app_id, client_session_id, ui_revision)
-    ) and not tools:
+    if (
+        not any(value is not None for value in (frontend_app_id, client_session_id, ui_revision))
+        and not tools
+    ):
         # AG-UI state also carries server-owned run configuration. It becomes
         # client-owned Shared State only through an explicit frontend mount.
         return None

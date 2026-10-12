@@ -29,6 +29,10 @@ Existing incident/search and COV-SQL-PHASE-01 work retains its scope and priorit
    Quality P1 delayed activation repaired with native lane revision CAS races;
    renewed SPEC42/QUALITY54 no-skips GO. Production factory dormant;
    admission/CLIENT, full activation, paired runtime and aggregate GC remain open.
+4a. Accepted bounded component for local integration: CLOUD-STREAM-ADMISSION-01; immutable accepted mode and real
+    mode-aware Worker/Turn/Host binding composition on accepted0d49f0b0.
+    Configured261/no-skips (including native16); static GO; SPEC39/QUALITY39+Writer26 no-skips GO.
+    Activation81SQL/call and0.3766/0.4024s remain material fixed-cost/TTFT evidence.
 5. Locked: CLOUD-STREAM-CLIENT-01; SDK/AG-UI replace/resync and old cursor/history.
 6. Locked: CLOUD-STREAM-RELIABILITY-01; postcommit relay, crash/GC/byte quotas.
 7. Locked: CLOUD-STREAM-ACCEPTANCE-01; native paired SQL gates, full checks,

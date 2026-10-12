@@ -200,7 +200,7 @@ def build_worker_loop_service(
     task_binding_loader = None
     egress_registry = None
     delegation_store = None
-    if cloud_memory_store is not None and settings.storage_authority == "postgresql":
+    if settings.storage_authority == "postgresql":
         from agent_storage.postgres.task_admission import load_session_task_binding as _load_binding
 
         binding_dsn = cloud_bundle.dsn or ""
@@ -272,6 +272,19 @@ def build_worker_loop_service(
         deployment_namespace=active_namespace,
         tail_reader=replay_reader.tail_page if replay_reader else None,
     )
+    from zebra_agent_worker.transient_output_composition import compose_transient_output_factory
+
+    transient_factory = None
+    if settings.storage_authority == "postgresql":
+        transient_factory = (
+            cloud_bundle.transient_output_factory
+            or compose_transient_output_factory(
+                cloud_bundle.stores,
+                dsn=cloud_bundle.dsn or "",
+                namespace=cloud_bundle.deployment_namespace,
+                settings=settings,
+            )
+        )
     execution_service = SessionExecutionService(
         database_path=database_path,
         claim_service=claim_service,
@@ -282,6 +295,7 @@ def build_worker_loop_service(
         worker_projection_transaction=active_transaction,
         deployment_namespace=active_namespace,
         task_binding_loader=task_binding_loader,
+        transient_output_factory=transient_factory,
         egress_registry=egress_registry,
         delegation_store=delegation_store,
         frozen_manifest_loader=frozen_manifest_loader,
@@ -395,7 +409,8 @@ def build_worker_loop_service(
     checkpoint_committed = None
     if settings.live_events.redis_url is not None:
         checkpoint_committed = RedisCommittedEventPublisher.from_url(
-            settings.live_events.redis_url, deployment_namespace=active_namespace or "local",
+            settings.live_events.redis_url,
+            deployment_namespace=active_namespace or "local",
             max_stream_length=settings.live_events.stream_max_length,
             key_prefix=settings.live_events.key_prefix,
         ).fanout.publish_checkpoint
@@ -422,15 +437,18 @@ def build_worker_loop_service(
                 ),
                 coverage_consumer=(
                     AgUiCheckpointConsumer(
-                        execution_stores.tasks, execution_stores.coverage_projection_work,
+                        execution_stores.tasks,
+                        execution_stores.coverage_projection_work,
                         namespace=active_namespace or "local",
                         checkpoint_committed=checkpoint_committed,
                         read_summaries=(
                             execution_stores.tasks
-                            if isinstance(execution_stores, PostgresControlPlaneStores) else None
+                            if isinstance(execution_stores, PostgresControlPlaneStores)
+                            else None
                         ),
                     )
-                    if execution_stores.coverage_projection_work is not None else None
+                    if execution_stores.coverage_projection_work is not None
+                    else None
                 ),
             )
             if execution_stores.projection_work is not None

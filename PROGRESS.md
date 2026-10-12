@@ -1,3 +1,36 @@
+## Cloud admission bounded component accepted — 2026-10-13
+
+Independent native review found fresh binding digest validation, superseded main
+callback renewal and ancillary PublicExpression interleaving gaps. Shared repairs
+validate both fresh and pinned Host authority, recognize only trusted ancillary
+requests and reject new ordinary/unknown/forged/reused requests. Legacy omission
+also survives generic Event normalization, retaining old Worker compatibility.
+Configured261/no-skips76.92s including16native; make check GO2999/mypy1257/eval30.
+Activation remains81SQL/call,0.3766/0.4024s;10/100frameSQL0, sample total530SQL.
+Independent SPEC GO39/no-skips35.4s; QUALITY GO39/no-skips34.81s plus Writer26/no-skips6.48s.
+Accepted bounded component for local commit/integration; no push/deploy or full GO.
+
+## Cloud stream admission bounded component in review — 2026-10-12
+
+CLOUD-STREAM-ADMISSION-01 freezes optional negotiated Run metadata in accepted
+Events while requested capabilities remain fingerprinted intent. Actual cloud
+Worker composition binds source open Turn, current Run/callback, full lease and
+fresh persisted API-verified Host binding; mode is honored when new admission is
+disabled or Redis is unavailable. Defaults off; no push/deploy or rollout GO.
+Configured229/no-skips61.14s, final native9/no-skips19.67s, legacy core19pass;
+static GO2999files/mypy1257/eval30. Independent spec then quality pending.
+Native provider10/100frames0SQL; activation remains81SQL/call and0.3343/0.2890s.
+These component samples do not establish total paired SQL or invocation TTFT SLO.
+See docs/CLOUD_STREAM_ADMISSION_EVIDENCE.md; CLIENT/reliability/acceptance OPEN.
+
+## Cloud stream admission prerequisite — 2026-10-12
+
+WRITER bounded component0d49f0b0 integrated locally after renewed spec/quality GO;
+primary29checks pass and42unrelated file hashes unchanged. Full product gates open.
+CLOUD-STREAM-ADMISSION-01 claimed before coding in its isolated worktree: reuse
+accepted-command Event plus indexed bounded source read; freeze negotiated mode,
+compose actual Turn/Host-bound Worker. Default admission off; no push/deployment.
+
 # Cloud stream writer component accepted — 2026-10-12
 
 Bounded Redis temporary drafts and optional Worker callback composition implemented

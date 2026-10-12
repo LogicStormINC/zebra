@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from agent_core.contracts.turn_events import validate_turn_identity
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
+from agent_core.domain.stream_admission import RunStreamAdmission, StreamCapabilities
 
 MAX_COMMAND_PAYLOAD_BYTES = 64 * 1024
 MAX_IDEMPOTENCY_KEY_LENGTH = 256
@@ -62,6 +63,16 @@ class SessionCommand(BaseModel):
             raise ValueError("command payload is too large")
         return dict(value)
 
+    @field_validator("payload")
+    @classmethod
+    def validate_stream_intent(cls, value: dict[str, object]) -> dict[str, object]:
+        if "stream_admission" in value:
+            raise ValueError("stream_admission is server-owned metadata")
+        if "stream_capabilities" in value:
+            caps = StreamCapabilities.model_validate(value["stream_capabilities"])
+            value = {**value, "stream_capabilities": caps.model_dump(mode="json")}
+        return value
+
     @model_validator(mode="after")
     def validate_kind_payload(self) -> SessionCommand:
         if self.kind is SessionCommandKind.MESSAGE:
@@ -95,6 +106,7 @@ class SessionCommand(BaseModel):
         *,
         extension_snapshot_digest: str | None = None,
         extension_turn_id: str | None = None,
+        stream_admission: RunStreamAdmission | None = None,
     ) -> dict[str, object]:
         return SessionCommandAcceptedPayload(
             command_id=str(self.command_id),
@@ -106,6 +118,7 @@ class SessionCommand(BaseModel):
             fingerprint=self.fingerprint,
             extension_snapshot_digest=extension_snapshot_digest,
             extension_turn_id=extension_turn_id,
+            stream_admission=stream_admission,
         ).model_dump(mode="json", exclude_none=True)
 
 
@@ -121,6 +134,9 @@ class SessionCommandAcceptedPayload(BaseModel):
     fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
     extension_snapshot_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     extension_turn_id: str | None = Field(default=None, min_length=1, max_length=512)
+    stream_admission: RunStreamAdmission | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def require_complete_extension_binding(self) -> SessionCommandAcceptedPayload:
@@ -166,6 +182,16 @@ def validate_accepted_session_command(
         or accepted.fingerprint != command.fingerprint
     ):
         raise ValueError("accepted command integrity check failed")
+    if accepted.stream_admission is not None:
+        admission = accepted.stream_admission
+        if (
+            accepted.kind not in {SessionCommandKind.RUN, SessionCommandKind.RESUME}
+            or str(admission.task_id) != accepted.payload.get("thread_id")
+            or admission.run_id != accepted.payload.get("run_id")
+            or admission.capabilities.model_dump(mode="json")
+            != accepted.payload.get("stream_capabilities")
+        ):
+            raise ValueError("accepted stream admission conflicts with command intent")
     return accepted
 
 
@@ -181,10 +207,7 @@ def is_command_message_materialization(
     return (
         causation_id == accepted_event_id
         and idempotency_key == f"command-input:{accepted_event_id}"
-    ) or (
-        causation_id is None
-        and idempotency_key == f"{accepted_idempotency_key}:message"
-    )
+    ) or (causation_id is None and idempotency_key == f"{accepted_idempotency_key}:message")
 
 
 class SessionCommandDecision(BaseModel):
