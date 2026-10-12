@@ -41,6 +41,7 @@ from zebra_agent_worker.provider_continuation_commit import (
 )
 from zebra_agent_worker.runtime_instances import InstanceFactory
 from zebra_agent_worker.tool_output_artifacts import CloudToolOutputArtifactCoordinator
+from zebra_agent_worker.transient_output_runtime import TransientOutputFactory
 
 
 def _workspace_snapshot_uri(
@@ -89,6 +90,7 @@ class CloudWorkerComposition:
     skill_objects: ArtifactObjectStorePort | None = None
     memory_runtime: MemoryGatewayRuntime | None = None
     coverage_runtime: CloudCoverageRuntime | None = None
+    transient_output_factory: TransientOutputFactory | None = None
 
 
 def compose_cloud_worker(

@@ -104,6 +104,7 @@ def _entry(tmp_path, monkeypatch, *, admitted=True):
     service = SimpleNamespace(
         _execution_namespace="local",
         _coverage_runtime=None,
+        _transient_output_factory=None,
         _execution_input_store=None,
         _task_index_store=stores.tasks,
         _event_store=stores.events,

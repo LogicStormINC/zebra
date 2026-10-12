@@ -31,7 +31,7 @@
   gap (runtime is unchanged);7profiler/native/CLI checks pass3.59s; make check
   GO, independent spec/quality reviews GO for profiler.
 - Completed frozen60s/3repeat matrix:54/54cells, unchanged harness/runtime;
-  23terminal failures, zero content/tool failures (existing v1 runtime defects).
+  23terminal failures, zero content failures; tools untested in this workload.
   Cd=20SQL/durable delta; single idle reader median Session213/Task3479/AGUI2739
   SQL per60s. FullWorker/Grant/browser/v2 remains open; measurement is not
   runtime correctness approval. Instrumentation integrated locally f16d8324.
@@ -80,7 +80,7 @@
 
 ### CLOUD-STREAM-READ-BOUNDS-01 - Bound Cloud replay and privacy preflight
 
-- Status: Review for bounded replay/source-qualified privacy component
+- Status: Done for bounded replay/source-qualified privacy component locally3a3e5902
   (Ready created then claimed before coding; full READ scale/paired gates stay open).
 - Human owner: Luke Ding; executor: Codex.
 - Branch/worktree: codex/cloud-stream-read-bounds-01, managed isolated checkout.
@@ -164,15 +164,53 @@
 
 ### CLOUD-STREAM-WRITER-01 - Compose bounded transient delta writer
 
-- Status: Locked; Depends on READ and CONTRACT accepted integration.
-- Human owner: Luke Ding; intended branch codex/cloud-stream-writer-01.
+- Status: Accepted for bounded adapter/optional Worker callback component;
+  renewed independent SPEC42/no skips6.75s and QUALITY54/no skips11.26s GO.
+  Source frozen after quality P1 activation CAS repair; local integration authorized.
+  Full activation/paired acceptance remains open.
+  READ bounded component3a3e5902 and CONTRACTd8e85614 accepted locally.
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-writer-01, isolated managed checkout.
+- Claim: Ready -> In Progress before coding2026-10-12.
 - Owned paths: core harness stream_deltas.py/model_step.py; Worker
   execution_context.py/cloud_composition.py and claimed transient composition;
-  integrations/redis_live_fanout.py write side; related tests.
+  new integrations/redis_transient_output.py and responsibility-named companion
+  modules if needed under500lines; existing redis_live_fanout.py remains read
+  ownership handoff only. Worker new transient_output_runtime.py and narrow
+  execution.py call-site wiring; core model_request.py trusted callback purpose
+  only if necessary, claimed before coding. Related tests/agent_integrations/
+  test_redis_transient_output*.py, tests/worker/test_transient_output*.py,
+  tests/agent_core/test_stream_deltas.py and affected existing regressions.
+  Governance registry/PROGRESS/task_plan/WORKLOG and focused writer evidence doc;
+  stream spec header/§15/§20 measurement/status handoff only (parent serial edit).
+  Admission/config/migration source paths require explicit claim before editing.
 - Recorder/progress paths stay with COV-SQL-PHASE-01 until explicit handoff.
 - Acceptance: zero per-frame PG content/projection writes; bounded writer scope,
   old generation fencing; ordinary candidates labelled draft, private/coverage
   prohibited and final publication gates preserved.
+
+- Component evidence: configured179pass/no skips17.91s;
+  make check GO2991files/mypy1254/eval30. Actual native public callback SQL0
+  for10 and100frames after activation; full request/response/progress restored.
+  Synthetic durable admission/Grant fixtures do not prove signed Host negotiation.
+  Source/handle close proof rejects completed-call reconstruction after Redis loss.
+  Production factory stays None; CLIENT admission/factory/Turn/cursor wiring pending.
+  Details: [CLOUD_STREAM_WRITER_EVIDENCE.md](CLOUD_STREAM_WRITER_EVIDENCE.md).
+
+- Review-fix scope claimed before edits: integrations/redis_transient_deadlines.py
+  exact native Redis socket/connect deadline companion (existing dependency only);
+  tests/worker/test_public_output_deadline.py publication_dsn fixture ONLY to
+  permit exact equality with the private owned stream-test DSN on127.0.0.1,
+  retaining legacy port32768 default. No business/native authority source edits.
+
+- Review repair: initial immutable-mode/eligibility exceptions fail closed,
+  separate trusted mode pin cannot downgrade; canonical facts bypass visual lock.
+  Bounded provisional/cleanup deadlines, no automatic Redis retries, socket/full
+  response probes and exact owned native publication fixture regressions pass.
+  Quality P1 delayed activation repaired: snapshot revision before fresh resolver,
+  atomic compare after validation; no retries. Native cross-adapter new epoch,
+  same-fence new call, token, closure/loss/absent-lane races fail closed.
+  Renewed independent spec/quality reviews pending; source refrozen before commit.
 
 ### CLOUD-STREAM-CLIENT-01 - Reconcile AG-UI and SDK streaming state
 

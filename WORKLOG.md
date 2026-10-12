@@ -14049,3 +14049,40 @@ Configured combined native/API/Host/header rerun after the exact-route P1 repair
 refrozen for renewed independent reviews; governance evidence updated only.
 
 2026-10-12: READ-BOUNDS independent final quality GO after exact-route P1 fix; configured107 tests/no skips and static gates pass. Recorded completed frozen54-cell baseline,23 existing terminal failures and20SQL/durable delta; paired v2/full-runtime acceptance stays open. Local integration authorized, no push/deploy.
+
+2026-10-12: Claimed CLOUD-STREAM-WRITER-01 after READ-BOUNDS local integration3a3e5902; exact Redis/Worker composition and tests ownership declared. Frozen v1 full54-cell measurement stays unchanged.
+
+2026-10-12 CLOUD-STREAM-WRITER-01: bounded Redis adapter and optional ordinary
+public callback sink implemented; source-backed request/call completion checks and
+fresh native full-fence/Grant gates, bounded splitting/resume/quotas/expiry.
+Configured161pass2existing-fixture-skips15.30s; static GO2991files/mypy1253/eval30.
+Actual native callback SQL0at10/100frames; full response/progress restored.
+Admission/Grant loaders are synthetic native fixtures; production factory remains
+None. Source frozen for independent spec/quality component reviews before commit.
+Next: reviewed local integration, then separately claim server admission/Turn/
+factory/HTTP/SDK prerequisites and paired acceptance. No push/deployment.
+Evidence: docs/CLOUD_STREAM_WRITER_EVIDENCE.md.
+
+2026-10-12 WRITER spec P1 repair: admission/eligibility lookup failure no longer
+falls back to v1 deltas; trusted Run mode pinned independently. Canonical facts
+bypass transient lock; provisional work and cleanup use existing subdeadlines,
+native Redis connection clipping/no retries, source terminal reconstruction guard.
+Configured173pass/no skips18.12s including both owned native publication cases;
+static GO2991files/mypy1254/eval30. Refrozen for renewed spec then quality review.
+No commit, push or deployment. Evidence doc updated with exact remaining scope.
+
+2026-10-12 WRITER quality P1 repair: fresh authority validation can race another
+adapter's activation. Snapshot a random Redis lane revision before validation,
+then compare atomically with activation; no retries. Revision-only absent-lane
+reservation expires within1h and grants no authority; closure/state loss also
+reject delayed writers. Native coordinated epoch/token/same-fence-call/closure/
+loss/absent races pass; broader179pass/no skips17.91s. Static checks rerun;
+renewed spec then quality review before commit. No push/deploy/activation claim.
+
+2026-10-12 WRITER renewed independent SPEC GO42/no skips6.75s and QUALITY
+GO54/no skips11.26s, former epoch/same-fence race independently closed. Parent
+native Redis16pass1.37s. Frozen15-source/test SHA256
+f4e7e6be3deb0e8ed1eb66ebdffa6a966b919e17bc013aa98069276ca32f8ae1 verified.
+Bounded component accepted for explicit-path local commit/integration. Actual
+admission/factory activation, paired runtime and aggregate GC remain OPEN.
+No push or deployment; next ADMISSION uses a separate task/worktree.

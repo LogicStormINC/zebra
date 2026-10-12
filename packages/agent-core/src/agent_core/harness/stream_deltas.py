@@ -36,11 +36,12 @@ class TextDeltaCoalescer:
         self._timer_generation = 0
         self.reset()
 
-    def reset(self) -> None:
+    def reset(self, model_call_id: str | None = None) -> None:
         with self._lock:
             self._cancel_timer()
             self._reset_buffer()
             self._first_emitted = False
+            self._generation_call = model_call_id
 
     def _reset_buffer(self) -> None:
         self._call_id: str | None = None
@@ -51,6 +52,8 @@ class TextDeltaCoalescer:
     def emit(self, model_call_id: str, delta: ModelTextDelta) -> None:
         with self._lock:
             self._raise_timer_error()
+            if self._generation_call is not None and model_call_id != self._generation_call:
+                return  # A retired provider callback cannot enter the next invocation.
             self._emit_locked(model_call_id, delta)
 
     def _emit_locked(self, model_call_id: str, delta: ModelTextDelta) -> None:

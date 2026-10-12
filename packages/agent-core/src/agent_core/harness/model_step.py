@@ -73,6 +73,7 @@ class HarnessModelStep:
         delta_coalesce_characters: int | None = None,
         delta_coalesce_seconds: float | None = None,
         invocation_policy: ModelInvocationPolicy | None = None,
+        public_call_started: Callable[[str, int], None] | None = None,
     ) -> None:
         if conversation_token_budget is not None and conversation_token_budget <= 0:
             raise ValueError("conversation_token_budget must be positive")
@@ -89,6 +90,7 @@ class HarnessModelStep:
         self._compaction_hook = compaction_hook
         self._delegation_mode = delegation_mode
         self._invocation_policy = invocation_policy
+        self._public_call_started = public_call_started
         self._text_deltas = (
             TextDeltaCoalescer(
                 event_sink,
@@ -99,7 +101,6 @@ class HarnessModelStep:
             if event_sink is not None
             else None
         )
-
     def prepare_conversation(
         self,
         messages: list[SessionMessage],
@@ -120,7 +121,6 @@ class HarnessModelStep:
             user_goal=user_goal,
             created_at=created_at,
         )
-
     def request_initial_completion(
         self,
         task: HarnessTask,
@@ -141,7 +141,6 @@ class HarnessModelStep:
         return self.request_completion(
             messages, model_gateway, allow_tools=True, response_repair_limit=repair_limit
         )
-
     def request_completion(
         self,
         messages: list[SessionMessage],
@@ -219,7 +218,9 @@ class HarnessModelStep:
             )
         )
         assert self._text_deltas is not None
-        self._text_deltas.reset()
+        self._text_deltas.reset(model_call_id)
+        if self._public_call_started is not None:
+            self._public_call_started(model_call_id, self._attempt_number)
         if (
             self._invocation_policy is None
             and self._provider_continuation is not None
@@ -294,7 +295,6 @@ class HarnessModelStep:
         if self._event_sink is None:
             return
         self._event_sink(continuation_event(selection, attempt_number=self._attempt_number))
-
     def append_tool_exchange(
         self,
         messages: list[SessionMessage],

@@ -1,6 +1,6 @@
 # Cloud 流式输出与持久存储优化重构 Spec
 
-日期：2026-10-12。状态：基线持续测量；typed 合同已本地集成，READ 切片验证通过；v2 未激活。
+日期：2026-10-12。状态：54组基线完成；合同与有界读取本地集成；WRITER 实施中，v2 未激活。
 文档任务：CLOUD-STREAM-SPEC-01。人类 Owner：Luke Ding；编写：Codex。
 源码基线：cloud-agent-trench / d836b04cef7df21c6130c1df8be74ff200089f32。
 本稿由源码审计与官方资料形成；已实施合同与读侧切片，未测生产 SQL 或部署。
@@ -352,7 +352,7 @@ tests/agent_core 的 progress/public_output，用例扩展按共享函数回归�
 2026-10-12 用户先要求纳入计划，随后授权全 spec 实施；已登记 CLOUD-STREAM-*。
 reviewed instrumentation f16d8324 已本地集成；READ/CONTRACT 独立认领实施。
 用户允许 validated stage 本地集成 cloud-agent-trench 后解锁依赖，不要求先合 main；
-此阶段授权不含 push/部署。60s/3repeat matrix 仍运行，终态缺口由 READ 修复，
+此阶段授权不含 push/部署。60s/3repeat matrix 已完成，旧版终态缺口由 READ 修复，
 不据 instrumentation/static gates 宣称 runtime GO 或提前激活 v2。
 每项一分支/Owner/worktree；跨路径更改先明确转移，不默认共享 ownership。
 
@@ -545,9 +545,9 @@ SQL 总数与 DB server/trigger 工作分开记录，保留计量配置而不隐
 至少重复3次，报告中位数与范围；p95 延迟需要足够帧样本和独立运行说明。
 输出 baseline.json/JUnit/trace 摘要与同参数v1/v2对照，禁止保存正文或密钥。
 用实测 B/Cd/H/R/f 替换本节假设后，才能给指定会话绝对 SQL 预算。
-上述为纳入计划时的基线要求；后续已启动测量，执行证据见§20.4。
+上述为纳入计划时的基线要求；已完成接口测量，完整执行证据仍开放，见§20.4。
 
-### 20.4 开始实施后的 native 短窗口实测
+### 20.4 实施后的 native 测量与证据边界
 
 用户随后授权开始实施；CLOUD-STREAM-BASELINE-01 已在独立分支认领。
 源码5dfa824d，PG17.5、Redis8.2.1，生成独立数据库与 Redis 前缀。
@@ -581,10 +581,12 @@ SQL调用含连接健康检查的空execute；server实际statement/trigger另�
 AG-UI首次RUN_STARTED不保证初始replay已排空，报告显式标记初始/稳态重叠可能。
 请求短窗口0.35s，生产/存储工作导致实测超时长；禁止外推为600delta/min吞吐。
 100Run仅为本机存储接口测量，未认证Host/HTTP/browser100并发SLO。
-60秒三重复、10分钟idle、完整Worker/授权与v2对照Gate仍OPEN。
+冻结f16d8324的60秒三重复54组完成，23终态失败，文本缺失为0，工具交付未覆盖。
+单订阅idle中位SQL：Session213、Task3479、AG-UI2739；Cd仍为20。
+10分钟idle、完整Worker/授权及v2配对Gate仍OPEN；详见CLOUD_STREAM_READ_EVIDENCE.md。
 
 确定性Native检查复现空read之后提交终态、再读状态已完成时SSE提前退出。
-Session/Task都需在READ卡做根因修复；不得靠取消terminal断言或隐藏失败过关。
+Session/Task已在READ4a79a270修复并反转Native断言；旧版冻结报告保留。
 纯线程取消检查还要求测量工具等待未完成writer后再退出/清理数据库。
 该工具可靠性修正不改变v1 runtime，后续报告另记新的harness摘要。
 最后CLI/取消/原生计数等7checks通过；final-smoke的3cell仍有1Task终态缺失。

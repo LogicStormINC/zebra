@@ -88,12 +88,17 @@ by this component evidence alone. Frozen baseline code/dependencies stay untouch
 
 BASELINE scope extended before recording this completed measurement. Frozen
 profiler/runtime build f16d8324: 1/10/100 readers, Session/Task/AG-UI, idle/stream,
-60-second windows, three repeats;54/54 cells completed, harness_unchanged=true.
+nominal60-second steady windows, three repeats;54/54 cells completed,
+harness_unchanged=true; actual streaming windows60.002–68.586seconds.
 Report: baseline worktree .artifacts/native-steady.json and XML. Runtime
-conformance failed with23 terminal failures, zero content/tool failures; exit1
+conformance failed with23 terminal failures, zero content failures; tools
+untested (no tool Events in this idle/stream matrix). Exit1
 is preserved. These are baseline defects, not failed measurement collection.
 
-| Single reader, idle | Median SQL in60s | SQL/s |
+Table counts steady reader client SQL only, excluding initial admission/replay,
+finalization and checkpoint maintenance; artifact summary totals all phases.
+
+| Single reader, idle | Median steady SQL | SQL/s |
 | --- | ---: | ---: |
 | Session | 213 | 3.55 |
 | Task | 3479 | 57.98 |
@@ -102,11 +107,18 @@ is preserved. These are baseline defects, not failed measurement collection.
 Across27 stream cells, the durable delta recorder measured20SQL calls per delta.
 This excludes full Worker progress, HTTP Grant/provider/browser paths; synthetic
 checkpoint maintenance is counted separately. It is not the complete production
-write cost. Initial replay, steady reads and final replay are separate counters.
-The100-reader lower per-reader rates reflect saturation of the default32-thread
-executor and degraded throughput; they do not certify efficiency or capacity.
+write cost. Initial/steady/final phase counters are separate; AG-UI initial
+replay can overlap steady because readiness is signaled at preflight.
+The100-run lower per-reader rates are consistent with default32-thread executor
+contention and reduced throughput; queue/utilization telemetry is absent. Each
+reader has a separate Task/Session/namespace, not100subscribers to one stream.
+Lower rates do not certify efficiency or capacity; use actual window durations.
 WAL is cluster-global diagnostic data and may include other scratch tests.
 
 The80–95percent total SQL reduction remains a target until paired v1/v2 runs
 include actual Worker, checkpoint-ready publication and signed HTTP readers.
-Frozen artifacts and runtime remain untouched; no production load was applied.
+Frozen Task consumption omits fanout, and checkpoint fixture directly calls
+ready/resolve/publish rather than the real checkpoint consumer/postcommit-ready
+callback. Paired full acceptance needs matched offered/completed work and these
+actual delivery paths. Frozen artifacts/runtime stay untouched; no production load.
+Independent frozen-artifact review GO; runtime conformance and v2 Gate stay open.

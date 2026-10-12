@@ -303,7 +303,9 @@ def publication_dsn():
     if not configured:
         pytest.skip("set ZEBRA_PUBLICATION_SCRATCH_DSN for isolated publication PG proofs")
     params = conninfo_to_dict(configured)
-    assert params.get("host") == "127.0.0.1" and params.get("port") == "32768"
+    owned = os.environ.get("ZEBRA_STREAM_TEST_POSTGRES_DSN")
+    assert params.get("host") == "127.0.0.1"
+    assert params.get("port") == "32768" or (owned and configured == owned)
     schema = f"publication_deadline_{uuid4().hex}"
     with psycopg.connect(configured) as connection:
         connection.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))

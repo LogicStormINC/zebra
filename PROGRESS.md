@@ -1,3 +1,18 @@
+# Cloud stream writer component accepted — 2026-10-12
+
+Bounded Redis temporary drafts and optional Worker callback composition implemented
+on codex/cloud-stream-writer-01. Actual public-call hook follows durable model
+request; source-qualified ordinary v2 deltas bypass PG while in-memory progress
+and full response/publication gates remain. Legacy/coverage stay unchanged.
+Native callback measures0SQL for10/100frames after activation. Configured179pass/no skips17.91s; static GO2991files/mypy1254/eval30. Synthetic
+admission/Grant loaders prove the native seam, not signed Host negotiation.
+Production factory stays None; actual admission/Turn/SDK/HTTP wiring and paired
+performance/Host/browser acceptance remain open. Quality P1 delayed activation
+is repaired with atomic lane revision CAS after the fresh resolver. Renewed
+SPEC42/no skips6.75s and QUALITY54/no skips11.26s GO; bounded component
+accepted for local integration, full activation/paired/aggregate GC remain open;
+no push or deployment. Evidence: docs/CLOUD_STREAM_WRITER_EVIDENCE.md.
+
 # Cloud stream bounded replay component review — 2026-10-12
 
 READ-BOUNDS implements native count/UTF8 byte Session pages, metadata-only HTTP
@@ -5701,3 +5716,5 @@ an authenticated browser retry of the conversation is still unverified.
   had expired during the wait, so it failed closed. A fresh Turn in that same
   browser conversation completed with the expected answer. Durable command
   delivery cutover and remote deployment remain separate work.
+
+2026-10-12: READ-BOUNDS3a3e5902 accepted locally after spec/quality GO and107 native/API checks, primary33passed14.59s;42unrelated file hashes preserved. WRITER Ready claimed before coding on codex/cloud-stream-writer-01; v2 remains dormant pending full client/reliability/performance acceptance. No push/deploy.

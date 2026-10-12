@@ -9,21 +9,26 @@ Existing incident/search and COV-SQL-PHASE-01 work retains its scope and priorit
    observation paths, delta transactions, authorization and real dependency costs.
    Instrumentation reviewed; frozen45/18short-window cells preserve4/6terminal
    gaps; seven profiler checks/static GO. Final3cell smoke retains1Task terminal gap.
-   Next: current-harness60s/3repeat steady runs, then baseline review/integration.
+   Completed54cells/60s/3repeats;23existing terminal gaps; Cd20SQL/delta.
+   Full Worker/HTTPGrant/browser paired evidence stays open.
 2. Review for reader race/notification slice: CLOUD-STREAM-READ-01; remove SQL data polling
    and fix native terminal race. Baseline instrumentation f16d8324 integrated
    into cloud-agent-trench; frozen60s/3repeat measurement continues. User
    authorized validated local stage integration/unlock, no push or deployment.
    Native terminal2pass; make check GO. Fullstage remains open for bounded
    Session/privacy startup, native subscriber SQL/latency and independent reviews.
-2a. In Progress: CLOUD-STREAM-READ-BOUNDS-01; close bounded cloud Session
+2a. Accepted locally3a3e5902: CLOUD-STREAM-READ-BOUNDS-01; bounded cloud Session
     replay/privacy startup gap after accepted4a79a270; exact read-only COV
     source forwarding handoff claimed before edits. Native identity/bytes/Grant
     checks required; no GET repairs or SDK edits.
 3. Accepted locally: CLOUD-STREAM-CONTRACT-01; d8e85614 integrated into
    cloud-agent-trench after independent spec/quality GO, primary37pass.
    Labelled ordinary candidate drafts authorized; v2 remains dormant.
-4. Locked: CLOUD-STREAM-WRITER-01; bounded Redis delta path after READ/CONTRACT.
+4. Accepted bounded component: CLOUD-STREAM-WRITER-01; bounded Redis/public callback
+   gates179pass/no-skips/static GO; native callback0SQL at10/100frames.
+   Quality P1 delayed activation repaired with native lane revision CAS races;
+   renewed SPEC42/QUALITY54 no-skips GO. Production factory dormant;
+   admission/CLIENT, full activation, paired runtime and aggregate GC remain open.
 5. Locked: CLOUD-STREAM-CLIENT-01; SDK/AG-UI replace/resync and old cursor/history.
 6. Locked: CLOUD-STREAM-RELIABILITY-01; postcommit relay, crash/GC/byte quotas.
 7. Locked: CLOUD-STREAM-ACCEPTANCE-01; native paired SQL gates, full checks,

@@ -62,6 +62,7 @@ from zebra_agent_worker.gateway_release import GatewayRelease
 from zebra_agent_worker.provider_continuation_execution import CloudProviderContinuationFactory
 from zebra_agent_worker.resume import SessionResumeService
 from zebra_agent_worker.task_recovery import apply_bound_host_context
+from zebra_agent_worker.transient_output_runtime import TransientOutputFactory
 from zebra_agent_worker.worker_projection import WorkerProjectionRecorderFactory
 
 
@@ -95,11 +96,11 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         extension_mcp: execution_gateway.WorkerMcpSource | None = None,
         recorder_factory: WorkerProjectionRecorderFactory | None = None,
         coverage_runtime: CloudCoverageRuntime | None = None,
+        transient_output_factory: TransientOutputFactory | None = None,
     ) -> None:
         runtime_authority.validate_authority_wiring(
             execution_authority_resolver,
-            execution_authority_scope,
-            execution_authority_scope_provider,
+            execution_authority_scope, execution_authority_scope_provider,
         )
         cloud_artifact_factory = artifact_runtime.validate_cloud_artifact_factory(
             cloud_artifact_factory,
@@ -180,11 +181,10 @@ class SessionExecutionService(SessionExecutionEntrypoints):
         self._egress_registry, self._delegation_store = egress_registry, delegation_store
         self._frozen_manifest_loader = frozen_manifest_loader
         self._extensions = execution_gateway.extensions(
-            extension_snapshot_store,
-            extension_skills,
-            extension_mcp,
+            extension_snapshot_store, extension_skills, extension_mcp
         )
         self._coverage_runtime = coverage_runtime
+        self._transient_output_factory = transient_output_factory
 
     def _execute_claimed_session_once(
         self,
@@ -455,6 +455,8 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 invocation_policy=task.model_invocation_policy,
                 public_output_policy=self._settings.public_output,
                 worker_progress=worker_progress,
+                transient_output=(self._transient_output_factory(worker_progress, claimed.lease)
+                    if self._transient_output_factory and worker_progress else None),
                 user_input=task.user_input,
                 attempt_number=attempt_number,
             )

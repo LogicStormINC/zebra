@@ -1,6 +1,7 @@
 """Build the immutable Harness task view from recovered Worker state."""
 
 from collections.abc import Callable
+from time import monotonic
 from typing import Any
 
 from agent_context import (
@@ -12,6 +13,7 @@ from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.tools import ToolCall, ToolCallStatus, ToolResult
 from agent_core.harness import HarnessModelStep, HarnessTask, SingleAttemptOrchestrator
+from agent_core.harness import public_output_lifecycle as output_lifecycle
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.harness.public_expression import PublicExpression
 from agent_core.harness.public_output import ProgressiveEventSink, PublicOutputPolicy
@@ -24,6 +26,7 @@ import zebra_agent_worker.provider_continuation_execution as provider_runtime
 from zebra_agent_worker.progress_recovery import WorkerProgressRecovery
 from zebra_agent_worker.public_output_runtime import publication_scope
 from zebra_agent_worker.task_recovery import RecoveredTask
+from zebra_agent_worker.transient_output_runtime import TransientDeltaSink
 
 CLOUD_CONTEXT_TOKEN_BUDGET = 2_048
 CLOUD_CONVERSATION_TOKEN_BUDGET: int | None = None
@@ -72,6 +75,7 @@ def build_worker_orchestrator(
     worker_progress: WorkerProgressRecovery | None = None,
     user_input: str = "",
     attempt_number: int = 1,
+    transient_output: TransientDeltaSink | None = None,
 ) -> SingleAttemptOrchestrator:
     persist_event, prepare_continuation = provider_runtime.build_worker_context_sinks(
         cloud_continuation,
@@ -82,6 +86,8 @@ def build_worker_orchestrator(
         local_store=local_continuation_store,
         session_id=session_id,
     )
+    if transient_output is not None and recorder.worker_mutation_authority is None:
+        raise ValueError("transient output requires cloud authority and Worker progress")
     progress: ProgressiveEventSink | None = None
     if recorder.worker_mutation_authority is not None:
         if worker_progress is None:
@@ -95,6 +101,8 @@ def build_worker_orchestrator(
         if worker_progress.head.state.attempt_number != attempt_number:
             raise ValueError("Worker progress Attempt disagrees with execution")
         persist_event = worker_progress.persist_with(persist_event)
+        if transient_output is not None:
+            persist_event = transient_output.wrap(persist_event)
         policy = worker_progress.policy(public_output_policy or PublicOutputPolicy())
         progress = ProgressiveEventSink(
             persist_event,
@@ -137,6 +145,7 @@ def build_worker_orchestrator(
         delta_coalesce_characters=progress.policy.delta_characters if progress else 256,
         delta_coalesce_seconds=progress.policy.delta_seconds if progress else 0.1,
         invocation_policy=invocation_policy,
+        public_call_started=transient_output.start_public_call if transient_output else None,
     )
     return SingleAttemptOrchestrator(
         model_gateway,
@@ -149,8 +158,22 @@ def build_worker_orchestrator(
         max_parallel_tool_calls=3,
         tool_call_resolver=tool_gateway.resolve_model_tool_calls,
         event_sink=persist_event,
-        close_sink=progress.close if progress is not None else None,
+        close_sink=(lambda: _close_output(progress, transient_output)) if progress else None,
     )
+
+
+def _close_output(progress: ProgressiveEventSink, transient: TransientDeltaSink | None) -> None:
+    if transient is None:
+        progress.close()
+        return
+    with publication_scope(monotonic() + output_lifecycle.PUBLIC_OUTPUT_CLOSE_SECONDS):
+        try:
+            progress.close()
+        finally:
+            try:
+                transient.close()
+            except TimeoutError:
+                pass  # Failed draft references remain; canonical timer failures still propagate.
 
 
 def _effect_terminal_observer(
