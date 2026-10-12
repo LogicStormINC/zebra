@@ -1,3 +1,34 @@
+# Planned Cloud stream/storage refactor — 2026-10-12
+
+User-requested roadmap: `docs/CLOUD_STREAM_STORAGE_REFACTOR_SPEC.md` §15/§20.
+Execution authorized 2026-10-12; baseline claimed on codex/cloud-stream-baseline-01.
+Contracts, dependent implementation and rollout gates remain open.
+Existing incident/search and COV-SQL-PHASE-01 work retains its scope and priority.
+
+1. In Progress / user authorized execution: CLOUD-STREAM-BASELINE-01; measure three
+   observation paths, delta transactions, authorization and real dependency costs.
+   Instrumentation reviewed; frozen45/18short-window cells preserve4/6terminal
+   gaps; seven profiler checks/static GO. Final3cell smoke retains1Task terminal gap.
+   Next: current-harness60s/3repeat steady runs, then baseline review/integration.
+2. Locked: CLOUD-STREAM-READ-01; remove fixed-frequency SQL data polling.
+3. Locked: CLOUD-STREAM-CONTRACT-01; freeze v2/RPO/STOP/sequence/privacy semantics.
+4. Locked: CLOUD-STREAM-WRITER-01; bounded Redis delta path after READ/CONTRACT.
+5. Locked: CLOUD-STREAM-CLIENT-01; SDK/AG-UI replace/resync and old cursor/history.
+6. Locked: CLOUD-STREAM-RELIABILITY-01; postcommit relay, crash/GC/byte quotas.
+7. Locked: CLOUD-STREAM-ACCEPTANCE-01; native paired SQL gates, full checks,
+   authorized signed Host/browser and separate rollout/rollback acceptance.
+
+Planning SQL range for ordinary stream-heavy workload: 80%–95% total statement
+reduction (remaining5%–20%); illustrative60s Run ~10,000 -> ~500–2,000.
+These are assumptions/targets, not current production or measured v2 results.
+Coverage's recorded6,411/15,653 costs are authority/proof/settlement dominated;
+no blanket stream percentage or strict<=1000 success is inferred.
+Replace the spec model with Native measured Cd/B/H/R/f before claiming budgets.
+Historical planning-only boundary superseded by the user's start instruction.
+Disposable native test dependencies are permitted; existing business services,
+production migrations, paid-model calls, remote push and deploy remain untouched.
+
+
 # Active Worker startup incident — 2026-10-12
 
 ## Follow-up WEB-SEARCH-READINESS-01

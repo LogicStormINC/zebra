@@ -1,5 +1,106 @@
 # AGENT_TASKS.md
 
+### CLOUD-STREAM-SPEC-01 - Adopt stream storage roadmap and SQL estimate
+
+- Status: Review (user requested plan adoption 2026-10-12; documentation only).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-storage-spec, managed isolated checkout;
+  planning additions mirrored to cloud-agent-trench at user request.
+- Owned paths: docs/CLOUD_STREAM_STORAGE_REFACTOR_SPEC.md; this registry;
+  task_plan.md; PROGRESS.md planning pointer only.
+- Source audit: d836b04c; planning refresh: cloud-agent-trench 5dfa824d.
+- Acceptance: registered successors, explicit SQL model and coverage exclusions,
+  links/size/arithmetic validation; no runtime implementation or activation.
+
+### CLOUD-STREAM-BASELINE-01 - Measure Cloud streaming SQL and capacity
+
+- Status: In Progress (Ready task claimed 2026-10-12 before coding;
+  user authorized full refactor execution, beginning with native baseline).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-baseline-01; isolated managed checkout.
+- Owned paths: tests/stream_storage/ (new bounded baseline/load checks);
+  docs/CLOUD_STREAM_STORAGE_REFACTOR_SPEC.md §20 measurement evidence only;
+  registry, task_plan.md, PROGRESS.md, WORKLOG.md for status/evidence handoff.
+- Scope: freeze source/workload; separate Session/Task/AG-UI read SQL, delta
+  write SQL, authorization, transactions, sockets, WAL and Redis/queue bytes.
+- Acceptance: native PG/Redis 1/10/100 matrix; first/final replay separate;
+  replace assumed Cd/B/H/R/f with measured values. No runtime changes.
+- Implementation evidence: frozen45/18cells retain4/6existing terminal gaps;
+  all content/tool positions observed. Final3cell smoke retains1Task terminal
+  gap (runtime is unchanged);7profiler/native/CLI checks pass3.59s; make check
+  GO, independent spec/quality reviews GO for profiler.
+- Remaining: 60s/3repeat, fullWorker/Grant/browser/v2. Baseline measurement is
+  not runtime correctness approval; READ remains dependency-locked.
+- Disposable labeled PG/Redis test dependencies and scratch migration allowed;
+  no production load, existing-service operations, business migration,
+  paid-model calls or deploy. Successor tasks remain dependent on this evidence.
+
+### CLOUD-STREAM-READ-01 - Replace fixed-frequency SSE data polling
+
+- Status: Locked; Depends on CLOUD-STREAM-BASELINE-01 accepted integration.
+- Human owner: Luke Ding; intended branch codex/cloud-stream-read-01.
+- Owned paths: API session_streaming.py, ag_ui_checkpoint_tail.py,
+  ag_ui_stream.py; integrations/redis_live_fanout.py notification reads;
+  corresponding API/live read tests. Scope and paths frozen at claim.
+- Acceptance: bounded replay/barrier/blocking notification, Grant deadlines,
+  checkpoint-ready wake and degraded backoff; legacy/local behavior preserved.
+- Redis adapter ownership transfers serially to WRITER only after this merges.
+
+### CLOUD-STREAM-CONTRACT-01 - Freeze transient output and v2 compatibility
+
+- Status: Locked; Depends on CLOUD-STREAM-BASELINE-01 accepted integration.
+- Human owner: Luke Ding; intended branch codex/cloud-stream-contract-01.
+- Owned paths: minimal core transient frame/Port and contracts; ADR-024;
+  this spec contract sections; associated deterministic contract checks.
+- Acceptance: durable sequence/live offset separation, closed publish categories,
+  frozen Run mode, scope/STOP semantics, coverage privacy and RPO boundaries.
+- No Worker/API runtime edits; approve ADR and transfer exact names before coding.
+
+### CLOUD-STREAM-WRITER-01 - Compose bounded transient delta writer
+
+- Status: Locked; Depends on READ and CONTRACT accepted integration.
+- Human owner: Luke Ding; intended branch codex/cloud-stream-writer-01.
+- Owned paths: core harness stream_deltas.py/model_step.py; Worker
+  execution_context.py/cloud_composition.py and claimed transient composition;
+  integrations/redis_live_fanout.py write side; related tests.
+- Recorder/progress paths stay with COV-SQL-PHASE-01 until explicit handoff.
+- Acceptance: zero per-frame PG content/projection writes; bounded writer scope,
+  old generation fencing, no candidate/private/coverage publication bypass.
+
+### CLOUD-STREAM-CLIENT-01 - Reconcile AG-UI and SDK streaming state
+
+- Status: Locked; Depends on WRITER accepted integration and SDK dirty-work handoff.
+- Human owner: Luke Ding; intended branch codex/cloud-stream-client-01.
+- Owned paths: integrations/ag_ui projection/checkpoint/codec modules;
+  API v2 cursor/composition after READ handoff; SDK client-core/ui-contracts/React
+  stream handling and related tests. Exact modified files frozen at claim.
+- Acceptance: message replace/resync, independent cursors, start/content/end,
+  legacy history and client-effect continuity; GET never repairs state.
+- Trench changes require a separate cross-repo card, not implicit owned paths.
+
+### CLOUD-STREAM-RELIABILITY-01 - Reliable notifications and temporary-stream GC
+
+- Status: Locked; Depends on WRITER and CLIENT accepted integration.
+- Human owner: Luke Ding; intended branch codex/cloud-stream-reliability-01.
+- Owned paths: storage notification/relay composition and minimal missing outbox;
+  config typed stream settings; Redis writer GC after WRITER handoff;
+  native crash/rollback/GC tests and this spec release evidence sections.
+- live_event_store.py/recorder require COV-SQL-PHASE-01 explicit handoff.
+- Acceptance: postcommit-only relay/retry, no per-delta SQL outbox, byte caps,
+  no permanent orphan, degraded resync; additive migration tail reserved at claim.
+
+### CLOUD-STREAM-ACCEPTANCE-01 - Certify stream SQL reduction and safe rollout
+
+- Status: Locked; Depends on all prior stream cards accepted integration.
+- Human owner: Luke Ding; intended branch codex/cloud-stream-acceptance-01.
+- Owned paths: tests/stream_storage/, affected native/API/SDK browser checks;
+  runtime release evidence/runbook docs, this spec and release governance.
+- Acceptance: same-workload native v1/v2 SQL/latency/fault matrix; full gates;
+  signed Host/browser acceptance and explicit rollback rehearsal.
+- Performance goals are not measured outcomes; strict coverage <=1000 unchanged.
+- No implicit production migration, service restart, paid-provider or deployment.
+
+
 ### WEB-SEARCH-CHINA-01 - Domestic engines and explicit public WeChat search
 
 - Status: Review (created Ready and claimed 2026-10-12 before coding;

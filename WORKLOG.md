@@ -13918,3 +13918,29 @@ Scoped source reviewer GO. make check: size2382, Ruff, Mypy1091, eval30 pass.
 No full default suite rerun. Still OPEN: versioned capability fleet wiring/rollover,
 concurrent failure/approval races, native history scan/root cost and real9 load.
 No runtime restart/activation, primary edit, commit/merge/push or SLO claim.
+# CLOUD-STREAM-BASELINE-01 — 2026-10-12 execution
+
+- User authorized beginning the complete stream/storage plan. Baseline Ready card
+  claimed before coding; human owner Luke Ding, executor Codex.
+- Worktree: /Users/lukeding/.codex/worktrees/cloud-stream-baseline-01/zebra-agent.
+- Frozen source: 5dfa824dc8689bd6ea8b6aedd9e8557505919f20; branch codex/cloud-stream-baseline-01.
+- make sync passed. Original reader/publication/progress compatibility:72 passed
+  in42.08s. Native checkpoint checks and baseline measurement still running.
+- Disposable labeled PG/Redis only; private generated credentials under .artifacts
+  are never staged or printed. No existing business-service operations.
+- Implementation delegate owns only tests/stream_storage; parent owns evidence
+  and task governance. No overlapping runtime edits or paid provider calls.
+- Next: complete native instrumentation/matrix, independent spec/quality review,
+  document actual SQL costs; retain separate HTTP/Grant/browser acceptance.
+- Follow-up: counter/Cursor nesting, empty health query, cancellation/drain and
+  failed JUnit regressions verified. Native checkpoint31passed309.47s;
+  profiler/native6passed3.78s and make check2971/Ruff/mypy1246/eval30 GO.
+- Frozen45cell and18cellscale artifacts honestly exit1 on4/6v1 terminal gaps;
+  all required content/tool positions delivered. Current-harness smoke3passed.
+  Independent spec/quality reviews approve measurement implementation; they
+  do not approve v1 runtime or release. Detailed exact values in spec§20.4.
+- Next gate: final bounded CLI check, local focused commit, sustained60s/3repeat
+  baseline on owned dependencies. No business runtime modification yet.
+- Final CLI/native check7passed3.59s; final3cell smoke re-exposes1Task terminal
+  gap and honestly exits1. make check afterwards GO; shell's final exit0 is
+  not a combined native runtime PASS. No assertion or failure artifact suppressed.

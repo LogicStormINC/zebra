@@ -1,5 +1,27 @@
 # Zebra Agent Project Status
 
+Cloud stream/storage execution started (2026-10-12, CLOUD-STREAM-BASELINE-01):
+Ready task claimed before coding on codex/cloud-stream-baseline-01, source5dfa824d.
+Disposable labeled PG17.5/Redis8.2.1 provide isolated native measurement;
+existing business containers/SDK dirty work unchanged. Baseline reader/publication/
+progress compatibility72pass42.08s and native checkpoint31pass309.47s.
+Frozen baseline45cells/4terminal gaps and scale18cells/6terminal gaps retained;
+content/tool positions complete. Final-harness smoke3cells retains1Task terminal
+gap; content complete, honest exit1. Profiler counter/report/cancellation/CLI
+7checks pass3.59s; make check GO1246/eval30.
+Independent spec and quality reviews GO for measurement code only. 60s/3repeat,
+HTTPGrant/fullWorker/browser/v2 remain OPEN. No runtime correctness, SQL reduction,
+successor completion, mainline integration or activation claim.
+
+Cloud stream/storage roadmap (2026-10-12, CLOUD-STREAM-SPEC-01): user-requested
+planning adoption and §20 SQL estimate recorded in docs/CLOUD_STREAM_STORAGE_REFACTOR_SPEC.md.
+CLOUD-STREAM-BASELINE-01 Ready/not started; six dependent cards Locked.
+Ordinary stream-heavy model expects80%–95% statement reduction; not measured.
+Coverage6,411/15,653 and strict<=1000 remain separate open proof/authority work.
+Three reader paths, v2 SDK/AG-UI, privacy/fencing, crash/GC and release gates retained.
+Documentation only; no runtime implementation, migration or service activation.
+
+
 Operator handoff (2026-10-12): user declined Baidu/API integration. Removed Baidu
 from retained engines and shared v1/v2 query guidance; prepare-only, no service
 restart, paid provider or credentials. Current config retains Bing/Sogou/360/WeChat.
