@@ -6,7 +6,7 @@ import shutil
 from collections.abc import Callable, Mapping, Sequence
 from hashlib import sha256
 from pathlib import Path
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess, TimeoutExpired
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -147,6 +147,24 @@ class PinnedOciEngine:
             and kwargs.get("capture_output") is True
         ):
             # Read the identity and capability from the same response, not a cached probe.
+            if self._info is not None and command[3] == "{{.ServerVersion}}\n{{json .Runtimes}}":
+                timeout = kwargs.get("timeout") or 10
+                try:
+                    info = self._info.read(timeout=timeout)
+                except TimeoutError:
+                    raise TimeoutExpired(command, timeout) from None
+                if str(info["ID"]).strip() != self._daemon_id:
+                    self.close()
+                    raise RuntimeCapabilityError(
+                        "runtime engine daemon identity changed after pinning"
+                    )
+                version = info.get("ServerVersion")
+                if not isinstance(version, str) or not version.strip():
+                    self.close()
+                    raise RuntimeCapabilityError("cloud Docker daemon capability is unavailable")
+                return CompletedProcess(
+                    command, 0, version + "\n" + json.dumps(info.get("Runtimes")), ""
+                )
             result = self._runner(
                 (*self._prefix, "info", "--format", "{{.ID}}\n" + command[3]),
                 env=self._env, **kwargs,

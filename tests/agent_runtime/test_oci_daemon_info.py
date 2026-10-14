@@ -91,3 +91,55 @@ def test_closed_keepalive_reconnects_only_identity_read(transport):
     assert client.identity() == "daemon-a"
     assert connection.request.call_count == 2
     connection.close.assert_called_once()
+
+
+def test_native_capability_reads_are_fresh_and_share_identity_response(transport, monkeypatch):
+    root, connection, response, _ = transport
+    monkeypatch.setattr(
+        "agent_runtime.adapters.oci_engine.shutil.which", lambda *_a, **_k: "docker"
+    )
+    pinned = PinnedOciEngine(
+        "docker",
+        env={
+            "DOCKER_HOST": "tcp://127.0.0.1:2376",
+            "DOCKER_TLS_VERIFY": "1",
+            "DOCKER_CERT_PATH": str(root),
+        },
+    )
+    runner = Mock()
+    pinned._runner = runner
+    command = ("docker", "info", "--format", "{{.ServerVersion}}\n{{json .Runtimes}}")
+    response.read.return_value = b'{"ID":"daemon-a","ServerVersion":"26.1","Runtimes":{"runsc":{}}}'
+    first = pinned(command, text=True, capture_output=True, timeout=2)
+    assert first.returncode == 0 and first.stdout == '26.1\n{"runsc": {}}'
+    response.read.return_value = b'{"ID":"daemon-a","ServerVersion":"26.2","Runtimes":{}}'
+    assert pinned(command, text=True, capture_output=True, timeout=2).stdout == "26.2\n{}"
+    response.read.return_value = b'{"ID":"daemon-b","ServerVersion":"26.2","Runtimes":{"runsc":{}}}'
+    with pytest.raises(RuntimeCapabilityError, match="daemon identity"):
+        pinned(command, text=True, capture_output=True, timeout=2)
+    assert connection.request.call_count == 4
+    runner.assert_not_called()
+
+
+def test_capability_keeps_original_timeout_type_and_budget(transport, monkeypatch):
+    from subprocess import TimeoutExpired
+
+    root, connection, response, _ = transport
+    monkeypatch.setattr(
+        "agent_runtime.adapters.oci_engine.shutil.which", lambda *_a, **_k: "docker"
+    )
+    pinned = PinnedOciEngine(
+        "docker",
+        env={
+            "DOCKER_HOST": "tcp://127.0.0.1:2376",
+            "DOCKER_TLS_VERIFY": "1",
+            "DOCKER_CERT_PATH": str(root),
+        },
+    )
+    pinned._runner = Mock()
+    connection.getresponse.side_effect = TimeoutError
+    command = ("docker", "info", "--format", "{{.ServerVersion}}\n{{json .Runtimes}}")
+    with pytest.raises(TimeoutExpired) as error:
+        pinned(command, text=True, capture_output=True, timeout=2)
+    assert error.value.timeout == 2 and connection.timeout <= 2
+    pinned._runner.assert_not_called()

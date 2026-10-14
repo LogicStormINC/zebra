@@ -8,6 +8,7 @@ from pathlib import Path
 from socket import SHUT_RDWR, socket
 from threading import Lock, Timer
 from time import monotonic
+from typing import cast
 from weakref import finalize
 
 from agent_core.ports.runtime import RuntimeCapabilityError
@@ -31,9 +32,15 @@ class DockerDaemonInfo:
             self._connection.close()
 
     def identity(self) -> str:
-        deadline = monotonic() + 10
-        if not self._lock.acquire(timeout=10):
-            raise RuntimeCapabilityError("cloud Docker daemon identity read timed out")
+        try:
+            return str(self.read()["ID"]).strip()
+        except TimeoutError:
+            raise RuntimeCapabilityError("cloud Docker daemon identity is unavailable") from None
+
+    def read(self, *, timeout: float = 10) -> dict[str, object]:
+        deadline = monotonic() + timeout
+        if not self._lock.acquire(timeout=timeout):
+            raise TimeoutError("cloud Docker daemon identity read timed out")
         timer = Timer(max(0, deadline - monotonic()), self._abort)
         timer.daemon = True
         timer.start()
@@ -54,7 +61,9 @@ class DockerDaemonInfo:
                     self._request_socket = self._connection.sock
                     response = self._connection.getresponse()
                     body = response.read(131_073)
-                    if response.status != 200 or len(body) > 131_072 or monotonic() >= deadline:
+                    if monotonic() >= deadline:
+                        raise TimeoutError
+                    if response.status != 200 or len(body) > 131_072:
                         raise ValueError("invalid daemon response")
                     break
                 except (RemoteDisconnected, ConnectionResetError, BrokenPipeError):
@@ -67,12 +76,17 @@ class DockerDaemonInfo:
             identity = value.get("ID") if isinstance(value, dict) else None
             if not isinstance(identity, str) or not identity.strip():
                 raise ValueError("missing daemon identity")
-            return identity.strip()
+            return cast(dict[str, object], value)
+        except TimeoutError:
+            self._connection.close()
+            raise
         except RuntimeCapabilityError:
             self._connection.close()
             raise
         except Exception:
             self._connection.close()
+            if monotonic() >= deadline:
+                raise TimeoutError("cloud Docker daemon read timed out") from None
             # No command retry or CLI fallback after a failed identity read.
             raise RuntimeCapabilityError("cloud Docker daemon identity is unavailable") from None
         finally:
