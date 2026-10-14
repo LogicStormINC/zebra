@@ -37,7 +37,9 @@ from zebra_agent_api.tenant_guard import task_access_response
 
 
 def _problem(status: int, code: str) -> ApiResponse:
-    return ApiResponse(status, {"code": code, "status": code})
+    return ApiResponse(status, {"code": code, "status": code, **(
+        {"retryable": True} if status == 409 and code == "projection_not_ready" else {}
+    )})
 
 
 def _native_raw_authority(api: ZebraAgentApi) -> V2ReadAuthority | None:
@@ -190,7 +192,7 @@ def prepare_v2(
                     return None
         except Exception:
             pass
-        return _problem(409, "stream_source_unavailable")
+        return _problem(409, "projection_not_ready")
     except ValueError:
         return _problem(400, "invalid_cursor")
     except Exception:

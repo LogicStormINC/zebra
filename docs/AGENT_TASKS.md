@@ -33237,10 +33237,10 @@ browser Cookie or Host Grant.
 
 ### CLOUD-STREAM-OBSERVER-REPAIR-01 - Retry temporary source preparation
 
-- Status: `Review` (focused25 tests passed; local integration/recovery authorized)
+- Status: `Review` (legacy25 passed; v2/preparation24 passed/1 inherited skip; final local API update pending)
 - Human owner: Luke Ding; executor: Codex
 - Branch: `codex/cloud-stream-observer-repair`; base dd66539a
-- Owned paths: `apps/api/src/zebra_agent_api/ag_ui_task_view.py`, `tests/api/test_agui_preparation_retry.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
+- Owned paths: `apps/api/src/zebra_agent_api/ag_ui_task_view.py`, `apps/api/src/zebra_agent_api/stream_v2_http.py`, `tests/api/test_agui_preparation_retry.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`
 - Scope: shared409 projection_not_ready response retains retryabletrue; conflicts remainfailclosed. No model/Worker/execution/storage redesign.
 - Acceptance: one focused shared-problem/preflight check; existing command/stream route checks; local API update; same-Run GET recovery only.
 - Integration: user permits staged local cloud-agent-trench integration; no push.

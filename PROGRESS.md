@@ -1,3 +1,14 @@
+## 2026-10-14 - v2 initial source preparation follows bounded recovery
+
+An actual admission-only probe exposed the same temporary-source error in v2:
+CheckpointNotReady became permanent stream_source_unavailable before Worker startup.
+Only that typed branch now emits retryable409 projection_not_ready; invalid cursors
+and unexpected/broken sources remainfailclosed. Focusedv2/preparation24 passed,
+one inherited environment-dependent case skipped. Two original Runs synchronized
+790/2210 characters with unchanged model-call counts4/7; actual new admission was
+transient_v2 and cancelled canonically before execution, with0 model calls.
+The original no-retry startup probe failure remains in private operator evidence.
+
 ## 2026-10-14 - Temporary AG-UI preparation remains retryable
 
 CLOUD-STREAM-OBSERVER-REPAIR-01 fixes the existing shared stream problem formatter:
