@@ -33309,7 +33309,9 @@ browser Cookie or Host Grant.
 
 ### CLOUD-OCI-CLI-CONNECT-01
 
-- Status: Ready → In Progress; Owner Luke Ding; executor Codex; branch codex/cloud-oci-cli-connect; base226bee85.
+- Status: Done for local implementation/activation and three real startup samples; Owner Luke Ding; executor Codex; branch codex/cloud-oci-cli-connect; base226bee85.
 - Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; tests/agent_runtime/test_oci_daemon_info.py; docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md; docs/AGENT_TASKS.md; PROGRESS.md.
 - Scope: reuse validated explicit CONNECT proxy only in pinned native Docker CLI private environment; keep mTLS/fresh identity/exact instance/PG fence checks.
 - Acceptance: focused regression, alternating no-model lifecycle benchmark, local Worker activation and bounded real Trench startup measurement. No push.
+
+- CLOUD-OCI-CLI-CONNECT-01 local activation/real acceptance: three newFlash/high/general/v2 reply Runs all1 model round/0 tools; first model mean7.278s vs historical11.138s (34.7% reduction), Host completion mean11.585s vs16.973s (31.7%). reserve→model mean2.516s vs6.707s. Historical-v-current observational comparison, not concurrent model A/B or browser TTFT. Worker healthy/hash match/preflight ready; derivative one-source image, no dependency changes; no push. Detailed evidence primary .artifacts/oci-cli-connect-20261015/REPORT.md.
