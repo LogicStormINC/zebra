@@ -914,8 +914,8 @@
 
 ### CLOUD-STREAM-RELAY-01 - Retry committed stream frontiers and checkpoint hints
 
-- Status: Review (component SPEC/QUALITY GO2026-10-14; owned local integration
- next; fullruntime/80/TLS-handshake acceptance remains separately OPEN).
+- Status: Done for RELAY component (committed6bea341d and accepted locally into
+ cloud-agent-trench2026-10-14; fullruntime/80/TLS-handshake gates remain OPEN).
 - Human owner: Luke Ding; executor: Codex.
 - Branch/worktree: codex/cloud-stream-relay-01; cloud-stream-relay-01.
 - Plan/Owned paths: exact15 source paths and explicit tests in
@@ -945,10 +945,35 @@
  RELAY component does not substitute CAPACITY/GC or STOP/display ACK.
 - No push/deploy/paid provider/service restart/shared DB changes.
 
+### CLOUD-STREAM-CAPACITY-01 - Bound retained transient storage and recover charges
+
+- Status: In Progress (Ready after accepted local RELAY6bea341d; claimed
+ 2026-10-14 before implementation under staged local integration authorization).
+- Human owner Luke Ding; executor Codex.
+- Branch/worktree: codex/cloud-stream-capacity-01; cloud-stream-capacity-01.
+- Owned paths: exact12 source paths and explicit tests in
+ docs/CLOUD_STREAM_CAPACITY_PLAN.md; this plan,registry,PROGRESS/task_plan/WORKLOG.
+- WRITER/ADMISSION/RELAY serial handoff: frozen server capacity policy, existing
+ transient Lua/scope/discovery and bounded maintenance lifetime only; no canonical
+ appender/Recorder/coverage proof/STOP implementation or notification schema edits.
+- Acceptance: verified-policy Run/tenant/deployment atomic byte/row/retained-slot
+ quotas; all retained generations charged; no duplicate charge; metadata/offset
+ overhead bounded; dirty failclosed/indexed recovery; delete-before-release and
+ release-once GC; fixed lifetime/reads-not-renewing; old-policy/old-key cutover;
+ real two-Worker races and forbidden-private/coverage zero mutation; no V1 delta
+ persistence fallback. Standalone Redis only; no implicit Cluster support.
+- Current migration tail101 unchanged/no reservation. Extra paths require explicit
+ declaration before edits; no generic quota service/new dependency.
+- Include activation/renewal/maintenance costs in later actual SQL80% gate;
+ root policy values are initial named defaults, not production calibration proof.
+- Component validation has one concentrated native/static and SPEC→QUALITY gate;
+ do not repeat old fixture/observer review loops. No push/deploy/paid-provider/
+ shared-service restart/business migration. STOP and fullruntime80 remain separate.
+
 ### CLOUD-STREAM-RELIABILITY-01 - Reliable notifications and temporary-stream GC
 
 - Status: Serial umbrella; RELAY split and claimed after accepted local dependencies.
-  Capacity/GC and CONTROL remain separate Locked slices pending RELAY acceptance.
+  CAPACITY/GC claimed after local RELAY acceptance; CONTROL remains Locked.
 - Human owner: Luke Ding; intended branch codex/cloud-stream-reliability-01.
 - Owned paths: storage notification/relay composition and minimal missing outbox;
   config typed stream settings; Redis writer GC after WRITER handoff;

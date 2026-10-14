@@ -1108,3 +1108,10 @@ targeted transport checks; clean exact-source literal make check GO. Runtime1273
 Next ownedcommit/localFF then CAPACITY/GC; no push/deploy. Empty ledger452clientSQL/
 56PGsockets/3352wholeWAL has no rate denominator; fullruntime80/TLS-handshake/
 COV-MinIO/100Runs remain OPEN. All failures and oldPERF10 evidence retained.
+
+2026-10-14 RELAY6bea341d locally fast-forwarded cloud-agent-trench;17dirtyfile
+hashes/modes preserved. CLAIM CLOUD-STREAM-CAPACITY-01 Ready→InProgress,
+Luke/Codex,codex/cloud-stream-capacity-01. Exact12 source/tests+serial handoff in
+docs/CLOUD_STREAM_CAPACITY_PLAN.md before edits. Current tail101 unchanged;
+implement bounded retained quotas/expiry/dirty recovery/GC, then CONTROL/STOP.
+No push/deploy. Original PERF10/TLS/fullruntime80/fleet gates remain open.
