@@ -6028,3 +6028,9 @@ Remove the remaining native CLI capability query before instance reservation in 
   fresh runtime preflight33.955/24.763/31.775ms; no-client-cert request rejected.
   Full build frontend network timeout; activated existing verified image plus two
   source replacements. Only local integration; no push/model/Run.
+
+- 2026-10-15 CLOUD-AGENT-AUTONOMY-01:shared model-native guidance, scoped Host
+  tool/recovery instructions, goal-only Trench contract and targeted revision
+  feedback.103 Zebra/45 Trench focused tests; Ruff GO. No extra classifier call,
+  routing categories, authorization/coverage changes. Real provider behavior
+  remains pending manual testing; no model calls issued.

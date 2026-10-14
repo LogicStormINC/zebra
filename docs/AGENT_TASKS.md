@@ -33285,3 +33285,12 @@ browser Cookie or Host Grant.
 - Acceptance: bounded no-model diagnostic; paired current/candidate TLS and local daemon timing, no-cert rejection, exact daemon identity, local Worker activation and readiness; no bridge transport tuning. No Docker daemon restart or Run/model submission.
 
 - Activation:52 targeted tests pass; anonymous mTLS client rejected; Worker healthy, source hashes match. Actual fresh runtime preflight33.955/24.763/31.775ms. Full Dockerfile build blocked by Docker Hub frontend timeout; local image derived from verified runningfe7fdb03 image replacing only two runtime sources. Existing proxy is an explicit local dependency; failed network experiments reverted and shadow listeners stopped.
+
+### CLOUD-AGENT-AUTONOMY-01
+
+- Status: Ready; claimed In Progress before code.
+- Owner: Luke Ding; executor: Codex; branch: codex/cloud-agent-autonomy-01.
+- Owned paths: packages/agent-core/src/agent_core/harness/model_step_support.py; packages/agent-core/src/agent_core/harness/model_step.py; packages/agent-core/src/agent_core/harness/final_completion.py; apps/worker/src/zebra_agent_worker/execution_context.py; tests/agent_core/test_harness_model_step.py; tests/agent_core/test_agent_autonomy.py; docs/CLOUD_AGENT_AUTONOMY.md; docs/AGENT_TASKS.md; PROGRESS.md.
+- Scope: shared model-native autonomy guidance, scoped Host tool/verification instructions and bounded answer revision feedback. No classification call, permissions or coverage changes.
+- Companion: Trench codex/trench-agent-autonomy-01 owns services/api/src/trench_api/trench_ai_zebra_contract.py; tests/api/test_trench_ai_task_contract.py; WORKLOG.md. Host goal-only acceptance; runtime owns inference and verification.
+- Acceptance: focused deterministic tests and local integration; real Agent behavior pending human model test. No model invocation or push.

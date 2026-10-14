@@ -409,8 +409,9 @@ def _quality_revision_feedback(
         )
     if not instructions:
         instructions.append(
-            "Revise the candidate directly, preserving valid content and adding only the "
-            "missing detail, structure, or evidence."
+            "Fix only the listed missing requirements using existing content and evidence where "
+            "sufficient. Collect evidence only for a specific required fact still unsupported; "
+            "do not add unrelated investigations or operations."
         )
     return (
         "The candidate answer did not satisfy the task acceptance contract. "

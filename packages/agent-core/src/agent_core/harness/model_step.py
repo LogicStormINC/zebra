@@ -27,6 +27,7 @@ from agent_core.harness.model_request import (
     with_context_plan,
 )
 from agent_core.harness.model_step_support import (
+    AGENT_EXECUTION_GUIDANCE,
     MODEL_NATIVE_DELEGATION_GUIDANCE,
     MODEL_REQUIRED_DELEGATION_DIRECTIVE,
     ZEBRA_AGENT_IDENTITY_DIRECTIVE,
@@ -381,6 +382,7 @@ class HarnessModelStep:
         created_at: datetime,
     ) -> list[SessionMessage]:
         identity_directive = task.identity_directive or ZEBRA_AGENT_IDENTITY_DIRECTIVE
+        identity_directive += f"\n\n{AGENT_EXECUTION_GUIDANCE}"
         messages: list[SessionMessage] = []
         if self._context_compiler is not None and task.workspace_root is not None:
             if task.attachments:

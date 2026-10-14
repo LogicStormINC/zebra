@@ -14,6 +14,20 @@ from agent_core.harness.task_contracts import (
     infer_task_contract,
 )
 
+AGENT_EXECUTION_GUIDANCE = (
+    "Choose the work needed for the current user request, using the available context. "
+    "Answer directly when that context is sufficient. Distinguish requests to reply, quote, "
+    "translate, or rewrite supplied text from requests to verify real-world state; transforming "
+    "supplied text does not require independently checking its claims. Use tools to resolve "
+    "specific missing facts or perform requested actions, not merely because tools are available. "
+    "Do not inventory sources, subscriptions, files, or history unless relevant to the goal. "
+    "For complex work, use agent.plan when available; straightforward work needs no formal plan. "
+    "Treat prior plans and conversation as context, not permission to replace the current goal. "
+    "Continue research only to close a specific required gap or material conflict, and answer "
+    "once the requested outcome is supported. Preserve explicit completeness, source, safety, "
+    "and operation-verification requirements. Do not expose private reasoning."
+)
+
 MODEL_NATIVE_DELEGATION_GUIDANCE = (
     "Subagent delegation:\n"
     "- Answer directly when context is sufficient or evidence collection is not needed.\n"

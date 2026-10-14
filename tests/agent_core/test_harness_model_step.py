@@ -87,7 +87,8 @@ def test_harness_model_step_uses_task_identity_override() -> None:
     )
 
     assert messages[0].role is MessageRole.SYSTEM
-    assert messages[0].content == "You are the embedded product assistant."
+    assert messages[0].content.startswith("You are the embedded product assistant.\n\n")
+    assert "Choose the work needed for the current user request" in messages[0].content
     assert "Zebra Agent" not in messages[0].content
 
 
