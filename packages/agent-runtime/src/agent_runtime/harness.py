@@ -58,6 +58,7 @@ from agent_tools.skills_catalog import (
 from agent_runtime.adapters.local import LocalRuntime
 from agent_runtime.artifact_tools import build_artifact_read_tools
 from agent_runtime.cloud_mcp_transport import CloudMcpTransport
+from agent_runtime.deferred import DeferredRuntime
 from agent_runtime.harness_defaults import DEFAULT_TEST_PRESETS
 from agent_runtime.mcp_protocol import McpAnyServerSpec
 from agent_runtime.mcp_routing import build_mcp_transport
@@ -382,6 +383,10 @@ class LocalToolGateway(ToolGatewayPort):
     def execute(self, tool_call: ToolCall) -> ToolResult:
         if self._network_check is not None:
             self._network_check()
+        # ponytail: every local call conservatively needs the runtime; narrow only
+        # after proving individual tool dependencies. Host/Client routing is separate.
+        if isinstance(self._runtime, DeferredRuntime):
+            self._runtime.ensure_ready()
         try:
             result = self._executor.execute(tool_call)
             if self._network_check is not None:

@@ -1,4 +1,5 @@
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -9,6 +10,7 @@ from agent_core.ports.agent_tasks import AgentTaskPort
 from agent_core.ports.artifact_payload_store import ArtifactPayloadStorePort
 from agent_core.ports.runtime import RuntimeHandle, RuntimePort
 from agent_runtime import SetupPhasePlan, SetupPhaseRunner
+from agent_runtime.deferred import DeferredRuntime
 from agent_security import SetupDownload, SetupEgressGateway, TemporarySetupCredential
 from zebra_agent_config import SetupSettings, ZebraAgentSettings
 
@@ -56,7 +58,10 @@ def build_prepared_runtime(
     created_at: datetime,
     instance_factory: BoundInstanceFactory | None = None,
     compatible_session_ids: tuple[str, ...] = (),
+    cancellation_check: Callable[[], None] | None = None,
 ) -> tuple[RuntimePort, PreparedRuntime]:
+    check = cancellation_check or (lambda: None)
+    check()
     runtime = build_runtime(
         settings,
         database_path,
@@ -66,6 +71,7 @@ def build_prepared_runtime(
         attempt_number=attempt_number,
         instance_factory=instance_factory,
     )
+    check()
     prepared = prepare_runtime(
         runtime,
         setup=settings.setup,
@@ -75,22 +81,30 @@ def build_prepared_runtime(
         artifact_store=artifact_store,
         created_at=created_at,
     )
-    compatible_digests = tuple(
-        build_runtime_spec(
-            settings,
-            workspace_root=workspace_root,
-            network_profile="none" if network_profile == "setup-only" else network_profile,
-            session_id=compatible_session_id,
-            attempt_number=attempt_number,
-        ).digest
-        for compatible_session_id in compatible_session_ids
-        if compatible_session_id != str(session_id)
-    )
-    return runtime, PreparedRuntime(
-        handle=prepared.handle,
-        setup_artifact_id=prepared.setup_artifact_id,
-        compatible_authority_digests=compatible_digests,
-    )
+    try:
+        check()
+        compatible_digests = tuple(
+            build_runtime_spec(
+                settings,
+                workspace_root=workspace_root,
+                network_profile="none" if network_profile == "setup-only" else network_profile,
+                session_id=compatible_session_id,
+                attempt_number=attempt_number,
+            ).digest
+            for compatible_session_id in compatible_session_ids
+            if compatible_session_id != str(session_id)
+        )
+        return runtime, PreparedRuntime(
+            handle=prepared.handle,
+            setup_artifact_id=prepared.setup_artifact_id,
+            compatible_authority_digests=compatible_digests,
+        )
+    except BaseException as error:
+        try:
+            runtime.destroy(prepared.handle)
+        except Exception as cleanup:
+            error.add_note(f"runtime cleanup failed: {type(cleanup).__name__}")
+        raise
 
 
 def prepare_runtime(
@@ -168,6 +182,12 @@ def require_matching_runtime_authority(
 
 
 def destroy_runtime(runtime: RuntimePort | None, handle: RuntimeHandle | None) -> Exception | None:
+    if isinstance(runtime, DeferredRuntime):
+        try:
+            runtime.close()
+        except Exception as error:
+            return error
+        return None
     if runtime is None or handle is None:
         return None
     try:

@@ -88,7 +88,7 @@ def build_execution_tool_gateway(
     model_gateway: ModelGatewayPort,
     session_id: SessionId,
     runtime: RuntimePort,
-    runtime_handle: RuntimeHandle,
+    runtime_handle: RuntimeHandle | None,
     cloud_artifacts: CloudToolOutputArtifactCoordinator | None,
     trusted_local: bool,
     task_binding: TaskBindingSnapshot | None,

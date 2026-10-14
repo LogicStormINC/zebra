@@ -33351,8 +33351,19 @@ browser Cookie or Host Grant.
   Reuse existing Provider metadata before adding any production timing fields.
 - LATENCY-DRAFT-01: Done for common pipeline proof with TRACE; existing common production path correct.
   Real SDK provisional DOM precedes canonical4357.6ms; no source fix needed.
-- LATENCY-LAZY-01: Locked on TRACE dependency audit + DRAFT proof; explicit
-  cloud runtime, never implicit LocalRuntime fallback; preserve authority/fence.
+- LATENCY-LAZY-01: Review: source/focused/native and SPEC/QUALITY GO; local integration next. Owner Luke Ding; executor Codex.
+  Branch codex/latency-lazy-01; reuse /Users/lukeding/Desktop/playground/2026/product/zebra-stream-observer-repair.
+  Exact Owned paths: apps/config/src/zebra_agent_config/settings.py and runtime_settings.py;
+  apps/worker/src/zebra_agent_worker/execution.py, runtime_setup.py, execution_runtime.py,
+  execution_tool_gateway.py, tool_gateway_runtime.py, worker_tool_gateway.py;
+  packages/agent-runtime/src/agent_runtime/deferred.py and harness.py;
+  tests/config/test_settings.py; tests/agent_runtime/test_deferred_runtime.py;
+  tests/worker/execution/test_deferred_runtime_execution.py; docker/compose.application.yml;
+  .env.example; docs/CLOUD_FIRST_BODY_LATENCY_ACCEPTANCE.md; registry/plan/PROGRESS/WORKLOG.
+  Container/reserve/runtimeProvisioned zero for eligible pure replies; preserve
+  existing WorkspaceRuntimeResolver materialization and filesystem validation.
+  Explicit cloud runtime, never LocalRuntime fallback; preserve authority/fence.
+  One concentrated regression/static and final SPEC/QUALITY; no test infrastructure expansion.
 - LATENCY-ADMISSION-01: Locked on TRACE; only measured slowest shared step.
 - LATENCY-WARM-01: Locked on TRACE cold/hot evidence; existing node/image/client
   readiness only. Generic running pool/checkpoint requires separate ADR/task.

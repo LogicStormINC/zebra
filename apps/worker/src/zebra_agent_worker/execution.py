@@ -24,6 +24,7 @@ import zebra_agent_worker.authority_types as authority_types
 import zebra_agent_worker.execution_context as execution_context
 import zebra_agent_worker.execution_continuations as execution_continuations
 import zebra_agent_worker.execution_preflight as execution_preflight
+import zebra_agent_worker.execution_runtime as execution_runtime
 import zebra_agent_worker.execution_tool_gateway as execution_gateway
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
 import zebra_agent_worker.runtime_authority as runtime_authority
@@ -283,39 +284,28 @@ class SessionExecutionService(SessionExecutionEntrypoints):
                 self._runtime_instance_factory, claimed.lease, session_events, task_binding
             )
             setup_stage = "runtime_provision"
-            runtime, prepared_runtime = runtime_setup.build_prepared_runtime(
-                self._settings,
-                self._database_path,
-                workspace_root=task.workspace_root,
-                network_profile=effective_network_profile.name.value,
-                session_id=session_id,
-                attempt_number=attempt_number,
-                artifact_store=self._artifact_payload_store,
-                created_at=started_at,
-                instance_factory=bound_instance_factory,
-                compatible_session_ids=compatible_ids,
-            )
-            runtime_handle = prepared_runtime.handle
-            setup_stage = "runtime_authority"
-            authority = runtime_handle.authority
-            runtime_setup.require_matching_runtime_authority(
-                runtime_handle,
-                None if trusted_local else claimed.recovery.workspace.runtime_spec_digest,
-                prepared_runtime.compatible_authority_digests,
-            )
             authority_recorder = self._projection_recorder_factory.build(
                 session=claimed.recovery.session,
                 workspace=claimed.recovery.workspace,
                 lease=claimed.lease,
                 ownership_check=ownership_check,
             )
-            if runtime_authority.persist_runtime_authority(
-                authority_recorder, authority, created_at=started_at
-            ):
+            runtime_preparation = execution_runtime.compose_execution_runtime(
+                self._settings, self._database_path,
+                claimed=claimed, task=task, binding=task_binding,
+                materialization=materialized_context,
+                network_profile=effective_network_profile.name.value,
+                has_capsule=active_capsule is not None, attempt_number=attempt_number,
+                created_at=started_at, artifact_store=self._artifact_payload_store,
+                instance_factory=bound_instance_factory, compatible_session_ids=compatible_ids,
+                recorder=lambda: effect_recorder[-1] if effect_recorder else authority_recorder,
+                trusted_local=trusted_local,
+            )
+            runtime, runtime_handle, authority_persisted = runtime_preparation
+            if authority_persisted:
                 claimed = ClaimedSession(
                     recovery=self._recovery_service.recover_session(
-                        session_id,
-                        worker_lease=claimed.lease,
+                        session_id, worker_lease=claimed.lease,
                     ),
                     lease=claimed.lease,
                 )

@@ -12,6 +12,7 @@ from zebra_agent_config.coverage_settings import CoverageWorkSettings, load_cove
 from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_credentials
 from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memory_gateway_settings
 from zebra_agent_config.public_output_settings import PublicOutputPolicy, load_public_output_policy
+from zebra_agent_config.runtime_settings import RuntimeSettings as RuntimeSettings
 from zebra_agent_config.setup_settings import SetupSettings, load_setup_settings
 from zebra_agent_config.stream_settings import StreamSettings, load_stream_settings
 
@@ -64,24 +65,6 @@ class ScmSettings:
     github_token_env: str | None
     github_api_base_url: str
     pull_request_dry_run: bool
-
-
-@dataclass(frozen=True)
-class RuntimeSettings:
-    runtime_class: str = "trusted-local"
-    engine: str = "docker"
-    gvisor_runtime: str = "runsc"
-    image: str = ""
-    cpu_count: float = 2.0
-    memory_mb: int = 2048
-    pids: int = 256
-    tmpfs_mb: int = 512
-    max_output_bytes: int = 1_048_576
-    max_execution_seconds: float = 900.0
-    container_uid: int = 65532
-    container_gid: int = 65532
-    require_workspace_quota: bool = False
-    workspace_quota_mb: int = 10_240
 
 
 @dataclass(frozen=True)
@@ -323,6 +306,7 @@ def _load_runtime_settings(
     ):
         raise ValueError(f"ZEBRA_PROFILE={profile} requires a storage-enforced workspace quota")
     return RuntimeSettings(
+        defer_provision=_read_bool(values, "ZEBRA_RUNTIME_DEFER_PROVISION", default=False),
         runtime_class=runtime_class,
         engine=engine,
         gvisor_runtime=gvisor_runtime,

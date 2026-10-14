@@ -234,3 +234,5 @@ SDK五包消费端校验保持contracts/ui-contracts/client-core/react/react-cha
 预计：TRACE+DRAFT约0.5–1天；LAZY与恢复回归约1–2天；ADMISSION/WARM必要项及集中真实验收约1–2天。核心方案约2.5–5个工作日，按源码审计调整；不含通用池/快照新设计、外部Provider等待和既有STOP/SQL完整验收。运行池若必要须另估，不能塞进最小切片。
 
 方案集中只读审查：GO。核对当前eager顺序、runtime fallback、workspace工具依赖、并发准备和OCI不可变绑定边界；完整依赖表及STOP/接管native证明仍属于实施任务，未冒称已验证。
+
+实施边界校正2026-10-15：LAZY首切片只消除OCI分配，保留已有工作区授权物化、LocalWorkspace.ensure与ContextCompileRequest目录校验；它们不是已证实的秒级瓶颈，不扩大输入语义重构。仅已物化Host上下文进入lazy，其他eager。

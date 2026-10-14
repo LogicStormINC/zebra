@@ -356,3 +356,10 @@ def test_load_settings_auto_loads_dotenv_local(monkeypatch, tmp_path) -> None:
     assert settings.model.base_url == "https://local.deepseek.test"
     assert settings.model.model == "local-model"
     assert settings.model.api_key_env == "DEEPSEEK_API_KEY"
+
+
+def test_runtime_defer_is_explicit_and_false_by_default() -> None:
+    assert load_settings(env={}).runtime.defer_provision is False
+    enabled = load_settings(env={"ZEBRA_RUNTIME_DEFER_PROVISION": "true"})
+    assert enabled.runtime.defer_provision is True
+    assert not load_settings(env={"ZEBRA_RUNTIME_DEFER_PROVISION": "maybe"}).runtime.defer_provision
