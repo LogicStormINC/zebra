@@ -161,3 +161,15 @@ timeout; the activated local image derives from the verified runningfe7fdb03 ima
 and replaces only the two changed runtime sources. No dependencies were changed.
 All shadow listeners were stopped and VM offload settings restored. No new Runs
 or model calls were issued.
+
+## Local bridge latency (2026-10-15)
+
+Keep `nodelay` on the existing OPENSSL-LISTEN TCP endpoint. Docker CLI27.5.1
+uses a separate TLS dialer for exec's hijacked stream; it does not use the normal
+HTTP proxy route for that connection. The bridge's small-packet buffering added
+hundreds of milliseconds even when runsc completed the probe in about15ms.
+Three alternating real PG/gVisor lifecycle pairs with the same certificates:
+first exec~1.072s→0.728s and provision~1.668s→1.292s. This is a local topology
+result; certificate verification (`verify=1`), SAN/client certificates, endpoint,
+container identity and PG lease/authority checks remain mandatory. No Docker
+daemon restart, runtime fallback or skipped workspace-writable probe is needed.

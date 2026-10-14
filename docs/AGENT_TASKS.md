@@ -33322,3 +33322,10 @@ browser Cookie or Host Grant.
 - Owned paths: packages/agent-storage/src/agent_storage/postgres/task_io.py; tests/agent_storage/test_postgres_task_io.py; tests/agent_storage/test_postgres_task_io_shared.py; tests/agent_storage/test_postgres_task_io_dns.py; docs/CLOUD_STARTUP_DNS_OPTIMIZATION.md; docs/AGENT_TASKS.md; PROGRESS.md.
 - Scope: profile remaining pre-runtime startup, optimize confirmed bounded DNS child startup only; preserve cancellation, connection identity, service/env precedence and cache TTL. No global DNS/IP pinning or permission changes.
 - Acceptance: deterministic/native TaskIO checks, cold resolver pairs, local Worker activation and real v2 startup comparison. Local integration authorized, no push.
+
+### CLOUD-STARTUP-EXEC-01
+
+- Status: Ready → In Progress; Owner Luke Ding; executor Codex; branch codex/cloud-startup-exec-01; baseeae40643.
+- Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci.py; packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; tests/agent_runtime/test_oci_runtime.py; tests/agent_runtime/test_oci_engine.py; docker/local-gvisor/zebra-docker-tls.service; tests/agent_runtime/test_local_gvisor_bridge.py; docs/runbooks/runtime-startup-failure.md; docs/CLOUD_STARTUP_EXEC_OPTIMIZATION.md; docs/AGENT_TASKS.md; PROGRESS.md.
+- Scope: diagnose first-exec and post-runtime preparation; smallest demonstrated runtime fix only, preserving identity/PG fence/workspace validation. Temporary browser timing is diagnostic, no SDK/UI source changes. Update owned paths before any other production edits.
+- Acceptance: no-model isolated PG/gVisor phase pairs, targeted regressions, normal local activation and bounded v2 browser timing; no push.

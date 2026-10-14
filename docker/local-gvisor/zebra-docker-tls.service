@@ -7,7 +7,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 EnvironmentFile=/etc/zebra-gvisor/bridge.env
-ExecStart=/usr/bin/socat OPENSSL-LISTEN:2376,bind=${ZEBRA_LOCAL_GVISOR_ADDRESS},reuseaddr,fork,cert=/etc/zebra-gvisor/server.pem,key=/etc/zebra-gvisor/server.key,cafile=/etc/zebra-gvisor/ca.pem,verify=1 UNIX-CONNECT:/var/run/docker.sock
+ExecStart=/usr/bin/socat OPENSSL-LISTEN:2376,bind=${ZEBRA_LOCAL_GVISOR_ADDRESS},reuseaddr,fork,nodelay,cert=/etc/zebra-gvisor/server.pem,key=/etc/zebra-gvisor/server.key,cafile=/etc/zebra-gvisor/ca.pem,verify=1 UNIX-CONNECT:/var/run/docker.sock
 Restart=on-failure
 RestartSec=2
 UMask=0077
