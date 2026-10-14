@@ -12,6 +12,7 @@ from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
 from agent_core.ports.event_store import BoundedSessionEventReadPort
+from agent_core.ports.stream_source_head import StreamSourceHeadPort
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
 from fastapi import Request
@@ -176,7 +177,34 @@ async def tail_session_events(
         events: Sequence[SessionEvent]
         status: SessionStatus | None
         while not await request.is_disconnected():
-            if cloud:
+            head = None
+            task_database = getattr(active.tasks, "_database", None) if cloud else None
+            event_database = getattr(
+                getattr(active.events, "_event_store", active.events), "_database", None
+            ) if cloud else None
+            same_source = task_database is None or (
+                event_database is not None
+                and event_database._dsn == task_database._dsn
+                and event_database.deployment_namespace == task_database.deployment_namespace
+            )
+            if (
+                cloud
+                and (
+                    isinstance(active.tasks, StreamSourceHeadPort)
+                    and getattr(active.tasks, "stream_head_reads_compatible", True)
+                )
+                and same_source
+                and getattr(active.events, "stream_head_reads_compatible", task_database is None)
+            ):
+                head = await _read_until(
+                    deadline, active.tasks.read_stream_source_head, session_id=session_id
+                )
+                if head is None or head.task.strict_coverage or head.session_sequence is None:
+                    return
+            if cloud and (
+                head is None
+                or cursor < (head.session_sequence if head.session_sequence is not None else -1)
+            ):
                 if not isinstance(active.events, BoundedSessionEventReadPort):
                     return
                 page = await _read_until(
@@ -185,6 +213,8 @@ async def tail_session_events(
                 events = page.events
                 if await _read_until(deadline, coverage_session_read_problem, active, session_id):
                     return
+            elif cloud:
+                events = ()
             else:
                 events = await _read_until(deadline, active.events.read_since, session_id, cursor)
             if coverage_public_read_problem(events):
@@ -201,7 +231,9 @@ async def tail_session_events(
                 )
             if closing:
                 return
-            if cloud and isinstance(active.events, BoundedSessionEventReadPort):
+            if head is not None:
+                status = head.session_status
+            elif cloud and isinstance(active.events, BoundedSessionEventReadPort):
                 status = await _read_until(deadline, active.events.read_session_status, session_id)
             else:
                 session = await _read_until(deadline, active.sessions.get_session, session_id)
@@ -267,12 +299,25 @@ async def tail_task_events(
         cursor, closing, last_delivery = after_sequence, False, monotonic()
         recovered = not recovery_notice
         while not await request.is_disconnected():
-            page = await _read_until(deadline, store.read_event_page, task_id, cursor)
-            if cloud:
-                problem = await _read_until(deadline, coverage_task_read_problem, active, task_id)
-                if problem is not None:
+            head = None
+            if cloud and (
+                isinstance(store, StreamSourceHeadPort)
+                and getattr(store, "stream_head_reads_compatible", True)
+            ):
+                head = await _read_until(deadline, store.read_stream_source_head, task_id=task_id)
+                if head is None or head.task.strict_coverage:
                     return
-            events = page.events
+            if head is None or cursor < head.task.current_sequence:
+                page = await _read_until(deadline, store.read_event_page, task_id, cursor)
+                if cloud:
+                    problem = await _read_until(
+                        deadline, coverage_task_read_problem, active, task_id
+                    )
+                    if problem is not None:
+                        return
+                events = page.events
+            else:
+                events = ()
             if coverage_public_read_problem(item.event for item in events):
                 return
             for event in events:
@@ -294,8 +339,12 @@ async def tail_task_events(
                 )
             if closing:
                 return
-            task = await _read_until(
-                deadline, store.read_task_header if cloud else store.get_task, task_id
+            task = (
+                head.task
+                if head is not None
+                else await _read_until(
+                    deadline, store.read_task_header if cloud else store.get_task, task_id
+                )
             )
             if task is None or task.status not in _ACTIVE_STATUSES:
                 closing = True

@@ -48,12 +48,11 @@ class PostgresProjectionStore(ProjectionStorePort):
 
     def get_session_namespace(self, session_id: SessionId) -> tuple[bool, str | None]:
         with self._database.connect_task_io() as connection:
-            row = connection.execute(
-                "SELECT namespace_id FROM session_projections "
-                "WHERE deployment_namespace=%s AND session_id=%s",
-                (self._database.deployment_namespace, session_id),
-            ).fetchone()
-        return (False, None) if row is None else (True, row["namespace_id"])
+            return read_session_namespace(
+                connection, self._database.deployment_namespace, session_id
+            )
+
+    _snapshot_native_namespace = get_session_namespace
 
     def list_recent_sessions(self, *, limit: int) -> list[Session]:
         if limit <= 0:
@@ -238,3 +237,14 @@ def _session_from_row(row: dict[str, Any]) -> Session:
     values["clarification_context"] = values.pop("clarification_context_json")
     values["task_plan"] = values.pop("task_plan_json")
     return Session.model_validate(values)
+
+
+def read_session_namespace(
+    connection: Any, namespace: str, session_id: SessionId
+) -> tuple[bool, str | None]:
+    row = connection.execute(
+        "SELECT namespace_id FROM session_projections "
+        "WHERE deployment_namespace=%s AND session_id=%s",
+        (namespace, session_id),
+    ).fetchone()
+    return (False, None) if row is None else (True, row["namespace_id"])

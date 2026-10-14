@@ -7,8 +7,9 @@ from uuid import uuid4
 import psycopg
 import pytest
 from ag_ui.encoder import EventEncoder
+from agent_core.application.session_projection import rebuild_session
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import TaskId
+from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady, ProjectionScope
 from agent_integrations.ag_ui.checkpoint_binding import build_projection_page_plan
 from agent_integrations.ag_ui.checkpoint_materializer import AgUiCheckpointMaterializer
@@ -35,6 +36,7 @@ from tests.agent_core.test_coverage_persistence import binding
 from tests.agent_integrations import test_ag_ui_binding_persistence as persistence
 from tests.agent_integrations.binding_store_cases import (
     NOW,
+    BindingStores,
     append,
     command,
     publish,
@@ -44,6 +46,11 @@ from tests.agent_integrations.binding_store_cases import (
 )
 
 native_stores = persistence.stores
+
+
+def prepare_session_projection(stores: BindingStores, segment: SessionId) -> None:
+    # ponytail: at most nine fixture Events; larger fixtures should apply incremental projection.
+    stores.sessions.save_session(rebuild_session(stores.events.list_for_session(segment)))
 
 
 @pytest.mark.parametrize("marker", [None, {}, "malformed"])
@@ -58,6 +65,7 @@ def test_native_late_admission_flips_privacy_before_next_frame(upgraded_stores, 
         EventType.MODEL_RESPONSE_RECEIVED,
         {"assistant_message": "PRIVATE_PREFIX"},
     )
+    prepare_session_projection(stores, segment)
     run = ready(stores.tasks, task)
     assert not run.strict_coverage
     scope = ProjectionScope(stores.namespace, task, run.anchor.event_id, checkpoint_version(run))
@@ -89,6 +97,7 @@ def test_native_late_admission_flips_privacy_before_next_frame(upgraded_stores, 
         }
     )
     stores.events.append(source)
+    prepare_session_projection(stores, segment)
     strict = ready(stores.tasks, task)
     assert strict.strict_coverage
     assert not stores.tasks.read_run_header(task, "run", through_sequence=2).strict_coverage
@@ -231,6 +240,7 @@ def test_native_commit_read_and_cold_resume_retain_private_progress_authority(
         (8, EventType.COVERAGE_RUN_CANCELLED, common),
     ):
         append(stores, segment, position, kind, payload)
+    prepare_session_projection(stores, segment)
     run = ready(stores.tasks, task)
     assert run.strict_coverage
     scope = ProjectionScope(stores.namespace, task, run.anchor.event_id, checkpoint_version(run))

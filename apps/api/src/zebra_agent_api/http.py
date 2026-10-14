@@ -11,6 +11,7 @@ from agent_runtime.mcp_catalog_refresh import McpCatalogRefresh
 from agent_security import CredentialBroker
 from agent_security.mcp_credential_management import McpCredentialManagement
 from agent_storage import CloudCompositionSettings, ControlPlaneStores, PostgresControlPlaneStores
+from agent_storage.postgres.stream_proof_batch import StreamProofSnapshot
 from agent_storage.postgres.task_io import TaskIoConnections
 from agent_tools.skill_publications import SkillPublicationService
 from fastapi import FastAPI, Request
@@ -272,6 +273,7 @@ def create_http_app(
             verified_host_grant=getattr(request.state, "verified_host_grant", None),
         )
         artifact_parts = tuple(part for part in request.url.path.split("/") if part)
+        raw_negotiated = False
         if (
             active_settings.deployment != "local"
             and request.method == "GET"
@@ -282,12 +284,34 @@ def create_http_app(
         ):
             response = await authorized_artifact_read(request, adapter, route_request)
         elif active_settings.deployment != "local" and _is_stream_request(request):
-            response = await authorized_task_preflight(
-                lambda: tenant_scope_response(api, route_request),
-                lambda: cloud_raw_stream_preflight(api.stores, request.url.path),
-                authorization_expires_at=getattr(route_request.host_context, "expires_at", None),
-                request_deadline=getattr(request.state, "authorization_deadline", None),
+            from zebra_agent_api.stream_v2_http import raw_response
+
+            def preflight(proof: StreamProofSnapshot | None = None) -> ApiResponse | None:
+                denied = (
+                    tenant_scope_response(api, route_request, proof=proof)
+                    if proof is not None
+                    else tenant_scope_response(api, route_request)
+                )
+                if denied is not None:
+                    return denied
+                source = (
+                    cloud_raw_stream_preflight(api.stores, request.url.path, proof=proof)
+                    if proof is not None
+                    else cloud_raw_stream_preflight(api.stores, request.url.path)
+                )
+                return source if source.status_code != 200 else None
+
+            v2_response = await raw_response(
+                api,
+                request,
+                database_path=active_database_path,
+                preflight=preflight,
+                snapshot_preflight=preflight,
             )
+            if v2_response is not None:
+                return v2_response
+            raw_negotiated = True
+            response = ApiResponse(200, {})
         elif (
             active_settings.deployment != "local"
             and request.url.path.endswith("/stream")
@@ -307,9 +331,10 @@ def create_http_app(
         if _is_stream_request(request) and response.status_code == 200:
             from zebra_agent_api.stream_v2_http import raw_response
 
-            v2_response = await raw_response(api, request, database_path=active_database_path)
-            if v2_response is not None:
-                return v2_response
+            if not raw_negotiated:
+                v2_response = await raw_response(api, request, database_path=active_database_path)
+                if v2_response is not None:
+                    return v2_response
             stream_id = _stream_resource_id(request.url.path)
             after_sequence_value, cursor_error = after_sequence(request)
             if cursor_error is not None:

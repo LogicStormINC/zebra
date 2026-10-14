@@ -152,6 +152,11 @@ def test_cold_scalar_pending_and_tail_repair_seek_no_prefix_or_body(queue, count
                     "ON session_events TO {}"
                 ).format(sql.Identifier(queue.role))
             )
+            connection.execute(
+                sql.SQL("GRANT SELECT ON task_replay_coverage_privacy TO {}").format(
+                    sql.Identifier(queue.role)
+                )
+            )
             connection.execute("ANALYZE session_events")
             connection.execute("ANALYZE task_projection_work")
             connection.execute("ANALYZE task_projection_heads")

@@ -28,7 +28,7 @@ TASK_PROJECTION_WORK_ROUTING_MIGRATION = Migration(
         + ";"
         + activate_privacy(_SOURCE, postgres=True)
         + "; RETURN NEW; END IF; "
-        + ";".join(routed_statements(_SOURCE, postgres=True))
+        + ";".join(routed_statements(_SOURCE, postgres=True, legacy_scalar_source=True))
         + "; RETURN NEW; END; $$ LANGUAGE plpgsql",
     ),
 )

@@ -9,7 +9,13 @@ import psycopg
 from agent_core.domain.identifiers import TaskId
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.projection_work import PostgresTaskProjectionWorkStore
+from agent_storage.postgres.projection_work_fanout_migration import (
+    TASK_PROJECTION_WORK_FANOUT_MIGRATION,
+)
 from agent_storage.postgres.projection_work_migration import TASK_PROJECTION_WORK_MIGRATION
+from agent_storage.postgres.projection_work_routing_migration import (
+    TASK_PROJECTION_WORK_ROUTING_MIGRATION,
+)
 from agent_storage.projection_work import SQLiteTaskProjectionWorkStore
 from agent_storage.projection_work_schema import initialize_projection_work
 from agent_storage.task_projection_checkpoint_schema import SCHEMA
@@ -75,8 +81,12 @@ class QueueFixture:
             if self.backend == "sqlite":
                 initialize_projection_work(connection)
             else:
-                for statement in TASK_PROJECTION_WORK_MIGRATION.statements:
-                    connection.execute(statement)
+                for migration in (
+                    TASK_PROJECTION_WORK_MIGRATION, TASK_PROJECTION_WORK_ROUTING_MIGRATION,
+                    TASK_PROJECTION_WORK_FANOUT_MIGRATION,
+                ):
+                    for statement in migration.statements:
+                        connection.execute(statement)
 
     def execute(self, connection, statement, params=()):
         return connection.execute(

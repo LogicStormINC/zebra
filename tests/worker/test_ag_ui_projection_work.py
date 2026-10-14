@@ -47,6 +47,7 @@ from tests.agent_integrations.ag_ui_checkpoint_consumer_scratch import (
     _task,
     assert_cold_cursor_oracle,
     orphan_sources,
+    prepare_source_projections,
 )
 from tests.agent_integrations.ag_ui_checkpoint_consumer_scratch import (
     native_source as _native_source_fixture,
@@ -443,13 +444,19 @@ def test_native_257_orphan_ledger_survives_cold_consumer_and_preserves_oracle(
     sources = orphan_sources(tasks, events, task)
     child = _attach(tasks, task.task_id, task.active_segment_id)
     sources.extend(_prefix_sources(tasks, task, after=len(sources) - 1))
+    child_offset = offset
 
     def append(segment, sequence, kind, payload):
-        sequence += offset * (2 if segment == task.active_segment_id else 1)
+        sequence += 2 * offset if segment == task.active_segment_id else child_offset
+        if offset and kind is EventType.SESSION_HANDOFF_RECEIVED:
+            payload = {**payload, "root_session_id": str(task.task_id), "stage_index": 1}
         source = _event(segment, sequence, kind, payload)
         events.append(source)
         sources.append(TaskEvent(task.task_id, len(sources), segment, sequence, source))
 
+    if offset:
+        append(child, 0, EventType.TASK_PREPARED, {"title": "Child", "user_input": "Inspect"})
+    child_offset += offset
     append(
         child,
         0,
@@ -471,18 +478,17 @@ def test_native_257_orphan_ledger_survives_cold_consumer_and_preserves_oracle(
     run = tasks.read_run_header(task.task_id, work.run_id, through_sequence=work.requested_through)
     page = tasks.read_event_page(task.task_id, -1, through_sequence=run.highwater)
     identity = AgUiRunIdentity(
-        session_id=task.active_segment_id, thread_id=str(task.task_id), run_id=work.run_id
-    )
+        session_id=task.active_segment_id, thread_id=str(task.task_id), run_id=work.run_id)
     with pytest.raises(BindingResolutionPending) as pending:
         build_projection_page_plan(tasks, page, run, work.scope, identity)
     assert pending.value.reason == "budget"
     assert (
-        pending.value.resolved_through == -1 and pending.value.required_through == 258 + 3 * offset
+        pending.value.resolved_through == -1 and pending.value.required_through == 258 + 4 * offset
     )
     assert consumer.materialize_once(work) is False
     for _ in range(16):
         consumer.poll_once(budget_seconds=2)
-    assert tasks.read_checkpoint_head(ledger).through_sequence == 258 + 3 * offset, (
+    assert tasks.read_checkpoint_head(ledger).through_sequence == 258 + 4 * offset, (
         "consumer did not advance ledger"
     )
     assert tasks.read_checkpoint_head(work.scope).through_sequence == -1
@@ -493,7 +499,7 @@ def test_native_257_orphan_ledger_survives_cold_consumer_and_preserves_oracle(
     restored = _restore(tasks)
     _forbid_history(restored, monkeypatch)
     _page_spy(restored, monkeypatch)
-    assert restored.read_checkpoint_head(ledger).through_sequence == 258 + 3 * offset
+    assert restored.read_checkpoint_head(ledger).through_sequence == 258 + 4 * offset
     assert queue.read_projection_work_problem(work.scope) == problem
     consumer = AgUiCheckpointConsumer(restored, queue, namespace="local")
     if finish == "late_pair":
@@ -504,19 +510,13 @@ def test_native_257_orphan_ledger_survives_cold_consumer_and_preserves_oracle(
             EventType.SESSION_HANDOFF_COMMITTED,
             {"handoff_id": handoff, "target_session_id": str(child)},
         )
-        append(
-            child,
-            258,
-            EventType.SESSION_HANDOFF_RECEIVED,
+        append(child, 258, EventType.SESSION_HANDOFF_RECEIVED,
             {"handoff_id": handoff, "parent_session_id": str(task.active_segment_id)},
         )
-        append(
-            child,
-            259,
-            EventType.MODEL_RESPONSE_RECEIVED,
+        append(child, 259, EventType.MODEL_RESPONSE_RECEIVED,
             {"model_call_id": "orphan-prefix", "assistant_message": "prefix"},
         )
-        target = 261 + 3 * offset
+        target = 261 + 4 * offset
     else:
         append(
             task.active_segment_id,
@@ -524,7 +524,7 @@ def test_native_257_orphan_ledger_survives_cold_consumer_and_preserves_oracle(
             EventType.SESSION_COMMAND_ACCEPTED,
             {"kind": "run", "payload": {"run_id": "next"}},
         )
-        target = 258 + 3 * offset
+        target = 258 + 4 * offset
         closed = next(row for row in queue.read_pending_projection_work() if row.run_id == "run")
         assert closed.closed_through == target
         assert restored.read_run_header(task.task_id, "run").stop == target + 1
@@ -535,16 +535,10 @@ def test_native_257_orphan_ledger_survives_cold_consumer_and_preserves_oracle(
             EventType.SESSION_HANDOFF_COMMITTED,
             {"handoff_id": handoff, "target_session_id": str(child)},
         )
-        append(
-            child,
-            258,
-            EventType.SESSION_HANDOFF_RECEIVED,
+        append(child, 258, EventType.SESSION_HANDOFF_RECEIVED,
             {"handoff_id": handoff, "parent_session_id": str(task.active_segment_id)},
         )
-        append(
-            child,
-            259,
-            EventType.MODEL_RESPONSE_RECEIVED,
+        append(child, 259, EventType.MODEL_RESPONSE_RECEIVED,
             {"model_call_id": "orphan-prefix", "assistant_message": "prefix"},
         )
         assert (
@@ -560,6 +554,7 @@ def test_native_257_orphan_ledger_survives_cold_consumer_and_preserves_oracle(
     assert restored.read_checkpoint_head(work.scope).through_sequence == target
     assert queue.read_projection_work_problem(work.scope) is None
     assert not any(row.run_id == "run" for row in queue.read_pending_projection_work())
+    prepare_source_projections(tasks, sources)
     observer = AgUiCheckpointObserver(restored, namespace="local")
     snapshot = observer.snapshot(task.task_id, identity)
     assert snapshot.through == target

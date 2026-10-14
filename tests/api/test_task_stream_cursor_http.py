@@ -29,9 +29,9 @@ def test_task_cursor_preflight_is_body_free_grant_bounded_and_precedes_sse(tmp_p
     header = SQLiteAgentTaskStore.read_task_header
     reads = []
 
-    def bounded(store, task_id):
+    def bounded(store, task_id, *, require_source_coverage=False):
         assert current_task_io_deadline() is not None
-        result = header(store, task_id)
+        result = header(store, task_id, require_source_coverage=require_source_coverage)
         reads.append(result)
         return result
 

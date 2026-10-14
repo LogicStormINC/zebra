@@ -89,6 +89,8 @@ class PostCommitPublishingEventStore(EventStorePort):
             raise ValueError("underlying store has no bounded Session reader")
         return self._event_store.read_session_highwater(session_id)
 
+    _snapshot_native_highwater = read_session_highwater
+
     def read_session_status(self, session_id: SessionId) -> SessionStatus:
         if not isinstance(self._event_store, BoundedSessionEventReadPort):
             raise ValueError("underlying store has no bounded Session reader")
@@ -112,6 +114,21 @@ class PostCommitPublishingEventStore(EventStorePort):
             limit=limit,
             max_bytes=max_bytes,
         )
+
+    _stream_head_original_reads = (
+        ("read_session_status", read_session_status),
+        ("read_session_event_page", read_session_event_page),
+    )
+
+    @property
+    def stream_head_reads_compatible(self) -> bool:
+        if type(self) is not PostCommitPublishingEventStore:
+            return False
+        for name, original in self._stream_head_original_reads:
+            method = getattr(self, name)
+            if getattr(method, "__func__", method) is not original:
+                return False
+        return bool(getattr(self._event_store, "stream_head_reads_compatible", False))
 
 
 class PostCommitPublishingWorkerProjectionTransaction(WorkerProjectionTransactionPort):

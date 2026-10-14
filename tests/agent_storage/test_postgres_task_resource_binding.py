@@ -48,7 +48,9 @@ def _native_case(dsn):
     assert original is not None
     current = original.model_copy(
         update={
-            "resource_refs": original.resource_refs
+            "resource_refs": tuple(
+                ref for ref in original.resource_refs if ref.resource_type != "thread"
+            )
             + (
                 HostResourceRef(type="thread", id=THREAD),
                 HostResourceRef(type="run", id="new-run"),
@@ -127,7 +129,9 @@ def test_native_rollover_session_resolves_root_binding_not_child_uuid(postgres_d
     current = current.model_copy(
         update={
             "expires_at": datetime.now(UTC) + timedelta(minutes=1),
-            "resource_refs": current.resource_refs
+            "resource_refs": tuple(
+                ref for ref in current.resource_refs if ref.resource_type != "thread"
+            )
             + (
                 HostResourceRef(type="thread", id=THREAD),
                 HostResourceRef(type="run", id="later-run"),

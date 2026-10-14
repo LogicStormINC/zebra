@@ -12,6 +12,7 @@ from ag_ui.core import Event, RunErrorEvent, RunFinishedEvent
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports.agent_tasks import TaskEvent, TaskEventPage
+from agent_core.ports.stream_source_head import StreamCheckpointReadPort
 from agent_core.ports.task_projection_checkpoints import (
     MAX_CHECKPOINT_BYTES,
     MAX_CHECKPOINT_KEYS,
@@ -25,7 +26,6 @@ from agent_core.ports.task_projection_checkpoints import (
     ProjectionScope,
     ProjectionTransition,
     SegmentCheckpoint,
-    TaskProjectionCheckpointPort,
 )
 from agent_core.ports.task_replay import TaskRunHeader
 
@@ -56,7 +56,7 @@ from agent_integrations.coverage_public_events import coverage_projection_event
 class _PageReader:
     def __init__(
         self,
-        port: TaskProjectionCheckpointPort,
+        port: StreamCheckpointReadPort,
         scope: ProjectionScope,
         before: int,
     ) -> None:
@@ -134,7 +134,8 @@ def _state_for(
     reader: _PageReader,
     entry: TaskEvent,
     identity: AgUiRunIdentity,
-    *, strict_coverage: bool = False,
+    *,
+    strict_coverage: bool = False,
 ) -> tuple[ProjectionState, tuple[ProjectionCellKey, ...], SegmentCheckpoint]:
     scalar = reader.scalar(entry.segment_id)
     public = coverage_projection_event(entry.event, strict=strict_coverage)
@@ -269,7 +270,7 @@ def _prepare_membership(reader: _PageReader, page: TaskEventPage, plan: Projecti
 class AgUiCheckpointMaterializer:
     def __init__(
         self,
-        port: TaskProjectionCheckpointPort,
+        port: StreamCheckpointReadPort,
         projector: AgUiProjector | None = None,
     ) -> None:
         self.port = port
@@ -314,9 +315,10 @@ class AgUiCheckpointMaterializer:
                     )
                 )
                 _check_frames(frames)
-                if coverage_projection_event(
-                    entry.event, strict=plan.run.strict_coverage
-                ) is not None:
+                if (
+                    coverage_projection_event(entry.event, strict=plan.run.strict_coverage)
+                    is not None
+                ):
                     settle_interrupt_membership(entry.event, state)
                 for key in keys:
                     if key.kind != "coverage":

@@ -116,7 +116,7 @@ def test_configured_reader_keeps_unstarted_task_legacy_without_hiding_broken_run
 
 def test_native_handoff_parent_canonical_history_has_no_child_drafts(owned, monkeypatch, tmp_path):
     import asyncio
-    from datetime import timedelta
+    from datetime import UTC, datetime, timedelta
     from time import monotonic
 
     from agent_core.application.session_projection import rebuild_session
@@ -235,10 +235,22 @@ def test_native_handoff_parent_canonical_history_has_no_child_drafts(owned, monk
         )
     )
     assert not writer._failed
+    from dataclasses import make_dataclass, replace
+
+    from agent_storage import with_committed_event_publisher
+
     run.stores.deployment_namespace = run.namespace
+    # Use the actual factory publisher replacement on this read-only fixture bundle.
+    bundle = make_dataclass("ReadStores", [(key, object) for key in vars(run.stores)])(
+        **vars(run.stores)
+    )
+    published_stores = with_committed_event_publisher(
+        bundle, SimpleNamespace(publish_committed=lambda _: None)
+    )
+    assert published_stores is not reader.authority.stores
     api = SimpleNamespace(
         stream_v2_reader=reader,
-        stores=run.stores,
+        stores=published_stores,
         cloud_control=SimpleNamespace(
             deployment_namespace=run.namespace, load_task_binding=lambda _: renewed
         ),
@@ -253,8 +265,127 @@ def test_native_handoff_parent_canonical_history_has_no_child_drafts(owned, monk
         )
         is None
     )
-    parent = prepare_v2(api, parent_path, {"recovery": "full"}, fresh)
+    from tests.stream_storage.telemetry import Telemetry
+
+    telemetry = Telemetry()
+    with telemetry.installed():
+        parent = prepare_v2(api, parent_path, {"recovery": "full"}, fresh)
+    assert sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket")) == 1
     assert parent.session_id == str(run.session_id)
+
+    from agent_storage.postgres.direct_control import PostgresDirectControl
+    from zebra_agent_api.coverage_public_read import cloud_raw_stream_preflight
+    from zebra_agent_api.stream_v2_http import _raw_snapshot_authority, raw_response
+
+    api.cloud_control = PostgresDirectControl(owned[0], deployment_namespace=run.namespace)
+    api.settings = SimpleNamespace(deployment="cloud")
+    api.live_event_fanout = api.stream_notifications = None
+
+    def raw_preflight(proof=None):
+        route = RouteRequest(
+            "GET", parent_path, host_context=fresh, verified_host_grant=_verified(fresh)
+        )
+        denied = tenant_scope_response(api, route, proof=proof)
+        if denied is not None:
+            return denied
+        source = cloud_raw_stream_preflight(api.stores, parent_path, proof=proof)
+        return source if source.status_code != 200 else None
+
+    async def connected():
+        return False
+
+    def raw_request(after=None):
+        return SimpleNamespace(
+            state=SimpleNamespace(host_context=fresh, authorization_deadline=monotonic() + 2),
+            headers={},
+            is_disconnected=connected,
+            url=SimpleNamespace(path=parent_path),
+            query_params={"cursor": reader.codec.encode(replace(parent.cursor, durable=str(after)))}
+            if after is not None
+            else {},
+        )
+
+    telemetry = Telemetry()
+    with telemetry.installed():
+        response = asyncio.run(
+            raw_response(
+                api,
+                raw_request(),
+                database_path=tmp_path / "unused",
+                preflight=raw_preflight,
+                snapshot_preflight=raw_preflight,
+            )
+        )
+    assert response.status_code == 200
+    assert sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket")) == 1
+    future = asyncio.run(
+        raw_response(
+            api,
+            raw_request(10**9),
+            database_path=tmp_path / "unused",
+            preflight=raw_preflight,
+            snapshot_preflight=raw_preflight,
+        )
+    )
+    assert future.status_code == 400
+    expired = raw_request()
+    expired.state.host_context = fresh.model_copy(
+        update={"expires_at": datetime.now(UTC) - timedelta(seconds=1)}
+    )
+    expired_response = asyncio.run(
+        raw_response(
+            api,
+            expired,
+            database_path=tmp_path / "unused",
+            preflight=raw_preflight,
+            snapshot_preflight=raw_preflight,
+        )
+    )
+    assert expired_response.status_code == 403
+    from functools import wraps
+
+    for target, method_name, transformed, after, expected in (
+        (api.stores.sessions, "get_session_namespace", (True, "denied-namespace"), None, 404),
+        (api.stores.events._event_store, "read_session_highwater", 0, 1, 400),
+        (api.stores.events, "read_session_highwater", 0, 1, 400),
+    ):
+        for install_on_class in (False, True):
+            original = getattr(target, method_name)
+            invoked = []
+
+            @wraps(original)
+            def custom_read(*args, _invoked=invoked, _transformed=transformed, **kwargs):
+                _invoked.append(True)
+                return _transformed
+
+            with monkeypatch.context() as extension:
+                if install_on_class:
+                    extension.setattr(type(target), method_name, custom_read)
+                else:
+                    # Preserve absence of an instance method so the next class hook is reachable.
+                    extension.setitem(vars(target), method_name, custom_read)
+                eligible = _raw_snapshot_authority(api) is not None
+                direct = raw_preflight()
+                direct_status = getattr(direct, "status_code", None)
+                direct_calls = len(invoked)
+                hooked = asyncio.run(
+                    raw_response(
+                        api,
+                        raw_request(after),
+                        database_path=tmp_path / "unused",
+                        preflight=raw_preflight,
+                        snapshot_preflight=raw_preflight,
+                    )
+                )
+            assert not eligible and hooked.status_code == expected and invoked, (
+                method_name,
+                install_on_class,
+                eligible,
+                direct_status,
+                direct_calls,
+                hooked.status_code,
+                len(invoked),
+            )
     child_context = prepare_v2(api, f"/sessions/{child}/stream", {}, fresh)
     assert child_context.session_id == str(child)
     calls = []
@@ -343,3 +474,146 @@ def test_native_handoff_parent_canonical_history_has_no_child_drafts(owned, monk
         writer.close()
         root_writer.close()
         asyncio.run(reader.close())
+
+
+@pytest.mark.parametrize("denied", [False, True])
+def test_agui_preparations_share_one_fresh_access_gate(monkeypatch, denied):
+    import asyncio
+
+    from zebra_agent_api.responses import ApiResponse
+    from zebra_agent_api.stream_v2_http import agui_response
+
+    calls = []
+    api = SimpleNamespace(
+        stores=SimpleNamespace(),
+        live_event_fanout=None,
+        command_outcome=None,
+        stream_notifications=None,
+    )
+    request = SimpleNamespace(
+        state=SimpleNamespace(host_context=None),
+        query_params={},
+        headers={},
+        url=SimpleNamespace(path="/tasks/task/ag-ui/stream"),
+    )
+
+    def access(*args):
+        calls.append("authorize")
+        return ApiResponse(403, {"status": "forbidden"}) if denied else None
+
+    def negotiate(*args):
+        calls.append("negotiate")
+        return None
+
+    def prepare(*args, **kwargs):
+        calls.append("prepare")
+        return None
+
+    monkeypatch.setattr("zebra_agent_api.stream_v2_http.task_access_response", access)
+    monkeypatch.setattr("zebra_agent_api.stream_v2_http.prepare_v2", negotiate)
+    monkeypatch.setattr("zebra_agent_api.stream_v2_http.prepare_agui_stream", prepare)
+    result = asyncio.run(agui_response(api, request))
+    assert calls == (["authorize"] if denied else ["authorize", "negotiate", "prepare"])
+    assert result.status_code == 403 if denied else result is None
+
+
+@pytest.mark.parametrize("route", ["session", "task"])
+@pytest.mark.parametrize(
+    "scenario", ["ready", "future", "legacy", "unavailable", "tenant_denied", "source_denied"]
+)
+def test_raw_preparation_one_dispatch_keeps_source_cursor_and_fallback(
+    monkeypatch, route, scenario
+):
+    import asyncio
+    from pathlib import Path
+    from time import monotonic
+
+    from zebra_agent_api import ag_ui_task_view, stream_v2_http
+    from zebra_agent_api.responses import ApiResponse
+    from zebra_agent_api.stream_v2_reader import V2StreamContext
+
+    resource, calls, dispatches = uuid4(), [], []
+    context = V2StreamContext(
+        SimpleNamespace(),
+        route,
+        StreamV2Cursor("scope", "5" if scenario == "future" else "1"),
+        False,
+    )
+
+    def negotiate(*args):
+        calls.append("negotiate")
+        if scenario == "legacy":
+            return None
+        if scenario == "unavailable":
+            return ApiResponse(409, {"status": "stream_source_unavailable"})
+        return context
+
+    def preflight():
+        calls.append("authorize")
+        if scenario in {"tenant_denied", "source_denied"}:
+            return ApiResponse(403 if scenario == "tenant_denied" else 409, {"status": "denied"})
+        return None
+
+    def highwater(identity, **kwargs):
+        assert identity == resource
+        if route == "task":
+            assert kwargs == {"require_source_coverage": True}
+        calls.append("source")
+        return SimpleNamespace(current_sequence=4) if route == "task" else 4
+
+    async def tail(**kwargs):
+        assert kwargs["after_sequence"] == 1
+        assert kwargs[f"{route}_id"] == resource
+        yield "data: canonical\n\n"
+
+    original_thread = ag_ui_task_view.to_thread
+
+    async def thread(function, *args, **kwargs):
+        dispatches.append(True)
+        return await original_thread(function, *args, **kwargs)
+
+    api = SimpleNamespace(
+        stores=SimpleNamespace(
+            tasks=SimpleNamespace(read_task_header=highwater),
+            events=SimpleNamespace(read_session_highwater=highwater),
+            deployment_namespace="owned",
+        ),
+        settings=SimpleNamespace(deployment="cloud"),
+        live_event_fanout=None,
+        stream_notifications=None,
+        stream_v2_reader=SimpleNamespace(tail=lambda context, source, **kwargs: source),
+    )
+    request = SimpleNamespace(
+        state=SimpleNamespace(host_context=None, authorization_deadline=monotonic() + 2),
+        query_params={},
+        headers={},
+        url=SimpleNamespace(
+            path=f"/{'sessions' if route == 'session' else 'tasks'}/{resource}/stream"
+        ),
+        is_disconnected=lambda: False,
+    )
+    monkeypatch.setattr(ag_ui_task_view, "to_thread", thread)
+    monkeypatch.setattr(stream_v2_http, "prepare_v2", negotiate)
+    monkeypatch.setattr(stream_v2_http, f"tail_{route}_events", tail)
+
+    async def check():
+        result = await stream_v2_http.raw_response(
+            api, request, database_path=Path("/unused"), preflight=preflight
+        )
+        if scenario == "ready":
+            assert [frame async for frame in result.body_iterator] == ["data: canonical\n\n"]
+        elif scenario == "legacy":
+            assert result is None
+        else:
+            assert result.status_code == (
+                400 if scenario == "future" else 403 if scenario == "tenant_denied" else 409
+            )
+        expected = ["authorize"]
+        if scenario not in {"tenant_denied", "source_denied"}:
+            expected.append("negotiate")
+        if scenario in {"ready", "future"}:
+            expected.append("source")
+        assert calls == expected
+        assert len(dispatches) == 1
+
+    asyncio.run(check())

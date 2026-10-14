@@ -147,3 +147,60 @@ def test_native_cumulative_deadline_cancels_and_releases_snapshot(owned, monkeyp
     with reader.snapshot() as snapshot:
         snapshot._connection.execute("SELECT 1")
     assert all(connection.closed for connection in captured)
+
+
+@pytest.mark.parametrize(
+    "extension", ["native", "reader", "wrapped", "method", "subclass", "dsn", "namespace"]
+)
+def test_native_binding_snapshot_keeps_custom_hooks_and_database_scope(
+    owned, monkeypatch, extension
+):
+    from functools import wraps
+
+    from agent_storage.postgres.direct_control import PostgresDirectControl
+
+    from tests.stream_storage.telemetry import Telemetry
+
+    run, _, _, _, _ = setup(owned, monkeypatch)
+    reader = StreamProofReader(owned[0], deployment_namespace=run.namespace)
+    control = PostgresDirectControl(owned[0], deployment_namespace=run.namespace)
+    baseline = control.load_task_binding(run.task_id)
+    assert baseline is not None
+    called = []
+
+    def deny(task_id):
+        called.append(task_id)
+        return None
+
+    if extension == "reader":
+        control._binding_reader = deny
+    elif extension in {"wrapped", "method"}:
+        control.load_task_binding = (
+            wraps(control.load_task_binding)(deny) if extension == "wrapped" else deny
+        )
+    elif extension == "subclass":
+
+        class CustomControl(PostgresDirectControl):
+            def load_task_binding(self, task_id):
+                return deny(task_id)
+
+        control = CustomControl(owned[0], deployment_namespace=run.namespace)
+    elif extension == "dsn":
+        control = PostgresDirectControl(
+            make_conninfo(owned[0], application_name="snapshot-fallback"),
+            deployment_namespace=run.namespace,
+        )
+    elif extension == "namespace":
+        control = PostgresDirectControl(owned[0], deployment_namespace=run.namespace + "-foreign")
+    telemetry = Telemetry()
+    with telemetry.installed(), reader.snapshot() as snapshot:
+        assert snapshot.get_session_namespace(run.session_id)[0]
+        assert snapshot.read_session_highwater(run.session_id) >= 0
+        result = control.read_task_binding_snapshot(snapshot, run.task_id)
+    assert snapshot._connection.closed
+    if extension in {"reader", "wrapped", "method", "subclass"}:
+        assert result is None and called == [run.task_id]
+    else:
+        assert result == (None if extension == "namespace" else baseline)
+    sockets = sum(v for k, v in telemetry.calls.items() if k.endswith("/new_pg_socket"))
+    assert sockets == (2 if extension in {"dsn", "namespace"} else 1)

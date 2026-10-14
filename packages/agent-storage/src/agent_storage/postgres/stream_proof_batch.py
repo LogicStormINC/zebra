@@ -6,16 +6,25 @@ from time import monotonic
 from typing import Any
 
 from agent_core.domain.events import SessionEvent
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.leases import WorkerLease
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.ports.agent_tasks import TaskEventPage
+from agent_core.ports.stream_source_head import StreamCheckpointHead, StreamSourceHead
+from agent_core.ports.task_projection_checkpoints import (
+    CheckpointConflict,
+    ProjectionFrameHeader,
+    ProjectionScope,
+)
 from agent_core.ports.task_replay import TaskEventHeader, TaskReadHeader, TaskRunHeader
 
-from agent_storage.postgres.agent_tasks import read_task_header
+from agent_storage.postgres.agent_tasks import read_task_header, read_task_id_for_session
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.events import read_session_highwater
 from agent_storage.postgres.leases import read_current_lease
-from agent_storage.postgres.task_admission import read_session_task_binding
+from agent_storage.postgres.projections import read_session_namespace
+from agent_storage.postgres.task_admission import _read_task_binding, read_session_task_binding
 from agent_storage.postgres.task_event_pages import read_task_event_page
 from agent_storage.postgres.task_io import task_io_deadline
 from agent_storage.postgres.task_replay_headers import (
@@ -33,8 +42,60 @@ class StreamProofSnapshot:
     source qualification remains O(history), bounded by the same 2s deadline.
     """
 
-    def __init__(self, connection: Any, namespace: str) -> None:
-        self._connection, self._namespace = connection, namespace
+    def __init__(self, connection: Any, database: PostgresDatabase) -> None:
+        self._connection, self._database = connection, database
+        self._namespace = database.deployment_namespace
+
+    def get_session_namespace(self, session_id: SessionId) -> tuple[bool, str | None]:
+        return read_session_namespace(self._connection, self._namespace, session_id)
+
+    def read_session_highwater(self, session_id: SessionId) -> int:
+        return read_session_highwater(self._connection, self._namespace, session_id)
+
+    def read_task_binding(self, task_id: TaskId) -> TaskBindingSnapshot | None:
+        return _read_task_binding(self._connection, self._namespace, task_id)
+
+    def read_stream_source_head(
+        self, *, task_id: TaskId | None = None, session_id: SessionId | None = None
+    ) -> StreamSourceHead | None:
+        from agent_storage.postgres.stream_source_head import read_source_head
+
+        return read_source_head(self._connection, self._namespace, task_id, session_id)
+
+    def read_stream_checkpoint_head(
+        self,
+        task_id: TaskId,
+        run_id: str,
+        *,
+        ordinary_version: str,
+        coverage_version: str,
+        host_context: HostContextEnvelope | None = None,
+    ) -> StreamCheckpointHead:
+        from agent_storage.postgres.stream_source_head import read_checkpoint_source_head
+
+        return read_checkpoint_source_head(
+            self._connection,
+            self._namespace,
+            task_id,
+            run_id,
+            ordinary_version=ordinary_version,
+            coverage_version=coverage_version,
+            host_context=host_context,
+        )
+
+    def read_event_projection_header(
+        self, scope: ProjectionScope, task_sequence: int
+    ) -> ProjectionFrameHeader | None:
+        from agent_storage.postgres.task_projection_checkpoint_rows import frame_at, head_at
+        from agent_storage.task_projection_checkpoint_rows import read_position
+
+        if scope.namespace != self._namespace:
+            raise CheckpointConflict("checkpoint namespace does not match this Store")
+        read_position(head_at(self._connection, scope), task_sequence)
+        return frame_at(self._connection, scope, task_sequence)
+
+    def task_id_for_session(self, session_id: SessionId) -> TaskId | None:
+        return read_task_id_for_session(self._connection, self._namespace, session_id)
 
     def read_task_header(
         self, task_id: TaskId, *, require_source_coverage: bool = False
@@ -96,4 +157,4 @@ class StreamProofReader:
         # snapshot/work unit. DNS/query/cancel/commit/release share this budget.
         with task_io_deadline(monotonic() + 2), self._database.connect_task_io() as connection:
             connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
-            yield StreamProofSnapshot(connection, self._database.deployment_namespace)
+            yield StreamProofSnapshot(connection, self._database)

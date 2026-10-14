@@ -133,7 +133,9 @@ def test_worker_uses_supplied_stores_for_all_control_plane_services(tmp_path: Pa
 def test_worker_composition_wraps_event_store_when_live_publisher_is_enabled(
     tmp_path: Path, monkeypatch
 ) -> None:
-    publisher = object()
+    publisher = RedisCommittedEventPublisher(
+        Mock(spec=["publish", "publish_checkpoint"]), deployment_namespace="local"
+    )
     monkeypatch.setattr(
         RedisCommittedEventPublisher,
         "from_url",

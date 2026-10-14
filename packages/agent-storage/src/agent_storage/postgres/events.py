@@ -147,17 +147,12 @@ class PostgresEventStore(EventStorePort):
         return [_event_from_row(row) for row in rows]
 
     def read_session_highwater(self, session_id: SessionId) -> int:
-        from agent_core.ports.session_recovery import SessionRecoveryConflict
-
         with self._database.connect_task_io() as connection:
-            row = connection.execute(
-                "SELECT current_version FROM session_streams "
-                "WHERE deployment_namespace=%s AND session_id=%s",
-                (self._database.deployment_namespace, session_id),
-            ).fetchone()
-        if row is None:
-            raise SessionRecoveryConflict("canonical Session source is unavailable")
-        return int(row["current_version"])
+            return read_session_highwater(
+                connection, self._database.deployment_namespace, session_id
+            )
+
+    _snapshot_native_highwater = read_session_highwater
 
     def read_session_status(self, session_id: SessionId) -> SessionStatus:
         from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
@@ -201,6 +196,21 @@ class PostgresEventStore(EventStorePort):
                 limit=limit,
                 max_bytes=max_bytes,
             )
+
+    _stream_head_original_reads = (
+        ("read_session_status", read_session_status),
+        ("read_session_event_page", read_session_event_page),
+    )
+
+    @property
+    def stream_head_reads_compatible(self) -> bool:
+        if type(self) is not PostgresEventStore:
+            return False
+        for name, original in self._stream_head_original_reads:
+            method = getattr(self, name)
+            if getattr(method, "__func__", method) is not original:
+                return False
+        return True
 
     def _advance_stream(self, connection: Any, event: SessionEvent) -> bool:
         return _advance_stream(connection, self._database.deployment_namespace, event)
@@ -359,3 +369,16 @@ def _find_idempotent_event(
         (deployment_namespace, event.session_id, event.idempotency_key),
     ).fetchone()
     return _event_from_row(row) if row is not None else None
+
+
+def read_session_highwater(connection: Any, namespace: str, session_id: SessionId) -> int:
+    from agent_core.ports.session_recovery import SessionRecoveryConflict
+
+    row = connection.execute(
+        "SELECT current_version FROM session_streams "
+        "WHERE deployment_namespace=%s AND session_id=%s",
+        (namespace, session_id),
+    ).fetchone()
+    if row is None:
+        raise SessionRecoveryConflict("canonical Session source is unavailable")
+    return int(row["current_version"])

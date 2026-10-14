@@ -28,7 +28,7 @@ from agent_storage import (
     SQLiteEventStore,
     sqlite_control_plane_stores,
 )
-from zebra_agent_api import ag_ui_stream, http
+from zebra_agent_api import ag_ui_stream
 from zebra_agent_api.ag_ui_stream import _DisconnectableRequest
 
 from tests.api.ag_ui_checkpoint_postgres_support import PgGetReplay, PgSqlObservation, pg_rows
@@ -365,6 +365,7 @@ def test_cloud_pg_get_frames_scope_and_deadline_are_read_only(
 
     from agent_core.domain.host_authority import HostContextEnvelope
     from agent_integrations.ag_ui import AgUiCursor
+    from zebra_agent_api import stream_v2_http
 
     from tests.api.test_agui_stream_routes import _FakeRequest
     from tests.api.test_extension_reads import AUTH
@@ -408,7 +409,7 @@ def test_cloud_pg_get_frames_scope_and_deadline_are_read_only(
                 observed.bodies = True
             return context
 
-        patch.setattr(http, "prepare_agui_stream", preflight)
+        patch.setattr(stream_v2_http, "prepare_agui_stream", preflight)
         response = client.get(path, headers=AUTH)
         assert response.status_code == 200 and response.text == "".join(expected)
         assert not stopped or "RUN_FINISHED" not in response.text
@@ -493,6 +494,7 @@ def test_cloud_pg_complete_prefix_precedes_exact_scope_persisted_problem(
 
     from agent_core.ports.task_projection_work import ProjectionWorkProblem
     from agent_storage.postgres.command_wakeup_outcome import PostgresCommandOutcomeReader
+    from zebra_agent_api import stream_v2_http
 
     from tests.api.test_extension_reads import AUTH
 
@@ -561,8 +563,8 @@ def test_cloud_pg_complete_prefix_precedes_exact_scope_persisted_problem(
                         return  # Client disconnect only after the real problem/wait frame.
 
         patch.setattr(type(work), "read_projection_work_problem", scoped)
-        patch.setattr(http, "prepare_agui_stream", preflight)
-        patch.setattr(http, "tail_agui_events", connection)
+        patch.setattr(stream_v2_http, "prepare_agui_stream", preflight)
+        patch.setattr(stream_v2_http, "tail_agui_events", connection)
         response = client.get(f"/agui/threads/{replay.session}/runs/run-1/stream", headers=AUTH)
         assert response.status_code == 200 and response.text.startswith("".join(prefix))
         suffix = response.text[len("".join(prefix)) :]

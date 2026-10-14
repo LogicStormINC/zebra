@@ -3,13 +3,14 @@
 from typing import Any
 from uuid import UUID
 
+from agent_core.contracts.broker_envelope import PrincipalScope
 from agent_core.domain.events import SessionEvent
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import TaskId
+from agent_core.ports.task_replay import TaskRunHeader
 
 from agent_storage.postgres.command_wakeup import (
-    _scope_from_binding,
-    _validated_host_context,
+    _host_context_from_row,
     command_scope_key,
 )
 from agent_storage.postgres.command_wakeup_receipts import HANDLED_EVENTS
@@ -24,6 +25,17 @@ class PostgresCommandOutcomeReader:
     @property
     def deployment_namespace(self) -> str:
         return self._database.deployment_namespace
+
+    def supports_source_head(self, tasks: object) -> bool:
+        from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
+
+        return (
+            type(self) is PostgresCommandOutcomeReader
+            and type(self).__call__ is _NATIVE_OUTCOME_CALL
+            and type(tasks) is PostgresAgentTaskStore
+            and tasks._database._dsn == self._database._dsn
+            and tasks._database.deployment_namespace == self.deployment_namespace
+        )
 
     def __call__(
         self,
@@ -41,104 +53,94 @@ class PostgresCommandOutcomeReader:
                 raise ValueError("command outcome has no unique canonical run binding") from exc
             if run.anchor is None or run.anchor.event_id != accepted_event_id:
                 raise ValueError("command outcome has no unique canonical run binding")
-            row = connection.execute(
-                """SELECT event_id,session_id,sequence,event_type,actor,created_at,
-                   payload->>'command_id' AS command_id
-                   FROM session_events WHERE deployment_namespace=%s AND task_id=%s
-                   AND task_sequence=%s AND event_id=%s AND session_id=%s AND sequence=%s""",
-                (
-                    namespace,
-                    task_id,
-                    run.anchor.task_sequence,
-                    accepted_event_id,
-                    run.anchor.segment_id,
-                    run.anchor.segment_sequence,
-                ),
-            ).fetchone()
-            if row is None:
-                raise ValueError("command outcome has no unique canonical run binding")
-            command_id = row.pop("command_id")
-            if not isinstance(command_id, str) or len(command_id) > 36:
-                raise ValueError("canonical command identity is invalid")
-            UUID(command_id)
-            event = SessionEvent.model_validate({**row, "payload": {"command_id": command_id}})
-            bound = _validated_host_context(connection, namespace, event)
-            if bound is None or _identity(bound) != _identity(host_context):
-                raise ValueError("command outcome Host identity conflicts")
-            if not run.control_only and _terminal(connection, namespace, task_id, event, run_id):
-                return None
-            scope = _scope_from_binding(connection, namespace, event)
-            scope_key = command_scope_key(scope)
-            pending = connection.execute(
-                """SELECT * FROM session_command_pending WHERE deployment_namespace=%s
-                AND accepted_event_id=%s AND session_id=%s AND scope_key=%s
-                AND tenant_id=%s AND workspace_id=%s AND command_id=%s""",
-                (
-                    namespace,
-                    accepted_event_id,
-                    event.session_id,
-                    scope_key,
-                    scope.tenant_id,
-                    scope.workspace_id,
-                    event.payload["command_id"],
-                ),
-            ).fetchone()
-            if pending is None:
-                return None
-            generation = pending["current_generation"]
-            receipt = connection.execute(
-                """SELECT status, handled_event_id FROM command_handoff_receipts
-                WHERE deployment_namespace=%s AND accepted_event_id=%s AND session_id=%s
-                AND scope_key=%s AND command_id=%s AND wake_generation=%s""",
-                (
-                    namespace,
-                    accepted_event_id,
-                    event.session_id,
-                    scope_key,
-                    pending["command_id"],
-                    generation,
-                ),
-            ).fetchone()
-            if receipt is not None and receipt["handled_event_id"] is not None:
-                return None
-            if receipt is not None and receipt["status"] == "requires_reconciliation":
-                return "command_requires_reconciliation"
-            if run.control_only:
-                control = connection.execute(
-                    """SELECT outcome FROM command_control_receipts WHERE deployment_namespace=%s
-                    AND accepted_event_id=%s AND session_id=%s AND scope_key=%s
-                    AND command_id=%s AND wake_generation=%s""",
-                    (
-                        namespace,
-                        accepted_event_id,
-                        event.session_id,
-                        scope_key,
-                        pending["command_id"],
-                        generation,
-                    ),
-                ).fetchone()
-                if control is not None:
-                    if control["outcome"] == "unsupported":
-                        return "command_unsupported"
-                    if control["outcome"] == "requires_reconciliation":
-                        return "command_requires_reconciliation"
-            if pending["status"] == "dead":
-                return (
-                    "command_recovery_exhausted"
-                    if pending["recovery_code"] == "recovery_exhausted"
-                    else "command_delivery_failed"
-                )
-            outbox = connection.execute(
-                """SELECT status FROM broker_outbox WHERE deployment_namespace=%s AND scope_key=%s
-                AND operation_id=%s AND aggregate_id=%s AND wake_generation=%s
-                AND message_type='zebra.session.command.ready'""",
-                (namespace, scope_key, pending["command_id"], event.session_id, generation),
-            ).fetchone()
-            return (
-                "command_delivery_failed"
-                if outbox is not None and outbox["status"] == "dead"
-                else None
-            )
+            return read_command_outcome(connection, namespace, run, host_context)
+
+
+_NATIVE_OUTCOME_CALL = PostgresCommandOutcomeReader.__call__
+
+
+def read_command_outcome(
+    connection: Any, namespace: str, run: TaskRunHeader, host_context: HostContextEnvelope
+) -> str | None:
+    """Capture outcome metadata in the caller's fresh qualified Run snapshot."""
+    if run.anchor is None:
+        return None
+    anchor = run.anchor
+    scope = PrincipalScope(
+        kind="principal",
+        tenant_id=host_context.namespace_id,
+        workspace_id=host_context.workspace_ref,
+    )
+    scope_key = command_scope_key(scope)
+    row = connection.execute(
+        "SELECT accepted,binding,terminal,pending,receipt,control,outbox FROM "
+        "(WITH args AS (SELECT %s::text ns,%s::uuid tid,%s::bigint position,"
+        "%s::uuid eid,%s::uuid sid,%s::bigint sequence,%s::text rid,%s::boolean control_only,"
+        "%s::text scope_key,%s::text tenant,%s::text workspace,%s::text[] handled,true enabled),"
+        + COMMAND_OUTCOME_BODY
+        + ") captured",
+        (
+            namespace,
+            run.task_id,
+            anchor.task_sequence,
+            anchor.event_id,
+            anchor.segment_id,
+            anchor.segment_sequence,
+            run.run_id,
+            run.control_only,
+            scope_key,
+            scope.tenant_id,
+            scope.workspace_id,
+            [e.value for e in HANDLED_EVENTS],
+        ),
+    ).fetchone()
+    return command_outcome_from_row(connection, namespace, run, host_context, row)
+
+
+def command_outcome_from_row(
+    connection: Any,
+    namespace: str,
+    run: TaskRunHeader,
+    host_context: HostContextEnvelope,
+    row: Any,
+) -> str | None:
+    accepted = row["accepted"]
+    if accepted is None:
+        raise ValueError("command outcome has no unique canonical run binding")
+    command_id = accepted.pop("command_id")
+    if not isinstance(command_id, str) or len(command_id) > 36:
+        raise ValueError("canonical command identity is invalid")
+    UUID(command_id)
+    event = SessionEvent.model_validate({**accepted, "payload": {"command_id": command_id}})
+    binding = row["binding"]
+    if binding is not None:
+        binding["task_id"] = UUID(binding["task_id"])
+    bound = _host_context_from_row(connection, namespace, event, binding)
+    if bound is None or _identity(bound) != _identity(host_context):
+        raise ValueError("command outcome Host identity conflicts")
+    if not run.control_only and row["terminal"]:
+        return None
+    pending, receipt, control, outbox = (
+        row[name] for name in ("pending", "receipt", "control", "outbox")
+    )
+    if pending is None:
+        return None
+    if receipt is not None and receipt["handled_event_id"] is not None:
+        return None
+    if receipt is not None and receipt["status"] == "requires_reconciliation":
+        return "command_requires_reconciliation"
+    if run.control_only and control is not None:
+        if control["outcome"] == "unsupported":
+            return "command_unsupported"
+        if control["outcome"] == "requires_reconciliation":
+            return "command_requires_reconciliation"
+    if pending["status"] == "dead":
+        return (
+            "command_recovery_exhausted"
+            if pending["recovery_code"] == "recovery_exhausted"
+            else "command_delivery_failed"
+        )
+    return "command_delivery_failed" if outbox is not None and outbox["status"] == "dead" else None
 
 
 def _identity(context: HostContextEnvelope) -> tuple[object, ...]:
@@ -151,24 +153,43 @@ def _identity(context: HostContextEnvelope) -> tuple[object, ...]:
     )
 
 
-def _terminal(
-    connection: Any, namespace: str, task_id: TaskId, event: SessionEvent, run_id: str
-) -> bool:
-    # Only canonical paired handoffs extend an execution into another Segment.
-    return (
-        connection.execute(
-            """WITH RECURSIVE members AS (
+COMMAND_OUTCOME_BODY = """
+accepted AS (
+          SELECT event_id,session_id,sequence,event_type,actor,created_at,
+            payload->>'command_id' AS command_id FROM session_events
+          WHERE deployment_namespace=(SELECT ns FROM args) AND task_id=(SELECT tid FROM args)
+AND task_sequence=(SELECT position FROM args)
+            AND event_id=(SELECT eid FROM args) AND session_id=(SELECT sid FROM args) AND
+sequence=(SELECT sequence FROM args) AND (SELECT enabled FROM args)
+        ), binding AS (
+          SELECT
+session.namespace_id,segment.task_id,binding.snapshot_json,binding.binding_digest
+          FROM session_projections session JOIN workspace_projections workspace
+            ON workspace.deployment_namespace=session.deployment_namespace
+            AND workspace.session_id=session.session_id
+          JOIN execution_segments segment
+            ON segment.deployment_namespace=session.deployment_namespace
+            AND segment.session_id=session.session_id
+          JOIN LATERAL (SELECT snapshot_json,binding_digest FROM task_binding_snapshots
+            WHERE deployment_namespace=segment.deployment_namespace AND
+task_id=segment.task_id
+            ORDER BY binding_revision DESC LIMIT 1) binding ON TRUE
+          WHERE session.deployment_namespace=(SELECT ns FROM args) AND
+session.session_id=(SELECT sid FROM args) AND (SELECT enabled FROM args)
+        ), terminal AS (SELECT 1 FROM (WITH RECURSIVE members AS (
           SELECT session_id, segment_index FROM execution_segments
-          WHERE deployment_namespace=%s AND task_id=%s
+          WHERE deployment_namespace=(SELECT ns FROM args) AND task_id=(SELECT tid FROM args)
         ), related AS (
-          SELECT session_id FROM members WHERE session_id=%s
+          SELECT session_id FROM members WHERE session_id=(SELECT sid FROM args)
           UNION
           SELECT received.session_id FROM related parent
-          JOIN session_events committed ON committed.deployment_namespace=%s
+          JOIN session_events committed ON committed.deployment_namespace=(SELECT ns FROM
+args)
             AND committed.session_id=parent.session_id
             AND committed.event_type='session_handoff_committed'
             AND committed.projection_metadata_ready
-            AND (committed.session_id<>%s OR committed.sequence>%s)
+            AND (committed.session_id<>(SELECT sid FROM args) OR committed.sequence>(SELECT
+sequence FROM args))
           JOIN session_events received
             ON received.deployment_namespace=committed.deployment_namespace
             AND received.event_type='session_handoff_received'
@@ -181,34 +202,54 @@ def _terminal(
         SELECT 1 FROM session_events terminal
         JOIN related ON related.session_id=terminal.session_id
         JOIN members current ON current.session_id=terminal.session_id
-        JOIN members original ON original.session_id=%s
-        WHERE terminal.deployment_namespace=%s AND terminal.event_type=ANY(%s)
-        AND (current.segment_index, terminal.sequence)>(original.segment_index,%s)
+        JOIN members original ON original.session_id=(SELECT sid FROM args)
+        WHERE terminal.deployment_namespace=(SELECT ns FROM args) AND
+terminal.event_type=ANY((SELECT handled FROM args)::text[])
+        AND (current.segment_index, terminal.sequence)>(original.segment_index,(SELECT
+sequence FROM args))
         AND NOT EXISTS (
           SELECT 1 FROM session_events next JOIN members next_segment
           ON next_segment.session_id=next.session_id
-          WHERE next.deployment_namespace=%s AND next.event_type='session_command_accepted'
+          WHERE next.deployment_namespace=(SELECT ns FROM args) AND
+next.event_type='session_command_accepted'
           AND next.replay_header_ready AND NOT next.replay_internal_continuation
           AND next.replay_command_kind IN ('run','resume','message')
-          AND next.replay_run_id IS DISTINCT FROM %s
-          AND (next_segment.segment_index,next.sequence)>(original.segment_index,%s)
-          AND (next_segment.segment_index,next.sequence)<(current.segment_index,terminal.sequence)
-        ) LIMIT 1""",
-            (
-                namespace,
-                task_id,
-                event.session_id,
-                namespace,
-                event.session_id,
-                event.sequence,
-                event.session_id,
-                namespace,
-                [e.value for e in HANDLED_EVENTS],
-                event.sequence,
-                namespace,
-                run_id,
-                event.sequence,
-            ),
-        ).fetchone()
-        is not None
-    )
+          AND next.replay_run_id IS DISTINCT FROM (SELECT rid FROM args)
+          AND (next_segment.segment_index,next.sequence)>(original.segment_index,(SELECT
+sequence FROM args))
+          AND
+(next_segment.segment_index,next.sequence)<(current.segment_index,terminal.sequence)
+        ) LIMIT 1 ) t WHERE NOT (SELECT control_only FROM args) AND (SELECT enabled FROM
+args)), pending AS (
+          SELECT p.* FROM session_command_pending p JOIN accepted a
+            ON p.accepted_event_id=a.event_id AND p.session_id=a.session_id
+            AND replace(p.command_id::text,'-','')=replace(lower(a.command_id),'-','')
+          WHERE p.deployment_namespace=(SELECT ns FROM args) AND p.scope_key=(SELECT scope_key
+FROM args) AND p.tenant_id=(SELECT tenant FROM args)
+            AND p.workspace_id=(SELECT workspace FROM args)
+        ), receipt AS (
+          SELECT r.status,r.handled_event_id FROM command_handoff_receipts r JOIN pending p
+            ON r.accepted_event_id=p.accepted_event_id AND r.session_id=p.session_id
+            AND r.scope_key=p.scope_key AND r.command_id=p.command_id
+            AND r.wake_generation=p.current_generation
+          WHERE r.deployment_namespace=(SELECT ns FROM args)
+        ), control AS (
+          SELECT r.outcome FROM command_control_receipts r JOIN pending p
+            ON r.accepted_event_id=p.accepted_event_id AND r.session_id=p.session_id
+            AND r.scope_key=p.scope_key AND r.command_id=p.command_id
+            AND r.wake_generation=p.current_generation
+          WHERE r.deployment_namespace=(SELECT ns FROM args)
+        ), outbox AS (
+          SELECT r.status FROM broker_outbox r JOIN pending p
+            ON r.scope_key=p.scope_key AND r.operation_id=p.command_id
+            AND r.aggregate_id=p.session_id AND r.wake_generation=p.current_generation
+          WHERE r.deployment_namespace=(SELECT ns FROM args) AND
+r.message_type='zebra.session.command.ready'
+        ) SELECT (SELECT to_jsonb(a) FROM accepted a) accepted,
+          (SELECT to_jsonb(b) FROM binding b) binding,
+          EXISTS(SELECT 1 FROM terminal) terminal,
+          (SELECT to_jsonb(p) FROM pending p) pending,
+          (SELECT to_jsonb(r) FROM receipt r) receipt,
+          (SELECT to_jsonb(c) FROM control c) control,
+          (SELECT to_jsonb(o) FROM outbox o) outbox
+"""

@@ -27,7 +27,7 @@ from agent_integrations.ag_ui.checkpoint_observer import (
 from agent_integrations.ag_ui.checkpoint_plan import AG_UI_CHECKPOINT_VERSION
 from agent_storage import ControlPlaneStores, SQLiteEventStore, sqlite_control_plane_stores
 from fastapi.testclient import TestClient
-from zebra_agent_api import ag_ui_stream, http
+from zebra_agent_api import ag_ui_stream, stream_v2_http
 from zebra_agent_api.ag_ui_task_view import deadline_frames
 from zebra_agent_api.http import create_http_app
 from zebra_agent_api.responses import ApiResponse
@@ -197,7 +197,7 @@ def test_actual_get_preflight_is_body_free_before_its_bounded_page(
             sql.bodies, tasks.allow_bodies = True, True
             return result
 
-        patch.setattr(http, "prepare_agui_stream", preflight)
+        patch.setattr(stream_v2_http, "prepare_agui_stream", preflight)
         response = client.get(_stream_path(replay.session, "run-1"))
         assert response.status_code == 200 and "RUN_FINISHED" in response.text
         assert sql.writes == [] and len(tasks.pages) == 1

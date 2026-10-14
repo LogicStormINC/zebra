@@ -33,6 +33,9 @@ from agent_storage import (
     bootstrap_control_plane_epoch,
     postgres_control_plane_stores,
 )
+from agent_storage.postgres.session_observation_headers_migration import (
+    SESSION_OBSERVATION_HEADERS_MIGRATION,
+)
 from agent_storage.postgres.task_replay_coverage_privacy_migration import (
     TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION,
 )
@@ -50,14 +53,16 @@ from tests.agent_storage.test_postgres_control_plane_composition import _ObjectR
 def _native(tmp_path: Path, *, dsn=None):
     if dsn is not None:
         # The standalone queue fixture stays frozen at v68. Composing current
-        # replay readers additionally requires the real source-owned privacy
-        # view, not a test-built replacement or a removed privacy predicate.
+        # replay readers also requires real observation triggers and privacy.
         with psycopg.connect(dsn) as connection:
             assert connection.execute("SELECT current_schema()").fetchone()[0].startswith(
                 "projection_work_native_"
             )
-            for statement in TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION.statements:
-                connection.execute(statement)
+            for migration in (
+                SESSION_OBSERVATION_HEADERS_MIGRATION, TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION,
+            ):
+                for statement in migration.statements:
+                    connection.execute(statement)
         bootstrap_control_plane_epoch(dsn, deployment_namespace="local")
         scope = OpaqueAuthorityScope(authority_issuer="test", namespace_id="test")
         stores = postgres_control_plane_stores(
@@ -90,6 +95,14 @@ def _projections(tasks):
     if isinstance(tasks, PostgresAgentTaskStore):
         return PostgresProjectionStore(tasks._database._dsn, deployment_namespace="local")
     return SQLiteProjectionStore(tasks._database.database_path)
+
+
+def prepare_source_projections(tasks, sources):
+    # ponytail: <=600 fixture Events/2 Segments; larger fixtures need incremental projection.
+    if isinstance(tasks, PostgresAgentTaskStore):
+        for segment in dict.fromkeys(source.segment_id for source in sources):
+            canonical = [source.event for source in sources if source.segment_id == segment]
+            _projections(tasks).save_session(rebuild_session(canonical))
 
 
 def _restore(tasks):

@@ -22,7 +22,7 @@ class PreparationReached(Exception):
     pass
 
 
-def reject_preparation(*args):
+def reject_preparation(*args, continuation=None):
     raise PreparationReached
 
 
@@ -138,7 +138,7 @@ def test_preflight_miss_releases_all_lifecycle_locks_before_preparation(dsn, mon
     # A future due date makes the conditional UPDATE miss after taking lease locks.
     database = PostgresDatabase(dsn, deployment_namespace=NAMESPACE)
 
-    def check_released(*args):
+    def check_released(*args, continuation=None):
         with database.connect() as observer:
             assert observer.execute(
                 "SELECT pg_try_advisory_xact_lock(hashtextextended(%s,0)) AS acquired",

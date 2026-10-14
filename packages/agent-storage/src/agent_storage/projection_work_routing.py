@@ -94,8 +94,13 @@ def activate_privacy(source: str, *, postgres: bool = False) -> str:
     )
 
 
-def routed_statements(source: str, *, postgres: bool = False) -> tuple[str, ...]:
-    statements = list(routing_statements(selected_source(source, postgres=postgres)))
+def routed_statements(
+    source: str, *, postgres: bool = False, legacy_scalar_source: bool = False,
+) -> tuple[str, ...]:
+    # ponytail: legacy mode freezes v98 SQL; upgrades replace its trigger additively.
+    statements = list(routing_statements(
+        selected_source(source, postgres=postgres), correlate_source=not legacy_scalar_source,
+    ))
     statements.insert(1, activate_privacy(source, postgres=postgres))
     # Replaying after the one-time privacy flip revisits *each* canonical anchor,
     # including closed/ACKed legacy coverage rows. Never reset a true failure cap,

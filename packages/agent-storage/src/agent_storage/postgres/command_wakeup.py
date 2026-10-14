@@ -337,6 +337,13 @@ def _validated_host_context(
         """,
         (namespace, event.session_id),
     ).fetchone()
+    return _host_context_from_row(connection, namespace, event, row, allow_unbound=allow_unbound)
+
+
+def _host_context_from_row(
+    connection: Any, namespace: str, event: SessionEvent, row: Any, *, allow_unbound: bool = False
+) -> HostContextEnvelope | None:
+    """Validate loaded binding metadata with the same legacy parent fallback."""
     if row is None:
         if allow_unbound:
             return None

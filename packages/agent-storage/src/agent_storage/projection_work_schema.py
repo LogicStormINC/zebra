@@ -74,7 +74,7 @@ def pending_statement(source: str) -> str:
     )
 
 
-def routing_statements(source: str) -> tuple[str, ...]:
+def routing_statements(source: str, *, correlate_source: bool = False) -> tuple[str, ...]:
     """Same point-key routing in source triggers and explicit bounded maintenance."""
     enabled = (
         f"FROM ({source}) s JOIN task_projection_work_projectors p "
@@ -101,6 +101,15 @@ def routing_statements(source: str) -> tuple[str, ...]:
         "problem_code=CASE WHEN dependency_wait=1 THEN NULL ELSE problem_code END,"
         "retry_at=CASE WHEN dependency_wait=1 THEN NULL ELSE retry_at END,dependency_wait=0,"
     )
+    # ponytail: the default freezes v68 SQL; never alter its historical output.
+    scalar_source = f"FROM ({source}) s"
+    if correlate_source:
+        scalar_source += (
+            " WHERE s.deployment_namespace=task_projection_work_routes.deployment_namespace"
+            " AND s.task_id=task_projection_work_routes.task_id"
+            " AND (s.selected_version IS NULL OR "
+            "s.selected_version=task_projection_work_routes.projector_version)"
+        )
     return (
         pending_statement(source),
         "UPDATE task_projection_work SET requested_through=(SELECT s.task_sequence-1 "
@@ -129,8 +138,8 @@ def routing_statements(source: str) -> tuple[str, ...]:
         + current
         + f"WHERE {contiguous} AND {executable} AND s.run_id IS NOT NULL",
         "UPDATE task_projection_work_routes SET active_anchor_key=CASE WHEN "
-        f"(SELECT {executable} FROM ({source}) s) THEN "
-        f"(SELECT CASE WHEN s.run_id IS NOT NULL THEN s.event_id END FROM ({source}) s) "
+        f"(SELECT {executable} {scalar_source}) THEN "
+        f"(SELECT CASE WHEN s.run_id IS NOT NULL THEN s.event_id END {scalar_source}) "
         "ELSE active_anchor_key END,observed_through=observed_through+1 "
         f"WHERE ({ROUTE_KEY}) IN (SELECT r.deployment_namespace,r.task_id,r.projector_version "
         + current

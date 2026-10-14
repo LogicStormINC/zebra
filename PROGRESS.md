@@ -1,3 +1,109 @@
+Cloud stream validation follow-up (2026-10-14): clean exact-source make check
+passed. Full make test interrupted only after confirming inherited unbounded
+terminal-race test patches obsolete Session read_since; f91906dc already uses
+bounded pages. Partial JUnit retains 96 failures/1 error/228 skips
+among10255 cases; failure classification remains OPEN. Test-only path claimed
+before fix; preserve scheduling assertions and add bounded collection. Production
+runtime a4b2 and18 actual600s cells unchanged. No local integration yet.
+
+
+## 2026-10-13 - Canonical observation failure: bounded graceful-close fix
+
+Reviewed289e freeze SPEC70/no-skips54.259s and QUALITY110/no-skips232.532s plus
+47adapter probes passed. Matrix03 on35e2 then completed nine quiet600 cells;
+pausedSession1 recovered before client RemoteProtocolError around291s. Observed
+TaskIOconnect TimeoutError after successful resolver was nearby, but original
+native server linkage/infrastructure cause remains unproven. Immutable failure
+capture dc17dfda49c6f2f1f76d95da1c49107ca865b4316e7d2f9d719994dca485c097 retains
+nine results/start/end maps and raw hash references;289e remains unchanged.
+
+Harness-only capture records ASGI exception/leaf CLASS, phase and monotonic times
+before original re-raise; cancellation remains separate. Failed windows now retain
+scheduledend versus actualexit, completedLeasecount and incomplete/SLOFalse.
+Capture gates01/02 each4pass/1unexecuted async-test registration failure retained;
+repository asyncio.run convention fixed this; gate03 passed5/0skips .986s.
+Controlled launcher01 failed missing tests import BEFORE native startup, retained.
+Controlled02 on11af injected once only in native connect after real recovery at
+fresh canonical Sessionhead: server ASGI TimeoutError during streaming followed
+by client RemoteProtocolError. Partial30.1753s/requested45, Lease0/SLOFalse.
+This proves controlled mechanism, not the original infrastructure cause.
+
+One natural pausedSession1 diagnostic on11af completed actual steady600.000979s
+(ended-started); observe return600.089277s includes cleanup; connected600.098204s.
+Startup41/steady69/post0/inclusive110SQL, rate.11499981235,3Lease heartbeats,
+1actualpeer/full recovery,0ASGI exceptions. No repeat or18-cell acceptance.
+
+Minimal optionA changes only V2 pending.result typed TimeoutError/OperationalError:
+check frozenGrant deadline/disconnect, emit existing draft reset then retryable
+observation_unavailable notice with another boundary check, then graceful close.
+Original finally cleanup remains; no automatic retry, sourcecache, provisional
+continuation or Task failure. Unknown/custom/integrity errors and CancelledError
+retain original behavior; outer deadline_frames unchanged. Existing HTTP consumer
+already rejects premature StopAsyncIteration: earlier possible falsePASS concern
+was unconfirmed and corrected, no redundant harness guard added.
+
+Focused A gate01:6pass/7RuntimeError cleanup failures53.657s, retained. Direct
+reader test closed Redis asyncclient in a second loop; test-only same-loop fix.
+Gate02:13pass/0fail/error/skip52.224s. Six typedfault cases cover Session/Task/AGUI;
+unknown/cancel identity and between-notice deadline/disconnect checks pass.
+ActualHTTP controlled fresh-head connectfault requested600 emits complete SSE
+reset then observationnotice, closes without ASGIexception, and triggers existing
+healthy-window EOF assertion at30.189602s/Lease0/incomplete/SLOFalse. No weakened
+subscription check, second natural600, fullmatrix rerun or infrastructure repair.
+
+Current runtime1269 SHA a4b2e24b39abcfe32c4fd4d81b8f2a0be31c58db9e8e676249f5213161e2f743.
+New focused test SHA a25706248158748594c8b377dfe337f7fed904447af57c75fdf3dff654290431.
+Current-source Ruff/fullmypy/filelimits/eval/diff pass; literal make check exits2
+on277Ruff findings, every location historical .artifacts copies/diagnostic scripts.
+No archive/config modification. NEW private freeze requires fresh SPEC then QUALITY;
+prior reviews are historical. Full make test,18healthy600, matched-v1 inclusive80%,
+reliability/fullruntime/product acceptance remain OPEN; no commit/integration/push.
+
+
+## 2026-10-13 - Slice2 compatibility follow-up ready for independent review
+
+Accepted ed796 frozen SPEC GO followed by QUALITY NO-GO is preserved: nominal
+131 native checks did not cover custom namespace/highwater public hooks. Original
+method identity guards now honor publisher and underlying EventStore hooks.
+Raw/AGUI shared proof eligibility also honors native Task map/latest/header/Run/
+checkpoint/Event/frame/segment/cell/page hooks, authority bind/bind_snapshot, and
+old-signature prepare callbacks. Optional-head and restore consumers choose their
+existing fallback before shortcuts; SQLite and explicit nonnative Ports unchanged.
+
+AGUI one fresh request RR closes before tail/backpressure. Initial identity-only
+Taskheader is allowed only after original native V2 binding qualified the same
+Task in that snapshot; full checkpoint SOURCE remains mandatory. No auth/cache,
+expiry/deadline/ramp/pool/executor/write change. Matrices06/07 real startup failures
+remain: observed TimeoutError, respectively subscriber83 and73. Matrix06 measured
+Hostqueue.563s/post-JTIqueue.903s and headentry parentremaining.126s. Matrix07 measured
+Hostqueue.425s/post-JTIqueue.919s, parentremaining.316s and headexecute.1695s;
+1socket alone did not establish capacity. Original unobserved failure92 remains
+unclassified; no PG error inferred. Both prior partial600 matrices stay incomplete.
+
+Native AGUI snapshot103/198.631s (011b), scoped dedup103/198.124s (222f), shared
+compatibility2/12.113s plus affected104/217.825s (0562), callback25/15.141s (35e2)
+passed without skips. Fixture failures and original f919 stale-hook proof remain.
+Diagnostic08/matrix08 on222f are historical five-second evidence. Final matrix09
+on35e2 completed six100-subscriber cells, each100 admissions/recoveries/distinct
+TCP peers and actual post-JTI1socket; all1269 start/end/live hashes match. Lease0,
+SLOFalse throughout: no600 steady, stable capacity or matched-v1 inclusive80% claim.
+
+Current runtime SHA35e2ccb1daa5dcaa4ac2ea5fa6320ff42a75f35d5657457c482157b44c761c04.
+New private source/safe-proof freeze precedes fresh serial SPEC then QUALITY.
+Full make test,18healthy600 matrix, reliability/fullruntime/product gates OPEN;
+no commit/integration/push/deployment. Historical literal make check artifact-only
+Ruff failures remain distinct from passing equivalent current-source gates.
+
+2026-10-13 root: slice1f91906dc locally integrated into cloud-agent-trench;
+primary native10/no skips18.702s. Fresh17dirty-file manifest hash-exact after
+FF plus original41non-UI dirty hashes unchanged; current combinedUI hash exact.
+No SDK changes/retest, push or deployment. Slice2 exact readonly source/core/API/
+integration and two native-test paths claimed before code on same PERF card,
+owner Luke Ding/executor Codex/branch codex/cloud-stream-proof-perf-01. Preserve
+optional-port SQLite compatibility, fresh integrity/privacy checks, parent
+Session coordinates and AG-UI full membership; inclusive quiet target remains
+OPEN including paused-generation authority refresh.
+
 ## 2026-10-13 - Proof PERF slice1 accepted locally
 
 Independent SPEC and QUALITY GO at frozen f9f777f344f6f2a12e4646b7e11743d2f7047c19281cad9ec4208fe6fd4df116.
@@ -5822,3 +5928,14 @@ an authenticated browser retry of the conversation is still unverified.
   delivery cutover and remote deployment remain separate work.
 
 2026-10-12: READ-BOUNDS3a3e5902 accepted locally after spec/quality GO and107 native/API checks, primary33passed14.59s;42unrelated file hashes preserved. WRITER Ready claimed before coding on codex/cloud-stream-writer-01; v2 remains dormant pending full client/reliability/performance acceptance. No push/deploy.
+
+2026-10-14 stream proof follow-up: native header supplementation exposed a real v98 multi-projector scalar-subquery error. Claimed a minimal shared correlation fix with additive migration v100 and frozen historical statements/checksums. Current source/runtime validation and full acceptance remain pending; no deployment or push.
+
+2026-10-14 stream verification boundary: current protocol admission performs necessary bounded canonical accepted-command body validation (intent fingerprint). Preserve it and account for its SQL; checkpoint/source metadata body-free checks are separate. The original whole-HTTP zero-Event-body test guarantee remains unachieved, not replaced by equivalent evidence. No production admission shortcut or new validation witness is claimed.
+
+2026-10-14 STREAM PERF component convergence: frozen69 native batch59P/10F,
+literal make check GO,93 review-file hashes unchanged. Current v10072 GO;
+original172 has93 current/79 historical passes. Consolidated SPEC/QUALITY permit
+component local acceptance→RELAY. Retain1 observer shape gap,8 output UNKNOWN,
+1 preHTTP timeout UNKNOWN; completeHTTP/fulltest/fullPERF80/runtime/browser OPEN.
+No further fixture/observer expansion in this batch; no push/deploy.

@@ -150,36 +150,95 @@ def require_source(
         raise CheckpointConflict("checkpoint locator conflicts with canonical source")
 
 
+CHECKPOINT_HEAD_BODY = """
+task AS (SELECT next_event_sequence,event_position_state FROM agent_tasks,args a
+          WHERE deployment_namespace=a.ns AND task_id=a.tid AND a.enabled),
+        head AS (SELECT h.through_sequence,h.last_event_id,
+          h.latest_eligible_sequence,h.terminal_sequence
+          FROM task_projection_heads h,args a WHERE h.deployment_namespace=a.ns AND h.task_id=a.tid
+          AND h.anchor_key=a.anchor AND h.projector_version=a.version),
+        frames AS (SELECT f.task_sequence,f.event_id,f.segment_id,f.segment_sequence,
+          f.state_before_sequence,f.frame_count,f.projected,f.eligible
+          FROM task_projection_frames f,args a,head h
+          WHERE f.deployment_namespace=a.ns AND f.task_id=a.tid AND f.anchor_key=a.anchor
+          AND f.projector_version=a.version
+          AND f.task_sequence IN (h.latest_eligible_sequence,h.terminal_sequence)),
+        locators AS (SELECT task_sequence,event_id,segment_id,segment_sequence FROM frames
+          UNION ALL SELECT through_sequence,last_event_id,NULL::uuid,NULL::bigint
+          FROM head WHERE through_sequence>=0),
+        anchor AS (SELECT e.task_id,e.task_sequence,e.sequence,m.task_id AS member_task,
+          m.event_position_source_ready,m.event_position_source_cursor
+          FROM args a LEFT JOIN session_events e ON e.deployment_namespace=a.ns
+          AND e.event_id=NULLIF(a.anchor,'')::uuid LEFT JOIN execution_segments m
+          ON m.deployment_namespace=a.ns AND m.session_id=e.session_id)
+        SELECT t.*,(SELECT to_jsonb(h) FROM head h) AS head,
+          (SELECT jsonb_agg(to_jsonb(f)) FROM frames f) AS frames,
+          EXISTS(SELECT 1 FROM anchor x,args a WHERE a.anchor<>'' AND (
+            x.task_id IS DISTINCT FROM a.tid OR x.member_task IS DISTINCT FROM a.tid
+            OR x.task_sequence IS NULL OR x.task_sequence>=t.next_event_sequence
+            OR x.event_position_source_ready IS DISTINCT FROM true
+            OR x.sequence>x.event_position_source_cursor)) AS invalid_anchor,
+          EXISTS(SELECT 1 FROM locators l CROSS JOIN args a
+            LEFT JOIN session_events e ON e.deployment_namespace=a.ns AND e.task_id=a.tid
+            AND e.task_sequence=l.task_sequence LEFT JOIN execution_segments m
+            ON m.deployment_namespace=a.ns AND m.session_id=e.session_id
+            WHERE e.event_id IS NULL OR m.task_id IS DISTINCT FROM a.tid
+            OR m.event_position_source_ready IS DISTINCT FROM true
+            OR e.sequence>m.event_position_source_cursor OR e.event_id IS DISTINCT FROM l.event_id
+            OR (l.segment_id IS NOT NULL AND e.session_id IS DISTINCT FROM l.segment_id)
+            OR (l.segment_sequence IS NOT NULL AND e.sequence IS DISTINCT FROM l.segment_sequence)
+          ) AS invalid_source FROM task t"""
+
+
 def head_at(connection: Connection, scope: ProjectionScope) -> ProjectionCheckpointHead:
-    next_sequence = require_scope(connection, scope)
     row = connection.execute(
-        f"""SELECT through_sequence,last_event_id,latest_eligible_sequence,terminal_sequence
-            FROM task_projection_heads WHERE {SCOPE_WHERE}""",
+        "SELECT * FROM (WITH args AS (SELECT %s::text ns,%s::uuid tid,"
+        "%s::text anchor,%s::text version,true AS enabled)," + CHECKPOINT_HEAD_BODY + ") metadata",
         scope_values(scope),
     ).fetchone()
+    return checkpoint_head_from_row(row, scope)
+
+
+def checkpoint_head_from_row(row: Any, scope: ProjectionScope) -> ProjectionCheckpointHead:
     if row is None:
+        raise CheckpointConflict("checkpoint Task namespace is unavailable")
+    if row["event_position_state"] != "ready":
+        raise CheckpointNotReady("canonical Task positions require explicit backfill")
+    if row["invalid_anchor"]:
+        raise CheckpointConflict("checkpoint anchor conflicts with canonical Task source")
+    head = row["head"]
+    if head is None:
         return ProjectionCheckpointHead(scope)
-    if row["through_sequence"] >= next_sequence:
+    if head["through_sequence"] >= row["next_event_sequence"]:
         raise CheckpointConflict("checkpoint frontier exceeds canonical source coverage")
-    latest = frame_at(connection, scope, row["latest_eligible_sequence"])
-    terminal = frame_at(connection, scope, row["terminal_sequence"])
-    if (row["latest_eligible_sequence"] is not None and latest is None) or (
-        row["terminal_sequence"] is not None and terminal is None
+    if row["invalid_source"]:
+        raise CheckpointConflict("checkpoint locator conflicts with canonical source")
+    frames = {frame["task_sequence"]: json_frame_header(frame) for frame in row["frames"] or []}
+    latest = frames.get(head["latest_eligible_sequence"])
+    terminal = frames.get(head["terminal_sequence"])
+    if (head["latest_eligible_sequence"] is not None and latest is None) or (
+        head["terminal_sequence"] is not None and terminal is None
     ):
         raise CheckpointConflict("checkpoint frontier references a missing frame header")
-    if row["through_sequence"] >= 0:
-        require_source(
-            connection,
-            scope,
-            row["through_sequence"],
-            event_id=row["last_event_id"],
-        )
     return ProjectionCheckpointHead(
         scope,
-        row["through_sequence"],
-        EventId(row["last_event_id"]) if row["last_event_id"] is not None else None,
+        head["through_sequence"],
+        EventId(UUID(head["last_event_id"])) if head["last_event_id"] else None,
         latest,
         terminal,
+    )
+
+
+def json_frame_header(row: Any) -> ProjectionFrameHeader:
+    return ProjectionFrameHeader(
+        row["task_sequence"],
+        EventId(UUID(row["event_id"])),
+        SessionId(UUID(row["segment_id"])),
+        row["segment_sequence"],
+        row["state_before_sequence"],
+        row["frame_count"],
+        row["projected"],
+        row["eligible"],
     )
 
 

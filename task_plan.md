@@ -1,3 +1,91 @@
+
+## 2026-10-13 - Canonical observation failure: bounded graceful-close fix
+
+Reviewed289e freeze SPEC70/no-skips54.259s and QUALITY110/no-skips232.532s plus
+47adapter probes passed. Matrix03 on35e2 then completed nine quiet600 cells;
+pausedSession1 recovered before client RemoteProtocolError around291s. Observed
+TaskIOconnect TimeoutError after successful resolver was nearby, but original
+native server linkage/infrastructure cause remains unproven. Immutable failure
+capture dc17dfda49c6f2f1f76d95da1c49107ca865b4316e7d2f9d719994dca485c097 retains
+nine results/start/end maps and raw hash references;289e remains unchanged.
+
+Harness-only capture records ASGI exception/leaf CLASS, phase and monotonic times
+before original re-raise; cancellation remains separate. Failed windows now retain
+scheduledend versus actualexit, completedLeasecount and incomplete/SLOFalse.
+Capture gates01/02 each4pass/1unexecuted async-test registration failure retained;
+repository asyncio.run convention fixed this; gate03 passed5/0skips .986s.
+Controlled launcher01 failed missing tests import BEFORE native startup, retained.
+Controlled02 on11af injected once only in native connect after real recovery at
+fresh canonical Sessionhead: server ASGI TimeoutError during streaming followed
+by client RemoteProtocolError. Partial30.1753s/requested45, Lease0/SLOFalse.
+This proves controlled mechanism, not the original infrastructure cause.
+
+One natural pausedSession1 diagnostic on11af completed actual steady600.000979s
+(ended-started); observe return600.089277s includes cleanup; connected600.098204s.
+Startup41/steady69/post0/inclusive110SQL, rate.11499981235,3Lease heartbeats,
+1actualpeer/full recovery,0ASGI exceptions. No repeat or18-cell acceptance.
+
+Minimal optionA changes only V2 pending.result typed TimeoutError/OperationalError:
+check frozenGrant deadline/disconnect, emit existing draft reset then retryable
+observation_unavailable notice with another boundary check, then graceful close.
+Original finally cleanup remains; no automatic retry, sourcecache, provisional
+continuation or Task failure. Unknown/custom/integrity errors and CancelledError
+retain original behavior; outer deadline_frames unchanged. Existing HTTP consumer
+already rejects premature StopAsyncIteration: earlier possible falsePASS concern
+was unconfirmed and corrected, no redundant harness guard added.
+
+Focused A gate01:6pass/7RuntimeError cleanup failures53.657s, retained. Direct
+reader test closed Redis asyncclient in a second loop; test-only same-loop fix.
+Gate02:13pass/0fail/error/skip52.224s. Six typedfault cases cover Session/Task/AGUI;
+unknown/cancel identity and between-notice deadline/disconnect checks pass.
+ActualHTTP controlled fresh-head connectfault requested600 emits complete SSE
+reset then observationnotice, closes without ASGIexception, and triggers existing
+healthy-window EOF assertion at30.189602s/Lease0/incomplete/SLOFalse. No weakened
+subscription check, second natural600, fullmatrix rerun or infrastructure repair.
+
+Current runtime1269 SHA a4b2e24b39abcfe32c4fd4d81b8f2a0be31c58db9e8e676249f5213161e2f743.
+New focused test SHA a25706248158748594c8b377dfe337f7fed904447af57c75fdf3dff654290431.
+Current-source Ruff/fullmypy/filelimits/eval/diff pass; literal make check exits2
+on277Ruff findings, every location historical .artifacts copies/diagnostic scripts.
+No archive/config modification. NEW private freeze requires fresh SPEC then QUALITY;
+prior reviews are historical. Full make test,18healthy600, matched-v1 inclusive80%,
+reliability/fullruntime/product acceptance remain OPEN; no commit/integration/push.
+
+
+## 2026-10-13 - Slice2 compatibility follow-up ready for independent review
+
+Accepted ed796 frozen SPEC GO followed by QUALITY NO-GO is preserved: nominal
+131 native checks did not cover custom namespace/highwater public hooks. Original
+method identity guards now honor publisher and underlying EventStore hooks.
+Raw/AGUI shared proof eligibility also honors native Task map/latest/header/Run/
+checkpoint/Event/frame/segment/cell/page hooks, authority bind/bind_snapshot, and
+old-signature prepare callbacks. Optional-head and restore consumers choose their
+existing fallback before shortcuts; SQLite and explicit nonnative Ports unchanged.
+
+AGUI one fresh request RR closes before tail/backpressure. Initial identity-only
+Taskheader is allowed only after original native V2 binding qualified the same
+Task in that snapshot; full checkpoint SOURCE remains mandatory. No auth/cache,
+expiry/deadline/ramp/pool/executor/write change. Matrices06/07 real startup failures
+remain: observed TimeoutError, respectively subscriber83 and73. Matrix06 measured
+Hostqueue.563s/post-JTIqueue.903s and headentry parentremaining.126s. Matrix07 measured
+Hostqueue.425s/post-JTIqueue.919s, parentremaining.316s and headexecute.1695s;
+1socket alone did not establish capacity. Original unobserved failure92 remains
+unclassified; no PG error inferred. Both prior partial600 matrices stay incomplete.
+
+Native AGUI snapshot103/198.631s (011b), scoped dedup103/198.124s (222f), shared
+compatibility2/12.113s plus affected104/217.825s (0562), callback25/15.141s (35e2)
+passed without skips. Fixture failures and original f919 stale-hook proof remain.
+Diagnostic08/matrix08 on222f are historical five-second evidence. Final matrix09
+on35e2 completed six100-subscriber cells, each100 admissions/recoveries/distinct
+TCP peers and actual post-JTI1socket; all1269 start/end/live hashes match. Lease0,
+SLOFalse throughout: no600 steady, stable capacity or matched-v1 inclusive80% claim.
+
+Current runtime SHA35e2ccb1daa5dcaa4ac2ea5fa6320ff42a75f35d5657457c482157b44c761c04.
+New private source/safe-proof freeze precedes fresh serial SPEC then QUALITY.
+Full make test,18healthy600 matrix, reliability/fullruntime/product gates OPEN;
+no commit/integration/push/deployment. Historical literal make check artifact-only
+Ruff failures remain distinct from passing equivalent current-source gates.
+
 # Planned Cloud stream/storage refactor — 2026-10-12
 
 User-requested roadmap: `docs/CLOUD_STREAM_STORAGE_REFACTOR_SPEC.md` §15/§20.
@@ -36,7 +124,7 @@ Existing incident/search and COV-SQL-PHASE-01 work retains its scope and priorit
 5. Done bounded component locallyc0e073fe, native40/combinedSDK99: CLOUD-STREAM-CLIENT-01; actual scoped v2 SSE + signed cursors,
    trusted generation discovery and labelled SDK draft/replace/reset/recovery;
    root dirty SDK handoff narrowed before coding.  SDK/AG-UI replace/resync and old cursor/history.
-5a. In Progress; slice1 SPEC/QUALITY accepted at f9f777f344f6f2a12e4646b7e11743d2f7047c19281cad9ec4208fe6fd4df116, slice2 pending exact claim; base249f4e6d: CLOUD-STREAM-PROOF-PERF-01; explicit fresh proof batches and combined
+5a. In Progress; slice1 SPEC/QUALITY accepted at f9f777f344f6f2a12e4646b7e11743d2f7047c19281cad9ec4208fe6fd4df116, slice2 exact paths claimed after localf91906dc/primary native10; base249f4e6d: CLOUD-STREAM-PROOF-PERF-01; explicit fresh proof batches and combined
     source-qualified heads after CLIENT acceptance; preserve full privacy checks.
 6. Locked: CLOUD-STREAM-RELIABILITY-01; postcommit relay, crash/GC/byte quotas.
 7. Locked: CLOUD-STREAM-ACCEPTANCE-01; native paired SQL gates, full checks,
@@ -987,3 +1075,21 @@ P1→P3 顺序拉栈、填配置、跑 runner。
 - Exact-settings HTTPS-to-evidence qualification and static/test gates complete.
 - Final images built; local integration next. Operator/model tests pending;
   v2 mixed-HTTP result compatibility remains OPEN separately from engine config.
+
+
+2026-10-14 validation continuation: make check GO in clean exact-source checkout;
+full12081 selection interrupted at inherited unbounded Session terminal oracle.
+Classify retained96fail/1error/228skip; claimed test-only actual bounded
+page hook plus finite collection. Production1269/a4b2 and18healthy600 remain frozen.
+
+2026-10-14 PERF slice2 follow-up: reserve v100 for shared projector-fanout correctness; preserve all historical1..99 SQL/checksums. Revalidate new runtime, then accept slice2 locally. RELAY must refresh catalog tail (prospective101), not reuse the old prospective100 plan number. Whole runtime SQL80% gate remains open.
+
+2026-10-14 proof observation scope: explicitly distinguish bounded canonical protocol-admission intent validation from checkpoint/source metadata. Count both in fullHTTP/runtime SQL. Keep originalwholeHTTPzeroEventBody NOTGO provenance; testphase split must preserve original validator/native method identity, exactanchor/budget and invalidintent denial. WholePERF80% acceptance remains open.
+
+2026-10-14 USER CONVERGENCE: freeze prepared PERF scope; one concentrated necessary regression/static batch, complete failure classification, one final SPEC→QUALITY review, coherent local commits/FF. Do not loop on newly found stalefixtures/observer/hooks. Reopen only actual new regression/security/data-loss. Then RELAY→CAPACITY/GC→STOP; fullpairedruntime80 remains finalgate.
+
+2026-10-14 convergence outcome: frozen69=59P10F, literalmakecheckGO; original52
+remaining allpassed,172 mixed93current/79historical. ConsolidatedSPEC/QUALITY
+componentGO; record10 unresolved failures without newfixture/observer repairs.
+Proceed ownedcommit/localFF preserving primary17dirtyfiles, then RELAY.
+CompleteHTTP/fulltest/fullPERF80/runtime/SDKbrowser remainOPEN.

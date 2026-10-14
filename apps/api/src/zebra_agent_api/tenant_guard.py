@@ -10,7 +10,7 @@ Sessions without a bound namespace (internal/legacy) stay operator-scoped.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from agent_core.domain.host_authority import HostContextEnvelope
@@ -21,6 +21,9 @@ from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_security.host_grant import VerifiedHostGrant
 
 from zebra_agent_api.responses import ApiResponse
+
+if TYPE_CHECKING:
+    from agent_storage.postgres.stream_proof_batch import StreamProofSnapshot
 
 
 def tenant_namespace(host_context: HostContextEnvelope | None) -> str | None:
@@ -45,8 +48,11 @@ def session_tenant_denied(
     sessions: Any,
     session_id: str,
     host_context: HostContextEnvelope | None,
+    *,
+    proof: StreamProofSnapshot | None = None,
 ) -> bool:
     """True when a namespaced session belongs to another tenant."""
+    sessions = proof if proof is not None else sessions
     namespace = tenant_namespace(host_context)
     if namespace is None:
         return False
@@ -117,6 +123,8 @@ def scope_session_list_response(
 def tenant_scope_response(
     app: Any,
     request: Any,
+    *,
+    proof: StreamProofSnapshot | None = None,
 ) -> ApiResponse | None:
     """Deny cross-tenant access on session-scoped routes; None means allowed.
 
@@ -164,13 +172,16 @@ def tenant_scope_response(
                     target,
                     host_context,
                     verified_host_grant=verified,
+                    proof=proof,
                 )
                 if task_response is not None:
                     return task_response
             elif target:
                 if host_context is not None and getattr(app.stores, "deployment_namespace", None):
                     try:
-                        task_id = app.stores.tasks.task_id_for_session(SessionId(UUID(target)))
+                        task_id = (
+                            proof if proof is not None else app.stores.tasks
+                        ).task_id_for_session(SessionId(UUID(target)))
                     except CheckpointNotReady:
                         return ApiResponse(
                             409, {"status": "projection_not_ready", "retryable": True}
@@ -186,6 +197,7 @@ def tenant_scope_response(
                         str(task_id),
                         host_context,
                         verified_host_grant=verified,
+                        proof=proof,
                     )
                 if session_tenant_denied(sessions, target, host_context):
                     return tenant_forbidden_response(target)
@@ -199,6 +211,7 @@ def task_access_response(
     *,
     verified_host_grant: VerifiedHostGrant | None = None,
     run_id: str | None = None,
+    proof: StreamProofSnapshot | None = None,
 ) -> ApiResponse | None:
     """Fence Task transports; envelope-only callers have verified preflight upstream."""
 
@@ -213,7 +226,7 @@ def task_access_response(
             run_id = runs[0]
 
     try:
-        if session_tenant_denied(app.stores.sessions, task_id, host_context):
+        if session_tenant_denied(app.stores.sessions, task_id, host_context, proof=proof):
             return tenant_forbidden_response(task_id)
     except Exception:
         return ApiResponse(503, {"status": "tenant_binding_unavailable"})
@@ -223,6 +236,7 @@ def task_access_response(
         host_context,
         authority_issuer=issuer,
         run_id=run_id,
+        proof=proof,
     )
 
 
@@ -233,6 +247,7 @@ def _task_principal_response(
     *,
     authority_issuer: str | None = None,
     run_id: str | None = None,
+    proof: StreamProofSnapshot | None = None,
 ) -> ApiResponse | None:
     namespace = getattr(app.stores, "deployment_namespace", None)
     if namespace is None:
@@ -248,7 +263,11 @@ def _task_principal_response(
     if control is None or control.deployment_namespace != namespace:
         return ApiResponse(503, {"status": "principal_binding_unavailable"})
     try:
-        binding = control.load_task_binding(TaskId(UUID(task_id)))
+        binding = (
+            control.read_task_binding_snapshot(proof, TaskId(UUID(task_id)))
+            if proof is not None
+            else control.load_task_binding(TaskId(UUID(task_id)))
+        )
     except CheckpointNotReady:
         return ApiResponse(409, {"status": "projection_not_ready", "retryable": True})
     except (ValueError, TypeError):

@@ -14,7 +14,16 @@ from agent_storage import SQLiteAgentTaskStore, SQLiteEventStore, SQLiteProjecti
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.migrations import MIGRATIONS
 from agent_storage.postgres.projection_work import PostgresTaskProjectionWorkStore
+from agent_storage.postgres.projection_work_fanout_migration import (
+    TASK_PROJECTION_WORK_FANOUT_MIGRATION,
+)
 from agent_storage.postgres.projection_work_migration import TASK_PROJECTION_WORK_MIGRATION
+from agent_storage.postgres.projection_work_routing_migration import (
+    TASK_PROJECTION_WORK_ROUTING_MIGRATION,
+)
+from agent_storage.postgres.task_replay_coverage_privacy_migration import (
+    TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION,
+)
 from agent_storage.projection_source_metadata_schema import initialize_projection_source_metadata
 from agent_storage.projection_work import SQLiteTaskProjectionWorkStore
 from agent_storage.projection_work_schema import initialize_projection_work
@@ -263,6 +272,15 @@ def test_pg_deferred_allocator_revisited_segments_and_queue(
 @pytest.mark.parametrize("reenable", [False, True])
 def test_pg_bootstrap_does_not_lose_existing_task_append_across_enable(native_dsn, reenable):
     with psycopg.connect(native_dsn, row_factory=dict_row) as connection:
+        assert connection.execute("SELECT current_schema() AS s").fetchone()["s"].startswith(
+            "projection_work_native_"
+        )
+        for migration in (
+            TASK_REPLAY_COVERAGE_PRIVACY_MIGRATION, TASK_PROJECTION_WORK_ROUTING_MIGRATION,
+            TASK_PROJECTION_WORK_FANOUT_MIGRATION,
+        ):
+            for statement in migration.statements:
+                connection.execute(statement)
         task, segment, _ = seed(connection)
     database = PostgresDatabase(native_dsn, deployment_namespace=NS)
     store = PostgresTaskProjectionWorkStore(database, "ag-ui-v1")

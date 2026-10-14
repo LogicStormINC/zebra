@@ -8,7 +8,7 @@ from collections import Counter
 from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from threading import Lock
-from time import perf_counter
+from time import monotonic, perf_counter
 from unittest.mock import patch
 
 import psycopg
@@ -51,8 +51,10 @@ class Telemetry:
     def __init__(self):
         self.calls = Counter()
         self.seconds = Counter()
+        self.connect_seconds = Counter()
         self.lock = Lock()
         self.stage = "initial"
+        self.sql_starts = []
 
     def increment(self, kind, value=1):
         key = f"{self.stage}/{LABEL.get()}/{kind}"
@@ -71,6 +73,8 @@ class Telemetry:
             )
         )
         started = perf_counter()
+        with self.lock:
+            self.sql_starts.append((monotonic(), key))
         token = _INSIDE.set(True)
         try:
             return invoke()
@@ -108,9 +112,16 @@ class Telemetry:
             return invoke() if _INSIDE.get() else self.measured(query, invoke)
 
         def sockets(cls, *args, **kwargs):
-            result = yield from connect_gen(cls, *args, **kwargs)
-            self.increment("new_pg_socket")
-            return result
+            key = f"{self.stage}/{LABEL.get()}/pg_connect"
+            self.increment("pg_connect_attempt")
+            started = perf_counter()
+            try:
+                result = yield from connect_gen(cls, *args, **kwargs)
+                self.increment("new_pg_socket")
+                return result
+            finally:
+                with self.lock:
+                    self.connect_seconds[key] += perf_counter() - started
 
         def checkouts(database):
             self.increment("adapter_checkout")
@@ -156,6 +167,7 @@ class Telemetry:
         return {
             "calls": dict(sorted(self.calls.items())),
             "db_seconds": dict(sorted(self.seconds.items())),
+            "connect_seconds": dict(sorted(self.connect_seconds.items())),
         }
 
 

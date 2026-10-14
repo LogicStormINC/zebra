@@ -32,6 +32,7 @@ from agent_storage import (
     list_confirmed_repo_memories,
     postgres_control_plane_stores,
 )
+from agent_storage.postgres.direct_control import PostgresDirectControl
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from zebra_agent_api import create_app
@@ -117,6 +118,10 @@ def test_cloud_api_review_commits_atomically_and_is_recalled_by_next_task(
     api = create_app(
         tmp_path / "must-not-be-created.sqlite",
         stores=cast(ControlPlaneStores, stores),
+        cloud_control=PostgresDirectControl(
+            isolated_dsn, deployment_namespace=environment.namespace,
+            task_io_connections=stores.task_io_connections,
+        ),
     )
 
     blocked = api.confirm_session_memory(

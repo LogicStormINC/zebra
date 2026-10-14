@@ -6,11 +6,15 @@ from typing import Any
 
 from agent_core.domain.agent_tasks import AgentTask, ExecutionSegment, RolloverReason
 from agent_core.domain.events import EventType
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.agent_tasks import FencedAgentTaskStorePort, TaskEvent, TaskEventPage
 from agent_core.ports.aggregate_mutation import WorkerMutationAuthority
-from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
+from agent_core.ports.stream_source_head import StreamCheckpointHead, StreamSourceHead
+from agent_core.ports.task_projection_checkpoints import (
+    CheckpointNotReady,
+)
 from agent_core.ports.task_replay import TaskEventHeader, TaskReadHeader, TaskRunHeader
 
 from agent_storage.postgres.database import PostgresDatabase
@@ -153,6 +157,47 @@ class PostgresAgentTaskStore(
                 require_source_coverage=require_source_coverage,
             )
 
+    def read_stream_source_head(
+        self, *, task_id: TaskId | None = None, session_id: SessionId | None = None
+    ) -> StreamSourceHead | None:
+        from agent_storage.postgres.stream_source_head import read_source_head
+
+        with task_io_deadline(monotonic() + 2), self._database.connect_task_io() as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            return read_source_head(
+                connection, self._database.deployment_namespace, task_id, session_id
+            )
+
+    def read_stream_checkpoint_head(
+        self,
+        task_id: TaskId,
+        run_id: str,
+        *,
+        ordinary_version: str,
+        coverage_version: str,
+        host_context: HostContextEnvelope | None = None,
+    ) -> StreamCheckpointHead:
+        from agent_storage.postgres.stream_source_head import read_checkpoint_source_head
+
+        with task_io_deadline(monotonic() + 2), self._database.connect_task_io() as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            return read_checkpoint_source_head(
+                connection,
+                self._database.deployment_namespace,
+                task_id,
+                run_id,
+                ordinary_version=ordinary_version,
+                coverage_version=coverage_version,
+                host_context=host_context,
+            )
+
+    _snapshot_native_source_head = read_stream_source_head
+    _snapshot_native_task_header = read_task_header
+    _snapshot_native_checkpoint_head = read_stream_checkpoint_head
+    _snapshot_native_frame_header = (
+        PostgresTaskProjectionCheckpointMixin.read_event_projection_header
+    )
+
     def segments(self, task_id: TaskId) -> tuple[ExecutionSegment, ...]:
         with self._database.connect_task_io() as connection:
             rows = connection.execute(
@@ -173,14 +218,9 @@ class PostgresAgentTaskStore(
 
     def task_id_for_session(self, session_id: SessionId) -> TaskId | None:
         with self._database.connect_task_io() as connection:
-            row = connection.execute(
-                """
-                SELECT task_id FROM execution_segments
-                WHERE deployment_namespace = %s AND session_id = %s
-                """,
-                (self._database.deployment_namespace, session_id),
-            ).fetchone()
-        return None if row is None else TaskId(row["task_id"])
+            return read_task_id_for_session(
+                connection, self._database.deployment_namespace, session_id
+            )
 
     def is_internal_segment(self, session_id: SessionId) -> bool:
         task_id = self.task_id_for_session(session_id)
@@ -312,6 +352,8 @@ class PostgresAgentTaskStore(
                 limit=limit,
             )
 
+    _snapshot_native_event_header = read_event_header
+
     def read_run_header(
         self,
         task_id: TaskId,
@@ -324,6 +366,35 @@ class PostgresAgentTaskStore(
             return read_run_header(
                 connection, self._database.deployment_namespace, task_id, run_id, through_sequence
             )
+
+    _stream_head_original_reads = (
+        ("read_task_header", read_task_header),
+        ("task_id_for_session", task_id_for_session),
+        ("read_latest_run_header", PostgresWorkerProgressMixin.read_latest_run_header),
+        ("read_run_header", read_run_header),
+        ("read_event_header", read_event_header),
+        ("read_event_page", read_event_page),
+        ("read_checkpoint_head", PostgresTaskProjectionCheckpointMixin.read_checkpoint_head),
+        (
+            "read_event_projection_header",
+            PostgresTaskProjectionCheckpointMixin.read_event_projection_header,
+        ),
+        (
+            "read_segment_checkpoint_before",
+            PostgresTaskProjectionCheckpointMixin.read_segment_checkpoint_before,
+        ),
+        ("read_cells_at", PostgresTaskProjectionCheckpointMixin.read_cells_at),
+    )
+
+    @property
+    def stream_head_reads_compatible(self) -> bool:
+        if type(self) is not PostgresAgentTaskStore:
+            return False
+        for name, original in self._stream_head_original_reads:
+            method = getattr(self, name)
+            if getattr(method, "__func__", method) is not original:
+                return False
+        return True
 
 
 def read_task_header(
@@ -374,3 +445,16 @@ __all__ = [
     "attach_segment_for_worker_in_transaction",
     "rebuild_task_in_transaction",
 ]
+
+
+def read_task_id_for_session(
+    connection: Any, namespace: str, session_id: SessionId
+) -> TaskId | None:
+    row = connection.execute(
+        """
+        SELECT task_id FROM execution_segments
+        WHERE deployment_namespace = %s AND session_id = %s
+        """,
+        (namespace, session_id),
+    ).fetchone()
+    return None if row is None else TaskId(row["task_id"])

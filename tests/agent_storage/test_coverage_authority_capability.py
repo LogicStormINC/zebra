@@ -6,12 +6,16 @@ from uuid import uuid4
 
 import pytest
 from agent_core.domain.coverage_contracts import coverage_digest
+from agent_core.domain.identifiers import SessionId
+from agent_core.domain.leases import LeaseFence
 from agent_storage.postgres import migration_runner
 from agent_storage.postgres.coverage_authority import PostgresCoverageAuthority
+from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.worker_capability import PostgresWorkerCapabilities
 from agent_storage.worker_capability_configuration import continuation_configuration_digest
 
-from tests.worker.coverage_model_cloud_fixtures import dsn, model_cloud, postgres_dsn  # noqa: F401
+from tests.agent_storage.test_command_wakeup import _binding
+from tests.worker.coverage_model_cloud_fixtures import NAMESPACE, dsn, postgres_dsn  # noqa: F401
 
 
 @pytest.fixture(autouse=True)
@@ -37,10 +41,16 @@ def test_v89_consumer_identity_cannot_register_the_new_contract():
         store.register(uuid4(), configuration_digest=configuration, continuation_digest=old)
 
 
-def test_missing_migration_uses_explicit_legacy_path(model_cloud):
-    env = model_cloud
+def test_missing_migration_uses_explicit_legacy_path(dsn):
+    database = PostgresDatabase(dsn, deployment_namespace=NAMESPACE)
+    session = SessionId(uuid4())
+    fence = LeaseFence(control_plane_epoch=uuid4(), fencing_token=1, owner_instance_id="fixture")
+    with database.connect() as connection:
+        assert connection.execute(
+            "SELECT 1 FROM zebra_schema_migrations WHERE version>=90"
+        ).fetchone() is None
     load = Mock(side_effect=AssertionError("qualified context must not be prepared"))
     assert PostgresCoverageAuthority.prepare(
-        env.database, env.session, env.task_binding, env.fence, load,
+        database, session, _binding(str(session)), fence, load,
     ) is None
     load.assert_not_called()

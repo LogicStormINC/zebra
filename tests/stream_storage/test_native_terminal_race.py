@@ -25,14 +25,14 @@ def test_native_empty_read_before_terminal_status_preserves_terminal(monkeypatch
     with native_environment(dsn, redis_url) as (scratch, _, fanout):
         run = seed(scratch, fanout, 1)
         owner = run.stores.events if reader == "session" else run.stores.tasks
-        method = "read_since" if reader == "session" else "read_event_page"
+        method = "read_session_event_page" if reader == "session" else "read_event_page"
         read = getattr(owner, method)
         committed = False
 
         def scheduled_read(session_id, sequence, **kwargs):
             nonlocal committed
             rows = read(session_id, sequence, **kwargs)
-            empty = not rows if reader == "session" else not rows.events
+            empty = not rows.events
             if empty and not committed:
                 committed = True
                 write(run, "terminal", 0)
@@ -55,7 +55,7 @@ def test_native_empty_read_before_terminal_status_preserves_terminal(monkeypatch
                 )
             ]
 
-        frames = asyncio.run(collect())
+        frames = asyncio.run(asyncio.wait_for(collect(), timeout=15))
         assert committed
         assert run.stores.events.list_for_session(run.session_id)[-1].event_type is (
             EventType.SESSION_COMPLETED

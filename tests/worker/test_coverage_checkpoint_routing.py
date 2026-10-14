@@ -42,6 +42,9 @@ from tests.agent_integrations.ag_ui_checkpoint_consumer_scratch import (
     _restore,
     _task,
 )
+from tests.agent_integrations.test_ag_ui_coverage_checkpoint_native import (
+    prepare_session_projection,
+)
 from tests.agent_integrations.test_ag_ui_projection import _event
 from tests.agent_storage.test_postgres_control_plane_composition import _ObjectReader
 
@@ -139,6 +142,9 @@ def test_historical_migration_generator_stays_frozen():
         "a08e29f23387b57b0ed740702c65bedee740384226363e3d919f7689dc36201f"
     )
     assert TASK_PROJECTION_WORK_ROUTING_MIGRATION.version == 98
+    assert TASK_PROJECTION_WORK_ROUTING_MIGRATION.checksum == (
+        "a5c191da7be764473aa8083fe0af521e9cf412a03b48ebb89eb5a7b478fa8f46"
+    )
 
 
 @pytest.mark.parametrize("enabled_before_source", [False, True])
@@ -386,6 +392,8 @@ def test_actual_worker_late_flip_requeues_closed_anchors_bounded_and_cold_privac
         {"assistant_message": "PRIVATE_SECOND"},
     )
     _command(native.events, task, 6, "last")
+    if hasattr(native.tasks._database, "_dsn"):
+        prepare_session_projection(native, task.active_segment_id)
     consumer, strict_consumer = consumers(native)
     drain(consumer)
     assert not coverage.read_pending_projection_work()
@@ -430,6 +438,8 @@ def test_actual_worker_late_flip_requeues_closed_anchors_bounded_and_cold_privac
         7 + offset,
         7 + offset,
     )  # Same append transaction; no later source event or bootstrap wake needed.
+    if hasattr(native.tasks._database, "_dsn"):
+        prepare_session_projection(native, task.active_segment_id)
     with pytest.raises(CheckpointNotReady, match="privacy changed"):
         next(frames)
     assert observer.snapshot(task.task_id, identity).head.through_sequence == -1

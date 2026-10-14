@@ -21,7 +21,7 @@ def test_legacy_returns_existing_sink_and_unknown_mode_drops_drafts(monkeypatch)
     stores.tasks.read_run_header.return_value = SimpleNamespace(
         anchor=SimpleNamespace(event_id="anchor")
     )
-    monkeypatch.setattr(composition, "PostgresWorkerReplayReader", Mock())
+    monkeypatch.setattr(composition, "StreamProofReader", Mock())
     factory = composition.compose_transient_output_factory(
         stores, dsn="postgresql://unused", namespace="ns", settings=load_settings({})
     )
@@ -51,7 +51,7 @@ def test_v2_without_transport_does_not_fallback_when_admission_disabled(monkeypa
     )
     progress = SimpleNamespace(head=SimpleNamespace(scope=scope, through_sequence=9))
     stores = SimpleNamespace(tasks=Mock(), leases=Mock())
-    monkeypatch.setattr(composition, "PostgresWorkerReplayReader", Mock())
+    monkeypatch.setattr(composition, "StreamProofReader", Mock())
     stores.tasks.read_run_header.return_value = SimpleNamespace(
         anchor=SimpleNamespace(event_id="anchor")
     )

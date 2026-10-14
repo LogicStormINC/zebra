@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from agent_core.application.session_command_read_state import SessionCommandReadState
@@ -38,6 +38,9 @@ from agent_storage.postgres.task_io import TaskIoConnections
 from agent_storage.postgres.workspaces import get_workspace_in_transaction
 from agent_storage.task_read_summary_rows import encoded
 
+if TYPE_CHECKING:
+    from agent_storage.postgres.stream_proof_batch import StreamProofSnapshot
+
 
 @dataclass(frozen=True)
 class DirectCancellation:
@@ -69,8 +72,29 @@ class PostgresDirectControl:
             )
         )
 
+        self._native_binding_reader = self._binding_reader
+
     def load_task_binding(self, task_id: TaskId) -> TaskBindingSnapshot | None:
         return self._binding_reader(task_id)
+
+    _snapshot_native_load = load_task_binding
+
+    def supports_binding_snapshot(self, database: PostgresDatabase) -> bool:
+        method = self.load_task_binding
+        return (
+            type(self) is PostgresDirectControl
+            and self._binding_reader is self._native_binding_reader
+            and getattr(method, "__func__", method) is PostgresDirectControl._snapshot_native_load
+            and self._database._dsn == database._dsn
+            and self._database.deployment_namespace == database.deployment_namespace
+        )
+
+    def read_task_binding_snapshot(
+        self, proof: "StreamProofSnapshot", task_id: TaskId
+    ) -> TaskBindingSnapshot | None:
+        if not self.supports_binding_snapshot(proof._database):
+            return self.load_task_binding(task_id)
+        return proof.read_task_binding(task_id)
 
     def host_scope(
         self, session_id: SessionId, context: HostContextEnvelope

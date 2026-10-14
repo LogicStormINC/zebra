@@ -123,6 +123,50 @@ def read_event_header(
     )
 
 
+RUN_HEADER_BODY = f"""task AS (SELECT t.next_event_sequence,t.event_position_state,
+          LEAST(t.next_event_sequence-1,COALESCE(a.through,t.next_event_sequence-1)) AS highwater
+          FROM agent_tasks t,args a WHERE t.deployment_namespace=a.ns AND t.task_id=a.tid),
+        executable AS (SELECT {_QUERY_COLUMNS} FROM session_events
+          WHERE deployment_namespace=(SELECT ns FROM args) AND task_id=(SELECT tid FROM args)
+          AND replay_run_id=(SELECT rid FROM args)
+          AND task_sequence<=(SELECT highwater FROM task) AND {_QUERY_EXECUTABLE}
+          ORDER BY task_sequence LIMIT 2),
+        control AS (SELECT {_QUERY_COLUMNS} FROM session_events
+          WHERE deployment_namespace=(SELECT ns FROM args) AND task_id=(SELECT tid FROM args)
+          AND replay_run_id=(SELECT rid FROM args)
+          AND task_sequence<=(SELECT highwater FROM task)
+          AND {_QUERY_COMMAND}
+          AND NOT EXISTS(SELECT 1 FROM executable) ORDER BY task_sequence LIMIT 2),
+        anchor AS (SELECT * FROM executable UNION ALL SELECT * FROM control),
+        stop_position AS (SELECT task_sequence FROM session_events
+          WHERE deployment_namespace=(SELECT ns FROM args) AND task_id=(SELECT tid FROM args)
+          AND task_sequence>(SELECT min(task_sequence) FROM anchor)
+          AND task_sequence<=(SELECT highwater FROM task) AND {_QUERY_EXECUTABLE}
+          ORDER BY task_sequence LIMIT 1),
+        stop AS (SELECT {_QUERY_COLUMNS} FROM session_events
+          WHERE deployment_namespace=(SELECT ns FROM args) AND task_id=(SELECT tid FROM args)
+          AND task_sequence=(SELECT task_sequence FROM stop_position)),
+        checked AS (SELECT c.event_id,m.task_id AS member_task,m.event_position_source_ready,
+          m.event_position_source_cursor,c.sequence FROM (SELECT * FROM anchor UNION ALL
+          SELECT * FROM stop) c LEFT JOIN execution_segments m
+          ON m.deployment_namespace=(SELECT ns FROM args) AND m.session_id=c.session_id)
+        SELECT t.*,EXISTS(SELECT 1 FROM task_replay_coverage_privacy e
+          WHERE deployment_namespace=(SELECT ns FROM args) AND task_id=(SELECT tid FROM args)
+          AND task_sequence<=(SELECT highwater FROM task)) AS strict_coverage,
+          EXISTS(SELECT 1 FROM session_events WHERE deployment_namespace=(SELECT ns FROM args)
+          AND task_id=(SELECT tid FROM args) AND task_sequence<=(SELECT highwater FROM task)
+          AND NOT replay_header_ready) AS pending,
+          (SELECT jsonb_agg(to_jsonb(c) ORDER BY task_sequence) FROM anchor c) AS commands,
+          EXISTS(SELECT 1 FROM executable) AS executable,
+          (SELECT task_sequence FROM session_events WHERE deployment_namespace=(SELECT ns FROM args)
+          AND task_id=(SELECT tid FROM args) AND task_sequence<=(SELECT highwater FROM task)
+          AND {_QUERY_COMMAND}
+          ORDER BY task_sequence LIMIT 1) AS first_command,
+          (SELECT to_jsonb(c) FROM stop c) AS stop,
+          (SELECT jsonb_agg(to_jsonb(c)) FROM checked c) AS checked
+          FROM task t"""
+
+
 def read_run_header(
     connection: Any,
     namespace: str,
@@ -135,90 +179,56 @@ def read_run_header(
     if through is not None and (type(through) is not int or through < -1):
         raise ValueError("invalid canonical Run highwater")
     row = connection.execute(
-        "SELECT next_event_sequence,event_position_state,EXISTS("
-        "SELECT 1 FROM task_replay_coverage_privacy e "
-        "WHERE e.deployment_namespace=t.deployment_namespace AND e.task_id=t.task_id "
-        "AND task_sequence<=LEAST(next_event_sequence-1,COALESCE(%s,next_event_sequence-1)) "
-        ") AS strict_coverage FROM agent_tasks t "
-        "WHERE deployment_namespace=%s AND task_id=%s",
-        (through, namespace, task_id),
+        "SELECT * FROM (WITH args AS (SELECT %s::text ns,%s::uuid tid,"
+        "%s::text rid,%s::bigint through)," + RUN_HEADER_BODY + ") metadata",
+        (namespace, task_id, run_id, through),
     ).fetchone()
+    return run_header_from_row(row, task_id, run_id, through)
+
+
+def run_header_from_row(
+    row: Any, task_id: TaskId, run_id: str, through: int | None = None
+) -> TaskRunHeader:
     if row is None:
         raise PostgresAgentTaskConflictError("Task replay target was not found")
     if row["event_position_state"] != "ready":
         raise CheckpointNotReady("Task Event positions require explicit backfill")
     highwater = page_highwater(-1, row["next_event_sequence"], through)
-    if (
-        connection.execute(
-            "SELECT 1 FROM session_events WHERE deployment_namespace=%s AND task_id=%s "
-            "AND task_sequence<=%s AND NOT replay_header_ready LIMIT 1",
-            (namespace, task_id, highwater),
-        ).fetchone()
-        is not None
-    ):
+    if row["pending"]:
         raise CheckpointNotReady("Task replay headers require explicit backfill")
-    parameters = namespace, task_id, run_id, highwater
-    strict_coverage = row["strict_coverage"]
-    rows = connection.execute(
-        f"SELECT {_QUERY_COLUMNS} FROM session_events WHERE deployment_namespace=%s AND task_id=%s "
-        f"AND replay_run_id=%s AND task_sequence<=%s AND {_QUERY_EXECUTABLE} "
-        "ORDER BY task_sequence LIMIT 2",
-        parameters,
-    ).fetchall()
-    control_only = not rows
-    if not rows:
-        rows = connection.execute(
-            f"SELECT {_QUERY_COLUMNS} FROM session_events "
-            "WHERE deployment_namespace=%s AND task_id=%s "
-            f"AND replay_run_id=%s AND task_sequence<=%s AND {_QUERY_COMMAND} "
-            "ORDER BY task_sequence LIMIT 2",
-            parameters,
-        ).fetchall()
-    if len(rows) > 1:
+    commands = row["commands"] or []
+    if len(commands) > 1:
         raise PostgresAgentTaskConflictError("ambiguous canonical Task/run command")
-    if not rows:
-        exists = connection.execute(
-            "SELECT 1 FROM session_events WHERE deployment_namespace=%s AND task_id=%s "
-            f"AND task_sequence<=%s AND {_QUERY_COMMAND} ORDER BY task_sequence LIMIT 1",
-            (namespace, task_id, highwater),
-        ).fetchone()
-        return TaskRunHeader(
-            task_id,
-            run_id,
-            highwater,
-            None,
-            0,
-            None,
-            legacy=exists is None,
-            strict_coverage=strict_coverage,
-        )
-    anchor = _checked_header(connection, namespace, rows[0], row["next_event_sequence"])
-    # Anchor uniqueness already rejects a repeated executable Run. Seek the
-    # next executable directly; do not filter/scan the historical command tail.
-    stop = connection.execute(
-        "SELECT task_sequence FROM session_events WHERE deployment_namespace=%s AND task_id=%s "
-        f"AND task_sequence>%s AND task_sequence<=%s AND {_QUERY_EXECUTABLE} "
-        "ORDER BY task_sequence LIMIT 1",
-        (namespace, task_id, anchor.task_sequence, highwater),
-    ).fetchone()
-    if stop is not None:
-        source = connection.execute(
-            f"SELECT {_QUERY_COLUMNS} FROM session_events "
-            "WHERE deployment_namespace=%s AND task_id=%s AND task_sequence=%s",
-            (namespace, task_id, stop["task_sequence"]),
-        ).fetchone()
-        if source is None:
-            raise CheckpointConflict("canonical Run stop source is unavailable")
-        _checked_header(connection, namespace, source, row["next_event_sequence"])
+    if any(
+        item["member_task"] != str(task_id)
+        or not item["event_position_source_ready"]
+        or item["sequence"] > item["event_position_source_cursor"]
+        for item in row["checked"] or []
+    ):
+        raise CheckpointConflict("checkpoint locator conflicts with canonical source")
+    anchor = json_event_header(commands[0]) if commands else None
+    stop = json_event_header(row["stop"]) if row["stop"] is not None else None
     return TaskRunHeader(
         task_id,
         run_id,
         highwater,
         anchor,
-        anchor.task_sequence,
-        None if stop is None else stop["task_sequence"],
-        control_only=control_only,
-        strict_coverage=strict_coverage,
+        anchor.task_sequence if anchor else 0,
+        stop.task_sequence if stop else None,
+        legacy=row["first_command"] is None,
+        control_only=bool(anchor and not row["executable"]),
+        strict_coverage=row["strict_coverage"],
+    )
+
+
+def json_event_header(row: Any) -> TaskEventHeader:
+    return event_header(
+        {
+            **row,
+            "task_id": UUID(row["task_id"]),
+            "event_id": UUID(row["event_id"]),
+            "session_id": UUID(row["session_id"]),
+        }
     )
 
 

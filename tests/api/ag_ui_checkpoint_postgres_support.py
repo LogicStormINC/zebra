@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 from collections.abc import Callable, Generator
 from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
@@ -12,7 +11,7 @@ from pathlib import Path
 from threading import Event
 from time import monotonic, sleep
 from typing import Any, cast
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import psycopg
 import pytest
@@ -40,6 +39,8 @@ from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from zebra_agent_api import http
 
+from tests.api.ag_ui_checkpoint_sql_observation import PgSqlObservation
+
 
 @dataclass(frozen=True)
 class PgGetReplay:
@@ -60,7 +61,10 @@ class PgGetReplay:
             continuation_scope=self.cloud.continuation_scope,
         )
 
-    def prepare_run(self, *, stopped: bool = False, prefix: int = 0) -> None:
+    def prepare_run(
+        self, *, stopped: bool = False, prefix: int = 0, bad_fingerprint: bool = False
+    ) -> None:
+        from agent_core.application.session_projection import rebuild_session
         from agent_core.contracts.session_commands import SessionCommand, SessionCommandKind
         from agent_core.domain.events import EventActor, EventType, SessionEvent
 
@@ -71,6 +75,8 @@ class PgGetReplay:
         assert session is not None
         assert not (stopped and prefix)
         kinds = [EventType.SESSION_COMMAND_ACCEPTED]
+        if not prefix:
+            kinds.append(EventType.HARNESS_ATTEMPT_STARTED)
         kinds.extend([EventType.MODEL_RESPONSE_RECEIVED] * (prefix + 1 if prefix else 2))
         if not prefix:
             kinds.append(
@@ -89,6 +95,10 @@ class PgGetReplay:
                     idempotency_key=f"pg-{run_id}",
                     payload={"run_id": run_id},
                 ).event_payload()
+                if bad_fingerprint and run_id == "run-1":
+                    payload["fingerprint"] = "0" * 64
+            elif kind == EventType.HARNESS_ATTEMPT_STARTED:
+                payload = {"attempt_number": 1}
             elif kind == EventType.MODEL_RESPONSE_RECEIVED:
                 payload = {
                     "model_call_id": f"model-{offset}",
@@ -103,8 +113,14 @@ class PgGetReplay:
                     event_type=kind,
                     actor=EventActor.HARNESS,
                     payload=payload,
+                    idempotency_key=(
+                        cast(str, payload["idempotency_key"])
+                        if kind is EventType.SESSION_COMMAND_ACCEPTED else None
+                    ),
                 )
             )
+        # ponytail: at most 270 fixture Events; larger fixtures should use incremental projection.
+        stores.sessions.save_session(rebuild_session(stores.events.list_for_session(self.session)))
         for run_id in ["run-1", "run-2"] if stopped else ["run-1"]:
             prepare_checkpoint(
                 cast(ControlPlaneStores, stores),
@@ -247,78 +263,6 @@ def pg_get_replay(tmp_path: Path) -> Generator[PgGetReplay]:
             connection.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
 
 
-class PgSqlObservation:
-    """Record attempted SQL; PG read-only transactions independently reject any DML."""
-
-    COMMAND_ID_POINT = (
-        "SELECT event_id,session_id,sequence,event_type,actor,created_at, "
-        "payload->>'command_id' AS command_id FROM session_events "
-        "WHERE deployment_namespace=%s AND task_id=%s AND task_sequence=%s "
-        "AND event_id=%s AND session_id=%s AND sequence=%s"
-    )
-
-    def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        self.writes: list[str] = []
-        self.body_reads: list[str] = []
-        self.body_limits: list[int] = []
-        self.body_connections: list[str] = []
-        self.rejected_body_reads: list[str] = []
-        self.connections: set[str] = set()
-        self.command_points: list[tuple[object, ...]] = []
-        self.command_connections: list[str] = []
-        self.bodies = False
-        execute = psycopg.Cursor.execute
-
-        def observed_execute(
-            cursor: psycopg.Cursor[Any],
-            query: Any,
-            params: Any = None,
-            **kwargs: Any,
-        ) -> psycopg.Cursor[Any]:
-            self.connections.add(type(cursor.connection).__name__)
-            statement = " ".join(
-                (
-                    query.as_string(cursor.connection)
-                    if isinstance(query, sql.Composable)
-                    else str(query)
-                ).split()
-            )
-            if re.search(
-                r"\b(INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|COPY|TRUNCATE)\b",
-                statement,
-                re.IGNORECASE,
-            ) or re.search(r"\bFOR (UPDATE|SHARE)\b", statement, re.IGNORECASE):
-                self.writes.append(statement)
-            if statement == self.COMMAND_ID_POINT:
-                assert len(params) == 6 and isinstance(params[0], str)
-                assert all(isinstance(params[index], UUID) for index in (1, 3, 4))
-                assert all(type(params[index]) is int and params[index] >= 0 for index in (2, 5))
-                self.command_points.append(tuple(params))
-                self.command_connections.append(type(cursor.connection).__name__)
-                return execute(cursor, query, params, **kwargs)
-            if "session_events" in statement and re.search(
-                r"\bpayload\b|SELECT (?:event\.)?\*",
-                statement,
-                re.IGNORECASE,
-            ):
-                self.body_reads.append(statement)
-                self.body_connections.append(type(cursor.connection).__name__)
-                try:
-                    assert self.bodies, "PG preflight hydrated an Event body"
-                    assert "event.task_sequence>%s" in statement
-                    assert "event.task_sequence<=%s" in statement
-                    assert "ORDER BY event.task_sequence LIMIT %s" in statement
-                    assert 1 <= params[-1] <= 256
-                except AssertionError:
-                    self.rejected_body_reads.append(statement)
-                    raise
-                self.body_limits.append(params[-1])
-            return execute(cursor, query, params, **kwargs)
-
-        # ClientCursor inherits this execute method; native connection creation is untouched.
-        monkeypatch.setattr(psycopg.Cursor, "execute", observed_execute)
-
-
 def pg_rows(dsn: str) -> dict[str, str]:
     """Fingerprint every tiny scratch table outside GET, without logging row bodies."""
     with psycopg.connect(dsn) as connection:
@@ -345,10 +289,41 @@ def test_sql_observation_covers_real_native_task_io_connection(
     monkeypatch: pytest.MonkeyPatch,
     client_cursor: bool,
 ) -> None:
+    from agent_storage.postgres.command_wakeup_outcome import read_command_outcome
     from agent_storage.postgres.database import PostgresDatabase
+    from agent_storage.postgres.stream_source_head import read_checkpoint_source_head, source_row
     from agent_storage.postgres.task_io import TaskIoConnection
+    from agent_storage.postgres.task_replay_headers import read_run_header
 
     replay = pg_get_replay
+    replay.stores().tasks.ensure_for_session(replay.session)
+    replay.prepare_run(prefix=1)
+    run = replay.stores().tasks.read_run_header(TaskId(replay.session), "run-1")
+    captured: list[tuple[str, tuple[object, ...]]] = []
+
+    class QueryCaptured(Exception):
+        pass
+
+    class Capture:
+        def execute(self, query, params):
+            captured.append((query, params))
+            raise QueryCaptured
+
+    for read in (
+        lambda: source_row(Capture(), replay.cloud.deployment_namespace, TaskId(replay.session)),
+        lambda: read_checkpoint_source_head(
+            Capture(), replay.cloud.deployment_namespace, TaskId(replay.session), "run-1",
+            ordinary_version=AG_UI_CHECKPOINT_VERSION, coverage_version="coverage",
+        ),
+        lambda: read_command_outcome(
+            Capture(), replay.cloud.deployment_namespace, run, replay.verified.context
+        ),
+        lambda: read_run_header(
+            Capture(), replay.cloud.deployment_namespace, TaskId(replay.session), "run-1", None
+        ),
+    ):
+        with pytest.raises(QueryCaptured):
+            read()
     database = PostgresDatabase(
         replay.readonly_dsn,
         deployment_namespace=replay.cloud.deployment_namespace,
@@ -360,6 +335,7 @@ def test_sql_observation_covers_real_native_task_io_connection(
             assert isinstance(connection, TaskIoConnection)
             row = connection.execute("SELECT 1 AS observed").fetchone()
             assert row is not None and row["observed"] == 1
+            assert connection.execute("SELECT count(*) FROM session_events").fetchone() is not None
             point = (
                 replay.cloud.deployment_namespace,
                 replay.session,
@@ -369,18 +345,76 @@ def test_sql_observation_covers_real_native_task_io_connection(
                 0,
             )
             assert connection.execute(PgSqlObservation.COMMAND_ID_POINT, point).fetchone() is None
+            for query, params in captured:
+                assert connection.execute(query, params).fetchone() is not None
+            assert observed.body_reads == []  # All four fixed shapes return only metadata.
+            outcome_query, outcome_params = captured[2]
+            for index, invalid in ((2, True), (3, str(outcome_params[3]))):
+                altered = list(outcome_params)
+                altered[index] = invalid
+                with pytest.raises(AssertionError):
+                    connection.execute(outcome_query, tuple(altered))
             observed.bodies = True  # Raw bodies remain forbidden outside a bounded Page, too.
+            injections = (
+                "e.payload", "e.*", "*", "to_jsonb(e)", "row_to_json(e)",
+                "e.payload->>'extra'", "e.payload::text",
+            )
+            for query, params in captured:
+                for projection in injections:
+                    if len(params) in (4, 12):
+                        columns = ("event_id,session_id," if len(params) == 12
+                                   else PgSqlObservation.RUN_COLUMNS)
+                        injected = query.replace(
+                            "SELECT " + columns, f"SELECT {projection}," + columns, 1
+                        ).replace("FROM session_events", "FROM session_events e", 1)
+                    else:
+                        injected = query.replace(
+                            "SELECT e.task_id,", f"SELECT {projection},e.task_id,", 1
+                        )
+                    with pytest.raises(AssertionError):
+                        connection.execute(injected, params)
             for query in (
                 "SELECT event.payload FROM session_events event LIMIT 1",
                 "SELECT event.* FROM session_events event LIMIT 1",
                 "SELECT payload->>'command_id' FROM session_events LIMIT 1",
+                "SELECT to_jsonb(e) FROM session_events e LIMIT 1",
+                "SELECT row_to_json(e) FROM session_events e LIMIT 1",
+                "SELECT e.task_id,e.* FROM session_events e LIMIT 1",
+                "SELECT e.task_id,* FROM session_events e LIMIT 1",
+                "SELECT to_jsonb ( e ) FROM session_events e LIMIT 1",
+                "SELECT row_to_json ( e ) FROM session_events e LIMIT 1",
             ):
                 with pytest.raises(AssertionError):
                     connection.execute(query)
         assert connection.closed and observed.connections == {"TaskIoConnection"}
-        assert observed.writes == [] and len(observed.body_reads) == 3
+        assert observed.writes == [] and len(observed.body_reads) == 37
         assert observed.body_limits == []  # Rejected before the real driver can hydrate a body.
-        assert len(observed.rejected_body_reads) == 3 and observed.command_points == [point]
+        assert len(observed.rejected_body_reads) == 37
+        assert observed.command_points == [point, tuple(outcome_params[:6])]
+        assert observed.command_connections == ["TaskIoConnection", "TaskIoConnection"]
+    assert pg_rows(replay.dsn) == before
+
+
+def test_protocol_admission_keeps_invalid_accepted_intent_fail_closed(
+    pg_get_replay: PgGetReplay, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tests.api.test_extension_reads import AUTH
+
+    replay = pg_get_replay
+    replay.prepare_run(prefix=1, bad_fingerprint=True)
+    before = pg_rows(replay.dsn)
+    client = replay.client()
+    with monkeypatch.context() as patch:
+        observed = PgSqlObservation(patch)
+        response = client.get(f"/agui/threads/{replay.session}/runs/run-1/stream", headers=AUTH)
+        # Existing prepare_v2 maps the original validator's ValueError to invalid_cursor.
+        assert response.status_code == 400 and response.json()["code"] == "invalid_cursor"
+        assert "id: " not in response.text  # No canonical or provisional frame precedes rejection.
+        assert len(observed.protocol_admission_reads) == 1
+        assert observed.protocol_admission_connections == ["TaskIoConnection"]
+        assert observed.protocol_validator_calls == observed.protocol_validation_failures == 1
+        assert not observed.writes and not observed.body_reads
+        assert not observed.rejected_body_reads and not observed.body_limits
     assert pg_rows(replay.dsn) == before
 
 
@@ -396,7 +430,7 @@ def test_cloud_pg_tail_read_shares_grant_deadline_and_cleans_native_query(
     from agent_storage.postgres.command_wakeup_outcome import PostgresCommandOutcomeReader
     from agent_storage.postgres.projection_work import PostgresTaskProjectionWorkStore
     from agent_storage.postgres.task_io import TaskIoConnection
-    from zebra_agent_api import ag_ui_stream
+    from zebra_agent_api import ag_ui_stream, stream_v2_http
 
     from tests.api.test_extension_reads import AUTH
 
@@ -477,7 +511,7 @@ def test_cloud_pg_tail_read_shares_grant_deadline_and_cleans_native_query(
                 execute(sql_cursor, "SELECT pg_sleep(5)")
             return observed_execute(sql_cursor, query, params, **kwargs)
 
-        patch.setattr(http, "prepare_agui_stream", preflight)
+        patch.setattr(stream_v2_http, "prepare_agui_stream", preflight)
         patch.setattr(owner, method, scoped_read)
         patch.setattr(psycopg.Cursor, "execute", stalled_execute)
         response = client.get(
@@ -485,7 +519,34 @@ def test_cloud_pg_tail_read_shares_grant_deadline_and_cleans_native_query(
             headers=AUTH,
             params={"cursor": cursor.encode()},
         )
-        assert response.status_code == 200
+        diagnostic: dict[str, object] = {"status": response.status_code}
+        if response.status_code != 200:
+            import hashlib
+            import re
+
+            diagnostic["rejected_sql_count"] = len(observed.rejected_body_reads)
+            diagnostic["rejected_sql_sha256"] = [
+                hashlib.sha256(statement.encode()).hexdigest()
+                for statement in observed.rejected_body_reads[:8]
+            ]
+            diagnostic["body_limits_count"] = len(observed.body_limits)
+            try:
+                problem = response.json()
+            except ValueError:
+                problem = {}
+            if isinstance(problem, dict):
+                for candidate in (problem, problem.get("error"), problem.get("problem")):
+                    if not isinstance(candidate, dict):
+                        continue
+                    code = candidate.get("code", candidate.get("status"))
+                    if isinstance(code, str) and re.fullmatch(r"[a-zA-Z][a-zA-Z0-9_-]{0,63}", code):
+                        diagnostic["code"] = code
+                    if type(candidate.get("retryable")) is bool:
+                        diagnostic["retryable"] = candidate["retryable"]
+        assert response.status_code == 200, diagnostic
+        assert len(observed.protocol_admission_reads) == 1
+        assert observed.protocol_admission_connections == ["TaskIoConnection"]
+        assert observed.protocol_validator_calls == 1 and observed.protocol_validation_failures == 0
         assert response.text == (prefix if stage in {"problem", "outcome"} else "")
         assert len(connections) == 1 and finished.wait(0.15)
         assert connections[0].closed  # Socket closure, not just coroutine cancellation.

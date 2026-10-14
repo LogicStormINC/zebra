@@ -368,6 +368,309 @@
 
 ### CLOUD-STREAM-PROOF-PERF-01 - Reduce fresh proof and quiet-read fixed costs
 
+- Component convergence2026-10-14: one frozen69 native batch59P/10F and
+  literal make check GO; consolidated SPEC/QUALITY permit component localaccept
+  and independent RELAY.93 frozen review files/runtime1270 unchanged.
+  Retain1 observer metadata-shape gap,8 outputUNKNOWN,1 preHTTP timeoutUNKNOWN.
+  Original172 latest passes are93current492d/79historical64df; currentv10072 GO
+  and historical18 long cells retain provenance. FullHTTP/fulltest/fullPERF80/
+  runtime/SDKbrowser OPEN; no newfixture/observer expansion or push/deploy.
+
+- BEFORE 2026-10-14 staged HTTP observation boundary: existing owned test
+  observer/support and validation doc may distinguish canonical protocol
+  admission from checkpoint/source metadata. Necessary full accepted-intent
+  validation remains; do not create a new durable witness solely for this
+  test or stub protocol/validator. A loader-local two-read test delegate may
+  observe the original typed Run/Page without patching native public reader
+  identities or adding SQL. Only its actual admission Page context permits
+  the fixed captured Page shape, exact namespace/Task/anchor six coordinates,
+  after=anchor-1/through=anchor, limit1 and <=1MiB under original RO/deadline.
+  Independently count admission reads/connections; all other preflight metadata
+  still rejects Event bodies. Retain all HTTP SQL in totals. Add actual invalid
+  accepted-intent fingerprint fail-closed regression using unchanged validator
+  and existing HTTP error mapping, no frames. Original whole-HTTP zero-Event-
+  body gate remains explicitly NOT GO; phase-specific evidence is not equivalent.
+  Update VALIDATION/PROGRESS/task_plan/spec guarantee wording honestly; no
+  production changes. Serial SPEC then QUALITY before native.
+
+- BEFORE 2026-10-14 Run metadata observation correction: existing owned test
+  observer may accept one additional fixed audited Run query fingerprint
+  cd3d40514cfb4ff20202f95637f5d6e782d9d1f4935eaa1aa1f790c37827f088,
+  four typed request parameters, zero payload identifiers and exact scalar
+  Run header projection. Outer SELECT* is permitted only for this frozen
+  metadata CTE shape; preserve all Event wildcard/body mutation denial.
+  Extend real observer smoke rejection checks. No accepted-command full
+  Event body allowance or protocol isolation change is authorized. First
+  actual downstream blocker must be captured before its separate source or
+  test boundary decision. Serial SPEC then QUALITY before native.
+
+- BEFORE 2026-10-14 scalar command-outcome instrumentation follow-up: existing
+  owned PostgreSQL test observation supports one additional fixed audited
+  outcome SQL fingerprint, exact accepted-point scalar and twelve typed request
+  parameters. Require one payload identifier and metadata-only seven-result
+  projection; preserve six-coordinate command_points/connection oracle.
+  Extend real smoke mutation rejection to this fixed shape. No body wildcard,
+  full Event allowance, production query or physical zeroTOAST claim.
+  The support file approaches700; additionally own new
+  tests/api/ag_ui_checkpoint_sql_observation.py to move the existing observer
+  class without abstraction/API change. Re-export through the original support
+  import so every caller and test node remains stable; preserve current guard
+  semantics, then review the outcome-only addition. Frozen source1270 unchanged.
+  Serial SPEC then QUALITY before copying/native; prior failures retained.
+
+- BEFORE sibling fixture hook follow-up: same owned
+  tests/api/ag_ui_checkpoint_fixture.py may also replace its one obsolete
+  http.tail_agui_events hook with actual stream_v2_http.tail_agui_events.
+  Preserve disconnect/terminal/problem/connection assertions. No observer
+  command-counter or scalar query allowance changes are authorized here;
+  any such mismatch needs precise read-only proposal and separate review.
+
+- BEFORE 2026-10-14 sibling AG-UI fixture hook correction: additionally own
+  tests/api/ag_ui_checkpoint_fixture.py only its two obsolete
+  http.prepare_agui_stream patches. Point both at actual
+  stream_v2_http.prepare_agui_stream with minimum local imports. Preserve
+  every frame/scope/read-only/deadline/cleanup/table/oracle; no production
+  change. Full tests/apps caller search finds only these two remaining old
+  hooks after prior support/quality fixes. Static obsolete-hook evidence is
+  not native baseline confirmation. Serial SPEC then QUALITY before native.
+
+- BEFORE 2026-10-14 PostgreSQL observation instrumentation correction:
+  additionally own tests/api/ag_ui_checkpoint_postgres_support.py. Preserve
+  command-id point and bounded Event page rules; distinguish approved metadata
+  source qualification/combined checkpoint SQL by fixed independently audited
+  normalized query fingerprints, precise existing handoff scalar predicate and
+  typed parameter shape. Do not dynamically whitelist arbitrary SOURCE_BODY or
+  ignore payload identifiers globally. Extend existing real TaskIoConnection/
+  ClientCursor smoke with allowed metadata and rejection of bare payload/Event
+  wildcard/JSON full row/extra scalar or body access, retaining GET/read-only/
+  deadline/cleanup/table fingerprints. Production unchanged. Guarantee only
+  no full Event result hydration, not PostgreSQL internal zero JSON/TOAST.
+  Query shape changes require explicit review. Retain attempt07 and mixed
+  source provenance; serial SPEC then QUALITY before copying/native.
+
+- BEFORE v100 migration oracle update: additionally own
+  tests/agent_storage/test_postgres_migrations.py only its actual catalog
+  expected entry (100,projector_scoped_scalar_fanout,64). Keep all historical
+  entries and other migration/epoch/schema assertions; include actual isolated
+  migration smoke in new-source gates. Do not weaken the catalog equality test.
+
+- BEFORE 2026-10-14 native projector-fanout correctness repair: additionally own
+  packages/agent-storage/src/agent_storage/projection_work_schema.py,
+  packages/agent-storage/src/agent_storage/projection_work_routing.py,
+  packages/agent-storage/src/agent_storage/postgres/projection_work_routing_migration.py,
+  packages/agent-storage/src/agent_storage/postgres/migration_catalog_tail.py,
+  new packages/agent-storage/src/agent_storage/postgres/projection_work_fanout_migration.py,
+  and tests/agent_storage/test_task_projection_work.py. Reserve additive v100
+  after freshly verified tail99; future RELAY must recheck tail and use101 or
+  next available. Shared scalar subqueries correlate outer namespace/Task/
+  projector, with explicit legacy generator modes preserving every historical
+  v1..99 statement/checksum (v68 default legacy, v98 explicit legacy call).
+  v100 replaces only route_task_projection_work function; no data/cursor/failure
+  cap/authority reset. Existing-owned queue helper and exact native-bootstrap
+  test setup append real v100; frozen native_dsn remains unchanged. Existing
+  owned worker coverage routing test fixes historical v98 checksum and preserves
+  privacy/namespace/malformed/null source oracles. Add one real SQLite/PG
+  receipt→next-command fanout/closure regression. No weakened fixture or broad
+  grants; retain original v98 scalar-multiple-row failure. Fresh runtime fingerprint,
+  all prior migration checksum comparison, serial SPEC then QUALITY and relevant
+  native gates required; old64df/a4b2 evidence remains historical only.
+
+- BEFORE 2026-10-14 cold scale restricted-role correction: additionally own
+  tests/agent_storage/test_projection_work_scale.py only PG role setup in
+  test_cold_scalar_pending_and_tail_repair_seek_no_prefix_or_body. Add the
+  existing SELECT-only metadata privacy view grant; preserve scalar Event
+  columns and explicit payload permission rejection, cold subprocess, 32-row
+  pending/repair bounds and EXPLAIN oracle/optimizer diagnostic settings.
+  No payload/full-table/superuser grant or new production optimization. Audit
+  found only this and already-corrected IO role affected; existing observer
+  and scalar-header view grants remain. Original1000/10000/100000 cases and
+  attempt05 failure retained; serial SPEC then QUALITY before native.
+
+- BEFORE 2026-10-14 standalone current-bootstrap test setup correction:
+  additionally own tests/agent_storage/test_projection_work_native.py only
+  test_pg_bootstrap_does_not_lose_existing_task_append_across_enable setup.
+  In its existing initial isolated PG transaction before seed/enable, assert
+  projection_work_native_ schema and compose real existing v97 then v98.
+  Keep native_dsn fixture frozen <=67+v68, v68 source/checksum and other tests
+  unchanged. Preserve both reenable parameters, deferred allocator, controlled
+  lock retry, concurrent append commit, cold bootstrap/repair and every oracle.
+  Retain attempt04 failure; serial SPEC then QUALITY before focused native.
+
+- BEFORE 2026-10-14 projection-work restricted-role fixture correction:
+  additionally own tests/agent_storage/test_projection_work_io.py. Its PG
+  metadata-only role gains SELECT on existing source-coordinate-only
+  task_replay_coverage_privacy view, matching the existing scalar-native test
+  grant. Retain scalar-column-only session_events grants; never grant payload,
+  full Event table or superuser. Preserve SQLite payload/JSON authorizer, 8MiB
+  body oracle, read-only UPDATE denial, isolated schema and all original checks.
+  No production/reader changes. Retain restricted-role failure; serial SPEC
+  then QUALITY before native. Identical f919 fixture is static provenance only.
+
+- BEFORE 2026-10-14 projection-work fixture routing correction: additionally
+  own tests/agent_storage/projection_work_test_support.py. QueueFixture PG
+  composition already prepares real replay-header/v97 privacy schema; install
+  real existing v98 routing migration after v68 work migration to satisfy current
+  bootstrap privacy_frontier/routing contract. No invented columns, full catalog,
+  production fallback or edits to frozen standalone native_dsn/v68 migration.
+  Preserve shared bootstrap/no-append/restart/namespace/inert-close, IO, scale
+  and work oracles. Audit all QueueFixture callers; serial SPEC then QUALITY
+  before copy/native. Retain attempt03 UndefinedColumn and current75pass/1fail/
+  96unexecuted boundary; identical f919 blobs are static provenance only.
+
+- BEFORE 2026-10-14 resource-binding fixture correction: additionally own
+  tests/agent_storage/test_postgres_task_resource_binding.py. Its two valid
+  setup Grants replace the inherited helper thread with the exact THREAD,
+  retaining principal/other refs and run; do not append a second valid thread.
+  Preserve expired frozen binding vs fresh current Grant, every forged wrong,
+  missing, UUID and ambiguous-thread denial, no-mutation/cleanup assertions,
+  rollover child/root resource identity and scalar lookup oracle. No production
+  authorization changes. Current source/test blobs match f919 and249 statically;
+  historical249 evidence is separate from current native confirmation. Retain
+  header attempt02 failure; serial SPEC then QUALITY before focused native.
+
+- BEFORE consumer fixture SPEC P1 correction: the same two owned test files
+  may append real PG-only TASK_PREPARED before pre-anchor and orphan-child
+  deltas. Preserve SQLite sequences and every oracle; PG child sequences and
+  Task frontier increase by exactly one canonical Event. Retain 257 unmatched
+  receipts, root sequences, late pairing and closure stop=target+1. Do not
+  fabricate projection status or relax the canonical state machine. Original
+  three-file static NO-GO remains recorded; re-SPEC then QUALITY required.
+
+- BEFORE 2026-10-14 consumer header-supplement fixture repair: additionally own
+  tests/agent_integrations/ag_ui_checkpoint_consumer_scratch.py,
+  tests/agent_integrations/test_ag_ui_checkpoint_consumer.py, and
+  tests/worker/test_ag_ui_projection_work.py. Dedicated consumer composition
+  applies real v69 observation migration alongside existing v97; keep shared
+  standalone native_dsn queue fixture frozen at v68. Reuse canonical
+  rebuild_session and existing projection store on explicit finite setup
+  sources grouped by Segment, once per Segment; no observer/restore/read-hook
+  repair, history scan, direct header writes, production fallback or weakened
+  privacy/source qualification. Four consumer native_source setup boundaries
+  and worker orphan cold-observation setup only. Orphan handoff received fixture
+  adds actual known root and stage index while retaining handoff IDs, parent,
+  257 unmatched ledger and late-pair/closure assertions. Retain initial failed
+  header attempt; serial SPEC then QUALITY before copying/native rerun. Keep
+  source/test file limits and every existing behavior assertion.
+
+- BEFORE 2026-10-14 suffix test-preparation follow-up: additionally own
+  tests/worker/test_coverage_checkpoint_routing.py (reuse finite <=9 Event
+  fixture projection helper at two PG-only preparation points; retain privacy,
+  generator, routing/ACK/cold checks), tests/worker/test_transient_output_composition.py
+  (patch actual StreamProofReader), tests/worker/test_worker_storage_composition.py
+  (publisher stub exposes existing fanout.publish_checkpoint), and
+  tests/test_postgres_memory_review_api.py (explicit matching isolated PG config
+  or actual control composition). Retain every original behavior/atomic-recall
+  oracle; no production, shared connector/DSN guard or shared fixture edits.
+  These are static stale-fixture roots, not native baseline confirmations. PROOF
+  preparation and serial SPEC then QUALITY before copying/focused native.
+
+
+- BEFORE 2026-10-14 native outcome-callback qualification follow-up: existing
+  owned command_wakeup_outcome.py may additionally require captured original
+  class __call__ identity in supports_source_head; do not unwrap. Existing owned
+  test_stream_source_head_tail_native.py extends its actual custom-outcome test
+  to native-reader class overrides (plain and wraps). Preserve native/default
+  qualification and actual callback invocation/problem frame on fallback.
+  Static f919/current difference is confirmed, native proof pending. PROOF-only
+  preparation/review; frozen suffix remains unchanged and no concurrent native.
+
+
+- BEFORE validation evidence split: additionally own docs/CLOUD_STREAM_PROOF_PERF_VALIDATION.md. Keep current-source gates, failure classification and narrow follow-up reviews there; matrix evidence has reached the 600-line limit. Historical captures and claims remain intact.
+
+- BEFORE 2026-10-14 two stale test-boundary repairs: additionally own
+  tests/agent_storage/test_coverage_command_recovery.py (patch the actual
+  coverage_recovery_authority clock; preserve issued-report/deadline/no-model
+  assertions) and tests/agent_storage/test_coverage_authority_capability.py
+  (single legacy-schema test uses existing isolated dsn, real prepare and typed
+  arguments, without unrelated current bootstrap). Preserve missing-migration
+  None/load-not-called oracle. Static identical f919 roots are not runtime
+  baseline confirmation. No production/shared-fixture edits; focused native
+  only after frozen suffix completes, with serial SPEC then QUALITY review.
+
+
+- BEFORE 2026-10-14 scalar-outcome validation follow-up: additionally own
+  tests/agent_storage/test_postgres_command_outcome_bounded_read.py. Preserve
+  native TaskIoConnection, exact canonical anchor coordinates, scalar-only
+  command identity and body-free Run reads. Adapt the guard to the shared args
+  CTE rather than historical placeholder positions. Existing-owned outcome SQL
+  may name its seven outer result columns and use SELECT 1 in the terminal
+  existence subquery; no query expansion or history/body hydration. Prepare in
+  implementation checkout only; native checks after the frozen suffix exits.
+
+
+- BEFORE 2026-10-14 bounded test-preparation follow-up: additionally own
+  tests/agent_storage/test_command_recovery_preflight.py (fixture hook accepts
+  existing continuation keyword; preserve PreparationReached assertions) and
+  tests/agent_integrations/test_ag_ui_coverage_checkpoint_native.py (finite
+  fixture-only canonical rebuild_session + sessions.save_session at three
+  preparation boundaries). Preserve source114/privacy and late/cold replay
+  guards; no direct observation-header writes or observational repairs.
+  Edits occur only in implementation checkout; running validation checkout and
+  its1825-case suffix stay byte-frozen. Copy/check after that run completes.
+
+
+- BEFORE 2026-10-14 local regression fix: existing-owned session_streaming.py
+  reads native database identities only when cloud=True. Preserve every cloud
+  compatibility predicate; local SQLite must not access PostgreSQL _dsn fields.
+  Baseline nine selected cases: eight pass, one inherited cursor fixture failure.
+  Validate current nine plus the bounded terminal scheduling oracle; no matrix rerun.
+
+- BEFORE 2026-10-14 test-only validation follow-up: additionally own
+  tests/stream_storage/test_native_terminal_race.py. The Session scheduling hook
+  still patches read_since, but both accepted f91906dc and current cloud readers
+  use bounded read_session_event_page. No terminal is written; unbounded collect
+  hangs. Hook the actual bounded read, preserve empty-read/commit/status/drain
+  assertions, and bound collection with asyncio.wait_for. No production fallback
+  to unbounded reads. Preserve interrupted full-suite prefix and every failure;
+  classify failures and verify baseline with bounded checks before acceptance.
+  Runtime a4b2/18 healthy600 evidence remains unchanged; no push/deployment.
+
+
+- 2026-10-13 bounded follow-up: A graceful canonical dependency close13nativeGO
+  at runtimea4b2; exact typedfault scope above, no retry/auth/pool/deadline/cache.
+  Prior reviewed289e and ninequiet600+failedpausedSession1 remain historical;
+  original infrastructure cause unproven. Controlled injection links mechanism;
+  one natural600 diagnostic passes on11af, not18cellacceptance. EOF concern
+  corrected: existing subscriber rejects earlyclose, no redundant guard.
+  Testregistration/import/sevenasynccleanup failures retained. New private
+  source/safeproof freeze awaits independent SPEC→QUALITY; wholePERF/fullmakeTest/
+  18matrix/80%/fullruntime remain OPEN. No commit/integration/push/deployment.
+
+
+- BEFORE bounded canonical observation-failure fix2026-10-13: additionally own
+  apps/api/src/zebra_agent_api/stream_v2_reader.py ONLY typed TimeoutError/native
+  OperationalError around durable pending.result; Grant/disconnect checks before
+  reset and existing observation_unavailable notice, then graceful close. No retry,
+  sourcecache/provisionalcontinuation/Taskfailure; unknown/integrity/cancel unchanged.
+  NEW tests/api/test_stream_v2_observation_failure_native.py exact focused native
+  typedfault/sharedroutes/customerrors/cancel/expiry + actualHTTP requested600
+  controlledconnectfault afterrecovery proving reset→notice→earlyEOF failure.
+  Existing harness StopAsyncIteration guard already denies earlyEOF; preliminary
+  falsePASS concern corrected/unconfirmed, no redundantguard. Naturaldiagnostic
+  onecase600 passed11af but originalmatrix03 infrastructurecause staysunlinked.
+
+
+- BEFORE matrix03 diagnostic-only follow-up2026-10-13: retain immutable private
+  failure-matrix03-20261013T092411991142Z (manifestdc17dfda) and unchanged289e review.
+  Owned native_source_head_http.py/native_source_head_diagnostics.py capture ASGI
+  terminal exception CLASS/phase/monotonic only before original re-raise; failure
+  steady boundaries/completedLeasecount, explicit incomplete/SLOFalse. Owned
+  test_telemetry.py sentinel regression only. One controlled native TaskIO-connect
+  timeout after real recovery and one natural pausedSession1 max600 diagnostic,
+  separately labelled; no blind repeats/full18 run. No productionretry/auth/pool/
+  executor/deadline/ramp/TTL/sourcepredicate changes; classify before proposedfix.
+
+
+- 2026-10-13 follow-up: implementation remains In Progress, pending NEW frozen
+  serial SPEC then QUALITY review. ed796 SPEC_GO/QUALITY_NO_GO retained; nominal
+  tests did not cover overridden public hooks. Shared exact-original eligibility
+  and callback fallback now pass2+104+25 native checks; six short100-subscriber
+  cells on runtime35e2 all admitted/recovered with100TCP peers/1post-JTI socket.
+  Prior06/07 observedTimeoutError and incomplete600 attempts remain failures.
+  Five-second SLOFalse/Lease0 is startup evidence only; no stable capacity,
+  600steady/80%/fullruntime acceptance. No commit/integration/push/deployment.
+
+
 - Status: In Progress (Ready claimed before coding2026-10-13 after CLIENT
   local249f4e6d acceptance). Human owner: Luke Ding; executor: Codex.
 - Branch/worktree: codex/cloud-stream-proof-perf-01, clean managed checkout.
@@ -392,8 +695,193 @@
   tests/stream_storage/telemetry.py instrumentation only if required;
   docs/CLOUD_STREAM_PROOF_PERF_EVIDENCE.md and existing focused plan plus
   registry/PROGRESS/task_plan/WORKLOG. No SDK, UI or Trench edits.
-- Slice2 qualified quiet head and any additional module/helper/test path require
-  exact registry amendment before editing; do not implicitly expand ownership.
+- Slice2 claimed before coding2026-10-13 after slice1f91906dc local integration
+  and primary native10/no skips18.702s. Same owner/branch/worktree. Exact additions:
+  packages/agent-storage/src/agent_storage/postgres/stream_source_head.py (new),
+  existing postgres/task_projection_checkpoint_rows.py; existing slice1
+  agent_tasks.py, stream_read_preflight.py and task_replay_headers.py remain owned.
+  packages/agent-core/src/agent_core/ports/stream_source_head.py (new narrow
+  optional read Port), existing ports/agent_tasks.py only if required;
+  apps/api/src/zebra_agent_api/session_streaming.py, coverage_public_read.py,
+  ag_ui_checkpoint_tail.py; packages/agent-integrations/src/agent_integrations/
+  ag_ui/checkpoint_observer.py; new tests/agent_storage/test_stream_source_head_native.py
+  and tests/api/test_stream_source_head_tail_native.py; new exact harness
+  tests/stream_storage/native_source_head_http.py for real loopback signedHTTP
+  idle measurements (one Run/1,10,100 subscribers, per route, explicit scope).
+  Existing telemetry instrumentation remains owned. Existing focused plan/evidence/governance owned.
+  All additions transfer only readonly COV qualification; no body/permission
+  weakening, mutation/proof writes or migrations. No SDK/UI/Trench.
+- Slice2 actual signedHTTP follow-up claimed before edits2026-10-13: add exact
+  readonly packages/agent-storage/src/agent_storage/postgres/command_wakeup_outcome.py
+  and apps/api/src/zebra_agent_api/stream_v2_http.py; add existing focused tests
+  tests/agent_storage/test_postgres_command_wakeup_outcome.py and
+  tests/api/test_stream_v2_http.py. Reuse validated Host identity inside one fresh
+  outcome snapshot and consolidate scoped pending/receipt/control/outbox reads;
+  preserve generation/branch precedence, paired-handoff terminal checks and all
+  namespace/accepted-coordinate guards. Consolidate duplicate request Task-access
+  preflights only within the same HTTP preparation, retaining fresh admission,
+  source rewriting, deadlines/cancellation and all tail/frame requalification.
+  http_host_auth.py remains outside scope: actual RS256, registry, before-consume
+  target checks, JTI consumption and mutable Host authorization remain unchanged.
+  This is intermediate cost reduction, not measured idle acceptance. Startup,
+  planned reconnect, outcome and Lease SQL remain visible in inclusive totals.
+  The authoritative <=0.2 gate is steady600s, with startup/reconnect separately
+  reported and matched-v1 inclusive total >=80% reduction still OPEN.
+  No expiry/polling extension.
+- Additional readonly outcome composition claimed before edits2026-10-13:
+  postgres/command_wakeup.py only to factor _validated_host_context row parsing;
+  retain exact SELECT wrapper, allow_unbound behavior, legacy same-Task parent
+  namespace recovery and every write caller unchanged. Existing owned optional
+  stream-source Port, source-head and observer/tail may carry a typed fresh outcome
+  with optional Host context in the same source/Run/checkpoint snapshot. Reuse one
+  shared Run validation and one shared Host parser; standalone outcome readers
+  retain their API and fallback. No command admission, capacity, Outbox, receipt,
+  lease, JTI or other write changes. Native tests cover parser/writer compatibility,
+  readonly permission, current-generation outcome precedence and Host mutation.
+- Cold checkpoint restoration scope claimed before edits2026-10-13: existing
+  postgres/task_projection_checkpoints.py only readonly snapshot/cell-loader
+  factoring; integrations/ag_ui/checkpoint_materializer.py only optional bounded
+  read reuse, no projection/prepare/commit semantics changes. Existing tests
+  tests/agent_storage/test_postgres_task_projection_checkpoints.py and
+  tests/agent_integrations/test_ag_ui_checkpoint_observer_quality.py are owned for
+  focused regression fixes within700lines; substantive new cases use the already
+  owned source-head native/tail tests. Owned core stream_source_head.py may define
+  a narrow optional read-snapshot Protocol without write methods/mandatory SQLite
+  extension. Every Event restore uses a new RR readonly snapshot under cumulative
+  2s, reuses existing head/frame/scalar/membership/cell validation and closes before
+  frame yield or backpressure. Retain metadata byte/count gates before cell bodies,
+  fresh per-frame Run/privacy checks and standalone/SQLite fallback. No cross-Event
+  authority cache, checkpoint writes, migration or planner/test threshold changes.
+- Before readonly Port typing follow-up edits2026-10-13, additionally claim
+  integrations/ag_ui/binding_resolution.py only the binding_member_before reader
+  annotation/import. It reads binding-ledger head and cells; narrow read Port typing must preserve all
+  selection/validation behavior and all existing full-Port callers. No body or
+  projection rules change. Existing owned integration/native tests cover callers.
+- After frozen matrix attempt01 stopped on real startup HTTP503 at100 quiet
+  Session subscribers2026-10-13, claim diagnostic-only amendment of already owned
+  tests/stream_storage/native_source_head_http.py before coding: retain allowlisted
+  scalar status/reason/retryable and subscriber index, admitted/recovered counts,
+  phase SQL/timings in error JSON. Preserve2s auth,25ms ramp,60s admission bound,
+ 600s windows and all production source. Run only short100-subscriber diagnostic;
+  fresh review required before new600s accepted run. First2 complete cells retained.
+- Native startup diagnosis follow-up claimed BEFORE coding2026-10-13: new exact
+  tests/stream_storage/native_source_head_diagnostics.py to move existing timing
+  wrappers and record authorized_async_read submitted/callback/thread timestamps,
+  supplied deadline remaining and exception class only. Preserve original callback,
+  async timeout, thread pool and all authority/source behavior. Bound non200 body
+  consumption to4KiB; no raw bodies/headers/credentials. Existing harness remains
+  <=700lines. Run only diagnostic02,100 quiet Session/5s; review before600s.
+- After diagnostic02 proves serial executor dispatch exhausts cumulative2s,
+  claim BEFORE editing already owned stream_v2_http.py raw_response only: combine
+  prepare_v2/source_query/original Session highwater or Task header into one existing
+  authorized_task_preflight worker operation. Initial http.py tenant/source gate
+  remains separate and unchanged. Preserve None/local fallback, cursor/errors,
+  all original source reads and shared2s deadline; no cache/executor/auth changes.
+  Existing test_stream_v2_http.py covers both raw callers. Targeted checks then
+  one short100 diagnostic; independent review/refreeze before new600s acceptance.
+- After short100 matrix still fails cumulative2s in its initial-source plus raw
+  dispatches, claim BEFORE coding exact apps/api/src/zebra_agent_api/http.py:
+  cloud raw stream initial tenant_scope_response then cloud_raw_stream_preflight
+  becomes raw_response's optional authorize callback within its same existing
+  preflight dispatch. Keep entry/authorize/prepare/exit deadline checks and all SQL,
+  local/legacy fallback; track negotiation to avoid duplicate None-path invocation.
+  No Host/JTI/executor/cache changes. Existing owned test_stream_v2_http.py adds
+  minimal both-route deny/order/fallback checks. Explicit regression paths:
+  tests/api/test_task_stream_cursor_http.py, test_tenant_isolation.py,
+  test_host_auth_http.py (regression-only, no policy/fixture weakening).
+  Targeted gates then same6 short100 cells; reviews before new600s acceptance.
+- Native setup diagnosis04 claimed BEFORE coding2026-10-13 in existing owned
+  native_source_head_http.py/native_source_head_diagnostics.py only: unchanged100
+  clients/ramp/deadlines/executor; measure construction wall/threadCPU, actual
+  issuance spacing, admission client-loop CPU, bounded API lifespan lag/CPU summary,
+  factory/environment setup separately. Close probe on errors; no bodies/credentials.
+  One100 quiet Session5s only. No shared client or additional production changes
+  before measured decision; latestRun reader is already3SQL includingSET.
+- After diagnostic04 measures constructor1.301s CPU/64.1% client admission CPU,
+  claim BEFORE test-only resource reuse in existing2 harness files: one shared
+  AsyncClient per observe lifetime, explicit100 connection/<=100keepalive limits,
+  still100 simultaneous real SSEs/freshJTI perGET. Preserve25ms/60s/2s/TLS options;
+  record actual issuance and loopback peer TCP-port uniqueness at recovery barrier.
+  Close client after all consumer cleanup on error; no production/executor change.
+  One6-cell100 quiet/paused x3routes5s candidate, no600 before gates/reviews.
+- BEFORE readonly preparation reuse2026-10-13 claim existing agent_tasks.py,
+  stream_proof_batch.py, stream_v2_authority.py, stream_v2_http.py: explicit one
+  fresh proof snapshot for native raw mapping/latestRun/bind, standalone wrappers
+  remain fresh; custom/absent-reader/legacy and AGUI paths preserve fallback.
+  Also own tests/stream_storage/test_telemetry.py alongside telemetry.py for
+  generator socket-duration yield/return/failure checks. No historical timing
+  inference; same deadlines/ramp. Focused gates then six short100 cells only.
+- AFTER immutable matrix02 failure, BEFORE diagnostic-only amendment2026-10-13:
+  owned native_source_head_diagnostics.py records Task mapping/principal binding/
+  TaskIO connect+resolver exception CLASS, scalar stage/deadline/connect remaining,
+  and actual Host authorize_request to_thread submitted/entered queue. No strings,
+  bodies/headers/credentials; preserve exact pool/timeout/return/error semantics.
+  One100quiet Session5s with same sharedclient25ms/2s/60s only; no prod edits or
+  broader post-JTI snapshot implementation before classifier/proposal review.
+- BEFORE bounded post-JTI raw snapshot implementation2026-10-13 additionally
+  claim exact readonly scope: apps/api/src/zebra_agent_api/tenant_guard.py optional
+  explicit proof only; postgres/projections.py factor namespace SELECT/parser;
+  postgres/events.py factor read_session_highwater SELECT/conflict parser only;
+  postgres/direct_control.py native binding-reader identity/readonly snapshot
+  compatibility, preserving custom method/reader/subclass/DSN/namespace fallback.
+  Existing owned proofbatch/task_admission/http/v2http/coverage compose one RR
+  tenant→source→mapping/latest/bind/highwater phase. No appender/CAS/publication,
+  proof writes, auth/JTI/executor/pool edits. Tests remain already-owned v2HTTP/
+  proofbatch. Original deadline checks and standalone/custom fallback retained;
+  close snapshot before return/tail. Focused gates then one6short100 matrix only.
+- AFTER immutable ed796 QUALITY NO-GO, BEFORE readonly hook eligibility fix:
+  existing projections.py/events.py original-method identity aliases only; own
+  packages/agent-storage/src/agent_storage/live_event_store.py ONLY original
+  public read_session_highwater method identity alias, no publication/write changes.
+  Owned stream_v2_http.py checks namespace method plus BOTH publisher and underlying
+  EventStore highwater identities; custom wrapped deny/transform hooks fall back.
+  Native regressions in already-owned test_stream_v2_http.py; static before gates,
+  preserve NO-GO/failed proofs, one6short100matrix then fresh freeze/reviews only.
+- AFTER actual matrix06 AGUI83 cumulative TimeoutError, BEFORE AGUI read reuse:
+  own apps/api/src/zebra_agent_api/ag_ui_stream.py ONLY optional initial readonly
+  metadata reader; existing core stream_source_head.py optional4method observation
+  Protocol, observer initial snapshot/cursor/recovery only, normal materializer/
+  tail unchanged. Existing proof/storage helpers share original queries/parsers
+  in one freshRR. Existing v2HTTP exact-original callback/read/bind eligibility;
+  existing stream_v2_authority.py bind identity alias ONLY for new AGUI path.
+  Lower diagnostic timing preserves public hook semantics. No mutation/cache/
+  auth/pool/ramp/deadline changes. Existing680/693AGUI tests run unchanged; new
+  cases in ownedv2HTTP/sourceheadtail<700. Static/native before short-cell approval.
+- BEFORE baseline-stale fixture repair own tests/api/test_agui_checkpoint_get_quality.py
+  ONLY test_actual_get_preflight_is_body_free_before_its_bounded_page callback
+  patch target from removed http alias to current stream_v2_http; all body/bounds/
+  deadline expectations unchanged. Primaryf919 isolated failure independently proven.
+- BEFORE one-scan reduction after attempt07 failure73: existing ag_ui_stream.py/
+  stream_v2_http.py optional internal qualified-Task identity permits headerFalse
+  ONLY same-request native proof + original successful sameTask V2 binding;
+  legacy/unbound/customTrue, mandatory full checkpoint source retained. Existing
+  authority bind_snapshot original alias/guard and lower diagnostics timing ONLY.
+  No cache across request/await, no auth/pool/ramp/deadline/write changes.
+- BEFORE shared raw/optional-head public-hook compatibility fix: existing Task
+  adapter exact-original readonly eligibility property; native raw authority
+  bind/bindSnapshot and source/checkpoint public-head identities. Existing coverage,
+  Session/Task/AGUI tails and observer head/Event restore choose existing fallback
+  on incompatibility. Existing events.py/live_event_store.py ONLY readonly page/
+  status original aliases+eligibility (no append/CAS/publication changes); Session
+  shortcut verifies same Task/Event DSN+namespace. Core optional Port documentation
+  only; nonnative default/SQLite unchanged. Owned diagnostics lower-row timing and
+  focused native hook regressions; static before one gate, no600/freeze/commit.
+- BEFORE raw public-callback compatibility fix: existing stream_v2_http.py shared
+  authority declines changed prepare_v2 module callback via captured original
+  identity; fallback preserves original4arg call. source_query unchanged3arg kept.
+  Existing native test covers Session/Task wrapped4arg callback409+invocation;
+  no auth/cache/newPort/writes or newpaths. Static then one focused callback gate.
+- Existing SQLite and non-head implementations retain compatibility; avoid a
+  mandatory new method on all existing Task adapters if an optional read Port
+  suffices. Storage must not import integrations for checkpoint-version choice.
+  New helper/module/test paths beyond this exact list need amendment BEFORE edits.
+- Quiet head must qualify every fresh cycle even if highwater unchanged, preserve
+  requested parent Session cursor/status independently from active Task Segment,
+  add full canonical membership proof to empty AG-UI reads, and preserve changed
+  page/post-read privacy/terminal-drain guards. A head is not lasting authority.
+  Count startup/hints/reconnect/Host and paused-generation refresh SQL separately
+  and inclusively;32SQL per30s refresh cannot be hidden by a2SQL head. Spec <=0.2
+  applies to steady600s including auth refresh; matched-v1 total >=80% remains OPEN.
 - Human owner: Luke Ding; intended branch codex/cloud-stream-proof-perf-01.
 - Goal: reduce measured connection/query duplication without caching mutable
   authorization, changing privacy checks or hiding costs behind longer polling.
@@ -414,7 +902,9 @@
 - Current one-sample native activation: 81 client SQL,18 fresh connections,
   297.5ms; quiet-cycle Session13/Task12/AG-UI13 SQL. Not p95 or capacity proof.
 - Targets: activation about3 connections; quiet cycle2-4 client SQL, measured
-  <=0.2 SQL/subscriber/s. Connection reuse alone cannot meet the SQL goal.
+  <=0.2 SQL/subscriber/s over600s steady observation including authorization.
+  Startup/reconnect and inclusive total remain visible; total >=80% matched-v1
+  reduction is an independent gate. Connection reuse alone is not proof.
 - Validate authority mutation between issue/resolve, legitimate renewal/ancillary
   expression, namespace/snapshot/timeouts/cleanup, terminal drain/handoff/missed
   hints, zero frame SQL and paired actual HTTP/SDK total SQL/TTFT.

@@ -214,6 +214,39 @@ def test_bounded_roundrobin_and_projector_fanout(queue):
             store.read_pending_projection_work(limit=invalid)
 
 
+def test_scalar_fanout_receipt_and_next_anchor_are_route_scoped(queue):
+    active(queue)
+    versions = ["ag-ui-v1", "other-0", "other-1", "other-2"]
+    for version in versions[1:]:
+        queue.store(version=version).enable_projection_work()
+    other_task = UUID(int=queue.task.int ^ 1)
+    namespace_column = "namespace" if queue.backend == "sqlite" else "deployment_namespace"
+    with queue.connect() as connection:
+        queue.execute(
+            connection,
+            f"INSERT INTO agent_tasks(task_id,{namespace_column},next_event_sequence,"
+            "event_position_state) VALUES (?,?,0,'ready')",
+            (str(other_task), queue.namespace),
+        )
+        other_before = [dict(row) for row in queue.execute(
+            connection, "SELECT * FROM task_projection_work_routes WHERE task_id=? "
+            "ORDER BY projector_version", (str(other_task),),
+        ).fetchall()]
+    queue.append(0, run="one")
+    queue.append(1, body='{"receipt":"fanout"}')
+    queue.append(2, kind="message", run="two")
+    assert sorted(
+        (row["projector_version"], row["anchor_sequence"], row["requested_through"],
+         row["closed_through"]) for row in queue.work_rows()
+    ) == sorted((version, anchor, through, closed) for version in versions
+                for anchor, through, closed in ((0, 1, 1), (2, 2, None)))
+    with queue.connect() as connection:
+        assert [dict(row) for row in queue.execute(
+            connection, "SELECT * FROM task_projection_work_routes WHERE task_id=? "
+            "ORDER BY projector_version", (str(other_task),),
+        ).fetchall()] == other_before
+
+
 def test_persistent_finite_defer_and_explicit_retry(queue, monkeypatch):
     store = active(queue)
     queue.append(0)

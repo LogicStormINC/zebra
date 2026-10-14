@@ -498,7 +498,7 @@ def test_native_issued_report_crash_recovers_after_original_deadline_without_mod
     monkeypatch,
 ):
     import zebra_agent_worker.coverage_dispatch as dispatch
-    import zebra_agent_worker.coverage_recovery as recovery
+    import zebra_agent_worker.coverage_recovery_authority as recovery
     from agent_core.domain.events import EventType
     from agent_core.domain.sessions import SessionStatus
     from agent_storage.postgres.command_wakeup_handoff import HandoffStatus

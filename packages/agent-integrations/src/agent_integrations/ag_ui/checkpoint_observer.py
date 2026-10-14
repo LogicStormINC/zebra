@@ -1,11 +1,14 @@
 """Read-only, bounded observation of a shared durable AG-UI projection."""
 
 from collections.abc import Iterator
+from contextlib import nullcontext
 from dataclasses import dataclass
 
 from ag_ui.core import Event
+from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import TaskId
 from agent_core.ports.agent_tasks import AgentTaskPort, TaskEventPage
+from agent_core.ports.stream_source_head import StreamObservationReadPort, StreamSourceHeadPort
 from agent_core.ports.task_projection_checkpoints import (
     CheckpointConflict,
     CheckpointNotReady,
@@ -15,7 +18,11 @@ from agent_core.ports.task_projection_checkpoints import (
 from agent_core.ports.task_replay import TaskRunHeader
 
 from agent_integrations.ag_ui.checkpoint_materializer import AgUiCheckpointMaterializer
-from agent_integrations.ag_ui.checkpoint_plan import checkpoint_version
+from agent_integrations.ag_ui.checkpoint_plan import (
+    AG_UI_CHECKPOINT_VERSION,
+    AG_UI_COVERAGE_CHECKPOINT_VERSION,
+    checkpoint_version,
+)
 from agent_integrations.ag_ui.contracts import AgUiCursor, AgUiProjectionError, AgUiRunIdentity
 
 
@@ -23,6 +30,8 @@ from agent_integrations.ag_ui.contracts import AgUiCursor, AgUiProjectionError, 
 class AgUiObservationSnapshot:
     run: TaskRunHeader
     head: ProjectionCheckpointHead
+    command_outcome: str | None = None
+    outcome_checked: bool = False
 
     @property
     def bound(self) -> bool:
@@ -37,18 +46,53 @@ class AgUiObservationSnapshot:
 class AgUiCheckpointObserver:
     """Never hydrates a Task, materializes checkpoints, or executes commands."""
 
-    def __init__(self, tasks: AgentTaskPort, *, namespace: str) -> None:
+    def __init__(
+        self,
+        tasks: AgentTaskPort,
+        *,
+        namespace: str,
+        initial_metadata: StreamObservationReadPort | None = None,
+    ) -> None:
         self.tasks, self.namespace = tasks, namespace
+        self.initial_metadata = initial_metadata
         self.materializer = AgUiCheckpointMaterializer(tasks)
 
-    def snapshot(self, task_id: TaskId, identity: AgUiRunIdentity) -> AgUiObservationSnapshot:
+    def snapshot(
+        self,
+        task_id: TaskId,
+        identity: AgUiRunIdentity,
+        host_context: HostContextEnvelope | None = None,
+    ) -> AgUiObservationSnapshot:
         if str(task_id) != identity.thread_id:
             raise AgUiProjectionError("observation belongs to another Task")
+        read_head = None
+        if self.initial_metadata is not None:
+            read_head = self.initial_metadata.read_stream_checkpoint_head
+        elif isinstance(self.tasks, StreamSourceHeadPort) and getattr(
+            self.tasks, "stream_head_reads_compatible", True
+        ):
+            read_head = self.tasks.read_stream_checkpoint_head
+        if read_head is not None:
+            captured = read_head(
+                task_id,
+                identity.run_id,
+                ordinary_version=AG_UI_CHECKPOINT_VERSION,
+                coverage_version=AG_UI_COVERAGE_CHECKPOINT_VERSION,
+                host_context=host_context,
+            )
+            run, head = captured.run, captured.head
+            if run.task_id != task_id or run.run_id != identity.run_id:
+                raise CheckpointConflict("observation Run belongs to another Task/run")
+            return AgUiObservationSnapshot(
+                run, head, captured.command_outcome, host_context is not None
+            )
         run = self.tasks.read_run_header(task_id, identity.run_id)
         if run.task_id != task_id or run.run_id != identity.run_id:
             raise CheckpointConflict("observation Run belongs to another Task/run")
         scope = ProjectionScope(
-            self.namespace, task_id, run.anchor.event_id if run.anchor else None,
+            self.namespace,
+            task_id,
+            run.anchor.event_id if run.anchor else None,
             checkpoint_version(run),
         )
         # A newly admitted command may not have reached its source index yet.
@@ -63,8 +107,10 @@ class AgUiCheckpointObserver:
             if refreshed.task_id != task_id or refreshed.run_id != identity.run_id:
                 raise CheckpointConflict("refreshed observation belongs to another Task/run")
             if (
-                refreshed.anchor != run.anchor or refreshed.start != run.start
-                or refreshed.legacy != run.legacy or refreshed.control_only != run.control_only
+                refreshed.anchor != run.anchor
+                or refreshed.start != run.start
+                or refreshed.legacy != run.legacy
+                or refreshed.control_only != run.control_only
                 or refreshed.strict_coverage != run.strict_coverage
             ):
                 raise CheckpointNotReady("observation Run changed while capturing its head")
@@ -91,7 +137,8 @@ class AgUiCheckpointObserver:
             or (run.stop is not None and cursor.sequence >= run.stop)
         ):
             raise AgUiProjectionError("cursor is outside the requested Task/run")
-        source = self.tasks.read_event_header(run.task_id, cursor.sequence)
+        reader = self.initial_metadata if self.initial_metadata is not None else self.tasks
+        source = reader.read_event_header(run.task_id, cursor.sequence)
         if source is None or str(source.event_id) != cursor.event_id:
             raise AgUiProjectionError("cursor does not identify a canonical Task Event")
         if source.task_id != run.task_id or source.task_sequence != cursor.sequence:
@@ -100,42 +147,52 @@ class AgUiCheckpointObserver:
             return
         if cursor.sequence < run.start:
             raise AgUiProjectionError("cursor frame precedes its Run")
-        header = self.tasks.read_event_projection_header(snapshot.head.scope, cursor.sequence)
+        header = reader.read_event_projection_header(snapshot.head.scope, cursor.sequence)
         if header is None:
             raise CheckpointNotReady("cursor frame checkpoint is not ready")
-        if (
-            (header.event_id, header.segment_id, header.segment_sequence)
-            != (source.event_id, source.segment_id, source.segment_sequence)
-            or header.task_sequence != source.task_sequence
-        ):
+        if (header.event_id, header.segment_id, header.segment_sequence) != (
+            source.event_id,
+            source.segment_id,
+            source.segment_sequence,
+        ) or header.task_sequence != source.task_sequence:
             raise CheckpointConflict("cursor frame conflicts with canonical source")
         if not header.eligible or cursor.frame_index >= header.frame_count:
             raise AgUiProjectionError("cursor frame is outside its durable Event")
 
     def recovery_cursor(
-        self, snapshot: AgUiObservationSnapshot, identity: AgUiRunIdentity,
+        self,
+        snapshot: AgUiObservationSnapshot,
+        identity: AgUiRunIdentity,
     ) -> AgUiCursor | None:
         header = snapshot.head.latest_eligible
         if (
-            not snapshot.bound or header is None
+            not snapshot.bound
+            or header is None
             or not snapshot.run.start <= header.task_sequence <= snapshot.through
         ):
             return None
         return AgUiCursor(
-            thread_id=identity.thread_id, run_id=identity.run_id,
-            sequence=header.task_sequence, event_id=str(header.event_id),
+            thread_id=identity.thread_id,
+            run_id=identity.run_id,
+            sequence=header.task_sequence,
+            event_id=str(header.event_id),
             frame_index=header.frame_count - 1 if header.frame_count else None,
         )
 
     def read_page(
-        self, snapshot: AgUiObservationSnapshot, after_source: int,
+        self,
+        snapshot: AgUiObservationSnapshot,
+        after_source: int,
     ) -> TaskEventPage | None:
         if not snapshot.bound or snapshot.through < snapshot.run.start:
             return None
         if after_source >= snapshot.through:
             return None
         return self.tasks.read_event_page(
-            snapshot.run.task_id, after_source, limit=256, max_bytes=1_048_576,
+            snapshot.run.task_id,
+            after_source,
+            limit=256,
+            max_bytes=1_048_576,
             through_sequence=snapshot.through,
         )
 
@@ -150,42 +207,69 @@ class AgUiCheckpointObserver:
         if page.highwater != snapshot.through or page.after_sequence < snapshot.run.start - 1:
             raise AgUiProjectionError("observation Page does not match its Run window")
         for entry in page.events:
-            header = self.tasks.read_event_projection_header(
-                snapshot.head.scope, entry.task_sequence,
+            snapshot_read = (
+                self.tasks.read_checkpoint_snapshot(snapshot.head.scope, entry.task_sequence)
+                if (
+                    isinstance(self.tasks, StreamSourceHeadPort)
+                    and getattr(self.tasks, "stream_head_reads_compatible", True)
+                )
+                else nullcontext(self.tasks)
             )
-            if header is None:
-                raise CheckpointNotReady("observation Page is missing a frame header")
-            if (
-                entry.task_id != snapshot.run.task_id
-                or (
-                    header.task_sequence, header.event_id, header.segment_id,
-                    header.segment_sequence,
+            # The bounded Event restore finishes and releases its socket before yield.
+            with snapshot_read as reader:
+                header = reader.read_event_projection_header(
+                    snapshot.head.scope,
+                    entry.task_sequence,
                 )
-                != (
-                    entry.task_sequence, entry.event.event_id, entry.segment_id,
-                    entry.segment_sequence,
+                if header is None:
+                    raise CheckpointNotReady("observation Page is missing a frame header")
+                if (
+                    entry.task_id != snapshot.run.task_id
+                    or (
+                        header.task_sequence,
+                        header.event_id,
+                        header.segment_id,
+                        header.segment_sequence,
+                    )
+                    != (
+                        entry.task_sequence,
+                        entry.event.event_id,
+                        entry.segment_id,
+                        entry.segment_sequence,
+                    )
+                    or entry.event.session_id != entry.segment_id
+                    or entry.event.sequence != entry.segment_sequence
+                ):
+                    raise CheckpointConflict(
+                        "observation Page conflicts with its canonical frame header"
+                    )
+                if not header.eligible:
+                    # Silent source positions still advance the caller's watermark.
+                    continue
+                if after is not None and entry.task_sequence < after.sequence:
+                    continue
+                frames = tuple(
+                    AgUiCheckpointMaterializer(
+                        reader, self.materializer.projector
+                    ).iter_event_frames(
+                        snapshot.head.scope,
+                        entry,
+                        identity,
+                        run=snapshot.run,
+                        after=(
+                            after
+                            if after is not None and entry.task_sequence == after.sequence
+                            else None
+                        ),
+                    )
                 )
-                or entry.event.session_id != entry.segment_id
-                or entry.event.sequence != entry.segment_sequence
-            ):
-                raise CheckpointConflict(
-                    "observation Page conflicts with its canonical frame header"
-                )
-            if not header.eligible:
-                continue  # Silent/ineligible source positions still advance the caller's watermark.
-            if after is not None and entry.task_sequence < after.sequence:
-                continue
-            frames = self.materializer.iter_event_frames(
-                snapshot.head.scope, entry, identity, run=snapshot.run,
-                after=(
-                    after if after is not None and entry.task_sequence == after.sequence else None
-                ),
-            )
             for frame in frames:
                 current = self.tasks.read_run_header(snapshot.run.task_id, identity.run_id)
                 if (
-                    current.task_id != snapshot.run.task_id or current.run_id != identity.run_id
-                    or current.anchor != snapshot.run.anchor or current.start != snapshot.run.start
+                    current.task_id != snapshot.run.task_id
+                    or current.run_id != identity.run_id
+                    or current.anchor != snapshot.run.anchor
+                    or current.start != snapshot.run.start
                     or current.strict_coverage != snapshot.run.strict_coverage
                 ):
                     raise CheckpointNotReady("observation Run privacy changed before delivery")

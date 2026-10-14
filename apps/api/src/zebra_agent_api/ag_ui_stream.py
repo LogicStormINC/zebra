@@ -17,6 +17,7 @@ from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.ports import LiveEventFanoutPort
 from agent_core.ports.agent_tasks import TaskEvent
+from agent_core.ports.stream_source_head import StreamObservationReadPort
 from agent_core.ports.task_projection_checkpoints import CheckpointConflict, CheckpointNotReady
 from agent_integrations.ag_ui import AgUiCursor, AgUiProjectionError, AgUiRunIdentity
 from agent_integrations.ag_ui.checkpoint_observer import AgUiCheckpointObserver
@@ -79,6 +80,8 @@ def prepare_agui_stream(
     host_context: HostContextEnvelope | None = None,
     notifications: AsyncRedisNotifications | None = None,
     recovery_notice: bool = False,
+    initial_metadata: StreamObservationReadPort | None = None,
+    source_qualified_task: TaskId | None = None,
 ) -> AgUiStreamContext | ApiResponse | None:
     """Indexed, body-free preflight; never adopt/repair/materialize from GET."""
     path_identity = _stream_path_identity(path)
@@ -91,10 +94,16 @@ def prepare_agui_stream(
         task_id = TaskId(UUID(thread_text))
     except ValueError:
         return _problem(400, "invalid_request", "threadId must be a UUID", path)
+    if source_qualified_task is not None and (
+        initial_metadata is None or source_qualified_task != task_id
+    ):
+        return _problem(409, "projection_conflict", "qualified Task identity conflicts", path)
     cloud = getattr(stores, "deployment_namespace", None) is not None
     try:
         task = (
-            stores.tasks.read_task_header(task_id, require_source_coverage=True)
+            (initial_metadata if initial_metadata is not None else stores.tasks).read_task_header(
+                task_id, require_source_coverage=source_qualified_task is None
+            )
             if cloud
             else stores.tasks.get_task(task_id)
         )
@@ -123,7 +132,11 @@ def prepare_agui_stream(
     cursor, error = _query_cursor(query, path)
     if error is not None:
         return error
-    observer = AgUiCheckpointObserver(stores.tasks, namespace=deployment_namespace or "local")
+    observer = AgUiCheckpointObserver(
+        stores.tasks,
+        namespace=deployment_namespace or "local",
+        **({"initial_metadata": initial_metadata} if initial_metadata is not None else {}),
+    )
     snapshot = None
     try:
         snapshot = observer.snapshot(task_id, identity)

@@ -55,9 +55,11 @@ class V2ReadAuthority:
 
     def bind(self, task_id: TaskId, run_id: str, host: HostContextEnvelope) -> V2ReadBinding | None:
         with self.proofs.snapshot() as proof:
-            return self._bind(proof, task_id, run_id, host)
+            return self.bind_snapshot(proof, task_id, run_id, host)
 
-    def _bind(
+    _snapshot_native_bind = bind
+
+    def bind_snapshot(
         self, proof: StreamProofSnapshot, task_id: TaskId, run_id: str, host: HostContextEnvelope
     ) -> V2ReadBinding | None:
         admission = load_run_stream_admission(cast(AgentTaskPort, proof), task_id, run_id)
@@ -89,6 +91,8 @@ class V2ReadAuthority:
             self.key_prefix,
         )
 
+    _snapshot_native_bind_snapshot = bind_snapshot
+
     def qualify(self, bound: V2ReadBinding, descriptor: TransientDescriptor) -> datetime:
         with self.proofs.snapshot() as proof:
             return self._qualify(proof, bound, descriptor)
@@ -97,7 +101,7 @@ class V2ReadAuthority:
         self, proof: StreamProofSnapshot, bound: V2ReadBinding, descriptor: TransientDescriptor
     ) -> datetime:
         scope, generation = descriptor.scope, descriptor.scope.generation
-        fresh = self._bind(proof, bound.task_id, bound.run_id, bound.host)
+        fresh = self.bind_snapshot(proof, bound.task_id, bound.run_id, bound.host)
         if fresh != bound or (
             scope.deployment_namespace != bound.namespace
             or scope.authority_scope != bound.authority

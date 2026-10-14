@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from ag_ui.core import CustomEvent
 from ag_ui.encoder import EventEncoder
 from agent_core.ports.live_event_fanout import CheckpointNotificationPort, LiveEventCursor
+from agent_core.ports.stream_source_head import StreamSourceHeadPort
 from agent_core.ports.task_projection_checkpoints import CheckpointConflict, CheckpointNotReady
 from agent_core.ports.task_projection_work import ProjectionWorkProblem
 from agent_integrations.ag_ui.checkpoint_observer import AgUiCheckpointObserver
@@ -170,8 +171,20 @@ async def tail_checkpoint_frames(
             return
         emitted = False
         try:
+            compatible = getattr(
+                getattr(context, "command_outcome", None), "supports_source_head", None
+            )
+            captured_host = (
+                context.host_context
+                if callable(compatible) and compatible(context.stores.tasks)
+                else None
+            )
             snapshot = await _read_until(
-                deadline, observer.snapshot, context.task_id, context.identity
+                deadline,
+                observer.snapshot,
+                context.task_id,
+                context.identity,
+                *((captured_host,) if captured_host is not None else ()),
             )
             if monotonic() >= deadline or await request.is_disconnected():
                 return
@@ -192,12 +205,22 @@ async def tail_checkpoint_frames(
                 page = await _read_until(deadline, observer.read_page, snapshot, after_source)
                 if page is not None:
                     if getattr(context.stores, "deployment_namespace", None) is not None:
-                        header = await _read_until(
-                            deadline,
-                            context.stores.tasks.read_task_header,
-                            context.task_id,
-                            require_source_coverage=True,
-                        )
+                        if isinstance(context.stores.tasks, StreamSourceHeadPort) and getattr(
+                            context.stores.tasks, "stream_head_reads_compatible", True
+                        ):
+                            source = await _read_until(
+                                deadline,
+                                context.stores.tasks.read_stream_source_head,
+                                task_id=context.task_id,
+                            )
+                            header = source.task if source is not None else None
+                        else:
+                            header = await _read_until(
+                                deadline,
+                                context.stores.tasks.read_task_header,
+                                context.task_id,
+                                require_source_coverage=True,
+                            )
                         if (
                             header is None
                             or header.strict_coverage is None
@@ -272,14 +295,16 @@ async def tail_checkpoint_frames(
                     and context.host_context is not None
                     and snapshot.run.anchor is not None
                 ):
-                    outcome = await _read_until(
-                        deadline,
-                        context.command_outcome,
-                        context.task_id,
-                        context.identity.run_id,
-                        snapshot.run.anchor.event_id,
-                        context.host_context,
-                    )
+                    outcome = snapshot.command_outcome
+                    if not snapshot.outcome_checked:
+                        outcome = await _read_until(
+                            deadline,
+                            context.command_outcome,
+                            context.task_id,
+                            context.identity.run_id,
+                            snapshot.run.anchor.event_id,
+                            context.host_context,
+                        )
                     if monotonic() >= deadline or await request.is_disconnected():
                         return
                     if outcome in {

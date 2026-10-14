@@ -46,6 +46,7 @@ from tests.agent_integrations.ag_ui_checkpoint_consumer_scratch import (
     assert_transport_problem,
     observe_unchanged,
     persist_problem,
+    prepare_source_projections,
 )
 from tests.agent_integrations.ag_ui_checkpoint_consumer_scratch import (
     native_source as _native_source_fixture,
@@ -181,31 +182,29 @@ def test_native_pre_anchor_warming_and_cold_restore_match_task_projector(
 ):
     tasks, events, queue = native_source
     task = _task(tasks)
-    sources = _prefix_sources(tasks, task) + [
-        _append(
-            events,
-            task,
-            0,
-            EventType.MODEL_RESPONSE_DELTA,
-            {"model_call_id": "old", "content_delta": "prefix"},
+    offset = _source_offset(tasks)
+    sources = _prefix_sources(tasks, task)
+    if offset:
+        sources.append(_append(events, task, 0, EventType.TASK_PREPARED,
+                               {"title": "Pre-anchor", "user_input": "Inspect"}))
+    sources += [
+        _append(events, task, offset,
+            EventType.MODEL_RESPONSE_DELTA, {"model_call_id": "old", "content_delta": "prefix"},
         ),
-        _command(events, task, 1),
-        _append(
-            events,
-            task,
-            2,
+        _command(events, task, 1 + offset),
+        _append(events, task, 2 + offset,
             EventType.MODEL_RESPONSE_RECEIVED,
             {"model_call_id": "old", "assistant_message": "prefix"},
         ),
     ]
+    prepare_source_projections(tasks, sources)
     work = queue.read_pending_projection_work()[0]
     _forbid_history(tasks, monkeypatch)
     assert _consumer(tasks, queue).materialize_once(work)
     restored = _restore(tasks)
     _forbid_history(restored, monkeypatch)
     identity = AgUiRunIdentity(
-        session_id=task.active_segment_id, thread_id=str(task.task_id), run_id="run"
-    )
+        session_id=task.active_segment_id, thread_id=str(task.task_id), run_id="run")
     observer = AgUiCheckpointObserver(restored, namespace="local")
     snapshot = observer.snapshot(task.task_id, identity)
     page = observer.read_page(snapshot, snapshot.run.start - 1)
@@ -631,6 +630,7 @@ def test_native_full_text_tool_terminal_output_and_each_cursor_survive_cold_rest
     sources = _prefix_sources(tasks, task) + [_command(events, task)]
     for event in _golden_events(task.active_segment_id):
         sources.append(_append(events, task, event.sequence + 1, event.event_type, event.payload))
+    prepare_source_projections(tasks, sources)
     _forbid_history(tasks, monkeypatch)
     pages = _page_spy(tasks, monkeypatch)
     consumer = _consumer(tasks, queue)
@@ -660,7 +660,8 @@ def test_native_observation_problem_is_typed_without_task_failure(
 ):
     tasks, events, queue = native_source
     task = _task(tasks)
-    _command(events, task)
+    sources = _prefix_sources(tasks, task) + [_command(events, task)]
+    prepare_source_projections(tasks, sources)
     work, problem = persist_problem(queue, fault, monkeypatch)
     assert problem is not None
     assert problem.attempts == (8 if fault == "exhausted" else 0 if fault == "not_ready" else 1)
@@ -684,7 +685,8 @@ def test_native_foreign_problem_scope_is_transport_conflict_not_task_failure(
 ):
     tasks, events, queue = native_source
     task = _task(tasks)
-    _command(events, task)
+    sources = _prefix_sources(tasks, task) + [_command(events, task)]
+    prepare_source_projections(tasks, sources)
     work = queue.read_pending_projection_work()[0]
     assert queue.defer_projection_work(work, problem_code="integrity")
     problem = queue.read_projection_work_problem(work.scope)

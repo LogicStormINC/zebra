@@ -219,3 +219,66 @@ def test_paired_real_handoff_child_terminal_precedes_old_outbox_error(dsn):
         context = _validated_host_context(connection, NAMESPACE, event)
         connection.execute("UPDATE broker_outbox SET status='dead'")
     assert _read(dsn, event, context) is None
+
+
+def test_source_head_outcome_shares_fresh_snapshot_and_requalifies_same_frontier(dsn):
+    from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
+
+    from tests.agent_storage.test_postgres_command_wakeup_receipts import _refresh
+    from tests.stream_storage.telemetry import Telemetry
+
+    event, context = _setup(dsn)
+    _refresh(dsn, event.session_id)
+    tasks = PostgresAgentTaskStore(dsn, deployment_namespace=NAMESPACE)
+    telemetry = Telemetry()
+
+    def capture(host):
+        return tasks.read_stream_checkpoint_head(
+            TaskId(event.session_id),
+            "run-one",
+            ordinary_version="ag-ui-v1",
+            coverage_version="ag-ui-v1-coverage",
+            host_context=host,
+        )
+
+    with telemetry.installed():
+        telemetry.stage = "qualified-outcome"
+        before = capture(context)
+    assert before.command_outcome is None
+    assert sum(v for k, v in telemetry.calls.items() if "/sql:" in k) == 2
+    assert sum(v for k, v in telemetry.calls.items() if k.endswith("new_pg_socket")) == 1
+    with psycopg.connect(dsn) as connection:
+        connection.execute("UPDATE session_command_pending SET status='dead'")
+    after = capture(context)
+    assert after.run.highwater == before.run.highwater
+    assert after.command_outcome == "command_delivery_failed"
+    with pytest.raises(ValueError, match="identity"):
+        capture(context.model_copy(update={"workspace_ref": "wrong-workspace"}))
+    with psycopg.connect(dsn) as connection:
+        connection.execute("UPDATE task_binding_snapshots SET binding_digest=%s", ("0" * 64,))
+    with pytest.raises(ValueError, match="bounded Host scope"):
+        capture(context)
+
+
+def test_head_capture_requires_exact_reader_store_and_database(dsn):
+    from agent_storage.postgres.agent_tasks import PostgresAgentTaskStore
+
+    class CustomReader(PostgresCommandOutcomeReader):
+        def __call__(self, *args):
+            return "command_unsupported"
+
+    class CustomTasks(PostgresAgentTaskStore):
+        pass
+
+    reader = PostgresCommandOutcomeReader(dsn, deployment_namespace=NAMESPACE)
+    tasks = PostgresAgentTaskStore(dsn, deployment_namespace=NAMESPACE)
+    assert reader.supports_source_head(tasks)
+    assert not reader.supports_source_head(CustomTasks(dsn, deployment_namespace=NAMESPACE))
+    custom = CustomReader(dsn, deployment_namespace=NAMESPACE)
+    assert not custom.supports_source_head(tasks)
+    assert custom(None) == "command_unsupported"
+    alternate = PostgresAgentTaskStore(
+        psycopg.conninfo.make_conninfo(dsn, application_name="different-outcome-composition"),
+        deployment_namespace=NAMESPACE,
+    )
+    assert not reader.supports_source_head(alternate)

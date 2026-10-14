@@ -14253,3 +14253,475 @@ Reviewer surfaced an owned-test DSN in an old private failure traceback. Root
 rotated only owned PostgreSQL32781 and32786 passwords, updated excluded0600
 baseline/header env files and verified new connections; old logged credentials
 invalid. Frozen proofs/source unchanged. No business credentials or services.
+
+2026-10-13 root: slice1f91906dc locally integrated into cloud-agent-trench;
+primary native10/no skips18.702s. Fresh17dirty-file manifest hash-exact after
+FF plus original41non-UI dirty hashes unchanged; current combinedUI hash exact.
+No SDK changes/retest, push or deployment. Slice2 exact readonly source/core/API/
+integration and two native-test paths claimed before code on same PERF card,
+owner Luke Ding/executor Codex/branch codex/cloud-stream-proof-perf-01. Preserve
+optional-port SQLite compatibility, fresh integrity/privacy checks, parent
+Session coordinates and AG-UI full membership; inclusive quiet target remains
+OPEN including paused-generation authority refresh.
+
+2026-10-13 root: before harness coding, add exact native_source_head_http.py
+path. Native baseline tail generators bypass HTTP; new harness must use real
+loopback network and RS256/JTI/Postgres authorizer. Idle source-head matrix is
+one Run with1/10/100 independent subscribers per route, explicitly not100
+concurrent executing Runs or full Worker/provider/SDK acceptance. Separate
+no-generation vs paused-open generation; maintain real valid Lease/Host scope
+for observation duration, count all renewal SQL, no expiry shortcut. Owned
+fixtures only; preserve frozen baseline profiler.
+
+### 2026-10-13 signedHTTP readonly cost scope amendment before implementation
+
+- Root reviewed sole implementer caller audit and claimed command_wakeup_outcome.py,
+  stream_v2_http.py and their two existing focused tests on the current PERF card.
+- Actual HTTP uncovered seven extra outcome SQL per quiet invocation and duplicate
+  request Task-access checks. Only readonly query reuse/consolidation is authorized;
+  http_host_auth.py, JTI consumption and authorization writes stay untouched.
+- Count all startup/reconnect/outcome/Lease work; intermediate reductions are not
+  sufficient proof of <=0.2 SQL/subscriber/s. No long cells before short lower-bound
+  accounting supports the unchanged target. Existing failed probes remain private.
+
+- Before further edits, additionally claimed command_wakeup.py parser extraction
+  only and fresh typed outcome composition inside the already-owned head/Port/tail.
+  Existing connection wrapper and legacy parent recovery remain unchanged; all
+  write callers must retain behavior. Separate outcome snapshots cannot meet the
+  inclusive SQL budget, so reuse the same validated Run and Host parser once.
+
+- Actual HTTP attempt7 healthy six-cell diagnostics preserve unchanged runtime/
+  harness fingerprints: quiet Session/Task startup44SQL, AG-UI89SQL; paused
+  Session/Task44SQL, AG-UI103SQL. AG-UI5SQL/30s plus startup exceeds the unchanged
+ 120SQL/600s budget; no long windows started and no SLO accepted.
+- Attempt8 six exact-progress continuation cells pass with all reconnect-ready
+  timestamps,10.010..10.091s windows and unchanged fingerprints. Producer phase
+ 133SQL remains included in each offered-work total. Separate idle-resume probes
+  must prove actual fresh heads and completed SSE heartbeats without injected
+  canonical progress; exact canonical continuation is tested independently.
+
+- Before coding, claimed readonly checkpoint snapshot/cell-loader factoring in
+  task_projection_checkpoints.py and optional read reuse in checkpoint_materializer.py,
+  plus the two existing bounded regression files. Root verified current sizes264/
+ 456 source and635/657 tests. New substantial tests stay in owned source-head tests.
+  Each Event has one fresh cumulative2s RR snapshot, closed before yielding; byte
+  gates precede bodies and per-frame fresh Run/privacy remain independent. No writes.
+
+- Claimed binding_resolution.py reader annotation/import only before edits:
+  binding_member_before reads cells, so accept the narrow readonly Port while
+  preserving all behavior/full-Port callers. No additional source logic authorized.
+
+- Root caller audit correction: binding_member_before reads the derived binding
+  ledger head as well as cells; child handoff can use a different projector scope
+  and earlier bounded position. Snapshot reuse must preserve this valid path with
+  explicit bounded same-Task/namespace/anchor scopes, never accept arbitrary scope.
+
+- Complete caller trace resolves the potential ledger boundary: only background
+  prepare_page/_prepare_membership invokes binding_member_before; Event restoration
+  does not. Prepare retains its original full Task reader, so do not broaden the
+  restore snapshot to unused ledger scopes. Verify handoff/coverage regressions.
+
+- Checkpoint restore regression attempt24:91passed/8missing-header-env skips,
+ 99total297.119s, no failures; retained before boundary refinements. Attempt25 with
+  current private header env:100passed/no skips/errors301.644s. After cached point
+  read_position correction, focused attempt26:3passed/no skips1.594s.
+- Actual signedHTTP attempt11 idle_resume quiet AG-UI:35.056753s window,
+ 35.009694 connected subscriber-seconds,130totalSQL/startup65, one reconnect with
+  fresh-head and complete-heartbeat checks, stable fingerprints. No producer SQL
+  or canonical business progress injected. This exceeds120SQL even before600s;
+  inclusive SLO FAIL remains OPEN and no long cells were started. Next audit:
+  shared metadata query fragments/row validation for source/Run/head/outcome.
+
+- Root approved exact already-owned query composition after readonly caller audit:
+  source-head, Run-header, checkpoint-row and command-outcome fragments plus shared
+  validators. No new path or generic compiler/cache. Physical seek rerun justified
+  because the CTE/LATERAL context can change planner choices; all guards retained.
+- Unchanged-code blackhole attempt27:1passed/no skips5.899s; actual recovery
+ 0.689943s/44SQL, two measured Redis waits0.250356/0.251120s. Prior broad1.009334s
+  failure remains; final regression must follow new query work. No threshold change.
+
+### Authoritative steady/inclusive metric correction2026-10-13
+
+- Root reread spec13/20.1 and found its stricter all-in120SQL/600s constraint was
+  an interpretation error. Spec <=0.2 covers600s STEADY supplemental reads including
+  auth; startup/reconnect I stays separate, and inclusive total SQL must separately
+  improve >=80% against an equivalent v1 workload. No authoritative threshold changed.
+- Preserve all prior cumulative totals and diagnostic labels. Attempt11 is130total/
+ 65startup over35s, not sufficient to accept or fail600s steady. Prior wording that
+  calls it an inclusive SLO failure refers only to the withdrawn extra constraint.
+- Shared query work continues for actual duplication/cold total cost, not to chase
+  an invented gate. No hiding startup/reconnect, longer polls, auth caching or false
+  matched-v1 claims. Harness will expose startup/steady/reconnect/full totals.
+
+
+- 2026-10-13 Slice2 implementation: shared source/Run/checkpoint/outcome metadata
+  SELECT uses existing validators,2SQL/1socket including SET; optional Event
+  restore snapshot preserves cumulative2s/lifetime/byte guards and fresh per-frame
+  Run validation. Actual composed100k plan attempt34 passes with full private plan,
+ 487.194ms execution and source disk sort; unchanged2s timeout attempt31 retained.
+  NoPayload role fails closed; no metadata-role success/TOAST certification claim.
+  Timestamp-aligned HTTP35s healthy AG-UI:59 startup/4 steady/63 totalSQL; separate
+  idle-resume117 totalSQL and continuation barriers pass. Both hashes unchanged,
+  no600s acceptance/Lease renewal observed. Equivalent current-source static gates
+  pass; literal make check21 artifact-only Ruff failures retained. Final affected
+  native regression attempt35 running; no commit/push/deploy or long matrix yet.
+
+- Final slice2 affected native attempt35:187pass/no skips500.534s; source100k
+  API unchanged2s passes, actualplan606.106ms, restricted role fails closed;
+  native blackhole0.679128s/42SQL and all original route cases pass. Historical
+ 31deadline failure retained. Pre-matrix sanitized freeze and fresh SPEC then
+  QUALITY review next; full make test and600s matrix remain separate pending gates.
+
+- Frozen RUN-ONLY matrix attempt01: quiet Session1 and10 each complete600s/pass;
+  Session100 fails actual HTTP503 during startup, before common steady barrier.
+  Preserve raw/start/error and2 complete cells; reason absent original exception.
+  BEFORE harness edit claim diagnostic-only owned native_source_head_http.py:
+  allowlisted scalar error status/reason/retryable, subscriber index and error
+  admitted/recovered counts+phase SQL/timings. No production edits or deadline,
+  ramp/window changes; only short100 quiet Session diagnostic, review before600.
+
+- BEFORE code claim new tests/stream_storage/native_source_head_diagnostics.py:
+  move existing native timing wrappers, retain request-index labels and capture
+  async callback/worker submit-enter-exit, original deadline remaining and exception
+  class only; unchanged async timeout/queue/auth semantics. Non200 bounded4KiB.
+  Diagnostic01 reproduced task_preflight_unavailable503,22admitted/4recovered;
+  preserve immutable. Only100 quiet Session5s diagnostic02 next, no new600/sourcefix.
+
+- BEFORE raw_response fix claim exact owned stream_v2_http.py + existing focused
+  test_stream_v2_http.py: one existing authorized_task_preflight dispatch combines
+  negotiation/source_query/original Sessionhighwater or Taskheader, retaining all
+  reads/cursor/errors/Nonefallback and cumulative2s. Initial HTTP tenant/source
+  gate unchanged. Diagnostic02 proved serial queue deadline with CancelledError/
+  workerTimeoutError, no OperationalError. Targeted bothcaller checks then only
+  short100 diagnostic; no new600 before independent review/refreeze.
+
+- BEFORE next fix claim apps/api/src/zebra_agent_api/http.py plus exact existing
+  regressions test_task_stream_cursor_http.py/test_tenant_isolation.py/
+  test_host_auth_http.py, newcases in alreadyowned test_stream_v2_http.py.
+  Preserve tenant→source→raw preparation in one existing preflight worker via
+  optional initial callback; avoid duplicate negotiation on None fallback.
+  No local/legacy, Host/JTI, SQL, deadline/ramp/window/cache/executor changes.
+  Short100 matrix attempt01 fails53admitted/21recovered after diag03 pass;
+  preserve both. Targeted checks and same6 short100 matrix before fresh reviews.
+
+- Local cursor fixture's keyword TypeError reproduced on accepted primaryf919:
+  1fail1.872s, retained private baseline proof. Authorized test-only compatibility
+  repair accepts/forwards existing require_source_coverage flag; deadline/body/
+  futurecursor assertions unchanged, no production guard change.
+
+- Six short100 matrix attempt02 fails45admitted/7recovered despite one dispatch;
+  retained HTTP503/cumulativeTimeout, maxworkerqueue1.05s,2842SQL. BEFORE diagnostic
+  amendment claim existing2 harness files: client ctor wall/threadCPU+issuance,
+  admission-loopCPU, bounded API-lifespan lag/CPU, setup/factory separate; unchanged
+ 100clients/25ms/2s/60s/executor. One quietSession5s only, no sharedclient/prodfix.
+
+- BEFORE shared-client test-only candidate claim existing2 harness files: ctor
+  CPU1.301s is64.1% admission-loopCPU, actualissue32ms despite25ms sleeps. Reuse
+  one AsyncClient/lifetime with100limits,100realSSEs andfreshJTI, measure peerport
+  uniqueness/actualdenserissuance; unchangedTLS/deadlines/executor. One6short100
+  matrix only; candidate not production/capacity fix, priorfailures retained.
+
+- BEFORE approved readonly reuse: claim existing four preparation modules for
+  explicit fresh snapshot mapping/latestRun/bind, native-compatible only;
+  standalone bind/qualify and legacy/custom/AGUI retain their prior paths.
+  Add exact tests/stream_storage/test_telemetry.py ownership for actual socket
+  generator duration including failed attempts, preserving yield/return/error.
+  Six short100 cells after focused gates; no600/review/commit claim.
+
+- Approved snapshot reuse gate10:49nativepassed0skip20.233s; exact publisher
+  replacement one-socket assertion. Gate09 fixture dataclass TypeError retained,
+  gate07 nonexistent-path collection error retained. Shared-client matrix04 all
+  six100 healthy5s cells admitted/recovered,100unique peers, unchangedfingerprints;
+  actualissuance27.14–28.30ms, inclusiveSQL4003/4003/5803/5903/5903/8403.
+  Pausedsteady624/374/599 included; allSLO=false(<600),Lease0. Separateconnect
+  elapsed is concurrent sum, notwall/historical. Currentgates/refreeze precede
+  freshSPECthenQUALITY; no600/commit/integration/fullruntimeGO.
+
+- Matrix02 stopped after2valid600quiet Session1/10cells;100startup503 status
+  principal_binding_unavailable,98admitted/15recovered, failed92 gate1connect
+  attempt/0success/0SQL; rawerror class swallowed/unobserved. Immutable attempt02
+  manifest59fbe233 preserved; reviewed5130source/proof hashes unchanged.
+  BEFORE diagnostic-only amendment claim existing diagnostics module: native
+  mapping/binding/TaskIOconnect/resolver exceptionclass+stage+deadline, Host
+  authorization queue; no errors/body/credentialstrings or production semantics.
+  One100quietSession5s only; broader readonlyreuse proposal remains uncoded.
+
+- BEFORE approved post-JTI raw readonly reuse claim tenant_guard optionalproof,
+  projections namespaceSELECT/parser only, events highwaterSELECT/conflictparser
+  only, direct_control nativebindingidentity/readonlysnapshotcompatibility only.
+  Existinghelpers/guards inoneexplicitRR; custommethod/reader/subclass/DSN/ns
+  fallback,2sentry/authorization/exit andclose-before-stream retained. No mutation,
+  auth/JTI/executor/pool edits. Gate then one6short100matrix; no600 yet.
+  Diagnostic05 all100admitted/recovered/uniquepeers,4003SQL,0steady/5sSLOfalse;
+  Hostqueue.677615/rawqueue.664587, zeroexceptions. Original92classunobserved.
+
+- Complete post-JTI native gates11–15 failures retained; source Protocol fallback
+  corrected via explicit narrow proof, no fake APIs; signed future-cursor fixture
+  and expiry imports repaired. No new assertions/edits during final native run.
+  Final16:64pass0skip40.374s. Customwrapped deny preserved exactoriginal identity.
+- Short05 all6cells100admitted/recovered/uniqueTCPpeers, stable1269hashes ec707
+  (sorted/indentedJSON+newline). RawSession/Task each100operations1actualpost-JTI
+  connection, AGUI5unchanged. InclusiveSQL3803/3703/5803/5703/5603/8403;
+  pausedsteady436/590/587included; all5sSLO=false/Lease0. Auxiliary barepython
+  fingerprint import failure retained; actualharness uvstarthash succeeded.
+- Gate05 literalmakecheck2/87artifact-onlyRuff errors retained; equivalentRuff/
+  mypy1267/files3025/eval30pass. Refreeze source/proof→freshSPEC→QUALITY;
+  no600/commit/integration/fullruntimeGO. Rawlogs private immutable/hashreferenced.
+
+- Fresh QUALITY NO-GO on ed796 despite131nominalnativepass: custom wrapped
+  projection namespace deny and EventStore/publisher highwater transform bypassed.
+  Preserve immutable summary/override probe. BEFORE fix claim live_event_store.py
+  public highwater original-method identity alias ONLY, plus already-owned
+  projection/event aliases+raw eligibility checks; no publication/mutation changes.
+  Real publisher wrapped deny/transform regressions required. Static→native then
+  one6short100matrix/freshSPEC→QUALITY; no600/commit.
+
+- Matrix06 stops quietAGUI10083 HTTP503/86admitted11recovered; observed
+  TimeoutError+CancelledError at2s afterHostqueue.563/rawqueue.903;8successful
+  sockets25SQL;partial3128SQL973sockets. Source3ff359stable, no rerun/freeze.
+  Hookfix64pass remains separate. BEFORE AGUI readonly snapshot claim ag_ui_stream
+  optionalmetadatareader only; existingcore4methodPort/observer/proof/storage/
+  v2HTTP/authoritybindalias/diagnostics scoped to one freshRR with originalguards.
+  Newly bypassed public methods/callback/bind exactidentities, customfallback;
+  diagnostics lowerhelper. No pool/auth/mutation/ramp/deadline changes.
+
+- AGUI snapshot attempt02 retained 96/103 pass,7fail,0skip192.280s.
+  Exact eligibility shared fallback denies unknown callbacks before adapter probing;
+  canonical candidate Event + signedV2 durable partial cursor repair native fixture.
+  BEFORE owned tail read-call fix: optional captured Host argument supplied ONLY
+  when compatible native outcome + nonNone Host; legacy/custom original3args retained.
+  Existing checkpoint-get stale HTTP callback patch target awaits exact test claim.
+
+- BEFORE test-only repair claim checkpoint_get_quality.py preflight callback target
+  ONLY; primaryf919 isolated1fail/0skip1.939s missinghttp.preparealias proven byroot.
+  Safe summary copied privately; source untouched for stalealias. Preserve all
+  body-free/bounded-page/deadline assertions; native103gate follows staticchecks.
+
+- Attempt07 stopped pausedAGUI73 503/79admitted17recovered. All4request sockets
+  succeeded/22SQL; Hostqueue.425/post-JTIqueue.919/headexecute.1695Timeout.
+  BEFORE minimal reduction own existing API optional qualifiedTask identity only
+  after sameRR original nativebind+bind_snapshot success; default/custom/legacyTrue.
+  Full checkpoint SOURCE remains mandatory. BindSnapshot identity alias/guard and
+  diagnostic timing moved below guarded method. No16ms capacity assumption/600GO.
+
+- BEFORE shared raw/optional-head eligibility fix: source222f6b historical short08
+  all6PASS retained, not currentfutureapproval. New versusf919 raw bind/map/latest/
+  header bypass confirmed; old authority internalproof bypass distinguished.
+  Claim existing Task property+raw guard and all optional-head/restore consumers;
+  events/livepublisher readonly page/status aliases+eligibility only, sameDSN/ns
+  Sessionshortcut. Nonnative optionalhead default preserved; no newmandatoryPort.
+  Lowerdiagnostics avoid touching guarded publicmethods; focused realhook regression.
+  No auth/pool/expiry/sourcepredicate/writes; no gate untilstatic, stopfailure.
+
+- BEFORE raw callback fix: compatibility104pass217.825s/source0562 retained.
+  NEW versusf919 nativeproof keyword bypasses old4arg moduleprepare callback;
+  TypeError propagates (ASGI500 inferenceunprobed, not503). Sharedauthority
+  capturedoriginal callback guard ONLY; source_query retains3args/no extraguard.
+  Actualnative Session/Task wrappeddenial regression; static→focused gate only.
+
+## 2026-10-13 - Slice2 compatibility follow-up ready for independent review
+
+Accepted ed796 frozen SPEC GO followed by QUALITY NO-GO is preserved: nominal
+131 native checks did not cover custom namespace/highwater public hooks. Original
+method identity guards now honor publisher and underlying EventStore hooks.
+Raw/AGUI shared proof eligibility also honors native Task map/latest/header/Run/
+checkpoint/Event/frame/segment/cell/page hooks, authority bind/bind_snapshot, and
+old-signature prepare callbacks. Optional-head and restore consumers choose their
+existing fallback before shortcuts; SQLite and explicit nonnative Ports unchanged.
+
+AGUI one fresh request RR closes before tail/backpressure. Initial identity-only
+Taskheader is allowed only after original native V2 binding qualified the same
+Task in that snapshot; full checkpoint SOURCE remains mandatory. No auth/cache,
+expiry/deadline/ramp/pool/executor/write change. Matrices06/07 real startup failures
+remain: observed TimeoutError, respectively subscriber83 and73. Matrix06 measured
+Hostqueue.563s/post-JTIqueue.903s and headentry parentremaining.126s. Matrix07 measured
+Hostqueue.425s/post-JTIqueue.919s, parentremaining.316s and headexecute.1695s;
+1socket alone did not establish capacity. Original unobserved failure92 remains
+unclassified; no PG error inferred. Both prior partial600 matrices stay incomplete.
+
+Native AGUI snapshot103/198.631s (011b), scoped dedup103/198.124s (222f), shared
+compatibility2/12.113s plus affected104/217.825s (0562), callback25/15.141s (35e2)
+passed without skips. Fixture failures and original f919 stale-hook proof remain.
+Diagnostic08/matrix08 on222f are historical five-second evidence. Final matrix09
+on35e2 completed six100-subscriber cells, each100 admissions/recoveries/distinct
+TCP peers and actual post-JTI1socket; all1269 start/end/live hashes match. Lease0,
+SLOFalse throughout: no600 steady, stable capacity or matched-v1 inclusive80% claim.
+
+Current runtime SHA35e2ccb1daa5dcaa4ac2ea5fa6320ff42a75f35d5657457c482157b44c761c04.
+New private source/safe-proof freeze precedes fresh serial SPEC then QUALITY.
+Full make test,18healthy600 matrix, reliability/fullruntime/product gates OPEN;
+no commit/integration/push/deployment. Historical literal make check artifact-only
+Ruff failures remain distinct from passing equivalent current-source gates.
+
+- BEFORE matrix03 diagnostic-only follow-up2026-10-13: retain immutable private
+  failure-matrix03-20261013T092411991142Z (manifestdc17dfda) and unchanged289e review.
+  Owned native_source_head_http.py/native_source_head_diagnostics.py capture ASGI
+  terminal exception CLASS/phase/monotonic only before original re-raise; failure
+  steady boundaries/completedLeasecount, explicit incomplete/SLOFalse. Owned
+  test_telemetry.py sentinel regression only. One controlled native TaskIO-connect
+  timeout after real recovery and one natural pausedSession1 max600 diagnostic,
+  separately labelled; no blind repeats/full18 run. No productionretry/auth/pool/
+  executor/deadline/ramp/TTL/sourcepredicate changes; classify before proposedfix.
+
+- BEFORE bounded canonical observation-failure fix2026-10-13: additionally own
+  apps/api/src/zebra_agent_api/stream_v2_reader.py ONLY typed TimeoutError/native
+  OperationalError around durable pending.result; Grant/disconnect checks before
+  reset and existing observation_unavailable notice, then graceful close. No retry,
+  sourcecache/provisionalcontinuation/Taskfailure; unknown/integrity/cancel unchanged.
+  NEW tests/api/test_stream_v2_observation_failure_native.py exact focused native
+  typedfault/sharedroutes/customerrors/cancel/expiry + actualHTTP requested600
+  controlledconnectfault afterrecovery proving reset→notice→earlyEOF failure.
+  Existing harness StopAsyncIteration guard already denies earlyEOF; preliminary
+  falsePASS concern corrected/unconfirmed, no redundantguard. Naturaldiagnostic
+  onecase600 passed11af but originalmatrix03 infrastructurecause staysunlinked.
+
+## 2026-10-13 - Canonical observation failure: bounded graceful-close fix
+
+Reviewed289e freeze SPEC70/no-skips54.259s and QUALITY110/no-skips232.532s plus
+47adapter probes passed. Matrix03 on35e2 then completed nine quiet600 cells;
+pausedSession1 recovered before client RemoteProtocolError around291s. Observed
+TaskIOconnect TimeoutError after successful resolver was nearby, but original
+native server linkage/infrastructure cause remains unproven. Immutable failure
+capture dc17dfda49c6f2f1f76d95da1c49107ca865b4316e7d2f9d719994dca485c097 retains
+nine results/start/end maps and raw hash references;289e remains unchanged.
+
+Harness-only capture records ASGI exception/leaf CLASS, phase and monotonic times
+before original re-raise; cancellation remains separate. Failed windows now retain
+scheduledend versus actualexit, completedLeasecount and incomplete/SLOFalse.
+Capture gates01/02 each4pass/1unexecuted async-test registration failure retained;
+repository asyncio.run convention fixed this; gate03 passed5/0skips .986s.
+Controlled launcher01 failed missing tests import BEFORE native startup, retained.
+Controlled02 on11af injected once only in native connect after real recovery at
+fresh canonical Sessionhead: server ASGI TimeoutError during streaming followed
+by client RemoteProtocolError. Partial30.1753s/requested45, Lease0/SLOFalse.
+This proves controlled mechanism, not the original infrastructure cause.
+
+One natural pausedSession1 diagnostic on11af completed actual steady600.000979s
+(ended-started); observe return600.089277s includes cleanup; connected600.098204s.
+Startup41/steady69/post0/inclusive110SQL, rate.11499981235,3Lease heartbeats,
+1actualpeer/full recovery,0ASGI exceptions. No repeat or18-cell acceptance.
+
+Minimal optionA changes only V2 pending.result typed TimeoutError/OperationalError:
+check frozenGrant deadline/disconnect, emit existing draft reset then retryable
+observation_unavailable notice with another boundary check, then graceful close.
+Original finally cleanup remains; no automatic retry, sourcecache, provisional
+continuation or Task failure. Unknown/custom/integrity errors and CancelledError
+retain original behavior; outer deadline_frames unchanged. Existing HTTP consumer
+already rejects premature StopAsyncIteration: earlier possible falsePASS concern
+was unconfirmed and corrected, no redundant harness guard added.
+
+Focused A gate01:6pass/7RuntimeError cleanup failures53.657s, retained. Direct
+reader test closed Redis asyncclient in a second loop; test-only same-loop fix.
+Gate02:13pass/0fail/error/skip52.224s. Six typedfault cases cover Session/Task/AGUI;
+unknown/cancel identity and between-notice deadline/disconnect checks pass.
+ActualHTTP controlled fresh-head connectfault requested600 emits complete SSE
+reset then observationnotice, closes without ASGIexception, and triggers existing
+healthy-window EOF assertion at30.189602s/Lease0/incomplete/SLOFalse. No weakened
+subscription check, second natural600, fullmatrix rerun or infrastructure repair.
+
+Current runtime1269 SHA a4b2e24b39abcfe32c4fd4d81b8f2a0be31c58db9e8e676249f5213161e2f743.
+New focused test SHA a25706248158748594c8b377dfe337f7fed904447af57c75fdf3dff654290431.
+Current-source Ruff/fullmypy/filelimits/eval/diff pass; literal make check exits2
+on277Ruff findings, every location historical .artifacts copies/diagnostic scripts.
+No archive/config modification. NEW private freeze requires fresh SPEC then QUALITY;
+prior reviews are historical. Full make test,18healthy600, matched-v1 inclusive80%,
+reliability/fullruntime/product acceptance remain OPEN; no commit/integration/push.
+
+
+2026-10-14 - Full validation stopped at inherited unbounded terminal oracle
+- Exact frozen source copied to isolated validation checkout; literal make check
+  exit0/11.289s, actual import origins verified. Full12081 selection retained.
+- Full pytest at terminal-race Session case never commits because its hook is on
+  read_since; accepted f919 and current cloud call bounded page. Single SIGINT to
+  pytest only preserved partial10255/96fail/1error/228skip; no service termination.
+- BEFORE coding claim exact test_native_terminal_race.py for bounded-page hook
+  and asyncio.wait_for; original assertions stay. Triage all failures before GO.
+- No production edits, commit, integration, push or deploy for this follow-up.
+
+- 2026-10-14 BEFORE-CODE PERF local-only identity guard: root authorizes existing session_streaming.py database lookups conditional on cloud, preserving all cloud predicates. Same-env f919 selected nine: 8 pass and inherited require_source_coverage fixture failure; current nine + finite terminal two follow. No auth/pool/deadline/matrix changes.
+
+2026-10-14 - Claim two finite test-preparation paths before coding
+- Existing continuation keyword confirmed on f919 representative; adapt only
+  reject_preparation fixture signature, retain negative exception assertion.
+- New complete-source observer requires prepared observation projection. In the
+  five native coverage tests prepare real canonical rebuild_session/save_session
+  at three boundaries; preserve source readiness/privacy and cold-read oracle.
+- Proof implementation edits only; active validation suffix stays immutable,
+  no concurrent focused native run or copying into active validation checkout.
+
+2026-10-14: BEFORE scalar-outcome follow-up, PERF owns test_postgres_command_outcome_bounded_read.py. Root authorizes exact-coordinate args-CTE semantic guards and explicit seven outer columns/terminal SELECT 1 only. Preserve native TaskIO, scalar payload identity and bounded Run reads. Frozen suffix checkout remains unchanged; execute focused native after its exit.
+
+2026-10-14: BEFORE test-only narrow repairs, PERF claims test_coverage_command_recovery.py and test_coverage_authority_capability.py. Readonly source comparison shows stale clock patch and legacy-schema/current-bootstrap fixture mismatch also present at f919, not native baseline confirmation. Preserve original deadline/no-model and missing-migration/load-not-called oracles; no production/shared fixture edits. Native waits for immutable suffix exit.
+
+2026-10-14: BEFORE evidence split, PERF claims docs/CLOUD_STREAM_PROOF_PERF_VALIDATION.md; the existing matrix evidence is 600 lines. New focused document carries validation provenance and pending gates without changing preserved historical artifacts.
+
+2026-10-14: BEFORE shared outcome callback qualification, root authorizes existing-owned command_wakeup_outcome.py predicate to require captured original class __call__ identity, no unwrap; existing custom-outcome native tail test gains class override/plain+wraps regressions, actual fallback invocation/problem frame preserved. SPEC static comparison confirms shortcut bypass vs f919, not native evidence. No copied validation or concurrent native run.
+
+2026-10-14: BEFORE four suffix test-only repairs, PERF claims checkpoint_routing, transient_output_composition, worker_storage_composition and postgres_memory_review_api exact tests. Readonly SPEC/QUALITY locate finite projection preparation (8/9 Events), actual StreamProofReader hook, shaped checkpoint publisher and matching PG configuration. Preserve original privacy/routing/cold/no-fallback/atomic-recall assertions, do not modify production/shared DSN guards. Native baseline status remains unconfirmed; preparation only while soleimpl runs approved tests.
+
+2026-10-14 header supplement: claimed the three dedicated consumer/worker fixture paths in PROOF-PERF before edits. Minimal real v69 migration and finite canonical projection setup; shared frozen v68 fixture and production unchanged. Initial UndefinedTable retained; serial SPEC then QUALITY required before native.
+
+2026-10-14 consumer fixture SPEC NO-GO retained: two canonical prefixes lacked TASK_PREPARED before delta. Before edits, permit same owned tests to append actual PG-only preparation event, shift child/frontier by one, retain SQLite and 257 orphan/late/closure/cold assertions; serial re-SPEC then QUALITY.
+
+- PERF fixture/header follow-up: reviewed consumer v69/canonical setup repair focused24 GO (12PG+12SQLite,331.200s),runtime64df stable; immutable first SPEC NO-GO/headerattempt01 retained.
+- Header172 exact partition12PG+160 verified. Attempt02 first-failure STOP:56pass/1HostGrantScopeError/103unexecuted; wrong-resource fixture fails before forged injection because legitimate setup has duplicate thread. No production security change or automatic rerun. Publication2 independent GO3.825s retained.
+
+2026-10-14 header attempt02 first failure: valid resource-binding fixture inherited one thread and appended another; strict source guard correctly rejected ambiguous bound Grant before forged-case oracle. BEFORE claim exact resource-binding test file; correct only two valid setup refs, preserve all denial/no-mutation/rollover assertions, serial reviews before native. 68pass/1fail/103unexecuted retained.
+
+- PERF resource fixture reviewed native7 GO9.569s; exact172 partition12+56+7+97 independently checked. Headerattempt03 STOP0pass1UndefinedColumn(privacy_frontier)/96unexecuted; current header75pass1fail96unexecuted, runtime64df unchanged. Readonly identifies QueueFixture.install v68 versus unchanged current bootstrap real-v98 requirement; no production or frozen native-v68 change.
+
+2026-10-14 header attempt03 fixture root: current bootstrap requires v98 privacy_frontier/routing while shared QueueFixture installs only v68 atop already-real v97. BEFORE claim precise projection_work_test_support.py; compose existing v98 only, all oracles/frozen standalonefixture/production unchanged. Serial reviews before native.
+
+2026-10-14 queue native: bootstrap3 passed, restricted role denied existing metadata privacy view. BEFORE own exact test_projection_work_io.py for SELECT-view-only grant matching scalar-native pattern; Eventpayload/fulltable/superuser privileges remain forbidden. Preserve original failure and all body/read-only oracles; serial reviews before native.
+
+- PERF reviewed queue helper routing composition focused34 STOP3bootstrap-pass1InsufficientPrivilege(v97 metadata-only privacy view),78header-pass1fail93unexecuted. Proposed same existing scalar-role SELECT-view grant only; no Eventbody/production/security change. Runtime64df remains unchanged, original failure retained.
+
+2026-10-14 header attempt04 native bootstrap uses frozen queue fixture; BEFORE claim only test_projection_work_native.py exact current-bootstrap test setup for real v97→v98 under unique schema guard before seed. native_dsn function remains frozen; concurrency/reenable/oracles unchanged; serial reviews before native. Header90pass1fail81unexecuted retained.
+
+- PERF restricted-role focusedPG1/SQLite1 GO. Headerattempt04 STOP11pass1UndefinedTable(v97 privacy view) in exact nativebootstrap False; current90pass1fail81unexecuted. Readonly proposes real97→98 only that current-bootstrap test's setup before seed/events/enable, preserving sharednative_dsn≤67+68. Runtime64df unchanged; originals retained.
+
+2026-10-14 header attempt05 cold scale restricted role lacks same metadata privacy view SELECT. BEFORE own exact scale test PG setup only; preserve payload denial subprocess and every 32-row/EXPLAIN oracle. One-pass related-role audit finds only IO already fixed and scale remaining; no production or optimizer edits. Serial reviews before native;92pass1fail79unexecuted retained.
+
+- PERF nativebootstrap2 GO2.078s; headerattempt05 STOP scale1000 InsufficientPrivilege(metadata-only privacy view),92pass1fail79unexecuted. Readonly restricted-role sweep found only scale sibling still missing same viewSELECT; exact PG3 (1k/10k/100k) plan/body-denial assertions unchanged pending fixture scope. Runtime64df and originals preserved.
+
+2026-10-14 real v98 fanout root: multiple projector source rows enter two uncorrelated scalar subqueries. BEFORE claim shared generators, frozen-v98 legacy call, catalog/new v100 route-function migration and one real fanout test; owned helpers/currentbootstrap compose100, shared frozenfixture unchanged. Prior serialized migration checksums1..99 must stay byte-equal; new fingerprint/reviews/native required. Currentheader106pass1fail65unexecuted retained; RELAY future tail100→101 recheck.
+
+2026-10-14 root caller audit caught actual migration catalog equality oracle ending at99. BEFORE own exact test_postgres_migrations.py one v100 expected metadata entry; historical list and every other assertion unchanged. Include native migration smoke, add to serial reviews before copy.
+
+2026-10-14 fullTaskGET guard root: broad payload identifier classifier conflicts with existing scalar command exception and new approved handoff scalar metadata query. BEFORE own exact shared test-support file; fixed independently reviewed query fingerprints + precise scalar/typedparams, reject body/wildcard/fullrow/extraaccess injections via existing real native smoke. Production unchanged; no zeroTOAST claim. Serial reviews before native;118pass1fail53unexecuted mixedsource retained.
+
+2026-10-14 instrumentation review correction: fixed metadata fingerprint expansions already fail closed through existing payload tokens; initial hypothetical metadata bypass was withdrawn. Real narrow standalone classifier gap remains for non-first Event alias/bare wildcard and spaced full-row JSON calls. BEFORE same-owned support correction, allow minimal regex/standalone rejection cases (COUNT(*) preserved), no general parser/production edits. Original9c preparedhash retained; re-SPEC then QUALITY before native.
+
+2026-10-14 metadata guard native smoke first failure retained: original replay fixture had no agent Task because old smoke only queried SELECT1/empty command point. BEFORE same-owned setup fix, call existing real ensure_for_session before query capture/table baseline/observer; preserve metadata result-not-None and all body rejection checks. No observer repair/production/guard weakening. Static re-SPEC then QUALITY before focused5 rerun.
+
+2026-10-14 shared deadline native first failure retained: obsolete http.prepare_agui_stream alias hook, actual adapter invokes stream_v2_http.prepare_agui_stream. BEFORE same-owned support test-hook correction permits local real-module import and patch only; retain original450ms/PG sleep/closed sockets/no lateframe/tablehash/deadline assertions. Static f919 same hook is not nativebaseline claim. Re-SPEC then QUALITY before deadline7 rerun; focused5 GO retained.
+
+2026-10-14 deadline attempt02 HTTP409 preserved; actual problem code was not captured. Static path shows prepare_run appends canonical Events without Session projection, leaving observation source frontier stale under required qualification. BEFORE same-owned fixture setup repair, one finite <=270 Event canonical rebuild_session + sessions.save_session after all appends and before prepare_checkpoint; no GET/observer repair or per-append rebuild. Preserve200/450ms/PGsleep/socket cleanup/no lateframes/tablehash/cumulative and privacy/source gates. Static mapped problem code remains inference; re-SPECQUALITY before native.
+
+2026-10-14 prepare_run projection SPEC NO-GO retained: prefix0 terminal callers need canonical READY→RUNNING before COMPLETE. BEFORE same-owned minimal correction, append actual HARNESS_ATTEMPT_STARTED with existing HarnessLoop payload attempt_number=1 after first command, before first response only prefix0. No new typed payload claim/model, no fabricated status; dynamic enumerate/checkpoint preserves anchor3 and shifts terminal/stop by1. Prefix1/260 and every frame/scope/expiry/read-only oracle unchanged. Re-SPECQUALITY before native.
+
+2026-10-14 quality caller audit found two remaining obsolete preflight hooks in ag_ui_checkpoint_fixture.py411/564. Root rg all tests/apps confirms onlythese2 remain; BEFORE own exact fixture two hook targets/localimports, preserve every native scope/frame/cleanup/readonly/deadline oracle. Static evidence only, no nativebaseline claim; serial reviews before native.
+
+2026-10-14 sibling caller audit found adjacent third old http.tail_agui_events hook; BEFORE samefile scope additionally allows actual stream_v2_http.tail_agui_events target, retain disconnect/terminal/problem/connection oracle. Command-point counter/query-shape concerns remain readonly proposal, not authorized guard relaxation.
+
+2026-10-14 readonly current outcome SQL fixedSHA553a3bd7/twelveparams/singleacceptedpoint needs exact scalar observer allowance, not dropped command_points assertion. BEFORE own additional dedicated test observer module to split existing class before700 ceiling; originalsupport re-export/callers/nodes stable. Sameguard+new exactoutcome shape/coordinates/mutationreject, source unchanged. Three siblinghooks89fa remain separate serialreview candidate; no native yet.
+
+2026-10-14 current observer2 native GO; deadline snapshot stillHTTP409 after finite projection, original root not fully resolved. BEFORE same-owned diagnostic-only assertion context: retain200 and include only integer status, bounded fixed-pattern problem code, boolean retryable when non200. Never print body/message/Grant/DSN/token. Approve one exact snapshot native discriminator, no blind7 rerun or sibling/52 until root known; source and guard budgets unchanged.
+
+2026-10-14 snapshot discriminator captures actualHTTP409 stream_source_unavailable (priorprojectioncode speculation superseded). BEFORE same-owned diagnostic-only context may include bounded SHA256 digests/counts of rejected SQL, never SQLtext/parameters/body. One exact snapshot discriminator will distinguish fixed metadata Run wrapper misclassification from later accepted-command body hydration; no fullbody allowance or production change authorized.
+
+2026-10-14 rejectedSQL discriminator actual cd3d4051Runmetadata4params0payload confirms classifier false positive. BEFORE sameowned observer exact fourth fixedshape/scalar projection/type guard + rejection smoke; no fullacceptedCommand page exception or testprotocol isolation permitted. Fresh one snapshot after serialreviews establishes actual downstream boundary, not static guesses. Source unchanged; existingf919 wholecommandloader static provenance retained.
+
+2026-10-14 formal boundary decision: user goal is complete stream SQL/storage refactor; necessary bounded accepted-intent integrity validation is retained. No new witness solely to satisfy broad test. BEFORE test instrumentation phase split via loader-local original two-read delegate, exact fixedPage/namespaceTaskanchor/limit1≤1MiB context and independent count; public native identity/default callbacks and totalHTTPSQL unchanged. Add actual bad-fingerprint denial with existing error mapping. OriginalwholeHTTPzeroEventBody NOTGO retained, no equivalence claim; stage checkpoint/source metadata bodyfree. Serialreviews before native.
+
+2026-10-14 accepted fixture integrity readonly finding: prepare_run payload has pg-run-* idempotency key but Event column defaultNone. BEFORE sameowned setup correction, SessionEvent.create receives payload idempotency_key only for SESSION_COMMAND_ACCEPTED, None otherwise. Preserve payload/fingerprint/anchors/sequences and original validator key comparison; make badfingerprint regression one fault rather than bypassing idempotency validation. No production change; serialreviews before native.
+
+2026-10-14 user audit accepted: prior serialfixture/observer/hook microfix-review loop consumed unnecessary time. Freeze present candidates, batch remaining verification and one consolidated finalreview; separately backlog old/unconfirmed failures. Do not start another small-fix loop. OwnerLuke/Codex, localintegrationonly authorization unchanged.
+
+2026-10-14 user convergence completed: one frozen69 batch59P10F0E0skip839.064s;
+subsequent literal make check exit0. Exact93files/runtime1270 unchanged.
+All52 original remaining nodes passed; original172 mixed93current/79historical.
+One consolidated SPEC71lines and QUALITY60lines permit component localaccept;
+retain10 failures (1observer,8unknownoutput,1unknownpreHTTPtimeout), no autofix.
+Primary17 dirty source files privately backed up before owned local integration.
+Next: commit/finalfreeze/localFF then formal RELAY claim; full80/runtime remains open.

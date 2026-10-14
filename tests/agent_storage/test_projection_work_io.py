@@ -75,6 +75,11 @@ def test_huge_payload_readonly_and_explicit_repair_never_decode_body(queue):
                     "replay_header_ready) ON session_events TO {}"
                 ).format(sql.Identifier(queue.role))
             )
+            connection.execute(
+                sql.SQL("GRANT SELECT ON task_replay_coverage_privacy TO {}").format(
+                    sql.Identifier(queue.role)
+                )
+            )
         configured = conninfo_to_dict(queue.dsn)
         dsn = make_conninfo(queue.dsn, options=configured["options"] + f" -c role={queue.role}")
         store = PostgresTaskProjectionWorkStore(

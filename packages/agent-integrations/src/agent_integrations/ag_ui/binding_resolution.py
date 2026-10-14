@@ -11,6 +11,7 @@ from typing import Literal
 from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import SessionId
 from agent_core.ports.agent_tasks import AgentTaskPort
+from agent_core.ports.stream_source_head import StreamCheckpointReadPort
 from agent_core.ports.task_projection_checkpoints import (
     MAX_CHECKPOINT_EVENTS,
     CheckpointConflict,
@@ -21,7 +22,6 @@ from agent_core.ports.task_projection_checkpoints import (
     ProjectionFrameHeader,
     ProjectionScope,
     ProjectionTransition,
-    TaskProjectionCheckpointPort,
 )
 from agent_core.ports.task_replay import TaskHandoffHeader, TaskRunHeader
 
@@ -78,7 +78,7 @@ def member_key(segment: SessionId) -> ProjectionCellKey:
 
 
 def binding_member_before(
-    port: TaskProjectionCheckpointPort,
+    port: StreamCheckpointReadPort,
     run: TaskRunHeader,
     scope: ProjectionScope,
     segment: SessionId,

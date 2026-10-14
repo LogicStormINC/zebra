@@ -8,13 +8,14 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from time import monotonic
 
+import psycopg
 from agent_core.ports.live_event_fanout import LiveEventCursor
 from agent_core.ports.transient_output import TransientResumeCursor, TransientStreamScope
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_integrations.redis_transient_discovery import TransientDescriptor, discover
 from agent_integrations.redis_transient_output import RedisTransientOutput
 
-from zebra_agent_api.ag_ui_checkpoint_tail import _read_until
+from zebra_agent_api.ag_ui_checkpoint_tail import _read_until, observation_problem
 from zebra_agent_api.stream_v2_authority import V2ReadAuthority, V2ReadBinding
 from zebra_agent_api.stream_v2_cursor import StreamV2Cursor, StreamV2CursorCodec
 from zebra_agent_api.stream_v2_wire import (
@@ -182,7 +183,18 @@ class StreamV2Reader:
                 if await disconnected():
                     return
                 if pending.done():
-                    record = pending.result()
+                    try:
+                        record = pending.result()
+                    except (TimeoutError, psycopg.OperationalError):
+                        if monotonic() >= deadline or await disconnected():
+                            return
+                        yield stream_notice(
+                            "zebra.stream.reset", {"reason": "canonical_unavailable"}
+                        )
+                        if monotonic() >= deadline or await disconnected():
+                            return
+                        yield observation_problem("observation_unavailable", retryable=True)
+                        return
                     if record is None:
                         yield stream_notice("zebra.stream.reset", {"reason": "canonical_closed"})
                         return
