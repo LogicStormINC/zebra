@@ -12,7 +12,7 @@ from agent_core.ports import (
     GovernedMemoryStorePort,
     WorkerProjectionTransactionPort,
 )
-from agent_integrations import RedisCommittedEventPublisher, build_model_gateway
+from agent_integrations import build_model_gateway
 from agent_integrations.ag_ui.checkpoint_consumer import AgUiCheckpointConsumer
 from agent_storage import (
     CloudCompositionSettings,
@@ -35,7 +35,10 @@ from zebra_agent_worker.cloud_memory_recovery import (
 from zebra_agent_worker.command_consumer import SessionCommandConsumer
 from zebra_agent_worker.control import SessionControlService
 from zebra_agent_worker.execution import SessionExecutionService
-from zebra_agent_worker.live_event_runtime import configure_live_event_delivery
+from zebra_agent_worker.live_event_runtime import (
+    configure_live_event_delivery,
+    configure_stream_hint_relay,
+)
 from zebra_agent_worker.mcp_composition import compose_worker_mcp
 from zebra_agent_worker.model_call_index import ModelCallIndexer
 from zebra_agent_worker.provider_configuration import model_provider_settings
@@ -406,14 +409,9 @@ def build_worker_loop_service(
             cloud_bundle.dsn,
             deployment_namespace=active_namespace,
         ).reconcile
-    checkpoint_committed = None
-    if settings.live_events.redis_url is not None:
-        checkpoint_committed = RedisCommittedEventPublisher.from_url(
-            settings.live_events.redis_url,
-            deployment_namespace=active_namespace or "local",
-            max_stream_length=settings.live_events.stream_max_length,
-            key_prefix=settings.live_events.key_prefix,
-        ).fanout.publish_checkpoint
+    stream_hint_relay, checkpoint_committed = configure_stream_hint_relay(
+        execution_stores, settings
+    )
     service = WorkerLoopService(
         projection_store=execution_stores.sessions,
         execution_service=execution_service,
@@ -422,6 +420,7 @@ def build_worker_loop_service(
         sleep=sleep,
         command_consumer=command_consumer,
         client_effect_recovery=client_effect_recovery,
+        stream_hint_relay=stream_hint_relay,
         projection_work=(
             AgUiProjectionWorkService(
                 AgUiCheckpointConsumer(
@@ -429,6 +428,7 @@ def build_worker_loop_service(
                     execution_stores.projection_work,
                     namespace=active_namespace or "local",
                     checkpoint_committed=checkpoint_committed,
+                    notification_required=settings.deployment == "cloud",
                     read_summaries=(
                         execution_stores.tasks
                         if isinstance(execution_stores, PostgresControlPlaneStores)
@@ -441,6 +441,7 @@ def build_worker_loop_service(
                         execution_stores.coverage_projection_work,
                         namespace=active_namespace or "local",
                         checkpoint_committed=checkpoint_committed,
+                        notification_required=settings.deployment == "cloud",
                         read_summaries=(
                             execution_stores.tasks
                             if isinstance(execution_stores, PostgresControlPlaneStores)

@@ -914,8 +914,8 @@
 
 ### CLOUD-STREAM-RELAY-01 - Retry committed stream frontiers and checkpoint hints
 
-- Status: In Progress (Ready dependencies accepted locally0f8c1716; claimed
- 2026-10-14 before source edits under user-approved staged local integration).
+- Status: Review (component SPEC/QUALITY GO2026-10-14; owned local integration
+ next; fullruntime/80/TLS-handshake acceptance remains separately OPEN).
 - Human owner: Luke Ding; executor: Codex.
 - Branch/worktree: codex/cloud-stream-relay-01; cloud-stream-relay-01.
 - Plan/Owned paths: exact15 source paths and explicit tests in
@@ -923,6 +923,12 @@
 - COV handoff before coding: new notification fields/claim/settle on
  session_streams and checkpoint notification-before-ACK only. No edits to
  canonical appender, Recorder, coverage proof/finalizer or command outbox.
+- Test ownership extension before edits2026-10-14: new checkpoint notification
+ retry and Worker relay composition test modules named in the focused plan;
+ existing699/692-line tests remain intact. Source scope remains15paths.
+- Before-edit shared transport extension2026-10-14: WRITER transfers
+ redis_transient_output.py from_url factory only to RELAY; reuse native Unix/TCP/
+ TLS selection/deadline helper, preserve options. Exact boundary in focused plan.
 - Fresh migration tail100; reserve additive101 stream_hint_relay. Preserve
  every historical migration body/checksum; no business schema operation.
 - Acceptance: committed metadata frontier coalescing, full fenced lease claim/
@@ -932,6 +938,9 @@
 - Validation: one coherent focused/native batch with two-claimant/crash/rollback/
  stale fence/newer frontier/retry/timeout tests; static checks; consolidated review.
  No blind12k/18long rerun; all relay/empty maintenance SQL counts in final80%.
+- Component validation:57 mixed-source passes plus11 targeted transport checks;
+ real SIGKILL/restart/concurrency/batch/rollback/cutover/stall/maintenance passed.
+ Final clean exact-source literal make check GO; sole Unix P1 closed.
 - Keep PERF10failed evidence and fullHTTP/fulltest/runtime/browser/80 gates open.
  RELAY component does not substitute CAPACITY/GC or STOP/display ACK.
 - No push/deploy/paid provider/service restart/shared DB changes.

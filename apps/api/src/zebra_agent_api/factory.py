@@ -152,10 +152,8 @@ def create_app(
         publisher_fanout = getattr(publisher, "fanout", None)
         if publisher_fanout is not None:
             live_event_fanout = cast(LiveEventFanoutPort, publisher_fanout)
-        active_stores = with_committed_event_publisher(
-            active_stores,
-            publisher,
-        )
+        if active_settings.deployment != "cloud":
+            active_stores = with_committed_event_publisher(active_stores, publisher)
     active_broker = credential_broker
     if active_broker is None:
         active_broker = build_default_credential_broker(active_settings.scm, env=credential_env)

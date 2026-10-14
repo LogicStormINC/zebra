@@ -1100,3 +1100,11 @@ InProgress, Luke/Codex, codex/cloud-stream-relay-01; exact owned paths and COV
 write handoff in docs/CLOUD_STREAM_RELAY_PLAN.md. Tail100→reserved101; no source
 edits before claim. Next implement committed frontier/retry and checkpoint ACK.
 FullHTTP/fulltest/80/runtime/browser and retained10 PERF failures remain open.
+
+2026-10-14 RELAY component SPEC/QUALITY GO; sole Unix factory P1 closed across
+full-event and transient writer callers.57 earlier mixed-source passes plus11
+targeted transport checks; clean exact-source literal make check GO. Runtime1273
+4a5dba8e0a953d73703c2c11d643c0e30ea935dbf71abb62f234d3fb13501474.
+Next ownedcommit/localFF then CAPACITY/GC; no push/deploy. Empty ledger452clientSQL/
+56PGsockets/3352wholeWAL has no rate denominator; fullruntime80/TLS-handshake/
+COV-MinIO/100Runs remain OPEN. All failures and oldPERF10 evidence retained.

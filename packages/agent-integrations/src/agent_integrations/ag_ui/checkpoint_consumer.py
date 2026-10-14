@@ -55,6 +55,7 @@ class AgUiCheckpointConsumer:
         namespace: str,
         read_summaries: TaskReadSummaryPort | None = None,
         checkpoint_committed: Callable[[ProjectionCheckpointHead], object] | None = None,
+        notification_required: bool = False,
     ) -> None:
         if (
             not isinstance(namespace, str)
@@ -63,6 +64,10 @@ class AgUiCheckpointConsumer:
             or len(namespace.encode()) > 256
         ):
             raise ValueError("invalid projection consumer namespace")
+        if notification_required and checkpoint_committed is None:
+            raise ValueError("cloud checkpoint publication requires a callback")
+        self.notification_required = notification_required
+        self._notification_retry: dict[ProjectionScope, tuple[int, float, float]] = {}
         self.tasks, self.work, self.namespace = tasks, work, namespace
         self.read_summaries = read_summaries
         self.checkpoint_committed = checkpoint_committed
@@ -119,7 +124,8 @@ class AgUiCheckpointConsumer:
                 self._repair_retry_at = monotonic() + 1.0
                 logger.warning(
                     "AG-UI projection repair deferred task=%s error=%s",
-                    repair.scope.task_id, type(exc).__name__,
+                    repair.scope.task_id,
+                    type(exc).__name__,
                 )
         return 0
 
@@ -143,13 +149,36 @@ class AgUiCheckpointConsumer:
                 "AG-UI projection problem persistence failed: %s", type(failure).__name__
             )
 
-    def _notify_checkpoint(self, head: ProjectionCheckpointHead) -> None:
-        if self.checkpoint_committed is not None:
-            try:
-                self.checkpoint_committed(head)
-            except Exception:
-                # ponytail: failed readiness hints converge through bounded reader fallback.
-                logger.warning("AG-UI checkpoint notification unavailable")
+    def _notify_checkpoint(self, head: ProjectionCheckpointHead) -> bool:
+        scope, now = head.scope, monotonic()
+        if self.checkpoint_committed is None:
+            return not self.notification_required
+        try:
+            if self.checkpoint_committed(head) is False:
+                raise RuntimeError("checkpoint publication unconfirmed")
+        except Exception:
+            # Physical notification retries never consume the durable eight-attempt failure cap.
+            stale = [
+                key
+                for key, (_, _, touched) in self._notification_retry.items()
+                if now - touched > 300
+            ]
+            for key in stale:
+                del self._notification_retry[key]
+            failures = self._notification_retry.get(scope, (0, 0, now))[0] + 1
+            if scope not in self._notification_retry and len(self._notification_retry) >= 512:
+                del self._notification_retry[
+                    min(self._notification_retry, key=lambda key: self._notification_retry[key][2])
+                ]
+            self._notification_retry[scope] = (
+                failures,
+                now + min(30, 2 ** min(failures - 1, 5)),
+                now,
+            )
+            logger.warning("AG-UI checkpoint notification unavailable")
+            return False
+        self._notification_retry.pop(scope, None)
+        return True
 
     def materialize_once(self, work: ProjectionWork) -> bool:
         self._scope(work.scope)
@@ -193,8 +222,7 @@ class AgUiCheckpointConsumer:
         )
         head = self.tasks.read_checkpoint_head(work.scope)
         if head.through_sequence >= work.requested_through:
-            self._notify_checkpoint(head)
-            if not summary_ready:
+            if not self._notify_checkpoint(head) or not summary_ready:
                 return False
             return self.work.complete_projection_work(work, expected_through=work.requested_through)
         identity = AgUiRunIdentity(
@@ -234,7 +262,8 @@ class AgUiCheckpointConsumer:
         except CheckpointStale:
             # Only a confirmed frontier race is benign; identity conflicts still fail closed.
             return False
-        self._notify_checkpoint(committed)
+        if not self._notify_checkpoint(committed):
+            return False
         if committed.through_sequence >= work.requested_through and summary_ready:
             self.work.complete_projection_work(work, expected_through=committed.through_sequence)
         return True
@@ -256,6 +285,10 @@ class AgUiCheckpointConsumer:
             if monotonic() >= deadline:
                 break
             self._after_scope = work.scope
+            self._scope(work.scope)
+            retry = self._notification_retry.get(work.scope)
+            if retry is not None and monotonic() < retry[1]:
+                continue
             try:
                 try:
                     progressed += self.materialize_once(work)

@@ -102,3 +102,21 @@ class CheckpointNotificationPort(Protocol):
     ) -> LiveEventCursor: ...
 
     def publish_checkpoint(self, head: ProjectionCheckpointHead) -> LiveEventCursor: ...
+
+
+@runtime_checkable
+class CanonicalFrontierNotificationPort(Protocol):
+    """Distinct body-free canonical hints; never authorize replay or checkpoint readiness."""
+
+    def capture_frontier_barrier(
+        self, *, deployment_namespace: str, session_id: SessionId,
+    ) -> LiveEventCursor: ...
+
+    def wait_frontier_after(
+        self, *, deployment_namespace: str, session_id: SessionId,
+        barrier: LiveEventCursor, block_ms: int,
+    ) -> LiveEventCursor: ...
+
+    def publish_frontier(
+        self, *, deployment_namespace: str, session_id: SessionId, through: int,
+    ) -> LiveEventCursor: ...

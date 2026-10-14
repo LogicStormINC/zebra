@@ -4,13 +4,14 @@ import sys
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from threading import Thread
+from threading import Lock, Thread
 from uuid import UUID
 
 from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.leases import LeaseLostError
 from agent_core.ports.agent_tasks import AgentTaskPort
 from agent_core.ports.projection_store import ProjectionStorePort
+from agent_runtime.stream_hint_relay import StreamHintRelay
 from agent_storage import (
     LeaseConflictError,
 )
@@ -78,6 +79,7 @@ class WorkerLoopService:
         memory_delivery: Callable[[str], MemoryDeliveryConsumption] | None = None,
         client_effect_recovery: Callable[[], int] | None = None,
         projection_work: AgUiProjectionWorkService | None = None,
+        stream_hint_relay: StreamHintRelay | None = None,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
@@ -94,6 +96,20 @@ class WorkerLoopService:
         self._client_effect_recovery = client_effect_recovery
         self._client_recovery_at = 0.0
         self._projection_work = projection_work
+        self._stream_hint_relay = stream_hint_relay
+        self._relay_at = 0.0
+        self._relay_lock = Lock()
+
+    def _relay_stream_hints(self) -> None:
+        if self._stream_hint_relay is None or not self._relay_lock.acquire(blocking=False):
+            return
+        try:
+            if time.monotonic() < self._relay_at:
+                return
+            self._relay_at = time.monotonic()+1  # Rate ceiling, not a delivery latency promise.
+            self._stream_hint_relay.tick()
+        finally:
+            self._relay_lock.release()
 
     def _start_projection_work(self) -> None:
         if self._projection_work is not None:
@@ -118,6 +134,7 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
+        self._relay_stream_hints()
         self._start_projection_work()
         self._process_child_wakeups()
         self._recover_client_effects()
@@ -127,6 +144,8 @@ class WorkerLoopService:
         )
 
     def drain(self) -> None:
+        if self._stream_hint_relay is not None:
+            self._stream_hint_relay.close()
         if self._projection_work is not None:
             self._projection_work.close()
         if self._cloud_memory_recovery_thread is not None:
@@ -141,6 +160,7 @@ class WorkerLoopService:
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
     ) -> WorkerLoopCycleResult:
+        self._relay_stream_hints()
         self._start_projection_work()
         self._process_child_wakeups()
         self._recover_client_effects()

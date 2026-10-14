@@ -113,7 +113,7 @@ class StreamV2Reader:
         assert bound.authority.allowed_session_ids is not None
         segment = context.session_id or bound.authority.allowed_session_ids[0]
         provisional = context.kind != "session" or segment == bound.authority.allowed_session_ids[0]
-        canonical_key = self.notifications.key(bound.namespace, segment)
+        canonical_key = self.notifications.key(bound.namespace, segment, frontier=True)
         checkpoint_key = self.notifications.key(bound.namespace, bound.task_id, checkpoint=True)
         control_key = bound.lane + ":authority:control"
         # ponytail: one startup budget; Redis loss must not consume the canonical Grant.

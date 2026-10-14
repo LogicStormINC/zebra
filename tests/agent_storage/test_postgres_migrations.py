@@ -272,6 +272,7 @@ def test_lease_migration_is_concurrent_repeatable_and_does_not_bootstrap_epoch(
         (98, "source_owned_projection_work_routing", 64),
         (99, "coverage_execution_source_positions", 64),
         (100, "projector_scoped_scalar_fanout", 64),
+        (101, "stream_hint_relay", 64),
     ]
     assert epochs == (0,)
     assert [row[0] for row in lease_columns] == [

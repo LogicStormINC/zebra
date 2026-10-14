@@ -14,8 +14,12 @@ from agent_core.ports.live_event_fanout import (
     LiveEventEnvelope,
 )
 from agent_core.ports.task_projection_checkpoints import ProjectionCheckpointHead
-from redis import Redis
+from redis import ConnectionPool, Redis
 from redis.exceptions import ResponseError
+
+from agent_integrations.redis_transient_deadlines import (
+    deadline_redis_options,
+)
 
 _SCHEMA_VERSION = "1"
 _EMPTY_STREAM_CURSOR = "0-0"
@@ -74,6 +78,8 @@ class RedisStreamClient(Protocol):
         approximate: bool = False,
     ) -> str | bytes: ...
 
+    def eval(self, script: str, numkeys: int, *values: object) -> str | bytes: ...
+
     def xinfo_stream(self, name: str) -> Mapping[str | bytes, object]: ...
 
     def xread(
@@ -122,16 +128,29 @@ class RedisLiveEventFanout:
             raise ValueError("Redis URL must be non-blank and trimmed")
         # ponytail: cap blocking reader sockets at 128; excess readers degrade to
         # durable reconciliation. Instance-local multiplexing is the scale-out path.
-        client = cast(RedisStreamClient, Redis.from_url(
-            url, decode_responses=True, socket_connect_timeout=1.0, socket_timeout=2.0,
-            max_connections=128,
-        ))
-        long_reads = cast(RedisStreamClient, Redis.from_url(
-            url, decode_responses=True, socket_connect_timeout=1.0, socket_timeout=62.0,
-            max_connections=128,
-        ))
+        options = deadline_redis_options(url)
+
+        def client(timeout: float) -> RedisStreamClient:
+            return cast(
+                RedisStreamClient,
+                Redis(
+                    connection_pool=ConnectionPool(
+                        **{
+                            "decode_responses": True,
+                            "socket_connect_timeout": 1.0,
+                            "socket_timeout": timeout,
+                            "max_connections": 128,
+                            **options,
+                        },
+                    )
+                ),
+            )
+
+        short_reads, long_reads = client(2), client(62)
         return cls(
-            client, max_stream_length=max_stream_length, key_prefix=key_prefix,
+            short_reads,
+            max_stream_length=max_stream_length,
+            key_prefix=key_prefix,
             long_read_client=long_reads,
         )
 
@@ -227,11 +246,93 @@ class RedisLiveEventFanout:
                 entries.append(envelope)
         return LiveEventBatch(events=tuple(entries), next_cursor=next_cursor)
 
+    def close(self) -> None:
+        """Only the composition owning these clients may drain them."""
+        for client in {
+            id(self._client): self._client,
+            id(self._long_read_client): self._long_read_client,
+        }.values():
+            cast(Any, client).close()
+            cast(Any, client).connection_pool.disconnect()
+
+    def capture_frontier_barrier(
+        self,
+        *,
+        deployment_namespace: str,
+        session_id: SessionId,
+    ) -> LiveEventCursor:
+        key = self._stream_key(deployment_namespace, session_id) + ":frontier"
+        try:
+            info = self._client.xinfo_stream(key)
+        except ResponseError as exc:
+            if "no such key" in str(exc).lower():
+                return LiveEventCursor(_EMPTY_STREAM_CURSOR, stream_ref=key)
+            raise
+        return self._cursor(info.get("last-generated-id", info.get(b"last-generated-id")), key)
+
+    def publish_frontier(
+        self,
+        *,
+        deployment_namespace: str,
+        session_id: SessionId,
+        through: int,
+    ) -> LiveEventCursor:
+        if type(through) is not int or not 0 <= through <= 2**63 - 1:
+            raise ValueError("invalid canonical frontier")
+        key = self._stream_key(deployment_namespace, session_id) + ":frontier"
+        position = self._client.eval(
+            "local id=redis.call('XADD',KEYS[1],'MAXLEN',ARGV[1],'*',"
+            "'schema_version','1','namespace',ARGV[2],'session_id',ARGV[3],"
+            "'through_sequence',ARGV[4]); redis.call('EXPIRE',KEYS[1],ARGV[5]); return id",
+            1,
+            key,
+            self._max_stream_length,
+            deployment_namespace,
+            str(session_id),
+            through,
+            300,
+        )
+        return self._redis_cursor(position, key)
+
+    def wait_frontier_after(
+        self,
+        *,
+        deployment_namespace: str,
+        session_id: SessionId,
+        barrier: LiveEventCursor,
+        block_ms: int,
+    ) -> LiveEventCursor:
+        key = self._stream_key(deployment_namespace, session_id) + ":frontier"
+        if barrier.stream_ref != key or type(block_ms) is not int or not 1 <= block_ms <= 1000:
+            raise RedisLiveEventError("invalid frontier notification scope/budget")
+        cursor = barrier
+        for stream, entries in self._client.xread({key: barrier.value}, count=100, block=block_ms):
+            if self._text(stream) != key:
+                raise RedisLiveEventError("unexpected frontier stream")
+            for position, raw in entries:
+                fields = {self._text(k): self._text(v) for k, v in raw.items()}
+                if (
+                    set(fields) != {"schema_version", "namespace", "session_id", "through_sequence"}
+                    or fields["schema_version"] != "1"
+                    or fields["namespace"] != deployment_namespace
+                    or fields["session_id"] != str(session_id)
+                    or not fields["through_sequence"].isascii()
+                    or not fields["through_sequence"].isdecimal()
+                    or len(fields["through_sequence"]) > 19
+                    or int(fields["through_sequence"]) > 2**63 - 1
+                ):
+                    raise RedisLiveEventError("invalid frontier notification")
+                cursor = self._redis_cursor(position, key)
+        return cursor
+
     def _checkpoint_key(self, namespace: str, task_id: TaskId) -> str:
         return self._stream_key(namespace, task_id) + ":checkpoint"
 
     def capture_checkpoint_barrier(
-        self, *, deployment_namespace: str, task_id: TaskId,
+        self,
+        *,
+        deployment_namespace: str,
+        task_id: TaskId,
     ) -> LiveEventCursor:
         key = self._checkpoint_key(deployment_namespace, task_id)
         try:
@@ -247,16 +348,24 @@ class RedisLiveEventFanout:
         key = self._checkpoint_key(scope.namespace, scope.task_id)
         cursor = self._client.xadd(
             key,
-            {"namespace": scope.namespace, "task_id": str(scope.task_id),
-             "through_sequence": str(head.through_sequence),
-             "projector_version": scope.projector_version},
-            maxlen=self._max_stream_length, approximate=False,
+            {
+                "namespace": scope.namespace,
+                "task_id": str(scope.task_id),
+                "through_sequence": str(head.through_sequence),
+                "projector_version": scope.projector_version,
+            },
+            maxlen=self._max_stream_length,
+            approximate=False,
         )
         return self._redis_cursor(cursor, key)
 
     def wait_checkpoint_after(
-        self, *, deployment_namespace: str, task_id: TaskId,
-        barrier: LiveEventCursor, block_ms: int,
+        self,
+        *,
+        deployment_namespace: str,
+        task_id: TaskId,
+        barrier: LiveEventCursor,
+        block_ms: int,
     ) -> LiveEventCursor:
         key = self._checkpoint_key(deployment_namespace, task_id)
         if barrier.stream_ref != key or not 1 <= block_ms <= 1000:

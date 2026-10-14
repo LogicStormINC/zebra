@@ -17,14 +17,13 @@ from agent_core.ports.transient_output import (
     TransientStreamScope,
     TransientWriterAuthorization,
 )
-from redis import Redis
+from redis import ConnectionPool, Redis
 from redis.backoff import NoBackoff
 from redis.exceptions import RedisError
 from redis.retry import Retry
 
 from agent_integrations.redis_transient_deadlines import (
-    TransientRedisConnection,
-    TransientSSLRedisConnection,
+    deadline_redis_options,
     transient_lock,
 )
 from agent_integrations.redis_transient_discovery import TransientDescriptor, transient_lane
@@ -76,18 +75,17 @@ class RedisTransientOutput:
         if not 0 < read_timeout <= 2:
             raise ValueError("invalid transient socket deadline")
         return cls(
-            Redis.from_url(
-                url,
-                decode_responses=True,
-                socket_connect_timeout=min(1, read_timeout),
-                socket_timeout=read_timeout,
-                max_connections=128,
-                connection_class=(
-                    TransientSSLRedisConnection
-                    if url.startswith("rediss://")
-                    else TransientRedisConnection
-                ),
-                retry=Retry(NoBackoff(), 0),
+            Redis(
+                connection_pool=ConnectionPool(
+                    **{
+                        "decode_responses": True,
+                        "socket_connect_timeout": min(1, read_timeout),
+                        "socket_timeout": read_timeout,
+                        "max_connections": 128,
+                        "retry": Retry(NoBackoff(), 0),
+                        **deadline_redis_options(url),
+                    }
+                )
             ),
             resolve_authorization=resolve_authorization,
             descriptor_source=descriptor_source,

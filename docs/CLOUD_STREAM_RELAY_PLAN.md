@@ -181,3 +181,61 @@ historical comparison for101. Preserve old oracle strength. Audit same-family
 fixture/caller incompatibilities up front and declare any extra owned path before
 editing. Run one coherent native/focused validation and consolidated review at
 the slice end; do not resume per-test repair/review loops.
+
+### Test ownership extension before editing — 2026-10-14
+
+Existing checkpoint-consumer and Worker-projection test files are699/692 lines.
+Add tests/agent_integrations/test_checkpoint_notification_retry.py and
+tests/worker/test_stream_hint_relay_composition.py for the new RELAY matrix.
+Reuse their existing fixture/helpers; preserve all old assertions and source
+ownership. This extension does not authorize unrelated fixture changes.
+
+### Shared transport ownership extension before editing — 2026-10-14
+
+Consolidated QUALITY found a Unix Redis URL regression: factory code replaced
+the parser-selected Unix class with TCP while retaining Unix path options.
+The sibling transient writer uses the same transport selection pattern.
+Extend this serial RELAY slice to
+packages/agent-integrations/src/agent_integrations/redis_transient_output.py
+for its from_url transport selection only. WRITER explicitly transfers this
+accepted factory boundary; Lua/state/fence/capacity behavior remains unchanged.
+Reuse the existing deadline adapter with native TCP/TLS/Unix transports and a
+shared selector; preserve native URL options. Regression checks belong to the
+owned frontier notifications module. Confirm the single QUALITY blocker after
+focused constructor/deadline/native TCP checks; do not repeat the57-case matrix.
+
+## Component acceptance result — 2026-10-14
+
+Additive101 coalesces committed Session frontiers; fresh fenced claims settle only
+their captured version after body-free Redis publication. Both Worker maintenance
+entrances share cadence/lifetime; checkpoint work ACK follows confirmed hints.
+Native TCP/TLS/Unix factory selection and deadlines preserve existing transports.
+Consolidated SPEC minimum gaps and the sole QUALITY Unix regression are closed.
+Current runtime1273 fingerprint:
+4a5dba8e0a953d73703c2c11d643c0e30ea935dbf71abb62f234d3fb13501474.
+
+Preserve mixed evidence:57 unique earlier passes =43 old-helper,6 final runtime,
+8 minimum native supplement. Transport fix then has11 targeted passes (10+1
+disjoint), with actual Unix bridge I/O and clean exact-source literal make check GO.
+Do not label all57 final-source reruns. Every collection/native/setup failure remains
+privately retained; no oracle was weakened. Process kill/restart, concurrent claims,
+actual PG COV batch commit/rollback, checkpoint outage/restart, blocked writer
+cutover, Redis+PG cumulative stall and both maintenance entrances were exercised.
+
+Short empty-maintenance ledger:452 client SQL calls,56 actual PG sockets,3352
+whole-round WAL bytes; bootstrap/ordinary/coverage polls,relay,ready-scan included.
+Independent Telemetry wall duration was not recorded; never divide by XML case
+time or infer SQL/s. Server trigger/protocol internal SQL is not certified by that
+client count; WAL is whole-round, not isolated relay-index overhead. Memory/child/
+client-effect paths were unconfigured and GC remains separate. COV object storage
+uses versioned fake S3 with real PG batch, not full COV/MinIO E2E. TLS handshake,
+full Worker/HTTP/SDK/browser,100 independent Runs and inclusive80% remain OPEN.
+
+Private retained final transport manifest SHA:
+24ba8f7ead92a94536d6c0b1e583f4ccd0ef17c679b7916ef72cba484ede98dd.
+Minimum supplement manifest SHA:
+becc76f922c93107c3ca8300456af2d732fe3a450a561d3917a014325d4f9782.
+Final literal make check raw SHA:
+e4aaf94ab80bc945c528e7d50901235995a54341b9f8d6b02a66c409778237a4.
+Source/test/raw hashes,protected copies and reviewer reports remain in the owned
+stream-relay artifact directory. Local integration only; no push/deploy.

@@ -12,6 +12,7 @@ from agent_core.domain.identifiers import SessionId, TaskId
 from agent_core.domain.sessions import SessionStatus
 from agent_core.ports import LiveEventCursor, LiveEventFanoutPort
 from agent_core.ports.event_store import BoundedSessionEventReadPort
+from agent_core.ports.live_event_fanout import CanonicalFrontierNotificationPort
 from agent_core.ports.stream_source_head import StreamSourceHeadPort
 from agent_integrations.redis_live_fanout_async import AsyncRedisNotifications
 from agent_storage import ControlPlaneStores, sqlite_control_plane_stores
@@ -58,6 +59,7 @@ class StreamWake:
         self.notifications = notifications
         self.deadline = deadline
         self.cloud = cloud or namespace not in {None, "local"}
+        self.frontier = self.cloud and isinstance(fanout, CanonicalFrontierNotificationPort)
         self.cursor: LiveEventCursor | None = None
         self.retry_at = 0.0
         self.fallback_until: float | None = None
@@ -69,12 +71,18 @@ class StreamWake:
             return
         try:
             if self.notifications is not None:
-                key = self.notifications.key(self.namespace, self.session_id)
+                key = (
+                    self.notifications.key(self.namespace, self.session_id, frontier=True)
+                    if self.frontier
+                    else self.notifications.key(self.namespace, self.session_id)
+                )
                 self.cursor = LiveEventCursor(await self.notifications.barrier(key), stream_ref=key)
                 return
             self.cursor = await _read_until(
                 self.deadline,
-                self.fanout.capture_barrier,
+                self.fanout.capture_frontier_barrier
+                if self.frontier and isinstance(self.fanout, CanonicalFrontierNotificationPort)
+                else self.fanout.capture_barrier,
                 deployment_namespace=self.namespace,
                 session_id=self.session_id,
             )
@@ -96,7 +104,11 @@ class StreamWake:
         if self.cursor is not None and self.fanout is not None and self.namespace is not None:
             try:
                 if self.notifications is not None:
-                    key = self.notifications.key(self.namespace, self.session_id)
+                    key = (
+                        self.notifications.key(self.namespace, self.session_id, frontier=True)
+                        if self.frontier
+                        else self.notifications.key(self.namespace, self.session_id)
+                    )
                     positions = await self.notifications.wait(
                         {key: self.cursor.value},
                         block_ms=max(
@@ -105,6 +117,23 @@ class StreamWake:
                     )
                     changed = positions[key] != self.cursor.value
                     self.cursor = LiveEventCursor(positions[key], stream_ref=key)
+                    if changed or monotonic() >= self.reconcile_at:
+                        self.reconcile_at = monotonic() + 30
+                        return True
+                    return False
+                if self.frontier and isinstance(self.fanout, CanonicalFrontierNotificationPort):
+                    cursor = await _read_until(
+                        self.deadline,
+                        self.fanout.wait_frontier_after,
+                        deployment_namespace=self.namespace,
+                        session_id=self.session_id,
+                        barrier=self.cursor,
+                        block_ms=max(
+                            1, int(min(1, self.deadline - monotonic(), keepalive_seconds) * 1000)
+                        ),
+                    )
+                    changed = cursor != self.cursor
+                    self.cursor, self.backoff = cursor, 1.0
                     if changed or monotonic() >= self.reconcile_at:
                         self.reconcile_at = monotonic() + 30
                         return True
@@ -179,9 +208,11 @@ async def tail_session_events(
         while not await request.is_disconnected():
             head = None
             task_database = getattr(active.tasks, "_database", None) if cloud else None
-            event_database = getattr(
-                getattr(active.events, "_event_store", active.events), "_database", None
-            ) if cloud else None
+            event_database = (
+                getattr(getattr(active.events, "_event_store", active.events), "_database", None)
+                if cloud
+                else None
+            )
             same_source = task_database is None or (
                 event_database is not None
                 and event_database._dsn == task_database._dsn

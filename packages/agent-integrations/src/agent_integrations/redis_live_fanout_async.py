@@ -22,8 +22,12 @@ class AsyncRedisNotifications:
             retry=Retry(NoBackoff(), 0),
         )
 
-    def key(self, namespace: str, resource: object, *, checkpoint: bool = False) -> str:
-        suffix = ":checkpoint" if checkpoint else ""
+    def key(
+        self, namespace: str, resource: object, *, checkpoint: bool = False, frontier: bool = False
+    ) -> str:
+        if checkpoint and frontier:
+            raise ValueError("notification key cannot mix readiness scopes")
+        suffix = ":checkpoint" if checkpoint else ":frontier" if frontier else ""
         return f"{self.key_prefix}:{namespace.encode().hex()}:{resource}{suffix}"
 
     async def barrier(self, key: str) -> str:
