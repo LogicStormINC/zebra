@@ -564,3 +564,33 @@ test("expired stream authority stops reconnecting", async () => {
   assert.equal(runtime.isStopped, true);
   assert.equal(streamCalls, 1);
 });
+
+
+test("v2 starts observing before the recovery boundary's single pending-effects read", async () => {
+  const requests: string[] = [];
+  let observed!: () => void;
+  const received = new Promise<void>(resolve => { observed = resolve; });
+  const runtime = new ZebraClientRuntime({
+    baseUrl: "https://fixture.test", clientSessionId: "fixture", sessionCredential: "synthetic",
+    streamUrl: "https://fixture.test/stream", streamVersion: 2,
+    fetchImpl: async url => {
+      if (String(url).startsWith("https://fixture.test/stream")) {
+        requests.push("stream");
+        return new Response([
+          { type: "CUSTOM", name: "zebra.stream.recovery_complete", value: {} },
+          { type: "CUSTOM", name: "zebra.stream.draft", value: { message_id: "message:first", generation_id: "g", offset: 0, content_delta: "First" } },
+        ].map(event => `data: ${JSON.stringify(event)}\n\n`).join(""));
+      }
+      if (String(url).endsWith("/effects")) requests.push("effects");
+      return Response.json({ effects: [] });
+    },
+    onObservation: async event => { if (event.name === "zebra.stream.draft") observed(); },
+  });
+  try {
+    await runtime.start();
+    await received;
+    assert.deepEqual(requests, ["stream", "effects"]);
+  } finally {
+    runtime.stop();
+  }
+});

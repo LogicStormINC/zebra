@@ -237,9 +237,8 @@ export class ZebraClientRuntime {
       if (await this.submitReceipt(receipt)) this.forgetReceipt(effectId);
       if (this.stopped) return;
     }
-    for (const effect of await this.listPendingEffects()) {
-      await this.runEffect(effect);
-    }
+    // V2 reconciles the current pending set at its awaited recovery boundary.
+    if (this.deps.streamVersion !== 2 || this.deps.streamUrl === undefined) await this.poll();
     this.heartbeatTimer ??= setInterval(() => void this.heartbeat(), 30_000);
     if (this.deps.streamUrl === undefined && this.pollTimer === null) {
       // ponytail: durable HTTP polling is the universal fallback; Hosts may

@@ -53,18 +53,13 @@ export function AgentMessageList(props: AgentMessageListProps) {
   return (
     <ol aria-live="polite" aria-relevant="additions text" className={`zebra-agent-message-list ${props.className ?? ""}`.trim()} role="log">
       {props.messages.map((message) => (
-        <AgentMessageItem contentRenderer={props.contentRenderer} key={message.id} labels={labels} message={message} renderContent={props.renderContent} />
+        <MemoizedAgentMessageItem contentRenderer={props.contentRenderer} key={message.id} labels={labels} message={message} renderContent={props.renderContent} />
       ))}
     </ol>
   );
 }
 
 export function AgentMessageItem(props: AgentMessageItemProps) {
-  // ponytail: retain the callable public component; memoize only its rendered row.
-  return <MemoizedAgentMessageItem {...props} />;
-}
-
-const MemoizedAgentMessageItem = memo(function AgentMessageRow(props: AgentMessageItemProps) {
   const { labels, message } = props;
   const showMeta = Boolean(message.presentation === "provisional" || labels[message.role] || message.timestampLabel || message.status !== "complete");
   return (
@@ -94,7 +89,10 @@ const MemoizedAgentMessageItem = memo(function AgentMessageRow(props: AgentMessa
       </article>
     </li>
   );
-}, (previous, next) => previous.message === next.message
+}
+
+// ponytail: cache list rows without changing direct callers' lifecycle boundaries.
+const MemoizedAgentMessageItem = memo(AgentMessageItem, (previous, next) => previous.message === next.message
   && previous.renderContent === next.renderContent
   && previous.contentRenderer === next.contentRenderer
   && Object.entries(previous.labels).every(([key, value]) => next.labels[key as keyof AgentMessageListLabels] === value));
