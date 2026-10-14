@@ -33255,3 +33255,11 @@ browser Cookie or Host Grant.
 - Integration: locally into cloud-agent-trench; no push or model rerun.
 
 - Evidence: Zebra signed-wire 9/9, Trench v2 protocol 7/7; real producer-to-Host decoder accepts valid Task/Run and rejects mismatch. Active API source hash matches. Original Run remains unchanged with 6 model calls and one accepted command; Host completed with 4,179-character exact canonical answer and 92 events. Snapshot returns the complete answer. Browser lacks login state, so authenticated UI refresh remains user verification.
+
+### CLOUD-OCI-IDENTITY-KEEPALIVE-01
+
+- Status: Ready, claimed In Progress before implementation.
+- Human owner Luke Ding; executor Codex. Branch codex/cloud-oci-identity-keepalive; base717cb294.
+- Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; packages/agent-runtime/src/agent_runtime/adapters/oci_daemon_info.py; packages/agent-runtime/src/agent_runtime/adapters/oci.py; apps/worker/src/zebra_agent_worker/runtime_preflight.py; tests/agent_runtime/test_oci_daemon_info.py; docs/AGENT_TASKS.md; PROGRESS.md; docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md.
+- Scope: persistent verified mTLS fresh Docker daemon identity reads; preserve command routing, full identity/fence checks and nonmatching/custom-runner fallback.
+- Acceptance: deterministic connection/identity/timeout/certificate checks; existing engine/runtime tests; no-model isolated provisioning comparison. Local integration/update permitted; no push or model invocation.
