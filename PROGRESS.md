@@ -1,3 +1,9 @@
+Local repair closeout (2026-10-14): deployed API source hashes match both repaired
+formatters, API/Worker healthy. Both original history answers verified790/2210
+characters; original model counts4/7 unchanged. Normal dotenv dispatcher admitted
+transient_v2 with all capabilities; probe cancelled before execution, model calls0.
+No push, remote deployment or database backup; user dirty files preserved.
+
 ## 2026-10-14 - v2 initial source preparation follows bounded recovery
 
 An actual admission-only probe exposed the same temporary-source error in v2:
