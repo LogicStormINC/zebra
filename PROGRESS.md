@@ -6008,3 +6008,7 @@ Local API is updated and healthy; deployed wire source hash matches verified fix
 Original Run 8126ca2b-c8d0-4a58-8904-3b2af3abc141 recovered through full v2 GET observation: Host completed, 4,179 answer characters, 92 events, answer exactly matches canonical fact, snapshot content readable.
 Model calls remain 6; accepted Run commands remain 1. Trench protocol 7/7 passes. No push or model rerun.
 Authenticated browser rendering remains user verification because automation has no logged-in session; this does not claim full performance/E2E acceptance.
+
+### 2026-10-14 - CLOUD-OCI-IDENTITY-KEEPALIVE-01
+
+Implement fresh Docker identity reads over persistent verified mTLS for the native explicit TCP engine. Existing CLI mutations/fences/instance ownership remain intact. 45 focused checks and targeted typing pass; final isolated engine measurement/Worker activation pending. No model calls or push. Details in docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md.

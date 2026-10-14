@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 
 from agent_core.ports.runtime import RuntimeCapabilityError
 
+from agent_runtime.adapters.oci_daemon_info import DockerDaemonInfo
 from agent_runtime.process_execution import run_process_tree
 
 
@@ -100,6 +101,14 @@ class PinnedOciEngine:
             raise RuntimeCapabilityError(
                 "cloud engine requires an explicit credential-free unix/tcp endpoint"
             )
+        self._info = None
+        if (Path(engine).name == "docker" and parsed.scheme == "tcp"
+                and runner is run_process_tree and self._env.get("DOCKER_HOST")
+                and not self._env.get("DOCKER_CONTEXT") and self._env.get("DOCKER_TLS_VERIFY")):
+            assert parsed.hostname is not None and parsed.port is not None
+            self._info = DockerDaemonInfo(
+                parsed.hostname, parsed.port, self._env["DOCKER_CERT_PATH"]
+            )
         for key in (
             "DOCKER_HOST",
             "DOCKER_CONTEXT",
@@ -148,10 +157,21 @@ class PinnedOciEngine:
             result.stdout = output
             return result
         if self._daemon_id is not None and self._read_daemon_id() != self._daemon_id:
+            self.close()
             raise RuntimeCapabilityError("runtime engine daemon identity changed after pinning")
-        return self._runner((*self._prefix, *command[1:]), env=self._env, **kwargs)
+        try:
+            return self._runner((*self._prefix, *command[1:]), env=self._env, **kwargs)
+        finally:
+            if len(command) > 1 and command[1] == "rm":
+                self.close()
+
+    def close(self) -> None:
+        if self._info is not None:
+            self._info.close()
 
     def _read_daemon_id(self) -> str:
+        if self._info is not None:
+            return self._info.identity()
         result = self._runner(
             (*self._prefix, "info", "--format", "{{.ID}}"),
             env=self._env,

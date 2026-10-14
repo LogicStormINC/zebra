@@ -33260,6 +33260,6 @@ browser Cookie or Host Grant.
 
 - Status: Ready, claimed In Progress before implementation.
 - Human owner Luke Ding; executor Codex. Branch codex/cloud-oci-identity-keepalive; base717cb294.
-- Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; packages/agent-runtime/src/agent_runtime/adapters/oci_daemon_info.py; packages/agent-runtime/src/agent_runtime/adapters/oci.py; apps/worker/src/zebra_agent_worker/runtime_preflight.py; tests/agent_runtime/test_oci_daemon_info.py; docs/AGENT_TASKS.md; PROGRESS.md; docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md.
+- Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; packages/agent-runtime/src/agent_runtime/adapters/oci_daemon_info.py; tests/agent_runtime/test_oci_daemon_info.py; docs/AGENT_TASKS.md; PROGRESS.md; docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md.
 - Scope: persistent verified mTLS fresh Docker daemon identity reads; preserve command routing, full identity/fence checks and nonmatching/custom-runner fallback.
 - Acceptance: deterministic connection/identity/timeout/certificate checks; existing engine/runtime tests; no-model isolated provisioning comparison. Local integration/update permitted; no push or model invocation.
