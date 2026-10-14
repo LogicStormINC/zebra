@@ -1,3 +1,12 @@
+## 2026-10-14 - Temporary AG-UI preparation remains retryable
+
+CLOUD-STREAM-OBSERVER-REPAIR-01 fixes the existing shared stream problem formatter:
+409 projection_not_ready includes retryabletrue; conflicts remain failclosed.
+Focused preparation/command/stream routes25 passed. Initial regression caught the
+separate command formatter alias; production fix is only in stream_problem.
+Trench normal Settings/dotenv v2 negotiation checks38 passed. Local API update
+and exact original-Run GET recovery are authorized; no new model execution.
+
 Cloud stream validation follow-up (2026-10-14): clean exact-source make check
 passed. Full make test interrupted only after confirming inherited unbounded
 terminal-race test patches obsolete Session read_since; f91906dc already uses

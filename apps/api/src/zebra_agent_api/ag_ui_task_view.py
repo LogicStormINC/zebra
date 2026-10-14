@@ -132,6 +132,7 @@ def stream_problem(status: int, code: str, detail: str, path: str) -> ApiRespons
             "detail": detail[:512],
             "instance": path,
             "code": code,
+            **({"retryable": True} if status == 409 and code == "projection_not_ready" else {}),
         },
     )
 
