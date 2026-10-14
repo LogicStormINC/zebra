@@ -6004,4 +6004,7 @@ RSS certification. Actual SQL80/Worker/SDK/browser/fleet/TLS remain OPEN.
 Real Trench generation exposed omitted Task/Run identities in draft SSE serialization.
 The API now preserves both validated identities on every chunk; Host scope rejection stays intact.
 Signed-wire regressions: 9 passed; real producer-to-Host decoder accepts valid chunks and rejects wrong Task.
-Local API activation and original completed Run GET recovery are pending; no model rerun or push.
+Local API is updated and healthy; deployed wire source hash matches verified fix.
+Original Run 8126ca2b-c8d0-4a58-8904-3b2af3abc141 recovered through full v2 GET observation: Host completed, 4,179 answer characters, 92 events, answer exactly matches canonical fact, snapshot content readable.
+Model calls remain 6; accepted Run commands remain 1. Trench protocol 7/7 passes. No push or model rerun.
+Authenticated browser rendering remains user verification because automation has no logged-in session; this does not claim full performance/E2E acceptance.

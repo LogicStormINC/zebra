@@ -33247,9 +33247,11 @@ browser Cookie or Host Grant.
 
 ### CLOUD-STREAM-DRAFT-SCOPE-01 - Preserve draft scope on SSE wire
 
-- Status: `Ready`, claimed `In Progress` by Luke Ding; executor Codex.
+- Status: `Done` (locally integrated, API activated, original Run synchronized); human owner Luke Ding; executor Codex.
 - Branch: `codex/cloud-stream-draft-scope`; base aa860eab.
 - Owned paths: `apps/api/src/zebra_agent_api/stream_v2_wire.py`, `tests/api/test_stream_v2_reader.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`.
 - Scope: serialize existing validated Task/Run identity on every draft chunk; retain Host scope rejection.
 - Acceptance: bounded signed-wire regression, real producer-to-Host decoder check; local API update; original Run GET-only recovery with unchanged model-call count.
 - Integration: locally into cloud-agent-trench; no push or model rerun.
+
+- Evidence: Zebra signed-wire 9/9, Trench v2 protocol 7/7; real producer-to-Host decoder accepts valid Task/Run and rejects mismatch. Active API source hash matches. Original Run remains unchanged with 6 model calls and one accepted command; Host completed with 4,179-character exact canonical answer and 92 events. Snapshot returns the complete answer. Browser lacks login state, so authenticated UI refresh remains user verification.
