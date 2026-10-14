@@ -153,3 +153,11 @@ python docker/local-gvisor/info-bridge-check.py --samples 3 \
 
 52 focused runtime/engine/Worker tests and Ruff passed. CONNECT is a local
 transport workaround, not a claim that the underlying platform defect is fixed.
+
+Local Worker activation verified: fresh runtime preflight33.955/24.763/31.775ms,
+source hashes matched and Worker healthy. An anonymous client through CONNECT
+was rejected with SSL error. Full Dockerfile build encountered Docker Hub frontend
+timeout; the activated local image derives from the verified runningfe7fdb03 image
+and replaces only the two changed runtime sources. No dependencies were changed.
+All shadow listeners were stopped and VM offload settings restored. No new Runs
+or model calls were issued.

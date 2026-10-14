@@ -6023,3 +6023,8 @@ Remove the remaining native CLI capability query before instance reservation in 
   operation. Three paired probes: cold1224.924→20.191ms (-98.35%),
   warm629.589→9.305ms (-98.52%);52 focused tests/Ruff passed. Platform packet-loss
   mechanism and whole-Run TTFT remain unproven; zero model calls.
+
+- LOCAL-GVISOR-INFO-CONNECT-01 local activation:Worker healthy/source hashes match;
+  fresh runtime preflight33.955/24.763/31.775ms; no-client-cert request rejected.
+  Full build frontend network timeout; activated existing verified image plus two
+  source replacements. Only local integration; no push/model/Run.

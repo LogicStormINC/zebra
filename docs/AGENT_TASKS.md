@@ -33278,8 +33278,10 @@ browser Cookie or Host Grant.
 
 ### LOCAL-GVISOR-INFO-CONNECT-01
 
-- Status: Ready, claimed In Progress before implementation.
+- Status: Done; committed62536518, locally integrated into cloud-agent-trench and activated; no push.
 - Human owner Luke Ding; executor Codex; branch codex/local-gvisor-info-connect; basefe7fdb03.
 - Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; packages/agent-runtime/src/agent_runtime/adapters/oci_daemon_info.py; tests/agent_runtime/test_oci_daemon_info.py; docker/compose.local-gvisor.yml; docker/local-gvisor/info-bridge-check.py; docs/runbooks/runtime-startup-failure.md; docs/AGENT_TASKS.md; PROGRESS.md.
 - Scope: measure Unix daemon vs verified mTLS bridge; explicitly opt local profile into existing Mac CONNECT transport for /info after paired proof. No ambient proxy adoption. Retain client-certificate requirement, endpoints, daemon identity reads and all security checks.
 - Acceptance: bounded no-model diagnostic; paired current/candidate TLS and local daemon timing, no-cert rejection, exact daemon identity, local Worker activation and readiness; no bridge transport tuning. No Docker daemon restart or Run/model submission.
+
+- Activation:52 targeted tests pass; anonymous mTLS client rejected; Worker healthy, source hashes match. Actual fresh runtime preflight33.955/24.763/31.775ms. Full Dockerfile build blocked by Docker Hub frontend timeout; local image derived from verified runningfe7fdb03 image replacing only two runtime sources. Existing proxy is an explicit local dependency; failed network experiments reverted and shadow listeners stopped.
