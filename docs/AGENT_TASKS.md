@@ -33343,11 +33343,14 @@ browser Cookie or Host Grant.
 - Status: Plan prepared; no implementation claimed by this document-only turn.
 - Human owner: Luke Ding; intended executor Codex.
 - Plan: docs/superpowers/plans/2026-10-15-cloud-first-body-latency.md.
-- LATENCY-TRACE-01: Ready. Branch codex/latency-trace-01, dedicated worktree
-  to be assigned at claim. Reuse existing Provider/observability timing and
-  independently verify official SDK actual first draft. Owned paths are candidate
-  paths in the plan and must be narrowed explicitly before implementation.
-- LATENCY-DRAFT-01: Locked on TRACE; if already correct, close with evidence.
+- LATENCY-TRACE-01: Done for instrumentation + exploratory real SDK draft proof component; SPEC/QUALITY GO. Owner Luke Ding; executor Codex. Branch
+  codex/latency-trace-01; worktree /Users/lukeding/Desktop/playground/2026/product/zebra-stream-observer-repair.
+  Initial Owned paths: .artifacts/first-body-latency-20261015/** (private diagnostics),
+  sdks/typescript/examples/stream-latency/** (real public SDK diagnostic mode),
+  docs/CLOUD_FIRST_BODY_LATENCY_ACCEPTANCE.md; task registry, plan, PROGRESS, WORKLOG.
+  Reuse existing Provider metadata before adding any production timing fields.
+- LATENCY-DRAFT-01: Done for common pipeline proof with TRACE; existing common production path correct.
+  Real SDK provisional DOM precedes canonical4357.6ms; no source fix needed.
 - LATENCY-LAZY-01: Locked on TRACE dependency audit + DRAFT proof; explicit
   cloud runtime, never implicit LocalRuntime fallback; preserve authority/fence.
 - LATENCY-ADMISSION-01: Locked on TRACE; only measured slowest shared step.

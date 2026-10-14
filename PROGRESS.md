@@ -6072,3 +6072,5 @@ Validated explicit INFO CONNECT routing now also applies to the native pinned Do
 ## 2026-10-15 - Cloud first-body latency plan
 
 User approved the direction; detailed plan at docs/superpowers/plans/2026-10-15-cloud-first-body-latency.md. Sequence: reuse timing/real draft proof, on-demand cloud sandbox after dependency audit, measured admission waits, conditional node warm-up and Provider tuning. Generic running-container pool is conditional: immutable workspace mounts/session labels/spec digest require a separate authority design. Targets are proposed, not measured SLAs. Planning only; STOP and paired SQL80% gates remain independent. Existing dirty UI work preserved.
+
+2026-10-15 LATENCY-TRACE/DRAFT component: official built SDK consumed real authenticated v2 SSE; provisional DOM preceded canonical by4357.6ms, observation→DOM3.6ms. Artificial queue wait excluded. Existing common production stream needs no change. Fixed diagnostic generation cancellation race; SPEC/QUALITY GO,35 focused passes plus observer/proxy smoke. Consolidated startup distributions remain final gate.
