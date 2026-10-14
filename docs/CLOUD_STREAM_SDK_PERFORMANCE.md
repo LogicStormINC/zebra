@@ -6,12 +6,13 @@
 
 Worker TextDeltaCoalescer已有首帧立即发出、后续按字符/100ms合并的实现。Redis临时流通知和v2 Reader保持独立canonical recovery/authority；SDK不会等Run终态才observe draft，React直接显示明确Draft标签。没有证据支持盲目降低轮询间隔、跳过授权或整体取消合并。
 
-确认两项累计客户端成本：ConversationStreamReducer.put每次追加都重新UTF-8编码旧prefix与新全文；32KB增量累计编码1MB。React消息行对未变历史内容每次重新渲染；40live更新下每条历史内容41次render。AgentChat经AgentMessageList、Timeline经AgentMessageItem都会经过共用消息行，标签对象可每次新建，因此shared row比较标签值而不是只看标签对象引用。
+确认两项累计客户端成本：ConversationStreamReducer.put每次追加都重新UTF-8编码旧prefix与新全文；32KB增量累计编码1MB。React消息行对未变历史内容每次重新渲染；40live更新下每条历史内容41次render。已审计AgentChat和Timeline调用点：消息列表内部缓存历史行，Timeline直接调用的函数/生命周期保持原样。标签对象可每次新建，list row比较标签值而不是只看标签对象引用。
 
 ## 实现
 
 - client-core复用TextEncoder，按消息缓存UTF-8字节数，只编码新delta；正确处理跨帧UTF-16 surrogate pair，reset/remove/generation replacement/full canonical replacement更新缓存。保留1Mi字符/8MiB/500message/offset/chunk/replay限制与canonical authority。
-- React用native memo缓存private row，保持原可调用export function；比较message/render callback/contentRenderer引用及标签值。消息变化、标签变化、renderer变化继续更新；历史message引用稳定时不重绘媒体/图表等既有内容。
+- React用native memo缓存列表内部的row，保持原可调用export function与直接Timeline调用行为；比较message/render callback/contentRenderer引用及标签值。消息变化、标签变化、renderer变化继续更新；历史message引用稳定时不重绘媒体/图表等既有内容。
+- v2有SSE时不重复执行恢复前pending-effects读取；复用既有恢复完成边界的awaited poll。遗留/v2无SSE轮询仍按原启动顺序执行。
 - 新增独立stream-latency example：built npm exports→真实ZebraClientRuntime SSE parser→ConversationStreamReducer→AgentMessageList。录制40delta后人工点击Commit final，验证首字、Draft标签、最终替换与历史render。无backend/模型/Trench依赖。
 - 修正一个已在未改动主工作区复现的旧测试期望：private v2 callback必须被抑制，不能进入durable delta。仅test修正，不改Worker安全行为。
 
@@ -30,3 +31,9 @@ Worker TextDeltaCoalescer已有首帧立即发出、后续按字符/100ms合并�
 clean worktree旧package-audit遗漏npm自动包含的React README，因此verify在pack阶段失败；主工作区已有对应一行allowlist修正（以及其他未提交UI改动），不重复实现或纳入本切片commit。当前SDK变更将本地集成后，使用主工作区现有审计/消费者脚本做最终五包验证。用户既有React/charts/timeline/contracts改动保持原样。
 
 无全量Python测试或Cloud部署/模型验收声明；这轮生产更改仅npm包的两处共用实现，无Cloud API/Worker行为改变。详细证据.artifacts/stream-sdk-perf-20261015/，最终包gate待完成。
+
+## 启动读取与组件兼容收敛
+
+v2启动负对照旧请求顺序effects→stream→effects，新stream→effects，读次数2→1。100ms合成读取延迟下三组配对首正文观察224.517/203.506/202.497ms→104.667/101.960/101.949ms；这是单次重复Host读取的消除，不冒称真实模型TTFT或PG SQL降幅。
+
+消息列表缓存只包裹内部row；直接AgentMessageItem仍为原函数，避免改变用户现有Timeline的新折叠生命周期。主工作区新增、尚未提交的Timeline测试需要等待原生toggle事件后再触发terminal；本次只补该测试的事件等待，未改其UI实现或其他用户改动，这一测试小修仍留在既有未提交UI修改中。孤立目标测试/同上下文原版本对照与完整包测试的结果分别留存，不掩盖早期失败。
