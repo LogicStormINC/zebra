@@ -31,3 +31,9 @@ the first replies directly and the second performs relevant verification.
 Also test focused facts, complex research and required operation verification.
 Unseen paraphrases are needed to assess generalization. No model calls were made
 by this implementation/verification turn.
+
+Local activation:Worker healthy, all four source hashes matched, runtime preflight
+ready; Trench hot reload completed and /api/health/live returned alive. The local
+Worker image derives from the previous verified image with four source replacements;
+no full Dockerfile build was run for this slice. Integrated commits5cadc4e6 (Zebra)
+and e6f82a8 (Trench); no push. Real model decisions remain unverified.

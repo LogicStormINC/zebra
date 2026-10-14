@@ -6034,3 +6034,7 @@ Remove the remaining native CLI capability query before instance reservation in 
   feedback.103 Zebra/45 Trench focused tests; Ruff GO. No extra classifier call,
   routing categories, authorization/coverage changes. Real provider behavior
   remains pending manual testing; no model calls issued.
+
+- CLOUD-AGENT-AUTONOMY-01 local activation:four Worker source hashes match,
+  healthy/preflight ready; Trench reloaded/live. Integrated-source103+45 tests pass.
+  No model invocation; semantic gain pending user manual test.
