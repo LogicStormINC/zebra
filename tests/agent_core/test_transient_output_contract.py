@@ -9,6 +9,7 @@ from agent_core.domain.stream_admission import (
     RunStreamAdmission,
     StreamCapabilities,
     StreamMode,
+    TransientCapacityPolicy,
     negotiate_stream_mode,
 )
 from agent_core.domain.transient_output import (
@@ -55,6 +56,8 @@ def scope(identity: TransientGeneration, namespace: str = "namespace-1") -> Tran
 def authorization(identity: TransientGeneration) -> TransientWriterAuthorization:
     now = datetime.now(UTC)
     return TransientWriterAuthorization(
+        capacity_policy=TransientCapacityPolicy(),
+        capacity_digest=TransientCapacityPolicy().digest,
         scope=scope(identity), lease_fence=LeaseFence(
             control_plane_epoch=uuid4(), fencing_token=identity.lease_fence,
             owner_instance_id="worker-1",

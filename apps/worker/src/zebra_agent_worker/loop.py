@@ -412,7 +412,12 @@ def build_worker_loop_service(
     stream_hint_relay, checkpoint_committed = configure_stream_hint_relay(
         execution_stores, settings
     )
+    from zebra_agent_worker.transient_capacity_maintenance import (
+        configure_transient_capacity_maintenance,
+    )
+
     service = WorkerLoopService(
+        transient_capacity=configure_transient_capacity_maintenance(active_namespace, settings),
         projection_store=execution_stores.sessions,
         execution_service=execution_service,
         cloud_memory_recovery=cloud_memory_recovery,

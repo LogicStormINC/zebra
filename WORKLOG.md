@@ -14757,3 +14757,28 @@ Luke/Codex,codex/cloud-stream-capacity-01. Exact12 source/tests+serial handoff i
 docs/CLOUD_STREAM_CAPACITY_PLAN.md before edits. Current tail101 unchanged;
 implement bounded retained quotas/expiry/dirty recovery/GC, then CONTROL/STOP.
 No push/deploy. Original PERF10/TLS/fullruntime80/fleet gates remain open.
+
+2026-10-14 CAPACITY before-code source ownership extension: dedicated
+redis_transient_capacity.py and Worker transient_capacity_maintenance.py.
+Reuse accepted deadlines/lifecycle; loop remains bounded; no genericledger/migration.
+Audit found pre-resolveSNAPSHOT mutation/Segment-only resettable counters/laneend
+TTL erasing successor metadata; fix shared paths with concentrated native proof.
+
+2026-10-14 CAPACITY before-edit caller path api_command_mixin.py declared: only
+server policy forwarding to existing command submission; duplicate accepted policy
+and original intent fingerprint preserved, source total15.
+
+2026-10-14 CAPACITY concentrated closure: attempt02 123P/14F, attempt03 46P/6F,
+attempt04 static-only failed and test restored from original Git blob, attempt05
+13P. Preserve all records and source provenance. One consolidated SPEC identified
+original-key GC binding, fixed in existing capacity/output modules; binding is
+atomically charged and checked before read/delete. Lost ledger stays failclosed.
+Final affected45unique=44P attempt06 (26.915s, original shared-prefix assertion
+failure retained) +1P attempt07 (5.202s); source/runtime unchanged, literal clean
+make check GO. Final runtime1273 SHA1e5070fbf1a81ff382a7149380756cf50b9942d550a4411bb538cfc06eb51178.
+Manifest SHA13d7f3c8707c7294d64f07c3e10c27e578b22b7e8b5a49f9ada16b6d2a10b960;
+independent SPEC/QUALITY1330hash/mode checks GO. Metrics421clientSQL/66PGsockets
+whole lifecycle; client37EVAL vs server36/6289us different windows retained;
+instance-global memory/RSS are not isolated physical guarantees. Production
+cutover OFF; STOP/full80/TLS/browser/fleet OPEN. Prepare local ownedcommit/FF
+only, preserving primary dirty work; no push/deploy/business changes.

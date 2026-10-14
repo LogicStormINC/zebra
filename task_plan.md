@@ -1115,3 +1115,10 @@ Luke/Codex,codex/cloud-stream-capacity-01. Exact12 source/tests+serial handoff i
 docs/CLOUD_STREAM_CAPACITY_PLAN.md before edits. Current tail101 unchanged;
 implement bounded retained quotas/expiry/dirty recovery/GC, then CONTROL/STOP.
 No push/deploy. Original PERF10/TLS/fullruntime80/fleet gates remain open.
+
+2026-10-14 CAPACITY component SPEC/QUALITY GO. Final affected45unique native
+passes=44 attempt06 +1 attempt07; clean literal make check GO, independent1330
+hashes stable. Consolidated review closed original-key GC binding; lost ledger
+does not authorize mutable-record deletion or automatic empty-ledger reset.
+Prepare ownedcommit/localFF preserving primary17dirtyfiles, then claim CONTROL.
+Production cutover OFF; final actual SQL80/browser/fleet remains OPEN. No push/deploy.

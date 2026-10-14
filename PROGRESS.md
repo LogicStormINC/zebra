@@ -5961,3 +5961,14 @@ Luke/Codex,codex/cloud-stream-capacity-01. Exact12 source/tests+serial handoff i
 docs/CLOUD_STREAM_CAPACITY_PLAN.md before edits. Current tail101 unchanged;
 implement bounded retained quotas/expiry/dirty recovery/GC, then CONTROL/STOP.
 No push/deploy. Original PERF10/TLS/fullruntime80/fleet gates remain open.
+
+2026-10-14 CAPACITY component SPEC/QUALITY GO. Frozen server policy and retained
+Run/tenant/deployment quotas, bounded dirty recovery/GC, both Worker maintenance
+entrances and oldV2 no-delta fallback are implemented. Original-key GC binding
+is sealed atomically with charge; lost ledger remains failclosed pending explicit
+owned inventory/drain. Final45unique passes=44 attempt06 +1 attempt07, clean
+literal make check GO; prior batches keep distinct source/failure provenance.
+Independent1330hash/proof-mode checks agree. Pending ownedcommit/localFF, then
+CONTROL/STOP. Production cutover OFF;421clientSQL/66PGsockets whole lifecycle,
+Redis instance-global CPU/memory samples are diagnostics, not SQL-rate/isolated
+RSS certification. Actual SQL80/Worker/SDK/browser/fleet/TLS remain OPEN.

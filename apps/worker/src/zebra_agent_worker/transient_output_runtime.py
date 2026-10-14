@@ -118,6 +118,8 @@ class WorkerTransientCallGate:
                 or admission.run_id != generation.run_id
             ):
                 raise TransientOutputUnavailable("Run has no frozen v2 admission")
+            if admission.capacity_policy is None:
+                raise TransientOutputUnavailable("Run has no frozen capacity policy")
             header = tasks.read_task_header(generation.task_id, require_source_coverage=True)
             run = tasks.read_latest_run_header(generation.task_id)
             if (
@@ -203,7 +205,11 @@ class WorkerTransientCallGate:
             lease_expiry, grant_expiry = self._fresh_authority()
             now = datetime.now(UTC)
             expiry = min(now + timedelta(seconds=30), lease_expiry, grant_expiry)
+            admission = self._admission()
+            assert admission is not None and admission.capacity_policy is not None
             self._issued = TransientWriterAuthorization(
+                capacity_policy=admission.capacity_policy,
+                capacity_digest=admission.capacity_digest,
                 scope=self.scope,
                 lease_fence=self.fence,
                 gate_context_ref=str(uuid4()),
@@ -219,6 +225,9 @@ class WorkerTransientCallGate:
             if self._closed or authorization is not self._issued:
                 raise TransientOutputUnavailable("unknown public callback gate handle")
             lease_expiry, grant_expiry = self._fresh_authority()
+            admission = self._admission()
+            if admission is None or authorization.capacity_policy != admission.capacity_policy:
+                raise TransientOutputUnavailable("frozen capacity policy changed")
             if not datetime.now(UTC) < authorization.expires_at <= min(lease_expiry, grant_expiry):
                 raise TransientOutputUnavailable("activation authority changed")
 
@@ -304,13 +313,15 @@ class TransientDeltaSink:
                     if self._stream_mode is not None and mode is not self._stream_mode:
                         raise TransientOutputUnavailable("frozen Run stream mode changed")
                     self._stream_mode = mode
+                    if mode is StreamMode.TRANSIENT_V2 and len(self._v2_calls) < 256:
+                        self._v2_calls.add(self._call)  # Register before any provisional rejection.
                     if not self._gate.ordinary_v2():
                         self._call = None
                         self._gate.close()
                         self._gate = None
                         return
                     self._call = (call_id, attempt)
-                    if len(self._v2_calls) >= 256:
+                    if self._call not in self._v2_calls and len(self._v2_calls) >= 256:
                         self._failed = True
                         self._gate.close()
                         return  # Lane generation budget exhausted; business completion continues.
@@ -341,7 +352,8 @@ class TransientDeltaSink:
             call = (event.payload.get("model_call_id"), event.payload.get("attempt_number"))
             known_call = isinstance(call[0], str) and type(call[1]) is int
             if event.event_type is EventType.MODEL_RESPONSE_DELTA and (
-                call == self._call or (known_call and call in self._v2_calls)
+                self._stream_mode is StreamMode.TRANSIENT_V2
+                or call == self._call or (known_call and call in self._v2_calls)
             ):
                 try:
                     with self._draft_lock():

@@ -171,3 +171,52 @@ classify same-family failures together, keep raw evidence, do not replay previou
 PERF/RELAY matrices blindly. Use clean exact-source validation with proper Git index,
 resolved import paths and existing dependency environment; archive copies stay
 immutable outside source gates. All additions count in later inclusive SQL/latency.
+
+### Focused source ownership extension before editing — 2026-10-14
+
+Add packages/agent-integrations/src/agent_integrations/redis_transient_capacity.py
+for the specific atomic retained-quota/GC Lua and explicit epoch sealing; not a
+generic ledger service. Add
+apps/worker/src/zebra_agent_worker/transient_capacity_maintenance.py for bounded
+capacity maintenance using accepted RELAY deadline/non-overlap/owned-close behavior.
+The existing482-line loop composes the small maintenance object only. Initial
+cutover configuration stays OFF; global-cap certification requires old writers
+quiescent plus bounded inventory/TTL-drain proof, not merely a new key prefix.
+Other source ownership remains the original12 paths and catalog tail101 unchanged.
+
+### Consolidated review closure — 2026-10-14
+
+The final review identified a GC corruption boundary: mutable record keys alone
+cannot prove which bodies belong to a charged record. Reopen only the already
+owned redis_transient_capacity.py and redis_transient_output.py to bind original
+keys/generation/aggregate identities/policy in the independent ledger, atomically
+with its charge. Charge/read/cleanup validate that binding before body operations;
+its bounded overhead remains inside the metadata reservation. Add one same-prefix
+wrong-body regression to the already owned capacity test module. This is the
+existing corruption/delete-before-release requirement, not a new quota framework.
+If the ledger/binding is lost, mutable records cannot authorize deleting bodies
+or certify an empty cutover. Keep admission and recovery failclosed until explicit
+owned inventory/TTL-drain certification; natural body expiry is not automatic
+ledger reconstruction or proof that all historical keys have drained.
+
+Before caller edit2026-10-14 add
+apps/api/src/zebra_agent_api/api_command_mixin.py only to forward server-selected
+settings.stream.capacity_policy into submit_session_command. Existing duplicate
+commands still return their accepted Event before new policy selection; client
+intent fingerprint stays unchanged. This is composition forwarding, not a new
+canonical appender/transaction mutation path. Source ownership total15.
+
+## Component acceptance evidence — 2026-10-14
+
+Concentrated SPEC and QUALITY GO, independently verified1330 hashes and private
+proof modes. Final affected45unique native passes comprise44 from attempt06 and
+one test-only corrected assertion from attempt07; final runtime1273 files has SHA
+1e5070fbf1a81ff382a7149380756cf50b9942d550a4411bb538cfc06eb51178.
+Clean exact-source literal make check passed. Earlier137/52/13 runs retain their
+different source provenance; original failures were not discarded. Explicit
+minimum races/caps/partial operations/GC binding/oldV2/no-delta/epoch/private-source
+checks passed. This is component acceptance for local integration, not production
+cutover or complete runtime certification. Whole-lifecycle421clientSQL/66sockets
+has no independent rate denominator;37 client EVAL attempts and36 server commands
+use different sampling windows. CPU6289us and memory/RSS are owned-instance global
+samples. Physical isolated capacity, TLS, STOP, full80/browser/fleet remain OPEN.

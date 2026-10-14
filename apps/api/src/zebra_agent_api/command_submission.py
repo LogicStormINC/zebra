@@ -15,6 +15,7 @@ from agent_core.domain.stream_admission import (
     RunStreamAdmission,
     StreamCapabilities,
     StreamMode,
+    TransientCapacityPolicy,
     negotiate_stream_mode,
 )
 from agent_core.ports.extensions import ExtensionSkillConflictError
@@ -43,6 +44,7 @@ def submit_session_command(
     extension_admission: CloudExtensionTurnAdmission | None = None,
     verified_host_grant: VerifiedHostGrant | None = None,
     transient_admission_enabled: bool = False,
+    capacity_policy: TransientCapacityPolicy | None = None,
 ) -> ApiResponse:
     try:
         session_key = SessionId(UUID(session_id))
@@ -154,6 +156,7 @@ def submit_session_command(
             stores,
             command,
             transient_admission_enabled and isinstance(verified_host_grant, VerifiedHostGrant),
+            capacity_policy,
         )
     except (ValueError, ValidationError) as exc:
         return bad_request(str(exc))
@@ -321,7 +324,8 @@ def _expected_revision(value: object) -> int:
 
 
 def _stream_admission(
-    stores: ControlPlaneStores, command: SessionCommand, enabled: bool
+    stores: ControlPlaneStores, command: SessionCommand, enabled: bool,
+    capacity_policy: TransientCapacityPolicy | None = None,
 ) -> RunStreamAdmission | None:
     raw = command.payload.get("stream_capabilities")
     if raw is None or command.kind not in {SessionCommandKind.RUN, SessionCommandKind.RESUME}:
@@ -342,4 +346,8 @@ def _stream_admission(
             mode = StreamMode.LEGACY
     if mode is StreamMode.LEGACY:
         return None  # Accepted absence pins legacy and keeps old Workers byte-compatible.
-    return RunStreamAdmission(task_id=task_id, run_id=run_id, mode=mode, capabilities=caps)
+    return RunStreamAdmission(
+        task_id=task_id, run_id=run_id, mode=mode, capabilities=caps,
+        capacity_policy=capacity_policy,
+        capacity_digest=capacity_policy.digest if capacity_policy is not None else None,
+    )

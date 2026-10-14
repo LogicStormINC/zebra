@@ -11,6 +11,7 @@ from agent_core.domain.host_authority import HostResourceRef
 from agent_core.domain.identifiers import new_event_id, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCallMetadata, ModelCompletion, ModelTextDelta
+from agent_core.domain.stream_admission import TransientCapacityPolicy
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.harness.orchestration_events import model_response_event
@@ -48,7 +49,10 @@ def owned():
         yield OwnedEndpoints((scratch, client, fanout, url))
 
 
-def setup(owned, monkeypatch, *, oversized_history=False):
+def setup(
+    owned, monkeypatch, *, oversized_history=False, capacity_policy=None, missing_policy=False
+):
+    capacity_policy = None if missing_policy else capacity_policy or TransientCapacityPolicy()
     dsn, _, fanout, url = owned
     run = seed(dsn, fanout, 1)
     leases = PostgresLeaseStore(dsn, deployment_namespace=run.namespace)
@@ -97,6 +101,7 @@ def setup(owned, monkeypatch, *, oversized_history=False):
         payload,
         idempotency_key="accepted-v2",
         transient_admission_enabled=True,
+        capacity_policy=capacity_policy,
         verified_host_grant=_verified(context),
     )
     assert (
@@ -135,13 +140,17 @@ def setup(owned, monkeypatch, *, oversized_history=False):
     )
     settings = load_settings({"ZEBRA_LIVE_REDIS_URL": url})
     original = RedisTransientOutput.from_url
-    monkeypatch.setattr(
-        RedisTransientOutput,
-        "from_url",
-        lambda address, **kw: original(
-            address, **{**kw, "key_prefix": f"{fanout._key_prefix}:admission"}
-        ),
-    )
+    def sealed(address, **kw):
+        from tests.agent_core.test_transient_output_contract import authorization, generation
+        port = original(address, **{**kw, "key_prefix": f"{fanout._key_prefix}:admission"})
+        scope = authorization(generation()).scope.model_copy(
+            update={"deployment_namespace": run.namespace})
+        if capacity_policy is not None:
+            port.seal_capacity(scope, capacity_policy, old_keys=(),
+                               old_writers_quiescent=True, old_ttl_drained=True)
+        return port
+
+    monkeypatch.setattr(RedisTransientOutput, "from_url", sealed)
     return run, lease, progress, binding, settings
 
 
@@ -245,7 +254,8 @@ def test_native_mode_aware_model_hook_exact_turn_timer_and_zero_frame_sql(
                 if "/native/real-composition-activation/sql:" in key
             ),
         )
-        for metric, expected in (("new_pg_socket", 8), ("client_commit", 8), ("statement:set", 8)):
+        activation_cost = (("new_pg_socket", 10), ("client_commit", 10), ("statement:set", 10))
+        for metric, expected in activation_cost:
             measured = sum(
                 value
                 for key, value in telemetry.calls.items()
@@ -427,6 +437,7 @@ def test_native_handoff_uses_root_host_binding_and_active_child_turn(owned, monk
         },
         idempotency_key="child-run",
         transient_admission_enabled=True,
+        capacity_policy=TransientCapacityPolicy(),
         verified_host_grant=_verified(fresh),
     )
     assert response.status_code == 202

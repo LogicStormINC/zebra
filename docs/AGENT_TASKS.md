@@ -947,8 +947,8 @@
 
 ### CLOUD-STREAM-CAPACITY-01 - Bound retained transient storage and recover charges
 
-- Status: In Progress (Ready after accepted local RELAY6bea341d; claimed
- 2026-10-14 before implementation under staged local integration authorization).
+- Status: Review (component SPEC/QUALITY GO2026-10-14; prepared for owned
+ commit and staged local integration into cloud-agent-trench).
 - Human owner Luke Ding; executor Codex.
 - Branch/worktree: codex/cloud-stream-capacity-01; cloud-stream-capacity-01.
 - Owned paths: exact12 source paths and explicit tests in
@@ -962,6 +962,12 @@
  release-once GC; fixed lifetime/reads-not-renewing; old-policy/old-key cutover;
  real two-Worker races and forbidden-private/coverage zero mutation; no V1 delta
  persistence fallback. Standalone Redis only; no implicit Cluster support.
+- Before-edit exact source extension2026-10-14: redis_transient_capacity.py
+ (specific atomic quota/GC/sealing) and transient_capacity_maintenance.py
+ (bounded RELAY-style maintenance) as listed in focused plan; source total14.
+ Cutover configuration initially OFF until scoped old-writer/drain proof.
+- Before-edit caller handoff2026-10-14: api_command_mixin.py server policy
+ forwarding only (focused plan); source total15, no appender/write redesign.
 - Current migration tail101 unchanged/no reservation. Extra paths require explicit
  declaration before edits; no generic quota service/new dependency.
 - Include activation/renewal/maintenance costs in later actual SQL80% gate;
@@ -969,6 +975,13 @@
 - Component validation has one concentrated native/static and SPEC→QUALITY gate;
  do not repeat old fixture/observer review loops. No push/deploy/paid-provider/
  shared-service restart/business migration. STOP and fullruntime80 remain separate.
+- Final affected native set45unique passed (44 attempt06 +1 attempt07), literal
+ clean make check GO. Independent1330hash/proof-permission checks agree. Earlier
+137/52/13 batches retain their own source provenance and failure records.
+- GC original-key binding is atomic with charge and checked before read/delete;
+ lost ledger remains failclosed pending explicit inventory/drain certification.
+ Production cutover OFF; whole-lifecycle421clientSQL/66PGsockets is not a rate,
+ global Redis memory/RSS samples do not certify isolated physical capacity.
 
 ### CLOUD-STREAM-RELIABILITY-01 - Reliable notifications and temporary-stream GC
 

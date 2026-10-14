@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from agent_core.domain.cloud_scope import OpaqueAuthorityScope
 from agent_core.domain.leases import LeaseFence
+from agent_core.domain.stream_admission import TransientCapacityPolicy
 from agent_core.domain.transient_output import TransientGeneration, TransientTextFrame
 from agent_core.ports.live_event_fanout import LiveEventCursor, _require_namespace
 
@@ -50,6 +51,8 @@ class TransientWriterAuthorization(BaseModel):
     scope: TransientStreamScope
     lease_fence: LeaseFence
     gate_context_ref: str = Field(min_length=1, max_length=128)
+    capacity_policy: TransientCapacityPolicy | None = None
+    capacity_digest: str | None = Field(default=None, min_length=64, max_length=64)
     category: Literal["ordinary_public_text"] = "ordinary_public_text"
     issued_at: datetime
     expires_at: datetime
@@ -72,6 +75,10 @@ class TransientWriterAuthorization(BaseModel):
 
     @model_validator(mode="after")
     def require_bounded_window(self) -> TransientWriterAuthorization:
+        if (self.capacity_policy is None) != (self.capacity_digest is None):
+            raise ValueError("capacity policy and digest must appear together")
+        if self.capacity_policy is not None and self.capacity_digest != self.capacity_policy.digest:
+            raise ValueError("capacity policy digest mismatch")
         if self.lease_fence.fencing_token != self.scope.generation.lease_fence:
             raise ValueError("full lease fence token must match generation")
         ceiling = min(

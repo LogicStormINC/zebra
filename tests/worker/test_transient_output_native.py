@@ -14,7 +14,12 @@ from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion, ModelTextDelta
-from agent_core.domain.stream_admission import RunStreamAdmission, StreamCapabilities, StreamMode
+from agent_core.domain.stream_admission import (
+    RunStreamAdmission,
+    StreamCapabilities,
+    StreamMode,
+    TransientCapacityPolicy,
+)
 from agent_core.domain.transient_output import TransientGeneration
 from agent_core.harness.model_step import HarnessModelStep
 from agent_core.harness.models import HarnessEventDraft
@@ -60,6 +65,8 @@ def test_native_actual_public_callback_has_zero_sql_for_10_and_100_frames(owned,
         task_id=run.task_id,
         run_id="run",
         mode=StreamMode.TRANSIENT_V2,
+        capacity_policy=TransientCapacityPolicy(),
+        capacity_digest=TransientCapacityPolicy().digest,
         capabilities=StreamCapabilities(
             wire_version=2,
             provisional_draft_label=True,
@@ -137,6 +144,13 @@ def test_native_actual_public_callback_has_zero_sql_for_10_and_100_frames(owned,
         active.append(gate)
         return gate
 
+    from tests.agent_core.test_transient_output_contract import authorization, generation
+
+    initial = authorization(generation()).scope.model_copy(
+        update={"deployment_namespace": run.namespace}
+    )
+    port.seal_capacity(initial, admission.capacity_policy, old_keys=(),
+                       old_writers_quiescent=True, old_ttl_drained=True)
     progress = ProgressiveEventSink(
         writer.wrap(progress_recovery.persist_with(run.recorder.append_draft)),
         user_input="x",

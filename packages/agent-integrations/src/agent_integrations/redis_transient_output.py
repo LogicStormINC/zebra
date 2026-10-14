@@ -6,9 +6,11 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from hashlib import sha256
 from threading import RLock
+from time import monotonic
 from typing import Any
 from uuid import uuid4
 
+from agent_core.domain.stream_admission import TransientCapacityPolicy
 from agent_core.domain.transient_output import TransientTextFrame
 from agent_core.ports.live_event_fanout import LiveEventCursor
 from agent_core.ports.transient_output import (
@@ -17,16 +19,23 @@ from agent_core.ports.transient_output import (
     TransientStreamScope,
     TransientWriterAuthorization,
 )
-from redis import ConnectionPool, Redis
+from redis import ConnectionPool, Redis, RedisCluster
 from redis.backoff import NoBackoff
 from redis.exceptions import RedisError
 from redis.retry import Retry
 
+from agent_integrations.redis_transient_capacity import GC, READ_BOUND, SEAL
 from agent_integrations.redis_transient_deadlines import (
+    current_redis_io_deadline,
     deadline_redis_options,
     transient_lock,
 )
-from agent_integrations.redis_transient_discovery import TransientDescriptor, transient_lane
+from agent_integrations.redis_transient_discovery import (
+    TransientDescriptor,
+    transient_aggregates,
+    transient_deployment_key,
+    transient_lane,
+)
 from agent_integrations.redis_transient_scripts import ACTIVATE, INVALIDATE, PUBLISH, READ, SNAPSHOT
 
 
@@ -53,6 +62,8 @@ class RedisTransientOutput:
             raise ValueError("invalid transient retention or byte capacity")
         if not 1 <= max_rows <= 8192:
             raise ValueError("invalid transient row capacity")
+        if isinstance(client, RedisCluster):
+            raise TransientOutputUnavailable("capacity requires standalone Redis")
         self._client, self._resolve = client, resolve_authorization
         self._read_authority = read_authority
         self._descriptor_source = descriptor_source
@@ -109,10 +120,30 @@ class RedisTransientOutput:
             f"{prefix}:{generation.generation_id}:offsets",
         )
 
-    def _eval(self, script: str, scope: TransientStreamScope, *args: object) -> list[str]:
+    def _capacity_keys(self, scope: TransientStreamScope) -> tuple[str, str, str]:
+        ledger, _, _ = transient_aggregates(scope, key_prefix=self._prefix)
+        record = ledger + ":record:" + sha256(self._keys(scope)[1].encode()).hexdigest()
+        return ledger, ledger + ":due", record
+
+    def _eval(
+        self, script: str, scope: TransientStreamScope, *args: object,
+        policy: TransientCapacityPolicy | None = None,
+    ) -> list[str]:
         try:
             keys = self._keys(scope)
-            raw = self._client.eval(script, 4, *keys, keys[0] + ":control", *args)
+            tail: tuple[object, ...] = ()
+            if policy is not None:
+                _, tenant, run = transient_aggregates(scope, key_prefix=self._prefix)
+                tail = (policy.model_dump_json(), policy.digest, tenant, run,
+                        scope.generation.generation_id)
+            elif script == READ:
+                _, tenant, run = transient_aggregates(scope, key_prefix=self._prefix)
+                tail = (tenant, run)
+                script = READ_BOUND + script
+            raw = self._client.eval(
+                script, 7, *keys, keys[0] + ":control", *self._capacity_keys(scope),
+                *args, *tail,
+            )
             return [item.decode() if isinstance(item, bytes) else str(item) for item in raw]
         except (RedisError, OSError) as exc:
             raise TransientOutputUnavailable("temporary output transport unavailable") from exc
@@ -126,8 +157,26 @@ class RedisTransientOutput:
     def activate(self, authorization: TransientWriterAuthorization) -> None:
         with transient_lock(self._lock):
             scope = authorization.scope
-            expected = self._eval(SNAPSHOT, scope, uuid4().hex)[0]
-            self._resolve(authorization)  # Must verify actual gate AND fresh PG lease/Grant.
+            self._resolve(authorization)  # BEFORE the first reservation/quota mutation.
+            policy = authorization.capacity_policy
+            if policy is None or authorization.capacity_digest != policy.digest:
+                raise TransientOutputUnavailable("writer has no frozen capacity policy")
+            metadata_keys = (*self._keys(scope), self._keys(scope)[0]+":control",
+                             *self._capacity_keys(scope))
+            if (any(len(key.encode()) > 512 for key in metadata_keys) or
+                    2*sum(len(key.encode()) for key in metadata_keys)+8192+4096 >
+                    policy.metadata_bytes):
+                raise TransientOutputUnavailable("capacity metadata allowance exceeded")
+            if isinstance(self._client, RedisCluster):
+                raise TransientOutputUnavailable("capacity requires standalone Redis")
+            reserved = self._eval(
+                SNAPSHOT, scope, uuid4().hex, self._millis(authorization.expires_at),
+                scope.generation.generation_id, policy=policy,
+            )
+            if reserved[0] != "ok":
+                raise TransientOutputUnavailable(f"temporary reservation rejected: {reserved[0]}")
+            expected = reserved[1]
+            self._resolve(authorization)  # Fresh source/Host/Turn/Lease before ACTIVATE CAS.
             now = datetime.now(UTC)
             if not authorization.issued_at <= now < authorization.expires_at:
                 raise TransientOutputUnavailable("writer authority expired")
@@ -137,7 +186,7 @@ class RedisTransientOutput:
             if not renewing and len(self._active) >= 4096:
                 raise TransientOutputUnavailable("process writer capacity exhausted")
             maximum = min(
-                self._millis(now) + self._retention * 1000,
+                self._millis(now) + min(self._retention, policy.active_seconds) * 1000,
                 self._millis(authorization.grant_expires_at),
             )
             result = self._eval(
@@ -161,6 +210,7 @@ class RedisTransientOutput:
                     if self._descriptor_source is not None
                     else ""
                 ),
+                policy=policy,
             )
             if result[0] != "ok":
                 raise TransientOutputUnavailable(f"temporary activation rejected: {result[0]}")
@@ -190,6 +240,7 @@ class RedisTransientOutput:
                 self._max_bytes,
                 self._max_rows,
                 sha256(frame.wire_bytes()).hexdigest(),
+                policy=authorization.capacity_policy,
             )
             if result[0] != "ok":
                 raise TransientOutputUnavailable(f"temporary append rejected: {result[0]}")
@@ -197,7 +248,14 @@ class RedisTransientOutput:
 
     def invalidate(self, scope: TransientStreamScope) -> None:
         try:
-            self._eval(INVALIDATE, scope, scope.generation.generation_id)
+            active = self._active.get(self._keys(scope)[1])
+            if active is None or active.capacity_policy is None:
+                raise TransientOutputUnavailable("invalidation has no activated capacity policy")
+            result = self._eval(
+                INVALIDATE, scope, scope.generation.generation_id, policy=active.capacity_policy
+            )
+            if result[0] != "ok":
+                raise TransientOutputUnavailable(f"temporary invalidation rejected: {result[0]}")
         finally:
             with transient_lock(self._lock):
                 self._active.pop(self._keys(scope)[1], None)
@@ -278,3 +336,49 @@ class RedisTransientOutput:
             return TransientOutputBatch(frames=tuple(frames), next_cursor=next_cursor)
         except (RedisError, OSError, TransientOutputUnavailable, ValueError):
             return TransientOutputBatch(next_cursor=empty, resync_required=True)
+
+
+    def seal_capacity(
+        self, scope: TransientStreamScope, policy: TransientCapacityPolicy, *,
+        old_keys: tuple[str, ...], old_writers_quiescent: bool, old_ttl_drained: bool,
+    ) -> None:
+        """Explicit operator cutover; assertions alone do not certify fleet inventory."""
+        if old_writers_quiescent is not True or old_ttl_drained is not True:
+            raise TransientOutputUnavailable("old provisional writers have not drained")
+        if len(old_keys) > 512 or any(
+            not key.startswith(self._prefix + ":") or len(key) > 512 for key in old_keys
+        ):
+            raise ValueError("bounded owned inventory required")
+        ledger, due, _ = self._capacity_keys(scope)
+        result = self._client.eval(SEAL, 2 + len(old_keys), ledger, due, *old_keys,
+                                   policy.epoch, policy.digest)
+        if result[0] not in ("ok", b"ok"):
+            raise TransientOutputUnavailable("capacity epoch could not be sealed")
+
+    def collect_capacity(
+        self, scope: TransientStreamScope, policy: TransientCapacityPolicy, *, count: int = 32,
+    ) -> int:
+        if type(count) is not int or not 1 <= count <= 32:
+            raise ValueError("capacity collection count must be 1..32")
+        return self.collect_namespace_capacity(scope.deployment_namespace, policy, count=count)
+
+    def collect_namespace_capacity(
+        self, namespace: str, policy: TransientCapacityPolicy, *, count: int = 32,
+    ) -> int:
+        if type(count) is not int or not 1 <= count <= 32:
+            raise ValueError("capacity collection count must be 1..32")
+        ledger = transient_deployment_key(namespace, key_prefix=self._prefix)
+        parent = current_redis_io_deadline()
+        budget = min(2000, int((parent-monotonic())*1000)) if parent is not None else 2000
+        if budget <= 0:
+            raise TimeoutError("capacity collection deadline expired")
+        result = self._client.eval(
+            GC, 2, ledger, ledger + ":due", policy.epoch, policy.digest, count, budget
+        )
+        if result[0] not in ("ok", b"ok"):
+            raise TransientOutputUnavailable("capacity collection requires recovery")
+        return int(result[1])
+
+    def close(self) -> None:
+        self._client.close()
+        self._client.connection_pool.disconnect()

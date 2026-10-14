@@ -37,7 +37,8 @@ def transient_lane(
 
 DISCOVER = """
 local t=redis.call('TIME'); local now=t[1]*1000+math.floor(t[2]/1000)
-if redis.call('HGET',KEYS[1],'closed')~='0' or
+if redis.call('HGET',KEYS[1],'dirty')=='1' or
+ redis.call('HGET',KEYS[1],'closed')~='0' or
  now>=tonumber(redis.call('HGET',KEYS[1],'expiry') or '0') then return {} end
 local descriptor=redis.call('HGET',KEYS[1],'descriptor')
 if not descriptor then return {} end
@@ -59,3 +60,21 @@ def discover(client: object, lane: str) -> tuple[TransientDescriptor, str] | Non
     if not isinstance(revision, str) or len(revision) > 256:
         raise ValueError("transient descriptor revision is malformed")
     return TransientDescriptor.model_validate_json(raw), revision
+
+
+def transient_aggregates(scope: TransientStreamScope, *, key_prefix: str) -> tuple[str, str, str]:
+    """Verified identity only; a Run spans Segments, Turns and model calls."""
+    def digest(parts: tuple[str, ...]) -> str:
+        return sha256(json.dumps(parts, separators=(",", ":")).encode()).hexdigest()
+
+    authority = scope.authority_scope
+    deployment = digest((scope.deployment_namespace,))
+    tenant = digest((scope.deployment_namespace, *authority.scope_key))
+    run = digest((scope.deployment_namespace, *authority.scope_key,
+                  str(scope.generation.task_id), scope.generation.run_id))
+    return f"{key_prefix}:capacity:{deployment}", tenant, run
+
+
+def transient_deployment_key(namespace: str, *, key_prefix: str) -> str:
+    digest = sha256(json.dumps((namespace,), separators=(",", ":")).encode()).hexdigest()
+    return f"{key_prefix}:capacity:{digest}"

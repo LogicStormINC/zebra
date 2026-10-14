@@ -30,6 +30,7 @@ from zebra_agent_worker.lease_heartbeat import LeaseHeartbeatError
 from zebra_agent_worker.memory_delivery_consumer import MemoryDeliveryConsumption
 from zebra_agent_worker.recovery import SessionRecoveryError
 from zebra_agent_worker.resume import SessionResumeError
+from zebra_agent_worker.transient_capacity_maintenance import TransientCapacityMaintenance
 from zebra_agent_worker.worker_polling import has_remaining_cycles, validate_loop_inputs
 
 
@@ -80,6 +81,7 @@ class WorkerLoopService:
         client_effect_recovery: Callable[[], int] | None = None,
         projection_work: AgUiProjectionWorkService | None = None,
         stream_hint_relay: StreamHintRelay | None = None,
+        transient_capacity: TransientCapacityMaintenance | None = None,
     ) -> None:
         self._projection_store = projection_store
         self._execution_service = execution_service
@@ -96,6 +98,7 @@ class WorkerLoopService:
         self._client_effect_recovery = client_effect_recovery
         self._client_recovery_at = 0.0
         self._projection_work = projection_work
+        self._transient_capacity = transient_capacity
         self._stream_hint_relay = stream_hint_relay
         self._relay_at = 0.0
         self._relay_lock = Lock()
@@ -134,6 +137,8 @@ class WorkerLoopService:
         batch_size: int,
         lease_ttl_seconds: int,
     ) -> None:
+        if self._transient_capacity is not None:
+            self._transient_capacity.tick()
         self._relay_stream_hints()
         self._start_projection_work()
         self._process_child_wakeups()
@@ -144,6 +149,8 @@ class WorkerLoopService:
         )
 
     def drain(self) -> None:
+        if self._transient_capacity is not None:
+            self._transient_capacity.close()
         if self._stream_hint_relay is not None:
             self._stream_hint_relay.close()
         if self._projection_work is not None:
@@ -160,6 +167,8 @@ class WorkerLoopService:
         batch_size: int = 1,
         lease_ttl_seconds: int = 30,
     ) -> WorkerLoopCycleResult:
+        if self._transient_capacity is not None:
+            self._transient_capacity.tick()
         self._relay_stream_hints()
         self._start_projection_work()
         self._process_child_wakeups()

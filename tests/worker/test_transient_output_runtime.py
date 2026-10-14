@@ -6,7 +6,12 @@ from unittest.mock import Mock
 import pytest
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.modeling import ModelTextDelta
-from agent_core.domain.stream_admission import RunStreamAdmission, StreamCapabilities, StreamMode
+from agent_core.domain.stream_admission import (
+    RunStreamAdmission,
+    StreamCapabilities,
+    StreamMode,
+    TransientCapacityPolicy,
+)
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.harness.public_output import ProgressiveEventSink, PublicOutputPolicy
 from agent_core.harness.stream_deltas import TextDeltaCoalescer
@@ -78,6 +83,8 @@ def test_gate_unknown_admission_private_coverage_and_fresh_full_fence():
         task_id=auth.scope.generation.task_id,
         run_id="run-1",
         mode=StreamMode.TRANSIENT_V2,
+        capacity_policy=TransientCapacityPolicy(),
+        capacity_digest=TransientCapacityPolicy().digest,
         capabilities=StreamCapabilities(
             wire_version=2,
             provisional_draft_label=True,
@@ -293,6 +300,8 @@ def test_source_terminal_without_model_response_cannot_reconstruct_old_callback(
         task_id=auth.scope.generation.task_id,
         run_id="run-1",
         mode=StreamMode.TRANSIENT_V2,
+        capacity_policy=TransientCapacityPolicy(),
+        capacity_digest=TransientCapacityPolicy().digest,
         capabilities=StreamCapabilities(
             wire_version=2,
             provisional_draft_label=True,
@@ -333,3 +342,20 @@ def test_source_terminal_without_model_response_cannot_reconstruct_old_callback(
     with pytest.raises(TransientOutputUnavailable, match="Session is terminal"):
         gate.issue()
     leases.get.assert_not_called()
+
+
+def test_old_v2_missing_capacity_stays_transient_only_before_rejection():
+    auth = authorization(generation())
+    gate = Mock()
+    gate.stream_mode.return_value = StreamMode.TRANSIENT_V2
+    gate.ordinary_v2.return_value = True
+    gate.scope = auth.scope
+    gate.issue.side_effect = TransientOutputUnavailable("no frozen capacity policy")
+    persisted = []
+    writer = TransientDeltaSink(Mock(), lambda *_: gate, durable_anchor=lambda: 0)
+    writer.start_public_call("call-1", 1)
+    sink = writer.wrap(persisted.append)
+    sink(draft(EventType.MODEL_RESPONSE_DELTA, content_delta="private draft"))
+    sink(draft(EventType.MODEL_RESPONSE_RECEIVED, content="durable complete"))
+    assert [event.event_type for event in persisted] == [EventType.MODEL_RESPONSE_RECEIVED]
+    assert writer._failed and gate.close.called

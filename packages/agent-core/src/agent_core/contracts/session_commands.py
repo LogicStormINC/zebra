@@ -66,7 +66,8 @@ class SessionCommand(BaseModel):
     @field_validator("payload")
     @classmethod
     def validate_stream_intent(cls, value: dict[str, object]) -> dict[str, object]:
-        if "stream_admission" in value:
+        server_owned = {"stream_admission", "capacity_policy", "capacity_digest", "capacity_epoch"}
+        if server_owned & value.keys():
             raise ValueError("stream_admission is server-owned metadata")
         if "stream_capabilities" in value:
             caps = StreamCapabilities.model_validate(value["stream_capabilities"])

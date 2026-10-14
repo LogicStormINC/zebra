@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from agent_core.domain.stream_admission import TransientCapacityPolicy
 from agent_storage import sqlite_control_plane_stores
 from zebra_agent_api.ag_ui_command import AgUiCommandEnvelope, _command_payload
 from zebra_agent_api.command_submission import submit_session_command
@@ -34,12 +35,15 @@ def test_idempotent_admission_survives_flag_change_and_new_intent_conflicts(tmp_
         body,
         idempotency_key="v2",
         transient_admission_enabled=True,
+        capacity_policy=TransientCapacityPolicy(),
         verified_host_grant=_verified(_context()),
     )
     assert first.status_code == 202 and first.body["stream_admission"]["mode"] == "transient_v2"
+    assert first.body["stream_admission"]["capacity_digest"] == TransientCapacityPolicy().digest
     tasks.read_task_header.side_effect = RuntimeError("must not renegotiate on retry")
     duplicate = submit_session_command(
-        proxy, str(session), body, idempotency_key="v2", transient_admission_enabled=False
+        proxy, str(session), body, idempotency_key="v2", transient_admission_enabled=False,
+        capacity_policy=TransientCapacityPolicy(epoch="future", run_slots=1),
     )
     assert (
         duplicate.status_code == 200

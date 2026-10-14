@@ -106,6 +106,7 @@ class ApiCommandMixin:
             idempotency_key=idempotency_key,
             extension_admission=extension_admission,
             verified_host_grant=verified_host_grant,
+            capacity_policy=self.settings.stream.capacity_policy,
             transient_admission_enabled=(
                 self.settings.storage_authority == "postgresql"
                 and self.settings.stream.new_admission_enabled

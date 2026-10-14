@@ -36,6 +36,9 @@ def native():
         read_authority=lambda _: datetime.now(UTC) + timedelta(seconds=30),
         key_prefix=prefix,
     )
+    seed = authorization(generation())
+    adapter.seal_capacity(seed.scope, seed.capacity_policy, old_keys=(),
+                          old_writers_quiescent=True, old_ttl_drained=True)
     try:
         yield adapter, client, known
     finally:
@@ -358,8 +361,14 @@ def test_native_activation_cas_rejects_authority_changed_after_fresh_check(nativ
     current = [first.lease_fence]
     validated, release = Event(), Event()
 
+    resolve_count = 0
+
     def delayed_resolve(auth):
+        nonlocal resolve_count
+        resolve_count += 1
         assert auth is delayed and auth.lease_fence == current[0]
+        if resolve_count == 1:
+            return  # The new first proof precedes SNAPSHOT; pause the second fresh proof.
         validated.set()
         assert release.wait(5)
 
