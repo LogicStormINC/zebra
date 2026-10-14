@@ -33315,3 +33315,10 @@ browser Cookie or Host Grant.
 - Acceptance: focused regression, alternating no-model lifecycle benchmark, local Worker activation and bounded real Trench startup measurement. No push.
 
 - CLOUD-OCI-CLI-CONNECT-01 local activation/real acceptance: three newFlash/high/general/v2 reply Runs all1 model round/0 tools; first model mean7.278s vs historical11.138s (34.7% reduction), Host completion mean11.585s vs16.973s (31.7%). reserve→model mean2.516s vs6.707s. Historical-v-current observational comparison, not concurrent model A/B or browser TTFT. Worker healthy/hash match/preflight ready; derivative one-source image, no dependency changes; no push. Detailed evidence primary .artifacts/oci-cli-connect-20261015/REPORT.md.
+
+### CLOUD-STARTUP-DNS-01
+
+- Status: Ready → In Progress; Owner Luke Ding; executor Codex; branch codex/cloud-startup-dns-01; base12f1e027.
+- Owned paths: packages/agent-storage/src/agent_storage/postgres/task_io.py; tests/agent_storage/test_postgres_task_io.py; tests/agent_storage/test_postgres_task_io_shared.py; tests/agent_storage/test_postgres_task_io_dns.py; docs/CLOUD_STARTUP_DNS_OPTIMIZATION.md; docs/AGENT_TASKS.md; PROGRESS.md.
+- Scope: profile remaining pre-runtime startup, optimize confirmed bounded DNS child startup only; preserve cancellation, connection identity, service/env precedence and cache TTL. No global DNS/IP pinning or permission changes.
+- Acceptance: deterministic/native TaskIO checks, cold resolver pairs, local Worker activation and real v2 startup comparison. Local integration authorized, no push.

@@ -53,12 +53,24 @@ def task_io_deadline(deadline: float) -> Iterator[None]:
         _TASK_IO_DEADLINE.reset(token)
 
 
-RESOLVE_SCRIPT = """import json,sys
+RESOLVE_SCRIPT = """import json,os,socket,sys
+params=json.load(sys.stdin)
+host=params.get("host", "")
+# ponytail: one explicit host/port needs only libc DNS, not a psycopg import.
+# Multi-host, service and host ordering stay with the existing libpq adapter.
+if (host and "," not in host and params.get("port", "").isdigit()
+    and not params.get("service", os.environ.get("PGSERVICE"))
+    and params.get("target_session_attrs", os.environ.get("PGTARGETSESSIONATTRS"))
+        != "prefer-standby"
+    and params.get("load_balance_hosts", os.environ.get("PGLOADBALANCEHOSTS")) != "random"):
+    addresses=socket.getaddrinfo(host,params["port"],
+                                proto=socket.IPPROTO_TCP,type=socket.SOCK_STREAM)
+    json.dump([{**params,"hostaddr":item[4][0]} for item in addresses],sys.stdout)
+    sys.exit(0)
 from psycopg import pq
 from psycopg._conninfo_attempts import conninfo_attempts
 from psycopg._conninfo_utils import get_param
 from psycopg.conninfo import make_conninfo
-params=json.load(sys.stdin)
 if get_param(params,"service"):
     # libpq owns service/LDAP/environment precedence; keep any blocking lookup
     # in this killable child. No polling, authentication or SQL is performed.
