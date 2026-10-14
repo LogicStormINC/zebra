@@ -33336,3 +33336,23 @@ browser Cookie or Host Grant.
 - Owned paths: sdks/typescript/packages/client-core/src/conversation_stream.ts; sdks/typescript/packages/client-core/src/index.ts; sdks/typescript/packages/client-core/tests/client-core.test.ts; sdks/typescript/packages/client-core/src/conversation_stream.test.ts; tests/agent_core/test_stream_deltas.py; sdks/typescript/packages/react/src/components/agent-message-list.tsx; sdks/typescript/packages/react/tests/stream-latency.test.tsx; sdks/typescript/packages/react/tests/conversation-timeline.test.tsx; sdks/typescript/package.json; sdks/typescript/examples/stream-latency/**; docs/CLOUD_STREAM_SDK_PERFORMANCE.md; docs/AGENT_TASKS.md; PROGRESS.md.
 - Scope: replay Worker/relay/SDK/React timing, fix demonstrated common SDK cost, package/browser acceptance across all five official npm packages. Existing dirty React/timeline/charts/contracts/scripts work is outside this slice and preserved. Earlier broad React Review cards are not reimplemented; this is user-authorized narrow follow-up.
 - Acceptance: bounded-byte/Unicode/recovery regression, paired recorded stream benchmark, standalone React draft-before-terminal check, packed npm exports/consumers. No Trench-specific changes, model invocation or npm publish.
+
+
+### CLOUD-FIRST-BODY-LATENCY - Planning / serial follow-up
+
+- Status: Plan prepared; no implementation claimed by this document-only turn.
+- Human owner: Luke Ding; intended executor Codex.
+- Plan: docs/superpowers/plans/2026-10-15-cloud-first-body-latency.md.
+- LATENCY-TRACE-01: Ready. Branch codex/latency-trace-01, dedicated worktree
+  to be assigned at claim. Reuse existing Provider/observability timing and
+  independently verify official SDK actual first draft. Owned paths are candidate
+  paths in the plan and must be narrowed explicitly before implementation.
+- LATENCY-DRAFT-01: Locked on TRACE; if already correct, close with evidence.
+- LATENCY-LAZY-01: Locked on TRACE dependency audit + DRAFT proof; explicit
+  cloud runtime, never implicit LocalRuntime fallback; preserve authority/fence.
+- LATENCY-ADMISSION-01: Locked on TRACE; only measured slowest shared step.
+- LATENCY-WARM-01: Locked on TRACE cold/hot evidence; existing node/image/client
+  readiness only. Generic running pool/checkpoint requires separate ADR/task.
+- LATENCY-PROVIDER-01: Locked on actual first-public-text timing and quality proof.
+- Local dependency integration into cloud-agent-trench follows existing user
+  authorization; no push/remote deploy/npm publish. STOP and SQL80% unchanged.
