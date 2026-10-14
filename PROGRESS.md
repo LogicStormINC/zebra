@@ -6015,4 +6015,4 @@ Implement fresh Docker identity reads over persistent verified mTLS for the nati
 
 ### 2026-10-14 - CLOUD-OCI-CAPABILITY-KEEPALIVE-01
 
-Remove the remaining native CLI capability query before instance reservation in favor of a fresh same-response daemon ID/version/runsc TLS check. 47 focused tests and targeted Ruff/mypy pass. Isolated storage primitives are measured separately; original3.4–5.7s is not a full live-stage attribution. Final remote paired probe/local Worker activation pending; no model calls or push.
+Remove the remaining native CLI capability query before instance reservation in favor of a fresh same-response daemon ID/version/runsc TLS check. 47 focused tests and targeted Ruff/mypy pass. Isolated storage primitives are measured separately; original3.4–5.7s is not a full live-stage attribution. Final3 paired probes: capability1.259s→0.272s (-78.39%), init+capability2.688s→2.015s (-25.04%). Unchanged initialization remains variable1–2s, mainly remote /info response wait. Local Worker source hashes/preflight/health verified; no model calls or push. Full historical interval/whole-Run TTFT attribution not claimed.

@@ -33268,8 +33268,10 @@ browser Cookie or Host Grant.
 
 ### CLOUD-OCI-CAPABILITY-KEEPALIVE-01
 
-- Status: Ready, claimed In Progress before code.
+- Status: Done (claimed Ready before code; measured and locally integrated; Worker activated).
 - Human owner Luke Ding; executor Codex; branch codex/cloud-oci-capability-keepalive; base00b83840.
 - Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; packages/agent-runtime/src/agent_runtime/adapters/oci_daemon_info.py; tests/agent_runtime/test_oci_daemon_info.py; docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md; docs/AGENT_TASKS.md; PROGRESS.md.
 - Scope: one fresh native TLS /info response supplies current daemon ID and exact gVisor capability probe output; no result cache, no authority/recorder/context shortcuts.
 - Acceptance: same-response identity/handler/timeout checks, existing runtime guards, no-model remote pre-reservation paired timing; local Worker update only.
+
+- CLOUD-OCI-CAPABILITY-KEEPALIVE-01 evidence:47 current-source focused passes; Ruff/mypy GO. Same-response capability query1.259s→0.272s across3 pairs; initialization+capability2.688s→2.015s, with initialization variability retained. Worker hashes/preflight/health verified. Zero model calls; full historical pre-reservation attribution/whole-Run TTFT not claimed.

@@ -25,4 +25,20 @@ Actual Worker image built and activated locally; source hashes match final measu
 
 The pre-reservation gVisor capability query now performs one fresh verified TLS /info request through the native persistent connection. Current daemon ID, ServerVersion and Runtimes come from the same response; no result/authority cache. Exact known format only; other CLI formats/custom runners/context/Unix/Podman remain unchanged. Original2s probe timeout and TimeoutExpired semantics remain so existing readiness retry behavior is retained.
 
-47 focused checks and targeted Ruff/mypy pass. Isolated native PG primitives (3 cold fixtures) have median progress recovery111.64ms, initial inputs109.39ms, ready-input reread49.53ms and context snapshot18.22ms. They exclude full Host authority/recorder writes and are not attributed timings of historic business Runs. No PostgreSQL recovery/context optimization is made without evidence. Final remote initialization/capability paired timings and local activation pending; no model calls.
+47 focused checks and targeted Ruff/mypy pass. Isolated native PG primitives (3 cold fixtures) have median progress recovery111.64ms, initial inputs109.39ms, ready-input reread49.53ms and context snapshot18.22ms. They exclude full Host authority/recorder writes and are not attributed timings of historic business Runs. No PostgreSQL recovery/context optimization is made without evidence. Final same-source remote initialization/capability paired timings completed and local Worker activated; no model calls.
+
+### Pre-reservation measurements and remaining boundary
+
+3 alternating read-only pairs (current verified source, same daemon/settings):
+
+| Mean stage | Before | After | Change |
+|---|---:|---:|---:|
+| capability query | 1.259s | 0.272s | -78.39%, saving0.987s |
+| initialization + capability | 2.688s | 2.015s | -25.04%, saving0.673s |
+| initialization only (unchanged logic) | 1.429s | 1.743s | +21.98%, reflects variability; no initialization saving claimed |
+
+Capability samples before1.540/1.537/0.702s; after0.278/0.266/0.272s. Engine initialization still incurs a cold fresh /info read. Read-only instrumentation: certificate context/client certificate processing around1–2ms total, TCP+TLS connect208–218ms, full initialization854–2050ms. Subsequent instrumentation partitions remaining first-response wait into headers427–1138ms and body209–913ms. Server processing vs network delay cannot be distinguished from these client-side observations. Do not blame local memory/crypto or cache authority/daemon results to hide this wait.
+
+The original3.4–5.7s historical interval has not been fully attributed: the isolated storage primitives exclude full Host binding/authority and recorder writes, and historical event timestamps are backfilled. This slice addresses the confirmed capability-query overhead only. No live full-Worker/browser/TTFT SLO is inferred from these measurements.
+
+47 current-source focused tests pass, targeted Ruff/mypy pass. Deployed Worker source hashes match measured source; actual remote preflight passes and Worker is running/healthy. Native storage fixtures assert zero model_request_started and are cleaned up. Remote probes perform no reservation, sandbox creation, Run submission or model invocation. Raw proof under primary .artifacts/ttft-pre-reserve-20261014/. No push/remote deployment.
