@@ -30,10 +30,16 @@ Worker TextDeltaCoalescer已有首帧立即发出、后续按字符/100ms合并�
 
 clean worktree旧package-audit遗漏npm自动包含的React README，因此verify在pack阶段失败；主工作区已有对应一行allowlist修正（以及其他未提交UI改动），不重复实现或纳入本切片commit。当前SDK变更将本地集成后，使用主工作区现有审计/消费者脚本做最终五包验证。用户既有React/charts/timeline/contracts改动保持原样。
 
-无全量Python测试或Cloud部署/模型验收声明；这轮生产更改仅npm包的两处共用实现，无Cloud API/Worker行为改变。详细证据.artifacts/stream-sdk-perf-20261015/，最终包gate待完成。
+无全量Python测试或Cloud部署/模型验收声明；这轮生产更改仅npm包的两处共用实现，无Cloud API/Worker行为改变。详细证据.artifacts/stream-sdk-perf-20261015/，最终五包gate已通过（基于主工作区当前SDK及保留的未提交UI改动）。
 
 ## 启动读取与组件兼容收敛
 
 v2启动负对照旧请求顺序effects→stream→effects，新stream→effects，读次数2→1。100ms合成读取延迟下三组配对首正文观察224.517/203.506/202.497ms→104.667/101.960/101.949ms；这是单次重复Host读取的消除，不冒称真实模型TTFT或PG SQL降幅。
 
 消息列表缓存只包裹内部row；直接AgentMessageItem仍为原函数，避免改变用户现有Timeline的新折叠生命周期。主工作区新增、尚未提交的Timeline测试需要等待原生toggle事件后再触发terminal；本次只补该测试的事件等待，未改其UI实现或其他用户改动，这一测试小修仍留在既有未提交UI修改中。孤立目标测试/同上下文原版本对照与完整包测试的结果分别留存，不掩盖早期失败。
+
+## 最终五包gate
+
+本地主工作区 pnpm verify GO：strict TScheck、五包build、103SDK/React/charts tests、package allowlist/exports/path/secret audit、React18/19×Vite/Next SSR+RSC消费者、Chromium/WebKit交互与Next hydration全部通过。日志.artifacts/stream-sdk-perf-20261015/npm-verify.log。
+
+第一次clean分支verify由旧package-audit遗漏README阻断；使用主工作区已存在的一行allowlist修正。主工作区新增未提交的disclosure测试正确等待原生toggle后，全套103pass；这一测试的小修与用户既有UI文件保持未提交，未混入性能实现commit。性能提交只覆盖本卡路径，其他dirty内容保持。没有发布npm、push或改变Cloud服务镜像。录制流性能与模拟100ms启动读取均不冒称真实模型端到端性能。

@@ -13,6 +13,7 @@ function Replay() {
   const [historicalRenders, setHistoricalRenders] = useState(0);
   const renders = useRef(new Map<string, number>());
   const started = useRef(0);
+  const replayNumber = useRef(0);
   const runtime = useRef<ZebraClientRuntime | null>(null);
   const controller = useRef<ReadableStreamDefaultController<Uint8Array> | null>(null);
   const reducer = useRef(new ConversationStreamReducer());
@@ -28,6 +29,7 @@ function Replay() {
     setHistoricalRenders(history.reduce((count, message) => count + (renders.current.get(message.id) ?? 0), 0));
   }, [messages, timing.firstBodyMs]);
   const replay = async () => {
+    const replay = ++replayNumber.current;
     runtime.current?.stop();
     reducer.current.reset();
     setTiming({ firstObservationMs: 0, firstBodyMs: 0 });
@@ -53,7 +55,7 @@ function Replay() {
     await runtime.current.start();
     while (!controller.current) await new Promise(resolve => setTimeout(resolve, 0));
     write("zebra.stream.recovery_complete", {});
-    for (let offset = 0; offset < 40; offset++) {
+    for (let offset = 0; offset < 40 && replay === replayNumber.current; offset++) {
       write("zebra.stream.draft", { message_id: "message:example", generation_id: "recording", offset, content_delta: offset ? " · text" : "First draft" });
       await new Promise(resolve => setTimeout(resolve, 10));
     }
@@ -62,7 +64,7 @@ function Replay() {
     <h1>Cloud Agent stream replay</h1>
     <p>Official npm packages · recorded v2 frames · no model or Trench dependency</p>
     <button onClick={() => void replay()} disabled={active}>Replay stream</button>{" "}
-    <button disabled={!active} onClick={() => write("zebra.answer_committed", { model_call_id: "example", assistant_message: "Corrected final answer" })}>Commit final</button>
+    <button disabled={!active} onClick={() => { replayNumber.current++; write("zebra.answer_committed", { model_call_id: "example", assistant_message: "Corrected final answer" }); }}>Commit final</button>
     <p role="status">{active ? "Streaming draft; final has not committed" : "Ready / completed"}</p>
     <output aria-label="Stream timings">First observation: {timing.firstObservationMs.toFixed(2)} ms · First body: {timing.firstBodyMs.toFixed(2)} ms · Historical renders: {historicalRenders}</output>
     <AgentMessageList messages={messages} renderContent={renderContent} />
