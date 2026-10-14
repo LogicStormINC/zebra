@@ -144,6 +144,11 @@ def test_maximal_signed_cursor_and_unicode_draft_chunk_fit_final_wire():
     assert (
         "".join(parse_record(piece)[1]["value"]["content_delta"] for _, piece in pieces) == content
     )
+    assert all(
+        parse_record(piece)[1]["value"]["task_id"] == str(core.task_id)
+        and parse_record(piece)[1]["value"]["run_id"] == core.run_id
+        for _, piece in pieces
+    )
     assert all(len(reader._signed(piece, cursor).encode()) <= 16384 for _, piece in pieces)
 
 

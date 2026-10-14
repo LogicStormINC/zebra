@@ -5998,3 +5998,10 @@ Independent1330hash/proof-mode checks agree. Pending ownedcommit/localFF, then
 CONTROL/STOP. Production cutover OFF;421clientSQL/66PGsockets whole lifecycle,
 Redis instance-global CPU/memory samples are diagnostics, not SQL-rate/isolated
 RSS certification. Actual SQL80/Worker/SDK/browser/fleet/TLS remain OPEN.
+
+### 2026-10-14 - CLOUD-STREAM-DRAFT-SCOPE-01
+
+Real Trench generation exposed omitted Task/Run identities in draft SSE serialization.
+The API now preserves both validated identities on every chunk; Host scope rejection stays intact.
+Signed-wire regressions: 9 passed; real producer-to-Host decoder accepts valid chunks and rejects wrong Task.
+Local API activation and original completed Run GET recovery are pending; no model rerun or push.

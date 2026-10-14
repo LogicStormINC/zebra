@@ -161,6 +161,8 @@ def draft_wire(frame: TransientTextFrame) -> Iterator[tuple[int | None, str]]:
     frames = _chunks(
         "zebra.stream.draft",
         {
+            "task_id": str(frame.task_id),
+            "run_id": frame.run_id,
             "message_id": frame.message_id,
             "generation_id": frame.generation_id,
             "offset": frame.offset,
