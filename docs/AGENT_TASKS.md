@@ -33329,3 +33329,10 @@ browser Cookie or Host Grant.
 - Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci.py; packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; tests/agent_runtime/test_oci_runtime.py; tests/agent_runtime/test_oci_engine.py; docker/local-gvisor/zebra-docker-tls.service; tests/agent_runtime/test_local_gvisor_bridge.py; docs/runbooks/runtime-startup-failure.md; docs/CLOUD_STARTUP_EXEC_OPTIMIZATION.md; docs/AGENT_TASKS.md; PROGRESS.md.
 - Scope: diagnose first-exec and post-runtime preparation; smallest demonstrated runtime fix only, preserving identity/PG fence/workspace validation. Temporary browser timing is diagnostic, no SDK/UI source changes. Update owned paths before any other production edits.
 - Acceptance: no-model isolated PG/gVisor phase pairs, targeted regressions, normal local activation and bounded v2 browser timing; no push.
+
+### CLOUD-STREAM-SDK-PERF-01
+
+- Status: Review; implementation/replay evidence complete, final local package gates pending; Owner Luke Ding; executor Codex; branch codex/cloud-stream-sdk-perf-01; base0a46d398.
+- Owned paths: sdks/typescript/packages/client-core/src/conversation_stream.ts; sdks/typescript/packages/client-core/src/conversation_stream.test.ts; tests/agent_core/test_stream_deltas.py; sdks/typescript/packages/react/src/components/agent-message-list.tsx; sdks/typescript/packages/react/tests/stream-latency.test.tsx; sdks/typescript/package.json; sdks/typescript/examples/stream-latency/**; docs/CLOUD_STREAM_SDK_PERFORMANCE.md; docs/AGENT_TASKS.md; PROGRESS.md.
+- Scope: replay Worker/relay/SDK/React timing, fix demonstrated common SDK cost, package/browser acceptance across all five official npm packages. Existing dirty React/timeline/charts/contracts/scripts work is outside this slice and preserved. Earlier broad React Review cards are not reimplemented; this is user-authorized narrow follow-up.
+- Acceptance: bounded-byte/Unicode/recovery regression, paired recorded stream benchmark, standalone React draft-before-terminal check, packed npm exports/consumers. No Trench-specific changes, model invocation or npm publish.

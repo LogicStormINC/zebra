@@ -56,7 +56,7 @@ def test_actual_public_hook_follows_durable_request_before_any_public_text():
         (StreamMode.TRANSIENT_V2, True),
     ],
 )
-def test_injected_sink_preserves_legacy_and_coverage_public_callback(admission_mode, private):
+def test_injected_sink_preserves_legacy_but_suppresses_private_v2_callback(admission_mode, private):
     auth = authorization(generation())
     tasks, leases, port = Mock(), Mock(), Mock()
     tasks.read_task_header.return_value = Mock(
@@ -93,11 +93,12 @@ def test_injected_sink_preserves_legacy_and_coverage_public_callback(admission_m
         event_sink=writer.wrap(observed.append), public_call_started=writer.start_public_call
     )
     completion = step.request_completion([], PublicStreamingProvider(), allow_tools=True)
-    assert [event.event_type for event in observed] == [
-        EventType.MODEL_REQUEST_STARTED,
-        EventType.MODEL_RESPONSE_DELTA,
-    ]
-    assert observed[-1].payload["content_delta"] == "  public "
+    expected = [EventType.MODEL_REQUEST_STARTED]
+    if not private:
+        expected.append(EventType.MODEL_RESPONSE_DELTA)
+    assert [event.event_type for event in observed] == expected
+    if not private:
+        assert observed[-1].payload["content_delta"] == "  public "
     assert completion.assistant_message.content == "Full response"
     port.activate.assert_not_called()
     port.publish.assert_not_called()

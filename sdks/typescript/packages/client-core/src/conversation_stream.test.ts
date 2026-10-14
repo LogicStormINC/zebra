@@ -419,3 +419,41 @@ for (const status of [400, 401, 403, 410]) {
     assert.deepEqual(cursors, [null]);
   });
 }
+
+test("stream byte accounting encodes appended chunks, not the complete growing prefix", () => {
+  const reducer = new ConversationStreamReducer();
+  const original = TextEncoder.prototype.encode;
+  let encodedCharacters = 0;
+  TextEncoder.prototype.encode = function (input) {
+    encodedCharacters += input?.length ?? 0;
+    return original.call(this, input);
+  };
+  try {
+    for (let offset = 0; offset < 32; offset++) {
+      reducer.observe(custom("zebra.stream.draft", { message_id: "message:linear", generation_id: "g", offset, content_delta: "x".repeat(1024) }));
+    }
+    assert.equal(reducer.snapshot()[0]?.content.length, 32768);
+    assert.ok(encodedCharacters <= 4 * 32768, `encoded ${encodedCharacters} characters for 32768 appended`);
+  } finally {
+    TextEncoder.prototype.encode = original;
+  }
+});
+
+test("cached stream bytes handle split surrogate pairs, reset and generation replacement", () => {
+  const reducer = new ConversationStreamReducer();
+  for (let index = 0; index < 7; index++) {
+    reducer.observe(custom("zebra.answer_committed", { model_call_id: `full-${index}`, assistant_message: "x".repeat(1_048_576) }));
+  }
+  const draft = (generation_id: string, offset: number, content_delta: string) => custom("zebra.stream.draft", { message_id: "message:edge", generation_id, offset, content_delta });
+  reducer.observe(draft("g", 0, "x".repeat(1_048_572) + "\ud83d"));
+  reducer.observe(draft("g", 1, "\ude00")); // The joined pair is four bytes, not two replacement characters.
+  assert.throws(() => reducer.observe(draft("g", 2, "x")), /byte capacity/);
+  reducer.observe(draft("new", 0, "small"));
+  reducer.observe(custom("zebra.stream.reset", {}));
+  assert.equal(reducer.snapshot().length, 7);
+  reducer.observe(draft("reset", 0, "x".repeat(1_048_576)));
+  reducer.observe(custom("zebra.stream.recovery_start", {}));
+  assert.equal(reducer.snapshot().length, 0);
+  reducer.observe(draft("fresh", 0, "ready"));
+  assert.equal(reducer.snapshot()[0]?.content, "ready");
+});

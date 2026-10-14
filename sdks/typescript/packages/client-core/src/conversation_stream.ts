@@ -31,6 +31,8 @@ interface Draft {
 
 export class ConversationStreamReducer {
   private contentBytes = 0;
+  private readonly encoder = new TextEncoder();
+  private readonly messageBytes = new Map<string, number>();
   private lastChunk: { key: string; payload: string; draft: boolean } | undefined;
   private readonly messages = new Map<string, ConversationMessage>();
   private readonly draftChunks = new Map<string, { generation: string; offset: number; parts: string[] }>();
@@ -45,6 +47,7 @@ export class ConversationStreamReducer {
   reset(): void {
     this.lastChunk = undefined;
     this.messages.clear();
+    this.messageBytes.clear();
     this.contentBytes = 0;
     this.drafts.clear();
     this.draftChunks.clear();
@@ -111,7 +114,7 @@ export class ConversationStreamReducer {
       if ((!current || current.generation !== generation) && offset !== 0) throw new Error("Draft prefix unavailable");
       if (current?.generation === generation && offset !== current.offset + 1) throw new Error("Draft offset gap");
       const previous = current?.generation === generation ? this.messages.get(id)?.content ?? "" : "";
-      this.put(id, previous + content, "provisional", "streaming");
+      this.put(id, previous + content, "provisional", "streaming", current?.generation === generation ? content : undefined);
       this.drafts.set(id, { generation, offset: offset as number });
       return;
     }
@@ -161,16 +164,25 @@ export class ConversationStreamReducer {
   }
 
   private remove(id: string): void {
-    this.contentBytes -= new TextEncoder().encode(this.messages.get(id)?.content ?? "").length;
+    this.contentBytes -= this.messageBytes.get(id) ?? 0;
+    this.messageBytes.delete(id);
     this.messages.delete(id);
   }
 
-  private put(id: string, content: string, presentation: ConversationMessage["presentation"], status: ConversationMessage["status"]): void {
+  private put(id: string, content: string, presentation: ConversationMessage["presentation"], status: ConversationMessage["status"], appended?: string): void {
     if (content.length > 1_048_576 || (!this.messages.has(id) && this.messages.size >= 500)) throw new Error("Conversation exceeds bounded recovery capacity");
-    const encoder = new TextEncoder();
-    const total = this.contentBytes - encoder.encode(this.messages.get(id)?.content ?? "").length + encoder.encode(content).length;
+    const previousBytes = this.messageBytes.get(id) ?? 0;
+    // ponytail: encode only new text; a surrogate pair split across frames replaces two 3-byte errors.
+    let bytes = appended === undefined ? this.encoder.encode(content).length : previousBytes + this.encoder.encode(appended).length;
+    if (appended?.length && content.length > appended.length) {
+      const high = content.charCodeAt(content.length - appended.length - 1);
+      const low = appended.charCodeAt(0);
+      if (high >= 0xd800 && high <= 0xdbff && low >= 0xdc00 && low <= 0xdfff) bytes -= 2;
+    }
+    const total = this.contentBytes - previousBytes + bytes;
     if (total > 8 * 1024 * 1024) throw new Error("Conversation byte capacity exceeded");
     this.contentBytes = total;
+    this.messageBytes.set(id, bytes);
     this.messages.set(id, { id, role: "assistant", content, presentation, status });
   }
 }

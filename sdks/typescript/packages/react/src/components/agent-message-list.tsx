@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type ReactNode, useEffect, useRef, useState } from "react";
+import React, { type ReactNode, memo, useEffect, useRef, useState } from "react";
 import type { AgentMessage } from "@zebra-agent/ui-contracts";
 import { AgentContentRenderer, type AgentContentRendererProps } from "./agent-content.tsx";
 
@@ -60,6 +60,11 @@ export function AgentMessageList(props: AgentMessageListProps) {
 }
 
 export function AgentMessageItem(props: AgentMessageItemProps) {
+  // ponytail: retain the callable public component; memoize only its rendered row.
+  return <MemoizedAgentMessageItem {...props} />;
+}
+
+const MemoizedAgentMessageItem = memo(function AgentMessageRow(props: AgentMessageItemProps) {
   const { labels, message } = props;
   const showMeta = Boolean(message.presentation === "provisional" || labels[message.role] || message.timestampLabel || message.status !== "complete");
   return (
@@ -89,7 +94,10 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
       </article>
     </li>
   );
-}
+}, (previous, next) => previous.message === next.message
+  && previous.renderContent === next.renderContent
+  && previous.contentRenderer === next.contentRenderer
+  && Object.entries(previous.labels).every(([key, value]) => next.labels[key as keyof AgentMessageListLabels] === value));
 
 function renderMessageContent(props: AgentMessageItemProps) {
   if (props.renderContent) return props.renderContent(props.message);
