@@ -33244,3 +33244,12 @@ browser Cookie or Host Grant.
 - Scope: shared409 projection_not_ready response retains retryabletrue; conflicts remainfailclosed. No model/Worker/execution/storage redesign.
 - Acceptance: one focused shared-problem/preflight check; existing command/stream route checks; local API update; same-Run GET recovery only.
 - Integration: user permits staged local cloud-agent-trench integration; no push.
+
+### CLOUD-STREAM-DRAFT-SCOPE-01 - Preserve draft scope on SSE wire
+
+- Status: `Ready`, claimed `In Progress` by Luke Ding; executor Codex.
+- Branch: `codex/cloud-stream-draft-scope`; base aa860eab.
+- Owned paths: `apps/api/src/zebra_agent_api/stream_v2_wire.py`, `tests/api/test_stream_v2_reader.py`, `docs/AGENT_TASKS.md`, `PROGRESS.md`.
+- Scope: serialize existing validated Task/Run identity on every draft chunk; retain Host scope rejection.
+- Acceptance: bounded signed-wire regression, real producer-to-Host decoder check; local API update; original Run GET-only recovery with unchanged model-call count.
+- Integration: locally into cloud-agent-trench; no push or model rerun.
