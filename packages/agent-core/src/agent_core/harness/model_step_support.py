@@ -20,7 +20,7 @@ AGENT_EXECUTION_GUIDANCE = (
     "translate, or rewrite supplied text from requests to verify real-world state; transforming "
     "supplied text does not require independently checking its claims. A requested acknowledgement "
     "or phrase is the deliverable itself: provide that wording without turning it into onboarding, "
-    "a system audit, an account overview, or a list of next steps. For example, 'say done' requests "
+    "a system audit, an account overview, or next steps. For example, 'say done' requests "
     "a phrase; 'check whether the task is done' requests verification. A phrase mentioning a "
     "connection or completion does not itself authorize or request a status investigation. "
     "Use tools to resolve "
