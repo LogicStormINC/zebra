@@ -33318,7 +33318,7 @@ browser Cookie or Host Grant.
 
 ### CLOUD-STARTUP-DNS-01
 
-- Status: Ready → In Progress; Owner Luke Ding; executor Codex; branch codex/cloud-startup-dns-01; base12f1e027.
+- Status: Done for implementation/local activation/native checks and two normal-entrypoint real samples; Owner Luke Ding; executor Codex; branch codex/cloud-startup-dns-01; base12f1e027.
 - Owned paths: packages/agent-storage/src/agent_storage/postgres/task_io.py; tests/agent_storage/test_postgres_task_io.py; tests/agent_storage/test_postgres_task_io_shared.py; tests/agent_storage/test_postgres_task_io_dns.py; docs/CLOUD_STARTUP_DNS_OPTIMIZATION.md; docs/AGENT_TASKS.md; PROGRESS.md.
 - Scope: profile remaining pre-runtime startup, optimize confirmed bounded DNS child startup only; preserve cancellation, connection identity, service/env precedence and cache TTL. No global DNS/IP pinning or permission changes.
 - Acceptance: deterministic/native TaskIO checks, cold resolver pairs, local Worker activation and real v2 startup comparison. Local integration authorized, no push.

@@ -18,4 +18,11 @@
 
 Worker内六组交替冷解析+真实SELECT1：均值385.714→69.870ms，降低81.9%，缓存后的连接查询保持约4.5–7.3ms。仅冷解析微基准，不能直接换算整个Run收益。
 
-证据：.artifacts/startup-dns-20261015/。本地Worker激活与真实请求后测待完成；全量测试/远端发布不在本切片范围。临时诊断launcher记录阶段/耗时/调用函数名，不记录参数或凭据，最终恢复正常entrypoint。
+证据：.artifacts/startup-dns-20261015/。本地Worker/v2 API正常入口已激活并验收；全量测试/远端发布不在本切片范围。临时诊断launcher记录阶段/耗时/调用函数名，不记录参数或凭据，最终恢复正常entrypoint。
+
+## 本地真实后测完成
+
+- 正常配置最终两次first model等待5.375/4.626s，均值5.001s；上轮三样本7.278s→5.001s，降低31.3%。本轮旧基线7.372s，另两个仅Worker更新5.880/5.762s。
+- API与Worker源hash一致/healthy，preflight ready，临时诊断入口已撤，恢复原entrypoint。均1主模型轮/0工具/v2/UI正文显示。没有浏览器精确首字计时，不将first model冒称TTFT。
+- 单一源文件衍生镜像，无依赖变化；30真实/确定性聚焦测试零skip，Ruff/mypy GO，无push。报告主工作区.artifacts/startup-dns-20261015/REPORT.md。
+- 均值为小样本前后观测对比，不承诺全部任务或p95；登记前仍均值2.419s、登记后2.582s，后续独立切片。SQL调用数没有变化。
