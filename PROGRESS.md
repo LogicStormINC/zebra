@@ -6011,4 +6011,4 @@ Authenticated browser rendering remains user verification because automation has
 
 ### 2026-10-14 - CLOUD-OCI-IDENTITY-KEEPALIVE-01
 
-Implement fresh Docker identity reads over persistent verified mTLS for the native explicit TCP engine. Existing CLI mutations/fences/instance ownership remain intact. 45 focused checks and targeted typing pass; final isolated engine measurement/Worker activation pending. No model calls or push. Details in docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md.
+Implement fresh Docker identity reads over persistent verified mTLS for the native explicit TCP engine. Existing CLI mutations/fences/instance ownership remain intact. 45 focused checks and targeted typing/Ruff pass; remote engine initialization+provision mean12.987s→8.882s (31.61%,3 alternating pairs, synthetic lifecycle). All six isolated containers removed. Local Worker updated; deployed source hashes and actual remote preflight verified. Whole-Run/browser/model TTFT remains unmeasured. No model calls or push. Details in docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md.

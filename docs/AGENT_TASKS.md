@@ -33258,8 +33258,10 @@ browser Cookie or Host Grant.
 
 ### CLOUD-OCI-IDENTITY-KEEPALIVE-01
 
-- Status: Ready, claimed In Progress before implementation.
+- Status: Done (claimed Ready before implementation, locally integrated, measured and Worker activated).
 - Human owner Luke Ding; executor Codex. Branch codex/cloud-oci-identity-keepalive; base717cb294.
 - Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; packages/agent-runtime/src/agent_runtime/adapters/oci_daemon_info.py; tests/agent_runtime/test_oci_daemon_info.py; docs/AGENT_TASKS.md; PROGRESS.md; docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md.
 - Scope: persistent verified mTLS fresh Docker daemon identity reads; preserve command routing, full identity/fence checks and nonmatching/custom-runner fallback.
 - Acceptance: deterministic connection/identity/timeout/certificate checks; existing engine/runtime tests; no-model isolated provisioning comparison. Local integration/update permitted; no push or model invocation.
+
+- CLOUD-OCI-IDENTITY-KEEPALIVE-01 evidence: 45 focused passes, targeted Ruff/mypy GO; remote engine inclusive mean12.987s→8.882s across3 alternating pairs (31.61%). Synthetic lifecycle/no model; Worker deployed source hashes and actual remote preflight verified. Whole-Run/browser TTFT remains unmeasured.
