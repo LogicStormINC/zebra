@@ -6078,3 +6078,7 @@ User approved the direction; detailed plan at docs/superpowers/plans/2026-10-15-
 ### Cloud first-body LAZY slice 2026-10-15
 
 Source and focused/native gates accepted; eligible pure replies allocate no OCI runtime. SPEC/QUALITY GO. Real v2 pure Run completed with zero instances; candidate locally enabled for paired evidence, normal entrypoint activation pending. See docs/CLOUD_FIRST_BODY_LATENCY_ACCEPTANCE.md.
+
+### Cloud first-body shared address reuse 2026-10-15
+
+Three Worker execution phases reuse existing same-DSN address cache while retaining fresh database facts. Focused/static SPEC/QUALITY GO; local paired rollout follows. API/Broker time remains separately measured; no blanket 4s claim.

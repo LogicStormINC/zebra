@@ -33351,7 +33351,7 @@ browser Cookie or Host Grant.
   Reuse existing Provider metadata before adding any production timing fields.
 - LATENCY-DRAFT-01: Done for common pipeline proof with TRACE; existing common production path correct.
   Real SDK provisional DOM precedes canonical4357.6ms; no source fix needed.
-- LATENCY-LAZY-01: Review: source/focused/native and SPEC/QUALITY GO; local integration next. Owner Luke Ding; executor Codex.
+- LATENCY-LAZY-01: Done for accepted source slice, locally integrated e6c2bed1; final paired acceptance pending. Owner Luke Ding; executor Codex.
   Branch codex/latency-lazy-01; reuse /Users/lukeding/Desktop/playground/2026/product/zebra-stream-observer-repair.
   Exact Owned paths: apps/config/src/zebra_agent_config/settings.py and runtime_settings.py;
   apps/worker/src/zebra_agent_worker/execution.py, runtime_setup.py, execution_runtime.py,
@@ -33364,7 +33364,15 @@ browser Cookie or Host Grant.
   existing WorkspaceRuntimeResolver materialization and filesystem validation.
   Explicit cloud runtime, never LocalRuntime fallback; preserve authority/fence.
   One concentrated regression/static and final SPEC/QUALITY; no test infrastructure expansion.
-- LATENCY-ADMISSION-01: Locked on TRACE; only measured slowest shared step.
+- LATENCY-ADMISSION-01: Review: measured Worker address reuse accepted SPEC/QUALITY; local integration next. Owner Luke Ding; executor Codex.
+  Branch codex/latency-admission-01; same observer-repair worktree.
+  Measured repeated DNS subprocess 58-69ms per temporary database adapter. Reuse existing TaskIoConnections, no fact/credential/connection cache.
+  Owned paths (audit narrowed): apps/worker/src/zebra_agent_worker/loop.py, transient_output_composition.py;
+  packages/agent-storage/src/agent_storage/postgres_composition.py, postgres/worker_replay_reader.py, postgres/stream_proof_batch.py;
+  tests/worker/test_task_io_loader_reuse.py; registry/plan/acceptance/PROGRESS/WORKLOG.
+  Binding/manifest loaders outside deadline do not spawn measured children, therefore unchanged.
+  Reuse existing shared connector for execution-input, replay and draft-proof snapshot only; admission770ms requires separate trace.
+  Audit before edit; extend precise ownership only for measured shared caller.
 - LATENCY-WARM-01: Locked on TRACE cold/hot evidence; existing node/image/client
   readiness only. Generic running pool/checkpoint requires separate ADR/task.
 - LATENCY-PROVIDER-01: Locked on actual first-public-text timing and quality proof.

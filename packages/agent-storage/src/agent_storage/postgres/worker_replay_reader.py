@@ -18,7 +18,7 @@ from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_storage.postgres.database import PostgresDatabase
 from agent_storage.postgres.leases import assert_current_lease_fence
 from agent_storage.postgres.session_recovery import read_session_page
-from agent_storage.postgres.task_io import task_io_deadline
+from agent_storage.postgres.task_io import TaskIoConnections, task_io_deadline
 from agent_storage.postgres.task_lineage import EVENT_COLUMNS
 
 WORKER_REPLAY_INDEX_SQL = """CREATE INDEX session_events_worker_replay
@@ -71,8 +71,13 @@ class PostgresWorkerReplayReader:
     authority/window reducer is required before this ceiling can be lifted.
     """
 
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    def __init__(
+        self, dsn: str, *, deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> None:
+        self._database = PostgresDatabase(
+            dsn, deployment_namespace=deployment_namespace, task_io_connections=task_io_connections
+        )
 
     def authority_events(self, session_id: SessionId) -> list[SessionEvent]:
         return self._read(session_id, AUTHORITY_TYPES)

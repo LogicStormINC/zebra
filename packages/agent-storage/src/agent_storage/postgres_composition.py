@@ -178,7 +178,9 @@ def postgres_control_plane_stores(
             task_io_connections=shared,
         ),
         execution_inputs=ExecutionInputStore(
-            PostgresDatabase(dsn, deployment_namespace=deployment_namespace),
+            PostgresDatabase(
+                dsn, deployment_namespace=deployment_namespace, task_io_connections=shared
+            ),
             tasks,
             namespace=deployment_namespace,
             postgres=True,

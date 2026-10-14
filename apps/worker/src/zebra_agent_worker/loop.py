@@ -261,7 +261,10 @@ def build_worker_loop_service(
         cloud_bundle if settings.storage_authority == "postgresql" else None,
     )
     replay_reader = (
-        PostgresWorkerReplayReader(cloud_bundle.dsn, deployment_namespace=active_namespace)
+        PostgresWorkerReplayReader(
+            cloud_bundle.dsn, deployment_namespace=active_namespace,
+            task_io_connections=cloud_bundle.stores.task_io_connections,
+        )
         if settings.storage_authority == "postgresql"
         and cloud_bundle.dsn is not None
         and active_namespace is not None

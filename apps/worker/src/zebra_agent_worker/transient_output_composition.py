@@ -32,7 +32,10 @@ def compose_transient_output_factory(
     stores: PostgresControlPlaneStores, *, dsn: str, namespace: str, settings: ZebraAgentSettings
 ) -> Callable[[WorkerProgressRecovery, WorkerLease], TransientDeltaSink | None]:
     """Always mode-aware, even when new admission is disabled or Redis is absent."""
-    reader = StreamProofReader(dsn, deployment_namespace=namespace)
+    reader = StreamProofReader(
+        dsn, deployment_namespace=namespace,
+        task_io_connections=getattr(stores, "task_io_connections", None),
+    )
 
     def factory(progress: WorkerProgressRecovery, lease: WorkerLease) -> TransientDeltaSink | None:
         run_scope = progress.head.scope

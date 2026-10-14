@@ -26,7 +26,7 @@ from agent_storage.postgres.leases import read_current_lease
 from agent_storage.postgres.projections import read_session_namespace
 from agent_storage.postgres.task_admission import _read_task_binding, read_session_task_binding
 from agent_storage.postgres.task_event_pages import read_task_event_page
-from agent_storage.postgres.task_io import task_io_deadline
+from agent_storage.postgres.task_io import TaskIoConnections, task_io_deadline
 from agent_storage.postgres.task_replay_headers import (
     read_event_header,
     read_latest_run_header,
@@ -148,8 +148,13 @@ class StreamProofSnapshot:
 
 
 class StreamProofReader:
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    def __init__(
+        self, dsn: str, *, deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> None:
+        self._database = PostgresDatabase(
+            dsn, deployment_namespace=deployment_namespace, task_io_connections=task_io_connections
+        )
 
     @contextmanager
     def snapshot(self) -> Iterator[StreamProofSnapshot]:

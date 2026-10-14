@@ -14784,3 +14784,5 @@ cutover OFF; STOP/full80/TLS/browser/fleet OPEN. Prepare local ownedcommit/FF
 only, preserving primary dirty work; no push/deploy/business changes.
 
 2026-10-15 LATENCY-LAZY-01: source frozen, SPEC/QUALITY GO, focused/static/native passed. Literal make check private-artifact lint classified; source Ruff/mypy/eval passed. New real pure v2 Run completed 1 round/0 tools/0 instances, pre-model 3.08s. Remaining: paired distributions, admission measured minimum, final normal local configuration.
+
+2026-10-15 LATENCY-ADMISSION-01: audit rejected unmeasured rawloader edits; concentrated minimal DNS connector reuse accepted (43pass, SPEC/QUALITY GO). Literal SDK initial verify accidentally used pnpm Node20 despite outer shell22; correcting to installed supported24, no fixture changes. Real paired sampling ongoing; no originalRun rerun.

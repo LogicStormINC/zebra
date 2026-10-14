@@ -21,3 +21,9 @@ Eligible cloud materialized Host context uses explicit DeferredRuntime; all poli
 Native PostgreSQL and real gVisor: pure close 0 instances, 2 shell commands 1 allocation, all instances removed; 2428.51ms for allocate/execute/cleanup, no model calls. Native proof used an isolated random schema, dropped only that fixture schema.
 
 Real new Run 472f302f-a375-4b32-ad75-4d986f02bbd4: transient_v2, completed, 1 main model round, 0 tools, 0 runtime_instances. Created-to-model-event 3079.919ms. Compared to earlier exploratory 5715.624–6621.878ms, this is promising but is not controlled paired distribution. Candidate diagnostics remain temporary pending consolidated measurement and normal-entrypoint activation.
+
+## Shared address resolution, 2026-10-15
+
+Measured cold task-I/O address resolver children cost58–69ms. Execution-input/replay/draft-proof adapters now receive the existing same-DSN TaskIoConnections from composition. Address TTL/environment/service-file invalidation remain existing30s behavior; each connection, transaction, snapshot and authorization read remains fresh. Raw binding/manifest loaders outside deadline were audited and left unchanged.
+
+43 focused passed; 2 native skips not claimed; 1 existing missing-Redis fixture deselected. New concentrated regression proves one resolver across3 phases,4 fresh connections,2 fresh RR READONLY snapshots and DSN mismatch rejection. Ruff/mypy1278 pass; SPEC/QUALITY GO. This does not explain all API admission time. API diagnostic observed an actual command request209.587ms and Host binding renewal126.593ms; preceding Broker/consumer delay must be kept separate.
