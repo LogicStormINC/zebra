@@ -37,3 +37,15 @@ ready; Trench hot reload completed and /api/health/live returned alive. The loca
 Worker image derives from the previous verified image with four source replacements;
 no full Dockerfile build was run for this slice. Integrated commits5cadc4e6 (Zebra)
 and e6f82a8 (Trench); no push. Real model decisions remain unverified.
+
+## 2026-10-15 real-model paired acceptance: FAILED
+
+The user authorized exactly two real UI-submitted new sessions, same Flash/high/
+general configuration, both transient_v2. Supplied-text reply used2 main-model
+rounds/3 tools (sources.list, files.list, subscriptions.list_history), Host completion
+24.793s. Connection verification used3 rounds/13 tools, completion47.326s.
+Both completed without tool failures. The first still expands the expression
+request into account inspection; offline success did not establish semantic success.
+Run IDs ef0a7336-cced-459d-973b-04fce6282186 and
+d49fd141-25aa-449d-a5bc-df29dcc2d589. Next: inspect actual first-turn assembled
+inputs; do not claim the simple-task behavior fixed. No third test/model submission.

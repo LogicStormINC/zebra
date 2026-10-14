@@ -6038,3 +6038,8 @@ Remove the remaining native CLI capability query before instance reservation in 
 - CLOUD-AGENT-AUTONOMY-01 local activation:four Worker source hashes match,
   healthy/preflight ready; Trench reloaded/live. Integrated-source103+45 tests pass.
   No model invocation; semantic gain pending user manual test.
+
+- 2026-10-15 CLOUD-AGENT-AUTONOMY-01 real paired UI acceptance FAILED:
+  reply request2 model rounds/3 irrelevant inventory tools/24.793s; verification
+  request3 rounds/13 tools/47.326s, sameFlash/high/general/v2. Both completed.
+  First-stage implementation is active, but simple-request semantic fix is incomplete.
