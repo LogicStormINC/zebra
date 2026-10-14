@@ -1093,3 +1093,10 @@ remaining allpassed,172 mixed93current/79historical. ConsolidatedSPEC/QUALITY
 componentGO; record10 unresolved failures without newfixture/observer repairs.
 Proceed ownedcommit/localFF preserving primary17dirtyfiles, then RELAY.
 CompleteHTTP/fulltest/fullPERF80/runtime/SDKbrowser remainOPEN.
+
+2026-10-14 PERF source component0f8c1716 locally integrated into cloud-agent-trench;
+primary17dirtyfile hashes/modes preserved. CLAIM CLOUD-STREAM-RELAY-01 Ready→
+InProgress, Luke/Codex, codex/cloud-stream-relay-01; exact owned paths and COV
+write handoff in docs/CLOUD_STREAM_RELAY_PLAN.md. Tail100→reserved101; no source
+edits before claim. Next implement committed frontier/retry and checkpoint ACK.
+FullHTTP/fulltest/80/runtime/browser and retained10 PERF failures remain open.

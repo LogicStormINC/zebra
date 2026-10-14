@@ -912,9 +912,34 @@
   Local integration only; no push/deploy. Estimated80-150k tokens/6-11 effective
   hours for both slices, not a budget cap or completion promise.
 
+### CLOUD-STREAM-RELAY-01 - Retry committed stream frontiers and checkpoint hints
+
+- Status: In Progress (Ready dependencies accepted locally0f8c1716; claimed
+ 2026-10-14 before source edits under user-approved staged local integration).
+- Human owner: Luke Ding; executor: Codex.
+- Branch/worktree: codex/cloud-stream-relay-01; cloud-stream-relay-01.
+- Plan/Owned paths: exact15 source paths and explicit tests in
+ docs/CLOUD_STREAM_RELAY_PLAN.md; this registry, plan, PROGRESS/task_plan/WORKLOG.
+- COV handoff before coding: new notification fields/claim/settle on
+ session_streams and checkpoint notification-before-ACK only. No edits to
+ canonical appender, Recorder, coverage proof/finalizer or command outbox.
+- Fresh migration tail100; reserve additive101 stream_hint_relay. Preserve
+ every historical migration body/checksum; no business schema operation.
+- Acceptance: committed metadata frontier coalescing, full fenced lease claim/
+ settle, bounded retry/fairness/cleanup/totaldeadline, independent bounded Redis
+ frontier hints, both Worker maintenance entrances, checkpoint ACK only after
+ confirmed notification, cloud required notifier and local compatibility.
+- Validation: one coherent focused/native batch with two-claimant/crash/rollback/
+ stale fence/newer frontier/retry/timeout tests; static checks; consolidated review.
+ No blind12k/18long rerun; all relay/empty maintenance SQL counts in final80%.
+- Keep PERF10failed evidence and fullHTTP/fulltest/runtime/browser/80 gates open.
+ RELAY component does not substitute CAPACITY/GC or STOP/display ACK.
+- No push/deploy/paid provider/service restart/shared DB changes.
+
 ### CLOUD-STREAM-RELIABILITY-01 - Reliable notifications and temporary-stream GC
 
-- Status: Locked; Depends on WRITER and CLIENT accepted integration.
+- Status: Serial umbrella; RELAY split and claimed after accepted local dependencies.
+  Capacity/GC and CONTROL remain separate Locked slices pending RELAY acceptance.
 - Human owner: Luke Ding; intended branch codex/cloud-stream-reliability-01.
 - Owned paths: storage notification/relay composition and minimal missing outbox;
   config typed stream settings; Redis writer GC after WRITER handoff;

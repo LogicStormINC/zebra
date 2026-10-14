@@ -14725,3 +14725,10 @@ One consolidated SPEC71lines and QUALITY60lines permit component localaccept;
 retain10 failures (1observer,8unknownoutput,1unknownpreHTTPtimeout), no autofix.
 Primary17 dirty source files privately backed up before owned local integration.
 Next: commit/finalfreeze/localFF then formal RELAY claim; full80/runtime remains open.
+
+2026-10-14 PERF source component0f8c1716 locally integrated into cloud-agent-trench;
+primary17dirtyfile hashes/modes preserved. CLAIM CLOUD-STREAM-RELAY-01 Ready→
+InProgress, Luke/Codex, codex/cloud-stream-relay-01; exact owned paths and COV
+write handoff in docs/CLOUD_STREAM_RELAY_PLAN.md. Tail100→reserved101; no source
+edits before claim. Next implement committed frontier/retry and checkpoint ACK.
+FullHTTP/fulltest/80/runtime/browser and retained10 PERF failures remain open.
