@@ -49,3 +49,12 @@ request into account inspection; offline success did not establish semantic succ
 Run IDs ef0a7336-cced-459d-973b-04fce6282186 and
 d49fd141-25aa-449d-a5bc-df29dcc2d589. Next: inspect actual first-turn assembled
 inputs; do not claim the simple-task behavior fixed. No third test/model submission.
+
+2026-10-15 follow-up diagnosis: failed turn selected zero memories; no personalization
+record exists for this principal. Host contract is goal-only. Running Worker offline
+composition confirms new guidance and scoped Host wording are loaded. Provider
+serialization forwards messages without adding a compulsory research stage.
+Candidate02 clarifies phrase/acknowledgement deliverables versus real state checks
+and forbids unrequested onboarding/account overviews in that expression context.
+This is semantic guidance, not a keyword classifier or tool restriction.103 focused
+regressions pass. One same-configuration real paired retest follows local activation.

@@ -33296,3 +33296,11 @@ browser Cookie or Host Grant.
 - Acceptance: focused deterministic tests and local integration; real Agent behavior pending human model test. No model invocation or push.
 
 - Evidence:103 focused Zebra tests,45 Trench tests; Ruff GO; negative control rejects removed guidance. Local Worker four source hashes match/healthy/runtime preflight ready; Trench hot-reloaded and /api/health/live alive. Existing verified image plus four source replacements, no dependency change. No model/Run/push.
+
+### CLOUD-AGENT-AUTONOMY-02
+
+- Status: Ready; claimed In Progress before code.
+- Owner Luke Ding; executor Codex; branch codex/cloud-agent-autonomy-02; base91314f5b.
+- Owned paths: packages/agent-core/src/agent_core/harness/model_step_support.py; apps/worker/src/zebra_agent_worker/execution_context.py; tests/agent_core/test_agent_autonomy.py; docs/CLOUD_AGENT_AUTONOMY.md; docs/AGENT_TASKS.md; PROGRESS.md.
+- Scope: resolve expression-versus-state-verification ambiguity in shared natural-language guidance after real first-turn inventory failure. No keyword routing, tool gating or additional model stage.
+- Acceptance: offline composition/regression, deploy local Worker, repeat same two real UI requests once; no unrelated model workload.
