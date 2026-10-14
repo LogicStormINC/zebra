@@ -33265,3 +33265,11 @@ browser Cookie or Host Grant.
 - Acceptance: deterministic connection/identity/timeout/certificate checks; existing engine/runtime tests; no-model isolated provisioning comparison. Local integration/update permitted; no push or model invocation.
 
 - CLOUD-OCI-IDENTITY-KEEPALIVE-01 evidence: 45 focused passes, targeted Ruff/mypy GO; remote engine inclusive mean12.987s→8.882s across3 alternating pairs (31.61%). Synthetic lifecycle/no model; Worker deployed source hashes and actual remote preflight verified. Whole-Run/browser TTFT remains unmeasured.
+
+### CLOUD-OCI-CAPABILITY-KEEPALIVE-01
+
+- Status: Ready, claimed In Progress before code.
+- Human owner Luke Ding; executor Codex; branch codex/cloud-oci-capability-keepalive; base00b83840.
+- Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; packages/agent-runtime/src/agent_runtime/adapters/oci_daemon_info.py; tests/agent_runtime/test_oci_daemon_info.py; docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md; docs/AGENT_TASKS.md; PROGRESS.md.
+- Scope: one fresh native TLS /info response supplies current daemon ID and exact gVisor capability probe output; no result cache, no authority/recorder/context shortcuts.
+- Acceptance: same-response identity/handler/timeout checks, existing runtime guards, no-model remote pre-reservation paired timing; local Worker update only.
