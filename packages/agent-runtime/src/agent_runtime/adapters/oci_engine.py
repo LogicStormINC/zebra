@@ -111,6 +111,12 @@ class PinnedOciEngine:
                 parsed.hostname, parsed.port, self._env["DOCKER_CERT_PATH"],
                 connect_proxy=info_proxy,
             )
+            if info_proxy:
+                self._env.update(
+                    HTTP_PROXY=info_proxy, HTTPS_PROXY=info_proxy,
+                    http_proxy=info_proxy, https_proxy=info_proxy,
+                    NO_PROXY="", no_proxy="",
+                )
         for key in (
             "DOCKER_HOST",
             "DOCKER_CONTEXT",

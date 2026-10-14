@@ -33306,3 +33306,10 @@ browser Cookie or Host Grant.
 - Acceptance: offline composition/regression, deploy local Worker, repeat same two real UI requests once; no unrelated model workload.
 
 - Real candidate02 acceptance:reply exact接入完毕,1 round/0 tools/16.973s; status verification4 rounds/13 tools/51.720s. SameFlash/high/general/v2, new sessions. No forced tool choice.103 focused regressions/Ruff pass; Worker healthy/source hashes match/preflight ready. Only local integration; no push.
+
+### CLOUD-OCI-CLI-CONNECT-01
+
+- Status: Ready → In Progress; Owner Luke Ding; executor Codex; branch codex/cloud-oci-cli-connect; base226bee85.
+- Owned paths: packages/agent-runtime/src/agent_runtime/adapters/oci_engine.py; tests/agent_runtime/test_oci_daemon_info.py; docs/CLOUD_OCI_IDENTITY_KEEPALIVE.md; docs/AGENT_TASKS.md; PROGRESS.md.
+- Scope: reuse validated explicit CONNECT proxy only in pinned native Docker CLI private environment; keep mTLS/fresh identity/exact instance/PG fence checks.
+- Acceptance: focused regression, alternating no-model lifecycle benchmark, local Worker activation and bounded real Trench startup measurement. No push.

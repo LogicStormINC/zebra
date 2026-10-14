@@ -42,3 +42,9 @@ Capability samples before1.540/1.537/0.702s; after0.278/0.266/0.272s. Engine ini
 The original3.4–5.7s historical interval has not been fully attributed: the isolated storage primitives exclude full Host binding/authority and recorder writes, and historical event timestamps are backfilled. This slice addresses the confirmed capability-query overhead only. No live full-Worker/browser/TTFT SLO is inferred from these measurements.
 
 47 current-source focused tests pass, targeted Ruff/mypy pass. Deployed Worker source hashes match measured source; actual remote preflight passes and Worker is running/healthy. Native storage fixtures assert zero model_request_started and are cleaned up. Remote probes perform no reservation, sandbox creation, Run submission or model invocation. Raw proof under primary .artifacts/ttft-pre-reserve-20261014/. No push/remote deployment.
+
+## CLOUD-OCI-CLI-CONNECT-01 (2026-10-15)
+
+Validated explicit INFO CONNECT routing now also applies to the native pinned Docker CLI private environment. Explicit mTLS/host flags, fresh identity, exact labels/ID, PG authority/fence and mutation retry behavior remain unchanged. No global environment modification; absent configuration keeps existing behavior.
+
+66 focused runtime/worker regressions, targeted Ruff/mypy passed. Three alternating real Worker/gVisor lifecycle pairs with real isolated PostgreSQL authority/fence: provision mean 5.264s→1.776s (66.26% reduction). Pinning 21–27ms. All six containers removed and temporary PG schemas dropped. No model calls in lifecycle proof. Evidence .artifacts/oci-cli-connect-20261015/results.safe.json; real Trench startup acceptance pending local activation.

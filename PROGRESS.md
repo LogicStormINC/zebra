@@ -6048,3 +6048,9 @@ Remove the remaining native CLI capability query before instance reservation in 
   real-check boundary locally active. Exact paired real retest:reply1 round/
   0 tools/16.973s, verification4 rounds/13 tools/51.720s.103 regressions pass.
   No keyword routing/tool ban; broader generalization and speed SLO unproven.
+
+## CLOUD-OCI-CLI-CONNECT-01 (2026-10-15)
+
+Validated explicit INFO CONNECT routing now also applies to the native pinned Docker CLI private environment. Explicit mTLS/host flags, fresh identity, exact labels/ID, PG authority/fence and mutation retry behavior remain unchanged. No global environment modification; absent configuration keeps existing behavior.
+
+66 focused runtime/worker regressions, targeted Ruff/mypy passed. Three alternating real Worker/gVisor lifecycle pairs with real isolated PostgreSQL authority/fence: provision mean 5.264s→1.776s (66.26% reduction). Pinning 21–27ms. All six containers removed and temporary PG schemas dropped. No model calls in lifecycle proof. Evidence .artifacts/oci-cli-connect-20261015/results.safe.json; real Trench startup acceptance pending local activation.

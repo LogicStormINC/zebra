@@ -176,3 +176,33 @@ def test_invalid_connect_proxy_fails_closed(transport, proxy):
     with pytest.raises(RuntimeCapabilityError):
         info.DockerDaemonInfo("192.168.139.232", 2376, str(root), connect_proxy=proxy)
     factory.assert_not_called()
+
+
+def test_native_cli_reuses_validated_proxy_only_in_private_environment(transport, monkeypatch):
+    import os
+
+    root, connection, _, _ = transport
+    monkeypatch.setattr(
+        "agent_runtime.adapters.oci_engine.shutil.which", lambda *_a, **_k: "docker"
+    )
+    monkeypatch.setenv("HTTPS_PROXY", "http://ambient:8080")
+    environment = {
+        "DOCKER_HOST": "tcp://127.0.0.1:2376", "DOCKER_TLS_VERIFY": "1",
+        "DOCKER_CERT_PATH": str(root), "ZEBRA_OCI_INFO_CONNECT_PROXY": "http://proxy:7890",
+        "NO_PROXY": "*", "no_proxy": "*",
+    }
+    original = environment.copy()
+    pinned = PinnedOciEngine("docker", env=environment)
+    runner = Mock(return_value=CompletedProcess([], 0, "", ""))
+    pinned._runner = runner
+    pinned(("docker", "start", "exact"))
+    command = runner.call_args.args[0]
+    private = runner.call_args.kwargs["env"]
+    assert command[1:4] == ("--host", original["DOCKER_HOST"], "--tlsverify")
+    assert command[-2:] == ("start", "exact")
+    for key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+        assert private[key] == "http://proxy:7890"
+    assert private["NO_PROXY"] == private["no_proxy"] == ""
+    assert environment == original and os.environ["HTTPS_PROXY"] == "http://ambient:8080"
+    assert connection.request.call_count == 2
+    pinned.close()
