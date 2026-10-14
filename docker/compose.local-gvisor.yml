@@ -6,6 +6,7 @@ services:
       DOCKER_HOST: tcp://${ZEBRA_LOCAL_GVISOR_ADDRESS:?set the verified local VM IP}:2376
       DOCKER_TLS_VERIFY: "1"
       DOCKER_CERT_PATH: /run/zebra-engine-tls
+      ZEBRA_OCI_INFO_CONNECT_PROXY: ${ZEBRA_LOCAL_GVISOR_INFO_CONNECT_PROXY:-}
     volumes: !override
       - ./trench-acceptance/secrets/ca.crt:/etc/ssl/certs/${ZEBRA_LOCAL_CA_HASH:-zebra-local-unused}.0:ro
       - ${ZEBRA_ACCEPTANCE_CA_BUNDLE_FILE:-./trench-acceptance/secrets/ca-bundle.crt}:/etc/ssl/certs/zebra-acceptance-ca-bundle.crt:ro

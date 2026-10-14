@@ -9,19 +9,43 @@ from socket import SHUT_RDWR, socket
 from threading import Lock, Timer
 from time import monotonic
 from typing import cast
+from urllib.parse import urlsplit
 from weakref import finalize
 
 from agent_core.ports.runtime import RuntimeCapabilityError
 
 
 class DockerDaemonInfo:
-    def __init__(self, host: str, port: int, certificate_root: str) -> None:
+    def __init__(
+        self, host: str, port: int, certificate_root: str, *, connect_proxy: str = ""
+    ) -> None:
         root = Path(certificate_root)
         paths = [root / name for name in ("ca.pem", "cert.pem", "key.pem")]
         self._files = {path: sha256(path.read_bytes()).digest() for path in paths}
         context = ssl.create_default_context(cafile=str(paths[0]))
         context.load_cert_chain(str(paths[1]), str(paths[2]))
-        self._connection = HTTPSConnection(host, port, context=context, timeout=10)
+        if connect_proxy:
+            proxy = urlsplit(connect_proxy)
+            if (
+                proxy.scheme != "http"
+                or not proxy.hostname
+                or not proxy.port
+                or proxy.username
+                or proxy.password
+                or proxy.path not in ("", "/")
+                or proxy.query
+                or proxy.fragment
+            ):
+                raise RuntimeCapabilityError(
+                    "daemon info CONNECT proxy requires a credential-free HTTP endpoint"
+                )
+            self._connection = HTTPSConnection(
+                proxy.hostname, proxy.port, context=context, timeout=10
+            )
+            # stdlib verifies the tunnel target's certificate; TLS remains end-to-end.
+            self._connection.set_tunnel(host, port)
+        else:
+            self._connection = HTTPSConnection(host, port, context=context, timeout=10)
         self._lock = Lock()
         self._request_socket: socket | None = None
         # Also release an unused/preflight transport when its engine leaves scope.

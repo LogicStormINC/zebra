@@ -106,3 +106,50 @@ If the VM IP changes, reissue the server IP SAN and update both bridge.env and
 the ignored acceptance address. Never disable TLS verification to bypass this.
 Rollback restores the prior Worker endpoint/configuration; the outer daemon still
 cannot satisfy gVisor, so rollback is not a functional sandbox fallback.
+
+### Local VM `/info` transport latency (2026-10-14)
+
+Read-only measurements isolate daemon Unix processing at 3–9 ms, VM-local TLS
+at 45–55 ms and Mac-native TLS at 3–19 ms. Worker-container direct IPv4 traffic
+has TCP retransmissions and 0.8–2 second waits despite sub-2 ms TCP RTT. This
+locates the delay in the container-to-VM transport; the specific OrbStack packet
+loss mechanism remains unproven. NODELAY, buffer size, MSS, TLS version and VM
+segmentation-offload experiments did not reliably fix it; all were reverted.
+
+The optional local-profile setting in ignored `docker/trench-acceptance.env` is:
+
+```sh
+ZEBRA_LOCAL_GVISOR_INFO_CONNECT_PROXY=http://host.docker.internal:7890
+```
+
+This uses the existing Mac Clash Party HTTP CONNECT listener only for native
+Docker `/info`. It is explicit, defaults empty, and does not adopt ambient proxy
+variables or change model/CLI traffic. Python HTTPSConnection verifies the
+original VM certificate SAN through the tunnel and sends the existing client
+certificate. Every operation still fetches current daemon identity, checks
+certificate rotation and fails closed on transport/identity errors. No response
+cache or direct/CLI fallback is introduced. The transport enters the pinned
+configuration digest. The local proxy must remain running; remove the setting
+and recreate the Worker to return to direct transport.
+
+Three alternating pairs, nine cold and nine warm samples per transport:
+
+| Transport | Cold mean / median | Warm mean / median |
+| --- | --- | --- |
+| Worker direct | 1224.924 / 893.502 ms | 629.589 / 480.063 ms |
+| Mac CONNECT | 20.191 / 18.758 ms | 9.305 / 5.135 ms |
+
+Cold mean decreases 98.35%; warm mean decreases 98.52%. All responses carried
+fresh daemon ID hash `d96cb4bbc72240007f6774f67b4bd6df1e2771d9cee195604669b32d7a90ff83`.
+These are `/info` measurements, not whole-Run first-token latency or SQL counts.
+Reproduce without submitting a Run or calling a model:
+
+```sh
+# Execute this script inside the Worker with its existing DOCKER_* environment.
+python docker/local-gvisor/info-bridge-check.py --samples 3
+python docker/local-gvisor/info-bridge-check.py --samples 3 \
+  --connect-proxy http://host.docker.internal:7890
+```
+
+52 focused runtime/engine/Worker tests and Ruff passed. CONNECT is a local
+transport workaround, not a claim that the underlying platform defect is fixed.

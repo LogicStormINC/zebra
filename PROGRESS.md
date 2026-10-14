@@ -6016,3 +6016,10 @@ Implement fresh Docker identity reads over persistent verified mTLS for the nati
 ### 2026-10-14 - CLOUD-OCI-CAPABILITY-KEEPALIVE-01
 
 Remove the remaining native CLI capability query before instance reservation in favor of a fresh same-response daemon ID/version/runsc TLS check. 47 focused tests and targeted Ruff/mypy pass. Isolated storage primitives are measured separately; original3.4–5.7s is not a full live-stage attribution. Final3 paired probes: capability1.259s→0.272s (-78.39%), init+capability2.688s→2.015s (-25.04%). Unchanged initialization remains variable1–2s, mainly remote /info response wait. Local Worker source hashes/preflight/health verified; no model calls or push. Full historical interval/whole-Run TTFT attribution not claimed.
+
+- 2026-10-14 LOCAL-GVISOR-INFO-CONNECT-01: daemon /info computation3–9ms;
+  Worker direct container-to-VM retransmission path isolated. Explicit optional
+  local Mac CONNECT transport retains end-to-end mTLS and fresh identity per
+  operation. Three paired probes: cold1224.924→20.191ms (-98.35%),
+  warm629.589→9.305ms (-98.52%);52 focused tests/Ruff passed. Platform packet-loss
+  mechanism and whole-Run TTFT remain unproven; zero model calls.

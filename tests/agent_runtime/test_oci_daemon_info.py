@@ -143,3 +143,36 @@ def test_capability_keeps_original_timeout_type_and_budget(transport, monkeypatc
         pinned(command, text=True, capture_output=True, timeout=2)
     assert error.value.timeout == 2 and connection.timeout <= 2
     pinned._runner.assert_not_called()
+
+
+def test_explicit_connect_tunnel_keeps_target_and_fresh_identity(transport):
+    root, connection, response, factory = transport
+    client = info.DockerDaemonInfo(
+        "192.168.139.232", 2376, str(root), connect_proxy="http://host.docker.internal:7890"
+    )
+    assert factory.call_args.args == ("host.docker.internal", 7890)
+    connection.set_tunnel.assert_called_once_with("192.168.139.232", 2376)
+    assert client.identity() == "daemon-a"
+    response.read.return_value = b'{"ID":"daemon-b"}'
+    assert client.identity() == "daemon-b"
+    assert connection.request.call_count == 2
+    connection.getresponse.side_effect = OSError("proxy unavailable")
+    with pytest.raises(RuntimeCapabilityError):
+        client.identity()
+    assert factory.call_count == 1  # no direct/CLI fallback
+
+
+@pytest.mark.parametrize(
+    "proxy",
+    [
+        "https://localhost:7890",
+        "http://u:p@localhost:7890",
+        "http://localhost:7890/path",
+        "http://localhost",
+    ],
+)
+def test_invalid_connect_proxy_fails_closed(transport, proxy):
+    root, _, _, factory = transport
+    with pytest.raises(RuntimeCapabilityError):
+        info.DockerDaemonInfo("192.168.139.232", 2376, str(root), connect_proxy=proxy)
+    factory.assert_not_called()

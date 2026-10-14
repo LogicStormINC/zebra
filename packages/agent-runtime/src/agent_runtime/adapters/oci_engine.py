@@ -102,12 +102,14 @@ class PinnedOciEngine:
                 "cloud engine requires an explicit credential-free unix/tcp endpoint"
             )
         self._info = None
+        info_proxy = self._env.pop("ZEBRA_OCI_INFO_CONNECT_PROXY", "")
         if (Path(engine).name == "docker" and parsed.scheme == "tcp"
                 and runner is run_process_tree and self._env.get("DOCKER_HOST")
                 and not self._env.get("DOCKER_CONTEXT") and self._env.get("DOCKER_TLS_VERIFY")):
             assert parsed.hostname is not None and parsed.port is not None
             self._info = DockerDaemonInfo(
-                parsed.hostname, parsed.port, self._env["DOCKER_CERT_PATH"]
+                parsed.hostname, parsed.port, self._env["DOCKER_CERT_PATH"],
+                connect_proxy=info_proxy,
             )
         for key in (
             "DOCKER_HOST",
@@ -125,7 +127,8 @@ class PinnedOciEngine:
         self._daemon_id = self._read_daemon_id() if Path(engine).name == "docker" else None
         self.identity = sha256(
             json.dumps(
-                {"command": self._prefix, "certificates": self._files, "daemon": self._daemon_id},
+                {"command": self._prefix, "certificates": self._files, "daemon": self._daemon_id,
+                 **({"info_proxy": info_proxy} if info_proxy else {})},
                 sort_keys=True,
                 separators=(",", ":"),
             ).encode()
