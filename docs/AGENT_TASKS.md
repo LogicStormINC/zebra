@@ -33299,8 +33299,10 @@ browser Cookie or Host Grant.
 
 ### CLOUD-AGENT-AUTONOMY-02
 
-- Status: Ready; claimed In Progress before code.
+- Status: Done for implementation/local activation and this exact two-case real acceptance; broader semantic generalization unverified.
 - Owner Luke Ding; executor Codex; branch codex/cloud-agent-autonomy-02; base91314f5b.
 - Owned paths: packages/agent-core/src/agent_core/harness/model_step_support.py; apps/worker/src/zebra_agent_worker/execution_context.py; tests/agent_core/test_agent_autonomy.py; docs/CLOUD_AGENT_AUTONOMY.md; docs/AGENT_TASKS.md; PROGRESS.md.
 - Scope: resolve expression-versus-state-verification ambiguity in shared natural-language guidance after real first-turn inventory failure. No keyword routing, tool gating or additional model stage.
 - Acceptance: offline composition/regression, deploy local Worker, repeat same two real UI requests once; no unrelated model workload.
+
+- Real candidate02 acceptance:reply exact接入完毕,1 round/0 tools/16.973s; status verification4 rounds/13 tools/51.720s. SameFlash/high/general/v2, new sessions. No forced tool choice.103 focused regressions/Ruff pass; Worker healthy/source hashes match/preflight ready. Only local integration; no push.

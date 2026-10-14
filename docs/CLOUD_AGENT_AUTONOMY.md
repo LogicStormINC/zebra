@@ -58,3 +58,15 @@ Candidate02 clarifies phrase/acknowledgement deliverables versus real state chec
 and forbids unrequested onboarding/account overviews in that expression context.
 This is semantic guidance, not a keyword classifier or tool restriction.103 focused
 regressions pass. One same-configuration real paired retest follows local activation.
+
+## Candidate02 exact paired retest: PASSED for these two requests
+
+Same UI Flash/high/general/v2, two new sessions, original prompts unchanged.
+Reply is exactly接入完毕:1 model round/0 tools,16.973s Host completion. Real
+state verification:4 rounds/13 tools,51.720s; necessary checks remain available.
+Previous pair was2/3/24.793s and3/13/47.326s. Expression scope corrected in this
+sample; verification timing did not improve. First-model preparation remains
+11.138/9.990s. This does not establish generalization across unseen requests or
+statistical latency improvements.103 regressions/Ruff pass; local Worker sources
+match/preflight ready. Runs286dc6be-4887-44eb-82af-29ca05a0dc2b and candidate
+verification Run recorded in .artifacts/agent-autonomy02-pair-20261015/results.safe.json.

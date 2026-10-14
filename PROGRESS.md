@@ -6043,3 +6043,8 @@ Remove the remaining native CLI capability query before instance reservation in 
   reply request2 model rounds/3 irrelevant inventory tools/24.793s; verification
   request3 rounds/13 tools/47.326s, sameFlash/high/general/v2. Both completed.
   First-stage implementation is active, but simple-request semantic fix is incomplete.
+
+- 2026-10-15 CLOUD-AGENT-AUTONOMY-02:explicit natural-language expression/
+  real-check boundary locally active. Exact paired real retest:reply1 round/
+  0 tools/16.973s, verification4 rounds/13 tools/51.720s.103 regressions pass.
+  No keyword routing/tool ban; broader generalization and speed SLO unproven.
