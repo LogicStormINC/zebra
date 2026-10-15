@@ -104,3 +104,40 @@ The command actually ran python -c print(1+1), stdout2, exit0. No extra quality-
 Latency remains bounded by actual provider behavior: story Run→model-event4.748s, provider first-public-text8.764s with1052 reasoning tokens, actual page body14.334s. Short actual page Run→model-event2.803s, provider first-public-text1.916s, page body5.518s. These are a few new samples, not a new distribution or a same-prompt comparison against the earlier40-run cohort. Existing historical48.43% pre-model median benefit is not recomputed. Long high-thinking output can still exceed9–12s; no stable3s page SLA or complete latency optimization claim.
 
 Final focused checks:108 tests (72 quality/provider plus36 existing intent/negation/artifact) pass. make check passes3063 size files, Ruff, mypy1278 and eval30. Normal Worker imageb3f64784dd8ab3a86b2fb1b62e21548528c95777666dd21e021342f26153e54c; all17 source hashes verified, including every previously accepted latency file. API unchanged; defer_provision and v2 remain enabled. Temporary page timing listeners and batch globals removed, no trace monkeypatches or service overrides introduced. Evidence: .artifacts/quality-provider-repair-20261015/{fixed-story-page-timing.safe.json,fixed-story-db.safe.json,repaired-pair-db.safe.json,short-page-timing.safe.json,short-page-db.safe.json,fixed-story-final.png,short-page-final.png}. STOP/full paired SQL80% remains outside this acceptance.
+
+
+## FIRST-BODY-CAUSE-01: why public body still waits (2026-10-15)
+
+Read-only investigation; production source, defaults, services and all latency gains unchanged. Two additional fresh same-story, Flash/general requests used normal authenticated BFF with high and none; no original Run replay. Both canonical completed/transient_v2, one model request, zero tools, zero runtime instances and zero retries. Only these test requests selected different effort; page default stayed high. Dynamic Host context differs slightly (4792 vs4769 input tokens), so this is one directional diagnostic pair, not an exact-byte randomized benchmark or quality-equivalence evaluation.
+
+| Provider metric | high603d46e7 | noneb8a23335 |
+| --- | ---: | ---: |
+| First SSE event |2020ms|912ms|
+| First public text |13186ms|1887ms|
+| Reasoning tokens |1677|not reported (thinking disabled)|
+| Total model call |14998ms|6765ms|
+| Input / cached tokens |4792 /512|4769 /0|
+| Run→model-request event |2951ms|2179ms|
+
+Provider first-public-text falls85.69%,11.299s in this pair. That is not an85.69% browser speedup: the pair did not measure DOM arrival. none had zero prompt-cache hits and nevertheless much earlier body; cache warmth alone cannot explain the observed difference. Official DeepSeek thinking mode sends reasoning before the public answer: https://api-docs.deepseek.com/guides/thinking_mode/ . Source confirms private reasoning is accumulated separately, public content emitted immediately; no private reasoning is displayed as body.
+
+Original successful actual-page storyc88afcc1,14.334s:
+
+| Timeline span | Duration |
+| --- | ---: |
+| Actual send→Trench Run row |0.148s|
+| Run→Cloud session-created timestamp |0.792s|
+| Cloud session-created→accepted command |1.320s|
+| Accepted command→model-request event |2.637s|
+| Provider stream start→first public text |8.764s|
+| Remaining event persistence/call initialization/delivery/DOM combined |0.674s|
+
+First four spans total4.896s. The0.674s is a remainder, not an isolated browser or Redis measurement: model_request_started is emitted before durable sink return, public callback authorization and actual HTTP; exact HTTP wall start was not captured on this normal-service sample. Provider time uses monotonic timers; cross-service wall timestamps need this boundary caveat. The story provider first-event was1.298s, then7.466s until first body, with1052 reasoning tokens. Short pagee292a8f5:3.038s send→model-event,1.916s provider first-body,0.564s combined remainder =5.518s. Both already had zero sandboxes, so OCI cold start does not explain these waits. Worker warm-up or host contention could explain part of the remaining platform variation; neither has been independently isolated here.
+
+Source details: Trench strategy-chat-input.tsx defaults high and strategy-chat-api.ts sends high when omitted; Cloud task_recovery._model_invocation_policy maps that explicit effort to thinking enabled. Thus one directly answering model call may still think for seconds: tool/research routing and per-request Provider reasoning budget are different controls. Existing Cloud none policy reaches thinking disabled without new dependencies. AUTO currently resolves the selected profile; it is not proof of provider-side adaptive thinking.
+
+Timing audit corrected an attribution risk: HARNESS_ATTEMPT_STARTED, EXECUTION_AUTHORITY_RESOLVED and MEMORY_CONTEXT_SELECTED reuse started_at/as_of. Their identical timestamps are not three stage-completion times. Do not label the next2.497s as solely orchestrator work. MODEL_REQUEST_STARTED precedes public-call setup and HTTP. TextDeltaCoalescer emits the first content chunk immediately; its0.1s later coalescing interval cannot explain8–13s before provider content. About4.8–5.5k input tokens remain even for small requests, mostly advertised tool schemas; this is a secondary candidate, not a measured cause of the long reasoning gap.
+
+Next minimal work: (1) keep explicit user high unchanged; define a Cloud invocation-budget policy before changing defaults, with a fast first call and agent-driven escalation for tasks needing deeper work, avoiding an extra classification model round; independently evaluate quality/tool escalation, not just speed. (2) For remaining2–5s platform overhead, reuse bounded temporary tracing at Host/Broker admission, Worker input/context recovery, recorder append, public-call authorization and actual HTTP start. Measure monotonic spans/fresh DB connections; preserve all fresh authority checks and do not widen into fixture repairs or a warm-pool framework. This task makes no production optimization or stable3s guarantee.
+
+Evidence: .artifacts/first-body-cause-20261015/{thinking-pair.safe.json,pair-browser.safe.json,none-final-page.png}; previous actual-page evidence remains under quality-provider-repair-20261015. Temporary diagnostic batch global removed. No service restart, source change, new dependency or full-suite rerun was required for this read-only investigation.
