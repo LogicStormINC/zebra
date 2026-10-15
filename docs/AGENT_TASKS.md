@@ -33364,7 +33364,7 @@ browser Cookie or Host Grant.
   existing WorkspaceRuntimeResolver materialization and filesystem validation.
   Explicit cloud runtime, never LocalRuntime fallback; preserve authority/fence.
   One concentrated regression/static and final SPEC/QUALITY; no test infrastructure expansion.
-- LATENCY-ADMISSION-01: Review: measured Worker address reuse accepted SPEC/QUALITY; local integration next. Owner Luke Ding; executor Codex.
+- LATENCY-ADMISSION-01: Done for accepted source slice, locally integrated593565d2; paired validation follows. Owner Luke Ding; executor Codex.
   Branch codex/latency-admission-01; same observer-repair worktree.
   Measured repeated DNS subprocess 58-69ms per temporary database adapter. Reuse existing TaskIoConnections, no fact/credential/connection cache.
   Owned paths (audit narrowed): apps/worker/src/zebra_agent_worker/loop.py, transient_output_composition.py;
@@ -33373,8 +33373,11 @@ browser Cookie or Host Grant.
   Binding/manifest loaders outside deadline do not spawn measured children, therefore unchanged.
   Reuse existing shared connector for execution-input, replay and draft-proof snapshot only; admission770ms requires separate trace.
   Audit before edit; extend precise ownership only for measured shared caller.
-- LATENCY-WARM-01: Locked on TRACE cold/hot evidence; existing node/image/client
-  readiness only. Generic running pool/checkpoint requires separate ADR/task.
-- LATENCY-PROVIDER-01: Locked on actual first-public-text timing and quality proof.
+- LATENCY-WARM-01: Audited; existing resident Worker/shared HTTP client retained, pinned image present on target daemon. No extra warm framework. Generic running pool/checkpoint requires separate ADR/task.
+- LATENCY-PROVIDER-01: Audited stream/first-public-text timing; existing quality-revision Provider400 remains open (also eager control), no speculative compatibility fix.
 - Local dependency integration into cloud-agent-trench follows existing user
   authorization; no push/remote deploy/npm publish. STOP and SQL80% unchanged.
+
+### LATENCY-ACCEPTANCE-01 - Final local acceptance
+
+Status: Review / partial E2E acceptance after local integration: source and local activation complete; canonical35/40 successful,5 existing Provider400; final browser after adapter fix blocked by debug connection. Human owner Luke Ding; executor Codex. Branch codex/latency-acceptance-01; existing observer-repair worktree. Owned paths: docs/CLOUD_FIRST_BODY_LATENCY_ACCEPTANCE.md, docs/CLOUD_RUNTIME_LATENCY_RUNBOOK.md, docs/superpowers/plans/2026-10-15-cloud-first-body-latency.md, docs/AGENT_TASKS.md, PROGRESS.md, WORKLOG.md; private first-body diagnostics only. Conditional WARM/PROVIDER readiness/source audit and final real paired evidence. Additional exact acceptance-adapter Owned paths: /Users/lukeding/Desktop/playground/2026/product/Trench/toc-frontend/src/lib/strategy-conversation-turns.ts and strategy-conversation-turns.test.ts. Fix measured transient_draft incorrectly collapsed as work; no Trench business rules or Cloud architecture changes. No additional product framework, no silent model/effort change; no push/npm/remote deployment.

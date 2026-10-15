@@ -9,7 +9,7 @@
 **Tech Stack:** Python Worker/API、PostgreSQL、Redis transient_v2、Docker/gVisor、TypeScript client-core、React 及五个官方 npm 包。复用现有 Ports、计时、事件、租约和工具网关，不新增依赖。
 
 日期：2026-10-15。源码基线：cloud-agent-trench / 74c703a9。
-状态：完整方案；本次仅文档，不代表生产实现、模型验证或启用已经完成。
+状态：核心方案已实现并本地启用；40次真实配对已记录，完整E2E有5次既有Provider400及修复后浏览器核验未通过，不宣称全部验收完成。详见docs/CLOUD_FIRST_BODY_LATENCY_ACCEPTANCE.md。
 
 ## 1. 范围与事实边界
 
