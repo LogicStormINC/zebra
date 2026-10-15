@@ -100,28 +100,31 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
             finally:
                 connection.set_progress_handler(None, 0)
 
-    def _key(self, lease: WorkerLease) -> tuple[str, ...]:
-        task = self._tasks.task_id_for_session(lease.session_id)
+    def _key(self, lease: WorkerLease, connection: Any = None) -> tuple[str, ...]:
+        if self._progress_postgres and connection is not None:
+            from agent_storage.postgres.agent_tasks import read_task_id_for_session
+
+            # ponytail: resolve canonical membership once on this operation's
+            # native socket/snapshot; never cache identity across operations.
+            task = read_task_id_for_session(connection, self._namespace, lease.session_id)
+        else:
+            task = self._tasks.task_id_for_session(lease.session_id)
         if task is None:
             from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 
             raise CheckpointNotReady("execution inputs require indexed Task membership")
-        return self._namespace, str(task), str(lease.session_id), INPUT_VERSION
+        key = self._namespace, str(task), str(lease.session_id), INPUT_VERSION
+        if not self._progress_postgres and connection is not None:
+            self._membership(connection, key)
+        return key
 
     def _membership(self, connection: Any, key: tuple[str, ...]) -> None:
-        if self._progress_postgres:
-            query = (
-                "SELECT task_id FROM execution_segments WHERE deployment_namespace=? "
-                "AND session_id=? AND task_id=?"
-            )
-            values = key[0], key[2], key[1]
-        else:
-            query = (
-                "SELECT segment.task_id FROM execution_segments segment JOIN agent_tasks task "
-                "ON task.task_id=segment.task_id WHERE task.namespace=? "
-                "AND segment.session_id=? AND segment.task_id=?"
-            )
-            values = key[0], key[2], key[1]
+        query = (
+            "SELECT segment.task_id FROM execution_segments segment JOIN agent_tasks task "
+            "ON task.task_id=segment.task_id WHERE task.namespace=? "
+            "AND segment.session_id=? AND segment.task_id=?"
+        )
+        values = key[0], key[2], key[1]
         if self._progress_execute(connection, query, values).fetchone() is None:
             raise CheckpointConflict("execution input namespace/membership conflict")
 
@@ -204,9 +207,8 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
         return head
 
     def read(self, lease: WorkerLease) -> ExecutionInputHead:
-        key = self._key(lease)
         with self._progress_connection() as connection:
-            self._membership(connection, key)
+            key = self._key(lease, connection)
             return self._head(connection, key)
 
     def _page(
@@ -238,9 +240,8 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
         )
 
     def read_page(self, lease: WorkerLease, after: int, through: int) -> TaskEventPage:
-        key = self._key(lease)
         with self._progress_connection() as connection:
-            self._membership(connection, key)
+            key = self._key(lease, connection)
             try:
                 return self._page(connection, key, after, through)
             except ValueError as error:
@@ -257,7 +258,6 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
                 raise
 
     def advance(self, lease: WorkerLease, page: TaskEventPage) -> ExecutionInputHead:
-        key = self._key(lease)
         with self._progress_connection(write=True) as connection:
             # Lease validation precedes derived head locks, and is repeated after
             # lock waits immediately before writing. No ownership callback substitutes it.
@@ -266,7 +266,7 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
 
                 lock_session_lease_boundary(connection, self._namespace, lease.session_id)
             self._fence(connection, lease)
-            self._membership(connection, key)
+            key = self._key(lease, connection)
             canonical = self._page(
                 connection, key, page.after_sequence, page.highwater, max(1, len(page.events))
             )

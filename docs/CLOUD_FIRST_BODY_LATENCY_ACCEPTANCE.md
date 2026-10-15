@@ -170,3 +170,25 @@ Context preparation480.60ms in the targeted sample: bound binding load4.15ms; au
 Minimal next implementation candidate stays in Cloud Agent: first narrow to execution-input recovery and its existing bounded reader/connection boundaries. Reuse a socket or batch reads only within one existing short operation, preserve its cumulative deadline and separate fresh transactions/authority reads, close/discard on errors and stop; no attempt-lifetime authority cache, no transaction across Provider wait. Retain commit-time fence/epoch/control checks. Validate a meaningful storage/lease/STOP regression plus a few real short samples, then address the context path if measured gains justify it. The measured per-stage costs bound possible savings; no promised one-second or percentage reduction before implementation. Host dispatch remains a separate adapter observation, not a Trench-specific Cloud redesign.
 
 All diagnostic services removed: exact saved images, original entrypoints and original six-file normal composition restored and healthy. All17 accepted source hashes verified, defer_provision and v2 retained. Temporary page driver globals removed; final page shows 接入完毕. Evidence under .artifacts/platform-pre-model-20261015: summary.safe.json, canonical.safe.json, worker/api-trace-pass1/pass2.safe.json, normal-restored.safe.json, completed-page.png. No new production source, dependency or full-suite run; only private launchers and durable findings changed.
+
+
+## INPUT-MEMBERSHIP-01: minimal native input-transaction repair (2026-10-15)
+
+ExecutionInputStore previously opened a separate Task-port connection to map Session→Task, then queried the same native membership again inside read/read_page/advance. All three PG paths now resolve namespace-qualified canonical membership once through the existing read_task_id_for_session helper on their own operation's connection. No cross-operation socket or authority result cache, no new pool or dependency. Each operation retains its native transaction/deadline. advance retains the lease-boundary lock and both fence validations; membership now resolves after the first fenced lock. SQLite retains its task-port/namespace membership validation and the original _key(lease) compatibility entry.
+
+The new native regression first failed because identity escaped the input transaction. It now proves read/page/advance/read each uses one distinct operation connection, no external Task-port lookup, correct state advancement, and foreign namespace refusal. Four existing native CAS/forgery/expiry/actual-lock-deadline cases passed. The103 other local/frontier/compaction/core cases passed; one old internal caller exposed the changed private signature, fixed by preserving the original optional-connection entry rather than editing its fixture, and its focused rerun passed. Thus109 distinct relevant cases validated. Final make check passes (3063 size files, Ruff, mypy1278, eval30); no unrelated tests repaired.
+
+Two fresh Flash/high/general short requests were traced with the same temporary launchers as baseline: f01a3a62 and ddc2d33d. Both canonicalcompleted/transient_v2,1 model,0 tools,0 OCI. Deterministic pre-HTTP observations:
+
+| Metric | Previous3 samples | New2 samples |
+| --- | ---: | ---: |
+| Task I/O fresh connections |91 each|76 each (-16.48%)|
+| Instrumented Cursor.execute calls |566 each|551 each (-2.65%)|
+| Lease-fence epoch checks |32 each|32 each|
+| Input recovery stage |271–306ms|224–229ms|
+| Worker execution entry→actual HTTP |1227–1410ms|1134–1253ms|
+| Task I/O connection elapsed |437ms (targeted baseline)|350–354ms|
+
+This is a small fixed-startup improvement. The code deterministically removes15 connection paths and15 duplicate membership queries in these starts. Sample timing is exploratory and includes diagnostic overhead; no stable end-to-end/DOM improvement percentage is claimed. BFF terminal polls5.640s/4.411s are not first-body measurements; Provider thinking variability remains. These counts are scoped cursor calls, not complete Run/server SQL or the overall80% SQL acceptance gate.
+
+Only packages/agent-storage/src/agent_storage/execution_inputs.py was layered over accepted Workerb3f64784. Active normal Worker236aef39ef8279759ba3b697c2ab0d1fc0389f0bc60cde97083485e0d2690176, API66603329 unchanged. Exact original normal six-file composition and entrypoints restored after tracing, both healthy;18 live source hashes match including all15 prior latency files and both quality/Provider fixes. defer_provision/v2 retained, no temporary trace service or browser batch global remains. Evidence: .artifacts/input-membership-20261015/{red.log,native-focused.log,local-focused.log,local-compatibility.log,native-final.log,check.log,summary.safe.json,canonical.safe.json,normal-active.safe.json,completed-page.png}. Initial compatibility failure remains in the evidence; no original Run replay, push or remote deployment.

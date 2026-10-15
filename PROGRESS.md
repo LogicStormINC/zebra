@@ -6094,3 +6094,7 @@ QUALITY-PROVIDER-REPAIR-01 fixes ambiguous bare 报告 forcing long structured o
 ### Real page quality/Provider acceptance 2026-10-15
 
 Browser restored. Fresh page revealed negated research/structure false positive; shared inference now excludes bounded negated clauses while preserving explicit contracts/length limits.108 focused tests + make check pass. Four fresh post-fix canonical v2 completions: story1model/0tools/0OCI, pure1/0/0, command2/1/1removed, pagepure1/0/0. Actual page first body5.518s short/14.334s story, both provisional before commit. Provider story TTFT8.764s, so stable3s page target is not achieved. Normal Workerb3f64784,17 source hashes verified/all prior latency files retained; API unchanged. Failure before follow-up retained; no old Run replay. See acceptance doc.
+
+### Cloud input membership transaction slice 2026-10-15
+
+INPUT-MEMBERSHIP-01 removes the extra PG Task-port socket and duplicate membership lookup inside each native input operation; no cross-operation cache or pool. Fresh native namespace/lease/deadline checks retained; SQLite/legacy helper compatibility verified.109 distinct relevant cases + make check pass. Two fresh canonical v2 short starts:91→76 TaskIO connections,566→551 cursorcalls,32 fence checks unchanged; inputs271–306→224–229ms exploratory. Worker236aef39 normal/healthy, API unchanged,18 source hashes match/all prior latency gains retained. No stable page-latency or totalSQL80% claim. See first-body acceptance doc.
