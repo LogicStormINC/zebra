@@ -15000,3 +15000,14 @@ Source quality/mypy1283/size3082/eval30 and SDK check/25pass; consumer18pass2exi
 Normal six-file composition, original Worker/search and accepted source hashes verified;
 trace/page instrumentation removed, own disposable PG removed. No unrelated tests repaired,
 no oldRun reexecution, push/npm/remote deployment. Acceptance doc contains precise proof limits.
+
+## 2026-10-15 LATEST-RUN-READ-01
+
+Traced current startup; chose a single shared latestRun function, not cached Context/authority.
+Native red confirmed2SQL; changed identity+metadata into one statement using original body/decoder.
+10native new cases pass; focused/native59pass49.32s incl fresh proof/fence/privacy/Run replacement.
+40AB/BA pairs8.611→7.783ms; one new real high/v2 search pair completed. Startup412→404SQL,
+65connections same. Candidate76latestRun calls save76SQL vs identical work, but model/tool counts
+and timing differ, so no full-run or stable first-body speedup claim. Source quality/eval30pass.
+Normal images updated only shared source,56hash/sixCompose/search verified; no trace or observers,
+no unrelated fixture fixes/oldRun replay/push/npm/remote deploy. Acceptance doc records all data.

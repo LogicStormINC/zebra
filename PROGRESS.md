@@ -6298,3 +6298,13 @@ All three new Runs retained; B2tools5 vs A1/B1six so total completion gain is no
 Focused native85, SDK25+check, consumer18/2skips, source quality/eval30 pass; raw makecheck
 stops on private artifact lint. Full evidence: docs/CLOUD_CLIENT_SURFACE_ACCEPTANCE.md.
 No push/npm/remote deployment or oldRun replay. Local integration target remainscloud-agent-trench.
+
+## 2026-10-15 LATEST-RUN-READ-01 local acceptance
+
+Shared PostgreSQL latest executable Run identity+metadata now one statement, reusing canonical
+metadata/source checks. Native40pairs2→1SQL/8.611→7.783ms;59safety/native checks passed.
+New real high/v2 search A1/B1 Worker startup412→404SQL,65connections unchanged; firstvisible
+4.951→3.859s observed but not causally attributed (4/5→3/4model/tools, timing variation).
+Normal API/Worker/56sourceidentities and unchanged six-file/search composition verified.
+One-function SQL optimization only; full startup/first-body goal remains open. Details:
+docs/CLOUD_LATEST_RUN_READ_ACCEPTANCE.md. No push/npm/remote deploy or oldRun replay.

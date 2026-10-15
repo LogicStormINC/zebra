@@ -233,15 +233,25 @@ def json_event_header(row: Any) -> TaskEventHeader:
 
 
 def read_latest_run_header(connection: Any, namespace: str, task_id: TaskId) -> TaskRunHeader:
+    # ponytail: select identity and metadata in one statement snapshot. Reuse the
+    # explicit-Run source checks, never cache a previously current Run.
     row = connection.execute(
-        "SELECT replay_run_id FROM session_events "
+        "WITH latest AS (SELECT replay_run_id FROM session_events "
         f"WHERE deployment_namespace=%s AND task_id=%s AND {_QUERY_EXECUTABLE} "
-        "ORDER BY task_sequence DESC LIMIT 1",
-        (namespace, task_id),
+        "ORDER BY task_sequence DESC LIMIT 1),"
+        "args AS (SELECT %s::text ns,%s::uuid tid,replay_run_id rid,"
+        "NULL::bigint through FROM latest) "
+        "SELECT a.rid AS latest_run_id,metadata.* FROM args a "
+        "LEFT JOIN LATERAL (WITH " + RUN_HEADER_BODY + ") metadata ON true",
+        (namespace, task_id, namespace, task_id),
     ).fetchone()
-    if row is None or not isinstance(row["replay_run_id"], str) or not row["replay_run_id"].strip():
+    if row is None or not isinstance(row["latest_run_id"], str) or not row["latest_run_id"].strip():
         raise CheckpointNotReady("latest executable command requires a canonical Run identity")
-    return read_run_header(connection, namespace, task_id, row["replay_run_id"], None)
+    if len(row["latest_run_id"]) > 256:
+        raise ValueError("invalid replay Run identity")
+    return run_header_from_row(
+        row if row["next_event_sequence"] is not None else None, task_id, row["latest_run_id"]
+    )
 
 
 def backfill_task_replay_headers(
