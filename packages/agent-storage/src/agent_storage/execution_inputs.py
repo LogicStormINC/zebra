@@ -157,29 +157,27 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
             if self._progress_postgres
             else "length(CAST(state_json AS BLOB))"
         )
-        metadata = self._progress_execute(
+        # ponytail: the database gates body hydration by UTF-8 byte size; one
+        # snapshot/query retains the 1-MiB trust boundary without a second fetch.
+        row = self._progress_execute(
             connection,
-            f"SELECT state_bytes,{byte_length} AS actual_bytes "
+            f"SELECT state_bytes,{byte_length} AS actual_bytes,through_sequence,last_event_id,"
+            f"CASE WHEN state_bytes BETWEEN 1 AND {MAX_INPUT_BYTES} "
+            f"AND {byte_length}=state_bytes THEN state_json END AS state_json "
             f"FROM execution_input_heads WHERE {WHERE}",
             key,
         ).fetchone()
-        if metadata is None:
+        if row is None:
             return ExecutionInputHead(-1, ExecutionInputState())
-        size = metadata["state_bytes"]
+        size = row["state_bytes"]
         if (
             type(size) is not int
             or not 0 < size <= MAX_INPUT_BYTES
-            or metadata["actual_bytes"] != size
+            or row["actual_bytes"] != size
+            or row["state_json"] is None
+            or len(row["state_json"].encode()) != size
         ):
             raise CheckpointConflict("execution input state metadata exceeds bound")
-        row = self._progress_execute(
-            connection,
-            "SELECT through_sequence,last_event_id,state_json FROM execution_input_heads "
-            f"WHERE {WHERE} AND state_bytes=?",
-            (*key, size),
-        ).fetchone()
-        if row is None or len(row["state_json"].encode()) != size:
-            raise CheckpointConflict("execution input state metadata conflicts")
         state = ExecutionInputState.model_validate_json(row["state_json"])
         state.encoded()
         if any(str(event.session_id) != key[2] for event in state.events):
@@ -403,36 +401,35 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
         namespace = "deployment_namespace=? AND " if self._progress_postgres else ""
         base = (*key[:1], key[1], key[2]) if self._progress_postgres else (key[1], key[2])
 
-        def last(kind: str, stop: int, command: str | None = None) -> int | None:
-            condition = "replay_command_kind=?" if command else "replay_command_kind IS NULL"
-            values = (*base, kind, *((command,) if command else ()), stop)
-            row = self._progress_execute(
-                connection,
-                f"SELECT task_sequence FROM session_events WHERE {namespace}task_id=? "
-                f"AND session_id=? AND event_type=? AND {condition} AND task_sequence<=? "
-                "ORDER BY task_sequence DESC LIMIT 1",
-                values,
-            ).fetchone()
-            return row["task_sequence"] if row is not None else None
-
-        admission_sequence = last("session_command_accepted", highwater, "run")
-        if admission_sequence is None:
+        seek = (
+            f"SELECT task_sequence FROM session_events WHERE {namespace}task_id=? "
+            "AND session_id=? AND event_type=? AND replay_command_kind "
+        )
+        tail = "AND task_sequence<=? ORDER BY task_sequence DESC LIMIT 1"
+        admission = self._progress_execute(
+            connection, seek + "=? " + tail,
+            (*base, "session_command_accepted", "run", highwater),
+        ).fetchone()
+        if admission is None:
             return None
-        positions = [
-            position
-            for kind in (
-                "turn_completed",
-                "turn_failed",
-                "turn_cancelled",
-                "session_completed",
-                "session_failed",
-                "session_cancelled",
-            )
-            if (position := last(kind, admission_sequence - 1)) is not None
-        ]
-        if not positions:
+        admission_sequence = admission["task_sequence"]
+        terminal_kinds = (
+            "turn_completed", "turn_failed", "turn_cancelled",
+            "session_completed", "session_failed", "session_cancelled",
+        )
+        # UNION keeps six LIMIT-1 index seeks, while one round trip returns the
+        # latest result. An IN/MAX scan could grow with a long execution history.
+        terminals = " UNION ALL ".join(
+            f"SELECT * FROM ({seek}IS NULL {tail}) terminal" for _ in terminal_kinds
+        )
+        result_sequence = self._progress_execute(
+            connection, f"SELECT max(task_sequence) AS task_sequence FROM ({terminals}) results",
+            tuple(
+                value for kind in terminal_kinds for value in (*base, kind, admission_sequence - 1)
+            ),
+        ).fetchone()["task_sequence"]
+        if result_sequence is None:
             return None
-        result_sequence = max(positions)
         result = self._page(connection, key, result_sequence - 1, result_sequence, 1).events[0]
         admission = self._page(
             connection, key, admission_sequence - 1, admission_sequence, 1

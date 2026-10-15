@@ -192,3 +192,73 @@ Two fresh Flash/high/general short requests were traced with the same temporary 
 This is a small fixed-startup improvement. The code deterministically removes15 connection paths and15 duplicate membership queries in these starts. Sample timing is exploratory and includes diagnostic overhead; no stable end-to-end/DOM improvement percentage is claimed. BFF terminal polls5.640s/4.411s are not first-body measurements; Provider thinking variability remains. These counts are scoped cursor calls, not complete Run/server SQL or the overall80% SQL acceptance gate.
 
 Only packages/agent-storage/src/agent_storage/execution_inputs.py was layered over accepted Workerb3f64784. Active normal Worker236aef39ef8279759ba3b697c2ab0d1fc0389f0bc60cde97083485e0d2690176, API66603329 unchanged. Exact original normal six-file composition and entrypoints restored after tracing, both healthy;18 live source hashes match including all15 prior latency files and both quality/Provider fixes. defer_provision/v2 retained, no temporary trace service or browser batch global remains. Evidence: .artifacts/input-membership-20261015/{red.log,native-focused.log,local-focused.log,local-compatibility.log,native-final.log,check.log,summary.safe.json,canonical.safe.json,normal-active.safe.json,completed-page.png}. Initial compatibility failure remains in the evidence; no original Run replay, push or remote deployment.
+
+
+## INPUT-BOUNDED-QUERIES-01: fixed startup SQL consolidation (2026-10-15)
+
+Only `agent_storage/execution_inputs.py` changes production behavior. Checkpoint metadata
+and body now share one query; database CASE returns NULL for an oversized/mismatched
+body before client hydration. UTF-8 byte checks and canonical event identity remain.
+The six terminal types retain separate covering-index LIMIT-1 seeks, combined with
+UNION ALL/MAX in one round trip; admission anchor remains a separate bounded seek.
+No authority cache, shared transaction/socket, pool or new dependency. Namespace,
+captured highwater, index prerequisite, cumulative deadline and both write fences remain.
+
+New PostgreSQL/SQLite tests first failed all eight cases, then passed size mismatch,
+1.1-MiB corruption, multibyte state round trip and highwater/seek-count assertions.
+The first green attempt exposed two assumptions in this new test only (compacted tool
+output is absent from exact state; SQLite Row has no get); corrected without editing
+old fixtures. Original native invocation:15 pass/1 failure in119.10s. The cold-history
+case prepares over2,000 events after acquiring a60s scratch lease and was correctly
+rejected at its first write fence. Diagnostic rerun of that unchanged test body with
+only a5-minute scratch lease passed in100.26s. This is separate evidence, not a claim
+that the unmodified full native invocation passed.104 local/core cases passed44.53s.
+Final make check:3064 file sizes, Ruff, mypy1278 and eval30 passed.
+
+Two new normal BFF requests, Flash/general/high, observed with the same bounded
+API/Worker tracing as INPUT-MEMBERSHIP-01:
+
+| Metric before actual Provider HTTP | Previous two samples | New two samples |
+| --- | ---: | ---: |
+| Cursor.execute calls |551 /551|525 /525|
+| Task I/O fresh connections |76 /76|76 /76|
+| Mutation fence epoch checks |32 /32|32 /32|
+| Worker entry to HTTP |1253 /1134ms|1320 /1278ms|
+| Native connection duration sum |354 /350ms|390 /398ms|
+
+Runs e619186c-a80d-4837-83c2-fe4110cdc475 and48bc427b-74eb-4ee3-899b-e51b8d2fbe38
+both canonically completed/transient_v2,1 model/0tools/0instances. Fixed query count
+falls26/551=4.72%, cumulatively566→525=7.24% from pre-membership trace. These are
+startup-scoped client cursor calls including SET/fences, not whole Run/server SQL
+or the overall v1/v2≥80% gate. Samples do not prove lower startup latency; connection
+variation exceeds the saved query time. BFF terminal polls are not first body.
+
+After restoring normal entrypoints and original six-file composition, two actual-page
+Flash/general/high requests both completed v2/1model/0tools/0instances:
+
+| Actual page | First visible body | First visible draft | Provider first body / reasoning |
+| --- | ---: | --- | ---: |
+| Short b0286e47 |6.5986s|first observed in final state|797ms /44tokens|
+| Story1ab820c4 |26.5966s|75chars, aria-busy=true,632.8ms before answer_committed|21871ms /4978tokens|
+
+Story first SSE event195ms, model total22407ms; high thinking accounts for most of the
+wait before public body. Story send→model event4075ms plus Provider first body21871ms
+plus650ms mixed initialization/persistence/delivery/DOM remainder explains26.597s.
+The650ms is not an isolated browser transport measurement because model event precedes
+actual HTTP. The short answer does not independently prove provisional display; the
+longer story does. First-nonbusy is not treated as canonical completion. Stable3s is
+still unachieved, and no end-to-end speedup percentage is claimed. No quality revision
+or Provider400 in these four new requests. No original Run/model replay.
+
+Normal Worker a51c3a5969c71b47618822fa92b806204ae954cfa2ec8de9126128d4a4adf110;
+API66603329 unchanged. Both healthy;18 live source hashes match accepted files and
+prior latency/quality fixes. defer_provision and actual v2 retained. Browser diagnostic
+globals/listeners removed; no trace launcher remains. Evidence under
+.artifacts/input-bounded-queries-20261015/{red.log,native.log,native-final.log,
+long-history-diagnostic.log,local.log,check.log,summary.safe.json,page-canonical.safe.json,
+normal-active.safe.json,completed-page.png}.
+
+Next priority: Cloud reasoning-budget policy preserving explicitly selected high effort,
+and separately isolate the normal-page pre-model4.1–4.4s path. Do not keep iterating
+millisecond-only SQL changes as a solution to21.9s Provider body wait. STOP, full SQL80%,
+cold/hot/concurrent distributions and capacity/GC lifecycle acceptance remain open.

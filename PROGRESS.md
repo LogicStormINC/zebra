@@ -6098,3 +6098,8 @@ Browser restored. Fresh page revealed negated research/structure false positive;
 ### Cloud input membership transaction slice 2026-10-15
 
 INPUT-MEMBERSHIP-01 removes the extra PG Task-port socket and duplicate membership lookup inside each native input operation; no cross-operation cache or pool. Fresh native namespace/lease/deadline checks retained; SQLite/legacy helper compatibility verified.109 distinct relevant cases + make check pass. Two fresh canonical v2 short starts:91→76 TaskIO connections,566→551 cursorcalls,32 fence checks unchanged; inputs271–306→224–229ms exploratory. Worker236aef39 normal/healthy, API unchanged,18 source hashes match/all prior latency gains retained. No stable page-latency or totalSQL80% claim. See first-body acceptance doc.
+
+
+### Bounded input SQL consolidation 2026-10-15
+
+INPUT-BOUNDED-QUERIES-01 merges size-gated head reads and terminal index seeks in one storage file. Two actual starts: cursor551→525(-4.72%),76 fresh sockets/32 fence checks unchanged; no latency improvement proven.119 focused original cases pass; original long-history fixture expired60s lease before first advance, separate5min scratch diagnostic passes. makecheck green. Normal Worker a51c3a59/API unchanged,18hashes verified. Actual page short6.599s/story26.597s; story Provider firstbody21.871s/4978reasoning tokens, provisional visible633ms beforecommit. Stable3s/fullSQL80/STOP remain open; prioritize Cloud reasoning policy and page admission path, not further SQL micro-tuning. No push/remote deploy.
