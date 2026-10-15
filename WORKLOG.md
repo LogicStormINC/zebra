@@ -14867,3 +14867,18 @@ APIc0b8e9dc/六Compose/入口命令/30hash核对；计时器/trace撤除，测�
 检索完整query本地未丢，但cn.Bing重复首页/site限定无效，搜狗备用报错；上游原因仍
 未彻底定位，未改全局引擎/语言或掩盖失败。报告docs/CLOUD_WEB_RETRIEVAL_ACCEPTANCE.md，
 私有证据.artifacts/web-retrieval-20261015。整体SQL80/STOP/GC/稳定分布未验收。
+
+
+### 2026-10-15 — SEARCH-PROVIDER-QUALITY-01
+
+完整q与HTML首词泛化响应直接复现，固定Bing已含上游PR6671，换语言/市场/出口/RSS
+未恢复。360限定官方公告不合格；Sogou限定查询302antispider且next_request兼容错误；
+Google/Brave原生隔离测试拒绝/限流、DDG验证码，未绕过或盲换默认。用户无API凭据，
+先落地operator误判修复：verify.py区分transport与已知来源约束，默认两公告canary，
+自定义query配expect-source，transport-only不标ready。相同两查询旧版各5来源ready真，
+新版正确expected_source_missing/退出1；官网导航正例仍过。13新检查红→绿，65相关过，
+仅集中更新3个CLI调用点。Ruff排除私有.artifacts、mypy1278/eval30/文件门过；额外脚本
+mypy原有9项未扩修。无模型/页面配对、无新增SQL/耗时收益主张，性能目标仍未完成。
+原d9d84e3c/APIc0b/搜索245b675f及配置不变，31hash/六Compose正常入口核对；自有
+隔离容器/卷/临时secret移除。报告docs/CLOUD_SEARCH_PROVIDER_QUALITY_ACCEPTANCE.md。
+仅本地集成，保留27条脏改动；不推送/远端部署/改业务库。

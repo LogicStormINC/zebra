@@ -89,7 +89,10 @@ def test_operator_probe_requires_candidates_not_just_success_status(monkeypatch)
     from agent_tools.web_search import WebSearchResponse
     from zebra_agent_config import load_settings
 
-    monkeypatch.setattr("sys.argv", ["verify.py", "--query", "OpenAI news"])
+    monkeypatch.setattr(
+        "sys.argv",
+        ["verify.py", "--query", "OpenAI news", "--expect-source", "https://openai.com/news/"],
+    )
     monkeypatch.setattr(
         "zebra_agent_config.load_settings",
         lambda: load_settings(env={"ZEBRA_WEB_SEARCH_ENDPOINT": "https://search.example/search"}),
@@ -109,7 +112,10 @@ def test_operator_probe_qualifies_collected_search_refs(monkeypatch):
     from zebra_agent_config import load_settings
 
     probe = runpy.run_path(str(Path(__file__).resolve().parents[2] / "docker/web-search/verify.py"))
-    monkeypatch.setattr("sys.argv", ["verify.py", "--query", "OpenAI news"])
+    monkeypatch.setattr(
+        "sys.argv",
+        ["verify.py", "--query", "OpenAI news", "--expect-source", "https://openai.com/news/"],
+    )
     monkeypatch.setattr(
         "zebra_agent_config.load_settings",
         lambda: load_settings(env={"ZEBRA_WEB_SEARCH_ENDPOINT": "https://search.example/search"}),
@@ -168,7 +174,10 @@ def test_operator_probe_uses_the_configured_v2_pipeline(monkeypatch):
     from zebra_agent_config import load_settings
 
     probe = runpy.run_path(str(Path(__file__).resolve().parents[2] / "docker/web-search/verify.py"))
-    monkeypatch.setattr("sys.argv", ["verify.py", "--query", "OpenAI news"])
+    monkeypatch.setattr(
+        "sys.argv",
+        ["verify.py", "--query", "OpenAI news", "--expect-source", "https://openai.com/news/"],
+    )
     monkeypatch.setattr(
         "zebra_agent_config.load_settings",
         lambda: load_settings(
