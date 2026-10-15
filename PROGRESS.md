@@ -6328,3 +6328,19 @@ binding/model/tools/sandbox (all0). Error11757ms is not正文. Host extension-li
 at2036ms consumed2sbudget, DNSchild1184ms/connection1331ms + JWKS583ms. Worker deadline
 restarts also observed. Input batching remains native-proven, actual page acceptance open;
 next narrow candidate is resolver child startup after import/DNS stage measurements.
+
+## 2026-10-15 RESOLVER-STARTUP-01 backend local acceptance
+
+Real search baseline failed pre-model on2sHost admission (DNSchild1184ms + JWKS583ms).
+Minimal shared TaskIO fix uses a killable python-S/native_socket address child only for explicit
+single ASCII host/numeric port; bytes avoid IDNA import, credentials/settings remain parent.
+International/service/multihost/env-only/prefer-standby/random stay with libpq. No deadline,
+cacheTTL, fresh authentication, TLS host, SQL/COMMIT or Host authority relaxation.
+Native20AB/BA cold pairs979.703→112.088ms/childCPU687.171→72.845ms,20/20success each;
+first unhelpful prototype measurements retained. Two fresh realDB connections+SELECTs in one
+original2sbudget completed392.5ms and closed.18focused behaviors evidenced incl both kill/reap
+paths; final9pass+2timingfailures in concurrent build, both isolated cases pass4.28s, no fixture or
+budget edits. SourceRuff/mypy1283/size3088/eval30 pass. NormalAPI/Worker running healthy,
+zero restarts at receipt,62sourceidentities/sixCompose/search verified. User foreground/reconnected
+browser again, controls still time out/native wrong window; no post-fix model Run or page A/B yet.
+Local integration only; docs/CLOUD_RESOLVER_STARTUP_ACCEPTANCE.md has precise proof boundary.

@@ -15047,3 +15047,26 @@ No candidate model request dispatched while admission is failing. Resolver child
 normal total629.53ms, json import309.83ms, socket import53.64ms, actualDNS46.87ms medians;
 -S alone total489.55ms still json265.28ms. Next narrow investigation targets child serialization
 startup; no deadline/identity/cache loosening. Page pair remains open, baseline failure retained.
+
+## 2026-10-15 RESOLVER-STARTUP-01
+
+Claimed Ready task oncodex/resolver-startup-01 at72852beb before source edits; only task_io.py
+and its DNS regression file changed. Input-batch page A1 zero-model admission failure retained.
+Profiled child startup/import/actualDNS and rejected JSON-removal/native-string variant after
+20nativepairs regressed575→761ms. Found IDNA codec imports for str host; final ASCII bytes/
+python-S/native_socket child retains exact addresses/order/params and existing complexlibpq path.
+Red blocked JSON/driver and then IDNA imports; both reproduced failures before their fix.
+Final20AB/BA allsuccess:979.703→112.088ms/childCPU687.171→72.845ms. Fixed source typing after
+mypy union errors with canonical string locals, no settings mutation.18targeted behavior cases
+have pass evidence:17focused + directkill1; final DNS11run had2deadline failures under concurrent
+image builds, isolated same2cases pass4.28s, no budget/fixture tweaks. No fullsuite claim.
+Native realDB readonly2freshconnections/differentbackendPIDs/2SELECTs closed within same2s
+budget392.512ms. Runtime profile data are load-sensitive absolute timings, not a first-body SLA.
+SourceRuff/mypy1283/size3088/eval30 pass. Built source-only API/Worker and common-resolver
+paired images. Initial/final builds overlapped; paused own final builder until previous finished,
+then completed final build and checked exact final hashes before activation. No active Turn at
+restart. NormalAPI/Worker healthy/no trace;62sourceidentities/sixCompose/search verified.
+Browser user foreground/reconnected again; getTab timed out, native path still binds aboutblank
+instead of user Trench. No further model request dispatched; actual high/v2 page pair remainsopen.
+LocalFFauthorized targetcloud-agent-trench; integration receipt preserves original27dirtyentries.
+No push/npm/remote deployment, oldRun replay, newdep/cache/pool/schema or unrelatedfixture repair.

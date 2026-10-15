@@ -53,20 +53,14 @@ def task_io_deadline(deadline: float) -> Iterator[None]:
         _TASK_IO_DEADLINE.reset(token)
 
 
-RESOLVE_SCRIPT = """import json,os,socket,sys
+RESOLVE_HOST_SCRIPT = """import _socket as socket,sys
+for item in socket.getaddrinfo(sys.argv[1].encode("ascii"),sys.argv[2],
+                               proto=socket.IPPROTO_TCP,type=socket.SOCK_STREAM):
+    print(item[4][0])
+"""
+
+RESOLVE_SCRIPT = """import json,sys
 params=json.load(sys.stdin)
-host=params.get("host", "")
-# ponytail: one explicit host/port needs only libc DNS, not a psycopg import.
-# Multi-host, service and host ordering stay with the existing libpq adapter.
-if (host and "," not in host and params.get("port", "").isdigit()
-    and not params.get("service", os.environ.get("PGSERVICE"))
-    and params.get("target_session_attrs", os.environ.get("PGTARGETSESSIONATTRS"))
-        != "prefer-standby"
-    and params.get("load_balance_hosts", os.environ.get("PGLOADBALANCEHOSTS")) != "random"):
-    addresses=socket.getaddrinfo(host,params["port"],
-                                proto=socket.IPPROTO_TCP,type=socket.SOCK_STREAM)
-    json.dump([{**params,"hostaddr":item[4][0]} for item in addresses],sys.stdout)
-    sys.exit(0)
 from psycopg import pq
 from psycopg._conninfo_attempts import conninfo_attempts
 from psycopg._conninfo_utils import get_param
@@ -234,8 +228,33 @@ class TaskIoConnections:
                 # ponytail: native libc DNS has no cancellation contract. One
                 # short child per DSN/30s bounds it; no per-query process or new
                 # dependency. DNS cache invalidates after all addresses fail.
+                direct_host = str(self._params.get("host") or "")
+                direct_port = str(self._params.get("port") or "")
+                direct = (
+                    bool(direct_host)
+                    and direct_host.isascii()
+                    and "," not in direct_host
+                    and direct_port.isdigit()
+                    and not service
+                    and self._params.get(
+                        "target_session_attrs", environment.get("PGTARGETSESSIONATTRS")
+                    )
+                    != "prefer-standby"
+                    and self._params.get(
+                        "load_balance_hosts", environment.get("PGLOADBALANCEHOSTS")
+                    )
+                    != "random"
+                )
+                # ponytail: ASCII names need no IDNA codec or JSON/site imports
+                # in the killable child. Keep settings/credentials in the parent;
+                # international names and complex settings stay with libpq.
+                command = (
+                    [sys.executable, "-S", "-c", RESOLVE_HOST_SCRIPT, direct_host, direct_port]
+                    if direct
+                    else [sys.executable, "-c", RESOLVE_SCRIPT]
+                )
                 with subprocess.Popen(
-                    [sys.executable, "-c", RESOLVE_SCRIPT],
+                    command,
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.DEVNULL,
@@ -244,7 +263,7 @@ class TaskIoConnections:
                 ) as child:
                     try:
                         output, _ = child.communicate(
-                            json.dumps(self._params),
+                            None if direct else json.dumps(self._params),
                             timeout=_remaining(deadline),
                         )
                     except subprocess.TimeoutExpired:
@@ -253,7 +272,11 @@ class TaskIoConnections:
                         raise TimeoutError("Task storage DNS deadline exceeded") from None
                     if child.returncode:
                         raise psycopg.OperationalError("Task storage hostname resolution failed")
-                attempts = json.loads(output)
+                attempts = (
+                    [{**self._params, "hostaddr": address} for address in output.splitlines()]
+                    if direct
+                    else json.loads(output)
+                )
             _remaining(deadline)
             self._attempts = (
                 ()
