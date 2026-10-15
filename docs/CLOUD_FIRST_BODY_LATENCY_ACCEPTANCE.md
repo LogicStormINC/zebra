@@ -505,3 +505,16 @@ sanitized network/trace/canonical summary, failure/red/focused/static logs, exac
 and normal composition restoration. Preserve prior v2/lazy/input-SQL/key-warm/provider
 fixes. STOP, full-workload SQL80%, capacity/GC lifecycle, adaptive reasoning policy and
 controlled cold/hot/concurrent distributions remain separate open gates.
+
+
+## 2026-10-15：真实网络搜索补充验收
+
+见 [真实网络搜索配对验收](CLOUD_SEARCH_WORKLOAD_ACCEPTANCE.md)。相同公开资料核对问题，
+A1→B1→B2→A2→A3 共五个新 canonical v2/high 完成，实际6–10次工具、4–6轮主模型、
+各一个 sandbox。A1 DOM 计时初始化失败，后端证据保留，A3只补DOM。
+最新优化固定启动531→415 cursor calls、76→66连接，但全程3,713–5,467次Worker范围
+调用；完成41.926–66.832s，首次同时出现两家官方链接37.744–64.170s。优化组未显示
+整体提速，模型/工具路径不同，不能把raw差异归因于Context或解释成v1/v2收益。
+工具区间实际串行、搜索候选/截断增加续轮、控制投影和checkpoint推进仍有成本。
+保留3次抓取失败及所有样本；不修旧fixture、不改生产源码。正常376b20dd/c0b8e9dc
+原六份Compose/entrypoint/command及26源hash已恢复核对，临时计时器已移除。

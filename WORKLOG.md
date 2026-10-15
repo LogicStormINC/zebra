@@ -14810,3 +14810,16 @@ only, preserving primary dirty work; no push/deploy/business changes.
 
 
 2026-10-15 PRE-MODEL-CRITICAL-01: claimed exact task/branch/private scope, amended two Worker source paths/new test before implementation. Actual page traces isolate Worker1.53–1.77s, Context592–827ms; two post-append recoveries120SQL. Small shared committed-snapshot path retains fresh primary equality, lease/fence/revision guard, caller ownership and native2s scope; concurrent drift uses original recovery. Existing None-returning cancellation callback preserved via shared read_active_session (caught callable typing mismatch during own check; no call-site/Port edits). New12checks red/green;46focused pass4.07s+5ordinarycancel6.61s, nativeContext10pass and6tail/fence/budgetpass. Existing identity wording assertion reproduced on HEAD; unchanged250ms tail probe1fail6pass (budget spent before second socket); two PGcancel tests refused genericDSN in setup, fixture pins existing127.0.0.1:32786/header_scratch, not repaired/reused. Final makecheck3068/Ruff/mypy1278/eval30 green. Two final real page pairs: Context709→426ms, Worker1650→1456ms; SQL531→415/connect76→66, no recovery SQL in final startup. Whole send→HTTP3923→3817ms, DOM5061→5387ms, so no page speedup claim. Retained exploratory6.739/6.086s and returned-old-code5.316s control; no cherry-picking or original Run replay. Normal final run9220ce48 body4.901s/ProviderTTFT753ms, v2/high/1model/0tools/0OCI. All8new runs canonicalcomplete/high/v2. Worker376b20dd normal restored/APIc0b unchanged,26hashes and6files/entrypoints verified; no traces/browserglobals left, screenshot retained. Next boundary: Host/API admission variability and generated-draft→DOM mixed378–1247ms; do not blame one hop without separate capture. Stable3s/STOP/fullSQL80/lifecycle/adaptive reasoning/distributions still open. No unrelated source/tests, push, remote deploy or npm publish.
+
+
+### 2026-10-15 — SEARCH-WORKLOAD-PAIR-01
+
+按用户要求从纯回复扩展到真实页面公开联网核对。相同问题/Flash/high/v2，按
+A1→B1→B2→A2→A3完成五个新Run，未重放旧Run。A1 DOM计时器初始化失败，
+保留所有后端记录，A3仅补DOM；所有失败工具保留。实际4–6轮模型、6–10工具、
+一sandbox，完成41.926–66.832s；启动固定SQL531→415，整轮观察3713–5467
+Worker cursor调用，不声称全系统或v1/v2收益。查明当前Web契约默认非parallel_safe，
+观察handler串行；搜索噪音/正文截断有续轮，控制投影309–482次SELECT。
+仅写验收报告，未顺带改生产并发/控制逻辑或旧测试。恢复376b20dd/c0b8e9dc原
+六份Compose、entrypoint/command、healthy与26源hash。证据在私有
+.artifacts/search-workload-20261015；报告docs/CLOUD_SEARCH_WORKLOAD_ACCEPTANCE.md。

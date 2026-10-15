@@ -6118,3 +6118,15 @@ PROVIDER-ATTEMPT-TRACE-01 retains safe failure class/status and per-attempt/cumu
 ### Pre-model Context snapshot reuse 2026-10-15
 
 PRE-MODEL-CRITICAL-01 removes two full recoveries immediately following the recorder's own fenced atomic Context appends. Reuse only if a fresh active primary exactly matches the committed Session and lease/fence/workspace revisions agree; concurrent drift keeps original recovery, with native cumulative2s deadline/ownership/cancellation unchanged. Local recovery and Callable[[],None] cancellation compatibility preserved. No pool/cache/dependency/Host/SDK/default change. Two frozen same-prompt Flash/high page pairs: Context709→426ms, Worker→HTTP1650→1456ms; startup cursor531→415(21.85%), TaskIOconnect76→66. Send→HTTP3923→3817ms, DOM5061→5387ms: no overall page gain established. Intermediate slower samples retained, old-code return control confirms531 calls.8new runs all completed/v2/1model/0tools/0OCI/high; normal入口body4900.9ms.46focused+5cancellation local pass,10nativeContext+6nativebounds pass; makecheck3068/Ruff/mypy1278/eval30 pass. One inherited identity wording failure and one unchanged250ms tail timing assertion retained; two native cancellation cases blocked in fixture setup by pinned existing header_scratch endpoint, no fixture/credential changes. Normal Worker376b20dd/APIc0b8e9dc healthy,26hashes/original composition verified. No old Run replay/publication. Stable3s/fullSQL80/STOP/lifecycle/distributions remain open; see acceptance doc.
+
+
+### 2026-10-15 — SEARCH-WORKLOAD-PAIR-01：真实网络搜索验证
+
+五个新页面会话均 canonical completed / transient_v2 / Flash high，实际4–6轮主模型、
+6–10工具、每轮一个sandbox；包括3次失败抓取后的替代路径。最近Context固定工作
+531→415启动cursor calls、76→66连接仍成立；整轮41.926–66.832s和3,713–5,467
+Worker范围SQL调用暴露复杂任务尚未解决。优化组没有证明整体提速，首段过程说明
+与实际带官方来源答案分开记录。工具串行、搜索命中/长文截断、控制读取和checkpoint
+为后续窄切片；本次仅验收，无生产源码更改或旧fixture修复。正常镜像/六份Compose/
+入口/命令与26源hash恢复核对。详见docs/CLOUD_SEARCH_WORKLOAD_ACCEPTANCE.md；
+完整系统SQL80、稳定分布、STOP/GC仍未通过。仅本地集成，不推送/远端部署。
