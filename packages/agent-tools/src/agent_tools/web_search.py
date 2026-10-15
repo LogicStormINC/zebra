@@ -37,9 +37,10 @@ web_search_contract = ToolContract(
             "maxLength": MAX_WEB_SEARCH_QUERY_CHARS,
             "description": (
                 "The bounded search query. For SearXNG, select one engine with "
-                "!bing (default), !sogou, !360so or !sogouw "
+                "!yh, !bing, !sogou, !360so or !sogouw "
                 "(public WeChat articles), e.g. !sogouw 人工智能. Select engines "
-                "separately; CAPTCHA/empty results do not prove no matching content."
+                "separately; unprefixed queries use the deployment default. "
+                "CAPTCHA/empty results do not prove no matching content."
             ),
         },
         "limit": {

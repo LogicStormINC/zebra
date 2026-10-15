@@ -14882,3 +14882,19 @@ mypy原有9项未扩修。无模型/页面配对、无新增SQL/耗时收益主�
 原d9d84e3c/APIc0b/搜索245b675f及配置不变，31hash/六Compose正常入口核对；自有
 隔离容器/卷/临时secret移除。报告docs/CLOUD_SEARCH_PROVIDER_QUALITY_ACCEPTANCE.md。
 仅本地集成，保留27条脏改动；不推送/远端部署/改业务库。
+
+
+### 2026-10-15 — SEARCH-FREE-PROVIDER-01
+
+四个额外已安装免费原生候选：Yep空、Qwant验证码、Mwmbl超时，Yahoo命中具体公告。
+源码发现Mojeek/Startpage自动解验证码而不执行。Yahoo中英文/独立Python源/域限定六项
+通过；直连超时，标准容器HTTPS_PROXY下冷实例六过(首2.643s，后0.764–1.291s)。
+最小settings启用Yahoo唯一默认、Bing显式保留；工具描述不写死默认，新增!yh说明。
+本机出口仅原service.env的HTTPS_PROXY/NO_PROXY，不入可移植源码或Trench，无新依赖。
+3检查红→绿，72相关过；Ruff排除私有.artifacts、mypy1278/eval30/文件门过。原TLS
+入口operator两条ready且命中来源。新真实高/v2配对33.898→28.451s、模型4→3/工具6→5、
+搜索4→2、Worker显式SQL3246→2738；只报本次观察16.1%/15.7%，不冒充稳定分布/系统
+SQL80%。实际首轮候选从首页/教程变具体公告；两路并行及启动415SQL/66连接保留。
+正常Worker d6b72027/APIc0b不变、32hash/六Compose；搜索245b675f/正常一Compose和
+主checkout配置、原envfile已核对；trace/观察器/自有隔离容器卷/临时secret撤除。
+报告docs/CLOUD_FREE_SEARCH_PROVIDER_ACCEPTANCE.md；本地集成，保留27脏改动，不推送。

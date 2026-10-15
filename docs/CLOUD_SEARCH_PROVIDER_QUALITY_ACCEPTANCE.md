@@ -1,5 +1,8 @@
 # Cloud 搜索通道质量排查与验收修复
 
+> 2026-10-15 续轮：已验证并本地接入免费的原生Yahoo通道，当前默认引擎及实际页面
+> 配对结果见 [新验收报告](CLOUD_FREE_SEARCH_PROVIDER_ACCEPTANCE.md)。下文保留此前排查快照。
+
 日期：2026-10-15。任务 SEARCH-PROVIDER-QUALITY-01，起点fc3c9c42。
 
 ## 当前结论与交付边界
