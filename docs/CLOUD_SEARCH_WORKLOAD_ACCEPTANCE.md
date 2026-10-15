@@ -148,3 +148,12 @@ pg_stat_statements 总量或完整系统查询数。连接数为 TaskIoConnectio
 安全摘录、原始分组指标、失败回执摘要、截图、版本切换与 normal-restored.safe.json。
 collect.py / metrics.py 可重新核算已生成新会话的记录，trace 文件按精确 Session 过滤。
 文档仅汇总诊断结果，不提交私有日志、浏览器内容、身份或连接配置。
+
+
+## 后续实施：WEB-READ-PARALLEL-01
+
+第一步两路内置Web只读并行已在本地正常入口激活，详见
+[并行验收](CLOUD_WEB_READ_PARALLEL_ACCEPTANCE.md)。受控四请求中位最终1211→610ms；
+四个新真实搜索样本验证网络峰值1→2、启动415 SQL/66连接保留，整轮与SQL尚未改善。
+旧版55.102/64.937s、并行版64.294/62.453s；路径不同，不作整体因果收益声明。
+后续控制查询、检索质量、checkpoint仍按独立切片处理，未在本次顺带修改。

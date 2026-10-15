@@ -10,8 +10,11 @@ under the file-size gate.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
+from threading import BoundedSemaphore
 
+from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.domain.web import WebTarget, WebTargetError, parse_web_target
 from agent_storage.web_resource import SQLiteWebResourceStore, WebResourceStoreAdapter
 from agent_tools import ToolRegistry
@@ -36,6 +39,8 @@ from agent_tools.web_search import WebSearchTool, WebSearchTransport
 from agent_runtime.crawl_gateway import Crawl4AIFetchProvider, CrawlGateway, is_crawl4ai_available
 from agent_runtime.fetch_providers import LocalHttpFetchProvider
 from agent_runtime.search_providers import SearXNGSearchProvider
+from agent_runtime.web_gateway import LocalWebGatewayTransport
+from agent_runtime.web_search import LocalWebSearchTransport
 
 
 def register_web_tools(
@@ -81,12 +86,28 @@ def register_web_tools(
         if network_cancellation_check is not None
         else {}
     )
+    # ponytail: two network handlers per gateway/attempt; fleet-wide admission is separate.
+    slots = BoundedSemaphore(2)
+
+    def register(tool: WebFetchTool | WebSearchTool, *, parallel_safe: bool) -> None:
+        if not parallel_safe:
+            registry.register(tool.contract, tool.handle)
+            return
+
+        def handle(call: ToolCall) -> ToolResult:
+            with slots:
+                return tool.handle(call)
+
+        registry.register(replace(tool.contract, parallel_safe=True), handle)
+
     fetch_transport = web_gateway_transport or fetch_factory(
         use_system_proxy=trusted_local, **cancel_options
     )
     if "web.fetch" in enabled_names:
         tool = WebFetchTool(fetch_transport, max_output_bytes=max_output_bytes)
-        registry.register(tool.contract, tool.handle)
+        register(tool, parallel_safe=(
+            web_gateway_transport is None and type(fetch_transport) is LocalWebGatewayTransport
+        ))
     if search_endpoint is not None and "web.search" in enabled_names:
         search_transport = web_search_transport or search_factory(
             use_system_proxy=trusted_local,
@@ -98,7 +119,9 @@ def register_web_tools(
             ),
         )
         search = WebSearchTool(endpoint=search_endpoint, transport=search_transport)
-        registry.register(search.contract, search.handle)
+        register(search, parallel_safe=(
+            web_search_transport is None and type(search_transport) is LocalWebSearchTransport
+        ))
 
 
 def optional_web_search_endpoint(

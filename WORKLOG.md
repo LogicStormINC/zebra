@@ -14823,3 +14823,18 @@ Worker cursor调用，不声称全系统或v1/v2收益。查明当前Web契约�
 仅写验收报告，未顺带改生产并发/控制逻辑或旧测试。恢复376b20dd/c0b8e9dc原
 六份Compose、entrypoint/command、healthy与26源hash。证据在私有
 .artifacts/search-workload-20261015；报告docs/CLOUD_SEARCH_WORKLOAD_ACCEPTANCE.md。
+
+
+### 2026-10-15 — WEB-READ-PARALLEL-01
+
+用户授权先实施第一步。仅改runtime/web_tools注册与core/concurrent_batch线程上下文，
+不改50ms控制检查/搜索策略/checkpoint/Host/SDK。精确内置transport两路共享上限，
+复用执行器；自定义transport不默认安全，结果仍按provider序持久化。最初5测试3红2绿
+到5绿，最终另2注入保护通过，111相关通过/2跳过/1未选。makecheck扫描私有诊断脚本Ruff失败；排除后
+Ruff、mypy1278、eval30、文件门通过，保留边界。受控四输入三次中位最终1211.2→610.2ms，
+实际ABBA四Run均v2/high/completed，各一sandbox；网络峰值A1/A2=1、B1/B2=2。
+完成55.102/64.937s vs64.294/62.453s；SQL5127/5667 vs6052/6449，路径/轮数不同，
+不声称总体提速。全部失败事件保留；并行trace以JSON解码恢复拼接，无重跑筛选。
+正常b9f1e732 Worker/API不变已激活，28源hash与原六Compose/入口命令核对。浏览器
+原结果重新加载成功，无旧Run重放；临时trace与观察器撤除。报告见
+docs/CLOUD_WEB_READ_PARALLEL_ACCEPTANCE.md，私有证据.artifacts/web-read-parallel-20261015。

@@ -6130,3 +6130,16 @@ Worker范围SQL调用暴露复杂任务尚未解决。优化组没有证明整�
 为后续窄切片；本次仅验收，无生产源码更改或旧fixture修复。正常镜像/六份Compose/
 入口/命令与26源hash恢复核对。详见docs/CLOUD_SEARCH_WORKLOAD_ACCEPTANCE.md；
 完整系统SQL80、稳定分布、STOP/GC仍未通过。仅本地集成，不推送/远端部署。
+
+
+### 2026-10-15 — WEB-READ-PARALLEL-01
+
+两文件最小实现：精确内置search/fetch注册为parallel_safe，共享每attempt两路信号量；
+自定义/subclass/nativeWebv2及其他工具配置保持原状。既有executor每次submit复制
+独立Context，保留deadline，现有线程保护拒绝跨线程父DB连接。5新检查红→绿，另2注入保护检查通过，
+111聚焦通过/2跳过/1未选，mypy1278/eval30和排除私有.artifacts后的Ruff通过；
+makecheck原命令因扫描未跟踪诊断脚本失败，未修无关文件。受控四个300ms输入
+中位最终1211→610ms(49.62%)；四个真实v2/high联网Run均完成，网络峰值1→2、启动
+415 SQL/66连接不变。整轮55–65s、SQL5127–6449，未证明总体提速或SQL降低。
+正常Workerb9f1e732/APIc0b8e9dc、原六份Compose/入口/命令/28源hash已核对。
+详见docs/CLOUD_WEB_READ_PARALLEL_ACCEPTANCE.md。第2步控制SQL及STOP/GC仍未通过。

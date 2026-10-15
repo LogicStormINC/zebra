@@ -1,6 +1,7 @@
 from collections import Counter
 from collections.abc import Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextvars import copy_context
 from dataclasses import dataclass
 
 from agent_core.domain.events import EventActor, EventType
@@ -297,7 +298,8 @@ class ConcurrentToolBatchExecutor:
     def _execute_all(self, tool_calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
         with ThreadPoolExecutor(max_workers=self._max_parallel_tool_calls) as executor:
             futures = [
-                executor.submit(execute_observed, self._tool_gateway, call) for call in tool_calls
+                executor.submit(copy_context().run, execute_observed, self._tool_gateway, call)
+                for call in tool_calls
             ]
         return tuple(
             _future_result(call, future) for call, future in zip(tool_calls, futures, strict=True)
