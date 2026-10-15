@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
@@ -18,6 +19,7 @@ from agent_core.domain.identifiers import SessionId
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.ports.projection_store import ProjectionStorePort
 from agent_storage import ControlPlaneStores, LeaseConflictError, PostgresControlPlaneStores
+from psycopg import OperationalError
 from pydantic import ValidationError
 
 from zebra_agent_worker.client_effect_continuation import pending_client_effect_ids
@@ -32,6 +34,8 @@ from zebra_agent_worker.resume import SessionResumeError
 
 if TYPE_CHECKING:
     from zebra_agent_worker.execution import SessionExecutionService
+
+logger = logging.getLogger(__name__)
 
 
 class _SessionControl(Protocol):
@@ -83,20 +87,29 @@ class SessionCommandConsumer:
         batch_size: int = 1,
     ) -> CommandConsumption:
         limit = min(500, max(1, batch_size * 8))
-        sessions = (
-            self._command_sessions(limit, self._scan_after)
-            if self._command_sessions is not None
-            else self._projection_store.list_recent_sessions(limit=limit)
-        )
+        try:
+            sessions = (
+                self._command_sessions(limit, self._scan_after)
+                if self._command_sessions is not None
+                else self._projection_store.list_recent_sessions(limit=limit)
+            )
+        except (TimeoutError, OperationalError) as exc:
+            logger.warning("Command candidate read deferred: %s", type(exc).__name__)
+            return CommandConsumption(None, None, "deferred", "candidate_read_unavailable")
         if not sessions:
             self._scan_after = None
         skipped = None
         for session in sessions:
-            # Advance even on failure; durable intents remain available on the next sweep.
+            previous = self._scan_after
             self._scan_after = session.session_id
-            command_event = self._next_command(
-                session.session_id, session.current_sequence, session.status
-            )
+            try:
+                command_event = self._next_command(
+                    session.session_id, session.current_sequence, session.status
+                )
+            except (TimeoutError, OperationalError) as exc:
+                self._scan_after = previous
+                logger.warning("Command event read deferred: %s", type(exc).__name__)
+                return CommandConsumption(None, None, "deferred", "command_read_unavailable")
             if command_event is None:
                 continue
             try:

@@ -6344,3 +6344,8 @@ budget edits. SourceRuff/mypy1283/size3088/eval30 pass. NormalAPI/Worker running
 zero restarts at receipt,62sourceidentities/sixCompose/search verified. User foreground/reconnected
 browser again, controls still time out/native wrong window; no post-fix model Run or page A/B yet.
 Local integration only; docs/CLOUD_RESOLVER_STARTUP_ACCEPTANCE.md has precise proof boundary.
+
+
+### CATALOG-ADMISSION-AVAILABILITY-01 (2026-10-16)
+
+Fixed local catalog admission false unavailability: extension GET/public-key warmup have bounded5s aligned with the existing key fetch; execution/write admission and per-connection TaskIO remain2s. Worker read-only discovery transient failures defer without losing cursor/intent or replaying effects. Real signed catalog3x503→3x200, nonce replays403;44focused+nativeTLS pass, Ruff/mypy1283/size3088/eval30 pass. Two baseline Redis fixture failures explicitly retained. NormalAPI50810e64/Worker017aae18 and63source identities/config/search verified; no model or oldRun replay. Local cloud-agent-trench integration/activation only. See docs/CLOUD_CATALOG_AVAILABILITY_REPAIR.md.

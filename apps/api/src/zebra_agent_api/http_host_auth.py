@@ -42,8 +42,17 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 HOST_PREFLIGHT_SECONDS = 2.0
+HOST_CATALOG_READ_SECONDS = 5.0
 # Covers existing base64 image/document aggregate limits, including JSON overhead.
 MAX_HOST_REQUEST_BYTES = 64 * 1024 * 1024
+
+
+def host_authorization_seconds(method: str, path: str) -> float:
+    return (
+        HOST_CATALOG_READ_SECONDS
+        if method == "GET" and is_extension_path(path)
+        else HOST_PREFLIGHT_SECONDS
+    )
 
 
 @dataclass(frozen=True)
@@ -194,7 +203,7 @@ async def authorize_request(
     if error is not None:
         return error
     assert host_grant_authorizer is not None
-    deadline = monotonic() + HOST_PREFLIGHT_SECONDS
+    deadline = monotonic() + host_authorization_seconds(request.method, path)
     request.state.authorization_deadline = deadline
     body = None
 

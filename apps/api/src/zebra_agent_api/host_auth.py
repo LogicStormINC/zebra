@@ -26,6 +26,7 @@ from agent_storage import HostGrantAttempt, HostRegistryRecord, PostgresHostAuth
 from agent_storage.postgres.task_io import TaskIoConnections, task_io_deadline
 
 from zebra_agent_api.http import HostGrantHttpRequest, HostGrantRequestAuthorizer
+from zebra_agent_api.http_host_auth import HOST_CATALOG_READ_SECONDS, host_authorization_seconds
 
 _DEFAULT_REQUIRED_SCOPES = ("agent.run",)
 logger = logging.getLogger(__name__)
@@ -55,19 +56,19 @@ async def warm_host_grant_keys(authorizer: HostGrantRequestAuthorizer | None) ->
     resolver = authorizer.decoder.key_resolver
     if not isinstance(resolver, CachingJwksKeyResolver):
         return
-    deadline = monotonic() + 2
+    deadline = monotonic() + HOST_CATALOG_READ_SECONDS
 
     def warm() -> None:
         with task_io_deadline(deadline):
             records = authorizer.registry.list_registries()
             uris = dict.fromkeys(record.jwks_uri for record in records if record.active)
-            # ponytail: at most the existing 32-keyset cache, within one 2s startup
+            # ponytail: at most the existing 32-keyset cache, within one 5s startup
             # budget. Other Hosts use ordinary request misses; no background work.
             for uri in tuple(uris)[:32]:
                 resolver.prefetch(uri, deadline=deadline)
 
     try:
-        async with asyncio.timeout(2):
+        async with asyncio.timeout(HOST_CATALOG_READ_SECONDS):
             await asyncio.to_thread(warm)
     except Exception as exc:
         logger.warning("Host signing-key warmup unavailable: %s", type(exc).__name__)
@@ -98,7 +99,8 @@ class PostgresHostGrantRequestAuthorizer(HostGrantRequestAuthorizer):
             type(supplied) not in (int, float) or not math.isfinite(supplied)
         ):
             raise HostGrantBindingError("Host Grant deadline is invalid")
-        deadline = min(supplied, monotonic() + 2) if supplied is not None else monotonic() + 2
+        maximum = monotonic() + host_authorization_seconds(request.method, request.path)
+        deadline = min(supplied, maximum) if supplied is not None else maximum
         with task_io_deadline(deadline):
             try:
                 # Unverified claims are bounded lookup hints, never authority.

@@ -15070,3 +15070,8 @@ Browser user foreground/reconnected again; getTab timed out, native path still b
 instead of user Trench. No further model request dispatched; actual high/v2 page pair remainsopen.
 LocalFFauthorized targetcloud-agent-trench; integration receipt preserves original27dirtyentries.
 No push/npm/remote deployment, oldRun replay, newdep/cache/pool/schema or unrelatedfixture repair.
+
+
+### CATALOG-ADMISSION-AVAILABILITY-01 incident repair (2026-10-16)
+
+User reported temporary unavailability. Failed Run3b49833c had no Cloud binding/model; catalog503 followed2sHost timeout while actual cold key fetch took1.65–4.09s. Applied only5sGETcatalog/keywarmup budget and guarded candidate/event reads; all write/execution timeouts still escape. Red8fail/3pass; final44focused pass, isolated nativeTLS pass; existing two Redis fixture failures reproduced on primary, left untouched. Real configured workload/Broker probe3x503/~2.1s→3x200/593.2,233.3,107.8ms; reuse403. Replaced normal API/Worker after zero-active-turn guard;63source hashes plus originalsixCompose/env/entrypoints/commands/search verified. No model, oldRun replay, migration, push/npm/remote deployment. Full suite/page-model acceptance not claimed. Branch codex/catalog-admission-availability-01, base4b151251; local FF preserves unrelated dirty work.
