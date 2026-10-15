@@ -15011,3 +15011,26 @@ Native red confirmed2SQL; changed identity+metadata into one statement using ori
 and timing differ, so no full-run or stable first-body speedup claim. Source quality/eval30pass.
 Normal images updated only shared source,56hash/sixCompose/search verified; no trace or observers,
 no unrelated fixture fixes/oldRun replay/push/npm/remote deploy. Acceptance doc records all data.
+
+## 2026-10-15 INPUT-READ-BATCH-01
+
+Claimed one input preparation slice basedce2fe3e on codex/input-read-batch-01 before coding.
+Classified prior65startup sockets; first inputs21 and Context refresh12cost147.5ms of connects.
+Red4sockets vs target2; reused existing native short RR/key/header/head, no new cache/pool/type.
+Added same database/namespace guard after focused review and native red; custom/legacy fallback.
+Final40AB/BA pairs4→2sockets,7→6SQL,323.778→187.520ms; same exact facts and finalfresh reads.
+First benchmark deadline failed under load, retained; no production deadline changes. New7cases
+firstpass89.32s; final9case run8pass+one2sdeadline, isolated interleaved-case pass15.34s. Existing
+28targeted pass113.70s/7deselected; hugeSQLite case70.04s also fails baseline60slease, unmodified.
+An earlier broad focused attempt was interrupted after repeated timing failures; no full gate claim.
+Ruff/mypy1283/filelimits3087/eval30 pass. Browser reconnected by user; get/claim/reload/new-tab
+still Debugger unattached/timeouts. No fresh model Run or oldRun replay; page A/B not accepted.
+Prepared final source-only images against actual current normal images and sixCompose snapshot.
+Next boundary: normal hashes/health and localFF receipt below; then one fresh high/v2 public
+search pair after browser controls recover. No unrelated test repair, push/npm/remote deployment.
+
+Final normal receipt: API/Worker healthy, final3source files match built image checksums;
+60role/source identities retain prior gains, exact original sixCompose/entrypoints/commands
+and unchanged search image/settings/proxy verified. No trace launcher was activated this slice.
+LocalFF is authorized tocloud-agent-trench; integration helper preserves all27dirty entries
+and append-only hotdoc suffixes. Browser/page pair remains pending, not a backend regression.

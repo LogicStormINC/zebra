@@ -6308,3 +6308,17 @@ New real high/v2 search A1/B1 Worker startup412→404SQL,65connections unchanged
 Normal API/Worker/56sourceidentities and unchanged six-file/search composition verified.
 One-function SQL optimization only; full startup/first-body goal remains open. Details:
 docs/CLOUD_LATEST_RUN_READ_ACCEPTANCE.md. No push/npm/remote deploy or oldRun replay.
+
+## 2026-10-15 INPUT-READ-BATCH-01 backend acceptance; page pair pending
+
+Generic Cloud execution-input preparation now shares only its initial membership/header/head
+reads in one bounded native readonly RR snapshot. Final Task reads and post-commit refreshes
+remain fresh; SQLite/legacy/custom and different database/namespace compositions fall back.
+Fixed native40AB/BA pairs4→2connections,7→6SQL,323.778→187.520ms (-42.1%) in a loaded local
+environment; not a whole-Worker/first-body percentage. 28targeted regressions pass; final new
+suite8pass+1deadline timeout, isolated interleaving rerun passes; all9behavior cases evidenced.
+Old baseline reproduces large SQLite fixture60slease failure; no unrelated fixture repairs.
+Source Ruff/mypy1283/size/eval30 pass. Backend source-only local images prepared/activated;
+final hash/normal service receipt in WORKLOG. Browser user reconnected but controls still
+Debugger unattached/time out, so no new model Run and actual page pairing remains open.
+See docs/CLOUD_INPUT_READ_BATCH_ACCEPTANCE.md; local integration only, no push/npm/remote deploy.

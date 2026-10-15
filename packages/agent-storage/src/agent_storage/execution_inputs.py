@@ -27,6 +27,7 @@ from agent_core.ports.task_projection_checkpoints import (
     CheckpointNotReady,
     CheckpointStale,
 )
+from agent_core.ports.task_replay import TaskReadHeader
 
 from agent_storage.postgres.task_io import current_task_io_deadline
 from agent_storage.worker_progress import WorkerProgressStoreMixin
@@ -74,6 +75,31 @@ class ExecutionInputStore(WorkerProgressStoreMixin):
     @property
     def namespace(self) -> str:
         return self._namespace
+
+    def read_preparation(
+        self, lease: WorkerLease, tasks: AgentTaskPort
+    ) -> tuple[TaskReadHeader, ExecutionInputHead] | None:
+        task_database = getattr(tasks, "_database", None)
+        if (
+            not self._progress_postgres
+            or type(self) is not ExecutionInputStore
+            or tasks is not self._tasks
+            or not getattr(tasks, "stream_head_reads_compatible", False)
+            or getattr(task_database, "_dsn", None) != self._database._dsn
+            or getattr(task_database, "deployment_namespace", None) != self.namespace
+            or getattr(self.read, "__func__", self.read) is not ExecutionInputStore.read
+        ):
+            return None
+        from agent_storage.postgres.agent_tasks import read_task_header
+
+        # ponytail: share only initial pure reads; never retain this snapshot
+        # across progress commits or replace the Worker's fresh final header.
+        with self._progress_connection() as connection:
+            key = self._key(lease, connection)
+            header = read_task_header(connection, self._namespace, TaskId(UUID(key[1])))
+            if header is None or header.active_segment_id != lease.session_id:
+                raise CheckpointNotReady("execution inputs require current Task Segment")
+            return header, self._head(connection, key)
 
     @contextmanager
     def _progress_connection(self, *, write: bool = False) -> Iterator[Any]:

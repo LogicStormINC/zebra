@@ -14,7 +14,8 @@ from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.leases import WorkerLease
 
 if TYPE_CHECKING:
-    from agent_core.ports.agent_tasks import TaskEvent, TaskEventPage
+    from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent, TaskEventPage
+    from agent_core.ports.task_replay import TaskReadHeader
 
 MAX_INPUT_BYTES = 1_048_576
 MAX_INPUT_EVENTS = 2048
@@ -424,6 +425,12 @@ class ExecutionInputPort(Protocol):
     def namespace(self) -> str: ...
 
     def read(self, lease: WorkerLease) -> ExecutionInputHead: ...
+
+    def read_preparation(
+        self, lease: WorkerLease, tasks: AgentTaskPort
+    ) -> tuple[TaskReadHeader, ExecutionInputHead] | None:
+        """Optional initial read snapshot; None selects independent legacy reads."""
+        ...
 
     def advance(self, lease: WorkerLease, page: TaskEventPage) -> ExecutionInputHead: ...
 

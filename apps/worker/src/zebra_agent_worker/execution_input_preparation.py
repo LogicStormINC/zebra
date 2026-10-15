@@ -36,13 +36,21 @@ def recover_execution_input_events(
         with task_io_deadline(deadline):
             if ownership_check is not None:
                 ownership_check()
-            task_id = tasks.task_id_for_session(lease.session_id)
-            if task_id is None:
-                raise CheckpointNotReady("execution inputs require indexed Task identity")
-            header = tasks.read_task_header(task_id)
+            read_preparation = getattr(store, "read_preparation", None)
+            prepared = read_preparation(lease, tasks) if callable(read_preparation) else None
+            if prepared is None:
+                task_id = tasks.task_id_for_session(lease.session_id)
+                if task_id is None:
+                    raise CheckpointNotReady("execution inputs require indexed Task identity")
+                header = tasks.read_task_header(task_id)
+                if header is None or header.active_segment_id != lease.session_id:
+                    raise CheckpointNotReady("execution inputs require current Task Segment")
+                head = store.read(lease)
+            else:
+                header, head = prepared
+                task_id = header.task_id
             if header is None or header.active_segment_id != lease.session_id:
                 raise CheckpointNotReady("execution inputs require current Task Segment")
-            head = store.read(lease)
             if head.through_sequence > header.current_sequence:
                 raise ValueError("execution input frontier exceeds canonical Task")
             for _ in range(max_pages):
