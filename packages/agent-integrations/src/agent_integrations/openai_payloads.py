@@ -300,12 +300,8 @@ def _provider_reasoning_content(
         return None
     if not isinstance(value, str):
         raise ValueError("DeepSeek reasoning_content must be a string")
-    if not value.strip():
-        if required:
-            # DeepSeek requires the exact returned field to be replayed. Its API
-            # can return an empty string for a valid thinking-mode tool call.
-            return value
-        return None
+    # Empty reasoning is still a returned field, including non-tool candidates.
+    # Same-turn quality revisions must replay it exactly like tool-call reasoning.
     return value
 
 

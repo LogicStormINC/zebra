@@ -6086,3 +6086,7 @@ Three Worker execution phases reuse existing same-DSN address cache while retain
 ### First-body latency local activation and acceptance boundary 2026-10-15
 
 Core source commits locally integrated and normal Worker/API restored; defer_provision=true in normal local env.40 real requests:20pure all1round/0tool, lazy pure0OCI;20sandbox each1actualcommand/1instance, all resources removed. Current-source flag comparison pre-model-event median3513.37→1811.73ms(-48.43%). Full make check and5npm verify pass. Trench draft adapter2aff921 fixes hidden provisional body (19tests), but Chrome connection blocks post-fix real DOM acceptance. Canonical35/40complete;5existing quality-revision Provider400 also present with eager, root response-body evidence unavailable. Core implementation is not fullE2E acceptance. STOP/fullSQL80 unchanged. See acceptance doc/runbook for exact next checks.
+
+### Focused quality and Provider repair 2026-10-15
+
+QUALITY-PROVIDER-REPAIR-01 fixes ambiguous bare 报告 forcing long structured output, and preserves exact empty DeepSeek reasoning for same-turn SYSTEM quality revisions. Controlled actual Provider pair: missing field400/present empty200; full real gateway completions pass stream/nonstream.71 focused regressions and make check pass. Normal local Worker updated,17 source hashes verified including all15 latency files; lazy flag/API unchanged. Final real-page DOM acceptance remains open due browser control timeouts after reconnect; no original Run replay or unrelated fixture work. See CLOUD_FIRST_BODY_LATENCY_ACCEPTANCE.md.

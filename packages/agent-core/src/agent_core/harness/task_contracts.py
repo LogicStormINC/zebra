@@ -49,11 +49,13 @@ def infer_task_contract(user_input: str) -> TaskAcceptanceContract:
         and max_characters <= 500
         and _contains_any(lowered, ("一段", "摘要", "paragraph", "summary"))
     )
+    # ponytail: 报告 also means reporting a result; it cannot alone mandate
+    # document length/structure. Explicit format hints and Host contracts remain authoritative.
     deliverable = _contains_any(
         lowered,
-        ("报告", "文章", "研判", "markdown", "详细", "完整", "方案", "计划", "detailed"),
+        ("文章", "研判", "markdown", "详细", "完整", "方案", "计划", "detailed"),
     )
-    structured = _contains_any(lowered, ("报告", "markdown", "方案", "计划", "分点", "列表"))
+    structured = _contains_any(lowered, ("markdown", "方案", "计划", "分点", "列表"))
     evidence = _contains_any(
         lowered,
         ("证据", "来源", "引用", "链接", "验证", "evidence", "source", "citation", "verify"),

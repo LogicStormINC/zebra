@@ -464,3 +464,16 @@ def test_explicit_resource_identity_prevents_cross_namespace_verification() -> N
     assert needs_post_mutation_verification(
         versioned, read_only_tools=frozenset({"sources.get_status"})
     )
+
+
+def test_reporting_a_tool_result_does_not_impose_a_document_contract() -> None:
+    prompt = '请实际调用 command.run 执行 python -c "print(1+1)"，然后只报告输出。'
+    contract = infer_task_contract(prompt)
+    assert contract.min_characters == 1
+    assert not contract.require_structure
+    assert evaluate_answer(prompt, "2", contract=contract).passed
+    explicit = parse_task_contract(
+        {"minCharacters": 160, "requireStructure": True}, fallback_goal=prompt
+    )
+    assert not evaluate_answer(prompt, "2", contract=explicit).passed
+    assert not evaluate_answer("请生成详细的 markdown 报告", "2").passed
