@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import gzip
+import io
 import json
 import math
 import os
@@ -9,6 +11,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
+import zlib
 from collections.abc import Callable
 from contextlib import redirect_stdout
 from dataclasses import asdict
@@ -73,6 +76,7 @@ class LocalWebGatewayTransport:
             request.target.url,
             headers={
                 "Accept": "text/plain, text/html, application/json, application/xml",
+                "Accept-Encoding": "gzip",
                 "User-Agent": "Zebra-Agent-Web-Gateway/1.0",
             },
             method="GET",
@@ -285,6 +289,19 @@ def _read_bounded_body(response: HTTPResponse, maximum: int) -> bytes:
         raise WebGatewayError("web response exceeds the byte limit", reason="response_too_large")
     if content_length is not None and len(body) != int(content_length):
         raise WebGatewayError("web response body is incomplete", reason="response_incomplete")
+    if response.headers.get("Content-Encoding", "").strip().lower() == "gzip":
+        try:
+            # ponytail: buffer bounded wire bytes first, then cap decoded bytes too.
+            with gzip.GzipFile(fileobj=io.BytesIO(body)) as compressed:
+                body = compressed.read(maximum + 1)
+        except (OSError, EOFError, zlib.error) as exc:
+            raise WebGatewayError(
+                "compressed web response is incomplete", reason="response_incomplete"
+            ) from exc
+        if len(body) > maximum:
+            raise WebGatewayError(
+                "web response exceeds the byte limit", reason="response_too_large"
+            )
     return body
 
 

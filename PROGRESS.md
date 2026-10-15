@@ -6215,3 +6215,17 @@ eval30/文件门过。两次新高/v2页面首工具3110→249ms、首区间SQL1
 A1搜索失败一次，B1Redis博客抓取超时并增轮6/工具9，精确日期质量仍未完全验收。
 正常Worker c7a422d5/API与Yahoo不变、32hash/原六Compose正常入口；报告
 docs/CLOUD_WEB_RUNTIME_DEFER_ACCEPTANCE.md。只本地集成，保留27脏改动，不推送。
+
+
+### 2026-10-15 — WEB-FETCH-CONNECT-01
+
+旧Redis抓取10s父截止detail确认，但3次Redis/1次PG分段无模型复测未重现；不猜网络
+阶段。稳定导入850–901ms另记，TCP1–3ms/TLS345–474ms，原HTML1692922bytes。
+仅web_gateway.py新增gzip协商和wire/decoded双cap/完整性错误归一，10新回归红→绿，
+211相关通过；Ruff排除私有诊断/mypy1278/eval30/文件门通过。固定同页ABBA，HTML/
+投影hash全一致：wire1692922→418982(-75.25%)，正文659→398ms，进程2.272→2.086s。
+单次新高/v2页面44.413s/6模型/7成功handler，RedisGA抓取2469ms；另2次模型limit
+字符串被原类型边界拒绝，未扩修。SQL4412/连接998，启动415/66、并发2、0sandbox
+保留；不报gzip系统总收益或原偶发超时已解决。正常Worker7be67b5c/API与Yahoo不变，
+33hash/原六Compose入口复核；本地集成保留27脏改动，不推送。报告
+docs/CLOUD_WEB_FETCH_CONNECT_ACCEPTANCE.md；下一独立优先项为子进程包导入依赖。
