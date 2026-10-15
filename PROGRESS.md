@@ -6256,3 +6256,19 @@ Ruff排除私有诊断/mypy1282/eval30/文件门过。两次新高/v2页面30.32
 不报整体SQL收益。启动415/66、两路并发/0sandbox、gzip/导入/新鲜scalar保持。
 正常Worker b373f27d/API与Yahoo不变，42hash/原六Compose入口核对；本地集成保留
 27脏改动，不推送。报告docs/CLOUD_WEB_MODEL_LIMIT_ACCEPTANCE.md。
+
+
+### 2026-10-15 — WEB-PROGRESS-CATCHUP-01
+
+persist写入后catch_up紧接repair内catch_up；仅删除重复调用，写前/后仍各新鲜检查，
+锁/两秒累计预算/原子fence/CAS/未知提交恢复不变。新增真实checkpoint红[1,2,2]→
+绿[1,2]及提交后Run supersede拒绝。125相关过+2原生PG SQL/commit截止过；1既有
+缺Redis组合fixture失败在旧persist复现、不扩修；1专用TLS端点skip。Ruff排除私有
+诊断/mypy1282/eval30/文件门过。无模型PG相同24事件ABBA，SQL792→720(-9.1%)、
+新连接144→120、中位3599→3047ms。新高/v2真实配对均3模型/4工具/0失败/0sandbox，
+37append相同，catch_up97→66；Worker SQL2324→2204，指纹精确减少93去重SQL+
+27少轮询，连接499→441=31+27；总21.735→20.711s不全归因修复，首过程5.045→
+5.129s未改善。启动415/66→412/65；两路Web/导入/gzip/limit/新鲜控制保持。
+正常Worker5d086202/API与Yahoo不变，43hash/原六Compose入口核对；私有scratch/
+匿名卷/临时DSN清理，本地集成保留27脏改动，不推送。报告
+ docs/CLOUD_WEB_PROGRESS_CATCHUP_ACCEPTANCE.md。全系统SQL/稳定首正文目标仍未完成。

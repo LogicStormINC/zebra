@@ -133,9 +133,8 @@ class WorkerProgressRecovery:
                     accept_commentary(output, self.head.state.model_dump())
                 self.ownership_check()
                 sink(event)
-                # The canonical append owns truth. A failed checkpoint never
-                # authorizes replaying that append; the next recovery catches up.
-                self.catch_up()
+                # ponytail: repair starts with a fresh catch_up; do not repeat it.
+                # A failed checkpoint never authorizes replaying the canonical append.
                 repair_commentary(self, sink)
 
         return persist

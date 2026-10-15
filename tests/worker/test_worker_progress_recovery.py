@@ -204,3 +204,54 @@ def test_latest_run_identity_is_not_inferred_from_task_uuid(tmp_path):
     append_progress(events, scope, EventType.SESSION_COMMAND_ACCEPTED, command.event_payload())
     with pytest.raises(CheckpointNotReady, match="Run identity"):
         recover(tasks, scope)
+
+
+def test_persist_checks_latest_run_once_on_each_side_of_canonical_append(tmp_path, monkeypatch):
+    tasks, events, scope = seed_progress(tmp_path / "fresh-sides.sqlite")
+    restored = recover(tasks, scope)
+    read = tasks.read_latest_run_header
+    frontiers = []
+
+    def latest(task_id):
+        run = read(task_id)
+        frontiers.append(run.highwater)
+        return run
+
+    monkeypatch.setattr(tasks, "read_latest_run_header", latest)
+
+    def append(draft):
+        append_progress(events, scope, draft.event_type, draft.payload)
+
+    restored.persist_with(append)(
+        HarnessEventDraft(EventType.SESSION_TITLE_UPDATED, EventActor.HARNESS, {"title": "Fresh"})
+    )
+    assert frontiers == [1, 2]
+    assert restored.head == tasks.read_worker_progress(scope)
+    assert restored.head.through_sequence == 2
+    assert len(events.list_for_session(scope.task_id)) == 3
+
+
+def test_run_superseded_during_append_still_stops_post_append_repair(tmp_path):
+    tasks, events, scope = seed_progress(tmp_path / "superseded-during-append.sqlite")
+    restored = recover(tasks, scope)
+    calls = []
+
+    def append(draft):
+        calls.append(draft)
+        append_progress(events, scope, draft.event_type, draft.payload)
+        command = SessionCommand(
+            session_id=scope.task_id, kind=SessionCommandKind.RUN,
+            expected_revision=2, idempotency_key="replacement",
+            payload={"run_id": "replacement"},
+        )
+        append_progress(events, scope, EventType.SESSION_COMMAND_ACCEPTED, command.event_payload())
+
+    with pytest.raises(ExecutionInterrupted, match="superseded"):
+        restored.persist_with(append)(
+            HarnessEventDraft(
+                EventType.SESSION_TITLE_UPDATED, EventActor.HARNESS, {"title": "Committed"}
+            )
+        )
+    assert len(calls) == 1
+    assert restored.head.through_sequence == 1
+    assert tasks.read_latest_run_header(scope.task_id).run_id == "replacement"
