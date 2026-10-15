@@ -6229,3 +6229,16 @@ docs/CLOUD_WEB_RUNTIME_DEFER_ACCEPTANCE.md。只本地集成，保留27脏改动
 保留；不报gzip系统总收益或原偶发超时已解决。正常Worker7be67b5c/API与Yahoo不变，
 33hash/原六Compose入口复核；本地集成保留27脏改动，不推送。报告
 docs/CLOUD_WEB_FETCH_CONNECT_ACCEPTANCE.md；下一独立优先项为子进程包导入依赖。
+
+
+### 2026-10-15 — WEB-CHILD-IMPORT-01
+
+四包入口按需加载原聚合，四份原导出模块逐字搬移、505公共名称/身份/import*保持。
+7项新进程红→绿，235相关原生安全/Worker检查+32实际包级MCP调用点通过，Ruff排除
+私有诊断/mypy1282/eval30/文件门通过。无网络同约束各3进程Web导入901→260ms、
+搜索933→261ms，模块1241→257/262；真实原生同页Redis2397→1596ms、PG2571→1628ms
+且投影hash一致。两次新高/v2页面27.167→24.318s、官方链接26.010→23.116s，模型
+均4轮；候选另2参数类型失败、少1实际搜索，不能全归因导入。总SQL2863→2892反增29，
+连接660→562；启动415/66、并发2、0sandbox保持，不报系统SQL80或稳定3s。正常Worker
+4a1c78ad/API与Yahoo不变，41hash/原六Compose入口核对。本地集成保留27脏改动，
+不推送。报告docs/CLOUD_WEB_CHILD_IMPORT_ACCEPTANCE.md；模型limit字符串损耗另查。

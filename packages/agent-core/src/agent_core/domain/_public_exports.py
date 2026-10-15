@@ -1,0 +1,401 @@
+"""Domain models for Zebra Agent."""
+
+from agent_core.domain.agent_capabilities import (
+    Capability,
+    GrantScope,
+    capability,
+    capability_set,
+    grant_scope,
+    grant_scope_set,
+    intersect_capabilities,
+)
+from agent_core.domain.agent_definition_drafts import (
+    AgentDefinitionDraft,
+    AgentDefinitionDraftValidation,
+    AgentDraftValidationIssue,
+    AgentDraftValidationStatus,
+)
+from agent_core.domain.agent_definitions import (
+    AgentDefinition,
+    AgentDefinitionScope,
+    AgentDefinitionVersion,
+    AgentRelease,
+    AgentReleaseStatus,
+    AgentReleaseTransitionError,
+    canonical_agent_definition_digest,
+)
+from agent_core.domain.agent_tasks import (
+    AgentTask,
+    ContextLifecycleController,
+    ContextLifecycleDecision,
+    ContextLifecycleSignals,
+    ExecutionSegment,
+    RolloverReason,
+    SegmentVisibility,
+)
+from agent_core.domain.artifact_access import (
+    ArtifactAccessClass,
+    ArtifactAccessDescriptor,
+)
+from agent_core.domain.artifact_objects import (
+    ArtifactObjectCleanupEvidence,
+    ArtifactObjectConflictError,
+    ArtifactObjectDeleteRequest,
+    ArtifactObjectDeleteResult,
+    ArtifactObjectDeleteStatus,
+    ArtifactObjectExpectation,
+    ArtifactObjectIntegrityError,
+    ArtifactObjectNotFoundError,
+    ArtifactObjectPutRequest,
+    ArtifactObjectReceipt,
+    ArtifactObjectUnavailableError,
+    ArtifactObjectVerification,
+    ArtifactObjectVerificationStatus,
+)
+from agent_core.domain.artifact_payloads import (
+    ArtifactPayloadInspection,
+    ArtifactPayloadLifecycleStatus,
+    ArtifactPayloadStatus,
+    ArtifactPayloadWrite,
+    StoredArtifactPayload,
+)
+from agent_core.domain.artifact_retention import (
+    ArtifactRetentionPolicy,
+    ArtifactRetentionProfile,
+)
+from agent_core.domain.artifacts import ArtifactRef
+from agent_core.domain.attachments import (
+    AttachmentContextInput,
+    SessionAttachmentRef,
+    TextAttachmentInput,
+)
+from agent_core.domain.clarifications import ClarificationContext
+from agent_core.domain.client_capabilities import (
+    ClientActionContract,
+    ClientActionRisk,
+    ClientCapabilityError,
+    ClientComponentContract,
+    ClientReadableContract,
+    FrontendCapabilityProfileVersion,
+    MountedCapabilitySnapshot,
+    ProfileLifecycle,
+)
+from agent_core.domain.client_effects import (
+    CLIENT_EFFECT_TERMINAL_STATUSES,
+    ClientEffectContinuation,
+    ClientEffectReceipt,
+    ClientEffectRequest,
+    ClientEffectStatus,
+)
+from agent_core.domain.client_run_bindings import (
+    ClientRunBinding,
+    client_run_binding_key,
+)
+from agent_core.domain.client_sessions import (
+    ClientControlFence,
+    ClientControlLease,
+    ClientSession,
+    ClientSessionGrant,
+    ClientSessionStatus,
+)
+from agent_core.domain.cloud_artifact_payloads import (
+    CloudArtifactPayloadConflictError,
+    CloudArtifactPayloadLifecycleStatus,
+    CloudArtifactPayloadNotFoundError,
+    CloudArtifactPayloadRecord,
+    CloudArtifactPayloadStateError,
+)
+from agent_core.domain.cloud_artifact_requests import (
+    ArtifactBeginPruneRequest,
+    ArtifactCompensateRequest,
+    ArtifactCompletePruneRequest,
+    ArtifactEventBinding,
+    ArtifactFinalizeRequest,
+    ArtifactManagementContext,
+    ArtifactMetadataQuery,
+    ArtifactReconcileQuery,
+    ArtifactRecordObjectRequest,
+    ArtifactReserveRequest,
+    canonical_artifact_reserve_hash,
+)
+from agent_core.domain.cloud_scope import OpaqueAuthorityScope
+from agent_core.domain.context_inheritance import (
+    MAX_DELEGATED_CONTEXT_CHARS,
+    MAX_DELEGATED_CONTEXT_ITEM_CHARS,
+    MAX_DELEGATED_CONTEXT_ITEMS,
+    REQUIRED_CONTEXT_OMISSIONS,
+    ContextInheritanceMode,
+    DelegatedContextItem,
+    DelegatedContextSnapshot,
+)
+from agent_core.domain.context_materialization import (
+    MAX_CONTEXT_HISTORY_MESSAGES,
+    MAX_CONTEXT_MEMORY_ENTRIES,
+    ContextMaterialization,
+    ContextMaterializationGeneration,
+    ContextMaterializationMode,
+    ContextMaterializationRequest,
+)
+from agent_core.domain.delivery_audit import DeliveryAuditRecord
+from agent_core.domain.delivery_transaction import (
+    DeliveryTransactionConflictError,
+    DeliveryTransactionInvariantError,
+    DeliveryTransactionNotFoundError,
+    DeliveryTransactionOwnershipError,
+    DeliveryTransactionRecord,
+    DeliveryTransactionState,
+    DeliveryTransactionStateError,
+    validate_delivery_transaction_transition,
+)
+from agent_core.domain.effect_dispatch import (
+    EffectClaim,
+    EffectDispatch,
+    EffectDispatchConflictError,
+    EffectDispatchStateError,
+    EffectDispatchStatus,
+    EffectEvidence,
+    EffectResolutionOutcome,
+    EffectScheduleRequest,
+)
+from agent_core.domain.events import EventActor, EventType, SessionEvent
+from agent_core.domain.governed_memories import (
+    GovernedMemoryConflictError,
+    GovernedMemoryCreate,
+    GovernedMemoryEntry,
+    GovernedMemoryLifecycleMutation,
+    GovernedMemoryManagementContext,
+    GovernedMemoryStateError,
+    GovernedMemoryTombstone,
+    canonical_governed_memory_content_hash,
+    canonical_governed_memory_creation_key,
+)
+from agent_core.domain.governed_memory_operations import (
+    AdministrativeMemoryReviewRequest,
+    GovernedMemoryOperationKind,
+    GovernedMemoryReviewAction,
+    WorkerMemoryMutationPlan,
+    canonical_administrative_memory_review_hash,
+    canonical_worker_memory_mutation_hash,
+)
+from agent_core.domain.governed_memory_receipts import (
+    GovernedMemoryCommitResult,
+    GovernedMemoryOperationReceipt,
+    GovernedMemoryRevision,
+    canonical_governed_memory_result_hash,
+)
+from agent_core.domain.host_authority import (
+    HostAuthorityError,
+    HostContextEnvelope,
+    HostGrantExpiredError,
+    HostGrantMismatchError,
+    HostGrantNotYetValidError,
+    HostGrantScopeError,
+    HostResourceRef,
+    HostSessionGrant,
+    HostTechnicalLimits,
+)
+from agent_core.domain.host_capability_manifests import (
+    HostCapabilityManifestV1,
+    HostToolContractV1,
+    ResourceBindingRule,
+)
+from agent_core.domain.host_connectors import (
+    HostConnectorBinding,
+    HostConnectorProfileVersion,
+    HostConnectorStatus,
+    accepts_new_tasks,
+    fails_closed_for_running_tasks,
+)
+from agent_core.domain.host_effect_receipts import (
+    HostEffectReceipt,
+    HostEffectStatus,
+    uncertain_receipt,
+)
+from agent_core.domain.image_attachments import (
+    SUPPORTED_IMAGE_MEDIA_TYPES,
+    ImageAttachmentContextInput,
+    ImageAttachmentInput,
+)
+from agent_core.domain.leases import (
+    DEFAULT_MAX_LEASE_TTL,
+    LeaseCheckpointRegressionError,
+    LeaseConflictError,
+    LeaseFence,
+    LeaseLostError,
+    WorkerLease,
+)
+from agent_core.domain.memories import (
+    MemoryQuery,
+    MemoryRecord,
+    MemoryStatus,
+    MemoryType,
+    MemoryVisibility,
+)
+from agent_core.domain.memory_delivery import (
+    MemoryDeliveryCertainty,
+    MemoryDeliveryOperation,
+    MemoryDeliveryOperationRecord,
+    MemoryDeliveryScope,
+    MemoryDeliveryScopeState,
+    MemoryDeliveryState,
+    MemoryDeliveryTransition,
+    validate_memory_delivery_transition,
+)
+from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.domain.model_calls import ModelCallRecord
+from agent_core.domain.plans import PlanStep, PlanStepStatus, SessionPlan
+from agent_core.domain.policies import PolicyDecision, PolicyDecisionType
+from agent_core.domain.session_handoff import (
+    CompletedToolEvidence,
+    EffectIdentity,
+    HandoffActorKind,
+    HandoffOperationStatus,
+    HandoffReason,
+    HandoffSideEffectClass,
+    SessionHandoffEnvelope,
+    SessionHandoffValidationContext,
+    SessionHandoffValidationError,
+    SessionLineage,
+    WorkspaceBindingRevision,
+    validate_session_handoff,
+)
+from agent_core.domain.sessions import Session, SessionStatus
+from agent_core.domain.task_bindings import (
+    AgentCapabilityCeilingSnapshot,
+    HostCapabilitySnapshot,
+    TaskBindingSnapshot,
+    bind_task,
+    compute_effective_capabilities,
+)
+from agent_core.domain.task_schedule_authority import (
+    ScheduleAuthorityBinding,
+    ScheduledTaskTemplate,
+    ScheduleOwner,
+)
+from agent_core.domain.task_schedules import (
+    SCHEDULE_FIRING_TERMINAL_STATUSES,
+    DailyScheduleTrigger,
+    IntervalScheduleTrigger,
+    OnceScheduleTrigger,
+    ScheduleFiringStatus,
+    ScheduleMisfirePolicy,
+    ScheduleOverlapPolicy,
+    ScheduleTrigger,
+    TaskSchedule,
+    TaskScheduleFiring,
+    TaskScheduleStatus,
+    WeeklyScheduleTrigger,
+)
+from agent_core.domain.tool_profiles import ToolProfile
+from agent_core.domain.tool_runs import ToolRunRecord
+from agent_core.domain.tools import (
+    ToolCall,
+    ToolCallStatus,
+    ToolExecutionLocation,
+    ToolIdempotency,
+    ToolReceipt,
+    ToolResult,
+    ToolRisk,
+)
+from agent_core.domain.workspace_control import (
+    WorkspaceAction,
+    WorkspaceId,
+    WorkspaceInstance,
+    WorkspaceLifecycleState,
+    WorkspaceSource,
+    WorkspaceSourceKind,
+    WorkspaceTransitionError,
+    next_workspace_state,
+)
+from agent_core.domain.workspaces import WorkspaceProjection, WorkspaceStatus
+
+__all__ = [
+    "ArtifactRetentionPolicy", "ArtifactRetentionProfile", "ArtifactAccessClass",
+    "ArtifactAccessDescriptor", "ArtifactPayloadInspection",
+    "ArtifactPayloadLifecycleStatus", "ArtifactPayloadStatus", "ArtifactPayloadWrite",
+    "ArtifactObjectConflictError", "ArtifactObjectCleanupEvidence",
+    "ArtifactObjectDeleteRequest", "ArtifactObjectDeleteResult",
+    "ArtifactObjectDeleteStatus", "ArtifactObjectExpectation",
+    "ArtifactObjectIntegrityError", "ArtifactObjectNotFoundError",
+    "ArtifactObjectPutRequest", "ArtifactObjectReceipt",
+    "ArtifactObjectUnavailableError", "ArtifactObjectVerification",
+    "ArtifactObjectVerificationStatus", "ArtifactBeginPruneRequest",
+    "ArtifactCompensateRequest", "ArtifactCompletePruneRequest", "ArtifactEventBinding",
+    "ArtifactFinalizeRequest", "ArtifactManagementContext", "ArtifactMetadataQuery",
+    "ArtifactReconcileQuery", "ArtifactRecordObjectRequest", "ArtifactReserveRequest",
+    "canonical_artifact_reserve_hash", "ArtifactRef", "OpaqueAuthorityScope",
+    "HostAuthorityError", "HostContextEnvelope", "Capability", "GrantScope",
+    "HostCapabilityManifestV1", "HostConnectorBinding", "HostConnectorProfileVersion",
+    "HostConnectorStatus", "AgentCapabilityCeilingSnapshot", "HostCapabilitySnapshot",
+    "TaskBindingSnapshot", "accepts_new_tasks", "fails_closed_for_running_tasks",
+    "DailyScheduleTrigger", "IntervalScheduleTrigger", "OnceScheduleTrigger",
+    "ScheduleAuthorityBinding", "ScheduleFiringStatus", "ScheduleMisfirePolicy",
+    "ScheduleOverlapPolicy", "ScheduleOwner", "ScheduleTrigger",
+    "ScheduledTaskTemplate", "SCHEDULE_FIRING_TERMINAL_STATUSES", "TaskSchedule",
+    "TaskScheduleFiring", "TaskScheduleStatus", "WeeklyScheduleTrigger",
+    "HostEffectReceipt", "HostEffectStatus", "HostToolContractV1",
+    "ResourceBindingRule", "capability", "capability_set", "grant_scope",
+    "grant_scope_set", "intersect_capabilities", "bind_task",
+    "compute_effective_capabilities", "uncertain_receipt", "HostGrantExpiredError",
+    "HostGrantMismatchError", "HostGrantNotYetValidError", "HostGrantScopeError",
+    "HostResourceRef", "HostSessionGrant", "HostTechnicalLimits",
+    "ContextMaterialization", "ContextMaterializationGeneration",
+    "ContextMaterializationMode", "ContextMaterializationRequest",
+    "ContextInheritanceMode", "DelegatedContextItem", "DelegatedContextSnapshot",
+    "MAX_DELEGATED_CONTEXT_CHARS", "MAX_DELEGATED_CONTEXT_ITEM_CHARS",
+    "MAX_DELEGATED_CONTEXT_ITEMS", "REQUIRED_CONTEXT_OMISSIONS",
+    "MAX_CONTEXT_HISTORY_MESSAGES", "MAX_CONTEXT_MEMORY_ENTRIES", "AgentTask",
+    "AgentDefinition", "AgentDefinitionScope", "AgentDefinitionVersion", "AgentRelease",
+    "AgentReleaseStatus", "AgentReleaseTransitionError", "AgentDefinitionDraft",
+    "AgentDefinitionDraftValidation", "AgentDraftValidationIssue",
+    "AgentDraftValidationStatus", "canonical_agent_definition_digest",
+    "AttachmentContextInput", "ImageAttachmentContextInput", "ImageAttachmentInput",
+    "SUPPORTED_IMAGE_MEDIA_TYPES", "DeliveryAuditRecord", "DeliveryTransactionConflictError",
+    "DeliveryTransactionInvariantError", "DeliveryTransactionNotFoundError",
+    "DeliveryTransactionOwnershipError", "DeliveryTransactionRecord",
+    "DeliveryTransactionState", "DeliveryTransactionStateError",
+    "validate_delivery_transaction_transition", "ClarificationContext",
+    "ContextLifecycleController", "ContextLifecycleDecision", "ContextLifecycleSignals",
+    "CloudArtifactPayloadConflictError", "CloudArtifactPayloadLifecycleStatus",
+    "CloudArtifactPayloadNotFoundError", "CloudArtifactPayloadRecord",
+    "CloudArtifactPayloadStateError", "EventActor", "EventType",
+    "AdministrativeMemoryReviewRequest", "GovernedMemoryCommitResult",
+    "GovernedMemoryConflictError", "GovernedMemoryCreate", "GovernedMemoryEntry",
+    "GovernedMemoryLifecycleMutation", "GovernedMemoryManagementContext",
+    "GovernedMemoryOperationKind", "GovernedMemoryOperationReceipt",
+    "GovernedMemoryReviewAction", "GovernedMemoryRevision", "GovernedMemoryStateError",
+    "GovernedMemoryTombstone", "WorkerMemoryMutationPlan",
+    "canonical_administrative_memory_review_hash",
+    "canonical_governed_memory_content_hash", "canonical_governed_memory_creation_key",
+    "canonical_governed_memory_result_hash", "canonical_worker_memory_mutation_hash",
+    "EffectClaim", "EffectDispatch", "EffectDispatchConflictError",
+    "EffectDispatchStateError", "EffectDispatchStatus", "EffectEvidence",
+    "ExecutionSegment", "EffectIdentity", "EffectResolutionOutcome",
+    "EffectScheduleRequest", "CompletedToolEvidence", "HandoffActorKind",
+    "HandoffOperationStatus", "HandoffReason", "HandoffSideEffectClass", "MessageRole",
+    "MemoryQuery", "MemoryRecord", "MemoryStatus", "MemoryType", "MemoryVisibility",
+    "MemoryDeliveryCertainty", "MemoryDeliveryOperation",
+    "MemoryDeliveryOperationRecord", "MemoryDeliveryScope", "MemoryDeliveryScopeState",
+    "MemoryDeliveryState", "MemoryDeliveryTransition",
+    "validate_memory_delivery_transition", "LeaseCheckpointRegressionError",
+    "LeaseConflictError", "DEFAULT_MAX_LEASE_TTL", "LeaseFence", "LeaseLostError",
+    "ModelCallRecord", "PolicyDecision", "PolicyDecisionType", "PlanStep",
+    "PlanStepStatus", "Session", "SessionHandoffEnvelope",
+    "SessionHandoffValidationContext", "SessionHandoffValidationError",
+    "SessionLineage", "SessionEvent", "SessionMessage", "SessionStatus",
+    "RolloverReason", "SegmentVisibility", "SessionPlan", "StoredArtifactPayload",
+    "SessionAttachmentRef", "TextAttachmentInput", "ToolCall", "ToolCallStatus",
+    "ToolExecutionLocation", "ToolIdempotency", "ToolReceipt", "ToolProfile",
+    "ToolRunRecord", "ToolResult", "ToolRisk", "WorkerLease", "WorkspaceAction",
+    "WorkspaceId", "WorkspaceInstance", "WorkspaceLifecycleState", "WorkspaceSource",
+    "WorkspaceSourceKind", "WorkspaceTransitionError", "next_workspace_state",
+    "WorkspaceProjection", "WorkspaceBindingRevision", "WorkspaceStatus",
+    "ClientActionContract", "ClientActionRisk", "ClientCapabilityError",
+    "ClientComponentContract", "ClientReadableContract",
+    "FrontendCapabilityProfileVersion", "MountedCapabilitySnapshot", "ProfileLifecycle",
+    "CLIENT_EFFECT_TERMINAL_STATUSES", "ClientEffectContinuation",
+    "ClientEffectReceipt", "ClientEffectRequest", "ClientEffectStatus",
+    "ClientRunBinding", "client_run_binding_key", "ClientControlFence",
+    "ClientControlLease", "ClientSession", "ClientSessionGrant", "ClientSessionStatus",
+    "validate_session_handoff",
+]

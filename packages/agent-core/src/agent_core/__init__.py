@@ -1,57 +1,12 @@
-"""Core package for Zebra Agent."""
+"""Public exports load on demand; direct submodule imports stay bounded."""
 
-from agent_core.application.mock_model import ScriptedModelGateway, ScriptedModelResponse
-from agent_core.domain.leases import (
-    DEFAULT_MAX_LEASE_TTL,
-    LeaseCheckpointRegressionError,
-    LeaseConflictError,
-    LeaseFence,
-    LeaseLostError,
-    WorkerLease,
-)
-from agent_core.domain.model_calls import ModelCallRecord
-from agent_core.domain.modeling import (
-    ModelCallMetadata,
-    ModelCompletion,
-    ModelTokenBreakdown,
-    ModelToolDefinition,
-    ModelToolOrigin,
-    ModelUsage,
-)
-from agent_core.domain.tool_runs import ToolRunRecord
-from agent_core.harness import (
-    FirstToolCallSelectionStrategy,
-    HarnessAttempt,
-    HarnessAttemptOutcome,
-    HarnessAttemptResult,
-    HarnessAttemptTrace,
-    HarnessContext,
-    HarnessEventDraft,
-    HarnessEventRecorder,
-    HarnessLoop,
-    HarnessLoopResult,
-    HarnessModelStep,
-    HarnessRunResult,
-    HarnessRunTrace,
-    HarnessStoppingPolicy,
-    HarnessStopReason,
-    HarnessTask,
-    HarnessToolTrace,
-    HarnessTraceProjector,
-    NoopPlanner,
-    NoopVerifier,
-    PlannerHook,
-    PlannerResult,
-    RetryPlanHint,
-    SingleAttemptOrchestrator,
-    StepClock,
-    SystemClock,
-    ToolCallSelection,
-    ToolCallSelectionStrategy,
-    VerifierHook,
-    VerifierResult,
-    build_retry_plan_hint,
-)
+# ruff: noqa: F405 -- TYPE_CHECKING exports and __getattr__ define the public names.
+
+from importlib import import_module as _import_module
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ._public_exports import *  # noqa: F403
 
 __all__ = [
     "FirstToolCallSelectionStrategy",
@@ -102,3 +57,17 @@ __all__ = [
     "LeaseLostError",
     "WorkerLease",
 ]
+
+
+def __getattr__(name: str) -> object:
+    if name not in __all__:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    # ponytail: first public access loads the original aggregate; per-name lazy
+    # exports are only needed if aggregate consumers also need lower startup cost.
+    value = getattr(_import_module(f"{__name__}._public_exports"), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))

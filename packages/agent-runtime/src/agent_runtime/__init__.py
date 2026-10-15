@@ -1,104 +1,12 @@
-"""Runtime package for Zebra Agent."""
+"""Public exports load on demand; direct submodule imports stay bounded."""
 
-from agent_core.ports.runtime import (
-    EffectiveRuntimeAuthority,
-    RuntimeCapabilities,
-    RuntimeCapabilityError,
-    RuntimeClass,
-    RuntimeHandle,
-    RuntimeLimits,
-    RuntimeSnapshot,
-    SandboxSpec,
-)
+# ruff: noqa: F405 -- TYPE_CHECKING exports and __getattr__ define the public names.
 
-from agent_runtime.adapters.local import LocalRuntime
-from agent_runtime.adapters.oci import OciRuntime
-from agent_runtime.adapters.os_sandbox import OsSandboxRuntime
-from agent_runtime.adapters.os_sandbox_platform import os_sandbox_engine
-from agent_runtime.git_commit import (
-    WorkspaceCommitCommand,
-    WorkspaceCommitError,
-    WorkspaceCommitResult,
-    WorkspaceCommitService,
-)
-from agent_runtime.git_diff import WorkspaceDiffError, WorkspaceDiffResult, WorkspaceDiffService
-from agent_runtime.harness import LocalToolGateway, run_local_harness
-from agent_runtime.mcp_elicitation import (
-    McpElicitationBridge,
-    McpElicitationDisabledError,
-)
-from agent_runtime.mcp_http import StreamableHttpMcpTransport
-from agent_runtime.mcp_inventory import (
-    McpCapabilityInventory,
-    McpServerCapability,
-    McpToolCapability,
-    build_mcp_capability_inventory,
-    validate_mcp_capability_selection,
-)
-from agent_runtime.mcp_prompts import (
-    McpPrompt,
-    McpPromptArgument,
-    McpPromptMessage,
-    ResolvedMcpPrompt,
-    discover_mcp_prompts,
-    resolve_mcp_prompt,
-)
-from agent_runtime.mcp_protocol import (
-    McpAnyServerSpec,
-    McpHttpServerSpec,
-    McpProtocolError,
-    McpServerSpec,
-)
-from agent_runtime.mcp_resources import (
-    McpResource,
-    discover_mcp_resources,
-    normalize_mcp_resource_ids,
-    read_mcp_resource_attachments,
-)
-from agent_runtime.mcp_stdio import LocalStdioMcpTransport
-from agent_runtime.research import (
-    LocalResearchSubagentRunner,
-    ReadOnlyToolGateway,
-    ResearchSubagentTool,
-)
-from agent_runtime.setup_phase import (
-    SetupPhaseError,
-    SetupPhasePlan,
-    SetupPhaseResult,
-    SetupPhaseRunner,
-)
-from agent_runtime.subagents import (
-    LocalResearchSubagentCoordinator,
-    SubagentLimitError,
-    UnknownSubagentError,
-)
-from agent_runtime.workspace import (
-    LocalWorkspace,
-    LocalWorktree,
-    WorkspaceError,
-    WorkspaceLayout,
-    WorkspacePathError,
-)
-from agent_runtime.workspace_materialization import (
-    WorkspaceMaterializationError,
-    materialize_archive,
-    materialize_git,
-    materialize_snapshot_bytes,
-    workspace_tree_digest,
-)
-from agent_runtime.workspace_provisioner import (
-    PostgresWorkspaceProvisioner,
-    WorkspaceProvisionerError,
-)
-from agent_runtime.workspace_quota import (
-    WorkspaceQuotaError,
-    WorkspaceQuotaEvidence,
-    require_workspace_quota,
-)
-from agent_runtime.workspace_runtime_resolver import (
-    WorkspaceRuntimeResolutionError,
-    WorkspaceRuntimeResolver,
-)
+from importlib import import_module as _import_module
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ._public_exports import *  # noqa: F403
 
 __all__ = [
     "LocalRuntime",
@@ -173,3 +81,17 @@ __all__ = [
     "os_sandbox_engine",
     "require_workspace_quota",
 ]
+
+
+def __getattr__(name: str) -> object:
+    if name not in __all__:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    # ponytail: first public access loads the original aggregate; per-name lazy
+    # exports are only needed if aggregate consumers also need lower startup cost.
+    value = getattr(_import_module(f"{__name__}._public_exports"), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))
