@@ -453,7 +453,21 @@ class LocalToolGateway(ToolGatewayPort):
         self,
         tool_calls: tuple[ToolCall, ...],
     ) -> tuple[ToolCall, ...]:
-        return tuple(self._mcp_catalog.resolve(tool_call) for tool_call in tool_calls)
+        resolved: list[ToolCall] = []
+        for tool_call in tool_calls:
+            current = self._mcp_catalog.resolve(tool_call)
+            limit = current.arguments.get("limit")
+            # ponytail: only the five exact native search wire spellings; Policy
+            # still validates canonical arguments, and provider replay stays raw.
+            if (current.name == "web.search" and current.provider_arguments is None
+                    and isinstance(limit, str) and limit in ("1", "2", "3", "4", "5")):
+                current = current.model_copy(update={
+                    "arguments": {**current.arguments, "limit": int(limit)},
+                    "provider_tool_name": current.name,
+                    "provider_arguments": dict(current.arguments),
+                })
+            resolved.append(current)
+        return tuple(resolved)
 
     def close(self) -> None:
         try:

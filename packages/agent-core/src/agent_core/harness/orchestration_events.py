@@ -164,6 +164,9 @@ def policy_decision_payload(
         "tool_name": tool_call.name,
         "tool_call_id": str(tool_call.tool_call_id),
     }
+    if tool_call.provider_arguments is not None:
+        payload["provider_tool_name"] = tool_call.provider_tool_name
+        payload["provider_arguments"] = dict(tool_call.provider_arguments)
     _extend_proxy_policy_payload(payload, decision)
     return payload
 

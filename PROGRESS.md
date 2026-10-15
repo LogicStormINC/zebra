@@ -6242,3 +6242,17 @@ docs/CLOUD_WEB_FETCH_CONNECT_ACCEPTANCE.md；下一独立优先项为子进程�
 连接660→562；启动415/66、并发2、0sandbox保持，不报系统SQL80或稳定3s。正常Worker
 4a1c78ad/API与Yahoo不变，41hash/原六Compose入口核对。本地集成保留27脏改动，
 不推送。报告docs/CLOUD_WEB_CHILD_IMPORT_ACCEPTANCE.md；模型limit字符串损耗另查。
+
+
+### 2026-10-15 — WEB-MODEL-LIMIT-01
+
+模型非strict虽收到integer schema仍可能返回字符串；json.loads不改类型。既有模型
+resolver仅规范原生search精确ASCII"1".."5"，保留原provider参数/continuation，原
+Policy/直接输入/其它非法值仍严格拒绝；共享既有Policy事实加原始字段，无新事件/
+SQL次数。35新检查与固定真实Harness证明错误输入3→2轮、失败1→0；169相关通过，
+Ruff排除私有诊断/mypy1282/eval30/文件门过。两次新高/v2页面30.325→27.471s，
+首过程文字4.853→4.994s，官方链接28.851→27.330s，均4模型/6工具/0失败；两侧
+模型本次都给整数5，不能把9.4%总耗时差归因修复。Worker SQL3141→3120，仅少21，
+不报整体SQL收益。启动415/66、两路并发/0sandbox、gzip/导入/新鲜scalar保持。
+正常Worker b373f27d/API与Yahoo不变，42hash/原六Compose入口核对；本地集成保留
+27脏改动，不推送。报告docs/CLOUD_WEB_MODEL_LIMIT_ACCEPTANCE.md。
