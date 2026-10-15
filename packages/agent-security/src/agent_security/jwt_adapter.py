@@ -146,6 +146,30 @@ class CachingJwksKeyResolver:
         finally:
             self._lock.release()
 
+    def prefetch(self, jwks_uri: str, *, deadline: float) -> None:
+        """Warm registry-pinned public keys without a token or authorization decision."""
+        deadline = min(deadline, monotonic() + self.timeout_seconds)
+        if not math.isfinite(deadline):
+            raise ValueError("JWKS deadline must be finite")
+        if not self._lock.acquire(timeout=_remaining(deadline)):
+            raise TimeoutError("Host Grant JWKS cache admission deadline exceeded")
+        try:
+            cached = self._sets.get(jwks_uri)
+            if cached is None or monotonic() - cached[0] >= self.cache_lifespan_seconds:
+                keys = self._fetch(jwks_uri, deadline)
+                _remaining(deadline)
+                self._sets[jwks_uri] = (monotonic(), keys)
+            _remaining(deadline)
+            self._sets.move_to_end(jwks_uri)
+            while len(self._sets) > _MAX_JWKS_CACHE:
+                self._sets.popitem(last=False)
+        except TimeoutError:
+            raise
+        except Exception as exc:
+            raise HostGrantDecodeError("Host Grant signing key prefetch failed") from exc
+        finally:
+            self._lock.release()
+
     def _fetch(self, uri: str, deadline: float) -> PyJWKSet:
         if not uri.startswith("https://"):
             raise ValueError("JWKS URI must be registry-pinned HTTPS")

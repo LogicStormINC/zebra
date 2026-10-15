@@ -170,6 +170,10 @@ def create_http_app(
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         try:
+            if active_settings.deployment != "local":
+                from zebra_agent_api.host_auth import warm_host_grant_keys
+
+                await warm_host_grant_keys(active_host_grant_authorizer)
             yield
         finally:
             if api.stream_v2_reader is not None:

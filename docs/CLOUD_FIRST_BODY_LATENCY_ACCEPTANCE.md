@@ -262,3 +262,92 @@ Next priority: Cloud reasoning-budget policy preserving explicitly selected high
 and separately isolate the normal-page pre-model4.1–4.4s path. Do not keep iterating
 millisecond-only SQL changes as a solution to21.9s Provider body wait. STOP, full SQL80%,
 cold/hot/concurrent distributions and capacity/GC lifecycle acceptance remain open.
+
+
+## PAGE-ADMISSION-TRACE-01: actual page path and bounded key warmup (2026-10-15)
+
+Actual pages include client open/mount/run-binding, which empty-client-state BFF
+samples omit. Trench source was read only; no Host product code/default changed.
+Two baseline page requests and one empty-client control used existing accepted images.
+The first trace omitted the /v1/extensions prefix; its1.258s before runtime-capabilities
+is therefore before the first *recorded* API request, not all outside Cloud. The second
+trace fixes this observation boundary. All requests are new, not original Run replay.
+
+| Measured span, complete baseline page1f00dc76 | Duration |
+| --- | ---: |
+| Actual send→Skill HTTP entry |783ms|
+| Skill HTTP authorization / metadata |291ms /13ms|
+| Runtime capabilities HTTP total |20ms|
+| Task creation HTTP total |253ms|
+| Client open + mount + binding HTTP totals |43 +70 +99ms|
+| AG-UI command HTTP total |219ms|
+| Command HTTP response→Worker execution entry |208ms|
+| Worker execution entry→Provider call entry |1384ms|
+| Actual send→Provider call entry |3609.5ms|
+
+HTTP durations exclude inter-request Host validation/grant exchange/network gaps;
+host-binding renewal overlaps Worker preparation and must not be added as wholly
+blocking time. Initial783ms includes browser conversation creation, Turn admission,
+Host dispatch/preparation and grant/network; it is not a measured queue-only delay.
+Skill metadata itself is13ms, not a hidden research/model step. A second page baseline
+933cd2ee measured5107ms send→Provider,2092ms Worker; API/client/DB costs varied too.
+Actual pages use531 startup cursorcalls vs525 for empty-client BFF, both76 Task I/O
+connections. This does not establish that client integration caused the whole timing
+variation. No state/authority read was removed to improve these numbers.
+
+Minimal Cloud-only implementation: existing CachingJwksKeyResolver gains token-free
+prefetch using its same lock, pinned HTTPS fetch, native kill/reap, size/capacity bound,
+300s TTL and rotation behavior. API lifespan warms active registry URIs before readiness,
+with one cumulative2s budget and maximum32 unique URIs. Custom/local authorizers are
+unchanged. Failure logs only exception type and leaves ordinary fail-closed request
+authorization. Every request still reads current registry, verifies signature/claims,
+checks target and atomically consumes nonce. No authority/nonce cache, pool, dependency,
+background refresh or reasoning policy change. Expired public keys still refresh normally;
+this moves first-process work, not all future network misses.
+
+Evidence is deliberately separated:
+
+- Six new checks first failed, then46 focused security/API cases passed16.18s.
+  Frozen-source new6 rerun passed3.58s; make check passed3065size/Ruff/mypy1278/eval30.
+- Native signed-grant replay/origin/scope/audit matrix passed. Two additional native
+  bounds checks initially skipped for missing scratch DSN, then failed setup because
+  an existing dedicated container's volume password differs from its configured env.
+  No fixture/credential was repaired. A disposable PostgreSQL ran those two unchanged
+  checks:2passed0.73s; only its own container was removed.49 distinct focused checks pass.
+- Three adjacent no-model PostgreSQL+native TLS pairs, alternating order: cold auth
+  98.09/81.32/75.77ms, warm29.92/24.81/30.22ms. Medians81.32→29.92ms,51.41ms saved
+  in this isolated boundary. Warm work63.68–76.96ms occurs before serving. Cold auth
+  fetched once each; warm auth fetched zero times. This is not a page speedup claim.
+- Candidate actual startup warm took391.38ms including362.93ms JWKS fetch. First real
+  Skill request resolved the already-warmed key in0.172ms and performed no JWKS fetch.
+  Its whole HTTP authorization nevertheless took496.49ms: first DB connection301.9ms
+  (including163ms resolver), other DB/nonce work and scheduling remained. Baseline
+  authorization291ms was faster overall. Thus no real-page/auth-total improvement
+  percentage is established by the isolated component result.
+
+| Actual page sample | First visible body | Provider total / successful-attempt first text | Gateway retries |
+| --- | ---: | ---: | ---: |
+| Baseline933cd2ee |6.6944s|537 /510ms|0|
+| Baseline1f00dc76 |4.3622s|600 /581ms|0|
+| Warm candidate, tracedcc44a0f8 |6.1645s|704 /692ms|0|
+| Warm candidate, normal entrypoint30e491ae |12.3378s|7028 /917ms|1|
+
+All four pages and control72eacaa4 canonically completed/transient_v2 with one logical
+main-model round,zero tools/instances. The final normal request has two Provider HTTP
+attempts due to one Gateway retry, not two research rounds. Its917ms field is relative
+to the successful attempt while7028ms includes retries. Do not subtract917ms from page
+latency and label the remaining time browser delay. The original failed-attempt type
+was not retained; network/HTTP/provider reason is unknown. Thinking latency and Gateway
+retry latency are separate remaining causes. No new Provider400/quality revision was
+observed; this is not stable3s acceptance or proof that the whole first-body issue is fixed.
+
+Normal APIc0b8e9dce87a9cdc2d4a10d202dc012bc72d3e081dcb8494bf1e55175bacf3ab;
+Worker a51c3a59 unchanged. Both healthy under original six-file composition/entrypoints.
+Three API source hashes plus18 accepted Worker hashes verified. defer_provision/v2/high
+retained. Temporary launchers, browser observers/globals and Network instrumentation
+removed; final screenshot retained. Private evidence .artifacts/page-admission-20261015
+contains canonical.safe.json, native-pairs.safe.json, network/trace snapshots, red/focused/
+native/static logs and normal-active.safe.json. Next narrow slice: retain safe per-attempt
+retry reason/duration and distinguish total-call vs successful-attempt TTFT, then inspect
+new real requests without replaying30e491ae. Worker connection overhead, adaptive Cloud
+reasoning policy and the existing STOP/fullSQL80/distribution/lifecycle gates remain open.

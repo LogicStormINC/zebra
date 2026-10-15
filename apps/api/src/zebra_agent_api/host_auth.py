@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 from collections.abc import Callable, Iterable
@@ -45,6 +46,31 @@ def build_postgres_host_grant_authorizer(
         ),
         decoder=PyJwtHostGrantDecoder(CachingJwksKeyResolver()),
     )
+
+
+async def warm_host_grant_keys(authorizer: HostGrantRequestAuthorizer | None) -> None:
+    """Move cold public-key retrieval before readiness; request authority stays fresh."""
+    if not isinstance(authorizer, PostgresHostGrantRequestAuthorizer):
+        return
+    resolver = authorizer.decoder.key_resolver
+    if not isinstance(resolver, CachingJwksKeyResolver):
+        return
+    deadline = monotonic() + 2
+
+    def warm() -> None:
+        with task_io_deadline(deadline):
+            records = authorizer.registry.list_registries()
+            uris = dict.fromkeys(record.jwks_uri for record in records if record.active)
+            # ponytail: at most the existing 32-keyset cache, within one 2s startup
+            # budget. Other Hosts use ordinary request misses; no background work.
+            for uri in tuple(uris)[:32]:
+                resolver.prefetch(uri, deadline=deadline)
+
+    try:
+        async with asyncio.timeout(2):
+            await asyncio.to_thread(warm)
+    except Exception as exc:
+        logger.warning("Host signing-key warmup unavailable: %s", type(exc).__name__)
 
 
 @dataclass(frozen=True)
