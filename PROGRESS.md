@@ -6322,3 +6322,9 @@ Source Ruff/mypy1283/size/eval30 pass. Backend source-only local images prepared
 final hash/normal service receipt in WORKLOG. Browser user reconnected but controls still
 Debugger unattached/time out, so no new model Run and actual page pairing remains open.
 See docs/CLOUD_INPUT_READ_BATCH_ACCEPTANCE.md; local integration only, no push/npm/remote deploy.
+
+2026-10-15 page follow-up: browser restored, first baseline search failed before CloudSession
+binding/model/tools/sandbox (all0). Error11757ms is not正文. Host extension-list admission503
+at2036ms consumed2sbudget, DNSchild1184ms/connection1331ms + JWKS583ms. Worker deadline
+restarts also observed. Input batching remains native-proven, actual page acceptance open;
+next narrow candidate is resolver child startup after import/DNS stage measurements.

@@ -15034,3 +15034,16 @@ Final normal receipt: API/Worker healthy, final3source files match built image c
 and unchanged search image/settings/proxy verified. No trace launcher was activated this slice.
 LocalFF is authorized tocloud-agent-trench; integration helper preserves all27dirty entries
 and append-only hotdoc suffixes. Browser/page pair remains pending, not a backend regression.
+
+## 2026-10-15 INPUT-READ-BATCH-01 real-page follow-up
+
+Browser controls recovered after reconnect and one bounded click retry. New baseline A1
+conv_1792077750802_3093b7 failed before Cloud Session binding/model/sandbox/tools (all0);
+visible error11757.4ms is not first正文. Retained page-A1 and API/Worker trace; no replay/retry.
+GET extension skill-installations returned503 at2035.66ms in fresh Host authorization:
+TaskIO DNS1183.71ms/connection1331.33ms, registry SQL53.95ms, JWKSfetch582.84ms; cumulative
+2s budget expired. Worker also had DNS/TaskIO deadline restarts. Health200 alone was inadequate.
+No candidate model request dispatched while admission is failing. Resolver child staged profile:
+normal total629.53ms, json import309.83ms, socket import53.64ms, actualDNS46.87ms medians;
+-S alone total489.55ms still json265.28ms. Next narrow investigation targets child serialization
+startup; no deadline/identity/cache loosening. Page pair remains open, baseline failure retained.
