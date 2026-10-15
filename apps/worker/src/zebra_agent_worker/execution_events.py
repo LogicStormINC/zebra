@@ -120,8 +120,11 @@ class DurableHarnessEventRecorder:
         if self.effect_started_listener is not None:
             self.effect_started_listener(call_id)
 
-    @_serialized
     def require_active_execution(self) -> None:
+        self.read_active_session()
+
+    @_serialized
+    def read_active_session(self) -> Session:
         """Poll primary control state without replaying or projecting historical Events."""
         session = self._projection_store.get_session(self._session.session_id)
         if session is None:
@@ -131,6 +134,7 @@ class DurableHarnessEventRecorder:
                 f"execution interrupted by {session.status.value} session state", session=session
             )
         self._ownership_check()
+        return session
 
     @property
     def session(self) -> Session:

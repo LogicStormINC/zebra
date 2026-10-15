@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from contextlib import nullcontext
+from dataclasses import dataclass, replace
 from datetime import datetime
+from time import monotonic
 
 from agent_core.application.memory_scopes import governed_memory_scope
 from agent_core.application.turn_projection import is_human_message
@@ -16,13 +18,14 @@ from agent_core.domain.context_materialization import (
 )
 from agent_core.domain.events import EventActor, EventType, SessionEvent
 from agent_core.domain.identifiers import SessionId
-from agent_core.domain.leases import WorkerLease
+from agent_core.domain.leases import LeaseLostError, WorkerLease
 from agent_core.domain.memories import MemoryQuery
 from agent_core.domain.sessions import Session
 from agent_core.domain.task_bindings import TaskBindingSnapshot
 from agent_core.ports import EventStorePort
 from agent_core.ports.context_materialization import ContextMaterializationPort
 from agent_core.ports.execution_authority import ExecutionAuthorityResolverPort
+from agent_storage.postgres.task_io import task_io_deadline
 
 from zebra_agent_worker.authority_types import AuthorityScopeProvider
 from zebra_agent_worker.bound_execution_authority import (
@@ -95,15 +98,11 @@ class AttemptAuthorityEvidence:
         ):
             return claimed, session_events
         return (
-            ClaimedSession(
-                recovery=finish_preparation(
-                    lambda: self.recovery_service.recover_session(
-                        session_id,
-                        worker_lease=claimed.lease,
-                    ),
-                    self.ownership_check or recorder._ownership_check,
-                ),
-                lease=claimed.lease,
+            _refresh_claim(
+                recorder,
+                self.recovery_service,
+                claimed,
+                self.ownership_check or recorder._ownership_check,
             ),
             _refresh_inputs(
                 self.event_store,
@@ -192,17 +191,64 @@ def prepare_worker_context(
             },
             created_at=as_of,
         )
-        claimed = ClaimedSession(
-            recovery=finish_preparation(
-                lambda: recovery_service.recover_session(session_id, worker_lease=claimed.lease),
-                ownership_check or recorder._ownership_check,
-            ),
-            lease=claimed.lease,
+        claimed = _refresh_claim(
+            recorder, recovery_service, claimed, ownership_check or recorder._ownership_check
         )
         events = _refresh_inputs(
             event_store, execution_input_reader, claimed.lease, recorder, ownership_check
         )
     return PreparedWorkerContext(claimed, events, binding, materialization, extension)
+
+
+def _refresh_claim(
+    recorder: DurableHarnessEventRecorder,
+    recovery_service: SessionRecoveryService,
+    claimed: ClaimedSession,
+    ownership_check: Callable[[], None],
+) -> ClaimedSession:
+    cloud = recorder.worker_mutation_authority is not None
+    with task_io_deadline(monotonic() + 2) if cloud else nullcontext():
+        if cloud:
+            with recorder.mutation():
+                ownership_check()
+                observed = recorder.read_active_session()
+                authority = recorder.worker_mutation_authority
+                assert authority is not None
+                session, workspace = recorder.session, recorder.workspace
+                if (
+                    authority.session_id != claimed.lease.session_id
+                    or session.session_id != claimed.lease.session_id
+                    or workspace.session_id != claimed.lease.session_id
+                    or authority.lease_fence != claimed.lease.fence
+                    or authority.expected_stream_revision != session.current_sequence
+                    or workspace.current_sequence != session.current_sequence
+                ):
+                    raise LeaseLostError(
+                        "committed Context projection disagrees with Worker authority"
+                    )
+                # ponytail: reuse this recorder's atomic commit only while the fresh
+                # primary still agrees. Concurrent drift retains bounded recovery.
+                if observed == session:
+                    return ClaimedSession(
+                        replace(
+                            claimed.recovery,
+                            session=session,
+                            workspace=workspace,
+                            last_sequence=session.current_sequence,
+                            event_count=session.current_sequence + 1,
+                            is_terminal=False,  # Fresh control rejects terminal states.
+                        ),
+                        claimed.lease,
+                    )
+        return ClaimedSession(
+            finish_preparation(
+                lambda: recovery_service.recover_session(
+                    claimed.lease.session_id, worker_lease=claimed.lease
+                ),
+                ownership_check,
+            ),
+            claimed.lease,
+        )
 
 
 def _refresh_inputs(

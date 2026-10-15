@@ -410,3 +410,98 @@ bounded Task I/O. Reusing that pool blindly would change the deadline/isolation 
 Do not add a second generic pool or shorten Provider timeouts without evidence. Adaptive
 reasoning policy, stable cold/hot/concurrent distributions, STOP, full-workload SQL80%
 and capacity/GC lifecycle gates remain open.
+
+
+## PRE-MODEL-CRITICAL-01: reuse the just-committed Context projections (2026-10-15)
+
+Measured the actual page through Cloud HTTP entry, command response, Worker entry and
+actual Provider HTTP, rather than treating model_request_started as the network start.
+Same prompt throughout: `这是启动性能验收，只回复“接入完毕”，不要调用任何工具。`.
+All samples request Flash/high; canonical metadata confirms thinking=enabled/high.
+All are new requests, not replay of an old Run. Trench/SDK production source unchanged.
+
+| Exclusive baseline interval | First sample | Second sample |
+| --- | ---: | ---: |
+| Send→first Cloud HTTP |473ms|1089ms|
+| First Cloud HTTP→command response |1179ms|1166ms|
+| Command response→Worker entry |255ms|382ms|
+| Worker entry→actual Provider HTTP |1773ms|1528ms|
+
+First interval includes browser/Host work and network, not an isolated queue timer.
+The API/Host interval includes serial task/client open/mount/binding/command work;
+Host-binding renewal overlaps Worker and is not added as fully blocking time.
+Largest Cloud stage was Worker Context preparation827/592ms, inside Worker totals.
+It contained two full Session recoveries after authority and memory-selection appends,
+120 recovery cursor calls, despite the recorder's own fenced atomic commit already
+updating both primary projections. Context authority433/340ms and input refresh273/194ms
+are nested spans, not additive to the Context totals.
+
+Minimal implementation changes two Worker files. Context reuses this recorder's exact
+committed Session/Workspace only when a fresh primary control read still equals that
+Session, and lease/fence/Session/Workspace revisions agree. Caller ownership check and
+native cumulative2s deadline remain. Concurrent primary drift falls back to the original
+bounded recovery within the same deadline; cancellation/foreign fence fails closed.
+Fresh bounded execution-input refresh, authorization resolution and canonical appends
+remain. Local/non-fenced recovery is unchanged. The existing cancellation callback
+require_active_execution still returns None; read_active_session exposes its same one
+fresh read for Context. No new pool/cache/dependency, Port change, reasoning downgrade,
+Trench customization or per-frame SQL. Recovery checkpoints may catch up later through
+the unchanged ordinary recovery path; no fact or canonical index check is synthesized.
+
+Final frozen-code paired page results (not mixed with earlier intermediate images):
+
+| Measurement | Before1 / Before2 | Final1 / Final2 | Two-sample median change |
+| --- | ---: | ---: | ---: |
+| Context preparation |827 /592ms|351 /501ms|709→426ms,40.0% lower|
+| Worker→actual Provider HTTP |1773 /1528ms|1253 /1660ms|1650→1456ms,11.8% lower|
+| Startup cursor.execute calls |531 /531|415 /415|116 fewer,21.85% lower|
+| Fresh Task I/O connections |76 /76|66 /66|10 fewer,13.16% lower|
+| Send→model-start event |3407 /3903ms|3090 /3947ms|3655→3518ms,3.7% lower|
+| Send→actual Provider HTTP |3680 /4165ms|3338 /4295ms|3923→3817ms,2.7% lower|
+| Send→visible first body |4743 /5379ms|4427 /6347ms|5061→5387ms,6.4% higher|
+| Provider first public text |813 /913ms|708 /804ms|attempt-relative; no retry|
+
+Before Runs190e0432-1cff-4292-85d9-12e97d928ac4/d59c3c87-9b92-4a93-a7ad-c95e9859059a;
+final2d3f2b3d-62c3-45f1-8a6f-968880a9d10d/7f9dde7d-090f-49bb-bd8f-90ff63331b76.
+Old-code return control7535253b-9f6d-4ac2-9aa1-e84586200a9e:
+Context625ms,Worker1566ms,531cursor calls,76connections,body5316ms. It confirms the
+old fixed work reappears on code switch. Intermediate candidates233250c3/6b3cca29,
+before the fresh-primary drift fallback refinement, remain as exploratory evidence:
+body6739/6086ms,Context304/492ms,415cursor calls; they are not final-cohort acceptance.
+No outlier is deleted to claim a page speedup. Only two frozen matched samples per side;
+no stable p50/p95, concurrency distribution or causal whole-page percentage is established.
+
+Final1 first observed body was provisional; final2 was first observed final. Worker
+Provider-first-text→draft publication took1.41/1.27ms, while publication→observed DOM
+was378/1247ms. The latter mixes proof/read/persistence/relay/Host SSE/browser scheduling;
+API first-draft instrumentation did not capture an independent boundary, so it is not
+assigned to a specific hop. Thus this slice reduces fixed startup work but does not
+prove faster page body. Stable3s remains unachieved. These startup cursor counts do not
+represent server SQL or whole-Run workload, and do not satisfy the overall SQL80% gate.
+
+Validation:12 new deterministic checks red→green, including coherent snapshot, explicit
+ownership, fresh cancel/lease rejection, two-second scope, concurrent drift fallback,
+local compatibility and unchanged cancellation return.46 related cases pass4.07s;
+5 ordinary cancellation cases pass6.61s;10 native Context materialization cases pass;
+6 native tail/fence/budget cases pass. make check passes file sizes/Ruff/mypy1278/eval30.
+Failure boundaries retained without fixture repair: an existing Host identity wording
+assertion fails identically on pre-change source (excluded from focused rerun); one
+unchanged250ms native tail probe expected two sockets but its first operation exhausted
+the budget (1failed/6passed). Two native cancellation cases fail fixture setup before
+execution: existing guard pins127.0.0.1:32786/header_scratch, held by an existing scratch
+container, while the generic test DSN is refused. No existing credentials/container/test
+were changed; these two cases are not claimed as native cancellation acceptance.
+
+Normal-service Run9220ce48-3055-42e1-90fd-fa28868270ad completed with transient_v2,
+one main-model call,zero tools/OCI/retries,thinking enabled/high. Body4900.9ms,Provider
+755ms total/753ms first text. This normal-entrypoint n1 is a sanity check, not a matched
+speedup claim. Across all8new requests, canonical completions/profile/high/v2/one model/
+zero tools/OCI are verified. Normal Worker376b20ddb9598f5f577c59493653b6ace8bfc67e0c64adb11d08ca8c12b37fc7,
+APIc0b8e9dc unchanged;26live source hashes, healthy status and original six-file
+composition/entrypoints/commands verified. All temporary launchers, Network recording
+and browser observer/globals removed. Final screenshot retained.
+All private evidence under .artifacts/pre-model-critical-20261015 includes every page,
+sanitized network/trace/canonical summary, failure/red/focused/static logs, exact images,
+and normal composition restoration. Preserve prior v2/lazy/input-SQL/key-warm/provider
+fixes. STOP, full-workload SQL80%, capacity/GC lifecycle, adaptive reasoning policy and
+controlled cold/hot/concurrent distributions remain separate open gates.
