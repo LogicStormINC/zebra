@@ -4,6 +4,7 @@ import hashlib
 from collections.abc import Callable
 from time import perf_counter
 from typing import Any
+from uuid import uuid4
 
 import httpx
 from agent_core.domain.messages import SessionMessage
@@ -32,7 +33,11 @@ from agent_integrations.deepseek_responses_payloads import (
 from agent_integrations.deepseek_responses_streaming import (
     read_deepseek_responses_stream,
 )
-from agent_integrations.model_errors import ModelProviderError, normalize_provider_error
+from agent_integrations.model_errors import (
+    ModelProviderError,
+    log_provider_attempt,
+    normalize_provider_error,
+)
 from agent_integrations.openai_payloads import (
     internal_tool_names,
     provider_tool_names,
@@ -87,13 +92,15 @@ class DeepSeekResponsesModelGateway:
             stream=False,
         )
         started = perf_counter()
+        call_id = uuid4().hex
         if deadline_s is not None:
             validate_bounded_policy(invocation_policy, has_tools=bool(tools))
         retries = 0
         while True:
+            attempt_started = perf_counter()
             try:
                 payload = self._post(body, deadline_s=deadline_s)
-                return parse_responses_completion(
+                completion = parse_responses_completion(
                     payload,
                     resolved=resolved,
                     request_metadata=metadata,
@@ -102,7 +109,12 @@ class DeepSeekResponsesModelGateway:
                     latency_ms=int((perf_counter() - started) * 1000),
                     retry_count=retries,
                 )
+                log_provider_attempt(
+                    call_id, retries + 1, started, attempt_started, completion=completion
+                )
+                return completion
             except Exception as exc:
+                log_provider_attempt(call_id, retries + 1, started, attempt_started, error=exc)
                 if deadline_s is not None:
                     if isinstance(exc, ModelResponseRejectedError):
                         exc.retryable = False
@@ -138,6 +150,7 @@ class DeepSeekResponsesModelGateway:
         client = self._client or httpx.Client(timeout=httpx.Timeout(300.0, connect=10.0))
         should_close = self._client is None
         started = perf_counter()
+        call_id = uuid4().hex
         retries = 0
         public_delta_emitted = False
 
@@ -147,6 +160,7 @@ class DeepSeekResponsesModelGateway:
 
         try:
             while True:
+                attempt_started = perf_counter()
                 try:
                     payload = read_deepseek_responses_stream(
                         client,
@@ -160,7 +174,7 @@ class DeepSeekResponsesModelGateway:
                     public_delta_emitted = (
                         payload.get("_zebra_time_to_first_public_text_ms") is not None
                     )
-                    return parse_responses_completion(
+                    completion = parse_responses_completion(
                         payload,
                         resolved=resolved,
                         request_metadata=metadata,
@@ -169,7 +183,12 @@ class DeepSeekResponsesModelGateway:
                         latency_ms=int((perf_counter() - started) * 1000),
                         retry_count=retries,
                     )
+                    log_provider_attempt(
+                        call_id, retries + 1, started, attempt_started, completion=completion
+                    )
+                    return completion
                 except Exception as exc:
+                    log_provider_attempt(call_id, retries + 1, started, attempt_started, error=exc)
                     retries = self._retry_or_raise(
                         exc,
                         retries=retries,

@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+from uuid import uuid4
 
 import httpx
 from agent_core.domain.messages import SessionMessage
@@ -32,7 +33,11 @@ from agent_integrations.deepseek_profiles import (
 )
 from agent_integrations.deepseek_responses import DeepSeekResponsesModelGateway
 from agent_integrations.deepseek_schema import validate_strict_tools
-from agent_integrations.model_errors import ModelProviderError, normalize_provider_error
+from agent_integrations.model_errors import (
+    ModelProviderError,
+    log_provider_attempt,
+    normalize_provider_error,
+)
 from agent_integrations.openai_payloads import (
     internal_tool_names,
     parse_completion,
@@ -88,7 +93,11 @@ class OpenAICompatibleModelGateway:
     ) -> PreparedModelRequest:
         """Freeze an inspectable request; caller must reserve durably before sending."""
         return self._prepared_requests.prepare(
-            self, messages, invocation_policy, tools=tools, stream=stream,
+            self,
+            messages,
+            invocation_policy,
+            tools=tools,
+            stream=stream,
             strict_tools=strict_tools,
         )
 
@@ -126,15 +135,17 @@ class OpenAICompatibleModelGateway:
             strict_tools=strict_tools,
         )
         started = perf_counter()
+        call_id = uuid4().hex
         if deadline_s is not None:
             request_body["max_tokens"] = validate_bounded_policy(
                 invocation_policy, has_tools=bool(tools)
             )
         retry_count = 0
         while True:
+            attempt_started = perf_counter()
             try:
                 response_data = self._post_chat_completion(request_body, deadline_s=deadline_s)
-                return parse_completion(
+                completion = parse_completion(
                     response_data,
                     provider_name=self._provider_name,
                     default_model_name=self._model_name,
@@ -145,7 +156,12 @@ class OpenAICompatibleModelGateway:
                     internal_names=internal_tool_names(tools, tool_names),
                     tools_advertised=bool(tools),
                 )
+                log_provider_attempt(
+                    call_id, retry_count + 1, started, attempt_started, completion=completion
+                )
+                return completion
             except Exception as exc:
+                log_provider_attempt(call_id, retry_count + 1, started, attempt_started, error=exc)
                 if isinstance(exc, ModelResponseRejectedError):
                     if retry_count or deadline_s is not None:
                         exc.retryable = False
@@ -188,6 +204,7 @@ class OpenAICompatibleModelGateway:
         client = self._client or httpx.Client(timeout=self._client_timeout())
         should_close = self._client is None
         started = perf_counter()
+        call_id = uuid4().hex
         retry_count = 0
         public_delta_emitted = False
 
@@ -197,6 +214,7 @@ class OpenAICompatibleModelGateway:
 
         try:
             while True:
+                attempt_started = perf_counter()
                 try:
                     response_data = read_openai_stream(
                         client,
@@ -211,7 +229,7 @@ class OpenAICompatibleModelGateway:
                     public_delta_emitted = (
                         response_data.get("_zebra_time_to_first_public_text_ms") is not None
                     )
-                    return parse_completion(
+                    completion = parse_completion(
                         response_data,
                         provider_name=self._provider_name,
                         default_model_name=self._model_name,
@@ -222,7 +240,14 @@ class OpenAICompatibleModelGateway:
                         internal_names=internal_tool_names(tools, tool_names),
                         tools_advertised=bool(tools),
                     )
+                    log_provider_attempt(
+                        call_id, retry_count + 1, started, attempt_started, completion=completion
+                    )
+                    return completion
                 except Exception as exc:
+                    log_provider_attempt(
+                        call_id, retry_count + 1, started, attempt_started, error=exc
+                    )
                     if isinstance(exc, ModelResponseRejectedError):
                         # Do not renew a spent transport budget through Harness repair.
                         if public_delta_emitted or retry_count:

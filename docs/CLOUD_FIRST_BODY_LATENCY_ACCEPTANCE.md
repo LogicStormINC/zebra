@@ -351,3 +351,62 @@ native/static logs and normal-active.safe.json. Next narrow slice: retain safe p
 retry reason/duration and distinguish total-call vs successful-attempt TTFT, then inspect
 new real requests without replaying30e491ae. Worker connection overhead, adaptive Cloud
 reasoning policy and the existing STOP/fullSQL80/distribution/lifecycle gates remain open.
+
+
+## PROVIDER-ATTEMPT-TRACE-01: retained retry diagnostics (2026-10-15)
+
+Normal Worker now emits one bounded JSON diagnostic per Gateway attempt, sharing a
+random call_id only within that logical call. Both Chat Completions and DeepSeek Responses,
+streaming and nonstreaming, use the same helper. Failed attempts retain exception class,
+normalized category, optional HTTP status, attempt duration and cumulative elapsed time.
+Successful completion retains attempt-relative first SSE/public text and reconstructed
+call_to_successful_attempt_public_text_ms (attempt entry offset + stream TTFT). This
+last value includes earlier failed attempts; it is not the earliest SSE across failed
+attempts, an HTTP-only timer, or browser TTFT. Integer rounding and Gateway-to-reader
+call entry contribute a small measurement boundary difference. Existing durable fields
+remain successful-attempt-relative; their contract has not silently changed.
+
+Failed attempts and recovered retries log at WARNING so the normal Worker default
+retains them. Ordinary success logs at INFO, intentionally absent from default Worker
+logs. No exception message/traceback, URL, header, request/response body, model text or
+reasoning is logged. No per-delta records, SQL/event writes, new dependency, authority
+cache or transport behavior change. Retry count/budget, no retry after semantic output,
+private reasoning, deadline behavior and explicit high effort remain unchanged.
+
+21 new deterministic checks first failed (20 missing diagnostics, then default-warning
+visibility);141 focused cases pass including existing stream recovery/deadline, ordinary
+Gateway and empty-reasoning regressions. make check passes3067 file sizes/Ruff/mypy1278/
+eval30. This is a diagnostic correction, not an independently demonstrated speedup.
+
+Three fresh normal-page requests use Flash/high and actual transient_v2, all canonically
+completed with one logical main-model call, zero tools/OCI and zero Gateway retries:
+
+| Run | Send→first visible body | Send→model-start event | Provider total / attempt first text | First observed busy |
+| --- | ---: | ---: | ---: | --- |
+|5ca5dab0-74a8-4387-87c8-2157671062c1|5651.8ms|4818.6ms|489 /470ms|true|
+|64d88bb9-2a6c-48da-b047-712b80d3cd54|6084.8ms|4217.5ms|754 /715ms|false|
+|8a47451e-7148-4222-9247-e480916d497e|5363.9ms|3561.1ms|532 /501ms|false|
+
+Page median5651.8ms, observed range5363.9–6084.8ms, n3 only. First page provisional
+body precedes canonical answer_committed by about500.5ms, confirming short drafts can
+reach the page too. Later short answers were first observed final; this does not prove
+withholding. Model-start events precede actual Provider HTTP, so these event spans do
+not isolate a precise pre-network duration. No fresh Provider400, quality revision or
+Gateway retry was observed. The old30e491ae first failed attempt is still unrecoverable:
+its exact HTTP/transport/provider cause remains unknown, not fixed by speculation.
+Do not compare12.3378s with these no-retry samples as a causal speedup percentage.
+
+Normal Workere76adcdc54c51b5d8b3692b13f8af52e81dcb3d075d328d23223bb26e671e93a
+active/healthy, APIc0b8e9dc unchanged. Original six-file composition/entrypoints/commands
+and24 live source hashes verified. No temporary launcher, browser observer/global or
+Network recording remains. Private evidence .artifacts/provider-attempt-20261015 contains
+red/focused/static logs, canonical/page/attempts.safe.json, candidate and normal-active
+hashes, and completed-page.png. No old Run replay, unrelated fixture edits or publication.
+
+Next measured optimization target remains the normal page's3.56–4.82s to model-start
+event. Earlier actual-HTTP traces separately identified Cloud admission and Worker
+native Task I/O connections; existing composition pool explicitly excludes killable
+bounded Task I/O. Reusing that pool blindly would change the deadline/isolation boundary.
+Do not add a second generic pool or shorten Provider timeouts without evidence. Adaptive
+reasoning policy, stable cold/hot/concurrent distributions, STOP, full-workload SQL80%
+and capacity/GC lifecycle gates remain open.
