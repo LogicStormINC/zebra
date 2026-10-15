@@ -1,5 +1,6 @@
 import pytest
 from agent_runtime.web_content import project_web_text
+from agent_tools.output_projection import ToolOutputProjector
 
 
 def test_html_projection_keeps_readable_order_and_drops_inactive_content() -> None:
@@ -59,3 +60,47 @@ def test_html_projection_rejects_pages_without_readable_text() -> None:
             content_type="text/html",
             max_output_bytes=128,
         )
+
+
+@pytest.mark.parametrize("landmark", ['main', 'div role="main"'])
+def test_main_landmark_keeps_article_date_in_bounded_model_context(landmark: str) -> None:
+    tag = landmark.split()[0]
+    html = (
+        f"<header>{'Menu item ' * 700}</header><{landmark}>"
+        "<header><h1>Release news</h1><time>May 01, 2025</time></header>"
+        f"<p>{'Release feature ' * 900}</p></{tag}><footer>Site links</footer>"
+    )
+    text, _ = project_web_text(html, content_type="text/html", max_output_bytes=262_144)
+    saved: list[str] = []
+
+    def persist(content: str, name: str) -> str:
+        saved.append(content)
+        return "artifact://release.txt"
+
+    output = ToolOutputProjector(persist).project_text(text, artifact_name="release.txt")
+
+    assert "May 01, 2025" in output.model_output
+    assert "Release news" in output.model_output
+    assert "Menu item" not in text and "Site links" not in text
+    assert saved == [text]  # Existing artifact path retains the complete extracted main.
+    assert output.metadata["output_truncated"] is True
+
+
+@pytest.mark.parametrize(
+    ("html", "expected"),
+    [
+        ("<header>Title</header><p>Unmarked body</p>", "Title\n\nUnmarked body"),
+        ("<p>Fallback</p><main></main>", "Fallback"),
+        ("<p>Fallback</p><main hidden>Secret</main>", "Fallback"),
+        ("<main>One</main><aside>Other</aside><main>Two</main>", "One\n\nTwo"),
+        ("<main>One<main>Two</main>Three</main>", "One\nTwo\nThree"),
+        ("<div role='main'>One<script>secret</div>still hidden</script>Two</div>", "OneTwo"),
+        ("<header>Menu</header><main><p>Unclosed body", "Unclosed body"),
+        ("<div><main>Body</div><footer>Other</footer>", "Body"),
+        ("<div role='MAIN'>Body</div><footer>Other</footer>", "Body"),
+    ],
+)
+def test_main_landmark_fallback_and_parser_boundaries(html: str, expected: str) -> None:
+    text, _ = project_web_text(html, content_type="text/html", max_output_bytes=65_536)
+
+    assert text == expected

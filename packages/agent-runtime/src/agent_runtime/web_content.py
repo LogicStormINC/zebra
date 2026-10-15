@@ -65,6 +65,18 @@ class _ReadableHtmlParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.parts: list[str] = []
         self._stack: list[tuple[str, bool]] = []
+        self._main_start: tuple[int, int] | None = None
+        self._main_parts: list[str] = []
+
+    @property
+    def readable_text(self) -> str:
+        main = self._main_parts.copy()
+        if self._main_start is not None:
+            main.extend(self.parts[self._main_start[1] :])
+        # ponytail: explicit main landmarks only; unmarked/empty pages keep full text.
+        return _normalize_readable_text("".join(main)) or _normalize_readable_text(
+            "".join(self.parts)
+        )
 
     @property
     def ignoring(self) -> bool:
@@ -86,6 +98,10 @@ class _ReadableHtmlParser(HTMLParser):
             self._stack.append((tag, ignored))
         if parent_ignored or ignored:
             return
+        if self._main_start is None and tag not in _VOID_TAGS and (
+            tag == "main" or (attributes.get("role") or "").strip().lower() == "main"
+        ):
+            self._main_start = (len(self._stack), len(self.parts))
         if tag == "li":
             self.parts.append("\n- ")
         elif tag in _BLOCK_TAGS:
@@ -114,6 +130,10 @@ class _ReadableHtmlParser(HTMLParser):
             return
         was_ignoring = self.ignoring
         del self._stack[match:]
+        if self._main_start is not None and match < self._main_start[0]:
+            self._main_parts.extend(self.parts[self._main_start[1] :])
+            self._main_parts.append("\n\n")
+            self._main_start = None
         if was_ignoring or self.ignoring:
             return
         if tag in _BLOCK_TAGS:
@@ -143,7 +163,7 @@ def project_web_text(
             parser.close()
         except (AssertionError, ValueError) as exc:
             raise ValueError("HTML response could not be projected safely") from exc
-        projected = _normalize_readable_text("".join(parser.parts))
+        projected = parser.readable_text
         if not projected:
             raise ValueError("HTML response has no readable text")
         mode = "html_to_text"

@@ -6158,3 +6158,17 @@ Session；每次fresh连接/ownership、50ms轮询和2s累计预算保留。Cont
 415SQL/66连接保留；正常Worker76937731/API不变，六Compose/入口/30源hash核对。
 检索质量/checkpoint、完整系统SQL80/STOP/GC/稳定分布仍未过。详见
 docs/CLOUD_WEB_CONTROL_READ_ACCEPTANCE.md，仅本地集成，不推送/远端部署。
+
+
+### 2026-10-15 — WEB-RETRIEVAL-01
+
+共享HTMLParser优先可见main/role main，未标记/空区域回退原全文，保留隐藏/script安全及
+字节/模型预算。固定Redis官方HTML21883→14833字符，日期6560→296位置，通用投影
+从省略日期变为保留；PG未标记页面不变。11新检查红→绿，99相关通过；Ruff排除私有
+.artifacts、mypy1278/eval30/文件门通过，无旧fixture扩展。两个新真实high/v2Run均完成，
+原持久Redis工具输出日期false→true。总58.225→52.419s、SQL5025→4397，但模型6→5/
+工具9→8、两侧各2失败且网络等待增加，不归因总差值或宣称稳定收益。两路并行/启动
+415SQL、66连接及fresh scalar保留；正常d9d84e3c/API不变、六Compose/入口/31hash核对。
+检索完整query本地未丢，但cn.Bing重复首页/site限定无效，搜狗备用报错；上游原因仍
+未彻底定位，未改全局引擎/语言或掩盖失败。报告docs/CLOUD_WEB_RETRIEVAL_ACCEPTANCE.md，
+私有证据.artifacts/web-retrieval-20261015。整体SQL80/STOP/GC/稳定分布未验收。
