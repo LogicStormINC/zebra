@@ -264,7 +264,7 @@ class LocalToolGateway(ToolGatewayPort):
         for tool in tools:
             if tool.contract.name in enabled_names:
                 registry.register(tool.contract, tool.handle)
-        register_web_tools(
+        self._runtime_free_web_tools = register_web_tools(
             registry,
             enabled_names=enabled_names,
             workspace_root=workspace_root,
@@ -383,9 +383,10 @@ class LocalToolGateway(ToolGatewayPort):
     def execute(self, tool_call: ToolCall) -> ToolResult:
         if self._network_check is not None:
             self._network_check()
-        # ponytail: every local call conservatively needs the runtime; narrow only
-        # after proving individual tool dependencies. Host/Client routing is separate.
-        if isinstance(self._runtime, DeferredRuntime):
+        # ponytail: only audited default native Web handlers skip provisioning;
+        # custom transports and all other tools retain the conservative boundary.
+        if (isinstance(self._runtime, DeferredRuntime)
+                and tool_call.name not in self._runtime_free_web_tools):
             self._runtime.ensure_ready()
         try:
             result = self._executor.execute(tool_call)

@@ -58,8 +58,8 @@ def register_web_tools(
     fetch_factory: Callable[..., WebGatewayTransport],
     search_factory: Callable[..., WebSearchTransport],
     web_search_private_backend: bool = False,
-) -> None:
-    """Existing gateway composition; factories retain legacy injected transport compatibility."""
+) -> frozenset[str]:
+    """Register Web handlers and return the audited runtime-free subset."""
     search_endpoint = optional_web_search_endpoint(
         web_search_endpoint, web_pipeline_v2=web_pipeline_v2
     )
@@ -79,7 +79,7 @@ def register_web_tools(
                 search_endpoint.url if web_search_private_backend and search_endpoint else None
             ),
         )
-        return
+        return frozenset()
     # Legacy remains default until v2 replicates durable network authority.
     cancel_options = (
         {"network_cancellation_check": network_cancellation_check}
@@ -88,6 +88,7 @@ def register_web_tools(
     )
     # ponytail: two network handlers per gateway/attempt; fleet-wide admission is separate.
     slots = BoundedSemaphore(2)
+    runtime_free: set[str] = set()
 
     def register(tool: WebFetchTool | WebSearchTool, *, parallel_safe: bool) -> None:
         if not parallel_safe:
@@ -99,6 +100,8 @@ def register_web_tools(
                 return tool.handle(call)
 
         registry.register(replace(tool.contract, parallel_safe=True), handle)
+        # These exact default transports use native egress, never RuntimePort.
+        runtime_free.add(tool.contract.name)
 
     fetch_transport = web_gateway_transport or fetch_factory(
         use_system_proxy=trusted_local, **cancel_options
@@ -122,6 +125,8 @@ def register_web_tools(
         register(search, parallel_safe=(
             web_search_transport is None and type(search_transport) is LocalWebSearchTransport
         ))
+
+    return frozenset(runtime_free)
 
 
 def optional_web_search_endpoint(

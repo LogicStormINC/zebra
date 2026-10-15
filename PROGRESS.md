@@ -6203,3 +6203,15 @@ SQL80%。实际首轮候选从首页/教程变具体公告；两路并行及启�
 正常Worker d6b72027/APIc0b不变、32hash/六Compose；搜索245b675f/正常一Compose和
 主checkout配置、原envfile已核对；trace/观察器/自有隔离容器卷/临时secret撤除。
 报告docs/CLOUD_FREE_SEARCH_PROVIDER_ACCEPTANCE.md；本地集成，保留27脏改动，不推送。
+
+
+### 2026-10-15 — WEB-RUNTIME-DEFER-01
+
+共享工具入口对原生search/fetch也ensure_ready，真实OCI create796/start707/exec960ms；
+仅实际注册的默认精确类型网络handler跳过DeferredRuntime，自定义/其它工具与Web另一
+pipeline保守不变。新增7项红1→全绿，共90针对性检查，Ruff排除私有诊断/mypy1278/
+eval30/文件门过。两次新高/v2页面首工具3110→249ms、首区间SQL143→73、实例1→0，
+启动415SQL/66连接和并发2保留。整轮44.545→56.396s、SQL3989→4722，不报整体提速：
+A1搜索失败一次，B1Redis博客抓取超时并增轮6/工具9，精确日期质量仍未完全验收。
+正常Worker c7a422d5/API与Yahoo不变、32hash/原六Compose正常入口；报告
+docs/CLOUD_WEB_RUNTIME_DEFER_ACCEPTANCE.md。只本地集成，保留27脏改动，不推送。
