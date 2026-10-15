@@ -16,11 +16,20 @@ from agent_core.domain.identifiers import ClientSessionId, TaskId
 from agent_core.ports.client_control_lease import ClientControlLeasePort
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.task_io import TaskIoConnections
 
 
 class PostgresClientControlLeaseStore(ClientControlLeasePort):
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    def __init__(
+        self,
+        dsn: str,
+        *,
+        deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> None:
+        self._database = PostgresDatabase(
+            dsn, deployment_namespace=deployment_namespace, task_io_connections=task_io_connections
+        )
         self._namespace = self._database.deployment_namespace
 
     def claim_controller(

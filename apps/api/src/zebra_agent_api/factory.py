@@ -213,6 +213,7 @@ def create_app(
             active_settings.database_url,
             deployment_namespace=namespace,
             client_integration_enabled=True,
+            task_io_connections=getattr(active_stores, "task_io_connections", None),
         )
     from zebra_agent_api.platform_operator_auth import (
         StaticTokenPlatformOperatorAuthorizer,

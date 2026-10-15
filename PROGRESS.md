@@ -6287,3 +6287,14 @@ SDK协商，原验证/旧路径保留，页面收益估计数百毫秒未验收�
 正常Worker5d086202/APIc0b/原六Compose恢复、43hash/搜索配置环境核对，临时观察器
 撤除。本地诊断文档集成保留27脏改动，不推送。详细方案
  docs/CLOUD_WEB_PREMODEL_ADMISSION_ACCEPTANCE.md；稳定首正文/整体SQL目标仍OPEN。
+
+## 2026-10-15 CLIENT-SURFACE-01 local acceptance
+
+Generic Cloud mount+bind3→2HTTP, SDK helper and minimal Trench negotiation2731737 accepted.
+Actual B1 cold-resolver201ms regression fixed through existing Cloud connector injection;
+A1→B2 Client249.6→198.0ms/SQL38→36, first visible body4560.8→4378.8ms only4.0% in one pair.
+Worker startup412SQL/65connect unchanged; high/v2 preserved, normal API/Worker/search verified.
+All three new Runs retained; B2tools5 vs A1/B1six so total completion gain is not causal.
+Focused native85, SDK25+check, consumer18/2skips, source quality/eval30 pass; raw makecheck
+stops on private artifact lint. Full evidence: docs/CLOUD_CLIENT_SURFACE_ACCEPTANCE.md.
+No push/npm/remote deployment or oldRun replay. Local integration target remainscloud-agent-trench.

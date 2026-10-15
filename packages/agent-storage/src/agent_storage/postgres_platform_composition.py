@@ -30,6 +30,7 @@ from agent_storage.postgres.orchestration import PostgresOrchestrationStore
 from agent_storage.postgres.subagent_delegation import (
     PostgresSubagentDelegationStore,
 )
+from agent_storage.postgres.task_io import TaskIoConnections
 
 
 def postgres_agent_platform_control_plane(
@@ -37,6 +38,7 @@ def postgres_agent_platform_control_plane(
     *,
     deployment_namespace: str,
     client_integration_enabled: bool = False,
+    task_io_connections: TaskIoConnections | None = None,
 ) -> AgentPlatformControlPlane:
     """Build the platform bundle; adapters never run DDL here."""
 
@@ -44,13 +46,13 @@ def postgres_agent_platform_control_plane(
     if client_integration_enabled:
         client_stores = {
             "frontend_capabilities": PostgresClientCapabilityRegistry(
-                dsn, deployment_namespace=namespace
+                dsn, deployment_namespace=namespace, task_io_connections=task_io_connections
             ),
             "client_sessions": PostgresClientSessionRegistry(
-                dsn, deployment_namespace=namespace
+                dsn, deployment_namespace=namespace, task_io_connections=task_io_connections
             ),
             "client_control_leases": PostgresClientControlLeaseStore(
-                dsn, deployment_namespace=namespace
+                dsn, deployment_namespace=namespace, task_io_connections=task_io_connections
             ),
             "client_effects": PostgresClientEffectDispatch(
                 dsn, deployment_namespace=namespace

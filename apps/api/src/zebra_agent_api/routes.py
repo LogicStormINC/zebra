@@ -8,9 +8,7 @@ from uuid import UUID
 from agent_core.domain.host_authority import HostContextEnvelope
 from agent_core.domain.identifiers import SessionId
 from agent_core.domain.session_handoff import HandoffActorKind
-from agent_security import SUPPORTED_NETWORK_PROFILES
 from agent_security.host_grant import VerifiedHostGrant
-from agent_storage.postgres.migrations import MIGRATIONS
 
 from zebra_agent_api.ag_ui_command import handle_agui_command
 from zebra_agent_api.agent_definitions import handle_agent_definition_route
@@ -56,14 +54,7 @@ class RouteAdapter:
         if method == "GET" and request.path == "/capabilities/mcp/prompts":
             return self.app.get_mcp_prompts()
         if method == "GET" and request.path == "/capabilities/runtime":
-            return ApiResponse(
-                200,
-                {
-                    "contract_version": 1,
-                    "schema_version": MIGRATIONS[-1].version,
-                    "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
-                },
-            )
+            return self.app.get_runtime_capabilities()
         platform_client_response = handle_platform_client_route(self.app, request)
         if platform_client_response is not None:
             return platform_client_response

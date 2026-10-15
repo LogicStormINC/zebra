@@ -111,6 +111,14 @@ def validate_host_target(
             task_id, run_id = parse_task_id(parts[2]), parts[4]
         else:
             _reject(bad_request("invalid AG-UI resource target"))
+    elif path.startswith("/v1/tasks/") and path.endswith("/client-surface"):
+        from zebra_agent_api.client_surface import client_surface_target
+
+        try:
+            target, run_id = client_surface_target(path)
+        except ValueError:
+            _reject(bad_request("invalid client surface target"))
+        task_id = parse_task_id(target)
     elif len(parts) >= 2 and parts[0] == "tasks":
         task_id = parse_task_id(parts[1])
     elif len(parts) >= 2 and parts[0] in {"sessions", "approvals"}:

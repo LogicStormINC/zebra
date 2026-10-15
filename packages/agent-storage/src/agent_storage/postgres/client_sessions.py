@@ -39,11 +39,20 @@ from agent_storage.postgres.client_control_leases import (
     PostgresClientControlLeaseStore as PostgresClientControlLeaseStore,
 )
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.task_io import TaskIoConnections
 
 
 class PostgresClientSessionRegistry(ClientSessionRegistryPort):
-    def __init__(self, dsn: str, *, deployment_namespace: str) -> None:
-        self._database = PostgresDatabase(dsn, deployment_namespace=deployment_namespace)
+    def __init__(
+        self,
+        dsn: str,
+        *,
+        deployment_namespace: str,
+        task_io_connections: TaskIoConnections | None = None,
+    ) -> None:
+        self._database = PostgresDatabase(
+            dsn, deployment_namespace=deployment_namespace, task_io_connections=task_io_connections
+        )
         self._namespace = self._database.deployment_namespace
 
     def create_session(self, session: ClientSession) -> None:

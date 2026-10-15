@@ -14987,3 +14987,16 @@ SDK协商，原验证/旧路径保留，页面收益估计数百毫秒未验收�
 正常Worker5d086202/APIc0b/原六Compose恢复、43hash/搜索配置环境核对，临时观察器
 撤除。本地诊断文档集成保留27脏改动，不推送。详细方案
  docs/CLOUD_WEB_PREMODEL_ADMISSION_ACCEPTANCE.md；稳定首正文/整体SQL目标仍OPEN。
+
+## 2026-10-15 CLIENT-SURFACE-01
+
+Completed composite Client mount+bind API/capability, strict TypeScript transport helper,
+and consumer-only Trench negotiation (local2731737). Red→green API/SDK/consumer/resolver checks,
+real PostgreSQL fence/retry/concurrency and exact Task/Host authority85pass. Three fresh high/v2
+search pages A1/B1/B2 completed. B1 exposed201ms three cold DNS regressions; reused Cloud existing
+TaskIoConnections in three Client adapters, preserving fresh connections/auth and2s bound.
+B2Client198ms vs250ms, first public4379ms vs4561ms; tools differ so no causal full-run speedup.
+Source quality/mypy1283/size3082/eval30 and SDK check/25pass; consumer18pass2existing skips.
+Normal six-file composition, original Worker/search and accepted source hashes verified;
+trace/page instrumentation removed, own disposable PG removed. No unrelated tests repaired,
+no oldRun reexecution, push/npm/remote deployment. Acceptance doc contains precise proof limits.

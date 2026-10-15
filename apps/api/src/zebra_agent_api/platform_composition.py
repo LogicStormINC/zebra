@@ -9,6 +9,7 @@ is referenced here.
 from __future__ import annotations
 
 from agent_core.ports.platform_control_plane import AgentPlatformControlPlane
+from agent_storage.postgres.task_io import TaskIoConnections
 from agent_storage.postgres_platform_composition import (
     postgres_agent_platform_control_plane,
 )
@@ -24,6 +25,7 @@ def compose_api_platform_control_plane(
     *,
     deployment_namespace: str,
     client_integration_enabled: bool = False,
+    task_io_connections: TaskIoConnections | None = None,
 ) -> AgentPlatformControlPlane:
     if not dsn.strip():
         raise ValueError("cloud API startup requires a PostgreSQL DSN")
@@ -33,6 +35,7 @@ def compose_api_platform_control_plane(
         dsn,
         deployment_namespace=deployment_namespace,
         client_integration_enabled=client_integration_enabled,
+        task_io_connections=task_io_connections,
     )
     if client_integration_enabled:
         bundle.require_client_stores()

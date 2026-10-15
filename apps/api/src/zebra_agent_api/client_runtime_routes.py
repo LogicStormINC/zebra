@@ -27,6 +27,7 @@ from zebra_agent_api.client_sessions import (
     open_client_session,
     release_client_controller,
 )
+from zebra_agent_api.client_surface import mount_client_surface
 from zebra_agent_api.responses import ApiResponse, bad_request
 
 _SESSION_PREFIX = "/v1/client-sessions"
@@ -44,7 +45,7 @@ def handle_client_runtime_route(
     if not (
         path.startswith(_SESSION_PREFIX)
         or path.startswith(_EFFECT_PREFIX)
-        or path.endswith("/client-bindings")
+        or path.endswith(("/client-bindings", "/client-surface"))
     ):
         return None
     platform = app.client_platform
@@ -63,6 +64,10 @@ def handle_client_runtime_route(
                 "reason": "client_session_authorization_required",
             },
         )
+    if path.endswith("/client-surface"):
+        if method != "POST":
+            return bad_request("unsupported client surface operation")
+        return mount_client_surface(app, request, auth)
     if path.startswith(_SESSION_PREFIX):
         return _session_route(app, request, method, path, auth)
     if path.startswith(_EFFECT_PREFIX):

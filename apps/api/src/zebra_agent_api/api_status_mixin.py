@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from agent_runtime import build_mcp_capability_inventory, discover_mcp_prompts
+from agent_security import SUPPORTED_NETWORK_PROFILES
+from agent_storage.postgres.migrations import MIGRATIONS
 from zebra_agent_config import ZebraAgentSettings
 
 from zebra_agent_api.responses import ApiResponse
@@ -8,6 +10,19 @@ from zebra_agent_api.responses import ApiResponse
 
 class ApiStatusMixin:
     settings: ZebraAgentSettings
+
+    def get_runtime_capabilities(self) -> ApiResponse:
+        platform = getattr(self, "client_platform", None)
+        available = platform is not None and all(
+            getattr(platform, name, None) is not None
+            for name in ("client_sessions", "frontend_capabilities", "client_control_leases")
+        )
+        return ApiResponse(200, {
+            "contract_version": 1,
+            "schema_version": MIGRATIONS[-1].version,
+            "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
+            "client_surface_contract_version": 1 if available else 0,
+        })
 
     def health(self) -> ApiResponse:
         return ApiResponse(
