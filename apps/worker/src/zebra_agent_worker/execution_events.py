@@ -13,7 +13,7 @@ from uuid import UUID
 from agent_core.application.session_projection import apply_event
 from agent_core.application.workspace_projection import apply_event as apply_workspace_event
 from agent_core.domain.events import EventActor, EventType, SessionEvent
-from agent_core.domain.identifiers import CorrelationId
+from agent_core.domain.identifiers import CorrelationId, SessionId
 from agent_core.domain.sessions import Session, SessionStatus
 from agent_core.domain.workspaces import WorkspaceProjection
 from agent_core.harness.models import HarnessEventDraft
@@ -91,6 +91,7 @@ class DurableHarnessEventRecorder:
         worker_mutation_authority: WorkerMutationAuthority | None = None,
         tail_reader: Callable[[WorkerMutationAuthority, int | None], SessionEventPage]
         | None = None,
+        execution_status_reader: Callable[[SessionId], SessionStatus | None] | None = None,
     ) -> None:
         if (worker_projection_transaction is None) != (worker_mutation_authority is None):
             raise ValueError(
@@ -109,6 +110,7 @@ class DurableHarnessEventRecorder:
         if tail_reader is not None and worker_mutation_authority is None:
             raise ValueError("bounded tail reader requires worker mutation authority")
         self._tail_reader = tail_reader
+        self._execution_status_reader = execution_status_reader
         self._tail_highwater: int | None = None
         self._events: list[SessionEvent] = []
         # Timer and execution callbacks share the same per-recorder, reentrant boundary.
@@ -120,8 +122,19 @@ class DurableHarnessEventRecorder:
         if self.effect_started_listener is not None:
             self.effect_started_listener(call_id)
 
+    @_serialized
     def require_active_execution(self) -> None:
-        self.read_active_session()
+        if self._execution_status_reader is None:
+            self.read_active_session()
+            return
+        status = self._execution_status_reader(self._session.session_id)
+        if status is None:
+            raise ValueError("execution control projection is missing")
+        if status in _INTERRUPTED_STATUSES:
+            # Preserve the original fresh Session/error path for control transitions.
+            self.read_active_session()
+            return
+        self._ownership_check()
 
     @_serialized
     def read_active_session(self) -> Session:

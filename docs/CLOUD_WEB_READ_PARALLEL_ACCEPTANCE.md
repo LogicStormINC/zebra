@@ -128,3 +128,12 @@ API仍为c0b8e9dc。恢复原六份Compose、entrypoint与command，两个服务
 结果、四组DOM/canonical/Worker安全摘录、profile、28源hash、镜像与正常入口核对。
 verify.py可复核四组终态、高思考、实际网络峰值、启动固定成本和正常服务源码。
 未推送、发布npm或远端部署；完整STOP、系统SQL80%、容量/GC与稳定分布仍为独立未过项。
+
+
+## 后续：WEB-CONTROL-READ-01
+
+第二步已本地实施，详见[控制读取验收](CLOUD_WEB_CONTROL_READ_ACCEPTANCE.md)。
+活动轮询从SET+完整Session变为一次标量SELECT，保持50ms轮询/新连接/原归属检查。
+固定100检查显式SQL200→100，SELECT/连接仍100；97聚焦通过，真实PG取消能回收
+两路TLS子进程。新页面46.166→34.971s、SQL5173→3231，但模型/工具次数不同，
+不能归因全部收益。两路峰值及415启动SQL/66连接保留，正常76937731镜像已核对。

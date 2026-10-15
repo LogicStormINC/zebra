@@ -6143,3 +6143,18 @@ makecheck原命令因扫描未跟踪诊断脚本失败，未修无关文件。�
 415 SQL/66连接不变。整轮55–65s、SQL5127–6449，未证明总体提速或SQL降低。
 正常Workerb9f1e732/APIc0b8e9dc、原六份Compose/入口/命令/28源hash已核对。
 详见docs/CLOUD_WEB_READ_PARALLEL_ACCEPTANCE.md。第2步控制SQL及STOP/GC仍未通过。
+
+
+### 2026-10-15 — WEB-CONTROL-READ-01
+
+三份生产文件精简活动Cloud控制轮询：一次namespaced status SELECT替换SET+完整
+Session；每次fresh连接/ownership、50ms轮询和2s累计预算保留。Context及Local保持
+完整读取，终止状态回原新鲜Session异常路径；自定义get_session覆盖不被绕过。
+固定100检查200→100显式cursor调用，SELECT/新连接均仍100，不冒充服务器SQL
+或连接下降50%。97相关检查全通过，含独立PG新鲜/隔离/锁期限与两路真实TLS取消
+回收；Ruff排除私有.artifacts、mypy1278/eval30/文件门通过，原makecheck仍因诊断
+脚本Ruff失败。两个新v2/high联网Run完成：46.166→34.971s、SQL5173→3231，模型
+6→4轮/工具9→6，未归因整轮差值；新样本272活动轮询各少SET。两路并行、启动
+415SQL/66连接保留；正常Worker76937731/API不变，六Compose/入口/30源hash核对。
+检索质量/checkpoint、完整系统SQL80/STOP/GC/稳定分布仍未过。详见
+docs/CLOUD_WEB_CONTROL_READ_ACCEPTANCE.md，仅本地集成，不推送/远端部署。

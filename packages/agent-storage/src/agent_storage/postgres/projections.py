@@ -46,6 +46,25 @@ class PostgresProjectionStore(ProjectionStorePort):
                 session_id,
             )
 
+    _native_get_session = get_session
+
+    def get_session_status(self, session_id: SessionId) -> SessionStatus | None:
+        """Fresh control poll without Session JSON or an extra SET statement."""
+        if (
+            type(self) is not PostgresProjectionStore
+            or getattr(self.get_session, "__func__", None)
+            is not PostgresProjectionStore._native_get_session
+        ):
+            session = self.get_session(session_id)
+            return session.status if session is not None else None
+        with self._database.connect_task_io() as connection:
+            row = connection.execute(
+                "SELECT status FROM session_projections "
+                "WHERE deployment_namespace=%s AND session_id=%s",
+                (self._database.deployment_namespace, session_id),
+            ).fetchone()
+        return SessionStatus(row["status"]) if row is not None else None
+
     def get_session_namespace(self, session_id: SessionId) -> tuple[bool, str | None]:
         with self._database.connect_task_io() as connection:
             return read_session_namespace(

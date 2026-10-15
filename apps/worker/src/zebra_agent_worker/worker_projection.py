@@ -8,7 +8,7 @@ from agent_core.ports import (
     WorkerProjectionTransactionPort,
 )
 from agent_core.ports.session_recovery import SessionEventPage
-from agent_storage import ControlPlaneStores, PostgresControlPlaneStores
+from agent_storage import ControlPlaneStores, PostgresControlPlaneStores, PostgresProjectionStore
 
 from zebra_agent_worker.execution_events import DurableHarnessEventRecorder
 from zebra_agent_worker.model_call_index import ModelCallIndexer
@@ -68,4 +68,11 @@ class WorkerProjectionRecorderFactory:
             worker_projection_transaction=self._transaction,
             worker_mutation_authority=authority,
             tail_reader=self._tail_reader,
+            execution_status_reader=(
+                self._stores.sessions.get_session_status
+                if authority is not None
+                and isinstance(self._stores, PostgresControlPlaneStores)
+                and isinstance(self._stores.sessions, PostgresProjectionStore)
+                else None
+            ),
         )

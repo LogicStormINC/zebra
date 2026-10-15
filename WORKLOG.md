@@ -14838,3 +14838,18 @@ Ruff、mypy1278、eval30、文件门通过，保留边界。受控四输入三�
 正常b9f1e732 Worker/API不变已激活，28源hash与原六Compose/入口命令核对。浏览器
 原结果重新加载成功，无旧Run重放；临时trace与观察器撤除。报告见
 docs/CLOUD_WEB_READ_PARALLEL_ACCEPTANCE.md，私有证据.artifacts/web-read-parallel-20261015。
+
+
+### 2026-10-15 — WEB-CONTROL-READ-01
+
+按继续指令实施第二步，限定projections.py/execution_events.py/worker_projection.py。
+精简活动检查为一次fresh status SELECT，不改频率/连接/权限/Context快照。基线11例
+4红6绿1skip，加入factory和独立PG双TLS验证后，97聚焦全通过。独立自建PG数据库
+只用随机schema，无业务迁移；锁期限的原生LockNotAvailable纳入预期失败类型，
+没有修旧fixture。固定100poll两轮ABBA确认200→100显式SQL、连接100不变，耗时
+波动不声称稳定延迟百分比。两个新真实页面均v2/high/completed/一sandbox/网络峰值2；
+46.166→34.971s、5173→3231cursorcalls，但模型6→4/工具9→6，不能全部归因本次。
+新版272次scalarpoll各删一SET，Context仍保留2次完整控制读取。正常76937731镜像/
+APIc0b8e9dc/六Compose/入口命令/30hash核对；计时器/trace撤除，测试容器及临时卷
+清理。makecheck因私有脚本Ruff失败，排除后Ruff、mypy1278/eval30和文件门通过。
+报告docs/CLOUD_WEB_CONTROL_READ_ACCEPTANCE.md；私有证据.artifacts/web-control-read-20261015。
