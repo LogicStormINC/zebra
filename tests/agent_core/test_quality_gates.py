@@ -477,3 +477,17 @@ def test_reporting_a_tool_result_does_not_impose_a_document_contract() -> None:
     )
     assert not evaluate_answer(prompt, "2", contract=explicit).passed
     assert not evaluate_answer("请生成详细的 markdown 报告", "2").passed
+
+
+def test_negated_requirements_do_not_impose_research_or_structure() -> None:
+    prompt = (
+        '请仅生成一个完全虚构的中文故事，约800字，故事发生在不存在的星球，'
+        '不涉及任何真实资料。不调用工具、不检索事实、不列执行计划，直接开始正文。'
+    )
+    contract = infer_task_contract(prompt)
+    assert contract.task_type.value == "answer"
+    assert not contract.require_structure
+    assert evaluate_answer(prompt, "蓝色星球上，有个孩子。", contract=contract).passed
+    assert infer_task_contract("不要搜索，而是研究最新进展并给出来源").require_evidence_reference
+    assert infer_task_contract("不用列计划；请给出详细方案").require_structure
+    assert infer_task_contract("不超过100字，只回复结果").max_characters == 100

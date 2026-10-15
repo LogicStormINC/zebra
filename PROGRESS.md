@@ -6090,3 +6090,7 @@ Core source commits locally integrated and normal Worker/API restored; defer_pro
 ### Focused quality and Provider repair 2026-10-15
 
 QUALITY-PROVIDER-REPAIR-01 fixes ambiguous bare 报告 forcing long structured output, and preserves exact empty DeepSeek reasoning for same-turn SYSTEM quality revisions. Controlled actual Provider pair: missing field400/present empty200; full real gateway completions pass stream/nonstream.71 focused regressions and make check pass. Normal local Worker updated,17 source hashes verified including all15 latency files; lazy flag/API unchanged. Final real-page DOM acceptance remains open due browser control timeouts after reconnect; no original Run replay or unrelated fixture work. See CLOUD_FIRST_BODY_LATENCY_ACCEPTANCE.md.
+
+### Real page quality/Provider acceptance 2026-10-15
+
+Browser restored. Fresh page revealed negated research/structure false positive; shared inference now excludes bounded negated clauses while preserving explicit contracts/length limits.108 focused tests + make check pass. Four fresh post-fix canonical v2 completions: story1model/0tools/0OCI, pure1/0/0, command2/1/1removed, pagepure1/0/0. Actual page first body5.518s short/14.334s story, both provisional before commit. Provider story TTFT8.764s, so stable3s page target is not achieved. Normal Workerb3f64784,17 source hashes verified/all prior latency files retained; API unchanged. Failure before follow-up retained; no old Run replay. See acceptance doc.

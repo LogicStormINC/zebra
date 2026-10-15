@@ -1,6 +1,6 @@
 # Cloud first-body latency acceptance
 
-2026-10-15. Core implementation locally active; concentrated acceptance has explicit limits; common Cloud Agent and five official npm packages. No push/publication/remote deployment.
+2026-10-15. Core implementation locally active. Focused quality/Provider repairs and actual-page provisional rendering now accepted; a stable 3-second send-to-body target is not achieved. Earlier evidence and failures remain below as historical snapshots. No push/publication/remote deployment.
 
 ## TRACE / DRAFT component
 
@@ -82,3 +82,25 @@ The fix preserves every returned string, including empty and whitespace, in the 
 Validation:71 focused quality/provider regressions pass; make check passes (3062 files, Ruff, mypy1278, eval30). No unrelated fixtures were changed. Worker image4436ee7fa90988ca2a5ce01c019743eb210c1bfdc277b8cf3cfa6cb4ca2ecf9f layers only the two repaired source files on the prior normal image1ddf79d7. All17 source hashes match (15 latency files plus2 repairs); defer_provision remains true and API image/normal entrypoint remain unchanged. The earlier paired latency measurements remain historical evidence, not a new performance distribution for this fix.
 
 Page acceptance is still pending: after the user restored the connection, Chrome tabs can be enumerated but Runtime.evaluate and focus commands time out before a usable page control session; native input also has no observable effect. The old completed conversation remains readable after reload, and no original Run was replayed. A fresh logged-in page with working control is needed for actual send-to-visible-body timing and canonical completion reconciliation. No placeholder, replay or backend-only timing is counted as that proof.
+
+
+## Real page acceptance after browser restart (2026-10-15)
+
+Chrome control recovered after user restart. A fresh actual-page fictitious-story request64753bdc-ead1-4f51-b14c-c633b9f04499 exposed a second instance of the same quality inference defect: 不检索事实 was classified as research and 不列执行计划 demanded structure. It displayed provisional body at18.604s but ultimately suspended for verified_evidence after2 model calls,0 tools. This failure is retained; neither it nor any original Run was replayed. Provider candidate TTFT13.278s shows this was not just transport waiting.
+
+The shared inference entry point now excludes bounded Chinese negated clauses before heuristic requirements, preserving length parsing first and explicit Host overrides. Punctuation and contrast stop the exclusion, so later affirmative research/structure requirements remain. This deliberately bounded heuristic is not a semantic question router. The regression reproduces the original failure, verifies the positive contrast cases and preserves 不超过100字. No new classifier/model/dependency or unrelated fixture edits.
+
+Four fresh post-fix requests reconciled against canonical Cloud events and Trench terminal state:
+
+| Sample | Canonical state | Main model calls / tools / instances | Actual page send-to-first-visible-body |
+| --- | --- | --- | --- |
+| Same fictitious story c88afcc1 | completed v2 |1 /0 /0|14.334s|
+| Short reply via normal BFF ed2a521d | completed v2 |1 /0 /0|not measured|
+| Actual command cf489d89 | completed v2 |2 /1 /1 removed|not measured|
+| Short reply via actual page e292a8f5 | completed v2 |1 /0 /0|5.5175s|
+
+The command actually ran python -c print(1+1), stdout2, exit0. No extra quality-revision model round or Provider400 occurred. BFF polling totals7.499s pure/16.216s command are terminal-observation times, not first body. The story's first visible draft contained79 characters and was aria-busy=true,1.686s before durable answer_committed. Short first draft was0.141s before answer_committed. MutationObserver checks nonempty visible .strategy-markdown; placeholders and collapsed work do not count. The first-nonbusy timer field is not treated as canonical completion; PostgreSQL terminal events are authoritative. Screenshot files capture final pages; first-draft timing is observer evidence, not a screenshot taken during drafting.
+
+Latency remains bounded by actual provider behavior: story Run→model-event4.748s, provider first-public-text8.764s with1052 reasoning tokens, actual page body14.334s. Short actual page Run→model-event2.803s, provider first-public-text1.916s, page body5.518s. These are a few new samples, not a new distribution or a same-prompt comparison against the earlier40-run cohort. Existing historical48.43% pre-model median benefit is not recomputed. Long high-thinking output can still exceed9–12s; no stable3s page SLA or complete latency optimization claim.
+
+Final focused checks:108 tests (72 quality/provider plus36 existing intent/negation/artifact) pass. make check passes3063 size files, Ruff, mypy1278 and eval30. Normal Worker imageb3f64784dd8ab3a86b2fb1b62e21548528c95777666dd21e021342f26153e54c; all17 source hashes verified, including every previously accepted latency file. API unchanged; defer_provision and v2 remain enabled. Temporary page timing listeners and batch globals removed, no trace monkeypatches or service overrides introduced. Evidence: .artifacts/quality-provider-repair-20261015/{fixed-story-page-timing.safe.json,fixed-story-db.safe.json,repaired-pair-db.safe.json,short-page-timing.safe.json,short-page-db.safe.json,fixed-story-final.png,short-page-final.png}. STOP/full paired SQL80% remains outside this acceptance.

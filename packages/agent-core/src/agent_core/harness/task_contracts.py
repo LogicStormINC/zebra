@@ -44,6 +44,14 @@ class TaskAcceptanceContract:
 def infer_task_contract(user_input: str) -> TaskAcceptanceContract:
     lowered = user_input.lower()
     max_characters = _inferred_max_characters(lowered)
+    # ponytail: exclude bounded negated clauses from heuristic requirements, not
+    # semantic intent parsing. Parse length limits first; Host contracts override.
+    lowered = re.sub(
+        r"(?:不要|不允许|禁止|无需|不用|不得|不)"
+        r"(?:(?!而是|但是|然后|并且|但)[^，。；,;!?！？\n]){1,160}",
+        "",
+        lowered,
+    )
     brief = _contains_any(lowered, ("简短", "简洁", "一句话", "brief", "concise")) or (
         max_characters is not None
         and max_characters <= 500
