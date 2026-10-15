@@ -14972,3 +14972,18 @@ persist写入后catch_up紧接repair内catch_up；仅删除重复调用，写前
 正常Worker5d086202/API与Yahoo不变，43hash/原六Compose入口核对；私有scratch/
 匿名卷/临时DSN清理，本地集成保留27脏改动，不推送。报告
  docs/CLOUD_WEB_PROGRESS_CATCHUP_ACCEPTANCE.md。全系统SQL/稳定首正文目标仍未完成。
+
+
+### 2026-10-15 — WEB-PREMODEL-ADMISSION-01
+
+只读完整API/Worker新真实搜索拆解，点击→实际HTTP3231.645ms=首次Cloud前419.169+
+串行准入1418.675+command到Worker243.194+Worker1150.606。首过程4911.4ms；
+本次5模型/8工具/0失败、高/v2/无retry/0sandbox；不与旧3轮请求比较整轮性能。
+HTTP合计952.776ms、间隙465.899ms；Client open/mount/bind窗口480.712ms，内部
+214.029、间隙266.682。首次JWKS resolve0.087ms，热身已生效。Context340/Task317
+为主要单段，尚无可直接删去的大重复；不再强凑毫秒修复。下一建议独立通用Client
+组合准入，复用现有control-plane服务并先定义幂等/credential/fence/部分失败契约，
+SDK协商，原验证/旧路径保留，页面收益估计数百毫秒未验收。未改生产/Host/SDK源码。
+正常Worker5d086202/APIc0b/原六Compose恢复、43hash/搜索配置环境核对，临时观察器
+撤除。本地诊断文档集成保留27脏改动，不推送。详细方案
+ docs/CLOUD_WEB_PREMODEL_ADMISSION_ACCEPTANCE.md；稳定首正文/整体SQL目标仍OPEN。
