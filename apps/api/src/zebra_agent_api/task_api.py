@@ -244,7 +244,14 @@ def create_task(
     session_id = response.body.get("session_id")
     if not isinstance(session_id, str):
         return ApiResponse(409, {"status": "projection_incomplete"})
-    task = app.stores.tasks.ensure_for_session(SessionId(UUID(session_id)))
+    # ponytail: atomic cloud admission already built the index; reuse its header.
+    # Missing/legacy indexes still use the existing preparation path.
+    task = (
+        app.stores.tasks.get_task(TaskId(UUID(session_id)))
+        if isinstance(app.stores, PostgresControlPlaneStores) else None
+    )
+    if task is None:
+        task = app.stores.tasks.ensure_for_session(SessionId(UUID(session_id)))
     active = app.stores.sessions.get_session(task.active_segment_id)
     if active is None:
         return ApiResponse(409, {"task_id": str(task.task_id), "status": "projection_incomplete"})

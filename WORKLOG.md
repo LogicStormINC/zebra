@@ -15288,3 +15288,13 @@ SEARCH-START-TOOL-WAIT-01 closeout: localcloud-agent-trench integrated/preserved
 - 正常 API 已更新；Worker/Search 保留原镜像，六 Compose/env/command 与103源码指纹复核。
 
 - 本地 FF 2eb15eba 到 cloud-agent-trench，保留27项无关脏状态；Host bca9952，未推送。正常B2原结果可见、接收器已关闭，无第五次模型Run；任务Review等待维护者边界。
+
+### 2026-10-17 CLOUD-START-TRANSPORT-01
+
+Luke Ding授权最小启动优化、真实页面配对；独立任务/分支，维护primary27项脏状态。
+无模型原生探针定位重复ensure22条可替换为get1条；原子写入不变。借用已有HTTPclient。
+临时Host计时hook仅用于四轮配对，交付前还原；不跟进无关fixture/期限断言修复。
+
+- 四轮全部通过；14次执行模型响应high/retry0、20工具成功/质量各一次；Task重复ensure22SQL替换为header1SQL。
+- 额外client构造1→0、任务后辅助准入间隙123→61ms；Task请求均值248→253ms（B2事务波动），不宣称整体Task耗时稳定下降。
+- API定向22、Host54通过/2skip、独立断言和clean makecheck通过；正常源文件恢复后借用测试1pass。Host本地提交59773b7，三份源码精确还原，104登记指纹通过；无第五次模型Run。
