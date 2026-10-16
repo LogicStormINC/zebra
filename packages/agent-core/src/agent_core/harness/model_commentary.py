@@ -107,10 +107,22 @@ class ModelCommentaryPublisher:
     ) -> None:
         self._sink, self._output_published, self.reserved = sink, output_published, reserved
         self._seen: set[str] = set()
+        self._reserved_outputs: set[str] = set()
+
+    def _reserve(self, payload: Mapping[str, object]) -> tuple[HarnessEventDraft, ...]:
+        drafts = commentary_outputs(payload)
+        keys = {str(d.payload["output_id"]) for d in drafts}
+        self.reserved += len(keys - self._reserved_outputs)
+        self._reserved_outputs.update(keys)
+        return drafts
+
+    def defer(self, payload: Mapping[str, object]) -> None:
+        """Retain a committed reservation; indexed recovery owns unfinished chunks."""
+        drafts = self._reserve(payload)
+        self._seen.update(str(d.payload["output_id"]) for d in drafts)
 
     def publish(self, payload: Mapping[str, object]) -> None:
-        drafts = commentary_outputs(payload)
-        self.reserved += sum(d.payload["output_id"] not in self._seen for d in drafts)
+        drafts = self._reserve(payload)
         for draft in drafts:
             key = str(draft.payload["output_id"])
             if key not in self._seen and not self._output_published(key):

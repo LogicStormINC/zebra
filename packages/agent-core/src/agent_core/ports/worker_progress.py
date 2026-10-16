@@ -19,6 +19,15 @@ MAX_PROGRESS_KEY_BYTES = 262_144
 PROGRESS_VERSION = "worker-progress-v1"
 
 
+class WorkerProgressTimeout(TimeoutError):
+    """A storage timeout with an explicit acknowledgement boundary, never a retry grant."""
+
+    def __init__(self, stage: str, *, canonical_committed: bool) -> None:
+        self.stage = stage
+        self.canonical_committed = canonical_committed
+        super().__init__("Worker progress storage deadline exceeded")
+
+
 @dataclass(frozen=True, slots=True)
 class WorkerProgressScope:
     namespace: str

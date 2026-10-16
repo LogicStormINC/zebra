@@ -1,8 +1,13 @@
 """Observe public model speech and draft-verification progress, not private reasoning."""
 
+from dataclasses import asdict, replace
 from typing import TYPE_CHECKING
 
+from agent_core.domain.events import EventType
+from agent_core.harness.model_commentary import plan_response
 from agent_core.harness.models import HarnessEventDraft
+from agent_core.harness.public_output_lifecycle import public_output_lock
+from agent_core.ports.worker_progress import WorkerProgressTimeout
 
 if TYPE_CHECKING:
     from agent_core.harness.public_output import ProgressiveEventSink
@@ -29,3 +34,48 @@ def observe_model_response(progress: "ProgressiveEventSink", event: HarnessEvent
                 "Checking collected evidence and answer requirements; this draft is not final.",
             ),
         )
+
+
+def dispatch_public_event(progress: "ProgressiveEventSink", event: HarnessEventDraft) -> None:
+    deferred = False
+    try:
+        with public_output_lock(
+            progress._lock,
+            progress._emission_scope,
+            progress._closing if progress._emission_scope else None,
+        ):
+            if progress._timer_error is not None:
+                raise progress._timer_error
+            if event.event_type is EventType.MODEL_REQUEST_STARTED:
+                if not progress._closed:
+                    progress._publish_pending()
+                event = replace(
+                    event,
+                    payload={**event.payload, "public_output_policy": asdict(progress.policy)},
+                )
+            if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
+                event = replace(
+                    event, payload=plan_response(event.payload, progress._commentary.reserved)
+                )
+            committed = False
+            try:
+                progress._sink(event)
+                committed = True
+                if not progress._closed:
+                    progress._observe(event)
+            except WorkerProgressTimeout as error:
+                if not (committed or error.canonical_committed):
+                    raise
+                deferred = True
+                # ponytail: only derived display state may lag; next sink reconciles
+                # canonical identities before another append, with fresh authority.
+                if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
+                    progress._commentary.defer(event.payload)
+                    progress._active.discard(f"model:{event.payload.get('model_call_id', '')}")
+                    progress._cancel_timer()
+                elif event.event_type is EventType.ANSWER_COMMITTED:
+                    progress._closed = True
+                raise
+    except WorkerProgressTimeout:
+        if not deferred:
+            raise

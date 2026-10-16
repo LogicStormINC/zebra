@@ -15,6 +15,7 @@ from agent_core.domain.coverage_contracts import CoverageRefusalReason
 from agent_core.harness.context_window import ContextWindowExceededError
 from agent_core.harness.models import HarnessAttemptOutcome, HarnessAttemptResult
 from agent_core.ports.model_gateway import ModelResponseRejectedError
+from agent_core.ports.worker_progress import WorkerProgressTimeout
 from agent_integrations.model_errors import ModelProviderError
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,16 @@ def exception_attempt_result(exc: Exception, metadata: dict[str, object]) -> Har
     fallback is a recovery signal, not a model execution failure. It must
     suspend (recoverable) rather than fail (terminal).
     """
+    if isinstance(exc, WorkerProgressTimeout):
+        return HarnessAttemptResult(
+            outcome=HarnessAttemptOutcome.FAILED,
+            summary="execution progress storage unavailable",
+            metadata={
+                **metadata,
+                "stop_reason": "execution_progress_unavailable",
+                "progress_stage": exc.stage,
+            },
+        )
     if isinstance(exc, ContextCapsuleValidationError):
         return HarnessAttemptResult(
             outcome=HarnessAttemptOutcome.SUSPENDED,

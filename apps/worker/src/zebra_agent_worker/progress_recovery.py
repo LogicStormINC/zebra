@@ -1,6 +1,8 @@
 """Fenced execution-progress recovery from native headers and bounded pages."""
 
 import json
+import logging
+import traceback
 from _thread import RLock
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -25,6 +27,7 @@ from agent_core.ports.worker_progress import (
     WorkerProgressHead,
     WorkerProgressScope,
     WorkerProgressState,
+    WorkerProgressTimeout,
 )
 from agent_storage.postgres.task_io import task_io_deadline
 
@@ -104,38 +107,52 @@ class WorkerProgressRecovery:
                 repair_commentary(self, sink)
 
         def persist(event: HarnessEventDraft) -> None:
-            with task_io_deadline(monotonic() + 2), publication_lock(self._lock):
-                repair_commentary(self, sink)
-                if self.head.state.terminal:
-                    raise ExecutionInterrupted("Worker progress Run is terminal")
-                validate_progress_attempt(
-                    event.event_type, event.payload, self.head.state.attempt_number
-                )
-                if (
-                    event.event_type is EventType.MODEL_RESPONSE_RECEIVED
-                    and event.payload.get("public_commentary") is not None
-                ):
-                    commentary_outputs(event.payload)
-                    expected = plan_response(
-                        event.payload, self.head.state.commentary_reserved_count
+            committed, stage = False, "prepare"
+            try:
+                with task_io_deadline(monotonic() + 2), publication_lock(self._lock):
+                    repair_commentary(self, sink)
+                    if self.head.state.terminal:
+                        raise ExecutionInterrupted("Worker progress Run is terminal")
+                    validate_progress_attempt(
+                        event.event_type, event.payload, self.head.state.attempt_number
                     )
-                    if event.payload["public_commentary"] != expected.get("public_commentary"):
-                        raise CheckpointConflict(
-                            "source commentary plan exceeds current reservation"
+                    if (
+                        event.event_type is EventType.MODEL_RESPONSE_RECEIVED
+                        and event.payload.get("public_commentary") is not None
+                    ):
+                        commentary_outputs(event.payload)
+                        expected = plan_response(
+                            event.payload, self.head.state.commentary_reserved_count
                         )
-                if (
-                    event.event_type is EventType.PUBLIC_OUTPUT
-                    and event.payload.get("phase") == "model_commentary"
-                ):
-                    output = PublicOutputPayload.model_validate(event.payload)
-                    if self.output_published(output.output_id):
-                        return
-                    accept_commentary(output, self.head.state.model_dump())
-                self.ownership_check()
-                sink(event)
-                # ponytail: repair starts with a fresh catch_up; do not repeat it.
-                # A failed checkpoint never authorizes replaying the canonical append.
-                repair_commentary(self, sink)
+                        if event.payload["public_commentary"] != expected.get("public_commentary"):
+                            raise CheckpointConflict(
+                                "source commentary plan exceeds current reservation"
+                            )
+                    if (
+                        event.event_type is EventType.PUBLIC_OUTPUT
+                        and event.payload.get("phase") == "model_commentary"
+                    ):
+                        output = PublicOutputPayload.model_validate(event.payload)
+                        if self.output_published(output.output_id):
+                            return
+                        accept_commentary(output, self.head.state.model_dump())
+                    self.ownership_check()
+                    stage = "canonical_append"
+                    sink(event)
+                    committed, stage = True, "checkpoint"
+                    # ponytail: repair starts with a fresh catch_up; do not repeat it.
+                    # A failed checkpoint never authorizes replaying the canonical append.
+                    repair_commentary(self, sink)
+
+            except TimeoutError as error:
+                frames = traceback.extract_tb(error.__traceback__)
+                logging.getLogger(__name__).warning(
+                    "worker_progress_timeout stage=%s canonical_committed=%s location=%s",
+                    stage,
+                    committed,
+                    ";".join(f"{f.name}:{f.lineno}" for f in frames[-6:]),
+                )
+                raise WorkerProgressTimeout(stage, canonical_committed=committed) from error
 
         return persist
 

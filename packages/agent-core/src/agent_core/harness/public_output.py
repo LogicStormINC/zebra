@@ -1,7 +1,6 @@
 """Bounded public facts: no tool execution, mutation retries or private reasoning."""
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import asdict, replace
 from hashlib import sha256
 from re import fullmatch
 from threading import Event, RLock, Thread, Timer, current_thread
@@ -10,8 +9,8 @@ from typing import Any
 from agent_core.contracts.public_output import EvidenceBasis, PublicOperationFacts, PublicReadFacts
 from agent_core.contracts.public_output import PublicOutputPolicy as PublicOutputPolicy
 from agent_core.domain.events import EventActor, EventType
-from agent_core.harness.model_commentary import ModelCommentaryPublisher, plan_response
-from agent_core.harness.model_response_progress import observe_model_response
+from agent_core.harness.model_commentary import ModelCommentaryPublisher
+from agent_core.harness.model_response_progress import dispatch_public_event, observe_model_response
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.harness.public_expression import PublicExpression
 from agent_core.harness.public_output_lifecycle import (
@@ -22,7 +21,7 @@ from agent_core.harness.public_output_lifecycle import (
     public_output_lock,
 )
 from agent_core.harness.public_output_publication import narration_draft
-from agent_core.ports.worker_progress import WorkerProgressState
+from agent_core.ports.worker_progress import WorkerProgressState, WorkerProgressTimeout
 
 
 class ProgressiveEventSink:
@@ -109,24 +108,7 @@ class ProgressiveEventSink:
         self._closed = recovery_state.terminal if recovery_state is not None else False
 
     def __call__(self, event: HarnessEventDraft) -> None:
-        with public_output_lock(
-            self._lock, self._emission_scope, self._closing if self._emission_scope else None
-        ):
-            if self._timer_error is not None:
-                raise self._timer_error
-            if event.event_type is EventType.MODEL_REQUEST_STARTED:
-                if not self._closed:
-                    self._publish_pending()
-                event = replace(
-                    event, payload={**event.payload, "public_output_policy": asdict(self.policy)}
-                )
-            if event.event_type is EventType.MODEL_RESPONSE_RECEIVED:
-                event = replace(
-                    event, payload=plan_response(event.payload, self._commentary.reserved)
-                )
-            self._sink(event)  # append-before-push and authority checking remain downstream
-            if not self._closed:
-                self._observe(event)
+        dispatch_public_event(self, event)
 
     def _observe(self, event: HarnessEventDraft) -> None:
         payload, kind = event.payload, event.event_type
@@ -378,22 +360,29 @@ class ProgressiveEventSink:
                 or self._output_published(output_id)
             ):
                 return False
-            self._sink(
-                narration_draft(
-                    output_id,
-                    kind,
-                    phase,
-                    content,
-                    attempt=self._attempt,
-                    policy=self.policy,
-                    meaningful=meaningful,
-                    evidence_basis=evidence_basis,
-                    evidence_refs=evidence_refs,
-                    replaces_output_id=replaces_output_id,
-                    origin=origin,
-                    model_call_id=model_call_id,
+            try:
+                self._sink(
+                    narration_draft(
+                        output_id,
+                        kind,
+                        phase,
+                        content,
+                        attempt=self._attempt,
+                        policy=self.policy,
+                        meaningful=meaningful,
+                        evidence_basis=evidence_basis,
+                        evidence_refs=evidence_refs,
+                        replaces_output_id=replaces_output_id,
+                        origin=origin,
+                        model_call_id=model_call_id,
+                    )
                 )
-            )
+            except WorkerProgressTimeout as error:
+                if error.canonical_committed:
+                    self._seen.add(output_id)
+                    self._published_count += 1
+                    self._meaningful = self._meaningful or meaningful
+                raise
             self._seen.add(output_id)
             self._published_count += 1
             self._meaningful = self._meaningful or meaningful
@@ -413,11 +402,16 @@ class ProgressiveEventSink:
             EventType.TOOL_EXECUTION_FAILED,
         }:
             raise ValueError("external observation requires a terminal tool result")
-        with public_output_lock(self._lock, self._emission_scope):
-            if not self._closed:
-                if self._timer_error is not None:
-                    raise self._timer_error
-                self._observe(event)
+        try:
+            with public_output_lock(self._lock, self._emission_scope):
+                if not self._closed:
+                    if self._timer_error is not None:
+                        raise self._timer_error
+                    self._observe(event)
+
+        except WorkerProgressTimeout as error:
+            if not error.canonical_committed:
+                raise
 
     def _text(self, chinese: str, english: str) -> str:
         return chinese if self._chinese else english
@@ -455,6 +449,9 @@ class ProgressiveEventSink:
                         "Connection heartbeats are not execution progress.",
                     ),
                 )
+        except WorkerProgressTimeout as error:
+            if not error.canonical_committed:
+                self._timer_error = error
         except PublicOutputClosed:
             pass  # An unadmitted callback is stopped, not a failed durable write.
         except Exception as error:
