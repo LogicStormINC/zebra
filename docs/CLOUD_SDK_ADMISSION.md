@@ -124,3 +124,9 @@ Host 初始等待与各次请求间隙包含身份交换、持久化和适配器
 - 私有测量：`.artifacts/cloud-sdk-admission-20261017/{summary,startup,breakdown}.safe.json`；
   正常配置与源文件指纹分别为 normal-services.safe.json / final-source-checks.safe.json。
   B2 会话 conv_1792172823056_dabb26，正常服务恢复后只读取原结果，不重调模型。
+
+
+本地集成：代码提交 2eb15eba 已 fast-forward 到 cloud-agent-trench，27 项原有脏状态
+逐字节核对保留；Host 接线 bca9952 在其独立任务分支，原有三个非本任务条目保留。
+任务状态 Review（本地交付验收完成，未推送/合入 main）。诊断接收器已关闭，正常服务
+恢复后 B2 原正文/高思考 UI 可见，未产生第五次模型 Run。截图保留 page-B2.jpg。

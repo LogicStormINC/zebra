@@ -15286,3 +15286,5 @@ SEARCH-START-TOOL-WAIT-01 closeout: localcloud-agent-trench integrated/preserved
 - 实际四次模型 Run ABBA 全部通过，保留高思考/Flash/v2 和自主工具；合并段节省约52ms，6条 SQL。
 - 整体启动 A均值3.088/B2.525s，但回切A2=2.514s；整轮 SQL 与耗时无改善，未夸大局部收益。
 - 正常 API 已更新；Worker/Search 保留原镜像，六 Compose/env/command 与103源码指纹复核。
+
+- 本地 FF 2eb15eba 到 cloud-agent-trench，保留27项无关脏状态；Host bca9952，未推送。正常B2原结果可见、接收器已关闭，无第五次模型Run；任务Review等待维护者边界。
