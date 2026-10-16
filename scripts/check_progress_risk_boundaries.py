@@ -341,6 +341,11 @@ def signature_membership_batch():
         second = page(head.through_sequence, [("0", "same"), ("8", "same")])
         head = store.advance_worker_progress(scope, second)
         assert head.state.published_count == 9 and reads() == 1
+        assert not any(sql.startswith("INSERT INTO worker_progress_heads") for sql in statements), (
+            "hot checkpoint advancement still attempts redundant initialization"
+        )
+        assert sum(sql.startswith("SELECT") and "FROM worker_progress_heads" in sql
+                   for sql in statements) == 1
         for outputs in ([("0", "changed")], [("new", "first"), ("new", "changed")]):
             try:
                 store.advance_worker_progress(scope, page(head.through_sequence, outputs))

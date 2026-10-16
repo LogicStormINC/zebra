@@ -2,6 +2,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, replace
+from threading import Barrier, local
 
 import pytest
 from agent_core.application.session_projection import rebuild_session
@@ -113,9 +114,33 @@ def test_postgres_restores_attempt_policy_budget_and_indexed_membership(
     assert reopened.worker_receipts_covered(scope, ("read:1", "unknown")) == frozenset({"read:1"})
 
 
-def test_postgres_concurrent_frontier_has_one_winner(native_progress_dsn):
-    tasks, _, scope = seed(native_progress_dsn)
+@pytest.mark.parametrize("initialized", [False, True])
+def test_postgres_concurrent_frontier_has_one_winner(native_progress_dsn, monkeypatch, initialized):
+    tasks, events, scope = seed(native_progress_dsn)
     page = tasks.read_event_page(scope.task_id, 0)
+    if initialized:
+        head = tasks.advance_worker_progress(scope, page)
+        append(events, scope, EventType.HARNESS_ATTEMPT_STARTED, {"attempt_number": 1})
+        page = tasks.read_event_page(scope.task_id, head.through_sequence)
+    barrier, thread, arrivals = Barrier(2), local(), []
+    read = tasks._progress_head
+
+    def racing_read(connection, scope, **kwargs):
+        if getattr(thread, "arrived", False):
+            return read(connection, scope, **kwargs)
+        thread.arrived = True
+        assert kwargs.get("lock"), "advancement must lock the bounded head read"
+        if initialized:
+            arrivals.append("existing")
+            barrier.wait(timeout=1)
+        try:
+            return read(connection, scope, **kwargs)
+        except CheckpointNotReady:
+            arrivals.append("missing")
+            barrier.wait(timeout=1)  # Both observe missing before either INSERT.
+            raise
+
+    monkeypatch.setattr(tasks, "_progress_head", racing_read)
 
     def advance(_):
         try:
@@ -124,8 +149,10 @@ def test_postgres_concurrent_frontier_has_one_winner(native_progress_dsn):
             return "stale"
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        assert sorted(executor.map(advance, range(2)), key=str) == [1, "stale"]
-    assert tasks.read_worker_progress(scope).through_sequence == 1
+        assert sorted(executor.map(advance, range(2)), key=str) == [page.next_sequence, "stale"]
+    assert arrivals == ["existing" if initialized else "missing"] * 2
+    monkeypatch.setattr(tasks, "_progress_head", read)
+    assert tasks.read_worker_progress(scope).through_sequence == page.next_sequence
 
 
 @pytest.mark.parametrize(

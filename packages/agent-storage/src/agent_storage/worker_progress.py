@@ -147,7 +147,12 @@ class WorkerProgressStoreMixin:
         return run
 
     def _progress_head(
-        self, connection: Any, scope: WorkerProgressScope, *, initial: bool = False
+        self,
+        connection: Any,
+        scope: WorkerProgressScope,
+        *,
+        initial: bool = False,
+        lock: bool = False,
     ) -> WorkerProgressHead:
         byte_length = (
             "octet_length(state_json)"
@@ -161,7 +166,8 @@ class WorkerProgressStoreMixin:
             f"SELECT run_id,anchor_sequence,state_bytes,{byte_length} AS actual_bytes,"
             f"through_sequence,last_event_id,CASE WHEN state_bytes BETWEEN 1 AND "
             f"{MAX_PROGRESS_STATE_BYTES} AND {byte_length}=state_bytes THEN state_json END "
-            f"AS state_json FROM worker_progress_heads WHERE {WHERE}",
+            f"AS state_json FROM worker_progress_heads WHERE {WHERE}"
+            + (" FOR UPDATE" if lock and self._progress_postgres else ""),
             _values(scope),
         ).fetchone()
         if row is None:
@@ -240,28 +246,27 @@ class WorkerProgressStoreMixin:
             canonical = self._progress_canonical(connection, scope, page)
             if canonical.events != page.events:
                 raise CheckpointConflict("Worker progress page conflicts with canonical source")
-            initial_json, initial_size = _encoded(WorkerProgressState())
-            self._progress_execute(
-                connection,
-                "INSERT INTO worker_progress_heads VALUES (?,?,?,?,?,?,?,?,?,?) "
-                "ON CONFLICT DO NOTHING",
-                (
-                    *_values(scope),
-                    scope.run_id,
-                    scope.anchor_sequence,
-                    scope.anchor_sequence - 1,
-                    None,
-                    initial_json,
-                    initial_size,
-                ),
-            )
-            if self._progress_postgres:
+            try:
+                head = self._progress_head(connection, scope, lock=True)
+            except CheckpointNotReady:
+                initial_json, initial_size = _encoded(WorkerProgressState())
                 self._progress_execute(
                     connection,
-                    f"SELECT through_sequence FROM worker_progress_heads WHERE {WHERE} FOR UPDATE",
-                    _values(scope),
+                    "INSERT INTO worker_progress_heads VALUES (?,?,?,?,?,?,?,?,?,?) "
+                    "ON CONFLICT DO NOTHING",
+                    (
+                        *_values(scope),
+                        scope.run_id,
+                        scope.anchor_sequence,
+                        scope.anchor_sequence - 1,
+                        None,
+                        initial_json,
+                        initial_size,
+                    ),
                 )
-            head = self._progress_head(connection, scope)
+                # ponytail: first-use races still read and lock the INSERT winner;
+                # existing heads need only the bounded locking SELECT above.
+                head = self._progress_head(connection, scope, lock=True)
             if head.through_sequence > page.after_sequence:
                 raise CheckpointStale("Worker progress frontier CAS advanced")
             signatures: dict[str, str] = {}
