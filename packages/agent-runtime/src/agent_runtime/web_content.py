@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import date, datetime
 from html.parser import HTMLParser
 
 _IGNORED_TAGS = frozenset(
@@ -108,6 +109,15 @@ class _ReadableHtmlParser(HTMLParser):
             self.parts.append("\n")
         elif tag in _CELL_TAGS:
             self.parts.append("\t")
+        if tag in {"time", "relative-time"}:
+            # ponytail: preserve typed source evidence, not arbitrary HTML attributes.
+            for parse in (date.fromisoformat, datetime.fromisoformat):
+                try:
+                    stamp = parse(attributes.get("datetime") or "")
+                except ValueError:
+                    continue
+                self.parts.append(f" [datetime: {stamp.isoformat()}] ")
+                break
 
     def handle_startendtag(
         self,
