@@ -6528,3 +6528,23 @@ Focused66/standalone/defaultcleanmakecheck passed. Docs CLOUD_SOURCE_CANDIDATE_R
 localnormalactivation/sourceproof pendingcloseout, no unrelatedfixture/push/remotedeploy.
 
 SOURCE-CANDIDATE-ROUNDTRIP-01 closeout: localcloud-agent-trench integrated/preserved27dirtyentries; normalWorker5fdb3e0d119b/API7eb869c9/Search245b675f healthy/zero-restart/original6Compose-env-commands and103sourcehashes verified. ActualnormalWorker standalonepasses. Diagnosticentrypoints/sitecustomize/DOMlisteners/receiver removed; no fifthRun/push/remotedeploy.
+
+
+## 2026-10-17 - SEARCH-START-TOOL-WAIT-01
+
+Measured16–17s firstbody: previousfinalpair provider5.2–5.9s/tools6.0–6.6s/other4.2–5.3s.
+PreWorkeradmission1.97–2.82s, scopedWorker→model0.40–0.58s, no sandboxprovision;
+largest avoidable fetch stage was RedisGA HTML1692922decodedbytes/body1.96–2.71s.
+One existingHTTPAccept header now prefers text/markdown, originalformatsremainq0.9;
+native sameURL16036bytes/date/featuresretained, no URLrewrite/newparser/dependency/
+fallbackrequest/securitychange. ActualpageRedisbody864.5/2232.9ms(A)→2.25/0.86ms(B),
+completefetch2.987/3.820s→1.706/1.518s. PGHTMLfallbackretained.
+
+Fixed4ABBA pages allcompleted/high/Flash/v2/14modelretry0/20toolsuccess/onecandidateeach.
+A1/B1/B2/A2 body26.541/15.157/16.558/19.755s,Host31.861/18.442/19.965/23.933s,
+nonemptyWorker+APISQL4757/3274/3255/4136. Aextraquery/modelworkmeans raw31.5percent
+body/26.6percentSQLmean gaps not stablecausalgains. Startupmeans2.724/2.798s unchanged,
+5opens/448execute33empty retained. Focused134/standalone/defaultcleanmakecheck pass;
+finaldocs onlytargeteddiff/sizegate, no repeatedbroadtest. Details CLOUD_SEARCH_START_TOOL_WAIT.md.
+Normal localactivation/sourceproof pendingcloseout; preserve primary27dirtyentries,
+no Trenchproductcode/unrelatedfixture/push/remotedeploy.

@@ -75,7 +75,10 @@ class LocalWebGatewayTransport:
         outbound = urllib.request.Request(
             request.target.url,
             headers={
-                "Accept": "text/plain, text/html, application/json, application/xml",
+                "Accept": (
+                    "text/markdown, text/plain;q=0.9, text/html;q=0.9, "
+                    "application/json;q=0.9, application/xml;q=0.9"
+                ),
                 "Accept-Encoding": "gzip",
                 "User-Agent": "Zebra-Agent-Web-Gateway/1.0",
             },

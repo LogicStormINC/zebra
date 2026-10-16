@@ -15256,3 +15256,22 @@ existingboundedretry, extra307challengepersists; no retrybudget/TLSchange.
 Private evidence .artifacts/source-candidate-roundtrip-20261017.
 
 SOURCE-CANDIDATE-ROUNDTRIP-01 closeout: localcloud-agent-trench integrated/preserved27dirtyentries; normalWorker5fdb3e0d119b/API7eb869c9/Search245b675f healthy/zero-restart/original6Compose-env-commands and103sourcehashes verified. ActualnormalWorker standalonepasses. Diagnosticentrypoints/sitecustomize/DOMlisteners/receiver removed; no fifthRun/push/remotedeploy.
+
+
+### 2026-10-17 SEARCH-START-TOOL-WAIT-01
+
+Traced previous16–17s: CloudadmissionbeforeWorker~1.97–2.82s vsWorker→model0.4–0.58s;
+no sandboxcoldstart; heavyRedisGAHTML1692922decodedbytes/body~2–2.7s keytoolwait.
+ExistingstdlibHTTPcontentnegotiation works: sameURLMarkdown16036bytes withISOpublication
+andfeaturesretained. OnlyproductionchangefetchAccept preferMarkdown/fouroriginalformatsq0.9;
+no extraHTTP/sourceforce/parser/timeout/TLS/DNS/cancellationchange. Privateprobe initialB
+accidentallychangedDoH Accept; invalidprobe retained, targetscope corrected, no productioneffect.
+Standalone red→green;134focused/defaultcleanmakecheck pass. No unrelatedfixture/newdeps.
+
+Fixed fouractualpageRuns ABBA high/Flash/v2,allcompleted/14modelretry0/20toolsuccess/
+qualityonceeach. Body26.541/15.157/16.558/19.755s;Host31.861/18.442/19.965/23.933s;
+nonemptyWorker+APISQL4757/3274/3255/4136. UnequalAextraquery/modelwork retained; no stable
+31.5percentbody/26.6percentSQLcausalclaim. RedisGAHTMLbody864.5/2232.9ms→Markdown2.25/0.86ms,
+fetch2.987/3.820s→1.706/1.518s; PGnowcriticalparallelfetch. Startupmeans2.724/2.798s,
+initial5opens/448execute(33empty)unchanged,command→attempt93–207ms. Remaining highthinking,
+search/network/admission cannotclaimsub10s. Private .artifacts/search-start-tool-wait-20261017.
