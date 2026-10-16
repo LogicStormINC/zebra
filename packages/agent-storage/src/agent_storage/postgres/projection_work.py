@@ -1,7 +1,7 @@
 """PostgreSQL scalar derived-work queue, independent of Task execution."""
 
 import time
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any, cast
 from uuid import UUID
@@ -21,10 +21,10 @@ from agent_core.ports.task_projection_work import (
     ProjectionWorkRepair,
     TaskProjectionWorkPort,
 )
-from psycopg import ClientCursor, Connection, Cursor
-from psycopg.errors import QueryCanceled
+from psycopg import ClientCursor
 
 from agent_storage.postgres.database import PostgresDatabase
+from agent_storage.postgres.projection_work_io import _WorkConnection
 from agent_storage.postgres.task_io import TaskIoConnection
 from agent_storage.projection_work import (
     PENDING,
@@ -55,31 +55,6 @@ HEADER_BYTES = "128+" + "+".join(
     f"COALESCE(octet_length({name}::text),0)"
     for name in ("event_id", "event_type", "replay_command_kind", "replay_run_id")
 )
-
-
-class _WorkConnection:
-    """Remaining SQL operation budget, shared by all statements and COMMIT."""
-
-    def __init__(self, connection: Connection[dict[str, Any]], deadline: float) -> None:
-        self.connection, self.deadline = connection, deadline
-
-    def execute(
-        self, statement: str, params: Sequence[Any] | Mapping[str, Any] | None = None
-    ) -> Cursor[dict[str, Any]]:
-        remaining = int((self.deadline - time.monotonic()) * 1000)
-        if remaining <= 0:
-            raise CheckpointNotReady("projection-work operation I/O deadline exceeded")
-        try:
-            self.connection.execute(
-                "SELECT set_config('statement_timeout',%s,true),set_config('lock_timeout',%s,true)",
-                (f"{remaining}ms", f"{min(50, remaining)}ms"),
-            )
-            return self.connection.execute(statement, params)
-        except (QueryCanceled, TimeoutError) as exc:
-            raise CheckpointNotReady("projection-work operation I/O deadline exceeded") from exc
-
-    def commit(self) -> None:
-        self.execute("COMMIT")
 
 
 class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
@@ -362,14 +337,16 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
                 except CheckpointNotReady as exc:
                     if connection.connection.closed:
                         raise  # Transport expiry is not a recoverable savepoint cancellation.
-                    # set_config cannot run in an aborted transaction; recover natively first.
-                    connection.connection.execute("ROLLBACK TO SAVEPOINT projection_work_header")
+                    # Failed recovery must abort the transaction, preserving the original cause.
+                    try:
+                        step.connection.execute("ROLLBACK TO SAVEPOINT projection_work_header")
+                    except Exception as cleanup_error:
+                        raise exc from cleanup_error
                     if not index:
                         problem = str(exc)
                     break
-                finally:
-                    if not connection.connection.closed:
-                        connection.execute("RELEASE SAVEPOINT projection_work_header")
+                else:
+                    connection.execute("RELEASE SAVEPOINT projection_work_header")
             if problem is None:
                 route = execute(
                     "UPDATE task_projection_work_routes SET needs_repair="
