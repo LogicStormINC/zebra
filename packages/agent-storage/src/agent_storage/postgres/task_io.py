@@ -19,7 +19,7 @@ from contextvars import ContextVar
 from threading import Lock
 from time import monotonic
 from types import TracebackType
-from typing import Any
+from typing import Any, cast
 
 import psycopg
 from psycopg import ClientCursor, pq, waiting
@@ -177,7 +177,7 @@ class TaskIoConnection(psycopg.Connection[dict[str, Any]]):
 
 
 class TaskIoConnections:
-    """Explicitly shared address cache; each call creates a fresh connection."""
+    """Shared addresses; optional existing callback scope owns short-lived sockets."""
 
     def __init__(self, dsn: str) -> None:
         self._params = conninfo_to_dict(dsn)
@@ -319,6 +319,32 @@ class TaskIoConnections:
         if (scoped := _TASK_IO_DEADLINE.get()) is not None:
             deadline = min(deadline, scoped)
         operation_deadline = deadline - min(0.2, _remaining(deadline) * 0.1)
+        from agent_storage.postgres.connection_scope import current_connection_scope
+
+        scope = current_connection_scope()
+        if (
+            scope is not None and scope.bounded_deadline is not None and scoped is not None
+            and pq.version() >= 170000 and not get_param(self._params, "service")
+        ):
+            environment = tuple(sorted(
+                (key, value) for key, value in os.environ.items()
+                if key.startswith("PG") or key == "HOME"
+            ))
+            # ponytail: reuse the existing synchronous scope, never a global pool.
+            # Native libpq cancellation bounds later borrows' shorter remaining budget.
+            # Older clients keep fresh server timeouts; ordinary sockets never share keys.
+            connection = scope.borrow(
+                ("task-io", make_conninfo("", **self._params), client_cursor, environment, scoped),
+                lambda: self._open(deadline, operation_deadline, client_cursor),
+            )
+            connection.deadline, connection.operation_deadline = deadline, operation_deadline
+            connection.prepare_threshold = None  # DISCARD ALL removes server plans.
+            return cast(TaskIoConnection, connection)
+        return self._open(deadline, operation_deadline, client_cursor)
+
+    def _open(
+        self, deadline: float, operation_deadline: float, client_cursor: bool
+    ) -> TaskIoConnection:
         attempts = self._resolve(operation_deadline)
         failure: psycopg.Error | None = None
         for attempt in attempts:

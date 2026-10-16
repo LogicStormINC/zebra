@@ -29,6 +29,7 @@ from agent_core.ports.worker_progress import (
     WorkerProgressState,
     WorkerProgressTimeout,
 )
+from agent_storage.postgres.connection_scope import postgres_connection_scope
 from agent_storage.postgres.task_io import task_io_deadline
 
 from zebra_agent_worker.commentary_recovery import repair_commentary
@@ -64,7 +65,11 @@ class WorkerProgressRecovery:
 
     def catch_up(self) -> TaskEvent | None:
         source: TaskEvent | None = None
-        with task_io_deadline(monotonic() + 2), publication_lock(self._lock):
+        with (
+            task_io_deadline(monotonic() + 2),
+            publication_lock(self._lock),
+            postgres_connection_scope(bounded=True),
+        ):
             self.ownership_check()
             run = self.tasks.read_latest_run_header(self.head.scope.task_id)
             if run.anchor is None or run.anchor.event_id != self.head.scope.anchor_event_id:
@@ -134,7 +139,11 @@ class WorkerProgressRecovery:
         def persist(event: HarnessEventDraft) -> None:
             committed, stage = False, "prepare"
             try:
-                with task_io_deadline(monotonic() + 2), publication_lock(self._lock):
+                with (
+                    task_io_deadline(monotonic() + 2),
+                    publication_lock(self._lock),
+                    postgres_connection_scope(bounded=True),
+                ):
                     repair_commentary(self, sink)
                     if self.head.state.terminal:
                         raise ExecutionInterrupted("Worker progress Run is terminal")

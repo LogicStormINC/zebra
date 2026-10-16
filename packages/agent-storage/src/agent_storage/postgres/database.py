@@ -72,6 +72,9 @@ class PostgresDatabase:
                 unit = RecoveryDeadlineConnection(unit, deadline)
             return cast(psycopg.Connection[dict[str, Any]], unit)
 
+        if deadline is None and (task_deadline := current_task_io_deadline()) is not None:
+            return self.connect_task_io(deadline=task_deadline)
+
         scope = current_connection_scope()
         if scope is not None:
             from agent_storage.postgres.coverage_recovery_preparation import (
@@ -94,8 +97,6 @@ class PostgresDatabase:
                 connection = RecoveryDeadlineConnection(connection, deadline)
             return cast(psycopg.Connection[dict[str, Any]], connection)
         if deadline is None:
-            if (task_deadline := current_task_io_deadline()) is not None:
-                return self.connect_task_io(deadline=task_deadline)
             if self._pool is not None:
                 return self._pool.connection()
             return psycopg.connect(self._dsn, row_factory=dict_row)
