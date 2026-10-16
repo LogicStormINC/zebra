@@ -78,8 +78,10 @@ def classified_pending(source: str, *, postgres: bool = False) -> str:
     )
 
 
-def activate_privacy(source: str, *, postgres: bool = False) -> str:
-    routed = classified_source(source, postgres=postgres)
+def activate_privacy(
+    source: str, *, postgres: bool = False, preclassified: bool = False,
+) -> str:
+    routed = source if preclassified else classified_source(source, postgres=postgres)
     return (
         "UPDATE task_projection_work_routes SET observed_through=-1,active_anchor_key=NULL,"
         "needs_repair=1,privacy_frontier=(SELECT s.privacy_frontier "
@@ -96,12 +98,14 @@ def activate_privacy(source: str, *, postgres: bool = False) -> str:
 
 def routed_statements(
     source: str, *, postgres: bool = False, legacy_scalar_source: bool = False,
+    preclassified: bool = False,
 ) -> tuple[str, ...]:
     # ponytail: legacy mode freezes v98 SQL; upgrades replace its trigger additively.
     statements = list(routing_statements(
-        selected_source(source, postgres=postgres), correlate_source=not legacy_scalar_source,
+        source if preclassified else selected_source(source, postgres=postgres),
+        correlate_source=not legacy_scalar_source,
     ))
-    statements.insert(1, activate_privacy(source, postgres=postgres))
+    statements.insert(1, activate_privacy(source, postgres=postgres, preclassified=preclassified))
     # Replaying after the one-time privacy flip revisits *each* canonical anchor,
     # including closed/ACKed legacy coverage rows. Never reset a true failure cap,
     # nor rewrite its captured target/closure. Each header remains a point-key step.

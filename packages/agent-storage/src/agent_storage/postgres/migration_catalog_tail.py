@@ -50,6 +50,9 @@ from agent_storage.postgres.native_memory_migration import NATIVE_MEMORY_MIGRATI
 from agent_storage.postgres.projection_source_metadata_migration import (
     TASK_PROJECTION_SOURCE_METADATA_MIGRATION,
 )
+from agent_storage.postgres.projection_work_classification_migration import (
+    TASK_PROJECTION_WORK_CLASSIFICATION_MIGRATION,
+)
 from agent_storage.postgres.projection_work_fanout_migration import (
     TASK_PROJECTION_WORK_FANOUT_MIGRATION,
 )
@@ -153,4 +156,5 @@ LATEST_MIGRATIONS = (
     COVERAGE_EXECUTION_POSITIONS_MIGRATION,
     TASK_PROJECTION_WORK_FANOUT_MIGRATION,
     STREAM_HINT_RELAY_MIGRATION,
+    TASK_PROJECTION_WORK_CLASSIFICATION_MIGRATION,
 )
