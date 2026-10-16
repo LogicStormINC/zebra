@@ -55,6 +55,7 @@ class FetchResult:
     wire_bytes: int = 0
     decoded_bytes: int = 0
     raw_html: str | None = None
+    evidence_refs: tuple[str, ...] = ()
 
 
 class FetchProvider(Protocol):

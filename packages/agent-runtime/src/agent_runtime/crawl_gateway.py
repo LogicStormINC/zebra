@@ -142,6 +142,9 @@ class CrawlGateway(CrawlGatewayPort):
             provider=self.provider.name,
             degraded=source_truncated,
             metadata={
+                "evidence_refs": [
+                    ref for ref in result.evidence_refs if ref in projection.content
+                ][:128],
                 "content_sha256": content_sha,
                 "clean_chars": len(clean),
                 "fetch_mode": result.fetch_mode,

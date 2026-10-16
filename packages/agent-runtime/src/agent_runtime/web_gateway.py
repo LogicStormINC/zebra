@@ -93,6 +93,7 @@ class LocalWebGatewayTransport:
                         text,
                         content_type=content_type,
                         max_output_bytes=request.max_output_bytes,
+                        base_url=request.target.url,
                     )
                 except ValueError as exc:
                     raise WebGatewayError(str(exc), reason="content_projection_failed") from exc

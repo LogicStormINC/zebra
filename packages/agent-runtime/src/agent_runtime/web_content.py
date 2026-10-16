@@ -3,6 +3,10 @@ from __future__ import annotations
 import re
 from datetime import date, datetime
 from html.parser import HTMLParser
+from urllib.parse import urldefrag, urljoin
+
+from agent_core.domain.web import parse_web_target
+from agent_tools.mcp_proxy import JsonValue
 
 _IGNORED_TAGS = frozenset(
     {"canvas", "head", "iframe", "noscript", "object", "script", "style", "svg", "template"}
@@ -62,12 +66,15 @@ _BLANK_LINES = re.compile(r"\n{3,}")
 
 
 class _ReadableHtmlParser(HTMLParser):
-    def __init__(self) -> None:
+    def __init__(self, base_url: str | None = None) -> None:
         super().__init__(convert_charrefs=True)
         self.parts: list[str] = []
         self._stack: list[tuple[str, bool]] = []
         self._main_start: tuple[int, int] | None = None
         self._main_parts: list[str] = []
+        self._base_url = base_url
+        self._pending_link: tuple[int, str] | None = None
+        self.links: list[str] = []
 
     @property
     def readable_text(self) -> str:
@@ -109,6 +116,20 @@ class _ReadableHtmlParser(HTMLParser):
             self.parts.append("\n")
         elif tag in _CELL_TAGS:
             self.parts.append("\t")
+        if tag == "a":
+            self._pending_link = None
+            href = attributes.get("href") or ""
+            # ponytail: expose source links, not navigation expansion or fetch authority.
+            if self._base_url and href and not href.startswith("#") and not any(
+                name == "nav" for name, _ in self._stack
+            ):
+                try:
+                    url = parse_web_target(urldefrag(urljoin(self._base_url, href)).url).url
+                except ValueError:
+                    pass
+                else:
+                    if len(url) <= 2_048:
+                        self._pending_link = (len(self._stack), url)
         if tag in {"time", "relative-time"}:
             # ponytail: preserve typed source evidence, not arbitrary HTML attributes.
             for parse in (date.fromisoformat, datetime.fromisoformat):
@@ -138,6 +159,8 @@ class _ReadableHtmlParser(HTMLParser):
         )
         if match is None:
             return
+        if self._pending_link is not None and self._pending_link[0] > match:
+            self._pending_link = None
         was_ignoring = self.ignoring
         del self._stack[match:]
         if self._main_start is not None and match < self._main_start[0]:
@@ -153,6 +176,10 @@ class _ReadableHtmlParser(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         if not self.ignoring:
+            if self._pending_link is not None and data.strip():
+                self.parts.append(f" [link: {self._pending_link[1]}] ")
+                self.links.append(self._pending_link[1])
+                self._pending_link = None
             self.parts.append(data)
 
 
@@ -161,13 +188,15 @@ def project_web_text(
     *,
     content_type: str,
     max_output_bytes: int,
-) -> tuple[str, dict[str, str | int | bool]]:
+    base_url: str | None = None,
+) -> tuple[str, dict[str, JsonValue]]:
     if max_output_bytes <= 0:
         raise ValueError("max_output_bytes must be positive")
     mode = "decoded_text"
     projected = text
+    parser: _ReadableHtmlParser | None = None
     if content_type in {"text/html", "application/xhtml+xml"}:
-        parser = _ReadableHtmlParser()
+        parser = _ReadableHtmlParser(base_url)
         try:
             parser.feed(text)
             parser.close()
@@ -178,11 +207,19 @@ def project_web_text(
             raise ValueError("HTML response has no readable text")
         mode = "html_to_text"
     output, truncated = _truncate_utf8(projected, max_output_bytes=max_output_bytes)
-    return output, {
+    metadata: dict[str, JsonValue] = {
         "content_projection": mode,
         "output_byte_count": len(output.encode("utf-8")),
         "output_truncated": truncated,
     }
+    if parser is not None:
+        # Same collected-reference contract as search results; target content is not fetched.
+        refs: list[JsonValue] = [
+            url for url in dict.fromkeys(parser.links) if f"[link: {url}]" in output
+        ]
+        if refs:
+            metadata["evidence_refs"] = refs[:128]
+    return output, metadata
 
 
 def _normalize_readable_text(value: str) -> str:

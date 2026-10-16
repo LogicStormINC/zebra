@@ -57,7 +57,10 @@ class LocalHttpFetchProvider:
             )
         except WebGatewayError as exc:
             raise FetchProviderError(str(exc), reason=exc.reason) from exc
+        refs = response.metadata.get("evidence_refs", [])
         return FetchResult(
+            evidence_refs=tuple(ref for ref in refs if isinstance(ref, str))
+            if isinstance(refs, list) else (),
             requested_url=request.url,
             final_url=target.url,
             clean_markdown=response.text,
