@@ -17,26 +17,29 @@ if TYPE_CHECKING:
 def repair_commentary(
     recovery: "WorkerProgressRecovery", sink: Callable[[HarnessEventDraft], None]
 ) -> None:
-    recovery.catch_up()
+    source = recovery.catch_up()
     pending = recovery.head.state.pending_commentary
     if pending is None or recovery.head.state.terminal:
         return  # Cancellation never grants authority to finish an abandoned publication.
     recovery.ownership_check()
-    page = recovery.tasks.read_event_page(
-        recovery.head.scope.task_id,
-        pending.source_sequence - 1,
-        limit=1,
-        max_bytes=1_048_576,
-        through_sequence=pending.source_sequence,
-    )
+    if source is None:
+        page = recovery.tasks.read_event_page(
+            recovery.head.scope.task_id,
+            pending.source_sequence - 1,
+            limit=1,
+            max_bytes=1_048_576,
+            through_sequence=pending.source_sequence,
+        )
+        if len(page.events) != 1:
+            raise CheckpointConflict("pending commentary source is not the exact canonical point")
+        source = page.events[0]
     if (
-        len(page.events) != 1
-        or page.events[0].task_sequence != pending.source_sequence
-        or page.events[0].task_id != recovery.head.scope.task_id
-        or page.events[0].event.event_type is not EventType.MODEL_RESPONSE_RECEIVED
+        source.task_sequence != pending.source_sequence
+        or source.task_id != recovery.head.scope.task_id
+        or source.event.event_type is not EventType.MODEL_RESPONSE_RECEIVED
     ):
         raise CheckpointConflict("pending commentary source is not the exact canonical point")
-    drafts = commentary_outputs(page.events[0].event.payload)
+    drafts = commentary_outputs(source.event.payload)
     if tuple(str(d.payload["output_id"]) for d in drafts) != tuple(pending.output_ids):
         raise CheckpointConflict("pending commentary source identity disagrees")
     # At most eight chunks; outer publication scope supplies ONE cumulative deadline.

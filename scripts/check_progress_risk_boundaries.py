@@ -143,6 +143,91 @@ def pending_recovery_stage():
             raise AssertionError("required recovery failure was ignored")
 
 
+def _check_verified_source(warm: bool):
+    from dataclasses import replace
+
+    from agent_core.domain.events import SessionEvent
+    from agent_core.harness.commentary_progress import reserve_commentary
+    from agent_core.harness.model_commentary import plan_response
+    from agent_core.ports.agent_tasks import TaskEvent, TaskEventPage
+    from agent_core.ports.worker_progress import WorkerProgressHead, WorkerProgressState
+    from zebra_agent_worker.commentary_recovery import repair_commentary
+
+    identity = uuid4()
+    scope = WorkerProgressScope("local", identity, "reuse", uuid4(), 1)
+    payload = plan_response(
+        {
+            "attempt_number": 1,
+            "model_call_id": "reuse",
+            "assistant_message": "已确认的公开进度",
+            "response_stage": "tool_loop",
+        },
+        0,
+    )
+    source = SessionEvent.create(
+        session_id=identity,
+        sequence=2,
+        event_type=EventType.MODEL_RESPONSE_RECEIVED,
+        actor=EventActor.HARNESS,
+        payload=payload,
+    )
+    entry = TaskEvent(identity, 2, identity, 2, source)
+    page = TaskEventPage((entry,), 1, 2, len(source.model_dump_json().encode()))
+    values = WorkerProgressState().model_dump()
+    reserve_commentary(payload, 2, values)
+    head = WorkerProgressHead(scope, 2, source.event_id, WorkerProgressState(**values))
+    reads = []
+    outputs = []
+    checks = []
+
+    def point(*_args, **kwargs):
+        reads.append(kwargs)
+        assert kwargs["limit"] == 1
+        return page
+
+    recovery = SimpleNamespace(
+        head=head,
+        tasks=SimpleNamespace(read_event_page=point),
+        ownership_check=lambda: checks.append(1),
+    )
+    calls = 0
+
+    def catch_up():
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return entry if warm else None
+        recovery.head = replace(
+            head,
+            state=head.state.model_copy(
+                update={"pending_commentary": None, "commentary_published_count": 1}
+            ),
+        )
+        return None
+
+    recovery.catch_up = catch_up
+    repair_commentary(recovery, outputs.append)
+    assert len(outputs) == 1 and recovery.head.state.pending_commentary is None
+    assert len(checks) >= 2
+    assert len(reads) == int(not warm), "verified source was redundantly read"
+    if warm:
+        from agent_core.ports.task_projection_checkpoints import CheckpointConflict
+
+        recovery.head = head
+        recovery.catch_up = lambda: replace(entry, task_id=uuid4())
+        try:
+            repair_commentary(recovery, outputs.append)
+        except CheckpointConflict:
+            pass
+        else:
+            raise AssertionError("foreign verified-source identity accepted")
+
+
+def verified_source_reuse():
+    _check_verified_source(True)
+    _check_verified_source(False)
+
+
 failures = []
 for check in (
     priority,
@@ -151,6 +236,7 @@ for check in (
     postcommit_dedup,
     unknown_write,
     pending_recovery_stage,
+    verified_source_reuse,
 ):
     try:
         check()

@@ -16,7 +16,7 @@ from agent_core.harness.model_commentary import commentary_outputs, plan_respons
 from agent_core.harness.models import HarnessEventDraft
 from agent_core.harness.progress_recovery import validate_progress_attempt
 from agent_core.harness.public_output import PublicOutputPolicy
-from agent_core.ports.agent_tasks import AgentTaskPort
+from agent_core.ports.agent_tasks import AgentTaskPort, TaskEvent
 from agent_core.ports.task_projection_checkpoints import (
     CheckpointConflict,
     CheckpointNotReady,
@@ -62,7 +62,8 @@ class WorkerProgressRecovery:
         except TimeoutError as error:
             raise WorkerProgressTimeout("observation", canonical_committed=False) from error
 
-    def catch_up(self) -> None:
+    def catch_up(self) -> TaskEvent | None:
+        source: TaskEvent | None = None
         with task_io_deadline(monotonic() + 2), publication_lock(self._lock):
             self.ownership_check()
             run = self.tasks.read_latest_run_header(self.head.scope.task_id)
@@ -72,7 +73,7 @@ class WorkerProgressRecovery:
             initial_frontier = self.head.through_sequence
             for _ in range(self.max_pages):
                 if self.head.through_sequence == run.highwater:
-                    return
+                    return source
                 self.ownership_check()
                 page = self.tasks.read_event_page(
                     run.task_id,
@@ -84,6 +85,7 @@ class WorkerProgressRecovery:
                 try:
                     self.head = self.tasks.advance_worker_progress(self.head.scope, page)
                 except CheckpointStale:
+                    source = None
                     self.head = self.tasks.read_worker_progress(self.head.scope)
                 except ValueError as exc:
                     # ponytail: a page may exceed the bounded receipt-key transition.
@@ -94,6 +96,19 @@ class WorkerProgressRecovery:
                     ):
                         raise
                     limit //= 2
+                else:
+                    # ponytail: reuse only this call's successfully verified bounded page.
+                    pending = self.head.state.pending_commentary
+                    source = next(
+                        (
+                            entry
+                            for entry in page.events
+                            if pending is not None
+                            and entry.task_sequence == pending.source_sequence
+                        ),
+                        None,
+                    )
+
             if self.head.through_sequence != run.highwater:
                 if self.head.through_sequence > initial_frontier:
                     raise PreparationAdvanced(
@@ -104,6 +119,7 @@ class WorkerProgressRecovery:
                 raise CheckpointNotReady(
                     "Worker progress recovered a bounded prefix; continue preparation"
                 )
+            return source
 
     def persist_with(
         self, sink: Callable[[HarnessEventDraft], None]
