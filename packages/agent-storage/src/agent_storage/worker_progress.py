@@ -269,18 +269,30 @@ class WorkerProgressStoreMixin:
                 if entry.event.event_type is EventType.PUBLIC_OUTPUT:
                     output = PublicOutputPayload.model_validate(entry.event.payload)
                     signature = sha256(output.model_dump_json().encode("utf-8")).hexdigest()
-                    previous = signatures.get(output.output_id) or self._progress_signature(
-                        connection, scope, output.output_id
-                    )
+                    previous = signatures.get(output.output_id)
                     if previous is not None and previous != signature:
                         raise CheckpointConflict("Worker progress output identity changed")
                     signatures[output.output_id] = signature
-            folded = fold_progress_page(
-                head,
-                canonical,
-                output_published=lambda key: self._progress_signature(connection, scope, key)
-                is not None,
-            )
+            # ponytail: the verified canonical page bounds this transaction-local
+            # lookup to 256 IDs; reuse it for both identity checks and the fold.
+            published = {
+                row["output_id"]: row["signature"]
+                for row in (
+                    self._progress_execute(
+                        connection,
+                        f"SELECT output_id,signature FROM worker_progress_outputs WHERE {WHERE} "
+                        f"AND output_id IN ({','.join('?' for _ in signatures)})",
+                        (*_values(scope), *signatures),
+                    ).fetchall()
+                    if signatures
+                    else ()
+                )
+            }
+            if any(
+                published[key] != value for key, value in signatures.items() if key in published
+            ):
+                raise CheckpointConflict("Worker progress output identity changed")
+            folded = fold_progress_page(head, canonical, output_published=published.__contains__)
             encoded, size = _encoded(folded.head.state)
             for key, position in folded.outputs:
                 self._progress_execute(

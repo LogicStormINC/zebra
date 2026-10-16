@@ -289,6 +289,70 @@ def progress_head_read():
             assert len(statements) == 1, "checkpoint metadata/body required two SQL statements"
 
 
+def signature_membership_batch():
+    import sqlite3
+    from contextlib import contextmanager
+
+    from agent_core.domain.events import SessionEvent
+    from agent_core.ports.agent_tasks import TaskEvent, TaskEventPage
+    from agent_core.ports.task_projection_checkpoints import CheckpointConflict
+    from agent_storage.worker_progress import WorkerProgressStoreMixin, progress_schema
+
+    scope = WorkerProgressScope("local", uuid4(), "batch", uuid4(), 1)
+    store = WorkerProgressStoreMixin()
+    with sqlite3.connect(":memory:") as connection:
+        connection.row_factory = sqlite3.Row
+        for sql in progress_schema():
+            connection.execute(sql)
+
+        @contextmanager
+        def transaction(*, write=False):
+            with connection:
+                yield connection
+
+        # This check isolates real index/fold SQL; native suites retain source/Run checks.
+        store._progress_connection = transaction
+        store._progress_run = lambda *_args: SimpleNamespace(stop=None)
+        store._progress_canonical = lambda _connection, _scope, page: page
+        statements = []
+        connection.set_trace_callback(statements.append)
+
+        def page(after, outputs):
+            entries = []
+            for position, (key, content) in enumerate(outputs, after + 1):
+                source = SessionEvent.create(
+                    session_id=scope.task_id, sequence=position,
+                    event_type=EventType.PUBLIC_OUTPUT, actor=EventActor.HARNESS,
+                    payload={"attempt_number": 1, "output_id": key, "kind": "status",
+                             "phase": "started", "origin": "system", "content": content},
+                )
+                entries.append(TaskEvent(scope.task_id, position, scope.task_id, position, source))
+            return TaskEventPage(tuple(entries), after, after + len(entries), 4096)
+
+        def reads():
+            return sum(sql.startswith("SELECT") and "FROM worker_progress_outputs" in sql
+                       for sql in statements)
+
+        first = page(0, [(str(i), "same") for i in range(8)] + [("0", "same")])
+        head = store.advance_worker_progress(scope, first)
+        assert head.state.published_count == 8
+        assert reads() == 1, "signature membership still performs per-output SQL"
+        statements.clear()
+        second = page(head.through_sequence, [("0", "same"), ("8", "same")])
+        head = store.advance_worker_progress(scope, second)
+        assert head.state.published_count == 9 and reads() == 1
+        for outputs in ([("0", "changed")], [("new", "first"), ("new", "changed")]):
+            try:
+                store.advance_worker_progress(scope, page(head.through_sequence, outputs))
+            except CheckpointConflict:
+                pass
+            else:
+                raise AssertionError("conflicting output signature accepted")
+            assert store._progress_head(connection, scope) == head
+            count = connection.execute("SELECT count(*) FROM worker_progress_outputs").fetchone()[0]
+            assert count == 9
+
+
 failures = []
 for check in (
     priority,
@@ -299,6 +363,7 @@ for check in (
     pending_recovery_stage,
     verified_source_reuse,
     progress_head_read,
+    signature_membership_batch,
 ):
     try:
         check()

@@ -6383,3 +6383,8 @@ Reduced timeout exposure by reusing the exact pending model response verified in
 ### PROGRESS-HEAD-READ-01
 
 Reused existing execution-input bounded SQL CASE pattern in shared Worker progress head read; metadata+body twoqueries→one without weakening32KiB/Unicode/scope/CAS boundaries. Native same-server4A/4B operation SQL57→55, connections9unchanged, median254.52→255.77ms (no stable latency gain); slowoldsecondSELECT1827.47ms timeout→235.56ms successful output under unchanged2s.85existing regressions,7nativebounds and cleantracked-source makecheck pass. Worker5f2b9889 healthy/79sourcehashes+originalcomposition verified, APIimage/startunchanged; no model/oldRun replay/schema/push/npm/remote deployment. Local integration only; docs/CLOUD_PROGRESS_HEAD_READ_OPTIMIZATION.md.
+
+
+### PROGRESS-MEMBERSHIP-BATCH-01
+
+Removed repeated per-output signature queries from shared progress advancement using existing bounded IN-query pattern, transaction-local only. Native fixed4A/4B128output recovery: signatureSELECT256→1,totalSQL398→143(-64.1%),269.45→122.10ms; ordinary operation55→54SQL with no stable latency gain.85existing regressions+8native identity controls/defaultclean-source gate pass; sameRun/canonical/fence/CAS/32KiB/2s bounds retained. Worker506d0d80 healthy/79sourcehashes+originalcomposition verified; APIunchanged. Localintegration only, no model/oldRunreplay/schema/push/npm/remote deployment; docs/CLOUD_PROGRESS_MEMBERSHIP_BATCH.md.
