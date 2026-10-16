@@ -27,7 +27,7 @@ from zebra_agent_api.client_sessions import (
     open_client_session,
     release_client_controller,
 )
-from zebra_agent_api.client_surface import mount_client_surface
+from zebra_agent_api.client_surface import mount_client_surface, open_client_surface
 from zebra_agent_api.responses import ApiResponse, bad_request
 
 _SESSION_PREFIX = "/v1/client-sessions"
@@ -48,6 +48,8 @@ def handle_client_runtime_route(
         or path.endswith(("/client-bindings", "/client-surface"))
     ):
         return None
+    if path.endswith("/client-surface") and method == "POST" and "grant" in (request.body or {}):
+        return open_client_surface(app, request)
     platform = app.client_platform
     if platform is None or platform.client_sessions is None:
         return ApiResponse(503, {"status": "unavailable", "reason": "client_integration_disabled"})

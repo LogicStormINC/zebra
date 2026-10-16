@@ -15277,3 +15277,12 @@ initial5opens/448execute(33empty)unchanged,command→attempt93–207ms. Remainin
 search/network/admission cannotclaimsub10s. Private .artifacts/search-start-tool-wait-20261017.
 
 SEARCH-START-TOOL-WAIT-01 closeout: localcloud-agent-trench integrated/preserved27dirtyentries; normalWorker1a2270dfbf0b/API7eb869c9/Search245b675f healthy/zero-restart/original6Compose-env-commands and103sourcehashes verified. ActualnormalWorker standalone negotiationcheck passes; diagnosticentrypoints/mounts/DOMlisteners/receiver removed, no fifthRun/push/remotedeploy.
+
+### 2026-10-17 CLOUD-SDK-ADMISSION-01
+
+- Luke Ding 授权继续启动优化与真实页面配对；独立 codex/cloud-sdk-admission-01，以 cdb3bf25 为基线。
+- 共用原 client-surface route 增加 Host-only open/mount/bind 组合，SDK 与 Host 仅协商接线。
+- 原目录 deadline equality 失败在干净 HEAD 重现，不改旧 fixture 或该无关链路。
+- 实际四次模型 Run ABBA 全部通过，保留高思考/Flash/v2 和自主工具；合并段节省约52ms，6条 SQL。
+- 整体启动 A均值3.088/B2.525s，但回切A2=2.514s；整轮 SQL 与耗时无改善，未夸大局部收益。
+- 正常 API 已更新；Worker/Search 保留原镜像，六 Compose/env/command 与103源码指纹复核。

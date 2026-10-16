@@ -1,16 +1,24 @@
-"""Compose existing mount/bind operations; credentials stay with the original open."""
+"""Compose existing client admission operations with fresh Host authority."""
 
 from datetime import UTC, datetime
 from time import monotonic
 from typing import TYPE_CHECKING, Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from agent_core.domain.client_capabilities import CAPABILITY_NAME_PATTERN, MountedCapabilitySnapshot
+from agent_core.domain.client_sessions import ClientSessionGrant
 from agent_storage.postgres.task_io import task_io_deadline
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 
-from zebra_agent_api.client_grant_auth import ClientAuthContext
-from zebra_agent_api.client_sessions import bind_client_run, mount_client_session
+from zebra_agent_api.client_grant_auth import (
+    ClientAuthContext,
+    SessionBackedClientGrantAuthorizer,
+)
+from zebra_agent_api.client_sessions import (
+    bind_client_run,
+    mount_client_session,
+    open_client_session,
+)
 from zebra_agent_api.responses import ApiResponse, bad_request
 from zebra_agent_api.tenant_guard import host_list_context_response, task_access_response
 
@@ -85,26 +93,105 @@ def mount_client_surface(
             )
             if denied is not None:
                 return denied
-            mounted = mount_client_session(
-                app, str(auth.client_session_id), body.mount.model_dump(mode="json"), auth
-            )
-            if mounted.status_code != 200:
-                return mounted
-            binding = bind_client_run(
+            return _mount_and_bind(app, request, body, auth, task_id, run_id)
+    except TimeoutError:
+        return ApiResponse(503, {"status": "unavailable", "reason": "client_surface_deadline"})
+
+
+def _mount_and_bind(
+    app: "ZebraAgentApi",
+    request: "RouteRequest",
+    body: ClientSurfaceRequest,
+    auth: ClientAuthContext,
+    task_id: str,
+    run_id: str,
+) -> ApiResponse:
+    """Internal continuation after the current request's target authority check."""
+    mounted = mount_client_session(
+        app, str(auth.client_session_id), body.mount.model_dump(mode="json"), auth
+    )
+    if mounted.status_code != 200:
+        return mounted
+    binding = bind_client_run(
+        app,
+        task_id,
+        run_id,
+        {
+            "task_capability_scope": body.task_capability_scope,
+            "controller": body.controller,
+        },
+        auth,
+        request.host_context,
+    )
+    if binding.status_code != 201:
+        return binding
+    # ponytail: keep the original partial-commit/retry semantics. A retry
+    # reuses the binding and rotates its fence; no bearer response is stored.
+    return ApiResponse(201, {**mounted.body, **binding.body})
+
+
+def open_client_surface(app: "ZebraAgentApi", request: "RouteRequest") -> ApiResponse:
+    """Host/BFF-only composition; never cache or retry a credential-bearing result."""
+    body = dict(request.body or {})
+    try:
+        task_id, run_id = client_surface_target(request.path)
+        grant = ClientSessionGrant.model_validate(body.pop("grant"))
+        mount = body.get("mount")
+        if not isinstance(mount, dict) or "client_session_id" in mount:
+            raise ValueError("new sessions require a server-issued identity")
+        parsed = ClientSurfaceRequest.model_validate(
+            {**body, "mount": {**mount, "client_session_id": str(uuid4())}}
+        )
+    except (KeyError, ValueError):
+        return bad_request("invalid_client_surface_open")
+    context = request.host_context
+    if context is None:
+        return ApiResponse(401, {"status": "unauthorized"})
+    denied = host_list_context_response(context, request.verified_host_grant)
+    if denied is not None:
+        return denied
+    deadline = monotonic() + 2
+    if context.expires_at is not None:
+        deadline = min(
+            deadline, monotonic() + (context.expires_at - datetime.now(UTC)).total_seconds()
+        )
+    try:
+        with task_io_deadline(deadline):
+            denied = task_access_response(
                 app,
                 task_id,
-                run_id,
-                {
-                    "task_capability_scope": body.task_capability_scope,
-                    "controller": body.controller,
-                },
-                auth,
                 context,
+                verified_host_grant=request.verified_host_grant,
+                run_id=run_id,
             )
-            if binding.status_code != 201:
-                return binding
-            # ponytail: keep the original partial-commit/retry semantics. A retry
-            # reuses the binding and rotates its fence; no bearer response is stored.
-            return ApiResponse(201, {**mounted.body, **binding.body})
+            if denied is not None:
+                return denied
+            opened = open_client_session(app, {"grant": grant.model_dump(mode="json")}, context)
+            if opened.status_code != 201:
+                return opened
+            platform = app.client_platform
+            assert platform is not None and platform.client_sessions is not None
+            credential = opened.body["session_credential"]
+            assert isinstance(credential, str)
+            auth = SessionBackedClientGrantAuthorizer(platform.client_sessions).authorize(
+                {"X-Zebra-Client-Session": credential},
+                host_context=context,
+                require_host_context=True,
+            )
+            if auth is None:
+                return ApiResponse(401, {"status": "unauthorized"})
+            mounted = parsed.model_copy(
+                update={
+                    "mount": parsed.mount.model_copy(
+                        update={"client_session_id": auth.client_session_id}
+                    )
+                }
+            )
+            bound = _mount_and_bind(app, request, mounted, auth, task_id, run_id)
+            if bound.status_code != 201:
+                return bound
+            # ponytail: existing operations may partially commit. Lost responses never
+            # trigger automatic reopen/fallback; abandoned sessions expire at their TTL.
+            return ApiResponse(201, {**opened.body, **bound.body})
     except TimeoutError:
         return ApiResponse(503, {"status": "unavailable", "reason": "client_surface_deadline"})

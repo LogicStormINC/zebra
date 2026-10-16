@@ -22,6 +22,9 @@ class ApiStatusMixin:
             "schema_version": MIGRATIONS[-1].version,
             "network_profiles": list(SUPPORTED_NETWORK_PROFILES),
             "client_surface_contract_version": 1 if available else 0,
+            "client_surface_open_contract_version": (
+                1 if available and self.settings.deployment == "cloud" else 0
+            ),
         })
 
     def health(self) -> ApiResponse:

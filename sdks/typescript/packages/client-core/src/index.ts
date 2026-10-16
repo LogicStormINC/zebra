@@ -496,4 +496,4 @@ export class ZebraClientRuntime {
 }
 export { ConversationStreamReducer, STREAM_V2_CAPABILITIES } from "./conversation_stream.ts";
 export type { ConversationMessage, ConversationStreamEvent } from "./conversation_stream.ts";
-export { mountClientSurface, type ClientSurfaceOptions, type ClientSurfaceAdmission, type ClientSurfaceMount } from "./client_surface.ts";
+export { openClientSurface, type ClientSurfaceOpenOptions, type ClientSurfaceOpened, mountClientSurface, type ClientSurfaceOptions, type ClientSurfaceAdmission, type ClientSurfaceMount } from "./client_surface.ts";

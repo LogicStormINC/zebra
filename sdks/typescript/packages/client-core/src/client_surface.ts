@@ -53,15 +53,59 @@ export async function mountClientSurface(options: ClientSurfaceOptions): Promise
     ? object(await request(`${base}/client-surface`, {mount, ...binding}))
     : {...object(await request(`/v1/client-sessions/${mount.client_session_id}/mount`, mount)),
       ...object(await request(`${base}/client-bindings`, binding))};
+  return validateAdmission(options, value);
+}
+
+function validateAdmission(options: ClientSurfaceOptions, value: Record<string, unknown>): ClientSurfaceAdmission {
+  const {mount} = options;
+  const controller = options.controller ?? true;
   if (typeof value.mounted_snapshot_digest !== "string" || !digest.test(value.mounted_snapshot_digest)
     || value.ui_revision !== mount.ui_revision || typeof value.binding_id !== "string" || !uuid.test(value.binding_id)
     || typeof value.binding_digest !== "string" || !digest.test(value.binding_digest)
     || !Number.isSafeInteger(value.binding_revision) || Number(value.binding_revision) < 1
-    || value.controller !== binding.controller || !Array.isArray(value.allowed_actions)
+    || value.controller !== controller || !Array.isArray(value.allowed_actions)
     || value.allowed_actions.some(a => typeof a !== "string" || !options.taskCapabilityScope.includes(a) || !mount.mounted_actions.includes(a))
-    || (binding.controller ? typeof value.controller_fence_token !== "string" || value.controller_fence_token.length < 16 || /\s/.test(value.controller_fence_token)
+    || (controller ? typeof value.controller_fence_token !== "string" || value.controller_fence_token.length < 16 || /\s/.test(value.controller_fence_token)
       : value.controller_fence_token !== null)) {
     throw new ClientRuntimeError("invalid_client_surface", "invalid client surface response");
   }
   return value as unknown as ClientSurfaceAdmission;
+}
+
+
+export interface ClientSurfaceOpenOptions extends Omit<ClientSurfaceOptions, "mount" | "request" | "capabilities"> {
+  mount: Omit<ClientSurfaceMount, "client_session_id">;
+  grant: Record<string, unknown>;
+  capabilities: ClientSurfaceOptions["capabilities"] & {client_surface_open_contract_version?: unknown};
+  request: (path: string, body: unknown, sessionCredential?: string) => Promise<unknown>;
+}
+export interface ClientSurfaceOpened extends ClientSurfaceAdmission {
+  client_session_id: string;
+  session_credential: string;
+}
+
+/** Host/BFF only: request supplies fresh Host authority; never cache the returned credential. */
+export async function openClientSurface(options: ClientSurfaceOpenOptions): Promise<ClientSurfaceOpened> {
+  const {taskId, runId, request} = options;
+  if (!uuid.test(taskId) || !runId.trim() || runId.length > 128 || /[\x00-\x1f/]/.test(runId)
+    || "client_session_id" in options.mount) {
+    throw new ClientRuntimeError("invalid_client_surface", "invalid client surface target");
+  }
+  const combined = options.capabilities.client_surface_open_contract_version === 1;
+  // ponytail: negotiate before mutation. A timeout/invalid response never retries or falls back.
+  const opened = object(await request(combined
+    ? `/v1/tasks/${taskId}/runs/${encodeURIComponent(runId)}/client-surface` : "/v1/client-sessions",
+    combined ? {grant: options.grant, mount: options.mount,
+      task_capability_scope: options.taskCapabilityScope, controller: options.controller ?? true}
+      : {grant: options.grant}));
+  const session = opened.client_session_id;
+  const credential = opened.session_credential;
+  if (typeof session !== "string" || !uuid.test(session) || typeof credential !== "string"
+    || !credential.startsWith(`${session}:`) || credential.length <= session.length + 16 || /\s/.test(credential)) {
+    throw new ClientRuntimeError("invalid_client_surface", "invalid client session response");
+  }
+  const mounted = {...options, mount: {...options.mount, client_session_id: session},
+    request: (path: string, body: unknown) => request(path, body, credential)};
+  const admission = combined ? validateAdmission(mounted, opened) : await mountClientSurface(mounted);
+  return {...admission, client_session_id: session, session_credential: credential};
 }

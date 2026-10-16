@@ -6550,3 +6550,11 @@ Normal localactivation/sourceproof pendingcloseout; preserve primary27dirtyentri
 no Trenchproductcode/unrelatedfixture/push/remotedeploy.
 
 SEARCH-START-TOOL-WAIT-01 closeout: localcloud-agent-trench integrated/preserved27dirtyentries; normalWorker1a2270dfbf0b/API7eb869c9/Search245b675f healthy/zero-restart/original6Compose-env-commands and103sourcehashes verified. ActualnormalWorker standalone negotiationcheck passes; diagnosticentrypoints/mounts/DOMlisteners/receiver removed, no fifthRun/push/remotedeploy.
+
+### CLOUD-SDK-ADMISSION-01 / 2026-10-17
+
+- 2.3–3.3 秒启动继续按真实 Host → Cloud 请求图拆解；仅合并开 client session 与已有挂载/绑定。
+- 通用 Cloud API 及 SDK 显式能力协商；新鲜 Host/目标/profile/credential/fence 校验保留。
+- Trench 仅协议传输接线，业务/恢复/模型设置不改；Worker/Search 已验收实现保持。
+- 四轮 completed/high/Flash/v2；局部 2→1 请求、36→30 SQL、233→180ms；整体启动稳定收益未证实。
+- 正常服务与 103 指纹恢复通过，Worker/Search 不变；详细口径见 `docs/CLOUD_SDK_ADMISSION.md`。
