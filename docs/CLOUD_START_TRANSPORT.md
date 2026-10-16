@@ -107,3 +107,5 @@ host-breakdown.safe.json、diagnostic-A/B.safe.json、final-source-checks.safe.j
 本地代码集成保留primary27项无关脏状态，不推送/远端部署、不发布npm包。
 剩余重点是事务内首次索引构建与Host调度准备；后续必须先测其内部阶段，不能用减授权校验、
 降低思考强度、固定工具路由或扩大测试修复来换取看起来更短的数字。
+
+本地集成：98d72222 已fast-forward到cloud-agent-trench，27项无关脏状态保留；Host传输接线59773b7，原有3项无关条目保留。任务Review（本地已验收/集成，未推送或合入main）。正常B2会话conv_1792174446903_84654b只读恢复、正文/高思考可见，截图page-B2.jpg；临时hook和接收器均已清除。

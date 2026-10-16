@@ -6565,4 +6565,4 @@ SEARCH-START-TOOL-WAIT-01 closeout: localcloud-agent-trench integrated/preserved
 准入借用现存httpx transport，每请求新鲜Grant及权限校验保留，Trench仅传输接线。
 原生无模型94→73 SQL；四轮真实页面和正常服务验收见docs/CLOUD_START_TRANSPORT.md。
 
-CLOUD-START-TRANSPORT-01验收：固定4ABBA均completed/high/Flash/v2；Task SQL94→73，前置183→162，startup非空598→577。启动样本均值2.451→2.197s，首正文19.157→18.109s，整轮22.656→23.951s，整轮收益未证实。首Cloud前主等待在入队180–220ms/调度准备235–459ms；主体校验3–8ms保留。正常API1fcd97720fade/Worker1a2270dfbf0b/Search245b675f健康、原6Compose/env/commands及104指纹复核，临时Hosthook移除；本地集成收尾中。
+CLOUD-START-TRANSPORT-01验收：固定4ABBA均completed/high/Flash/v2；Task SQL94→73，前置183→162，startup非空598→577。启动样本均值2.451→2.197s，首正文19.157→18.109s，整轮22.656→23.951s，整轮收益未证实。首Cloud前主等待在入队180–220ms/调度准备235–459ms；主体校验3–8ms保留。正常API1fcd97720fade/Worker1a2270dfbf0b/Search245b675f健康、原6Compose/env/commands及104指纹复核，临时Hosthook移除；本地98d72222集成完成并保留27项脏状态；Host59773b7，未推送/远端部署。
