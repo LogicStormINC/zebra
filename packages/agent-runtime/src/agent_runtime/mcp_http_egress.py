@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import http.client
 import socket
 import ssl
@@ -32,6 +33,12 @@ class PublicMcpHttpsConnection(http.client.HTTPSConnection):
             if self.source_address is not None:
                 connection.bind(self.source_address)
             connection.connect(address)
+            # Match stdlib HTTPConnection after replacing its address connector.
+            try:
+                connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            except OSError as exc:
+                if exc.errno != errno.ENOPROTOOPT:
+                    raise
             self.sock = self._context.wrap_socket(connection, server_hostname=self.host)
         except BaseException:
             connection.close()

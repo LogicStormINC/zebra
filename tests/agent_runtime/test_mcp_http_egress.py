@@ -1,3 +1,4 @@
+import errno
 import socket
 import ssl
 import urllib.request
@@ -136,3 +137,25 @@ def test_ipv6_socket_uses_exact_validated_sockaddr(monkeypatch):
     PublicMcpHttpsConnection("example.test", timeout=2, context=Mock()).connect()
     factory.assert_called_once_with(socket.AF_INET6, socket.SOCK_STREAM, 6)
     sock.connect.assert_called_once_with(address)
+
+
+@pytest.mark.parametrize("option_error", [None, errno.ENOPROTOOPT, errno.EACCES])
+def test_pinned_connection_keeps_stdlib_tcp_default_and_error_handling(monkeypatch, option_error):
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **kw: answers("93.184.216.34"))
+    sock = Mock()
+    if option_error is not None:
+        sock.setsockopt.side_effect = OSError(option_error, "socket option unavailable")
+    monkeypatch.setattr(socket, "socket", Mock(return_value=sock))
+    context = Mock()
+    connection = PublicMcpHttpsConnection("example.test", timeout=2, context=context)
+    if option_error == errno.EACCES:
+        with pytest.raises(OSError) as caught:
+            connection.connect()
+        assert caught.value.errno == errno.EACCES
+        context.wrap_socket.assert_not_called()
+        sock.close.assert_called_once()
+    else:
+        connection.connect()
+        context.wrap_socket.assert_called_once_with(sock, server_hostname="example.test")
+    sock.connect.assert_called_once_with(("93.184.216.34", 443))
+    sock.setsockopt.assert_called_once_with(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)

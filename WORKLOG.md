@@ -15119,3 +15119,8 @@ Removed repeated per-output signature queries from shared progress advancement u
 ### 2026-10-16 CURRENT-RUNTIME-ACCEPTANCE-01
 
 Completed current-version real search acceptance round:2fresh Flash/high/v2 Runs complete,8models/10successful tools. Firstsubstantive35.22/17.59s vsprocess4.64/4.13s; Hostcomplete44.53/21.13s. Startup395SQL/53connect both; Worker-scoped3117/2078 reflects5rounds6tools vs3rounds4tools, not systemreduction. PGofficialfetch9.31vs2.00s and one validcitationcorrection explain substantial variation; Worker-other10.60/6.86s remains to split. No sourcefix; focusedpaircannot certify<=10s/SQL80/STOP/GC. RestoredoriginalnormalAPI907fcc00/Worker506d0d80 healthy/zero restarts,79sourcehashes/originalcomposition verified; normalpage reloadpasses, diagnosticsremoved. Preserved oldClientSession502 and truncatednetwork/proof-boundary limits; no oldRun replay/schema/push/npm/remote deployment. See docs/CLOUD_CURRENT_RUNTIME_ACCEPTANCE.md.
+
+
+### 2026-10-16 WEB-WAIT-PROFILE-01
+
+No-model native segmentation: PG TLS1.01–1.07s/headers0.40–0.55s/parse<6ms; historical9.31s outlier unproven. Existing A1/A2 residual resolves progress3.862/2.489s andcanonicalappend3.148/1.980s, with nested/parallel time excluded. Restored omittedstdlibTCP_NODELAY in sharedpinnedHTTPadapter(sevenlines), originalSSRF/TLS/50mscontrol/deadline/killreap unchanged.3newregressions+242focused/native checks andclean-source makecheck pass. FixedABBA noisy2738→2639ms doesnot establishstablegain; exactcandidate2x200/realoption1/hashmatch verified. NormalWorker6f3a5d8b healthy/80sourcefingerprints/originalcomposition retained; APIimage/startunchanged. Localintegrationonly, no model/oldRunreplay/schema/push/npm/remote deployment. See docs/CLOUD_WEB_WAIT_PROFILE.md.
