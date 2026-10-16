@@ -76,7 +76,7 @@ class PostgresDatabase:
             return self.connect_task_io(deadline=task_deadline)
 
         scope = current_connection_scope()
-        if scope is not None:
+        if scope is not None and not scope.task_io_only:
             from agent_storage.postgres.coverage_recovery_preparation import (
                 CoverageRecoveryDeferred,
                 RecoveryDeadlineConnection,

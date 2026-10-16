@@ -1,4 +1,4 @@
-"""Callback-local sockets, never shared transactions or cached query results."""
+"""Explicit callback/Run sockets, never shared transactions or query results."""
 
 import logging
 import sys
@@ -13,8 +13,11 @@ _logger = logging.getLogger(__name__)
 
 
 class ConnectionScope:
-    def __init__(self, bounded_deadline: float | None = None) -> None:
+    def __init__(
+        self, bounded_deadline: float | None = None, *, task_io_only: bool = False
+    ) -> None:
         self.bounded_deadline = bounded_deadline
+        self.task_io_only = task_io_only
         self.thread = get_ident()
         self.closed = False
         self.idle: dict[tuple[object, ...], list[Any]] = {}
@@ -63,8 +66,9 @@ class ConnectionScope:
                 self.discard(connection)
             _logger.warning("Discarded callback database connection after reset failure")
             return
-        # ponytail: at most eight idle sockets per callback; no global pool or
-        # cross-thread sharing. A process-wide pool needs explicit lifecycle wiring.
+        # ponytail: at most eight idle sockets per explicit callback/Run owner;
+        # idle Run sockets occupy DB sessions until exit. Cross-Run pooling needs
+        # separate process lifecycle/capacity wiring; no cross-thread sharing.
         if self.closed or sum(map(len, self.idle.values())) >= 8:
             self.discard(connection)
         else:
@@ -129,24 +133,31 @@ def current_connection_scope() -> ConnectionScope | None:
 
 
 @contextmanager
-def postgres_connection_scope(*, bounded: bool = False) -> Iterator[None]:
-    """Only explicit synchronous callback composition opts into physical reuse."""
+def postgres_connection_scope(
+    *, bounded: bool = False, task_io: bool = False
+) -> Iterator[None]:
+    """task_io owns one Run; each nested bounded callback keeps its own budget."""
     from agent_storage.postgres.task_io import current_task_io_deadline
 
+    if bounded and task_io:
+        raise ValueError("Run owner and bounded callback are separate scopes")
     deadline = current_task_io_deadline() if bounded else None
     if bounded and deadline is None:
         raise ValueError("bounded connection scope requires a Task I/O deadline")
     parent = current_connection_scope()
-    if parent is not None and (not bounded or parent.bounded_deadline == deadline):
+    if not task_io and parent is not None and (
+        (bounded and (parent.task_io_only or parent.bounded_deadline == deadline))
+        or (not bounded and not parent.task_io_only)
+    ):
         yield
         return
-    scope = ConnectionScope(deadline)
+    scope = ConnectionScope(deadline, task_io_only=task_io)
     token = _scope.set(scope)
     try:
         yield
     finally:
         _scope.reset(token)
-        if bounded and sys.exc_info()[0] is not None:
+        if (bounded or task_io) and sys.exc_info()[0] is not None:
             with suppress(Exception):
                 scope.close()
         else:

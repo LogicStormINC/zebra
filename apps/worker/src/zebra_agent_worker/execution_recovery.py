@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Literal, Never
@@ -16,6 +17,7 @@ from agent_core.domain.sessions import SessionStatus
 from agent_core.ports.runtime import RuntimeCapabilityError
 from agent_core.ports.task_projection_checkpoints import CheckpointNotReady
 from agent_core.ports.worker_preparation import PreparationAdvanced
+from agent_storage.postgres.connection_scope import postgres_connection_scope
 
 import zebra_agent_worker.provider_continuation_execution as provider_runtime
 import zebra_agent_worker.runtime_setup as runtime_setup
@@ -105,10 +107,14 @@ def execute_claimed_with_stale_retry(
         _claimed: ClaimedSession = claimed,
     ) -> ExecutedSession:
         effective = _claimed if recovery is None else replace(_claimed, recovery=recovery)
-        result: ExecutedSession = service._execute_claimed_session_once(
-            effective, started_at=started_at, ownership_check=ownership_check
-        )
-        return result
+        with (
+            postgres_connection_scope(task_io=True)
+            if getattr(service, "_execution_namespace", None) is not None else nullcontext()
+        ):
+            result: ExecutedSession = service._execute_claimed_session_once(
+                effective, started_at=started_at, ownership_check=ownership_check
+            )
+            return result
 
     def recover() -> RecoveredSession:
         # Cloud recovery requires the CURRENT lease: the fresh retry stays

@@ -28,6 +28,7 @@ from psycopg._conninfo_utils import get_param, is_ip_address, split_attempts
 from psycopg.abc import RV, ConnDict, PQGen
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 
 _TASK_IO_DEADLINE: ContextVar[float | None] = ContextVar("task_io_deadline", default=None)
 
@@ -323,7 +324,8 @@ class TaskIoConnections:
 
         scope = current_connection_scope()
         if (
-            scope is not None and scope.bounded_deadline is not None and scoped is not None
+            scope is not None and (scope.bounded_deadline is not None or scope.task_io_only)
+            and scoped is not None
             and pq.version() >= 170000 and not get_param(self._params, "service")
         ):
             environment = tuple(sorted(
@@ -333,11 +335,25 @@ class TaskIoConnections:
             # ponytail: reuse the existing synchronous scope, never a global pool.
             # Native libpq cancellation bounds later borrows' shorter remaining budget.
             # Older clients keep fresh server timeouts; ordinary sockets never share keys.
-            connection = scope.borrow(
-                ("task-io", make_conninfo("", **self._params), client_cursor, environment, scoped),
-                lambda: self._open(deadline, operation_deadline, client_cursor),
+            key = (
+                "task-io", make_conninfo("", **self._params), client_cursor, environment,
+                None if scope.task_io_only else scoped,
             )
+            connection = scope.borrow(
+                key, lambda: self._open(deadline, operation_deadline, client_cursor)
+            )
+            check_idle = scope.task_io_only and connection.deadline != deadline
             connection.deadline, connection.operation_deadline = deadline, operation_deadline
+            if check_idle:
+                try:
+                    # Empty protocol query, once at the next callback. Renew the
+                    # native budget first; no application statement has been sent.
+                    ConnectionPool.check_connection(connection)
+                except psycopg.OperationalError:
+                    connection.close()
+                    connection = scope.borrow(
+                        key, lambda: self._open(deadline, operation_deadline, client_cursor)
+                    )
             connection.prepare_threshold = None  # DISCARD ALL removes server plans.
             return cast(TaskIoConnection, connection)
         return self._open(deadline, operation_deadline, client_cursor)
