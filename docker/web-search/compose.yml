@@ -6,6 +6,7 @@ services:
     env_file: ./secrets/service.env
     environment:
       SEARXNG_BASE_URL: https://search.zebra.test/
+      TMPDIR: /var/cache/searxng
     volumes:
       - ./settings.yml:/etc/searxng/settings.yml:ro
       - search-cache:/var/cache/searxng

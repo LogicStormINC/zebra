@@ -6485,3 +6485,22 @@ Trace/source confirms Yahoo HTTPError loggedstatus0 is actualinvalidresponse, no
 FourrealpageRuns high/Flash/v2/Agentautonomous retained,20modelreceiptsretry0. B1twoYahoo5stimeouts thenallowed!bing/officialfetch exposedactualsourceURLs displacedbysorted128hrefinventory; samecapturedfirst/finalcandidate failbefore/passafterunknownstillreject. Sharedledger12lineboundedsourcepriority/forgedauxintersectionguard andstandalonefloodregression red→green; no qualityweakening/capraise/schema/Port. FirstA1/B1proposalcohort retained includingB1blocked, finalB2/A2 body29.446/59.663s/Host32.542/64.597s/models4/7/tools6/10;Worker nonempty3228/5284/API1377/2242. Observed50percentgap isunequalfailures/work, not stablecausalbenefit. A2fetch10.361sdeadline/404/308; B2twoYahoo failures andcold307trackinghopsremainOPEN. Pausefeedbackneedsrawresponse/timeevidence, not speculativefix.
 
 39search/config+75ledger/quality/recoveryfocused (overlap)/defaultcleanmakecheck pass; wrongtestpath/newscriptlintcorrected, nofixtureexpansion. B2afterguardnative6receipt replay yieldsidenticalmetadata; noextraactualRun beyondfour. IdleguardednormalAPI7eb869c9/Worker38c42ab1/search245b675f composition updated/restored,99sourcehashes/exactYahooconfig/originalenv/commandsverified; diagnosticAPI/searchrestartsacknowledged. Temporarylaunchers/sitecustomizemount/DOMlisteners/ownisolatedcontaineranonymousvolumes/loopbackremoved. Localcloud-agent-trenchintegrationpreserves27unrelateddirtyentries, noDBrepair/historicalRunreplay/push/npm/remotedeploy. Wholebody10s/SQL80/STOP/capacity/GC/multiworkergatesOPEN. Docs CLOUD_YAHOO_SEARCH_RECOVERY.md, private yahoo-search-recovery-20261016.
+
+
+## 2026-10-17 - YAHOO-COLD-READY-01
+
+Yahoo installed EngineCache used /tmp while existing cache volume stayed empty.
+One TMPDIR env reuses native SQLite/expiry in existing volume across recreation;
+empty/expired/rejected YBV can still redirect. Shared paused JSON now accurately
+reports not_executed only all bounded paused/no results, retryfalse/no invented
+5s countdown; read-only search failure no longer suggests argument repair.
+Native fresh/recreated controls and paused10.56ms/no-upstream proof pass; focused68
+and standalone check pass. Fixed four actual page Runs all completed/high/Flash/v2.
+Docker maxdepth before B1 model required exact-filesystem flatten124→2/config and69
+Worker hashes preserved; final comparable B2/A2 body28.875/18.373s,Host37.317/21.254s,
+models5/3, tools7/4 includingB2 one404 and2candidates. YahooHTTP4/6, redirects2/4,
+but B2 cache hit still reinitialized; SQL Worker+API nonempty5185/3360. No end-to-end
+speed/SQL reduction proved; no favorable extra samples. Startup5opens/448execute
+(33empty) retained. Paused model behavior not exercised on page. Details and limits
+in docs/CLOUD_YAHOO_COLD_READY.md. Normal local activation/source/gate closeout follows;
+no push/remote deploy or unrelated fixture changes.

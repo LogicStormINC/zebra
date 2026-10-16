@@ -20,7 +20,9 @@ def require_complete_search(payload: Mapping[str, object]) -> None:
         engine = re.sub(r"[^a-zA-Z0-9_. -]", "", str(engine))[:40] or "unknown"
         text = str(detail).lower()
         code = (
-            "captcha"
+            "suspended"
+            if text.startswith("suspended:")
+            else "captcha"
             if "captcha" in text
             else "rate_limited"
             if "too many" in text or "429" in text
@@ -39,7 +41,11 @@ def require_complete_search(payload: Mapping[str, object]) -> None:
         "engine_failures": failures,
         "candidate_count": len(results) if isinstance(results, list) else 0,
         "source_complete": False,
-        "execution_state": "executed",
+        "execution_state": "not_executed"
+        if isinstance(raw, list) and 0 < len(raw) <= 8
+        and all(isinstance(item, dict) and item["code"] == "suspended" for item in failures)
+        and isinstance(results, list) and not results and not payload.get("error")
+        else "executed",
         "category": "upstream_search",
         "retryable": bool(retryable),
     }

@@ -63,6 +63,11 @@ def normalize_failure(result: ToolResult, *, read_only: bool) -> ToolResult:
         else "Do not repeat this write: its outcome is unknown. Read the resulting state or "
         "query its durable receipt before deciding what remains to do."
         if not read_only and state == "unknown"
+        else "The search provider is unavailable or suspended. Changing query text on the same "
+        "engine does not repair this failure. Use collected evidence, choose a separately "
+        "available engine, or report/defer the missing evidence. "
+        "Do not bypass provider restrictions."
+        if read_only and metadata.get("category") == "upstream_search"
         else "Correct the arguments using the tool schema, choose an allowed alternative, "
         "or report the missing outcome. Do not repeat identical failed calls or bypass policy."
     )
