@@ -15254,3 +15254,5 @@ benefitclaim. B1extraGitHubfetchretained; realpagesdidnotreproducecapfalsepositi
 Startup5physicalopens/448execute(33empty)allretained. YahooA2status0 recoveredvia
 existingboundedretry, extra307challengepersists; no retrybudget/TLSchange.
 Private evidence .artifacts/source-candidate-roundtrip-20261017.
+
+SOURCE-CANDIDATE-ROUNDTRIP-01 closeout: localcloud-agent-trench integrated/preserved27dirtyentries; normalWorker5fdb3e0d119b/API7eb869c9/Search245b675f healthy/zero-restart/original6Compose-env-commands and103sourcehashes verified. ActualnormalWorker standalonepasses. Diagnosticentrypoints/sitecustomize/DOMlisteners/receiver removed; no fifthRun/push/remotedeploy.
