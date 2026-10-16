@@ -20,6 +20,7 @@ from agent_tools.web_search import (
 )
 from pydantic import TypeAdapter
 
+from agent_runtime.public_dns import PublicAddressBlocked
 from agent_runtime.search_egress import search_network_options
 from agent_runtime.search_health import require_complete_search
 from agent_runtime.web_gateway import (
@@ -102,7 +103,12 @@ class LocalWebSearchTransport:
                 "search response body is incomplete", reason="response_incomplete"
             ) from exc
         except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
-            raise WebGatewayError(f"search gateway request failed: {exc}") from exc
+            reason = (
+                "private_network_blocked"
+                if isinstance(getattr(exc, "reason", exc), PublicAddressBlocked)
+                else "gateway_unavailable"
+            )
+            raise WebGatewayError(f"search gateway request failed: {exc}", reason=reason) from exc
 
 
 def _search_url(request: WebSearchRequest) -> str:

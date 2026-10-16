@@ -21,6 +21,7 @@ from agent_tools.search_pipeline import SearchHit, SearchQuery
 from agent_tools.web_gateway import WebGatewayError
 from agent_tools.web_search import DEFAULT_WEB_SEARCH_TIMEOUT_SECONDS
 
+from agent_runtime.public_dns import PublicAddressBlocked
 from agent_runtime.search_egress import search_network_options
 from agent_runtime.search_health import require_complete_search
 from agent_runtime.web_gateway import (
@@ -173,7 +174,12 @@ def urllib_fetch_json(
                 "search response body is incomplete", reason="response_incomplete"
             ) from exc
         except (OSError, ValueError) as exc:
-            raise WebGatewayError("search request unavailable") from exc
+            reason = (
+                "private_network_blocked"
+                if isinstance(getattr(exc, "reason", exc), PublicAddressBlocked)
+                else "gateway_unavailable"
+            )
+            raise WebGatewayError("search request unavailable", reason=reason) from exc
         try:
             payload = json.loads(body.decode("utf-8"))
         except (UnicodeError, json.JSONDecodeError) as exc:

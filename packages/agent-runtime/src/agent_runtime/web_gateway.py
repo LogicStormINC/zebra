@@ -118,7 +118,17 @@ class LocalWebGatewayTransport:
                 "web response body is incomplete", reason="response_incomplete"
             ) from exc
         except (OSError, UnicodeError, ValueError) as exc:
-            raise WebGatewayError(f"web gateway request failed: {exc}") from exc
+            reason = (
+                "private_network_blocked"
+                if isinstance(getattr(exc, "reason", exc), PublicAddressBlocked)
+                else "gateway_unavailable"
+            )
+            detail = (
+                "web hostname resolves to a non-public address"
+                if reason == "private_network_blocked"
+                else f"web gateway request failed: {exc}"
+            )
+            raise WebGatewayError(detail, reason=reason) from exc
 
 
 def sticky_network_cancellation_check(
@@ -326,9 +336,10 @@ def _proxy_configuration(hostname: str, *, use_system_proxy: bool) -> dict[str, 
     proxies = urllib.request.getproxies() if use_system_proxy else {}
     if proxies.get("https"):
         # ponytail: trusted-local delegates DNS and routing to the operator's HTTPS proxy;
-        # direct connections still keep the public-address preflight below.
+        # direct handlers retain connection-time public-address validation.
         return proxies
-    _reject_non_public_resolution(hostname)
+    # ponytail: direct handlers validate and pin fresh DNS at connect; a separate
+    # preflight repeats Fake-IP DoH without authorizing the actual socket.
     return {}
 
 
