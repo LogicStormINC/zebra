@@ -75,7 +75,12 @@ class WorkerProgressStoreMixin:
     _progress_postgres = False
 
     def read_latest_run_header(self, task_id: TaskId) -> TaskRunHeader:
-        with self._progress_connection() as connection:
+        # ponytail: the PostgreSQL metadata reader is one statement, so its
+        # statement snapshot needs no separate transaction-isolation round trip.
+        with (
+            self._database.connect_task_io()
+            if self._progress_postgres else self._progress_connection()
+        ) as connection:
             if self._progress_postgres:
                 from agent_storage.postgres.task_replay_headers import (
                     read_latest_run_header as postgres_read_latest_run_header,

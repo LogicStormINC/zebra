@@ -362,7 +362,6 @@ class PostgresAgentTaskStore(
         through_sequence: int | None = None,
     ) -> TaskRunHeader:
         with self._database.connect_task_io() as connection:
-            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
             return read_run_header(
                 connection, self._database.deployment_namespace, task_id, run_id, through_sequence
             )
