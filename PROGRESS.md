@@ -6378,3 +6378,8 @@ Audited12shared publication/recovery/draft/terminal boundaries after the user re
 ### PROGRESS-SOURCE-REUSE-01, 2026-10-16
 
 Reduced timeout exposure by reusing the exact pending model response verified in the current successful bounded progress page, avoiding a duplicate point read. Cold recovery/CASwinner/sourceabsence retainoriginalpointfallback; no cross-call authority cache, larger budget or retries. Real native4A/4B operation:61→57SQL,10→9TaskIOconnections,3→2pages, median264.40→233.47ms. Injected slowduplicatepoint causes original1.819stimeout whilecandidatecompletes0.206s/oneoutput; no wholeRun performance/SLA claim.95focused/native/deadline tests and clean-source defaultmakecheck pass, no realmodel. OnlylocalWorkerbdd9972b replaced/healthy,78sourcefingerprints/originalsixCompose/env/search preserved; APIimage/starttimeunchanged. Localcloud-agent-trenchintegrationonly; docs/CLOUD_PROGRESS_SOURCE_REUSE.md.
+
+
+### PROGRESS-HEAD-READ-01
+
+Reused existing execution-input bounded SQL CASE pattern in shared Worker progress head read; metadata+body twoqueries→one without weakening32KiB/Unicode/scope/CAS boundaries. Native same-server4A/4B operation SQL57→55, connections9unchanged, median254.52→255.77ms (no stable latency gain); slowoldsecondSELECT1827.47ms timeout→235.56ms successful output under unchanged2s.85existing regressions,7nativebounds and cleantracked-source makecheck pass. Worker5f2b9889 healthy/79sourcehashes+originalcomposition verified, APIimage/startunchanged; no model/oldRun replay/schema/push/npm/remote deployment. Local integration only; docs/CLOUD_PROGRESS_HEAD_READ_OPTIMIZATION.md.

@@ -149,9 +149,19 @@ class WorkerProgressStoreMixin:
     def _progress_head(
         self, connection: Any, scope: WorkerProgressScope, *, initial: bool = False
     ) -> WorkerProgressHead:
+        byte_length = (
+            "octet_length(state_json)"
+            if self._progress_postgres
+            else "length(CAST(state_json AS BLOB))"
+        )
+        # ponytail: reuse execution-input's database byte gate; one snapshot
+        # returns at most 32KiB of state without a second metadata/body query.
         row = self._progress_execute(
             connection,
-            f"SELECT run_id,anchor_sequence,state_bytes FROM worker_progress_heads WHERE {WHERE}",
+            f"SELECT run_id,anchor_sequence,state_bytes,{byte_length} AS actual_bytes,"
+            f"through_sequence,last_event_id,CASE WHEN state_bytes BETWEEN 1 AND "
+            f"{MAX_PROGRESS_STATE_BYTES} AND {byte_length}=state_bytes THEN state_json END "
+            f"AS state_json FROM worker_progress_heads WHERE {WHERE}",
             _values(scope),
         ).fetchone()
         if row is None:
@@ -164,20 +174,18 @@ class WorkerProgressStoreMixin:
             raise CheckpointConflict("Worker progress stored scope conflicts with Run")
         if not 0 < row["state_bytes"] <= MAX_PROGRESS_STATE_BYTES:
             raise CheckpointConflict("Worker progress stored state exceeds byte bound")
-        state_row = self._progress_execute(
-            connection,
-            f"SELECT through_sequence,last_event_id,state_json FROM worker_progress_heads "
-            f"WHERE {WHERE} AND state_bytes=?",
-            (*_values(scope), row["state_bytes"]),
-        ).fetchone()
-        if state_row is None or len(state_row["state_json"].encode("utf-8")) != row["state_bytes"]:
+        if (
+            row["actual_bytes"] != row["state_bytes"]
+            or row["state_json"] is None
+            or len(row["state_json"].encode("utf-8")) != row["state_bytes"]
+        ):
             raise CheckpointConflict("Worker progress state metadata conflicts")
-        last = state_row["last_event_id"]
+        last = row["last_event_id"]
         return WorkerProgressHead(
             scope,
-            state_row["through_sequence"],
+            row["through_sequence"],
             EventId(UUID(str(last))) if last is not None else None,
-            WorkerProgressState.model_validate_json(state_row["state_json"]),
+            WorkerProgressState.model_validate_json(row["state_json"]),
         )
 
     def _progress_signature(self, connection: Any, scope: WorkerProgressScope, output: str) -> Any:

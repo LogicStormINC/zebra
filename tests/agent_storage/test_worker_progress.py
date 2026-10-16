@@ -98,7 +98,9 @@ def test_missing_progress_is_read_only_and_explicit_preparation_restores(tmp_pat
     assert not any(
         sql.lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE")) for sql in statements
     )
-    assert not any("SELECT *" in sql or "state_json" in sql for sql in statements)
+    assert not any("SELECT *" in sql for sql in statements)
+    # Missing rows remain read-only; a bounded CASE query may name the body.
+    assert sum("FROM worker_progress_heads" in sql for sql in statements) == 1
     append_progress(events, scope, EventType.HARNESS_ATTEMPT_STARTED, {"attempt_number": 2})
     append_progress(events, scope, EventType.PUBLIC_OUTPUT, output_payload())
     head = tasks.advance_worker_progress(scope, tasks.read_event_page(scope.task_id, 0))

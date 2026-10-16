@@ -228,6 +228,67 @@ def verified_source_reuse():
     _check_verified_source(False)
 
 
+def progress_head_read():
+    import sqlite3
+
+    from agent_core.ports.task_projection_checkpoints import CheckpointConflict, CheckpointNotReady
+    from agent_core.ports.worker_progress import MAX_PROGRESS_STATE_BYTES, WorkerProgressState
+    from agent_storage.worker_progress import WorkerProgressStoreMixin, progress_schema
+
+    scope = WorkerProgressScope("local", uuid4(), "bounded-head", uuid4(), 1)
+    store = WorkerProgressStoreMixin()
+    statements = []
+
+    def guarded_row(cursor, values):
+        row = dict(zip((column[0] for column in cursor.description), values, strict=True))
+        if row.get("state_json") is not None:
+            size = len(row["state_json"].encode())
+            assert size <= MAX_PROGRESS_STATE_BYTES and size == row.get("state_bytes", size), (
+                "invalid checkpoint body crossed the database hydration boundary"
+            )
+        return row
+
+    with sqlite3.connect(":memory:") as connection:
+        connection.row_factory = guarded_row
+        connection.execute(progress_schema()[0])
+        connection.set_trace_callback(statements.append)
+        for initial in (False, True):
+            statements.clear()
+            try:
+                head = store._progress_head(connection, scope, initial=initial)
+            except CheckpointNotReady:
+                assert not initial
+            else:
+                assert initial and head.through_sequence == 0
+            assert len(statements) == 1
+        connection.execute("PRAGMA ignore_check_constraints=ON")
+        state = WorkerProgressState(policy_json="公开进度 🐎")
+        text = state.model_dump_json()
+        padded = text + " " * (MAX_PROGRESS_STATE_BYTES - len(text.encode()))
+        for body, size, valid in (
+            (text, len(text.encode()), True),
+            (padded, MAX_PROGRESS_STATE_BYTES, True),
+            (text, len(text), False),
+            (padded + "x", MAX_PROGRESS_STATE_BYTES, False),
+            (text, 0, False),
+            (padded + "x", MAX_PROGRESS_STATE_BYTES + 1, False),
+        ):
+            connection.execute("DELETE FROM worker_progress_heads")
+            connection.execute(
+                "INSERT INTO worker_progress_heads VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (scope.namespace, str(scope.task_id), str(scope.anchor_event_id), scope.version,
+                 scope.run_id, scope.anchor_sequence, 1, str(scope.anchor_event_id), body, size),
+            )
+            statements.clear()
+            try:
+                head = store._progress_head(connection, scope)
+            except CheckpointConflict:
+                assert not valid
+            else:
+                assert valid and head.state == state and head.through_sequence == 1
+            assert len(statements) == 1, "checkpoint metadata/body required two SQL statements"
+
+
 failures = []
 for check in (
     priority,
@@ -237,6 +298,7 @@ for check in (
     unknown_write,
     pending_recovery_stage,
     verified_source_reuse,
+    progress_head_read,
 ):
     try:
         check()
