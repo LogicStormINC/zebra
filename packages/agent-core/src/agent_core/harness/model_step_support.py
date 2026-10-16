@@ -30,7 +30,14 @@ AGENT_EXECUTION_GUIDANCE = (
     "Treat prior plans and conversation as context, not permission to replace the current goal. "
     "Continue research only to close a specific required gap or material conflict, and answer "
     "once the requested outcome is supported. Preserve explicit completeness, source, safety, "
-    "and operation-verification requirements. Do not expose private reasoning."
+    "and operation-verification requirements. For web research, distinguish the requested "
+    "product, edition and version before choosing sources. Prefer a primary announcement "
+    "for release dates and features; fetch another candidate only for a named missing fact "
+    "or material conflict, not just because it appeared in search. Follow exact URLs supplied "
+    "by the user or observed in tool results; do not guess a website path by rewriting a "
+    "repository URL. When the requested facts are supported, stop collecting and cite the "
+    "successful primary source itself rather than optional related links. "
+    "Do not expose private reasoning."
 )
 
 MODEL_NATIVE_DELEGATION_GUIDANCE = (

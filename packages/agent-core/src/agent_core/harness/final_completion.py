@@ -95,14 +95,14 @@ def finalize_without_tools(
                 "missing_skill_components": list(missing),
             },
         )
-    ledger = evidence_ledger(emitted_events, metadata)
+    answer = completion.assistant_message.content
+    ledger = evidence_ledger(emitted_events, metadata, answer=answer)
     quality = evaluate_answer(
         context.task.user_input,
         completion.assistant_message.content,
         evidence=ledger,
         contract=context.task.acceptance_contract,
     )
-    quality_revision_count = _quality_revision_count(metadata)
     quality_revision_score = _quality_revision_score(
         answer=completion.assistant_message.content,
         missing_requirements=quality.missing_requirements,
@@ -150,7 +150,7 @@ def finalize_without_tools(
             metadata={
                 **metadata,
                 "quality_revision_prompted": True,
-                "quality_revision_count": quality_revision_count + 1,
+                "quality_revision_count": _quality_revision_count(metadata) + 1,
                 "quality_revision_score": quality_revision_score,
                 "quality_reason": quality.reason,
             },

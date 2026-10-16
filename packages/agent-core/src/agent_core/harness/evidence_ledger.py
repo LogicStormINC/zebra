@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from agent_core.domain.events import EventType
 from agent_core.domain.tools import ToolCallStatus, ToolResult
@@ -56,11 +56,25 @@ class EvidenceLedger:
 def evidence_ledger(
     events: list[HarnessEventDraft],
     metadata: Mapping[str, object] | None = None,
+    *,
+    answer: str = "",
 ) -> EvidenceLedger:
     """Collect only bounded, explicit references from successful tool results."""
 
     if metadata is not None and "evidence_successful_tool_results" in metadata:
-        return _ledger_from_metadata(metadata)
+        ledger = _ledger_from_metadata(metadata)
+        if not answer:
+            return ledger
+        cited: set[str] = set()
+        for event in events:
+            if event.event_type is not EventType.TOOL_EXECUTION_COMPLETED:
+                continue
+            event_refs: set[str] = set()
+            _collect_metadata_refs(event.payload.get("metadata"), event_refs, set())
+            cited.update(ref for ref in event_refs if ref in answer)
+        # ponytail: rescue current-attempt cited refs within 128; absent receipts fail closed.
+        selected = sorted(cited) + sorted(set(ledger.evidence_refs) - cited)
+        return replace(ledger, evidence_refs=tuple(selected[:128]))
     successful = 0
     failed = 0
     refs: set[str] = set()

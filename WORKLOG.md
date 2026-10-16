@@ -15233,3 +15233,24 @@ Startup5physicalopens/448execute(33empty) preserved. Private evidence
 .artifacts/yahoo-cold-ready-20261017; docs CLOUD_YAHOO_COLD_READY.md.
 
 YAHOO-COLD-READY-01 closeout: clean default make check passed; local integration preserves27 unrelateddirtyentries. Normal Worker e03f72cacd5a/API7eb869c9/Search245b675f healthy/zero-restart, original6Compose/commands/env(exceptTMPDIR) and101sourcehashes verified. Actual normalWorker standalone pausecheck passes; diagnosticlaunchers/mounts/listeners/receiver removed. No push/remotedeploy.
+
+
+### 2026-10-17 SOURCE-CANDIDATE-ROUNDTRIP-01
+
+Root trace: captured previousB2 firstcandidate rejected only genuinecollected PG
+releaseURL evicted from128; secondcandidate4745ms deletedit. 404 URL was guessed
+fromGitHubpath; enterprisepage irrelevantedition, GAbdatefetchrequired.
+Minimum3corepaths: current-attempt event-backed citation reprioritization128/noSQL,
+finalgate argument, generic sourceguidance(no forcedtools). Firstproposal used TOOL
+conversation metadata; tightened to alreadyavailable current successfulevents to
+excludehistorical receipts beforefinal B2/A2; no extra actualRun. Standalone and
+66existing focused pass; clean makecheck passes after localtypingname repair.
+PurecapturedB2 beforefail/afterpass,unknownstillreject,128both,model0/local~0.21ms.
+
+FournewpageRuns A1/B1/B2/A2 allcompleted/high/Flash/v2,13modelsretry0/alltoolsuccess,
+qualityonceeach. Body17.887/23.381/17.059/16.054s;Host21.947/26.685/19.799/18.546s.
+Finalpair3models/4tools/onecandidateboth;Worker+APInonempty3294/3314, no stablelatency
+benefitclaim. B1extraGitHubfetchretained; realpagesdidnotreproducecapfalsepositive.
+Startup5physicalopens/448execute(33empty)allretained. YahooA2status0 recoveredvia
+existingboundedretry, extra307challengepersists; no retrybudget/TLSchange.
+Private evidence .artifacts/source-candidate-roundtrip-20261017.

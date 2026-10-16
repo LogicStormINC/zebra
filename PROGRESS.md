@@ -6506,3 +6506,23 @@ in docs/CLOUD_YAHOO_COLD_READY.md. Normal local activation/source/gate closeout 
 no push/remote deploy or unrelated fixture changes.
 
 YAHOO-COLD-READY-01 closeout: clean default make check passed; local integration preserves27 unrelateddirtyentries. Normal Worker e03f72cacd5a/API7eb869c9/Search245b675f healthy/zero-restart, original6Compose/commands/env(exceptTMPDIR) and101sourcehashes verified. Actual normalWorker standalone pausecheck passes; diagnosticlaunchers/mounts/listeners/receiver removed. No push/remotedeploy.
+
+
+## 2026-10-17 - SOURCE-CANDIDATE-ROUNDTRIP-01
+
+PriorB2's extra candidate4745ms was a false citation rejection: successful PG
+release-notes reference evicted by bounded128 inventory. Final gate now prioritizes
+candidate-cited explicit refs from current in-memory successful tool events within
+same128; no historical receipts/plain-text promotion/SQL/model retry added.
+Generic model guidance matches product/edition/version, exact observed URL and
+named evidence gaps; no forced tool route. PriorB2's guessed Redis website path
+from GitHub caused404; enterprise source was optional, GA date fetch was necessary.
+Original B2 receipt/candidate pure recheck now passes, unknown stillrejects.
+
+Fixed four pageRuns high/Flash/v2 allcompleted/13modelsretry0/no404/onecandidateeach.
+B1 early conversation-based recovery tightened to current events before B2; retain
+all four, finalcomparison B2/A2only: body17.059/16.054s,Host19.799/18.546s,
+models3/3,tools4/4,nonemptyWorker+APISQL3294/3314. No stableoveralllatencygain proved;
+B1stillautonomouslyfetched4pages. Initial5opens/448execute(33empty) retained.
+Focused66/standalone/defaultcleanmakecheck passed. Docs CLOUD_SOURCE_CANDIDATE_ROUNDTRIP.md;
+localnormalactivation/sourceproof pendingcloseout, no unrelatedfixture/push/remotedeploy.
