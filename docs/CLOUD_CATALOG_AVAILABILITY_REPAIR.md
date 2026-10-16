@@ -99,3 +99,51 @@ including the previously accepted 62 and the Worker consumer. Existing search
 image/config/proxy and v2/service configuration were retained. No trace launcher,
 DB migration, old Run replay, new model request, push, npm publication or remote
 deployment was performed. Original failed Run remains failed and unbound.
+
+## Read-only follow-up, 2026-10-16
+
+The initial three successful reads were a bounded acceptance result, not proof
+that every later request would succeed. A later user Run
+`9e3549d1-d5a2-4c32-9988-ad0b6e6237e8` failed `upstream_timeout` without a Cloud
+binding or model request. Its wall-clock lifetime was 103.769 s:
+
+| Local time, UTC+08 | Recorded fact |
+| --- | --- |
+| 00:25:21–00:27:21 | 17 Worker candidate reads deferred on `TimeoutError` |
+| 00:25:29.916 | User Turn created |
+| 00:26:57 | OrbStack VM manager logged `sleep` |
+| 00:27:03.552 | First recorded successful Broker `/exchange` response |
+| 00:27:09.351 | API Host authentication timeout; skill catalog returned 503 |
+| 00:27:13.685 | Host Turn marked failed, no Cloud Task binding |
+| 00:27:26 | macOS recorded entry into clamshell sleep |
+
+Both PostgreSQL services logged canceled statements/client disconnects in that
+window. These facts support a shared runtime/dependency disturbance; they do
+**not** isolate CPU, disk, a database lock, sleep preparation, or Host queueing as
+the cause. In particular, 93.636 s elapsed before the first recorded Broker
+success, whose access log records completion rather than arrival. Historical
+logs cannot split that span further. A checkpoint duration by itself is not
+evidence of a stall, since PostgreSQL deliberately paces checkpoint writes.
+
+Current follow-up checks, with no restart or production source change:
+
+- API/Worker remain the accepted images, healthy with zero restarts after more
+  than 11 hours. Worker has 18 total read deferrals, 17 in the above window;
+  no traceback or additional authentication failure was recorded at this check.
+- Three fresh signed catalog reads: 200 at 301.8/35.9/27.8 ms; all three consumed
+  grants still reject reuse with 403. The first occurs after the original key
+  TTL expired, so the result is not limited to the initial startup warmup.
+- The actual consumer `_read_task_skills` flow, including active principal
+  validation, Broker exchange, catalog parse and selection: 261.57/72.57/47.95 ms.
+  Three corresponding normal-budget `/capabilities/runtime` calls also return
+  200 at 20.62/28.83/30.21 ms. No Task or Run was created by the probes.
+- Eight separate cold pinned-key fetches succeed. A diagnostic `-S` comparison
+  gives overlapping timings (ordinary 182–232 ms; diagnostic 182–204 ms), so no
+  further child-launch change is justified from this sample.
+- Canonical model-request count since activation remains zero. Failed Runs are
+  not replayed and runtime configuration/performance source overlays are intact.
+
+The controlled browser currently redirects this conversation to login. Real
+page acceptance therefore awaits the operator logging into that browser. No
+message is submitted by these follow-up checks, and the isolated historical
+timeout is not described as fully explained or fixed by an additional patch.
