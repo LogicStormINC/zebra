@@ -98,7 +98,28 @@ def check() -> None:
             FetchRequest('https://example.test/docs/page/'), max_output_tokens=8000
         )
         assert 'https://example.test/release' in outcome.metadata.get('evidence_refs', [])
-    print("HTTPS relative/absolute links, hidden/main/nav, unsafe URL and preview/byte bounds pass")
+    inventory: dict[str, object] = {}
+    for index in range(4):
+        source = f"https://www.official.test/source/{index}"
+        receipt = ToolResult(
+            tool_call_id=new_tool_call_id(), status=ToolCallStatus.EXECUTED,
+            metadata={
+                "url": source,
+                "evidence_refs": [f"https://a.test/link/{index}/{n:03d}" for n in range(128)],
+            },
+        )
+        inventory = record_tool_evidence(inventory, receipt)
+        assert source in inventory["evidence_refs"], "fetched source displaced by discovered links"
+        assert len(inventory["evidence_refs"]) <= 128
+    assert all(
+        f"https://www.official.test/source/{i}" in inventory["evidence_refs"] for i in range(4)
+    )
+    forged = record_tool_evidence(
+        {"evidence_source_refs": ["https://unknown.test/not-collected"]},
+        ToolResult(tool_call_id=new_tool_call_id(), status=ToolCallStatus.FAILED),
+    )
+    assert "https://unknown.test/not-collected" not in forged["evidence_refs"]
+    print("HTTPS links, byte/preview bounds, native gateway and bounded primary sources pass")
 
 
 if __name__ == "__main__":

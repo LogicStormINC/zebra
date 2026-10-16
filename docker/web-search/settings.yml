@@ -6,6 +6,9 @@ engines:
   - name: yahoo
     disabled: false
     timeout: 5.0
+    # ponytail: recover an invalid HTTP status once using SearXNG's existing client retry.
+    retries: 1
+    retry_on_http_error: [0]
   - name: bing
     disabled: true
     inactive: false

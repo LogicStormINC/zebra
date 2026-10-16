@@ -96,6 +96,7 @@ def record_tool_evidence(
     result: ToolResult,
 ) -> dict[str, object]:
     refs = set(_string_sequence(metadata.get("evidence_refs")))
+    sources = set(_string_sequence(metadata.get("evidence_source_refs")))
     media_refs = set(_url_sequence(metadata.get("evidence_media_refs")))
     artifacts = set(_string_sequence(metadata.get("evidence_artifact_refs")))
     successful = _non_negative_int(metadata.get("evidence_successful_tool_results"))
@@ -103,6 +104,11 @@ def record_tool_evidence(
     if result.status is ToolCallStatus.EXECUTED:
         successful += 1
         _collect_metadata_refs(result.metadata, refs, artifacts, media_refs)
+        sources.update(
+            value.strip()
+            for key, value in result.metadata.items()
+            if key in _REFERENCE_KEYS and isinstance(value, str) and _safe_reference(value.strip())
+        )
         if result.output:
             try:
                 parsed = json.loads(result.output)
@@ -111,11 +117,15 @@ def record_tool_evidence(
             _collect_refs(parsed, refs, artifacts, media_refs)
     else:
         failed += 1
+    # ponytail: reserve actual source addresses within 128; excess discovered links are evicted.
+    sources = set(sorted(sources & refs)[:128])
+    selected = (sorted(sources) + sorted(refs - sources))[:128]
     return {
         **metadata,
+        "evidence_source_refs": sorted(sources),
         "evidence_successful_tool_results": successful,
         "evidence_failed_tool_results": failed,
-        "evidence_refs": sorted(refs)[:128],
+        "evidence_refs": sorted(selected),
         "evidence_media_refs": sorted(media_refs)[:128],
         "evidence_artifact_refs": sorted(artifacts)[:128],
     }
