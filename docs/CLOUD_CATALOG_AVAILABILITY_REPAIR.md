@@ -143,7 +143,15 @@ Current follow-up checks, with no restart or production source change:
 - Canonical model-request count since activation remains zero. Failed Runs are
   not replayed and runtime configuration/performance source overlays are intact.
 
-The controlled browser currently redirects this conversation to login. Real
-page acceptance therefore awaits the operator logging into that browser. No
-message is submitted by these follow-up checks, and the isolated historical
-timeout is not described as fully explained or fixed by an additional patch.
+The initially inspected Chrome DevTools session was a separate unauthenticated
+browser. The existing user Chrome extension session was subsequently found
+already authenticated as the expected account; no fresh login was needed.
+
+The actual conversation page was opened there without sending a message. It
+displays exactly the two durable failed turns above, an enabled composer, Flash
+with high thinking, and the no-model-data indicator. The empty composer explains
+why Send is disabled. There is no active turn or automatic retry. Screenshot:
+`.artifacts/catalog-admission-20261016/page-readonly.jpg`. This completes
+**read-only page inspection**, not new-message generation or first-body timing
+acceptance. The isolated historical timeout is not described as fully explained
+or fixed by an additional patch.
