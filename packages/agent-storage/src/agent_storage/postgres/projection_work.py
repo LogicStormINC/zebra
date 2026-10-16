@@ -304,9 +304,10 @@ class PostgresTaskProjectionWorkStore(TaskProjectionWorkPort):
             assert route is not None
             used = 0
             problem = None
-            # ponytail: reserve 200ms inside the existing 2s budget for recovery/COMMIT.
-            # Each header is atomic; a timed-out header cannot undo the completed prefix.
-            step = _WorkConnection(connection.connection, connection.deadline - 0.2)
+            # ponytail: bound header repair to 100ms to reduce canonical COMMIT contention.
+            # Each header is atomic; the committed prefix resumes on the next tick.
+            deadline = min(connection.deadline - 0.2, time.monotonic() + 0.1)
+            step = _WorkConnection(connection.connection, deadline)
             routing = "BEGIN " + ";".join(routed_statements(SOURCE, postgres=True)) + ";END"
             for index in range(limit):
                 remaining = step.deadline - time.monotonic()
