@@ -15300,3 +15300,17 @@ Luke Ding授权最小启动优化、真实页面配对；独立任务/分支，�
 - API定向22、Host54通过/2skip、独立断言和clean makecheck通过；正常源文件恢复后借用测试1pass。Host本地提交59773b7，三份源码精确还原，104登记指纹通过；无第五次模型Run。
 
 - 本地98d72222已FF到cloud-agent-trench并保留27项脏状态；Host59773b7、正常配置/104指纹复核、B2页面/高思考原结果可见、接收器关闭。任务Review本地验收完成，无推送或远端部署。
+
+
+CLOUD-TASK-ADMISSION-IO-01 claimed2026-10-17 at cd0f23d6. Live API four inspected storage files byteidentical to HEAD. Existing73SQL proof: initial rebuild43; atomic admission55; auth6 retained. Same connection already used by admission. Chosen minimum shared _assign optimization saves one byte UPDATE and one pre-insert SELECT for each new bootstrap event; no fresh-task initializer/native-trigger rewrite.
+
+CLOUD-TASK-ADMISSION-IO-01 frozen minimal shared_assign patch passed native check and clean
+makecheck. Focused first invocation30passed then interrupted at inherited huge scan fixture;
+remainder38passed/3deselected with overlap; no existing test/fixture edited. RealABBA four
+original Runs completed, onecandidate/qualitypass each; normalAPI restored with exact helper
+overlay, originalWorker/Search/env/6compose unchanged,105hashes verified. Receiver shutdown,
+DOM listener removed, B2normalhistory visibly complete/high, screenshotpage-B2.jpg.
+POST/tasksSQL73/67/67/73, sourceassign14→8 driver ops; atomic body and commit separated.
+Native commit5–7ms not dominant, originalA2 nonindexbody174.8ms spike unassigned to a
+specific statement; document limit. Source_assign mean45.3→44.8ms, no stabledelayclaim.
+Local integration uses guarded suffix preservation; no npm/push/remote deployment.

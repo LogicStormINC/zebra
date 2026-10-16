@@ -6566,3 +6566,20 @@ SEARCH-START-TOOL-WAIT-01 closeout: localcloud-agent-trench integrated/preserved
 原生无模型94→73 SQL；四轮真实页面和正常服务验收见docs/CLOUD_START_TRANSPORT.md。
 
 CLOUD-START-TRANSPORT-01验收：固定4ABBA均completed/high/Flash/v2；Task SQL94→73，前置183→162，startup非空598→577。启动样本均值2.451→2.197s，首正文19.157→18.109s，整轮22.656→23.951s，整轮收益未证实。首Cloud前主等待在入队180–220ms/调度准备235–459ms；主体校验3–8ms保留。正常API1fcd97720fade/Worker1a2270dfbf0b/Search245b675f健康、原6Compose/env/commands及104指纹复核，临时Hosthook移除；本地98d72222集成完成并保留27项脏状态；Host59773b7，未推送/远端部署。
+
+
+## 2026-10-17 - CLOUD-TASK-ADMISSION-IO-01
+
+Shared first Event coordinate/byte update and native insert-first mapping arbitration reduce
+POST/tasks73→67 SQL, atomic55→49, initialindex43→37; same connection and all native
+guards/authority/replay/rollback preserved. No schema/pool/dependency or Trench product change.
+Native standalone red→green, focused30passed plus remainder38passed/3heavy scans deselected
+(overlap); clean tracked makecheck passes, no fixture repair/full-suite claim. Fixed realABBA
+allcompleted/high/Flash/v2/autonomous, 14 model responses retry0 and20successful tools.
+Assignment latency45.3→44.8ms/initialindex76.1→69.0ms; no stable latency guarantee.
+Firstbody19.295→17.528s and whole23.011→20.712s raw averages include model/write/connection
+jitter, not6SQL causal gains. Whole SQL3742.5→3712.5 (~0.8%). API normal candidate only,
+Worker/Search unchanged; original composition/health0restart/105hashes verified. Native
+probes0command/0model; normalB2 result visible, receiver closed. Local integration only,
+primary27unrelated dirty entries preserved; no push/npm/remotedeploy. Details in
+docs/CLOUD_TASK_ADMISSION_IO.md. Broader performance and STOP/GC/scale-out gates remain open.

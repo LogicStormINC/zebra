@@ -232,16 +232,30 @@ def _assign(connection: Any, namespace: str, task_id: TaskId, row: Any, position
             raise PostgresAgentTaskConflictError("legacy Task reservations invert source order")
     if actual == (None, None):
         connection.execute(
-            """UPDATE session_events SET task_id=%s,task_sequence=%s
+            f"""UPDATE session_events SET task_id=%s,task_sequence=%s,event_bytes_bound={BYTE_BOUND}
                WHERE deployment_namespace=%s AND event_id=%s AND task_id IS NULL""",
             (task_id, position, namespace, row["event_id"]),
         )
-    connection.execute(
-        f"UPDATE session_events SET event_bytes_bound={BYTE_BOUND} "
-        f"WHERE deployment_namespace=%s AND event_id=%s AND event_bytes_bound "
-        f"IS DISTINCT FROM ({BYTE_BOUND})",
-        (namespace, row["event_id"]),
-    )
+    else:
+        connection.execute(
+            f"UPDATE session_events SET event_bytes_bound={BYTE_BOUND} "
+            f"WHERE deployment_namespace=%s AND event_id=%s AND event_bytes_bound "
+            f"IS DISTINCT FROM ({BYTE_BOUND})",
+            (namespace, row["event_id"]),
+        )
+    # ponytail: arbitrate with the existing unique key; only an existing mapping needs a read.
+    try:
+        inserted = connection.execute(
+            """INSERT INTO task_event_index
+               (deployment_namespace,task_id,task_sequence,event_id,segment_id,segment_sequence)
+               VALUES (%s,%s,%s,%s,%s,%s)
+               ON CONFLICT (deployment_namespace,event_id) DO NOTHING""",
+            (namespace, task_id, position, row["event_id"], row["session_id"], row["sequence"]),
+        )
+    except errors.UniqueViolation as exc:
+        raise PostgresAgentTaskConflictError("derived Task position conflicts with source") from exc
+    if inserted.rowcount == 1:
+        return 1
     mapped = connection.execute(
         """SELECT task_id,task_sequence,segment_id,segment_sequence FROM task_event_index
            WHERE deployment_namespace=%s AND event_id=%s""",
@@ -256,16 +270,7 @@ def _assign(connection: Any, namespace: str, task_id: TaskId, row: Any, position
         ) != (task_id, position, row["session_id"], row["sequence"]):
             raise PostgresAgentTaskConflictError("derived Task position conflicts with source")
         return 0
-    try:
-        connection.execute(
-            """INSERT INTO task_event_index
-               (deployment_namespace,task_id,task_sequence,event_id,segment_id,segment_sequence)
-               VALUES (%s,%s,%s,%s,%s,%s)""",
-            (namespace, task_id, position, row["event_id"], row["session_id"], row["sequence"]),
-        )
-    except errors.UniqueViolation as exc:
-        raise PostgresAgentTaskConflictError("derived Task position conflicts with source") from exc
-    return 1
+    raise PostgresAgentTaskConflictError("derived Task position conflicts with source")
 
 
 def repair_task_event_index(
