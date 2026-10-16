@@ -82,6 +82,20 @@ A separate focused contract correction will preserve the lock fix and use one
 fresh confirmation Run; B1 is retained and not resumed.
 
 Safe traces, native red/green, page timing and screenshots are private under
-`.artifacts/e2e-search-latency-20261016/`. Temporary trace launchers remain active
-for the immediate acceptance follow-up and must be replaced with the prepared
-normal images afterwards, preserving the original six Compose files and gains.
+`.artifacts/e2e-search-latency-20261016/`.
+
+## Follow-up acceptance and normal restoration
+
+The separately owned `QUALITY-PUBLICATION-DATE-01` correction removes only the
+false publication-date/time action inference. Fresh C1, same prompt/high/v2,
+completes with four models and six successful tools: visible process5.41s,
+substantive provisional body27.70s, Host completion31.86s. Its startup remains
+398 SQL/53 TaskIO connections. Different model paths and terminal outcomes
+prevent a normalized SQL or causal speedup claim. A1/B1 are not resumed.
+
+After C1, temporary trace launchers were replaced with normal source-only
+API `b0f0832b` / Worker `e46c3823`; both healthy. Verified66 retained/overlaid
+source fingerprints, original six Compose files/environment/commands/search.
+The completed C1 page reloads its original committed result under these normal
+services. See [publication-date acceptance](CLOUD_PUBLICATION_DATE_CONTRACT_REPAIR.md)
+for canonical identities, exact spans, quality checks and remaining latency.

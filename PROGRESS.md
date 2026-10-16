@@ -6358,3 +6358,8 @@ Page follow-up completed through the original authenticated Chrome extension tab
 ### E2E-SEARCH-LATENCY-01, 2026-10-16
 
 Real search exposed a Host queued-dispatch incident and canonical COMMIT lock contention on derived projection work. Restored existing Host autoreload without content changes; cap only PG repair header sub-budget100ms, parent2s unchanged. Native negative234ms lock failure→candidate80ms commit, prefix+frontier converge;19consumer pass5skip/static gates pass. B1 high/v2 process4.62s/substantive provisional answer33.57s,9tools succeed but final contract false-positive operate blocks completion. Startup398SQL/53connections unchanged; no overall speedup claim. Separate focused task-contract repair required; normal restoration follows immediate acceptance work. See docs/CLOUD_E2E_SEARCH_LATENCY_ACCEPTANCE.md.
+
+
+### QUALITY-PUBLICATION-DATE-01, 2026-10-16
+
+Fixed fallback 发布日期/发布时间→operate false positive, preserving explicit publish/deploy verification, evidence/citations and model tool selection.12standalone boundary checks+62existing targeted tests/static gates pass. One fresh same-prompt Flash/high/v2 C1 completes4model rounds/6successful tools; process5.41s, substantive provisional body27.70s, Hostcompleted31.86s. B1 previously6rounds/9tools thenpaused; preserved without replay. Startup398SQL/53connections unchanged; model/network differences prevent causal percentage claims, and search still has substantial waits. Restored normalAPIb0f0832b/Workere46c3823, healthy66sourcehashes/originalsixCompose/env/commands/search verified; completed page reloads original answer. E2E normal-restoration follow-up complete; focused local acceptance only, no push/npm/remote deploy. See docs/CLOUD_PUBLICATION_DATE_CONTRACT_REPAIR.md.

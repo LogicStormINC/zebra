@@ -254,11 +254,15 @@ def _task_type(text: str) -> AgentTaskType:
         "",
         action_text,
     )
+    # ponytail: release date/time are nouns; explicit publish requests still verify.
+    publication_action = (
+        re.search(r"发布(?!日期|时间)", operation_text) is not None
+        or _contains_any(operation_text, ("请发布", "帮我发布", "开始发布", "并发布", "然后发布"))
+    )
     operational_request = _contains_any(
         operation_text,
         (
             "部署",
-            "发布",
             "提交",
             "发送",
             "调度",
@@ -269,7 +273,7 @@ def _task_type(text: str) -> AgentTaskType:
             "schedule",
             "scheduled job",
         ),
-    ) or _explicit_execute_request(operation_text)
+    ) or publication_action or _explicit_execute_request(operation_text)
     if (not information_request or explicit_action) and operational_request:
         return AgentTaskType.OPERATE
     if (not information_request or explicit_action) and _contains_any(
