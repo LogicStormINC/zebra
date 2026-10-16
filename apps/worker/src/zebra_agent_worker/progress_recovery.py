@@ -49,12 +49,18 @@ class WorkerProgressRecovery:
         return fallback if value is None else PublicOutputPolicy(**json.loads(value))
 
     def output_published(self, output_id: str) -> bool:
-        with task_io_deadline(monotonic() + 2):
-            return self.tasks.worker_output_published(self.head.scope, output_id)
+        try:
+            with task_io_deadline(monotonic() + 2):
+                return self.tasks.worker_output_published(self.head.scope, output_id)
+        except TimeoutError as error:
+            raise WorkerProgressTimeout("observation", canonical_committed=False) from error
 
     def receipts_covered(self, references: tuple[str, ...]) -> frozenset[str]:
-        with task_io_deadline(monotonic() + 2):
-            return self.tasks.worker_receipts_covered(self.head.scope, references)
+        try:
+            with task_io_deadline(monotonic() + 2):
+                return self.tasks.worker_receipts_covered(self.head.scope, references)
+        except TimeoutError as error:
+            raise WorkerProgressTimeout("observation", canonical_committed=False) from error
 
     def catch_up(self) -> None:
         with task_io_deadline(monotonic() + 2), publication_lock(self._lock):
@@ -103,8 +109,11 @@ class WorkerProgressRecovery:
         self, sink: Callable[[HarnessEventDraft], None]
     ) -> Callable[[HarnessEventDraft], None]:
         if self.head.state.pending_commentary is not None:
-            with task_io_deadline(monotonic() + 2), publication_lock(self._lock):
-                repair_commentary(self, sink)
+            try:
+                with task_io_deadline(monotonic() + 2), publication_lock(self._lock):
+                    repair_commentary(self, sink)
+            except TimeoutError as error:
+                raise WorkerProgressTimeout("prepare", canonical_committed=False) from error
 
         def persist(event: HarnessEventDraft) -> None:
             committed, stage = False, "prepare"

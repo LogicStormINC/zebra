@@ -17,10 +17,9 @@ from agent_core.harness.public_output_lifecycle import (
     PublicationScope,
     PublicOutputClosed,
     close_public_output,
-    current_public_output_deadline,
     public_output_lock,
 )
-from agent_core.harness.public_output_publication import narration_draft
+from agent_core.harness.public_output_publication import narration_draft, publish_evidence
 from agent_core.ports.worker_progress import WorkerProgressState, WorkerProgressTimeout
 
 
@@ -246,95 +245,7 @@ class ProgressiveEventSink:
             self._publish_evidence()
 
     def _publish_evidence(self) -> None:
-        if not self._pending:
-            return
-        basis = next(
-            (
-                item.evidence_basis
-                for item in self._pending.values()
-                if isinstance(item, PublicReadFacts)
-            ),
-            None,
-        )
-        refs = [
-            ref
-            for ref, item in self._pending.items()
-            if not isinstance(item, PublicReadFacts) or item.evidence_basis == basis
-        ]
-        summaries = list(
-            dict.fromkeys(item.summary for ref in refs if (item := self._pending[ref]) is not None)
-        )
-        business_summaries = {
-            item.summary for ref in refs if isinstance(item := self._pending[ref], PublicReadFacts)
-        }
-        for ref in refs:
-            self._pending.pop(ref)
-        content = (
-            "\n\n".join(summaries)
-            if summaries
-            else self._text(
-                f"已收到 {len(refs)} 项成功工具回执，正在整理并核对；这不代表已覆盖全部数据。",
-                f"Received {len(refs)} successful tool receipts. "
-                "I am consolidating and checking them; this does not imply complete coverage.",
-            )
-        )
-        fingerprint = sha256("\n".join(refs).encode()).hexdigest()[:24]
-        if f"public:{self._attempt}:evidence:{fingerprint}" in self._seen:
-            return
-        if len(content) > self.policy.max_characters:
-            suffix = self._text(
-                "另有回执未在此处展开；这不是完整数据覆盖。",
-                "More receipts are omitted here; this is not complete data coverage.",
-            )
-            bounded: list[str] = []
-            for summary in summaries:
-                if len("\n\n".join([*bounded, summary, suffix])) <= self.policy.max_characters:
-                    bounded.append(summary)
-            summaries = [*bounded, suffix] if bounded else []
-            content = "\n\n".join([*bounded, suffix])
-        meaningful = bool(business_summaries.intersection(summaries))
-        persisted = self.publish(
-            f"evidence:{fingerprint}",
-            "result" if meaningful and basis == "verified_result" else "commentary",
-            "evidence",
-            content,
-            meaningful=meaningful,
-            evidence_basis=basis if meaningful else None,
-            evidence_refs=refs,
-        )
-        if persisted:
-            self._covered_receipts.update(refs)
-            self._evidence_published = self._evidence_published or meaningful
-            self._result_published |= meaningful and basis == "verified_result"
-        if (
-            persisted
-            and meaningful
-            and len(summaries) > 1
-            and self._expression is not None
-            and not self._closed
-            and not self._closing.is_set()
-            and self._published_count < self.policy.max_outputs
-        ):
-            expressed = self._expression.express(
-                summaries, chinese=self._chinese, deadline=current_public_output_deadline()
-            )
-            if (
-                expressed is not None
-                and expressed[0] != content
-                and len(expressed[0]) <= self.policy.max_characters
-            ):
-                self.publish(
-                    f"expression:{fingerprint}",
-                    "result" if basis == "verified_result" else "commentary",
-                    "evidence",
-                    expressed[0],
-                    meaningful=True,
-                    evidence_basis=basis,
-                    evidence_refs=refs,
-                    origin="model",
-                    model_call_id=expressed[1],
-                    replaces_output_id=f"public:{self._attempt}:evidence:{fingerprint}",
-                )
+        publish_evidence(self)
 
     def publish(
         self,
@@ -410,7 +321,7 @@ class ProgressiveEventSink:
                     self._observe(event)
 
         except WorkerProgressTimeout as error:
-            if not error.canonical_committed:
+            if not error.canonical_committed and error.stage != "observation":
                 raise
 
     def _text(self, chinese: str, english: str) -> str:
@@ -450,7 +361,7 @@ class ProgressiveEventSink:
                     ),
                 )
         except WorkerProgressTimeout as error:
-            if not error.canonical_committed:
+            if not error.canonical_committed and error.stage != "observation":
                 self._timer_error = error
         except PublicOutputClosed:
             pass  # An unadmitted callback is stopped, not a failed durable write.

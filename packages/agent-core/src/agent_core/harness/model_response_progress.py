@@ -47,8 +47,6 @@ def dispatch_public_event(progress: "ProgressiveEventSink", event: HarnessEventD
             if progress._timer_error is not None:
                 raise progress._timer_error
             if event.event_type is EventType.MODEL_REQUEST_STARTED:
-                if not progress._closed:
-                    progress._publish_pending()
                 event = replace(
                     event,
                     payload={**event.payload, "public_output_policy": asdict(progress.policy)},
@@ -63,6 +61,8 @@ def dispatch_public_event(progress: "ProgressiveEventSink", event: HarnessEventD
                 committed = True
                 if not progress._closed:
                     progress._observe(event)
+                    if event.event_type is EventType.MODEL_REQUEST_STARTED:
+                        progress._publish_pending()
             except WorkerProgressTimeout as error:
                 if not (committed or error.canonical_committed):
                     raise

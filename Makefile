@@ -20,6 +20,8 @@ check:
 	uv run ruff check .
 	uv run mypy packages apps
 	uv run python scripts/eval_release_check.py
+	uv run python scripts/check_progress_postcommit_repair.py
+	uv run python scripts/check_progress_risk_boundaries.py
 
 eval:
 	uv run python scripts/eval_release_check.py
