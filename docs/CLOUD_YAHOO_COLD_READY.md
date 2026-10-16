@@ -113,3 +113,10 @@ progress risk gate；完整 make test 未重跑，聚焦 68 项与独立检查�
 搜索镜像保持 `245b675ff61b`。本地集成后用 pair_services.py restore/verify
 移除临时 API/Worker launcher 与搜索诊断挂载，核验原六份 Compose、环境差异仅
 TMPDIR、原命令入口、健康/零重启和已有源码指纹；不推送、不部署远端。
+
+本地验收收尾：正常 API/Worker/Search 全部 healthy、零重启，镜像与上述一致；
+原六份 Compose、启动命令入口和环境核验通过，唯一预期新增 TMPDIR。
+101 个 API/Worker 源码指纹匹配（含此前优化及本次两个共享模块），
+实际正常 Worker 执行独立暂停检查通过。临时 launcher/sitecustomize 挂载已移除，
+DOM 监听已断开，本地接收器关闭，独立控制容器/卷和本次导出 tar 已清理。
+已本地集成 cloud-agent-trench，保留 27 项无关修改，未推送或部署远端。

@@ -15231,3 +15231,5 @@ B2 extra3fetches/one404/twocandidates vsA2one; nonemptyWorker+APISQL5185/3360.
 No overallbody/SQLgain claim, pausepagebehavior remainsunmeasured; rawfailuresretained.
 Startup5physicalopens/448execute(33empty) preserved. Private evidence
 .artifacts/yahoo-cold-ready-20261017; docs CLOUD_YAHOO_COLD_READY.md.
+
+YAHOO-COLD-READY-01 closeout: clean default make check passed; local integration preserves27 unrelateddirtyentries. Normal Worker e03f72cacd5a/API7eb869c9/Search245b675f healthy/zero-restart, original6Compose/commands/env(exceptTMPDIR) and101sourcehashes verified. Actual normalWorker standalone pausecheck passes; diagnosticlaunchers/mounts/listeners/receiver removed. No push/remotedeploy.
