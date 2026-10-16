@@ -6548,3 +6548,5 @@ body/26.6percentSQLmean gaps not stablecausalgains. Startupmeans2.724/2.798s unc
 finaldocs onlytargeteddiff/sizegate, no repeatedbroadtest. Details CLOUD_SEARCH_START_TOOL_WAIT.md.
 Normal localactivation/sourceproof pendingcloseout; preserve primary27dirtyentries,
 no Trenchproductcode/unrelatedfixture/push/remotedeploy.
+
+SEARCH-START-TOOL-WAIT-01 closeout: localcloud-agent-trench integrated/preserved27dirtyentries; normalWorker1a2270dfbf0b/API7eb869c9/Search245b675f healthy/zero-restart/original6Compose-env-commands and103sourcehashes verified. ActualnormalWorker standalone negotiationcheck passes; diagnosticentrypoints/mounts/DOMlisteners/receiver removed, no fifthRun/push/remotedeploy.

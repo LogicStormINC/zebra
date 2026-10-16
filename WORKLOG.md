@@ -15275,3 +15275,5 @@ nonemptyWorker+APISQL4757/3274/3255/4136. UnequalAextraquery/modelwork retained;
 fetch2.987/3.820s→1.706/1.518s; PGnowcriticalparallelfetch. Startupmeans2.724/2.798s,
 initial5opens/448execute(33empty)unchanged,command→attempt93–207ms. Remaining highthinking,
 search/network/admission cannotclaimsub10s. Private .artifacts/search-start-tool-wait-20261017.
+
+SEARCH-START-TOOL-WAIT-01 closeout: localcloud-agent-trench integrated/preserved27dirtyentries; normalWorker1a2270dfbf0b/API7eb869c9/Search245b675f healthy/zero-restart/original6Compose-env-commands and103sourcehashes verified. ActualnormalWorker standalone negotiationcheck passes; diagnosticentrypoints/mounts/DOMlisteners/receiver removed, no fifthRun/push/remotedeploy.

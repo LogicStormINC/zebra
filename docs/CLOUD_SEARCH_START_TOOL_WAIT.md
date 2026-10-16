@@ -111,3 +111,9 @@ eval30和progress故障边界。最后仅追加实测文档，做diff/file-size�
 正常Worker准备镜像1a2270dfbf0b，API保持7eb869c9da78，Search保持245b675ff61b；
 本地集成后恢复原Compose/环境/命令，撤下临时诊断并核验实际运行源码。
 私有接收器已关闭，DOM监听已断开；四个会话结果保留，不重放Run。
+
+本地激活收尾：正常Worker1a2270dfbf0b/API7eb869c9da78/Search245b675ff61b
+均healthy/零重启；原六份Compose、完整环境、入口和命令保持，103个源码指纹核验通过，
+含此前启动/SQL/引用修复与本次唯一传输文件。实际正常Worker执行独立协商检查通过。
+临时launcher/sitecustomize挂载已撤下，DOM监听断开、loopback接收器关闭；
+cloud-agent-trench本地集成保留27项无关修改，未推送或部署远端。
