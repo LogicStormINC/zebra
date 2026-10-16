@@ -6388,3 +6388,8 @@ Reused existing execution-input bounded SQL CASE pattern in shared Worker progre
 ### PROGRESS-MEMBERSHIP-BATCH-01
 
 Removed repeated per-output signature queries from shared progress advancement using existing bounded IN-query pattern, transaction-local only. Native fixed4A/4B128output recovery: signatureSELECT256→1,totalSQL398→143(-64.1%),269.45→122.10ms; ordinary operation55→54SQL with no stable latency gain.85existing regressions+8native identity controls/defaultclean-source gate pass; sameRun/canonical/fence/CAS/32KiB/2s bounds retained. Worker506d0d80 healthy/79sourcehashes+originalcomposition verified; APIunchanged. Localintegration only, no model/oldRunreplay/schema/push/npm/remote deployment; docs/CLOUD_PROGRESS_MEMBERSHIP_BATCH.md.
+
+
+### CURRENT-RUNTIME-ACCEPTANCE-01
+
+Completed current-version real search acceptance round:2fresh Flash/high/v2 Runs complete,8models/10successful tools. Firstsubstantive35.22/17.59s vsprocess4.64/4.13s; Hostcomplete44.53/21.13s. Startup395SQL/53connect both; Worker-scoped3117/2078 reflects5rounds6tools vs3rounds4tools, not systemreduction. PGofficialfetch9.31vs2.00s and one validcitationcorrection explain substantial variation; Worker-other10.60/6.86s remains to split. No sourcefix; focusedpaircannot certify<=10s/SQL80/STOP/GC. RestoredoriginalnormalAPI907fcc00/Worker506d0d80 healthy/zero restarts,79sourcehashes/originalcomposition verified; normalpage reloadpasses, diagnosticsremoved. Preserved oldClientSession502 and truncatednetwork/proof-boundary limits; no oldRun replay/schema/push/npm/remote deployment. See docs/CLOUD_CURRENT_RUNTIME_ACCEPTANCE.md.
