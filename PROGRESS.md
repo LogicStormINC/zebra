@@ -6865,3 +6865,17 @@ exact source/default config/cancel patch checked without further search requests
 Normal API/Worker/Search unchanged; isolated container removed. Tool description,
 high reasoning/transient_v2, authority/DNS/SSRF/Trench/globalproxy unchanged.
 Local preparation only; operating bounds and commands docs/CLOUD_EXA_OPTIONAL.md.
+
+## 2026-10-17 — Exa latency decomposition; paired optimization stopped on quota
+
+CLOUD-EXA-LATENCY-01 isolates existing curl timing without production code edits.
+Four baseline successes/official4of4: cold MCP initialize+notification770.293ms;
+hot tools797–990ms, request-ready-to-first-byte748–920ms. All tools reuse native
+connection/TLS; remote computation cannot be separated from RTT/service queue.
+New956.032ms median versus previous1612.701ms is cohort variance, not a gain.
+Freeze instant single-variable4pair test; firstfast request returns textual
+HTTP200limit, persists900s cooldown and falls back Yahoo. Stop,0instant calls,
+no retries/reset/rotation; one cooldown route check returnsYahoo with no new Exa
+frames/state change. No unvalidated performance code applied or page/model run.
+Normal service identity/runtime unchanged; existing offline control check passes.
+Docs CLOUD_EXA_OPTIONAL.md records measured boundaries and uncompleted pairing.

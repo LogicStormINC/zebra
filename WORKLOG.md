@@ -15633,3 +15633,23 @@ Shared state inherited prior rate cohort deadline and never reset; no rotation,
 Exa retries or limit evasion. Preserve private artifacts/cloud-exa-optional evidence.
 Normal service image/envhash/start/restart snapshots compared; owned candidate
 removed. Prepared opt-in only, no normal service activation/push/remote deployment.
+
+## 2026-10-17 — CLOUD-EXA-LATENCY-01
+
+Claimed Ready task before diagnostics on codex/cloud-exa-latency-01/base0f0fae79.
+Reuse existing curl infos in private native-engine instrumentation, same persistent
+cooldown volume and controlled proxy; no production source/dependency changes.
+Four fixed query baseline successes, normalized official4of4. Cold1492.944ms:
+initialize561.938,notification208.355,tools700.593,other22.058. Hot tools native
+connect/TLS0, predominantly748–920ms response-start wait; includes RTT/MCP/Exa
+work, no claimed pure server search time. Other local13–25ms/body49–107ms.
+New956.032ms median retained as timing variance, not improvement over1.61s cohort.
+Freeze one candidate typefast→instant with identical content/query constraints,
+AB/BA/BA/AB primary warm-tool timing and official-target/15percent speed gate.
+Firstfast cell hits HTTP200limit; originalratecontrol stores900s and actualYahoo
+fallback. Immediate stop:0instant calls, no retry/reset/rotation. One predeclared
+cooldown-only functional call returns markedYahoo, byte-identicalcontrolstate and
+unchanged Exa phase-log count. No extra Exa requests. Offline assert check passes.
+Source optimization/page/model acceptance remains pending; do not promote type
+without successful controlled paired evidence. Normal containers preserved,
+owned diagnostic removed; exact evidence/docs retained, no push or deployment.
