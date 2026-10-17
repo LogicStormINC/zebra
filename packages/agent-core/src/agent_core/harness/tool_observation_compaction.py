@@ -3,6 +3,7 @@
 import json
 
 from agent_core.domain.messages import MessageRole, SessionMessage
+from agent_core.harness.snapshot_observation_compaction import compact_snapshot_observations
 
 
 def compact_repeated_records(messages: list[SessionMessage]) -> list[SessionMessage]:
@@ -64,4 +65,4 @@ def compact_repeated_records(messages: list[SessionMessage]) -> list[SessionMess
         compacted.append(message if content == message.content else message.model_copy(
             update={"content": content}
         ))
-    return compacted
+    return compact_snapshot_observations(compacted)
