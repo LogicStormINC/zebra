@@ -34,6 +34,9 @@ def test_historical_route_migrations_remain_byte_identical():
 def test_native_mid_route_disable_keeps_enabled_guard(tmp_path, scratch):
     from uuid import uuid4
 
+    from agent_storage.postgres.projection_trigger_plan_migration import (
+        TASK_PROJECTION_TRIGGER_PLAN_MIGRATION,
+    )
     from psycopg.types.json import Jsonb
 
     from tests.agent_storage.projection_work_test_support import QueueFixture
@@ -41,8 +44,9 @@ def test_native_mid_route_disable_keeps_enabled_guard(tmp_path, scratch):
     queue = QueueFixture("postgres", tmp_path, scratch)
     queue.install()
     with queue.connect() as connection:
-        for statement in MIGRATIONS[-1].statements:
+        for statement in next(m for m in MIGRATIONS if m.version == 102).statements:
             connection.execute(statement)
+        connection.execute(TASK_PROJECTION_TRIGGER_PLAN_MIGRATION.statements[0])
     queue.store("ag-ui-v1-coverage").enable_projection_work()
     with queue.connect() as connection:
         connection.execute("""CREATE FUNCTION disable_mid_route() RETURNS trigger AS $$ BEGIN
