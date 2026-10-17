@@ -15612,3 +15612,24 @@ prompt/Trench/globalproxy/authority changes. Before/after service image/envhash/
 start/restarts identical; owned candidate removed. Preserve all raw/normalized/
 adjudicated evidence, no new SQL/latency acceptance. Native-source read checks
 and service/source equality validate scope.
+
+## 2026-10-17 — CLOUD-EXA-OPTIONAL-01
+
+Claimed Ready task/owned paths before code on codex/cloud-exa-optional-01,
+base620ee185, ownerLukeDing/executorCodex. Reuse native SearXNG online network,
+Yahoo registry/parser and stdlib flock state; no dependency or Cloud/Trench edits.
+Optional overlay only changes image/settings selector; base config stays identical.
+Initial candidate startup rejected reserved network import; failure logs and4Yahoo
+controls retained,0Exa calls. Alias fixed and native loader assertion added before
+working candidate cohort. Offline protocol/lease/cooldown/cancel check passed;
+fixed4pairs then Exa4/4official versusYahoo3/4 after predeclared SQLite apex/www
+allowset normalization. Exa median1612.701ms/Yahoo889.394ms; no stable latency gate,
+no model/page/SQL acceptance. No actual429/fallback in these4Exa searches.
+One grouped protocol review found notification429 missed long Retry-After;
+regression reproduced failure then minimal status/response correction passed.
+Final source rebuilt/native startup checked without more retrieval.37existing
+Cloud search transport/publicDNS/search+gateway tests pass;Ruff/format pass.
+Shared state inherited prior rate cohort deadline and never reset; no rotation,
+Exa retries or limit evasion. Preserve private artifacts/cloud-exa-optional evidence.
+Normal service image/envhash/start/restart snapshots compared; owned candidate
+removed. Prepared opt-in only, no normal service activation/push/remote deployment.

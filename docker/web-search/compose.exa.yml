@@ -1,0 +1,6 @@
+# Explicit opt-in only: normal compose.yml and Yahoo default are unchanged.
+services:
+  searxng:
+    image: zebra-searxng:exa-optional-01
+    environment:
+      SEARXNG_SETTINGS_PATH: /usr/local/searxng/zebra-exa-settings.yml

@@ -1,6 +1,8 @@
 # Keep the qualified provider/parser; add bounded cancellation, timing and explicit routing.
 ARG SEARXNG_BASE_IMAGE=docker.io/searxng/searxng@sha256:ddd642cae6eac75412938fd846ddbf440a2df029cfeae8a562b8b205f4e35e25
 FROM ${SEARXNG_BASE_IMAGE}
+COPY zebra_exa.py /usr/local/searxng/searx/engines/zebra_exa.py
+COPY settings.yml /usr/local/searxng/zebra-base-settings.yml
 RUN /usr/local/searxng/.venv/bin/python - <<'PY'
 from pathlib import Path
 import py_compile
@@ -69,4 +71,11 @@ assert source.count(old) == 1
 source = source.replace(old, '# ponytail: native proxy pooling; unset keeps existing outgoing settings.\nif _operator_proxy := os.environ.get("SEARXNG_YAHOO_PROXY"):\n    proxies = _operator_proxy\n\n' + old)
 path.write_text(source)
 py_compile.compile(str(path), doraise=True, invalidation_mode=py_compile.PycInvalidationMode.CHECKED_HASH)
+
+# ponytail: opt-in config is a snapshot of this base; rebuild after config changes.
+import yaml
+from searx.engines.zebra_exa import OPTIONAL_CONFIG
+config = yaml.safe_load(Path('/usr/local/searxng/zebra-base-settings.yml').read_text())
+config['engines'].insert(0, OPTIONAL_CONFIG)
+Path('/usr/local/searxng/zebra-exa-settings.yml').write_text(yaml.safe_dump(config))
 PY

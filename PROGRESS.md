@@ -6847,3 +6847,21 @@ Normal services unchanged and temporary container removed. Only plausible future
 candidate is bounded low-frequency anonymous MCP with correct limit/cooldown/
 Yahoo fallback and existing Cloud authorization/cancellation, not default replacement.
 See docs/CLOUD_KEYLESS_PROVIDER_02.md; no performance/SQL acceptance claim.
+
+## 2026-10-17 — Exa anonymous MCP optional preparation, no normal activation
+
+CLOUD-EXA-OPTIONAL-01 prepares an explicit native !exa engine/Compose overlay;
+Yahoo remains sole default. Shared local-volume lease/cooldown recognizes HTTP,
+RPC and HTTP200 textual limits, including initialize/notification429, honors
+longer Retry-After and disables automatic recovery above24h. Native pooled
+transport/cancellation reused; timeout/stop never starts late Yahoo fallback.
+Known provider errors/cooldown use actual Yahoo within original deadline.
+Offline native checks and37existing Cloud search/DNS/tool checks pass. Fixed4
+real pairs normalize official targets Exa4/4 versusYahoo3/4; medians1612.701ms
+versus889.394ms. No real limit in this cohort: injected regression proves limit
+handling, not live quota acceptance. No stable latency/page/SQL benefit claimed;
+no expansion/models/pages. Final image rebuilt after notification429 fix; startup,
+exact source/default config/cancel patch checked without further search requests.
+Normal API/Worker/Search unchanged; isolated container removed. Tool description,
+high reasoning/transient_v2, authority/DNS/SSRF/Trench/globalproxy unchanged.
+Local preparation only; operating bounds and commands docs/CLOUD_EXA_OPTIONAL.md.
