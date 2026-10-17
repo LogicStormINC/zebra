@@ -6603,3 +6603,9 @@ and107hashes healthy0restart verified; declaredAPIentrypoint changed intentional
 NormalB2 result visible, no further model, receiverclosed. Localintegration only,
 primary27dirtyentries preserved; no push/npm/Trenchproductchange/remotedeploy.
 Details docs/CLOUD_ADMISSION_WRITE.md; historical spike and broadgates remain open.
+
+
+### 2026-10-17 CLOUD-ADMISSION-SPIKE-01 — diagnostic boundary
+
+- Correlated native server Parse/Bind/Execute and sampled waits/scheduler with raw driver timing before observer locks. Current A2 UPDATE43.402ms/server42.644ms; sampled runtime36.395ms/runqueue2.952ms, no blockers. Native UPDATE projection triggers5.107+3.478ms dominate10.808ms execution. Historical85.7/53.4ms not uniquely attributable; no justified production change or latency gain claimed.
+- Four actual matched baseline search pages preserve high/Flash/v2/fresh authority/autonomous tools; body12.894–15.511s, whole16.193–22.088s,67business admission SQL unchanged. B2extra search/A2candidate revision retained.31 diagnostic Tasks have0commands/0models. Normal original API/Worker/Search/config/107sourcehashes restored; focused doc is docs/CLOUD_ADMISSION_SPIKE.md. Historical spike cause, production optimization, p95 and broader performance gates remain OPEN. No unrelated test/fixture repair, Trench change, push or remote deploy.

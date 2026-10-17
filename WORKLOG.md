@@ -15330,3 +15330,8 @@ with declaredserverentrypoint restored, oldWorker/Search/config107hashes verifie
 normal2newfreshGrant tasks0commands/0models and same2PGbackendPIDs. B2normalhistory
 visible/high, screenshotpage-B2.jpg, receiverclosed and listeners removed.
 LocalFF uses guarded suffix preservation, no push/npm/remotedeploy.
+
+
+## 2026-10-17 CLOUD-ADMISSION-SPIKE-01
+
+Claimed codex/cloud-admission-spike-01 from3aeb7c3e, diagnostics-only ownership. Native and actualfresh HTTP controls plus fixed4 actualpage searches instrumented nativeprotocol duration, target wait/blocker samples, client/backend schedstat and corrected rawtimer. Calibration detects80ms PgSleep/advisory blocker/callerpause;31controls reconciled0commands/models. Actual A2 UPDATE43.4ms is42.6msserver withsampled36.4msruntime/3.0msrunqueue; servertriggerEXPLAIN10.8ms dominated5.1+3.5msprojectionfunctions. No exacthistorical85.7/53.4reproduction or uniqueattribution; no speculative SQL/index/trigger/pool production edit. Fourpage source-identical labels mustnotbeusedasproductionA/B orperformancegain:body13.082/12.894/15.511/14.814s;SQL3202/3200/3937/3492;67businessTaskSQLunchanged.14modelresponsesallhigh/Flash/retry0,17toolsuccess; B2extraSearch/A2candidate2 retained. Originalnormalimages/config107hashes/healthrestored, twofreshnormalcontrols201; no globalDBloggingchange. Scope remainsdiagnosticReview, historicalcause/productionfixOPEN. Next: investigate measured projection nestedqueries only if a redundant operation is proven; preserve guards/privacy/fanout/rollback. Fulltest/fixturecycle omitted fordocs-onlyslice; gitdiffcheck andnative/pageassertions used. LocalFFwith27dirtyentrypreservation; no push/npm/remotedeploy.
