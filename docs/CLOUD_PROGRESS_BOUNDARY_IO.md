@@ -139,3 +139,21 @@ python scripts/check_cloud_progress_boundary.py
 
 The runner refuses to overwrite completed output and writes `.partial.json` after
 each completed arm. It imports no test fixtures and invokes no model Provider.
+
+## Follow-up after Yahoo timeout ownership repair (2026-10-17)
+
+The user authorized a separate search reliability repair and fresh full cohort.
+`CLOUD_YAHOO_TIMEOUT.md` records the confirmed un-cancelled native HTTP Future,
+minimal search-image repair, original route/config preservation and acceptance limits.
+This follow-up does not replace or combine the failed cohort above.
+
+Both arms now share that repaired search backend. Fresh fixed4pairs/8arms completed
+16Yahoo searches and16official fetches with zero failures. Boundary median
+557.8→562.0ms(+0.76%); only1of4paired wins. Median tool+boundary3509.2→3313.9ms,
+SQL520→517 includes differing duration-dependent fresh polls and does not prove SQL
+reduction. The >=5%/>=100ms/>=3of4gate fails; no progress-source activation or page
+model calls. Normal Worker/API remain9953a04d/eb4f695b, search alone is updated to
+ea7241c97288. No unaccepted tool-thread implementation is included. Own scratch
+schema/login and Worker overlay removed. Exact data/gate: private
+`.artifacts/cloud-yahoo-timeout/{cohort.json,gate.safe.json}`. This closes the missing
+tool-cohort evidence with a negative result, rather than selecting favorable reruns.
