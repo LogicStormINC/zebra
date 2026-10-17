@@ -184,3 +184,97 @@ production-connector completion observations. Raw evidence and source snapshots
 are private under `.artifacts/cloud-egress-connect/`; no credentials, response
 text or private model reasoning is retained by network observers. Local operator
 service configuration contains no SSH private keys or task authority tokens.
+
+
+## Follow-up: remaining first-body latency, 2026-10-17
+
+Read-only analysis reuses the retained enabled B1/B2 cases, not a new model cohort.
+The following intervals are disjoint and reconcile to each observed first-body
+prefix; parallel tools are counted by interval union, never by summing durations.
+
+| Critical-path interval | B1 ms | B2 ms | Mean ms |
+|---|---:|---:|---:|
+| Send → first Provider invocation |1814.8|3698.6|2756.7|
+| Provider calls → outputs needed before first body |4927.8|3780.6|4354.2|
+| Two concurrent searches |2127.0|2409.0|2268.0|
+| Two concurrent official fetches |1697.7|1549.5|1623.6|
+| Four transitions between model/tool stages |1602.8|1899.6|1751.2|
+| Candidate first content → visible final-prefix |500.3|623.3|561.8|
+| Total |12670.5|13960.6|13315.6|
+
+The model row includes the first two complete tool-decision calls and the final
+candidate only through its first content callback. It excludes the remainder of
+answer generation after first body. First Provider stream events appear after
+199/156/239ms in B1,194/191/248ms in B2. Final-candidate content starts after
+2765/1656ms. These do not isolate pure thinking: request/queue/prefill, role-only
+stream events, server generation and network remain mixed. No private reasoning
+was read. High thinking is enabled for every model call. There are exactly three
+model rounds, two searches and two official fetches, no retry/failed tool or
+quality-revision loop in either case. Current evidence does not identify a
+redundant model/tool round to delete.
+
+Startup: first Cloud ingress is438/961ms after Send; short pre-model API scopes
+occupy675/1161ms of wall time; Worker-entry → Provider is388/775ms. Remaining
+startup time mixes host/grant preparation, inter-request gaps, transport, dispatch
+and scheduling; the existing traces cannot isolate each. A new Trench business
+change is not justified by this unassigned interval. Stage transitions spend
+approximately562/629ms inside canonical append and560/637ms inside progress calls;
+these inclusive observations overlap and cannot be added. Fresh facts and fence
+checks must not be skipped. The Provider emits its first content immediately, and
+the Harness coalescer also emits its first chunk immediately. The final562ms mean
+includes producing the measured16-character prefix, Redis/API/host transit and
+rendering; it is not proof of a fixed500ms buffer or polling defect.
+
+### Highest-value minimal next experiment
+
+Prioritize thread-owned reuse of existing Task I/O sockets around each Cloud native
+read-only web tool invocation. This is a small, measurable resource-lifecycle gap,
+not a request to suppress authority checks or change tool choice. Source chain:
+
+- `concurrent_batch._execute_all` invokes tools using `copy_context` in a thread pool.
+- `execution_recovery` already owns a Run Task-I/O scope on the execution thread.
+- `current_connection_scope` correctly rejects that owner on another thread.
+- `LocalToolGateway.execute`/native polling repeatedly calls the fresh recorder
+  status check. On these threads, TaskIoConnections lacks a matching reusable scope.
+- Before the final candidate, physical Task-I/O opens grow5→136 in B1 and5→151 in
+  B2, cumulative open time27→695ms /47→839ms. Counts include all instrumented
+  Task-I/O work, not only status reads; the trace does not assign each open to a
+  caller. Much of this cost overlaps website waiting, so it is not an additive
+  page-saving estimate. Main-thread Run reuse already exists and must not be rebuilt.
+
+A separate no-model, read-only normal-Worker probe uses the existing connector and
+scope, two concurrent threads,20 fresh status-query index misses per thread, four
+alternating A/B pairs; no application writes or model calls. It first verifies
+that copied parent scopes are unavailable in the child threads. Each arm performs
+40 queries; physical opens40→2 in every pair, wall median146.2→20.0ms. This supports
+the connection-lifecycle mechanism, not production authorization correctness or
+an86% tool/page gain. The query intentionally returns no row and does not exercise
+actual live-run authorization, cancellation or authority mutations.
+
+Implementation proposal: in the Cloud composition/application gateway boundary,
+wrap each native web read-tool execution in the existing
+`postgres_connection_scope(task_io=True)` on its own executing thread. Do not
+share parent-thread connections, transactions, results or successful authority
+checks. Keep every original per-check deadline/fresh status/fence lookup,50ms
+cancel polling, DNS/SSRF/TLS and child cleanup. Scope exit closes its idle sockets;
+retain finite existing bounds and verify at most the observed necessary per-thread
+connections under two concurrent tools before increasing capacity. No new pool,
+dependency, generic core storage import or Trench logic. Local/host mutation tools
+keep their present behavior. If the connector/deadline/libpq path cannot reuse
+safely, preserve the existing fresh-connection fallback.
+
+Gate before activation: deterministic thread isolation, fresh status/STOP/lease loss,
+shorter successive deadlines, rollback/unknown-write behavior and cleanup; then
+actual no-model concurrent web calls with unchanged checks and measured physical
+opens, wall time, SQL calls and cancellation. Socket reuse can add reset/liveness
+SQL, so fewer connections does not promise fewer queries. Proceed to one fixed
+high/Flash/v2 page cohort only if actual tool critical time improves stably. The
+current data supports a hundreds-of-milliseconds opportunity, not a credible
+13→5s promise; no page saving is accepted yet. Further splitting the1.75s between
+stages is the fallback if the direct native-tool gate shows no useful benefit.
+
+Evidence: private `body-breakdown.safe.json`, `provider-timing.safe.json`,
+`tool-thread-connections.safe.json`, and runnable `decompose_body.py` /
+`check_tool_thread_connections.py` under the existing acceptance artifact folder.
+All timing rows are checked for an exact first-body sum. No production source,
+service/config, global proxy or Trench changes were made in this follow-up.
