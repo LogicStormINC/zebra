@@ -3,6 +3,14 @@ use_default_settings:
   engines:
     keep_only: [yahoo, bing, sogou, 360search, sogou wechat]
 engines:
+  # Explicit opt-in only; keep this entry equal to zebra_exa.OPTIONAL_CONFIG.
+  - name: exa
+    engine: zebra_exa
+    shortcut: exa
+    disabled: true
+    inactive: false
+    timeout: 6.0
+    retries: 0
   - name: yahoo
     disabled: false
     timeout: 5.0
@@ -38,8 +46,18 @@ server:
 search:
   formats: [html, json]
   safe_search: 1
-  default_lang: zh-CN
+  # Agent queries may mix languages; do not force Yahoo's lang_zh_chs cookie.
+  default_lang: all
+  autocomplete: ""
+  favicon_resolver: ""
+  max_page: 1
+  # Respect upstream rejection; never retry CAPTCHA/403/429 immediately.
+  suspended_times:
+    SearxEngineAccessDenied: 86400
+    SearxEngineCaptcha: 86400
+    SearxEngineTooManyRequests: 3600
 outgoing:
   request_timeout: 5.0
   max_request_timeout: 6.0
   pool_connections: 20
+  enable_http2: true

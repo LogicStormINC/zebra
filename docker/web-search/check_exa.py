@@ -79,9 +79,8 @@ def main():
         assert "tools/call" in emitted and "session_ready" in emitted
     settings = yaml.safe_load(Path(__file__).with_name("settings.yml").read_text())
     defaults = yaml.safe_load(Path("/usr/local/searxng/searx/settings.yml").read_text())
-    optional = deepcopy(settings)
-    optional["engines"].insert(0, engine.OPTIONAL_CONFIG)
-    for config in (settings, optional):
+    assert next(e for e in settings["engines"] if e["name"] == "exa") == engine.OPTIONAL_CONFIG
+    for config in (settings,):
         merged = update_settings(deepcopy(defaults), config)
         assert {
             e["name"] for e in merged["engines"] if not e.get("disabled") and not e.get("inactive")

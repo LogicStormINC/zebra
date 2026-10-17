@@ -7059,3 +7059,27 @@ Source integration is local to cloud-agent-trench; no push or remote deployment.
 Correction to prior source diagnosis:95k was the identical A/B Vector sets guide,
 not an additional Redis release page. The relevant15,111char release page had
 Vector set [preview] at7799 inside the omitted initial5976:9134 interval.
+
+
+## 2026-10-18 — CLOUD-SEARXNG-CONFIG-01 normal configuration installed
+
+Primary-doc/maintainer research plus8 frozen Yahoo zh-CN/all native queries:
+4/4success each, exact official target hit@5 both3/4; median1404.069/1149.376ms.
+Redis same first3sources and missing expected What's-new in both; no recall/stable
+latency improvement claim. Current-environment recommendation keeps Yahoo only
+default/Exa optional fast, all-language neutral default, no autocomplete/favicon,
+max_page1/safe1,5s/6s timeouts/pool20/HTTP2;429cooldown1h/403-CAPTCHA24h.
+One mounted/native settings authority replaces unused build-time configuration copy;
+normal startup image cloud-config-01 and compatibility overlay agree.
+Network=none config/cookie and existing Exa regression passed, transport/provider
+sources byte-equal original. Only Search replaced after zero active leases;
+env except settings path, mounts/cache volumes/security/command preserved.
+Runtime config digest matches host, healthy. API/Worker ID/image/start/env unchanged.
+Two default Worker HTTPS/native smoke calls PG/SQLite succeeded with official
+first results1.869s/1.190s.10real Yahoo calls total,0models/Exa/limits; no page or SQL claim.
+Original Search/MCP memory process ended at2026-10-18 01:19:16 Shanghai for this
+explicit installation. Original process had0natural limits and no recovery proof;
+control file/cache retained, no resurrection/probe. Deleted exa heartbeat per its
+stop condition. No Trench/globalproxy/auth/DNS/SSRF/cancellation changes.
+Runbook docs/CLOUD_SEARXNG_CONFIG.md; private .artifacts/cloud-searxng-config-01/.
+Local integration only, no push/remote deployment.

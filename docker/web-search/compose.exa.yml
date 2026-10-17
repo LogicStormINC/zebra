@@ -1,6 +1,6 @@
 # Compatibility overlay; normal compose now registers Exa too. Yahoo stays default.
 services:
   searxng:
-    image: zebra-searxng:exa-optional-01
+    image: ${ZEBRA_SEARXNG_IMAGE:-zebra-searxng:cloud-config-01}
     environment:
-      SEARXNG_SETTINGS_PATH: /usr/local/searxng/zebra-exa-settings.yml
+      SEARXNG_SETTINGS_PATH: /etc/searxng/settings.yml

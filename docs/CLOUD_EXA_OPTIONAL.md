@@ -389,3 +389,19 @@ Search与Worker健康，API保持原状；Search原进程现在保留，不做�
 只能称恢复观测，不宣称配对收益，不自动扩大到页面。当前仍未验收约463ms的
 真实恢复节省。私有构建/配置保留/真实功能结果及运行摘要：
 `.artifacts/cloud-exa-live-01/`。本地更新及集成，不推送或远端部署。
+
+
+## 2026-10-18 正常配置与原进程观察终止
+
+后续正常部署以 [CLOUD_SEARXNG_CONFIG.md](CLOUD_SEARXNG_CONFIG.md) 为准：
+镜像默认 zebra-searxng:cloud-config-01，SEARXNG_SETTINGS_PATH 直接读取
+/etc/searxng/settings.yml；Exa 显式注册进入同一挂载文件，仍disabled/fast/有界冷却与Yahoo回退。
+此前历史镜像/构建命令及实验收据保留，不能把它们当作当前运行配置。
+
+用户授权的 Search 配置实装于2026-10-18 01:19:16（上海时间）替换原进程。
+原PID1230期间无自然限流，仅一次 initialize/initialized/tools-call，
+因此 CLOUD-EXA-LIVE-01 没有得到真实同会话恢复证据。
+原内存MCP会话随进程结束，未重建旧身份或清状态；持久控制文件逐字保留，
+出口/引擎代码不变，新进程验收无Exa请求。按任务要求已删除exa heartbeat。
+这是观察条件终止，不是恢复成功或初始化性能通过。
+证据 .artifacts/cloud-searxng-config-01/{old-mcp-observation.json,after.json}。
