@@ -15485,3 +15485,26 @@ artifacts, compare normal images/env/status/restarts equal, remove ownedtmp.
 Next boundary: this simple formatting hypothesis is not qualified; do not keep
 sampling it for a favorable outcome or add global prompt instructions. No push,
 service rebuild, Trench/globalproxy edits or unrelated test repairs.
+
+
+## 2026-10-17 — CLOUD-SOURCE-PROVENANCE-AUDIT-01
+
+Claimed focuseddiagnostic from31039ea7; structure route stopped. Compared full
+whitelisted tool refs versus visible content: Node22.11/22.0/24.0 proposedpaths
+absent both; no projection-loss cause for those targets. Sourcefetch contract
+does not require observedURL provenance; successful fetch supplies new citation
+evidence. Existing exact-call loopguard already works; originalB1 extra calls
+are different queries/pages, not duplicate dispatch. Native public response23
+confirms both firstrelease dates; original response37final. Replay lost that note
+and added standaloneack. Amended owneddiagnosticpaths beforerepair; preserve
+original batch publiccontent and native message topology, no new instructions.
+16frozen L/C highFlash probes success/no retry: Node final4tools→0/2answers;
+initial4→4; Python/SQLite stop both. Predeclared4N/Tfactor probes both continue
+firstreleasefetch2/2; cannot isolate publicnote alone. All20retained/no tools
+executed/no Runwrites. Native mainloop/wire/delegatedresume inspected: already
+retains public notes; no corresponding production fix justified. Add one offline
+check and correct prior report interpretation without altering prior outcomes.
+Normal APIca0/Workerd246/Search19f/env/restarts identical, ownedtmp removed after
+export; no production image/Trench/proxy/prompt/schema/page change or push.
+Next boundary: qualify real resume/context-loss or actual failed guessedpaths
+before any production fix; do not infer performancegain from diagnosticrepair.

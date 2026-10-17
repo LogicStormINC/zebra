@@ -1,9 +1,4 @@
-"""Controlled public-evidence decision probes; never execute proposed tools.
-
-Run self-check FIXTURE offline, or run FIXTURE OUTPUT inside the configured
-Worker. Synthetic empty reasoning is protocol scaffolding, not historical CoT.
-The reduced tool catalog and missing Host context limit historical attribution.
-"""
+"""Replay public evidence; never execute tools or reconstruct private reasoning."""
 
 import argparse
 import hashlib
@@ -89,19 +84,30 @@ def tools(variant):
     return definitions
 
 
-def conversation(rows, cut, variant, *, goal=GOAL, cuts=CUTS, ack="我将直接搜索官方公告。"):
+def conversation(
+    rows,
+    cut,
+    variant,
+    *,
+    goal=GOAL,
+    cuts=CUTS,
+    ack="我将直接搜索官方公告。",
+    assistant_batches=None,
+    legacy=False,
+):
     messages = HarnessModelStep().build_initial_messages(
         HarnessTask(title="Public evidence decision replay", user_input=goal), created_at=NOW
     )
-    messages.append(
-        SessionMessage(
-            message_id=new_message_id(),
-            role=MessageRole.ASSISTANT,
-            content=ack,
-            created_at=NOW,
-            provider_reasoning_content="",
+    if legacy:
+        messages.append(
+            SessionMessage(
+                message_id=new_message_id(),
+                role=MessageRole.ASSISTANT,
+                content=ack,
+                created_at=NOW,
+                provider_reasoning_content="",
+            )
         )
-    )
     calls = {}
     for end in cuts[: cuts.index(cut) + 1]:
         start = 0 if end == cuts[0] else cuts[cuts.index(end) - 1]
@@ -123,7 +129,13 @@ def conversation(rows, cut, variant, *, goal=GOAL, cuts=CUTS, ack="我将直接�
             SessionMessage(
                 message_id=new_message_id(),
                 role=MessageRole.ASSISTANT,
-                content="Tool calls proposed.",
+                content=(
+                    "Tool calls proposed."
+                    if legacy
+                    else (assistant_batches or {}).get(
+                        str(end), ack if start == 0 else "Tool calls proposed."
+                    )
+                ),
                 tool_calls=tuple(proposed),
                 created_at=NOW,
                 provider_reasoning_content="",  # Synthetic continuation; never original CoT.
@@ -157,6 +169,9 @@ def self_check(rows, **context):
         a, d, r = (conversation(rows, cut, variant, **context) for variant in "ADR")
         assert [m.content for m in a] == [m.content for m in d]
         assert len(a) == len(r)
+        assert sum(m.role == MessageRole.ASSISTANT for m in a) == (
+            list(context.get("cuts", CUTS)).index(cut) + 1
+        )
         assert all(m.provider_reasoning_content == "" for m in a if m.role == MessageRole.ASSISTANT)
         for before, after in zip(a, r, strict=True):
             if before.role != MessageRole.TOOL or "EXTERNAL SEARCH RESULTS" not in before.content:
@@ -166,7 +181,7 @@ def self_check(rows, **context):
     print("offline: lossless search fields, unchanged history/schema/continuation PASS")
 
 
-def run(rows, output, *, cases=None):
+def run(rows, output, *, cases=None, faithfulness=False):
     import httpx
     from agent_integrations import build_model_gateway
     from zebra_agent_config import load_settings
@@ -179,7 +194,9 @@ def run(rows, output, *, cases=None):
         reasoning_effort=ModelReasoningEffort.HIGH,
         profile_id="deepseek-v4-flash-executor-v1",
     )
-    variants, repetitions = ("ADR", 2) if cases is None else ("AR", 4)
+    variants, repetitions = (
+        ("LC", 2) if faithfulness else ("ADR", 2) if cases is None else ("AR", 4)
+    )
     cases = cases or [
         {"name": "B1", "rows": rows, "goal": GOAL, "cuts": CUTS, "ack": "我将直接搜索官方公告。"}
     ]
@@ -188,6 +205,7 @@ def run(rows, output, *, cases=None):
         for repeat in range(repetitions)
         for ci, case in enumerate(cases)
         for i, cut in enumerate(case["cuts"])
+        if not faithfulness or case["name"] == "node" or cut == case["cuts"][-1]
         for variant in (
             variants[(i + ci + repeat) % len(variants) :]
             + variants[: (i + ci + repeat) % len(variants)]
@@ -208,8 +226,12 @@ def run(rows, output, *, cases=None):
         gateway = build_model_gateway(settings, client=client)
         for ci, cut, repeat, variant in schedule:
             case = cases[ci]
-            context = {key: case[key] for key in ("goal", "cuts", "ack")}
-            messages = conversation(case["rows"], cut, variant, **context)
+            context = {
+                key: case[key]
+                for key in ("goal", "cuts", "ack", "assistant_batches")
+                if key in case
+            }
+            messages = conversation(case["rows"], cut, variant, legacy=variant == "L", **context)
             started = time.perf_counter()
             result = {
                 "case": case["name"],
@@ -255,17 +277,22 @@ def run(rows, output, *, cases=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("self-check", "run", "check-cases", "run-cases"))
+    parser.add_argument(
+        "mode", choices=("self-check", "run", "check-cases", "run-cases", "run-faithfulness")
+    )
     parser.add_argument("fixture", type=Path)
     parser.add_argument("output", nargs="?")
     args = parser.parse_args()
     evidence = json.loads(args.fixture.read_text())
-    cases = evidence if args.mode.endswith("cases") else None
+    cases = evidence if args.mode.endswith(("cases", "faithfulness")) else None
     if cases:
         for case in cases:
-            self_check(case["rows"], **{k: case[k] for k in ("goal", "cuts", "ack")})
+            self_check(
+                case["rows"],
+                **{k: case[k] for k in ("goal", "cuts", "ack", "assistant_batches") if k in case},
+            )
     else:
         self_check(evidence)
     if args.mode.startswith("run"):
         assert args.output
-        run(evidence, args.output, cases=cases)
+        run(evidence, args.output, cases=cases, faithfulness=args.mode == "run-faithfulness")

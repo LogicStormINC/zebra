@@ -6757,3 +6757,20 @@ promotion or page cohort. Input tokens+3.25%, no SQL/body/whole-turn speedup cla
 New/old offline checks andRuff pass; accepted normal API/Worker/Search/env/restarts
 and fresh authorization/DNS/SSRF/cancel/high/v2 remain unchanged. Report
 docs/CLOUD_SOURCE_REPLAY_DIVERSE.md; no Trench/proxy/unrelated fixture edits.
+
+
+## 2026-10-17 - Correct replay public-state loss before source optimizations
+
+CLOUD-SOURCE-PROVENANCE-AUDIT-01 stops structured-result experimentation. Complete
+Node metadata refs confirm proposed paths were not observed; authorization and
+provenance are different contracts. Found diagnostic reconstruction fault: extra
+standalone acknowledgement and missing original public verified batch note. Real
+NodeA3 already completed afterLTS; native loop/serialization/resume retains notes.
+Correct shared replay and add one offline native-pairing/wire check; append prior
+report fidelity correction.16frozen L/C calls: NodepostLTS4proposals→0/2answers,
+initial4→4,Python/SQLite bothstop.4factor probes show neither public-content-only
+nor topology-only fixes alone reproduced correctedstop; preserve interaction and
+small-sample limits.20valid high/Flash model responses, no tools/retries/Runwrites.
+No production gain claimed; original real B1 detour/overlap remains unresolved.
+Normal images/env/restarts/freshauthority/DNS/SSRF/cancel/high/v2 preserved, no
+Trench changes/page cohort. docs/CLOUD_SOURCE_PROVENANCE_AUDIT.md.
