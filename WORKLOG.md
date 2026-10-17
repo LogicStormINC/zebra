@@ -15351,3 +15351,14 @@ Previous B2 extra rounds trace to broad Redis landing before targeted GA search,
 
 
 2026-10-17 CLOUD-START-ADMISSION-REUSE-01: Cloud client_surface reuses existing bounded request-owned PG scope (one production API file, fresh reads/commits/reset/deadlines/partial failures retained). Source9451985c; exact accepted Worker task_io/connection_scope dependency bytes also aligned into older API, identical in A/B. Nativefixed4 median196.4→64.8ms(-67%,4/4),physical14→1,17nonresetSQLsame+14resets; gatepass. Focused72pass/10skip/1oldfixture teardown privilege error retained/ownedDBcleaned, finalnew5nativepass, Ruff/targetMypy/nativeactualAPIreuse+deadline+recoverypass. Exactly4realpageABBA/high/Flash/transient_v2/zero retries or failedtools: Clientmean193.9→102.5ms(-47.1%),physical20→4; startupHTTPmean2497.5→2119.4ms(-15.1%,not fully causal). Body12.795→15.479s(+21.0%),whole16.153→18.531s(+14.7%); B1自主5models8tools vsothers3/4, adverse sample retained/no fifth Run. No stable body/whole benefit claimed. StartupAPIbusiness156+13empty unchanged,17extra resetSQL/TaskIOopens43→27,Worker448 unchanged; not SQL reduction. NormalAPIca0a85f2/Worker9953a04d/Search19f3942f/originalentries/env/healthy0restart/sourcehashes verified; no Trench/globalproxy/unsupported progress/thread integration/push/deploy. OwnDB/role/credential/DOM/receiver cleared; B2 reloaded read-only. docs/CLOUD_START_ADMISSION_REUSE.md.
+
+2026-10-17 CLOUD-B1-EVIDENCE-AUDIT-01: read canonical public tool arguments/results
+for retained startup cohort A1/B1/B2/A2, verify actual Worker execution guidance,
+inspect shared harness/search normalization. B1 first Redis search lacked GA;
+landing-page fetch failed to close historical-date gap; dual recovery queries and
+GA+docs fetch overlap. One search necessary recovery; no exact duplicate arguments,
+toolfailure/Providerretry/qualityrevision. Existing checker passes all4 disjoint
+firstbody sums/high/v2. No new runtime code, service replacement or model/page Run;
+no candidate supports a new paired acceptance. Next useful work requires varied
+source-selection evidence, not repeated same-question prompt tuning. Durable
+analysis docs/CLOUD_B1_EVIDENCE_AUDIT.md; no unrelated dirty paths touched.
