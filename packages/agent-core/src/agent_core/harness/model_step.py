@@ -6,17 +6,14 @@ from agent_core.domain.context_continuation import ProviderContinuationRef
 from agent_core.domain.events import EventActor, EventType
 from agent_core.domain.identifiers import new_correlation_id, new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
-from agent_core.domain.modeling import (
-    ModelCompletion,
-    ModelInvocationPolicy,
-    ModelToolDefinition,
-)
+from agent_core.domain.modeling import ModelCompletion, ModelInvocationPolicy, ModelToolDefinition
 from agent_core.domain.tools import ToolCall, ToolResult
 from agent_core.harness.context_recovery import prepare_bounded_conversation
 from agent_core.harness.context_window import (
     ContextWindowExceededError,
     context_breakdown_v2_payload,
 )
+from agent_core.harness.delivery_assessment import refresh_version_scope_state
 from agent_core.harness.hooks import CompactionHook
 from agent_core.harness.image_messages import image_data_urls
 from agent_core.harness.model_request import (
@@ -111,6 +108,7 @@ class HarnessModelStep:
         user_goal: str,
         created_at: datetime,
     ) -> ConversationCompactionResult | None:
+        messages[:] = refresh_version_scope_state(messages)
         return prepare_bounded_conversation(
             messages,
             model_gateway,
@@ -151,7 +149,7 @@ class HarnessModelStep:
         response_repair_limit: int = 1,
     ) -> ModelCompletion:
         tools = self._available_tools if allow_tools else ()
-        messages = compact_repeated_records(messages)
+        messages = compact_repeated_records(refresh_version_scope_state(messages))
         window = context_window(model_gateway)
         plan = build_context_plan(tuple(messages), tools, window, model_gateway)
         if not plan.within_budget:
@@ -497,4 +495,4 @@ class HarnessModelStep:
                 provider_image_data_urls=image_data_urls(task.image_attachments),
             )
         )
-        return messages
+        return refresh_version_scope_state(messages)

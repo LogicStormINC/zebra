@@ -110,6 +110,7 @@ def tool_result_message(
         metadata={
             **tool_result.metadata,
             "tool_status": tool_result.status.value,
+            "tool_name": tool_call.name,
             "context_segment": "skills" if tool_call.name == "skills.read" else "messages",
         },
     )
@@ -217,7 +218,9 @@ def task_acceptance_message(
             "required outcome is supported; otherwise clearly identify partial or blocked work."
         ),
         created_at=created_at,
-        metadata={"context_segment": "system_prompt", "context_source": "acceptance"},
+        metadata={"context_segment": "system_prompt", "context_source": "acceptance",
+                  "version_scopes": [{"subject": x.subject, "version": x.version}
+                                     for x in contract.version_scopes]},
     )
 
 

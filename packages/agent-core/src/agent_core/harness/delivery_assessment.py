@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 from typing import TypedDict
 from urllib.parse import urlsplit
 
+from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 
 _VERSION = r"\d{1,4}(?:\.\d{1,4}){0,3}(?:\.[xX*])?"
@@ -64,12 +65,11 @@ def requested_version_scopes(goal: str) -> tuple[RequestedVersionScope, ...]:
     return tuple(scopes.values())
 
 
-def assess_version_scopes(
+def observed_version_scopes(
     requested: tuple[RequestedVersionScope, ...],
-    answer: str,
     receipts: Iterable[Mapping[str, object]],
-) -> VersionScopeReport:
-    citations = {m.group().rstrip(".,;:!?，。；：！？") for m in _URL.finditer(answer)}
+) -> list[CheckedVersionScope]:
+    """Source-version observations only; no citation or semantic coverage claim."""
     found: dict[str, dict[str, set[str]]] = {s.subject.casefold(): {} for s in requested}
     for receipt in receipts:
         if receipt.get("tool_name") != "web.fetch" or receipt.get("status") != "executed":
@@ -79,7 +79,7 @@ def assess_version_scopes(
         if not isinstance(metadata, Mapping) or not isinstance(text, str):
             continue
         url = metadata.get("url")
-        if not isinstance(url, str) or len(url) > 2048 or url not in citations:
+        if not isinstance(url, str) or len(url) > 2048:
             continue
         try:
             parts = urlsplit(url).path.split("/")
@@ -103,20 +103,86 @@ def assess_version_scopes(
                         if len(refs) < 32:
                             refs.add(url)
     checked: list[CheckedVersionScope] = []
-    unresolved: list[UnresolvedVersionScope] = []
     for scope in requested:
         sources = found[scope.subject.casefold()]
         checked.append({"subject": scope.subject, "versions": sorted(sources),
                         "source_refs": sorted({u for refs in sources.values() for u in refs})[:32],
-                        "basis": "cited_fetched_source_version_only"})
-        if scope.version not in sources:
+                        "basis": "successful_fetched_source_version_only"})
+    return checked
+
+
+def assess_version_scopes(
+    requested: tuple[RequestedVersionScope, ...],
+    answer: str,
+    receipts: Iterable[Mapping[str, object]],
+) -> VersionScopeReport:
+    citations = {m.group().rstrip(".,;:!?，。；：！？") for m in _URL.finditer(answer)}
+    checked = observed_version_scopes(requested, (
+        r for r in receipts if isinstance(meta := r.get("metadata"), Mapping)
+        and meta.get("url") in citations
+    ))
+    for item in checked:
+        item["basis"] = "cited_fetched_source_version_only"
+    unresolved: list[UnresolvedVersionScope] = []
+    for scope, item in zip(requested, checked, strict=True):
+        versions = item["versions"]
+        if scope.version not in versions:
             unresolved.append({"subject": scope.subject, "requested_version": scope.version,
                                "reason": "requested_version_scope_not_established",
-                               "observed_versions": sorted(sources)})
+                               "observed_versions": versions})
     return {"requested_scope": [{"subject": s.subject, "version": s.version} for s in requested],
             "checked_scope": checked, "unresolved_points": unresolved,
             "status": "partial" if unresolved else "matched",
             "semantic_coverage_certified": False}
+
+
+_SCOPE_MARKER = "\nVersion scope state: "
+
+
+def refresh_version_scope_state(messages: list[SessionMessage]) -> list[SessionMessage]:
+    """Replace one acceptance-state value; never append feedback or request a tool."""
+    last_user = max((i for i, m in enumerate(messages) if m.role is MessageRole.USER), default=-1)
+    receipts: list[dict[str, object]] = []
+    for message in messages[last_user + 1:]:
+        if (message.role is not MessageRole.TOOL or message.metadata.get("tool_name") != "web.fetch"
+                or message.metadata.get("tool_status") != "executed"
+                or len(message.content) > 262_144):
+            continue
+        try:
+            payload = json.loads(message.content)
+        except (ValueError, RecursionError):
+            payload = None
+        output = payload.get("output") if isinstance(payload, dict) else message.content
+        if not isinstance(payload, dict) or payload.get("status") == "executed":
+            receipts.append({"tool_name": "web.fetch", "status": "executed",
+                             "metadata": message.metadata, "output": output})
+    result = list(messages)
+    for i, message in enumerate(messages):
+        raw = message.metadata.get("version_scopes")
+        if (message.role is not MessageRole.SYSTEM
+                or message.metadata.get("context_source") != "acceptance"
+                or not isinstance(raw, list) or not 0 < len(raw) <= 12):
+            continue
+        try:
+            requested = tuple(RequestedVersionScope(**item) for item in raw)
+        except (TypeError, ValueError):
+            continue
+        observed = observed_version_scopes(requested, receipts)
+        state = {
+            "requested_scope": raw,
+            "observed_source_scope": [{"subject": x["subject"], "versions": x["versions"]}
+                                      for x in observed],
+            "unresolved_points": [{"subject": scope.subject, "requested_version": scope.version,
+                                   "reason": "requested_version_scope_not_established"}
+                                  for scope, item in zip(requested, observed, strict=True)
+                                  if scope.version not in item["versions"]],
+            "basis": "successful_fetched_source_version_only",
+            "semantic_coverage_certified": False,
+        }
+        # ponytail: current retained turn only; no hidden state or extra history reads.
+        content = message.content.rsplit(_SCOPE_MARKER, 1)[0] + _SCOPE_MARKER + json.dumps(state)
+        result[i] = message.model_copy(update={"content": content})
+    return result
 
 
 def qualify_version_scope(
