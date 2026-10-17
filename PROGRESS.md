@@ -6640,3 +6640,16 @@ Worker guidance already covers source selection/independent gaps/stop; no shared
 result-loss/replay defect found. No production edit/new model cohort/SQL claim;
 new candidate A/B remains unperformed rather than relabel unchanged reruns as gain.
 Normal APIca0a85f2/Worker9953a04d/Search19f3942f retained. docs/CLOUD_B1_EVIDENCE_AUDIT.md.
+
+## 2026-10-17 - Factual lookup versus operation stopping contract
+
+CLOUD-SEARCH-DECISION-01 reproduces a hard conflict: “核对…首次发布” becomes
+operate/result_verified, forcing2models/1fetch after first candidate then
+verification_required. Shared inference recognizes lookups; explicit compound
+actions/Host override still verify. No autonomy/tool/authority/Trench change.
+7lookup/11action check/64existingfocusedpass/Ruff/mypy/image smoke. Accepted-base
+normal Worker9e1a5f95 overlays only task_contracts.py; APIca0/Search19f/env preserved.
+Exactly3varied high/Flash/v2pagepairs: Node7models8tools/pause32.962s→4/7/complete
+20.395s, postcandidate forced2models1fetch→0/0. Python slower7.750→9.664s retained;
+SQLite faster but unchanged contract, not patch causality. No general speedup/SQL
+claim. B1 source choice/artifact range inefficiency remain. docs/CLOUD_SEARCH_DECISION.md.

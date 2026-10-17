@@ -15362,3 +15362,16 @@ firstbody sums/high/v2. No new runtime code, service replacement or model/page R
 no candidate supports a new paired acceptance. Next useful work requires varied
 source-selection evidence, not repeated same-question prompt tuning. Durable
 analysis docs/CLOUD_B1_EVIDENCE_AUDIT.md; no unrelated dirty paths touched.
+
+2026-10-17 CLOUD-SEARCH-DECISION-01: exactly3diverse baseline pages expose Node
+factual-goal operation-contract mismatch, canonical verification_required.
+Claimed shared task_contracts.py+assert script before16line source repair.
+Red original-goal assertion retained;7lookup/11action+Hostoverride/negation pass,
+64existing regressions/Ruff/mypy/network-disabled image/actual Worker smoke.
+Candidate only one module on9953a04d; API/Search/env unchanged. Three identical
+candidate pages reverse order, allhigh/Flash/v2complete; no replacement. Node
+postcandidate forced2models1fetch removed; total7/8pause32.962s→4/7complete20.395s.
+Python slower retained; SQLite unchanged contract, no universal speedup. Existing
+stage checker rejects R1/R2 mixed batches, retained/no infrastructure repair;
+overall DOM/canonical/counts reconciled independently. No old Run resume, unrelated
+dirty changes/push/remote deploy. Details docs/CLOUD_SEARCH_DECISION.md.

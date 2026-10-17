@@ -192,6 +192,9 @@ def _task_type(text: str) -> AgentTaskType:
     information_request = _contains_any(
         text,
         (
+            "查询",
+            "核对",
+            "查找",
             "如何",
             "怎么",
             "是否",
@@ -200,6 +203,9 @@ def _task_type(text: str) -> AgentTaskType:
             "介绍",
             "解释",
             "评估",
+            "look up",
+            "find out",
+            "when was",
             "how to",
             "should i",
             "what is",
@@ -234,6 +240,16 @@ def _task_type(text: str) -> AgentTaskType:
             "please create",
         ),
     )
+    # ponytail: lookup verbs describe information needs, not mutation authority.
+    # Compound requests still retain postconditions; this is a bounded heuristic,
+    # not semantic classification. Explicit Host acceptance contracts override it.
+    explicit_action = explicit_action or re.search(
+        r"(?:^|[，。；,;!?！？\n]|然后|随后|接着|并且|并|再|后)\s*"
+        r"(?:请|帮我)?(?:部署|发布|提交|发送|调度|执行|修复|修改|实现|删除|增加|改成|创建)"
+        r"|\b(?:then|and)\s+(?:please\s+)?"
+        r"(?:deploy|publish|submit|send|schedule|fix|change|implement|delete|create)\b",
+        action_text,
+    ) is not None
     # ponytail: only explicit artifact publication is creation, not deployment.
     # Other operations in the same request still retain operational verification.
     # With files.publish, an extension-qualified file object is an Artifact;
