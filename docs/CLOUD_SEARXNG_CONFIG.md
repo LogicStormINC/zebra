@@ -74,7 +74,8 @@ API/Worker 的 ID/镜像/启动时间/环境哈希均未变且健康。
 上线后正常 Worker 默认调用两题（不再传 language 覆盖）：PG官方AIO1.869s、
 SQLite官方WAL1.190s，目标均第一；无 Exa 调用或限流，无新模型请求。
 
-本轮10次真实 Yahoo 请求。未运行模型页面，不声称 SQL/首正文新收益。
+目录挂载修复后额外一次默认 Worker 检索 PG 官方页面成功、排名第一、1.753s。
+本轮11次真实 Yahoo 请求（8配对+3功能检查）。未运行模型页面，不声称 SQL/首正文新收益。
 私有证据：.artifacts/cloud-searxng-config-01/{protocol.json,paired.json,
 live-smoke.json,effective-settings.json,transport-hashes.json,after.json}。
 

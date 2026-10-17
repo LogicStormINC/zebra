@@ -7090,3 +7090,11 @@ Moved sole source to docker/web-search/config/settings.yml; read-only config/ di
 mount excludes secrets/, avoids ordinary file atomic-replacement invalidation.
 Offline checks updated for new path; final activation follows local integration.
 Preserve cache/control/env/security and API/Worker; no additional search/model query.
+
+Final directory-mount receipt: activated after Git integration, same-content atomic
+replacement of host YAML stays readable inside container; current digest matches.
+One final default Worker PG smoke1.753s/official first, no error/fallback; total11
+Yahoo requests including original8comparison and3functional checks,0models/Exa.
+Final transport/provider sources match original; API/Worker unchanged, all healthy;
+control/cache preserved. Directory contains configuration only, not secrets.
+Evidence directory-live-smoke.json/atomic-replace.json/final-seal.log.
