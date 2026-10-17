@@ -4,7 +4,7 @@ from pathlib import Path
 
 def _settings():
     root = Path(__file__).resolve().parents[2]
-    return (root / "docker/web-search/settings.yml").read_text()
+    return (root / "docker/web-search/config/settings.yml").read_text()
 
 
 def _engines():
@@ -26,7 +26,8 @@ def test_domestic_and_public_wechat_engines_are_selectable_without_poisoning_def
     kept = settings.split("keep_only: [", 1)[1].split("]", 1)[0]
     assert {name.strip() for name in kept.split(",")} == expected
     engines = _engines()
-    assert set(engines) == expected
+    assert set(engines) == expected | {"exa"}
+    assert "disabled: true" in engines["exa"]
     assert {name for name, e in engines.items() if "disabled: false" in e} == {"yahoo"}
     for name in expected - {"yahoo", "bing"}:
         assert "inactive: false" in engines[name]

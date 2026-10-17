@@ -17,6 +17,7 @@ class ArtifactAccessDescriptor(BaseModel):
     uri: str | None = None
     preview_redacted: bool = False
     preview_truncated: bool = False
+    published: bool = False
 
     @field_validator("kind")
     @classmethod

@@ -1,5 +1,27 @@
 # Progress Log
 
+## 2026-10-18 - TRN-SETTINGS-MEDIA-01
+
+- Root causes and local acceptance: docs/TRN_SETTINGS_MEDIA_REPAIR.md.
+- Branch: codex/trench-settings-media-01 in both paired primary checkouts.
+- User approved local API replacement; exact source verified and healthy.
+- Settings, four original SVG charts and existing WebM playback accepted locally.
+- User reopened full-gate repairs and authorized commit/push after verification.
+- Final full Zebra test: 9,633 passed / 2,921 environment skips, zero failures;
+  all 18 first-run failures repaired. Zebra make check and SDK full verify pass.
+- Trench complete check passes: 233 API / 80 cleaning / 472 frontend; 62 native
+  API skips; both production builds, lint and offline migration SQL pass.
+- Source delivery: paired codex/trench-settings-media-01 branches pushed.
+- User-requested integration: Zebra cloud-agent-trench, Trench main. Trench
+  fast-forwards to the identical validated 8474cb7 tree; Zebra merges b11334f2
+  with target a5f031c1 and retains all snapshot/version-scope commits.
+  Combined Zebra make test: 9,646 passed / 2,921 environment skips, zero
+  failures (1,130.99s); make check passes: 3,153 files, Ruff, 1,294 typed
+  sources, 30 evals and post-commit/risk-boundary gates. Focused combined
+  regressions: 35 passed. User-authorized delivery targets these existing branches.
+- Preserve unrelated dirty work. Live provider smoke tests are included;
+  no remote runtime deployment.
+
 ## 2026-10-12 - CLOUD-STREAM-READ-01 reader slice (Review, uncommitted)
 
 - Claimed Ready then In Progress before coding on codex/cloud-stream-read-01,

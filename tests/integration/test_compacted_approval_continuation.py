@@ -56,6 +56,8 @@ class RecordingTools:
 
 
 def test_compacted_conversation_survives_exact_approval_continuation() -> None:
+    # Include the protected instruction ledger and exact pending exchange in the budget.
+    budget = 1_000
     first = _call("files.read", {"path": "old.txt"}, "call_old")
     second = _call("files.read", {"path": "latest.txt"}, "call_latest")
     pending = _call("command.run", {"command": ["echo", "ok"]}, "call_pending")
@@ -79,7 +81,7 @@ def test_compacted_conversation_survives_exact_approval_continuation() -> None:
         model_step=HarnessModelStep(
             available_tools=TOOLS,
             conversation_compactor=compiler,
-            conversation_token_budget=240,
+            conversation_token_budget=budget,
         ),
         synthesize_tool_results=True,
     )
@@ -95,7 +97,8 @@ def test_compacted_conversation_survives_exact_approval_continuation() -> None:
     compacted = next(
         event for event in waiting.events if event.event_type is EventType.CONTEXT_COMPACTED
     )
-    assert compacted.payload["after_tokens"] <= 240
+    assert compacted.payload["before_tokens"] > budget
+    assert compacted.payload["after_tokens"] <= budget
     assert "OLD-SECRET" not in str(compacted.payload)
     approval = next(
         event for event in waiting.events if event.event_type is EventType.APPROVAL_REQUESTED
@@ -104,7 +107,7 @@ def test_compacted_conversation_survives_exact_approval_continuation() -> None:
         SessionMessage.model_validate(message) for message in approval.payload["conversation"]
     )
     assert any(SUMMARY_MARKER in message.content for message in conversation)
-    assert estimate_message_tokens(conversation[:-1]) <= 240
+    assert estimate_message_tokens(conversation[:-1]) <= budget
     assert conversation[-1].tool_calls == (pending,)
 
     completed = orchestrator.continue_approved_tool_call(

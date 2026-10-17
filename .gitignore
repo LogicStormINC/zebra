@@ -15,6 +15,7 @@ node_modules/
 .pnpm-store/
 /.zebra-agent/
 /.zcode/
+/.artifacts/
 UI/**/node_modules/
 UI/**/dist/
 UI/**/src-tauri/target/

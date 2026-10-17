@@ -520,7 +520,7 @@ def test_authority_append_is_not_repeated_when_recovery_and_inputs_advance(tmp_p
     recovery = Mock()
     recovery.recover_session.side_effect = [PreparationAdvanced("primary", 1, 2), recovered]
     reader = Mock(side_effect=[PreparationAdvanced("inputs", 1, 2), []])
-    recorder = SimpleNamespace(_ownership_check=Mock())
+    recorder = SimpleNamespace(_ownership_check=Mock(), worker_mutation_authority=None)
     result, exact = AttemptAuthorityEvidence(None, None, None, recovery, Mock(), reader).persist(
         recorder,
         claim,

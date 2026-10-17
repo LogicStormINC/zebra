@@ -326,7 +326,7 @@ def test_trench_host_uses_trench_product_identity(tmp_path: Path) -> None:
     assert "product assistant embedded by the invoking Host" in harness_task.identity_directive
     assert "Host-provided product role and identity" in harness_task.identity_directive
     assert "underlying agent runtime" in harness_task.identity_directive
-    assert "exhaust safe in-scope alternatives" in harness_task.identity_directive
+    assert "exhaust safe alternatives for that step" in harness_task.identity_directive
     assert "reports and articles need developed structure" in harness_task.identity_directive
 
 

@@ -1,3 +1,20 @@
+## 2026-10-18 - Trench settings and media repair (validated Review)
+
+TRN-SETTINGS-MEDIA-01 restores user-management grants without fabricated Task
+bindings, accepts both usage periods over HTTP, permits canonical successful
+files.publish media under workspace policy, and converts bounded numeric chart
+conditions to declarative predicates. Local API activation was user-approved;
+original settings, four SVG charts and external-video playback were verified.
+All 18 first-run failures are repaired. Zebra complete test: 9,633 passed /
+2,921 environment skips; make check passes. Trench make check passes (233 API /
+80 cleaning / 472 frontend passed); SDK full verify passes (104 tests and
+package/consumer/browser matrices). User-authorized delivery is on the paired
+codex/trench-settings-media-01 branches (pushed). User-requested integration
+targets existing Zebra cloud-agent-trench and Trench main. Combined Zebra
+verification passes: 9,646 tests / 2,921 environment skips, zero failures;
+make check and 35 focused regressions pass. No new branches are retained.
+Details: docs/TRN_SETTINGS_MEDIA_REPAIR.md.
+
 Local repair closeout (2026-10-14): deployed API source hashes match both repaired
 formatters, API/Worker healthy. Both original history answers verified790/2210
 characters; original model counts4/7 unchanged. Normal dotenv dispatcher admitted
