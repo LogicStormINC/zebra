@@ -15521,3 +15521,18 @@ code maps zh-CN→lang_zh_chs; frozen24locale probes show same top5URLorder12/12
 no configchange. Results retained, no retries or selectedtools/Runwrites, no
 production auth/high/v2/Trench/proxy edits or pagegain claim. Next meaningful
 lever is decision capability/source recall, not more global prompt variants.
+
+
+## 2026-10-17 — CLOUD-B1-DECISION-PROFILE-01
+
+After bounded batching/cap/locale negatives, claim existing-model capability
+comparison; doc dependency64bf6100 fast-forwarded without sourcechange. Native
+F/P profiles on original B1 cuts19/32/45,2repeats/alternating12calls, same public
+history/messagehash/schema/high/auto; allvalid/no retries or toolexecution.
+F11/P9proposals, initialdetour0/2→1/2, median1409.6→2806.1ms, gateFAIL. No
+profile/router change or pagepair; fewerparallelfetches are not savedmodelrounds.
+Retain all36modelresponses/30nativequeries across this turn; no new framework,
+source/config/Trench/auth/high/v2 edits. Normal serviceidentity/env/restarts
+equal; own tmp exported/removed. No production performanceclaim. Remaining
+bottleneck is event-source recall/semantic gap choice; no verified general code
+shortcut found, so stop these variants instead of expanding speculative scope.

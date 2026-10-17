@@ -6784,3 +6784,15 @@ change. Current raw Yahoo widequery still lacks GA across all7results, not just
 top5;24native zh-CN/all comparisons have identical top5URLorders12/12. No locale
 or cap change justified. No test-framework extension, source/Trench/auth/v2 change
 or performanceclaim. Details docs/CLOUD_B1_BATCH_BOUNDARY.md.
+
+
+## 2026-10-17 - Existing Pro profile does not qualify as B1 latency fix
+
+Native identical-message B1 comparison12calls/high/auto: Flash11/Pro9proposals,
+but first-source detour0/2→1/2 and medianmodel1409.6→2806.1ms. Optional parallel
+corroboration reduced, not a measured model-round/body/SQL saving. GateFAIL; no
+defaultmodel/router/production changes. Current investigation36modelresponses
+and30nativequeries total, no executed proposedtools/test-framework expansion.
+First-query event recall and semantic gap selection remain the unresolved target;
+no validated generic small production fix claimed. Normal images/env/auth/DNS/
+SSRF/cancel/high/v2/Trench preserved. docs/CLOUD_B1_DECISION_PROFILE.md.
