@@ -6725,3 +6725,19 @@ Search/env/authority/high/v2 intact. Final2pages3models each,one candidate; SQLi
 body12.262s/whole14.494s,PGRedis12.386/15.725s. No stable body/SQL speedup; old B1
 semantic source detour remains open. Exactly11newRuns across prompt+quality
 experiments,37canonical model responses/38successfultools, no replacement.
+
+
+## 2026-10-17 - Fixed-evidence B1 source decisions, no speculative promotion
+
+CLOUD-SOURCE-REPLAY-01 retains the actual original B1 public search/fetch evidence
+and compares original, capability-description-only and lossless-result-layout
+next decisions.24valid native high/Flash completions,4checkpoints/2repetitions;
+A/D12tool proposals each,R11, no tools executed. All6complete-evidence probes
+stop; all6GA-candidate probes still fetch GA+docs. Structured fields influence
+initial source selection but no stable generic benefit proven; no production
+prompt/formatter change or new page cohort. Replay-only missing synthetic
+reasoning field caused26pre-generation400rejections, retained separately, then
+corrected without retrieving private reasoning. Normal accepted APIca0/Worker
+d246/Search19f/env/restarts and fresh authority/DNS/SSRF/cancel/high/v2 unchanged.
+Offline focused checks/Ruff pass; no unrelated tests/Trench edits,SQL or speedup
+claim. Diagnostic script and report retained; docs/CLOUD_SOURCE_REPLAY.md.
