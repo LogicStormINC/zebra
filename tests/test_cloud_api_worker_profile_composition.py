@@ -251,6 +251,7 @@ def test_cloud_and_production_worker_profiles_use_shared_composition_without_sql
     settings = load_settings(
         env={
             "ZEBRA_PROFILE": profile,
+            "ZEBRA_LIVE_REDIS_URL": "redis://fixture.invalid:6379/0",
             "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
             "ZEBRA_RUNTIME_CLASS": "gvisor",
             "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
@@ -281,12 +282,14 @@ def test_cloud_and_production_worker_profiles_use_shared_composition_without_sql
         return object()
 
     monkeypatch.setattr("zebra_agent_worker.loop.SessionExecutionService", capture_service)
-    build_worker_loop_service(
+    worker = build_worker_loop_service(
         database_path=tmp_path / "ignored.sqlite",
         settings=settings,
         cloud_composition=_cloud_settings(),
         sleep=lambda _: None,
     )
+    assert worker._stream_hint_relay is not None
+    worker.drain()
     assert captured["cloud"] is not None
     assert cast(CloudCompositionSettings, captured["cloud"]).dsn == _cloud_settings().dsn
     service = cast(dict[str, object], captured["service"])
@@ -319,6 +322,7 @@ def test_cloud_skill_worker_passes_one_bundle_and_requires_snapshot_recovery(
 ) -> None:
     base = {
         "ZEBRA_PROFILE": "cloud",
+        "ZEBRA_LIVE_REDIS_URL": "redis://fixture.invalid:6379/0",
         "ZEBRA_DATABASE_URL": "postgresql://zebra:test@localhost/zebra",
         "ZEBRA_RUNTIME_CLASS": "gvisor",
         "ZEBRA_RUNTIME_IMAGE": "zebra/runtime@sha256:" + "a" * 64,
@@ -360,10 +364,12 @@ def test_cloud_skill_worker_passes_one_bundle_and_requires_snapshot_recovery(
         return object()
 
     monkeypatch.setattr("zebra_agent_worker.loop.SessionExecutionService", capture_service)
-    build_worker_loop_service(
+    worker = build_worker_loop_service(
         database_path=tmp_path / "ignored.sqlite", settings=settings,
         cloud_worker_composition=bundle, sleep=lambda _: None,
     )
+    assert worker._stream_hint_relay is not None
+    worker.drain()
     assert captured["extension_snapshot_store"] is extension_snapshots
     source = captured["extension_skills"]
     assert source.store is extensions  # type: ignore[attr-defined]

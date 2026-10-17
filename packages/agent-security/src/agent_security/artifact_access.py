@@ -20,6 +20,12 @@ def classify_artifact_access(
         return ArtifactAccessClass.SENSITIVE
     if descriptor.kind in _OPERATOR_SAFE_KINDS:
         return ArtifactAccessClass.OPERATOR_SAFE
+    if (
+        descriptor.kind == "tool_output"
+        and descriptor.published
+        and urlparse(descriptor.uri or "").scheme in _LOCAL_URI_SCHEMES
+    ):
+        return ArtifactAccessClass.OPERATOR_SAFE
     if descriptor.kind == "tool_output" and _is_local_text_payload(descriptor.mime_type):
         return ArtifactAccessClass.OPERATOR_SAFE
     return ArtifactAccessClass.SENSITIVE

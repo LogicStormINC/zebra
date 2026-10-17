@@ -15,6 +15,7 @@ from agent_core.application.workspace_projection import rebuild_workspace
 from agent_core.domain.events import EventType
 from agent_core.harness import public_output_lifecycle as lifecycle
 from agent_core.harness.public_output import ProgressiveEventSink, PublicOutputPolicy
+from agent_core.ports.worker_progress import WorkerProgressTimeout
 from agent_storage import (
     apply_postgres_migrations,
     bootstrap_control_plane_epoch,
@@ -167,8 +168,10 @@ def test_progress_lock_cannot_outlive_the_native_publication_budget(tmp_path, sh
     assert timer is not None
     try:
         timer.join(0.4)
-        with pytest.raises(TimeoutError, match="publication mutation lock deadline"):
+        with pytest.raises(WorkerProgressTimeout) as failure:
             sink.close()
+        assert failure.value.stage == "prepare" and not failure.value.canonical_committed
+        assert str(failure.value.__cause__) == "publication mutation lock deadline exceeded"
         assert not timer.is_alive() and writes == []
     finally:
         release.set()

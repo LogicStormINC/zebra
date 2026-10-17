@@ -1,3 +1,4 @@
+import pytest
 from agent_core.domain import ArtifactAccessClass, ArtifactAccessDescriptor
 from agent_security import (
     PolicyProfile,
@@ -7,9 +8,7 @@ from agent_security import (
 
 
 def test_assistant_message_is_operator_safe() -> None:
-    access_class = classify_artifact_access(
-        ArtifactAccessDescriptor(kind="assistant_message")
-    )
+    access_class = classify_artifact_access(ArtifactAccessDescriptor(kind="assistant_message"))
 
     assert access_class is ArtifactAccessClass.OPERATOR_SAFE
     assert required_policy_profile_for_artifact_access(access_class) == (
@@ -80,3 +79,28 @@ def test_unknown_kind_fails_closed_to_sensitive() -> None:
     )
 
     assert access_class is ArtifactAccessClass.SENSITIVE
+
+
+@pytest.mark.parametrize("mime_type", ["application/json", "image/png", "video/mp4"])
+def test_published_payloads_are_operator_safe_but_internal_payloads_remain_sensitive(mime_type):
+    descriptor = ArtifactAccessDescriptor(
+        kind="tool_output",
+        mime_type=mime_type,
+        uri="artifact://00000000-0000-4000-8000-000000000001",
+        published=True,
+    )
+    assert classify_artifact_access(descriptor) is ArtifactAccessClass.OPERATOR_SAFE
+    assert (
+        classify_artifact_access(descriptor.model_copy(update={"published": False}))
+        is ArtifactAccessClass.SENSITIVE
+    )
+    assert (
+        classify_artifact_access(descriptor.model_copy(update={"preview_redacted": True}))
+        is ArtifactAccessClass.SENSITIVE
+    )
+    assert (
+        classify_artifact_access(
+            descriptor.model_copy(update={"uri": "https://example.test/private"})
+        )
+        is ArtifactAccessClass.RESTRICTED
+    )
