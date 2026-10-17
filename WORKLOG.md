@@ -15861,3 +15861,44 @@ cause large fallback reads/source expansion; researcher business path remains un
 Evidence: .artifacts/cloud-artifact-locate-01/{snapshot-check.json,live/after.json,
 live/probe.json,page/summary.json,page/run.json,page/browser-timing.json}.
 No full-suite gate, push, remote deployment or extra quota probe claimed.
+
+
+## 2026-10-18 — CLOUD-ARTIFACT-EXCERPTS-01: bounded multi-hit/candidate reads
+
+One production file now returns up to4 non-overlapping short Artifact excerpts:
+literal text≤2048chars, fenced metadata/code≤512, word candidates≤1024;
+warning/separators share max_characters total. Exact original Unicode ranges
+exclude labels/gaps. Literal miss candidates remain explicitly unverified
+(literal_match=false/candidate_only=true); bounded word overlap≤16terms,
+no synonym/semantic inference or external fallback. Offset-only reads unchanged;
+authorization, immutable snapshot/digest, cancellation and no-sandbox preserved.
+73focused tests passed/2DB environment skips; Ruff/strict mypy passed.
+Saved original SQLite directory/body, Redis metadata/body/code, omitted-word
+candidates, beta absence, Unicode/cursor/budgets/permission/cancel passed.
+Worker updated via exact live-image derivative1sourcefile, effective configuration
+retained. Deployed old-snapshot read/foreign-session denial passed with0sandbox.
+API untouched; original Search container/start/PID1230/MCP/control bytes retained.
+
+Exactly one normal-page original-question C: conv_1792256535989_31d585,
+research/Flash/high/transient_v2, all7executor responses high/thinking enabled/auto.
+First actual answer receipt58.709s/Reactcommit58.788s, wholepage59.620s;
+7models/17successful tools (4search/6fetch/7read),0researcher/children/sandbox.
+Five literal queries and2offset reads,24,000source characters; last input32,735tokens.
+Actual SQLite4000-budget query exposes directory and body together; Redis durability
+query exposes metadata+body. Term-candidate fallback did not occur in this page,
+so its coverage remains offline only. Agent independently chose different Redis
+queries/pages; no forced engine/delegation or extra system prompt/Trench change.
+Against B:138.177s firstanswer/139.482s page/14models/37tools/20reads;
+against A:83.336s/84.614s/10models/24tools/12reads. One sample with changing
+source choices supports observed improvement, not stable/causal speedup certification.
+Model intervals41.197s/final19.460s/inter-round14.391s/startup2.426s.
+Some PG offset rereads remain; no full semantic answer-quality or researcher E2E claim.
+No limits/newExaRPCs, Yahoo default/fast/cooldown/fallback unchanged. Temporary
+browser observer removed; final result kept open. No further model sample/quota probe.
+Evidence .artifacts/cloud-artifact-excerpts-01/{snapshot-check.json,regression.log,
+live/after.json,live/probe.json,page/summary.json,page/browser-timing.json}.
+Source integration is local to cloud-agent-trench; no push or remote deployment.
+
+Correction to prior source diagnosis:95k was the identical A/B Vector sets guide,
+not an additional Redis release page. The relevant15,111char release page had
+Vector set [preview] at7799 inside the omitted initial5976:9134 interval.

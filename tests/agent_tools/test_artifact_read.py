@@ -54,11 +54,15 @@ def test_literal_query_preserves_unicode_offsets_and_bounded_context() -> None:
     tool = ArtifactReadTool(StaticArtifactReader(content), new_session_id())
     result = tool.handle(read_call(query="a.[b]", max_characters=17))
     coverage = result.metadata["coverage"]
-    assert coverage["match_start"] == content.index("A.[B]")
-    assert coverage["match_end"] == content.index("A.[B]") + 5
-    assert result.output == content[coverage["included_start"] : coverage["included_end"]]
+    hit = coverage["matches"][0]
+    assert hit["start"] == content.index("A.[B]")
+    assert hit["end"] == content.index("A.[B]") + 5
+    ((start, end),) = coverage["included_ranges"]
+    assert result.output == content[start:end]
     assert "A.[B]" in result.output and len(result.output) == 17
-    assert result.metadata["next_cursor"] == coverage["included_end"]
+    assert result.metadata["next_cursor"] is None
+    assert coverage["literal_match"] is True
+    assert coverage["candidate_only"] is False
 
 
 def test_query_continuation_and_no_match_do_not_claim_unseen_text() -> None:
@@ -67,17 +71,14 @@ def test_query_continuation_and_no_match_do_not_claim_unseen_text() -> None:
     second = tool.handle(
         read_call(query="match", offset=first.metadata["next_cursor"], max_characters=10)
     )
-    assert first.metadata["coverage"]["match_start"] == 0
-    assert second.metadata["coverage"]["match_start"] == 30
+    assert first.metadata["coverage"]["matches"][0]["start"] == 0
+    assert second.metadata["coverage"]["matches"][0]["start"] == 30
     assert second.metadata["has_more"] is False
     missing = tool.handle(read_call(query="missing", offset=10))
-    assert missing.metadata["coverage"] == {
-        "included_start": 10,
-        "included_end": 10,
-        "total_characters": 35,
-        "search_start": 10,
-        "matched": False,
-    }
+    coverage = missing.metadata["coverage"]
+    assert coverage["literal_match"] is False and coverage["candidate_only"] is True
+    assert coverage["included_ranges"] == [] and coverage["matches"] == []
+    assert coverage["search_start"] == 10 and not missing.output
     assert missing.metadata["next_cursor"] is None
     assert missing.metadata["has_more"] is False
     beyond = tool.handle(read_call(offset=100))
@@ -105,3 +106,90 @@ def test_query_validation_precedes_reader_and_authorization_is_preserved() -> No
     assert denied.status is ToolCallStatus.FAILED
     assert denied.metadata["reason"] == "artifact_unavailable"
     assert not denied.output
+
+
+def assert_exact_excerpts(result, content, limit):
+    import json
+
+    from agent_core.harness.model_step_support import tool_result_content
+
+    coverage = result.metadata["coverage"]
+    ranges = coverage["included_ranges"]
+    assert len(result.output) <= limit and len(ranges) <= 4
+    prefix = (
+        "[Unverified word candidates; literal phrase not found]\n"
+        if coverage["candidate_only"] and ranges
+        else ""
+    )
+    assert result.output == prefix + "\n\n[Next snapshot excerpt]\n\n".join(
+        content[start:end] for start, end in ranges
+    )
+    for i, (start, end) in enumerate(ranges):
+        assert 0 <= start < end <= len(content) and end - start <= 2048
+        assert all(end <= a or start >= b for a, b in ranges[:i])
+        hit = coverage["matches"][i]
+        assert start <= hit["start"] < hit["end"] <= end
+    observation = json.loads(tool_result_content(result))
+    assert observation["coverage"] == coverage
+
+
+def test_multiple_literal_excerpts_include_later_body_and_share_budget():
+    content = "Table Of Contents\n2.2. Concurrency\n" + "x" * 3000
+    content += "\n2.2. Concurrency\nOnly one writer at a time.\n" + "y" * 3000
+    tool = ArtifactReadTool(StaticArtifactReader(content), new_session_id())
+    result = tool.handle(read_call(query="Concurrency", max_characters=4500))
+    assert len(result.metadata["coverage"]["included_ranges"]) == 2
+    assert "Only one writer" in result.output
+    assert_exact_excerpts(result, content, 4500)
+
+
+def test_metadata_and_code_are_labeled_without_claiming_semantics():
+    content = '```json metadata\n{"title":"AOF disadvantages"}\n```\n' + "x" * 3000
+    content += "\n## AOF disadvantages\nReal paragraph.\n" + "x" * 3000
+    tool = ArtifactReadTool(StaticArtifactReader(content), new_session_id())
+    result = tool.handle(read_call(query="AOF disadvantages"))
+    assert [h["kind"] for h in result.metadata["coverage"]["matches"]] == [
+        "fenced_metadata",
+        "text",
+    ]
+    assert "Real paragraph" in result.output
+    assert_exact_excerpts(result, content, 8192)
+    for fence in ("```go", "~~~go"):
+        code = fence + "\nredisClient := rdb.VAdd()\n"
+        result = ArtifactReadTool(StaticArtifactReader(code), new_session_id()).handle(
+            read_call(query="RDB")
+        )
+        assert result.metadata["coverage"]["matches"][0]["kind"] == "fenced_code"
+        assert_exact_excerpts(result, code, 8192)
+
+
+def test_word_candidates_are_unverified_and_do_not_invent_synonyms():
+    content = "Unrelated add operation.\n\n" + "x" * 3000
+    content += "\n\nAdd an asynchronous I/O subsystem. Reads can run concurrently."
+    tool = ArtifactReadTool(StaticArtifactReader(content), new_session_id())
+    result = tool.handle(read_call(query="Add asynchronous I/O", max_characters=3000))
+    coverage = result.metadata["coverage"]
+    assert coverage["literal_match"] is False and coverage["candidate_only"] is True
+    assert content[coverage["matches"][0]["start"] :].startswith("Add an asynchronous")
+    assert "Unverified word candidates" in result.output
+    assert result.metadata["next_cursor"] is None
+    assert_exact_excerpts(result, content, 3000)
+    no_synonym = ArtifactReadTool(StaticArtifactReader("Vector set [preview]"), new_session_id())
+    absent = no_synonym.handle(read_call(query="beta"))
+    assert not absent.output and absent.metadata["coverage"]["included_ranges"] == []
+
+
+def test_query_limits_and_continuation_never_expand_global_budget():
+    content = ("TOKEN" + "x" * 3000 + "\n\n") * 6
+    tool = ArtifactReadTool(StaticArtifactReader(content), new_session_id())
+    for limit in (5, 17, 120, 2048, 8192, 16000):
+        result = tool.handle(read_call(query="TOKEN", max_characters=limit))
+        assert_exact_excerpts(result, content, limit)
+        cursor = result.metadata["next_cursor"]
+        assert cursor is not None and cursor > 0
+        next_result = tool.handle(read_call(query="TOKEN", offset=cursor, max_characters=limit))
+        assert next_result.metadata["coverage"]["matches"][0]["start"] == cursor
+        assert_exact_excerpts(next_result, content, limit)
+    for limit in (7, 55, 56, 120):
+        result = tool.handle(read_call(query="TOKEN missing", max_characters=max(limit, 13)))
+        assert_exact_excerpts(result, content, max(limit, 13))
