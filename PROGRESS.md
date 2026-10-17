@@ -6952,3 +6952,21 @@ cancellation; catalog/transport4passed; Ruff/diffcheck and source-resolved stric
 mypy7files green. v104 is additive; no production migration or Worker update, no
 external search/model/page requests, no new performance claim. This slice is
 locally integrated only; activation must apply v104 before a new Worker image.
+
+
+### CLOUD-RESEARCH-WEB-01 local service activation (2026-10-17)
+
+The previously pending rollout is now complete: schema104 applied first; normal
+Worker uses the exact prior image plus7changed files. API received only the3
+profile/catalog compatibility files required to deserialize new child Tasks and
+restart with schema104. Both healthy; effective env/mounts/command preserved.
+Original Search container/start/image/PID1230/cooldown bytes and initialized MCP
+process retained, with0newExa frames. Yahoo default/optional fast/fallback unchanged.
+
+Deployed no-model acceptance recovered durable state and admitted/replayed6
+synthetic narrow-authority cases in temporary schema+namespace on same database;
+allow/deny behavior and read-only/no nested delegation verified. Deployed API read
+and serializer6cases passed. Model events0/search requests0; owned temporary
+schemas removed. This proves deployed composition/storage, not signed Host HTTP
+or real-model business E2E or a new performance improvement. No Trench/globalproxy
+changes, remote push or remote deployment.

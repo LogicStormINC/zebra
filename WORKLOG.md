@@ -15767,3 +15767,34 @@ service/config/Trench edits, no live migration or claimed latency improvement.
 Cleaned only task-owned disposable PostgreSQL container. Local commit/integration
 to cloud-agent-trench; no push/remote deployment. Next operational step if authorized:
 apply migration104 then deploy matching Worker; existing Child remains immutable.
+
+
+## 2026-10-17 CLOUD-RESEARCH-WEB-01 normal local activation follow-up
+
+User explicitly requested v104 then Worker, preserve original Search/MCP, no-model
+only. Resumed same task branch and amended registry before operations. Compared
+existing image source to parent189df4d5^: all affected source baselines exact. Built
+Worker derivative copying7files; API derivative copying only ToolProfile/migration
+catalog/newmigration3files (required for new-profile reads and schema startup).
+Applied normal v104 using existing advisory-lock/checksum migration runner, bounded
+lock/statement timeout, no active leases. Then replaced Worker and API with exact
+env/command/mount/security preservation and --no-deps; Search never replaced.
+
+Acceptance runs only deployed image modules; no source or product test changes.
+6cases of stored parent network/tool permissions, child admission and replay,
+Worker recovery/model-visible tools and Policy, API projection reader/serializer.
+Used synthetic narrowed authority fixtures in temporary schema+namespace on same
+database, ensuring normal Worker could not consume a Run.0model events/0search
+requests; success/failed owned schemas removed. Private script setup failures
+(missing timedelta; DNS guard initially blocked DB lookup; omitted required
+cancellation callback) corrected without production changes; retained receipts.
+Mount equality normalized ordering; reused known Search /config read rather than
+system Python yaml. No unrelated test infrastructure work or extra model/search.
+
+Final seal: API/Worker healthy; deployed7/3source hashes exact; old image layers
+and effective env/mount/entrypoint/command retained. Search e20569063d54/PID1230
+start14:14:13Z/image/control byte-identical, fast engine source exact, Yahoo sole
+default/Exa optional. Exa history3original frames only/no new initialization/call,
+no natural rate events. v104 current;0temporary acceptance schemas/active leases.
+Artifacts .artifacts/cloud-research-web-01/live/. No signed-Host HTTP/page/model E2E
+or measured speedup claimed. Local commit/integration only; no push/remote deploy.
