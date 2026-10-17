@@ -18,6 +18,7 @@ from dataclasses import asdict
 from http.client import HTTPException, HTTPResponse
 from threading import Lock
 from time import monotonic
+from typing import Any
 
 from agent_tools.web_gateway import (
     WebGatewayError,
@@ -137,6 +138,8 @@ class LocalWebGatewayTransport:
 
 def sticky_network_cancellation_check(
     check: Callable[[], None] | None,
+    *,
+    reuse_doh: bool = False,
 ) -> Callable[[], None] | None:
     """Retain the original ownership error even if a Tool catches Exception."""
     if check is None:
@@ -155,6 +158,10 @@ def sticky_network_cancellation_check(
                 failure = exc
                 raise
 
+    if reuse_doh and os.name == "posix":
+        from agent_runtime.native_network_scope import DohNetworkScope
+
+        return DohNetworkScope(require_active)
     return require_active
 
 
@@ -171,6 +178,17 @@ def _native_network_call(
     """Kill/reap native DNS/TLS/reads, following the existing JWKS child pattern."""
     if not math.isfinite(timeout) or timeout <= 0 or max_output_bytes <= 0:
         raise ValueError("native network request bounds must be finite and positive")
+    from agent_runtime.native_network_scope import DohNetworkScope
+
+    if isinstance(check, DohNetworkScope) and operation != "browser_fetch":
+        return check.call(
+            operation,
+            arguments,
+            timeout=timeout,
+            use_system_proxy=use_system_proxy,
+            max_output_bytes=max_output_bytes,
+            trusted_search_endpoint=trusted_search_endpoint,
+        )
     check()
     deadline = monotonic() + timeout
     # ponytail: one short-lived child per native request; a persistent egress
@@ -210,31 +228,35 @@ def _native_network_call(
                 )
             return result["result"]
     except BaseException as primary:
-        # Cleanup has one bounded grace period, never another body read or unbounded wait.
-        cleanup_deadline = monotonic() + 0.5
-        steps: tuple[tuple[str, Callable[[], object]], ...] = (
-            ("group kill", lambda: _terminate_process_tree(child)),
-            *(
-                (("raw group kill", lambda: os.killpg(child.pid, signal.SIGKILL)),)
-                if os.name == "posix"
-                else ()
-            ),
-            ("process kill", child.kill),
-            *(
-                ("pipe close", pipe.close)
-                for pipe in (child.stdin, child.stdout, child.stderr)
-                if pipe is not None
-            ),
-            ("reap", lambda: child.wait(timeout=max(0.001, cleanup_deadline - monotonic()))),
-        )
-        for stage, action in steps:
-            try:
-                action()
-            except ProcessLookupError:
-                pass  # The child/group is already gone; continue closing and reaping.
-            except BaseException as cleanup:
-                primary.add_note(f"native network {stage} failed: {type(cleanup).__name__}")
+        _cleanup_network_child(child, primary)
         raise
+
+
+def _cleanup_network_child(child: subprocess.Popen[bytes], primary: BaseException) -> None:
+    # Cleanup has one bounded grace period, never another body read or unbounded wait.
+    cleanup_deadline = monotonic() + 0.5
+    steps: tuple[tuple[str, Callable[[], object]], ...] = (
+        ("group kill", lambda: _terminate_process_tree(child)),
+        *(
+            (("raw group kill", lambda: os.killpg(child.pid, signal.SIGKILL)),)
+            if os.name == "posix"
+            else ()
+        ),
+        ("process kill", child.kill),
+        *(
+            ("pipe close", pipe.close)
+            for pipe in (child.stdin, child.stdout, child.stderr)
+            if pipe is not None
+        ),
+        ("reap", lambda: child.wait(timeout=max(0.001, cleanup_deadline - monotonic()))),
+    )
+    for stage, action in steps:
+        try:
+            action()
+        except ProcessLookupError:
+            pass  # The child/group is already gone; continue closing and reaping.
+        except BaseException as cleanup:
+            primary.add_note(f"native network {stage} failed: {type(cleanup).__name__}")
 
 
 def _network_child() -> None:
@@ -242,47 +264,7 @@ def _network_child() -> None:
     operation, arguments, proxy, maximum, search_endpoint = json.load(sys.stdin)
     result: object
     try:
-        if operation == "fetch":
-            request = TypeAdapter(WebGatewayRequest).validate_python(arguments)
-            result = asdict(LocalWebGatewayTransport(use_system_proxy=proxy).execute(request))
-        elif operation == "search":
-            from agent_tools.web_search import WebSearchRequest
-
-            from agent_runtime.web_search import LocalWebSearchTransport
-
-            request_search = TypeAdapter(WebSearchRequest).validate_python(arguments)
-            result = asdict(
-                LocalWebSearchTransport(
-                    use_system_proxy=proxy, trusted_search_endpoint=search_endpoint
-                ).execute(request_search)
-            )
-        elif operation == "search_json":
-            from agent_runtime.search_providers import urllib_fetch_json
-
-            result = urllib_fetch_json(proxy, trusted_search_endpoint=search_endpoint)(arguments)
-        elif operation == "resolve":
-            from agent_security.ssrf import SsrfError, resolve_and_validate
-
-            try:
-                resolve_and_validate(arguments, resolver=public_host_ips)
-            except SsrfError as exc:
-                raise WebGatewayError(str(exc), reason="ssrf_blocked") from exc
-            result = None
-        elif operation == "browser_fetch":
-            from agent_tools.web_crawl import FetchProviderError, FetchRequest
-
-            from agent_runtime.crawl_gateway import Crawl4AIFetchProvider
-
-            browser_request = TypeAdapter(FetchRequest).validate_python(arguments["request"])
-            try:
-                with redirect_stdout(sys.stderr):
-                    result = asdict(
-                        Crawl4AIFetchProvider(arguments["headless"]).fetch(browser_request)
-                    )
-            except FetchProviderError as exc:
-                raise WebGatewayError(str(exc), reason=exc.reason) from exc
-        else:
-            raise WebGatewayError("unknown native network operation")
+        result = _execute_network_operation(operation, arguments, proxy, search_endpoint)
         output = json.dumps({"result": result})
         if len(output.encode()) > maximum:
             raise WebGatewayError(
@@ -291,6 +273,55 @@ def _network_child() -> None:
         sys.stdout.write(output)
     except WebGatewayError as exc:
         json.dump({"error": str(exc), "reason": exc.reason, "metadata": exc.metadata}, sys.stdout)
+
+
+def _execute_network_operation(
+    operation: str,
+    arguments: Any,
+    proxy: bool,
+    search_endpoint: str | None,
+) -> object:
+    result: object
+    if operation == "fetch":
+        request = TypeAdapter(WebGatewayRequest).validate_python(arguments)
+        result = asdict(LocalWebGatewayTransport(use_system_proxy=proxy).execute(request))
+    elif operation == "search":
+        from agent_tools.web_search import WebSearchRequest
+
+        from agent_runtime.web_search import LocalWebSearchTransport
+
+        request_search = TypeAdapter(WebSearchRequest).validate_python(arguments)
+        result = asdict(
+            LocalWebSearchTransport(
+                use_system_proxy=proxy, trusted_search_endpoint=search_endpoint
+            ).execute(request_search)
+        )
+    elif operation == "search_json":
+        from agent_runtime.search_providers import urllib_fetch_json
+
+        result = urllib_fetch_json(proxy, trusted_search_endpoint=search_endpoint)(arguments)
+    elif operation == "resolve":
+        from agent_security.ssrf import SsrfError, resolve_and_validate
+
+        try:
+            resolve_and_validate(arguments, resolver=public_host_ips)
+        except SsrfError as exc:
+            raise WebGatewayError(str(exc), reason="ssrf_blocked") from exc
+        result = None
+    elif operation == "browser_fetch":
+        from agent_tools.web_crawl import FetchProviderError, FetchRequest
+
+        from agent_runtime.crawl_gateway import Crawl4AIFetchProvider
+
+        browser_request = TypeAdapter(FetchRequest).validate_python(arguments["request"])
+        try:
+            with redirect_stdout(sys.stderr):
+                result = asdict(Crawl4AIFetchProvider(arguments["headless"]).fetch(browser_request))
+        except FetchProviderError as exc:
+            raise WebGatewayError(str(exc), reason=exc.reason) from exc
+    else:
+        raise WebGatewayError("unknown native network operation")
+    return result
 
 
 def _read_bounded_body(response: HTTPResponse, maximum: int) -> bytes:

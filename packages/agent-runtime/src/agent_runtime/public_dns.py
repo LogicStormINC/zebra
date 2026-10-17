@@ -12,6 +12,8 @@ from typing import Any
 
 from agent_tools.web_gateway import WebGatewayError
 
+from agent_runtime.doh_transport import current_doh_transport
+
 AddressInfo = tuple[int, int, int, str, tuple[Any, ...]]
 _FAKE_IP = ipaddress.ip_network("198.18.0.0/15")
 
@@ -54,7 +56,9 @@ def _doh_addresses(hostname: str) -> tuple[str, ...]:
         f"https://1.1.1.1/dns-query?{query}", headers={"Accept": "application/dns-json"}
     )
     # Literal public resolver IP, verified TLS, no env proxy or redirects.
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoDnsRedirect())
+    opener = current_doh_transport.get() or urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), _NoDnsRedirect()
+    )
     try:
         with opener.open(request, timeout=3) as response:
             if response.status != 200:
@@ -85,4 +89,10 @@ def _doh_addresses(hostname: str) -> tuple[str, ...]:
             and isinstance(item.get("data"), str)
         )
     except (ValueError, TypeError, KeyError) as exc:
+        if current_doh_transport.get() is not None:
+            opener.close()
         raise OSError("invalid public DNS response") from exc
+    except BaseException:
+        if current_doh_transport.get() is not None:
+            opener.close()
+        raise

@@ -205,6 +205,7 @@ class LocalToolGateway(ToolGatewayPort):
         trusted_local: bool = False,
         web_pipeline_v2: bool = False,
         network_cancellation_check: Callable[[], None] | None = None,
+        reuse_doh_transport: bool = False,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -228,7 +229,9 @@ class LocalToolGateway(ToolGatewayPort):
             artifact_payload_store, current_session_id=current_session_id
         )
         self._output_projector = output_projector
-        self._network_check = sticky_network_cancellation_check(network_cancellation_check)
+        self._network_check = sticky_network_cancellation_check(
+            network_cancellation_check, reuse_doh=reuse_doh_transport
+        )
         registry = ToolRegistry()
         tools = (
             ClarifyTool(),
@@ -470,6 +473,10 @@ class LocalToolGateway(ToolGatewayPort):
         return tuple(resolved)
 
     def close(self) -> None:
+        from agent_runtime.native_network_scope import DohNetworkScope
+
+        if isinstance(self._network_check, DohNetworkScope):
+            self._network_check.close()
         try:
             if self._subagents is not None:
                 self._subagents.close()
