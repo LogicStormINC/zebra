@@ -118,3 +118,45 @@ docker run --rm --network none -e PYTHONPATH=/usr/local/searxng \
 上线后 Git 切换暴露本机单文件 bind 的 inode 问题：运行进程仍持有内存配置，
 但容器配置路径不可读。已修正为 config/ 目录挂载，并在最终本地集成后重新
 激活；额外验证同内容原子替换 settings.yml 后仍可读取。该验证没有新增搜索。
+
+
+## 原题真实页面验收（CLOUD-SEARXNG-PAGE-01，2026-10-18）
+
+同原题、同 Worker 镜像，历史 C 对照一轮新配置 D；未更改产品或运行配置，
+未重启服务、未额外检索/模型探针。research/Flash/high/thinking enabled/
+tool_choice auto/transient_v2 实际记录均保持，Yahoo 唯一默认、Exa fast 可选。
+
+| 指标 | 历史 C | 新配置 D |
+| --- | ---: | ---: |
+| 首答案正文 React commit（排除进度） |58.788s|101.860s|
+| 整轮页面结束 |59.620s|102.134s|
+| 模型响应轮数 |7|9|
+| 工具调用 |17|24|
+| search / fetch / artifacts.read |4 / 6 / 7|5 / 12 / 7|
+| 模型请求区间合计 |41.197s|76.565s|
+| 最后一轮模型 |19.460s|43.248s|
+| 最后一轮输入 tokens |32,735|56,711|
+
+本次首正文增加73.27%、整轮增加71.31%，没有证明新配置带来页面收益。
+增加43.072s中模型区间增加35.368s（约82%），轮间增加6.852s；
+最后一轮高思考 reasoning tokens 1,293→7,301，首公开文本模型内等待
+7.855→35.942s。agent 另行核对 Redis Arrays/8.8 与 PG AIO 限制等，
+新增6个来源页面；这些选择包含版本边界核对，不能一概认定无用。
+搜索工具累计墙钟11.104→14.451s（4→5次），抓取13.220→29.045s
+（6→12次）；并发工具耗时不可直接相加为关键路径。三个主题首次搜索都有
+直接官方来源，未发生失败恢复。单次历史配对且取证不同，不能把变慢因果归于
+SearXNG，也不能声称配置改善来源召回或稳定延迟。
+
+SQL：历史 C 未采集；D 前后117.271s共享数据库 pg_stat_statements(track=all)
+窗口为顶层69,940次、嵌套11,271次（无重置/淘汰，排除统计自身查询）。
+包含后台 projector/worker轮询和观测，不可归属该会话，不可作为整轮SQL数或
+SQL降幅；BEGIN/COMMIT/set_config等占大量计数。未改生产观测配置/清统计。
+因此本次无法给出可信逐轮 SQL 对比，须另有请求级计数或独占环境才可测。
+
+所有24工具成功、9模型无provider重试；无 agent.research/子任务，故不构成
+researcher E2E。未选择 Exa，未观测限流；Exa控制文件逐字不变，无RPC。
+Search/API/Worker ID、启动、镜像、环境哈希不变且健康。临时浏览器计时器已移除。
+会话 conv_1792258380433_8ec0c9，root f20507ed-5ed3-448f-8aa3-bd2cc1e68f89。
+证据 .artifacts/cloud-searxng-page-01/{protocol,summary,run,browser-timing,
+metrics.raw.safe,sql.before,sql.after,runtime,search-log-summary}.json 与 final-page.png。
+本轮仅验收记录，本地集成、不推送；不补跑有利样本。

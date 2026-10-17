@@ -7098,3 +7098,7 @@ Yahoo requests including original8comparison and3functional checks,0models/Exa.
 Final transport/provider sources match original; API/Worker unchanged, all healthy;
 control/cache preserved. Directory contains configuration only, not secrets.
 Evidence directory-live-smoke.json/atomic-replace.json/final-seal.log.
+
+
+### CLOUD-SEARXNG-PAGE-01 — 2026-10-18
+One original-question real page D completed with current SearXNG config; high/Flash/research/transient_v2 and autonomous tools retained. First answer101.860s vs historical C58.788s (+73.27%); whole102.134 vs59.620s;9models/24tools (5search12fetch7read) vs7/17 (4/6/7). All successful, no limit/provider retry/Exa/researcher child. Added source/version verification and final high-thinking dominate extra time; no demonstrated page benefit or causal/stable regression claim. C SQL not captured; D shared117.271s database window69,940 top-level+11,271 nested includes background/observers, not per-run SQL or reduction. Existing counters only/no reset/config/restart/source changes; all service identities/env/images unchanged healthy, Exa state unchanged. Details docs/CLOUD_SEARXNG_CONFIG.md; private .artifacts/cloud-searxng-page-01/. No favorable rerun, push or remote deployment.
