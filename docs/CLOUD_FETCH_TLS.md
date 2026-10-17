@@ -125,3 +125,10 @@ Diagnostic Ruff and offline trace verifier pass. No claim of full-suite, SQL,
 model-round or real-page performance acceptance. Temporary overlay is removed
 after evidence collection; API/Worker images, restart counts and service config
 are unchanged. Primary unrelated dirty files remain untouched.
+
+Local integration: diagnostic runner/document committed as faee9401 on
+cloud-agent-trench; normal production transport source is unchanged by this slice.
+Actual primary regressions, including the preserved local DNS recovery changes:
+85 passed. All 21 pre-existing tracked dirty file hashes were verified intact
+before appending only this task's governance notes. Temporary overlay removal,
+original API/Worker images, healthy state and zero restart counts were verified.
