@@ -1,7 +1,10 @@
 name: zebra-web-search
 services:
   searxng:
-    image: ${ZEBRA_SEARXNG_IMAGE:-docker.io/searxng/searxng@sha256:ddd642cae6eac75412938fd846ddbf440a2df029cfeae8a562b8b205f4e35e25}
+    image: ${ZEBRA_SEARXNG_IMAGE:-zebra-searxng:network-deadline-01}
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     env_file: ./secrets/service.env
     environment:
