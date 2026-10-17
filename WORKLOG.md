@@ -15556,3 +15556,16 @@ No private Brave settings/credential created, API/Worker/Search not restarted,
 no upstream/model/replay calls. Next: obtain operator-provisioned key, generate
 private config, separately activate explicit engine for bounded native recall
 qualification; never infer performance from offline preparation.
+
+
+## 2026-10-17 — CLOUD-SEARCH-ALTERNATIVES-01
+
+Claimed before deleting the unused Brave-only preparer/check/overlay. Replaced
+Brave instructions with a cancellation notice; no private files touched. User
+confirmed keyless priority; all free-credit/key APIs deferred. Official research
+and pinned engine inspection only: Google already uses XML, DDG Web/Mojeek/
+Startpage contain challenge solvers so do not blindly run them; DDG normal HTML
+is a candidate only if a new route/interface differs from old blocked probes.
+Recorded bounded qualification and stop rules, not a new performance result.
+No backend search/model calls or service changes. Base settings/Compose/Dockerfile
+byte equality to445fa13f checked; existing verify.py help works and diff clean.

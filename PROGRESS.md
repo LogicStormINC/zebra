@@ -6808,3 +6808,15 @@ high/transient_v2, prompts or Trench changes. Network-disabled pinned-image
 checks and Compose configuration comparison pass; no real credential, upstream
 query, model call or running-service replacement. Actual recall/latency/page
 acceptance waits for credentials. See docs/CLOUD_BRAVE_OPTIONAL.md.
+
+
+## 2026-10-17 — Brave cancelled; keyless retrieval takes priority
+
+User cancelled Brave then explicitly prioritized no-key alternatives. Remove
+unused Brave preparer/check/Compose overlay; retain cancellation history and
+any private operator files. Yahoo default settings/Compose/Dockerfile unchanged;
+no service restart or API/provider/model requests. Read-only pinned source shows
+Google already uses XML and DDG HTML is distinct from challenge-handling Web;
+qualify only a genuinely different transport/interface before any activation.
+Serper/Exa/Tavily require keys despite free offers, so are deferred. No promise
+of recall/latency gain; bounded plan docs/CLOUD_SEARCH_ALTERNATIVES.md.

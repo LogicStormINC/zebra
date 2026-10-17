@@ -34198,3 +34198,14 @@ WEB-MODEL-LIMIT-01 audit amendment before edit: add packages/agent-core/src/agen
 - Acceptance: offline pinned native SearXNG YAML/engine/secret-file checks and Compose merged configuration validation; no real recall, latency or production acceptance before credentials and separately bounded native search qualification.
 
 - Acceptance: Review/prepared only. Offline pinned image with network=none verifies native config merge/Yahoo-only defaults, request header/query, secret validation/permissions and exclusive writes. Compose base/override differs only in settings mount (missing path cannot auto-create); Ruff/format pass. No real key/config created or service activation/search/model traffic. Original Yahoo default and all Cloud/Trench paths unchanged. Credential-dependent recall, latency and actual !brapi dispatch remain open; docs/CLOUD_BRAVE_OPTIONAL.md.
+
+
+### CLOUD-SEARCH-ALTERNATIVES-01
+
+- Status: Ready → In Progress 2026-10-17, claimed before changes.
+- Human owner: Luke Ding; executor: Codex. Branch/worktree: codex/cloud-search-alternatives-01; zebra-agent; base445fa13f.
+- Owned paths: docker/web-search/prepare_brave.py; docker/web-search/check_brave.py; docker/web-search/compose.brave.yml (remove unused Brave-only preparation); docs/CLOUD_BRAVE_OPTIONAL.md (cancellation); docs/CLOUD_SEARCH_ALTERNATIVES.md(new); docs/AGENT_TASKS.md; PROGRESS.md; WORKLOG.md.
+- Scope: user cancels Brave. Remove unused optional integration, preserve historical record and any operator private files. Read-only native provider inspection and primary-source research for alternatives; no new backend implementation/registration/model/replay/search/service/global proxy/Trench changes. Retain Yahoo default, fresh authority/DNS/SSRF/cancel/high/transient_v2.
+- Acceptance: exact base settings/Compose/Dockerfile unchanged; deletion/reference/status checks, existing operator CLI --help; clearly distinguish no-key candidates from free API registration and unmeasured recall/cost/latency.
+
+- Acceptance: Review/local cancellation and keyless plan prepared. User priority amendment: no-key candidates first; API signup/credentials/integration deferred. Removed only tracked unused Brave scripts/overlay; retained cancellation record/private files. Normal settings/Compose/Dockerfile byte-equal base, operator help/diff checks pass. No actual backend qualification, service restart or model call; no new recall/performance claim. docs/CLOUD_SEARCH_ALTERNATIVES.md.
