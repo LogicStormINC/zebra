@@ -94,3 +94,11 @@ No real-page model cohort is triggered by these results: the matching cold/overa
 stability gate remains open. High thinking and transient_v2 remain configured by
 the existing composition. Any subsequent local activation must retain the original
 service environment, entrypoint, commands, API/Search images and current DNS repair.
+
+Local source integration completed as `d1b366da` on `cloud-agent-trench`. All
+previous tracked dirty bytes outside the owned DNS file were verified unchanged;
+its original `public_addresses` AST (including Teredo recovery) was preserved.
+Primary-checkout combined DNS/cancellation regression:85passed. This includes
+the pre-existing dirty DNS tests; it is distinct from the98-test clean slice.
+Running Worker/API/Search images and configuration have not been switched.
+Temporary network overlay removed; no further model/page sample was run.
