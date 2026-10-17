@@ -1,7 +1,7 @@
 name: zebra-web-search
 services:
   searxng:
-    image: ${ZEBRA_SEARXNG_IMAGE:-zebra-searxng:network-deadline-01}
+    image: ${ZEBRA_SEARXNG_IMAGE:-zebra-searxng:failure-timing-01}
     build:
       context: .
       dockerfile: Dockerfile
