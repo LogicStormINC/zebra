@@ -6700,3 +6700,14 @@ Exactly3varied high/Flash/v2pagepairs: Node7models8tools/pause32.962s→4/7/comp
 20.395s, postcandidate forced2models1fetch→0/0. Python slower7.750→9.664s retained;
 SQLite faster but unchanged contract, not patch causality. No general speedup/SQL
 claim. B1 source choice/artifact range inefficiency remain. docs/CLOUD_SEARCH_DECISION.md.
+
+## 2026-10-17 - Reject source-choice checklist without stable gain
+
+CLOUD-SOURCE-DECISION-CHECK-01 runs fixed4realpage pairs/high/Flash/transient_v2.
+Checklist candidate13→14models/14→15tools/medianbody12.466→13.040s; no source
+promotion. Original B1 initial bad search result not reproduced; public commentary
+does not establish internal model cause. Normal Worker9e1a5f95 restored, prior
+classification/egress/connection work preserved. Two original public candidates
+(SQLiteB2/PG-A4) independently reproduce false URL citations caused by Chinese
+right parenthesis; separate minimal delimiter repair warranted. No broad prompt/
+tool control, authority/Trench change, SQL reduction or generalized speedup claim.

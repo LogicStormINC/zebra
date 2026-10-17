@@ -15420,3 +15420,13 @@ Python slower retained; SQLite unchanged contract, no universal speedup. Existin
 stage checker rejects R1/R2 mixed batches, retained/no infrastructure repair;
 overall DOM/canonical/counts reconciled independently. No old Run resume, unrelated
 dirty changes/push/remote deploy. Details docs/CLOUD_SEARCH_DECISION.md.
+
+2026-10-17 CLOUD-SOURCE-DECISION-CHECK-01: trace B1 actual public commentary and
+tool timing; overlapping calls proposed before primary result, no quality retry.
+Freeze one replacement checklist, composition+64tests/Ruff/mypy pass. Fixed8pages
+A1B1B2A2A3B3B4A4 over4questions allcomplete/high/v2, no retry/toolfailure. Reject:
+models13→14/tools14→15/medianbody12.466→13.040s; source remains experimental,
+normal9e1a5f95 restored. No favorable extra Runs or SQL claim. New unrelated-to-B1
+but relevant redundant-generation cause: Chinese right parenthesis swallowed by
+citation regex in two captured original candidates. Pure same-candidate quality
+replay reproduces; no model/private reasoning or historical data changes.
