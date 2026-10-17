@@ -1,6 +1,53 @@
 """Committed answer event contracts."""
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+class RequestedVersionScopePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    subject: str = Field(min_length=1, max_length=64)
+    version: str = Field(min_length=1, max_length=32)
+
+
+class CheckedVersionScopePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    subject: str = Field(min_length=1, max_length=64)
+    versions: list[Annotated[str, Field(min_length=1, max_length=32)]] = Field(max_length=12)
+    source_refs: list[Annotated[str, Field(min_length=1, max_length=2048)]] = Field(max_length=32)
+    basis: Literal["cited_fetched_source_version_only"]
+
+
+class UnresolvedVersionScopePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    subject: str = Field(min_length=1, max_length=64)
+    requested_version: str = Field(min_length=1, max_length=32)
+    reason: Literal["requested_version_scope_not_established"]
+    observed_versions: list[Annotated[str, Field(min_length=1, max_length=32)]] = Field(
+        max_length=12)
+
+
+class VersionScopeReportPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    requested_scope: list[RequestedVersionScopePayload] = Field(max_length=12)
+    checked_scope: list[CheckedVersionScopePayload] = Field(max_length=12)
+    unresolved_points: list[UnresolvedVersionScopePayload] = Field(max_length=12)
+    status: Literal["partial", "matched"]
+    semantic_coverage_certified: Literal[False] = False
+
+    @model_validator(mode="after")
+    def validate_scope_correspondence(self) -> "VersionScopeReportPayload":
+        expected = {
+            (scope.subject.casefold(), scope.version) for scope in self.requested_scope
+            if not any(checked.subject.casefold() == scope.subject.casefold()
+                       and scope.version in checked.versions for checked in self.checked_scope)
+        }
+        actual = {(scope.subject.casefold(), scope.requested_version)
+                  for scope in self.unresolved_points}
+        if expected != actual or bool(expected) != (self.status == "partial"):
+            raise ValueError("version scope status must match checked ranges and unresolved points")
+        return self
 
 
 class DeliveryAssessmentPayload(BaseModel):
@@ -15,6 +62,14 @@ class DeliveryAssessmentPayload(BaseModel):
     task_type: str | None = None
     goal: str | None = None
     required_outcomes: list[str] = Field(default_factory=list)
+    version_scope: VersionScopeReportPayload | None = None
+
+    @model_validator(mode="after")
+    def reject_complete_with_partial_version_scope(self) -> "DeliveryAssessmentPayload":
+        if (self.status == "complete" and self.version_scope is not None
+                and self.version_scope.status != "matched"):
+            raise ValueError("complete delivery cannot have unresolved version scope")
+        return self
 
     @field_validator("status")
     @classmethod

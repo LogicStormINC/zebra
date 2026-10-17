@@ -5,6 +5,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
+from agent_core.harness.delivery_assessment import RequestedVersionScope, requested_version_scopes
+
 
 class AgentTaskType(StrEnum):
     ANSWER = "answer"
@@ -27,6 +29,7 @@ class TaskAcceptanceContract:
     require_matching_citation: bool = False
     require_verification: bool = False
     require_artifact: bool = False
+    version_scopes: tuple[RequestedVersionScope, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.goal.strip():
@@ -39,6 +42,10 @@ class TaskAcceptanceContract:
             raise ValueError("task acceptance required answer terms must not be blank")
         if not self.required_outcomes or any(not item.strip() for item in self.required_outcomes):
             raise ValueError("task acceptance outcomes must not be blank")
+        if len(self.version_scopes) > 12 or any(
+            not isinstance(scope, RequestedVersionScope) for scope in self.version_scopes
+        ):
+            raise ValueError("task acceptance version scopes are invalid")
 
 
 def infer_task_contract(user_input: str) -> TaskAcceptanceContract:
@@ -121,6 +128,7 @@ def infer_task_contract(user_input: str) -> TaskAcceptanceContract:
         require_matching_citation=requires_citation,
         require_verification=requires_verification,
         require_artifact=task_type is AgentTaskType.CREATE,
+        version_scopes=requested_version_scopes(user_input) if requires_evidence else (),
     )
 
 
@@ -144,6 +152,16 @@ def parse_task_contract(
     if not isinstance(raw_terms, list) or len(raw_terms) > 20:
         raise ValueError("task acceptance required_answer_terms is invalid")
     required_terms = tuple(_bounded_text(item, "", limit=160) for item in raw_terms)
+    raw_scopes = value.get("versionScopes", value.get("version_scopes"))
+    scopes = inferred.version_scopes
+    if raw_scopes is not None:
+        if not isinstance(raw_scopes, list) or len(raw_scopes) > 12:
+            raise ValueError("task acceptance version scopes are invalid")
+        if any(not isinstance(item, Mapping) for item in raw_scopes):
+            raise ValueError("task acceptance version scope must be an object")
+        scopes = tuple(RequestedVersionScope(str(item.get("subject", "")),
+                                            str(item.get("version", "")))
+                       for item in raw_scopes)
     max_characters = _optional_positive_int(
         value.get("maxCharacters", value.get("max_characters")),
         inferred.max_characters,
@@ -165,6 +183,7 @@ def parse_task_contract(
         ),
         require_verification=_flag(value, "requireVerification", inferred.require_verification),
         require_artifact=_flag(value, "requireArtifact", inferred.require_artifact),
+        version_scopes=scopes,
     )
 
 

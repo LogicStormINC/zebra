@@ -2,10 +2,12 @@
 
 from collections.abc import Callable
 
+from agent_core.domain.events import EventType
 from agent_core.domain.identifiers import new_message_id
 from agent_core.domain.messages import MessageRole, SessionMessage
 from agent_core.domain.modeling import ModelCompletion
 from agent_core.harness.attempt_result import build_attempt_result
+from agent_core.harness.delivery_assessment import _delivery_assessment, qualify_version_scope
 from agent_core.harness.evidence_ledger import EvidenceLedger, evidence_ledger
 from agent_core.harness.models import (
     HarnessAttemptOutcome,
@@ -303,6 +305,11 @@ def finalize_without_tools(
         media_refs=ledger.media_refs,
         artifact_refs=ledger.artifact_refs,
     )
+    completion, delivery = qualify_version_scope(
+        completion, delivery, context.task.acceptance_contract,
+        (event.payload for event in emitted_events
+         if event.event_type is EventType.TOOL_EXECUTION_COMPLETED),
+    )
     emitted_events.append(
         answer_committed_event(
             completion,
@@ -418,31 +425,6 @@ def _quality_revision_feedback(
         f"Reason: {reason}. Missing requirements: {missing}. "
         f"{' '.join(instructions)} Do not claim unsupported facts."
     )
-
-def _delivery_assessment(
-    status: str,
-    *,
-    satisfied: tuple[str, ...] = (),
-    unmet: tuple[str, ...] = (),
-    evidence_refs: tuple[str, ...] = (),
-    media_refs: tuple[str, ...] = (),
-    artifact_refs: tuple[str, ...] = (),
-    contract: object | None = None,
-) -> dict[str, object]:
-    required_outcomes = tuple(getattr(contract, "required_outcomes", ()))
-    result: dict[str, object] = {
-        "status": status,
-        "satisfied": list(satisfied),
-        "unmet": list(unmet),
-        "evidence_refs": list(evidence_refs),
-        "media_refs": list(media_refs),
-        "artifact_refs": list(artifact_refs),
-    }
-    if contract is not None:
-        result["task_type"] = str(getattr(contract, "task_type", ""))
-        result["goal"] = str(getattr(contract, "goal", ""))
-        result["required_outcomes"] = list(required_outcomes)
-    return result
 
 def _with_verification_gap(answer: str) -> str:
     notice = (
