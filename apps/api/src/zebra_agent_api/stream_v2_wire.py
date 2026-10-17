@@ -85,6 +85,13 @@ def _commit(value: dict[str, object], event_id: object) -> Iterator[str]:
     if not isinstance(call, str) and not isinstance(event_id, str):
         raise ValueError("committed answer requires canonical event identity")
     identity = f"message:{call}" if isinstance(call, str) else f"message:event:{event_id}"
+    # ponytail: one bounded clear prevents legacy prefix deduplication from losing
+    # a changed suffix's replacement start; no consumer or canonical body rewrite.
+    yield from _chunks(
+        "zebra.message_replace",
+        {"message_id": identity, "model_call_id": call},
+        "", key="content",
+    )
     yield from _chunks(
         "zebra.message_replace",
         {

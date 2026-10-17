@@ -31,6 +31,12 @@ def test_canonical_commit_follows_complete_replacement_and_preserves_assessment(
     assert last["name"] == "zebra.answer_committed"
     assert last["value"]["replacement_committed"] is True
     assert last["value"]["delivery_assessment"] == {"status": "complete"}
+    # A clear starts a new replacement even when accepted text shares the raw
+    # model response's first chunks. The exact authoritative body follows it.
+    clear = parse_record(frames[0][1])[1]
+    assert clear["name"] == "zebra.message_replace"
+    assert clear["value"]["content"] == "" and clear["value"]["last"] is True
+    assert parse_record(frames[1][1])[1]["value"]["chunk_index"] == 0
     assert all(len(frame.encode()) <= 16384 for _, frame in frames)
     assert (
         "".join(parse_record(frame)[1]["value"]["content"] for _, frame in frames[:-1])

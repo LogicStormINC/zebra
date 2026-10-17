@@ -34,7 +34,7 @@ assessment，避免破坏格式。模型原始响应事件不变；接受的ANSW
 
 严格ANSWER_COMMITTED事件契约新增有界可选version_scope；旧事件仍有效；
 禁止complete与partial范围并存，状态必须与checked/unresolved对应。
-现有API v2 wire透明传递assessment，不改Trench产品逻辑或SDK，不改数据库schema。
+API与Worker共享新增事件契约；v2 wire保留assessment与精确正文，不改Trench产品逻辑或SDK，不改数据库schema。
 
 ## 无模型验收
 
@@ -47,3 +47,34 @@ E仅8.0；两者请求仍是8，均保守标partial，分别列明范围。原�
 不变；新提交事件完整schema往返通过。新Worker镜像断网重复快照验收后，才做
 本地Worker更新与唯一原题页面F。高思考/v2/Yahoo默认/Exa fast与冷却回退保留，
 遇限流停止、不替换样本；结果另记。
+
+## 原题页面 F 与兼容修复
+
+本地已启用精确四文件Worker衍生镜像及API的共享事件契约/wire衍生镜像。
+Search容器ID、启动时间、镜像、环境和持久冷却内容保持不变；API/Worker环境
+与安全选项保持，服务健康。仅本地集成cloud-agent-trench，不推送或远端部署。
+
+唯一F会话为conv_1792261003864_219971，原Run共10轮模型、17次工具
+（3search/9fetch/5artifacts.read）；全部high/thinking/auto、transient_v2，
+无Provider错误/重试或限流。模型调用区间合计45.436秒，末轮14.905秒。
+这些是该样本观测，不能证明性能提升。
+
+提交事件正确列出请求PostgreSQL18/Redis8、已核对来源18/8.0、Redis8范围未决，
+交付partial；页面最终显示版本范围说明。原文仍未核对8.8/Array；本契约阻止
+局部覆盖被认证完整，不替代缺失的事实核对，不认证语义正确性。
+
+首次页面验收发现两个兼容问题：旧API严格事件契约拒绝新增字段；更新共享契约后，
+保存的raw/accepted帧又在真实未修改消费端复现stream_replacement_gap：相同前缀
+被去重而新增后缀失去replacement起点。公共提交wire增加一个有界空replacement帧，
+再发送原封不动的权威正文；保留原调用/事件配对、游标顺序与授权，不改消费端。
+实际消费端对保存帧的无模型往返已通过，页面随后恢复原Run且仍为10轮模型。
+
+恢复过程包含API更新与只读页面重载，原浏览器有界计时也被重复回放覆盖，故F的
+正常首正文/整轮页面延迟均不作为有效配对数据。不替换失败样本、不追加模型/搜索。
+共享SQL窗口包含背景及恢复流量，不声称单Run查询数或SQL降幅。
+
+64项core聚焦回归与9项API wire回归通过（共73项；兼容阶段16项中包含重复的7项
+scope测试）；Ruff和四个core文件strict mypy通过。保存帧实际消费端校验、镜像断网
+检查、部署源码摘要/健康/环境与Search进程及冷却核验通过。证据保存在私有
+.artifacts/cloud-version-scope-01/，包含page/summary.json、final-page.png及final-seal.log。
+下一轮若评估性能，应另行取得干净页面样本；本轮不追加验收请求。
