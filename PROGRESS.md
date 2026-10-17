@@ -6879,3 +6879,17 @@ no retries/reset/rotation; one cooldown route check returnsYahoo with no new Exa
 frames/state change. No unvalidated performance code applied or page/model run.
 Normal service identity/runtime unchanged; existing offline control check passes.
 Docs CLOUD_EXA_OPTIONAL.md records measured boundaries and uncompleted pairing.
+
+## 2026-10-17 — Post-cooldown Exa pairing: instant rejected
+
+CLOUD-EXA-PAIR-02 checked persisted deadline naturally expired, then executed
+exact frozen4pairs/8searches, AB/BA/BA/AB, same pool/egress/state/arguments except
+typefast/instant. Zero errors/limits/fallback; first-search officialtarget hit@1
+and@5 both4/4 in each mode. Warm native tools mediansfast681.231ms versus
+instant923.501ms: instant35.56percent slower, only1/4faster pairs. Upstream
+self-reported searchTime medians339.05/617.40ms corroborate remote slow portion;
+do not claim internal server-stage tracing. Cold669.113ms control excluded.
+Gate fails: retain fast optional/Yahoo sole default; no speculative performance
+source change, expanded samples, models or pages. Previous limited cohort retained,
+no state reset/identity/egress rotation. Normal service snapshots identical,
+owned candidate removed, one-shot follow-up deleted. Details CLOUD_EXA_OPTIONAL.md.

@@ -15653,3 +15653,35 @@ unchanged Exa phase-log count. No extra Exa requests. Offline assert check passe
 Source optimization/page/model acceptance remains pending; do not promote type
 without successful controlled paired evidence. Normal containers preserved,
 owned diagnostic removed; exact evidence/docs retained, no push or deployment.
+
+
+## 2026-10-17 — CLOUD-EXA-PAIR-02 scheduled continuation
+
+User explicitly requests after-cooldown fast/instant no-model pairs. Claimed Ready
+task on codex/cloud-exa-pair-02/basefa43cd21 before prep. Shared control still had
+~566s until2026-10-17T13:45:17Z; zero Exa requests during this preparation.
+Existing native offline check passes; isolated zebra-exa-pair-02 ready with same
+image/egress/persistent state and only private instrumentation. Frozen original
+four queries/allowsets, AB/BA/BA/AB, max8cells, stop first errors/limit/fallback,
+warm tools timing and officialtarget hit@5/rank. Baseline sources/default untouched.
+One future continuation registered via app heartbeat exa-fast-instant; it must
+recheck state before any request, stop on renewed limit with no retry/reset/
+rotation, retain prior aborted cohort, clean only owned container and compare
+normal services. Protocol/driver/analyzer/snapshot in .artifacts/cloud-exa-pair-02/.
+Not a completed paired acceptance; no model/page calls or production changes.
+
+## 2026-10-17 — CLOUD-EXA-PAIR-02 execution and closeout
+
+Heartbeat continuation checks persisted cooldown naturally expired by~198s,
+blockedfalse/leaseexpired; no reset/egress/identity rotation. Run frozen4pairs,
+8calls AB/BA/BA/AB; zero error/limit/fallback, no extra queries. ExistingCloud
+normalizer confirms officialtarget ranks1in all8responses (hit@1/@5both4/4).
+Warm tools fast656.312/706.150/605.612/769.095ms versusinstant679.557/655.287/
+1167.444/1297.257ms; median681.231vs923.501ms, instant35.56percent slower and
+only1/4pairs faster. Native connects/TLS0all; serversearchTime median339.05vs
+617.40ms; cold669.113ms separate, never count it as candidate gain. Gate rejected,
+no production source/default/performance changes, no additional/model/page calls.
+Previous limited cohort preserved. Same normal image/envhash/start/restarts,
+diagnosticcontainer removed, exa-fast-instant one-shot automation deleted.
+Updated docs/task/progress; exact private receipts .artifacts/cloud-exa-pair-02/.
+Local commit/integration only, no push/deploy. No further quota probes scheduled.
