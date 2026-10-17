@@ -43,6 +43,7 @@ from agent_runtime.research_context import (
     delegate_durable_research,
     durable_research_contract,
     parse_context_mode,
+    research_search_domains,
 )
 from agent_runtime.subagents import (
     SubagentLimitError,
@@ -245,7 +246,13 @@ class ResearchSubagentTool:
     @property
     def contract(self) -> ToolContract:
         return (
-            durable_research_contract(research_contract)
+            durable_research_contract(
+                research_contract,
+                web_search_allowed=bool(research_search_domains(
+                    self._parent_tool_profile, self._parent_network_profile,
+                    self._web_search_endpoint,
+                )),
+            )
             if not self._wait_for_result
             else research_contract
         )

@@ -99,9 +99,7 @@ def test_gateway_durable_flag_reaches_the_tool(tmp_path: Path) -> None:
         durable_delegation=True,
     )
     try:
-        research = next(
-            tool for tool in gateway.model_tools if tool.name == "agent.research"
-        )
+        research = next(tool for tool in gateway.model_tools if tool.name == "agent.research")
         assert research is not None  # still advertised; only the wait changes
     finally:
         gateway.close()
@@ -153,3 +151,32 @@ def test_durable_tool_forwards_frozen_child_budgets(tmp_path: Path, monkeypatch)
 
     assert captured["max_model_calls"] == 5
     assert captured["max_tool_calls"] == 7
+
+
+@pytest.mark.parametrize("profile,allowed", [("none", False), ("full-gateway", True)])
+def test_durable_research_description_matches_parent_search_authority(tmp_path, profile, allowed):
+    from agent_core.domain.tool_profiles import ToolProfile
+    from agent_security.network_profile import parse_network_profile
+
+    coordinator = LocalResearchSubagentCoordinator(SlowRunner())
+    try:
+        tool = ResearchSubagentTool(
+            coordinator,
+            tmp_path,
+            wait_for_result=False,
+            parent_tool_profile=ToolProfile.GENERAL,
+            parent_network_profile=parse_network_profile(profile),
+            web_search_endpoint="https://search.example.com/",
+        )
+        description = tool.contract.description
+        expected = (
+            "This parent authorizes child web.search"
+            if allowed
+            else "This parent does not authorize child web.search"
+        )
+        assert expected in description
+        assert "read-only" in description and "depth 1" in description
+        assert "cannot web.fetch" in description
+        assert "not automatically child-readable" in description
+    finally:
+        coordinator.close()

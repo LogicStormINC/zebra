@@ -15826,3 +15826,38 @@ unchanged. Final screenshot and safe receipts in .artifacts/cloud-research-web-0
 Browser tab retained as deliverable; no signed-grant or service settings modified.
 Local doc commit/integration only, no push/remote deploy. Remaining business proof
 requires a naturally selected researcher execution; do not claim one from this Run.
+
+
+## 2026-10-18 — CLOUD-ARTIFACT-LOCATE-01: bounded keyword reads implemented; page speedup unproven
+
+Implemented optional literal query on the authorized immutable Artifact reader,
+accurate model-visible snapshot ranges in a separate output_coverage observation,
+and skipping unrelated DeferredRuntime preparation for Artifact reads. Existing
+durable research tool description now states parent-authorized search and actual
+read-only/depth1 restrictions. No system prompt/routing/Trench/engine change.
+Three saved original snapshots pass exact-offset checks; focused64passed/2DB skips,
+additional observation/recovery/harness46passed/2baseline-known parallel-safe
+assertions (baseline gateway reproduced; no unrelated repair), Ruff/mypy6files pass.
+Worker only updated from exact live image with6source copies, original effective
+configuration retained; API and original Search/MCP/PID/control unchanged/healthy.
+Live no-model original snapshot succeeds, foreign session denied,0sandbox/model/search.
+
+One frozen original-question B on normal logged-in page (research/Flash/high,
+transient_v2; no forced delegation/provider) completed: first real answer React
+138.177s vsA83.336s, whole page139.482s vs84.614s;14vs10models,
+37vs24tools (search6vs5/fetch11vs7/Artifact20vs12), all successful.
+Runtime provisioning0vs1, but13keyword reads include4no-matches; directory
+matches and fallback offset scans did not reduce read volume (86,500vs87,600chars).
+Last input72,397vs56,708tokens; model intervals107.668vs56.125s, final
+model43.496vs21.243s; inter-round26.843vs23.117s, startup3.090vs3.017s.
+No researcher calls/children, no limits or new Exa frames. Yahoo sole default,
+Exa optional fast/cooldown/fallback unchanged. Browser observer removed; result kept open.
+
+Performance acceptance FAILED for this single historical A/oneB observation;
+no stable benefit or causal slowdown percentage claim, no extra model sample.
+Implementation is available locally, but do not call the overall latency goal done.
+Next bounded question is why first literal matches hit directories and why misses
+cause large fallback reads/source expansion; researcher business path remains unproven.
+Evidence: .artifacts/cloud-artifact-locate-01/{snapshot-check.json,live/after.json,
+live/probe.json,page/summary.json,page/run.json,page/browser-timing.json}.
+No full-suite gate, push, remote deployment or extra quota probe claimed.

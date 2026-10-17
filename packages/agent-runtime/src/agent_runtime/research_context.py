@@ -20,12 +20,24 @@ from agent_tools.contracts import ToolContract
 from agent_tools.errors import ToolArgumentError
 
 
-def durable_research_contract(base: ToolContract) -> ToolContract:
+def durable_research_contract(
+    base: ToolContract,
+    *,
+    web_search_allowed: bool = False,
+) -> ToolContract:
     return replace(
         base,
         description=(
             base.description
-            + " Cloud children may explicitly choose fresh, capsule, fork_tail, or "
+            + " Child tools are read-only workspace and governed Artifact tools. "
+            + (
+                "This parent authorizes child web.search through the configured search endpoint. "
+                if web_search_allowed
+                else "This parent does not authorize child web.search. "
+            )
+            + "Children cannot web.fetch, run shell commands, modify workspace files or "
+            "delegate again (depth 1). Parent Artifact URIs are not automatically child-readable. "
+            "Cloud children may explicitly choose fresh, capsule, fork_tail, or "
             "resume; every inherited mode is bounded and source-attributed."
         ),
         argument_properties={

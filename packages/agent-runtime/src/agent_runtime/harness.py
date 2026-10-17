@@ -392,10 +392,11 @@ class LocalToolGateway(ToolGatewayPort):
     def execute(self, tool_call: ToolCall) -> ToolResult:
         if self._network_check is not None:
             self._network_check()
-        # ponytail: only audited default native Web handlers skip provisioning;
-        # custom transports and all other tools retain the conservative boundary.
+        # ponytail: session-scoped Artifact reads use the control plane, not the sandbox.
+        # Only audited native Web handlers otherwise skip provisioning.
         if (isinstance(self._runtime, DeferredRuntime)
-                and tool_call.name not in self._runtime_free_web_tools):
+                and tool_call.name not in self._runtime_free_web_tools
+                and tool_call.name != "artifacts.read"):
             self._runtime.ensure_ready()
         try:
             result = self._executor.execute(tool_call)

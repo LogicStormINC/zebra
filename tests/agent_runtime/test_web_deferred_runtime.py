@@ -115,3 +115,81 @@ def test_stopped_native_web_neither_prepares_nor_enters_handler(tmp_path: Path) 
     finally:
         gateway.close()
         deferred.close()
+
+
+@pytest.mark.parametrize("denied", [False, True])
+def test_artifact_read_skips_sandbox_but_preserves_reader_authority(tmp_path: Path, denied: bool):
+    from agent_core.domain.identifiers import new_session_id
+
+    session = new_session_id()
+    prepared = []
+
+    class Reader:
+        def read_payload_bytes(self, session_id, uri):
+            assert session_id == session and uri == "artifact://snapshot"
+            if denied:
+                raise PermissionError("session denied")
+            return b"prefix needle suffix"
+
+    runtime = LocalRuntime()
+
+    def prepare():
+        prepared.append(True)
+        return runtime, runtime.provision(workspace_root=str(tmp_path))
+
+    deferred = DeferredRuntime(prepare)
+    gateway = LocalToolGateway(
+        tmp_path,
+        runtime=deferred,
+        current_session_id=str(session),
+        artifact_payload_reader=Reader(),
+    )
+    try:
+        result = gateway.execute(
+            call("artifacts.read").model_copy(
+                update={
+                    "arguments": {"uri": "artifact://snapshot", "query": "needle"},
+                }
+            )
+        )
+        assert result.status is (ToolCallStatus.FAILED if denied else ToolCallStatus.EXECUTED)
+        assert prepared == []
+        assert gateway.execute(call("files.list")).status is ToolCallStatus.EXECUTED
+        assert prepared == [True]
+    finally:
+        gateway.close()
+        deferred.close()
+
+
+def test_cancelled_artifact_read_never_enters_reader_or_prepares(tmp_path: Path):
+    from agent_core.domain.identifiers import new_session_id
+
+    def fail(*args):
+        raise AssertionError("must not read or prepare")
+
+    class Reader:
+        read_payload_bytes = fail
+
+    def cancelled():
+        raise asyncio.CancelledError("Task stopped")
+
+    deferred = DeferredRuntime(fail)
+    gateway = LocalToolGateway(
+        tmp_path,
+        runtime=deferred,
+        current_session_id=str(new_session_id()),
+        artifact_payload_reader=Reader(),
+        network_cancellation_check=cancelled,
+    )
+    try:
+        with pytest.raises(asyncio.CancelledError):
+            gateway.execute(
+                call("artifacts.read").model_copy(
+                    update={
+                        "arguments": {"uri": "artifact://snapshot", "query": "needle"},
+                    }
+                )
+            )
+    finally:
+        gateway.close()
+        deferred.close()

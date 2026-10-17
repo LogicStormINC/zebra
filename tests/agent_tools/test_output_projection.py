@@ -46,3 +46,47 @@ def test_tool_output_projector_keeps_small_stdout_and_stderr_exact() -> None:
 
     assert projected.model_output == "[stdout]\nok\n\n[stderr]\nwarning"
     assert projected.metadata["output_truncated"] is False
+
+
+def test_projected_ranges_match_actual_snapshot_text_and_reach_model() -> None:
+    import json
+
+    from agent_core.domain.identifiers import new_tool_call_id
+    from agent_core.domain.tools import ToolCallStatus, ToolResult
+    from agent_core.harness.model_step_support import tool_result_content
+
+    content = "前文" + "0123456789" * 70 + "结尾"
+    projected = ToolOutputProjector(lambda *_: "artifact://snapshot", max_model_characters=256)
+    result = projected.project_text(content, artifact_name="snapshot.txt")
+    coverage = result.metadata["output_coverage"]
+    (start, head_end), (tail_start, end) = coverage["included_ranges"]
+    assert start == 0 and end == len(content)
+    marker = "\n\n[... middle omitted from model context ...]\n\n"
+    assert result.model_output == (
+        content[start:head_end]
+        + marker
+        + content[tail_start:end]
+        + "\n\n[Complete output: artifact://snapshot]"
+    )
+    assert head_end < tail_start
+    observation = json.loads(
+        tool_result_content(
+            ToolResult(
+                tool_call_id=new_tool_call_id(),
+                status=ToolCallStatus.EXECUTED,
+                output=result.model_output,
+                metadata={"coverage": {"business": True}, **result.metadata},
+            )
+        )
+    )
+    assert observation["output_coverage"] == coverage
+    assert observation["coverage"] == {"business": True}
+    small = projected.project(stdout="hello", stderr="", artifact_name="small.txt")
+    assert small.metadata["output_coverage"] == {
+        "total_characters": 14,
+        "included_ranges": [[9, 14]],
+    }
+    transformed = projected.project_text(
+        "original", artifact_name="small.txt", small_output="other"
+    )
+    assert transformed.metadata["output_coverage"]["included_ranges"] == []

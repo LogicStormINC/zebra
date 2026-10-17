@@ -259,6 +259,7 @@ _MODEL_OBSERVATION_KEYS = (
     "artifact_id",
     "artifact_uri",
     "coverage",
+    "output_coverage",
     "detail",
     "exit_code",
     "failure_reason",
