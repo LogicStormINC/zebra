@@ -15569,3 +15569,22 @@ is a candidate only if a new route/interface differs from old blocked probes.
 Recorded bounded qualification and stop rules, not a new performance result.
 No backend search/model calls or service changes. Base settings/Compose/Dockerfile
 byte equality to445fa13f checked; existing verify.py help works and diff clean.
+
+
+## 2026-10-17 — CLOUD-KEYLESS-RECALL-01
+
+Claim before isolated diagnostics. Read original old raw/proxy/DoH probes to
+separate new egress/native POST conditions from failed combinations. Freeze
+four public questions and per-engine stop rules. Same pinned Search image,
+no published ports, temporary settings/cache, ordinary TLS and existing SOCKS.
+Google403 once stops; DDGzhCN4/4success but RedisGA/SQLite official sources miss,
+Yahoo3/4targets. Preserve strict wwwSQLite false negative, correct only known
+apex alias in offline adjudication; native Cloud normalizer agrees3/4vs2/4.
+Predeclare DDGall one-parameter contrast; first request CAPTCHA, stop.10total
+search calls, no models/Run writes/replays/new prompts/Trench/globalproxy edits.
+Diagnostic locale.py shadowing fixed before any extra call, no rerun; system
+Python config-check dependency error corrected in network-none image venv.
+Retain raw/normalized results/logs. DDG observed median848.465 vs1123.547ms is
+small fixed-order/provider/cache-confounded, not accepted speedup. No12case
+expansion or pagepair without recall benefit. Owned container removed; normal
+API/Worker/Search image/envhash/start/restarts identical; source configs unchanged.

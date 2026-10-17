@@ -6820,3 +6820,15 @@ Google already uses XML and DDG HTML is distinct from challenge-handling Web;
 qualify only a genuinely different transport/interface before any activation.
 Serper/Exa/Tavily require keys despite free offers, so are deferred. No promise
 of recall/latency gain; bounded plan docs/CLOUD_SEARCH_ALTERNATIVES.md.
+
+
+## 2026-10-17 — Keyless native search screen: no promotion
+
+CLOUD-KEYLESS-RECALL-01 tested pinned Google XML and native DDG HTML POST on
+existing controlled egress, distinct from prior proxy/raw GET failures. Four
+fixed first queries: Yahoo official targets3/4 versus DDG2/4; Google403 stops
+after1. One predeclared DDG all-region contrast then CAPTCHA on first request,
+stopped. Total10native search requests, no models/retries/pages. DDG faster in
+small fixed-order screen but weaker source recall; no stable benefit or SQL
+claim. Yahoo default/normal containers/source unchanged, candidate removed.
+Evidence and qualification boundaries docs/CLOUD_KEYLESS_RECALL.md.
