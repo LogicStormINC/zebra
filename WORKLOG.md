@@ -15463,3 +15463,25 @@ Accepted normal images/env/restarts checked equal; export own safe evidence,
 remove owned /tmp probes. No service change, Trench/globalproxy edits or push.
 Next: qualify any result-contract candidate with fixed diverse evidence before
 realpage A/B; do not repeat global checklist experiments or claim SQL savings.
+
+
+## 2026-10-17 — CLOUD-SOURCE-REPLAY-DIVERSE-01
+
+Focused branch fromb819c853, owner Luke Ding. Reused original PythonA1/NodeA3
+source-decision controls and SQLiteQ1 public tool results, exact goals and public
+acknowledgements; selected native observation metadata only. Frozen cases31674a1a,
+rubric/schedule beforecalls:3×2×4×2=48proposals, AR/RA alternating. Existing
+replay script generalized minimally, no new harness/prompt/tools/schema. Native
+high/Flash/auto, no retries/executedtools/Runwrites; all48succeeded. All24count
+pairs tie:28/28tools proposed. No cross-question overlap gain; Python versioned
+URL2/4→4/4 insufficient; SQLite safe artifact recovery/no post-completion calls
+both arms. Node first-release checks conservatively separate from duplicatework,
+but unobserved fetch paths11→12 remain; no production security bypass observed.
+Input169876/175404; output7893/7775. No body/SQL/whole-turn measurement or gain.
+Frozen gateFAIL; do not promote JSON formatter or launch page pairs. New3cases
+and originalB1 lossless/history/native pairing/continuation/schema offline checks
+plusRuff/diff checks pass. Retain all public proposals/answers/private evidence
+artifacts, compare normal images/env/status/restarts equal, remove ownedtmp.
+Next boundary: this simple formatting hypothesis is not qualified; do not keep
+sampling it for a favorable outcome or add global prompt instructions. No push,
+service rebuild, Trench/globalproxy edits or unrelated test repairs.

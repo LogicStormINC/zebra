@@ -89,22 +89,22 @@ def tools(variant):
     return definitions
 
 
-def conversation(rows, cut, variant):
+def conversation(rows, cut, variant, *, goal=GOAL, cuts=CUTS, ack="我将直接搜索官方公告。"):
     messages = HarnessModelStep().build_initial_messages(
-        HarnessTask(title="Public B1 decision replay", user_input=GOAL), created_at=NOW
+        HarnessTask(title="Public evidence decision replay", user_input=goal), created_at=NOW
     )
     messages.append(
         SessionMessage(
             message_id=new_message_id(),
             role=MessageRole.ASSISTANT,
-            content="我将直接搜索官方公告。",
+            content=ack,
             created_at=NOW,
             provider_reasoning_content="",
         )
     )
     calls = {}
-    for end in CUTS[: CUTS.index(cut) + 1]:
-        start = 0 if end == CUTS[0] else CUTS[CUTS.index(end) - 1]
+    for end in cuts[: cuts.index(cut) + 1]:
+        start = 0 if end == cuts[0] else cuts[cuts.index(end) - 1]
         batch = [r for r in rows if start < r["seq"] <= end]
         proposed = []
         for row in batch:
@@ -148,13 +148,13 @@ def conversation(rows, cut, variant):
     return messages
 
 
-def self_check(rows):
-    assert len(rows) == 16 and len({r["seq"] for r in rows}) == 16
+def self_check(rows, **context):
+    assert rows and len({r["seq"] for r in rows}) == len(rows)
     for row in rows:
         if row["type"] == "tool_execution_completed" and row["tool"] == "web.search":
-            assert len(search_records(row["output"])) == 5
-    for cut in CUTS:
-        a, d, r = (conversation(rows, cut, variant) for variant in "ADR")
+            assert 1 <= len(search_records(row["output"])) <= 5
+    for cut in context.get("cuts", CUTS):
+        a, d, r = (conversation(rows, cut, variant, **context) for variant in "ADR")
         assert [m.content for m in a] == [m.content for m in d]
         assert len(a) == len(r)
         assert all(m.provider_reasoning_content == "" for m in a if m.role == MessageRole.ASSISTANT)
@@ -163,10 +163,10 @@ def self_check(rows):
                 assert before.content == after.content
     assert [t.parameters for t in tools("A")] == [t.parameters for t in tools("D")]
     assert tools("A") == tools("R")
-    print("offline: four checkpoints, lossless search fields, unchanged history/schema PASS")
+    print("offline: lossless search fields, unchanged history/schema/continuation PASS")
 
 
-def run(rows, output):
+def run(rows, output, *, cases=None):
     import httpx
     from agent_integrations import build_model_gateway
     from zebra_agent_config import load_settings
@@ -179,29 +179,40 @@ def run(rows, output):
         reasoning_effort=ModelReasoningEffort.HIGH,
         profile_id="deepseek-v4-flash-executor-v1",
     )
+    variants, repetitions = ("ADR", 2) if cases is None else ("AR", 4)
+    cases = cases or [
+        {"name": "B1", "rows": rows, "goal": GOAL, "cuts": CUTS, "ack": "我将直接搜索官方公告。"}
+    ]
     schedule = [
-        (cut, repeat, variant)
-        for repeat in range(2)
-        for i, cut in enumerate(CUTS)
-        for variant in ("ADR"[(i + repeat) % 3 :] + "ADR"[: (i + repeat) % 3])
+        (ci, cut, repeat, variant)
+        for repeat in range(repetitions)
+        for ci, case in enumerate(cases)
+        for i, cut in enumerate(case["cuts"])
+        for variant in (
+            variants[(i + ci + repeat) % len(variants) :]
+            + variants[: (i + ci + repeat) % len(variants)]
+        )
     ]
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     assert not (output / "proposals.safe.jsonl").exists(), "Never overwrite or replace a cohort"
     manifest = {
-        "fixture_hash": digest(rows),
+        "fixture_hash": digest(cases),
         "schedule": schedule,
         "policy": asdict(policy),
-        "tools": {v: digest([asdict(t) for t in tools(v)]) for v in "ADR"},
+        "tools": {v: digest([asdict(t) for t in tools(v)]) for v in variants},
         "limits": "Public history; synthetic empty reasoning; 3 tools; no Host context",
     }
     (output / "manifest.safe.json").write_text(json.dumps(manifest, indent=2))
     with httpx.Client(timeout=httpx.Timeout(60, connect=10), trust_env=False) as client:
         gateway = build_model_gateway(settings, client=client)
-        for cut, repeat, variant in schedule:
-            messages = conversation(rows, cut, variant)
+        for ci, cut, repeat, variant in schedule:
+            case = cases[ci]
+            context = {key: case[key] for key in ("goal", "cuts", "ack")}
+            messages = conversation(case["rows"], cut, variant, **context)
             started = time.perf_counter()
             result = {
+                "case": case["name"],
                 "cut": cut,
                 "repeat": repeat,
                 "variant": variant,
@@ -244,12 +255,17 @@ def run(rows, output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("self-check", "run"))
+    parser.add_argument("mode", choices=("self-check", "run", "check-cases", "run-cases"))
     parser.add_argument("fixture", type=Path)
     parser.add_argument("output", nargs="?")
     args = parser.parse_args()
     evidence = json.loads(args.fixture.read_text())
-    self_check(evidence)
-    if args.mode == "run":
+    cases = evidence if args.mode.endswith("cases") else None
+    if cases:
+        for case in cases:
+            self_check(case["rows"], **{k: case[k] for k in ("goal", "cuts", "ack")})
+    else:
+        self_check(evidence)
+    if args.mode.startswith("run"):
         assert args.output
-        run(evidence, args.output)
+        run(evidence, args.output, cases=cases)

@@ -6741,3 +6741,19 @@ corrected without retrieving private reasoning. Normal accepted APIca0/Worker
 d246/Search19f/env/restarts and fresh authority/DNS/SSRF/cancel/high/v2 unchanged.
 Offline focused checks/Ruff pass; no unrelated tests/Trench edits,SQL or speedup
 claim. Diagnostic script and report retained; docs/CLOUD_SOURCE_REPLAY.md.
+
+
+## 2026-10-17 - Diverse fixed-result replay rejects formatter promotion
+
+CLOUD-SOURCE-REPLAY-DIVERSE-01 extends the existing diagnostic to three actual
+Python/Node/SQLite page questions, two public-evidence checkpoints and four
+repetitions.48valid native high/Flash decisions, original text versus lossless
+orderedJSON; identical tool definitions/guidance, no tools executed.24pairs all
+tie, proposedtools28→28. Python version-specific document selection improves
+2/4→4/4 but still fetches overlapping documents4/4. SQLite correctly recovers
+missing正文 and stops in both arms; Node continues first-release corroboration
+and unobserved URL proposals11→12. No stable generic gain; gateFAIL, no source
+promotion or page cohort. Input tokens+3.25%, no SQL/body/whole-turn speedup claim.
+New/old offline checks andRuff pass; accepted normal API/Worker/Search/env/restarts
+and fresh authorization/DNS/SSRF/cancel/high/v2 remain unchanged. Report
+docs/CLOUD_SOURCE_REPLAY_DIVERSE.md; no Trench/proxy/unrelated fixture edits.
