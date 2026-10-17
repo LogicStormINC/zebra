@@ -15714,3 +15714,29 @@ do not pass a new cold process off as same-session recovery. Record readiness
 receipt and retention rule for future natural business-limit episode; no quota
 polling/exhaustion/rotation/reset or page acceptance. Existing~463ms remains an
 estimate. Same task/owned paths/branch reused for this authorized follow-up.
+
+## 2026-10-17 — CLOUD-EXA-LIVE-01 normal activation
+
+ClaimedReady/ownedpaths before code, codex/cloud-exa-live-01/baseaf0ca1b3.
+Explicit user authorizes normal optionalExa/Yahoo default/fast and passive natural
+recovery. Normal Compose picks qualified optional snapshot; worker only adds!exa
+capability description. Native telemetry logs phase/status/curl/PID/sessionbool
+and committedcooldown only, no query/headers. Offline controls/privacy+37Cloud
+checks pass, Ruffclean. Copy historical realcontrol byte-for-byte into original
+normalcache volume without reset, retainYahoo cache. Search image updated normally.
+Worker derivative from exactcurrentarm64base copies only toolcontract. Initial
+amd64build rejected localbase resolution; no activation. First ComposeCLI update
+rejected internalTLS certpath; old Worker untouched. Separate host CLI environment
+from prefixed preserved Worker values, validate exact env/command/mount/group/
+security,0activeleases, then normal Worker updated healthy. Rootlayer prefix exact,
+only1COPYlayer; env values identical despite list reorder. API unchanged.
+Normal Worker cancellableHTTPS transport2queries fixedRedis: defaultYahoo5results/
+0Exaframes/2067.034ms; explicit!exa5results/officialfirst/3frames/1742.063ms.
+Exa init458.693+notify209.272+tools677.052, pid1230 initialized true. Functional
+verification only, no performance/model/page claim, no errors/limits/fallback.
+Keep normal process, no further queries. Read-only heartbeat idexa created for
+natural session-preserved limit only; prefer ordinary recovery elseoneauthorized
+post-cooldown probe with event marker, then delete; no quota probing/retries.
+Current live state authoritative in normalvolume, oldhostcontrol historical only.
+No Trench/globalproxy/freshauthority/high/v2 changes, no push/remote deployment.
+Receipts .artifacts/cloud-exa-live-01/, recovery savings not yet accepted.

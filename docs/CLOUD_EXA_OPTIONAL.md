@@ -4,9 +4,10 @@
 
 ## 结论
 
-已准备原生 SearXNG 可选引擎、显式 Compose overlay 和离线回归。
-**Yahoo 仍是唯一默认引擎；正常 API、Worker、搜索服务未更新或重启。**
-本轮不修改模型提示词、工具选择策略、Trench 产品逻辑或全局代理。
+当前状态（CLOUD-EXA-LIVE-01）：Exa 已作为可选引擎接入正常搜索服务，Worker
+工具说明已列出 `!exa`；**Yahoo 仍是唯一默认引擎，Exa 保留 fast**。
+不强制切换来源，不修改研究流程提示词、Trench 产品逻辑或全局代理。
+首次准备和历史隔离验证的记录保留如下；最新运行验收见末节。
 
 四组无模型真实检索中，Exa 补回 Redis 官方发布页，但整体检索中位耗时
 更高。仅验收“可选补充的实现准备”，不验收稳定性能收益，不启用正常环境，
@@ -21,9 +22,9 @@
   调用 `web_search_advanced_exa`，不接入任意第三方 MCP 地址。
 - 沿用 SearXNG online processor、已有 native HTTP 连接池和请求取消机制。
   不增加依赖、独立网络服务或 Cloud 授权缓存。
-- 只有 operator 显式选择 overlay 后才注册 `!exa`；引擎仍为 disabled，
-  排除在默认检索中，但允许显式选择。普通查询仍只走 Yahoo。
-  当前正常 Worker 工具说明未宣告新能力；尚未扩大到模型自动发现/页面验收。
+- 正常 Compose 已注册 `!exa`；引擎仍为 disabled，排除在默认检索中，
+  允许显式选择。普通查询仍只走 Yahoo。Worker 工具说明仅宣告可选能力，
+  由 agent 决定是否选择，不编写强制路由；尚未进行模型/页面验收。
 - 固定 query 原文；fast、最多 5 条、关闭 summary/highlights、正文每条
   最多 1000 字符、livecrawlTimeout=1000ms。不硬编码来源或改写搜索问题。
 - 只接受显式的逐结果 URL。现有 Cloud 结果规范化保留 URL/输出边界，
@@ -65,8 +66,8 @@
 - `docker/web-search/check_exa.py`：单个可运行、禁网的 assert 检查。
 - Dockerfile：保留原有取消、Yahoo 出口与耗时补丁；复制可选引擎，从当前
   base settings 构建 opt-in settings 快照。修改 base settings 后须重建镜像。
-- `compose.exa.yml`：仅指定可选镜像与 settings 路径；正常 compose/settings
-  与默认镜像选择未变。
+- `compose.yml`：正常启动选择可选镜像及其 settings 快照，默认引擎仍仅Yahoo。
+  `compose.exa.yml` 保留为兼容 overlay。基础settings修改后须重新构建快照。
 
 在仓库根目录准备镜像：
 
@@ -86,7 +87,8 @@ docker run --rm --network none --read-only --tmpfs /tmp \
   zebra-searxng:exa-optional-01 /checks/check_exa.py
 ```
 
-**以下为未来 operator 显式启用操作，本轮未执行：**
+首次准备阶段未启用；CLOUD-EXA-LIVE-01 已按用户授权启用。正常启动可用下方
+兼容组合，也可直接使用 `compose.yml`，二者均保留 Yahoo 默认：
 
 ```sh
 docker compose -f docker/web-search/compose.yml \
@@ -333,3 +335,57 @@ fast请求观察结果：有效同会话应无initialize/initialized，失效则
 恢复观测，不能宣称配对提升；不得为了A/B主动清除候选会话、恢复旧限流状态或
 触发第二轮额度耗尽。当前不安排配额轮询或页面验收，等待真实业务事件。
 只读就绪证据：`.artifacts/cloud-exa-cold-01/real-recovery-readiness.json`。
+
+## 2026-10-17 正常服务接入：Exa 可选，Yahoo 默认
+
+任务 CLOUD-EXA-LIVE-01，用户明确授权启用，不再等待真实恢复验收才注册引擎。
+正常 `docker/web-search/compose.yml` 现在选择 `exa-optional-01` 及镜像内设置
+快照。`/config` 实测 Yahoo enabled=true、Exa enabled=false/shortcut=exa；
+disabled仅排除默认fan-out，显式`!exa`可选。Exa参数仍为fast/5条/1000字符，
+无summary/highlights、livecrawlTimeout1000、moderation沿用原值。
+
+`web.search` 参数说明补充“where enabled, !exa”，说明其限流及标记的Yahoo
+回退。没有把来源选择写成固定规则，也没有额外研究流程提示。正常Worker实际
+导入的工具contract已可见该说明；这是能力发现验证，不是已用模型证明自主选择。
+
+上线前native禁网回归（含日志隐私、限流/冷却/lease/有效会话保留/取消/截止）
+及现有37项Cloud搜索/DNS/工具检查通过，Ruff/格式通过。正常Search沿用原
+search-cache命名卷，既有真实冷却文件先逐字节迁入该卷，再重建服务，未清零。
+**上线后权威实时状态在正常容器 `/var/cache/searxng/zebra-exa-control.json`；
+旧host artifact是历史证据，不再是正常服务的实时状态。** 原Yahoo缓存也保留。
+
+Worker更新基于其精确运行镜像（arm64），只增加一个COPY层替换工具说明文件，
+避免把累计源码全量部署。更新前检查0活跃Worker lease；现有environment值、
+command、挂载、group/security均保留，API镜像与进程不变。环境/挂载列表顺序
+可能由Compose重排，按原key顺序重建摘要确认值一致，不能把顺序差异当配置漂移。
+正常启动的后续完整构建同样会包含仓库中的新工具说明。
+
+通过正常Worker、现有证书/私有搜索endpoint、native可取消HTTPS transport，
+固定一题做两次无模型功能请求（非性能配对）：
+
+| 选择 | 结果 | Exa控制/检索帧 | Worker transport外层ms |
+| --- | --- | ---: | ---: |
+| 无前缀默认 | Yahoo返回5条，未命中预定Redis GA页 | 0 | 2067.034 |
+| `!exa` | Exa返回5条，Redis GA官方页第一 | 3 | 1742.063 |
+
+Exa的3帧为initialize458.693ms、initialized209.272ms、tools/call677.052ms；
+session_ready=true，pid=1230。单题功能检查不能证明提速、稳定容量或真实恢复。
+本轮无错误、限流或回退；不再追加查询。未发模型/Run/页面请求，不改Trench。
+Search与Worker健康，API保持原状；Search原进程现在保留，不做验收后清理。
+
+增加的生产日志仅含RPC阶段、HTTP状态、native curl数值计时、PID、会话是否
+已初始化，以及已持久化的冷却原因/until。无query、结果正文、session header
+或Cloud授权数据，无额外SQL。协议/配额/取消行为保持原样。
+
+已注册同会话只读heartbeat `exa`（“Exa 自然限流恢复观察”），每5分钟读取
+正常容器日志/状态，**没有新自然限流事件时不发任何Exa请求、不通知未变状态**。
+只有普通业务产生新的rate_limit、session_ready=true、原PID/容器仍存续，且
+完整cooldown已过、无lease/blocked时，才观察恢复。优先采用已经发生的普通
+业务恢复，不另发请求；若尚无业务恢复，至多一次已授权固定公开题目的无模型
+功能请求，先标记事件防重复。再次限流/错误即停止，不重试、不清状态或换出口。
+进程丢失时不能重建冒充；得到一次可报告观测后删除该观察任务。
+
+恢复时记录同PID的初始化/通知帧数及真实tools/call时间；没有可比真实baseline
+只能称恢复观测，不宣称配对收益，不自动扩大到页面。当前仍未验收约463ms的
+真实恢复节省。私有构建/配置保留/真实功能结果及运行摘要：
+`.artifacts/cloud-exa-live-01/`。本地更新及集成，不推送或远端部署。

@@ -40,6 +40,8 @@ web_search_contract = ToolContract(
                 "!yh, !bing, !sogou, !360so or !sogouw "
                 "(public WeChat articles), e.g. !sogouw 人工智能. Select engines "
                 "separately; unprefixed queries use the deployment default. "
+                "Where enabled, !exa selects the optional Exa fast supplement; "
+                "it is rate-limited and may return marked Yahoo fallback results. "
                 "CAPTCHA/empty results do not prove no matching content."
             ),
         },

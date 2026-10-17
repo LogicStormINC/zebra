@@ -12,6 +12,7 @@ import uuid
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
+from curl_cffi import CurlInfo
 from curl_cffi.requests.exceptions import Timeout
 from searx import network as _network
 from searx.engines import engines
@@ -113,11 +114,42 @@ def _finish(lease, reason=None, retry_after=None):
             # Never probe earlier than a longer Retry-After. Over-cap recovery is manual.
             state["blocked"] = delay > MAX_COOLDOWN
             state["until"] = now + min(delay, MAX_COOLDOWN)
+            return state["until"]
 
-    _state(change)
+    until = _state(change)
+    if until is not None:
+        logging.getLogger("searx.engines.exa").warning(
+            "Exa control reason=%s until=%.3f pid=%s session_ready=%s",
+            reason,
+            until,
+            os.getpid(),
+            _session is not None,
+        )
+
+
+def _timing(resp, phase):
+    infos = getattr(resp, "infos", {}) or {}
+    keys = (
+        CurlInfo.NAMELOOKUP_TIME,
+        CurlInfo.CONNECT_TIME,
+        CurlInfo.APPCONNECT_TIME,
+        CurlInfo.PRETRANSFER_TIME,
+        CurlInfo.STARTTRANSFER_TIME,
+        CurlInfo.TOTAL_TIME,
+    )
+    timings = {key.name.lower(): round(infos[key] * 1000, 3) for key in keys if key in infos}
+    logging.getLogger("searx.engines.exa").warning(
+        "Exa rpc phase=%s status=%s pid=%s session_ready=%s ms=%s",
+        phase,
+        resp.status_code,
+        os.getpid(),
+        _session is not None,
+        json.dumps(timings),
+    )
 
 
 def _message(resp, expected_id):
+    _timing(resp, "initialize" if expected_id == 1 else "tools/call")
     if resp.status_code == 429:
         raise RateLimit("rate_limit")
     if resp.status_code != 200 or len(resp.content) > 262144:
@@ -201,7 +233,9 @@ def _alive(params):
 
 def _yahoo(query, params):
     _restore(params)
-    logging.getLogger("searx.engines.exa").info("Exa optional route=yahoo")
+    logging.getLogger("searx.engines.exa").warning(
+        "Exa route=yahoo pid=%s session_ready=%s", os.getpid(), _session is not None
+    )
     _network.set_context_network_name("yahoo")
     params.update(default_request_params())  # Drop all MCP headers/body before Yahoo.
     params["_exa_fallback"] = True
@@ -265,6 +299,7 @@ def request(query, params):
                 allow_redirects=False,
                 raise_for_httperror=False,
             )
+            _timing(resp, "notifications/initialized")
             if resp.status_code == 429:
                 raise RateLimit("rate_limit")
             if resp.status_code not in (200, 202, 204):

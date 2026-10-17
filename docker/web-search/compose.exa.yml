@@ -1,4 +1,4 @@
-# Explicit opt-in only: normal compose.yml and Yahoo default are unchanged.
+# Compatibility overlay; normal compose now registers Exa too. Yahoo stays default.
 services:
   searxng:
     image: zebra-searxng:exa-optional-01

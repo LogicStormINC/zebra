@@ -70,6 +70,13 @@ def rejected(call, exception):
 
 def main():
     check_engine_module(engine)
+    with patch.object(engine.logging, "getLogger") as logger:
+        private = response(sources("SECRET_QUERY_SESSION"))
+        private.infos = {engine.CurlInfo.TOTAL_TIME: 0.123}
+        engine._timing(private, "tools/call")
+        emitted = str(logger.return_value.warning.call_args)
+        assert "SECRET_QUERY_SESSION" not in emitted and "123.0" in emitted
+        assert "tools/call" in emitted and "session_ready" in emitted
     settings = yaml.safe_load(Path(__file__).with_name("settings.yml").read_text())
     defaults = yaml.safe_load(Path("/usr/local/searxng/searx/settings.yml").read_text())
     optional = deepcopy(settings)

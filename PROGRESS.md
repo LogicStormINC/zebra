@@ -6916,3 +6916,20 @@ rate-limit recovery pair. Zero new Exa/model requests; no quota fishing, state
 reset or provider/default activation. Real recovery benefit remains unaccepted.
 Future natural business-limit episodes must retain the process until recovery
 observation ends; comparable baseline required before claiming paired gains.
+
+## 2026-10-17 — Normal Search optional Exa activated; natural recovery observation
+
+CLOUD-EXA-LIVE-01 follows explicit user authorization: normal Compose registers
+Exa disabled/explicit!exa, Yahoo sole default, fast unchanged. Worker tool argument
+description advertises optional supplement/fallback without forced routing.
+Search real control bytes migrated into unchanged cache volume; no reset/egress
+rotation. Native numeric RPC/PID/control logs support natural recovery without
+query/header logging or extraSQL. Offline controls/privacy +37Cloud checks pass.
+Normal Worker exact-image derivative updates only tool file, preserves env/mount/
+command/security;0activeleases before update, API unchanged. Both services healthy.
+Two Worker nativeHTTPS no-model queries: defaultYahoo0Exaframes; explicitExa3
+frames/officialRedisGAfirst; no error/limit/fallback. Functional only, no latency
+gain or autonomous-model/page claim. Keep normalSearch process. Read-only heartbeat
+exa watches natural limits; no request until real eligible event, at mostone
+post-cooldown recovery observation/probe then stop; no quota fishing/retry/reset.
+Real paired recovery savings still pending. Details CLOUD_EXA_OPTIONAL.md.
