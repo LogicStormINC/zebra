@@ -15508,3 +15508,16 @@ Normal APIca0/Workerd246/Search19f/env/restarts identical, ownedtmp removed afte
 export; no production image/Trench/proxy/prompt/schema/page change or push.
 Next boundary: qualify real resume/context-loss or actual failed guessedpaths
 before any production fix; do not infer performancegain from diagnosticrepair.
+
+
+## 2026-10-17 — CLOUD-B1-BATCH-BOUNDARY-01
+
+Frozen faithful B1 publicbatches/case1285c713;24native highFlash responses, only
+remove existing acceptance batching sentence in private diagnostic input. No
+source patch/framework expansion.18/18proposals; lowvalue7/6(-14.3%), onlyfirst
+checkpointimproves, unobservedURLs2/3; gateFAIL. All3finalanswerprobes stop both.
+Read6fresh backendqueries: RedisGA absentall7, so no capincrease. NativeYahoo
+code maps zh-CN→lang_zh_chs; frozen24locale probes show same top5URLorder12/12,
+no configchange. Results retained, no retries or selectedtools/Runwrites, no
+production auth/high/v2/Trench/proxy edits or pagegain claim. Next meaningful
+lever is decision capability/source recall, not more global prompt variants.

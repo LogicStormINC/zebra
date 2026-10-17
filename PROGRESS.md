@@ -6774,3 +6774,13 @@ small-sample limits.20valid high/Flash model responses, no tools/retries/Runwrit
 No production gain claimed; original real B1 detour/overlap remains unresolved.
 Normal images/env/restarts/freshauthority/DNS/SSRF/cancel/high/v2 preserved, no
 Trench changes/page cohort. docs/CLOUD_SOURCE_PROVENANCE_AUDIT.md.
+
+
+## 2026-10-17 - Original B1 batching/recall hypotheses bounded and rejected
+
+Faithful original B1,24high/Flash decisions: deleting duplicate acceptance batch
+sentence leaves18→18proposals and extra corroboration intact; gateFAIL. No source
+change. Current raw Yahoo widequery still lacks GA across all7results, not just
+top5;24native zh-CN/all comparisons have identical top5URLorders12/12. No locale
+or cap change justified. No test-framework extension, source/Trench/auth/v2 change
+or performanceclaim. Details docs/CLOUD_B1_BATCH_BOUNDARY.md.
