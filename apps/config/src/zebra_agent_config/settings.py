@@ -9,6 +9,7 @@ from pathlib import Path
 from zebra_agent_config import mcp_settings
 from zebra_agent_config.command_delivery import CommandDeliverySettings, load_command_delivery
 from zebra_agent_config.coverage_settings import CoverageWorkSettings, load_coverage_work
+from zebra_agent_config.egress_settings import load_egress_endpoint
 from zebra_agent_config.mcp_credentials import McpCredentialSettings, load_mcp_credentials
 from zebra_agent_config.memory_settings import MemoryGatewaySettings, load_memory_gateway_settings
 from zebra_agent_config.public_output_settings import PublicOutputPolicy, load_public_output_policy
@@ -115,6 +116,7 @@ class ZebraAgentSettings:
     host_tool_workload_identity: str | None = None
     host_tool_shared_secret: str | None = None
     development_unrestricted: bool = False
+    web_egress_socks_endpoint: tuple[str, int] | None = None
 
     @property
     def deployment(self) -> str:
@@ -225,6 +227,7 @@ def load_settings(
         coverage_work=load_coverage_work(values),
         setup=load_setup_settings(values),
         scm=_load_scm_settings(values),
+        web_egress_socks_endpoint=load_egress_endpoint(values, profile=profile),
         web_search_endpoint=_read_optional(values, "ZEBRA_WEB_SEARCH_ENDPOINT"),
         web_search_private_backend=_read_bool(
             values, "ZEBRA_WEB_SEARCH_PRIVATE_BACKEND", default=False

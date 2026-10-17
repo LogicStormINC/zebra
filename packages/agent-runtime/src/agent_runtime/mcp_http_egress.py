@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-import errno
 import http.client
-import socket
 import ssl
 import urllib.request
 from collections.abc import Sequence
 
 from agent_runtime.public_dns import AddressInfo, public_addresses
+from agent_runtime.public_egress import connect_address
 
 
 class PublicMcpHttpsConnection(http.client.HTTPSConnection):
     _tunnel_host: str | None
     _context: ssl.SSLContext
+    _controlled_egress = True
     source_address: tuple[str, int] | None
 
     def resolve_addresses(self) -> Sequence[AddressInfo]:
@@ -26,19 +26,11 @@ class PublicMcpHttpsConnection(http.client.HTTPSConnection):
         addresses = self.resolve_addresses()
         # ponytail: use the first validated address, with no request replay or
         # second hostname resolution; multi-address fallback can be added pre-TLS.
-        family, kind, protocol, _, address = addresses[0]
-        connection = socket.socket(family, kind, protocol)
+        connection = connect_address(
+            addresses[0], timeout=self.timeout, source_address=self.source_address,
+            public=self._controlled_egress,
+        )
         try:
-            connection.settimeout(self.timeout)
-            if self.source_address is not None:
-                connection.bind(self.source_address)
-            connection.connect(address)
-            # Match stdlib HTTPConnection after replacing its address connector.
-            try:
-                connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            except OSError as exc:
-                if exc.errno != errno.ENOPROTOOPT:
-                    raise
             self.sock = self._context.wrap_socket(connection, server_hostname=self.host)
         except BaseException:
             connection.close()

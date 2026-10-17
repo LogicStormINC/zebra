@@ -9,6 +9,7 @@ from pathlib import Path
 
 import httpx
 from agent_core.domain.sessions import SessionStatus
+from agent_runtime.public_egress import probe_egress
 from agent_storage.postgres.connection_pool import postgres_pool_scope
 from zebra_agent_config import load_settings
 
@@ -25,6 +26,8 @@ def worker_banner() -> str:
 def main(argv: Sequence[str] | None = None) -> int:
     namespace = _build_parser().parse_args(list(argv) if argv is not None else None)
     settings = load_settings()
+    if settings.deployment == "cloud" and settings.web_egress_socks_endpoint is not None:
+        probe_egress(settings.web_egress_socks_endpoint)
     database_path = Path(namespace.database or settings.database_url)
     # The process may need an internal CA for Host Grant traffic, but model
     # providers use public TLS. Keep their client independent of SSL_CERT_FILE.

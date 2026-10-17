@@ -146,7 +146,9 @@ def build_worker_tool_gateway(
         parent_binding=parent_binding,
         parent_context=parent_context,
         network_cancellation_check=network_cancellation_check,
-        reuse_doh_transport=settings.profile == "cloud",
+        reuse_doh_transport=settings.deployment == "cloud",
+        egress_endpoint=(settings.web_egress_socks_endpoint
+                         if settings.deployment == "cloud" else None),
     )
     web_egress_enabled = trusted_local or task.network_profile.name.value in WEB_ALLOWED_PROFILES
     if task.host_context is None:

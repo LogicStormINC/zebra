@@ -137,6 +137,7 @@ services:
         ZEBRA_DOCKER_CLI_IMAGE: ${ZEBRA_WORKER_DOCKER_CLI_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/docker:27-cli}
     environment:
       <<: *zebra-cloud-environment
+      ZEBRA_WEB_EGRESS_SOCKS_ENDPOINT: ${ZEBRA_WEB_EGRESS_SOCKS_ENDPOINT:-}
       SSL_CERT_FILE: ${ZEBRA_WORKER_SSL_CERT_FILE:-${SSL_CERT_FILE:-/etc/ssl/certs/ca-certificates.crt}}
       ZEBRA_CLIENT_INTEGRATION_ENABLED: ${ZEBRA_CLIENT_INTEGRATION_ENABLED:-false}
       ZEBRA_WORKER_ID: ${ZEBRA_WORKER_ID:-zebra-cloud-worker}

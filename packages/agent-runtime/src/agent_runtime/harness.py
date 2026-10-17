@@ -206,6 +206,7 @@ class LocalToolGateway(ToolGatewayPort):
         web_pipeline_v2: bool = False,
         network_cancellation_check: Callable[[], None] | None = None,
         reuse_doh_transport: bool = False,
+        egress_endpoint: tuple[str, int] | None = None,
     ) -> None:
         if research_child_limit <= 0:
             raise ValueError("research_child_limit must be positive")
@@ -230,7 +231,8 @@ class LocalToolGateway(ToolGatewayPort):
         )
         self._output_projector = output_projector
         self._network_check = sticky_network_cancellation_check(
-            network_cancellation_check, reuse_doh=reuse_doh_transport
+            network_cancellation_check, reuse_doh=reuse_doh_transport,
+            egress_endpoint=egress_endpoint,
         )
         registry = ToolRegistry()
         tools = (

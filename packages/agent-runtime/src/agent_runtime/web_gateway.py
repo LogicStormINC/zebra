@@ -140,8 +140,11 @@ def sticky_network_cancellation_check(
     check: Callable[[], None] | None,
     *,
     reuse_doh: bool = False,
+    egress_endpoint: tuple[str, int] | None = None,
 ) -> Callable[[], None] | None:
     """Retain the original ownership error even if a Tool catches Exception."""
+    if egress_endpoint is not None and (check is None or not reuse_doh or os.name != "posix"):
+        raise ValueError("controlled egress requires scoped native cancellation")
     if check is None:
         return None
     failure: BaseException | None = None
@@ -161,7 +164,7 @@ def sticky_network_cancellation_check(
     if reuse_doh and os.name == "posix":
         from agent_runtime.native_network_scope import DohNetworkScope
 
-        return DohNetworkScope(require_active)
+        return DohNetworkScope(require_active, egress_endpoint=egress_endpoint)
     return require_active
 
 
@@ -368,6 +371,10 @@ def _reject_non_public_resolution(hostname: str) -> None:
 
 
 def _proxy_configuration(hostname: str, *, use_system_proxy: bool) -> dict[str, str]:
+    from agent_runtime.public_egress import current_public_egress
+
+    if current_public_egress.get() is not None:
+        return {}  # Explicit Cloud route never delegates target DNS to an ambient proxy.
     proxies = urllib.request.getproxies() if use_system_proxy else {}
     if proxies.get("https"):
         # ponytail: trusted-local delegates DNS and routing to the operator's HTTPS proxy;

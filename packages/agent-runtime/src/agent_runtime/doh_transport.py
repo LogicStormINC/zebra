@@ -9,6 +9,8 @@ import urllib.request
 from contextvars import ContextVar
 from time import monotonic
 
+from agent_runtime.public_egress import current_public_egress
+
 
 class DohTransport:
     """Exclusive child use only; reject redirects and retire failed/idle sockets."""
@@ -26,7 +28,12 @@ class DohTransport:
         if monotonic() - self._used_at > 15:
             self.close()
         if self._connection is None:
-            self._connection = http.client.HTTPSConnection(
+            connection_type = http.client.HTTPSConnection
+            if current_public_egress.get() is not None:
+                from agent_runtime.mcp_http_egress import PublicMcpHttpsConnection
+
+                connection_type = PublicMcpHttpsConnection
+            self._connection = connection_type(
                 "1.1.1.1", timeout=timeout, context=ssl.create_default_context()
             )
         try:

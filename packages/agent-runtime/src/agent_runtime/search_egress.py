@@ -36,6 +36,9 @@ def _backend_addresses(hostname: str, port: int) -> Sequence[AddressInfo]:
 
 
 class _SearchBackendConnection(PublicMcpHttpsConnection):
+    # Operator-bound private backend stays on its original validated private route.
+    _controlled_egress = False
+
     def resolve_addresses(self) -> Sequence[AddressInfo]:
         # The handler is created only after exact endpoint admission below;
         # connection-time validation pins the actual DNS answer, preserving SNI.

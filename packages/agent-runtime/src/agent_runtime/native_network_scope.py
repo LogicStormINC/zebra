@@ -14,9 +14,14 @@ from typing import Any
 
 from agent_tools.web_gateway import WebGatewayError
 
+from agent_runtime.public_egress import Endpoint, validate_endpoint
+
 
 class DohNetworkScope:
-    def __init__(self, check: Callable[[], None]) -> None:
+    def __init__(
+        self, check: Callable[[], None], *, egress_endpoint: Endpoint | None = None,
+    ) -> None:
+        self._egress_endpoint = validate_endpoint(egress_endpoint)
         self._check = check
         self._lock = RLock()
         self._slots = BoundedSemaphore(2)
@@ -109,6 +114,7 @@ class DohNetworkScope:
                     stderr=subprocess.DEVNULL,
                     start_new_session=True,
                     bufsize=0,
+                    env={**os.environ, "_ZEBRA_NATIVE_EGRESS": json.dumps(self._egress_endpoint)},
                 )
                 self._children.add(child)
         good = False
@@ -187,8 +193,11 @@ class DohNetworkScope:
 
 def network_child() -> None:
     from agent_runtime.doh_transport import DohTransport, current_doh_transport
+    from agent_runtime.public_egress import current_public_egress
     from agent_runtime.web_gateway import _execute_network_operation
 
+    endpoint = validate_endpoint(json.loads(os.environ.get("_ZEBRA_NATIVE_EGRESS", "null")))
+    egress_token = current_public_egress.set(endpoint)
     transport = DohTransport()
     token = current_doh_transport.set(transport)
     try:
@@ -221,4 +230,5 @@ def network_child() -> None:
             sys.stdout.buffer.flush()
     finally:
         current_doh_transport.reset(token)
+        current_public_egress.reset(egress_token)
         transport.close()
