@@ -1,5 +1,6 @@
 """Compose existing client admission operations with fresh Host authority."""
 
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from time import monotonic
 from typing import TYPE_CHECKING, Annotated
@@ -7,6 +8,7 @@ from uuid import UUID, uuid4
 
 from agent_core.domain.client_capabilities import CAPABILITY_NAME_PATTERN, MountedCapabilitySnapshot
 from agent_core.domain.client_sessions import ClientSessionGrant
+from agent_storage.postgres.connection_scope import postgres_connection_scope
 from agent_storage.postgres.task_io import task_io_deadline
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 
@@ -83,7 +85,13 @@ def mount_client_surface(
             deadline, monotonic() + (context.expires_at - datetime.now(UTC)).total_seconds()
         )
     try:
-        with task_io_deadline(deadline):
+        # ponytail: reuse sockets for this synchronous Cloud request only;
+        # each adapter still commits/resets and reads fresh authority/profile state.
+        with (
+            task_io_deadline(deadline),
+            postgres_connection_scope(bounded=True)
+            if app.settings.deployment == "cloud" else nullcontext(),
+        ):
             denied = task_access_response(
                 app,
                 task_id,
@@ -156,7 +164,13 @@ def open_client_surface(app: "ZebraAgentApi", request: "RouteRequest") -> ApiRes
             deadline, monotonic() + (context.expires_at - datetime.now(UTC)).total_seconds()
         )
     try:
-        with task_io_deadline(deadline):
+        # ponytail: reuse sockets for this synchronous Cloud request only;
+        # each adapter still commits/resets and reads fresh authority/profile state.
+        with (
+            task_io_deadline(deadline),
+            postgres_connection_scope(bounded=True)
+            if app.settings.deployment == "cloud" else nullcontext(),
+        ):
             denied = task_access_response(
                 app,
                 task_id,
