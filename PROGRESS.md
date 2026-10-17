@@ -6583,3 +6583,23 @@ Worker/Search unchanged; original composition/health0restart/105hashes verified.
 probes0command/0model; normalB2 result visible, receiver closed. Local integration only,
 primary27unrelated dirty entries preserved; no push/npm/remotedeploy. Details in
 docs/CLOUD_TASK_ADMISSION_IO.md. Broader performance and STOP/GC/scale-out gates remain open.
+
+
+## 2026-10-17 - CLOUD-ADMISSION-WRITE-01
+
+API standard Docker entrypoint now wraps unchanged Uvicorn CLI in existing bounded
+postgres_pool_scope, matching Worker composition; no adapter/schema/trigger/authority
+change. Source first INSERT backend initialization is reproducible; normalAPI retains
+two backend PIDs across fresh-authority requests. Standalone red/green/actualimage/CLI
+and56focused/1known deadline assertion deselected plus cleanmakecheck pass; nofixturefix.
+4actualpage ABBA allcompleted/high/Flash/v2/autonomous,12executionmodelresponsesretry0,
+16toolsuccess/singlecandidate+quality each. Body A12.844→B14.578s/whole16.208→17.863s;
+no page gain claimed. SteadyHTTP controls afterpages Task177.6→122.9ms/firstINSERT
+10.74→5.59ms rawmeans; nonempty67 preserved,7emptyprotocol checks added perTask.
+OldA2nonindex174.8ms not reproduced or uniquely attributed; newA2SELECTGREATEST85.7ms
+spike has bounded indexonly plan in controls, so no claim all jitter solved.
+NormalAPI13e19eadb56d/Worker1a2270dfbf0b/Search245b675f/original6compose/env/commands
+and107hashes healthy0restart verified; declaredAPIentrypoint changed intentionally.
+NormalB2 result visible, no further model, receiverclosed. Localintegration only,
+primary27dirtyentries preserved; no push/npm/Trenchproductchange/remotedeploy.
+Details docs/CLOUD_ADMISSION_WRITE.md; historical spike and broadgates remain open.

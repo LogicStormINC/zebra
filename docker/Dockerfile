@@ -38,7 +38,7 @@ FROM runtime AS migrate
 ENTRYPOINT ["python", "docker/migrate.py"]
 
 FROM runtime AS api
-ENTRYPOINT ["uvicorn", "zebra_agent_api.http:create_http_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["python", "-m", "zebra_agent_api.server"]
 
 FROM runtime AS worker
 ENTRYPOINT ["zebra-agent-worker"]

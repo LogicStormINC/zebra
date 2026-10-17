@@ -15314,3 +15314,19 @@ POST/tasksSQL73/67/67/73, sourceassign14→8 driver ops; atomic body and commit 
 Native commit5–7ms not dominant, originalA2 nonindexbody174.8ms spike unassigned to a
 specific statement; document limit. Source_assign mean45.3→44.8ms, no stabledelayclaim.
 Local integration uses guarded suffix preservation; no npm/push/remote deployment.
+
+
+CLOUD-ADMISSION-WRITE-01: nativeEXPLAIN EventINSERT37.8/16.9ms vs~0.9 subsequent,
+projections~5ms; sharedbackend controls14.06/7.86→1.26/0.75ms firstINSERT. Reused existing
+Workerpool in APIserver entrypoint, no newpool/dependency/migration/SQLlogic. Tests56passed
+1known unrelated deadline assertion deselected/defaultmakecheckpass/lifecycle+actualimage
++CLIhelp pass. Fourrealpages completed high/v2/autonomy,12executionmodels retry0,16tool
+success, qualityonce. B1Task249.7ms slower thanA1231.6ms retained; pool2PIDs first-source
+cold on different backend. Extra2nativeHTTP/variant strictly afterpagecompletion, no models.
+NativeAPImean177.6→122.9ms but pagebodyA12.844/B14.578s worse, no E2Egain claimed.
+NewA2 SELECTGREATEST85.7ms/index221.7ms retained; readplan twoindexonlyseeks/exec0.09–1.16ms.
+Historical174.8ms notexactlyexplained, no blindtrigger/fixture fixes. NormalAPI13e19eadb56d
+with declaredserverentrypoint restored, oldWorker/Search/config107hashes verified;
+normal2newfreshGrant tasks0commands/0models and same2PGbackendPIDs. B2normalhistory
+visible/high, screenshotpage-B2.jpg, receiverclosed and listeners removed.
+LocalFF uses guarded suffix preservation, no push/npm/remotedeploy.
