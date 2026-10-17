@@ -12,7 +12,7 @@ services:
       TMPDIR: /var/cache/searxng
       SEARXNG_SETTINGS_PATH: /etc/searxng/settings.yml
     volumes:
-      - ./settings.yml:/etc/searxng/settings.yml:ro
+      - ./config:/etc/searxng:ro
       - search-cache:/var/cache/searxng
     security_opt: [no-new-privileges:true]
     cpus: 1

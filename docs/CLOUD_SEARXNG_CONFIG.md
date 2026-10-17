@@ -40,9 +40,11 @@
 | 重试 | 全局原值0；仅沿用已验证 Yahoo status0恢复一次，绝不重试403/429 |
 | 服务 | 私有、limiter=false、image_proxy=false，原受控出口与证书/隔离不变 |
 
-`docker/web-search/settings.yml` 为唯一操作者配置来源。Exa 显式注册也写入此文件，
+`docker/web-search/config/settings.yml` 为唯一操作者配置来源。Exa 显式注册也写入此文件，
 其字典由离线检查与 zebra_exa.OPTIONAL_CONFIG 保持一致。
-正常 Compose 与兼容 overlay 均读取 /etc/searxng/settings.yml；镜像 COPY 同一文件
+正常 Compose 将仅含配置的 config/ 目录只读挂载到 /etc/searxng，兼容 overlay
+使用同一路径；避免 Git 原子替换文件导致单文件 bind 失效，也不暴露 secrets/。
+镜像 COPY 同一文件
 作为无挂载时的默认值。不再维护第二份构建时拼装配置。
 配置不是热加载：编辑后仍需要有计划地重建 Search 容器，但不必为 YAML 修改重建镜像。
 
@@ -111,3 +113,7 @@ docker run --rm --network none -e PYTHONPATH=/usr/local/searxng \
 持久冷却文件逐字保留、原 cache 卷保留、fast 与出口代码/配置不变。
 依原观察任务终止条件，exa heartbeat 已删除，不再周期性探测额度。
 未来首次正常业务显式选择 Exa 时可正常新建会话，但不计作原同进程恢复证明。
+
+上线后 Git 切换暴露本机单文件 bind 的 inode 问题：运行进程仍持有内存配置，
+但容器配置路径不可读。已修正为 config/ 目录挂载，并在最终本地集成后重新
+激活；额外验证同内容原子替换 settings.yml 后仍可读取。该验证没有新增搜索。

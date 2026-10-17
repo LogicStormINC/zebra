@@ -77,7 +77,7 @@ def main():
         emitted = str(logger.return_value.warning.call_args)
         assert "SECRET_QUERY_SESSION" not in emitted and "123.0" in emitted
         assert "tools/call" in emitted and "session_ready" in emitted
-    settings = yaml.safe_load(Path(__file__).with_name("settings.yml").read_text())
+    settings = yaml.safe_load((Path(__file__).parent / "config" / "settings.yml").read_text())
     defaults = yaml.safe_load(Path("/usr/local/searxng/searx/settings.yml").read_text())
     assert next(e for e in settings["engines"] if e["name"] == "exa") == engine.OPTIONAL_CONFIG
     for config in (settings,):

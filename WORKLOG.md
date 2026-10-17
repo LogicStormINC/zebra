@@ -15926,3 +15926,10 @@ control file/cache retained, no resurrection/probe. Deleted exa heartbeat per it
 stop condition. No Trench/globalproxy/auth/DNS/SSRF/cancellation changes.
 Runbook docs/CLOUD_SEARXNG_CONFIG.md; private .artifacts/cloud-searxng-config-01/.
 Local integration only, no push/remote deployment.
+
+Follow-up: final Git integration exposed macOS Docker single-file bind inode
+invalidation (running in-memory service remained healthy, new settings reads failed).
+Moved sole source to docker/web-search/config/settings.yml; read-only config/ directory
+mount excludes secrets/, avoids ordinary file atomic-replacement invalidation.
+Offline checks updated for new path; final activation follows local integration.
+Preserve cache/control/env/security and API/Worker; no additional search/model query.

@@ -14,7 +14,7 @@ from searx.settings_loader import update_settings
 
 def main() -> None:
     root = Path(__file__).resolve().parent
-    source = yaml.safe_load((root / "settings.yml").read_text())
+    source = yaml.safe_load((root / "config" / "settings.yml").read_text())
     defaults = yaml.safe_load(Path("/usr/local/searxng/searx/settings.yml").read_text())
     merged = update_settings(deepcopy(defaults), source)
     engines = merged["engines"]
@@ -49,6 +49,8 @@ def main() -> None:
         yahoo_engine.request("offline configuration check", params)
         assert parse_qs(params["cookies"]["sB"])["vl"] == [language]
     # One source of truth: image fallback and both normal/compatibility mounts agree.
+    normal = yaml.safe_load((root / "compose.yml").read_text())
+    assert "./config:/etc/searxng:ro" in normal["services"]["searxng"]["volumes"]
     for filename in ("compose.yml", "compose.exa.yml"):
         compose = yaml.safe_load((root / filename).read_text())
         assert compose["services"]["searxng"]["environment"]["SEARXNG_SETTINGS_PATH"] == (
