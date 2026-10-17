@@ -15798,3 +15798,31 @@ default/Exa optional. Exa history3original frames only/no new initialization/cal
 no natural rate events. v104 current;0temporary acceptance schemas/active leases.
 Artifacts .artifacts/cloud-research-web-01/live/. No signed-Host HTTP/page/model E2E
 or measured speedup claimed. Local commit/integration only; no push/remote deploy.
+
+
+## 2026-10-18 CLOUD-RESEARCH-WEB-01 high/v2 actual page acceptance
+
+User authorized one real page; frozen question before submission spans PostgreSQL18
+AIO, Redis8 datatypes/persistence and SQLite WAL constraints, official docs only.
+Used existing logged-in Chrome Trench, UI research/high/Flash; no forced delegation
+or provider, no product/source/config/service changes. Captured CDP network metadata
+without credentials, temporary DOM timestamp observer, existing browser timing
+recorder, safe task event/tool/model metadata; removed observer afterward. Existing
+read-only evaluator hides custom window state, so read documented instrumentation
+through CDP. getResponseBody for finished SSE unavailable; no replay/new request;
+joined existing browser event message IDs to persisted public model responses.
+
+Conversation conv_1792252981464_17ccd2/root84d2f844-69a2-438a-b840-3f59936b0bc2.
+Accepted stream_admission.mode transient_v2;10responses high/thinking enabled.
+24tools all executed:5search,7fetch(allHTTP200),12artifactreads.0agent.research,
+0childlinks; actual researcher web.search path NOT accepted in this sample. No
+second trial or forced route. First plan/progress DOM5.002s excluded; first answer
+message65cfcd61 receipt83.194s/Reactcommit83.336s; finalcommit83.824s; page-ready
+84.614s. Single different complex question, no latency-improvement/paired claim.
+
+Read-only watch found0limits;5searchqueries unprefixed/Yahoo default,0newExaRPC.
+Original Search ID/start/PID1230/controlbytes retained; fast source/defaults
+unchanged. Final screenshot and safe receipts in .artifacts/cloud-research-web-01/page/.
+Browser tab retained as deliverable; no signed-grant or service settings modified.
+Local doc commit/integration only, no push/remote deploy. Remaining business proof
+requires a naturally selected researcher execution; do not claim one from this Run.

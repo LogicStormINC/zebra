@@ -6970,3 +6970,16 @@ and serializer6cases passed. Model events0/search requests0; owned temporary
 schemas removed. This proves deployed composition/storage, not signed Host HTTP
 or real-model business E2E or a new performance improvement. No Trench/globalproxy
 changes, remote push or remote deployment.
+
+
+### CLOUD-RESEARCH-WEB-01 actual page observation (2026-10-18)
+
+One user-authorized normal-page research/high/transient_v2 sample completed.
+Executor chose direct parent tools, no agent.research or Child links; actual
+researcher-business search remains unverified despite no-model deployment proof.
+10executor model rounds and24successful tools (search5/fetch7/artifactread12).
+First plan text5.002s is progress, not answer. First actual answer Reactcommit
+83.336s; finalcommit83.824s; page ready84.614s from click. Different multi-topic
+workload, no paired speedup claim.0limits and0newExaRPC; defaultYahoo/fast/Search
+PID1230/session/cooldown retained. No forced delegate/engine, extra samples,
+product/Trench/config/service changes. Private page evidence retained.
